@@ -38,3 +38,6 @@ next-env.d.ts
 
 # prisma
 /src/generated/prisma
+
+# storybook
+storybook-static/
