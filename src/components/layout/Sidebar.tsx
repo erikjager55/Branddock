@@ -24,26 +24,27 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { sidebarOpen, toggleSidebar } = useUIStore();
+  const { sidebarCollapsed, collapseSidebar } = useUIStore();
+  const expanded = !sidebarCollapsed;
 
   return (
     <aside
       className={cn(
         "fixed left-0 top-0 h-screen bg-surface-dark border-r border-border-dark transition-all duration-300 z-50",
-        sidebarOpen ? "w-64" : "w-16"
+        expanded ? "w-64" : "w-16"
       )}
     >
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-border-dark">
-        {sidebarOpen && (
+        {expanded && (
           <span className="text-xl font-bold text-primary">Branddock</span>
         )}
         <button
-          onClick={toggleSidebar}
+          onClick={() => collapseSidebar(!sidebarCollapsed)}
           className="p-2 rounded-md hover:bg-background-dark transition-colors"
-          aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
         >
-          {sidebarOpen ? (
+          {expanded ? (
             <ChevronLeft className="w-5 h-5 text-text-dark" />
           ) : (
             <ChevronRight className="w-5 h-5 text-text-dark" />
@@ -66,12 +67,12 @@ export function Sidebar() {
                 isActive
                   ? "bg-primary text-white"
                   : "text-text-dark hover:bg-background-dark",
-                !sidebarOpen && "justify-center"
+                !expanded && "justify-center"
               )}
-              title={!sidebarOpen ? item.name : undefined}
+              title={!expanded ? item.name : undefined}
             >
               <Icon className="w-5 h-5 flex-shrink-0" />
-              {sidebarOpen && (
+              {expanded && (
                 <span className="text-sm font-medium">{item.name}</span>
               )}
             </Link>

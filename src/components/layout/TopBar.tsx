@@ -8,13 +8,13 @@ interface TopBarProps {
 }
 
 export function TopBar({ title }: TopBarProps) {
-  const { sidebarOpen } = useUIStore();
+  const { sidebarCollapsed } = useUIStore();
 
   return (
     <header
       className={cn(
         "fixed top-0 right-0 h-16 bg-surface-dark border-b border-border-dark transition-all duration-300 z-40",
-        sidebarOpen ? "left-64" : "left-16"
+        sidebarCollapsed ? "left-16" : "left-64"
       )}
     >
       <div className="h-full px-6 flex items-center">

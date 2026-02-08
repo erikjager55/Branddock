@@ -19,7 +19,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { sidebarOpen } = useUIStore();
+  const { sidebarCollapsed } = useUIStore();
   const pathname = usePathname();
   const title = pageTitles[pathname || "/dashboard"] || "Branddock";
 
@@ -30,7 +30,7 @@ export default function DashboardLayout({
       <main
         className={cn(
           "pt-16 transition-all duration-300",
-          sidebarOpen ? "ml-64" : "ml-16"
+          sidebarCollapsed ? "ml-16" : "ml-64"
         )}
       >
         <div className="p-6">{children}</div>
