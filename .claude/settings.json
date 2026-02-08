@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "pnpm test", "pnpm build", "pnpm lint", "pnpm prettier",
+      "git status", "git diff", "git log", "git branch",
+      "git checkout", "git add", "git commit", "git push",
+      "cat *", "ls *", "find *", "grep *"
+    ],
+    "deny": [
+      "rm -rf /", "sudo *", "chmod 777 *"
+    ]
+  },
+  "model": "opus",
+  "thinking": true
+}

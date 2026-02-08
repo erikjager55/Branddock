@@ -1,0 +1,27 @@
+{
+  "servers": {
+    "slack": {
+      "command": "npx",
+      "args": ["@anthropic/mcp-server-slack"],
+      "env": { "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}" }
+    },
+    "github": {
+      "command": "npx",
+      "args": ["@anthropic/mcp-server-github"],
+      "env": { "GITHUB_TOKEN": "${GITHUB_TOKEN}" }
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["@anthropic/mcp-server-postgres"],
+      "env": { "DATABASE_URL": "${DATABASE_URL}" }
+    },
+    "figma": {
+      "command": "npx",
+      "args": ["@anthropic/mcp-server-figma"]
+    },
+    "html-to-design": {
+      "type": "sse",
+      "url": "https://h2d-mcp.divriots.com/9bd87b13-26e7-4c34-867e-33aff9120476/mcp"
+    }
+  }
+}
