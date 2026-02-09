@@ -21,6 +21,33 @@ enum Plan {
   ENTERPRISE
 }
 
+enum AssetType {
+  LOGO
+  COLOR
+  TYPOGRAPHY
+  MESSAGING
+  GUIDELINE
+}
+
+enum AssetStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum RelationType {
+  USES
+  SIMILAR
+  ALTERNATIVE
+}
+
+enum AnalysisType {
+  BRAND_ALIGNMENT
+  ACCESSIBILITY
+  USAGE_RECOMMENDATION
+  TREND_ANALYSIS
+}
+
 model User {
   id            String    @id @default(uuid())
   email         String    @unique
@@ -35,6 +62,7 @@ model User {
   sessions        Session[]
   ownedWorkspaces Workspace[]
   memberships     WorkspaceMember[]
+  createdAssets   BrandAsset[]
 
   @@map("users")
 }
@@ -90,7 +118,8 @@ model Workspace {
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id])
 
-  members WorkspaceMember[]
+  members      WorkspaceMember[]
+  brandAssets  BrandAsset[]
 
   @@map("workspaces")
 }
@@ -107,4 +136,56 @@ model WorkspaceMember {
 
   @@unique([userId, workspaceId])
   @@map("workspace_members")
+}
+
+model BrandAsset {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  type        AssetType
+  status      AssetStatus @default(DRAFT)
+  content     Json?
+  fileUrl     String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdBy String
+  creator   User   @relation(fields: [createdBy], references: [id])
+
+  aiAnalyses      AIAnalysis[]
+  relatedFrom     AssetRelation[] @relation("FromAsset")
+  relatedTo       AssetRelation[] @relation("ToAsset")
+
+  @@map("brand_assets")
+}
+
+model AssetRelation {
+  id           String       @id @default(uuid())
+  relationType RelationType
+  createdAt    DateTime     @default(now())
+
+  fromAssetId String
+  fromAsset   BrandAsset @relation("FromAsset", fields: [fromAssetId], references: [id], onDelete: Cascade)
+
+  toAssetId String
+  toAsset   BrandAsset @relation("ToAsset", fields: [toAssetId], references: [id], onDelete: Cascade)
+
+  @@unique([fromAssetId, toAssetId, relationType])
+  @@map("asset_relations")
+}
+
+model AIAnalysis {
+  id           String       @id @default(uuid())
+  analysisType AnalysisType
+  content      Json
+  confidence   Float?
+  createdAt    DateTime     @default(now())
+
+  assetId String
+  asset   BrandAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@map("ai_analyses")
 }
