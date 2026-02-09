@@ -13,6 +13,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import {
   Plus,
+  Zap,
   Megaphone,
   Calendar,
   FileText,
@@ -20,6 +21,7 @@ import {
 import { useCampaigns, useCreateCampaign, Campaign } from "@/hooks/api/useCampaigns";
 import { useToast } from "@/hooks/useToast";
 import { DemoBanner } from "@/components/ui/DemoBanner";
+import { QuickContentModal } from "@/components/strategy/QuickContentModal";
 
 // Placeholder data
 const placeholderCampaigns: Campaign[] = [
@@ -106,6 +108,7 @@ function formatDate(dateStr: string | null) {
 export default function CampaignsPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isQuickContentOpen, setIsQuickContentOpen] = useState(false);
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
 
@@ -151,13 +154,23 @@ export default function CampaignsPage() {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-1">
           <h1 className="text-3xl font-semibold text-text-dark">Campaigns</h1>
-          <Button
-            variant="primary"
-            leftIcon={<Plus className="w-4 h-4" />}
-            onClick={() => setIsModalOpen(true)}
-          >
-            New Campaign
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              leftIcon={<Zap className="w-4 h-4" />}
+              onClick={() => setIsQuickContentOpen(true)}
+            >
+              Quick Content
+            </Button>
+            <Link href="/strategy/campaigns/new">
+              <Button
+                variant="primary"
+                leftIcon={<Plus className="w-4 h-4" />}
+              >
+                New Campaign
+              </Button>
+            </Link>
+          </div>
         </div>
         <p className="text-sm text-text-dark/40">
           Plan, execute, and track your brand campaigns
@@ -256,7 +269,7 @@ export default function CampaignsPage() {
         </div>
       )}
 
-      {/* New Campaign Modal */}
+      {/* New Campaign Modal (legacy - kept for API-based creation) */}
       <Modal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -294,6 +307,12 @@ export default function CampaignsPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Quick Content Modal */}
+      <QuickContentModal
+        open={isQuickContentOpen}
+        onClose={() => setIsQuickContentOpen(false)}
+      />
     </div>
   );
 }
