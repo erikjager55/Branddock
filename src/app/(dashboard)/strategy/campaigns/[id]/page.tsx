@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import Link from "next/link";
 import {
   Edit,
   Plus,
@@ -213,13 +214,15 @@ export default function CampaignDetailPage({
           <h2 className="text-lg font-semibold text-text-dark">
             Campaign Content
           </h2>
-          <Button
-            variant="primary"
-            size="sm"
-            leftIcon={<Plus className="w-4 h-4" />}
-          >
-            Add Content
-          </Button>
+          <Link href={`/strategy/campaigns/${id}/content/new`}>
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<Plus className="w-4 h-4" />}
+            >
+              Add Content
+            </Button>
+          </Link>
         </div>
         <div className="space-y-2">
           {campaign.content.length === 0 ? (
@@ -237,27 +240,32 @@ export default function CampaignDetailPage({
                 variant: "default" as const,
               };
               return (
-                <Card key={item.id} hoverable padding="md">
-                  <div className="flex items-center gap-4">
-                    <div className="h-8 w-8 rounded-lg bg-surface-dark border border-border-dark flex items-center justify-center flex-shrink-0">
-                      <FileText className="w-4 h-4 text-text-dark/40" />
+                <Link
+                  key={item.id}
+                  href={`/strategy/campaigns/${id}/content/${item.id}`}
+                >
+                  <Card hoverable padding="md">
+                    <div className="flex items-center gap-4">
+                      <div className="h-8 w-8 rounded-lg bg-surface-dark border border-border-dark flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-4 h-4 text-text-dark/40" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-text-dark truncate">
+                          {item.title}
+                        </h4>
+                      </div>
+                      <Badge variant="default" size="sm">
+                        {item.type}
+                      </Badge>
+                      <Badge variant={cs.variant} size="sm">
+                        {item.status}
+                      </Badge>
+                      <span className="text-xs text-text-dark/40 flex-shrink-0">
+                        {item.date}
+                      </span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-text-dark truncate">
-                        {item.title}
-                      </h4>
-                    </div>
-                    <Badge variant="default" size="sm">
-                      {item.type}
-                    </Badge>
-                    <Badge variant={cs.variant} size="sm">
-                      {item.status}
-                    </Badge>
-                    <span className="text-xs text-text-dark/40 flex-shrink-0">
-                      {item.date}
-                    </span>
-                  </div>
-                </Card>
+                  </Card>
+                </Link>
               );
             })
           )}
