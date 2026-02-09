@@ -32,6 +32,23 @@ const sectionLabels: Record<string, Record<string, string>> = {
     goals: "Goals & KPIs",
     competitors: "Competitors",
   },
+  validation: {
+    "research-hub": "Research Hub",
+    "research-bundles": "Research Bundles",
+    "custom-validation": "Custom Validation",
+    "ai-exploration": "AI Exploration",
+    workshops: "Workshops",
+    interviews: "Interviews",
+    questionnaires: "Questionnaires",
+  },
+  settings: {
+    general: "General",
+    workspace: "Workspace",
+    members: "Members",
+    billing: "Billing",
+    integrations: "Integrations",
+    "api-keys": "API Keys",
+  },
 };
 
 function buildBreadcrumbs(pathname: string): BreadcrumbItem[] | undefined {
