@@ -16,6 +16,7 @@ import {
 } from "@/types/brand-asset";
 import { cn } from "@/lib/utils";
 import { useAssets } from "@/hooks/api/useAssets";
+import { useDebounce } from "@/hooks/useDebounce";
 
 // Placeholder data for when no API data is available
 const placeholderAssets: BrandAssetWithRelations[] = [
@@ -169,11 +170,12 @@ export default function BrandFoundationPage() {
 
   // TODO: Get from workspace context/session
   const workspaceId = "mock-workspace-id";
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   const { data: apiData, isLoading, isError, refetch } = useAssets({
     workspaceId,
     type: activeTab !== "all" ? activeTab.toUpperCase() : undefined,
-    search: searchQuery || undefined,
+    search: debouncedSearch || undefined,
   });
 
   // Use API data if available, otherwise fall back to placeholders
@@ -184,8 +186,8 @@ export default function BrandFoundationPage() {
     if (activeTab !== "all") {
       filtered = filtered.filter((a) => a.type === activeTab.toUpperCase());
     }
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
       filtered = filtered.filter(
         (a) =>
           a.name.toLowerCase().includes(q) ||
@@ -193,7 +195,7 @@ export default function BrandFoundationPage() {
       );
     }
     return filtered;
-  }, [apiData, activeTab, searchQuery]);
+  }, [apiData, activeTab, debouncedSearch]);
 
   const tabs = [
     { label: "All", value: "all" },

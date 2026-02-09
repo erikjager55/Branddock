@@ -30,6 +30,12 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
+        <a
+          href="#main-content"
+          className="sr-only-focusable fixed top-4 left-4 z-[100] bg-primary text-white px-4 py-2 rounded-md text-sm font-medium focus:not-sr-only"
+        >
+          Skip to content
+        </a>
         <QueryProvider>
           {children}
         </QueryProvider>

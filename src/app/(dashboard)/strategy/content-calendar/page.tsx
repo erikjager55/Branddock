@@ -176,9 +176,9 @@ export default function ContentCalendarPage() {
       {isLoading ? (
         <Skeleton variant="rect" height={500} />
       ) : (
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-6">
           {/* Calendar Grid */}
-          <Card padding="none" className="flex-1">
+          <Card padding="none" className="flex-1 overflow-x-auto">
             <div className="grid grid-cols-7 border-b border-border-dark">
               {DAYS.map((day) => (
                 <div key={day} className="py-2 text-center text-xs font-medium text-text-dark/40 uppercase tracking-wider">
@@ -227,7 +227,7 @@ export default function ContentCalendarPage() {
 
           {/* Day Detail Panel */}
           {selectedDate && (
-            <div className="w-80 flex-shrink-0">
+            <div className="w-full lg:w-80 flex-shrink-0">
               <Card padding="lg">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-text-dark">

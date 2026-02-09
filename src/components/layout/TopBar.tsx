@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Bell, LogOut, Settings, User } from "lucide-react";
+import { Search, Bell, LogOut, Settings, User, Menu } from "lucide-react";
 import { useUIStore } from "@/stores/ui-store";
 import { cn } from "@/lib/utils";
 import { Breadcrumb, type BreadcrumbItem } from "@/components/ui/Breadcrumb";
@@ -16,7 +16,7 @@ interface TopBarProps {
 }
 
 export function TopBar({ title, breadcrumbs }: TopBarProps) {
-  const { sidebarCollapsed } = useUIStore();
+  const { sidebarCollapsed, setSidebarOpen } = useUIStore();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const userMenuItems: DropdownEntry[] = [
@@ -44,12 +44,21 @@ export function TopBar({ title, breadcrumbs }: TopBarProps) {
       <header
         className={cn(
           "fixed top-0 right-0 h-16 bg-surface-dark border-b border-border-dark transition-all duration-300 z-40",
-          sidebarCollapsed ? "left-16" : "left-64"
+          "left-0 md:left-16",
+          !sidebarCollapsed && "md:left-64"
         )}
       >
-        <div className="h-full px-6 flex items-center justify-between">
-          {/* Left: Title + Breadcrumb */}
-          <div>
+        <div className="h-full px-4 md:px-6 flex items-center justify-between">
+          {/* Left: Hamburger + Title + Breadcrumb */}
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="md:hidden p-2 -ml-2 rounded-md text-text-dark/50 hover:text-text-dark hover:bg-background-dark transition-colors"
+              aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="min-w-0">
             {breadcrumbs && breadcrumbs.length > 0 && (
               <Breadcrumb items={breadcrumbs} className="mb-0.5" />
             )}
@@ -61,6 +70,7 @@ export function TopBar({ title, breadcrumbs }: TopBarProps) {
             >
               {title}
             </h1>
+            </div>
           </div>
 
           {/* Right: Search, Notifications, User */}

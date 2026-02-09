@@ -2,6 +2,8 @@
 
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TopBar } from "@/components/layout/TopBar";
+import { ErrorBoundary } from "@/components/ui/ErrorBoundary";
+import { PageTransition } from "@/components/ui/PageTransition";
 import { useUIStore } from "@/stores/ui-store";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -103,12 +105,20 @@ export default function DashboardLayout({
       <Sidebar />
       <TopBar title={title} breadcrumbs={breadcrumbs} />
       <main
+        id="main-content"
         className={cn(
           "pt-16 transition-all duration-300",
-          sidebarCollapsed ? "ml-16" : "ml-64"
+          "ml-0 md:ml-16",
+          !sidebarCollapsed && "md:ml-64"
         )}
       >
-        <div className="p-8">{children}</div>
+        <div className="p-4 sm:p-6 lg:p-8">
+          <ErrorBoundary>
+            <PageTransition key={pathname}>
+              {children}
+            </PageTransition>
+          </ErrorBoundary>
+        </div>
       </main>
     </div>
   );

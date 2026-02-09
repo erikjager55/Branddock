@@ -70,7 +70,8 @@ export function Modal({
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.15 }}
             className={cn(
-              "relative w-full mx-4 rounded-lg border border-border-dark bg-surface-dark shadow-xl",
+              "relative w-full border border-border-dark bg-surface-dark shadow-xl",
+              "mx-0 rounded-none h-full sm:mx-4 sm:rounded-lg sm:h-auto sm:max-h-[90vh] overflow-y-auto",
               sizeClasses[size]
             )}
           >

@@ -74,9 +74,9 @@ export default function KnowledgeLayout({
   );
 
   return (
-    <div className="flex gap-8">
+    <div className="flex flex-col md:flex-row md:gap-8">
       {/* Secondary Sidebar */}
-      <aside className="w-52 flex-shrink-0">
+      <aside className="w-full md:w-52 flex-shrink-0">
         {/* Mobile toggle */}
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}

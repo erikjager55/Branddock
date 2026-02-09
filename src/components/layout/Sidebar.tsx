@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   LayoutDashboard,
   BookOpen,
@@ -10,6 +11,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react";
 import { useUIStore } from "@/stores/ui-store";
 import { cn } from "@/lib/utils";
@@ -22,25 +24,26 @@ const navigation = [
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
-export function Sidebar() {
+function SidebarContent({
+  expanded,
+  onToggle,
+  onNavigate,
+}: {
+  expanded: boolean;
+  onToggle: () => void;
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
-  const { sidebarCollapsed, collapseSidebar } = useUIStore();
-  const expanded = !sidebarCollapsed;
 
   return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 h-screen bg-surface-dark border-r border-border-dark transition-all duration-300 z-50",
-        expanded ? "w-64" : "w-16"
-      )}
-    >
+    <>
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-border-dark">
         {expanded && (
           <span className="text-xl font-bold text-primary">Branddock</span>
         )}
         <button
-          onClick={() => collapseSidebar(!sidebarCollapsed)}
+          onClick={onToggle}
           className="p-2 rounded-md hover:bg-background-dark transition-colors"
           aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
         >
@@ -62,6 +65,7 @@ export function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
                 isActive
@@ -79,6 +83,67 @@ export function Sidebar() {
           );
         })}
       </nav>
-    </aside>
+    </>
+  );
+}
+
+export function Sidebar() {
+  const { sidebarCollapsed, collapseSidebar, sidebarOpen, setSidebarOpen } =
+    useUIStore();
+  const expanded = !sidebarCollapsed;
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <aside
+        className={cn(
+          "hidden md:block fixed left-0 top-0 h-screen bg-surface-dark border-r border-border-dark transition-all duration-300 z-50",
+          expanded ? "w-64" : "w-16"
+        )}
+      >
+        <SidebarContent
+          expanded={expanded}
+          onToggle={() => collapseSidebar(!sidebarCollapsed)}
+        />
+      </aside>
+
+      {/* Mobile sidebar overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              onClick={() => setSidebarOpen(false)}
+            />
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="md:hidden fixed left-0 top-0 h-screen w-64 bg-surface-dark border-r border-border-dark z-50"
+            >
+              <div className="absolute top-4 right-4">
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-2 rounded-md text-text-dark/50 hover:text-text-dark hover:bg-background-dark transition-colors"
+                  aria-label="Close menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <SidebarContent
+                expanded
+                onToggle={() => setSidebarOpen(false)}
+                onNavigate={() => setSidebarOpen(false)}
+              />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
