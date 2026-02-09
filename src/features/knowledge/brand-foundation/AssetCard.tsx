@@ -15,17 +15,17 @@ export function AssetCard({ asset, view = "grid" }: AssetCardProps) {
     return (
       <Link href={`/knowledge/brand-foundation/${asset.id}`}>
         <Card hoverable padding="md" className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-lg bg-surface-dark border border-border-dark flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
             <AssetTypeIcon
               type={asset.type}
-              className="w-6 h-6 text-text-dark/60"
+              className="w-5 h-5 text-primary"
             />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-base font-medium text-text-dark truncate">
+            <h3 className="text-sm font-medium text-text-dark truncate">
               {asset.name}
             </h3>
-            <p className="text-sm text-text-dark/60 truncate">
+            <p className="text-xs text-text-dark/40 truncate">
               {asset.description || "No description"}
             </p>
           </div>
@@ -34,8 +34,8 @@ export function AssetCard({ asset, view = "grid" }: AssetCardProps) {
           </span>
           <div className="flex items-center gap-3 flex-shrink-0">
             <AssetStatusBadge status={asset.status} />
-            <span className="text-sm text-text-dark/40">
-              Updated {formatDistanceToNow(asset.updatedAt)}
+            <span className="text-xs text-text-dark/40">
+              {formatDistanceToNow(asset.updatedAt)}
             </span>
           </div>
         </Card>
@@ -44,36 +44,34 @@ export function AssetCard({ asset, view = "grid" }: AssetCardProps) {
   }
 
   return (
-    <Link href={`/knowledge/brand-foundation/${asset.id}`}>
+    <Link href={`/knowledge/brand-foundation/${asset.id}`} className="group">
       <Card hoverable padding="none" className="overflow-hidden h-full">
         {/* Thumbnail */}
         <div className="aspect-[4/3] bg-surface-dark border-b border-border-dark flex items-center justify-center relative">
-          <AssetTypeIcon
-            type={asset.type}
-            className="w-12 h-12 text-text-dark/30"
-          />
-          <div className="absolute top-2 right-2">
+          <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+            <AssetTypeIcon
+              type={asset.type}
+              className="w-8 h-8 text-primary"
+            />
+          </div>
+          <div className="absolute top-3 right-3">
             <AssetStatusBadge status={asset.status} />
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-4">
-          <div className="flex items-start gap-2 mb-2">
-            <AssetTypeIcon
-              type={asset.type}
-              className="w-4 h-4 text-text-dark/40 flex-shrink-0 mt-0.5"
-            />
-            <h3 className="text-sm font-medium text-text-dark line-clamp-2 flex-1">
+        <div className="p-4 space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold text-text-dark line-clamp-2 mb-1">
               {asset.name}
             </h3>
+            {asset.description && (
+              <p className="text-xs text-text-dark/40 line-clamp-2">
+                {asset.description}
+              </p>
+            )}
           </div>
-          {asset.description && (
-            <p className="text-sm text-text-dark/60 line-clamp-2 mb-3">
-              {asset.description}
-            </p>
-          )}
-          <div className="flex items-center justify-between text-xs text-text-dark/40">
+          <div className="flex items-center justify-between text-xs text-text-dark/40 pt-2 border-t border-border-dark">
             <span>{asset.creator.name || asset.creator.email}</span>
             <span>{formatDistanceToNow(asset.updatedAt)}</span>
           </div>

@@ -34,9 +34,9 @@ export function Card({
     <Component
       onClick={onClick}
       className={cn(
-        "rounded-lg border bg-surface-dark transition-colors",
+        "rounded-xl border bg-surface-dark shadow-sm transition-all duration-200",
         selected ? "border-primary" : "border-border-dark",
-        hoverable && "hover:border-primary/50",
+        hoverable && "hover:shadow-md hover:-translate-y-0.5",
         clickable && "cursor-pointer text-left w-full",
         paddingClasses[padding],
         className

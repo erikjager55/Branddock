@@ -74,9 +74,9 @@ export default function KnowledgeLayout({
   );
 
   return (
-    <div className="flex gap-6">
+    <div className="flex gap-8">
       {/* Secondary Sidebar */}
-      <aside className="w-56 flex-shrink-0">
+      <aside className="w-52 flex-shrink-0">
         {/* Mobile toggle */}
         <button
           onClick={() => setIsMobileOpen(!isMobileOpen)}
@@ -93,11 +93,14 @@ export default function KnowledgeLayout({
 
         <nav
           className={cn(
-            "sticky top-20 space-y-1",
+            "sticky top-20 space-y-0.5",
             "md:block",
             isMobileOpen ? "block" : "hidden md:block"
           )}
         >
+          <p className="px-3 mb-3 text-xs font-semibold uppercase tracking-wider text-text-dark/40">
+            Knowledge
+          </p>
           {secondaryNavItems.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -111,10 +114,10 @@ export default function KnowledgeLayout({
                 href={item.href}
                 onClick={() => setIsMobileOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  "flex items-center gap-2 h-9 px-3 text-sm font-medium transition-colors border-l-2",
                   isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-text-dark/60 hover:text-text-dark hover:bg-surface-dark"
+                    ? "bg-primary/10 text-primary border-primary"
+                    : "text-text-dark/60 hover:text-text-dark hover:bg-surface-dark border-transparent"
                 )}
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />

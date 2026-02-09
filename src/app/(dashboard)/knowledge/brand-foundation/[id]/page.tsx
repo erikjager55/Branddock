@@ -176,14 +176,14 @@ export default function AssetDetailPage({
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-lg bg-surface-dark border border-border-dark flex items-center justify-center">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                   <AssetTypeIcon
                     type={asset.type}
-                    className="w-5 h-5 text-text-dark/60"
+                    className="w-6 h-6 text-primary"
                   />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-text-dark">
+                  <h1 className="text-2xl font-semibold text-text-dark">
                     {asset.name}
                   </h1>
                   <p className="text-sm text-text-dark/60 capitalize">
@@ -191,14 +191,14 @@ export default function AssetDetailPage({
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-4 mt-3">
+              <div className="flex items-center gap-3 mt-3">
                 <AssetStatusBadge status={asset.status} />
-                <span className="text-sm text-text-dark/60 flex items-center gap-1.5">
-                  <User className="w-4 h-4" />
+                <span className="text-xs text-text-dark/40 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5" />
                   {asset.creator.name || asset.creator.email}
                 </span>
-                <span className="text-sm text-text-dark/60 flex items-center gap-1.5">
-                  <Clock className="w-4 h-4" />
+                <span className="text-xs text-text-dark/40 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
                   Updated {formatDate(asset.updatedAt)}
                 </span>
               </div>
@@ -233,7 +233,7 @@ export default function AssetDetailPage({
 
           {/* Description */}
           {asset.description && (
-            <div className="bg-surface-dark border border-border-dark rounded-lg p-4">
+            <div className="bg-surface-dark border border-border-dark rounded-xl p-6">
               <p className="text-text-dark/80">{asset.description}</p>
             </div>
           )}

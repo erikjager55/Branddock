@@ -259,9 +259,9 @@ export default function BrandFoundationPage() {
   return (
     <div className="max-w-[1400px]">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-3xl font-bold text-text-dark">
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-3xl font-semibold text-text-dark">
             Brand Foundation
           </h1>
           <Button
@@ -279,12 +279,12 @@ export default function BrandFoundationPage() {
       </div>
 
       {/* Tabs */}
-      <div className="mb-6">
+      <div className="flex items-center gap-2 mb-6">
         <Tabs
           tabs={tabs}
           activeTab={activeTab}
           onChange={setActiveTab}
-          variant="underline"
+          variant="pills"
         />
       </div>
 
@@ -303,7 +303,7 @@ export default function BrandFoundationPage() {
         </div>
 
         {/* View Toggle */}
-        <div className="flex items-center gap-1 bg-surface-dark border border-border-dark rounded-lg p-1">
+        <div className="flex items-center gap-1 bg-surface-dark border border-border-dark rounded-xl p-1">
           <button
             onClick={() => setViewMode("grid")}
             className={cn(
@@ -340,7 +340,7 @@ export default function BrandFoundationPage() {
       ) : assets.length === 0 ? (
         <div className="text-center py-12">
           <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 rounded-full bg-surface-dark border border-border-dark flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-surface-dark border border-border-dark flex items-center justify-center mx-auto mb-4">
               <Plus className="w-8 h-8 text-text-dark/40" />
             </div>
             <h3 className="text-lg font-semibold text-text-dark mb-2">
@@ -363,7 +363,7 @@ export default function BrandFoundationPage() {
           </div>
         </div>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {assets.map((asset) => (
             <AssetCard key={asset.id} asset={asset} view="grid" />
           ))}

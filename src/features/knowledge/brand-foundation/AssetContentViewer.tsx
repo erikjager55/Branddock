@@ -185,7 +185,7 @@ export function AssetContentViewer({
   };
 
   return (
-    <Card padding="md">
+    <Card padding="lg">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-text-dark">
           {typeLabel} Statement
