@@ -128,7 +128,6 @@ export default function ContentDetailPage({
         initialOnBrand={content.onBrand}
         campaignId={id}
         campaignOptions={campaignOptions}
-        analysisScores={content.analysisScores}
         versionHistory={content.versionHistory}
       />
     </div>

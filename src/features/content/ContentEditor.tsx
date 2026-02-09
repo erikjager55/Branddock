@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import {
   Bold,
   Italic,
@@ -22,6 +22,8 @@ import {
   Send,
   Clock,
   Tag,
+  Loader2,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -35,6 +37,8 @@ import {
   contentTypeLabels,
   contentStatusLabels,
 } from "@/types/content";
+import { useGenerateContent, useAnalyzeContent } from "@/hooks/api/useAI";
+import { useToast } from "@/hooks/useToast";
 
 const contentTypeOptions = Object.values(ContentType).map((value) => ({
   value,
@@ -72,11 +76,7 @@ interface ContentEditorProps {
   campaignId?: string;
   campaignOptions?: { value: string; label: string }[];
   showPreview?: boolean;
-  analysisScores?: {
-    tone: string;
-    readability: number;
-    brandAlignment: number;
-  };
+  brandContext?: string;
   versionHistory?: { version: string; date: string; author: string }[];
 }
 
@@ -92,6 +92,18 @@ function readingTime(wordCount: number): string {
   return `${minutes} min read`;
 }
 
+function scoreColor(score: number): string {
+  if (score >= 80) return "bg-emerald-400";
+  if (score >= 50) return "bg-amber-400";
+  return "bg-red-400";
+}
+
+function scoreTextColor(score: number): string {
+  if (score >= 80) return "text-emerald-400";
+  if (score >= 50) return "text-amber-400";
+  return "text-red-400";
+}
+
 export function ContentEditor({
   initialTitle = "",
   initialBody = "",
@@ -102,7 +114,7 @@ export function ContentEditor({
   campaignId,
   campaignOptions,
   showPreview: initialShowPreview = false,
-  analysisScores,
+  brandContext = "",
   versionHistory,
 }: ContentEditorProps) {
   const [title, setTitle] = useState(initialTitle);
@@ -114,6 +126,19 @@ export function ContentEditor({
   const [tagInput, setTagInput] = useState("");
   const [onBrand, setOnBrand] = useState(initialOnBrand);
   const [isPreview, setIsPreview] = useState(initialShowPreview);
+  const [analysisScores, setAnalysisScores] = useState<{
+    tone: string;
+    readability: number;
+    brandAlignment: number;
+    suggestions: string[];
+  } | null>(null);
+
+  const generateContent = useGenerateContent();
+  const analyzeContent = useAnalyzeContent();
+  const toast = useToast();
+
+  // Debounce timer for auto-analysis
+  const analysisTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const wordCount = useMemo(() => countWords(body), [body]);
   const readTime = useMemo(() => readingTime(wordCount), [wordCount]);
@@ -125,6 +150,87 @@ export function ContentEditor({
       setTagInput("");
     }
   };
+
+  // AI Generate handler
+  const handleAI = useCallback(
+    (type: "generate" | "improve" | "shorten" | "expand") => {
+      const prompt =
+        type === "generate"
+          ? `Write ${contentTypeLabels[contentType as ContentType] || "content"} about: ${title || "brand strategy"}`
+          : body;
+
+      if (type !== "generate" && !body.trim()) {
+        toast.warning("No content", "Write some content first to use this feature.");
+        return;
+      }
+
+      generateContent.mutate(
+        {
+          prompt,
+          type,
+          context: onBrand ? brandContext : undefined,
+        },
+        {
+          onSuccess: (data) => {
+            setBody(data.text);
+            toast.success("Content updated", `Content has been ${type === "generate" ? "generated" : type + "d"}.`);
+          },
+          onError: () => {
+            toast.error("AI Error", "Failed to process your request. Please try again.");
+          },
+        }
+      );
+    },
+    [body, title, contentType, onBrand, brandContext, generateContent, toast]
+  );
+
+  // AI Analysis handler
+  const handleAnalyze = useCallback(() => {
+    if (!body.trim()) {
+      toast.warning("No content", "Write some content first to analyze.");
+      return;
+    }
+
+    analyzeContent.mutate(
+      {
+        content: body,
+        brandContext: onBrand ? brandContext : undefined,
+      },
+      {
+        onSuccess: (data) => {
+          setAnalysisScores(data);
+        },
+        onError: () => {
+          toast.error("Analysis Error", "Failed to analyze content.");
+        },
+      }
+    );
+  }, [body, onBrand, brandContext, analyzeContent, toast]);
+
+  // Auto-analyze when ON BRAND is active and content changes (debounced)
+  useEffect(() => {
+    if (!onBrand || !body.trim() || body.length < 50) return;
+
+    if (analysisTimerRef.current) {
+      clearTimeout(analysisTimerRef.current);
+    }
+
+    analysisTimerRef.current = setTimeout(() => {
+      analyzeContent.mutate(
+        { content: body, brandContext: brandContext || undefined },
+        {
+          onSuccess: (data) => setAnalysisScores(data),
+        }
+      );
+    }, 3000);
+
+    return () => {
+      if (analysisTimerRef.current) clearTimeout(analysisTimerRef.current);
+    };
+  }, [body, onBrand]);
+
+  const isAIBusy = generateContent.isPending;
+  const currentAction = generateContent.variables?.type;
 
   return (
     <div className="flex gap-6">
@@ -201,16 +307,40 @@ export function ContentEditor({
               AI Assist
             </span>
             <div className="flex-1" />
-            <Button variant="ghost" size="sm" leftIcon={<Wand2 className="w-3.5 h-3.5" />}>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={isAIBusy && currentAction === "generate" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+              onClick={() => handleAI("generate")}
+              disabled={isAIBusy}
+            >
               Generate
             </Button>
-            <Button variant="ghost" size="sm" leftIcon={<Sparkles className="w-3.5 h-3.5" />}>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={isAIBusy && currentAction === "improve" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+              onClick={() => handleAI("improve")}
+              disabled={isAIBusy}
+            >
               Improve
             </Button>
-            <Button variant="ghost" size="sm" leftIcon={<Shrink className="w-3.5 h-3.5" />}>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={isAIBusy && currentAction === "shorten" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Shrink className="w-3.5 h-3.5" />}
+              onClick={() => handleAI("shorten")}
+              disabled={isAIBusy}
+            >
               Shorten
             </Button>
-            <Button variant="ghost" size="sm" leftIcon={<Expand className="w-3.5 h-3.5" />}>
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={isAIBusy && currentAction === "expand" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Expand className="w-3.5 h-3.5" />}
+              onClick={() => handleAI("expand")}
+              disabled={isAIBusy}
+            >
               Expand
             </Button>
           </div>
@@ -286,6 +416,14 @@ export function ContentEditor({
               ? "Content aligns with brand guidelines"
               : "Content may deviate from brand guidelines"}
           </p>
+          {onBrand && analysisScores && (
+            <div className="mt-3 flex items-center gap-2">
+              <div className={cn("w-2 h-2 rounded-full", scoreColor(analysisScores.brandAlignment))} />
+              <span className={cn("text-xs font-medium", scoreTextColor(analysisScores.brandAlignment))}>
+                {analysisScores.brandAlignment}/100 alignment
+              </span>
+            </div>
+          )}
         </Card>
 
         {/* Tags */}
@@ -322,12 +460,24 @@ export function ContentEditor({
           </div>
         </Card>
 
-        {/* AI Analysis (if provided) */}
-        {analysisScores && (
-          <Card padding="lg">
-            <h3 className="text-sm font-semibold text-text-dark mb-4">
+        {/* AI Analysis */}
+        <Card padding="lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-text-dark">
               AI Analysis
             </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleAnalyze}
+              disabled={analyzeContent.isPending}
+              leftIcon={analyzeContent.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <BarChart3 className="w-3.5 h-3.5" />}
+            >
+              {analyzeContent.isPending ? "Analyzing..." : "Analyze"}
+            </Button>
+          </div>
+
+          {analysisScores ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-text-dark/60">Tone</span>
@@ -344,7 +494,7 @@ export function ContentEditor({
                 </div>
                 <div className="h-1.5 rounded-full bg-border-dark/30 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-blue-400"
+                    className={cn("h-full rounded-full", scoreColor(analysisScores.readability))}
                     style={{ width: `${analysisScores.readability}%` }}
                   />
                 </div>
@@ -360,14 +510,33 @@ export function ContentEditor({
                 </div>
                 <div className="h-1.5 rounded-full bg-border-dark/30 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-emerald-400"
+                    className={cn("h-full rounded-full", scoreColor(analysisScores.brandAlignment))}
                     style={{ width: `${analysisScores.brandAlignment}%` }}
                   />
                 </div>
               </div>
+              {analysisScores.suggestions.length > 0 && (
+                <div className="pt-2 border-t border-border-dark">
+                  <p className="text-xs font-medium text-text-dark/40 uppercase tracking-wide mb-2">
+                    Suggestions
+                  </p>
+                  <ul className="space-y-1.5">
+                    {analysisScores.suggestions.map((s, i) => (
+                      <li key={i} className="text-xs text-text-dark/60 flex items-start gap-2">
+                        <span className="w-1 h-1 rounded-full bg-primary flex-shrink-0 mt-1.5" />
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
-          </Card>
-        )}
+          ) : (
+            <p className="text-xs text-text-dark/30">
+              Click "Analyze" to get AI-powered insights on your content.
+            </p>
+          )}
+        </Card>
 
         {/* Version History (if provided) */}
         {versionHistory && versionHistory.length > 0 && (
