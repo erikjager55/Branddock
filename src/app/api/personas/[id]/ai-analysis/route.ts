@@ -4,7 +4,7 @@ import { auth } from "@/../auth";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ personaId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -12,7 +12,7 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { personaId } = await params;
+    const { id: personaId } = await params;
 
     // Verify user exists
     const user = await prisma.user.findUnique({
@@ -52,7 +52,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ personaId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -60,7 +60,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { personaId } = await params;
+    const { id: personaId } = await params;
 
     // Get user by email
     const user = await prisma.user.findUnique({
