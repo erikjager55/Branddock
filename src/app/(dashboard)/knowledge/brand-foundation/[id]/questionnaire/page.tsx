@@ -35,7 +35,6 @@ import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
 import { Toggle } from "@/components/ui/Toggle";
 import { Tabs } from "@/components/ui/Tabs";
-import { ProgressBar } from "@/components/ui/ProgressBar";
 import { WizardStepper } from "@/components/strategy/WizardStepper";
 import { cn } from "@/lib/utils";
 

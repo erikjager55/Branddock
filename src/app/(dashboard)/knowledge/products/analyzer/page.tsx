@@ -11,7 +11,6 @@ import {
   Upload,
   CheckCircle,
   Plus,
-  Users,
   DollarSign,
   Target,
   Package,

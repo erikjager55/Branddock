@@ -9,7 +9,6 @@ import {
   Check,
   Minus,
   Plus,
-  Users,
   Star,
   ShoppingCart,
 } from "lucide-react";

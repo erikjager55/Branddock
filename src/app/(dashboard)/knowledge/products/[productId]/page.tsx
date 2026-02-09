@@ -63,6 +63,7 @@ export default function ProductDetailPage({
 }: {
   params: Promise<{ productId: string }>;
 }) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { productId } = use(params);
 
   return (

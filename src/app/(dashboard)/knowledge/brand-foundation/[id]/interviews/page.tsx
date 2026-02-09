@@ -17,10 +17,7 @@ import {
   Check,
   Save,
   ArrowLeft,
-  ArrowRight,
-  FileText,
   Upload,
-  MessageSquare,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
