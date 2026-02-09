@@ -1,129 +1,251 @@
-import { BrandAsset } from "@/generated/prisma/client";
+"use client";
+
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { BrandAssetWithRelations } from "@/types/brand-asset";
+import { Edit, Check, Loader2 } from "lucide-react";
 
 interface AssetContentViewerProps {
-  asset: BrandAsset;
+  asset: BrandAssetWithRelations;
+  onSave?: (content: Record<string, unknown>) => Promise<void>;
+  editable?: boolean;
 }
 
-export function AssetContentViewer({ asset }: AssetContentViewerProps) {
-  // Logo content
-  if (asset.type === "LOGO" && asset.fileUrl) {
-    return (
-      <Card padding="none" className="overflow-hidden">
-        <div className="aspect-video bg-surface-dark/50 flex items-center justify-center p-8">
-          <img
-            src={asset.fileUrl}
-            alt={asset.name}
-            className="max-w-full max-h-full object-contain"
-          />
-        </div>
-      </Card>
-    );
-  }
+export function AssetContentViewer({
+  asset,
+  onSave,
+  editable = false,
+}: AssetContentViewerProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Color palette
-  if (asset.type === "COLOR" && asset.content) {
-    const palette = (asset.content as any).palette || [];
-    return (
-      <Card padding="md">
-        <h3 className="text-sm font-semibold text-text-dark mb-4">
-          Color Palette
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {palette.map((color: any, index: number) => (
-            <div key={index}>
-              <div
-                className="aspect-square rounded-lg mb-2 border border-border-dark"
-                style={{ backgroundColor: color.hex }}
-              />
-              <div className="text-sm">
-                <p className="font-medium text-text-dark">{color.name}</p>
-                <p className="text-text-dark/60 text-xs">{color.hex}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-    );
-  }
+  const content = asset.content as Record<string, unknown> | null;
 
-  // Typography
-  if (asset.type === "TYPOGRAPHY" && asset.content) {
-    const fonts = (asset.content as any).fonts || [];
-    return (
-      <Card padding="md">
-        <h3 className="text-sm font-semibold text-text-dark mb-4">Typography</h3>
-        <div className="space-y-6">
-          {fonts.map((font: any, index: number) => (
-            <div key={index} className="border-b border-border-dark last:border-0 pb-6 last:pb-0">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-base font-medium text-text-dark">{font.family}</h4>
-                <span className="text-xs text-text-dark/60 capitalize">{font.usage}</span>
-              </div>
-              <p
-                className="text-2xl text-text-dark mb-2"
-                style={{ fontFamily: font.family }}
-              >
-                The quick brown fox jumps over the lazy dog
-              </p>
-              <p className="text-xs text-text-dark/60">
-                Weights: {font.weights.join(", ")}
-              </p>
-            </div>
-          ))}
-        </div>
-      </Card>
-    );
-  }
+  // Extract the main text content based on asset type
+  const getMainText = useCallback((): string => {
+    if (!content) return "";
+    switch (asset.type) {
+      case "MISSION":
+      case "VISION":
+      case "POSITIONING":
+      case "PROMISE":
+        return (content.statement as string) || "";
+      case "VALUES": {
+        const values = content.values as { name: string; description: string }[] | undefined;
+        if (!values) return "";
+        return values
+          .map((v) => `${v.name}: ${v.description}`)
+          .join("\n\n");
+      }
+      case "STORY":
+        return (content.narrative as string) || "";
+      default:
+        return typeof content === "string"
+          ? content
+          : JSON.stringify(content, null, 2);
+    }
+  }, [content, asset.type]);
 
-  // Messaging
-  if (asset.type === "MESSAGING" && asset.content) {
-    const content = asset.content as any;
-    return (
-      <Card padding="md">
-        <h3 className="text-sm font-semibold text-text-dark mb-4">Messaging</h3>
-        <div className="space-y-4">
-          {content.tagline && (
-            <div>
-              <label className="text-xs font-medium text-text-dark/60 uppercase tracking-wide">
-                Tagline
-              </label>
-              <p className="text-lg font-medium text-text-dark mt-1">
-                {content.tagline}
-              </p>
-            </div>
-          )}
-          {content.missionStatement && (
-            <div>
-              <label className="text-xs font-medium text-text-dark/60 uppercase tracking-wide">
-                Mission Statement
-              </label>
-              <p className="text-base text-text-dark mt-1">
-                {content.missionStatement}
-              </p>
-            </div>
-          )}
-          {content.valueProposition && (
-            <div>
-              <label className="text-xs font-medium text-text-dark/60 uppercase tracking-wide">
-                Value Proposition
-              </label>
-              <p className="text-base text-text-dark mt-1">
-                {content.valueProposition}
-              </p>
-            </div>
-          )}
-        </div>
-      </Card>
-    );
-  }
+  useEffect(() => {
+    setEditContent(getMainText());
+  }, [getMainText]);
 
-  // Guideline or fallback
+  // Auto-save with debounce
+  const debouncedSave = useCallback(
+    (text: string) => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      saveTimeoutRef.current = setTimeout(async () => {
+        if (!onSave) return;
+        setIsSaving(true);
+        try {
+          let newContent: Record<string, unknown>;
+          switch (asset.type) {
+            case "MISSION":
+            case "VISION":
+            case "POSITIONING":
+            case "PROMISE":
+              newContent = { ...content, statement: text };
+              break;
+            case "VALUES": {
+              const values = text.split("\n\n").map((block) => {
+                const colonIndex = block.indexOf(":");
+                if (colonIndex > -1) {
+                  return {
+                    name: block.slice(0, colonIndex).trim(),
+                    description: block.slice(colonIndex + 1).trim(),
+                  };
+                }
+                return { name: block.trim(), description: "" };
+              });
+              newContent = { ...content, values };
+              break;
+            }
+            case "STORY":
+              newContent = { ...content, narrative: text };
+              break;
+            default:
+              newContent = { text };
+          }
+          await onSave(newContent);
+          setSavedAt(new Date());
+        } finally {
+          setIsSaving(false);
+        }
+      }, 1000);
+    },
+    [onSave, asset.type, content]
+  );
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    setEditContent(text);
+    debouncedSave(text);
+  };
+
+  const handleStartEdit = () => {
+    setIsEditing(true);
+    setEditContent(getMainText());
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  };
+
+  const handleStopEdit = () => {
+    setIsEditing(false);
+  };
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current && isEditing) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [editContent, isEditing]);
+
+  const mainText = getMainText();
+  const typeLabel = asset.type.charAt(0) + asset.type.slice(1).toLowerCase();
+
+  // Render helper fields (secondary content)
+  const renderHelperFields = () => {
+    if (!content) return null;
+
+    const fields: { label: string; value: string }[] = [];
+
+    switch (asset.type) {
+      case "MISSION":
+        if (content.purpose) fields.push({ label: "Purpose", value: content.purpose as string });
+        if (content.impact) fields.push({ label: "Impact", value: content.impact as string });
+        break;
+      case "VISION":
+        if (content.timeframe) fields.push({ label: "Timeframe", value: content.timeframe as string });
+        if (content.aspirations) {
+          fields.push({
+            label: "Aspirations",
+            value: (content.aspirations as string[]).join(", "),
+          });
+        }
+        break;
+      case "POSITIONING":
+        if (content.targetAudience) fields.push({ label: "Target Audience", value: content.targetAudience as string });
+        if (content.differentiator) fields.push({ label: "Differentiator", value: content.differentiator as string });
+        if (content.category) fields.push({ label: "Category", value: content.category as string });
+        break;
+      case "PROMISE":
+        if (content.proof_points) {
+          fields.push({
+            label: "Proof Points",
+            value: (content.proof_points as string[]).join(", "),
+          });
+        }
+        break;
+      case "STORY":
+        if (content.origin) fields.push({ label: "Origin", value: content.origin as string });
+        break;
+    }
+
+    if (fields.length === 0) return null;
+
+    return (
+      <div className="mt-4 pt-4 border-t border-border-dark space-y-3">
+        {fields.map((field) => (
+          <div key={field.label}>
+            <label className="text-xs font-medium text-text-dark/60 uppercase tracking-wide">
+              {field.label}
+            </label>
+            <p className="text-sm text-text-dark mt-1">{field.value}</p>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <Card padding="md">
-      <div className="prose prose-sm prose-invert max-w-none">
-        {asset.description || "No content available"}
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-text-dark">
+          {typeLabel} Statement
+        </h3>
+        <div className="flex items-center gap-2">
+          {isSaving && (
+            <span className="flex items-center gap-1.5 text-xs text-text-dark/60">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Saving...
+            </span>
+          )}
+          {!isSaving && savedAt && (
+            <span className="flex items-center gap-1.5 text-xs text-text-dark/40">
+              <Check className="w-3 h-3" />
+              Saved
+            </span>
+          )}
+          {editable && !isEditing && (
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<Edit className="w-3 h-3" />}
+              onClick={handleStartEdit}
+            >
+              Edit
+            </Button>
+          )}
+          {editable && isEditing && (
+            <Button
+              variant="ghost"
+              size="sm"
+              leftIcon={<Check className="w-3 h-3" />}
+              onClick={handleStopEdit}
+            >
+              Done
+            </Button>
+          )}
+        </div>
       </div>
+
+      {isEditing ? (
+        <textarea
+          ref={textareaRef}
+          value={editContent}
+          onChange={handleEditChange}
+          className="w-full min-h-[120px] bg-surface-dark border border-border-dark rounded-lg p-4 text-text-dark text-base leading-relaxed focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+        />
+      ) : mainText ? (
+        <div className="prose prose-sm prose-invert max-w-none">
+          <p className="text-text-dark/80 whitespace-pre-wrap leading-relaxed">
+            {mainText}
+          </p>
+        </div>
+      ) : (
+        <p className="text-text-dark/40 italic">
+          No content yet. {editable ? "Click Edit to add content." : ""}
+        </p>
+      )}
+
+      {!isEditing && renderHelperFields()}
     </Card>
   );
 }

@@ -22,17 +22,19 @@ enum Plan {
 }
 
 enum AssetType {
-  LOGO
-  COLOR
-  TYPOGRAPHY
-  MESSAGING
-  GUIDELINE
+  MISSION
+  VISION
+  VALUES
+  POSITIONING
+  PROMISE
+  STORY
+  OTHER
 }
 
 enum AssetStatus {
   DRAFT
-  PUBLISHED
-  ARCHIVED
+  ACTIVE
+  LOCKED
 }
 
 enum RelationType {
@@ -63,6 +65,7 @@ model User {
   ownedWorkspaces Workspace[]
   memberships     WorkspaceMember[]
   createdAssets   BrandAsset[]
+  lockedAssets    BrandAsset[] @relation("LockedAssets")
 
   @@map("users")
 }
@@ -154,6 +157,9 @@ model BrandAsset {
 
   createdBy String
   creator   User   @relation(fields: [createdBy], references: [id])
+
+  lockedById String?
+  lockedBy   User?  @relation("LockedAssets", fields: [lockedById], references: [id])
 
   aiAnalyses      AIAnalysis[]
   relatedFrom     AssetRelation[] @relation("FromAsset")

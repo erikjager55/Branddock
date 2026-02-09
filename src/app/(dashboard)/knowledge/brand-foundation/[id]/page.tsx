@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useCallback } from "react";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Button } from "@/components/ui/Button";
-import { Layers, Edit, Trash2, Clock, User } from "lucide-react";
+import { Layers, Trash2, Clock, User, Lock, Unlock } from "lucide-react";
 import { AssetTypeIcon } from "@/features/knowledge/brand-foundation/AssetTypeIcon";
 import { AssetStatusBadge } from "@/features/knowledge/brand-foundation/AssetStatusBadge";
 import { AssetContentViewer } from "@/features/knowledge/brand-foundation/AssetContentViewer";
@@ -22,7 +22,8 @@ export default function AssetDetailPage({
   const router = useRouter();
   const [asset, setAsset] = useState<BrandAssetWithRelations | null>(null);
   const [loading, setLoading] = useState(true);
-  const [relatedAssets, setRelatedAssets] = useState<any[]>([]);
+  const [relatedAssets, setRelatedAssets] = useState<{ asset: BrandAssetWithRelations }[]>([]);
+  const [lockLoading, setLockLoading] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -74,6 +75,48 @@ export default function AssetDetailPage({
     }
   };
 
+  const handleToggleLock = async () => {
+    if (!asset) return;
+    setLockLoading(true);
+    try {
+      const isLocked = asset.status === "LOCKED";
+      const response = await fetch(`/api/brand-assets/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: isLocked ? "ACTIVE" : "LOCKED",
+          lockedById: isLocked ? null : undefined,
+        }),
+      });
+
+      if (response.ok) {
+        const updated = await response.json();
+        setAsset(updated);
+      }
+    } catch (error) {
+      console.error("Error toggling lock:", error);
+    } finally {
+      setLockLoading(false);
+    }
+  };
+
+  const handleSaveContent = useCallback(
+    async (content: Record<string, unknown>) => {
+      await fetch(`/api/brand-assets/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+      // Re-fetch to get latest
+      const response = await fetch(`/api/brand-assets/${id}`);
+      if (response.ok) {
+        const updated = await response.json();
+        setAsset(updated);
+      }
+    },
+    [id]
+  );
+
   if (loading) {
     return (
       <div className="max-w-[1600px]">
@@ -94,7 +137,7 @@ export default function AssetDetailPage({
             Asset not found
           </h2>
           <p className="text-text-dark/60 mb-4">
-            The asset you're looking for doesn't exist or has been deleted.
+            The asset you&apos;re looking for doesn&apos;t exist or has been deleted.
           </p>
           <Button
             variant="primary"
@@ -106,6 +149,9 @@ export default function AssetDetailPage({
       </div>
     );
   }
+
+  const isLocked = asset.status === "LOCKED";
+  const canEdit = !isLocked;
 
   const breadcrumbItems = [
     { label: "Knowledge", href: "/knowledge" },
@@ -162,10 +208,17 @@ export default function AssetDetailPage({
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
-                leftIcon={<Edit className="w-4 h-4" />}
-                onClick={() => alert("Edit functionality to be implemented")}
+                leftIcon={
+                  isLocked ? (
+                    <Unlock className="w-4 h-4" />
+                  ) : (
+                    <Lock className="w-4 h-4" />
+                  )
+                }
+                onClick={handleToggleLock}
+                loading={lockLoading}
               >
-                Edit
+                {isLocked ? "Unlock" : "Lock"}
               </Button>
               <Button
                 variant="ghost"
@@ -186,7 +239,11 @@ export default function AssetDetailPage({
           )}
 
           {/* Content Viewer */}
-          <AssetContentViewer asset={asset} />
+          <AssetContentViewer
+            asset={asset}
+            editable={canEdit}
+            onSave={handleSaveContent}
+          />
 
           {/* Related Assets */}
           <div className="pt-6 border-t border-border-dark">

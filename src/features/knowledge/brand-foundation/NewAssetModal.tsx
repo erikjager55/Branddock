@@ -24,7 +24,7 @@ export function NewAssetModal({
 }: NewAssetModalProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [type, setType] = useState<AssetType>("LOGO");
+  const [type, setType] = useState<AssetType>("MISSION");
   const [status, setStatus] = useState<AssetStatus>("DRAFT");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -33,7 +33,7 @@ export function NewAssetModal({
     // Reset form
     setName("");
     setDescription("");
-    setType("LOGO");
+    setType("MISSION");
     setStatus("DRAFT");
   };
 
@@ -85,11 +85,13 @@ export function NewAssetModal({
             className="w-full px-3 py-2 bg-surface-dark border border-border-dark rounded-lg text-text-dark focus:outline-none focus:ring-2 focus:ring-primary"
             required
           >
-            <option value="LOGO">Logo</option>
-            <option value="COLOR">Color</option>
-            <option value="TYPOGRAPHY">Typography</option>
-            <option value="MESSAGING">Messaging</option>
-            <option value="GUIDELINE">Guideline</option>
+            <option value="MISSION">Mission</option>
+            <option value="VISION">Vision</option>
+            <option value="VALUES">Values</option>
+            <option value="POSITIONING">Positioning</option>
+            <option value="PROMISE">Promise</option>
+            <option value="STORY">Story</option>
+            <option value="OTHER">Other</option>
           </select>
         </div>
 
@@ -108,8 +110,8 @@ export function NewAssetModal({
             required
           >
             <option value="DRAFT">Draft</option>
-            <option value="PUBLISHED">Published</option>
-            <option value="ARCHIVED">Archived</option>
+            <option value="ACTIVE">Active</option>
+            <option value="LOCKED">Locked</option>
           </select>
         </div>
 

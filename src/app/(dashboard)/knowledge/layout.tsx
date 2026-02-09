@@ -1,8 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Layers, Users, Package, TrendingUp } from "lucide-react";
+import {
+  Layers,
+  Target,
+  Palette,
+  Users,
+  Package,
+  TrendingUp,
+  BookOpen,
+  Shield,
+  ChevronDown,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const secondaryNavItems = [
@@ -10,6 +21,16 @@ const secondaryNavItems = [
     label: "Brand Foundation",
     href: "/knowledge/brand-foundation",
     icon: Layers,
+  },
+  {
+    label: "Business Strategy",
+    href: "/knowledge/business-strategy",
+    icon: Target,
+  },
+  {
+    label: "Brandstyle",
+    href: "/knowledge/brandstyle",
+    icon: Palette,
   },
   {
     label: "Personas",
@@ -26,6 +47,16 @@ const secondaryNavItems = [
     href: "/knowledge/market-insights",
     icon: TrendingUp,
   },
+  {
+    label: "Knowledge Library",
+    href: "/knowledge/library",
+    icon: BookOpen,
+  },
+  {
+    label: "Brand Alignment",
+    href: "/knowledge/brand-alignment",
+    icon: Shield,
+  },
 ];
 
 export default function KnowledgeLayout({
@@ -34,12 +65,39 @@ export default function KnowledgeLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  const activeItem = secondaryNavItems.find(
+    (item) =>
+      pathname === item.href ||
+      (item.href !== "/knowledge" && pathname.startsWith(item.href))
+  );
 
   return (
     <div className="flex gap-6">
       {/* Secondary Sidebar */}
       <aside className="w-56 flex-shrink-0">
-        <nav className="sticky top-20 space-y-1">
+        {/* Mobile toggle */}
+        <button
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+          className="flex items-center justify-between w-full px-3 py-2 rounded-lg text-sm font-medium text-text-dark bg-surface-dark border border-border-dark md:hidden mb-2"
+        >
+          <span>{activeItem?.label || "Knowledge"}</span>
+          <ChevronDown
+            className={cn(
+              "w-4 h-4 transition-transform",
+              isMobileOpen && "rotate-180"
+            )}
+          />
+        </button>
+
+        <nav
+          className={cn(
+            "sticky top-20 space-y-1",
+            "md:block",
+            isMobileOpen ? "block" : "hidden md:block"
+          )}
+        >
           {secondaryNavItems.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -51,6 +109,7 @@ export default function KnowledgeLayout({
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setIsMobileOpen(false)}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                   isActive

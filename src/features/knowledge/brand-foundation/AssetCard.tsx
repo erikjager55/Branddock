@@ -29,6 +29,9 @@ export function AssetCard({ asset, view = "grid" }: AssetCardProps) {
               {asset.description || "No description"}
             </p>
           </div>
+          <span className="text-xs text-text-dark/40 capitalize flex-shrink-0">
+            {asset.type.toLowerCase()}
+          </span>
           <div className="flex items-center gap-3 flex-shrink-0">
             <AssetStatusBadge status={asset.status} />
             <span className="text-sm text-text-dark/40">
@@ -45,18 +48,10 @@ export function AssetCard({ asset, view = "grid" }: AssetCardProps) {
       <Card hoverable padding="none" className="overflow-hidden h-full">
         {/* Thumbnail */}
         <div className="aspect-[4/3] bg-surface-dark border-b border-border-dark flex items-center justify-center relative">
-          {asset.fileUrl ? (
-            <img
-              src={asset.fileUrl}
-              alt={asset.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <AssetTypeIcon
-              type={asset.type}
-              className="w-12 h-12 text-text-dark/30"
-            />
-          )}
+          <AssetTypeIcon
+            type={asset.type}
+            className="w-12 h-12 text-text-dark/30"
+          />
           <div className="absolute top-2 right-2">
             <AssetStatusBadge status={asset.status} />
           </div>

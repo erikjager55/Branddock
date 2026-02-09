@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Tabs } from "@/components/ui/Tabs";
@@ -15,8 +15,152 @@ import {
 } from "@/types/brand-asset";
 import { cn } from "@/lib/utils";
 
+// Placeholder data for when no API data is available
+const placeholderAssets: BrandAssetWithRelations[] = [
+  {
+    id: "placeholder-mission",
+    name: "Mission Statement",
+    description:
+      "Our mission is to empower brands with intelligent tools that bridge the gap between strategy and execution.",
+    type: "MISSION" as AssetType,
+    status: "ACTIVE" as AssetStatus,
+    content: {
+      statement:
+        "To empower brands with intelligent tools that bridge the gap between strategy and execution, making professional brand management accessible to every team.",
+      purpose: "Democratize brand strategy",
+      impact: "10,000+ brands managed",
+    },
+    fileUrl: null,
+    createdAt: new Date("2025-01-15"),
+    updatedAt: new Date("2025-02-01"),
+    workspaceId: "placeholder-ws",
+    createdBy: "placeholder-user",
+    lockedById: null,
+    workspace: { id: "placeholder-ws", name: "My Workspace" },
+    creator: { id: "placeholder-user", name: "Brand Manager", email: "manager@example.com" },
+  },
+  {
+    id: "placeholder-vision",
+    name: "Brand Vision",
+    description:
+      "Our vision for the future of brand management and where we see the industry heading.",
+    type: "VISION" as AssetType,
+    status: "ACTIVE" as AssetStatus,
+    content: {
+      statement:
+        "A world where every brand, from startups to enterprises, has access to the strategic tools and insights that were once reserved for top agencies.",
+      timeframe: "2030",
+      aspirations: [
+        "Global brand platform",
+        "AI-powered insights",
+        "Real-time brand health monitoring",
+      ],
+    },
+    fileUrl: null,
+    createdAt: new Date("2025-01-15"),
+    updatedAt: new Date("2025-01-28"),
+    workspaceId: "placeholder-ws",
+    createdBy: "placeholder-user",
+    lockedById: null,
+    workspace: { id: "placeholder-ws", name: "My Workspace" },
+    creator: { id: "placeholder-user", name: "Brand Manager", email: "manager@example.com" },
+  },
+  {
+    id: "placeholder-values",
+    name: "Core Values",
+    description:
+      "The fundamental beliefs and principles that guide our brand and team decisions.",
+    type: "VALUES" as AssetType,
+    status: "DRAFT" as AssetStatus,
+    content: {
+      values: [
+        { name: "Innovation", description: "We push boundaries and embrace new ideas" },
+        { name: "Transparency", description: "We are open and honest in everything we do" },
+        { name: "Empowerment", description: "We give teams the tools to succeed independently" },
+      ],
+    },
+    fileUrl: null,
+    createdAt: new Date("2025-01-20"),
+    updatedAt: new Date("2025-02-05"),
+    workspaceId: "placeholder-ws",
+    createdBy: "placeholder-user",
+    lockedById: null,
+    workspace: { id: "placeholder-ws", name: "My Workspace" },
+    creator: { id: "placeholder-user", name: "Brand Manager", email: "manager@example.com" },
+  },
+  {
+    id: "placeholder-positioning",
+    name: "Brand Positioning",
+    description:
+      "How we position ourselves in the market relative to competitors and customer needs.",
+    type: "POSITIONING" as AssetType,
+    status: "ACTIVE" as AssetStatus,
+    content: {
+      statement:
+        "For modern marketing teams who need to maintain brand consistency at scale, Branddock is the AI-powered brand platform that turns strategy into action.",
+      targetAudience: "Marketing teams at mid-size to enterprise companies",
+      differentiator: "AI-powered strategy-to-content pipeline",
+      category: "Brand Management Platform",
+    },
+    fileUrl: null,
+    createdAt: new Date("2025-01-18"),
+    updatedAt: new Date("2025-01-30"),
+    workspaceId: "placeholder-ws",
+    createdBy: "placeholder-user",
+    lockedById: null,
+    workspace: { id: "placeholder-ws", name: "My Workspace" },
+    creator: { id: "placeholder-user", name: "Brand Manager", email: "manager@example.com" },
+  },
+  {
+    id: "placeholder-promise",
+    name: "Brand Promise",
+    description:
+      "The commitment we make to our customers about the value and experience they can expect.",
+    type: "PROMISE" as AssetType,
+    status: "DRAFT" as AssetStatus,
+    content: {
+      statement:
+        "We promise to make brand management intuitive, data-driven, and accessible — so your team can focus on creativity, not process.",
+      proof_points: [
+        "50% faster campaign launches",
+        "99.9% brand consistency score",
+        "24/7 AI-powered brand guardian",
+      ],
+    },
+    fileUrl: null,
+    createdAt: new Date("2025-01-22"),
+    updatedAt: new Date("2025-02-03"),
+    workspaceId: "placeholder-ws",
+    createdBy: "placeholder-user",
+    lockedById: null,
+    workspace: { id: "placeholder-ws", name: "My Workspace" },
+    creator: { id: "placeholder-user", name: "Brand Manager", email: "manager@example.com" },
+  },
+  {
+    id: "placeholder-story",
+    name: "Brand Story",
+    description:
+      "The narrative that communicates who we are, where we came from, and where we're going.",
+    type: "STORY" as AssetType,
+    status: "LOCKED" as AssetStatus,
+    content: {
+      narrative:
+        "Born from the frustration of managing brand assets across dozens of tools and spreadsheets, Branddock was created by a team of brand strategists and engineers who believed there had to be a better way. What started as an internal tool at a creative agency has evolved into a platform used by thousands of brands worldwide.",
+      origin: "Founded in 2024 by former agency strategists",
+    },
+    fileUrl: null,
+    createdAt: new Date("2025-01-10"),
+    updatedAt: new Date("2025-01-25"),
+    workspaceId: "placeholder-ws",
+    createdBy: "placeholder-user",
+    lockedById: "placeholder-user",
+    workspace: { id: "placeholder-ws", name: "My Workspace" },
+    creator: { id: "placeholder-user", name: "Brand Manager", email: "manager@example.com" },
+  },
+];
+
 export default function BrandFoundationPage() {
-  const [assets, setAssets] = useState<BrandAssetWithRelations[]>([]);
+  const [apiAssets, setApiAssets] = useState<BrandAssetWithRelations[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -42,14 +186,40 @@ export default function BrandFoundationPage() {
       const response = await fetch(`/api/brand-assets?${params}`);
       if (response.ok) {
         const data: ListAssetsResponse = await response.json();
-        setAssets(data.assets);
+        setApiAssets(data.assets.length > 0 ? data.assets : null);
       }
-    } catch (error) {
-      console.error("Error fetching assets:", error);
+    } catch {
+      // API unavailable — will use placeholder data
+      setApiAssets(null);
     } finally {
       setLoading(false);
     }
   };
+
+  // Use API data if available, otherwise fall back to placeholders
+  const assets = useMemo(() => {
+    const source = apiAssets ?? placeholderAssets;
+    let filtered = source;
+
+    // Filter by tab
+    if (activeTab !== "all") {
+      filtered = filtered.filter(
+        (a) => a.type === activeTab.toUpperCase()
+      );
+    }
+
+    // Filter by search
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (a) =>
+          a.name.toLowerCase().includes(q) ||
+          (a.description && a.description.toLowerCase().includes(q))
+      );
+    }
+
+    return filtered;
+  }, [apiAssets, activeTab, searchQuery]);
 
   const handleCreateAsset = async (data: {
     name: string;
@@ -78,11 +248,12 @@ export default function BrandFoundationPage() {
 
   const tabs = [
     { label: "All", value: "all" },
-    { label: "Logos", value: "logo" },
-    { label: "Colors", value: "color" },
-    { label: "Typography", value: "typography" },
-    { label: "Messaging", value: "messaging" },
-    { label: "Guidelines", value: "guideline" },
+    { label: "Mission", value: "mission" },
+    { label: "Vision", value: "vision" },
+    { label: "Values", value: "values" },
+    { label: "Positioning", value: "positioning" },
+    { label: "Promise", value: "promise" },
+    { label: "Story", value: "story" },
   ];
 
   return (
@@ -102,7 +273,8 @@ export default function BrandFoundationPage() {
           </Button>
         </div>
         <p className="text-text-dark/60">
-          Manage your brand's core visual and messaging assets
+          Define and manage your brand's strategic foundation — mission, vision,
+          values, positioning, promise, and story
         </p>
       </div>
 
@@ -172,10 +344,14 @@ export default function BrandFoundationPage() {
               <Plus className="w-8 h-8 text-text-dark/40" />
             </div>
             <h3 className="text-lg font-semibold text-text-dark mb-2">
-              No assets yet
+              {activeTab === "all"
+                ? "No assets yet"
+                : `No ${activeTab} assets yet`}
             </h3>
             <p className="text-text-dark/60 mb-4">
-              Create your first brand asset to get started
+              {activeTab === "all"
+                ? "Create your first brand asset to get started"
+                : `Create your first ${activeTab} asset to define this part of your brand foundation`}
             </p>
             <Button
               variant="primary"

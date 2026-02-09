@@ -12,8 +12,8 @@ export function AssetStatusBadge({ status, className }: AssetStatusBadgeProps) {
     { variant: "default" | "success" | "warning" | "error"; label: string }
   > = {
     DRAFT: { variant: "default", label: "Draft" },
-    PUBLISHED: { variant: "success", label: "Published" },
-    ARCHIVED: { variant: "warning", label: "Archived" },
+    ACTIVE: { variant: "success", label: "Active" },
+    LOCKED: { variant: "warning", label: "Locked" },
   };
 
   const config = variants[status];

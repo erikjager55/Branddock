@@ -23,6 +23,11 @@ export type BrandAssetWithRelations = BrandAsset & {
     id: string;
     name: string;
   };
+  lockedBy?: {
+    id: string;
+    name: string | null;
+    email: string;
+  } | null;
   aiAnalyses?: AIAnalysis[];
   relatedFrom?: (AssetRelation & {
     toAsset: BrandAsset;
@@ -50,6 +55,7 @@ export interface UpdateAssetRequest {
   status?: AssetStatus;
   content?: Record<string, unknown>;
   fileUrl?: string;
+  lockedById?: string | null;
 }
 
 export interface ListAssetsQuery {
@@ -72,47 +78,44 @@ export interface AssetDetailResponse extends BrandAssetWithRelations {
   relatedAssets: BrandAsset[];
 }
 
-// Content type definitions for different asset types
-export interface LogoContent {
-  variations: {
-    id: string;
+// Content type definitions for brand strategy assets
+export interface MissionContent {
+  statement: string;
+  purpose?: string;
+  impact?: string;
+}
+
+export interface VisionContent {
+  statement: string;
+  timeframe?: string;
+  aspirations?: string[];
+}
+
+export interface ValuesContent {
+  values: {
     name: string;
-    url: string;
-    format: "svg" | "png" | "jpg";
-    usage: string[];
+    description: string;
   }[];
 }
 
-export interface ColorContent {
-  palette: {
-    name: string;
-    hex: string;
-    rgb: { r: number; g: number; b: number };
-    usage: string;
-  }[];
+export interface PositioningContent {
+  statement: string;
+  targetAudience?: string;
+  differentiator?: string;
+  category?: string;
 }
 
-export interface TypographyContent {
-  fonts: {
-    family: string;
-    weights: number[];
-    usage: "heading" | "body" | "accent";
-    fallback: string[];
-  }[];
+export interface PromiseContent {
+  statement: string;
+  proof_points?: string[];
 }
 
-export interface MessagingContent {
-  tagline?: string;
-  missionStatement?: string;
-  valueProposition?: string;
-  toneOfVoice?: string[];
-}
-
-export interface GuidelineContent {
-  sections: {
+export interface StoryContent {
+  narrative: string;
+  origin?: string;
+  chapters?: {
     title: string;
     content: string;
-    examples?: string[];
   }[];
 }
 

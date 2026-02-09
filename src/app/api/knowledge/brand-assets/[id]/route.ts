@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/../auth";
-import { UpdateAssetRequest } from "@/types/brand-asset";
+import { updateBrandAssetSchema } from "@/lib/validations/brand-asset";
 
 export async function GET(
   request: NextRequest,
@@ -20,30 +20,22 @@ export async function GET(
       where: { id },
       include: {
         creator: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          select: { id: true, name: true, email: true },
         },
         workspace: {
-          select: {
-            id: true,
-            name: true,
-          },
+          select: { id: true, name: true },
+        },
+        lockedBy: {
+          select: { id: true, name: true, email: true },
         },
         aiAnalyses: {
           orderBy: { createdAt: "desc" },
         },
         relatedFrom: {
-          include: {
-            toAsset: true,
-          },
+          include: { toAsset: true },
         },
         relatedTo: {
-          include: {
-            fromAsset: true,
-          },
+          include: { fromAsset: true },
         },
       },
     });
@@ -73,9 +65,18 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body: UpdateAssetRequest = await request.json();
+    const body = await request.json();
+    const parsed = updateBrandAssetSchema.safeParse(body);
 
-    // Get user by email
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
+    const data = parsed.data;
+
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
     });
@@ -84,14 +85,11 @@ export async function PATCH(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Check if asset exists and user has access
     const existingAsset = await prisma.brandAsset.findUnique({
       where: { id },
       include: {
         workspace: {
-          include: {
-            members: true,
-          },
+          include: { members: true },
         },
       },
     });
@@ -100,7 +98,6 @@ export async function PATCH(
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
     }
 
-    // Verify user has access to workspace
     const hasAccess =
       existingAsset.workspace.ownerId === user.id ||
       existingAsset.workspace.members.some(
@@ -111,19 +108,18 @@ export async function PATCH(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // Update the asset
     const updateData: Prisma.BrandAssetUpdateInput = {};
-    if (body.name) updateData.name = body.name;
-    if (body.description !== undefined) updateData.description = body.description;
-    if (body.type) updateData.type = body.type;
-    if (body.status) updateData.status = body.status;
-    if (body.content !== undefined) updateData.content = body.content as Prisma.InputJsonValue;
-    if (body.fileUrl !== undefined) updateData.fileUrl = body.fileUrl;
-    if (body.lockedById !== undefined) {
-      if (body.lockedById === null) {
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.type !== undefined) updateData.type = data.type;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.content !== undefined) updateData.content = data.content as Prisma.InputJsonValue;
+    if (data.fileUrl !== undefined) updateData.fileUrl = data.fileUrl;
+    if (data.lockedById !== undefined) {
+      if (data.lockedById === null) {
         updateData.lockedBy = { disconnect: true };
       } else {
-        updateData.lockedBy = { connect: { id: body.lockedById } };
+        updateData.lockedBy = { connect: { id: data.lockedById } };
       }
     }
 
@@ -132,17 +128,13 @@ export async function PATCH(
       data: updateData,
       include: {
         creator: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          select: { id: true, name: true, email: true },
         },
         workspace: {
-          select: {
-            id: true,
-            name: true,
-          },
+          select: { id: true, name: true },
+        },
+        lockedBy: {
+          select: { id: true, name: true, email: true },
         },
         aiAnalyses: true,
       },
@@ -170,7 +162,6 @@ export async function DELETE(
 
     const { id } = await params;
 
-    // Get user by email
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
     });
@@ -179,14 +170,11 @@ export async function DELETE(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Check if asset exists and user has access
     const existingAsset = await prisma.brandAsset.findUnique({
       where: { id },
       include: {
         workspace: {
-          include: {
-            members: true,
-          },
+          include: { members: true },
         },
       },
     });
@@ -195,7 +183,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
     }
 
-    // Verify user has access to workspace (only owners and admins can delete)
     const hasAccess =
       existingAsset.workspace.ownerId === user.id ||
       existingAsset.workspace.members.some(
@@ -208,7 +195,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // Delete the asset (cascades to relations and AI analyses)
     await prisma.brandAsset.delete({
       where: { id },
     });
