@@ -15,15 +15,23 @@ const pageTitles: Record<string, string> = {
   "/settings": "Settings",
 };
 
-const sectionLabels: Record<string, string> = {
-  "brand-foundation": "Brand Foundation",
-  "business-strategy": "Business Strategy",
-  brandstyle: "Brandstyle",
-  personas: "Personas",
-  products: "Products",
-  "market-insights": "Market Insights",
-  library: "Knowledge Library",
-  "brand-alignment": "Brand Alignment",
+const sectionLabels: Record<string, Record<string, string>> = {
+  knowledge: {
+    "brand-foundation": "Brand Foundation",
+    "business-strategy": "Business Strategy",
+    brandstyle: "Brandstyle",
+    personas: "Personas",
+    products: "Products",
+    "market-insights": "Market Insights",
+    library: "Knowledge Library",
+    "brand-alignment": "Brand Alignment",
+  },
+  strategy: {
+    campaigns: "Campaigns",
+    "content-calendar": "Content Calendar",
+    goals: "Goals & KPIs",
+    competitors: "Competitors",
+  },
 };
 
 function buildBreadcrumbs(pathname: string): BreadcrumbItem[] | undefined {
@@ -37,8 +45,9 @@ function buildBreadcrumbs(pathname: string): BreadcrumbItem[] | undefined {
     crumbs.push({ label: rootTitle, href: `/${root}` });
   }
 
-  if (root === "knowledge" && segments[1]) {
-    const sectionLabel = sectionLabels[segments[1]];
+  const rootSections = sectionLabels[root];
+  if (rootSections && segments[1]) {
+    const sectionLabel = rootSections[segments[1]];
     if (sectionLabel) {
       crumbs.push({
         label: sectionLabel,
@@ -54,8 +63,9 @@ function getTitle(pathname: string): string {
   const segments = pathname.split("/").filter(Boolean);
   const root = segments[0];
 
-  if (root === "knowledge" && segments[1]) {
-    return sectionLabels[segments[1]] || "Knowledge";
+  const rootSections = sectionLabels[root];
+  if (rootSections && segments[1]) {
+    return rootSections[segments[1]] || pageTitles[`/${root}`] || "Branddock";
   }
 
   return pageTitles[`/${root}`] || pageTitles[pathname] || "Branddock";
