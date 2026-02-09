@@ -9,9 +9,10 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
-import { Plus, Users, AlertCircle } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { usePersonas, useCreatePersona, Persona } from "@/hooks/api/usePersonas";
 import { useToast } from "@/hooks/useToast";
+import { DemoBanner } from "@/components/ui/DemoBanner";
 
 const placeholderPersonas: Persona[] = [
   {
@@ -92,11 +93,13 @@ export default function PersonasPage() {
 
   const workspaceId = "mock-workspace-id";
 
-  const { data: apiData, isLoading, isError, refetch } = usePersonas({ workspaceId });
+  const { data: apiData, isLoading, isError } = usePersonas({ workspaceId });
   const createPersona = useCreatePersona();
   const toast = useToast();
 
-  const personas = apiData?.data && apiData.data.length > 0 ? apiData.data : placeholderPersonas;
+  const hasApiData = !isError && apiData?.data && apiData.data.length > 0;
+  const personas = hasApiData ? apiData!.data : placeholderPersonas;
+  const isDemo = !isLoading && !hasApiData;
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,21 +139,15 @@ export default function PersonasPage() {
         </p>
       </div>
 
+      {/* Demo Banner */}
+      {isDemo && <DemoBanner />}
+
       {/* Content */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} variant="card" height={280} />
           ))}
-        </div>
-      ) : isError ? (
-        <div className="text-center py-12">
-          <AlertCircle className="w-12 h-12 text-text-dark/20 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-text-dark mb-1">
-            Failed to load personas
-          </h3>
-          <p className="text-sm text-text-dark/40 mb-4">Something went wrong.</p>
-          <Button variant="outline" onClick={() => refetch()}>Try Again</Button>
         </div>
       ) : personas.length === 0 ? (
         <EmptyState

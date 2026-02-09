@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, FlaskConical, Calendar, Users, Lightbulb, AlertCircle } from "lucide-react";
+import { Plus, FlaskConical, Calendar, Users, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -13,6 +13,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { useResearch, useCreateResearch, ResearchProject } from "@/hooks/api/useResearch";
 import { useToast } from "@/hooks/useToast";
+import { DemoBanner } from "@/components/ui/DemoBanner";
 
 const tabs = [
   { label: "All", value: "all" },
@@ -82,7 +83,7 @@ export default function ResearchHubPage() {
 
   const workspaceId = "mock-workspace-id";
 
-  const { data: apiData, isLoading, isError, refetch } = useResearch({
+  const { data: apiData, isLoading, isError } = useResearch({
     workspaceId,
     status: activeTab !== "all" ? activeTab : undefined,
   });
@@ -90,11 +91,13 @@ export default function ResearchHubPage() {
   const createResearch = useCreateResearch();
   const toast = useToast();
 
+  const hasApiData = !isError && apiData?.data && apiData.data.length > 0;
   const projects = useMemo(() => {
-    if (apiData?.data && apiData.data.length > 0) return apiData.data;
+    if (hasApiData) return apiData!.data;
     if (activeTab === "all") return placeholderProjects;
     return placeholderProjects.filter((p) => p.status === activeTab);
-  }, [apiData, activeTab]);
+  }, [hasApiData, apiData, activeTab]);
+  const isDemo = !isLoading && !hasApiData;
 
   const activeCount = useMemo(() => {
     const source = apiData?.data ?? placeholderProjects;
@@ -168,19 +171,15 @@ export default function ResearchHubPage() {
       {/* Tabs */}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} variant="pills" className="mb-6" />
 
+      {/* Demo Banner */}
+      {isDemo && <DemoBanner />}
+
       {/* Content */}
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} variant="card" height={120} />
           ))}
-        </div>
-      ) : isError ? (
-        <div className="text-center py-12">
-          <AlertCircle className="w-12 h-12 text-text-dark/20 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-text-dark mb-1">Failed to load research</h3>
-          <p className="text-sm text-text-dark/40 mb-4">Something went wrong.</p>
-          <Button variant="outline" onClick={() => refetch()}>Try Again</Button>
         </div>
       ) : projects.length === 0 ? (
         <EmptyState

@@ -9,7 +9,6 @@ import {
   MousePointerClick,
   Users,
   DollarSign,
-  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -21,6 +20,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { useGoals, useCreateGoal, Goal } from "@/hooks/api/useGoals";
 import { useToast } from "@/hooks/useToast";
+import { DemoBanner } from "@/components/ui/DemoBanner";
 
 const kpis = [
   { label: "Brand Awareness", value: "45.2K", change: "+12.3%", icon: Eye, color: "bg-blue-500/10 text-blue-400" },
@@ -61,11 +61,13 @@ export default function GoalsPage() {
 
   const workspaceId = "mock-workspace-id";
 
-  const { data: apiData, isLoading, isError, refetch } = useGoals({ workspaceId });
+  const { data: apiData, isLoading, isError } = useGoals({ workspaceId });
   const createGoal = useCreateGoal();
   const toast = useToast();
 
-  const goals = apiData?.data && apiData.data.length > 0 ? apiData.data : placeholderGoals;
+  const hasApiData = !isError && apiData?.data && apiData.data.length > 0;
+  const goals = hasApiData ? apiData!.data : placeholderGoals;
+  const isDemo = !isLoading && !hasApiData;
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,6 +124,9 @@ export default function GoalsPage() {
         })}
       </div>
 
+      {/* Demo Banner */}
+      {isDemo && <DemoBanner />}
+
       {/* Goals */}
       <h2 className="text-lg font-semibold text-text-dark mb-4">Strategic Goals</h2>
 
@@ -130,13 +135,6 @@ export default function GoalsPage() {
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} variant="card" height={100} />
           ))}
-        </div>
-      ) : isError ? (
-        <div className="text-center py-12">
-          <AlertCircle className="w-12 h-12 text-text-dark/20 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-text-dark mb-1">Failed to load goals</h3>
-          <p className="text-sm text-text-dark/40 mb-4">Something went wrong.</p>
-          <Button variant="outline" onClick={() => refetch()}>Try Again</Button>
         </div>
       ) : goals.length === 0 ? (
         <EmptyState

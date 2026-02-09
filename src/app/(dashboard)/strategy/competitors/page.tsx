@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Swords, Globe, Check, X as XIcon, AlertCircle } from "lucide-react";
+import { Plus, Swords, Globe, Check, X as XIcon } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { useCompetitors, useCreateCompetitor, Competitor } from "@/hooks/api/useCompetitors";
 import { useToast } from "@/hooks/useToast";
+import { DemoBanner } from "@/components/ui/DemoBanner";
 
 const placeholderCompetitors: Competitor[] = [
   {
@@ -61,11 +62,13 @@ export default function CompetitorsPage() {
 
   const workspaceId = "mock-workspace-id";
 
-  const { data: apiData, isLoading, isError, refetch } = useCompetitors({ workspaceId });
+  const { data: apiData, isLoading, isError } = useCompetitors({ workspaceId });
   const createCompetitor = useCreateCompetitor();
   const toast = useToast();
 
-  const competitors = apiData?.data && apiData.data.length > 0 ? apiData.data : placeholderCompetitors;
+  const hasApiData = !isError && apiData?.data && apiData.data.length > 0;
+  const competitors = hasApiData ? apiData!.data : placeholderCompetitors;
+  const isDemo = !isLoading && !hasApiData;
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,19 +104,15 @@ export default function CompetitorsPage() {
         </p>
       </div>
 
+      {/* Demo Banner */}
+      {isDemo && <DemoBanner />}
+
       {/* Content */}
       {isLoading ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} variant="card" height={300} />
           ))}
-        </div>
-      ) : isError ? (
-        <div className="text-center py-12">
-          <AlertCircle className="w-12 h-12 text-text-dark/20 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-text-dark mb-1">Failed to load competitors</h3>
-          <p className="text-sm text-text-dark/40 mb-4">Something went wrong.</p>
-          <Button variant="outline" onClick={() => refetch()}>Try Again</Button>
         </div>
       ) : competitors.length === 0 ? (
         <EmptyState

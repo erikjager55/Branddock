@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, TrendingUp, Calendar, ExternalLink, AlertCircle } from "lucide-react";
+import { Plus, TrendingUp, Calendar, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -12,6 +12,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { useMarketInsights, useCreateMarketInsight, MarketInsight } from "@/hooks/api/useMarketInsights";
 import { useToast } from "@/hooks/useToast";
+import { DemoBanner } from "@/components/ui/DemoBanner";
 
 const tabs = [
   { label: "All", value: "all" },
@@ -71,7 +72,7 @@ export default function MarketInsightsPage() {
 
   const workspaceId = "mock-workspace-id";
 
-  const { data: apiData, isLoading, isError, refetch } = useMarketInsights({
+  const { data: apiData, isLoading, isError } = useMarketInsights({
     workspaceId,
     type: activeTab !== "all" ? activeTab : undefined,
   });
@@ -79,11 +80,13 @@ export default function MarketInsightsPage() {
   const createInsight = useCreateMarketInsight();
   const toast = useToast();
 
+  const hasApiData = !isError && apiData?.data && apiData.data.length > 0;
   const insights = useMemo(() => {
-    if (apiData?.data && apiData.data.length > 0) return apiData.data;
+    if (hasApiData) return apiData!.data;
     if (activeTab === "all") return placeholderInsights;
     return placeholderInsights.filter((i) => i.type === activeTab);
-  }, [apiData, activeTab]);
+  }, [hasApiData, apiData, activeTab]);
+  const isDemo = !isLoading && !hasApiData;
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,19 +126,15 @@ export default function MarketInsightsPage() {
       {/* Tabs */}
       <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} variant="pills" className="mb-6" />
 
+      {/* Demo Banner */}
+      {isDemo && <DemoBanner />}
+
       {/* Content */}
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} variant="card" height={120} />
           ))}
-        </div>
-      ) : isError ? (
-        <div className="text-center py-12">
-          <AlertCircle className="w-12 h-12 text-text-dark/20 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-text-dark mb-1">Failed to load insights</h3>
-          <p className="text-sm text-text-dark/40 mb-4">Something went wrong.</p>
-          <Button variant="outline" onClick={() => refetch()}>Try Again</Button>
         </div>
       ) : insights.length === 0 ? (
         <EmptyState

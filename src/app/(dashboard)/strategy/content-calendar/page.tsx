@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/utils";
 import { ContentType, contentTypeLabels } from "@/types/content";
 import { useContent, Content } from "@/hooks/api/useContent";
+import { DemoBanner } from "@/components/ui/DemoBanner";
 
 interface CalendarItem {
   id: string;
@@ -88,14 +89,16 @@ export default function ContentCalendarPage() {
 
   const workspaceId = "mock-workspace-id";
 
-  const { data: apiData, isLoading } = useContent({ workspaceId, limit: 100 });
+  const { data: apiData, isLoading, isError } = useContent({ workspaceId, limit: 100 });
 
+  const hasApiData = !isError && apiData?.data && apiData.data.length > 0;
   const items = useMemo(() => {
-    if (apiData?.data && apiData.data.length > 0) {
-      return mapContentToCalendarItems(apiData.data);
+    if (hasApiData) {
+      return mapContentToCalendarItems(apiData!.data);
     }
     return generatePlaceholderItems(currentYear, currentMonth);
-  }, [apiData, currentYear, currentMonth]);
+  }, [hasApiData, apiData, currentYear, currentMonth]);
+  const isDemo = !isLoading && !hasApiData;
 
   const itemsByDate = useMemo(() => {
     const map: Record<string, CalendarItem[]> = {};
@@ -156,6 +159,9 @@ export default function ContentCalendarPage() {
           Plan and schedule your content across campaigns
         </p>
       </div>
+
+      {/* Demo Banner */}
+      {isDemo && <DemoBanner />}
 
       {/* Calendar Navigation */}
       <div className="flex items-center justify-between mb-6">

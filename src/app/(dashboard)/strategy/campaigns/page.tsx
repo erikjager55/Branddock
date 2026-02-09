@@ -16,10 +16,10 @@ import {
   Megaphone,
   Calendar,
   FileText,
-  AlertCircle,
 } from "lucide-react";
 import { useCampaigns, useCreateCampaign, Campaign } from "@/hooks/api/useCampaigns";
 import { useToast } from "@/hooks/useToast";
+import { DemoBanner } from "@/components/ui/DemoBanner";
 
 // Placeholder data
 const placeholderCampaigns: Campaign[] = [
@@ -111,7 +111,7 @@ export default function CampaignsPage() {
 
   const workspaceId = "mock-workspace-id";
 
-  const { data: apiData, isLoading, isError, refetch } = useCampaigns({
+  const { data: apiData, isLoading, isError } = useCampaigns({
     workspaceId,
     status: activeTab !== "all" ? activeTab : undefined,
   });
@@ -119,11 +119,13 @@ export default function CampaignsPage() {
   const createCampaign = useCreateCampaign();
   const toast = useToast();
 
+  const hasApiData = !isError && apiData?.data && apiData.data.length > 0;
   const campaigns = useMemo(() => {
-    if (apiData?.data && apiData.data.length > 0) return apiData.data;
+    if (hasApiData) return apiData!.data;
     if (activeTab === "all") return placeholderCampaigns;
     return placeholderCampaigns.filter((c) => c.status === activeTab);
-  }, [apiData, activeTab]);
+  }, [hasApiData, apiData, activeTab]);
+  const isDemo = !isLoading && !hasApiData;
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,25 +174,15 @@ export default function CampaignsPage() {
         />
       </div>
 
+      {/* Demo Banner */}
+      {isDemo && <DemoBanner />}
+
       {/* Content */}
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} variant="card" height={120} />
           ))}
-        </div>
-      ) : isError ? (
-        <div className="text-center py-12">
-          <AlertCircle className="w-12 h-12 text-text-dark/20 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-text-dark mb-1">
-            Failed to load campaigns
-          </h3>
-          <p className="text-sm text-text-dark/40 mb-4">
-            Something went wrong.
-          </p>
-          <Button variant="outline" onClick={() => refetch()}>
-            Try Again
-          </Button>
         </div>
       ) : campaigns.length === 0 ? (
         <EmptyState

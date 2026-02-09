@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Tabs } from "@/components/ui/Tabs";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Plus, Grid3x3, List, Search, AlertCircle } from "lucide-react";
+import { Plus, Grid3x3, List, Search } from "lucide-react";
 import { AssetCard } from "@/features/knowledge/brand-foundation/AssetCard";
 import { NewAssetModal } from "@/features/knowledge/brand-foundation/NewAssetModal";
 import {
@@ -17,6 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAssets } from "@/hooks/api/useAssets";
 import { useDebounce } from "@/hooks/useDebounce";
+import { DemoBanner } from "@/components/ui/DemoBanner";
 
 // Placeholder data for when no API data is available
 const placeholderAssets: BrandAssetWithRelations[] = [
@@ -172,15 +173,16 @@ export default function BrandFoundationPage() {
   const workspaceId = "mock-workspace-id";
   const debouncedSearch = useDebounce(searchQuery, 300);
 
-  const { data: apiData, isLoading, isError, refetch } = useAssets({
+  const { data: apiData, isLoading, isError } = useAssets({
     workspaceId,
     type: activeTab !== "all" ? activeTab.toUpperCase() : undefined,
     search: debouncedSearch || undefined,
   });
 
   // Use API data if available, otherwise fall back to placeholders
+  const hasApiData = !isError && apiData?.data && apiData.data.length > 0;
   const assets = useMemo(() => {
-    if (apiData?.data && apiData.data.length > 0) return apiData.data;
+    if (hasApiData) return apiData!.data;
 
     let filtered = placeholderAssets;
     if (activeTab !== "all") {
@@ -195,7 +197,8 @@ export default function BrandFoundationPage() {
       );
     }
     return filtered;
-  }, [apiData, activeTab, debouncedSearch]);
+  }, [hasApiData, apiData, activeTab, debouncedSearch]);
+  const isDemo = !isLoading && !hasApiData;
 
   const tabs = [
     { label: "All", value: "all" },
@@ -279,25 +282,15 @@ export default function BrandFoundationPage() {
         </div>
       </div>
 
+      {/* Demo Banner */}
+      {isDemo && <DemoBanner />}
+
       {/* Content */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} variant="card" height={200} />
           ))}
-        </div>
-      ) : isError ? (
-        <div className="text-center py-12">
-          <AlertCircle className="w-12 h-12 text-text-dark/20 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-text-dark mb-1">
-            Failed to load assets
-          </h3>
-          <p className="text-sm text-text-dark/40 mb-4">
-            Something went wrong while fetching your brand assets.
-          </p>
-          <Button variant="outline" onClick={() => refetch()}>
-            Try Again
-          </Button>
         </div>
       ) : assets.length === 0 ? (
         <EmptyState
