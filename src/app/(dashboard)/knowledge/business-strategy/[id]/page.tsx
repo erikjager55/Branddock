@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   TrendingUp,
@@ -14,7 +15,6 @@ import {
   ChevronDown,
   ChevronRight,
   Check,
-  AlertTriangle,
   Plus,
   Megaphone,
   ArrowRight,
@@ -33,6 +33,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { cn } from "@/lib/utils";
+import { useStrategy } from "@/hooks/api/useStrategies";
 
 // ────────────────────────────── Types ──────────────────────────────
 
@@ -81,58 +82,20 @@ interface Milestone {
   done: boolean;
 }
 
-// ────────────────────────────── Placeholder Data ──────────────────────────────
+// ────────────────────────────── Icon mapping ──────────────────────────────
 
-const STRATEGY_DATA: Record<string, {
-  title: string;
-  icon: React.ReactNode;
-  status: "Active" | "Draft";
-  dateRange: string;
-  lastUpdated: string;
-  vision: string;
-  rationale: string;
-  assumptions: string[];
-}> = {
-  "growth-strategy": {
-    title: "Growth Strategy 2026",
-    icon: <TrendingUp className="w-6 h-6 text-primary" />,
-    status: "Active",
-    dateRange: "Jan 2026 – Dec 2026",
-    lastUpdated: "3d ago",
-    vision: "Establish Branddock as the market leader in AI-powered brand management, capturing 15% market share by end of 2026 through aggressive product innovation, strategic partnerships, and thought leadership campaigns.",
-    rationale: "The brand management software market is experiencing rapid growth driven by increasing demand for AI-powered tools and consistent multi-channel brand experiences. Our competitive advantage lies in our unique strategy-to-content pipeline that no competitor currently offers. By investing heavily in growth now, we can establish a dominant market position before larger competitors adapt.",
-    assumptions: [
-      "Market will continue growing at 15% annually",
-      "Competitor response will be slow due to technical debt",
-      "Customer willingness to pay premium for AI features",
-      "Digital marketing effectiveness will remain stable",
-    ],
-  },
-  "target-audience": {
-    title: "Target Audience Strategy",
-    icon: <Users className="w-6 h-6 text-primary" />,
-    status: "Active",
-    dateRange: "Jan 2026 – Dec 2026",
-    lastUpdated: "5d ago",
-    vision: "Deep understanding of our ideal customer profile to drive all marketing and product decisions.",
-    rationale: "Focused targeting leads to higher conversion rates and more efficient marketing spend.",
-    assumptions: [
-      "Enterprise marketing teams remain primary buyer",
-      "Mid-market expansion is viable",
-    ],
-  },
+const strategyIcons: Record<string, React.ReactNode> = {
+  "growth-strategy": <TrendingUp className="w-6 h-6 text-primary" />,
+  growth: <TrendingUp className="w-6 h-6 text-primary" />,
+  "target-audience": <Users className="w-6 h-6 text-primary" />,
+  "competitive-landscape": <BarChart3 className="w-6 h-6 text-primary" />,
+  "market-position": <Target className="w-6 h-6 text-primary" />,
 };
 
-const DEFAULT_STRATEGY = {
-  title: "Business Strategy",
-  icon: <TrendingUp className="w-6 h-6 text-primary" />,
-  status: "Active" as const,
-  dateRange: "2026",
-  lastUpdated: "Recently",
-  vision: "Strategy vision will appear here.",
-  rationale: "Strategy rationale will appear here.",
-  assumptions: ["Assumption 1", "Assumption 2"],
-};
+// ────────────────────────────── Placeholder Detail Data ──────────────────────────────
+// These represent objectives, focus areas, campaigns, and milestones
+// that aren't yet stored in the database. They provide rich UI while
+// the API handles the strategy header/context data.
 
 const OBJECTIVES: Objective[] = [
   {
@@ -269,6 +232,17 @@ function krStatusIcon(status: KeyResult["status"]) {
   }
 }
 
+function formatRelativeDate(dateStr: string) {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "1d ago";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+  return `${Math.floor(diffDays / 30)}mo ago`;
+}
+
 // ────────────────────────────── Component ──────────────────────────────
 
 export default function StrategyDetailPage({
@@ -277,7 +251,8 @@ export default function StrategyDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const strategy = STRATEGY_DATA[id] || DEFAULT_STRATEGY;
+  const router = useRouter();
+  const { data: strategy, isLoading, isError } = useStrategy(id);
 
   const [expandedObjectives, setExpandedObjectives] = useState<Set<string>>(
     new Set(OBJECTIVES.map((o) => o.id))
@@ -293,6 +268,47 @@ export default function StrategyDetailPage({
   const [newObjCurrent, setNewObjCurrent] = useState("");
   const [newKRs, setNewKRs] = useState<string[]>([""]);
 
+  if (isLoading) {
+    return (
+      <div className="max-w-[1000px]">
+        <div className="animate-pulse space-y-6">
+          <div className="h-4 bg-surface-dark rounded w-1/4" />
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-lg bg-surface-dark" />
+            <div className="flex-1 space-y-2">
+              <div className="h-6 bg-surface-dark rounded w-1/3" />
+              <div className="h-4 bg-surface-dark rounded w-1/2" />
+            </div>
+          </div>
+          <div className="h-48 bg-surface-dark rounded" />
+          <div className="h-64 bg-surface-dark rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !strategy) {
+    return (
+      <div className="max-w-[1000px]">
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold text-text-dark mb-2">
+            Strategy not found
+          </h2>
+          <p className="text-text-dark/60 mb-4">
+            The strategy you&apos;re looking for doesn&apos;t exist or has been
+            deleted.
+          </p>
+          <Button
+            variant="primary"
+            onClick={() => router.push("/knowledge/business-strategy")}
+          >
+            Back to Business Strategy
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const toggleObjective = (objId: string) => {
     setExpandedObjectives((prev) => {
       const next = new Set(prev);
@@ -305,6 +321,14 @@ export default function StrategyDetailPage({
   const onTrackCount = OBJECTIVES.filter((o) => o.status === "on-track").length;
   const atRiskCount = OBJECTIVES.filter((o) => o.status === "at-risk").length;
   const overallProgress = Math.round(OBJECTIVES.reduce((s, o) => s + o.progressPercent, 0) / OBJECTIVES.length);
+
+  // Extract content from strategy JSON if available
+  const strategyContent = (strategy.content || {}) as Record<string, unknown>;
+  const vision = (strategyContent.vision as string) || strategy.description || "Strategy vision will appear here.";
+  const rationale = (strategyContent.rationale as string) || "Strategy rationale will appear here.";
+  const assumptions = (strategyContent.assumptions as string[]) || ["Assumption 1", "Assumption 2"];
+  const icon = strategyIcons[strategy.type] || <TrendingUp className="w-6 h-6 text-primary" />;
+  const isActive = strategy.status.toLowerCase() === "active";
 
   return (
     <div className="max-w-[1000px]">
@@ -321,19 +345,21 @@ export default function StrategyDetailPage({
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div className="flex items-start gap-3">
           <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-            {strategy.icon}
+            {icon}
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-text-dark">{strategy.title}</h1>
             <div className="flex flex-wrap items-center gap-2 mt-1.5">
-              <Badge variant="success" size="sm" dot>{strategy.status}</Badge>
+              <Badge variant={isActive ? "success" : "default"} size="sm" dot>
+                {isActive ? "Active" : "Draft"}
+              </Badge>
               <span className="text-xs text-text-dark/40 flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5" />
-                {strategy.dateRange}
+                2026
               </span>
               <span className="text-xs text-text-dark/40 flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5" />
-                Last updated: {strategy.lastUpdated}
+                Last updated: {formatRelativeDate(strategy.updatedAt)}
               </span>
             </div>
           </div>
@@ -404,16 +430,16 @@ export default function StrategyDetailPage({
         <div className="space-y-4">
           <div>
             <p className="text-xs font-medium text-text-dark/40 uppercase tracking-wide mb-1.5">Vision for this Strategy</p>
-            <p className="text-sm text-text-dark/70 leading-relaxed">{strategy.vision}</p>
+            <p className="text-sm text-text-dark/70 leading-relaxed">{vision}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-text-dark/40 uppercase tracking-wide mb-1.5">Strategic Rationale</p>
-            <p className="text-sm text-text-dark/70 leading-relaxed">{strategy.rationale}</p>
+            <p className="text-sm text-text-dark/70 leading-relaxed">{rationale}</p>
           </div>
           <div>
             <p className="text-xs font-medium text-text-dark/40 uppercase tracking-wide mb-1.5">Key Assumptions</p>
             <ul className="space-y-1.5">
-              {strategy.assumptions.map((a, i) => (
+              {assumptions.map((a, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-text-dark/70">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5" />
                   {a}

@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import { useRouter } from "next/navigation";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -16,87 +17,41 @@ import {
   FileText,
   Megaphone,
 } from "lucide-react";
+import { useCampaign, CampaignContent } from "@/hooks/api/useCampaigns";
 
-// Placeholder campaign data
-const campaignData: Record<
-  string,
-  {
-    name: string;
-    status: "planning" | "active" | "completed";
-    startDate: string;
-    endDate: string;
-    progress: number;
-    description: string;
-    metrics: { reach: string; engagement: string; contentPieces: number };
-    content: {
-      id: string;
-      title: string;
-      type: string;
-      status: string;
-      date: string;
-    }[];
-  }
-> = {
-  "campaign-launch-2025": {
-    name: "Q1 Product Launch",
-    status: "active",
-    startDate: "Jan 15, 2025",
-    endDate: "Mar 31, 2025",
-    progress: 65,
-    description:
-      "Major product launch campaign targeting enterprise marketing teams with new AI-powered features. Includes blog posts, social media, email sequences, and webinars.",
-    metrics: { reach: "45.2K", engagement: "8.7%", contentPieces: 12 },
-    content: [
-      { id: "c1", title: "Launch Announcement Blog Post", type: "Blog", status: "Published", date: "Jan 20, 2025" },
-      { id: "c2", title: "Product Demo Video", type: "Video", status: "Published", date: "Jan 22, 2025" },
-      { id: "c3", title: "Feature Deep Dive: AI Analysis", type: "Blog", status: "Published", date: "Feb 1, 2025" },
-      { id: "c4", title: "Customer Success Story", type: "Case Study", status: "In Review", date: "Feb 10, 2025" },
-      { id: "c5", title: "Email Sequence: Trial Users", type: "Email", status: "Draft", date: "Feb 15, 2025" },
-      { id: "c6", title: "Webinar: Brand Strategy 2025", type: "Webinar", status: "Planned", date: "Mar 5, 2025" },
-    ],
-  },
-  "campaign-brand-awareness": {
-    name: "Brand Awareness Drive",
-    status: "active",
-    startDate: "Feb 1, 2025",
-    endDate: "Apr 30, 2025",
-    progress: 35,
-    description:
-      "Multi-channel awareness campaign to establish Branddock as a thought leader in brand management space.",
-    metrics: { reach: "28.1K", engagement: "5.3%", contentPieces: 8 },
-    content: [
-      { id: "c7", title: "State of Brand Management Report", type: "Report", status: "Published", date: "Feb 5, 2025" },
-      { id: "c8", title: "LinkedIn Thought Leadership Series", type: "Social", status: "In Progress", date: "Feb 10, 2025" },
-      { id: "c9", title: "Guest Post: Forbes", type: "Blog", status: "In Review", date: "Feb 20, 2025" },
-    ],
-  },
-};
-
-// Fallback for unknown campaigns
-const defaultCampaign = {
-  name: "Campaign",
-  status: "planning" as const,
-  startDate: "TBD",
-  endDate: "TBD",
-  progress: 0,
-  description: "Campaign details will appear here.",
-  metrics: { reach: "—", engagement: "—", contentPieces: 0 },
-  content: [],
-};
-
-const statusConfig: Record<string, { variant: "info" | "success" | "default"; label: string }> = {
-  planning: { variant: "default", label: "Planning" },
-  active: { variant: "info", label: "Active" },
-  completed: { variant: "success", label: "Completed" },
+const statusConfig: Record<string, { variant: "info" | "success" | "default" | "warning"; label: string }> = {
+  DRAFT: { variant: "default", label: "Draft" },
+  PLANNING: { variant: "default", label: "Planning" },
+  ACTIVE: { variant: "info", label: "Active" },
+  COMPLETED: { variant: "success", label: "Completed" },
+  PAUSED: { variant: "warning", label: "Paused" },
+  ARCHIVED: { variant: "default", label: "Archived" },
 };
 
 const contentStatusConfig: Record<string, { variant: "success" | "info" | "warning" | "default" }> = {
-  Published: { variant: "success" },
-  "In Progress": { variant: "info" },
-  "In Review": { variant: "warning" },
-  Draft: { variant: "default" },
-  Planned: { variant: "default" },
+  PUBLISHED: { variant: "success" },
+  APPROVED: { variant: "success" },
+  IN_REVIEW: { variant: "warning" },
+  DRAFT: { variant: "default" },
 };
+
+function formatDate(dateStr: string | null | undefined) {
+  if (!dateStr) return "TBD";
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function getProgress(status: string) {
+  switch (status) {
+    case "COMPLETED": return 100;
+    case "ACTIVE": return 50;
+    case "PAUSED": return 30;
+    default: return 10;
+  }
+}
 
 export default function CampaignDetailPage({
   params,
@@ -104,8 +59,59 @@ export default function CampaignDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const campaign = campaignData[id] || defaultCampaign;
-  const config = statusConfig[campaign.status];
+  const router = useRouter();
+  const { data: campaign, isLoading, isError } = useCampaign(id);
+
+  if (isLoading) {
+    return (
+      <div className="max-w-[1400px]">
+        <div className="animate-pulse space-y-6">
+          <div className="h-4 bg-surface-dark rounded w-1/3" />
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-surface-dark" />
+            <div className="flex-1 space-y-2">
+              <div className="h-6 bg-surface-dark rounded w-1/3" />
+              <div className="h-4 bg-surface-dark rounded w-1/4" />
+            </div>
+          </div>
+          <div className="h-32 bg-surface-dark rounded" />
+          <div className="grid grid-cols-3 gap-4">
+            <div className="h-24 bg-surface-dark rounded" />
+            <div className="h-24 bg-surface-dark rounded" />
+            <div className="h-24 bg-surface-dark rounded" />
+          </div>
+          <div className="h-48 bg-surface-dark rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !campaign) {
+    return (
+      <div className="max-w-[1400px]">
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold text-text-dark mb-2">
+            Campaign not found
+          </h2>
+          <p className="text-text-dark/60 mb-4">
+            The campaign you&apos;re looking for doesn&apos;t exist or has been
+            deleted.
+          </p>
+          <Button
+            variant="primary"
+            onClick={() => router.push("/strategy/campaigns")}
+          >
+            Back to Campaigns
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const config = statusConfig[campaign.status] || statusConfig.DRAFT;
+  const progress = getProgress(campaign.status);
+  const contentItems: CampaignContent[] = campaign.content || [];
+  const contentCount = campaign._count?.contents ?? campaign._count?.content ?? contentItems.length;
 
   const breadcrumbItems = [
     { label: "Strategy", href: "/strategy" },
@@ -136,7 +142,7 @@ export default function CampaignDetailPage({
             <div className="flex items-center gap-3 text-xs text-text-dark/40">
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" />
-                {campaign.startDate} — {campaign.endDate}
+                {formatDate(campaign.startDate)} — {formatDate(campaign.endDate)}
               </span>
             </div>
           </div>
@@ -148,19 +154,21 @@ export default function CampaignDetailPage({
 
       {/* Description */}
       <Card padding="lg" className="mb-6">
-        <p className="text-sm text-text-dark/60">{campaign.description}</p>
+        <p className="text-sm text-text-dark/60">
+          {campaign.description || "No description provided."}
+        </p>
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-text-dark/40">
               Overall Progress
             </span>
             <span className="text-xs font-medium text-text-dark">
-              {campaign.progress}%
+              {progress}%
             </span>
           </div>
           <ProgressBar
-            value={campaign.progress}
-            variant={campaign.progress === 100 ? "success" : "default"}
+            value={progress}
+            variant={progress === 100 ? "success" : "default"}
           />
         </div>
       </Card>
@@ -173,9 +181,7 @@ export default function CampaignDetailPage({
               <Eye className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-text-dark">
-                {campaign.metrics.reach}
-              </p>
+              <p className="text-2xl font-bold text-text-dark">&mdash;</p>
               <p className="text-xs text-text-dark/40">Total Reach</p>
             </div>
           </div>
@@ -186,9 +192,7 @@ export default function CampaignDetailPage({
               <Heart className="w-5 h-5 text-rose-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-text-dark">
-                {campaign.metrics.engagement}
-              </p>
+              <p className="text-2xl font-bold text-text-dark">&mdash;</p>
               <p className="text-xs text-text-dark/40">Engagement Rate</p>
             </div>
           </div>
@@ -200,7 +204,7 @@ export default function CampaignDetailPage({
             </div>
             <div>
               <p className="text-2xl font-bold text-text-dark">
-                {campaign.metrics.contentPieces}
+                {contentCount}
               </p>
               <p className="text-xs text-text-dark/40">Content Pieces</p>
             </div>
@@ -225,17 +229,18 @@ export default function CampaignDetailPage({
           </Link>
         </div>
         <div className="space-y-2">
-          {campaign.content.length === 0 ? (
+          {contentItems.length === 0 ? (
             <Card padding="lg">
               <div className="text-center py-8">
                 <FileText className="w-10 h-10 text-text-dark/20 mx-auto mb-3" />
                 <p className="text-sm text-text-dark/40">
-                  No content yet. Add your first piece of content to this campaign.
+                  No content yet. Add your first piece of content to this
+                  campaign.
                 </p>
               </div>
             </Card>
           ) : (
-            campaign.content.map((item) => {
+            contentItems.map((item) => {
               const cs = contentStatusConfig[item.status] || {
                 variant: "default" as const,
               };
@@ -258,10 +263,10 @@ export default function CampaignDetailPage({
                         {item.type}
                       </Badge>
                       <Badge variant={cs.variant} size="sm">
-                        {item.status}
+                        {item.status.replace("_", " ")}
                       </Badge>
                       <span className="text-xs text-text-dark/40 flex-shrink-0">
-                        {item.date}
+                        {formatDate(item.updatedAt)}
                       </span>
                     </div>
                   </Card>

@@ -4,6 +4,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, PaginatedResponse } from "@/lib/api/client";
 import type { CreateCampaignInput } from "@/lib/validations/campaign";
 
+export interface CampaignContent {
+  id: string;
+  title: string;
+  type: "TEXT" | "IMAGE" | "VIDEO";
+  status: "DRAFT" | "IN_REVIEW" | "APPROVED" | "PUBLISHED" | "ARCHIVED";
+  body: string | null;
+  format: string | null;
+  channel: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Campaign {
   id: string;
   name: string;
@@ -16,8 +28,9 @@ export interface Campaign {
   createdAt: string;
   updatedAt: string;
   createdBy: { id: string; name: string | null; email: string };
+  content?: CampaignContent[];
   contents?: { id: string }[];
-  _count?: { contents: number };
+  _count?: { contents: number; content?: number };
 }
 
 interface UseCampaignsParams {

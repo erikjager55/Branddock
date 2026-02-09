@@ -19,6 +19,27 @@ export interface Persona {
   createdAt: string;
   updatedAt: string;
   createdBy: { id: string; name: string | null; email: string };
+  // Detail fields (returned by GET /api/personas/:id)
+  tagline?: string | null;
+  imageUrl?: string | null;
+  researchConfidence?: number;
+  methodsCompleted?: number;
+  isLocked?: boolean;
+  age?: string | null;
+  gender?: string | null;
+  location?: string | null;
+  occupation?: string | null;
+  education?: string | null;
+  income?: string | null;
+  familyStatus?: string | null;
+  personalityType?: string | null;
+  coreValues?: string[] | null;
+  interests?: string[] | null;
+  motivations?: string[] | null;
+  frustrations?: string[] | null;
+  behaviors?: string[] | null;
+  strategicImplications?: unknown | null;
+  aiAnalyses?: unknown[];
 }
 
 interface UsePersonasParams {

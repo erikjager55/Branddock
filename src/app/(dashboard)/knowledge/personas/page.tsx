@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Plus, Users } from "lucide-react";
+import Link from "next/link";
 import { usePersonas, useCreatePersona, Persona } from "@/hooks/api/usePersonas";
 import { useToast } from "@/hooks/useToast";
 import { DemoBanner } from "@/components/ui/DemoBanner";
@@ -165,7 +166,8 @@ export default function PersonasPage() {
           {personas.map((persona) => {
             const age = (persona.demographics as Record<string, string>)?.age;
             return (
-              <Card key={persona.id} hoverable padding="lg">
+              <Link key={persona.id} href={`/knowledge/personas/${persona.id}`}>
+              <Card hoverable padding="lg">
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <Avatar name={persona.name} size="lg" />
@@ -207,6 +209,7 @@ export default function PersonasPage() {
                   )}
                 </div>
               </Card>
+              </Link>
             );
           })}
         </div>

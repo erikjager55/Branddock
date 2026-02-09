@@ -2,11 +2,13 @@
 
 import { use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Edit,
   Bot,
   Lock,
+  Unlock,
   RefreshCw,
   Sparkles,
   Image as ImageIcon,
@@ -16,66 +18,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { cn } from "@/lib/utils";
-
-// ── Data ──
-
-const PERSONA = {
-  name: "Sarah the Startup Founder",
-  tagline: "First-time founder building a DTC brand from scratch",
-  confidence: 25,
-  confidenceLabel: "Low",
-  methods: "1/4",
-};
-
-const DEMOGRAPHICS = [
-  { label: "Age", value: "28-38" },
-  { label: "Location", value: "San Francisco, CA" },
-  { label: "Occupation", value: "Founder & CEO" },
-  { label: "Income", value: "$80,000 - $150,000" },
-  { label: "Family", value: "Single / No children" },
-  { label: "Education", value: "Bachelor's in Business" },
-];
-
-const PSYCHOGRAPHICS = {
-  personality: "Ambitious, resourceful, fast-paced decision maker",
-  coreValues: ["Innovation", "Authenticity", "Speed", "Independence"],
-  interests: ["Startups", "Branding", "Growth Hacking", "Design", "AI Tools"],
-};
-
-const GOALS = [
-  "Build a professional brand identity quickly",
-  "Create consistent brand content without agency costs",
-  "Establish market positioning before competitors",
-];
-
-const MOTIVATIONS = [
-  "Desire to prove her vision and build something meaningful",
-  "Need to attract investors with professional branding",
-  "Passion for solving real customer problems",
-];
-
-const FRUSTRATIONS = [
-  "Traditional brand agencies are too expensive and slow",
-  "Scattered tools with no unified brand management",
-  "Difficulty maintaining consistency as the team grows",
-];
-
-const BEHAVIORS = [
-  "Researches solutions independently before buying",
-  "Active on LinkedIn and Twitter for industry insights",
-  "Prefers self-serve tools over consultations",
-  "Makes fast purchasing decisions when value is clear",
-  "Values peer recommendations and case studies",
-];
-
-const RESEARCH_METHODS = [
-  { name: "AI Analysis", status: "completed", label: "Completed" },
-  { name: "Interviews", status: "pending", label: "Not started" },
-  { name: "Questionnaire", status: "pending", label: "Not started" },
-  { name: "Workshop", status: "pending", label: "Not started" },
-];
-
-// ── Component ──
+import { usePersona } from "@/hooks/api/usePersonas";
 
 export default function PersonaDetailPage({
   params,
@@ -83,6 +26,67 @@ export default function PersonaDetailPage({
   params: Promise<{ personaId: string }>;
 }) {
   const { personaId } = use(params);
+  const router = useRouter();
+  const { data: persona, isLoading, isError } = usePersona(personaId);
+
+  if (isLoading) {
+    return (
+      <div className="max-w-[900px] mx-auto">
+        <div className="animate-pulse space-y-6">
+          <div className="h-4 bg-surface-dark rounded w-1/4" />
+          <div className="flex items-start gap-5">
+            <div className="w-20 h-20 rounded-full bg-surface-dark" />
+            <div className="flex-1 space-y-3">
+              <div className="h-6 bg-surface-dark rounded w-1/3" />
+              <div className="h-4 bg-surface-dark rounded w-1/2" />
+            </div>
+          </div>
+          <div className="h-64 bg-surface-dark rounded" />
+          <div className="h-48 bg-surface-dark rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !persona) {
+    return (
+      <div className="max-w-[900px] mx-auto">
+        <div className="text-center py-12">
+          <h2 className="text-xl font-semibold text-text-dark mb-2">
+            Persona not found
+          </h2>
+          <p className="text-text-dark/60 mb-4">
+            The persona you&apos;re looking for doesn&apos;t exist or has been
+            deleted.
+          </p>
+          <Button
+            variant="primary"
+            onClick={() => router.push("/knowledge/personas")}
+          >
+            Back to Personas
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const demographics = [
+    { label: "Age", value: persona.age },
+    { label: "Location", value: persona.location },
+    { label: "Occupation", value: persona.occupation || persona.role },
+    { label: "Income", value: persona.income },
+    { label: "Family", value: persona.familyStatus },
+    { label: "Education", value: persona.education },
+  ].filter((d) => d.value);
+
+  const goals = (persona.goals as string[]) || [];
+  const motivations = (persona.motivations as string[]) || [];
+  const frustrations = (persona.frustrations as string[]) || [];
+  const behaviors = (persona.behaviors as string[]) || [];
+  const coreValues = (persona.coreValues as string[]) || [];
+  const interests = (persona.interests as string[]) || [];
+  const confidence = persona.researchConfidence ?? 0;
+  const methods = persona.methodsCompleted ?? 0;
 
   return (
     <div className="max-w-[900px] mx-auto">
@@ -97,114 +101,252 @@ export default function PersonaDetailPage({
       {/* Header */}
       <div className="flex items-start gap-5 mb-6">
         <div className="w-20 h-20 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center flex-shrink-0">
-          <ImageIcon className="w-8 h-8 text-purple-400/40" />
+          {persona.imageUrl ? (
+            <img
+              src={persona.imageUrl}
+              alt={persona.name}
+              className="w-20 h-20 rounded-full object-cover"
+            />
+          ) : (
+            <ImageIcon className="w-8 h-8 text-purple-400/40" />
+          )}
         </div>
         <div className="flex-1">
-          <h1 className="text-xl font-semibold text-text-dark">{PERSONA.name}</h1>
-          <p className="text-sm text-text-dark/50 mb-2">{PERSONA.tagline}</p>
+          <h1 className="text-xl font-semibold text-text-dark">
+            {persona.name}
+          </h1>
+          <p className="text-sm text-text-dark/50 mb-2">
+            {persona.tagline || persona.description || persona.role}
+          </p>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-text-dark/40">Research Confidence</span>
-              <ProgressBar value={PERSONA.confidence} size="sm" className="w-20" />
-              <Badge variant="warning" size="sm">{PERSONA.confidence}% {PERSONA.confidenceLabel}</Badge>
+              <span className="text-xs text-text-dark/40">
+                Research Confidence
+              </span>
+              <ProgressBar value={confidence} size="sm" className="w-20" />
+              <Badge
+                variant={confidence >= 50 ? "success" : "warning"}
+                size="sm"
+              >
+                {confidence}%{" "}
+                {confidence >= 75
+                  ? "High"
+                  : confidence >= 50
+                    ? "Medium"
+                    : "Low"}
+              </Badge>
             </div>
-            <span className="text-xs text-text-dark/40">Methods {PERSONA.methods}</span>
+            <span className="text-xs text-text-dark/40">
+              Methods {methods}/4
+            </span>
           </div>
         </div>
       </div>
 
       {/* Action Bar */}
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="secondary" size="sm" leftIcon={<Edit className="w-3.5 h-3.5" />}>Edit</Button>
-        <Button variant="secondary" size="sm" leftIcon={<Bot className="w-3.5 h-3.5" />}>Regenerate with AI</Button>
-        <Button variant="secondary" size="sm" leftIcon={<Lock className="w-3.5 h-3.5" />}>Lock</Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          leftIcon={<Edit className="w-3.5 h-3.5" />}
+        >
+          Edit
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          leftIcon={<Bot className="w-3.5 h-3.5" />}
+        >
+          Regenerate with AI
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          leftIcon={
+            persona.isLocked ? (
+              <Unlock className="w-3.5 h-3.5" />
+            ) : (
+              <Lock className="w-3.5 h-3.5" />
+            )
+          }
+        >
+          {persona.isLocked ? "Unlock" : "Lock"}
+        </Button>
       </div>
 
       {/* Demographics */}
-      <SectionCard title="Demographics" impact="high" impactLabel="Profile">
-        <div className="flex items-start gap-5">
-          <div className="flex-shrink-0">
-            <div className="w-24 h-24 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-2">
-              <ImageIcon className="w-8 h-8 text-purple-400/30" />
+      {demographics.length > 0 && (
+        <SectionCard title="Demographics" impact="high" impactLabel="Profile">
+          <div className="flex items-start gap-5">
+            <div className="flex-shrink-0">
+              <div className="w-24 h-24 rounded-lg bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mb-2">
+                <ImageIcon className="w-8 h-8 text-purple-400/30" />
+              </div>
+              <button className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
+                <RefreshCw className="w-3 h-3" /> Regenerate
+              </button>
             </div>
-            <button className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors">
-              <RefreshCw className="w-3 h-3" /> Regenerate
-            </button>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-3 flex-1">
+              {demographics.map((d) => (
+                <div key={d.label}>
+                  <p className="text-xs text-text-dark/40">{d.label}</p>
+                  <p className="text-sm text-text-dark">{d.value}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-3 flex-1">
-            {DEMOGRAPHICS.map((d) => (
-              <div key={d.label}>
-                <p className="text-xs text-text-dark/40">{d.label}</p>
-                <p className="text-sm text-text-dark">{d.value}</p>
+        </SectionCard>
+      )}
+
+      {/* Psychographics */}
+      {(persona.personalityType ||
+        coreValues.length > 0 ||
+        interests.length > 0) && (
+        <SectionCard title="Psychographics" impact="medium">
+          <div className="space-y-4">
+            {persona.personalityType && (
+              <div>
+                <p className="text-xs text-text-dark/40 mb-1">
+                  Personality Type
+                </p>
+                <p className="text-sm text-text-dark">
+                  {persona.personalityType}
+                </p>
+              </div>
+            )}
+            {coreValues.length > 0 && (
+              <div>
+                <p className="text-xs text-text-dark/40 mb-2">Core Values</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {coreValues.map((v) => (
+                    <Badge key={v} variant="success" size="sm">
+                      {v}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            {interests.length > 0 && (
+              <div>
+                <p className="text-xs text-text-dark/40 mb-2">Interests</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {interests.map((v) => (
+                    <Badge key={v} variant="default" size="sm">
+                      {v}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </SectionCard>
+      )}
+
+      {/* Goals / Motivations / Frustrations */}
+      {(goals.length > 0 ||
+        motivations.length > 0 ||
+        frustrations.length > 0) && (
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          {goals.length > 0 && (
+            <BulletCard title="Goals" impact="high" items={goals} />
+          )}
+          {motivations.length > 0 && (
+            <BulletCard
+              title="Motivations"
+              impact="high"
+              items={motivations}
+            />
+          )}
+          {frustrations.length > 0 && (
+            <BulletCard
+              title="Frustrations"
+              impact="medium"
+              items={frustrations}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Behaviors */}
+      {behaviors.length > 0 && (
+        <SectionCard title="Behaviors" impact="medium">
+          <div className="space-y-2">
+            {behaviors.map((b) => (
+              <div
+                key={b}
+                className="flex items-start gap-2 text-sm text-text-dark/70"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5" />
+                {b}
               </div>
             ))}
           </div>
-        </div>
-      </SectionCard>
-
-      {/* Psychographics */}
-      <SectionCard title="Psychographics" impact="medium">
-        <div className="space-y-4">
-          <div>
-            <p className="text-xs text-text-dark/40 mb-1">Personality Type</p>
-            <p className="text-sm text-text-dark">{PSYCHOGRAPHICS.personality}</p>
-          </div>
-          <div>
-            <p className="text-xs text-text-dark/40 mb-2">Core Values</p>
-            <div className="flex flex-wrap gap-1.5">
-              {PSYCHOGRAPHICS.coreValues.map((v) => (
-                <Badge key={v} variant="success" size="sm">{v}</Badge>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-xs text-text-dark/40 mb-2">Interests</p>
-            <div className="flex flex-wrap gap-1.5">
-              {PSYCHOGRAPHICS.interests.map((v) => (
-                <Badge key={v} variant="default" size="sm">{v}</Badge>
-              ))}
-            </div>
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* Goals / Motivations / Frustrations */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        <BulletCard title="Goals" impact="high" items={GOALS} />
-        <BulletCard title="Motivations" impact="high" items={MOTIVATIONS} />
-        <BulletCard title="Frustrations" impact="medium" items={FRUSTRATIONS} />
-      </div>
-
-      {/* Behaviors */}
-      <SectionCard title="Behaviors" impact="medium">
-        <div className="space-y-2">
-          {BEHAVIORS.map((b) => (
-            <div key={b} className="flex items-start gap-2 text-sm text-text-dark/70">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5" />
-              {b}
-            </div>
-          ))}
-        </div>
-      </SectionCard>
+        </SectionCard>
+      )}
 
       {/* Strategic Implications */}
       <SectionCard title="Strategic Implications" impact="high">
-        <div className="text-center py-6">
-          <p className="text-sm text-text-dark/40 mb-3">No strategic implications generated yet</p>
-          <Button variant="secondary" size="sm" leftIcon={<Sparkles className="w-3.5 h-3.5" />}>
-            Generate with AI
-          </Button>
-        </div>
+        {persona.strategicImplications ? (
+          <div className="space-y-2">
+            {Array.isArray(persona.strategicImplications) ? (
+              (persona.strategicImplications as string[]).map((item) => (
+                <div
+                  key={item}
+                  className="flex items-start gap-2 text-sm text-text-dark/70"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5" />
+                  {item}
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-text-dark/70">
+                {String(persona.strategicImplications)}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <p className="text-sm text-text-dark/40 mb-3">
+              No strategic implications generated yet
+            </p>
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<Sparkles className="w-3.5 h-3.5" />}
+            >
+              Generate with AI
+            </Button>
+          </div>
+        )}
       </SectionCard>
 
       {/* Research & Validation */}
       <Card padding="lg" className="mb-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-text-dark">Research &amp; Validation</h3>
-          <span className="text-xs text-text-dark/40">{PERSONA.methods} methods</span>
+          <h3 className="text-sm font-semibold text-text-dark">
+            Research &amp; Validation
+          </h3>
+          <span className="text-xs text-text-dark/40">{methods}/4 methods</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {RESEARCH_METHODS.map((m) => (
+          {[
+            {
+              name: "AI Analysis",
+              status: methods >= 1 ? "completed" : "pending",
+            },
+            {
+              name: "Interviews",
+              status: methods >= 2 ? "completed" : "pending",
+            },
+            {
+              name: "Questionnaire",
+              status: methods >= 3 ? "completed" : "pending",
+            },
+            {
+              name: "Workshop",
+              status: methods >= 4 ? "completed" : "pending",
+            },
+          ].map((m) => (
             <div
               key={m.name}
               className={cn(
@@ -214,12 +356,14 @@ export default function PersonaDetailPage({
                   : "border-border-dark"
               )}
             >
-              <p className="text-xs font-medium text-text-dark mb-1">{m.name}</p>
+              <p className="text-xs font-medium text-text-dark mb-1">
+                {m.name}
+              </p>
               <Badge
                 variant={m.status === "completed" ? "success" : "default"}
                 size="sm"
               >
-                {m.label}
+                {m.status === "completed" ? "Completed" : "Not started"}
               </Badge>
             </div>
           ))}
@@ -242,17 +386,20 @@ function SectionCard({
   impactLabel?: string;
   children: React.ReactNode;
 }) {
-  const impactColors = {
-    high: "bg-emerald-500/10 text-emerald-400",
-    medium: "bg-amber-500/10 text-amber-400",
-    low: "bg-text-dark/10 text-text-dark/40",
-  };
-
   return (
     <Card padding="lg" className="mb-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-text-dark">{title}</h3>
-        <Badge variant={impact === "high" ? "success" : impact === "medium" ? "warning" : "default"} size="sm">
+        <Badge
+          variant={
+            impact === "high"
+              ? "success"
+              : impact === "medium"
+                ? "warning"
+                : "default"
+          }
+          size="sm"
+        >
           {impactLabel || `${impact} impact`}
         </Badge>
       </div>
@@ -274,13 +421,25 @@ function BulletCard({
     <Card padding="lg">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-text-dark">{title}</h3>
-        <Badge variant={impact === "high" ? "success" : impact === "medium" ? "warning" : "default"} size="sm">
+        <Badge
+          variant={
+            impact === "high"
+              ? "success"
+              : impact === "medium"
+                ? "warning"
+                : "default"
+          }
+          size="sm"
+        >
           {impact}
         </Badge>
       </div>
       <div className="space-y-2">
         {items.map((item) => (
-          <div key={item} className="flex items-start gap-2 text-xs text-text-dark/70">
+          <div
+            key={item}
+            className="flex items-start gap-2 text-xs text-text-dark/70"
+          >
             <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1" />
             {item}
           </div>
