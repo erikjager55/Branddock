@@ -8,8 +8,9 @@ import {
   AnalysisType,
 } from "@/generated/prisma/client";
 
-// Re-export enums
+// Re-export enums and types
 export { AssetType, AssetStatus, RelationType, AnalysisType };
+export type { AIAnalysis, BrandAsset, AssetRelation };
 
 // Extended types with relations
 export type BrandAssetWithRelations = BrandAsset & {

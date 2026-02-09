@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
+import { auth } from "@/../auth";
 import { UpdateAssetRequest } from "@/types/brand-asset";
 
 export async function GET(
@@ -8,7 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession();
+    const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -66,7 +67,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession();
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -120,7 +121,7 @@ export async function PATCH(
         }),
         ...(body.type && { type: body.type }),
         ...(body.status && { status: body.status }),
-        ...(body.content !== undefined && { content: body.content }),
+        ...(body.content !== undefined && { content: body.content as Prisma.InputJsonValue }),
         ...(body.fileUrl !== undefined && { fileUrl: body.fileUrl }),
       },
       include: {
@@ -156,7 +157,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession();
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

@@ -38,7 +38,7 @@ export function NewAssetModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="New Brand Asset">
+    <Modal open={isOpen} onClose={onClose} title="New Brand Asset">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label

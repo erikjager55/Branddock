@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
+import { auth } from "@/../auth";
 import {
   AssetType,
   AssetStatus,
@@ -10,7 +11,7 @@ import {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -96,7 +97,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
         description: body.description,
         type: body.type,
         status: body.status || AssetStatus.DRAFT,
-        content: body.content || {},
+        content: (body.content || {}) as Prisma.InputJsonValue,
         fileUrl: body.fileUrl,
         workspaceId: body.workspaceId,
         createdBy: user.id,

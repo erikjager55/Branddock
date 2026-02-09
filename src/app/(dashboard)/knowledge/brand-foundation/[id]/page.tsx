@@ -162,14 +162,14 @@ export default function AssetDetailPage({
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
-                icon={<Edit className="w-4 h-4" />}
+                leftIcon={<Edit className="w-4 h-4" />}
                 onClick={() => alert("Edit functionality to be implemented")}
               >
                 Edit
               </Button>
               <Button
                 variant="ghost"
-                icon={<Trash2 className="w-4 h-4" />}
+                leftIcon={<Trash2 className="w-4 h-4" />}
                 onClick={handleDelete}
                 className="text-error hover:bg-error/10"
               >

@@ -96,7 +96,7 @@ export default function BrandFoundationPage() {
           <Button
             variant="primary"
             onClick={() => setIsModalOpen(true)}
-            icon={<Plus className="w-4 h-4" />}
+            leftIcon={<Plus className="w-4 h-4" />}
           >
             New Asset
           </Button>
@@ -180,7 +180,7 @@ export default function BrandFoundationPage() {
             <Button
               variant="primary"
               onClick={() => setIsModalOpen(true)}
-              icon={<Plus className="w-4 h-4" />}
+              leftIcon={<Plus className="w-4 h-4" />}
             >
               Create Asset
             </Button>
