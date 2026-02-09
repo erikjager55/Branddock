@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/../auth";
-import { createPersonaSchema } from "@/lib/validations/persona";
+import { createProductSchema } from "@/lib/validations/product";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const workspaceId = searchParams.get("workspaceId");
+    const status = searchParams.get("status") as string | null;
+    const category = searchParams.get("category") as string | null;
     const search = searchParams.get("search");
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
@@ -24,43 +26,38 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const where: Prisma.PersonaWhereInput = {
+    const where: Prisma.ProductWhereInput = {
       workspaceId,
       deletedAt: null,
+      ...(status && { status: status as Prisma.EnumProductStatusFilter["equals"] }),
+      ...(category && { category }),
       ...(search && {
         OR: [
           { name: { contains: search, mode: "insensitive" as const } },
-          { tagline: { contains: search, mode: "insensitive" as const } },
-          { role: { contains: search, mode: "insensitive" as const } },
           { description: { contains: search, mode: "insensitive" as const } },
         ],
       }),
     };
 
-    const [personas, total] = await Promise.all([
-      prisma.persona.findMany({
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
         where,
         include: {
           createdBy: { select: { id: true, name: true, email: true } },
-          _count: {
-            select: {
-              aiAnalyses: true,
-              products: true,
-            },
-          },
+          _count: { select: { personas: true } },
         },
         orderBy: { updatedAt: "desc" },
         take: limit,
         skip: offset,
       }),
-      prisma.persona.count({ where }),
+      prisma.product.count({ where }),
     ]);
 
-    return NextResponse.json({ data: personas, total, limit, offset });
+    return NextResponse.json({ data: products, total, limit, offset });
   } catch (error) {
-    console.error("Error fetching personas:", error);
+    console.error("Error fetching products:", error);
     return NextResponse.json(
-      { error: "Failed to fetch personas" },
+      { error: "Failed to fetch products" },
       { status: 500 }
     );
   }
@@ -74,7 +71,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const parsed = createPersonaSchema.safeParse(body);
+    const parsed = createProductSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -110,49 +107,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const persona = await prisma.persona.create({
+    const product = await prisma.product.create({
       data: {
         name: data.name,
-        tagline: data.tagline,
-        role: data.role,
         description: data.description,
-        avatar: data.avatar,
-        imageUrl: data.imageUrl,
-        age: data.age,
-        gender: data.gender,
-        location: data.location,
-        occupation: data.occupation,
-        education: data.education,
-        income: data.income,
-        familyStatus: data.familyStatus,
-        personalityType: data.personalityType,
-        coreValues: (data.coreValues || undefined) as Prisma.InputJsonValue | undefined,
-        interests: (data.interests || undefined) as Prisma.InputJsonValue | undefined,
-        goals: (data.goals || undefined) as Prisma.InputJsonValue | undefined,
-        motivations: (data.motivations || undefined) as Prisma.InputJsonValue | undefined,
-        frustrations: (data.frustrations || undefined) as Prisma.InputJsonValue | undefined,
-        painPoints: (data.painPoints || undefined) as Prisma.InputJsonValue | undefined,
-        behaviors: (data.behaviors || undefined) as Prisma.InputJsonValue | undefined,
-        tags: data.tags || [],
+        category: data.category,
+        source: data.source,
+        sourceUrl: data.sourceUrl,
+        status: "DRAFT",
+        analysisStatus: "DRAFT",
+        pricingModel: data.pricingModel,
+        pricingDetails: data.pricingDetails,
+        features: (data.features || []) as Prisma.InputJsonValue,
+        benefits: (data.benefits || []) as Prisma.InputJsonValue,
+        useCases: (data.useCases || []) as Prisma.InputJsonValue,
+        targetAudience: (data.targetAudience || []) as Prisma.InputJsonValue,
         workspaceId: data.workspaceId,
         createdById: user.id,
       },
       include: {
         createdBy: { select: { id: true, name: true, email: true } },
-        _count: {
-          select: {
-            aiAnalyses: true,
-            products: true,
-          },
-        },
+        _count: { select: { personas: true } },
       },
     });
 
-    return NextResponse.json(persona, { status: 201 });
+    return NextResponse.json(product, { status: 201 });
   } catch (error) {
-    console.error("Error creating persona:", error);
+    console.error("Error creating product:", error);
     return NextResponse.json(
-      { error: "Failed to create persona" },
+      { error: "Failed to create product" },
       { status: 500 }
     );
   }

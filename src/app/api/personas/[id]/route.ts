@@ -17,9 +17,18 @@ export async function GET(
     const { id } = await params;
 
     const persona = await prisma.persona.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       include: {
         createdBy: { select: { id: true, name: true, email: true } },
+        aiAnalyses: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
+        products: {
+          include: {
+            product: true,
+          },
+        },
       },
     });
 
@@ -69,12 +78,20 @@ export async function PATCH(
     }
 
     const existing = await prisma.persona.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       include: { workspace: { include: { members: true } } },
     });
 
     if (!existing) {
       return NextResponse.json({ error: "Persona not found" }, { status: 404 });
+    }
+
+    // Reject if persona is locked
+    if (existing.isLocked) {
+      return NextResponse.json(
+        { error: "Persona is locked and cannot be edited" },
+        { status: 403 }
+      );
     }
 
     const hasAccess =
@@ -86,23 +103,64 @@ export async function PATCH(
     }
 
     const updateData: Prisma.PersonaUpdateInput = {};
+
+    // String fields
     if (data.name !== undefined) updateData.name = data.name;
+    if (data.tagline !== undefined) updateData.tagline = data.tagline;
     if (data.role !== undefined) updateData.role = data.role;
     if (data.description !== undefined) updateData.description = data.description;
     if (data.avatar !== undefined) updateData.avatar = data.avatar;
-    if (data.demographics !== undefined)
-      updateData.demographics = (data.demographics || {}) as Prisma.InputJsonValue;
+    if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
+    if (data.age !== undefined) updateData.age = data.age;
+    if (data.gender !== undefined) updateData.gender = data.gender;
+    if (data.location !== undefined) updateData.location = data.location;
+    if (data.occupation !== undefined) updateData.occupation = data.occupation;
+    if (data.education !== undefined) updateData.education = data.education;
+    if (data.income !== undefined) updateData.income = data.income;
+    if (data.familyStatus !== undefined) updateData.familyStatus = data.familyStatus;
+    if (data.personalityType !== undefined) updateData.personalityType = data.personalityType;
+
+    // Numeric fields
+    if (data.researchConfidence !== undefined) updateData.researchConfidence = data.researchConfidence;
+    if (data.methodsCompleted !== undefined) updateData.methodsCompleted = data.methodsCompleted;
+
+    // JSON fields
+    if (data.coreValues !== undefined)
+      updateData.coreValues = (data.coreValues ?? Prisma.DbNull) as Prisma.InputJsonValue;
+    if (data.interests !== undefined)
+      updateData.interests = (data.interests ?? Prisma.DbNull) as Prisma.InputJsonValue;
     if (data.goals !== undefined)
-      updateData.goals = (data.goals || []) as Prisma.InputJsonValue;
+      updateData.goals = (data.goals ?? Prisma.DbNull) as Prisma.InputJsonValue;
+    if (data.motivations !== undefined)
+      updateData.motivations = (data.motivations ?? Prisma.DbNull) as Prisma.InputJsonValue;
+    if (data.frustrations !== undefined)
+      updateData.frustrations = (data.frustrations ?? Prisma.DbNull) as Prisma.InputJsonValue;
     if (data.painPoints !== undefined)
-      updateData.painPoints = (data.painPoints || []) as Prisma.InputJsonValue;
-    if (data.tags !== undefined) updateData.tags = data.tags;
+      updateData.painPoints = (data.painPoints ?? Prisma.DbNull) as Prisma.InputJsonValue;
+    if (data.behaviors !== undefined)
+      updateData.behaviors = (data.behaviors ?? Prisma.DbNull) as Prisma.InputJsonValue;
+    if (data.strategicImplications !== undefined)
+      updateData.strategicImplications = (data.strategicImplications ?? Prisma.DbNull) as Prisma.InputJsonValue;
+    if (data.demographics !== undefined)
+      updateData.demographics = (data.demographics ?? Prisma.DbNull) as Prisma.InputJsonValue;
+
+    // Array field
+    if (data.tags !== undefined) updateData.tags = data.tags ?? [];
 
     const updated = await prisma.persona.update({
       where: { id },
       data: updateData,
       include: {
         createdBy: { select: { id: true, name: true, email: true } },
+        aiAnalyses: {
+          orderBy: { createdAt: "desc" },
+          take: 5,
+        },
+        products: {
+          include: {
+            product: true,
+          },
+        },
       },
     });
 
@@ -137,7 +195,7 @@ export async function DELETE(
     }
 
     const existing = await prisma.persona.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       include: { workspace: { include: { members: true } } },
     });
 
@@ -157,7 +215,11 @@ export async function DELETE(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    await prisma.persona.delete({ where: { id } });
+    // Soft delete
+    await prisma.persona.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
