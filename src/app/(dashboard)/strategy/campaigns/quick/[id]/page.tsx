@@ -233,7 +233,7 @@ export default function QuickContentDetailPage({
               leftIcon={<Pencil className="w-4 h-4" />}
               onClick={() =>
                 router.push(
-                  "/strategy/campaigns/campaign-launch-2025/content/c1"
+                  "/strategy/content-studio/cl-1"
                 )
               }
             >
@@ -276,7 +276,7 @@ export default function QuickContentDetailPage({
               leftIcon={<Pencil className="w-4 h-4" />}
               onClick={() =>
                 router.push(
-                  "/strategy/campaigns/campaign-launch-2025/content/c1"
+                  "/strategy/content-studio/cl-1"
                 )
               }
             >

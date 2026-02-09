@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -77,29 +78,31 @@ export default function BusinessStrategyPage() {
           const Icon = strategy.icon;
           const config = statusConfig[strategy.status];
           return (
-            <Card key={strategy.id} hoverable padding="lg">
-              <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Icon className="w-5 h-5 text-primary" />
+            <Link key={strategy.id} href={`/knowledge/business-strategy/${strategy.id}`}>
+              <Card hoverable padding="lg">
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Icon className="w-5 h-5 text-primary" />
+                    </div>
+                    <Badge variant={config.variant}>{config.label}</Badge>
                   </div>
-                  <Badge variant={config.variant}>{config.label}</Badge>
+                  <div>
+                    <h3 className="text-sm font-semibold text-text-dark mb-1">
+                      {strategy.title}
+                    </h3>
+                    <p className="text-xs text-text-dark/40 line-clamp-3">
+                      {strategy.description}
+                    </p>
+                  </div>
+                  <div className="pt-3 border-t border-border-dark">
+                    <span className="text-xs text-text-dark/40">
+                      Updated {strategy.updatedAt}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-text-dark mb-1">
-                    {strategy.title}
-                  </h3>
-                  <p className="text-xs text-text-dark/40 line-clamp-3">
-                    {strategy.description}
-                  </p>
-                </div>
-                <div className="pt-3 border-t border-border-dark">
-                  <span className="text-xs text-text-dark/40">
-                    Updated {strategy.updatedAt}
-                  </span>
-                </div>
-              </div>
-            </Card>
+              </Card>
+            </Link>
           );
         })}
       </div>

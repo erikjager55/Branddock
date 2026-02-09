@@ -8,6 +8,7 @@ import {
   Calendar,
   Target,
   Swords,
+  BookOpen,
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,11 @@ const secondaryNavItems = [
     label: "Campaigns",
     href: "/strategy/campaigns",
     icon: Megaphone,
+  },
+  {
+    label: "Content Library",
+    href: "/strategy/content-library",
+    icon: BookOpen,
   },
   {
     label: "Content Calendar",
