@@ -50,6 +50,64 @@ enum AnalysisType {
   TREND_ANALYSIS
 }
 
+enum CampaignStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+  PAUSED
+}
+
+enum ContentType {
+  BLOG_POST
+  SOCIAL_MEDIA
+  EMAIL
+  AD_COPY
+  LANDING_PAGE
+  VIDEO
+  CASE_STUDY
+  REPORT
+  WEBINAR
+}
+
+enum ContentStatus {
+  DRAFT
+  IN_PROGRESS
+  IN_REVIEW
+  PUBLISHED
+  PLANNED
+}
+
+enum ProductStatus {
+  ACTIVE
+  DRAFT
+  ARCHIVED
+}
+
+enum ResearchType {
+  SURVEY
+  INTERVIEW
+  ANALYSIS
+  AI_EXPLORATION
+}
+
+enum ResearchStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+}
+
+enum InsightType {
+  TREND
+  COMPETITOR
+  INDUSTRY
+}
+
+enum GoalStatus {
+  ON_TRACK
+  BEHIND
+  COMPLETED
+}
+
 model User {
   id            String    @id @default(uuid())
   email         String    @unique
@@ -65,7 +123,15 @@ model User {
   ownedWorkspaces Workspace[]
   memberships     WorkspaceMember[]
   createdAssets   BrandAsset[]
-  lockedAssets    BrandAsset[] @relation("LockedAssets")
+  lockedAssets    BrandAsset[]        @relation("LockedAssets")
+  campaigns       Campaign[]
+  content         Content[]
+  personas        Persona[]
+  products        Product[]
+  research        ResearchProject[]
+  marketInsights  MarketInsight[]
+  competitors     Competitor[]
+  goals           Goal[]
 
   @@map("users")
 }
@@ -121,8 +187,16 @@ model Workspace {
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id])
 
-  members      WorkspaceMember[]
-  brandAssets  BrandAsset[]
+  members         WorkspaceMember[]
+  brandAssets     BrandAsset[]
+  campaigns       Campaign[]
+  content         Content[]
+  personas        Persona[]
+  products        Product[]
+  research        ResearchProject[]
+  marketInsights  MarketInsight[]
+  competitors     Competitor[]
+  goals           Goal[]
 
   @@map("workspaces")
 }
@@ -194,4 +268,177 @@ model AIAnalysis {
   asset   BrandAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
   @@map("ai_analyses")
+}
+
+// ─── Strategy Module ───────────────────────────────────────────────────────────
+
+model Campaign {
+  id          String         @id @default(uuid())
+  name        String
+  description String?
+  status      CampaignStatus @default(PLANNING)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  content Content[]
+
+  @@map("campaigns")
+}
+
+model Content {
+  id         String        @id @default(uuid())
+  title      String
+  body       String?
+  type       ContentType
+  status     ContentStatus @default(DRAFT)
+  onBrand    Boolean       @default(true)
+  brandScore Int?
+  wordCount  Int           @default(0)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  @@map("content")
+}
+
+model Goal {
+  id           String     @id @default(uuid())
+  title        String
+  targetValue  Float
+  currentValue Float      @default(0)
+  unit         String
+  deadline     DateTime?
+  status       GoalStatus @default(ON_TRACK)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  @@map("goals")
+}
+
+model Competitor {
+  id          String   @id @default(uuid())
+  name        String
+  website     String?
+  description String?
+  strengths   String[]
+  weaknesses  String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  @@map("competitors")
+}
+
+// ─── Knowledge Module ──────────────────────────────────────────────────────────
+
+model Persona {
+  id           String   @id @default(uuid())
+  name         String
+  role         String?
+  description  String?
+  avatar       String?
+  demographics Json?
+  goals        Json?
+  painPoints   Json?
+  tags         String[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  @@map("personas")
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  category    String?
+  pricing     String?
+  features    Json?
+  status      ProductStatus @default(DRAFT)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  @@map("products")
+}
+
+model MarketInsight {
+  id        String      @id @default(uuid())
+  title     String
+  source    String?
+  type      InsightType
+  summary   String?
+  content   String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  @@map("market_insights")
+}
+
+// ─── Validation Module ─────────────────────────────────────────────────────────
+
+model ResearchProject {
+  id               String         @id @default(uuid())
+  name             String
+  type             ResearchType
+  status           ResearchStatus @default(DRAFT)
+  description      String?
+  findings         Json?
+  participantCount Int            @default(0)
+  startDate        DateTime?
+  endDate          DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdById String
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  @@map("research_projects")
 }
