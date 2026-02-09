@@ -75,3 +75,38 @@ export function useDeleteAsset() {
     },
   });
 }
+
+export function useLockAsset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      assetId,
+      isLocked,
+    }: {
+      assetId: string;
+      isLocked: boolean;
+    }) =>
+      api.patch<BrandAssetWithRelations>(`/api/assets/${assetId}/lock`, {
+        isLocked,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["knowledge", "assets"] });
+    },
+  });
+}
+
+export interface AssetStats {
+  total: number;
+  validated: number;
+  inProgress: number;
+  draft: number;
+  averageValidationScore: number;
+}
+
+export function useAssetStats() {
+  return useQuery({
+    queryKey: ["knowledge", "assets", "stats"],
+    queryFn: () => api.get<AssetStats>("/api/assets/stats"),
+  });
+}

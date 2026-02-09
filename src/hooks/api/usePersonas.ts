@@ -84,3 +84,45 @@ export function useDeletePersona() {
     },
   });
 }
+
+export function useLockPersona() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      personaId,
+      isLocked,
+    }: {
+      personaId: string;
+      isLocked: boolean;
+    }) =>
+      api.patch<Persona>(`/api/personas/${personaId}/lock`, { isLocked }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["knowledge", "personas"] });
+    },
+  });
+}
+
+export function useGeneratePersonaImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (personaId: string) =>
+      api.post<Persona>(`/api/personas/${personaId}/generate-image`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["knowledge", "personas"] });
+    },
+  });
+}
+
+export function useGenerateImplications() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (personaId: string) =>
+      api.post<Persona>(`/api/personas/${personaId}/generate-implications`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["knowledge", "personas"] });
+    },
+  });
+}
