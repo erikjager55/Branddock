@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/../auth";
-import { UpdateAssetRequest } from "@/types/brand-asset";
+import { updateBrandAssetSchema } from "@/lib/validations/brand-asset";
 
 export async function GET(
   request: NextRequest,
@@ -32,6 +32,13 @@ export async function GET(
             name: true,
           },
         },
+        lockedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         aiAnalyses: {
           orderBy: { createdAt: "desc" },
         },
@@ -43,6 +50,13 @@ export async function GET(
         relatedTo: {
           include: {
             fromAsset: true,
+          },
+        },
+        _count: {
+          select: {
+            workshops: true,
+            interviews: true,
+            questionnaires: true,
           },
         },
       },
@@ -73,7 +87,17 @@ export async function PATCH(
     }
 
     const { id } = await params;
-    const body: UpdateAssetRequest = await request.json();
+    const body = await request.json();
+    const parsed = updateBrandAssetSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      );
+    }
+
+    const data = parsed.data;
 
     // Get user by email
     const user = await prisma.user.findUnique({
@@ -111,19 +135,21 @@ export async function PATCH(
       return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
-    // Update the asset
+    // Build update data
     const updateData: Prisma.BrandAssetUpdateInput = {};
-    if (body.name) updateData.name = body.name;
-    if (body.description !== undefined) updateData.description = body.description;
-    if (body.type) updateData.type = body.type;
-    if (body.status) updateData.status = body.status;
-    if (body.content !== undefined) updateData.content = body.content as Prisma.InputJsonValue;
-    if (body.fileUrl !== undefined) updateData.fileUrl = body.fileUrl;
-    if (body.lockedById !== undefined) {
-      if (body.lockedById === null) {
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.type !== undefined) updateData.type = data.type;
+    if (data.category !== undefined) updateData.category = data.category;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.content !== undefined) updateData.content = data.content as Prisma.InputJsonValue;
+    if (data.fileUrl !== undefined) updateData.fileUrl = data.fileUrl;
+    if (data.validationScore !== undefined) updateData.validationScore = data.validationScore;
+    if (data.lockedById !== undefined) {
+      if (data.lockedById === null) {
         updateData.lockedBy = { disconnect: true };
       } else {
-        updateData.lockedBy = { connect: { id: body.lockedById } };
+        updateData.lockedBy = { connect: { id: data.lockedById } };
       }
     }
 
@@ -144,7 +170,21 @@ export async function PATCH(
             name: true,
           },
         },
+        lockedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         aiAnalyses: true,
+        _count: {
+          select: {
+            workshops: true,
+            interviews: true,
+            questionnaires: true,
+          },
+        },
       },
     });
 

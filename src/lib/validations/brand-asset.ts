@@ -45,6 +45,7 @@ export const updateBrandAssetSchema = z.object({
   status: assetStatusEnum.optional(),
   content: z.record(z.string(), z.unknown()).optional().nullable(),
   fileUrl: z.string().url().optional().nullable(),
+  validationScore: z.number().min(0).max(100).optional(),
   lockedById: z.string().uuid().optional().nullable(),
 });
 

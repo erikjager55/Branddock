@@ -10,14 +10,18 @@ const contentTypeEnum = z.enum([
   "CASE_STUDY",
   "REPORT",
   "WEBINAR",
+  "TEXT",
+  "IMAGE",
 ]);
 
 const contentStatusEnum = z.enum([
   "DRAFT",
   "IN_PROGRESS",
   "IN_REVIEW",
+  "APPROVED",
   "PUBLISHED",
   "PLANNED",
+  "ARCHIVED",
 ]);
 
 export const createContentSchema = z.object({
@@ -25,6 +29,8 @@ export const createContentSchema = z.object({
   body: z.string().max(100000).optional(),
   type: contentTypeEnum,
   status: contentStatusEnum.optional().default("DRAFT"),
+  format: z.string().max(100).optional().nullable(),
+  channel: z.string().max(100).optional().nullable(),
   campaignId: z.string().uuid().optional().nullable(),
   onBrand: z.boolean().optional().default(true),
   brandScore: z.number().int().min(0).max(100).optional().nullable(),
@@ -37,6 +43,8 @@ export const updateContentSchema = z.object({
   body: z.string().max(100000).optional().nullable(),
   type: contentTypeEnum.optional(),
   status: contentStatusEnum.optional(),
+  format: z.string().max(100).optional().nullable(),
+  channel: z.string().max(100).optional().nullable(),
   campaignId: z.string().uuid().optional().nullable(),
   onBrand: z.boolean().optional(),
   brandScore: z.number().int().min(0).max(100).optional().nullable(),

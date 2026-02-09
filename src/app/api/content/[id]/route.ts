@@ -91,6 +91,8 @@ export async function PATCH(
     if (data.body !== undefined) updateData.body = data.body;
     if (data.type !== undefined) updateData.type = data.type;
     if (data.status !== undefined) updateData.status = data.status;
+    if (data.format !== undefined) updateData.format = data.format;
+    if (data.channel !== undefined) updateData.channel = data.channel;
     if (data.onBrand !== undefined) updateData.onBrand = data.onBrand;
     if (data.brandScore !== undefined) updateData.brandScore = data.brandScore;
     if (data.wordCount !== undefined) updateData.wordCount = data.wordCount;

@@ -7,6 +7,8 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
 enum Role {
   OWNER
   ADMIN
@@ -31,9 +33,19 @@ enum AssetType {
   OTHER
 }
 
+enum AssetCategory {
+  FOUNDATION
+  STRATEGY
+  EXPRESSION
+  IDENTITY
+}
+
 enum AssetStatus {
   DRAFT
   ACTIVE
+  IN_PROGRESS
+  AI_ANALYSIS_COMPLETE
+  VALIDATED
   LOCKED
 }
 
@@ -50,11 +62,24 @@ enum AnalysisType {
   TREND_ANALYSIS
 }
 
+enum AIAnalysisType {
+  BRAND_ANALYSIS
+  PERSONA_ANALYSIS
+}
+
+enum AnalysisStatus {
+  IN_PROGRESS
+  COMPLETED
+  ARCHIVED
+}
+
 enum CampaignStatus {
   PLANNING
+  DRAFT
   ACTIVE
-  COMPLETED
   PAUSED
+  COMPLETED
+  ARCHIVED
 }
 
 enum ContentType {
@@ -67,20 +92,36 @@ enum ContentType {
   CASE_STUDY
   REPORT
   WEBINAR
+  TEXT
+  IMAGE
 }
 
 enum ContentStatus {
   DRAFT
   IN_PROGRESS
   IN_REVIEW
+  APPROVED
   PUBLISHED
   PLANNED
+  ARCHIVED
 }
 
 enum ProductStatus {
   ACTIVE
   DRAFT
   ARCHIVED
+}
+
+enum ProductSource {
+  MANUAL
+  WEBSITE_URL
+  PDF_UPLOAD
+}
+
+enum ProductAnalysisStatus {
+  DRAFT
+  ANALYZING
+  ANALYZED
 }
 
 enum ResearchType {
@@ -107,6 +148,31 @@ enum GoalStatus {
   BEHIND
   COMPLETED
 }
+
+enum WorkshopStatus {
+  DRAFT
+  PURCHASED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum InterviewStatus {
+  TO_SCHEDULE
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  IN_REVIEW
+  APPROVED
+}
+
+enum QuestionnaireStatus {
+  DRAFT
+  COLLECTING
+  ANALYZED
+  VALIDATED
+}
+
+// ─── Auth Models ──────────────────────────────────────────────────────────────
 
 model User {
   id            String    @id @default(uuid())
@@ -176,10 +242,13 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
+// ─── Workspace ────────────────────────────────────────────────────────────────
+
 model Workspace {
   id        String   @id @default(uuid())
   name      String
   slug      String   @unique
+  logo      String?
   plan      Plan     @default(FREE)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -197,6 +266,8 @@ model Workspace {
   marketInsights  MarketInsight[]
   competitors     Competitor[]
   goals           Goal[]
+  styleguides     BrandStyleguide[]
+  strategies      BusinessStrategy[]
 
   @@map("workspaces")
 }
@@ -215,16 +286,23 @@ model WorkspaceMember {
   @@map("workspace_members")
 }
 
+// ─── Brand Foundation ─────────────────────────────────────────────────────────
+
 model BrandAsset {
-  id          String      @id @default(uuid())
-  name        String
-  description String?
-  type        AssetType
-  status      AssetStatus @default(DRAFT)
-  content     Json?
-  fileUrl     String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id              String        @id @default(uuid())
+  name            String
+  description     String?       @db.Text
+  type            AssetType
+  category        AssetCategory @default(FOUNDATION)
+  status          AssetStatus   @default(DRAFT)
+  content         Json?
+  fileUrl         String?
+  validationScore Float         @default(0)
+  isLocked        Boolean       @default(false)
+  lockedAt        DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -235,7 +313,11 @@ model BrandAsset {
   lockedById String?
   lockedBy   User?  @relation("LockedAssets", fields: [lockedById], references: [id])
 
-  aiAnalyses      AIAnalysis[]
+  aiAnalyses      AIAnalysis[]    @relation("AssetAIAnalyses")
+  newAiAnalyses   NewAIAnalysis[]
+  workshops       Workshop[]
+  interviews      Interview[]
+  questionnaires  Questionnaire[]
   relatedFrom     AssetRelation[] @relation("FromAsset")
   relatedTo       AssetRelation[] @relation("ToAsset")
 
@@ -257,6 +339,7 @@ model AssetRelation {
   @@map("asset_relations")
 }
 
+// Legacy AI Analysis (kept for existing data)
 model AIAnalysis {
   id           String       @id @default(uuid())
   analysisType AnalysisType
@@ -265,12 +348,158 @@ model AIAnalysis {
   createdAt    DateTime     @default(now())
 
   assetId String
-  asset   BrandAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  asset   BrandAsset @relation("AssetAIAnalyses", fields: [assetId], references: [id], onDelete: Cascade)
 
   @@map("ai_analyses")
 }
 
-// ─── Strategy Module ───────────────────────────────────────────────────────────
+// New AI Analysis (Tasks 4, 10: brand + persona analysis)
+model NewAIAnalysis {
+  id              String         @id @default(uuid())
+  type            AIAnalysisType
+  status          AnalysisStatus @default(IN_PROGRESS)
+  progress        Float          @default(0)
+  dataPoints      Int            @default(0)
+  duration        Int?
+
+  messages        Json?
+  executiveSummary String?       @db.Text
+  keyFindings     Json?
+  recommendations Json?
+  dimensions      Json?
+  confidenceBoost Float?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  assetId         String?
+  asset           BrandAsset?    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  personaId       String?
+  persona         Persona?       @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  createdById     String
+
+  @@map("new_ai_analyses")
+}
+
+// Workshop (Task 5)
+model Workshop {
+  id              String         @id @default(uuid())
+  title           String
+  status          WorkshopStatus @default(DRAFT)
+  type            String         @default("golden-circle")
+
+  bundle          String?
+  hasFacilitator  Boolean        @default(false)
+  purchaseAmount  Float?
+  purchasedAt     DateTime?
+
+  currentStep     Int            @default(0)
+  totalSteps      Int            @default(6)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  duration        Int?
+
+  facilitator     String?
+  participantCount Int           @default(0)
+  participants    Json?
+
+  stepResponses   Json?
+  canvas          Json?
+  objectives      Json?
+  agenda          Json?
+  aiReport        Json?
+  notes           Json?
+  gallery         Json?
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  assetId         String
+  asset           BrandAsset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  createdById     String
+
+  @@map("workshops")
+}
+
+// Interview (Task 6)
+model Interview {
+  id              String          @id @default(uuid())
+  title           String?
+  status          InterviewStatus @default(TO_SCHEDULE)
+  currentStep     Int             @default(1)
+
+  contactName     String?
+  contactPosition String?
+  contactEmail    String?
+  contactPhone    String?
+  contactCompany  String?
+
+  scheduledDate   DateTime?
+  scheduledTime   String?
+  duration        Int             @default(60)
+
+  questions       Json?
+  selectedAssets  Json?
+
+  answers         Json?
+  generalNotes    String?         @db.Text
+  completionRate  Float           @default(0)
+
+  isLocked        Boolean         @default(false)
+  lockedAt        DateTime?
+  approvedAt      DateTime?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
+
+  assetId         String
+  asset           BrandAsset      @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  createdById     String
+
+  @@map("interviews")
+}
+
+// Questionnaire (Task 7)
+model Questionnaire {
+  id                 String              @id @default(uuid())
+  name               String
+  description        String?
+  status             QuestionnaireStatus @default(DRAFT)
+  currentStep        Int                 @default(1)
+
+  questions          Json?
+  distributionMethod String              @default("email")
+  emailSubject       String?
+  emailBody          String?             @db.Text
+  isAnonymous        Boolean             @default(false)
+  allowMultiple      Boolean             @default(false)
+  reminderDays       Int?
+  shareableLink      String?
+
+  recipients         Json?
+  totalResponses     Int                 @default(0)
+  responseRate       Float               @default(0)
+  completionRate     Float               @default(0)
+  avgTime            Int?
+  responses          Json?
+  aiInsights         Json?
+  isValidated        Boolean             @default(false)
+  isLocked           Boolean             @default(false)
+  validatedAt        DateTime?
+
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  deletedAt          DateTime?
+
+  assetId            String
+  asset              BrandAsset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  createdById        String
+
+  @@map("questionnaires")
+}
+
+// ─── Strategy Module ──────────────────────────────────────────────────────────
 
 model Campaign {
   id          String         @id @default(uuid())
@@ -281,6 +510,7 @@ model Campaign {
   endDate     DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -296,14 +526,18 @@ model Campaign {
 model Content {
   id         String        @id @default(uuid())
   title      String
-  body       String?
+  body       String?       @db.Text
   type       ContentType
   status     ContentStatus @default(DRAFT)
+  format     String?
+  channel    String?
+  metadata   Json?
   onBrand    Boolean       @default(true)
   brandScore Int?
   wordCount  Int           @default(0)
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
+  deletedAt  DateTime?
 
   campaignId String?
   campaign   Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
@@ -356,40 +590,84 @@ model Competitor {
   @@map("competitors")
 }
 
-// ─── Knowledge Module ──────────────────────────────────────────────────────────
+// ─── Knowledge Module ─────────────────────────────────────────────────────────
 
 model Persona {
-  id           String   @id @default(uuid())
-  name         String
-  role         String?
-  description  String?
-  avatar       String?
-  demographics Json?
-  goals        Json?
-  painPoints   Json?
-  tags         String[]
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  name                String
+  tagline             String?
+  role                String?
+  description         String?  @db.Text
+  avatar              String?
+  imageUrl            String?
+  researchConfidence  Float    @default(0)
+  methodsCompleted    Int      @default(0)
+  isLocked            Boolean  @default(false)
+
+  age                 String?
+  gender              String?
+  location            String?
+  occupation          String?
+  education           String?
+  income              String?
+  familyStatus        String?
+
+  personalityType     String?
+  coreValues          Json?
+  interests           Json?
+
+  goals               Json?
+  motivations         Json?
+  frustrations        Json?
+  painPoints          Json?
+
+  behaviors           Json?
+  strategicImplications Json?
+
+  demographics        Json?
+  tags                String[]
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  deletedAt           DateTime?
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   createdById String
   createdBy   User @relation(fields: [createdById], references: [id])
+
+  aiAnalyses  NewAIAnalysis[]
+  products    ProductPersona[]
 
   @@map("personas")
 }
 
 model Product {
-  id          String        @id @default(uuid())
-  name        String
-  description String?
-  category    String?
-  pricing     String?
-  features    Json?
-  status      ProductStatus @default(DRAFT)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id              String               @id @default(uuid())
+  name            String
+  description     String?              @db.Text
+  category        String?
+  source          ProductSource        @default(MANUAL)
+  sourceUrl       String?
+  status          ProductStatus        @default(DRAFT)
+  analysisStatus  ProductAnalysisStatus @default(DRAFT)
+
+  pricing         String?
+  pricingModel    String?
+  pricingDetails  String?
+
+  features        Json?
+  benefits        Json?
+  useCases        Json?
+  targetAudience  Json?
+
+  analyzedAt      DateTime?
+  analysisSteps   Json?
+
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  deletedAt       DateTime?
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -397,7 +675,61 @@ model Product {
   createdById String
   createdBy   User @relation(fields: [createdById], references: [id])
 
+  personas    ProductPersona[]
+
   @@map("products")
+}
+
+model ProductPersona {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  personaId String
+  persona   Persona @relation(fields: [personaId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, personaId])
+  @@map("product_personas")
+}
+
+model BrandStyleguide {
+  id          String   @id @default(uuid())
+  sourceUrl   String?
+  sourceType  String?
+
+  logo        Json?
+  colors      Json?
+  typography  Json?
+  toneOfVoice Json?
+  imagery     Json?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("brand_styleguides")
+}
+
+model BusinessStrategy {
+  id          String   @id @default(uuid())
+  type        String
+  title       String
+  description String?  @db.Text
+  status      String   @default("draft")
+  content     Json?
+  isLocked    Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById String
+
+  @@map("business_strategies")
 }
 
 model MarketInsight {
@@ -419,7 +751,7 @@ model MarketInsight {
   @@map("market_insights")
 }
 
-// ─── Validation Module ─────────────────────────────────────────────────────────
+// ─── Validation Module ────────────────────────────────────────────────────────
 
 model ResearchProject {
   id               String         @id @default(uuid())

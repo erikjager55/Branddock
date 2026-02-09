@@ -125,364 +125,728 @@ pnpx prisma migrate dev --name [name]  # New migration
 ```
 
 ## Progress
-- Sprints 1–12: Foundation, auth, layout, component library, dashboard, core routes (37 routes functional)
+- Sprints 1–12: Foundation, auth, layout, component library, dashboard, core routes (37 routes)
 - Sprint 13: Strategy module — SCR-02a New Campaign Wizard, SCR-02b Quick Content Modal, SCR-02d Quick Content Detail
 - Sprint 14: Content & Strategy — SCR-03 Content Library, SCR-16 Content Studio, SCR-05a Strategy Detail
-- **Current: Sprint 15–18 backlog below (14 screens remaining)**
+- Sprint 15: Brand Foundation research — SCR-04b AI Brand Analysis, SCR-04c Workshop Purchase, SCR-04d Workshop Session, SCR-04e Workshop Complete
+- Sprint 16: Interviews & Questionnaire — SCR-04f Interviews, SCR-04g Questionnaire
+- Sprint 17: Brand Style & Personas — SCR-06a Styleguide, SCR-07a Create Persona, SCR-07b Persona Detail, SCR-07c AI Persona Analysis, SCR-07d Analysis Complete
+- Sprint 18: Products & Services — SCR-08a Product Analyzer, SCR-08b Analyzing Modal, SCR-08c Product Detail
+- ✅ **All 37 screens built with mock data. Full UI coverage complete.**
+- **Current: Sprint 19–22 Database & API backlog below**
 
 ---
 
-# Screen Build Backlog (Sprints 15–18)
+# Database & API Backlog (Sprints 19–22)
 
 ## How to Use This Backlog
-Work through tasks **sequentially** (Task 1 → Task 14). Each task = one screen = one git commit.
+Work through tasks **sequentially** (Task 1 → Task 12). Each task = one domain model + its API routes = one git commit.
 
 **Per task:**
-1. Read the spec below
-2. Check existing components in `src/components/` — reuse before creating new
-3. Build the page with mock/placeholder data (no real API calls)
-4. Commit: `feat(screens): add SCR-XXx [screen name]`
-5. Verify the page renders at its route
+1. Add the Prisma model(s) to `prisma/schema.prisma`
+2. Run `pnpx prisma migrate dev --name [task-name]`
+3. Add seed data to `prisma/seed.ts` for the new model
+4. Create API routes in `src/app/api/`
+5. Commit: `feat(db): add [model] schema + API routes`
 6. Move to next task
 
----
-
-## SPRINT 15 — Brand Foundation Research Methods
-
-### Task 1: SCR-04b AI Brand Analysis
-**Route:** `/knowledge/brand-foundation/[assetId]/ai-analysis`
-**Reference:** Reuse chat UI patterns if SCR-07c exists
-**Type:** Chat-based AI questionnaire → report generation
-
-**Layout:**
-- PageHeader: breadcrumb "Dashboard > Brand Foundation", "← Back to Asset"
-- Icon: 🤖, Title: "AI Brand Analysis", Subtitle: "Answer questions to analyze your brand"
-- Status dropdown: "📝 In Progress" / "✅ AI Analysis Complete"
-
-**Chat Interface:**
-- AI messages: left-aligned, white bg, purple AI icon avatar
-- User messages: right-aligned, green/teal bubble
-- Scrollable message container
-
-**Progress Indicator (below chat):**
-- "Progress" label + percentage right-aligned
-- Progress bar (blue/purple gradient), can exceed 100% (show "125%" etc.)
-
-**Input Area:**
-- Large textarea, placeholder "Type your answer here..."
-- "Previous" link (left) + "Next" button (green, disabled until typed, right)
-- At 100%: button becomes "Complete Analysis"
-
-**Completion State:**
-- Green success banner: ✅ "AI Analysis Complete" + "generated based on 247 data points"
-- Stats: "📊 247 Data points" + "⏱ Duration"
-- **AI Report:**
-  - 📝 Executive Summary (paragraph)
-  - 💡 Key Findings (5 numbered items): Brand Purpose, Audience Alignment, Unique Value, Customer Challenge, Market Position
-  - 🚀 Strategic Recommendations (4 items with ⭕ icons)
-- "⬇️ Export PDF" button
-- Footer: "← Back to Asset" + "✅ Done" (green)
+**Conventions:**
+- All entities: `id` (cuid), `createdAt`, `updatedAt`, `createdById`
+- Soft delete: `deletedAt DateTime?` where applicable
+- API response format: `{ data, error, meta }`
+- Zod validation on all inputs
+- Routes: `src/app/api/[module]/[entity]/route.ts`
+- Query params for filtering/pagination: `?page=1&limit=20&sort=createdAt&order=desc`
 
 ---
 
-### Task 2: SCR-04c Canvas Workshop Purchase
-**Route:** `/knowledge/brand-foundation/[assetId]/workshop/purchase`
-**Type:** E-commerce bundle selection + purchase flow
+## SPRINT 19 — Core Foundation Models
 
-**Header:** 🎨 "Canvas Workshop" + "Purchase workshop sessions for your team"
+### Task 1: Workspace & User Models
+**Why first:** Everything belongs to a workspace. All other models reference these.
 
-**3 Bundle Cards (row):**
-| Bundle | Price | Badge | Note |
-|--------|-------|-------|------|
-| Starter | €1,250 | Save €150 | Basic |
-| Professional | €1,350 | Save €200 | "Most Popular" ribbon, highlighted |
-| Complete | €1,400 | Save €250 | All assets |
+**Prisma Models:**
 
-Each card: title, price, discount badge, feature checklist ✅, Select button (outline/filled)
+```prisma
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  logo        String?
+  plan        Plan     @default(FREE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-**Workshop Options:** Quantity stepper + "Add Facilitator" toggle (+€350)
+  members     WorkspaceMember[]
+  campaigns   Campaign[]
+  personas    Persona[]
+  products    Product[]
+  assets      BrandAsset[]
+  styleguides BrandStyleguide[]
+  strategies  BusinessStrategy[]
+}
 
-**Dashboard Impact Preview:** "Preview Impact" link → modal with before/after asset states
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-**Purchase Summary Sidebar (right):** Bundle + add-ons + subtotal + discount + total + "Complete Purchase" (green)
+  accounts      Account[]
+  sessions      Session[]
+  memberships   WorkspaceMember[]
+}
 
----
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  role        Role     @default(VIEWER)
+  joinedAt    DateTime @default(now())
 
-### Task 3: SCR-04d Canvas Workshop Session
-**Route:** `/knowledge/brand-foundation/[assetId]/workshop/session`
-**Type:** Live workshop with 6-step flow
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
-**Header:** Workshop title + timer (counts UP from 00:00) + bookmark icon
+  @@unique([userId, workspaceId])
+}
 
-**6 Steps:** Introduction → Define Core Purpose → Identify Unique Value → Map Customer Journey → Synthesize Insights → Synthesis & Action Planning
+enum Role {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
 
-**Per step:**
-- Title + description
-- Video/presentation placeholder (grey box, play icon)
-- Timer: "⏱ 00:12:34"
-- Large textarea for response capture
-- "💡 Facilitator Tips" collapsible (amber bg)
-- "Step X of 6" + progress bar
-- "← Previous Step" + "Next Step →" (green) / final: "Complete Workshop"
+enum Plan {
+  FREE
+  STARTER
+  PROFESSIONAL
+  ENTERPRISE
+}
+```
 
----
+**Note:** NextAuth Account/Session models should already exist. If not, add them per NextAuth Prisma adapter docs.
 
-### Task 4: SCR-04e Workshop Complete
-**Route:** `/knowledge/brand-foundation/[assetId]/workshop/complete`
-**Type:** Results page with 5 tabs
+**API Routes:**
+- `GET/PATCH /api/workspace` — get/update current workspace
+- `GET/POST /api/workspace/members` — list/invite members
+- `PATCH/DELETE /api/workspace/members/[memberId]` — update role/remove
 
-**Header:** 💬 "Canvas Workshop" + "✅ Completed" + workshop navigation (← Prev | X of Y | Next →)
-
-**Complete Banner (green card):**
-- ✅ "Workshop Complete" + participant/duration summary
-- Stats: 📅 date | 👥 8 participants | ⏱ 1.5 hours | 👤 facilitator
-- Export: PDF download + raw data download
-
-**5 Tabs:**
-
-| Tab | Content |
-|-----|---------|
-| **Overview** | AI Report: Executive Summary + 5 Key Findings + 4 Strategic Recommendations |
-| **Canvas** | Golden Circle: WHY (Purpose) + HOW (Process) + WHAT (Product) cards with quotes + tips. Flow: 🔵→🟢→🟠 |
-| **Workshop** | 4 Objectives (✅), 8 Participants (name+role grid), 10-item Agenda timeline |
-| **Notes** | Participant notes list: avatar, name, timestamp, note text |
-| **Gallery** | 4 placeholder photos with captions |
-
-**Footer:** "← Back to Asset" + "✅ Done" (green)
-
----
-
-## SPRINT 16 — Interviews & Questionnaire
-
-### Task 5: SCR-04f Interviews
-**Route:** `/knowledge/brand-foundation/[assetId]/interviews`
-**Type:** Overview + 5-step wizard
-
-**Overview:**
-- Stats: "X Interviews" + "+ Add Interview" (green)
-- Counters: To Schedule (grey) | Scheduled (blue) | Completed (green) | In Review (purple)
-- Interview cards: title, status, lock icon, person info, View + ⋮ menu
-- Overflow: 🔓 Unlock | ✏️ Edit | 📋 Duplicate | 📊 Export | 🗑️ Delete
-
-**Wizard:** `① Contact → ② Schedule → ③ Questions → ④ Conduct → ⑤ Review`
-
-**Step 1 Contact:** Name, Position, Email, Phone (opt), Company → "Save Contact"
-
-**Step 2 Schedule:** Date picker, Time picker, Duration dropdown (60 min) → "Save Schedule"
-
-**Step 3 Questions:**
-- Asset checklist (Golden Circle, Core Values, Brand Positioning, Brand Personality)
-- Per asset: question count + View/+ actions
-- "+ Add Question" + "📚 Import from Templates"
-- **Add Question Modal:** Asset link dropdown, Type (card select: Open/MC/Multi-Select/Rating/Ranking), Question textarea, Answer Options repeater
-- **Templates Panel (slide-out):** search, asset filter, accordion categories, template items
-
-**Step 4 Conduct:**
-- "X of Y answered" + "X% complete"
-- Question nav: Previous | X/Y | Next
-- Question display: type badge + text + answer area (varies by type)
-- General Notes textarea
-- "Save Progress" + "Complete Interview" (green)
-
-**Step 5 Review:**
-- Stats: Questions Answered, Duration, Assets Covered, Completion %
-- Questions review with answers
-- Notes textarea
-- "✏️ Edit Responses" | "⬇️ Export PDF" | "✅ Approve & Lock" (green)
+**Seed:** 1 workspace "Branddock Demo" + 2 users (owner + editor)
 
 ---
 
-### Task 6: SCR-04g Questionnaire
-**Route:** `/knowledge/brand-foundation/[assetId]/questionnaire`
-**Type:** Overview + 5-step wizard (quantitative surveys)
+### Task 2: Campaign & Content Models
+**Why second:** Campaigns are the backbone — all content belongs to a campaign.
 
-**Overview:**
-- Stats: ❓ Questions | 👥 Recipients | 📬 Responses | 📈 Response Rate
-- "+ Create Questionnaire" (green)
-- Cards: title, status (Draft/Collecting/Analyzed), counts, response rate circle, ⋮ menu
+```prisma
+model Campaign {
+  id          String         @id @default(cuid())
+  name        String
+  description String?
+  status      CampaignStatus @default(DRAFT)
+  startDate   DateTime?
+  endDate     DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  deletedAt   DateTime?
 
-**Wizard:** `① Design → ② Distribution → ③ Recipients → ④ Collect → ⑤ Analyze`
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  createdById String
 
-**Step 1 Design:** Name + Description, draggable question list (type badge, Required badge, delete), inline add form (text, type, asset link, required checkbox), footer: Save Draft + Continue →
+  contents    Content[]
+}
 
-**Step 2 Distribution:** Radio: 📧 Email | 🔗 Shareable Link
-- Email: subject, body (placeholders: `{recipient_name}`, `{questionnaire_name}`, `{questionnaire_link}`), preview, anonymous/multiple response checkboxes, reminder settings
-- Link: URL + Copy, yellow public link warning, anonymous/multiple checkboxes
-- Green summary box, footer: ← Back + Save Draft + Continue →
+model Content {
+  id          String        @id @default(cuid())
+  title       String
+  type        ContentType
+  status      ContentStatus @default(DRAFT)
+  body        String?       @db.Text
+  format      String?       // "blog", "social", "email", etc.
+  channel     String?       // "instagram", "linkedin", "website", etc.
+  metadata    Json?         // flexible field for type-specific data
+  onBrand     Boolean       @default(false)
+  brandScore  Float?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  deletedAt   DateTime?
 
-**Step 3 Recipients:** Header + "⬆️ Import CSV" + "+ Add Recipient", empty state, Add Recipient Modal (Name, Email, Group, Role)
+  campaignId  String
+  campaign    Campaign @relation(fields: [campaignId], references: [id])
+  createdById String
+}
 
-**Step 4 Collect:** "Ready to Send" card: ✈️ icon, checklist, "📋 Copy Shareable Link" (green)
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
 
-**Step 5 Analyze:**
-- Stats: Responses, Rate, Completion, Avg Time, Assets
-- "✨ AI Generated Key Insights" + "🔄 Regenerate" (4 insight bullets)
-- Tabs: All Questions | per asset type
-- Per question: expand, Q#, text, badges, response count
-- Export: PDF, CSV, Charts PNG, Share
-- "🔓 Unlock" + "✅ Mark as Validated" (green)
-- **Validate Modal:** stats + green info + "✅ Validate & Lock"
+enum ContentType {
+  TEXT
+  IMAGE
+  VIDEO
+}
 
----
+enum ContentStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+}
+```
 
-## SPRINT 17 — Brand Style & Personas
+**API Routes:**
+- `GET/POST /api/campaigns` — list/create campaigns
+- `GET/PATCH/DELETE /api/campaigns/[campaignId]` — CRUD single campaign
+- `GET/POST /api/campaigns/[campaignId]/contents` — list/create content in campaign
+- `GET/PATCH/DELETE /api/contents/[contentId]` — CRUD single content
 
-### Task 7: SCR-06a Brand Styleguide
-**Route:** `/knowledge/brandstyle/guide`
-**Reference:** Result page of SCR-06 Brandstyle Analyzer
-**Type:** Multi-section scrollable document
-
-**Header:** 🎨 "Brand Styleguide" + creator avatar/name/date + "Analyze Next" + "⬇ Export PDF"
-
-**5 Tab Jump-Links:** Logo 🖼️ | Colors 🎨 | Typography Aa | Tone of Voice 💬 | Imagery 🖼️
-
-**Logo:** 3 variation cards (Primary, Icon Mark, Scale Only) + Usage Guidelines + Don'ts (5× ❌)
-
-**Colors:** Swatch grid (clickable) + Don'ts. **Color Detail Modal:** large swatch + HEX/RGB/HSL/CMYK with 📋 Copy each + tags + WCAG AA/AAA + bottom tabs (Info/Notes/Comments)
-
-**Typography:** Font alphabet display + Type Scale (H1–Small: preview, size, weight)
-
-**Tone of Voice:** Content Guidelines + Writing Guidelines bullets + Do ✅ / Don't ❌ examples
-
-**Imagery:** Photo thumbnails + Photography/Illustration Guidelines + Don'ts (5× ❌)
-
-**AI Banner (after each section):** Green strip "This styleguide is used for AI content generation" + "Discard" + "Save Changes"
-
----
-
-### Task 8: SCR-07a Create Persona
-**Route:** `/knowledge/personas/new`
-**Type:** 3-tab creation form
-
-**Header:** "← Back to Personas", purple avatar placeholder, name + tagline inputs, "✕ Cancel" + "+ Create Persona" (green)
-
-**Tab: Overview** — 2-col demographics (Age, Gender, Location, Occupation, Education, Income) + Persona Image Generator (placeholder, yellow tip, "✨ Generate Image", Manual URL fallback)
-
-**Tab: Psychographics** — 4 repeatable-item cards:
-Goals 🎯 | Frustrations ⚠️ | Motivations ❤️ | Values ✨
-(each: icon, prompt question, text input + "+ Add X" button)
-
-**Tab: Background** — 2 repeatable-item cards:
-Behaviors ⚡ | Interests 💡
-
----
-
-### Task 9: SCR-07b Persona Detail
-**Route:** `/knowledge/personas/[personaId]`
-**Type:** Rich profile page
-
-**Header:** Large photo, name "Sarah the Startup Founder", tagline, Research Confidence 25% "Low", Methods 1/4
-
-**Action Bar:** ✏️ Edit | 🤖 Regenerate with AI | 🔒 Lock
-
-**Sections with impact badges (high=green, medium=orange, low=grey):**
-- **Demographics** (green banner, "🎯 Profile" badge): photo + 🔄 Regenerate + 2-col grid (Age, Location, Occupation, Income, Family, Education)
-- **Psychographics** (medium): Personality Type, Core Values (color tags), Interests (outline tags)
-- **Goals** (high) / **Motivations** (high) / **Frustrations** (medium) — 3 cards in row, bullet items
-- **Behaviors** (medium): bullet list
-- **Strategic Implications** (high): empty state + "✨ Generate with AI"
-- **Research & Validation** (bottom): 1/4 methods, 4 method cards
+**Seed:** 2 campaigns ("Q1 Brand Launch", "Product Awareness") with 4 contents each (mix of types/statuses)
 
 ---
 
-### Task 10: SCR-07c AI Persona Analysis
-**Route:** `/knowledge/personas/[personaId]/analysis`
-**Reference:** Reuse chat components from Task 1 (SCR-04b)
-**Type:** Chat-based AI analysis, 4 dimensions
+### Task 3: Brand Asset Model (Brand Foundation)
+**Why third:** Assets are referenced by interviews, questionnaires, workshops, and AI analysis.
 
-**Header:** 🤖 "AI Persona Analysis" + "← Back to Persona"
+```prisma
+model BrandAsset {
+  id              String          @id @default(cuid())
+  name            String          // "Golden Circle", "Core Values", etc.
+  category        AssetCategory
+  description     String?         @db.Text
+  content         Json?           // flexible: stores the actual asset data
+  status          AssetStatus     @default(DRAFT)
+  validationScore Float           @default(0) // 0-100%
+  isLocked        Boolean         @default(false)
+  lockedAt        DateTime?
+  lockedById      String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  deletedAt       DateTime?
 
-**Chat:** Same pattern as SCR-04b. 4 questions (25% each):
-1. Demographics & characteristics
-2. Goals & motivations
-3. Challenges & frustrations
-4. Value proposition
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id])
+  createdById     String
 
-**Progress:** 25% increments. Input: textarea + Previous + Next/Complete
+  aiAnalyses      AIAnalysis[]
+  workshops       Workshop[]
+  interviews      Interview[]
+  questionnaires  Questionnaire[]
+}
 
----
+enum AssetCategory {
+  FOUNDATION    // Golden Circle, Core Values, Brand Promise
+  STRATEGY      // Brand Positioning, Competitive Advantage
+  EXPRESSION    // Brand Personality, Tone of Voice
+  IDENTITY      // Visual Identity elements
+}
 
-### Task 11: SCR-07d AI Persona Analysis Complete
-**Route:** `/knowledge/personas/[personaId]/analysis/complete`
-**Type:** Results page
+enum AssetStatus {
+  DRAFT
+  IN_PROGRESS
+  AI_ANALYSIS_COMPLETE
+  VALIDATED
+  LOCKED
+}
+```
 
-**Header:** 👥 "AI Persona Analysis" + "✅ Result" dropdown
+**API Routes:**
+- `GET/POST /api/assets` — list/create brand assets
+- `GET/PATCH/DELETE /api/assets/[assetId]` — CRUD single asset
+- `PATCH /api/assets/[assetId]/lock` — lock/unlock asset
+- `GET /api/assets/stats` — validation overview stats
 
-**Green completion card:** ✅ "AI Persona Analysis Complete" + "based on 4 strategic dimensions"
-- Stats: **4** dimensions | **+35%** research confidence
-
-**Insights card** ("✨ Generated Insights"):
-🟢 Demographic Characteristics | 📈 Goals & Motivations | ❤️ Challenges & Frustrations | ⚡ Value Proposition
-
-**Footer:** "← Back to Persona" + "Edit Answers" (green)
-
----
-
-## SPRINT 18 — Products & Services
-
-### Task 12: SCR-08a Product & Service Analyzer
-**Route:** `/knowledge/products/analyzer`
-**Reference:** Similar to SCR-06 Brandstyle Analyzer
-**Type:** 3-tab analyzer
-
-**Header:** ⚙️ "Product & Service Analyzer" + "Analyze via URL, upload PDF, or enter manually"
-
-**Tab: Website URL 🌐** — Input + "✨ Analyze" (green). "What we extract" 2×2: Features, Benefits, Target Audience, Pricing
-
-**Tab: PDF Upload 📄** — Drag & drop zone (PDF, max 10MB). "What we extract": Extraction, Pricing, Use Cases, Images. "What can I upload?" + "How does it work?" sections
-
-**Tab: Manual Entry ✏️** — Form: Name*, Description*, Category, Pricing Model, Features (monospace, one per line), Benefits (monospace), Use Cases (monospace). Target Audience: "+ Select Personas" (cross-module). "✅ Save Product/Service" (green). Tips panel.
-
----
-
-### Task 13: SCR-08b Analyzing Product Modal
-**Route:** Modal overlay (from Task 12 URL analysis)
-**Reference:** Similar to Brandstyle Analyzer processing modal
-**Type:** Processing progress modal
-
-**Modal:** Spinner + "Analyzing Product" + product name
-
-**7 steps (sequential animation):**
-1. Connecting to website ✅
-2. Scanning product information ✅
-3. Extracting features & specifications ✅
-4. Analyzing pricing model 🔄 (animated)
-5. Identifying use cases ⚪
-6. Detecting target audience ⚪
-7. Generating product profile ⚪
-
-"This may take up to 30 seconds" + "Cancel" (outline). On complete → redirect to SCR-08c.
+**Seed:** 6 assets (Golden Circle, Core Values, Brand Promise, Brand Positioning, Brand Personality, Competitive Advantage) with varying statuses and validation scores
 
 ---
 
-### Task 14: SCR-08c Product Detail
-**Route:** `/knowledge/products/[productId]`
-**Type:** Detail page
+## SPRINT 20 — Research Method Models
 
-**Header:** "← Back" + category icon + product name + category subtitle + "✏️ Edit". Metadata: "Source: **Manual Entry**" + "Analyzed" badge
+### Task 4: AI Analysis Model
+**For:** SCR-04b AI Brand Analysis + SCR-07c/07d AI Persona Analysis
 
-**Content cards:**
-- **Description** 📄 + **Pricing Model** 💲 (2-col)
-- **Features & Specifications** ✅ (2-col list with ✅ icons)
-- **Benefits & Advantages** 💡 (numbered 1-4, green circles, 2×2) + **Target Audience** 👥 (empty state + "+ Add Persona")
-- **Use Cases & Applications** 💡 (numbered 1-4)
+```prisma
+model AIAnalysis {
+  id              String           @id @default(cuid())
+  type            AIAnalysisType
+  status          AnalysisStatus   @default(IN_PROGRESS)
+  progress        Float            @default(0)
+  dataPoints      Int              @default(0)
+  duration        Int?             // seconds
 
-Source indicator: Manual Entry / Website URL / PDF Upload
+  messages        Json             // array of {role, content, timestamp}
+
+  executiveSummary String?         @db.Text
+  keyFindings     Json?            // array of finding objects
+  recommendations Json?            // array of recommendation objects
+  dimensions      Json?            // for persona analysis: 4 dimension summaries
+  confidenceBoost Float?           // e.g. +35% for persona
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  assetId         String?
+  asset           BrandAsset?  @relation(fields: [assetId], references: [id])
+  personaId       String?
+  persona         Persona?     @relation(fields: [personaId], references: [id])
+  createdById     String
+}
+
+enum AIAnalysisType {
+  BRAND_ANALYSIS
+  PERSONA_ANALYSIS
+}
+
+enum AnalysisStatus {
+  IN_PROGRESS
+  COMPLETED
+  ARCHIVED
+}
+```
+
+**API Routes:**
+- `POST /api/assets/[assetId]/ai-analysis` — start brand analysis
+- `GET /api/assets/[assetId]/ai-analysis` — get analysis
+- `PATCH /api/ai-analysis/[analysisId]` — update (add messages, complete)
+- `POST /api/personas/[personaId]/ai-analysis` — start persona analysis
+- `GET /api/personas/[personaId]/ai-analysis` — get persona analysis
+
+**Seed:** 1 completed brand analysis (with messages, findings, recommendations) + 1 completed persona analysis (with 4 dimensions)
+
+---
+
+### Task 5: Workshop Model
+**For:** SCR-04c Purchase + SCR-04d Session + SCR-04e Complete
+
+```prisma
+model Workshop {
+  id              String          @id @default(cuid())
+  title           String
+  status          WorkshopStatus  @default(DRAFT)
+  type            String          @default("golden-circle")
+
+  bundle          String?
+  hasFacilitator  Boolean         @default(false)
+  purchaseAmount  Float?
+  purchasedAt     DateTime?
+
+  currentStep     Int             @default(0)
+  totalSteps      Int             @default(6)
+  startedAt       DateTime?
+  completedAt     DateTime?
+  duration        Int?
+
+  facilitator     String?
+  participantCount Int            @default(0)
+  participants    Json?
+
+  stepResponses   Json?
+  canvas          Json?           // Golden Circle: {why, how, what}
+  objectives      Json?
+  agenda          Json?
+  aiReport        Json?
+  notes           Json?
+  gallery         Json?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  assetId         String
+  asset           BrandAsset  @relation(fields: [assetId], references: [id])
+  createdById     String
+}
+
+enum WorkshopStatus {
+  DRAFT
+  PURCHASED
+  IN_PROGRESS
+  COMPLETED
+}
+```
+
+**API Routes:**
+- `POST /api/assets/[assetId]/workshops` — create/purchase workshop
+- `GET /api/assets/[assetId]/workshops` — list workshops for asset
+- `GET /api/workshops/[workshopId]` — get workshop detail
+- `PATCH /api/workshops/[workshopId]` — update progress/responses
+- `PATCH /api/workshops/[workshopId]/complete` — mark complete, generate results
+
+**Seed:** 1 completed workshop (full data) + 1 in-progress
+
+---
+
+### Task 6: Interview Model
+**For:** SCR-04f Interviews (5-step wizard)
+
+```prisma
+model Interview {
+  id              String           @id @default(cuid())
+  title           String?
+  status          InterviewStatus  @default(TO_SCHEDULE)
+  currentStep     Int              @default(1)
+
+  contactName     String?
+  contactPosition String?
+  contactEmail    String?
+  contactPhone    String?
+  contactCompany  String?
+
+  scheduledDate   DateTime?
+  scheduledTime   String?
+  duration        Int              @default(60)
+
+  questions       Json?
+  selectedAssets  Json?
+
+  answers         Json?
+  generalNotes    String?          @db.Text
+  completionRate  Float            @default(0)
+
+  isLocked        Boolean          @default(false)
+  lockedAt        DateTime?
+  approvedAt      DateTime?
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+
+  assetId         String
+  asset           BrandAsset   @relation(fields: [assetId], references: [id])
+  createdById     String
+}
+
+enum InterviewStatus {
+  TO_SCHEDULE
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  IN_REVIEW
+  APPROVED
+}
+```
+
+**API Routes:**
+- `GET/POST /api/assets/[assetId]/interviews` — list/create
+- `GET/PATCH/DELETE /api/interviews/[interviewId]` — CRUD
+- `PATCH /api/interviews/[interviewId]/lock` — approve & lock
+- `GET /api/interview-templates` — get question templates
+
+**Seed:** 3 interviews (1 completed+locked, 1 scheduled, 1 to-schedule) with questions and answers
+
+---
+
+### Task 7: Questionnaire Model
+**For:** SCR-04g Questionnaire (5-step wizard)
+
+```prisma
+model Questionnaire {
+  id              String                @id @default(cuid())
+  name            String
+  description     String?
+  status          QuestionnaireStatus   @default(DRAFT)
+  currentStep     Int                   @default(1)
+
+  questions       Json?
+  distributionMethod String             @default("email")
+  emailSubject    String?
+  emailBody       String?
+  isAnonymous     Boolean               @default(false)
+  allowMultiple   Boolean               @default(false)
+  reminderDays    Int?
+  shareableLink   String?
+
+  recipients      Json?
+  totalResponses  Int                   @default(0)
+  responseRate    Float                 @default(0)
+  completionRate  Float                 @default(0)
+  avgTime         Int?
+  responses       Json?
+  aiInsights      Json?
+  isValidated     Boolean               @default(false)
+  isLocked        Boolean               @default(false)
+  validatedAt     DateTime?
+
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  deletedAt       DateTime?
+
+  assetId         String
+  asset           BrandAsset        @relation(fields: [assetId], references: [id])
+  createdById     String
+}
+
+enum QuestionnaireStatus {
+  DRAFT
+  COLLECTING
+  ANALYZED
+  VALIDATED
+}
+```
+
+**API Routes:**
+- `GET/POST /api/assets/[assetId]/questionnaires` — list/create
+- `GET/PATCH/DELETE /api/questionnaires/[questionnaireId]` — CRUD
+- `PATCH /api/questionnaires/[questionnaireId]/validate` — validate & lock
+- `POST /api/questionnaires/[questionnaireId]/send` — send to recipients
+- `POST /api/questionnaires/[questionnaireId]/responses` — submit response (public endpoint)
+
+**Seed:** 2 questionnaires (1 analyzed with 42 responses + AI insights, 1 draft)
+
+---
+
+## SPRINT 21 — Knowledge Module Models
+
+### Task 8: Persona Model
+**For:** SCR-07a Create + SCR-07b Detail + SCR-07c/d Analysis
+
+```prisma
+model Persona {
+  id                  String   @id @default(cuid())
+  name                String
+  tagline             String?
+  imageUrl            String?
+  researchConfidence  Float    @default(0)
+  methodsCompleted    Int      @default(0)
+  isLocked            Boolean  @default(false)
+
+  age                 String?
+  gender              String?
+  location            String?
+  occupation          String?
+  education           String?
+  income              String?
+  familyStatus        String?
+
+  personalityType     String?
+  coreValues          Json?
+  interests           Json?
+
+  goals               Json?
+  motivations         Json?
+  frustrations        Json?
+
+  behaviors           Json?
+  strategicImplications Json?
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  deletedAt           DateTime?
+
+  workspaceId         String
+  workspace           Workspace @relation(fields: [workspaceId], references: [id])
+  createdById         String
+
+  aiAnalyses          AIAnalysis[]
+  products            ProductPersona[]
+}
+```
+
+**API Routes:**
+- `GET/POST /api/personas` — list/create
+- `GET/PATCH/DELETE /api/personas/[personaId]` — CRUD
+- `PATCH /api/personas/[personaId]/lock` — lock/unlock
+- `POST /api/personas/[personaId]/generate-image` — trigger image generation (stub)
+- `POST /api/personas/[personaId]/generate-implications` — trigger AI strategic implications (stub)
+
+**Seed:** 2 personas ("Sarah the Startup Founder" with full data, "Marcus the Marketing Director" partial)
+
+---
+
+### Task 9: Product Model
+**For:** SCR-08a Analyzer + SCR-08b Modal + SCR-08c Detail
+
+```prisma
+model Product {
+  id              String        @id @default(cuid())
+  name            String
+  description     String?       @db.Text
+  category        String?
+  source          ProductSource @default(MANUAL)
+  sourceUrl       String?
+  status          ProductAnalysisStatus @default(DRAFT)
+
+  pricingModel    String?
+  pricingDetails  String?
+
+  features        Json?
+  benefits        Json?
+  useCases        Json?
+  targetAudience  Json?
+
+  analyzedAt      DateTime?
+  analysisSteps   Json?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id])
+  createdById     String
+
+  personas        ProductPersona[]
+}
+
+model ProductPersona {
+  id         String  @id @default(cuid())
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+  personaId  String
+  persona    Persona @relation(fields: [personaId], references: [id])
+
+  @@unique([productId, personaId])
+}
+
+enum ProductSource {
+  MANUAL
+  WEBSITE_URL
+  PDF_UPLOAD
+}
+
+enum ProductAnalysisStatus {
+  DRAFT
+  ANALYZING
+  ANALYZED
+}
+```
+
+**API Routes:**
+- `GET/POST /api/products` — list/create (manual entry)
+- `POST /api/products/analyze-url` — analyze from URL (stub, returns mock)
+- `POST /api/products/analyze-pdf` — analyze from PDF (stub)
+- `GET/PATCH/DELETE /api/products/[productId]` — CRUD
+- `POST/DELETE /api/products/[productId]/personas` — link/unlink personas
+
+**Seed:** 2 products ("Digital Platform Suite" analyzed, "Consulting Services" manual) + persona links
+
+---
+
+### Task 10: Brand Styleguide Model
+**For:** SCR-06a Brand Styleguide
+
+```prisma
+model BrandStyleguide {
+  id          String   @id @default(cuid())
+  sourceUrl   String?
+  sourceType  String?
+
+  logo        Json?
+  colors      Json?
+  typography  Json?
+  toneOfVoice Json?
+  imagery     Json?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdById String
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+}
+```
+
+**API Routes:**
+- `GET /api/styleguide` — get current workspace styleguide
+- `POST /api/styleguide` — create from analysis
+- `PATCH /api/styleguide` — update sections
+- `PATCH /api/styleguide/[section]` — update single section
+
+**Seed:** 1 complete styleguide with mock data per section
+
+---
+
+### Task 11: Business Strategy Model
+**For:** SCR-05a Strategy Detail (already built)
+
+```prisma
+model BusinessStrategy {
+  id          String   @id @default(cuid())
+  type        String
+  title       String
+  description String?  @db.Text
+  status      String   @default("draft")
+  content     Json?
+  isLocked    Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  createdById String
+}
+```
+
+**API Routes:**
+- `GET/POST /api/strategies` — list/create
+- `GET/PATCH/DELETE /api/strategies/[strategyId]` — CRUD
+
+**Seed:** 2 strategies ("Competitive Analysis" complete, "Growth Strategy" draft)
+
+---
+
+## SPRINT 22 — Wiring Pages to API
+
+### Task 12: Connect All Pages to API
+Replace hardcoded mock data with TanStack Query hooks across all screens.
+
+**Pattern per module:**
+```typescript
+// src/hooks/use[Module].ts
+export function useAssets() {
+  return useQuery({
+    queryKey: ['knowledge', 'assets'],
+    queryFn: () => api.get('/api/assets'),
+  })
+}
+
+export function useCreateAsset() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data) => api.post('/api/assets', data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['knowledge', 'assets'] }),
+  })
+}
+```
+
+**Work through modules in this order:**
+1. Campaigns + Content (SCR-02a, 02b, 02d, 03, 16)
+2. Brand Assets (SCR-04 series)
+3. Personas (SCR-07 series)
+4. Products (SCR-08 series)
+5. Styleguide (SCR-06a)
+6. Business Strategy (SCR-05a)
+
+**Per module create:**
+- `src/hooks/use[Module].ts` — TanStack Query hooks
+- `src/lib/api/[module].ts` — API client functions
+- Update page components to use hooks instead of hardcoded data
+- Add loading states (skeleton), error states, empty states
+
+**Commit:** `feat(api): wire [module] pages to API` (one commit per module)
 
 ---
 
 ## Completion Checklist
-- [ ] Task 1: SCR-04b AI Brand Analysis
-- [ ] Task 2: SCR-04c Canvas Workshop Purchase
-- [ ] Task 3: SCR-04d Canvas Workshop Session
-- [ ] Task 4: SCR-04e Workshop Complete
-- [ ] Task 5: SCR-04f Interviews
-- [ ] Task 6: SCR-04g Questionnaire
-- [ ] Task 7: SCR-06a Brand Styleguide
-- [ ] Task 8: SCR-07a Create Persona
-- [ ] Task 9: SCR-07b Persona Detail
-- [ ] Task 10: SCR-07c AI Persona Analysis
-- [ ] Task 11: SCR-07d AI Persona Analysis Complete
-- [ ] Task 12: SCR-08a Product & Service Analyzer
-- [ ] Task 13: SCR-08b Analyzing Product Modal
-- [ ] Task 14: SCR-08c Product Detail
+- [ ] Task 1: Workspace & User models + API
+- [ ] Task 2: Campaign & Content models + API
+- [ ] Task 3: Brand Asset model + API
+- [ ] Task 4: AI Analysis model + API
+- [ ] Task 5: Workshop model + API
+- [ ] Task 6: Interview model + API
+- [ ] Task 7: Questionnaire model + API
+- [ ] Task 8: Persona model + API
+- [ ] Task 9: Product model + API
+- [ ] Task 10: Brand Styleguide model + API
+- [ ] Task 11: Business Strategy model + API
+- [ ] Task 12: Wire all pages to API (TanStack Query)

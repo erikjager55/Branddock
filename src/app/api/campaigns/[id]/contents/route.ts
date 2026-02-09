@@ -4,32 +4,53 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/../auth";
 import { createContentSchema } from "@/lib/validations/content";
 
-export async function GET(request: NextRequest) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: campaignId } = await params;
+
     const searchParams = request.nextUrl.searchParams;
-    const workspaceId = searchParams.get("workspaceId");
-    const campaignId = searchParams.get("campaignId");
     const type = searchParams.get("type") as string | null;
     const status = searchParams.get("status") as string | null;
     const search = searchParams.get("search");
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    if (!workspaceId) {
-      return NextResponse.json(
-        { error: "workspaceId is required" },
-        { status: 400 }
-      );
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Verify campaign exists and user has workspace access
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: { workspace: { include: { members: true } } },
+    });
+
+    if (!campaign) {
+      return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+    }
+
+    const hasAccess =
+      campaign.workspace.ownerId === user.id ||
+      campaign.workspace.members.some((m) => m.userId === user.id);
+
+    if (!hasAccess) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     const where: Prisma.ContentWhereInput = {
-      workspaceId,
-      ...(campaignId && { campaignId }),
+      campaignId,
       ...(type && { type: type as Prisma.EnumContentTypeFilter["equals"] }),
       ...(status && { status: status as Prisma.EnumContentStatusFilter["equals"] }),
       ...(search && {
@@ -56,23 +77,32 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data: content, total, limit, offset });
   } catch (error) {
-    console.error("Error fetching content:", error);
+    console.error("Error fetching campaign contents:", error);
     return NextResponse.json(
-      { error: "Failed to fetch content" },
+      { error: "Failed to fetch campaign contents" },
       { status: 500 }
     );
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id: campaignId } = await params;
     const body = await request.json();
-    const parsed = createContentSchema.safeParse(body);
+
+    // Override campaignId from URL params; remove workspaceId requirement for nested route
+    const parsed = createContentSchema.safeParse({
+      ...body,
+      campaignId,
+    });
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -91,21 +121,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const workspace = await prisma.workspace.findFirst({
-      where: {
-        id: data.workspaceId,
-        OR: [
-          { ownerId: user.id },
-          { members: { some: { userId: user.id } } },
-        ],
-      },
+    // Verify campaign exists and user has workspace access
+    const campaign = await prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: { workspace: { include: { members: true } } },
     });
 
-    if (!workspace) {
-      return NextResponse.json(
-        { error: "Workspace not found or access denied" },
-        { status: 403 }
-      );
+    if (!campaign) {
+      return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+    }
+
+    const hasAccess =
+      campaign.workspace.ownerId === user.id ||
+      campaign.workspace.members.some((m) => m.userId === user.id);
+
+    if (!hasAccess) {
+      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     const content = await prisma.content.create({
@@ -119,8 +150,8 @@ export async function POST(request: NextRequest) {
         onBrand: data.onBrand,
         brandScore: data.brandScore,
         wordCount: data.wordCount,
-        campaignId: data.campaignId,
-        workspaceId: data.workspaceId,
+        campaignId,
+        workspaceId: campaign.workspaceId,
         createdById: user.id,
       },
       include: {
@@ -131,7 +162,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(content, { status: 201 });
   } catch (error) {
-    console.error("Error creating content:", error);
+    console.error("Error creating content in campaign:", error);
     return NextResponse.json(
       { error: "Failed to create content" },
       { status: 500 }

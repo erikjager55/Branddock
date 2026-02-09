@@ -43,6 +43,7 @@ export interface CreateAssetRequest {
   name: string;
   description?: string;
   type: AssetType;
+  category?: AssetCategory;
   status?: AssetStatus;
   content?: Record<string, unknown>;
   fileUrl?: string;
@@ -53,19 +54,30 @@ export interface UpdateAssetRequest {
   name?: string;
   description?: string;
   type?: AssetType;
+  category?: AssetCategory;
   status?: AssetStatus;
   content?: Record<string, unknown>;
   fileUrl?: string;
+  validationScore?: number;
   lockedById?: string | null;
 }
 
 export interface ListAssetsQuery {
   workspaceId: string;
   type?: AssetType;
+  category?: AssetCategory;
   status?: AssetStatus;
   search?: string;
   limit?: number;
   offset?: number;
+}
+
+export interface AssetStatsResponse {
+  total: number;
+  byCategory: Record<string, number>;
+  byStatus: Record<string, number>;
+  avgValidationScore: number;
+  lockedCount: number;
 }
 
 export interface ListAssetsResponse {
