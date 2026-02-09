@@ -13,6 +13,9 @@ export function AssetStatusBadge({ status, className }: AssetStatusBadgeProps) {
   > = {
     DRAFT: { variant: "default", label: "Draft" },
     ACTIVE: { variant: "success", label: "Active" },
+    IN_PROGRESS: { variant: "default", label: "In Progress" },
+    AI_ANALYSIS_COMPLETE: { variant: "success", label: "Analyzed" },
+    VALIDATED: { variant: "success", label: "Validated" },
     LOCKED: { variant: "warning", label: "Locked" },
   };
 

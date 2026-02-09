@@ -13,6 +13,7 @@ import {
   BrandAssetWithRelations,
   AssetType,
   AssetStatus,
+  AssetCategory,
 } from "@/types/brand-asset";
 import { cn } from "@/lib/utils";
 import { useAssets } from "@/hooks/api/useAssets";
@@ -27,6 +28,7 @@ const placeholderAssets: BrandAssetWithRelations[] = [
     description:
       "Our mission is to empower brands with intelligent tools that bridge the gap between strategy and execution.",
     type: "MISSION" as AssetType,
+    category: "FOUNDATION" as AssetCategory,
     status: "ACTIVE" as AssetStatus,
     content: {
       statement:
@@ -35,6 +37,10 @@ const placeholderAssets: BrandAssetWithRelations[] = [
       impact: "10,000+ brands managed",
     },
     fileUrl: null,
+    validationScore: 92,
+    isLocked: false,
+    lockedAt: null,
+    deletedAt: null,
     createdAt: new Date("2025-01-15"),
     updatedAt: new Date("2025-02-01"),
     workspaceId: "placeholder-ws",
@@ -49,6 +55,7 @@ const placeholderAssets: BrandAssetWithRelations[] = [
     description:
       "Our vision for the future of brand management and where we see the industry heading.",
     type: "VISION" as AssetType,
+    category: "FOUNDATION" as AssetCategory,
     status: "ACTIVE" as AssetStatus,
     content: {
       statement:
@@ -61,6 +68,10 @@ const placeholderAssets: BrandAssetWithRelations[] = [
       ],
     },
     fileUrl: null,
+    validationScore: 88,
+    isLocked: false,
+    lockedAt: null,
+    deletedAt: null,
     createdAt: new Date("2025-01-15"),
     updatedAt: new Date("2025-01-28"),
     workspaceId: "placeholder-ws",
@@ -75,6 +86,7 @@ const placeholderAssets: BrandAssetWithRelations[] = [
     description:
       "The fundamental beliefs and principles that guide our brand and team decisions.",
     type: "VALUES" as AssetType,
+    category: "FOUNDATION" as AssetCategory,
     status: "DRAFT" as AssetStatus,
     content: {
       values: [
@@ -84,6 +96,10 @@ const placeholderAssets: BrandAssetWithRelations[] = [
       ],
     },
     fileUrl: null,
+    validationScore: 0,
+    isLocked: false,
+    lockedAt: null,
+    deletedAt: null,
     createdAt: new Date("2025-01-20"),
     updatedAt: new Date("2025-02-05"),
     workspaceId: "placeholder-ws",
@@ -98,6 +114,7 @@ const placeholderAssets: BrandAssetWithRelations[] = [
     description:
       "How we position ourselves in the market relative to competitors and customer needs.",
     type: "POSITIONING" as AssetType,
+    category: "STRATEGY" as AssetCategory,
     status: "ACTIVE" as AssetStatus,
     content: {
       statement:
@@ -107,6 +124,10 @@ const placeholderAssets: BrandAssetWithRelations[] = [
       category: "Brand Management Platform",
     },
     fileUrl: null,
+    validationScore: 75,
+    isLocked: false,
+    lockedAt: null,
+    deletedAt: null,
     createdAt: new Date("2025-01-18"),
     updatedAt: new Date("2025-01-30"),
     workspaceId: "placeholder-ws",
@@ -121,6 +142,7 @@ const placeholderAssets: BrandAssetWithRelations[] = [
     description:
       "The commitment we make to our customers about the value and experience they can expect.",
     type: "PROMISE" as AssetType,
+    category: "FOUNDATION" as AssetCategory,
     status: "DRAFT" as AssetStatus,
     content: {
       statement:
@@ -132,6 +154,10 @@ const placeholderAssets: BrandAssetWithRelations[] = [
       ],
     },
     fileUrl: null,
+    validationScore: 0,
+    isLocked: false,
+    lockedAt: null,
+    deletedAt: null,
     createdAt: new Date("2025-01-22"),
     updatedAt: new Date("2025-02-03"),
     workspaceId: "placeholder-ws",
@@ -146,6 +172,7 @@ const placeholderAssets: BrandAssetWithRelations[] = [
     description:
       "The narrative that communicates who we are, where we came from, and where we're going.",
     type: "STORY" as AssetType,
+    category: "FOUNDATION" as AssetCategory,
     status: "LOCKED" as AssetStatus,
     content: {
       narrative:
@@ -153,6 +180,10 @@ const placeholderAssets: BrandAssetWithRelations[] = [
       origin: "Founded in 2024 by former agency strategists",
     },
     fileUrl: null,
+    validationScore: 95,
+    isLocked: true,
+    lockedAt: new Date("2025-01-25"),
+    deletedAt: null,
     createdAt: new Date("2025-01-10"),
     updatedAt: new Date("2025-01-25"),
     workspaceId: "placeholder-ws",
