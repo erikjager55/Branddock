@@ -5,36 +5,50 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useState } from "react";
 import { AssetType, AssetStatus } from "@/types/brand-asset";
+import { useCreateAsset } from "@/hooks/api/useAssets";
+import { useToast } from "@/hooks/useToast";
 
 interface NewAssetModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: {
-    name: string;
-    description: string;
-    type: AssetType;
-    status: AssetStatus;
-  }) => void;
+  workspaceId: string;
 }
 
 export function NewAssetModal({
   isOpen,
   onClose,
-  onSubmit,
+  workspaceId,
 }: NewAssetModalProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [type, setType] = useState<AssetType>("MISSION");
   const [status, setStatus] = useState<AssetStatus>("DRAFT");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({ name, description, type, status });
-    // Reset form
+  const createAsset = useCreateAsset();
+  const toast = useToast();
+
+  const resetForm = () => {
     setName("");
     setDescription("");
     setType("MISSION");
     setStatus("DRAFT");
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    createAsset.mutate(
+      { name, description, type, status, workspaceId },
+      {
+        onSuccess: () => {
+          toast.success("Asset created", "Your brand asset has been created successfully.");
+          resetForm();
+          onClose();
+        },
+        onError: () => {
+          toast.error("Failed to create asset", "Please try again.");
+        },
+      }
+    );
   };
 
   return (
@@ -119,8 +133,12 @@ export function NewAssetModal({
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary">
-            Create Asset
+          <Button
+            type="submit"
+            variant="primary"
+            disabled={createAsset.isPending}
+          >
+            {createAsset.isPending ? "Creating..." : "Create Asset"}
           </Button>
         </div>
       </form>

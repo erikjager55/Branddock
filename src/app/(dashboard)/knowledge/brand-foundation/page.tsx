@@ -1,19 +1,21 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Tabs } from "@/components/ui/Tabs";
-import { Plus, Grid3x3, List, Search } from "lucide-react";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Plus, Grid3x3, List, Search, AlertCircle } from "lucide-react";
 import { AssetCard } from "@/features/knowledge/brand-foundation/AssetCard";
 import { NewAssetModal } from "@/features/knowledge/brand-foundation/NewAssetModal";
 import {
   BrandAssetWithRelations,
   AssetType,
   AssetStatus,
-  ListAssetsResponse,
 } from "@/types/brand-asset";
 import { cn } from "@/lib/utils";
+import { useAssets } from "@/hooks/api/useAssets";
 
 // Placeholder data for when no API data is available
 const placeholderAssets: BrandAssetWithRelations[] = [
@@ -160,55 +162,28 @@ const placeholderAssets: BrandAssetWithRelations[] = [
 ];
 
 export default function BrandFoundationPage() {
-  const [apiAssets, setApiAssets] = useState<BrandAssetWithRelations[] | null>(null);
-  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Mock workspaceId - in production, get this from context/session
+  // TODO: Get from workspace context/session
   const workspaceId = "mock-workspace-id";
 
-  useEffect(() => {
-    fetchAssets();
-  }, [activeTab, searchQuery]);
-
-  const fetchAssets = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        workspaceId,
-        ...(activeTab !== "all" && { type: activeTab.toUpperCase() }),
-        ...(searchQuery && { search: searchQuery }),
-      });
-
-      const response = await fetch(`/api/brand-assets?${params}`);
-      if (response.ok) {
-        const data: ListAssetsResponse = await response.json();
-        setApiAssets(data.assets.length > 0 ? data.assets : null);
-      }
-    } catch {
-      // API unavailable — will use placeholder data
-      setApiAssets(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: apiData, isLoading, isError, refetch } = useAssets({
+    workspaceId,
+    type: activeTab !== "all" ? activeTab.toUpperCase() : undefined,
+    search: searchQuery || undefined,
+  });
 
   // Use API data if available, otherwise fall back to placeholders
   const assets = useMemo(() => {
-    const source = apiAssets ?? placeholderAssets;
-    let filtered = source;
+    if (apiData?.data && apiData.data.length > 0) return apiData.data;
 
-    // Filter by tab
+    let filtered = placeholderAssets;
     if (activeTab !== "all") {
-      filtered = filtered.filter(
-        (a) => a.type === activeTab.toUpperCase()
-      );
+      filtered = filtered.filter((a) => a.type === activeTab.toUpperCase());
     }
-
-    // Filter by search
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -217,34 +192,8 @@ export default function BrandFoundationPage() {
           (a.description && a.description.toLowerCase().includes(q))
       );
     }
-
     return filtered;
-  }, [apiAssets, activeTab, searchQuery]);
-
-  const handleCreateAsset = async (data: {
-    name: string;
-    description: string;
-    type: AssetType;
-    status: AssetStatus;
-  }) => {
-    try {
-      const response = await fetch("/api/brand-assets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...data,
-          workspaceId,
-        }),
-      });
-
-      if (response.ok) {
-        setIsModalOpen(false);
-        fetchAssets();
-      }
-    } catch (error) {
-      console.error("Error creating asset:", error);
-    }
-  };
+  }, [apiData, activeTab, searchQuery]);
 
   const tabs = [
     { label: "All", value: "all" },
@@ -290,7 +239,6 @@ export default function BrandFoundationPage() {
 
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-4 mb-6">
-        {/* Search */}
         <div className="flex-1 max-w-md relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-dark/40" />
           <Input
@@ -301,8 +249,6 @@ export default function BrandFoundationPage() {
             className="pl-10"
           />
         </div>
-
-        {/* View Toggle */}
         <div className="flex items-center gap-1 bg-surface-dark border border-border-dark rounded-xl p-1">
           <button
             onClick={() => setViewMode("grid")}
@@ -331,28 +277,36 @@ export default function BrandFoundationPage() {
         </div>
       </div>
 
-      {/* Assets Grid/List */}
-      {loading ? (
+      {/* Content */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} variant="card" height={200} />
+          ))}
+        </div>
+      ) : isError ? (
         <div className="text-center py-12">
-          <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-text-dark/60 mt-4">Loading assets...</p>
+          <AlertCircle className="w-12 h-12 text-text-dark/20 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-text-dark mb-1">
+            Failed to load assets
+          </h3>
+          <p className="text-sm text-text-dark/40 mb-4">
+            Something went wrong while fetching your brand assets.
+          </p>
+          <Button variant="outline" onClick={() => refetch()}>
+            Try Again
+          </Button>
         </div>
       ) : assets.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 rounded-2xl bg-surface-dark border border-border-dark flex items-center justify-center mx-auto mb-4">
-              <Plus className="w-8 h-8 text-text-dark/40" />
-            </div>
-            <h3 className="text-lg font-semibold text-text-dark mb-2">
-              {activeTab === "all"
-                ? "No assets yet"
-                : `No ${activeTab} assets yet`}
-            </h3>
-            <p className="text-text-dark/60 mb-4">
-              {activeTab === "all"
-                ? "Create your first brand asset to get started"
-                : `Create your first ${activeTab} asset to define this part of your brand foundation`}
-            </p>
+        <EmptyState
+          icon={<Plus className="w-8 h-8" />}
+          title={activeTab === "all" ? "No assets yet" : `No ${activeTab} assets yet`}
+          description={
+            activeTab === "all"
+              ? "Create your first brand asset to get started"
+              : `Create your first ${activeTab} asset to define this part of your brand foundation`
+          }
+          action={
             <Button
               variant="primary"
               onClick={() => setIsModalOpen(true)}
@@ -360,8 +314,8 @@ export default function BrandFoundationPage() {
             >
               Create Asset
             </Button>
-          </div>
-        </div>
+          }
+        />
       ) : viewMode === "grid" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {assets.map((asset) => (
@@ -380,7 +334,7 @@ export default function BrandFoundationPage() {
       <NewAssetModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateAsset}
+        workspaceId={workspaceId}
       />
     </div>
   );
