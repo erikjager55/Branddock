@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { cn } from "@/lib/utils";
 import { useStrategy } from "@/hooks/api/useStrategies";
+import { toStringArray } from "@/lib/json-render";
 
 // ────────────────────────────── Types ──────────────────────────────
 
@@ -326,7 +327,9 @@ export default function StrategyDetailPage({
   const strategyContent = (strategy.content || {}) as Record<string, unknown>;
   const vision = (strategyContent.vision as string) || strategy.description || "Strategy vision will appear here.";
   const rationale = (strategyContent.rationale as string) || "Strategy rationale will appear here.";
-  const assumptions = (strategyContent.assumptions as string[]) || ["Assumption 1", "Assumption 2"];
+  const assumptions = toStringArray(strategyContent.assumptions).length > 0
+    ? toStringArray(strategyContent.assumptions)
+    : ["Assumption 1", "Assumption 2"];
   const icon = strategyIcons[strategy.type] || <TrendingUp className="w-6 h-6 text-primary" />;
   const isActive = strategy.status.toLowerCase() === "active";
 

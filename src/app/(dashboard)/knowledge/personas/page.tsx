@@ -13,6 +13,7 @@ import { Plus, Users } from "lucide-react";
 import Link from "next/link";
 import { usePersonas, useCreatePersona, Persona } from "@/hooks/api/usePersonas";
 import { useToast } from "@/hooks/useToast";
+import { toStringArray } from "@/lib/json-render";
 
 export default function PersonasPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -104,21 +105,24 @@ export default function PersonasPage() {
                   <p className="text-xs text-text-dark/60 line-clamp-3">
                     {persona.description}
                   </p>
-                  {persona.goals.length > 0 && (
-                    <div>
-                      <p className="text-xs font-medium text-text-dark/40 uppercase tracking-wide mb-2">
-                        Goals
-                      </p>
-                      <ul className="space-y-1">
-                        {persona.goals.map((goal) => (
-                          <li key={goal} className="text-xs text-text-dark/60 flex items-center gap-2">
-                            <span className="w-1 h-1 rounded-full bg-primary flex-shrink-0" />
-                            {goal}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  {(() => {
+                    const goals = toStringArray(persona.goals);
+                    return goals.length > 0 ? (
+                      <div>
+                        <p className="text-xs font-medium text-text-dark/40 uppercase tracking-wide mb-2">
+                          Goals
+                        </p>
+                        <ul className="space-y-1">
+                          {goals.map((goal, i) => (
+                            <li key={i} className="text-xs text-text-dark/60 flex items-center gap-2">
+                              <span className="w-1 h-1 rounded-full bg-primary flex-shrink-0" />
+                              {goal}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null;
+                  })()}
                   {persona.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-3 border-t border-border-dark">
                       {persona.tags.map((tag) => (

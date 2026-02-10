@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/Button";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { cn } from "@/lib/utils";
 import { usePersona } from "@/hooks/api/usePersonas";
+import { toStringArray } from "@/lib/json-render";
 
 export default function PersonaDetailPage({
   params,
@@ -79,12 +80,12 @@ export default function PersonaDetailPage({
     { label: "Education", value: persona.education },
   ].filter((d) => d.value);
 
-  const goals = (persona.goals as string[]) || [];
-  const motivations = (persona.motivations as string[]) || [];
-  const frustrations = (persona.frustrations as string[]) || [];
-  const behaviors = (persona.behaviors as string[]) || [];
-  const coreValues = (persona.coreValues as string[]) || [];
-  const interests = (persona.interests as string[]) || [];
+  const goals = toStringArray(persona.goals);
+  const motivations = toStringArray(persona.motivations);
+  const frustrations = toStringArray(persona.frustrations);
+  const behaviors = toStringArray(persona.behaviors);
+  const coreValues = toStringArray(persona.coreValues);
+  const interests = toStringArray(persona.interests);
   const confidence = persona.researchConfidence ?? 0;
   const methods = persona.methodsCompleted ?? 0;
 
@@ -218,8 +219,8 @@ export default function PersonaDetailPage({
               <div>
                 <p className="text-xs text-text-dark/40 mb-2">Core Values</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {coreValues.map((v) => (
-                    <Badge key={v} variant="success" size="sm">
+                  {coreValues.map((v, i) => (
+                    <Badge key={i} variant="success" size="sm">
                       {v}
                     </Badge>
                   ))}
@@ -230,8 +231,8 @@ export default function PersonaDetailPage({
               <div>
                 <p className="text-xs text-text-dark/40 mb-2">Interests</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {interests.map((v) => (
-                    <Badge key={v} variant="default" size="sm">
+                  {interests.map((v, i) => (
+                    <Badge key={i} variant="default" size="sm">
                       {v}
                     </Badge>
                   ))}
@@ -271,9 +272,9 @@ export default function PersonaDetailPage({
       {behaviors.length > 0 && (
         <SectionCard title="Behaviors" impact="medium">
           <div className="space-y-2">
-            {behaviors.map((b) => (
+            {behaviors.map((b, i) => (
               <div
-                key={b}
+                key={i}
                 className="flex items-start gap-2 text-sm text-text-dark/70"
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5" />
@@ -288,21 +289,15 @@ export default function PersonaDetailPage({
       <SectionCard title="Strategic Implications" impact="high">
         {persona.strategicImplications ? (
           <div className="space-y-2">
-            {Array.isArray(persona.strategicImplications) ? (
-              (persona.strategicImplications as string[]).map((item) => (
-                <div
-                  key={item}
-                  className="flex items-start gap-2 text-sm text-text-dark/70"
-                >
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5" />
-                  {item}
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-text-dark/70">
-                {String(persona.strategicImplications)}
-              </p>
-            )}
+            {toStringArray(persona.strategicImplications).map((item, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-2 text-sm text-text-dark/70"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1.5" />
+                {item}
+              </div>
+            ))}
           </div>
         ) : (
           <div className="text-center py-6">
@@ -435,9 +430,9 @@ function BulletCard({
         </Badge>
       </div>
       <div className="space-y-2">
-        {items.map((item) => (
+        {items.map((item, i) => (
           <div
-            key={item}
+            key={i}
             className="flex items-start gap-2 text-xs text-text-dark/70"
           >
             <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0 mt-1" />

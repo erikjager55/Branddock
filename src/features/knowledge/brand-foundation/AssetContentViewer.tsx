@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { BrandAssetWithRelations } from "@/types/brand-asset";
 import { Edit, Check, Loader2 } from "lucide-react";
+import { toStringArray, jsonToString } from "@/lib/json-render";
 
 interface AssetContentViewerProps {
   asset: BrandAssetWithRelations;
@@ -36,10 +37,16 @@ export function AssetContentViewer({
       case "PROMISE":
         return (content.statement as string) || "";
       case "VALUES": {
-        const values = content.values as { name: string; description: string }[] | undefined;
-        if (!values) return "";
+        const values = content.values;
+        if (!Array.isArray(values)) return "";
         return values
-          .map((v) => `${v.name}: ${v.description}`)
+          .map((v) => {
+            if (typeof v === "string") return v;
+            const obj = v as Record<string, unknown>;
+            const name = (obj.name || obj.title || "") as string;
+            const desc = (obj.description || obj.text || "") as string;
+            return name && desc ? `${name}: ${desc}` : name || desc || jsonToString(v);
+          })
           .join("\n\n");
       }
       case "STORY":
@@ -146,7 +153,7 @@ export function AssetContentViewer({
         if (content.aspirations) {
           fields.push({
             label: "Aspirations",
-            value: (content.aspirations as string[]).join(", "),
+            value: toStringArray(content.aspirations).join(", "),
           });
         }
         break;
@@ -159,7 +166,7 @@ export function AssetContentViewer({
         if (content.proof_points) {
           fields.push({
             label: "Proof Points",
-            value: (content.proof_points as string[]).join(", "),
+            value: toStringArray(content.proof_points).join(", "),
           });
         }
         break;

@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useProduct } from "@/hooks/api/useProducts";
+import { toStringArray, jsonToString } from "@/lib/json-render";
 
 const statusConfig: Record<string, { variant: "success" | "info" | "default"; label: string }> = {
   ANALYZED: { variant: "success", label: "Analyzed" },
@@ -83,9 +84,9 @@ export default function ProductDetailPage({
   }
 
   const config = statusConfig[product.status] || statusConfig.DRAFT;
-  const features = (product.features as string[]) || [];
-  const benefits = (product.benefits as Array<{ num?: number; title: string; text: string }>) || [];
-  const useCases = (product.useCases as Array<{ num?: number; title: string; text: string }>) || [];
+  const features = toStringArray(product.features);
+  const rawBenefits = (Array.isArray(product.benefits) ? product.benefits : []) as unknown[];
+  const rawUseCases = (Array.isArray(product.useCases) ? product.useCases : []) as unknown[];
 
   return (
     <div className="max-w-[900px] mx-auto">
@@ -158,8 +159,8 @@ export default function ProductDetailPage({
             <h3 className="text-sm font-semibold text-text-dark">Features &amp; Specifications</h3>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {features.map((f) => (
-              <div key={f} className="flex items-start gap-2 text-sm text-text-dark/70">
+            {features.map((f, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm text-text-dark/70">
                 <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
                 {f}
               </div>
@@ -176,19 +177,25 @@ export default function ProductDetailPage({
               <Lightbulb className="w-4 h-4 text-text-dark/40" />
               <h3 className="text-sm font-semibold text-text-dark">Benefits &amp; Advantages</h3>
             </div>
-            {benefits.length > 0 ? (
+            {rawBenefits.length > 0 ? (
               <div className="grid grid-cols-2 gap-4">
-                {benefits.map((b, i) => (
-                  <div key={i} className="flex gap-3">
-                    <span className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold flex items-center justify-center flex-shrink-0">
-                      {b.num ?? i + 1}
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium text-text-dark">{b.title}</p>
-                      <p className="text-xs text-text-dark/50">{b.text}</p>
+                {rawBenefits.map((b, i) => {
+                  const text = jsonToString(b);
+                  const obj = (typeof b === "object" && b !== null ? b : {}) as Record<string, unknown>;
+                  const title = (obj.title || obj.name || obj.benefit || "") as string;
+                  const desc = (obj.text || obj.description || obj.target || "") as string;
+                  return (
+                    <div key={i} className="flex gap-3">
+                      <span className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                        {i + 1}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium text-text-dark">{title || text}</p>
+                        {desc && <p className="text-xs text-text-dark/50">{desc}</p>}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <p className="text-sm text-text-dark/40 text-center py-4">
@@ -227,24 +234,30 @@ export default function ProductDetailPage({
       </div>
 
       {/* Use Cases */}
-      {useCases.length > 0 && (
+      {rawUseCases.length > 0 && (
         <Card padding="lg" className="mb-4">
           <div className="flex items-center gap-2 mb-4">
             <Lightbulb className="w-4 h-4 text-text-dark/40" />
             <h3 className="text-sm font-semibold text-text-dark">Use Cases &amp; Applications</h3>
           </div>
           <div className="space-y-4">
-            {useCases.map((uc, i) => (
-              <div key={i} className="flex gap-3">
-                <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0">
-                  {uc.num ?? i + 1}
-                </span>
-                <div>
-                  <p className="text-sm font-medium text-text-dark">{uc.title}</p>
-                  <p className="text-xs text-text-dark/50">{uc.text}</p>
+            {rawUseCases.map((uc, i) => {
+              const text = jsonToString(uc);
+              const obj = (typeof uc === "object" && uc !== null ? uc : {}) as Record<string, unknown>;
+              const title = (obj.title || obj.name || "") as string;
+              const desc = (obj.text || obj.description || "") as string;
+              return (
+                <div key={i} className="flex gap-3">
+                  <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0">
+                    {i + 1}
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-text-dark">{title || text}</p>
+                    {desc && <p className="text-xs text-text-dark/50">{desc}</p>}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       )}

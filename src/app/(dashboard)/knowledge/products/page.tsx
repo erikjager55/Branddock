@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/Input";
 import { Plus, Package } from "lucide-react";
 import { useProducts, useCreateProduct, Product } from "@/hooks/api/useProducts";
 import { useToast } from "@/hooks/useToast";
+import { toStringArray } from "@/lib/json-render";
 
 const statusConfig: Record<string, { variant: "success" | "info" | "default"; label: string }> = {
   ANALYZED: { variant: "success", label: "Analyzed" },
@@ -93,7 +94,7 @@ export default function ProductsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {products.map((product) => {
             const config = statusConfig[product.status] || statusConfig.DRAFT;
-            const features = (product.features as string[]) || [];
+            const features = toStringArray(product.features);
             return (
               <Link key={product.id} href={`/knowledge/products/${product.id}`}>
                 <Card hoverable padding="lg" className="h-full">
@@ -137,8 +138,8 @@ export default function ProductsPage() {
                     {/* Features */}
                     {features.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 pt-3 border-t border-border-dark">
-                        {features.map((feature) => (
-                          <Badge key={feature} variant="default" size="sm">
+                        {features.map((feature, i) => (
+                          <Badge key={i} variant="default" size="sm">
                             {feature}
                           </Badge>
                         ))}
