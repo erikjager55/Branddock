@@ -5,7 +5,7 @@ import { api, PaginatedResponse } from "@/lib/api/client";
 import { BrandAssetWithRelations, AssetType, AssetStatus } from "@/types/brand-asset";
 
 interface UseAssetsParams {
-  workspaceId: string;
+  workspaceId?: string;
   type?: string;
   search?: string;
   limit?: number;
@@ -23,7 +23,6 @@ export function useAssets({ workspaceId, type, search, limit = 20, offset = 0 }:
         limit,
         offset,
       }),
-    enabled: !!workspaceId,
   });
 }
 

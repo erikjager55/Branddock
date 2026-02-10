@@ -23,7 +23,7 @@ export const createPersonaSchema = z.object({
   painPoints: z.array(z.unknown()).optional(),
   behaviors: z.array(z.unknown()).optional(),
   tags: z.array(z.string()).optional(),
-  workspaceId: z.string().uuid("Invalid workspace ID"),
+  workspaceId: z.string().uuid("Invalid workspace ID").optional(),
 });
 
 export const updatePersonaSchema = z.object({

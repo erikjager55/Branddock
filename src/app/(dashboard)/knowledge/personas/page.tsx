@@ -13,78 +13,6 @@ import { Plus, Users } from "lucide-react";
 import Link from "next/link";
 import { usePersonas, useCreatePersona, Persona } from "@/hooks/api/usePersonas";
 import { useToast } from "@/hooks/useToast";
-import { DemoBanner } from "@/components/ui/DemoBanner";
-
-const placeholderPersonas: Persona[] = [
-  {
-    id: "marketing-mary",
-    name: "Marketing Mary",
-    role: "Marketing Director",
-    description:
-      "Leads a team of 8-12 marketers at a mid-size B2B SaaS company. Responsible for brand consistency across all channels. Frustrated by scattered brand assets and lack of strategic alignment.",
-    avatar: null,
-    demographics: { age: "35-45" },
-    goals: ["Maintain brand consistency at scale", "Reduce time from strategy to content"],
-    painPoints: [],
-    tags: ["B2B", "SaaS", "Mid-size", "Decision Maker"],
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-01-15T00:00:00.000Z",
-    updatedAt: "2025-01-15T00:00:00.000Z",
-    createdBy: { id: "mock", name: "Brand Manager", email: "manager@example.com" },
-  },
-  {
-    id: "developer-dave",
-    name: "Developer Dave",
-    role: "Frontend Developer",
-    description:
-      "Works closely with the marketing team to implement brand guidelines in digital products. Needs clear, accessible design tokens and component specs.",
-    avatar: null,
-    demographics: { age: "25-35" },
-    goals: ["Access design tokens programmatically", "Consistent UI implementation"],
-    painPoints: [],
-    tags: ["Technical", "Implementation", "Design Systems"],
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-01-15T00:00:00.000Z",
-    updatedAt: "2025-01-15T00:00:00.000Z",
-    createdBy: { id: "mock", name: "Brand Manager", email: "manager@example.com" },
-  },
-  {
-    id: "startup-sarah",
-    name: "Startup Sarah",
-    role: "Founder & CEO",
-    description:
-      "First-time founder building a DTC brand. Needs to create a professional brand identity quickly without agency costs. Values speed and simplicity.",
-    avatar: null,
-    demographics: { age: "28-38" },
-    goals: ["Build professional brand fast", "AI-assisted brand strategy"],
-    painPoints: [],
-    tags: ["DTC", "Startup", "Budget-conscious", "Solo"],
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-01-15T00:00:00.000Z",
-    updatedAt: "2025-01-15T00:00:00.000Z",
-    createdBy: { id: "mock", name: "Brand Manager", email: "manager@example.com" },
-  },
-  {
-    id: "agency-alex",
-    name: "Agency Alex",
-    role: "Brand Strategist",
-    description:
-      "Works at a creative agency managing 10+ client brands simultaneously. Needs efficient workflows for brand audits, strategy development, and asset management.",
-    avatar: null,
-    demographics: { age: "30-40" },
-    goals: ["Manage multiple brands efficiently", "Deliver client brand audits faster"],
-    painPoints: [],
-    tags: ["Agency", "Multi-brand", "Strategy", "Power User"],
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-01-15T00:00:00.000Z",
-    updatedAt: "2025-01-15T00:00:00.000Z",
-    createdBy: { id: "mock", name: "Brand Manager", email: "manager@example.com" },
-  },
-];
 
 export default function PersonasPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -92,20 +20,16 @@ export default function PersonasPage() {
   const [formRole, setFormRole] = useState("");
   const [formDescription, setFormDescription] = useState("");
 
-  const workspaceId = "mock-workspace-id";
-
-  const { data: apiData, isLoading, isError } = usePersonas({ workspaceId });
+  const { data: apiData, isLoading } = usePersonas({});
   const createPersona = useCreatePersona();
   const toast = useToast();
 
-  const hasApiData = !isError && apiData?.data && apiData.data.length > 0;
-  const personas = hasApiData ? apiData!.data : placeholderPersonas;
-  const isDemo = !isLoading && !hasApiData;
+  const personas = apiData?.data ?? [];
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     createPersona.mutate(
-      { name: formName, role: formRole, description: formDescription, tags: [], workspaceId },
+      { name: formName, role: formRole, description: formDescription, tags: [] },
       {
         onSuccess: () => {
           toast.success("Persona created", "Your persona has been created.");
@@ -139,9 +63,6 @@ export default function PersonasPage() {
           Understand your target audience through detailed persona profiles
         </p>
       </div>
-
-      {/* Demo Banner */}
-      {isDemo && <DemoBanner />}
 
       {/* Content */}
       {isLoading ? (

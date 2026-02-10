@@ -43,7 +43,7 @@ export interface Persona {
 }
 
 interface UsePersonasParams {
-  workspaceId: string;
+  workspaceId?: string;
   search?: string;
   limit?: number;
   offset?: number;
@@ -59,7 +59,6 @@ export function usePersonas({ workspaceId, search, limit = 20, offset = 0 }: Use
         limit,
         offset,
       }),
-    enabled: !!workspaceId,
   });
 }
 

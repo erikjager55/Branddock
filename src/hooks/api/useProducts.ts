@@ -35,7 +35,7 @@ export interface Product {
 }
 
 interface UseProductsParams {
-  workspaceId: string;
+  workspaceId?: string;
   category?: string;
   status?: string;
   search?: string;
@@ -66,7 +66,6 @@ export function useProducts({
         limit,
         offset,
       }),
-    enabled: !!workspaceId,
   });
 }
 

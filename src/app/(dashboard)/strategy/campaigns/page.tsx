@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -20,68 +20,7 @@ import {
 } from "lucide-react";
 import { useCampaigns, useCreateCampaign, Campaign } from "@/hooks/api/useCampaigns";
 import { useToast } from "@/hooks/useToast";
-import { DemoBanner } from "@/components/ui/DemoBanner";
 import { QuickContentModal } from "@/components/strategy/QuickContentModal";
-
-// Placeholder data
-const placeholderCampaigns: Campaign[] = [
-  {
-    id: "campaign-launch-2025",
-    name: "Q1 Product Launch",
-    status: "ACTIVE",
-    startDate: "2025-01-15T00:00:00.000Z",
-    endDate: "2025-03-31T00:00:00.000Z",
-    description: "Major product launch campaign targeting enterprise marketing teams with new AI-powered features.",
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-01-15T00:00:00.000Z",
-    updatedAt: "2025-01-15T00:00:00.000Z",
-    createdBy: { id: "mock", name: "Brand Manager", email: "manager@example.com" },
-    _count: { contents: 12 },
-  },
-  {
-    id: "campaign-brand-awareness",
-    name: "Brand Awareness Drive",
-    status: "ACTIVE",
-    startDate: "2025-02-01T00:00:00.000Z",
-    endDate: "2025-04-30T00:00:00.000Z",
-    description: "Multi-channel awareness campaign to establish Branddock as a thought leader in brand management.",
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-02-01T00:00:00.000Z",
-    updatedAt: "2025-02-01T00:00:00.000Z",
-    createdBy: { id: "mock", name: "Brand Manager", email: "manager@example.com" },
-    _count: { contents: 8 },
-  },
-  {
-    id: "campaign-partner",
-    name: "Partner Co-Marketing",
-    status: "PLANNING",
-    startDate: "2025-03-01T00:00:00.000Z",
-    endDate: "2025-05-31T00:00:00.000Z",
-    description: "Collaborative campaign with integration partners to reach new audiences and drive sign-ups.",
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-03-01T00:00:00.000Z",
-    updatedAt: "2025-03-01T00:00:00.000Z",
-    createdBy: { id: "mock", name: "Brand Manager", email: "manager@example.com" },
-    _count: { contents: 3 },
-  },
-  {
-    id: "campaign-holiday",
-    name: "Holiday Rebranding Guide",
-    status: "COMPLETED",
-    startDate: "2024-11-01T00:00:00.000Z",
-    endDate: "2024-12-31T00:00:00.000Z",
-    description: "Seasonal campaign helping brands maintain consistency during holiday marketing pushes.",
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2024-11-01T00:00:00.000Z",
-    updatedAt: "2024-12-31T00:00:00.000Z",
-    createdBy: { id: "mock", name: "Brand Manager", email: "manager@example.com" },
-    _count: { contents: 18 },
-  },
-];
 
 const statusConfig: Record<
   string,
@@ -112,28 +51,19 @@ export default function CampaignsPage() {
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
 
-  const workspaceId = "mock-workspace-id";
-
-  const { data: apiData, isLoading, isError } = useCampaigns({
-    workspaceId,
+  const { data: apiData, isLoading } = useCampaigns({
     status: activeTab !== "all" ? activeTab : undefined,
   });
 
   const createCampaign = useCreateCampaign();
   const toast = useToast();
 
-  const hasApiData = !isError && apiData?.data && apiData.data.length > 0;
-  const campaigns = useMemo(() => {
-    if (hasApiData) return apiData!.data;
-    if (activeTab === "all") return placeholderCampaigns;
-    return placeholderCampaigns.filter((c) => c.status === activeTab);
-  }, [hasApiData, apiData, activeTab]);
-  const isDemo = !isLoading && !hasApiData;
+  const campaigns = apiData?.data ?? [];
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     createCampaign.mutate(
-      { name: formName, description: formDescription, status: "PLANNING" as const, workspaceId },
+      { name: formName, description: formDescription, status: "PLANNING" as const },
       {
         onSuccess: () => {
           toast.success("Campaign created", "Your campaign has been created.");
@@ -186,9 +116,6 @@ export default function CampaignsPage() {
           variant="pills"
         />
       </div>
-
-      {/* Demo Banner */}
-      {isDemo && <DemoBanner />}
 
       {/* Content */}
       {isLoading ? (

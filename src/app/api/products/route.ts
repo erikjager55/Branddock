@@ -12,16 +12,27 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const workspaceId = searchParams.get("workspaceId");
     const status = searchParams.get("status") as string | null;
     const category = searchParams.get("category") as string | null;
     const search = searchParams.get("search");
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
+    // Get workspaceId: from query params, or derive from user session
+    let workspaceId = searchParams.get("workspaceId");
+    if (!workspaceId) {
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email! },
+        include: {
+          memberships: { select: { workspaceId: true }, take: 1 },
+          ownedWorkspaces: { select: { id: true }, take: 1 },
+        },
+      });
+      workspaceId = user?.memberships[0]?.workspaceId ?? user?.ownedWorkspaces[0]?.id ?? null;
+    }
     if (!workspaceId) {
       return NextResponse.json(
-        { error: "workspaceId is required" },
+        { error: "No workspace found" },
         { status: 400 }
       );
     }
@@ -84,26 +95,22 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
+      include: {
+        memberships: { select: { workspaceId: true }, take: 1 },
+        ownedWorkspaces: { select: { id: true }, take: 1 },
+      },
     });
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const workspace = await prisma.workspace.findFirst({
-      where: {
-        id: data.workspaceId,
-        OR: [
-          { ownerId: user.id },
-          { members: { some: { userId: user.id } } },
-        ],
-      },
-    });
+    const workspaceId = data.workspaceId ?? user.memberships[0]?.workspaceId ?? user.ownedWorkspaces[0]?.id;
 
-    if (!workspace) {
+    if (!workspaceId) {
       return NextResponse.json(
-        { error: "Workspace not found or access denied" },
-        { status: 403 }
+        { error: "No workspace found" },
+        { status: 400 }
       );
     }
 
@@ -122,7 +129,7 @@ export async function POST(request: NextRequest) {
         benefits: (data.benefits || []) as Prisma.InputJsonValue,
         useCases: (data.useCases || []) as Prisma.InputJsonValue,
         targetAudience: (data.targetAudience || []) as Prisma.InputJsonValue,
-        workspaceId: data.workspaceId,
+        workspaceId,
         createdById: user.id,
       },
       include: {

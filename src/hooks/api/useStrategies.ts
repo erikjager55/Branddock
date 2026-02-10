@@ -22,7 +22,7 @@ export interface BusinessStrategy {
 }
 
 interface UseStrategiesParams {
-  workspaceId: string;
+  workspaceId?: string;
   type?: string;
   status?: string;
   search?: string;
@@ -53,7 +53,6 @@ export function useStrategies({
         limit,
         offset,
       }),
-    enabled: !!workspaceId,
   });
 }
 

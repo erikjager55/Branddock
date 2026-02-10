@@ -34,7 +34,7 @@ export interface Campaign {
 }
 
 interface UseCampaignsParams {
-  workspaceId: string;
+  workspaceId?: string;
   status?: string;
   search?: string;
   limit?: number;
@@ -52,7 +52,6 @@ export function useCampaigns({ workspaceId, status, search, limit = 20, offset =
         limit,
         offset,
       }),
-    enabled: !!workspaceId,
   });
 }
 

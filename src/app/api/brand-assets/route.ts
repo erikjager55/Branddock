@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const workspaceId = searchParams.get("workspaceId");
     const type = searchParams.get("type") as AssetType | null;
     const category = searchParams.get("category") as AssetCategory | null;
     const status = searchParams.get("status") as AssetStatus | null;
@@ -26,9 +25,21 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "20");
     const offset = parseInt(searchParams.get("offset") || "0");
 
+    // Get workspaceId: from query params, or derive from user session
+    let workspaceId = searchParams.get("workspaceId");
+    if (!workspaceId) {
+      const user = await prisma.user.findUnique({
+        where: { email: session.user.email! },
+        include: {
+          memberships: { select: { workspaceId: true }, take: 1 },
+          ownedWorkspaces: { select: { id: true }, take: 1 },
+        },
+      });
+      workspaceId = user?.memberships[0]?.workspaceId ?? user?.ownedWorkspaces[0]?.id ?? null;
+    }
     if (!workspaceId) {
       return NextResponse.json(
-        { error: "workspaceId is required" },
+        { error: "No workspace found" },
         { status: 400 }
       );
     }
@@ -81,14 +92,7 @@ export async function GET(request: NextRequest) {
       prisma.brandAsset.count({ where }),
     ]);
 
-    const response: ListAssetsResponse = {
-      assets,
-      total,
-      limit,
-      offset,
-    };
-
-    return NextResponse.json(response);
+    return NextResponse.json({ data: assets, total, limit, offset });
   } catch (error) {
     console.error("Error fetching brand assets:", error);
     return NextResponse.json(

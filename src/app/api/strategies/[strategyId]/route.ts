@@ -27,7 +27,7 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ data: strategy });
+    return NextResponse.json(strategy);
   } catch (error) {
     console.error("Error fetching strategy:", error);
     return NextResponse.json(

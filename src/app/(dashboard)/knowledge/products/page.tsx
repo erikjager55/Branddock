@@ -7,81 +7,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { DemoBanner } from "@/components/ui/DemoBanner";
 import { Modal } from "@/components/ui/Modal";
 import { Input } from "@/components/ui/Input";
 import { Plus, Package } from "lucide-react";
 import { useProducts, useCreateProduct, Product } from "@/hooks/api/useProducts";
 import { useToast } from "@/hooks/useToast";
-
-const placeholderProducts: Product[] = [
-  {
-    id: "branddock-platform",
-    name: "Branddock Platform",
-    category: "SaaS",
-    description:
-      "AI-powered brand management platform that combines brand strategy, validation through research, and content creation in a single workflow.",
-    pricingModel: "Freemium",
-    pricingDetails: "Free, Starter ($29/mo), Pro ($79/mo), Enterprise (custom)",
-    status: "ANALYZED",
-    source: "MANUAL",
-    sourceUrl: null,
-    features: ["Brand Foundation", "Campaign Management", "AI Content Generation"],
-    benefits: null,
-    useCases: null,
-    targetAudience: null,
-    analyzedAt: null,
-    analysisSteps: null,
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-01-15T00:00:00.000Z",
-    updatedAt: "2025-01-15T00:00:00.000Z",
-  },
-  {
-    id: "branddock-api",
-    name: "Branddock API",
-    category: "Developer Tool",
-    description:
-      "RESTful API providing programmatic access to brand assets, design tokens, and AI-powered brand analysis for integration into custom workflows.",
-    pricingModel: "Usage-based",
-    pricingDetails: "Included in Pro and Enterprise plans",
-    status: "ANALYZING",
-    source: "MANUAL",
-    sourceUrl: null,
-    features: ["Brand Assets API", "Design Tokens", "AI Analysis Endpoints"],
-    benefits: null,
-    useCases: null,
-    targetAudience: null,
-    analyzedAt: null,
-    analysisSteps: null,
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-01-15T00:00:00.000Z",
-    updatedAt: "2025-01-15T00:00:00.000Z",
-  },
-  {
-    id: "brand-audit-service",
-    name: "Brand Audit Service",
-    category: "Service",
-    description:
-      "Comprehensive AI-assisted brand audit that analyzes your brand's consistency, market positioning, and competitive landscape with actionable recommendations.",
-    pricingModel: "One-time",
-    pricingDetails: "Starting at $499",
-    status: "DRAFT",
-    source: "MANUAL",
-    sourceUrl: null,
-    features: ["Consistency Analysis", "Competitor Benchmarking", "Recommendations Report"],
-    benefits: null,
-    useCases: null,
-    targetAudience: null,
-    analyzedAt: null,
-    analysisSteps: null,
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-01-15T00:00:00.000Z",
-    updatedAt: "2025-01-15T00:00:00.000Z",
-  },
-];
 
 const statusConfig: Record<string, { variant: "success" | "info" | "default"; label: string }> = {
   ANALYZED: { variant: "success", label: "Analyzed" },
@@ -95,20 +25,16 @@ export default function ProductsPage() {
   const [formDescription, setFormDescription] = useState("");
   const [formCategory, setFormCategory] = useState("");
 
-  const workspaceId = "mock-workspace-id";
-
-  const { data: apiData, isLoading, isError } = useProducts({ workspaceId });
+  const { data: apiData, isLoading } = useProducts({});
   const createProduct = useCreateProduct();
   const toast = useToast();
 
-  const hasApiData = !isError && apiData?.data && apiData.data.length > 0;
-  const products = hasApiData ? apiData!.data : placeholderProducts;
-  const isDemo = !isLoading && !hasApiData;
+  const products = apiData?.data ?? [];
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     createProduct.mutate(
-      { name: formName, description: formDescription, category: formCategory, source: "MANUAL" as const, workspaceId },
+      { name: formName, description: formDescription, category: formCategory, source: "MANUAL" as const },
       {
         onSuccess: () => {
           toast.success("Product created", "Your product has been added.");
@@ -144,9 +70,6 @@ export default function ProductsPage() {
           Manage your product and service portfolio
         </p>
       </div>
-
-      {/* Demo Banner */}
-      {isDemo && <DemoBanner />}
 
       {/* Content */}
       {isLoading ? (

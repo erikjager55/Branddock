@@ -6,68 +6,8 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { DemoBanner } from "@/components/ui/DemoBanner";
 import { Plus, Target, Mountain, MapPin, TrendingUp, Briefcase } from "lucide-react";
 import { useStrategies, BusinessStrategy } from "@/hooks/api/useStrategies";
-
-const placeholderStrategies: BusinessStrategy[] = [
-  {
-    id: "target-audience",
-    type: "target-audience",
-    title: "Target Audience",
-    description:
-      "Mid-size to enterprise marketing teams (50-500 employees) looking to scale brand consistency across channels and campaigns.",
-    status: "active",
-    content: null,
-    isLocked: false,
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-01-15T00:00:00.000Z",
-    updatedAt: "2025-02-05T00:00:00.000Z",
-  },
-  {
-    id: "competitive-landscape",
-    type: "competitive-landscape",
-    title: "Competitive Landscape",
-    description:
-      "Analysis of key competitors including Frontify, Bynder, and Brandfolder. Our differentiator: AI-powered strategy-to-content pipeline.",
-    status: "active",
-    content: null,
-    isLocked: false,
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-01-15T00:00:00.000Z",
-    updatedAt: "2025-01-28T00:00:00.000Z",
-  },
-  {
-    id: "market-position",
-    type: "market-position",
-    title: "Market Position",
-    description:
-      "Positioned as the intelligent brand platform that bridges the gap between strategy and execution for modern marketing teams.",
-    status: "draft",
-    content: null,
-    isLocked: false,
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-01-15T00:00:00.000Z",
-    updatedAt: "2025-02-03T00:00:00.000Z",
-  },
-  {
-    id: "growth-strategy",
-    type: "growth-strategy",
-    title: "Growth Strategy",
-    description:
-      "Product-led growth with freemium model. Focus on organic acquisition through content marketing and strategic partnerships.",
-    status: "draft",
-    content: null,
-    isLocked: false,
-    workspaceId: "mock",
-    createdById: "mock",
-    createdAt: "2025-01-15T00:00:00.000Z",
-    updatedAt: "2025-01-20T00:00:00.000Z",
-  },
-];
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   "target-audience": Target,
@@ -85,13 +25,9 @@ function formatDate(dateStr: string) {
 }
 
 export default function BusinessStrategyPage() {
-  const workspaceId = "mock-workspace-id";
+  const { data: apiData, isLoading } = useStrategies({});
 
-  const { data: apiData, isLoading, isError } = useStrategies({ workspaceId });
-
-  const hasApiData = !isError && apiData?.data && apiData.data.length > 0;
-  const strategies = hasApiData ? apiData!.data : placeholderStrategies;
-  const isDemo = !isLoading && !hasApiData;
+  const strategies = apiData?.data ?? [];
 
   return (
     <div className="max-w-[1400px]">
@@ -113,9 +49,6 @@ export default function BusinessStrategyPage() {
           positioning
         </p>
       </div>
-
-      {/* Demo Banner */}
-      {isDemo && <DemoBanner />}
 
       {/* Content */}
       {isLoading ? (

@@ -8,7 +8,7 @@ export const createCampaignSchema = z.object({
   status: campaignStatusEnum.optional().default("PLANNING"),
   startDate: z.string().datetime().optional().nullable(),
   endDate: z.string().datetime().optional().nullable(),
-  workspaceId: z.string().uuid("Invalid workspace ID"),
+  workspaceId: z.string().uuid("Invalid workspace ID").optional(),
 });
 
 export const updateCampaignSchema = z.object({

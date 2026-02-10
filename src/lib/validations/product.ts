@@ -15,7 +15,7 @@ export const createProductSchema = z.object({
   benefits: z.array(z.unknown()).optional(),
   useCases: z.array(z.unknown()).optional(),
   targetAudience: z.array(z.unknown()).optional(),
-  workspaceId: z.string().uuid("Invalid workspace ID"),
+  workspaceId: z.string().uuid("Invalid workspace ID").optional(),
 });
 
 export const updateProductSchema = z.object({
