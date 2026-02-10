@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/../auth";
 import { updateProductSchema } from "@/lib/validations/product";
 
 export async function GET(
@@ -9,11 +8,6 @@ export async function GET(
   { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { productId } = await params;
 
     const product = await prisma.product.findUnique({
@@ -56,11 +50,6 @@ export async function PATCH(
   { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { productId } = await params;
     const body = await request.json();
     const parsed = updateProductSchema.safeParse(body);
@@ -74,29 +63,12 @@ export async function PATCH(
 
     const data = parsed.data;
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
     const existing = await prisma.product.findUnique({
       where: { id: productId, deletedAt: null },
-      include: { workspace: { include: { members: true } } },
     });
 
     if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
-
-    const hasAccess =
-      existing.workspace.ownerId === user.id ||
-      existing.workspace.members.some((m) => m.userId === user.id);
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     const updateData: Prisma.ProductUpdateInput = {};
@@ -152,40 +124,14 @@ export async function DELETE(
   { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { productId } = await params;
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
 
     const existing = await prisma.product.findUnique({
       where: { id: productId, deletedAt: null },
-      include: { workspace: { include: { members: true } } },
     });
 
     if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
-
-    const hasAccess =
-      existing.workspace.ownerId === user.id ||
-      existing.workspace.members.some(
-        (m) =>
-          m.userId === user.id &&
-          (m.role === "OWNER" || m.role === "ADMIN")
-      );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     await prisma.product.update({

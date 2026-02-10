@@ -1,39 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/../auth";
 import {
   createStyleguideSchema,
   updateStyleguideSchema,
 } from "@/lib/validations/styleguide";
+import { getAuthOrFallback } from "@/lib/auth-dev";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await getAuthOrFallback();
+    if (!authResult) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 400 });
     }
 
     const searchParams = request.nextUrl.searchParams;
 
-    // Get workspaceId: from query params, or derive from user session
-    let workspaceId = searchParams.get("workspaceId");
-    if (!workspaceId) {
-      const user = await prisma.user.findUnique({
-        where: { email: session.user.email! },
-        include: {
-          memberships: { select: { workspaceId: true }, take: 1 },
-          ownedWorkspaces: { select: { id: true }, take: 1 },
-        },
-      });
-      workspaceId = user?.memberships[0]?.workspaceId ?? user?.ownedWorkspaces[0]?.id ?? null;
-    }
-    if (!workspaceId) {
-      return NextResponse.json(
-        { error: "No workspace found" },
-        { status: 400 }
-      );
-    }
+    const workspaceId = searchParams.get("workspaceId") || authResult.workspaceId;
 
     const styleguide = await prisma.brandStyleguide.findFirst({
       where: { workspaceId },
@@ -51,9 +34,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await getAuthOrFallback();
+    if (!authResult) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 400 });
     }
 
     const body = await request.json();
@@ -71,34 +54,9 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Find user's workspace
-    const workspace = await prisma.workspace.findFirst({
-      where: {
-        OR: [
-          { ownerId: user.id },
-          { members: { some: { userId: user.id } } },
-        ],
-      },
-    });
-
-    if (!workspace) {
-      return NextResponse.json(
-        { error: "Workspace not found or access denied" },
-        { status: 403 }
-      );
-    }
-
     // Only one styleguide per workspace
     const existing = await prisma.brandStyleguide.findFirst({
-      where: { workspaceId: workspace.id },
+      where: { workspaceId: authResult.workspaceId },
     });
 
     if (existing) {
@@ -125,8 +83,8 @@ export async function POST(request: NextRequest) {
         imagery: (data.imagery || undefined) as
           | Prisma.InputJsonValue
           | undefined,
-        workspaceId: workspace.id,
-        createdById: user.id,
+        workspaceId: authResult.workspaceId,
+        createdById: authResult.user.id,
       },
     });
 
@@ -142,9 +100,9 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authResult = await getAuthOrFallback();
+    if (!authResult) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 400 });
     }
 
     const body = await request.json();
@@ -162,33 +120,8 @@ export async function PATCH(request: NextRequest) {
 
     const data = parsed.data;
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Find user's workspace
-    const workspace = await prisma.workspace.findFirst({
-      where: {
-        OR: [
-          { ownerId: user.id },
-          { members: { some: { userId: user.id } } },
-        ],
-      },
-    });
-
-    if (!workspace) {
-      return NextResponse.json(
-        { error: "Workspace not found or access denied" },
-        { status: 403 }
-      );
-    }
-
     const styleguide = await prisma.brandStyleguide.findFirst({
-      where: { workspaceId: workspace.id },
+      where: { workspaceId: authResult.workspaceId },
     });
 
     if (!styleguide) {

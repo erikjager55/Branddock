@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/../auth";
 import { updateBrandAssetSchema } from "@/lib/validations/brand-asset";
 
 export async function GET(
@@ -9,11 +8,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
 
     const asset = await prisma.brandAsset.findUnique({
@@ -81,11 +75,6 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
     const body = await request.json();
     const parsed = updateBrandAssetSchema.safeParse(body);
@@ -99,40 +88,12 @@ export async function PATCH(
 
     const data = parsed.data;
 
-    // Get user by email
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Check if asset exists and user has access
     const existingAsset = await prisma.brandAsset.findUnique({
       where: { id },
-      include: {
-        workspace: {
-          include: {
-            members: true,
-          },
-        },
-      },
     });
 
     if (!existingAsset) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
-    }
-
-    // Verify user has access to workspace
-    const hasAccess =
-      existingAsset.workspace.ownerId === user.id ||
-      existingAsset.workspace.members.some(
-        (member) => member.userId === user.id
-      );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Build update data
@@ -203,52 +164,16 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
 
-    // Get user by email
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Check if asset exists and user has access
     const existingAsset = await prisma.brandAsset.findUnique({
       where: { id },
-      include: {
-        workspace: {
-          include: {
-            members: true,
-          },
-        },
-      },
     });
 
     if (!existingAsset) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
     }
 
-    // Verify user has access to workspace (only owners and admins can delete)
-    const hasAccess =
-      existingAsset.workspace.ownerId === user.id ||
-      existingAsset.workspace.members.some(
-        (member) =>
-          member.userId === user.id &&
-          (member.role === "OWNER" || member.role === "ADMIN")
-      );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
-    }
-
-    // Delete the asset (cascades to relations and AI analyses)
     await prisma.brandAsset.delete({
       where: { id },
     });

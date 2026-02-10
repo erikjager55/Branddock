@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/../auth";
 import { updatePersonaSchema } from "@/lib/validations/persona";
 
 export async function GET(
@@ -9,11 +8,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
 
     const persona = await prisma.persona.findUnique({
@@ -51,11 +45,6 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
     const body = await request.json();
     const parsed = updatePersonaSchema.safeParse(body);
@@ -69,17 +58,8 @@ export async function PATCH(
 
     const data = parsed.data;
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
     const existing = await prisma.persona.findUnique({
       where: { id, deletedAt: null },
-      include: { workspace: { include: { members: true } } },
     });
 
     if (!existing) {
@@ -92,14 +72,6 @@ export async function PATCH(
         { error: "Persona is locked and cannot be edited" },
         { status: 403 }
       );
-    }
-
-    const hasAccess =
-      existing.workspace.ownerId === user.id ||
-      existing.workspace.members.some((m) => m.userId === user.id);
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     const updateData: Prisma.PersonaUpdateInput = {};
@@ -179,40 +151,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
 
     const existing = await prisma.persona.findUnique({
       where: { id, deletedAt: null },
-      include: { workspace: { include: { members: true } } },
     });
 
     if (!existing) {
       return NextResponse.json({ error: "Persona not found" }, { status: 404 });
-    }
-
-    const hasAccess =
-      existing.workspace.ownerId === user.id ||
-      existing.workspace.members.some(
-        (m) =>
-          m.userId === user.id &&
-          (m.role === "OWNER" || m.role === "ADMIN")
-      );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Soft delete

@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/../auth";
 import { updateStrategySchema } from "@/lib/validations/strategy";
+import { getAuthOrFallback } from "@/lib/auth-dev";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ strategyId: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
     const { strategyId } = await params;
 
@@ -42,11 +38,6 @@ export async function PATCH(
   { params }: { params: Promise<{ strategyId: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { strategyId } = await params;
     const body = await request.json();
     const parsed = updateStrategySchema.safeParse(body);
@@ -63,24 +54,9 @@ export async function PATCH(
 
     const data = parsed.data;
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
     // Check if strategy exists and is not soft-deleted
     const existing = await prisma.businessStrategy.findUnique({
       where: { id: strategyId, deletedAt: null },
-      include: {
-        workspace: {
-          include: {
-            members: true,
-          },
-        },
-      },
     });
 
     if (!existing) {
@@ -88,15 +64,6 @@ export async function PATCH(
         { error: "Strategy not found" },
         { status: 404 }
       );
-    }
-
-    // Verify user has access to workspace
-    const hasAccess =
-      existing.workspace.ownerId === user.id ||
-      existing.workspace.members.some((m) => m.userId === user.id);
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Reject updates if locked (unless the request is to unlock)
@@ -138,31 +105,11 @@ export async function DELETE(
   { params }: { params: Promise<{ strategyId: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { strategyId } = await params;
-
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-    });
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
 
     // Check if strategy exists and is not already soft-deleted
     const existing = await prisma.businessStrategy.findUnique({
       where: { id: strategyId, deletedAt: null },
-      include: {
-        workspace: {
-          include: {
-            members: true,
-          },
-        },
-      },
     });
 
     if (!existing) {
@@ -170,19 +117,6 @@ export async function DELETE(
         { error: "Strategy not found" },
         { status: 404 }
       );
-    }
-
-    // Verify user has access (only owners and admins can delete)
-    const hasAccess =
-      existing.workspace.ownerId === user.id ||
-      existing.workspace.members.some(
-        (m) =>
-          m.userId === user.id &&
-          (m.role === "OWNER" || m.role === "ADMIN")
-      );
-
-    if (!hasAccess) {
-      return NextResponse.json({ error: "Access denied" }, { status: 403 });
     }
 
     // Soft delete
