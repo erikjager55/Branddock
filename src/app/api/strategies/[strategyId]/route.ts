@@ -14,6 +14,13 @@ export async function GET(
 
     const strategy = await prisma.businessStrategy.findUnique({
       where: { id: strategyId, deletedAt: null },
+      include: {
+        objectives: {
+          include: { keyResults: { orderBy: { sortOrder: "asc" } } },
+          orderBy: { sortOrder: "asc" },
+        },
+        milestones: { orderBy: { dueDate: "asc" } },
+      },
     });
 
     if (!strategy) {
@@ -78,12 +85,17 @@ export async function PATCH(
     const updateData: Prisma.BusinessStrategyUpdateInput = {};
     if (data.type !== undefined) updateData.type = data.type;
     if (data.title !== undefined) updateData.title = data.title;
-    if (data.description !== undefined)
-      updateData.description = data.description;
+    if (data.description !== undefined) updateData.description = data.description;
     if (data.status !== undefined) updateData.status = data.status;
-    if (data.content !== undefined)
-      updateData.content = data.content as Prisma.InputJsonValue;
+    if (data.content !== undefined) updateData.content = data.content as Prisma.InputJsonValue;
     if (data.isLocked !== undefined) updateData.isLocked = data.isLocked;
+    if (data.icon !== undefined) updateData.icon = data.icon;
+    if (data.startDate !== undefined) updateData.startDate = data.startDate ? new Date(data.startDate) : null;
+    if (data.endDate !== undefined) updateData.endDate = data.endDate ? new Date(data.endDate) : null;
+    if (data.vision !== undefined) updateData.vision = data.vision;
+    if (data.rationale !== undefined) updateData.rationale = data.rationale;
+    if (data.assumptions !== undefined) updateData.assumptions = data.assumptions as Prisma.InputJsonValue;
+    if (data.focusAreas !== undefined) updateData.focusAreas = data.focusAreas as Prisma.InputJsonValue;
 
     const updated = await prisma.businessStrategy.update({
       where: { id: strategyId },

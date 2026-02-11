@@ -67,6 +67,14 @@ export async function GET(request: NextRequest) {
             },
           },
           aiAnalyses: true,
+          _count: {
+            select: {
+              newAiAnalyses: true,
+              workshops: true,
+              interviews: true,
+              questionnaires: true,
+            },
+          },
         },
         orderBy: { updatedAt: "desc" },
         take: limit,

@@ -196,3 +196,43 @@ export function useQuestionnaireResponses(questionnaireId: string) {
     enabled: !!questionnaireId,
   });
 }
+
+export function useUnlockQuestionnaire() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (questionnaireId: string) =>
+      api.patch<Questionnaire>(
+        `/api/questionnaires/${questionnaireId}/unlock`,
+        {}
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["knowledge", "questionnaires"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["knowledge", "assets"],
+      });
+    },
+  });
+}
+
+export function useDuplicateQuestionnaire() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (questionnaireId: string) =>
+      api.post<Questionnaire>(
+        `/api/questionnaires/${questionnaireId}/duplicate`,
+        {}
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["knowledge", "questionnaires"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["knowledge", "assets"],
+      });
+    },
+  });
+}

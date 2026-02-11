@@ -50,6 +50,9 @@ async function main() {
   await prisma.persona.deleteMany();
   await prisma.brandAsset.deleteMany();
   await prisma.brandStyleguide.deleteMany();
+  await prisma.keyResult.deleteMany();
+  await prisma.strategicObjective.deleteMany();
+  await prisma.strategyMilestone.deleteMany();
   await prisma.businessStrategy.deleteMany();
   await prisma.workspaceMember.deleteMany();
   await prisma.goal.deleteMany();
@@ -136,6 +139,7 @@ async function main() {
       validationScore: 92,
       isLocked: false,
       content: {
+        assetTypeKey: "golden-circle",
         why: "We believe every brand deserves to be understood deeply — not just on the surface, but at the core of what makes it meaningful. We exist to bridge the gap between brand intent and audience perception.",
         how: "By combining AI-powered analysis with structured research methodologies, we create a continuous feedback loop between strategy and validation. Our platform guides teams through workshops, interviews, and questionnaires to build evidence-based brand foundations.",
         what: "Branddock is a SaaS platform that unifies brand strategy, validation research, and campaign-driven content creation into one seamless workflow.",
@@ -157,6 +161,7 @@ async function main() {
       validationScore: 88,
       isLocked: false,
       content: {
+        assetTypeKey: "core-values",
         values: [
           {
             name: "Evidence-Based",
@@ -219,6 +224,7 @@ async function main() {
       validationScore: 75,
       isLocked: false,
       content: {
+        assetTypeKey: "brand-positioning",
         statement:
           "For marketing teams and brand managers who struggle with inconsistent brand execution, Branddock is the only platform that combines AI-powered brand analysis with structured validation research, enabling them to build evidence-based brand foundations that drive on-brand content at scale.",
         targetAudience: "Marketing teams and brand managers at growth-stage companies",
@@ -248,6 +254,7 @@ async function main() {
       validationScore: 45,
       isLocked: false,
       content: {
+        assetTypeKey: "brand-personality",
         archetypes: ["The Sage", "The Creator"],
         traits: [
           "Insightful",
@@ -308,6 +315,137 @@ async function main() {
           },
         ],
       },
+      workspaceId: workspace.id,
+      createdBy: owner.id,
+    },
+  });
+
+  // Additional brand assets to cover all 13 types
+  await prisma.brandAsset.create({
+    data: {
+      name: "Social Relevancy",
+      description: "How Branddock contributes to society and addresses social issues in the marketing industry.",
+      type: "OTHER",
+      category: "FOUNDATION",
+      status: "DRAFT",
+      validationScore: 0,
+      content: { assetTypeKey: "social-relevancy" },
+      workspaceId: workspace.id,
+      createdBy: owner.id,
+    },
+  });
+
+  await prisma.brandAsset.create({
+    data: {
+      name: "Brand Tone & Voice",
+      description: "The consistent voice and tone that defines how Branddock communicates across all channels.",
+      type: "OTHER",
+      category: "EXPRESSION",
+      status: "IN_PROGRESS",
+      validationScore: 30,
+      content: {
+        assetTypeKey: "brand-tone-voice",
+        tone: "Professional yet approachable",
+        voice: "Knowledgeable mentor who empowers teams",
+      },
+      workspaceId: workspace.id,
+      createdBy: editor.id,
+    },
+  });
+
+  await prisma.brandAsset.create({
+    data: {
+      name: "Brand Story",
+      description: "The narrative that connects Branddock's past, present, and future.",
+      type: "STORY",
+      category: "EXPRESSION",
+      status: "DRAFT",
+      validationScore: 0,
+      content: { assetTypeKey: "brand-story" },
+      workspaceId: workspace.id,
+      createdBy: owner.id,
+    },
+  });
+
+  await prisma.brandAsset.create({
+    data: {
+      name: "Brand Essence",
+      description: "The two core traits that capture the heart and soul of Branddock.",
+      type: "OTHER",
+      category: "FOUNDATION",
+      status: "AI_ANALYSIS_COMPLETE",
+      validationScore: 60,
+      content: {
+        assetTypeKey: "brand-essence",
+        traits: ["Strategic Clarity", "Research-Driven"],
+      },
+      workspaceId: workspace.id,
+      createdBy: owner.id,
+    },
+  });
+
+  await prisma.brandAsset.create({
+    data: {
+      name: "Vision Statement",
+      description: "A forward-looking declaration of Branddock's purpose and aspirations.",
+      type: "VISION",
+      category: "STRATEGY",
+      status: "ACTIVE",
+      validationScore: 85,
+      content: {
+        assetTypeKey: "vision-statement",
+        statement: "A world where every brand is built on evidence, not assumptions — where strategy and creativity are united by research.",
+      },
+      workspaceId: workspace.id,
+      createdBy: owner.id,
+    },
+  });
+
+  await prisma.brandAsset.create({
+    data: {
+      name: "Mission Statement",
+      description: "What Branddock does, how it does it, and for whom.",
+      type: "MISSION",
+      category: "STRATEGY",
+      status: "VALIDATED",
+      validationScore: 90,
+      content: {
+        assetTypeKey: "mission-statement",
+        statement: "We empower marketing teams to build research-backed brand strategies and create consistently on-brand content through AI-powered analysis and structured validation.",
+      },
+      workspaceId: workspace.id,
+      createdBy: owner.id,
+    },
+  });
+
+  await prisma.brandAsset.create({
+    data: {
+      name: "Brand Archetype",
+      description: "Universal behavior patterns that define how Branddock shows up in the world.",
+      type: "OTHER",
+      category: "IDENTITY",
+      status: "IN_PROGRESS",
+      validationScore: 40,
+      content: {
+        assetTypeKey: "brand-archetype",
+        primary: "The Sage",
+        secondary: "The Creator",
+        description: "We combine the Sage's pursuit of knowledge and truth with the Creator's vision for building something meaningful.",
+      },
+      workspaceId: workspace.id,
+      createdBy: editor.id,
+    },
+  });
+
+  await prisma.brandAsset.create({
+    data: {
+      name: "Transformative Goals",
+      description: "Ambitious goals that will transform Branddock's business and create lasting impact.",
+      type: "OTHER",
+      category: "STRATEGY",
+      status: "DRAFT",
+      validationScore: 0,
+      content: { assetTypeKey: "transformative-goals" },
       workspaceId: workspace.id,
       createdBy: owner.id,
     },
@@ -1877,203 +2015,240 @@ async function main() {
 
   await prisma.brandStyleguide.create({
     data: {
-      sourceUrl: "https://branddock.com",
-      sourceType: "website",
-      logo: {
-        primary: {
-          url: "/assets/logo/branddock-primary.svg",
-          description:
-            "Primary logo with full wordmark. Use on white or light backgrounds.",
-          minWidth: 120,
-        },
-        icon: {
-          url: "/assets/logo/branddock-icon.svg",
-          description:
-            "Icon-only mark for favicons, app icons, and small spaces.",
-          minWidth: 32,
-        },
-        reversed: {
-          url: "/assets/logo/branddock-reversed.svg",
-          description: "White version for use on dark backgrounds.",
-        },
-        clearSpace: "Minimum clear space is equal to the height of the 'B' character.",
-        misuse: [
-          "Do not stretch or distort",
-          "Do not change colors",
-          "Do not add effects or shadows",
-          "Do not place on busy backgrounds",
-          "Do not rotate or skew",
+      workspaceId: workspace.id,
+      name: "Brand Styleguide",
+      sourceType: "WEBSITE",
+      sourceUrl: "https://www.branddock.com",
+      status: "COMPLETE",
+
+      // Typography
+      primaryFont: "Inter",
+      secondaryFont: "Georgia",
+      typeScale: [
+        { level: "H1", size: "48px", weight: "700", lineHeight: "1.2", preview: "The quick brown fox" },
+        { level: "H2", size: "36px", weight: "600", lineHeight: "1.25", preview: "The quick brown fox" },
+        { level: "H3", size: "28px", weight: "600", lineHeight: "1.3", preview: "The quick brown fox" },
+        { level: "H4", size: "22px", weight: "500", lineHeight: "1.35", preview: "The quick brown fox" },
+        { level: "Body", size: "16px", weight: "400", lineHeight: "1.5", preview: "The quick brown fox" },
+        { level: "Small", size: "14px", weight: "400", lineHeight: "1.5", preview: "The quick brown fox" },
+      ],
+
+      // Tone of Voice
+      contentGuidelines: [
+        "Guidelines that feel on-point and authentic",
+        "Material and expressions — descriptive, honest style",
+        "Content credible — build trustworthiness",
+        "Short and approachable tone throughout",
+      ],
+      writingGuidelines: [
+        "Use active voice",
+        "Keep sentences under 20 words",
+        "Avoid jargon and complex terms",
+        "Write with empathy and honesty",
+        "Use contractions where possible",
+      ],
+      examplePhrases: [
+        { text: "We started in a modest lab", type: "DO" },
+        { text: "Design tools to help manufacturers", type: "DO" },
+        { text: "Create content that resonates", type: "DO" },
+        { text: "Utilize a platform to optimize workflow efficiency", type: "DONT" },
+        { text: "The system enables content generation capabilities", type: "DONT" },
+      ],
+
+      // Imagery
+      photographyGuidelines: [
+        "Natural lighting preferred",
+        "Real environments, not staged scenes",
+        "Close-up and in-process details/action",
+        "Clean, uncluttered backgrounds",
+        "Warm imagery, aligned with brand color palette",
+      ],
+      illustrationGuidelines: [
+        "Flat design with subtle gradients",
+        "Consistent line weights",
+        "Brand colors only",
+        "Rounded corners on all shapes",
+      ],
+      imageryDonts: [
+        "Generic stock photos",
+        "Heavy filters or effects",
+        "Clip art or outdated graphics",
+        "Busy or distracting backgrounds",
+        "Images that conflict with brand colors",
+      ],
+
+      // Logo usage guidelines & don'ts
+      logoUsageGuidelines: [
+        "Minimum clear space: 2x the mark logo",
+        "Minimum size: 48px width/height, 32px for print",
+        "Always provide three color versions of the logo file",
+      ],
+      logoDonts: [
+        "Don't stretch or distort",
+        "Don't use wrong colors",
+        "Don't place on busy backgrounds",
+        "Don't add effects or shadows",
+        "Don't make it too small",
+      ],
+      colorDonts: [
+        "Don't use colors outside the palette",
+        "Don't reduce opacity below 60%",
+        "Don't combine accent colors",
+      ],
+
+      // Logos (relational)
+      logos: {
+        create: [
+          {
+            variant: "PRIMARY",
+            label: "Primary Logo",
+            description: "Full color logo for standard use on light backgrounds",
+            backgroundColor: "#f5f5f5",
+            sortOrder: 0,
+          },
+          {
+            variant: "ICON_MARK",
+            label: "Icon Mark",
+            description: "Standalone brand icon for compact spaces and favicons",
+            backgroundColor: "#0d9488",
+            sortOrder: 1,
+          },
+          {
+            variant: "SCALE_ONLY",
+            label: "Scale Only",
+            description: "Clean, minimal version for small sizes and watermarks",
+            backgroundColor: "#f5f5f5",
+            sortOrder: 2,
+          },
         ],
       },
+
+      // Colors (relational)
       colors: {
-        primary: {
-          name: "Emerald",
-          hex: "#10B981",
-          rgb: "16, 185, 129",
-          usage:
-            "Primary brand color. Use for CTAs, active states, key highlights, and brand accents.",
-        },
-        secondary: {
-          name: "Slate",
-          hex: "#1E293B",
-          rgb: "30, 41, 59",
-          usage:
-            "Secondary color for headings, body text, and dark UI elements. Forms the foundation of the dark mode palette.",
-        },
-        accent: {
-          name: "Amber",
-          hex: "#F59E0B",
-          rgb: "245, 158, 11",
-          usage:
-            "Accent color for warnings, attention-grabbing elements, and secondary CTAs. Use sparingly.",
-        },
-        backgrounds: [
+        create: [
+          // Primary colors
           {
-            name: "White",
-            hex: "#FFFFFF",
-            usage: "Default light mode background",
+            name: "Teal 600",
+            hex: "#0d9488",
+            rgb: "13, 148, 136",
+            hsl: "175, 84%, 32%",
+            cmyk: "91, 0, 8, 42",
+            tags: ["Brand", "Primary"],
+            category: "PRIMARY",
+            sortOrder: 0,
           },
           {
-            name: "Gray 50",
-            hex: "#F8FAFC",
-            usage: "Subtle background for sections and cards",
+            name: "Teal 700",
+            hex: "#0f766e",
+            rgb: "15, 118, 110",
+            hsl: "175, 77%, 26%",
+            cmyk: "87, 0, 7, 54",
+            tags: ["Brand", "Primary Dark"],
+            category: "PRIMARY",
+            sortOrder: 1,
           },
           {
-            name: "Slate 900",
-            hex: "#0F172A",
-            usage: "Default dark mode background",
+            name: "Teal 400",
+            hex: "#2dd4bf",
+            rgb: "45, 212, 191",
+            hsl: "173, 66%, 50%",
+            cmyk: "79, 0, 10, 17",
+            tags: ["Brand", "Primary Light"],
+            category: "PRIMARY",
+            sortOrder: 2,
           },
+          // Secondary
           {
             name: "Slate 800",
-            hex: "#1E293B",
-            usage: "Dark mode card and section backgrounds",
+            hex: "#1e293b",
+            rgb: "30, 41, 59",
+            hsl: "217, 33%, 17%",
+            cmyk: "49, 31, 0, 77",
+            tags: ["Text", "Headings"],
+            category: "SECONDARY",
+            sortOrder: 3,
+          },
+          {
+            name: "Slate 600",
+            hex: "#475569",
+            rgb: "71, 85, 105",
+            hsl: "215, 19%, 35%",
+            cmyk: "32, 19, 0, 59",
+            tags: ["Text", "Body"],
+            category: "SECONDARY",
+            sortOrder: 4,
+          },
+          // Accent
+          {
+            name: "Amber 500",
+            hex: "#f59e0b",
+            rgb: "245, 158, 11",
+            hsl: "38, 92%, 50%",
+            cmyk: "0, 36, 96, 4",
+            tags: ["Accent", "Warning"],
+            category: "ACCENT",
+            sortOrder: 5,
+          },
+          {
+            name: "Rose 500",
+            hex: "#f43f5e",
+            rgb: "244, 63, 94",
+            hsl: "350, 89%, 60%",
+            cmyk: "0, 74, 62, 4",
+            tags: ["Accent", "Error"],
+            category: "ACCENT",
+            sortOrder: 6,
+          },
+          // Neutral
+          {
+            name: "Gray 100",
+            hex: "#f3f4f6",
+            rgb: "243, 244, 246",
+            hsl: "220, 14%, 96%",
+            cmyk: "1, 1, 0, 4",
+            tags: ["Background", "Surface"],
+            category: "NEUTRAL",
+            sortOrder: 7,
+          },
+          {
+            name: "White",
+            hex: "#ffffff",
+            rgb: "255, 255, 255",
+            hsl: "0, 0%, 100%",
+            cmyk: "0, 0, 0, 0",
+            tags: ["Background"],
+            category: "NEUTRAL",
+            sortOrder: 8,
           },
         ],
-        semantic: [
-          { name: "Success", hex: "#10B981", usage: "Positive states and confirmations" },
-          { name: "Warning", hex: "#F59E0B", usage: "Warnings and caution states" },
-          { name: "Error", hex: "#EF4444", usage: "Errors and destructive actions" },
-          { name: "Info", hex: "#3B82F6", usage: "Informational states and links" },
-        ],
       },
-      typography: {
-        headings: {
-          fontFamily: "Inter",
-          weights: ["600 (Semibold)", "700 (Bold)"],
-          sizes: {
-            h1: "2.25rem (36px)",
-            h2: "1.875rem (30px)",
-            h3: "1.5rem (24px)",
-            h4: "1.25rem (20px)",
-            h5: "1.125rem (18px)",
-          },
-          lineHeight: "1.2",
-          letterSpacing: "-0.025em",
-        },
-        body: {
-          fontFamily: "Inter",
-          weights: ["400 (Regular)", "500 (Medium)"],
-          sizes: {
-            large: "1.125rem (18px)",
-            base: "1rem (16px)",
-            small: "0.875rem (14px)",
-            caption: "0.75rem (12px)",
-          },
-          lineHeight: "1.6",
-          letterSpacing: "0",
-        },
-        code: {
-          fontFamily: "JetBrains Mono",
-          weights: ["400 (Regular)", "500 (Medium)"],
-          size: "0.875rem (14px)",
-          lineHeight: "1.5",
-        },
-        guidelines: [
-          "Use Inter for all UI text and marketing content",
-          "Use JetBrains Mono only for code, technical data, and metrics",
-          "Maintain minimum 16px body text for readability",
-          "Headings should use negative letter-spacing for tightness",
-          "Line length should not exceed 75 characters for body text",
-        ],
-      },
-      toneOfVoice: {
-        personality: [
-          "Insightful — We share genuine expertise, not surface-level advice",
-          "Approachable — Complex ideas, simple language. No jargon gates.",
-          "Empowering — We give you the tools and data, you make the decisions",
-          "Honest — We show our work and acknowledge limitations",
-          "Forward-looking — We focus on what's possible, not what's broken",
-        ],
-        doThis: [
-          "Use active voice and direct language",
-          "Lead with benefits, follow with features",
-          "Include specific numbers and data points when possible",
-          "Write at a grade 8-10 reading level",
-          "Use 'you' and 'your' to address the reader directly",
-          "Break up long paragraphs — aim for 2-3 sentences max",
-        ],
-        dontDoThis: [
-          "Don't use buzzwords: 'synergy', 'leverage', 'disrupt', 'paradigm'",
-          "Don't be condescending or assume ignorance",
-          "Don't make promises you can't quantify",
-          "Don't use passive voice unless intentional",
-          "Don't use exclamation marks in professional content (save for social)",
-          "Don't use industry jargon without context or definition",
-        ],
-        examples: {
-          good: "Our AI analysis examines your brand across 12 dimensions, giving you a clear score and actionable recommendations in under 5 minutes.",
-          bad: "Leverage our cutting-edge, AI-powered, industry-disrupting brand synergy platform to unlock unprecedented value!",
-        },
-      },
-      imagery: {
-        style:
-          "Clean, modern, and data-forward. Images should feel professional but approachable — not sterile. Prefer illustrations and data visualizations over generic stock photography.",
-        photography: {
-          style:
-            "Natural lighting, authentic expressions, diverse representation. Show real people in real work environments, not staged corporate shots.",
-          colorTreatment:
-            "Slight desaturation with emerald accent overlay for brand consistency",
-          subjects: [
-            "Teams collaborating around screens",
-            "Data dashboards and analytics",
-            "Workshop sessions and whiteboarding",
-            "Modern office and remote work environments",
-          ],
-        },
-        illustrations: {
-          style:
-            "Flat, geometric illustrations with the brand color palette. Consistent line weight (2px). Rounded corners to match UI components.",
-          usage: [
-            "Feature explanations and how-it-works sections",
-            "Empty states and onboarding flows",
-            "Blog post headers and social media",
-            "Error pages and status messages",
-          ],
-        },
-        iconography: {
-          library: "Lucide React",
-          style:
-            "Outline style, 24px default, 1.5px stroke. Never mix with other icon libraries.",
-          usage:
-            "Use consistently across navigation, features, and UI elements. Prefer meaning over decoration.",
-        },
-      },
+
       createdById: owner.id,
-      workspaceId: workspace.id,
     },
   });
 
   // ─── Task 11: Business Strategies ───────────────────────────────────────────
   console.log("📈 Seeding business strategies...");
 
-  await prisma.businessStrategy.create({
+  const competitiveStrategy = await prisma.businessStrategy.create({
     data: {
-      type: "competitive-analysis",
+      type: "BRAND_BUILDING",
       title: "Competitive Analysis",
       description:
         "Comprehensive analysis of the brand management and strategy tool landscape, identifying key competitors, market positioning opportunities, and sustainable competitive advantages.",
       status: "completed",
       isLocked: false,
+      icon: "🏆",
+      startDate: new Date("2025-07-01"),
+      endDate: new Date("2025-12-31"),
+      vision: "Establish category leadership in the AI-powered brand management space by understanding and outmaneuvering competitors.",
+      rationale: "A thorough competitive analysis is essential before allocating resources to product development and marketing efforts.",
+      assumptions: [
+        "The brand management tool market continues to grow at 12% CAGR",
+        "No competitor currently offers integrated validation research",
+        "AI-powered brand analysis is a differentiating factor",
+      ],
+      focusAreas: ["Market Share", "Brand Awareness", "Partnerships"],
       content: {
         overview:
           "The brand management tool market is valued at $4.2B in 2024, growing at 12% CAGR. The market is fragmented with no single player offering the full strategy-validation-content pipeline that Branddock provides.",
@@ -2172,14 +2347,26 @@ async function main() {
     },
   });
 
-  await prisma.businessStrategy.create({
+  const growthStrategy = await prisma.businessStrategy.create({
     data: {
-      type: "growth-strategy",
-      title: "Growth Strategy",
+      type: "GROWTH",
+      title: "Growth Strategy 2026",
       description:
         "Product-led growth strategy focusing on freemium acquisition, community-driven expansion, and strategic partnerships for market penetration.",
-      status: "draft",
+      status: "active",
       isLocked: false,
+      icon: "📈",
+      startDate: new Date("2026-01-01"),
+      endDate: new Date("2026-12-31"),
+      vision: "Achieve 10,000 active workspaces and $5M ARR through a product-led growth flywheel combining freemium acquisition with strategic partnerships.",
+      rationale: "Product-led growth is the most capital-efficient path to market leadership in our segment. Freemium lowers acquisition cost while community builds a moat.",
+      assumptions: [
+        "Free AI brand analysis converts at 8% to paid plans",
+        "Average revenue per user can increase 30% with premium tier",
+        "Churn can be reduced below 5% with improved onboarding",
+        "Partnership channels can drive 20% of new signups",
+      ],
+      focusAreas: ["Market Share", "Revenue Growth", "Customer Acquisition", "Brand Awareness", "Partnerships"],
       content: {
         overview:
           "Outline for PLG strategy targeting 10,000 active workspaces within 18 months of launch.",
@@ -2207,6 +2394,132 @@ async function main() {
       workspaceId: workspace.id,
       createdById: owner.id,
     },
+  });
+
+  // ─── Objectives for Growth Strategy ───────────────────────────────────────────
+  console.log("🎯 Seeding strategic objectives...");
+
+  const objMarketShare = await prisma.strategicObjective.create({
+    data: {
+      title: "Increase Market Share",
+      description: "Expand our presence in key markets and capture a larger share of the AI-powered brand management space.",
+      focusArea: "Market Share",
+      priority: "HIGH",
+      status: "ON_TRACK",
+      metricType: "PERCENTAGE",
+      startValue: 8,
+      targetValue: 15,
+      currentValue: 12,
+      sortOrder: 0,
+      strategyId: growthStrategy.id,
+    },
+  });
+
+  await prisma.keyResult.createMany({
+    data: [
+      { description: "Launch in 3 new regions", targetValue: "3", currentValue: "2", status: "IN_PROGRESS", sortOrder: 0, objectiveId: objMarketShare.id },
+      { description: "Acquire 500 new enterprise customers", targetValue: "500", currentValue: "380", status: "IN_PROGRESS", sortOrder: 1, objectiveId: objMarketShare.id },
+      { description: "Establish 10 strategic partnerships", targetValue: "10", currentValue: "7", status: "IN_PROGRESS", sortOrder: 2, objectiveId: objMarketShare.id },
+    ],
+  });
+
+  const objRevenue = await prisma.strategicObjective.create({
+    data: {
+      title: "Revenue Growth",
+      description: "Drive significant revenue growth through premium offerings and reduced churn.",
+      focusArea: "Revenue Growth",
+      priority: "HIGH",
+      status: "ON_TRACK",
+      metricType: "CURRENCY",
+      startValue: 1800000,
+      targetValue: 5000000,
+      currentValue: 3200000,
+      sortOrder: 1,
+      strategyId: growthStrategy.id,
+    },
+  });
+
+  await prisma.keyResult.createMany({
+    data: [
+      { description: "Launch premium tier", targetValue: "1", currentValue: "1", status: "COMPLETED", sortOrder: 0, objectiveId: objRevenue.id },
+      { description: "Increase ARPU by 30%", targetValue: "30%", currentValue: "+22%", status: "IN_PROGRESS", sortOrder: 1, objectiveId: objRevenue.id },
+      { description: "Reduce churn below 5%", targetValue: "5%", currentValue: "6.1%", status: "AT_RISK", sortOrder: 2, objectiveId: objRevenue.id },
+    ],
+  });
+
+  const objAwareness = await prisma.strategicObjective.create({
+    data: {
+      title: "Brand Awareness",
+      description: "Establish Branddock as a recognized thought leader in the brand management space.",
+      focusArea: "Brand Awareness",
+      priority: "MEDIUM",
+      status: "AT_RISK",
+      metricType: "PERCENTAGE",
+      startValue: 12,
+      targetValue: 35,
+      currentValue: 21,
+      sortOrder: 2,
+      strategyId: growthStrategy.id,
+    },
+  });
+
+  await prisma.keyResult.createMany({
+    data: [
+      { description: "Publish 50 thought leadership pieces", targetValue: "50", currentValue: "50", status: "COMPLETED", sortOrder: 0, objectiveId: objAwareness.id },
+      { description: "Reach 100K social followers", targetValue: "100K", currentValue: "45K", status: "AT_RISK", sortOrder: 1, objectiveId: objAwareness.id },
+      { description: "Secure 25 media mentions", targetValue: "25", currentValue: "8", status: "AT_RISK", sortOrder: 2, objectiveId: objAwareness.id },
+    ],
+  });
+
+  const objAcquisition = await prisma.strategicObjective.create({
+    data: {
+      title: "Customer Acquisition",
+      description: "Efficiently acquire new customers through targeted marketing campaigns and reduced CAC.",
+      focusArea: "Customer Acquisition",
+      priority: "MEDIUM",
+      status: "ON_TRACK",
+      metricType: "NUMBER",
+      startValue: 150,
+      targetValue: 500,
+      currentValue: 340,
+      sortOrder: 3,
+      strategyId: growthStrategy.id,
+    },
+  });
+
+  await prisma.keyResult.createMany({
+    data: [
+      { description: "Launch 5 marketing campaigns", targetValue: "5", currentValue: "5", status: "COMPLETED", sortOrder: 0, objectiveId: objAcquisition.id },
+      { description: "Reduce CAC by 25%", targetValue: "-25%", currentValue: "-18%", status: "IN_PROGRESS", sortOrder: 1, objectiveId: objAcquisition.id },
+    ],
+  });
+
+  await prisma.strategicObjective.create({
+    data: {
+      title: "Strategic Partnerships",
+      description: "Build a strong partner ecosystem to extend reach and add value to our platform.",
+      focusArea: "Partnerships",
+      priority: "LOW",
+      status: "ON_TRACK",
+      metricType: "NUMBER",
+      startValue: 5,
+      targetValue: 10,
+      currentValue: 7,
+      sortOrder: 4,
+      strategyId: growthStrategy.id,
+    },
+  });
+
+  // ─── Milestones for Growth Strategy ─────────────────────────────────────────
+  console.log("📅 Seeding strategy milestones...");
+
+  await prisma.strategyMilestone.createMany({
+    data: [
+      { title: "Strategy Launch", dueDate: new Date("2026-01-15"), quarter: "Q1", completed: true, completedAt: new Date("2026-01-15"), sortOrder: 0, strategyId: growthStrategy.id },
+      { title: "Mid-Year Review", dueDate: new Date("2026-07-01"), quarter: "Q2", completed: false, sortOrder: 1, strategyId: growthStrategy.id },
+      { title: "Product Launch", dueDate: new Date("2026-09-15"), quarter: "Q3", completed: false, sortOrder: 2, strategyId: growthStrategy.id },
+      { title: "Annual Review", dueDate: new Date("2026-12-31"), quarter: "Q4", completed: false, sortOrder: 3, strategyId: growthStrategy.id },
+    ],
   });
 
   // ─── Legacy AI Analysis (for completeness) ─────────────────────────────────

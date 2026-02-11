@@ -266,7 +266,7 @@ model Workspace {
   marketInsights  MarketInsight[]
   competitors     Competitor[]
   goals           Goal[]
-  styleguides     BrandStyleguide[]
+  brandStyleguide BrandStyleguide?
   strategies      BusinessStrategy[]
 
   @@map("workspaces")
@@ -692,24 +692,110 @@ model ProductPersona {
 }
 
 model BrandStyleguide {
-  id          String   @id @default(uuid())
-  sourceUrl   String?
-  sourceType  String?
+  id             String               @id @default(uuid())
+  name           String               @default("Brand Styleguide")
+  sourceType     StyleguideSourceType  @default(WEBSITE)
+  sourceUrl      String?
+  sourceFileName String?
+  status         StyleguideStatus      @default(DRAFT)
 
-  logo        Json?
-  colors      Json?
-  typography  Json?
-  toneOfVoice Json?
-  imagery     Json?
+  // Relations
+  logos          StyleguideLogo[]
+  colors         StyleguideColor[]
+
+  // Typography (Json for flexibility)
+  primaryFont    String?
+  secondaryFont  String?
+  typeScale      Json?
+
+  // Tone of Voice
+  contentGuidelines      Json?
+  writingGuidelines      Json?
+  examplePhrases         Json?
+
+  // Imagery
+  photographyGuidelines  Json?
+  illustrationGuidelines Json?
+  imageryDonts           Json?
+  photographyExamples    Json?
+
+  // Logo guidelines (stored as Json)
+  logoUsageGuidelines    Json?
+  logoDonts              Json?
+
+  // Color don'ts
+  colorDonts             Json?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  createdById String
+  createdById String?
 
-  workspaceId String
+  workspaceId String   @unique
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@map("brand_styleguides")
+}
+
+enum StyleguideSourceType {
+  WEBSITE
+  PDF
+  MANUAL
+}
+
+enum StyleguideStatus {
+  DRAFT
+  ANALYZING
+  COMPLETE
+  ERROR
+}
+
+model StyleguideLogo {
+  id              String          @id @default(uuid())
+  variant         LogoVariant     @default(PRIMARY)
+  label           String
+  description     String?
+  imageUrl        String?
+  backgroundColor String?
+  sortOrder       Int             @default(0)
+
+  styleguideId String
+  styleguide   BrandStyleguide @relation(fields: [styleguideId], references: [id], onDelete: Cascade)
+
+  @@map("styleguide_logos")
+}
+
+enum LogoVariant {
+  PRIMARY
+  ICON_MARK
+  SCALE_ONLY
+  MONOCHROME
+  REVERSED
+}
+
+model StyleguideColor {
+  id           String        @id @default(uuid())
+  name         String
+  hex          String
+  rgb          String?
+  hsl          String?
+  cmyk         String?
+  tags         Json?
+  category     ColorCategory @default(PRIMARY)
+  notes        String?
+  sortOrder    Int           @default(0)
+
+  styleguideId String
+  styleguide   BrandStyleguide @relation(fields: [styleguideId], references: [id], onDelete: Cascade)
+
+  @@map("styleguide_colors")
+}
+
+enum ColorCategory {
+  PRIMARY
+  SECONDARY
+  ACCENT
+  NEUTRAL
+  SEMANTIC
 }
 
 model BusinessStrategy {
@@ -720,6 +806,13 @@ model BusinessStrategy {
   status      String   @default("draft")
   content     Json?
   isLocked    Boolean  @default(false)
+  icon        String?  @default("🎯")
+  startDate   DateTime?
+  endDate     DateTime?
+  vision      String?  @db.Text
+  rationale   String?  @db.Text
+  assumptions Json?
+  focusAreas  Json?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -729,7 +822,70 @@ model BusinessStrategy {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdById String
 
+  objectives  StrategicObjective[]
+  milestones  StrategyMilestone[]
+
   @@map("business_strategies")
+}
+
+model StrategicObjective {
+  id           String  @id @default(uuid())
+  title        String
+  description  String? @db.Text
+  focusArea    String?
+  priority     String  @default("MEDIUM")
+  status       String  @default("ON_TRACK")
+  metricType   String  @default("PERCENTAGE")
+  startValue   Float   @default(0)
+  targetValue  Float   @default(100)
+  currentValue Float   @default(0)
+  sortOrder    Int     @default(0)
+
+  linkedCampaigns Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  strategyId String
+  strategy   BusinessStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  keyResults KeyResult[]
+
+  @@map("strategic_objectives")
+}
+
+model KeyResult {
+  id           String  @id @default(uuid())
+  description  String
+  targetValue  String?
+  currentValue String?
+  status       String  @default("IN_PROGRESS")
+  sortOrder    Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  objectiveId String
+  objective   StrategicObjective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+
+  @@map("key_results")
+}
+
+model StrategyMilestone {
+  id          String    @id @default(uuid())
+  title       String
+  description String?
+  dueDate     DateTime
+  quarter     String?
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  sortOrder   Int       @default(0)
+
+  createdAt DateTime @default(now())
+
+  strategyId String
+  strategy   BusinessStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@map("strategy_milestones")
 }
 
 model MarketInsight {

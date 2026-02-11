@@ -7,6 +7,13 @@ export const createStrategySchema = z.object({
   status: z.string().optional().default("draft"),
   content: z.record(z.string(), z.unknown()).optional(),
   workspaceId: z.string().uuid("Invalid workspace ID"),
+  icon: z.string().max(10).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  vision: z.string().max(5000).optional(),
+  rationale: z.string().max(5000).optional(),
+  assumptions: z.array(z.string()).optional(),
+  focusAreas: z.array(z.string()).optional(),
 });
 
 export const updateStrategySchema = z.object({
@@ -16,6 +23,13 @@ export const updateStrategySchema = z.object({
   status: z.string().optional(),
   content: z.record(z.string(), z.unknown()).optional().nullable(),
   isLocked: z.boolean().optional(),
+  icon: z.string().max(10).optional(),
+  startDate: z.string().optional().nullable(),
+  endDate: z.string().optional().nullable(),
+  vision: z.string().max(5000).optional().nullable(),
+  rationale: z.string().max(5000).optional().nullable(),
+  assumptions: z.array(z.string()).optional().nullable(),
+  focusAreas: z.array(z.string()).optional().nullable(),
 });
 
 export type CreateStrategyInput = z.infer<typeof createStrategySchema>;

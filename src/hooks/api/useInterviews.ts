@@ -140,6 +140,40 @@ export function useLockInterview() {
   });
 }
 
+export function useUnlockInterview() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (interviewId: string) =>
+      api.patch<Interview>(`/api/interviews/${interviewId}/unlock`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["knowledge", "interviews"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["knowledge", "assets"],
+      });
+    },
+  });
+}
+
+export function useDuplicateInterview() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (interviewId: string) =>
+      api.post<Interview>(`/api/interviews/${interviewId}/duplicate`, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["knowledge", "interviews"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["knowledge", "assets"],
+      });
+    },
+  });
+}
+
 export function useInterviewTemplates() {
   return useQuery({
     queryKey: ["knowledge", "interview-templates"],

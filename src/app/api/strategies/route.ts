@@ -29,6 +29,13 @@ export async function GET(request: NextRequest) {
     const [strategies, total] = await Promise.all([
       prisma.businessStrategy.findMany({
         where,
+        include: {
+          objectives: {
+            include: { keyResults: true },
+            orderBy: { sortOrder: "asc" },
+          },
+          milestones: { orderBy: { dueDate: "asc" } },
+        },
         orderBy: { updatedAt: "desc" },
         take: limit,
         skip: offset,
@@ -75,11 +82,20 @@ export async function POST(request: NextRequest) {
         title: data.title,
         description: data.description,
         status: data.status,
-        content: (data.content || undefined) as
-          | Prisma.InputJsonValue
-          | undefined,
+        content: (data.content || undefined) as Prisma.InputJsonValue | undefined,
+        icon: data.icon,
+        startDate: data.startDate ? new Date(data.startDate) : undefined,
+        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        vision: data.vision,
+        rationale: data.rationale,
+        assumptions: data.assumptions as Prisma.InputJsonValue | undefined,
+        focusAreas: data.focusAreas as Prisma.InputJsonValue | undefined,
         workspaceId,
         createdById: authResult.user.id,
+      },
+      include: {
+        objectives: { include: { keyResults: true } },
+        milestones: true,
       },
     });
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import {
   Download,
   Copy,
@@ -8,120 +9,92 @@ import {
   X,
   Image as ImageIcon,
   Sparkles,
-  User,
+  Pencil,
+  Upload,
+  Trash2,
+  Save,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Modal } from "@/components/ui/Modal";
-import { Tabs } from "@/components/ui/Tabs";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "@/lib/utils/date";
+import {
+  getContrastRatio,
+  meetsWCAG,
+  getTextColor,
+} from "@/lib/utils/color-contrast";
+import {
+  useBrandStyleguide,
+  useUpdateStyleguide,
+  useExportPdf,
+  type StyleguideColorData,
+  type StyleguideLogoData,
+  type TypeScaleItem,
+  type ExamplePhrase,
+} from "@/hooks/api/useBrandstyle";
+import { useToast } from "@/hooks/useToast";
 
-// ── Data ──
-
+// ─── Section IDs ──────────────────────────────────────────────
 const SECTIONS = [
-  { label: "Logo", value: "logo" },
-  { label: "Colors", value: "colors" },
-  { label: "Typography", value: "typography" },
-  { label: "Tone of Voice", value: "tone" },
-  { label: "Imagery", value: "imagery" },
-];
+  { id: "logo", label: "Logo", icon: "🖼️" },
+  { id: "colors", label: "Colors", icon: "🎨" },
+  { id: "typography", label: "Typography", icon: "Aa" },
+  { id: "tone", label: "Tone of Voice", icon: "💬" },
+  { id: "imagery", label: "Imagery", icon: "🖼️" },
+] as const;
 
-const LOGO_VARIANTS = [
-  { name: "Primary Logo", desc: "Full color logo for light backgrounds" },
-  { name: "Icon Mark", desc: "Standalone icon for small spaces" },
-  { name: "Scale Only", desc: "Wordmark without icon" },
-];
-
-const LOGO_DONTS = [
-  "Don't stretch or distort the logo",
-  "Don't change the logo colors",
-  "Don't add effects like shadows or gradients",
-  "Don't rotate or flip the logo",
-  "Don't place on busy backgrounds without contrast",
-];
-
-const LOGO_GUIDELINES = [
-  "Minimum clear space equal to the height of the 'B'",
-  "Use primary green logo on light backgrounds",
-  "Use white logo on dark or colored backgrounds",
-  "Minimum size: 24px height for digital, 10mm for print",
-];
-
-const COLORS = [
-  { name: "Primary Green", hex: "#10B981", rgb: "16, 185, 129", hsl: "160, 84%, 39%", cmyk: "91, 0, 30, 27", tags: ["Primary", "CTA", "Success"], wcagAA: true, wcagAAA: false },
-  { name: "Dark Slate", hex: "#1F2937", rgb: "31, 41, 55", hsl: "215, 28%, 17%", cmyk: "44, 25, 0, 78", tags: ["Text", "Background"], wcagAA: true, wcagAAA: true },
-  { name: "Electric Blue", hex: "#5252E3", rgb: "82, 82, 227", hsl: "240, 72%, 61%", cmyk: "64, 64, 0, 11", tags: ["Secondary", "Links"], wcagAA: true, wcagAAA: false },
-  { name: "Peach Pink", hex: "#FECFBD", rgb: "254, 207, 189", hsl: "17, 98%, 87%", cmyk: "0, 18, 26, 0", tags: ["Accent", "Highlight"], wcagAA: false, wcagAAA: false },
-  { name: "Orange Red", hex: "#FF6B48", rgb: "255, 107, 72", hsl: "11, 100%, 64%", cmyk: "0, 58, 72, 0", tags: ["Destructive", "Warning"], wcagAA: true, wcagAAA: false },
-  { name: "Lime Yellow", hex: "#F9FD48", rgb: "249, 253, 72", hsl: "61, 98%, 64%", cmyk: "2, 0, 72, 1", tags: ["Highlight", "Promo"], wcagAA: false, wcagAAA: false },
-];
-
-const COLOR_DONTS = [
-  "Don't use primary green on green backgrounds",
-  "Don't mix more than 3 brand colors in one layout",
-  "Don't use low-contrast color combinations for text",
-  "Don't alter the opacity of brand colors below 60%",
-  "Don't create new color variations without approval",
-];
-
-const TYPE_SCALE = [
-  { name: "H1", size: "36px", weight: "700", preview: "Heading One" },
-  { name: "H2", size: "30px", weight: "600", preview: "Heading Two" },
-  { name: "H3", size: "24px", weight: "600", preview: "Heading Three" },
-  { name: "H4", size: "20px", weight: "600", preview: "Heading Four" },
-  { name: "Body", size: "16px", weight: "400", preview: "Body text for paragraphs" },
-  { name: "Small", size: "14px", weight: "400", preview: "Small text and captions" },
-];
-
-const CONTENT_GUIDELINES = [
-  "Be clear and concise — avoid jargon unless speaking to technical audiences",
-  "Lead with benefits, not features",
-  "Use active voice over passive voice",
-  "Address the reader directly with 'you' and 'your'",
-];
-
-const WRITING_GUIDELINES = [
-  "Sentence case for headings (not Title Case)",
-  "Oxford comma in lists",
-  "Numbers: spell out one through nine, use numerals for 10+",
-  "Em dashes — no spaces around them",
-];
-
-const TONE_DOS = [
-  { do: "We help you build a brand that resonates.", dont: "Our platform leverages AI synergies for brand optimization." },
-  { do: "Get started in minutes with our guided setup.", dont: "Utilize our onboarding paradigm for rapid deployment." },
-  { do: "Your brand consistency improved by 40%.", dont: "Brand metric enhancement facilitated via algorithmic processes." },
-];
-
-const PHOTO_GUIDELINES = [
-  "Use authentic, natural photography over stock photos",
-  "Ensure diverse representation in all imagery",
-  "Maintain consistent lighting and color grading",
-  "Prefer candid shots over posed compositions",
-];
-
-const ILLUSTRATION_GUIDELINES = [
-  "Use flat, minimal illustration style",
-  "Primary green as the dominant illustration color",
-  "Consistent line weight of 2px across all icons",
-  "Rounded corners on all geometric shapes",
-];
-
-const IMAGERY_DONTS = [
-  "Don't use heavily filtered or overly saturated photos",
-  "Don't use clip art or low-resolution images",
-  "Don't combine photography with illustration in the same context",
-  "Don't use images that conflict with brand values",
-  "Don't crop faces or important elements awkwardly",
-];
-
-// ── Component ──
-
+// ─── Main Page ────────────────────────────────────────────────
 export default function BrandStyleguidePage() {
+  const router = useRouter();
+  const toast = useToast();
+  const { data: apiData, isLoading } = useBrandStyleguide();
+  const updateStyleguide = useUpdateStyleguide();
+  const exportPdf = useExportPdf();
+
+  const styleguide = apiData?.data ?? null;
+
   const [activeSection, setActiveSection] = useState("logo");
-  const [selectedColor, setSelectedColor] = useState<typeof COLORS[0] | null>(null);
+  const [selectedColor, setSelectedColor] = useState<StyleguideColorData | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Edit state per section
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [dirtySection, setDirtySection] = useState<string | null>(null);
+  const [editBuffer, setEditBuffer] = useState<Record<string, unknown>>({});
+
+  // ─── IntersectionObserver for scroll tracking ──────────────
+  const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id.replace("section-", ""));
+          }
+        }
+      },
+      { rootMargin: "-20% 0px -70% 0px" }
+    );
+
+    sectionRefs.current.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [isLoading]);
+
+  const registerRef = useCallback(
+    (id: string) => (el: HTMLElement | null) => {
+      if (el) sectionRefs.current.set(id, el);
+    },
+    []
+  );
+
+  const scrollTo = (section: string) => {
+    setActiveSection(section);
+    document
+      .getElementById(`section-${section}`)
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
 
   const handleCopy = (value: string, field: string) => {
     navigator.clipboard.writeText(value);
@@ -129,363 +102,905 @@ export default function BrandStyleguidePage() {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const scrollTo = (section: string) => {
-    setActiveSection(section);
-    document.getElementById(`section-${section}`)?.scrollIntoView({ behavior: "smooth" });
+  const handleExportPdf = async () => {
+    await exportPdf.mutateAsync();
+    toast.info("PDF export is coming soon", "This feature is under development");
+    if (styleguide) console.log("Styleguide data:", styleguide);
   };
+
+  const startEdit = (section: string) => {
+    setEditingSection(section);
+    setDirtySection(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingSection(null);
+    setDirtySection(null);
+    setEditBuffer({});
+  };
+
+  const handleSaveSection = async (sectionKey: string, data: Record<string, unknown>) => {
+    try {
+      await updateStyleguide.mutateAsync(data);
+      toast.success("Changes saved");
+      setEditingSection(null);
+      setDirtySection(null);
+      setEditBuffer({});
+    } catch {
+      toast.error("Failed to save changes");
+    }
+  };
+
+  // ─── Loading state ────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="max-w-[900px] mx-auto">
+        <div className="animate-pulse space-y-6">
+          <div className="h-10 bg-surface-dark rounded w-1/3" />
+          <div className="h-64 bg-surface-dark rounded" />
+          <div className="h-48 bg-surface-dark rounded" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!styleguide) {
+    return (
+      <div className="max-w-[900px] mx-auto text-center py-12">
+        <h2 className="text-xl font-semibold text-text-dark mb-2">
+          No styleguide yet
+        </h2>
+        <p className="text-text-dark/60 mb-4">
+          Analyze a website or upload a PDF to generate your brand styleguide.
+        </p>
+        <Button
+          variant="primary"
+          onClick={() => router.push("/knowledge/brandstyle")}
+        >
+          Go to Analyzer
+        </Button>
+      </div>
+    );
+  }
+
+  // ─── Data extraction ──────────────────────────────────────
+  const logos = styleguide.logos ?? [];
+  const colors = styleguide.colors ?? [];
+  const typeScale = (styleguide.typeScale ?? []) as TypeScaleItem[];
+  const contentGuidelines = (styleguide.contentGuidelines ?? []) as string[];
+  const writingGuidelines = (styleguide.writingGuidelines ?? []) as string[];
+  const examplePhrases = (styleguide.examplePhrases ?? []) as ExamplePhrase[];
+  const photographyGuidelines = (styleguide.photographyGuidelines ?? []) as string[];
+  const illustrationGuidelines = (styleguide.illustrationGuidelines ?? []) as string[];
+  const imageryDonts = (styleguide.imageryDonts ?? []) as string[];
+  const logoUsageGuidelines = (styleguide.logoUsageGuidelines ?? []) as string[];
+  const logoDonts = (styleguide.logoDonts ?? []) as string[];
+  const colorDonts = (styleguide.colorDonts ?? []) as string[];
+
+  // Group colors by category
+  const colorsByCategory = colors.reduce(
+    (acc, c) => {
+      const cat = c.category || "PRIMARY";
+      if (!acc[cat]) acc[cat] = [];
+      acc[cat].push(c);
+      return acc;
+    },
+    {} as Record<string, StyleguideColorData[]>
+  );
+
+  const doExamples = examplePhrases.filter((p) => p.type === "DO");
+  const dontExamples = examplePhrases.filter((p) => p.type === "DONT");
 
   return (
     <div className="max-w-[900px] mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      {/* ─── Header ─── */}
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-            <ImageIcon className="w-5 h-5 text-purple-400" />
+          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <span className="text-2xl">🎨</span>
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-text-dark">Brand Styleguide</h1>
-            <div className="flex items-center gap-2 mt-0.5">
-              <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-3 h-3 text-primary" />
-              </div>
-              <span className="text-xs text-text-dark/40">Created by Erik Jager</span>
-              <span className="text-xs text-text-dark/20">|</span>
-              <span className="text-xs text-text-dark/40">Updated Feb 5, 2026</span>
-            </div>
+            <h1 className="text-2xl font-bold text-text-dark">
+              Brand Styleguide
+            </h1>
+            <p className="text-sm text-text-dark/40">
+              Extracted from your brand style
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm">Analyze Next</Button>
-          <Button variant="secondary" size="sm" leftIcon={<Download className="w-3.5 h-3.5" />}>Export PDF</Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => router.push("/knowledge/brandstyle?reanalyze=true")}
+          >
+            Analyze Past
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<Download className="w-3.5 h-3.5" />}
+            onClick={handleExportPdf}
+            disabled={exportPdf.isPending}
+          >
+            Export PDF
+          </Button>
         </div>
       </div>
 
-      {/* Jump-Link Tabs */}
-      <Tabs
-        tabs={SECTIONS}
-        activeTab={activeSection}
-        onChange={scrollTo}
-        variant="underline"
-        className="mb-8"
-      />
+      {/* Metadata bar */}
+      <div className="flex items-center gap-2 mb-6">
+        <Check className="w-4 h-4 text-primary" />
+        <span className="text-sm text-primary font-medium">
+          Analysis Complete
+        </span>
+        <span className="text-text-dark/30">&bull;</span>
+        <span className="text-sm text-text-dark/40">
+          {new Date(styleguide.updatedAt).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </span>
+      </div>
 
-      {/* === LOGO === */}
-      <section id="section-logo" className="mb-10">
-        <h2 className="text-lg font-semibold text-text-dark mb-4">Logo</h2>
+      {/* ─── Sticky Tab Navigation ─── */}
+      <div className="sticky top-0 z-20 bg-background-dark/95 backdrop-blur-sm border-b border-border-dark mb-8 -mx-1 px-1">
+        <div className="flex items-center gap-1 overflow-x-auto">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => scrollTo(s.id)}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-3 text-sm font-medium whitespace-nowrap border-b-2 -mb-px transition-colors",
+                activeSection === s.id
+                  ? "border-primary text-text-dark"
+                  : "border-transparent text-text-dark/40 hover:text-text-dark/60"
+              )}
+            >
+              <span className="text-xs">{s.icon}</span>
+              {s.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ═══ LOGO SECTION ═══ */}
+      <section id="section-logo" ref={registerRef("section-logo")} className="mb-10">
+        <SectionHeader
+          title="Logo"
+          editing={editingSection === "logo"}
+          onEdit={() => startEdit("logo")}
+          onCancel={cancelEdit}
+          extra={
+            <Button variant="ghost" size="sm" leftIcon={<Download className="w-3.5 h-3.5" />}>
+              Download All
+            </Button>
+          }
+        />
 
         <div className="grid grid-cols-3 gap-4 mb-6">
-          {LOGO_VARIANTS.map((v) => (
-            <Card key={v.name} padding="lg" className="text-center">
-              <div className="aspect-[3/2] rounded-md bg-background-dark border border-border-dark flex items-center justify-center mb-3">
-                <ImageIcon className="w-10 h-10 text-text-dark/15" />
+          {logos.map((logo) => (
+            <Card key={logo.id} padding="lg" className="text-center">
+              <div
+                className="aspect-[3/2] rounded-md border border-border-dark flex items-center justify-center mb-3"
+                style={{ backgroundColor: logo.backgroundColor || "#f5f5f5" }}
+              >
+                <ImageIcon
+                  className="w-10 h-10"
+                  style={{
+                    color: getTextColor(logo.backgroundColor || "#f5f5f5") + "33",
+                  }}
+                />
               </div>
-              <p className="text-sm font-medium text-text-dark">{v.name}</p>
-              <p className="text-xs text-text-dark/40">{v.desc}</p>
+              <p className="text-sm font-medium text-text-dark">{logo.label}</p>
+              <p className="text-xs text-text-dark/40">{logo.description}</p>
             </Card>
           ))}
         </div>
 
-        <Card padding="lg" className="mb-4">
-          <h3 className="text-sm font-semibold text-text-dark mb-3">Usage Guidelines</h3>
-          <div className="space-y-2">
-            {LOGO_GUIDELINES.map((g) => (
-              <div key={g} className="flex items-start gap-2 text-sm text-text-dark/70">
-                <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                {g}
-              </div>
-            ))}
-          </div>
-        </Card>
+        {logoUsageGuidelines.length > 0 && (
+          <Card padding="lg" className="mb-4">
+            <h3 className="text-sm font-semibold text-text-dark mb-3">
+              Usage Guidelines
+            </h3>
+            <div className="space-y-2">
+              {logoUsageGuidelines.map((g, i) => (
+                <div key={i} className="flex items-start gap-2 text-sm text-text-dark/70">
+                  <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  {g}
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
-        <Card padding="lg" className="mb-4">
-          <h3 className="text-sm font-semibold text-text-dark mb-3">Don&apos;ts</h3>
-          <div className="space-y-2">
-            {LOGO_DONTS.map((d) => (
-              <div key={d} className="flex items-start gap-2 text-sm text-text-dark/70">
-                <X className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                {d}
-              </div>
-            ))}
-          </div>
-        </Card>
+        {logoDonts.length > 0 && (
+          <DontsList items={logoDonts} className="mb-4" />
+        )}
 
-        <AiBanner />
+        <AiContentBanner
+          visible={dirtySection === "logo"}
+          onSave={() => handleSaveSection("logo", editBuffer)}
+          onDiscard={cancelEdit}
+          saving={updateStyleguide.isPending}
+        />
       </section>
 
-      {/* === COLORS === */}
-      <section id="section-colors" className="mb-10">
-        <h2 className="text-lg font-semibold text-text-dark mb-4">Colors</h2>
+      {/* ═══ COLORS SECTION ═══ */}
+      <section id="section-colors" ref={registerRef("section-colors")} className="mb-10">
+        <SectionHeader
+          title="Colors"
+          editing={editingSection === "colors"}
+          onEdit={() => startEdit("colors")}
+          onCancel={cancelEdit}
+        />
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-          {COLORS.map((c) => (
-            <Card
-              key={c.hex}
-              padding="none"
-              className="overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-              onClick={() => setSelectedColor(c)}
+        {Object.entries(colorsByCategory).map(([category, catColors]) => (
+          <div key={category} className="mb-6">
+            <p className="text-xs font-medium text-text-dark/40 uppercase tracking-wide mb-3">
+              {category}
+            </p>
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {catColors.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedColor(c)}
+                  className="rounded-lg overflow-hidden border border-border-dark hover:ring-2 hover:ring-primary/50 transition-all text-left"
+                >
+                  <div className="h-16" style={{ backgroundColor: c.hex }} />
+                  <div className="p-2.5">
+                    <p className="text-xs font-semibold text-text-dark">
+                      {c.name}
+                    </p>
+                    <p className="text-xs text-text-dark/40 font-mono">
+                      {c.hex}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {colorDonts.length > 0 && (
+          <DontsList items={colorDonts} className="mb-4" />
+        )}
+
+        <AiContentBanner
+          visible={dirtySection === "colors"}
+          onSave={() => handleSaveSection("colors", editBuffer)}
+          onDiscard={cancelEdit}
+          saving={updateStyleguide.isPending}
+        />
+      </section>
+
+      {/* ═══ TYPOGRAPHY SECTION ═══ */}
+      <section id="section-typography" ref={registerRef("section-typography")} className="mb-10">
+        <SectionHeader
+          title="Typography"
+          editing={editingSection === "typography"}
+          onEdit={() => startEdit("typography")}
+          onCancel={cancelEdit}
+        />
+
+        {/* Primary Font Display */}
+        {styleguide.primaryFont && (
+          <Card padding="lg" className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Badge variant="default" size="sm">
+                {styleguide.primaryFont}
+              </Badge>
+              <span className="text-xs text-text-dark/40">Primary Font</span>
+            </div>
+            <p
+              className="text-2xl text-text-dark/60 mb-1 leading-relaxed"
+              style={{ fontFamily: styleguide.primaryFont }}
             >
-              <div className="h-20" style={{ backgroundColor: c.hex }} />
-              <div className="p-3">
-                <p className="text-xs font-semibold text-text-dark">{c.name}</p>
-                <p className="text-xs text-text-dark/40 font-mono">{c.hex}</p>
-              </div>
-            </Card>
-          ))}
-        </div>
+              ABCDEFGHIJKLMNOPQRSTUVWXYZ
+            </p>
+            <p
+              className="text-2xl text-text-dark/60 mb-1 leading-relaxed"
+              style={{ fontFamily: styleguide.primaryFont }}
+            >
+              abcdefghijklmnopqrstuvwxyz
+            </p>
+            <p
+              className="text-2xl text-text-dark/60 leading-relaxed"
+              style={{ fontFamily: styleguide.primaryFont }}
+            >
+              0123456789 !@#$%&amp;*()
+            </p>
+          </Card>
+        )}
 
-        <Card padding="lg" className="mb-4">
-          <h3 className="text-sm font-semibold text-text-dark mb-3">Don&apos;ts</h3>
-          <div className="space-y-2">
-            {COLOR_DONTS.map((d) => (
-              <div key={d} className="flex items-start gap-2 text-sm text-text-dark/70">
-                <X className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                {d}
-              </div>
-            ))}
-          </div>
-        </Card>
+        {styleguide.secondaryFont && (
+          <Card padding="lg" className="mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Badge variant="default" size="sm">
+                {styleguide.secondaryFont}
+              </Badge>
+              <span className="text-xs text-text-dark/40">Secondary Font</span>
+            </div>
+            <p
+              className="text-2xl text-text-dark/60 mb-1 leading-relaxed"
+              style={{ fontFamily: styleguide.secondaryFont }}
+            >
+              ABCDEFGHIJKLMNOPQRSTUVWXYZ
+            </p>
+            <p
+              className="text-2xl text-text-dark/60 mb-1 leading-relaxed"
+              style={{ fontFamily: styleguide.secondaryFont }}
+            >
+              abcdefghijklmnopqrstuvwxyz
+            </p>
+            <p
+              className="text-2xl text-text-dark/60 leading-relaxed"
+              style={{ fontFamily: styleguide.secondaryFont }}
+            >
+              0123456789
+            </p>
+          </Card>
+        )}
 
-        <AiBanner />
-      </section>
-
-      {/* === TYPOGRAPHY === */}
-      <section id="section-typography" className="mb-10">
-        <h2 className="text-lg font-semibold text-text-dark mb-4">Typography</h2>
-
-        <Card padding="lg" className="mb-6">
-          <h3 className="text-sm font-semibold text-text-dark mb-2">Inter — Primary Font</h3>
-          <p className="text-sm text-text-dark/40 mb-4">Used for all headings, body, and UI text</p>
-          <p className="text-2xl text-text-dark/60 mb-1" style={{ fontFamily: "Inter" }}>
-            ABCDEFGHIJKLMNOPQRSTUVWXYZ
-          </p>
-          <p className="text-2xl text-text-dark/60 mb-1" style={{ fontFamily: "Inter" }}>
-            abcdefghijklmnopqrstuvwxyz
-          </p>
-          <p className="text-2xl text-text-dark/60" style={{ fontFamily: "Inter" }}>
-            0123456789 !@#$%&amp;*()
-          </p>
-        </Card>
-
-        <Card padding="lg" className="mb-4">
-          <h3 className="text-sm font-semibold text-text-dark mb-4">Type Scale</h3>
-          <div className="space-y-0">
-            {TYPE_SCALE.map((t) => (
-              <div key={t.name} className="flex items-center gap-4 py-3 border-b border-border-dark last:border-0">
-                <span className="text-xs font-mono text-text-dark/40 w-12">{t.name}</span>
-                <span className="text-xs text-text-dark/40 w-14">{t.size}</span>
-                <span className="text-xs text-text-dark/40 w-10">{t.weight}</span>
-                <span className="text-text-dark flex-1" style={{ fontSize: t.size, fontWeight: Number(t.weight) }}>
-                  {t.preview}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <AiBanner />
-      </section>
-
-      {/* === TONE OF VOICE === */}
-      <section id="section-tone" className="mb-10">
-        <h2 className="text-lg font-semibold text-text-dark mb-4">Tone of Voice</h2>
-
-        <Card padding="lg" className="mb-4">
-          <h3 className="text-sm font-semibold text-text-dark mb-3">Content Guidelines</h3>
-          <div className="space-y-2">
-            {CONTENT_GUIDELINES.map((g) => (
-              <div key={g} className="flex items-start gap-2 text-sm text-text-dark/70">
-                <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                {g}
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card padding="lg" className="mb-4">
-          <h3 className="text-sm font-semibold text-text-dark mb-3">Writing Guidelines</h3>
-          <div className="space-y-2">
-            {WRITING_GUIDELINES.map((g) => (
-              <div key={g} className="flex items-start gap-2 text-sm text-text-dark/70">
-                <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                {g}
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card padding="lg" className="mb-4">
-          <h3 className="text-sm font-semibold text-text-dark mb-4">Do / Don&apos;t Examples</h3>
-          <div className="space-y-4">
-            {TONE_DOS.map((ex, i) => (
-              <div key={i} className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-xs font-medium text-emerald-300">Do</span>
-                  </div>
-                  <p className="text-sm text-text-dark/70">{ex.do}</p>
+        {/* Type Scale */}
+        {typeScale.length > 0 && (
+          <Card padding="lg" className="mb-4">
+            <h3 className="text-sm font-semibold text-text-dark mb-4">
+              Type Scale
+            </h3>
+            <div className="space-y-0">
+              {typeScale.map((t) => (
+                <div
+                  key={t.level}
+                  className="flex items-center gap-4 py-3 border-b border-border-dark last:border-0"
+                >
+                  <span className="text-xs font-mono text-text-dark/40 w-12">
+                    {t.level}
+                  </span>
+                  <span className="text-xs text-text-dark/40 w-14">
+                    {t.size}
+                  </span>
+                  <span className="text-xs text-text-dark/40 w-10">
+                    {t.weight}
+                  </span>
+                  <span className="text-xs text-text-dark/40 w-10">
+                    {t.lineHeight}
+                  </span>
+                  <span
+                    className="text-text-dark flex-1"
+                    style={{
+                      fontSize: t.size,
+                      fontWeight: Number(t.weight),
+                      lineHeight: t.lineHeight,
+                      fontFamily: styleguide.primaryFont || "Inter",
+                    }}
+                  >
+                    {t.preview}
+                  </span>
                 </div>
-                <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <X className="w-3.5 h-3.5 text-red-400" />
-                    <span className="text-xs font-medium text-red-300">Don&apos;t</span>
-                  </div>
-                  <p className="text-sm text-text-dark/70">{ex.dont}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
+        )}
 
-        <AiBanner />
+        <AiContentBanner
+          visible={dirtySection === "typography"}
+          onSave={() => handleSaveSection("typography", editBuffer)}
+          onDiscard={cancelEdit}
+          saving={updateStyleguide.isPending}
+        />
       </section>
 
-      {/* === IMAGERY === */}
-      <section id="section-imagery" className="mb-10">
-        <h2 className="text-lg font-semibold text-text-dark mb-4">Imagery</h2>
+      {/* ═══ TONE OF VOICE SECTION ═══ */}
+      <section id="section-tone" ref={registerRef("section-tone")} className="mb-10">
+        <SectionHeader
+          title="Tone of Voice"
+          editing={editingSection === "tone"}
+          onEdit={() => startEdit("tone")}
+          onCancel={cancelEdit}
+        />
 
-        <div className="grid grid-cols-4 gap-3 mb-6">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="aspect-square rounded-lg bg-surface-dark border border-border-dark flex items-center justify-center">
-              <ImageIcon className="w-8 h-8 text-text-dark/15" />
+        {contentGuidelines.length > 0 && (
+          <Card padding="lg" className="mb-4">
+            <h3 className="text-sm font-semibold text-text-dark mb-3">
+              Content Guidelines
+            </h3>
+            <div className="space-y-2">
+              {contentGuidelines.map((g, i) => (
+                <div key={i} className="flex items-start gap-2 text-sm text-text-dark/70">
+                  <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  {g}
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {writingGuidelines.length > 0 && (
+          <Card padding="lg" className="mb-4">
+            <h3 className="text-sm font-semibold text-text-dark mb-3">
+              Writing Guidelines
+            </h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              {writingGuidelines.map((g, i) => (
+                <div key={i} className="flex items-start gap-2 text-sm text-text-dark/70">
+                  <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                  {g}
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {examplePhrases.length > 0 && (
+          <Card padding="lg" className="mb-4">
+            <h3 className="text-sm font-semibold text-text-dark mb-4">
+              Example Phrases
+            </h3>
+            <div className="space-y-3">
+              {doExamples.map((ex, i) => (
+                <div
+                  key={`do-${i}`}
+                  className="flex items-center gap-3 border-l-[3px] border-emerald-500 bg-emerald-500/5 px-4 py-2.5 rounded-r-md"
+                >
+                  <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <p className="text-sm text-text-dark/70">
+                    &ldquo;{ex.text}&rdquo;
+                  </p>
+                </div>
+              ))}
+              {dontExamples.map((ex, i) => (
+                <div
+                  key={`dont-${i}`}
+                  className="flex items-center gap-3 border-l-[3px] border-red-500 bg-red-500/5 px-4 py-2.5 rounded-r-md"
+                >
+                  <X className="w-4 h-4 text-red-400 flex-shrink-0" />
+                  <p className="text-sm text-text-dark/70">
+                    &ldquo;{ex.text}&rdquo;
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        <AiContentBanner
+          visible={dirtySection === "tone"}
+          onSave={() => handleSaveSection("tone", editBuffer)}
+          onDiscard={cancelEdit}
+          saving={updateStyleguide.isPending}
+        />
+      </section>
+
+      {/* ═══ IMAGERY SECTION ═══ */}
+      <section id="section-imagery" ref={registerRef("section-imagery")} className="mb-10">
+        <SectionHeader
+          title="Imagery Guidelines"
+          editing={editingSection === "imagery"}
+          onEdit={() => startEdit("imagery")}
+          onCancel={cancelEdit}
+          extra={
+            <Button variant="ghost" size="sm" leftIcon={<Upload className="w-3.5 h-3.5" />}>
+              Upload
+            </Button>
+          }
+        />
+
+        {/* Photography Examples */}
+        <h3 className="text-sm font-semibold text-text-dark mb-3">
+          Photography Style
+        </h3>
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="rounded-lg border border-border-dark overflow-hidden"
+            >
+              <div className="h-28 bg-surface-dark flex items-center justify-center">
+                <ImageIcon className="w-8 h-8 text-text-dark/15" />
+              </div>
+              <div className="py-2 text-center">
+                <p className="text-xs text-text-dark/40">Example {i}</p>
+              </div>
             </div>
           ))}
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-4">
-          <Card padding="lg">
-            <h3 className="text-sm font-semibold text-text-dark mb-3">Photography Guidelines</h3>
-            <div className="space-y-2">
-              {PHOTO_GUIDELINES.map((g) => (
-                <div key={g} className="flex items-start gap-2 text-sm text-text-dark/70">
-                  <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                  {g}
-                </div>
-              ))}
-            </div>
-          </Card>
-          <Card padding="lg">
-            <h3 className="text-sm font-semibold text-text-dark mb-3">Illustration Guidelines</h3>
-            <div className="space-y-2">
-              {ILLUSTRATION_GUIDELINES.map((g) => (
-                <div key={g} className="flex items-start gap-2 text-sm text-text-dark/70">
-                  <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
-                  {g}
-                </div>
-              ))}
-            </div>
-          </Card>
+          {photographyGuidelines.length > 0 && (
+            <Card padding="lg">
+              <h3 className="text-sm font-semibold text-text-dark mb-3">
+                Photography Guidelines
+              </h3>
+              <div className="space-y-2">
+                {photographyGuidelines.map((g, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm text-text-dark/70">
+                    <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                    {g}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {illustrationGuidelines.length > 0 && (
+            <Card padding="lg">
+              <h3 className="text-sm font-semibold text-text-dark mb-3">
+                Illustration Guidelines
+              </h3>
+              <div className="space-y-2">
+                {illustrationGuidelines.map((g, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm text-text-dark/70">
+                    <Check className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+                    {g}
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
         </div>
 
-        <Card padding="lg" className="mb-4">
-          <h3 className="text-sm font-semibold text-text-dark mb-3">Don&apos;ts</h3>
-          <div className="space-y-2">
-            {IMAGERY_DONTS.map((d) => (
-              <div key={d} className="flex items-start gap-2 text-sm text-text-dark/70">
-                <X className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-                {d}
-              </div>
-            ))}
-          </div>
-        </Card>
+        {imageryDonts.length > 0 && (
+          <DontsList items={imageryDonts} className="mb-4" />
+        )}
 
-        <AiBanner />
+        <AiContentBanner
+          visible={dirtySection === "imagery"}
+          onSave={() => handleSaveSection("imagery", editBuffer)}
+          onDiscard={cancelEdit}
+          saving={updateStyleguide.isPending}
+        />
       </section>
 
-      {/* Color Detail Modal */}
-      <Modal
-        open={!!selectedColor}
-        onClose={() => setSelectedColor(null)}
-        title={selectedColor?.name ?? ""}
-        size="lg"
-      >
-        {selectedColor && (
-          <div>
-            <div className="h-32 rounded-lg mb-4" style={{ backgroundColor: selectedColor.hex }} />
-            <div className="space-y-3 mb-4">
-              {[
-                { label: "HEX", value: selectedColor.hex },
-                { label: "RGB", value: selectedColor.rgb },
-                { label: "HSL", value: selectedColor.hsl },
-                { label: "CMYK", value: selectedColor.cmyk },
-              ].map((field) => (
-                <div key={field.label} className="flex items-center justify-between py-2 border-b border-border-dark">
-                  <span className="text-xs font-medium text-text-dark/40">{field.label}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-mono text-text-dark">{field.value}</span>
-                    <button
-                      onClick={() => handleCopy(field.value, field.label)}
-                      className="p-1 rounded text-text-dark/30 hover:text-text-dark transition-colors"
-                    >
-                      {copiedField === field.label ? (
-                        <Check className="w-3.5 h-3.5 text-emerald-400" />
-                      ) : (
-                        <Copy className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap gap-1.5 mb-4">
-              {selectedColor.tags.map((tag) => (
-                <Badge key={tag} variant="default" size="sm">{tag}</Badge>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-text-dark/40">WCAG AA</span>
-                {selectedColor.wcagAA ? (
-                  <Badge variant="success" size="sm">Pass</Badge>
-                ) : (
-                  <Badge variant="error" size="sm">Fail</Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-text-dark/40">WCAG AAA</span>
-                {selectedColor.wcagAAA ? (
-                  <Badge variant="success" size="sm">Pass</Badge>
-                ) : (
-                  <Badge variant="error" size="sm">Fail</Badge>
-                )}
-              </div>
-            </div>
-
-            <Tabs
-              tabs={[
-                { label: "Info", value: "info" },
-                { label: "Notes", value: "notes" },
-                { label: "Comments", value: "comments" },
-              ]}
-              activeTab="info"
-              onChange={() => {}}
-              variant="underline"
-              className="mt-4 mb-3"
-            />
-            <p className="text-sm text-text-dark/50">
-              {selectedColor.name} is used as a {selectedColor.tags[0]?.toLowerCase()} color throughout the brand. Apply it consistently across all digital and print materials.
-            </p>
-          </div>
-        )}
-      </Modal>
+      {/* ─── Color Detail Modal ─── */}
+      {selectedColor && (
+        <ColorDetailModal
+          color={selectedColor}
+          onClose={() => setSelectedColor(null)}
+          onCopy={handleCopy}
+          copiedField={copiedField}
+        />
+      )}
     </div>
   );
 }
 
-// ── AI Banner sub-component ──
+// ─── Sub-components ──────────────────────────────────────────
 
-function AiBanner() {
+function SectionHeader({
+  title,
+  editing,
+  onEdit,
+  onCancel,
+  extra,
+}: {
+  title: string;
+  editing: boolean;
+  onEdit: () => void;
+  onCancel: () => void;
+  extra?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <h2 className="text-lg font-semibold text-text-dark">{title}</h2>
+      <div className="flex items-center gap-2">
+        {extra}
+        {editing ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onCancel}
+            leftIcon={<X className="w-3.5 h-3.5" />}
+          >
+            Cancel
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onEdit}
+            leftIcon={<Pencil className="w-3.5 h-3.5" />}
+          >
+            Edit
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DontsList({
+  items,
+  className,
+}: {
+  items: string[];
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <h3 className="text-sm font-semibold text-text-dark mb-3">
+        Don&apos;ts
+      </h3>
+      <div className="flex gap-3 overflow-x-auto pb-1">
+        {items.map((d, i) => (
+          <div
+            key={i}
+            className="flex flex-col items-center gap-2 min-w-[120px] rounded-lg border border-red-500/20 bg-red-500/5 p-3 text-center"
+          >
+            <X className="w-5 h-5 text-red-400" />
+            <span className="text-xs text-red-300">{d}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AiContentBanner({
+  visible,
+  onSave,
+  onDiscard,
+  saving,
+}: {
+  visible: boolean;
+  onSave: () => void;
+  onDiscard: () => void;
+  saving: boolean;
+}) {
+  if (!visible) {
+    return (
+      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 flex items-center gap-2">
+        <Sparkles className="w-4 h-4 text-emerald-400" />
+        <span className="text-sm text-emerald-300">
+          This styleguide is used for AI content generation
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-emerald-400" />
-        <span className="text-sm text-emerald-300">This styleguide is used for AI content generation</span>
+        <span className="text-sm text-emerald-300">
+          This styleguide is used for AI content generation
+        </span>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm">Discard</Button>
-        <Button variant="primary" size="sm">Save Changes</Button>
+        <Button variant="ghost" size="sm" onClick={onDiscard}>
+          Discard
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={onSave}
+          disabled={saving}
+          leftIcon={saving ? undefined : <Save className="w-3.5 h-3.5" />}
+        >
+          {saving ? "Saving..." : "Save Changes"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ColorDetailModal({
+  color,
+  onClose,
+  onCopy,
+  copiedField,
+}: {
+  color: StyleguideColorData;
+  onClose: () => void;
+  onCopy: (value: string, field: string) => void;
+  copiedField: string | null;
+}) {
+  const [activeTab, setActiveTab] = useState<"info" | "notes" | "comments">(
+    "info"
+  );
+
+  const textColor = getTextColor(color.hex);
+  const contrastWhite = getContrastRatio(color.hex, "#ffffff");
+  const contrastBlack = getContrastRatio(color.hex, "#000000");
+
+  const colorFormats = [
+    { label: "HEX", value: color.hex },
+    { label: "RGB", value: color.rgb || "—" },
+    { label: "HSL", value: color.hsl || "—" },
+    { label: "CMYK", value: color.cmyk || "—" },
+  ];
+
+  const tags = (color.tags ?? []) as string[];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+      onClick={onClose}
+    >
+      <div
+        className="bg-background-dark border border-border-dark rounded-xl max-w-2xl w-full mx-4 overflow-hidden flex"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Left panel — color swatch */}
+        <div
+          className="w-[40%] p-6 flex flex-col justify-between min-h-[400px]"
+          style={{ backgroundColor: color.hex }}
+        >
+          <p
+            className="text-lg font-semibold"
+            style={{ color: textColor }}
+          >
+            {color.name}
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onCopy(color.hex, "swatch")}
+              className="p-1.5 rounded-md transition-colors"
+              style={{
+                color: textColor,
+                backgroundColor: textColor + "15",
+              }}
+            >
+              {copiedField === "swatch" ? (
+                <Check className="w-4 h-4" />
+              ) : (
+                <Copy className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Right panel */}
+        <div className="w-[60%] p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-text-dark">
+              Color Information
+            </h3>
+            <button
+              onClick={onClose}
+              className="p-1 rounded text-text-dark/30 hover:text-text-dark transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex items-center gap-1 mb-4 border-b border-border-dark">
+            {(
+              [
+                { id: "info", label: "Information", icon: "ℹ️" },
+                { id: "notes", label: "Notes", icon: "📝" },
+                { id: "comments", label: "Comments", icon: "💬" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "px-3 py-2 text-xs font-medium border-b-2 -mb-px transition-colors",
+                  activeTab === tab.id
+                    ? "border-primary text-text-dark"
+                    : "border-transparent text-text-dark/40"
+                )}
+              >
+                {tab.icon} {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {activeTab === "info" && (
+            <>
+              {/* Color formats */}
+              <div className="space-y-0 mb-4">
+                {colorFormats.map((f) => (
+                  <div
+                    key={f.label}
+                    className="flex items-center justify-between py-2 border-b border-border-dark"
+                  >
+                    <span className="text-xs font-medium text-text-dark/40">
+                      {f.label}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-mono text-text-dark">
+                        {f.value}
+                      </span>
+                      {f.value !== "—" && (
+                        <button
+                          onClick={() => onCopy(f.value, f.label)}
+                          className="p-1 rounded text-text-dark/30 hover:text-text-dark transition-colors"
+                        >
+                          {copiedField === f.label ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Tags */}
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {tags.map((tag) => (
+                    <Badge key={tag} variant="default" size="sm">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* Accessibility */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-text-dark/40 uppercase tracking-wide">
+                  Accessibility
+                </p>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-text-dark/60">
+                      White contrast:
+                    </span>
+                    <Badge
+                      variant={meetsWCAG(contrastWhite, "AA") ? "success" : "error"}
+                      size="sm"
+                    >
+                      AA {meetsWCAG(contrastWhite, "AA") ? "✓" : "✗"}
+                    </Badge>
+                    <Badge
+                      variant={meetsWCAG(contrastWhite, "AAA") ? "success" : "error"}
+                      size="sm"
+                    >
+                      AAA {meetsWCAG(contrastWhite, "AAA") ? "✓" : "✗"}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-text-dark/60">
+                      Black contrast:
+                    </span>
+                    <Badge
+                      variant={meetsWCAG(contrastBlack, "AA") ? "success" : "error"}
+                      size="sm"
+                    >
+                      AA {meetsWCAG(contrastBlack, "AA") ? "✓" : "✗"}
+                    </Badge>
+                    <Badge
+                      variant={meetsWCAG(contrastBlack, "AAA") ? "success" : "error"}
+                      size="sm"
+                    >
+                      AAA {meetsWCAG(contrastBlack, "AAA") ? "✓" : "✗"}
+                    </Badge>
+                  </div>
+                </div>
+                <p className="text-xs text-text-dark/30">
+                  Ratio: {contrastWhite.toFixed(1)}:1 (white) ·{" "}
+                  {contrastBlack.toFixed(1)}:1 (black)
+                </p>
+              </div>
+            </>
+          )}
+
+          {activeTab === "notes" && (
+            <div>
+              <textarea
+                className="w-full rounded-lg border border-border-dark bg-surface-dark px-3 py-2 text-sm text-text-dark placeholder:text-text-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
+                rows={6}
+                placeholder="Add usage notes for this color..."
+                defaultValue={color.notes || ""}
+              />
+            </div>
+          )}
+
+          {activeTab === "comments" && (
+            <p className="text-sm text-text-dark/40 py-6 text-center">
+              Comments coming soon
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
