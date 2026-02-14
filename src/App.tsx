@@ -30,7 +30,7 @@ import { recentItems } from './services/RecentItemsService';
 import { calculateBrandScore } from './utils/brand-score-calculator';
 import { generateMockActivities } from './data/mock-activities';
 import { ActivityFeed } from './components/ActivityFeed';
-import { BrandAsset } from './data/mock-brand-assets';
+import { BrandAsset } from './types/brand-asset';
 import { useBreadcrumbs } from './hooks/useBreadcrumbs';
 import { mockBrandAssets } from './data/mock-brand-assets';
 import { TemplateLibraryPage } from './components/templates/TemplateLibraryPage';

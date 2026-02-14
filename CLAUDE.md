@@ -70,14 +70,73 @@ prisma/seed.ts                       ← Seed data
 - Stripe billing — niet geïmplementeerd
 - Server-side data fetching — alles is mock data
 
-## Roadmap
-1. ✅ P0 Design System integratie (sidebar fix, ComingSoonPage, design tokens)
-2. Fase 4: Personas verfijning
-3. API laag bouwen (Prisma singleton → API routes → TanStack hooks → mock data migratie)
-4. Auth: NextAuth.js + login/register
-5. Multi-tenant: Organization + Workspace modellen
-6. Agency model: user management, invitations, agency billing via Stripe
-7. Fase 5-12: overige modules
+---
+
+## ACTIELIJST
+
+### 🔴 URGENT — blokkeert production build
+1. **Broken import fixen in App.tsx:33**
+   `import { BrandAsset } from './data/brand-assets'` → bestand bestaat niet.
+   Vervang door `import { BrandAsset } from './data/mock-brand-assets'` of
+   zoek waar BrandAsset daadwerkelijk gedefinieerd is.
+
+2. **Git commit** — 40+ bestanden zijn untracked (nooit gecommit).
+   Alles kan verloren gaan bij een fout. Eerste commit:
+   `git add -A && git commit -m "chore: volledige project state onder version control"`
+
+### ⚠️ TECHNISCHE SCHULD
+3. **692 TypeScript errors** — pre-bestaand, blokkeren dev server niet maar
+   wel `npm run build`. Top bestanden: App.tsx (8 errors),
+   ActiveCampaignsPage, AssetUnlockDetailView, personas/*,
+   35+ andere componenten. Geleidelijk aanpakken.
+
+4. **globals.css verwijderd** — vervangen door src/index.css. Werkt, maar
+   git toont `D src/app/globals.css`. Opruimen in git.
+
+5. **src/main.tsx** — legacy Vite entry point, wordt niet gebruikt.
+   Kan verwijderd worden.
+
+### 📋 ROADMAP (in volgorde)
+6. **Fase 4: Personas verfijning** — PersonasSection bestaat al maar heeft
+   TypeScript errors en mist features uit implementatieplan.
+
+7. **API laag bouwen** — mock data → echte database:
+   a. src/lib/prisma.ts — Prisma client singleton
+   b. src/app/api/ — CRUD routes per module
+   c. src/lib/api/ — type-safe API client functies
+   d. TanStack Query hooks per module
+   e. Migratie per module: mock data → TanStack hook
+   f. Volgorde: dashboard → brand-assets → personas → rest
+
+8. **Auth: NextAuth.js** — login, register, sessie management
+
+9. **Multi-tenant model** — Organization + Workspace:
+   a. Organization model (type: DIRECT of AGENCY)
+   b. Workspace model (alle brand data hangt hieronder)
+   c. User rollen: OWNER, ADMIN, MEMBER, VIEWER
+
+10. **Agency model** — agencies maken zelf users aan:
+    a. User management (invite, roles, deactivate)
+    b. Billing loopt via agency, niet via individuele users
+    c. Stripe integratie: seat-based agency plans
+    d. Workspace switcher in topbar
+
+11. **Fase 5-12: Overige modules** — nu ComingSoonPage of mock-only:
+    - Business Strategy (Fase 2)
+    - Brand Alignment (Fase 8)
+    - Content Library (Fase 10)
+    - Help & Support (Fase 12)
+
+### ❓ OPEN BESLISSINGEN
+- Auth provider: NextAuth.js vs Clerk vs Auth0
+- Agency pricing: per seat vs per workspace vs flat tiers
+- Gratis tier limieten: hoeveel assets/personas/campaigns?
+- Workspace isolatie: soft (filter op orgId) vs hard (row-level security)
+- Agency white-label: eigen logo/domein of alleen Branddock branding?
+- AI provider: OpenAI of Anthropic als standaard
+- Deployment: Vercel, Railway, of self-hosted
+
+---
 
 ## Referenties
 - Figma: https://www.figma.com/make/WTXNV6zhzsTyYLUOdkFGge/Branddock

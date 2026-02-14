@@ -4,6 +4,46 @@ export type AssetCategory =
 
 export type AssetStatus = "DRAFT" | "IN_PROGRESS" | "NEEDS_ATTENTION" | "READY";
 
+// --- Research method types (gebruikt door mock data) ---
+export type ResearchMethodType =
+  | "ai-exploration"
+  | "canvas-workshop"
+  | "interviews"
+  | "questionnaire"
+  | "survey"
+  | "focus-group"
+  | "desk-research";
+
+export type ResearchMethodStatus = "completed" | "in-progress" | "locked" | "not-started";
+
+export interface ResearchMethod {
+  type: ResearchMethodType;
+  status: ResearchMethodStatus;
+  completedAt?: string;
+  metadata?: Record<string, unknown>;
+}
+
+// --- Core BrandAsset type (bron: mock-brand-assets.ts) ---
+export interface BrandAsset {
+  id: string;
+  type: string;
+  title: string;
+  content: string;
+  category: string;
+  lastUpdated: string;
+  status: string;
+  description: string;
+  isCritical?: boolean;
+  priority?: string;
+  researchMethods: ResearchMethod[];
+  researchCoverage: number;
+  artifactsGenerated: number;
+  artifactsValidated: number;
+  validatedAt?: string;
+  contentSections?: { title: string; content: string; completed: boolean }[];
+  version?: string;
+}
+
 export interface BrandAssetWithMeta {
   id: string;
   name: string;
@@ -60,3 +100,12 @@ export const CATEGORY_MAP: Record<string, AssetCategory[]> = {
   "Foundation":     ["FOUNDATION"],
   "Culture":        ["CULTURE"],
 };
+
+// --- BrandAssetOption (gebruikt in BrandAssetsViewSimple) ---
+export interface BrandAssetOption {
+  id: string;
+  title: string;
+  type: string;
+  category: string;
+  status: string;
+}

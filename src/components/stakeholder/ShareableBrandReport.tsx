@@ -25,7 +25,7 @@ import {
   TrendingUp,
   Lightbulb
 } from 'lucide-react';
-import { BrandAsset } from '../../data/mock-brand-assets';
+import { BrandAsset } from '../../types/brand-asset';
 import { calculateDecisionStatus, getMethodLabel } from '../../utils/decision-status-calculator';
 
 interface ShareableBrandReportProps {

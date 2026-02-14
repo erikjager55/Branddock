@@ -1,12 +1,12 @@
 import { DecisionStatus, DecisionStatusInfo, RESEARCH_METHOD_RANKING } from '../types/decision-status';
 
-interface ResearchMethod {
+export interface ResearchMethod {
   type: string;
-  status: 'not-started' | 'in-progress' | 'completed';
+  status: 'not-started' | 'in-progress' | 'completed' | 'locked';
   progress?: number;
 }
 
-interface ResearchItem {
+export interface ResearchItem {
   researchMethods: ResearchMethod[];
 }
 
