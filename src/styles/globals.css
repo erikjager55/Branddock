@@ -1,0 +1,287 @@
+@custom-variant dark (&:is(.dark *));
+
+/* Import design system */
+@import './design-system.css';
+
+/* Import Halyard-like Font (Inter as professional alternative) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --font-size: 14px;
+  
+  /* Font Families - Halyard Stack */
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-text: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  
+  /* New Brand Colors from Style Guide */
+  --minty-green: #1FD1B2;
+  --dark-slate: #1F2937;
+  --electric-blue: #5252E3;
+  --peach-pink: #FECFBD;
+  --orange-red: #FF6B48;
+  --lime-sunset: #F9FD48;
+  
+  /* Light Mode Colors */
+  --background: #FFFFFF;
+  --foreground: #1F2937;
+  --card: #FFFFFF;
+  --card-foreground: #1F2937;
+  --popover: #FFFFFF;
+  --popover-foreground: #1F2937;
+  --primary: #1FD1B2;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F1F5F9;
+  --secondary-foreground: #1F2937;
+  --muted: #F8FAFC;
+  --muted-foreground: #64748B;
+  --accent: #E0F2F1;
+  --accent-foreground: #1FD1B2;
+  --destructive: #FF6B48;
+  --destructive-foreground: #FFFFFF;
+  --border: #E2E8F0;
+  --input: transparent;
+  --input-background: #FFFFFF;
+  --switch-background: #CBD5E1;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #1FD1B2;
+  
+  /* Charts - using new vibrant colors */
+  --chart-1: #1FD1B2;
+  --chart-2: #5252E3;
+  --chart-3: #FF6B48;
+  --chart-4: #F9FD48;
+  --chart-5: #FECFBD;
+  
+  --radius: 0.75rem;
+  
+  /* Sidebar */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1F2937;
+  --sidebar-primary: #1FD1B2;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F8FAFC;
+  --sidebar-accent-foreground: #1F2937;
+  --sidebar-border: #E2E8F0;
+  --sidebar-ring: #1FD1B2;
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  html {
+    font-family: var(--font-text);
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/**
+ * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ */
+@layer base {
+  :where(h1, h2, h3, h4, h5, h6, p, label, button, input, small) {
+    &:not([class*="text-"]) {
+      /* Typography styles will be applied unless element has a text-* class */
+    }
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+
+  h1 {
+    font-size: 1.875rem; /* 30px */
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.03em;
+  }
+
+  h2 {
+    font-size: 1.5rem; /* 24px */
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    font-size: 1.25rem; /* 20px */
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+
+  h4 {
+    font-size: 1.125rem; /* 18px */
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  h5 {
+    font-size: 1rem; /* 16px */
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  h6 {
+    font-size: 0.875rem; /* 14px */
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  p {
+    font-family: var(--font-text);
+    font-size: 0.875rem; /* 14px */
+    font-weight: 400;
+    line-height: 1.6;
+  }
+
+  label {
+    font-family: var(--font-text);
+    font-size: 0.875rem; /* 14px */
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  button {
+    font-family: var(--font-text);
+    font-size: 0.875rem; /* 14px */
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  input {
+    font-family: var(--font-text);
+    font-size: 0.875rem; /* 14px */
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  small {
+    font-family: var(--font-text);
+    font-size: 0.75rem; /* 12px */
+    font-weight: 400;
+    line-height: 1.5;
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+/* Print Styles for Reports */
+@media print {
+  .print\:hidden {
+    display: none !important;
+  }
+  
+  body {
+    background: white;
+    color: black;
+  }
+  
+  @page {
+    margin: 1.5cm;
+  }
+  
+  /* Ensure colors print */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
