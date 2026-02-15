@@ -152,6 +152,7 @@ model Workspace {
   products               Product[]
   researchPlans          ResearchPlan[]
   purchasedBundles       PurchasedBundle[]
+  knowledgeResources     KnowledgeResource[]
 
   @@index([organizationId])
 }
@@ -1269,5 +1270,42 @@ model PurchasedBundle {
   purchasedAt     DateTime @default(now())
 
   @@unique([workspaceId, bundleId])
+  @@index([workspaceId])
+}
+
+// =============================================================
+// Knowledge Library
+// =============================================================
+model KnowledgeResource {
+  id                String   @id @default(cuid())
+  title             String
+  description       String   @db.Text
+  type              String   @default("article") // book, video, website, image, document, podcast, article, course
+  author            String   @default("")
+  category          String   @default("")
+  tags              Json     @default("[]") // string[]
+  difficulty        String?  // beginner, intermediate, advanced
+  language          String   @default("en")
+  url               String   @default("")
+  thumbnail         String?
+  rating            Float    @default(0)
+  status            String   @default("available") // available, archived, pending, unavailable
+  addedBy           String?
+
+  // AI features
+  aiSummary         String?  @db.Text
+  aiKeyTakeaways    Json?    // string[]
+
+  // Relations metadata
+  relatedTrends     Json?    // string[]
+  relatedPersonas   Json?    // string[]
+  relatedAssets     Json?    // string[]
+
+  workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
   @@index([workspaceId])
 }
