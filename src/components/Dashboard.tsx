@@ -22,8 +22,7 @@ import {
   generateNextBestAction,
   transformToDecisionCockpit 
 } from '../utils/dashboard-decision-transformer';
-import { mockBrandAssets } from '../data/mock-brand-assets';
-import { mockPersonas } from '../data/mock-personas';
+import { useBrandAssets, usePersonas } from '../contexts';
 import { DecisionImpactPanel } from './impact/DecisionImpactPanel';
 
 interface DashboardProps {
@@ -35,6 +34,10 @@ interface DashboardProps {
 export function Dashboard({ onStartResearch, onNavigateToRelationships, onNavigate }: DashboardProps) {
   const [showWelcome, setShowWelcome] = React.useState(false);
   const shouldShowWelcome = useShouldShowWelcome();
+
+  // Use context data instead of mock imports
+  const { brandAssets } = useBrandAssets();
+  const { personas } = usePersonas();
 
   React.useEffect(() => {
     setShowWelcome(shouldShowWelcome);
@@ -248,7 +251,7 @@ export function Dashboard({ onStartResearch, onNavigateToRelationships, onNaviga
               </div>
               <h3 className="font-semibold mb-1">Brand Assets</h3>
               <p className="text-sm text-muted-foreground">
-                {mockBrandAssets.length} assets
+                {brandAssets.length} assets
               </p>
             </button>
 
@@ -264,7 +267,7 @@ export function Dashboard({ onStartResearch, onNavigateToRelationships, onNaviga
               </div>
               <h3 className="font-semibold mb-1">Personas</h3>
               <p className="text-sm text-muted-foreground">
-                {mockPersonas.length} personas
+                {personas.length} personas
               </p>
             </button>
 

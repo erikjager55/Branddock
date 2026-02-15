@@ -7,6 +7,12 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   // Cleanup existing data (in reverse dependency order)
+  // Organization / Multi-tenant
+  await prisma.invitation.deleteMany();
+  await prisma.workspaceMemberAccess.deleteMany();
+  await prisma.organizationMember.deleteMany();
+
+  // Personas
   await prisma.personaChatInsight.deleteMany();
   await prisma.personaChatMessage.deleteMany();
   await prisma.personaChatSession.deleteMany();
@@ -47,12 +53,28 @@ async function main() {
   await prisma.dashboardPreference.deleteMany();
   await prisma.user.deleteMany();
   await prisma.workspace.deleteMany();
+  await prisma.organization.deleteMany();
 
-  // Workspace
+  // ============================================
+  // ORGANIZATION (Agency demo)
+  // ============================================
+  const organization = await prisma.organization.create({
+    data: {
+      name: "Branddock Agency",
+      slug: "branddock-agency",
+      type: "AGENCY",
+      subscriptionStatus: "ACTIVE",
+      maxSeats: 10,
+      maxWorkspaces: 5,
+    },
+  });
+
+  // Workspace (nu gekoppeld aan Organization)
   const workspace = await prisma.workspace.create({
     data: {
       name: "Branddock Demo",
       slug: "branddock-demo",
+      organizationId: organization.id,
     },
   });
 
@@ -62,6 +84,94 @@ async function main() {
       email: "erik@branddock.com",
       name: "Erik Jager",
       workspaceId: workspace.id,
+    },
+  });
+
+  // OrganizationMember — Erik als OWNER
+  await prisma.organizationMember.create({
+    data: {
+      role: "OWNER",
+      userId: user.id,
+      organizationId: organization.id,
+    },
+  });
+
+  // Tweede user + member (demo teamlid)
+  const teamMember = await prisma.user.create({
+    data: {
+      email: "sarah@branddock.com",
+      name: "Sarah Chen",
+      workspaceId: workspace.id,
+    },
+  });
+
+  await prisma.organizationMember.create({
+    data: {
+      role: "MEMBER",
+      userId: teamMember.id,
+      organizationId: organization.id,
+    },
+  });
+
+  // WorkspaceMemberAccess voor teamlid
+  const teamMembership = await prisma.organizationMember.findFirst({
+    where: { userId: teamMember.id, organizationId: organization.id },
+  });
+  if (teamMembership) {
+    await prisma.workspaceMemberAccess.create({
+      data: {
+        memberId: teamMembership.id,
+        workspaceId: workspace.id,
+      },
+    });
+  }
+
+  // Demo invitation (pending)
+  await prisma.invitation.create({
+    data: {
+      email: "tom.wilson@agency.com",
+      role: "MEMBER",
+      status: "PENDING",
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 dagen
+      organizationId: organization.id,
+      invitedById: user.id,
+    },
+  });
+
+  // === Tweede Organization (DIRECT klant) voor multi-tenant demo ===
+  const directOrg = await prisma.organization.create({
+    data: {
+      name: "TechCorp Inc.",
+      slug: "techcorp",
+      type: "DIRECT",
+      subscriptionStatus: "TRIALING",
+      trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 dagen trial
+      maxSeats: 3,
+      maxWorkspaces: 1,
+    },
+  });
+
+  const directWorkspace = await prisma.workspace.create({
+    data: {
+      name: "TechCorp Brand",
+      slug: "techcorp-brand",
+      organizationId: directOrg.id,
+    },
+  });
+
+  const directUser = await prisma.user.create({
+    data: {
+      email: "john@techcorp.com",
+      name: "John Smith",
+      workspaceId: directWorkspace.id,
+    },
+  });
+
+  await prisma.organizationMember.create({
+    data: {
+      role: "OWNER",
+      userId: directUser.id,
+      organizationId: directOrg.id,
     },
   });
 
@@ -1336,7 +1446,7 @@ async function main() {
     });
   }
 
-  console.log("Seed complete: workspace, user, preferences, 15 notifications, 13 brand assets, 1 AI session, 52 research methods, 2 frameworks, 3 versions, 3 bundles, 1 completed workshop, 1 scheduled workshop, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods)");
+  console.log("Seed complete: 2 organizations (1 AGENCY + 1 DIRECT), 2 workspaces, 4 users, 3 org members, 1 workspace access, 1 invitation, dashboard prefs, 15 notifications, 13 brand assets, 1 AI session, 52 research methods, 2 frameworks, 3 versions, 3 bundles, 1 completed workshop, 1 scheduled workshop, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods)");
 }
 
 main()
