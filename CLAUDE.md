@@ -48,7 +48,6 @@ Feature flag: `NEXT_PUBLIC_WORKSPACE_ID` in `.env.local`
 - Dashboard — leest counts uit BrandAssetsContext + PersonasContext
 
 **Nog op mock data:**
-- Research Plans, Research Bundles
 - Campaigns, Knowledge, Trends
 - Strategy tools (tool definitions, niet data-backed)
 - Dashboard utility functions (`dashboard-decision-transformer.ts` leest intern nog mock)
@@ -203,6 +202,11 @@ Directe klant (Organization type=DIRECT)
 | `/api/personas` | POST | Nieuwe persona aanmaken (name, workspaceId, createdById) |
 | `/api/products` | GET | Lijst met filters (category, search, sortBy, sortOrder) + stats |
 | `/api/products` | POST | Nieuw product aanmaken (name, category, workspaceId, pricing, features, etc.) |
+| `/api/research-plans` | GET | Lijst met filters (status) + stats |
+| `/api/research-plans` | POST | Nieuw research plan aanmaken |
+| `/api/research-plans` | PATCH | Research plan updaten (unlock methods/assets, status) |
+| `/api/purchased-bundles` | GET | Lijst gekochte bundles + alle unlocked tool IDs |
+| `/api/purchased-bundles` | POST | Bundle aankoop registreren (upsert) |
 
 Alle routes vereisen `workspaceId` als query param (GET) of in body (POST).
 
@@ -256,6 +260,7 @@ Alle routes vereisen `workspaceId` als query param (GET) of in body (POST).
 
 ### 📋 ROADMAP (in volgorde)
 1. ~~**Product model** toevoegen aan Prisma schema + API route + migratie~~ ✅
+1. ~~**ResearchPlan + PurchasedBundle** modellen + API routes~~ ✅
 2. **Meer API routes** — module voor module:
    - ResearchPlan, ResearchBundle, Campaigns, Knowledge, Trends
    - Zelfde patroon: route + client + adapter + hook + context

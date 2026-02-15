@@ -1,14 +1,5 @@
-/**
- * Research Plan Context
- * 
- * Global state management for research plans, unlocked methods and assets.
- * Provides centralized access control across the application.
- * Includes localStorage persistence.
- */
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { saveToStorage, loadFromStorage, StorageKeys } from '../utils/storage';
-import { logger } from '../utils/logger';
 
 export interface ResearchPlan {
   id: string;
@@ -36,30 +27,24 @@ interface ResearchPlanContextType {
   updateSharedAssets: (tool: keyof SharedAssetSelection, assets: string[]) => void;
   isMethodUnlocked: (methodId: string) => boolean;
   isAssetUnlocked: (assetId: string) => boolean;
+  isLoading: boolean;
 }
 
 const ResearchPlanContext = createContext<ResearchPlanContextType | undefined>(undefined);
 
+const DEMO_PLAN: ResearchPlan = {
+  id: 'demo-plan-1',
+  method: 'workshop',
+  unlockedMethods: ['ai-agent', 'canvas-workshop', 'interviews', 'questionnaire'],
+  unlockedAssets: ['1', '2', '3', '4', '5'],
+  entryMode: 'bundle',
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+};
+
 export function ResearchPlanProvider({ children }: { children: ReactNode }) {
-  const [activeResearchPlan, setActiveResearchPlan] = useState<ResearchPlan | null>(() => {
-    // Load from localStorage on mount
-    const stored = loadFromStorage<ResearchPlan | null>(StorageKeys.ACTIVE_RESEARCH_PLAN, null);
-    
-    // If no stored plan, return demo plan
-    if (!stored) {
-      return {
-        id: 'demo-plan-1',
-        method: 'workshop',
-        unlockedMethods: ['ai-agent', 'canvas-workshop', 'interviews', 'questionnaire'],
-        unlockedAssets: ['1', '2', '3', '4', '5'],
-        entryMode: 'bundle' as const,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-    }
-    
-    return stored;
-  });
+  const [activeResearchPlan, setActiveResearchPlan] = useState<ResearchPlan | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [sharedSelectedAssets, setSharedSelectedAssets] = useState<SharedAssetSelection>(() => {
     return loadFromStorage<SharedAssetSelection>(StorageKeys.SHARED_ASSETS, {
@@ -69,11 +54,50 @@ export function ResearchPlanProvider({ children }: { children: ReactNode }) {
     });
   });
 
+  // API first, fallback to localStorage/demo
+  useEffect(() => {
+    const workspaceId = process.env.NEXT_PUBLIC_WORKSPACE_ID;
+    if (!workspaceId) {
+      const stored = loadFromStorage<ResearchPlan | null>(StorageKeys.ACTIVE_RESEARCH_PLAN, null);
+      setActiveResearchPlan(stored ?? DEMO_PLAN);
+      setIsLoading(false);
+      return;
+    }
+
+    fetch(`/api/research-plans?workspaceId=${workspaceId}&status=active`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`API error ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        if (data.plans && data.plans.length > 0) {
+          const p = data.plans[0];
+          setActiveResearchPlan({
+            id: p.id,
+            method: p.method,
+            unlockedMethods: p.unlockedMethods,
+            unlockedAssets: p.unlockedAssets,
+            entryMode: p.entryMode as 'asset' | 'bundle' | 'questionnaire',
+            rationale: p.rationale ?? undefined,
+            configuration: p.configuration ?? undefined,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+          });
+        } else {
+          const stored = loadFromStorage<ResearchPlan | null>(StorageKeys.ACTIVE_RESEARCH_PLAN, null);
+          setActiveResearchPlan(stored ?? DEMO_PLAN);
+        }
+      })
+      .catch((err) => {
+        console.warn('[ResearchPlanContext] API fetch failed, using fallback:', err.message);
+        const stored = loadFromStorage<ResearchPlan | null>(StorageKeys.ACTIVE_RESEARCH_PLAN, null);
+        setActiveResearchPlan(stored ?? DEMO_PLAN);
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
   const updateSharedAssets = (tool: keyof SharedAssetSelection, assets: string[]) => {
-    setSharedSelectedAssets(prev => ({
-      ...prev,
-      [tool]: assets
-    }));
+    setSharedSelectedAssets((prev) => ({ ...prev, [tool]: assets }));
   };
 
   const isMethodUnlocked = (methodId: string): boolean => {
@@ -86,6 +110,7 @@ export function ResearchPlanProvider({ children }: { children: ReactNode }) {
     return activeResearchPlan.unlockedAssets.includes(assetId);
   };
 
+  // Persist to localStorage as backup
   useEffect(() => {
     if (activeResearchPlan) {
       saveToStorage(StorageKeys.ACTIVE_RESEARCH_PLAN, activeResearchPlan);
@@ -108,6 +133,7 @@ export function ResearchPlanProvider({ children }: { children: ReactNode }) {
         updateSharedAssets,
         isMethodUnlocked,
         isAssetUnlocked,
+        isLoading,
       }}
     >
       {children}

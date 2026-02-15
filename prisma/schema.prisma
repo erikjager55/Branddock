@@ -150,6 +150,8 @@ model Workspace {
   aiPersonaAnalyses      AIPersonaAnalysisSession[]
   personaChatSessions    PersonaChatSession[]
   products               Product[]
+  researchPlans          ResearchPlan[]
+  purchasedBundles       PurchasedBundle[]
 
   @@index([organizationId])
 }
@@ -1220,5 +1222,41 @@ model Product {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  @@index([workspaceId])
+}
+
+// =============================================================
+// Research Plans & Purchased Bundles
+// =============================================================
+model ResearchPlan {
+  id              String   @id @default(cuid())
+  method          String   // e.g. "workshop"
+  entryMode       String   @default("bundle") // asset | bundle | questionnaire
+  status          String   @default("active") // active | completed | paused
+  unlockedMethods Json     @default("[]") // string[]
+  unlockedAssets  Json     @default("[]") // string[]
+  rationale       Json?    // Record<string, string>
+  configuration   Json?
+
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([workspaceId])
+}
+
+model PurchasedBundle {
+  id              String   @id @default(cuid())
+  bundleId        String   // e.g. "brand-essentials-foundation"
+  unlockedTools   Json     @default("[]") // string[] — strategy tool IDs
+
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  purchasedAt     DateTime @default(now())
+
+  @@unique([workspaceId, bundleId])
   @@index([workspaceId])
 }
