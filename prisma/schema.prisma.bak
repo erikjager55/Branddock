@@ -6,118 +6,7 @@ datasource db {
   provider = "postgresql"
 }
 
-// ============================================
-// ORGANIZATION + MULTI-TENANT (Agency model)
-// ============================================
-
-model Organization {
-  id               String             @id @default(cuid())
-  name             String
-  slug             String             @unique
-  type             OrganizationType   @default(DIRECT)
-  logoUrl          String?
-  domain           String?            // voor toekomstige white-label
-
-  // Billing (Stripe)
-  stripeCustomerId   String?          @unique
-  stripePriceId      String?
-  stripeSubscriptionId String?        @unique
-  subscriptionStatus SubscriptionStatus @default(TRIALING)
-  trialEndsAt        DateTime?
-  maxSeats           Int              @default(3)
-  maxWorkspaces      Int              @default(1)
-
-  // Relations
-  members          OrganizationMember[]
-  workspaces       Workspace[]
-  invitations      Invitation[]
-
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-}
-
-enum OrganizationType {
-  DIRECT    // Klant die zelf betaalt, 1 workspace
-  AGENCY    // Bureau dat klanten beheert, meerdere workspaces
-}
-
-enum SubscriptionStatus {
-  TRIALING
-  ACTIVE
-  PAST_DUE
-  CANCELED
-  UNPAID
-}
-
-model OrganizationMember {
-  id             String           @id @default(cuid())
-  role           MemberRole       @default(MEMBER)
-  isActive       Boolean          @default(true)
-
-  userId         String
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  // Welke workspaces mag deze user zien? Leeg = alle (voor OWNER/ADMIN)
-  workspaceAccess WorkspaceMemberAccess[]
-
-  joinedAt       DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-
-  @@unique([userId, organizationId])
-  @@index([organizationId])
-  @@index([userId])
-}
-
-model WorkspaceMemberAccess {
-  id           String             @id @default(cuid())
-  memberId     String
-  member       OrganizationMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  workspaceId  String
-  workspace    Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@unique([memberId, workspaceId])
-  @@index([workspaceId])
-}
-
-enum MemberRole {
-  OWNER     // Volledige controle, billing, kan org verwijderen
-  ADMIN     // User management, workspace management
-  MEMBER    // Kan werken in toegewezen workspaces
-  VIEWER    // Alleen lezen
-}
-
-model Invitation {
-  id             String           @id @default(cuid())
-  email          String
-  role           MemberRole       @default(MEMBER)
-  token          String           @unique @default(cuid())
-  status         InvitationStatus @default(PENDING)
-  expiresAt      DateTime
-
-  organizationId String
-  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  invitedById    String
-  invitedBy      User             @relation(fields: [invitedById], references: [id])
-
-  createdAt      DateTime         @default(now())
-
-  @@index([organizationId])
-  @@index([token])
-  @@index([email])
-}
-
-enum InvitationStatus {
-  PENDING
-  ACCEPTED
-  EXPIRED
-  REVOKED
-}
-
-// ============================================
-// KERN MODELLEN
-// ============================================
+// === KERN MODELLEN (minimaal voor Fase 11) ===
 
 model Workspace {
   id        String   @id @default(cuid())
@@ -126,14 +15,6 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Organization koppeling
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-
-  // Access control
-  memberAccess         WorkspaceMemberAccess[]
-
-  // Bestaande relaties
   users                User[]
   dashboardPreferences DashboardPreference[]
   notifications        Notification[]
@@ -149,8 +30,6 @@ model Workspace {
   personas               Persona[]
   aiPersonaAnalyses      AIPersonaAnalysisSession[]
   personaChatSessions    PersonaChatSession[]
-
-  @@index([organizationId])
 }
 
 model User {
@@ -158,19 +37,11 @@ model User {
   email       String    @unique
   name        String?
   avatarUrl   String?
-
-  // Legacy: directe workspace koppeling (wordt gefaseerd vervangen door OrganizationMember)
-  workspaceId String?
-  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
-
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  // Organization relaties
-  memberships        OrganizationMember[]
-  sentInvitations    Invitation[]
-
-  // Bestaande relaties
   aiAnalysisSessions AIBrandAnalysisSession[]
   lockedAssets       BrandAsset[]           @relation("LockedAssets")
   assetVersions      BrandAssetVersion[]

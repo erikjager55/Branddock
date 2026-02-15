@@ -1,9 +1,31 @@
+#!/bin/bash
+# =============================================================
+# Branddock — Prisma schema update: Organization + Agency model
+#
+# Toevoegingen:
+#   - Organization model (DIRECT of AGENCY)
+#   - OrganizationMember (User ↔ Organization met rollen)
+#   - Invitation model (voor user management door agencies)
+#   - Workspace → gekoppeld aan Organization
+#   - User → losgekoppeld van single Workspace, via OrganizationMember
+# =============================================================
+
+set -e
+echo "🔧 Branddock — Schema update: Organization + Agency model"
+echo "=========================================================="
+
+# Backup huidig schema
+cp prisma/schema.prisma prisma/schema.prisma.bak
+echo "📦 Backup: prisma/schema.prisma.bak"
+
+cat > prisma/schema.prisma << 'ENDOFSCHEMA'
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================
@@ -1187,3 +1209,21 @@ model PersonaChatInsight {
 
   @@index([sessionId])
 }
+ENDOFSCHEMA
+
+echo "✅ Schema geschreven"
+
+# Valideer het schema
+echo ""
+echo "🔍 Schema valideren..."
+npx prisma validate 2>&1 || true
+
+echo ""
+echo "📊 Model count:"
+grep -c "model " prisma/schema.prisma
+echo ""
+echo "Nieuwe modellen: Organization, OrganizationMember, WorkspaceMemberAccess, Invitation"
+echo "Gewijzigd: Workspace (+ organizationId), User (workspaceId optioneel, + memberships)"
+echo ""
+echo "✅ Commit:"
+echo "   git add -A && git commit -m 'feat: add Organization + Agency model to Prisma schema'"
