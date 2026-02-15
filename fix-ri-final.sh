@@ -1,3 +1,9 @@
+#!/bin/bash
+set -e
+echo "🔧 Fix: ResearchItem zonder index signature"
+
+# Herschrijf alleen de interface, behoud de rest exact
+cat > src/utils/decision-status-calculator.ts << 'ENDOFFILE'
 import { DecisionStatus, DecisionStatusInfo, RESEARCH_METHOD_RANKING } from '../types/decision-status';
 
 export interface ResearchItem {
@@ -95,3 +101,15 @@ export function getMethodLabel(methodType: string): string {
   };
   return labels[methodType] || methodType;
 }
+ENDOFFILE
+
+echo "✅ Herschreven"
+echo ""
+RESEARCH_ERRORS=$(npx tsc --noEmit 2>&1 | grep -c "ResearchItem" || true)
+echo "ResearchItem errors: $RESEARCH_ERRORS"
+if [ "$RESEARCH_ERRORS" -gt "0" ]; then
+  npx tsc --noEmit 2>&1 | grep "ResearchItem" | head -10
+fi
+echo ""
+TOTAL=$(npx tsc --noEmit 2>&1 | grep -c "error TS" || true)
+echo "Totaal: $TOTAL errors (was 713)"

@@ -1,7 +1,21 @@
+#!/bin/bash
+# =============================================================
+# Branddock — Fix ResearchItem (clean rewrite, geen sed)
+# =============================================================
+
+set -e
+echo "🔧 Fix: ResearchItem compatible met BrandAsset + Persona"
+echo "========================================================="
+
+# ----- Schrijf decision-status-calculator.ts volledig opnieuw -----
+echo ""
+echo "📝 decision-status-calculator.ts herschrijven..."
+
+cat > src/utils/decision-status-calculator.ts << 'ENDOFFILE'
 import { DecisionStatus, DecisionStatusInfo, RESEARCH_METHOD_RANKING } from '../types/decision-status';
 
 export interface ResearchItem {
-  researchMethods: Array<{ status: string; type?: string; method?: string }>;
+  researchMethods: Array<{ status: string; type?: string; method?: string; [key: string]: unknown }>;
 }
 
 /**
@@ -15,19 +29,23 @@ export interface ResearchItem {
 export function calculateDecisionStatus(item: ResearchItem): DecisionStatusInfo {
   const methods = item.researchMethods || [];
   
+  // Calculate coverage
   const totalMethods = methods.length;
   const completedMethods = methods.filter(m => m.status === 'completed');
   const completedCount = completedMethods.length;
   const coverage = totalMethods > 0 ? (completedCount / totalMethods) * 100 : 0;
   
-  const completedTypes = completedMethods.map(m => (m.type || m.method || 'unknown'));
+  // Get completed method types (BrandAsset uses 'type', Persona uses 'method')
+  const completedTypes = completedMethods.map(m => (m.type || m.method || 'unknown') as string);
   
+  // Check if top 2 ranked methods are completed
   const methodsWithRanking = methods.map(m => ({
-    type: (m.type || m.method || 'unknown'),
+    type: (m.type || m.method || 'unknown') as string,
     status: m.status,
-    ranking: RESEARCH_METHOD_RANKING[(m.type || m.method || 'unknown')] || 999
+    ranking: RESEARCH_METHOD_RANKING[(m.type || m.method || 'unknown') as string] || 999
   }));
   
+  // Sort by ranking (lower = higher priority)
   const sortedMethods = methodsWithRanking.sort((a, b) => a.ranking - b.ranking);
   const topTwoMethods = sortedMethods.slice(0, 2);
   const topMethodsCompleted = topTwoMethods.every(m => m.status === 'completed');
@@ -35,6 +53,7 @@ export function calculateDecisionStatus(item: ResearchItem): DecisionStatusInfo 
     .filter(m => m.status !== 'completed')
     .map(m => m.type);
   
+  // Determine status
   let status: DecisionStatus;
   let recommendation: string;
   let risk: string;
@@ -86,6 +105,9 @@ export function calculateDecisionStatus(item: ResearchItem): DecisionStatusInfo 
   };
 }
 
+/**
+ * Get human-readable method names
+ */
 export function getMethodLabel(methodType: string): string {
   const labels: Record<string, string> = {
     'workshop': 'Workshop',
@@ -95,3 +117,23 @@ export function getMethodLabel(methodType: string): string {
   };
   return labels[methodType] || methodType;
 }
+ENDOFFILE
+
+echo "   ✅ decision-status-calculator.ts herschreven"
+
+# ----- Verificatie -----
+echo ""
+echo "🔍 Verificatie..."
+RESEARCH_ERRORS=$(npx tsc --noEmit 2>&1 | grep -c "ResearchItem" || true)
+echo "   ResearchItem errors: $RESEARCH_ERRORS"
+
+if [ "$RESEARCH_ERRORS" -gt "0" ]; then
+  npx tsc --noEmit 2>&1 | grep "ResearchItem" | head -15
+fi
+
+echo ""
+TOTAL=$(npx tsc --noEmit 2>&1 | grep -c "error TS" || true)
+echo "📊 Totaal: $TOTAL errors (was 713)"
+echo ""
+echo "✅ Klaar. Commit:"
+echo "   git add -A && git commit -m 'fix: flexible ResearchItem for BrandAsset + Persona'"
