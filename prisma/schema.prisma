@@ -153,6 +153,7 @@ model Workspace {
   researchPlans          ResearchPlan[]
   purchasedBundles       PurchasedBundle[]
   knowledgeResources     KnowledgeResource[]
+  trends                 Trend[]
 
   @@index([organizationId])
 }
@@ -1306,6 +1307,33 @@ model KnowledgeResource {
 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@index([workspaceId])
+}
+
+// =============================================================
+// Trends
+// =============================================================
+model Trend {
+  id                  String   @id @default(cuid())
+  title               String
+  description         String   @db.Text
+  category            String   @default("technology") // technology, consumer, social, business, environmental
+  impact              String   @default("medium") // high, medium, low
+  timeframe           String   @default("medium-term") // short-term, medium-term, long-term
+  direction           String?  // rising, declining, stable
+  level               String?  // micro, meso, macro
+  relevance           Int?     // 0-100
+  relevantIndustries  Json     @default("[]") // string[]
+  keyInsights         String?  @db.Text
+  sources             Json?    // string[]
+  tags                Json     @default("[]") // string[]
+
+  workspaceId         String
+  workspace           Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   @@index([workspaceId])
 }

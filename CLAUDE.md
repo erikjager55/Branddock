@@ -49,11 +49,11 @@ Feature flag: `NEXT_PUBLIC_WORKSPACE_ID` in `.env.local`
 - Research Plans (1 active plan) — `/api/research-plans` GET + POST + PATCH
 - Purchased Bundles
 - Campaigns (3 campaigns)
-- Knowledge Library (5 resources) — `/api/knowledge` GET + POST — `/api/campaigns` GET + POST + PATCH — `/api/purchased-bundles` GET + POST
+- Knowledge Library (5 resources)
+- Trends (5 trends) — `/api/trends` GET + POST — `/api/knowledge` GET + POST — `/api/campaigns` GET + POST + PATCH — `/api/purchased-bundles` GET + POST
 - Dashboard — leest counts uit BrandAssetsContext + PersonasContext
 
 **Nog op mock data:**
-- Trends
 - Strategy tools (tool definitions, niet data-backed)
 - Dashboard utility functions (`dashboard-decision-transformer.ts` leest intern nog mock)
 
@@ -270,8 +270,7 @@ Alle routes vereisen `workspaceId` als query param (GET) of in body (POST).
 1. ~~**Product model** toevoegen aan Prisma schema + API route + migratie~~ ✅
 1. ~~**ResearchPlan + PurchasedBundle** modellen + API routes~~ ✅
 2. **Meer API routes** — module voor module:
-   - Trends
-   - Zelfde patroon: route + client + adapter + hook + context
+   - ~~Zelfde patroon: route + client + adapter + hook + context~~ ✅ Alle modules gemigreerd
 3. **dashboard-decision-transformer refactoren** — mock imports → context data
 4. **Auth: NextAuth.js** — login, register, sessie management
    - workspaceId uit sessie halen ipv env variable
