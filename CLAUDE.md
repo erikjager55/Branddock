@@ -48,7 +48,6 @@ Feature flag: `NEXT_PUBLIC_WORKSPACE_ID` in `.env.local`
 - Dashboard — leest counts uit BrandAssetsContext + PersonasContext
 
 **Nog op mock data:**
-- Products & Services (geen DB model)
 - Research Plans, Research Bundles
 - Campaigns, Knowledge, Trends
 - Strategy tools (tool definitions, niet data-backed)
@@ -202,6 +201,8 @@ Directe klant (Organization type=DIRECT)
 | `/api/brand-assets` | POST | Nieuw asset aanmaken (name, category, workspaceId) |
 | `/api/personas` | GET | Lijst met research methods + stats |
 | `/api/personas` | POST | Nieuwe persona aanmaken (name, workspaceId, createdById) |
+| `/api/products` | GET | Lijst met filters (category, search, sortBy, sortOrder) + stats |
+| `/api/products` | POST | Nieuw product aanmaken (name, category, workspaceId, pricing, features, etc.) |
 
 Alle routes vereisen `workspaceId` als query param (GET) of in body (POST).
 
@@ -227,7 +228,6 @@ Alle routes vereisen `workspaceId` als query param (GET) of in body (POST).
 ## Wat er NIET is
 - **Auth** — niet geïmplementeerd, workspaceId via env variable
 - **Stripe billing** — niet geïmplementeerd
-- **Product model** — bestaat niet in Prisma schema
 - **API routes** voor strategies, research, campaigns, etc.
 - **Server-side rendering** — alles is client-side
 
@@ -252,10 +252,10 @@ Alle routes vereisen `workspaceId` als query param (GET) of in body (POST).
 - **693 TypeScript errors** — geleidelijk aanpakken
 - **Adapter pattern** — tijdelijk, componenten moeten op termijn direct DB-model gebruiken
 - **dashboard-decision-transformer.ts** — leest intern nog mock data, refactoren naar context
-- **ProductsContext** — inline mock data, geen DB model
+- **ProductsContext** — API first, mock fallback (zelfde patroon als BrandAssets/Personas)
 
 ### 📋 ROADMAP (in volgorde)
-1. **Product model** toevoegen aan Prisma schema + API route + migratie
+1. ~~**Product model** toevoegen aan Prisma schema + API route + migratie~~ ✅
 2. **Meer API routes** — module voor module:
    - ResearchPlan, ResearchBundle, Campaigns, Knowledge, Trends
    - Zelfde patroon: route + client + adapter + hook + context

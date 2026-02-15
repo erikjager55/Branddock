@@ -149,6 +149,7 @@ model Workspace {
   personas               Persona[]
   aiPersonaAnalyses      AIPersonaAnalysisSession[]
   personaChatSessions    PersonaChatSession[]
+  products               Product[]
 
   @@index([organizationId])
 }
@@ -1186,4 +1187,38 @@ model PersonaChatInsight {
   createdAt   DateTime            @default(now())
 
   @@index([sessionId])
+}
+
+// =============================================================
+// Product & Services
+// =============================================================
+model Product {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  description     String    @db.Text
+  category        String    // Software, Consulting, Mobile, etc.
+  source          String    @default("Manual Entry")
+
+  // Pricing
+  pricingModel    String    @default("Custom") // Enterprise, Subscription, Custom, Free
+  pricingAmount   String?   // e.g. "€149/month"
+  pricingCurrency String?   // e.g. "EUR"
+
+  // JSON arrays
+  features        Json      @default("[]") // string[]
+  benefits        Json      @default("[]") // string[]
+  useCases        Json      @default("[]") // string[]
+
+  // Optional extras
+  specifications  Json?     // { key: string, value: string }[]
+
+  // Relaties
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([workspaceId])
 }
