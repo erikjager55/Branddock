@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from './ui/alert';
 import { ResearchTargetCategory, ResearchTarget } from '../types/research-target';
-import { mockBrandAssets } from '../data/mock-brand-assets';
+import { useBrandAssets } from '../contexts/BrandAssetsContext';
 import { mockPersonas } from '../data/mock-personas';
 import { researchBundles, getBundlesForTarget } from '../data/research-bundles';
 
@@ -217,6 +217,7 @@ const compatibleCombinations = {
 };
 
 export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedPlan }: StrategicResearchPlannerProps) {
+  const { brandAssets } = useBrandAssets();
   // Navigation state - Skip target selection, go directly to entry
   const [step, setStep] = useState<'target-selection' | 'entry' | 'tool-selection' | 'asset-selection' | 'review' | 'bundle-selection' | 'plan-confirmation'>(
     preSelectedPlan ? 'plan-confirmation' : 'entry'
@@ -266,7 +267,7 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
     if (selectedTarget.category === 'brand') {
       if (selectedTarget.targetId) {
         // Specific brand asset
-        const asset = mockBrandAssets.find(a => a.id === selectedTarget.targetId);
+        const asset = brandAssets.find(a => a.id === selectedTarget.targetId);
         return asset ? [{ 
           id: asset.id, 
           name: asset.type, 
@@ -276,7 +277,7 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
         }] : [];
       } else {
         // All brand assets
-        return mockBrandAssets.map(asset => ({
+        return brandAssets.map(asset => ({
           id: asset.id,
           name: asset.type,
           description: asset.content?.substring(0, 100) || '',
@@ -1323,7 +1324,7 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
                       <div className="flex flex-wrap gap-2">
                         {((bundle as any).items || (bundle as any).assets || []).map((itemId: string) => {
                           // Try to find in brand assets first
-                          let item = mockBrandAssets.find(a => a.id === itemId);
+                          let item = brandAssets.find(a => a.id === itemId);
                           let ItemIcon = Palette;
                           let itemName = item?.type;
                           

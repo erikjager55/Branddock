@@ -29,7 +29,7 @@ import {
   Paintbrush,
   Shield,
 } from 'lucide-react';
-import { mockBrandAssets } from '../data/mock-brand-assets';
+import { useBrandAssets } from '../contexts/BrandAssetsContext';
 import { ResearchMethodType } from '../types/brand-asset';
 
 type NavigationItem = {
@@ -54,6 +54,7 @@ export function EnhancedSidebarSimple({
   collapsed,
   onToggleCollapse,
 }: EnhancedSidebarSimpleProps) {
+  const { brandAssets } = useBrandAssets();
   // Navigation groups
   const workspaceItems: NavigationItem[] = [
     { id: 'dashboard', label: 'Overview', icon: Home },
@@ -98,7 +99,7 @@ export function EnhancedSidebarSimple({
 
   // Count assets that need attention
   const needsAttentionCount = useMemo(() => {
-    return mockBrandAssets.filter(asset => asset.status === 'ready-to-validate').length;
+    return brandAssets.filter(asset => asset.status === 'ready-to-validate').length;
   }, []);
 
   if (collapsed) {

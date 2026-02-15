@@ -75,7 +75,7 @@ import { CanvasWorkshopManager } from './canvases/CanvasWorkshopManager_INTEGRAT
 import { GenericToolManager } from './canvases/GenericToolManager';
 import { SessionOutcomeHeader } from './SessionOutcomeHeader';
 import { SessionNavigator } from './SessionNavigator';
-import { mockBrandAssets } from '../data/mock-brand-assets';
+import { useBrandAssets } from '../contexts/BrandAssetsContext';
 import { ResearchMethodType } from '../types/brand-asset';
 
 interface ResearchDashboardProps {
@@ -104,6 +104,7 @@ export function ResearchDashboard({
   onAssetsChange,
   researchPlanConfig
 }: ResearchDashboardProps) {
+  const { brandAssets } = useBrandAssets();
   // Interview purchase state
   // Simplified: Research Plans control access now
   const [interviewsPurchased, setInterviewsPurchased] = useState(true); // Default to true for demo, or driven by global state
@@ -1007,8 +1008,8 @@ export function ResearchDashboard({
      
      // Get all assets that have been unlocked in the research plan
      const unlockedAssets = researchPlanConfig?.unlockedAssets 
-       ? mockBrandAssets.filter(asset => researchPlanConfig.unlockedAssets.includes(asset.id))
-       : mockBrandAssets;
+       ? brandAssets.filter(asset => researchPlanConfig.unlockedAssets.includes(asset.id))
+       : brandAssets;
      
      // Debug logging
      logger.debug('Interview SessionNavigator Debug', {
@@ -1068,8 +1069,8 @@ export function ResearchDashboard({
     
     // Get all assets that have been unlocked in the research plan
     const unlockedAssets = researchPlanConfig?.unlockedAssets 
-      ? mockBrandAssets.filter(asset => researchPlanConfig.unlockedAssets.includes(asset.id))
-      : mockBrandAssets;
+      ? brandAssets.filter(asset => researchPlanConfig.unlockedAssets.includes(asset.id))
+      : brandAssets;
     
     return (
       <div className="flex-1 overflow-y-auto">
@@ -1110,8 +1111,8 @@ export function ResearchDashboard({
     
     // Get all assets that have been unlocked in the research plan
     const unlockedAssets = researchPlanConfig?.unlockedAssets 
-      ? mockBrandAssets.filter(asset => researchPlanConfig.unlockedAssets.includes(asset.id))
-      : mockBrandAssets;
+      ? brandAssets.filter(asset => researchPlanConfig.unlockedAssets.includes(asset.id))
+      : brandAssets;
     
     return (
       <div className="flex-1 overflow-y-auto">

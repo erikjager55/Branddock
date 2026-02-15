@@ -44,7 +44,7 @@ import { ResearchMethodModal } from './ResearchMethodModal';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { Progress } from './ui/progress';
-import { mockBrandAssets } from '../data/mock-brand-assets';
+import { useBrandAssets } from '../contexts/BrandAssetsContext';
 import { ResearchFlowModal } from './ResearchFlowModal';
 import { VALIDATION_METHODS } from '../config/validation-methods';
 import { ResearchStatusOverview, ResearchMethodWithStatus } from './research/ResearchStatusOverview';
@@ -106,6 +106,7 @@ const statusConfig = {
 };
 
 export function UniversalAssetDashboard({ assetId, onBack, onStartResearch }: UniversalAssetDashboardProps) {
+  const { brandAssets } = useBrandAssets();
   const [selectedMethod, setSelectedMethod] = useState<typeof VALIDATION_METHODS[0] | null>(null);
   const [isFlowModalOpen, setIsFlowModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -114,7 +115,7 @@ export function UniversalAssetDashboard({ assetId, onBack, onStartResearch }: Un
   const [lockedBy, setLockedBy] = useState<string | null>(null);
   
   // Get the asset
-  const asset = mockBrandAssets.find((a) => a.id === assetId);
+  const asset = brandAssets.find((a) => a.id === assetId);
   
   if (!asset) return null;
 

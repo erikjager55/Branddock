@@ -29,7 +29,7 @@ import {
   Shield,
   Info
 } from 'lucide-react';
-import { mockBrandAssets } from '../../../data/mock-brand-assets';
+import { useBrandAssets } from '../../../contexts/BrandAssetsContext';
 import { mockPersonas } from '../../../data/mock-personas';
 import { calculateDecisionStatus, getMethodLabel } from '../../../utils/decision-status-calculator';
 import { DecisionStatusBadge } from '../../decision-status/DecisionStatusBadge';
@@ -66,6 +66,7 @@ export function StrategicReport({
   selectedChannels,
   channelBudgets
 }: StrategicReportProps) {
+  const { brandAssets } = useBrandAssets();
   const getObjectiveLabel = (value: string) => {
     const labels: Record<string, string> = {
       'brand-awareness': 'Build Brand Awareness',
@@ -134,7 +135,7 @@ export function StrategicReport({
   const decisionAudit = React.useMemo(() => {
     const allItems = [
       ...selectedBrandAssets.map(id => {
-        const asset = mockBrandAssets.find(a => a.id === id);
+        const asset = brandAssets.find(a => a.id === id);
         return asset ? { ...asset, category: 'Brand Asset' as const } : null;
       }).filter(Boolean),
       ...selectedPersonas.map(id => {

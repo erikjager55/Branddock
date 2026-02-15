@@ -16,7 +16,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { ResearchTargetCategory, ResearchTargetOption, ResearchTarget } from '../types/research-target';
-import { mockBrandAssets } from '../data/mock-brand-assets';
+import { useBrandAssets } from '../contexts/BrandAssetsContext';
 import { mockPersonas } from '../data/mock-personas';
 
 interface ResearchTargetSelectorProps {
@@ -68,6 +68,7 @@ const targetCategories: ResearchTargetOption[] = [
 ];
 
 export function ResearchTargetSelector({ onTargetSelected, onBack }: ResearchTargetSelectorProps) {
+  const { brandAssets } = useBrandAssets();
   const [selectedCategory, setSelectedCategory] = useState<ResearchTargetCategory | null>(null);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,7 +99,7 @@ export function ResearchTargetSelector({ onTargetSelected, onBack }: ResearchTar
 
   const renderCategorySelection = () => {
     // Get counts
-    const brandAssetsCount = mockBrandAssets.length;
+    const brandAssetsCount = brandAssets.length;
     const personasCount = mockPersonas.length;
 
     return (
@@ -212,7 +213,7 @@ export function ResearchTargetSelector({ onTargetSelected, onBack }: ResearchTar
     let items: Array<{ id: string; name: string; description?: string; status?: string; avatar?: string }> = [];
 
     if (selectedCategory === 'brand') {
-      items = mockBrandAssets.map(asset => ({
+      items = brandAssets.map(asset => ({
         id: asset.id,
         name: asset.type,
         description: asset.content?.substring(0, 100) + '...',

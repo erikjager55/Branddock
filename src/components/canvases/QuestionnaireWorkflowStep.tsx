@@ -42,7 +42,7 @@ import {
   SelectValue,
 } from '../ui/select';
 import { SessionNavigator } from '../SessionNavigator';
-import { mockBrandAssets } from '../../data/mock-brand-assets';
+import { useBrandAssets } from '../../contexts/BrandAssetsContext';
 
 interface Question {
   id: string;
@@ -122,6 +122,7 @@ export function QuestionnaireWorkflowStep({
   onReturnToHub,
   currentAssetId
 }: QuestionnaireWorkflowStepProps) {
+  const { brandAssets } = useBrandAssets();
   const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null);
 
   const getStatusIcon = (isCompleted: boolean, isCurrent: boolean) => {
@@ -645,8 +646,8 @@ export function QuestionnaireWorkflowStep({
         {step.step === 3 && (() => {
           // Get unlocked assets for SessionNavigator
           const unlockedAssets = researchPlanConfig?.unlockedAssets 
-            ? mockBrandAssets.filter(asset => researchPlanConfig.unlockedAssets!.includes(asset.id))
-            : mockBrandAssets;
+            ? brandAssets.filter(asset => researchPlanConfig.unlockedAssets!.includes(asset.id))
+            : brandAssets;
 
           return (
             <div className="space-y-4 mt-3">

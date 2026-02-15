@@ -23,7 +23,7 @@ import {
   Package
 } from 'lucide-react';
 import { SessionNavigator } from '../SessionNavigator';
-import { mockBrandAssets } from '../../data/mock-brand-assets';
+import { useBrandAssets } from '../../contexts/BrandAssetsContext';
 import { Bundle } from '../../types/brand-asset';
 
 // Asset-specific interview questions
@@ -144,6 +144,7 @@ export function InterviewWorkflowStep({
   onReturnToHub,
   currentAssetId
 }: InterviewWorkflowStepProps) {
+  const { brandAssets } = useBrandAssets();
   return (
     <div 
       className={`relative pl-8 pb-4 ${
@@ -444,8 +445,8 @@ export function InterviewWorkflowStep({
           
           // Get unlocked assets for SessionNavigator
           const unlockedAssets = researchPlanConfig?.unlockedAssets 
-            ? mockBrandAssets.filter(asset => researchPlanConfig.unlockedAssets!.includes(asset.id))
-            : mockBrandAssets;
+            ? brandAssets.filter(asset => researchPlanConfig.unlockedAssets!.includes(asset.id))
+            : brandAssets;
 
           return (
             <div className="space-y-4 mt-3">

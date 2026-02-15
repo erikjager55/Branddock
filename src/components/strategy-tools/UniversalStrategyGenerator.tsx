@@ -42,7 +42,7 @@ import { StrategyTool } from '../../types/strategy';
 import { EnhancedAssetPickerModal } from './EnhancedAssetPickerModal';
 import { AddTrendModal } from './AddTrendModal';
 import { EntityType } from '../../types/relationship';
-import { mockBrandAssets } from '../../data/mock-brand-assets';
+import { useBrandAssets } from '../../contexts/BrandAssetsContext';
 import { mockPersonas } from '../../data/mock-personas';
 import { mockProducts } from '../../data/mock-products';
 import { mockTrends } from '../../data/mock-trends';
@@ -235,6 +235,7 @@ export function UniversalStrategyGenerator({
   frameworkTitle,
   onBack 
 }: UniversalStrategyGeneratorProps) {
+  const { brandAssets } = useBrandAssets();
   const config = frameworkConfigs[frameworkId];
   
   if (!config) {
@@ -638,7 +639,7 @@ export function UniversalStrategyGenerator({
                       {selectedBrandAssets.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {selectedBrandAssets.map(id => {
-                            const asset = mockBrandAssets.find(a => a.id === id);
+                            const asset = brandAssets.find(a => a.id === id);
                             return asset ? (
                               <Badge key={id} variant="secondary" className="gap-2">
                                 {asset.type}
@@ -874,7 +875,7 @@ export function UniversalStrategyGenerator({
           title="Select Brand Assets"
           description="Choose brand assets to ensure your strategy aligns with your brand identity"
           type="brand-assets"
-          items={mockBrandAssets.map(a => ({ 
+          items={brandAssets.map(a => ({ 
             id: a.id, 
             name: a.title, 
             subtitle: a.category,

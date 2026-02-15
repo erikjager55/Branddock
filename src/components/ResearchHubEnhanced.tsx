@@ -39,7 +39,7 @@ import {
   ShieldAlert,
   XCircle
 } from 'lucide-react';
-import { mockBrandAssets } from '../data/mock-brand-assets';
+import { useBrandAssets } from '../contexts/BrandAssetsContext';
 import { mockPersonas } from '../data/mock-personas';
 import { ResearchTargetCategory } from '../types/research-target';
 import { DecisionStatusBadge } from './decision-status/DecisionStatusBadge';
@@ -51,66 +51,68 @@ interface ResearchHubEnhancedProps {
   onCreatePlan?: () => void;
 }
 
-const categoryConfig = {
-  'brand': {
-    icon: Palette,
-    label: 'Your Brand',
-    description: 'Brand assets and identity elements',
-    color: 'purple',
-    colorClasses: 'bg-purple-500/10 text-purple-600 dark:bg-purple-500/20',
-    hoverClasses: 'hover:border-purple-300 hover:bg-purple-50/50 dark:hover:bg-purple-950/20',
-    getItems: () => mockBrandAssets,
-    getProgress: (items: any[]) => {
-      const validated = items.filter((i: any) => i.status === 'validated').length;
-      return (validated / items.length) * 100;
-    }
-  },
-  'persona': {
-    icon: Users,
-    label: 'Personas',
-    description: 'Target audience personas',
-    color: 'pink',
-    colorClasses: 'bg-pink-500/10 text-pink-600 dark:bg-pink-500/20',
-    hoverClasses: 'hover:border-pink-300 hover:bg-pink-50/50 dark:hover:bg-pink-950/20',
-    getItems: () => mockPersonas,
-    getProgress: (items: any[]) => {
-      const validated = items.filter((i: any) => i.status === 'validated').length;
-      return (validated / items.length) * 100;
-    }
-  },
-  'products': {
-    icon: Package,
-    label: 'Products & Services',
-    description: 'Product and service portfolio',
-    color: 'blue',
-    colorClasses: 'bg-blue-500/10 text-blue-600 dark:bg-blue-500/20',
-    hoverClasses: 'hover:border-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/20',
-    getItems: () => [],
-    getProgress: () => 0
-  },
-  'trends': {
-    icon: TrendingUp,
-    label: 'Market Trends',
-    description: 'Industry and market insights',
-    color: 'green',
-    colorClasses: 'bg-green-500/10 text-green-600 dark:bg-green-500/20',
-    hoverClasses: 'hover:border-green-300 hover:bg-green-50/50 dark:hover:bg-green-950/20',
-    getItems: () => [],
-    getProgress: () => 0
-  },
-  'knowledge': {
-    icon: BookOpen,
-    label: 'Knowledge Library',
-    description: 'Research and documentation',
-    color: 'amber',
-    colorClasses: 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20',
-    hoverClasses: 'hover:border-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-950/20',
-    getItems: () => [],
-    getProgress: () => 0
-  }
-};
 
 export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnhancedProps) {
+  const { brandAssets } = useBrandAssets();
+
+  const categoryConfig = {
+    'brand': {
+      icon: Palette,
+      label: 'Your Brand',
+      description: 'Brand assets and identity elements',
+      color: 'purple',
+      colorClasses: 'bg-purple-500/10 text-purple-600 dark:bg-purple-500/20',
+      hoverClasses: 'hover:border-purple-300 hover:bg-purple-50/50 dark:hover:bg-purple-950/20',
+      getItems: () => brandAssets,
+      getProgress: (items: any[]) => {
+        const validated = items.filter((i: any) => i.status === 'validated').length;
+        return (validated / items.length) * 100;
+      }
+    },
+    'persona': {
+      icon: Users,
+      label: 'Personas',
+      description: 'Target audience personas',
+      color: 'pink',
+      colorClasses: 'bg-pink-500/10 text-pink-600 dark:bg-pink-500/20',
+      hoverClasses: 'hover:border-pink-300 hover:bg-pink-50/50 dark:hover:bg-pink-950/20',
+      getItems: () => mockPersonas,
+      getProgress: (items: any[]) => {
+        const validated = items.filter((i: any) => i.status === 'validated').length;
+        return (validated / items.length) * 100;
+      }
+    },
+    'products': {
+      icon: Package,
+      label: 'Products \& Services',
+      description: 'Product and service portfolio',
+      color: 'blue',
+      colorClasses: 'bg-blue-500/10 text-blue-600 dark:bg-blue-500/20',
+      hoverClasses: 'hover:border-blue-300 hover:bg-blue-50/50 dark:hover:bg-blue-950/20',
+      getItems: () => [],
+      getProgress: () => 0
+    },
+    'trends': {
+      icon: TrendingUp,
+      label: 'Market Trends',
+      description: 'Industry and market insights',
+      color: 'green',
+      colorClasses: 'bg-green-500/10 text-green-600 dark:bg-green-500/20',
+      hoverClasses: 'hover:border-green-300 hover:bg-green-50/50 dark:hover:bg-green-950/20',
+      getItems: () => [],
+      getProgress: () => 0
+    },
+    'knowledge': {
+      icon: BookOpen,
+      label: 'Knowledge Library',
+      description: 'Research and documentation',
+      color: 'amber',
+      colorClasses: 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20',
+      hoverClasses: 'hover:border-amber-300 hover:bg-amber-50/50 dark:hover:bg-amber-950/20',
+      getItems: () => [],
+      getProgress: () => 0
+    }
+  };
   const [activeTab, setActiveTab] = useState<string>('overview');
 
   // Calculate research methods statistics dynamically
@@ -131,7 +133,7 @@ export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnh
     };
 
     // Count items with each method from brand assets
-    mockBrandAssets.forEach(asset => {
+    brandAssets.forEach(asset => {
       const methods = asset.researchMethods || [];
       methods.forEach(method => {
         const methodId = method.type;
@@ -167,18 +169,18 @@ export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnh
 
   // Calculate overall stats
   const stats = useMemo(() => {
-    const brandValidated = mockBrandAssets.filter(a => a.status === 'validated').length;
+    const brandValidated = brandAssets.filter(a => a.status === 'validated').length;
     const personaValidated = mockPersonas.filter(p => p.status === 'validated').length;
     const totalValidated = brandValidated + personaValidated;
     
-    const brandTotal = mockBrandAssets.length;
+    const brandTotal = brandAssets.length;
     const personaTotal = mockPersonas.length;
     const totalItems = brandTotal + personaTotal;
     
     // Count active research (in-progress methods)
     let activeCount = 0;
     let completedCount = 0;
-    mockBrandAssets.forEach(asset => {
+    brandAssets.forEach(asset => {
       const inProgress = asset.researchMethods?.filter(m => m.status === 'in-progress') || [];
       const completed = asset.researchMethods?.filter(m => m.status === 'completed') || [];
       activeCount += inProgress.length;
@@ -206,7 +208,7 @@ export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnh
     const items: any[] = [];
     
     // Brand items
-    mockBrandAssets.forEach(asset => {
+    brandAssets.forEach(asset => {
       const inProgressMethods = asset.researchMethods?.filter(m => m.status === 'in-progress') || [];
       inProgressMethods.forEach(method => {
         items.push({
@@ -245,7 +247,7 @@ export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnh
     const items: any[] = [];
 
     // Brand assets ready to validate
-    mockBrandAssets.forEach(asset => {
+    brandAssets.forEach(asset => {
       if (asset.status === 'ready-to-validate') {
         items.push({
           category: 'brand',
@@ -286,7 +288,7 @@ export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnh
   // Calculate priority research recommendations based on decision quality
   const priorityResearch = useMemo(() => {
     const allItems = [
-      ...mockBrandAssets.map(asset => ({
+      ...brandAssets.map(asset => ({
         ...asset,
         category: 'brand' as const,
         categoryLabel: 'Brand Asset',

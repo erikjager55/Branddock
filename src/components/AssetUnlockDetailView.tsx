@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
-import { mockBrandAssets } from '../data/mock-brand-assets';
+import { useBrandAssets } from '../contexts/BrandAssetsContext';
 import { calculateDecisionStatus } from '../utils/decision-status-calculator';
 import { ResearchFlowModal } from './ResearchFlowModal';
 import { toast } from 'sonner';
@@ -86,10 +86,11 @@ const researchMethods = [
 ];
 
 export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: AssetUnlockDetailViewProps) {
+  const { brandAssets } = useBrandAssets();
   const [selectedLayout, setSelectedLayout] = useState<'default' | 'alternative'>('default');
   const [selectedMethod, setSelectedMethod] = useState<typeof researchMethods[0] | null>(null);
   const [isFlowModalOpen, setIsFlowModalOpen] = useState(false);
-  const [localAsset, setLocalAsset] = useState(mockBrandAssets.find((a) => a.id === assetId));
+  const [localAsset, setLocalAsset] = useState(brandAssets.find((a) => a.id === assetId));
   
   if (!localAsset) return null;
 

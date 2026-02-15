@@ -40,7 +40,7 @@ import { EnhancedAssetPickerModal } from './EnhancedAssetPickerModal';
 import { AddTrendModal } from './AddTrendModal';
 import { SmartSuggestionsService } from '../../services/SmartSuggestionsService';
 import { EntityType } from '../../types/relationship';
-import { mockBrandAssets } from '../../data/mock-brand-assets';
+import { useBrandAssets } from '../../contexts/BrandAssetsContext';
 import { mockPersonas } from '../../data/mock-personas';
 import { mockProducts } from '../../data/mock-products';
 import { mockTrends } from '../../data/mock-trends';
@@ -78,6 +78,7 @@ export function CampaignStrategyGeneratorDetail({
   tool, 
   onBack 
 }: CampaignStrategyGeneratorDetailProps) {
+  const { brandAssets } = useBrandAssets();
   const [selectedTab, setSelectedTab] = useState('configure');
   const [selectedBrandAssets, setSelectedBrandAssets] = useState<string[]>([]);
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
@@ -337,7 +338,7 @@ export function CampaignStrategyGeneratorDetail({
       generationMetadata: {
         generatedAt: new Date().toISOString(),
         usedBrandAssets: selectedBrandAssets.map(id => {
-          const asset = mockBrandAssets.find(a => a.id === id);
+          const asset = brandAssets.find(a => a.id === id);
           return {
             id,
             title: asset?.title || 'Unknown Asset',
@@ -422,7 +423,7 @@ export function CampaignStrategyGeneratorDetail({
     const generationMetadata = {
       generatedAt: new Date().toISOString(),
       usedBrandAssets: selectedBrandAssets.map(id => {
-        const asset = mockBrandAssets.find(a => a.id === id);
+        const asset = brandAssets.find(a => a.id === id);
         return {
           id,
           title: asset?.title || 'Unknown Asset',
@@ -489,7 +490,7 @@ export function CampaignStrategyGeneratorDetail({
   // Helper function to calculate average research coverage
   const calculateAverageResearchCoverage = () => {
     const allAssets = selectedBrandAssets
-      .map(id => mockBrandAssets.find(a => a.id === id))
+      .map(id => brandAssets.find(a => a.id === id))
       .filter(Boolean);
     
     if (allAssets.length === 0) return 0;
@@ -1062,7 +1063,7 @@ export function CampaignStrategyGeneratorDetail({
                     </Button>
                     {selectedBrandAssets.length > 0 && (
                       <div className="mt-3 space-y-2">
-                        {mockBrandAssets.filter(a => selectedBrandAssets.includes(a.id)).map(asset => (
+                        {brandAssets.filter(a => selectedBrandAssets.includes(a.id)).map(asset => (
                           <div key={asset.id} className="group flex items-center gap-2 p-2.5 rounded-lg bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/30 hover:border-primary/50 transition-all">
                             <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
                               <Shield className="h-4 w-4 text-primary" />
@@ -1907,7 +1908,7 @@ export function CampaignStrategyGeneratorDetail({
           title="Select Brand Assets"
           description="Choose brand assets to ensure your campaign aligns with your brand identity and values"
           type="brand-assets"
-          items={mockBrandAssets.map(a => ({ 
+          items={brandAssets.map(a => ({ 
             id: a.id, 
             name: a.title, 
             subtitle: a.category,
