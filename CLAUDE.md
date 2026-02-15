@@ -47,11 +47,12 @@ Feature flag: `NEXT_PUBLIC_WORKSPACE_ID` in `.env.local`
 - Personas (3 personas) — `/api/personas` GET + POST
 - Products & Services (3 products) — `/api/products` GET + POST
 - Research Plans (1 active plan) — `/api/research-plans` GET + POST + PATCH
-- Purchased Bundles — `/api/purchased-bundles` GET + POST
+- Purchased Bundles
+- Campaigns (3 campaigns) — `/api/campaigns` GET + POST + PATCH — `/api/purchased-bundles` GET + POST
 - Dashboard — leest counts uit BrandAssetsContext + PersonasContext
 
 **Nog op mock data:**
-- Campaigns, Knowledge, Trends
+- Knowledge, Trends
 - Strategy tools (tool definitions, niet data-backed)
 - Dashboard utility functions (`dashboard-decision-transformer.ts` leest intern nog mock)
 
@@ -210,6 +211,9 @@ Directe klant (Organization type=DIRECT)
 | `/api/research-plans` | PATCH | Research plan updaten (unlock methods/assets, status) |
 | `/api/purchased-bundles` | GET | Lijst gekochte bundles + alle unlocked tool IDs |
 | `/api/purchased-bundles` | POST | Bundle aankoop registreren (upsert) |
+| `/api/campaigns` | GET | Lijst met filters (status, type, search, sort) + stats |
+| `/api/campaigns` | POST | Nieuwe campaign aanmaken |
+| `/api/campaigns` | PATCH | Campaign updaten (status, deliverables, assets) |
 
 Alle routes vereisen `workspaceId` als query param (GET) of in body (POST).
 
@@ -265,7 +269,7 @@ Alle routes vereisen `workspaceId` als query param (GET) of in body (POST).
 1. ~~**Product model** toevoegen aan Prisma schema + API route + migratie~~ ✅
 1. ~~**ResearchPlan + PurchasedBundle** modellen + API routes~~ ✅
 2. **Meer API routes** — module voor module:
-   - Campaigns, Knowledge, Trends
+   - Knowledge, Trends
    - Zelfde patroon: route + client + adapter + hook + context
 3. **dashboard-decision-transformer refactoren** — mock imports → context data
 4. **Auth: NextAuth.js** — login, register, sessie management
