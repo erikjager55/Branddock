@@ -1,3 +1,8 @@
+#!/bin/bash
+# Update CLAUDE.md — 15 februari 2026 (avond)
+set -e
+
+cat > CLAUDE.md << 'EOF'
 # BRANDDOCK — Claude Code Context
 ## Laatst bijgewerkt: 15 februari 2026
 
@@ -350,3 +355,9 @@ Doel: alle directe mock imports (`from '../data/mock-*'`) vervangen door context
 - Notion Context Library: 2ff48b9c-6dc9-81a9-8b04-f1c0d1e14e40
 - Notion Backlog: b7dc92fa-1455-440a-845f-2808f409a9b9
 - ROADMAP-API-EN-AGENCY-MODEL.md — Gedetailleerd plan API laag + agency model
+EOF
+
+echo "✅ CLAUDE.md bijgewerkt (15 feb 2026 — avond)"
+echo ""
+echo "Commit:"
+echo "  git add CLAUDE.md && git commit -m 'docs: update CLAUDE.md — mockBrandAssets refactor done, roadmap bijgewerkt'"
