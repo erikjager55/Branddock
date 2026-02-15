@@ -44,14 +44,14 @@ export function Dashboard({ onStartResearch, onNavigateToRelationships, onNaviga
   }, [shouldShowWelcome]);
 
   // Simple dashboard status
-  const dashboardStatus = React.useMemo(() => calculateSimpleDashboardStatus(), []);
+  const dashboardStatus = React.useMemo(() => calculateSimpleDashboardStatus(brandAssets, personas), [brandAssets, personas]);
   
   // Top 2 strategic risks
-  const topRisks = React.useMemo(() => generateTopStrategicRisks(), []);
+  const topRisks = React.useMemo(() => generateTopStrategicRisks(brandAssets, personas), [brandAssets, personas]);
   
   // Next best action (SINGLE)
   const nextBestAction = React.useMemo(() => {
-    const action = generateNextBestAction();
+    const action = generateNextBestAction(brandAssets, personas);
     if (!action) {
       return {
         title: 'Continue Building',
@@ -68,10 +68,10 @@ export function Dashboard({ onStartResearch, onNavigateToRelationships, onNaviga
       targetSection: action.targetType === 'asset' ? 'brand' : action.targetType === 'persona' ? 'personas' : 'research',
       estimatedTime: action.estimatedTime
     };
-  }, []);
+  }, [brandAssets, personas]);
 
   // Decision cockpit data for overview
-  const decisionCockpitData = React.useMemo(() => transformToDecisionCockpit(), []);
+  const decisionCockpitData = React.useMemo(() => transformToDecisionCockpit(brandAssets, personas), [brandAssets, personas]);
 
   const handleNavigate = (section: string) => {
     if (onNavigate) {
