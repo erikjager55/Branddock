@@ -309,8 +309,8 @@ export function calculateSectionDecision(
         return {
           status: 'blocked',
           // CONSISTENTE FORMATTING: alleen naam + percentage + "research coverage"
-          causes: blockedItems.map(i => 
-            `${i!.item.type}: ${i!.status.coverage}% research coverage`
+          causes: blockedItems.map(i =>
+            `${(i!.item as any).type || (i!.item as any).name}: ${i!.status.coverage}% research coverage`
           ),
           requiredActions: ['Breng alle items naar minimaal 50% research coverage']
         };
@@ -321,8 +321,8 @@ export function calculateSectionDecision(
         return {
           status: 'risk',
           // CONSISTENTE FORMATTING: alleen naam + percentage + "research coverage"
-          causes: atRiskItems.map(i => 
-            `${i!.item.type}: ${i!.status.coverage}% research coverage`
+          causes: atRiskItems.map(i =>
+            `${(i!.item as any).type || (i!.item as any).name}: ${i!.status.coverage}% research coverage`
           ),
           requiredActions: ['Verhoog research coverage naar 80%+ voor optimale resultaten']
         };

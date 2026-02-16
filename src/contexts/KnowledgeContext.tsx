@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Knowledge } from '../data/mock-knowledge';
+import type { Knowledge, Collection } from '../types/knowledge';
 import { apiKnowledgeToMockFormat } from '../lib/api/knowledge-adapter';
 
 interface KnowledgeContextType {
   knowledge: Knowledge[];
+  collections: Collection[];
   addKnowledge: (item: Knowledge) => void;
   updateKnowledge: (id: string, item: Knowledge) => void;
   deleteKnowledge: (id: string) => void;
@@ -23,12 +24,26 @@ async function getMockFallback(): Promise<Knowledge[]> {
   return mockFallback;
 }
 
+let collectionsFallback: Collection[] | null = null;
+async function getCollectionsFallback(): Promise<Collection[]> {
+  if (!collectionsFallback) {
+    const mod = await import('../data/knowledge-resources');
+    collectionsFallback = mod.mockCollections;
+  }
+  return collectionsFallback;
+}
+
 export function KnowledgeProvider({ children }: { children: ReactNode }) {
   const [knowledge, setKnowledge] = useState<Knowledge[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const workspaceId = process.env.NEXT_PUBLIC_WORKSPACE_ID;
+
+    // Load collections (mock-only for now, no API yet)
+    getCollectionsFallback().then(setCollections);
+
     if (!workspaceId) {
       getMockFallback().then(data => {
         setKnowledge(data);
@@ -41,7 +56,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       .then(res => res.json())
       .then(data => {
         if (data.knowledge && data.knowledge.length > 0) {
-          setKnowledge(apiKnowledgeToMockFormat(data.knowledge));
+          setKnowledge(apiKnowledgeToMockFormat(data.knowledge) as any);
         } else {
           return getMockFallback().then(setKnowledge);
         }
@@ -60,7 +75,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
   const getKnowledge = (id: string) => knowledge.find(k => k.id === id);
 
   return (
-    <KnowledgeContext.Provider value={{ knowledge, addKnowledge, updateKnowledge, deleteKnowledge, getKnowledge, isLoading }}>
+    <KnowledgeContext.Provider value={{ knowledge, collections, addKnowledge, updateKnowledge, deleteKnowledge, getKnowledge, isLoading }}>
       {children}
     </KnowledgeContext.Provider>
   );

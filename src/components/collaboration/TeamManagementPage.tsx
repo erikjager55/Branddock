@@ -25,7 +25,8 @@ import {
   XCircle,
   MoreVertical,
 } from 'lucide-react';
-import { mockTeamMembers, TeamMember, TeamRole } from '../../data/mock-collaboration';
+import type { TeamMember, TeamRole } from '../../types/team';
+import { mockTeamMembers } from '../../data/mock-collaboration';
 
 export function TeamManagementPage() {
   const [members, setMembers] = useState<TeamMember[]>(mockTeamMembers);

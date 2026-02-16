@@ -48,7 +48,7 @@ const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID;
 export function PersonasProvider({ children }: { children: ReactNode }) {
   const [personas, setPersonas] = useState<MockPersona[]>(() => {
     const stored = loadFromStorage<MockPersona[]>(StorageKeys.PERSONAS, []);
-    if (stored.length === 0) return mockPersonas as MockPersona[];
+    if (stored.length === 0) return mockPersonas as unknown as MockPersona[];
     return migratePersonaData(stored);
   });
 

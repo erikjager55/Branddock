@@ -36,7 +36,7 @@ export const PersonaSchema = z.object({
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 // Array of Personas Schema

@@ -234,7 +234,7 @@ export function CampaignMetadataSections({
               </div>
             </div>
             <DecisionStatusBadge 
-              status={metadata.decisionStatus}
+              status={metadata.decisionStatus as any}
               showIcon={false}
             />
           </div>

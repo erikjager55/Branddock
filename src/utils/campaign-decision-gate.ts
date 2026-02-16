@@ -74,7 +74,7 @@ export function calculateDecisionGate(
     if (decisionStatus.status === 'blocked') {
       failedItems.push({
         id: persona.id,
-        name: persona.type,
+        name: persona.name,
         type: 'persona',
         coverage: Math.round(decisionStatus.coverage),
         status: 'blocked',
@@ -83,7 +83,7 @@ export function calculateDecisionGate(
     } else if (decisionStatus.status === 'decision-at-risk') {
       failedItems.push({
         id: persona.id,
-        name: persona.type,
+        name: persona.name,
         type: 'persona',
         coverage: Math.round(decisionStatus.coverage),
         status: 'decision-at-risk',

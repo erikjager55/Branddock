@@ -39,7 +39,7 @@ import {
 } from 'lucide-react';
 import { CampaignSettingsModal } from './CampaignSettingsModal';
 import { DeliverableCard } from './campaign-strategy/DeliverableCard';
-import { campaignToStrategy } from '../data/mock-campaigns';
+import { campaignToStrategy } from '../utils/campaign-helpers';
 import { useCampaignsContext } from '../contexts/CampaignsContext';
 
 interface Deliverable {
@@ -138,12 +138,12 @@ export function ActiveCampaignsPage({ onNavigateToCampaign }: ActiveCampaignsPag
 
   // Separate active and deleted strategies
   const activeStrategies = useMemo(() => 
-    strategies.filter(s => !s.deletedAt),
+    strategies.filter(s => !(s as any).deletedAt),
     [strategies]
   );
 
   const deletedStrategies = useMemo(() => 
-    strategies.filter(s => s.deletedAt),
+    strategies.filter(s => (s as any).deletedAt),
     [strategies]
   );
 
@@ -344,7 +344,7 @@ export function ActiveCampaignsPage({ onNavigateToCampaign }: ActiveCampaignsPag
             >
               <SelectTrigger className="w-48 h-10">
                 <SelectValue placeholder="Type">
-                  {selectedType === 'all' ? 'All Types' : typeConfig[selectedType].label}
+                  {selectedType === 'all' ? 'All Types' : typeConfig[selectedType as keyof typeof typeConfig].label}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -360,7 +360,7 @@ export function ActiveCampaignsPage({ onNavigateToCampaign }: ActiveCampaignsPag
             >
               <SelectTrigger className="w-48 h-10">
                 <SelectValue placeholder="Status">
-                  {selectedStatus === 'all' ? 'All Statuses' : statusConfig[selectedStatus].label}
+                  {selectedStatus === 'all' ? 'All Statuses' : statusConfig[selectedStatus as keyof typeof statusConfig].label}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>

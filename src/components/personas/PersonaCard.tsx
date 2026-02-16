@@ -20,7 +20,7 @@ import {
   Calendar,
   Sparkles
 } from 'lucide-react';
-import { Persona, PersonaResearchMethod } from '../../types/persona';
+import { Persona, PersonaResearchMethodItem } from '../../types/persona';
 import { ValidationMethodButton } from '../validation/ValidationMethodButton';
 import { VALIDATION_METHODS } from '../../config/validation-methods';
 import { QualityBadge } from '../quality/QualityBadge';
@@ -30,7 +30,7 @@ import { cn } from '../../lib/utils';
 interface PersonaCardProps {
   persona: Persona;
   onClick?: (persona: Persona) => void;
-  onMethodClick?: (personaId: string, method: PersonaResearchMethod, mode: 'work' | 'results') => void;
+  onMethodClick?: (personaId: string, method: PersonaResearchMethodItem, mode: 'work' | 'results') => void;
   onChatClick?: (persona: Persona) => void;
 }
 
@@ -42,6 +42,14 @@ export function PersonaCard({
 }: PersonaCardProps) {
   const [isValidationExpanded, setIsValidationExpanded] = useState(false);
 
+  // Map PersonaResearchMethodType → ValidationMethodId for lookups
+  const methodIdMap: Record<string, string> = {
+    'AI_EXPLORATION': 'ai-exploration',
+    'INTERVIEWS': 'interviews',
+    'QUESTIONNAIRE': 'surveys',
+    'USER_TESTING': 'user-testing',
+  };
+
   // Calculate quality score
   const completedCount = persona.researchMethods.filter(m => m.status === 'completed').length;
   const totalMethods = persona.researchMethods.length;
@@ -49,35 +57,35 @@ export function PersonaCard({
 
   // Demographics data
   const demographics = [
-    { 
-      icon: Calendar, 
-      label: 'Leeftijd', 
-      value: persona.demographics.age 
+    {
+      icon: Calendar,
+      label: 'Leeftijd',
+      value: persona.age
     },
-    { 
-      icon: MapPin, 
-      label: 'Locatie', 
-      value: persona.demographics.location 
+    {
+      icon: MapPin,
+      label: 'Locatie',
+      value: persona.location
     },
-    { 
-      icon: Briefcase, 
-      label: 'Beroep', 
-      value: persona.demographics.occupation 
+    {
+      icon: Briefcase,
+      label: 'Beroep',
+      value: persona.occupation
     },
-    { 
-      icon: GraduationCap, 
-      label: 'Opleiding', 
-      value: persona.demographics.education 
+    {
+      icon: GraduationCap,
+      label: 'Opleiding',
+      value: persona.education
     },
-    { 
-      icon: DollarSign, 
-      label: 'Inkomen', 
-      value: persona.demographics.income 
+    {
+      icon: DollarSign,
+      label: 'Inkomen',
+      value: persona.income
     },
-    { 
-      icon: FamilyIcon, 
-      label: 'Gezinssituatie', 
-      value: persona.demographics.familyStatus 
+    {
+      icon: FamilyIcon,
+      label: 'Gezinssituatie',
+      value: persona.familyStatus
     },
   ].filter(item => item.value); // Only show items with values
 
@@ -93,7 +101,7 @@ export function PersonaCard({
         {/* Header Zone */}
         <div className="flex items-start gap-4">
           <Avatar className="h-16 w-16 flex-shrink-0 ring-2 ring-offset-2 ring-primary/20">
-            <AvatarImage src={persona.avatar} alt={persona.name} />
+            <AvatarImage src={persona.avatarUrl || undefined} alt={persona.name} />
             <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary text-lg font-semibold">
               {persona.name.split(' ').map(n => n[0]).join('')}
             </AvatarFallback>
@@ -136,7 +144,7 @@ export function PersonaCard({
                   <div className="text-xs text-muted-foreground leading-tight">
                     {item.label}
                   </div>
-                  <div className="font-medium leading-tight truncate" title={item.value}>
+                  <div className="font-medium leading-tight truncate" title={item.value || undefined}>
                     {item.value}
                   </div>
                 </div>
@@ -195,7 +203,7 @@ export function PersonaCard({
             <div className="overflow-hidden">
               <div className="space-y-2">
                 {persona.researchMethods.map((method) => {
-                  const validationConfig = VALIDATION_METHODS.find(vm => vm.id === method.type);
+                  const validationConfig = VALIDATION_METHODS.find(vm => vm.id === methodIdMap[method.method]);
                   
                   // Map ResearchMethodStatus to ValidationMethodStatus
                   const mappedStatus = 
@@ -206,11 +214,11 @@ export function PersonaCard({
                   
                   return (
                     <ValidationMethodButton
-                      key={method.type}
-                      type={method.type}
+                      key={method.method}
+                      type={method.method}
                       status={mappedStatus}
                       progress={method.progress}
-                      label={validationConfig?.name || method.type}
+                      label={validationConfig?.name || method.method}
                       description={
                         method.status === 'completed' 
                           ? 'Research complete • High confidence'
@@ -219,14 +227,9 @@ export function PersonaCard({
                           : 'Available • Upgrade persona quality'
                       }
                       icon={validationConfig?.icon}
-                      onWorkClick={
-                        onMethodClick 
-                          ? () => onMethodClick(persona.id, method, 'work') 
-                          : undefined
-                      }
-                      onResultsClick={
-                        onMethodClick && method.status === 'completed' 
-                          ? () => onMethodClick(persona.id, method, 'results') 
+                      onPrimaryClick={
+                        onMethodClick
+                          ? () => onMethodClick(persona.id, method, method.status === 'completed' ? 'results' : 'work')
                           : undefined
                       }
                     />
@@ -240,12 +243,12 @@ export function PersonaCard({
           {!isValidationExpanded && (
             <div className="flex gap-1.5 mt-2 flex-wrap">
               {persona.researchMethods.slice(0, 6).map((method) => {
-                const validationConfig = VALIDATION_METHODS.find(vm => vm.id === method.type);
+                const validationConfig = VALIDATION_METHODS.find(vm => vm.id === methodIdMap[method.method]);
                 const Icon = validationConfig?.icon;
                 
                 return (
                   <div
-                    key={method.type}
+                    key={method.method}
                     className={cn(
                       "h-8 w-8 rounded-md flex items-center justify-center transition-colors",
                       method.status === 'completed' 
@@ -254,7 +257,7 @@ export function PersonaCard({
                         ? 'bg-blue-100 text-blue-700'
                         : 'bg-muted text-muted-foreground'
                     )}
-                    title={validationConfig?.name || method.type}
+                    title={validationConfig?.name || method.method}
                   >
                     {Icon && <Icon className="h-4 w-4" />}
                   </div>
@@ -272,7 +275,7 @@ export function PersonaCard({
         {/* Footer */}
         <div className="pt-3 border-t text-xs text-muted-foreground">
           <div>
-            Last updated: {new Date(persona.lastUpdated).toLocaleDateString('nl-NL', { 
+            Last updated: {new Date(persona.updatedAt).toLocaleDateString('nl-NL', { 
               day: 'numeric',
               month: 'short', 
               year: 'numeric'
@@ -290,7 +293,7 @@ export function PersonaCard({
 interface PersonaCardGridProps {
   personas: Persona[];
   onPersonaClick?: (persona: Persona) => void;
-  onMethodClick?: (personaId: string, method: PersonaResearchMethod, mode: 'work' | 'results') => void;
+  onMethodClick?: (personaId: string, method: PersonaResearchMethodItem, mode: 'work' | 'results') => void;
   onChatClick?: (persona: Persona) => void;
 }
 

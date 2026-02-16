@@ -24,7 +24,13 @@ import {
 } from 'lucide-react';
 import { SessionNavigator } from '../SessionNavigator';
 import { useBrandAssets } from '../../contexts/BrandAssetsContext';
-import { Bundle } from '../../types/brand-asset';
+// Bundle type defined locally since it's not exported from brand-asset
+interface Bundle {
+  name: string;
+  description: string;
+  color: string;
+  includedAssets: string[];
+}
 
 // Asset-specific interview questions
 const assetQuestions: Record<string, { id: string; question: string }[]> = {

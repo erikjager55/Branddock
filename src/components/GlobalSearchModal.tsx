@@ -20,7 +20,7 @@ export function GlobalSearchModal({ isOpen, onClose, onNavigate, onAction }: Glo
   // Sync context data to search service
   React.useEffect(() => {
     globalSearch.setBrandAssets(brandAssets);
-    globalSearch.setPersonas(personas);
+    globalSearch.setPersonas(personas as any);
   }, [brandAssets, personas]);
 
   const [query, setQuery] = useState('');

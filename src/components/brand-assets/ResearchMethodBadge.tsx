@@ -26,7 +26,7 @@ export function ResearchMethodBadge({
         return 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 border-green-300 dark:border-green-700';
       case 'in-progress':
         return 'bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400 border-blue-300 dark:border-blue-700';
-      case 'cancelled':
+      case 'locked':
         return 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-400 border-red-300 dark:border-red-700';
       case 'not-started':
       default:
@@ -40,7 +40,7 @@ export function ResearchMethodBadge({
         return <CheckCircle className="h-3 w-3" />;
       case 'in-progress':
         return <Clock className="h-3 w-3" />;
-      case 'cancelled':
+      case 'locked':
         return <X className="h-3 w-3" />;
       case 'not-started':
       default:
@@ -153,9 +153,9 @@ export function ResearchMethodBadge({
       {/* Metadata */}
       {method.metadata && size === 'large' && (
         <div className="text-xs opacity-70 mt-1">
-          {method.metadata.participants && `${method.metadata.participants} people`}
-          {method.metadata.sessions && `${method.metadata.sessions} sessions`}
-          {method.metadata.responses && `${method.metadata.responses} responses`}
+          {method.metadata.participants ? `${String(method.metadata.participants)} people` : null}
+          {method.metadata.sessions ? `${String(method.metadata.sessions)} sessions` : null}
+          {method.metadata.responses ? `${String(method.metadata.responses)} responses` : null}
         </div>
       )}
     </div>

@@ -247,7 +247,7 @@ export function QualityDisplay({
       {/* Icon */}
       <div className={cn(
         'h-12 w-12 rounded-full flex items-center justify-center flex-shrink-0',
-        config.iconContainerClasses
+        config.containerClasses
       )}>
         <Icon className={cn('h-6 w-6', config.iconClasses)} />
       </div>

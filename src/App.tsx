@@ -14,7 +14,6 @@ import { ProductsServices } from './components/ProductsServices';
 import { ProductServiceView } from './components/ProductServiceView';
 import { TrendLibrary } from './components/TrendLibrary';
 import { KnowledgeLibrary } from './components/KnowledgeLibrary';
-import { researchBundles } from './data/research-bundles';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TooltipProvider } from './components/ui/tooltip';
 import { AppProviders, useBrandAssets, useResearchPlan, useUIState } from './contexts';
@@ -31,7 +30,6 @@ import { calculateBrandScore } from './utils/brand-score-calculator';
 import { ActivityFeed } from './components/ActivityFeed';
 import { BrandAsset } from './types/brand-asset';
 import { useBreadcrumbs } from './hooks/useBreadcrumbs';
-import { mockBrandAssets } from './data/mock-brand-assets';
 import { TemplateLibraryPage } from './components/templates/TemplateLibraryPage';
 import { AgencySettingsPage } from './components/white-label/AgencySettingsPage';
 import { ClientManagementPage } from './components/white-label/ClientManagementPage';
@@ -47,7 +45,7 @@ import { CampaignWorkspace } from './components/CampaignWorkspace';
 import { ResearchValidationPage } from './components/ResearchValidationPage';
 import { ValidationPlanLandingPage } from './components/ValidationPlanLandingPage';
 import { BundleDetailsPage } from './components/BundleDetailsPage';
-import { ResearchBundle } from './data/research-bundles';
+import type { ResearchBundle } from './types/research-bundle';
 import { ValidationMethodDemo } from './components/ValidationMethodDemo';
 import { BrandstyleView } from './components/BrandstyleView';
 import { ComingSoonPage } from './components/shared/ComingSoonPage';
@@ -91,7 +89,7 @@ function AppContent() {
   const { brandAssets, getBrandAsset } = useBrandAssets();
 
   // Generate breadcrumbs
-  const breadcrumbs = useBreadcrumbs(activeSection, selectedAssetId);
+  const breadcrumbs = useBreadcrumbs(activeSection, selectedAssetId ?? undefined);
 
 
   // Track recent items when navigating
@@ -214,7 +212,7 @@ function AppContent() {
     approachId: string;
     selectedAssets: string[];
     configuration: any;
-    entryMode: 'asset' | 'bundle' | 'questionnaire';
+    entryMode: string;
     rationale?: Record<string, string>;
   }) => {
     // Create new research plan and unlock methods/assets
@@ -227,13 +225,13 @@ function AppContent() {
       method: config.approachId,
       unlockedMethods: uniqueMethods,
       unlockedAssets: config.selectedAssets,
-      entryMode: config.entryMode,
+      entryMode: config.entryMode as 'asset' | 'bundle' | 'questionnaire',
       rationale: config.rationale,
       configuration: config.configuration,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    
+
     setActiveResearchPlan(newPlan);
     
     // Update shared assets for each method
@@ -558,7 +556,7 @@ function AppContent() {
     <WorkflowEnhancer
       onNavigate={handleSetActiveSection}
       onAction={(actionId) => {
-        logger.action('Quick action executed', { actionId });
+        logger.interaction('Quick action executed', { actionId });
       }}
       searchOpen={searchOpen}
       setSearchOpen={setSearchOpen}
@@ -580,7 +578,7 @@ function AppContent() {
             activeSection={activeSection} 
             setActiveSection={handleSetActiveSection}
             onAssetClick={handleNavigateAsset}
-            onMethodClick={handleNavigateToResearchMethod}
+            onMethodClick={(assetId, methodType) => handleNavigateToResearchMethod(assetId, methodType, 'work')}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           />

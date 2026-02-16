@@ -60,12 +60,12 @@ export interface ProtectedComponent {
   allowedProps: string[];
   /** Verboden className overrides (blacklist patterns) */
   forbiddenClassNames: RegExp[];
-  /** Design system tokens die moeten worden gebruikt */
+  /** Design system tokens die moeten worden gebruikt (hint for developers) */
   requiredTokens: {
-    colors?: keyof typeof COLORS;
-    spacing?: keyof typeof SPACING;
-    typography?: keyof typeof TYPOGRAPHY;
-    effects?: keyof typeof EFFECTS;
+    colors?: string;
+    spacing?: string;
+    typography?: string;
+    effects?: string;
   };
   /** Laatste review datum */
   lastReviewed: string;
@@ -359,9 +359,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     category: 'color',
     protection: ProtectionLevel.LOCKED,
     values: {
-      DEFAULT: COLORS.primary.DEFAULT,
-      hover: COLORS.primary.hover,
-      active: COLORS.primary.active,
+      DEFAULT: COLORS.primary,
     },
     usage: 'Primary brand color (Minty Green #1FD1B2). Gebruik voor primary actions, highlights.',
     lastReviewed: '2025-01-15',
@@ -372,10 +370,10 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     category: 'color',
     protection: ProtectionLevel.LOCKED,
     values: {
-      success: COLORS.semantic.success,
-      warning: COLORS.semantic.warning,
-      error: COLORS.semantic.error,
-      info: COLORS.semantic.info,
+      success: COLORS.status.success.text,
+      warning: COLORS.status.warning.text,
+      error: COLORS.status.error.text,
+      info: COLORS.status.info.text,
     },
     usage: 'Status en feedback kleuren. Gebruik voor success/warning/error/info states.',
     lastReviewed: '2025-01-15',
@@ -386,10 +384,8 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     category: 'color',
     protection: ProtectionLevel.LOCKED,
     values: {
-      electricBlue: COLORS.accent.electricBlue,
-      peachPink: COLORS.accent.peachPink,
-      orangeRed: COLORS.accent.orangeRed,
-      limeSunset: COLORS.accent.limeSunset,
+      primary: COLORS.primary,
+      secondary: COLORS.secondary,
     },
     usage: 'Accent kleuren voor categories, highlights, en variety.',
     lastReviewed: '2025-01-15',
@@ -403,7 +399,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     name: 'Spacing Scale',
     category: 'spacing',
     protection: ProtectionLevel.LOCKED,
-    values: SPACING.spacing,
+    values: SPACING.component,
     usage: 'Unified spacing scale voor margins, padding, gaps. Gebruik via props (gap="md").',
     lastReviewed: '2025-01-15',
   },
@@ -412,7 +408,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     name: 'Container Padding',
     category: 'spacing',
     protection: ProtectionLevel.LOCKED,
-    values: SPACING.containerPadding,
+    values: SPACING.page,
     usage: 'Container padding presets. Gebruik Container component met paddingX/paddingY props.',
     lastReviewed: '2025-01-15',
   },
@@ -425,7 +421,13 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     name: 'Font Size Scale',
     category: 'typography',
     protection: ProtectionLevel.LOCKED,
-    values: TYPOGRAPHY.fontSize,
+    values: {
+      body: TYPOGRAPHY.body,
+      bodySmall: TYPOGRAPHY.bodySmall,
+      bodyLarge: TYPOGRAPHY.bodyLarge,
+      label: TYPOGRAPHY.label,
+      caption: TYPOGRAPHY.caption,
+    },
     usage: 'Font size scale. GEEN text-* classes gebruiken, gebruik variant props.',
     lastReviewed: '2025-01-15',
   },
@@ -434,7 +436,9 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     name: 'Font Weight Scale',
     category: 'typography',
     protection: ProtectionLevel.LOCKED,
-    values: TYPOGRAPHY.fontWeight,
+    values: {
+      emphasis: TYPOGRAPHY.emphasis,
+    },
     usage: 'Font weight scale. GEEN font-* classes gebruiken, gebruik variant props.',
     lastReviewed: '2025-01-15',
   },
@@ -447,7 +451,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     name: 'Shadow Scale',
     category: 'effect',
     protection: ProtectionLevel.LOCKED,
-    values: EFFECTS.shadows,
+    values: EFFECTS.shadow,
     usage: 'Shadow presets. Gebruik via component variants (Card hover="shadow").',
     lastReviewed: '2025-01-15',
   },
@@ -456,7 +460,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     name: 'Border Radius Scale',
     category: 'effect',
     protection: ProtectionLevel.LOCKED,
-    values: EFFECTS.borderRadius,
+    values: EFFECTS.radius,
     usage: 'Border radius scale. Gebruik component defaults, GEEN rounded-* overrides.',
     lastReviewed: '2025-01-15',
   },
@@ -587,11 +591,3 @@ export function getProtectionStatistics() {
   };
 }
 
-// ============================================================================
-// TYPE EXPORTS
-// ============================================================================
-
-export type {
-  ProtectedComponent,
-  ProtectedToken,
-};

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { ResearchBundle, getStrategyToolsUnlockedByBundle } from '../data/research-bundles';
+import type { ResearchBundle } from '../types/research-bundle';
+import { getStrategyToolsUnlockedByBundle } from '../lib/catalogs/research-bundles';
 
 interface ResearchBundleContextType {
   purchasedBundles: string[]; // Array of bundle IDs

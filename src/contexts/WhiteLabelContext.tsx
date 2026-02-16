@@ -159,7 +159,7 @@ export function WhiteLabelProvider({ children }: { children: React.ReactNode }) 
       whiteLabel: updates.whiteLabel ? { ...prev.whiteLabel, ...updates.whiteLabel } : prev.whiteLabel,
       features: updates.features ? { ...prev.features, ...updates.features } : prev.features,
       updatedAt: new Date().toISOString()
-    } : null);
+    } : prev);
   }, []);
 
   const addClient = useCallback((clientData: Omit<Client, 'id' | 'createdAt' | 'updatedAt' | 'projectsCount' | 'strategiesCount'>) => {

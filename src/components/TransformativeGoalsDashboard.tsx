@@ -274,7 +274,8 @@ export function TransformativeGoalsDashboard({ onBack, onStartResearch }: Transf
     }
   };
 
-  const StatusIcon = statusConfig[asset.status]?.icon || AlertTriangle;
+  const statusKey = asset.status as keyof typeof statusConfig;
+  const StatusIcon = statusConfig[statusKey]?.icon || AlertTriangle;
 
   return (
     <div className="min-h-screen bg-background">
@@ -305,10 +306,10 @@ export function TransformativeGoalsDashboard({ onBack, onStartResearch }: Transf
 
             <Badge
               variant="outline"
-              className={`${statusConfig[asset.status]?.className} border px-4 py-2`}
+              className={`${statusConfig[statusKey]?.className} border px-4 py-2`}
             >
               <StatusIcon className="h-4 w-4 mr-2" />
-              {statusConfig[asset.status]?.label}
+              {statusConfig[statusKey]?.label}
             </Badge>
           </div>
 
@@ -397,7 +398,7 @@ export function TransformativeGoalsDashboard({ onBack, onStartResearch }: Transf
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
                     <BarChart3 className="h-3 w-3 mr-1.5" />
-                    {decisionStatus.overallScore}% Quality
+                    {Math.round(decisionStatus.coverage)}% Quality
                   </Badge>
                   
                   {/* Lock/Unlock Button */}
@@ -660,7 +661,7 @@ export function TransformativeGoalsDashboard({ onBack, onStartResearch }: Transf
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Decision Quality</p>
-                    <p className="text-2xl font-semibold">{decisionStatus.overallScore}%</p>
+                    <p className="text-2xl font-semibold">{Math.round(decisionStatus.coverage)}%</p>
                   </div>
                   <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                     <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -706,7 +707,7 @@ export function TransformativeGoalsDashboard({ onBack, onStartResearch }: Transf
             setIsFlowModalOpen(false);
             setSelectedMethod(null);
           }}
-          method={selectedMethod}
+          method={selectedMethod as any}
           assetName="Transformative Goals"
           onComplete={handleResearchComplete}
         />

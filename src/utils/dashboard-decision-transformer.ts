@@ -144,7 +144,7 @@ export function generateNextBestAction(brandAssets: any[], personas: any[]): Nex
       reason: `Dit ${item.item.itemType} blokkeert strategische beslissingen (<50% coverage)`,
       unlocksDecision: `${item.item.type} wordt bruikbaar in campagnes en strategische tools`,
       riskReduction: 'Elimineert kritiek risico op misleidende beslissingen',
-      estimatedTime: item.status.missingTopMethods.includes('Workshop') ? '2-4 uur' : '1-2 uur',
+      estimatedTime: item.status.missingTopMethods.includes('canvas-workshop' as any) ? '2-4 uur' : '1-2 uur',
       impact: 'critical',
       targetType: item.item.itemType,
     };
@@ -215,7 +215,7 @@ export function calculatePrimaryNextStep(brandAssets: any[], personas: any[]): P
       reason: `Dit ${mostUrgent.type === 'asset' ? 'asset' : 'persona'} blokkeert strategische beslissingen`,
       unlocks: `${mostUrgent.name} wordt bruikbaar in campagnes en strategieën`,
       riskReduction: 'Elimineert kritiek risico op misleidende beslissingen',
-      estimatedTime: status?.missingTopMethods.includes('Workshop') ? '2-4 uur' : '1-2 uur',
+      estimatedTime: status?.missingTopMethods.includes('canvas-workshop' as any) ? '2-4 uur' : '1-2 uur',
       targetId: mostUrgent.id,
       targetType: mostUrgent.type,
     };
@@ -230,7 +230,7 @@ export function calculatePrimaryNextStep(brandAssets: any[], personas: any[]): P
       reason: `Dit ${mostUrgent.type === 'asset' ? 'asset' : 'persona'} heeft beperkte validatie`,
       unlocks: `${mostUrgent.name} bereikt optimale betrouwbaarheid (80%+)`,
       riskReduction: 'Verkleint risico op sub-optimale ROI met 40-60%',
-      estimatedTime: status?.missingTopMethods[0] === 'Workshop' ? '2-4 uur' : '1-2 uur',
+      estimatedTime: (status?.missingTopMethods[0] as string) === 'canvas-workshop' ? '2-4 uur' : '1-2 uur',
       targetId: mostUrgent.id,
       targetType: mostUrgent.type,
     };

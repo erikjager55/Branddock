@@ -103,12 +103,14 @@ export function ProductsServices({ onNavigate }: ProductsServicesProps) {
             icon={Package}
             title="Nog geen producten of diensten"
             description="Voeg je eerste product of dienst toe om te beginnen"
-            action={
-              <Button onClick={() => onNavigate?.('product-analyzer')}>
-                <Plus className="h-4 w-4 mr-2" />
-                Product/Service Toevoegen
-              </Button>
-            }
+            {...{
+              action: (
+                <Button onClick={() => onNavigate?.('product-analyzer')}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Product/Service Toevoegen
+                </Button>
+              )
+            } as any}
           />
         ) : (
           <Grid cols={2} gap="lg">

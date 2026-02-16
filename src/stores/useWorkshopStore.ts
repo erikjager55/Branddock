@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import type { Workshop, WorkshopBundle } from "@/types/workshop";
-import { WORKSHOP_BASE_PRICE, FACILITATOR_PRICE, ASSET_PRICE } from "@/lib/constants/workshop";
+// Inline workshop pricing constants (previously from @/lib/constants/workshop)
+const WORKSHOP_BASE_PRICE = 149;
+const FACILITATOR_PRICE = 99;
+const ASSET_PRICE = 29;
 
 type ResultsTab = "overview" | "canvas" | "workshop" | "notes" | "gallery";
 

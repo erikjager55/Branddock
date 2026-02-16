@@ -1,6 +1,25 @@
 // =============================================================
-// Campaign types — DB model + API contracts
+// Campaign types — Mock format (UI) + DB model + API contracts
 // =============================================================
+
+/** Mock-format Campaign used by UI components and adapters */
+export interface Campaign {
+  id: string;
+  name: string;
+  type: 'campaign-strategy' | 'brand-refresh' | 'content-strategy';
+  status: 'ready' | 'draft' | 'generating';
+  objective?: string;
+  budgetRange?: [number, number];
+  channels?: {
+    social?: boolean;
+    email?: boolean;
+    ooh?: boolean;
+  };
+  assets: CampaignAsset[];
+  deliverables: CampaignDeliverable[];
+  modifiedTime?: string;
+  modifiedBy?: string;
+}
 
 export interface CampaignDeliverable {
   id: string;

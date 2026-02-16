@@ -245,9 +245,6 @@ export function EntityCard({ data }: { data: EntityCardData }) {
                         label={method.label || validationConfig?.name || method.type}
                         description={method.description}
                         icon={method.icon || validationConfig?.icon}
-                        showIcon={true}
-                        onWorkClick={method.onWorkClick}
-                        onResultsClick={method.onResultsClick}
                         onPrimaryClick={method.status === 'completed' ? method.onResultsClick : method.onWorkClick}
                       />
                     );

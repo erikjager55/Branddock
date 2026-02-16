@@ -96,7 +96,7 @@ export function ResearchFlowModal({
   };
 
   return (
-    <Dialog open={isOpen} onClose={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-[600px] overflow-hidden">
         <CustomConfetti
           active={showConfetti}

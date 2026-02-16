@@ -32,12 +32,12 @@ interface PersonaContentProps {
 
 export function PersonaContent({ persona, isEditing, hasToolbar = false, onUpdate }: PersonaContentProps) {
   const [demographics, setDemographics] = useState({
-    age: persona.demographics.age || '',
-    location: persona.demographics.location || '',
-    occupation: persona.demographics.occupation || '',
-    income: persona.demographics.income || '',
-    familyStatus: persona.demographics.familyStatus || '',
-    education: persona.demographics.education || '',
+    age: persona.age || '',
+    location: persona.location || '',
+    occupation: persona.occupation || '',
+    income: persona.income || '',
+    familyStatus: persona.familyStatus || '',
+    education: persona.education || '',
   });
 
   const [goals, setGoals] = useState<string[]>(persona.goals || []);
@@ -45,12 +45,12 @@ export function PersonaContent({ persona, isEditing, hasToolbar = false, onUpdat
   const [frustrations, setFrustrations] = useState<string[]>(persona.frustrations || []);
   const [behaviors, setBehaviors] = useState<string[]>(persona.behaviors || []);
   const [strategicImplications, setStrategicImplications] = useState<string[]>(
-    persona.strategicImplications || []
+    persona.strategicImplications ? [persona.strategicImplications] : []
   );
 
   const [psychographics, setPsychographics] = useState({
-    personality: persona.personality || '',
-    values: persona.values || [],
+    personality: persona.personalityType || '',
+    values: persona.coreValues || [],
     interests: persona.interests || [],
   });
 

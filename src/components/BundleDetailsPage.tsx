@@ -18,7 +18,7 @@ import {
   Rocket,
   Sparkles,
 } from 'lucide-react';
-import { ResearchBundle } from '../data/research-bundles';
+import type { ResearchBundle } from '../types/research-bundle';
 import { Separator } from './ui/separator';
 
 interface BundleDetailsPageProps {

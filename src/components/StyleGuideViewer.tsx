@@ -43,7 +43,7 @@ interface StyleGuideViewerProps {
 interface NavSection {
   id: string;
   label: string;
-  ref: React.RefObject<HTMLDivElement>;
+  ref: React.RefObject<HTMLDivElement | null>;
 }
 
 export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
@@ -1133,7 +1133,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                       )}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {editableData.tonology.keywords.map((keyword, index) => (
+                      {editableData.tonology?.keywords.map((keyword, index) => (
                         <Badge 
                           key={index} 
                           variant="secondary" 
@@ -1172,7 +1172,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                         )}
                       </div>
                       <ul className="space-y-2.5">
-                        {editableData.tonology.dosDonts.dos.map((item, index) => (
+                        {editableData.tonology?.dosDonts.dos.map((item, index) => (
                           <li key={index} className="flex items-start gap-2.5 text-sm group">
                             <Check className="h-4 w-4 text-green-600 dark:text-green-500 flex-shrink-0 mt-0.5" />
                             <span className="text-muted-foreground flex-1">{item}</span>
@@ -1205,7 +1205,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                         )}
                       </div>
                       <ul className="space-y-2.5">
-                        {editableData.tonology.dosDonts.donts.map((item, index) => (
+                        {editableData.tonology?.dosDonts.donts.map((item, index) => (
                           <li key={index} className="flex items-start gap-2.5 text-sm group">
                             <XCircle className="h-4 w-4 text-red-600 dark:text-red-500 flex-shrink-0 mt-0.5" />
                             <span className="text-muted-foreground flex-1">{item}</span>

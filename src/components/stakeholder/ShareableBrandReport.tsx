@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { BrandAsset } from '../../types/brand-asset';
 import { calculateDecisionStatus, getMethodLabel } from '../../utils/decision-status-calculator';
+import { DECISION_STATUS_CONFIG } from '../../types/decision-status';
 
 interface ShareableBrandReportProps {
   asset: BrandAsset;
@@ -34,10 +35,7 @@ interface ShareableBrandReportProps {
 }
 
 export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProps) {
-  const decisionStatus = calculateDecisionStatus(
-    asset.researchMethods || [],
-    asset.researchCoverage || 0
-  );
+  const decisionStatus = calculateDecisionStatus(asset);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -163,8 +161,8 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
               <div className="flex flex-wrap gap-2">
                 {asset.researchMethods && asset.researchMethods.length > 0 ? (
                   asset.researchMethods.map((method) => (
-                    <Badge key={method} variant="outline">
-                      {getMethodLabel(method)}
+                    <Badge key={method.type} variant="outline">
+                      {getMethodLabel(method.type)}
                     </Badge>
                   ))
                 ) : (
@@ -198,38 +196,36 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
               <div className="flex items-center gap-3 mb-2">
                 <StatusIcon className={`h-6 w-6 ${getStatusColor(decisionStatus.status)}`} />
                 <div className="flex-1">
-                  <p className="font-semibold">{decisionStatus.label}</p>
-                  <p className="text-sm text-muted-foreground">{decisionStatus.description}</p>
+                  <p className="font-semibold">{DECISION_STATUS_CONFIG[decisionStatus.status].label}</p>
+                  <p className="text-sm text-muted-foreground">{DECISION_STATUS_CONFIG[decisionStatus.status].description}</p>
                 </div>
               </div>
             </div>
 
-            {/* Key Insights */}
-            {decisionStatus.keyInsights && decisionStatus.keyInsights.length > 0 && (
+            {/* Next Steps */}
+            {decisionStatus.nextSteps && decisionStatus.nextSteps.length > 0 && (
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-3">Key Insights</p>
                 <div className="space-y-2">
-                  {decisionStatus.keyInsights.map((insight, index) => (
+                  {decisionStatus.nextSteps.map((step: string, index: number) => (
                     <div key={index} className="flex items-start gap-2 text-sm">
                       <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
-                      <span>{insight}</span>
+                      <span>{step}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Risks */}
-            {decisionStatus.risks && decisionStatus.risks.length > 0 && (
+            {/* Risk */}
+            {decisionStatus.risk && (
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-3">Risico's</p>
                 <div className="space-y-2">
-                  {decisionStatus.risks.map((risk, index) => (
-                    <div key={index} className="flex items-start gap-2 text-sm">
-                      <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                      <span>{risk}</span>
-                    </div>
-                  ))}
+                  <div className="flex items-start gap-2 text-sm">
+                    <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                    <span>{decisionStatus.risk}</span>
+                  </div>
                 </div>
               </div>
             )}

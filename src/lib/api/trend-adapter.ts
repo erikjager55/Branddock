@@ -1,5 +1,4 @@
-import type { Trend } from "@/data/mock-trends";
-import type { TrendWithMeta } from "@/types/trend";
+import type { Trend, TrendWithMeta } from "@/types/trend";
 
 export function apiTrendToMockFormat(t: TrendWithMeta): Trend {
   return {

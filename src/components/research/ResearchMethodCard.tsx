@@ -20,6 +20,7 @@ import {
   Plus,
 } from 'lucide-react';
 import type { ResearchMethodType } from '../../types/brand-asset';
+import type { LucideIcon } from 'lucide-react';
 
 // Method status type - matches parent component
 export type MethodStatus = 'locked' | 'available' | 'running' | 'completed';

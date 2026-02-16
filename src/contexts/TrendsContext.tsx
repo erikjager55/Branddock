@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Trend } from '../data/mock-trends';
+import type { Trend } from '../types/trend';
 import { apiTrendsToMockFormat } from '../lib/api/trend-adapter';
 
 interface TrendsContextType {

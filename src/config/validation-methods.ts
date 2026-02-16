@@ -138,7 +138,7 @@ export function getValidationMethod(id: ValidationMethodId): ValidationMethod | 
  * Get validation methods by unlock level
  */
 export function getValidationMethodsByLevel(level: 'free' | 'basic' | 'pro' | 'enterprise'): ValidationMethod[] {
-  const levels = { free: 0, basic: 1, pro: 2, enterprise: 3 };
+  const levels: Record<string, number> = { free: 0, basic: 1, pro: 2, premium: 3, enterprise: 4 };
   const targetLevel = levels[level];
   return VALIDATION_METHODS.filter(method => levels[method.unlockLevel] <= targetLevel);
 }

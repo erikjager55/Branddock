@@ -42,13 +42,13 @@ import {
   Lightbulb,
   Rocket
 } from 'lucide-react';
+import type { ResearchBundle } from '../types/research-bundle';
 import {
   getFoundationBundles,
   getSpecializedBundles,
   getStrategyToolsUnlockedByBundle,
-  ResearchBundle
-} from '../data/research-bundles';
-import { strategyTools } from '../data/strategy-tools';
+} from '../lib/catalogs/research-bundles';
+import { strategyTools } from '../lib/catalogs/strategy-tools';
 import { useResearchBundles } from '../contexts/ResearchBundleContext';
 import { UnifiedResearchCard } from './UnifiedResearchCard';
 import { ResearchFoundationMatrix } from './ResearchFoundationMatrix';

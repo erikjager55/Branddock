@@ -63,7 +63,7 @@ export function RelationshipsPage({
   // Sync context data to static service
   React.useEffect(() => {
     RelationshipService.setBrandAssets(brandAssets);
-    RelationshipService.setPersonas(personas);
+    RelationshipService.setPersonas(personas as any);
   }, [brandAssets, personas]);
   const [selectedTab, setSelectedTab] = useState<string>('decision-insights');
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);

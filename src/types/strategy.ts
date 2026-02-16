@@ -1,5 +1,16 @@
 // Strategy Hub Type Definitions
 
+// Unlockable research/analysis tool (used in purchase flow)
+export interface UnlockableTool {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  icon?: any;
+  supportsMultiAsset?: boolean;
+  relatedAssets?: string[];
+}
+
 export type StrategyCategory = 
   | 'marketing-growth'
   | 'product-innovation'

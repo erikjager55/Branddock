@@ -226,7 +226,7 @@ export function ResearchTargetSelector({ onTargetSelected, onBack }: ResearchTar
         name: persona.name,
         description: persona.tagline,
         status: persona.status,
-        avatar: persona.avatar
+        avatar: persona.avatar || undefined
       }));
     }
 

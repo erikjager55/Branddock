@@ -21,7 +21,7 @@ import {
   ShoppingCart,
   Radio
 } from 'lucide-react';
-import { StrategyTool, StrategyCategory } from '../types/strategy';
+import { StrategyTool, StrategyCategory } from '../../types/strategy';
 
 // Comprehensive strategy tools library
 export const strategyTools: StrategyTool[] = [
@@ -55,7 +55,7 @@ export const strategyTools: StrategyTool[] = [
       ],
       optional: [
         {
-          type: 'product',
+          type: 'custom',
           count: 1,
           optional: true,
           description: 'Products or services to feature in the campaign'
@@ -67,7 +67,7 @@ export const strategyTools: StrategyTool[] = [
           description: 'Market trends and opportunities to leverage'
         },
         {
-          type: 'knowledge',
+          type: 'custom',
           count: 1,
           optional: true,
           description: 'Industry insights and best practices'

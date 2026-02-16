@@ -30,7 +30,8 @@ import {
 import { Slider } from './ui/slider';
 import { Checkbox } from './ui/checkbox';
 import { AssetSelectionModal } from './AssetSelectionModal';
-import { CampaignDeliverableButton, CampaignDeliverable } from './campaign-strategy/CampaignDeliverableButton';
+import { CampaignDeliverableButton } from './campaign-strategy/CampaignDeliverableButton';
+import type { CampaignDeliverable } from '../types/campaign';
 import { useCampaignsContext } from '../contexts/CampaignsContext';
 import { DeliverableCard } from './campaign-strategy/DeliverableCard';
 
@@ -46,7 +47,7 @@ interface Asset {
 interface NavSection {
   id: string;
   label: string;
-  ref: React.RefObject<HTMLDivElement>;
+  ref: React.RefObject<HTMLDivElement | null>;
 }
 
 interface CampaignWorkspaceProps {

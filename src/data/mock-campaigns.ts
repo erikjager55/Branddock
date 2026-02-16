@@ -1,49 +1,15 @@
 /**
  * Mock Campaign Data - Single Source of Truth
- * 
+ *
  * Dit bestand bevat alle campaign data die wordt gebruikt in de applicatie.
  * Wijzigingen hier worden automatisch gesynchroniseerd tussen:
  * - ActiveCampaignsPage (overzichtspagina)
  * - CampaignWorkspace (detailpagina)
  */
 
-export interface CampaignDeliverable {
-  id: string;
-  name: string;
-  description?: string;
-  type: 'document' | 'image' | 'video' | 'email' | 'website' | 'social';
-  status: 'completed' | 'in-progress' | 'not-started';
-  progress?: number;
-  dueDate?: string;
-  assignee?: string;
-}
+import type { Campaign, CampaignDeliverable, CampaignAsset } from '../types/campaign';
 
-export interface CampaignAsset {
-  id: string;
-  name: string;
-  type: 'brand' | 'product' | 'persona' | 'trend' | 'research';
-  trustLevel: 'high' | 'medium' | 'low';
-  trustLabel: string;
-  locked?: boolean;
-}
-
-export interface Campaign {
-  id: string;
-  name: string;
-  type: 'campaign-strategy' | 'brand-refresh' | 'content-strategy';
-  status: 'ready' | 'draft' | 'generating';
-  objective?: string;
-  budgetRange?: [number, number];
-  channels?: {
-    social?: boolean;
-    email?: boolean;
-    ooh?: boolean;
-  };
-  assets: CampaignAsset[];
-  deliverables: CampaignDeliverable[];
-  modifiedTime?: string;
-  modifiedBy?: string;
-}
+export type { Campaign, CampaignDeliverable, CampaignAsset };
 
 export const mockCampaigns: Record<string, Campaign> = {
   '1': {
@@ -110,45 +76,3 @@ export const mockCampaigns: Record<string, Campaign> = {
     modifiedBy: 'Alex'
   }
 };
-
-// Helper functie om campaign op te halen per ID
-export function getCampaign(id: string): Campaign | undefined {
-  return mockCampaigns[id];
-}
-
-// Helper functie om alle campaigns als array te krijgen
-export function getAllCampaigns(): Campaign[] {
-  return Object.values(mockCampaigns);
-}
-
-// Helper om campaign te converteren naar strategy format voor ActiveCampaignsPage
-export function campaignToStrategy(campaign: Campaign) {
-  // Tel assets per type
-  const assetCounts = campaign.assets.reduce((acc, asset) => {
-    if (asset.type === 'brand') acc.brand = (acc.brand || 0) + 1;
-    if (asset.type === 'persona') acc.persona = (acc.persona || 0) + 1;
-    if (asset.type === 'product') acc.product = (acc.product || 0) + 1;
-    return acc;
-  }, {} as { brand?: number; persona?: number; product?: number });
-
-  // Haal eerste asset van elk type op voor context inputs
-  const brandAsset = campaign.assets.find(a => a.type === 'brand');
-  const personaAsset = campaign.assets.find(a => a.type === 'persona');
-  const productAsset = campaign.assets.find(a => a.type === 'product');
-
-  return {
-    id: campaign.id,
-    name: campaign.name,
-    type: campaign.type,
-    status: campaign.status,
-    assets: assetCounts,
-    contextInputs: {
-      ...(brandAsset && { brand: { name: brandAsset.name, count: assetCounts.brand || 0 } }),
-      ...(personaAsset && { persona: { name: personaAsset.name, count: assetCounts.persona || 0 } }),
-      ...(productAsset && { product: { name: productAsset.name, count: assetCounts.product || 0 } }),
-    },
-    deliverables: campaign.deliverables,
-    modifiedTime: campaign.modifiedTime || 'Unknown',
-    modifiedBy: campaign.modifiedBy || 'Unknown'
-  };
-}

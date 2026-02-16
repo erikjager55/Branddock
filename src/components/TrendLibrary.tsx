@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Plus, Edit, Eye, TrendingUp, TrendingDown, BarChart3, Target, Calendar, Users } from 'lucide-react';
 import { AddTrendModal } from './strategy-tools/AddTrendModal';
-import { Trend } from '../data/mock-trends';
+import type { Trend } from '../types/trend';
 import { useTrendsContext } from '../contexts/TrendsContext';
 
 export function TrendLibrary() {

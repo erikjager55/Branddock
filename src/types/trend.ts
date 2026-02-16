@@ -1,3 +1,26 @@
+// =============================================================
+// Trend types — Mock format (UI) + DB model + API contracts
+// =============================================================
+
+/** Mock-format Trend used by UI components and adapters */
+export interface Trend {
+  id: string;
+  title: string;
+  category: 'technology' | 'consumer' | 'social' | 'business' | 'environmental';
+  description: string;
+  impact: 'high' | 'medium' | 'low';
+  timeframe: 'short-term' | 'medium-term' | 'long-term';
+  relevantIndustries: string[];
+  keyInsights?: string;
+  direction?: 'rising' | 'declining' | 'stable';
+  relevance?: number;
+  sources?: string[];
+  dateAdded?: string;
+  tags?: string[];
+  level?: 'micro' | 'meso' | 'macro';
+}
+
+/** DB-format Trend returned by API */
 export interface TrendWithMeta {
   id: string;
   title: string;

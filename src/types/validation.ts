@@ -220,7 +220,7 @@ export function mapToUIStatus(
   isAvailable: boolean = true
 ): ValidationMethodUIStatus {
   if (isLocked) return 'locked';
-  if (!isAvailable) return 'unavailable';
+  if (!isAvailable) return 'locked';
   
   switch (methodStatus) {
     case 'completed':

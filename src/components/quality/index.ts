@@ -16,8 +16,8 @@ export {
   QualityTooltipCompact
 } from './QualityTooltip';
 
-export {
-  QualityMethodConnection,
-  QualityMethodConnectionInline,
-  QualityFlowVisualization
-} from './QualityMethodConnection';
+// export {
+//   QualityMethodConnection,
+//   QualityMethodConnectionInline,
+//   QualityFlowVisualization
+// } from './QualityMethodConnection';

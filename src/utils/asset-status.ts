@@ -1,18 +1,18 @@
-import { BrandAsset, AssetStatus, ResearchMethodType } from '../types/brand-asset';
+import { BrandAsset, CalculatedAssetStatus, ResearchMethodType } from '../types/brand-asset';
 import { VALIDATION_METHODS, getValidationMethod } from '../config/validation-methods';
 
 /**
  * Calculate the status of an asset based on its research and content state
  */
-export function calculateAssetStatus(asset: BrandAsset): AssetStatus {
+export function calculateCalculatedAssetStatus(asset: BrandAsset): CalculatedAssetStatus {
   const anyMethodInProgress = asset.researchMethods.some(m => m.status === 'in-progress');
   const anyMethodCompleted = asset.researchMethods.some(m => m.status === 'completed');
   const hasContent = asset.content && asset.content.length > 0;
   
   // Check content sections if available
   if (asset.contentSections && asset.contentSections.length > 0) {
-    const allSectionsValidated = asset.contentSections.every(s => s.status === 'validated');
-    const anySectionReadyToValidate = asset.contentSections.some(s => s.status === 'ready-to-validate');
+    const allSectionsValidated = asset.contentSections.every(s => s.completed);
+    const anySectionReadyToValidate = asset.contentSections.some(s => !s.completed);
     
     if (allSectionsValidated && !anyMethodInProgress) {
       return 'validated';
@@ -72,7 +72,7 @@ export function hasCompletedMethod(asset: BrandAsset, methodType: ResearchMethod
 /**
  * Get status display information
  */
-export function getStatusInfo(status: AssetStatus) {
+export function getStatusInfo(status: CalculatedAssetStatus) {
   switch (status) {
     case 'awaiting-research':
       return {
@@ -148,7 +148,7 @@ export function getMethodInfo(methodType: ResearchMethodType) {
  * Get all available research method types
  */
 export function getAllMethodTypes(): ResearchMethodType[] {
-  return ['canvas-workshop', 'interviews', 'questionnaire', 'ai-exploration', 'competitive-analysis', 'customer-research', 'market-trends', 'brand-audit'];
+  return ['canvas-workshop', 'interviews', 'questionnaire', 'ai-exploration', 'survey', 'focus-group', 'desk-research'];
 }
 
 /**
@@ -157,7 +157,7 @@ export function getAllMethodTypes(): ResearchMethodType[] {
 export function filterAssets(
   assets: BrandAsset[],
   filters: {
-    status?: AssetStatus[];
+    status?: CalculatedAssetStatus[];
     hasMethod?: ResearchMethodType[];
     coverageMin?: number;
     coverageMax?: number;
@@ -166,7 +166,7 @@ export function filterAssets(
   return assets.filter(asset => {
     // Filter by status
     if (filters.status && filters.status.length > 0) {
-      if (!filters.status.includes(asset.status)) {
+      if (!(filters.status as string[]).includes(asset.status)) {
         return false;
       }
     }
@@ -201,7 +201,7 @@ export function filterAssets(
 /**
  * Group assets by status
  */
-export function groupAssetsByStatus(assets: BrandAsset[]) {
+export function groupAssetsByStatus(assets: BrandAsset[]): Record<CalculatedAssetStatus, BrandAsset[]> {
   return {
     'ready-to-validate': assets.filter(a => a.status === 'ready-to-validate'),
     'in-development': assets.filter(a => a.status === 'in-development'),

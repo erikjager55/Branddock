@@ -22,17 +22,7 @@ import {
   Pencil,
   ChevronRight,
 } from 'lucide-react';
-
-export interface CampaignDeliverable {
-  id: string;
-  name: string;
-  description?: string;
-  type: 'document' | 'image' | 'video' | 'email' | 'website' | 'social';
-  status: 'completed' | 'in-progress' | 'not-started';
-  progress?: number;
-  dueDate?: string;
-  assignee?: string;
-}
+import type { CampaignDeliverable } from '../../types/campaign';
 
 interface CampaignDeliverableButtonProps {
   deliverable: CampaignDeliverable;

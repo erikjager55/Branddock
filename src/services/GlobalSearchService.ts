@@ -170,20 +170,20 @@ class GlobalSearchService {
     return this.personas
       .filter(persona => {
         const nameMatch = persona.name.toLowerCase().includes(query);
-        const roleMatch = persona.role.toLowerCase().includes(query);
-        const descMatch = persona.description?.toLowerCase().includes(query);
-        return nameMatch || roleMatch || descMatch;
+        const taglineMatch = (persona.tagline || '').toLowerCase().includes(query);
+        const occupationMatch = (persona.occupation || '').toLowerCase().includes(query);
+        return nameMatch || taglineMatch || occupationMatch;
       })
       .map(persona => ({
         id: persona.id,
         type: 'persona' as SearchResultType,
         title: persona.name,
-        subtitle: persona.role,
-        description: persona.description,
+        subtitle: persona.occupation || persona.tagline || '',
+        description: persona.tagline || undefined,
         icon: 'Users',
         route: `personas/${persona.id}`,
         metadata: {
-          score: this.calculateRelevance(query, persona.name, persona.description)
+          score: this.calculateRelevance(query, persona.name, persona.tagline || undefined)
         }
       }))
       .sort((a, b) => (b.metadata?.score || 0) - (a.metadata?.score || 0));

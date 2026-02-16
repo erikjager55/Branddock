@@ -33,7 +33,7 @@ import {
   Activity,
   Lightbulb
 } from 'lucide-react';
-import { Persona, PersonaStatus } from '../types/persona';
+import { Persona } from '../types/persona';
 
 interface CreatePersonaProps {
   onBack: () => void;
@@ -45,25 +45,21 @@ export function CreatePersona({ onBack, onCreate }: CreatePersonaProps) {
   const [newPersona, setNewPersona] = useState<Partial<Persona>>({
     name: '',
     tagline: '',
-    avatar: '',
-    status: 'draft' as PersonaStatus,
-    demographics: {
-      age: '',
-      gender: '',
-      location: '',
-      occupation: '',
-      education: '',
-      income: ''
-    },
+    avatarUrl: '',
+    age: '',
+    gender: '',
+    location: '',
+    occupation: '',
+    education: '',
+    income: '',
     goals: [''],
     frustrations: [''],
     motivations: [''],
     behaviors: [''],
-    values: [''],
+    coreValues: [''],
     interests: [''],
-    researchCoverage: 0,
     researchMethods: [],
-    validationScore: 0
+    validationPercentage: 0
   });
 
   const handleSave = () => {
@@ -73,39 +69,35 @@ export function CreatePersona({ onBack, onCreate }: CreatePersonaProps) {
       id: `persona-${Date.now()}`,
       name: newPersona.name || 'Unnamed Persona',
       tagline: newPersona.tagline || '',
-      status: newPersona.status || 'draft',
-      demographics: newPersona.demographics || {
-        age: '',
-        gender: '',
-        location: '',
-        occupation: '',
-        education: '',
-        income: ''
-      },
-      goals: newPersona.goals?.filter(g => g.trim()) || [],
-      frustrations: newPersona.frustrations?.filter(f => f.trim()) || [],
-      motivations: newPersona.motivations?.filter(m => m.trim()) || [],
-      behaviors: newPersona.behaviors?.filter(b => b.trim()) || [],
-      values: newPersona.values?.filter(v => v.trim()) || [],
-      interests: newPersona.interests?.filter(i => i.trim()) || [],
-      researchCoverage: newPersona.researchCoverage || 0,
+      age: newPersona.age || '',
+      gender: newPersona.gender || '',
+      location: newPersona.location || '',
+      occupation: newPersona.occupation || '',
+      education: newPersona.education || '',
+      income: newPersona.income || '',
+      goals: newPersona.goals?.filter((g: string) => g.trim()) || [],
+      frustrations: newPersona.frustrations?.filter((f: string) => f.trim()) || [],
+      motivations: newPersona.motivations?.filter((m: string) => m.trim()) || [],
+      behaviors: newPersona.behaviors?.filter((b: string) => b.trim()) || [],
+      coreValues: newPersona.coreValues?.filter((v: string) => v.trim()) || [],
+      interests: newPersona.interests?.filter((i: string) => i.trim()) || [],
       researchMethods: newPersona.researchMethods || [],
-      validationScore: newPersona.validationScore || 0
+      validationPercentage: newPersona.validationPercentage || 0
     } as Persona;
-    
+
     onCreate(persona);
   };
 
   // Helper functions for list editing
-  const handleAddListItem = (field: 'goals' | 'frustrations' | 'motivations' | 'behaviors' | 'values' | 'interests') => {
+  const handleAddListItem = (field: 'goals' | 'frustrations' | 'motivations' | 'behaviors' | 'coreValues' | 'interests') => {
     setNewPersona({
       ...newPersona,
-      [field]: [...(newPersona[field] || []), '']
+      [field]: [...(newPersona[field] as string[] || []), '']
     });
   };
 
-  const handleUpdateListItem = (field: 'goals' | 'frustrations' | 'motivations' | 'behaviors' | 'values' | 'interests', index: number, value: string) => {
-    const newList = [...(newPersona[field] || [])];
+  const handleUpdateListItem = (field: 'goals' | 'frustrations' | 'motivations' | 'behaviors' | 'coreValues' | 'interests', index: number, value: string) => {
+    const newList = [...(newPersona[field] as string[] || [])];
     newList[index] = value;
     setNewPersona({
       ...newPersona,
@@ -113,10 +105,10 @@ export function CreatePersona({ onBack, onCreate }: CreatePersonaProps) {
     });
   };
 
-  const handleRemoveListItem = (field: 'goals' | 'frustrations' | 'motivations' | 'behaviors' | 'values' | 'interests', index: number) => {
+  const handleRemoveListItem = (field: 'goals' | 'frustrations' | 'motivations' | 'behaviors' | 'coreValues' | 'interests', index: number) => {
     setNewPersona({
       ...newPersona,
-      [field]: (newPersona[field] || []).filter((_, i) => i !== index)
+      [field]: (newPersona[field] as string[] || []).filter((_: string, i: number) => i !== index)
     });
   };
 
@@ -202,10 +194,10 @@ export function CreatePersona({ onBack, onCreate }: CreatePersonaProps) {
                     Age
                   </Label>
                   <Input
-                    value={newPersona.demographics?.age || ''}
+                    value={newPersona.age || ''}
                     onChange={(e) => setNewPersona({
                       ...newPersona,
-                      demographics: { ...newPersona.demographics, age: e.target.value }
+                      age: e.target.value
                     })}
                     placeholder="e.g., 32"
                   />
@@ -217,10 +209,10 @@ export function CreatePersona({ onBack, onCreate }: CreatePersonaProps) {
                     Gender
                   </Label>
                   <Input
-                    value={newPersona.demographics?.gender || ''}
+                    value={newPersona.gender || ''}
                     onChange={(e) => setNewPersona({
                       ...newPersona,
-                      demographics: { ...newPersona.demographics, gender: e.target.value }
+                      gender: e.target.value
                     })}
                     placeholder="e.g., Female"
                   />
@@ -232,10 +224,10 @@ export function CreatePersona({ onBack, onCreate }: CreatePersonaProps) {
                     Location
                   </Label>
                   <Input
-                    value={newPersona.demographics?.location || ''}
+                    value={newPersona.location || ''}
                     onChange={(e) => setNewPersona({
                       ...newPersona,
-                      demographics: { ...newPersona.demographics, location: e.target.value }
+                      location: e.target.value
                     })}
                     placeholder="e.g., Amsterdam, Netherlands"
                   />
@@ -247,10 +239,10 @@ export function CreatePersona({ onBack, onCreate }: CreatePersonaProps) {
                     Occupation
                   </Label>
                   <Input
-                    value={newPersona.demographics?.occupation || ''}
+                    value={newPersona.occupation || ''}
                     onChange={(e) => setNewPersona({
                       ...newPersona,
-                      demographics: { ...newPersona.demographics, occupation: e.target.value }
+                      occupation: e.target.value
                     })}
                     placeholder="e.g., Product Manager"
                   />
@@ -262,10 +254,10 @@ export function CreatePersona({ onBack, onCreate }: CreatePersonaProps) {
                     Education
                   </Label>
                   <Input
-                    value={newPersona.demographics?.education || ''}
+                    value={newPersona.education || ''}
                     onChange={(e) => setNewPersona({
                       ...newPersona,
-                      demographics: { ...newPersona.demographics, education: e.target.value }
+                      education: e.target.value
                     })}
                     placeholder="e.g., Bachelor's Degree"
                   />
@@ -277,10 +269,10 @@ export function CreatePersona({ onBack, onCreate }: CreatePersonaProps) {
                     Income
                   </Label>
                   <Input
-                    value={newPersona.demographics?.income || ''}
+                    value={newPersona.income || ''}
                     onChange={(e) => setNewPersona({
                       ...newPersona,
-                      demographics: { ...newPersona.demographics, income: e.target.value }
+                      income: e.target.value
                     })}
                     placeholder="e.g., €60,000 - €80,000"
                   />
@@ -300,10 +292,10 @@ export function CreatePersona({ onBack, onCreate }: CreatePersonaProps) {
                 <div className="space-y-2">
                   <Label>Avatar URL</Label>
                   <Input
-                    value={newPersona.avatar || ''}
+                    value={newPersona.avatarUrl || ''}
                     onChange={(e) => setNewPersona({
                       ...newPersona,
-                      avatar: e.target.value
+                      avatarUrl: e.target.value
                     })}
                     placeholder="Enter image URL for persona avatar"
                   />
@@ -452,18 +444,18 @@ export function CreatePersona({ onBack, onCreate }: CreatePersonaProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {(newPersona.values || ['']).map((value, index) => (
+                {(newPersona.coreValues || ['']).map((value, index) => (
                   <div key={index} className="flex gap-2">
                     <Input
                       value={value}
-                      onChange={(e) => handleUpdateListItem('values', index, e.target.value)}
+                      onChange={(e) => handleUpdateListItem('coreValues', index, e.target.value)}
                       placeholder="Enter a value..."
                     />
-                    {(newPersona.values?.length || 0) > 1 && (
+                    {(newPersona.coreValues?.length || 0) > 1 && (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleRemoveListItem('values', index)}
+                        onClick={() => handleRemoveListItem('coreValues', index)}
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -473,7 +465,7 @@ export function CreatePersona({ onBack, onCreate }: CreatePersonaProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleAddListItem('values')}
+                  onClick={() => handleAddListItem('coreValues')}
                   className="w-full"
                 >
                   <Plus className="h-4 w-4 mr-2" />

@@ -19,7 +19,7 @@ export const ResearchPlanSchema = z.object({
   unlockedMethods: z.array(z.string()).default([]),
   unlockedAssets: z.array(z.string()).default([]),
   entryMode: EntryModeSchema,
-  rationale: z.record(z.string()).optional(),
+  rationale: z.record(z.string(), z.string()).optional(),
   configuration: z.any().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),

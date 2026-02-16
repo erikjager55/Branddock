@@ -34,13 +34,10 @@ import {
   Palette,
   TrendingUp,
 } from 'lucide-react';
-import { useResearchStore } from '../store/researchStore';
 import { ThinkFeelActContent } from './asset-content/ThinkFeelActContent';
 import { ESGContent } from './asset-content/ESGContent';
 import { SimpleTextContent } from './asset-content/SimpleTextContent';
 import { assetDashboardConfigs } from '../config/asset-dashboard-configs';
-import { DecisionQualityIndicator } from './DecisionQualityIndicator';
-import { ResearchMethodModal } from './ResearchMethodModal';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { Progress } from './ui/progress';
@@ -197,7 +194,8 @@ export function UniversalAssetDashboard({ assetId, onBack, onStartResearch }: Un
     }
   };
 
-  const StatusIcon = statusConfig[asset.status]?.icon || AlertCircle;
+  const statusKey = decisionStatus as keyof typeof statusConfig;
+  const StatusIcon = statusConfig[statusKey]?.icon || AlertCircle;
 
   // Get asset icon
   const getAssetIcon = (type: string) => {
@@ -222,11 +220,17 @@ export function UniversalAssetDashboard({ assetId, onBack, onStartResearch }: Un
   const AssetIcon = getAssetIcon(asset.type);
 
   // Convert asset research methods to ResearchMethodWithStatus format
-  // ✅ NO MAPPING NEEDED - statuses are now uniform across the app
+  const mapToMethodStatus = (s: string): MethodStatus => {
+    if (s === 'completed') return 'completed';
+    if (s === 'running' || s === 'in-progress') return 'running';
+    if (s === 'locked') return 'locked';
+    return 'available';
+  };
+
   const researchMethodsWithStatus: ResearchMethodWithStatus[] = asset.researchMethods.map((method) => {
     return {
       type: method.type,
-      status: method.status,  // Direct assignment - no mapping!
+      status: mapToMethodStatus(method.status),
       impact: 'high' as MethodImpact,
       qualityScore: method.status === 'completed' ? 95 : undefined,
       confidence: method.status === 'completed' ? ('high' as MethodConfidence) : undefined,
@@ -284,10 +288,10 @@ export function UniversalAssetDashboard({ assetId, onBack, onStartResearch }: Un
 
             <Badge
               variant="outline"
-              className={`${statusConfig[asset.status]?.className} border px-4 py-2`}
+              className={`${statusConfig[statusKey]?.className} border px-4 py-2`}
             >
               <StatusIcon className="h-4 w-4 mr-2" />
-              {statusConfig[asset.status]?.label}
+              {statusConfig[statusKey]?.label}
             </Badge>
           </div>
 
@@ -498,7 +502,7 @@ export function UniversalAssetDashboard({ assetId, onBack, onStartResearch }: Un
               setSelectedMethod(null);
             }}
             onComplete={() => handleResearchComplete(selectedMethod.id)}
-            method={selectedMethod}
+            method={{ ...selectedMethod, unlocksPotential: 25 } as any}
             assetName={asset.type}
           />
         )}

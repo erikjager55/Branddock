@@ -293,36 +293,31 @@ export function UniversalStrategyGenerator({
   // Calculate decision status
   const campaignDecision = useMemo(() => {
     return calculateCampaignDecision(
-      brandAssets, personas,
+      brandAssets, personas as any,
       selectedBrandAssets,
-      selectedPersonas,
-      selectedProducts,
-      selectedTrends,
-      selectedKnowledge
+      selectedPersonas
     );
-  }, [selectedBrandAssets, selectedPersonas, selectedProducts, selectedTrends, selectedKnowledge]);
+  }, [brandAssets, personas, selectedBrandAssets, selectedPersonas]);
 
   const sectionDecisions = useMemo(() => {
     return {
-      brand: calculateSectionDecision(brandAssets, personas, 'brand', selectedBrandAssets),
-      persona: calculateSectionDecision(brandAssets, personas, 'persona', selectedPersonas),
-      products: calculateSectionDecision(brandAssets, personas, 'products', selectedProducts),
-      trends: calculateSectionDecision(brandAssets, personas, 'trends', selectedTrends),
-      knowledge: calculateSectionDecision(brandAssets, personas, 'knowledge', selectedKnowledge)
+      brand: calculateSectionDecision(brandAssets, personas as any, 'brand-assets', selectedBrandAssets, selectedPersonas, {}, []),
     };
-  }, [selectedBrandAssets, selectedPersonas, selectedProducts, selectedTrends, selectedKnowledge]);
+  }, [brandAssets, personas, selectedBrandAssets, selectedPersonas]);
 
   // Save current strategy
   const saveCurrentStrategy = () => {
     const newStrategy: SavedStrategy = {
       id: currentStrategyId || `strategy-${Date.now()}`,
       name: formData.name || `Untitled ${config.title}`,
-      createdAt: currentStrategyId 
+      createdAt: currentStrategyId
         ? savedStrategies.find(s => s.id === currentStrategyId)?.createdAt || new Date()
         : new Date(),
       updatedAt: new Date(),
       status: hasGenerated ? 'generated' : 'draft',
       objective: frameworkId,
+      timeline: '',
+      budget: '',
       config: {
         formData,
         selectedBrandAssets,
@@ -413,11 +408,14 @@ export function UniversalStrategyGenerator({
   const handleGenerate = () => {
     if (campaignDecision.status !== 'safe-to-decide') {
       setWarningStatusInfo({
-        status: campaignDecision.status,
-        coverage: campaignDecision.coverage,
-        gaps: campaignDecision.gaps,
-        risks: campaignDecision.risks,
-        recommendations: campaignDecision.recommendations
+        status: campaignDecision.status as DecisionStatusInfo['status'],
+        coverage: campaignDecision.details.avgCoverage,
+        completedMethods: [],
+        topMethodsCompleted: false,
+        missingTopMethods: campaignDecision.details.missingResearch as any[],
+        recommendation: campaignDecision.improvements[0] || '',
+        risk: campaignDecision.risks[0] || '',
+        nextSteps: campaignDecision.improvements,
       });
       setShowDecisionWarning(true);
       setPendingGeneration(true);
@@ -528,7 +526,9 @@ export function UniversalStrategyGenerator({
                 <SavedStrategiesDropdown
                   strategies={savedStrategies}
                   currentStrategyId={currentStrategyId}
-                  onSelect={loadStrategy}
+                  onSelectStrategy={loadStrategy}
+                  onNewStrategy={createNewStrategy}
+                  onManageStrategies={() => setShowStrategiesPanel(!showStrategiesPanel)}
                 />
               )}
 
@@ -557,7 +557,11 @@ export function UniversalStrategyGenerator({
               {/* Decision Quality Header */}
               <CampaignDecisionHeader
                 status={campaignDecision.status}
-                coverage={campaignDecision.coverage}
+                primaryAction={campaignDecision.primaryAction}
+                details={{
+                  affectedAssets: campaignDecision.details.affectedAssets,
+                  missingResearch: campaignDecision.details.missingResearch,
+                }}
               />
             </div>
           </div>
@@ -613,8 +617,9 @@ export function UniversalStrategyGenerator({
                           Knowledge Base Assets
                           <SectionDecisionIndicator
                             status={sectionDecisions.brand.status}
-                            coverage={sectionDecisions.brand.coverage}
-                            mini
+                            sectionName="Brand Assets"
+                            causes={sectionDecisions.brand.causes}
+                            requiredActions={sectionDecisions.brand.requiredActions}
                           />
                         </CardTitle>
                         <CardDescription>
@@ -758,7 +763,7 @@ export function UniversalStrategyGenerator({
                             const trend = trends.find(t => t.id === id);
                             return trend ? (
                               <Badge key={id} variant="secondary" className="gap-2">
-                                {trend.name}
+                                {trend.title}
                                 <X
                                   className="h-3 w-3 cursor-pointer hover:text-destructive"
                                   onClick={() => setSelectedTrends(prev => prev.filter(t => t !== id))}
@@ -863,11 +868,12 @@ export function UniversalStrategyGenerator({
               <SavedStrategiesPanel
                 strategies={savedStrategies}
                 currentStrategyId={currentStrategyId}
-                onSelect={loadStrategy}
-                onDelete={deleteStrategy}
-                onDuplicate={duplicateStrategy}
-                onRename={renameStrategy}
-                onClose={() => setShowStrategiesPanel(false)}
+                onSelectStrategy={loadStrategy}
+                onNewStrategy={createNewStrategy}
+                onDuplicateStrategy={duplicateStrategy}
+                onRenameStrategy={renameStrategy}
+                onDeleteStrategy={deleteStrategy}
+                onExportStrategy={() => {}}
               />
             </div>
           )}
@@ -903,12 +909,11 @@ export function UniversalStrategyGenerator({
           title="Select Personas"
           description="Choose target personas to tailor your strategy to the right audience"
           type="personas"
-          items={personas.map(p => ({ 
-            id: p.id, 
-            name: p.name, 
-            subtitle: p.role || 'Persona',
-            description: p.company || '',
-            status: p.status
+          items={personas.map(p => ({
+            id: p.id,
+            name: p.name,
+            subtitle: (p as any).demographics?.occupation || (p as any).occupation || 'Persona',
+            description: p.tagline || '',
           }))}
           selected={selectedPersonas}
           onSelect={setSelectedPersonas}
@@ -920,10 +925,10 @@ export function UniversalStrategyGenerator({
         <EnhancedAssetPickerModal
           title="Select Products & Services"
           description="Choose products or services this strategy will focus on"
-          items={products.map(p => ({ 
-            id: p.id, 
-            name: p.name, 
-            subtitle: p.type || 'Product',
+          items={products.map(p => ({
+            id: p.id || '',
+            name: p.name,
+            subtitle: p.category || 'Product',
             description: p.description || '',
           }))}
           selected={selectedProducts}
@@ -936,9 +941,9 @@ export function UniversalStrategyGenerator({
         <EnhancedAssetPickerModal
           title="Select Market Trends"
           description="Choose relevant market trends to inform your strategy"
-          items={trends.map(t => ({ 
-            id: t.id, 
-            name: t.name, 
+          items={trends.map(t => ({
+            id: t.id,
+            name: t.title,
             subtitle: t.category || 'Trend',
             description: t.description || '',
           }))}
@@ -955,9 +960,9 @@ export function UniversalStrategyGenerator({
       {showAddTrendModal && (
         <AddTrendModal
           onClose={() => setShowAddTrendModal(false)}
-          onTrendAdded={(newTrend) => {
-            setTrends(prev => [...prev, newTrend]);
-            setSelectedTrends(prev => [...prev, newTrend.id]);
+          onAddTrend={(newTrend: any) => {
+            setTrends((prev: any[]) => [...prev, newTrend]);
+            setSelectedTrends((prev: string[]) => [...prev, newTrend.id]);
             setShowAddTrendModal(false);
           }}
         />
@@ -965,10 +970,12 @@ export function UniversalStrategyGenerator({
 
       {showDecisionWarning && warningStatusInfo && (
         <DecisionWarningModal
-          statusInfo={warningStatusInfo}
+          isOpen={showDecisionWarning}
+          onClose={handleWarningDismiss}
           onProceed={handleWarningProceed}
-          onCancel={handleWarningDismiss}
-          actionLabel="Generate Anyway"
+          statusInfo={warningStatusInfo}
+          actionName="Generate Anyway"
+          itemName={config.title}
         />
       )}
     </div>

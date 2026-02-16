@@ -1,25 +1,35 @@
 import React from 'react';
-import { AssetStatus } from '../../types/brand-asset';
+import { CalculatedAssetStatus } from '../../types/brand-asset';
 import { getStatusInfo } from '../../utils/asset-status';
 import { Badge } from '../ui/badge';
-import { CheckCircle, Clock, Circle, AlertTriangle } from 'lucide-react';
+import { CheckCircle, Clock, Circle, AlertTriangle, LucideIcon } from 'lucide-react';
+
+const DEFAULT_STATUS_INFO = {
+  label: 'Unknown',
+  description: 'Unknown status',
+  color: 'gray',
+  bgClass: 'bg-gray-100 dark:bg-gray-900/20',
+  textClass: 'text-gray-700 dark:text-gray-300',
+  borderClass: 'border-gray-300 dark:border-gray-700',
+  icon: 'Circle'
+};
 
 interface AssetStatusBadgeProps {
-  status: AssetStatus;
+  status: CalculatedAssetStatus;
   size?: 'small' | 'medium' | 'large';
   showIcon?: boolean;
   showReviewBadge?: boolean;
 }
 
-export function AssetStatusBadge({ 
-  status, 
+export function AssetStatusBadge({
+  status,
   size = 'medium',
   showIcon = true,
   showReviewBadge = true
 }: AssetStatusBadgeProps) {
-  const statusInfo = getStatusInfo(status);
-  
-  const getIcon = () => {
+  const statusInfo = getStatusInfo(status) || DEFAULT_STATUS_INFO;
+
+  const getIcon = (): LucideIcon => {
     switch (statusInfo.icon) {
       case 'CheckCircle':
         return CheckCircle;
@@ -32,9 +42,9 @@ export function AssetStatusBadge({
         return Circle;
     }
   };
-  
+
   const Icon = getIcon();
-  
+
   const getSizeClasses = () => {
     switch (size) {
       case 'small':
@@ -46,7 +56,7 @@ export function AssetStatusBadge({
         return 'px-3 py-1 text-sm';
     }
   };
-  
+
   const getIconSize = () => {
     switch (size) {
       case 'small':
@@ -58,10 +68,10 @@ export function AssetStatusBadge({
         return 'h-4 w-4';
     }
   };
-  
+
   return (
     <div className="inline-flex items-center space-x-2">
-      <Badge 
+      <Badge
         variant="secondary"
         className={`
           ${getSizeClasses()}
@@ -74,9 +84,9 @@ export function AssetStatusBadge({
         {showIcon && <Icon className={`${getIconSize()} mr-1.5`} />}
         {statusInfo.label}
       </Badge>
-      
+
       {showReviewBadge && status === 'ready-to-validate' && (
-        <Badge 
+        <Badge
           variant="destructive"
           className="px-2 py-0.5 text-xs animate-pulse"
         >
@@ -88,19 +98,19 @@ export function AssetStatusBadge({
 }
 
 interface AssetStatusIndicatorProps {
-  status: AssetStatus;
+  status: CalculatedAssetStatus;
   variant?: 'dot' | 'icon' | 'full';
   size?: 'small' | 'medium' | 'large';
 }
 
-export function AssetStatusIndicator({ 
-  status, 
+export function AssetStatusIndicator({
+  status,
   variant = 'dot',
-  size = 'medium' 
+  size = 'medium'
 }: AssetStatusIndicatorProps) {
-  const statusInfo = getStatusInfo(status);
-  
-  const getIcon = () => {
+  const statusInfo = getStatusInfo(status) || DEFAULT_STATUS_INFO;
+
+  const getIcon = (): LucideIcon => {
     switch (statusInfo.icon) {
       case 'CheckCircle':
         return CheckCircle;
@@ -113,9 +123,9 @@ export function AssetStatusIndicator({
         return Circle;
     }
   };
-  
+
   const Icon = getIcon();
-  
+
   const getIconSize = () => {
     switch (size) {
       case 'small':
@@ -127,7 +137,7 @@ export function AssetStatusIndicator({
         return 'h-4 w-4';
     }
   };
-  
+
   const getDotSize = () => {
     switch (size) {
       case 'small':
@@ -139,25 +149,24 @@ export function AssetStatusIndicator({
         return 'h-3 w-3';
     }
   };
-  
+
   if (variant === 'dot') {
     return (
-      <div 
+      <div
         className={`rounded-full ${getDotSize()} ${statusInfo.bgClass}`}
         title={statusInfo.label}
       />
     );
   }
-  
+
   if (variant === 'icon') {
     return (
-      <Icon 
+      <Icon
         className={`${getIconSize()} ${statusInfo.textClass}`}
-        title={statusInfo.label}
       />
     );
   }
-  
+
   return (
     <div className={`inline-flex items-center space-x-2 ${statusInfo.textClass}`}>
       <Icon className={getIconSize()} />

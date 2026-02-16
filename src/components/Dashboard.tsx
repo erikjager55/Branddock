@@ -1,29 +1,32 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
+import React, { useMemo } from 'react';
+import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
-import { Progress } from './ui/progress';
-import { 
-  ArrowRight,
-  Target,
-  CheckCircle,
-  AlertTriangle,
-  ShieldCheck,
+import {
+  Layers,
+  Users,
+  Package,
+  Megaphone,
+  TrendingUp,
+  BookOpen,
   ChevronRight,
+  ArrowRight,
   Sparkles,
-  TrendingUp
 } from 'lucide-react';
 import { WelcomeModal, useShouldShowWelcome } from './WelcomeModal';
-import { DecisionStatusBadge } from './decision-status/DecisionStatusBadge';
-import { calculateDecisionStatus } from '../utils/decision-status-calculator';
-import { 
-  calculateSimpleDashboardStatus,
-  generateTopStrategicRisks,
-  generateNextBestAction,
-  transformToDecisionCockpit 
-} from '../utils/dashboard-decision-transformer';
-import { useBrandAssets, usePersonas } from '../contexts';
-import { DecisionImpactPanel } from './impact/DecisionImpactPanel';
+import { generateNextBestAction } from '../utils/dashboard-decision-transformer';
+import {
+  useBrandAssets,
+  usePersonas,
+  useProducts,
+  useTrendsContext,
+  useKnowledgeContext,
+  useCampaignsContext,
+} from '../contexts';
+import { PageHeader } from './shared/PageHeader';
+import { StatsCard, StatsCardGrid } from './shared/StatsCard';
+import { PAGE_ICONS } from '../lib/constants/design-tokens';
+
+// ─── Types ────────────────────────────────────────────────
 
 interface DashboardProps {
   onStartResearch?: () => void;
@@ -31,26 +34,87 @@ interface DashboardProps {
   onNavigate?: (url: string) => void;
 }
 
+// ─── Module Card ──────────────────────────────────────────
+
+interface ModuleCardProps {
+  icon: React.ElementType;
+  iconBgColor: string;
+  iconColor: string;
+  title: string;
+  count: number;
+  countLabel: string;
+  breakdownItems: { label: string; count: number }[];
+  sectionId: string;
+  onNavigate: (section: string) => void;
+}
+
+function ModuleCard({
+  icon: Icon,
+  iconBgColor,
+  iconColor,
+  title,
+  count,
+  countLabel,
+  breakdownItems,
+  sectionId,
+  onNavigate,
+}: ModuleCardProps) {
+  return (
+    <Card
+      className="group cursor-pointer hover:border-emerald-200 transition-all"
+      onClick={() => onNavigate(sectionId)}
+    >
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${iconBgColor}`}>
+              <Icon className={`w-5 h-5 ${iconColor}`} />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+              <p className="text-xs text-gray-500">
+                {count} {countLabel}
+              </p>
+            </div>
+          </div>
+          <ChevronRight className="h-4 w-4 text-gray-300 group-hover:text-emerald-500 transition-colors mt-1" />
+        </div>
+
+        {breakdownItems.length > 0 && (
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {breakdownItems.map((item) => (
+              <span key={item.label} className="text-xs text-gray-500">
+                <span className="font-medium text-gray-700">{item.count}</span>{' '}
+                {item.label}
+              </span>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Dashboard Component ──────────────────────────────────
+
 export function Dashboard({ onStartResearch, onNavigateToRelationships, onNavigate }: DashboardProps) {
   const [showWelcome, setShowWelcome] = React.useState(false);
   const shouldShowWelcome = useShouldShowWelcome();
 
-  // Use context data instead of mock imports
+  // All 6 context hooks
   const { brandAssets } = useBrandAssets();
   const { personas } = usePersonas();
+  const { products } = useProducts();
+  const { trends } = useTrendsContext();
+  const { knowledge } = useKnowledgeContext();
+  const { campaigns } = useCampaignsContext();
 
   React.useEffect(() => {
     setShowWelcome(shouldShowWelcome);
   }, [shouldShowWelcome]);
 
-  // Simple dashboard status
-  const dashboardStatus = React.useMemo(() => calculateSimpleDashboardStatus(brandAssets, personas), [brandAssets, personas]);
-  
-  // Top 2 strategic risks
-  const topRisks = React.useMemo(() => generateTopStrategicRisks(brandAssets, personas), [brandAssets, personas]);
-  
-  // Next best action (SINGLE)
-  const nextBestAction = React.useMemo(() => {
+  // Next best action (keep existing logic)
+  const nextBestAction = useMemo(() => {
     const action = generateNextBestAction(brandAssets, personas);
     if (!action) {
       return {
@@ -58,20 +122,84 @@ export function Dashboard({ onStartResearch, onNavigateToRelationships, onNaviga
         description: 'Your strategic foundation is strong. Keep validating and refining.',
         actionLabel: 'View Research Hub',
         targetSection: 'research',
-        estimatedTime: ''
+        estimatedTime: '',
       };
     }
     return {
       title: action.title,
       description: action.reason,
       actionLabel: 'Take Action',
-      targetSection: action.targetType === 'asset' ? 'brand' : action.targetType === 'persona' ? 'personas' : 'research',
-      estimatedTime: action.estimatedTime
+      targetSection:
+        action.targetType === 'asset' ? 'brand' : action.targetType === 'persona' ? 'personas' : 'research',
+      estimatedTime: action.estimatedTime,
     };
   }, [brandAssets, personas]);
 
-  // Decision cockpit data for overview
-  const decisionCockpitData = React.useMemo(() => transformToDecisionCockpit(brandAssets, personas), [brandAssets, personas]);
+  // ─── Status breakdowns ──────────────────────────────────
+
+  const brandAssetBreakdown = useMemo(() => {
+    const validated = brandAssets.filter((a) => a.status === 'validated').length;
+    const readyToValidate = brandAssets.filter((a) => a.status === 'ready-to-validate').length;
+    const inDevelopment = brandAssets.filter((a) => a.status === 'in-development').length;
+    const awaiting = brandAssets.filter((a) => a.status === 'awaiting-research').length;
+    return [
+      { label: 'validated', count: validated },
+      { label: 'ready to validate', count: readyToValidate },
+      { label: 'in development', count: inDevelopment },
+      { label: 'awaiting research', count: awaiting },
+    ].filter((i) => i.count > 0);
+  }, [brandAssets]);
+
+  const personaBreakdown = useMemo(() => {
+    const validated = personas.filter((p) => (p as any).validationPercentage ?? (p as any).validationScore ?? 0 >= 80).length;
+    const inResearch = personas.filter((p) => (p as any).validationPercentage ?? (p as any).validationScore ?? 0 >= 30 && (p as any).validationPercentage ?? (p as any).validationScore ?? 0 < 80).length;
+    const draft = personas.filter((p) => (p as any).validationPercentage ?? (p as any).validationScore ?? 0 < 30).length;
+    return [
+      { label: 'validated', count: validated },
+      { label: 'in research', count: inResearch },
+      { label: 'draft', count: draft },
+    ].filter((i) => i.count > 0);
+  }, [personas]);
+
+  const productBreakdown = useMemo(() => {
+    const byCategory: Record<string, number> = {};
+    products.forEach((p) => {
+      const cat = p.category || 'other';
+      byCategory[cat] = (byCategory[cat] || 0) + 1;
+    });
+    return Object.entries(byCategory).map(([label, count]) => ({ label, count }));
+  }, [products]);
+
+  const campaignBreakdown = useMemo(() => {
+    const ready = campaigns.filter((c) => c.status === 'ready').length;
+    const draft = campaigns.filter((c) => c.status === 'draft').length;
+    const generating = campaigns.filter((c) => c.status === 'generating').length;
+    return [
+      { label: 'ready', count: ready },
+      { label: 'draft', count: draft },
+      { label: 'generating', count: generating },
+    ].filter((i) => i.count > 0);
+  }, [campaigns]);
+
+  const trendBreakdown = useMemo(() => {
+    const high = trends.filter((t) => t.impact === 'high').length;
+    const medium = trends.filter((t) => t.impact === 'medium').length;
+    const low = trends.filter((t) => t.impact === 'low').length;
+    return [
+      { label: 'high impact', count: high },
+      { label: 'medium', count: medium },
+      { label: 'low', count: low },
+    ].filter((i) => i.count > 0);
+  }, [trends]);
+
+  const knowledgeBreakdown = useMemo(() => {
+    const byCategory: Record<string, number> = {};
+    knowledge.forEach((k) => {
+      const cat = k.category || 'other';
+      byCategory[cat] = (byCategory[cat] || 0) + 1;
+    });
+    return Object.entries(byCategory).map(([label, count]) => ({ label: label.replace(/-/g, ' '), count }));
+  }, [knowledge]);
 
   const handleNavigate = (section: string) => {
     if (onNavigate) {
@@ -79,216 +207,171 @@ export function Dashboard({ onStartResearch, onNavigateToRelationships, onNaviga
     }
   };
 
+  // Icon colors from design tokens
+  const icons = {
+    brand: PAGE_ICONS['brand-foundation'] || { bgColor: 'bg-emerald-50', iconColor: 'text-emerald-500' },
+    personas: PAGE_ICONS['personas'] || { bgColor: 'bg-violet-50', iconColor: 'text-violet-500' },
+    products: PAGE_ICONS['products'] || { bgColor: 'bg-orange-50', iconColor: 'text-orange-500' },
+    campaigns: PAGE_ICONS['campaigns'] || { bgColor: 'bg-purple-50', iconColor: 'text-purple-500' },
+    trends: PAGE_ICONS['market-insights'] || { bgColor: 'bg-cyan-50', iconColor: 'text-cyan-500' },
+    knowledge: PAGE_ICONS['knowledge-library'] || { bgColor: 'bg-amber-50', iconColor: 'text-amber-500' },
+  };
+
   return (
     <div className="h-full overflow-auto bg-background">
-      {/* Header */}
-      <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border z-10">
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold mb-1">Overview</h1>
-              <p className="text-muted-foreground">
-                Strategic overview of your brand research and validation progress
-              </p>
-            </div>
-            <DecisionStatusBadge 
-              status={dashboardStatus.status}
-              size="lg"
+      {/* Page Header */}
+      <PageHeader moduleKey="overview" />
+
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
+        {/* Stats Cards — 3x2 grid */}
+        <StatsCardGrid columns={3}>
+          <StatsCard
+            label="Brand Assets"
+            value={brandAssets.length}
+            icon="Layers"
+            iconBgColor={icons.brand.bgColor}
+            iconColor={icons.brand.iconColor}
+          />
+          <StatsCard
+            label="Personas"
+            value={personas.length}
+            icon="Users"
+            iconBgColor={icons.personas.bgColor}
+            iconColor={icons.personas.iconColor}
+          />
+          <StatsCard
+            label="Products"
+            value={products.length}
+            icon="Package"
+            iconBgColor={icons.products.bgColor}
+            iconColor={icons.products.iconColor}
+          />
+          <StatsCard
+            label="Campaigns"
+            value={campaigns.length}
+            icon="Megaphone"
+            iconBgColor={icons.campaigns.bgColor}
+            iconColor={icons.campaigns.iconColor}
+          />
+          <StatsCard
+            label="Market Insights"
+            value={trends.length}
+            icon="TrendingUp"
+            iconBgColor={icons.trends.bgColor}
+            iconColor={icons.trends.iconColor}
+          />
+          <StatsCard
+            label="Knowledge"
+            value={knowledge.length}
+            icon="BookOpen"
+            iconBgColor={icons.knowledge.bgColor}
+            iconColor={icons.knowledge.iconColor}
+          />
+        </StatsCardGrid>
+
+        {/* Module Overview Cards — 2 column grid */}
+        <div>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400 mb-4 px-1">
+            Modules
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ModuleCard
+              icon={Layers}
+              iconBgColor={icons.brand.bgColor}
+              iconColor={icons.brand.iconColor}
+              title="Brand Assets"
+              count={brandAssets.length}
+              countLabel="assets"
+              breakdownItems={brandAssetBreakdown}
+              sectionId="brand"
+              onNavigate={handleNavigate}
+            />
+            <ModuleCard
+              icon={Users}
+              iconBgColor={icons.personas.bgColor}
+              iconColor={icons.personas.iconColor}
+              title="Personas"
+              count={personas.length}
+              countLabel="personas"
+              breakdownItems={personaBreakdown}
+              sectionId="personas"
+              onNavigate={handleNavigate}
+            />
+            <ModuleCard
+              icon={Package}
+              iconBgColor={icons.products.bgColor}
+              iconColor={icons.products.iconColor}
+              title="Products & Services"
+              count={products.length}
+              countLabel="items"
+              breakdownItems={productBreakdown}
+              sectionId="products"
+              onNavigate={handleNavigate}
+            />
+            <ModuleCard
+              icon={Megaphone}
+              iconBgColor={icons.campaigns.bgColor}
+              iconColor={icons.campaigns.iconColor}
+              title="Campaigns"
+              count={campaigns.length}
+              countLabel="campaigns"
+              breakdownItems={campaignBreakdown}
+              sectionId="active-campaigns"
+              onNavigate={handleNavigate}
+            />
+            <ModuleCard
+              icon={TrendingUp}
+              iconBgColor={icons.trends.bgColor}
+              iconColor={icons.trends.iconColor}
+              title="Market Insights"
+              count={trends.length}
+              countLabel="trends"
+              breakdownItems={trendBreakdown}
+              sectionId="trends"
+              onNavigate={handleNavigate}
+            />
+            <ModuleCard
+              icon={BookOpen}
+              iconBgColor={icons.knowledge.bgColor}
+              iconColor={icons.knowledge.iconColor}
+              title="Knowledge Library"
+              count={knowledge.length}
+              countLabel="items"
+              breakdownItems={knowledgeBreakdown}
+              sectionId="knowledge"
+              onNavigate={handleNavigate}
             />
           </div>
         </div>
+
+        {/* Recommended Next Step — CTA card */}
+        <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-primary/10 flex-shrink-0">
+                <Sparkles className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold mb-1">{nextBestAction.title}</h3>
+                <p className="text-sm text-muted-foreground mb-4">{nextBestAction.description}</p>
+                <div className="flex items-center gap-3">
+                  <Button onClick={() => handleNavigate(nextBestAction.targetSection)} className="gap-2">
+                    {nextBestAction.actionLabel}
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  {nextBestAction.estimatedTime && (
+                    <span className="text-xs text-muted-foreground">{nextBestAction.estimatedTime}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-8 py-8 space-y-6">
-        
-        {/* Top Stats Grid - Compact 4-column */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-muted-foreground">COVERAGE</span>
-                <ShieldCheck className="h-4 w-4 text-primary" />
-              </div>
-              <div className="text-2xl font-bold">{decisionCockpitData.avgCoverage}%</div>
-              <Progress value={decisionCockpitData.avgCoverage} className="h-1.5 mt-2" />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-muted-foreground">READY</span>
-                <CheckCircle className="h-4 w-4 text-emerald-600" />
-              </div>
-              <div className="text-2xl font-bold text-emerald-600">
-                {decisionCockpitData.readyToDecide}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Assets validated</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-muted-foreground">AT RISK</span>
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-              </div>
-              <div className="text-2xl font-bold text-amber-600">
-                {decisionCockpitData.atRiskCount}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Need attention</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-medium text-muted-foreground">IN PROGRESS</span>
-                <Target className="h-4 w-4 text-slate-600" />
-              </div>
-              <div className="text-2xl font-bold text-slate-600">
-                {decisionCockpitData.blockedCount}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Being researched</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Grid - 2 columns on desktop */}
-        <div className="grid md:grid-cols-3 gap-6">
-          
-          {/* Left Column - 2 cols wide */}
-          <div className="md:col-span-2 space-y-6">
-            
-            {/* Recommended Next Step - Prominent CTA */}
-            <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-xl bg-primary/10 flex-shrink-0">
-                    <Sparkles className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold mb-1">{nextBestAction.title}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{nextBestAction.description}</p>
-                    <div className="flex items-center gap-3">
-                      <Button 
-                        onClick={() => handleNavigate(nextBestAction.targetSection)}
-                        className="gap-2"
-                      >
-                        {nextBestAction.actionLabel}
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                      {nextBestAction.estimatedTime && (
-                        <span className="text-xs text-muted-foreground">
-                          {nextBestAction.estimatedTime}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* What Needs Your Attention */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-amber-600" />
-                  What Needs Your Attention
-                </CardTitle>
-                <CardDescription>
-                  {dashboardStatus.recommendation}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {topRisks.slice(0, 2).map((risk, idx) => (
-                  <div 
-                    key={idx}
-                    className="flex items-start gap-3 p-4 rounded-lg bg-muted/50 border border-border hover:border-primary/50 transition-colors group cursor-pointer"
-                    onClick={() => handleNavigate(risk.targetSection)}
-                  >
-                    <div className="h-8 w-8 rounded-lg bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center flex-shrink-0">
-                      <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                        {idx + 1}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium mb-1">{risk.title}</h4>
-                      <p className="text-sm text-muted-foreground">{risk.description}</p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-1" />
-                  </div>
-                ))}
-                
-                {topRisks.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <CheckCircle className="h-12 w-12 mx-auto mb-3 text-emerald-500" />
-                    <p className="font-medium">All systems ready</p>
-                    <p className="text-sm">No immediate risks detected</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Decision Impact Panel */}
-            <DecisionImpactPanel />
-          </div>
-
-          {/* Right Column - Quick Links */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-muted-foreground px-1">QUICK ACCESS</h3>
-            
-            <button
-              onClick={() => handleNavigate('brand')}
-              className="w-full group p-4 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/50 transition-all text-left"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <Target className="h-5 w-5 text-primary" />
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-              <h3 className="font-semibold mb-1">Brand Assets</h3>
-              <p className="text-sm text-muted-foreground">
-                {brandAssets.length} assets
-              </p>
-            </button>
-
-            <button
-              onClick={() => handleNavigate('personas')}
-              className="w-full group p-4 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/50 transition-all text-left"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <Target className="h-5 w-5 text-primary" />
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-              <h3 className="font-semibold mb-1">Personas</h3>
-              <p className="text-sm text-muted-foreground">
-                {personas.length} personas
-              </p>
-            </button>
-
-            <button
-              onClick={() => handleNavigate('research')}
-              className="w-full group p-4 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-accent/50 transition-all text-left"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-              <h3 className="font-semibold mb-1">Research Hub</h3>
-              <p className="text-sm text-muted-foreground">
-                Active research
-              </p>
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Welcome Modal */}
+      <WelcomeModal isOpen={showWelcome} onClose={() => setShowWelcome(false)} />
     </div>
   );
 }

@@ -231,7 +231,7 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
                       <tr key={featureIndex} className="border-b">
                         <td className="py-3 px-4 text-sm">{feature.name}</td>
                         <td className="py-3 px-4">
-                          {renderFeatureCell(feature.scan)}
+                          {renderFeatureCell(feature.scan as boolean | "limited")}
                         </td>
                         <td className="py-3 px-4">
                           {renderFeatureCell(feature.control)}

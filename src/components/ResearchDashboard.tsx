@@ -503,8 +503,7 @@ export function ResearchDashboard({
         <div className="max-w-4xl mx-auto px-8 py-8">
           <div className="relative">
             {canvasType === 'golden-circle' && (
-              <GoldenCircleCanvas 
-                assetId={assetId}
+              <GoldenCircleCanvas
                 onRerender={() => {}}
                 onEdit={() => {}}
                 isLocked={true}
@@ -512,8 +511,7 @@ export function ResearchDashboard({
               />
             )}
             {canvasType === 'vision' && (
-              <VisionStatementCanvas 
-                assetId={assetId}
+              <VisionStatementCanvas
                 onRerender={() => {}}
                 onEdit={() => {}}
                 isLocked={true}
@@ -521,8 +519,7 @@ export function ResearchDashboard({
               />
             )}
             {canvasType === 'mission' && (
-              <MissionStatementCanvas 
-                assetId={assetId}
+              <MissionStatementCanvas
                 onRerender={() => {}}
                 onEdit={() => {}}
                 isLocked={true}
@@ -530,8 +527,7 @@ export function ResearchDashboard({
               />
             )}
             {canvasType === 'archetype' && (
-              <BrandArchetypeCanvas 
-                assetId={assetId}
+              <BrandArchetypeCanvas
                 onRerender={() => {}}
                 onEdit={() => {}}
                 isLocked={true}
@@ -539,8 +535,7 @@ export function ResearchDashboard({
               />
             )}
             {canvasType === 'values' && (
-              <BrandValuesCanvas 
-                assetId={assetId}
+              <BrandValuesCanvas
                 onRerender={() => {}}
                 onEdit={() => {}}
                 isLocked={true}
@@ -749,7 +744,6 @@ export function ResearchDashboard({
                       <DropdownMenuItem onClick={() => setAiAnalysisViewStatus('result')} className="cursor-pointer py-3">
                         <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
                         <span>Result</span>
-                        {aiAnalysisViewStatus === 'result' && <Check className="h-4 w-4 ml-auto" />}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -1036,7 +1030,7 @@ export function ResearchDashboard({
                currentAssetId={assetId}
                currentMethodType={methodType}
                allAssets={unlockedAssets}
-               onNavigateToAsset={(newAssetId) => {
+               onNavigateToAsset={(newAssetId: string) => {
                  // Navigate to the same method but different asset
                  window.location.hash = `research-${newAssetId}-${optionId}`;
                }}
@@ -1051,7 +1045,7 @@ export function ResearchDashboard({
                selectedAssets: [] 
              }}
              researchPlanConfig={researchPlanConfig}
-             onNavigateToAsset={(newAssetId) => {
+             onNavigateToAsset={(newAssetId: string) => {
                window.location.hash = `research-${newAssetId}-${optionId}`;
              }}
              onReturnToHub={onBack}
@@ -1064,7 +1058,7 @@ export function ResearchDashboard({
   // Special handling for canvas-workshop - show manager with status dropdown
   if (optionId === 'canvas-workshop') {
     // Map optionId to methodType
-    const methodType: ResearchMethodType = 'workshop';
+    const methodType: ResearchMethodType = 'canvas-workshop';
     
     // Get all assets that have been unlocked in the research plan
     const unlockedAssets = researchPlanConfig?.unlockedAssets 
@@ -1089,7 +1083,7 @@ export function ResearchDashboard({
               currentAssetId={assetId}
               currentMethodType={methodType}
               allAssets={unlockedAssets}
-              onNavigateToAsset={(newAssetId) => {
+              onNavigateToAsset={(newAssetId: string) => {
                 // Navigate to the same method but different asset
                 window.location.hash = `research-${newAssetId}-${optionId}`;
               }}
@@ -1131,7 +1125,7 @@ export function ResearchDashboard({
               currentAssetId={assetId}
               currentMethodType={methodType}
               allAssets={unlockedAssets}
-              onNavigateToAsset={(newAssetId) => {
+              onNavigateToAsset={(newAssetId: string) => {
                 // Navigate to the same method but different asset
                 window.location.hash = `research-${newAssetId}-${optionId}`;
               }}
@@ -1146,7 +1140,7 @@ export function ResearchDashboard({
               selectedAssets: [] 
             }}
             researchPlanConfig={researchPlanConfig}
-            onNavigateToAsset={(newAssetId) => {
+            onNavigateToAsset={(newAssetId: string) => {
               window.location.hash = `research-${newAssetId}-${optionId}`;
             }}
             onReturnToHub={onBack}
@@ -1407,11 +1401,11 @@ export function ResearchDashboard({
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {Object.entries(result.metrics).map(([metric, value], index) => (
+                  {Object.entries(result.metrics).map(([metric, value]: [string, any], index: number) => (
                     <div key={index} className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium capitalize">
-                          {metric.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                          {metric.replace(/([A-Z])/g, ' $1').replace(/^./, (str: string) => str.toUpperCase())}
                         </span>
                         <span className="text-sm font-semibold">{value}/10</span>
                       </div>

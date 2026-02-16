@@ -91,7 +91,7 @@ export function clearAllStorage(): boolean {
 export function checkStorageVersion(): boolean {
   const currentVersion = loadFromStorage(StorageKeys.VERSION, '0.0');
   
-  if (currentVersion !== STORAGE_VERSION) {
+  if ((currentVersion as string) !== STORAGE_VERSION) {
     logger.info(`Storage version mismatch. Current: ${currentVersion}, Expected: ${STORAGE_VERSION}`);
     // TODO: Add migration logic here if needed
     saveToStorage(StorageKeys.VERSION, STORAGE_VERSION);

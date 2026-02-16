@@ -1,14 +1,6 @@
-export type TeamRole = 'owner' | 'admin' | 'editor' | 'viewer';
+import type { TeamMember, TeamRole } from '../types/team';
 
-export interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role: TeamRole;
-  avatar: string;
-  status?: 'active' | 'pending' | 'inactive';
-  joinedAt: string;
-}
+export type { TeamMember, TeamRole };
 
 export const mockTeamMembers: TeamMember[] = [
   {

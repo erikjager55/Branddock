@@ -51,7 +51,7 @@ import {
   Sparkles,
   AlertCircle,
   Timer,
-  Tabs as TabsIcon
+  LayoutGrid as TabsIcon
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import {
@@ -1555,13 +1555,10 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
         )}
 
         {/* Workshop Report */}
-        <WorkshopReport 
-          assetId="1"
-          onRerender={() => {
-            console.log('Rerender requested');
-          }}
-          onEdit={(data) => {
-            console.log('Edit requested:', data);
+        <WorkshopReport
+          isLocked={false}
+          onLockToggle={() => {
+            console.log('Lock toggle');
           }}
         />
       </div>

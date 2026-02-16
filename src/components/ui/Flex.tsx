@@ -31,7 +31,7 @@ export interface FlexProps {
   className?: string;
   
   // HTML element
-  as?: keyof JSX.IntrinsicElements;
+  as?: React.ElementType;
 }
 
 export function Flex({
@@ -44,7 +44,7 @@ export function Flex({
   fullWidth,
   fullHeight,
   className,
-  as: Element = 'div',
+  as: Component = 'div',
 }: FlexProps) {
   // Alignment classes
   const alignClasses = {
@@ -65,14 +65,14 @@ export function Flex({
   };
 
   // Gap class
-  const gapClass = typeof gap === 'number' ? `gap-${gap}` : gap;
+  const gapClass = gap !== undefined ? (typeof gap === 'number' ? `gap-${gap}` : gap) : undefined;
 
   return (
-    <Element
+    <Component
       className={cn(
         'flex',
         direction === 'col' ? 'flex-col' : 'flex-row',
-        gap && gapClass,
+        gap !== undefined && gapClass,
         align && alignClasses[align],
         justify && justifyClasses[justify],
         wrap === true && 'flex-wrap',
@@ -83,6 +83,6 @@ export function Flex({
       )}
     >
       {children}
-    </Element>
+    </Component>
   );
 }

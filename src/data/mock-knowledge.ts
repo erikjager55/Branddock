@@ -1,13 +1,6 @@
-export interface Knowledge {
-  id: string;
-  title: string;
-  category: 'best-practice' | 'case-study' | 'research' | 'framework' | 'insight';
-  description: string;
-  source?: string;
-  industry?: string;
-  applicability: 'universal' | 'industry-specific' | 'niche';
-  keyTakeaway?: string;
-}
+import type { Knowledge } from '../types/knowledge';
+
+export type { Knowledge };
 
 export const mockKnowledge: Knowledge[] = [
   {

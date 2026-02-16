@@ -4,6 +4,9 @@ export type AssetCategory =
 
 export type AssetStatus = "DRAFT" | "IN_PROGRESS" | "NEEDS_ATTENTION" | "READY";
 
+// Calculated UI status (derived from research methods and content state)
+export type CalculatedAssetStatus = "awaiting-research" | "in-development" | "ready-to-validate" | "validated";
+
 // --- Research method types (gebruikt door mock data) ---
 export type ResearchMethodType =
   | "ai-exploration"
@@ -14,12 +17,13 @@ export type ResearchMethodType =
   | "focus-group"
   | "desk-research";
 
-export type ResearchMethodStatus = "completed" | "in-progress" | "locked" | "not-started";
+export type ResearchMethodStatus = "completed" | "in-progress" | "locked" | "not-started" | "available" | "running";
 
 export interface ResearchMethod {
   type: ResearchMethodType;
   status: ResearchMethodStatus;
   completedAt?: string;
+  progress?: number;
   metadata?: Record<string, unknown>;
 }
 
@@ -40,6 +44,7 @@ export interface BrandAsset {
   artifactsGenerated: number;
   artifactsValidated: number;
   validatedAt?: string;
+  validatedBy?: string;
   contentSections?: { title: string; content: string; completed: boolean }[];
   version?: string;
 }

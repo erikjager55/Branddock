@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Campaign } from '../data/mock-campaigns';
+import type { Campaign } from '../types/campaign';
 import { apiCampaignsToMockFormat } from '../lib/api/campaign-adapter';
 
 interface CampaignsContextType {

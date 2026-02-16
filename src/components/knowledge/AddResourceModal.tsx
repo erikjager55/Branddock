@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Badge } from '../ui/badge';
 import { BookOpen, Video, Globe, Image, FileText, Headphones, FileType, GraduationCap, X, Plus, Sparkles, Link2, Upload, File, CheckCircle2 } from 'lucide-react';
-import { KnowledgeResource } from '../../data/knowledge-resources';
+import type { KnowledgeResource } from '../../types/knowledge';
 
 interface AddResourceModalProps {
   isOpen: boolean;

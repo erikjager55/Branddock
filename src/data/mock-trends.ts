@@ -1,21 +1,6 @@
-export interface Trend {
-  id: string;
-  title: string;
-  category: 'technology' | 'consumer' | 'social' | 'business' | 'environmental';
-  description: string;
-  impact: 'high' | 'medium' | 'low';
-  timeframe: 'short-term' | 'medium-term' | 'long-term';
-  relevantIndustries: string[];
-  keyInsights?: string;
-  // Additional fields for Trend Library display
-  direction?: 'rising' | 'declining' | 'stable';
-  relevance?: number;
-  sources?: string[];
-  dateAdded?: string;
-  tags?: string[];
-  // NEW: Strategic level segmentation
-  level?: 'micro' | 'meso' | 'macro';
-}
+import type { Trend } from '../types/trend';
+
+export type { Trend };
 
 export const mockTrends: Trend[] = [
   {

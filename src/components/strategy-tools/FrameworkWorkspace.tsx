@@ -52,7 +52,7 @@ interface Asset {
 interface NavSection {
   id: string;
   label: string;
-  ref: React.RefObject<HTMLDivElement>;
+  ref: React.RefObject<HTMLDivElement | null>;
 }
 
 interface FrameworkField {
@@ -106,7 +106,7 @@ export function FrameworkWorkspace({ frameworkId, config, onBack }: FrameworkWor
   // Refs for scroll tracking (for Result tab navigation)
   const contentAreaRef = useRef<HTMLDivElement>(null);
   const overviewRef = useRef<HTMLDivElement>(null);
-  const outputRefsMap = useRef<Record<string, React.RefObject<HTMLDivElement>>>({});
+  const outputRefsMap = useRef<Record<string, React.RefObject<HTMLDivElement | null>>>({});
   
   // Initialize output section refs
   useEffect(() => {

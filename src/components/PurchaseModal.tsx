@@ -25,23 +25,10 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PaymentSection } from './payment/PaymentSection';
+import type { UnlockableTool } from '../types/strategy';
+import type { BrandAssetOption } from '../types/brand-asset';
 
-export interface UnlockableTool {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  icon?: any;
-  supportsMultiAsset?: boolean;
-  relatedAssets?: string[];
-}
-
-export interface BrandAssetOption {
-  id: string;
-  name: string;
-  type: string;
-  icon?: any;
-}
+export type { UnlockableTool, BrandAssetOption };
 
 interface PurchaseModalProps {
   isOpen: boolean;
@@ -427,7 +414,7 @@ export function PurchaseModal({
                       <div className="space-y-2">
                         {additionalAssets.map((asset) => {
                           const isAssetSelected = selectedAdditionalAssets.has(asset.id);
-                          const AssetIcon = asset.icon || Users;
+                          const AssetIcon = Users;
 
                           return (
                             <div
@@ -466,7 +453,7 @@ export function PurchaseModal({
                               {/* Content */}
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium truncate">{asset.type}</p>
-                                <p className="text-xs text-muted-foreground truncate">{asset.name}</p>
+                                <p className="text-xs text-muted-foreground truncate">{asset.title}</p>
                               </div>
 
                               {/* Price indicator */}

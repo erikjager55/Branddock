@@ -33,7 +33,7 @@ import {
   getToolsByCategory,
   getPopularTools,
   getToolsRequiringResearch
-} from '../data/strategy-tools';
+} from '../lib/catalogs/strategy-tools';
 import { Input } from './ui/input';
 import { CampaignStrategyGeneratorDetail } from './strategy-tools/CampaignStrategyGeneratorDetail';
 import { UniversalAIExploration } from './strategy-tools/UniversalAIExploration';

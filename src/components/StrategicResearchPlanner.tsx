@@ -38,7 +38,7 @@ import { Alert, AlertDescription } from './ui/alert';
 import { ResearchTargetCategory, ResearchTarget } from '../types/research-target';
 import { useBrandAssets } from '../contexts/BrandAssetsContext';
 import { usePersonas } from '../contexts/PersonasContext';
-import { researchBundles, getBundlesForTarget } from '../data/research-bundles';
+import { researchBundles, getBundlesForTarget } from '../lib/catalogs/research-bundles';
 
 interface StrategicResearchPlannerProps {
   onPlanCreated: (plan: {
@@ -226,12 +226,9 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
   
   // NEW: Target selection state - Default to brand target
   const [selectedTarget, setSelectedTarget] = useState<ResearchTarget | null>({
-    id: 'brand',
     category: 'brand',
-    label: 'Your Brand',
-    description: 'Brand assets and identity elements',
-    icon: Palette,
-    color: 'purple'
+    targetId: 'brand',
+    targetName: 'Your Brand',
   });
   
   // Tool selection state

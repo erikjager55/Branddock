@@ -28,7 +28,7 @@ import {
   Users,
   Package
 } from 'lucide-react';
-import { KnowledgeResource } from '../../data/knowledge-resources';
+import type { KnowledgeResource } from '../../types/knowledge';
 import { useTrendsContext } from '../../contexts/TrendsContext';
 
 interface ResourceDetailModalProps {

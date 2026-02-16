@@ -297,7 +297,7 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
     return reasons[reason || ''] || 'Locked';
   };
 
-  const updateInterview = (interviewId: string, field: keyof Interview, value: any) => {
+  const updateInterview = (interviewId: string, field: string, value: any) => {
     setInterviews(prev => prev.map(interview => 
       interview.id === interviewId ? { ...interview, [field]: value } : interview
     ));
@@ -526,7 +526,7 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
               step: 1,
               title: 'Add Contact Information',
               description: 'Fill in interviewee details and contact information',
-              isCompleted: interview.interviewee && interview.email,
+              isCompleted: !!(interview.interviewee && interview.email),
               isCurrent: !interview.interviewee || !interview.email
             },
             {
@@ -534,7 +534,7 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
               title: 'Schedule Interview',
               description: 'Set date, time and select brand assets to discuss',
               isCompleted: interview.status !== 'add-contact' && interview.selectedAssets.length > 0,
-              isCurrent: (interview.interviewee && interview.email) && (interview.status === 'add-contact' || interview.selectedAssets.length === 0)
+              isCurrent: !!(interview.interviewee && interview.email) && (interview.status === 'add-contact' || interview.selectedAssets.length === 0)
             },
             {
               step: 3,
@@ -856,21 +856,19 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
                       <Eye className="h-4 w-4" />
                     </Button>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="sm">
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={(e) => {
-                          e.stopPropagation();
+                        <DropdownMenuItem onClick={() => {
                           handleUnlockInterview(interview.id);
                         }}>
                           <Unlock className="h-4 w-4 mr-2" />
                           Unlock Interview
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => {
-                          e.stopPropagation();
+                        <DropdownMenuItem onClick={() => {
                         }}>
                           <FileText className="h-4 w-4 mr-2" />
                           Export Report

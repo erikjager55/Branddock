@@ -41,14 +41,14 @@ import {
 import { StrategicResearchPlanner } from './StrategicResearchPlanner';
 import { ResearchTargetSelector } from './ResearchTargetSelector';
 import { ResearchTarget } from '../types/research-target';
-import { 
-  researchBundles, 
-  getFoundationBundles, 
-  getSpecializedBundles, 
+import type { ResearchBundle } from '../types/research-bundle';
+import {
+  researchBundles,
+  getFoundationBundles,
+  getSpecializedBundles,
   getBundlesByTier,
   getStrategyToolsUnlockedByBundle,
-  ResearchBundle 
-} from '../data/research-bundles';
+} from '../lib/catalogs/research-bundles';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { ResearchBundlesSection } from './ResearchBundlesSection';
 import { useResearchBundles } from '../contexts/ResearchBundleContext';
@@ -301,7 +301,7 @@ export function ResearchPlansSectionGamified({
   // Calculate potential new score for each plan
   const getPotentialScore = (plan: ResearchPlan) => {
     const avgBoost = (plan.scoreBoost.min + plan.scoreBoost.max) / 2;
-    return Math.min(100, currentBrandScore + avgBoost);
+    return Math.min(100, (currentBrandScore ?? 0) + avgBoost);
   };
 
   // Get new tier based on score
@@ -343,7 +343,7 @@ export function ResearchPlansSectionGamified({
     return (
       <StrategicResearchPlanner
         onPlanCreated={(plan) => {
-          onPlanCreated(plan);
+          onPlanCreated(plan as any);
           setShowPurchaseFlow(false);
           setSelectedPlan(null);
           setSelectedPlanForFlow(null);

@@ -453,9 +453,10 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
           </Card>
 
           {/* Golden Circle Canvas Component */}
-          <GoldenCircleCanvas 
+          <GoldenCircleCanvas
             isLocked={isLocked}
-            onLockToggle={onLockToggle}
+            onRerender={() => {}}
+            onEdit={() => {}}
             sessionData={{
               aggregatedData: {
                 why: "To empower businesses through innovative technology solutions that create meaningful human connections and drive sustainable growth.",

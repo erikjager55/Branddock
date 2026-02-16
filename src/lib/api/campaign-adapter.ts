@@ -1,5 +1,4 @@
-import type { Campaign } from "@/data/mock-campaigns";
-import type { CampaignWithMeta } from "@/types/campaign";
+import type { Campaign, CampaignWithMeta } from "@/types/campaign";
 
 export function apiCampaignToMockFormat(c: CampaignWithMeta): Campaign {
   return {

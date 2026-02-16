@@ -32,7 +32,7 @@ import {
 } from './ui/dropdown-menu';
 import { PageHeader } from './ui/PageHeader';
 import { usePersonas } from '../contexts';
-import { Persona, PersonaStatus, PersonaResearchMethod } from '../types/persona';
+import { Persona, PersonaResearchMethodItem } from '../types/persona';
 import { PersonaDetailPage } from './personas/PersonaDetailPage';
 import { CreatePersona } from './CreatePersona';
 import { calculateDecisionStatus } from '../utils/decision-status-calculator';
@@ -55,6 +55,8 @@ interface PersonasSectionProps {
   onNavigate?: (section: string) => void;
 }
 
+type PersonaStatus = 'draft' | 'in-research' | 'validated' | 'archived';
+
 const statusConfig: Record<PersonaStatus, { label: string; color: string; icon: any }> = {
   'draft': { label: 'Draft', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: Edit },
   'in-research': { label: 'In Research', color: 'bg-blue-100 text-blue-700 border-blue-300', icon: Target },
@@ -65,11 +67,11 @@ const statusConfig: Record<PersonaStatus, { label: string; color: string; icon: 
 export function PersonasSection({ onNavigate }: PersonasSectionProps) {
   // Use context to get personas (synchronized with detail page)
   const { personas, updatePersona, addPersona, removePersona } = usePersonas();
-  const [selectedPersona, setSelectedPersona] = useState<Persona | null>(null);
+  const [selectedPersona, setSelectedPersona] = useState<any | null>(null);
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<PersonaStatus | 'all'>('all');
-  const [aiExplorationPersona, setAIExplorationPersona] = useState<Persona | null>(null);
-  const [chatPersona, setChatPersona] = useState<Persona | null>(null);
+  const [aiExplorationPersona, setAIExplorationPersona] = useState<any | null>(null);
+  const [chatPersona, setChatPersona] = useState<any | null>(null);
   
   const [showCreateDialog, setShowCreateDialog] = useState(() => {
     const params = new URLSearchParams(window.location.hash.split('?')[1]);
@@ -85,9 +87,9 @@ export function PersonasSection({ onNavigate }: PersonasSectionProps) {
     }
   }, [showCreateDialog]);
 
-  const filteredPersonas = personas.filter(persona => {
+  const filteredPersonas = (personas as any[]).filter((persona: any) => {
     const matchesSearch = persona.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         persona.tagline.toLowerCase().includes(searchQuery.toLowerCase());
+                         (persona.tagline || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filterStatus === 'all' || persona.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
@@ -115,24 +117,24 @@ export function PersonasSection({ onNavigate }: PersonasSectionProps) {
   };
 
   const handleArchivePersona = (id: string) => {
-    updatePersona(id, { status: 'archived' as PersonaStatus });
+    updatePersona(id, { status: 'archived' } as any);
   };
 
-  const handleMethodClick = (personaId: string, method: PersonaResearchMethod, mode: 'work' | 'results') => {
+  const handleMethodClick = (personaId: string, method: PersonaResearchMethodItem, mode: 'work' | 'results') => {
     const persona = personas.find(p => p.id === personaId);
     if (!persona) return;
 
     // If mode is 'results', show results
     if (mode === 'results') {
-      toast.info(`Viewing ${method.type} results for ${persona.name}...`);
+      toast.info(`Viewing ${method.method} results for ${persona.name}...`);
       return;
     }
 
     // If method is ai-exploration, navigate to page
-    if (method.type === 'ai-exploration') {
-      setAIExplorationPersona(persona);
+    if (method.method === 'AI_EXPLORATION') {
+      setAIExplorationPersona(persona as any);
     } else {
-      toast.success(`Starting ${method.type} research for ${persona.name}...`);
+      toast.success(`Starting ${method.method} research for ${persona.name}...`);
     }
   };
 
@@ -141,10 +143,10 @@ export function PersonasSection({ onNavigate }: PersonasSectionProps) {
 
     // Update persona state to mark AI exploration as completed
     updatePersona(aiExplorationPersona.id, {
-      researchMethods: aiExplorationPersona.researchMethods.map(m =>
-        m.type === 'ai-exploration' ? { ...m, status: 'completed' as const, completedDate: new Date().toISOString() } : m
+      researchMethods: aiExplorationPersona.researchMethods.map((m: any) =>
+        m.method === 'AI_EXPLORATION' ? { ...m, status: 'completed' as const, completedAt: new Date().toISOString() } : m
       )
-    });
+    } as any);
 
     // Show success toast
     toast.success('AI Exploration voltooid!', {
@@ -159,7 +161,7 @@ export function PersonasSection({ onNavigate }: PersonasSectionProps) {
         persona={selectedPersona}
         onBack={() => setSelectedPersona(null)}
         onUpdate={(updated) => {
-          updatePersona(updated.id, updated);
+          updatePersona(updated.id, updated as any);
           setSelectedPersona(updated);
         }}
         onNavigateToAIExploration={() => {
@@ -185,7 +187,7 @@ export function PersonasSection({ onNavigate }: PersonasSectionProps) {
       <CreatePersona
         onBack={() => setShowCreateDialog(false)}
         onCreate={(newPersona) => {
-          addPersona(newPersona);
+          addPersona(newPersona as any);
           setShowCreateDialog(false);
         }}
       />
@@ -271,7 +273,7 @@ export function PersonasSection({ onNavigate }: PersonasSectionProps) {
 
           {/* BLOCK 3: Personas List */}
           <PersonaCardGrid
-            personas={sortedPersonas}
+            personas={sortedPersonas as any}
             onPersonaClick={(persona) => setSelectedPersona(persona)}
             onMethodClick={handleMethodClick}
             onChatClick={(persona) => setChatPersona(persona)}

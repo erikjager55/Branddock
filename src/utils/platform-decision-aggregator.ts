@@ -13,6 +13,18 @@ import { Persona } from '../types/persona';
  */
 
 import { calculateDecisionStatus } from './decision-status-calculator';
+import { DecisionStatus } from '../types/decision-status';
+
+/** Map DecisionStatus ('blocked') to PlatformDecisionResult status ('do-not-decide') */
+function mapToResultStatus(status: DecisionStatus): 'safe-to-decide' | 'decision-at-risk' | 'do-not-decide' {
+  if (status === 'blocked') return 'do-not-decide';
+  return status;
+}
+
+/** Get display label for a union item */
+function getItemLabel(item: { itemType: 'asset' | 'persona'; [key: string]: any }): string {
+  return item.itemType === 'asset' ? item.type : item.name;
+}
 
 export interface PlatformDecisionResult {
   status: 'safe-to-decide' | 'decision-at-risk' | 'do-not-decide';
@@ -69,17 +81,17 @@ export function calculateDashboardDecision(brandAssets: BrandAsset[], personas: 
 
   if (blockedCount > 0) {
     overallStatus = 'do-not-decide';
-    topCauses = urgent.map(u => 
-      `${u.item.type}: ${u.status.coverage}% research coverage`
+    topCauses = urgent.map(u =>
+      `${getItemLabel(u.item)}: ${u.status.coverage}% research coverage`
     );
-    primaryAction = `Valideer ${urgent[0].item.type}`;
+    primaryAction = `Valideer ${getItemLabel(urgent[0].item)}`;
     contextText = `${blockedCount} ${blockedCount === 1 ? 'item heeft' : 'items hebben'} onvoldoende research validatie voor strategische beslissingen.`;
   } else if (atRiskCount > 0) {
     overallStatus = 'decision-at-risk';
-    topCauses = urgent.map(u => 
-      `${u.item.type}: ${u.status.coverage}% research coverage`
+    topCauses = urgent.map(u =>
+      `${getItemLabel(u.item)}: ${u.status.coverage}% research coverage`
     );
-    primaryAction = `Verbeter ${urgent[0].item.type}`;
+    primaryAction = `Verbeter ${getItemLabel(urgent[0].item)}`;
     contextText = `${atRiskCount} ${atRiskCount === 1 ? 'item heeft' : 'items hebben'} beperkte validatie. Strategieën zijn bruikbaar maar niet optimaal.`;
   } else {
     overallStatus = 'safe-to-decide';
@@ -127,8 +139,8 @@ export function calculateResearchHubDecision(brandAssets: BrandAsset[], personas
   if (dashboardDecision.status === 'do-not-decide') {
     return {
       status: 'do-not-decide',
-      topCauses: needsResearch.map(n => 
-        `${n.item.type} heeft ${n.status.missingTopMethods[0] || 'Workshop'} nodig`
+      topCauses: needsResearch.map(n =>
+        `${getItemLabel(n.item)} heeft ${n.status.missingTopMethods[0] || 'Workshop'} nodig`
       ),
       primaryAction: 'Plan research',
       contextText: 'Kritieke items missen fundamentele validatie. Start met Workshop of Interviews.',
@@ -137,8 +149,8 @@ export function calculateResearchHubDecision(brandAssets: BrandAsset[], personas
   } else if (dashboardDecision.status === 'decision-at-risk') {
     return {
       status: 'decision-at-risk',
-      topCauses: needsResearch.map(n => 
-        `${n.item.type} kan worden verbeterd met ${n.status.missingTopMethods[0] || 'diepere research'}`
+      topCauses: needsResearch.map(n =>
+        `${getItemLabel(n.item)} kan worden verbeterd met ${n.status.missingTopMethods[0] || 'diepere research'}`
       ),
       primaryAction: 'Verdiep research',
       contextText: 'Extra research verhoogt besluitzekerheid en ROI van strategieën.',
@@ -199,7 +211,7 @@ export function calculateAssetDetailDecision(brandAssets: BrandAsset[], personas
   }
 
   return {
-    status: status.status,
+    status: mapToResultStatus(status.status),
     topCauses,
     primaryAction,
     contextText,
@@ -257,7 +269,7 @@ export function calculatePersonaDetailDecision(brandAssets: BrandAsset[], person
   }
 
   return {
-    status: status.status,
+    status: mapToResultStatus(status.status),
     topCauses,
     primaryAction,
     contextText,
@@ -291,12 +303,12 @@ export function calculateCampaignOutputDecision(
   if (campaignDecision.status === 'do-not-decide') {
     topCauses = campaignDecision.details.affectedAssets
       .slice(0, 2)
-      .map(a => `${a.name}: ${a.coverage}% research coverage`);
+      .map((a: { name: string; coverage: number }) => `${a.name}: ${a.coverage}% research coverage`);
     contextText = 'Deze campagne is gebaseerd op onvoldoende gevalideerde data. Behandel als hypotheses.';
   } else if (campaignDecision.status === 'decision-at-risk') {
     topCauses = campaignDecision.details.affectedAssets
       .slice(0, 2)
-      .map(a => `${a.name}: ${a.coverage}% research coverage`);
+      .map((a: { name: string; coverage: number }) => `${a.name}: ${a.coverage}% research coverage`);
     contextText = 'Deze campagne bevat elementen met beperkte validatie. Test hypotheses in pilot.';
   } else {
     topCauses = [];

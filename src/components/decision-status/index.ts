@@ -4,8 +4,8 @@ export { CampaignDecisionHeader } from './CampaignDecisionHeader';
 export { SectionDecisionIndicator } from './SectionDecisionIndicator';
 export { DecisionSummaryPanel } from './DecisionSummaryPanel';
 export { DecisionWarningModal } from './DecisionWarningModal';
-export { PlatformDecisionSummary } from './PlatformDecisionSummary';
-export { ResearchImpactIndicator } from './ResearchImpactIndicator';
+// export { PlatformDecisionSummary } from './PlatformDecisionSummary';
+// export { ResearchImpactIndicator } from './ResearchImpactIndicator';
 
 // Decision Status Utilities
 export { calculateDecisionStatus, getMethodLabel } from '../../utils/decision-status-calculator';

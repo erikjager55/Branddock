@@ -94,7 +94,7 @@ export function VisionStatementCanvas({ onRerender, onEdit, assetData, sessionDa
               <div>
                 <h5 className="font-semibold text-purple-900 dark:text-purple-100 mb-3">Key Elements</h5>
                 <ul className="space-y-2">
-                  {editData.keyElements.map((element, index) => (
+                  {editData.keyElements.map((element: string, index: number) => (
                     <li key={index} className="flex items-start">
                       <Sparkles className="h-4 w-4 text-purple-500 mr-2 mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-gray-700 dark:text-gray-300">{element}</span>

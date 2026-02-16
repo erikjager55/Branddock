@@ -22,6 +22,7 @@ export interface Comment {
   createdAt: string;
   updatedAt?: string;
   replies: Reply[];
+  reactions?: Reaction[];
 }
 
 export interface Reply {

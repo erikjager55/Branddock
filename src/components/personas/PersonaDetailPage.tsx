@@ -4,7 +4,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { Persona, ResearchMethodStatus } from '../../types/persona';
+import { Persona, PersonaResearchMethodItem } from '../../types/persona';
 import { PersonaContent } from './PersonaContent';
 import { ValidationMethodButton, ValidationMethodStatus } from '../validation/ValidationMethodButton';
 import { toast } from 'sonner';
@@ -97,7 +97,10 @@ export function PersonaDetailPage({ persona, onBack, onUpdate, onNavigateToAIExp
     }
   };
 
-  const personaStatusInfo = getPersonaStatusInfo(persona.status);
+  // Derive status from validation percentage since Persona type has no `status` field
+  const derivedStatus = localPersona.validationPercentage >= 80 ? 'validated' :
+                        localPersona.validationPercentage >= 30 ? 'in-research' : 'draft';
+  const personaStatusInfo = getPersonaStatusInfo(derivedStatus);
 
   // Edit handlers
   const handleSaveEdits = () => {
@@ -149,17 +152,20 @@ export function PersonaDetailPage({ persona, onBack, onUpdate, onNavigateToAIExp
     // Update local persona state to mark AI exploration as completed
     setLocalPersona(prev => {
       const updatedMethods = prev.researchMethods.map(m =>
-        m.type === 'ai-exploration' ? { ...m, status: 'completed' as const, completedDate: new Date().toISOString() } : m
+        m.method === 'AI_EXPLORATION' ? { ...m, status: 'completed' as const, completedDate: new Date().toISOString() } : m
       );
 
       // If method doesn't exist, add it
-      const methodExists = prev.researchMethods.some(m => m.type === 'ai-exploration');
+      const methodExists = prev.researchMethods.some(m => m.method === 'AI_EXPLORATION');
       if (!methodExists) {
         updatedMethods.push({
-          type: 'ai-exploration' as any,
+          id: `rm-ai-${Date.now()}`,
+          method: 'AI_EXPLORATION',
           status: 'completed',
-          completedDate: new Date().toISOString(),
-        });
+          progress: 100,
+          completedAt: new Date().toISOString(),
+          artifactsCount: 0,
+        } as PersonaResearchMethodItem);
       }
 
       return { ...prev, researchMethods: updatedMethods };
@@ -173,7 +179,7 @@ export function PersonaDetailPage({ persona, onBack, onUpdate, onNavigateToAIExp
   };
 
   // Helper: Map persona status to ValidationMethodStatus
-  const mapPersonaStatus = (status: ResearchMethodStatus): ValidationMethodStatus => {
+  const mapPersonaStatus = (status: string): ValidationMethodStatus => {
     switch (status) {
       case 'completed': return 'completed';
       case 'in-progress': return 'running';
@@ -234,7 +240,6 @@ export function PersonaDetailPage({ persona, onBack, onUpdate, onNavigateToAIExp
             score={qualityScore}
             completedCount={completedMethods}
             totalCount={totalMethods}
-            label="Persona Quality"
             className="w-80"
           />
         </div>
@@ -405,7 +410,10 @@ export function PersonaDetailPage({ persona, onBack, onUpdate, onNavigateToAIExp
         persona={localPersona}
         isEditing={isEditing}
         hasToolbar={true}
-        onUpdate={onUpdate}
+        onUpdate={onUpdate ? (partial) => {
+          const updated = { ...localPersona, ...partial };
+          onUpdate(updated);
+        } : undefined}
       />
 
       {/* Research & Validation Section */}
@@ -427,10 +435,17 @@ export function PersonaDetailPage({ persona, onBack, onUpdate, onNavigateToAIExp
           {VALIDATION_METHODS
             .filter(method => ['ai-exploration', 'interviews', 'surveys', 'user-testing'].includes(method.id))
             .map((method) => {
-              const personaMethod = localPersona.researchMethods.find((m) => m.type === method.id);
-              
+              // Map validation method id to PersonaResearchMethodType
+              const methodTypeMap: Record<string, string> = {
+                'ai-exploration': 'AI_EXPLORATION',
+                'interviews': 'INTERVIEWS',
+                'surveys': 'QUESTIONNAIRE',
+                'user-testing': 'USER_TESTING',
+              };
+              const personaMethod = localPersona.researchMethods.find((m) => m.method === methodTypeMap[method.id]);
+
               // Determine status with proper type checking
-              let status: ResearchMethodStatus = 'not-started';
+              let status: string = 'not-started';
               
               if (personaMethod?.status) {
                 status = personaMethod.status;

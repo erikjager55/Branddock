@@ -124,7 +124,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
     
     const welcomeMessages: Record<ChatMode, string> = {
       free: `Hoi! Ik ben ${persona.name}. ${persona.tagline} Stel me gerust vragen over wat mij bezighoudt!`,
-      interview: `Hallo! Bedankt dat je tijd neemt voor dit interview. Ik ben ${persona.name}, ${persona.demographics?.occupation?.toLowerCase() || 'professional'}. Stel me gerust je vragen - ik zal eerlijk antwoorden!`,
+      interview: `Hallo! Bedankt dat je tijd neemt voor dit interview. Ik ben ${persona.name}, ${persona.occupation?.toLowerCase() || 'professional'}. Stel me gerust je vragen - ik zal eerlijk antwoorden!`,
       empathy: `Hey! Ik ben ${persona.name}. In deze modus kan je echt doorvragen over wat ik voel, denk, zeg en doe. Ik deel graag mijn perspectief!`,
       jtbd: `Hi! ${persona.name} hier. Laten we het hebben over wat ik echt wil bereiken en waarom. Vraag me naar mijn taken, doelen en wat ik nodig heb om succesvol te zijn!`
     };
@@ -159,7 +159,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
     const lowerMessage = userMessage.toLowerCase();
 
     // Personality traits to influence tone
-    const personality = persona.personality || 'professional';
+    const personality = persona.personalityType || 'professional';
     const isEnthusiastic = personality.toLowerCase().includes('enthusiast') || personality.toLowerCase().includes('energetic');
     const isAnalytical = personality.toLowerCase().includes('analytical') || personality.toLowerCase().includes('data');
 
@@ -173,7 +173,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
           if (insight) setInsights(prev => [...prev, insight]);
           
           return {
-            content: `Mijn primaire doel is ${goals[0].toLowerCase()}. ${goals.length > 1 ? `Daarnaast werk ik ook aan ${goals[1].toLowerCase()}.` : ''} Dit is belangrijk voor me omdat het direct impact heeft op mijn ${persona.demographics?.occupation ? 'werk als ' + persona.demographics.occupation.toLowerCase() : 'dagelijkse taken'}.`,
+            content: `Mijn primaire doel is ${goals[0].toLowerCase()}. ${goals.length > 1 ? `Daarnaast werk ik ook aan ${goals[1].toLowerCase()}.` : ''} Dit is belangrijk voor me omdat het direct impact heeft op mijn ${persona.occupation ? 'werk als ' + persona.occupation!.toLowerCase() : 'dagelijkse taken'}.`,
             mood: 'neutral',
             category: 'Goals'
           };
@@ -286,7 +286,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
 
     if (lowerMessage.includes('budget') || lowerMessage.includes('prijs') || lowerMessage.includes('kost')) {
       return {
-        content: `Qua budget kijk ik vooral naar ROI en totale waarde. ${isAnalytical ? 'Ik maak een business case met concrete cijfers.' : 'Ik wil weten wat het me oplevert.'} Als de investering zichzelf terugverdient binnen ${persona.demographics?.income?.includes('hoog') ? '6' : '12'} maanden, dan ben ik bereid om te investeren. Goedkoop is niet altijd voordelig - kwaliteit telt.`,
+        content: `Qua budget kijk ik vooral naar ROI en totale waarde. ${isAnalytical ? 'Ik maak een business case met concrete cijfers.' : 'Ik wil weten wat het me oplevert.'} Als de investering zichzelf terugverdient binnen ${persona.income?.includes('hoog') ? '6' : '12'} maanden, dan ben ik bereid om te investeren. Goedkoop is niet altijd voordelig - kwaliteit telt.`,
         mood: 'neutral',
         category: 'Budget'
       };
@@ -307,7 +307,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
     }
 
     if (lowerMessage.includes('tool') || lowerMessage.includes('software') || lowerMessage.includes('technologie')) {
-      const values = persona.values || [];
+      const values = persona.coreValues || [];
       const valuesEaseOfUse = values.some(v => v.toLowerCase().includes('gebruiksvriendelijk') || v.toLowerCase().includes('simpel'));
       
       return {
@@ -327,7 +327,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
 
     if (lowerMessage.includes('dag') || lowerMessage.includes('routine') || lowerMessage.includes('typisch')) {
       return {
-        content: `Een typische dag begint voor mij met ${persona.behaviors?.[0]?.toLowerCase() || 'het checken van prioriteiten'}. Ik ben het meest productief ${persona.demographics?.age?.includes('20') || persona.demographics?.age?.includes('30') ? 'in de ochtend en werk vaak tot laat' : 'als ik gefocuste tijd heb zonder onderbrekingen'}. ${isAnalytical ? 'Ik plan mijn dag zorgvuldig en track mijn tijd.' : 'Ik probeer flexibel te blijven maar wel gestructureerd te werken.'}`,
+        content: `Een typische dag begint voor mij met ${persona.behaviors?.[0]?.toLowerCase() || 'het checken van prioriteiten'}. Ik ben het meest productief ${persona.age?.includes('20') || persona.age?.includes('30') ? 'in de ochtend en werk vaak tot laat' : 'als ik gefocuste tijd heb zonder onderbrekingen'}. ${isAnalytical ? 'Ik plan mijn dag zorgvuldig en track mijn tijd.' : 'Ik probeer flexibel te blijven maar wel gestructureerd te werken.'}`,
         mood: 'neutral',
         category: 'Daily Routine'
       };
@@ -362,7 +362,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
     // Default fallback - personality-driven
     const responses = [
       {
-        content: `${isAnalytical ? 'Interessante vraag. Laat me daar analytisch over nadenken...' : 'Goede vraag!'} Vanuit mijn perspectief als ${persona.demographics?.occupation || 'professional'}: ${persona.tagline.toLowerCase()} ${isEnthusiastic ? 'Kun je me wat meer context geven? Dan kan ik je echt helpen!' : 'Wat wil je precies weten?'}`,
+        content: `${isAnalytical ? 'Interessante vraag. Laat me daar analytisch over nadenken...' : 'Goede vraag!'} Vanuit mijn perspectief als ${persona.occupation || 'professional'}: ${(persona.tagline || '').toLowerCase()} ${isEnthusiastic ? 'Kun je me wat meer context geven? Dan kan ik je echt helpen!' : 'Wat wil je precies weten?'}`,
         mood: 'neutral' as const,
       },
       {
@@ -490,7 +490,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
         <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <div className="flex items-start gap-4">
             <Avatar className="h-12 w-12 flex-shrink-0 ring-2 ring-primary/20">
-              <AvatarImage src={persona.avatar} alt={persona.name} />
+              <AvatarImage src={persona.avatarUrl || undefined} alt={persona.name} />
               <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary font-semibold">
                 {persona.name.split(' ').map(n => n[0]).join('')}
               </AvatarFallback>
@@ -505,7 +505,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
                 <MoodIcon className={cn("h-4 w-4", moodColor)} />
               </div>
               <DialogDescription>
-                {persona.demographics?.occupation || 'Professional'} • {persona.demographics?.age || 'N/A'}
+                {persona.occupation || 'Professional'} • {persona.age || 'N/A'}
               </DialogDescription>
             </div>
             <div className="flex gap-2">
@@ -598,7 +598,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
                         <Avatar className="h-8 w-8 flex-shrink-0">
                           {message.role === 'assistant' ? (
                             <>
-                              <AvatarImage src={persona.avatar} alt={persona.name} />
+                              <AvatarImage src={persona.avatarUrl || undefined} alt={persona.name} />
                               <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary text-sm">
                                 {persona.name.split(' ').map(n => n[0]).join('')}
                               </AvatarFallback>
@@ -658,7 +658,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
                   {isLoading && (
                     <div className="flex gap-3">
                       <Avatar className="h-8 w-8 flex-shrink-0">
-                        <AvatarImage src={persona.avatar} alt={persona.name} />
+                        <AvatarImage src={persona.avatarUrl || undefined} alt={persona.name} />
                         <AvatarFallback className="bg-gradient-to-br from-primary/20 to-primary/10 text-primary text-sm">
                           {persona.name.split(' ').map(n => n[0]).join('')}
                         </AvatarFallback>

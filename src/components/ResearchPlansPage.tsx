@@ -28,8 +28,8 @@ import {
   TrendingUp,
   Package,
 } from 'lucide-react';
-import { ResearchBundle } from '../data/research-bundles';
-import { researchBundles } from '../data/research-bundles';
+import type { ResearchBundle } from '../types/research-bundle';
+import { researchBundles } from '../lib/catalogs/research-bundles';
 
 interface ResearchPlansPageProps {
   onSelectBundle: (bundle: ResearchBundle) => void;

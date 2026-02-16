@@ -1,38 +1,8 @@
 import { Award, Target, ShieldCheck, Users, Palette, Package, TrendingUp, BookOpen, Megaphone, Lightbulb, Rocket, Map, Heart, Globe, ArrowUpRight, MessageSquare, Calendar, Radio, Layers, Sparkles, Zap, Crown, Star, Bot, ClipboardList } from 'lucide-react';
-import { ResearchTargetCategory } from '../types/research-target';
+import type { ResearchBundle } from '../../types/research-bundle';
+import type { ResearchTargetCategory } from '../../types/research-target';
 
-export interface ResearchBundle {
-  id: string;
-  name: string;
-  description: string;
-  targetCategory: ResearchTargetCategory;
-  primaryTool: string;
-  secondaryTool: string | null;
-  items: string[]; // IDs of items to research (brand assets, personas, etc.)
-  itemType: 'brand' | 'persona' | 'trend' | 'knowledge';
-  outcome: string;
-  timeline: string;
-  basePrice: number;
-  bundlePrice: number;
-  savings: number;
-  badge?: string;
-  icon: any;
-  color: string;
-  strategyToolUnlocked?: string | string[]; // Which strategy tool(s) this research enables
-  bundleType?: 'foundation' | 'specialized' | 'legacy'; // New: bundle classification
-  tier?: 'starter' | 'professional' | 'enterprise'; // New: pricing tier
-  
-  // NEW: Detailed activities (what happens during research)
-  activities?: {
-    icon: any;
-    name: string;
-    description: string;
-    duration: string;
-  }[];
-  
-  // NEW: Optional brand score impact (for plans that boost brand strength)
-  scoreBoost?: { min: number; max: number };
-}
+export type { ResearchBundle };
 
 // Comprehensive bundles across all target categories
 // Each bundle is designed to gather data for specific strategy tools

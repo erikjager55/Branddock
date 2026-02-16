@@ -48,15 +48,15 @@ export function getMethodImpact(method: ResearchMethod): MethodImpact {
   
   // Default impact based on method type
   const highImpactMethods: ResearchMethodType[] = [
-    'competitor-analysis',
-    'audience-survey',
-    'social-listening'
+    'canvas-workshop',
+    'interviews',
+    'questionnaire'
   ];
-  
+
   const mediumImpactMethods: ResearchMethodType[] = [
-    'trend-analysis',
-    'influencer-analysis',
-    'sentiment-analysis'
+    'ai-exploration',
+    'survey',
+    'desk-research'
   ];
   
   if (highImpactMethods.includes(method.type)) {
@@ -80,7 +80,7 @@ export function getMethodQualityScore(method: ResearchMethod): number | undefine
   
   // Check if method has quality score in metadata
   if (method.metadata?.qualityScore !== undefined) {
-    return method.metadata.qualityScore;
+    return method.metadata.qualityScore as number;
   }
   
   // Default quality score for completed methods

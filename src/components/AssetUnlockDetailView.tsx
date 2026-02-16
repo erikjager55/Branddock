@@ -130,7 +130,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
         updatedMethods.push({
           type: methodId as any,
           status: 'completed',
-          completedDate: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
         });
       }
       
@@ -433,7 +433,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
           <ResearchFlowModal
             isOpen={isFlowModalOpen}
             onClose={() => setIsFlowModalOpen(false)}
-            method={selectedMethod}
+            method={selectedMethod as any}
             assetName={localAsset.type}
             onComplete={handleResearchComplete}
           />
@@ -577,7 +577,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
         <ResearchFlowModal
           isOpen={isFlowModalOpen}
           onClose={() => setIsFlowModalOpen(false)}
-          method={selectedMethod}
+          method={selectedMethod as any}
           assetName={localAsset.type}
           onComplete={handleResearchComplete}
         />

@@ -9,7 +9,7 @@ import {
   DollarSign, Users as FamilyIcon
 } from 'lucide-react';
 import { BrandAsset, ResearchMethod } from '../types/brand-asset';
-import { Persona, PersonaResearchMethod } from '../types/persona';
+import { Persona, PersonaResearchMethodItem } from '../types/persona';
 import { EntityCardData, EntityValidationMethod } from '../components/unified/EntityCard';
 import { VALIDATION_METHODS } from '../config/validation-methods';
 
@@ -41,7 +41,7 @@ function getAssetIcon(type: string) {
 // QUALITY SCORE CALCULATION
 // ============================================================================
 
-function calculateQualityScore(methods: (ResearchMethod | PersonaResearchMethod)[]): number {
+function calculateQualityScore(methods: (ResearchMethod | PersonaResearchMethodItem)[]): number {
   const totalMethods = methods.length;
   if (totalMethods === 0) return 0;
 
@@ -65,18 +65,26 @@ export function brandAssetToEntityCard(
   const qualityScore = calculateQualityScore(asset.researchMethods);
   const completedCount = asset.researchMethods.filter(m => m.status === 'completed').length;
 
+  // Map ResearchMethodStatus to ValidationMethodStatus
+  const mapStatus = (status: string): 'available' | 'running' | 'completed' | 'locked' => {
+    if (status === 'completed') return 'completed';
+    if (status === 'running' || status === 'in-progress') return 'running';
+    if (status === 'locked') return 'locked';
+    return 'available';
+  };
+
   // Transform validation methods
   const validationMethods: EntityValidationMethod[] = asset.researchMethods.map((method) => {
     const validationConfig = VALIDATION_METHODS.find(vm => vm.id === method.type);
-    
+
     return {
       id: method.type,
       type: method.type,
-      status: method.status,  // ✅ NO CASTING NEEDED - statuses are now uniform!
+      status: mapStatus(method.status),
       progress: method.progress,
-      label: validationConfig?.name || method.type,  // ✅ Simplified - just use config name or fallback to type
-      icon: validationConfig?.icon,  // ✅ Add icon from validation config!
-      description: method.status === 'completed' 
+      label: validationConfig?.name || method.type,
+      icon: validationConfig?.icon,
+      description: method.status === 'completed'
         ? 'Research complete • High confidence'
         : method.status === 'running'
         ? 'Active research • Data collecting'
@@ -84,8 +92,8 @@ export function brandAssetToEntityCard(
         ? 'Locked • Upgrade required'
         : 'Available • Upgrade asset quality',
       onWorkClick: onMethodClick ? () => onMethodClick(method, 'work') : undefined,
-      onResultsClick: onMethodClick && method.status === 'completed' 
-        ? () => onMethodClick(method, 'results') 
+      onResultsClick: onMethodClick && method.status === 'completed'
+        ? () => onMethodClick(method, 'results')
         : undefined,
     };
   });
@@ -97,10 +105,10 @@ export function brandAssetToEntityCard(
   ];
 
   if (asset.artifactsGenerated && asset.artifactsGenerated > 0) {
-    attributes.push({ 
+    attributes.push({
       icon: FileText,
-      label: 'Artifacts', 
-      value: asset.artifactsGenerated 
+      label: 'Artifacts',
+      value: String(asset.artifactsGenerated)
     });
   }
 
@@ -134,24 +142,32 @@ export function brandAssetToEntityCard(
 export function personaToEntityCard(
   persona: Persona,
   onClick?: () => void,
-  onMethodClick?: (personaId: string, method: PersonaResearchMethod, mode: 'work' | 'results') => void,
+  onMethodClick?: (personaId: string, method: PersonaResearchMethodItem, mode: 'work' | 'results') => void,
   onChatClick?: () => void
 ): EntityCardData {
   const qualityScore = calculateQualityScore(persona.researchMethods);
   const completedCount = persona.researchMethods.filter(m => m.status === 'completed').length;
 
+  // Map status to ValidationMethodStatus
+  const mapStatus = (status: string): 'available' | 'running' | 'completed' | 'locked' => {
+    if (status === 'completed') return 'completed';
+    if (status === 'running' || status === 'in-progress') return 'running';
+    if (status === 'locked') return 'locked';
+    return 'available';
+  };
+
   // Transform validation methods
   const validationMethods: EntityValidationMethod[] = persona.researchMethods.map((method) => {
-    const validationConfig = VALIDATION_METHODS.find(vm => vm.id === method.type);
-    
+    const validationConfig = VALIDATION_METHODS.find(vm => vm.id === (method.method as string));
+
     return {
-      id: method.type,
-      type: method.type,
-      status: method.status,  // ✅ NO CASTING NEEDED - statuses are now uniform!
+      id: method.method,
+      type: method.method,
+      status: mapStatus(method.status),
       progress: method.progress,
-      label: validationConfig?.name || method.type,  // ✅ Simplified - just use config name or fallback to type
-      icon: validationConfig?.icon,  // ✅ Add icon from validation config!
-      description: method.status === 'completed' 
+      label: validationConfig?.name || method.method,
+      icon: validationConfig?.icon,
+      description: method.status === 'completed'
         ? 'Research complete • High confidence'
         : method.status === 'running'
         ? 'Active research • Data collecting'
@@ -159,32 +175,32 @@ export function personaToEntityCard(
         ? 'Locked • Upgrade required'
         : 'Available • Upgrade persona quality',
       onWorkClick: onMethodClick ? () => onMethodClick(persona.id, method, 'work') : undefined,
-      onResultsClick: onMethodClick && method.status === 'completed' 
-        ? () => onMethodClick(persona.id, method, 'results') 
+      onResultsClick: onMethodClick && method.status === 'completed'
+        ? () => onMethodClick(persona.id, method, 'results')
         : undefined,
     };
   });
 
   // Build attributes for personas
   const attributes = [
-    { icon: Calendar, label: 'Leeftijd', value: persona.demographics.age },
-    { icon: MapPin, label: 'Locatie', value: persona.demographics.location },
-    { icon: Briefcase, label: 'Beroep', value: persona.demographics.occupation },
-    { icon: GraduationCap, label: 'Opleiding', value: persona.demographics.education },
-    { icon: DollarSign, label: 'Inkomen', value: persona.demographics.income },
-    { icon: FamilyIcon, label: 'Gezinssituatie', value: persona.demographics.familyStatus },
-  ].filter(item => item.value); // Only show items with values
+    { icon: Calendar, label: 'Leeftijd', value: persona.age },
+    { icon: MapPin, label: 'Locatie', value: persona.location },
+    { icon: Briefcase, label: 'Beroep', value: persona.occupation },
+    { icon: GraduationCap, label: 'Opleiding', value: persona.education },
+    { icon: DollarSign, label: 'Inkomen', value: persona.income },
+    { icon: FamilyIcon, label: 'Gezinssituatie', value: persona.familyStatus },
+  ].filter((item): item is { icon: typeof Calendar; label: string; value: string } => item.value !== null && item.value !== undefined);
 
   return {
     entityType: 'persona',
     id: persona.id,
     title: persona.name,
-    avatar: persona.avatar,
+    avatar: persona.avatarUrl || undefined,
     qualityScore,
-    subtitle: persona.tagline,
+    subtitle: persona.tagline || undefined,
     attributes,
     validationMethods,
-    lastUpdated: persona.lastUpdated,
+    lastUpdated: persona.updatedAt,
     footerInfo: [],
     onClick: onClick ? () => onClick() : undefined,
     onChatClick: onChatClick ? () => onChatClick() : undefined,

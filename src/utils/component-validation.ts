@@ -22,7 +22,7 @@ import {
   isVariantAllowed,
   hasForbiddenClassName,
   getComponentRecommendations,
-} from './protected-components';
+} from '../constants/protected-components';
 
 // ============================================================================
 // CONFIGURATION
@@ -213,8 +213,8 @@ export function validateClassName(
   const recommendations = getComponentRecommendations(componentName);
 
   if (result.forbidden) {
-    const severity = component.protection === ProtectionLevel.LOCKED ? 'error' : 'warning';
-    
+    const severity = (component.protection === ProtectionLevel.LOCKED ? 'error' : 'warning') as Violation['severity'];
+
     const violation = {
       componentName,
       type: 'forbidden-className' as const,
@@ -262,8 +262,8 @@ export function validateVariant(
   const recommendations = getComponentRecommendations(componentName);
 
   if (!isVariantAllowed(componentName, variant)) {
-    const severity = component.protection === ProtectionLevel.LOCKED ? 'error' : 'warning';
-    
+    const severity = (component.protection === ProtectionLevel.LOCKED ? 'error' : 'warning') as Violation['severity'];
+
     const violation = {
       componentName,
       type: 'invalid-variant' as const,
@@ -445,7 +445,7 @@ export function logComponentInfo(componentName: string) {
   const recommendations = getComponentRecommendations(componentName);
   if (recommendations.length > 0) {
     console.group('📋 Recommendations');
-    recommendations.forEach(rec => console.log(rec));
+    recommendations.forEach((rec: string) => console.log(rec));
     console.groupEnd();
   }
 }
@@ -459,10 +459,10 @@ export function logProtectionStatistics() {
   console.group('🔒 Component Protection Statistics');
   console.log('Total Protected Components:', components.length);
   console.log('By Protection Level:');
-  console.log('  - LOCKED:', components.filter(c => c.protection === ProtectionLevel.LOCKED).length);
-  console.log('  - RESTRICTED:', components.filter(c => c.protection === ProtectionLevel.RESTRICTED).length);
-  console.log('  - MONITORED:', components.filter(c => c.protection === ProtectionLevel.MONITORED).length);
-  console.log('  - FLEXIBLE:', components.filter(c => c.protection === ProtectionLevel.FLEXIBLE).length);
+  console.log('  - LOCKED:', components.filter((c: any) => c.protection === ProtectionLevel.LOCKED).length);
+  console.log('  - RESTRICTED:', components.filter((c: any) => c.protection === ProtectionLevel.RESTRICTED).length);
+  console.log('  - MONITORED:', components.filter((c: any) => c.protection === ProtectionLevel.MONITORED).length);
+  console.log('  - FLEXIBLE:', components.filter((c: any) => c.protection === ProtectionLevel.FLEXIBLE).length);
   console.groupEnd();
 
   const violationStats = getViolationStatistics();
@@ -480,6 +480,5 @@ export function logProtectionStatistics() {
 
 export {
   type ValidationConfig,
-  type Violation,
   DEFAULT_CONFIG,
 };

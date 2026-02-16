@@ -45,7 +45,7 @@ export const BrandAssetSchema = z.object({
   lastUpdated: z.string().optional(),
   createdAt: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 // Array of Brand Assets Schema

@@ -1,5 +1,4 @@
-import type { KnowledgeResource } from "@/data/mock-knowledge";
-import type { KnowledgeWithMeta } from "@/types/knowledge";
+import type { KnowledgeResource, KnowledgeWithMeta } from "@/types/knowledge";
 
 export function apiKnowledgeToMockFormat(r: KnowledgeWithMeta): KnowledgeResource {
   return {

@@ -87,9 +87,9 @@ export function CampaignStrategyGeneratorDetail({
   // Sync context data to static services
   React.useEffect(() => {
     SmartSuggestionsService.setBrandAssets(brandAssets);
-    SmartSuggestionsService.setPersonas(personas);
+    SmartSuggestionsService.setPersonas(personas as any);
     RelationshipService.setBrandAssets(brandAssets);
-    RelationshipService.setPersonas(personas);
+    RelationshipService.setPersonas(personas as any);
   }, [brandAssets, personas]);
   const [selectedTab, setSelectedTab] = useState('configure');
   const [selectedBrandAssets, setSelectedBrandAssets] = useState<string[]>([]);
@@ -396,14 +396,14 @@ export function CampaignStrategyGeneratorDetail({
     if (decision.status === 'do-not-decide') {
       const confirmed = window.confirm(
         `⚠️ DO NOT DECIDE - Strategisch Risico\n\n` +
-        `${decision.reason}\n\n` +
-        `GEVOLGEN:\n${decision.consequences}\n\n` +
+        `${decision.rootCauses.join('; ')}\n\n` +
+        `GEVOLGEN:\n${decision.risks.join('\n')}\n\n` +
         `Deze campagne is gebaseerd op onvoldoende gevalideerde merkdata. ` +
         `Strategische beslissingen zijn speculatief en hebben hoog risico op mislukken.\n\n` +
         `AANBEVELING: ${decision.primaryAction}\n\n` +
         `Wil je toch doorgaan? (Dit wordt sterk afgeraden)`
       );
-      
+
       if (!confirmed) {
         return; // User chose to fix first
       }
@@ -413,8 +413,8 @@ export function CampaignStrategyGeneratorDetail({
     if (decision.status === 'decision-at-risk') {
       const confirmed = window.confirm(
         `⚠️ DECISION AT RISK - Verhoogd Risico\n\n` +
-        `${decision.reason}\n\n` +
-        `GEVOLGEN:\n${decision.consequences}\n\n` +
+        `${decision.rootCauses.join('; ')}\n\n` +
+        `GEVOLGEN:\n${decision.risks.join('\n')}\n\n` +
         `Deze campagne bevat elementen met beperkte validatie. ` +
         `Je kunt doorgaan, maar houd rekening met verhoogd risico.\n\n` +
         `AANBEVELING: ${decision.primaryAction}\n\n` +
@@ -521,12 +521,12 @@ export function CampaignStrategyGeneratorDetail({
 
   // Calculate overall campaign decision status
   const campaignDecision = React.useMemo(() => {
-    return calculateCampaignDecision(brandAssets, personas, selectedBrandAssets, selectedPersonas);
+    return calculateCampaignDecision(brandAssets, personas as any, selectedBrandAssets, selectedPersonas);
   }, [selectedBrandAssets, selectedPersonas]);
 
   // NEW: Decision Gate calculation (for blocking generation)
   const decisionGate = React.useMemo(() => {
-    return calculateDecisionGate(brandAssets, personas, selectedBrandAssets, selectedPersonas);
+    return calculateDecisionGate(brandAssets, personas as any, selectedBrandAssets, selectedPersonas);
   }, [selectedBrandAssets, selectedPersonas]);
 
   // Check for campaign impacts (nieuwere strategische input)
@@ -537,23 +537,23 @@ export function CampaignStrategyGeneratorDetail({
 
   // Calculate section-level decisions (VERFIJND v2)
   const templateDecision = React.useMemo(() => {
-    return calculateSectionDecision(brandAssets, personas, 'template', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
+    return calculateSectionDecision(brandAssets, personas as any, 'template', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
   }, []);
 
   const campaignDetailsDecision = React.useMemo(() => {
-    return calculateSectionDecision(brandAssets, personas, 'campaign-details', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
+    return calculateSectionDecision(brandAssets, personas as any, 'campaign-details', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
   }, [campaignConfig.name, campaignConfig.objective, campaignConfig.keyMessage]);
 
   const brandAssetsDecision = React.useMemo(() => {
-    return calculateSectionDecision(brandAssets, personas, 'brand-assets', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
+    return calculateSectionDecision(brandAssets, personas as any, 'brand-assets', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
   }, [selectedBrandAssets, selectedPersonas]);
 
   const advancedDecision = React.useMemo(() => {
-    return calculateSectionDecision(brandAssets, personas, 'advanced', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
+    return calculateSectionDecision(brandAssets, personas as any, 'advanced', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
   }, [campaignConfig.timeline, campaignConfig.budget]);
 
   const channelsDecision = React.useMemo(() => {
-    return calculateSectionDecision(brandAssets, personas, 'channels', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
+    return calculateSectionDecision(brandAssets, personas as any, 'channels', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
   }, [selectedChannels]);
 
   // Calculate readiness score

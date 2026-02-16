@@ -28,7 +28,7 @@ import { UnlockService } from '../services/UnlockService';
 import { calculateDecisionStatus } from '../utils/decision-status-calculator';
 import { DecisionStatus } from '../types/decision-status';
 import { ResearchMethodType } from '../utils/research-method-helpers';
-import { UnlockableTool } from '../data/research-tools';
+import type { UnlockableTool } from '../types/strategy';
 import { EnhancedAssetCardUnified } from './brand-assets/EnhancedAssetCardUnified';
 import { BrandAssetOption } from '../types/brand-asset';
 import {
@@ -212,9 +212,10 @@ export function BrandAssetsViewSimple({ onAssetClick, onNavigateToResearchMethod
   const availableAssetsForModal: BrandAssetOption[] = useMemo(() => {
     return brandAssets.map(asset => ({
       id: asset.id,
-      name: asset.title,
+      title: asset.title,
       type: asset.type,
-      icon: getAssetIcon(asset.type),
+      category: asset.category,
+      status: asset.status,
     }));
   }, [brandAssets]);
 

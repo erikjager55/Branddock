@@ -1,4 +1,5 @@
 import { DecisionStatus, DecisionStatusInfo, RESEARCH_METHOD_RANKING } from '../types/decision-status';
+import type { ValidationMethodId } from '../types/validation';
 
 export interface ResearchItem {
   researchMethods: Array<{ status: string; type?: string; method?: string }>;
@@ -77,9 +78,9 @@ export function calculateDecisionStatus(item: ResearchItem): DecisionStatusInfo 
   return {
     status,
     coverage: Math.round(coverage),
-    completedMethods: completedTypes,
+    completedMethods: completedTypes as ValidationMethodId[],
     topMethodsCompleted,
-    missingTopMethods,
+    missingTopMethods: missingTopMethods as ValidationMethodId[],
     recommendation,
     risk,
     nextSteps
