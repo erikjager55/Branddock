@@ -39,7 +39,8 @@ import {
 } from 'lucide-react';
 import { CampaignSettingsModal } from './CampaignSettingsModal';
 import { DeliverableCard } from './campaign-strategy/DeliverableCard';
-import { getAllCampaigns, campaignToStrategy } from '../data/mock-campaigns';
+import { campaignToStrategy } from '../data/mock-campaigns';
+import { useCampaignsContext } from '../contexts/CampaignsContext';
 
 interface Deliverable {
   id: string;
@@ -124,6 +125,7 @@ const deliverableIcons = {
 
 export function ActiveCampaignsPage({ onNavigateToCampaign }: ActiveCampaignsPageProps) {
   // Laad strategies vanuit gedeelde data source
+  const { getAllCampaigns } = useCampaignsContext();
   const [strategies, setStrategies] = useState(() => 
     getAllCampaigns().map(campaignToStrategy)
   );

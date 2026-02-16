@@ -65,7 +65,8 @@ import {
   SelectValue,
 } from '../ui/select';
 import { InterviewWorkflowStep } from './InterviewWorkflowStep';
-import { currentBundle } from '../../data/mock-bundles';
+// Bundle definition inlined (no API for bundle catalog)
+const currentBundle = { id: 'bundle-professional', name: 'Professional Bundle', type: 'professional' as const, description: 'Comprehensive brand strategy assets', includedAssets: ['1', '2', '3', '4', '5', '6'], color: '#8b5cf6' };
 
 interface Interview {
   id: string;

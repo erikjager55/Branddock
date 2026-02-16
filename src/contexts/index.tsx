@@ -20,6 +20,7 @@ import { ProductTierProvider } from './ProductTierContext';
 import { ProductsProvider } from './ProductsContext';
 import { TrendsProvider } from './TrendsContext';
 import { KnowledgeProvider } from './KnowledgeContext';
+import { CampaignsProvider } from './CampaignsContext';
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -35,6 +36,7 @@ export function AppProviders({ children }: AppProvidersProps) {
             <ProductsProvider>
               <TrendsProvider>
               <KnowledgeProvider>
+              <CampaignsProvider>
               <ResearchPlanProvider>
                 <ResearchBundleProvider>
                   <CollaborationProvider>
@@ -48,7 +50,8 @@ export function AppProviders({ children }: AppProvidersProps) {
                   </CollaborationProvider>
                 </ResearchBundleProvider>
               </ResearchPlanProvider>
-            </KnowledgeProvider>
+            </CampaignsProvider>
+              </KnowledgeProvider>
               </TrendsProvider>
               </ProductsProvider>
           </PersonasProvider>
@@ -71,3 +74,4 @@ export { useChangeImpact } from './ChangeImpactContext';
 export { useProductTier } from './ProductTierContext';
 export { useProducts } from './ProductsContext';export { useTrendsContext } from './TrendsContext';
 export { useKnowledgeContext } from './KnowledgeContext';
+export { useCampaignsContext } from './CampaignsContext';

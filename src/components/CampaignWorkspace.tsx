@@ -31,7 +31,7 @@ import { Slider } from './ui/slider';
 import { Checkbox } from './ui/checkbox';
 import { AssetSelectionModal } from './AssetSelectionModal';
 import { CampaignDeliverableButton, CampaignDeliverable } from './campaign-strategy/CampaignDeliverableButton';
-import { mockCampaigns } from '../data/mock-campaigns';
+import { useCampaignsContext } from '../contexts/CampaignsContext';
 import { DeliverableCard } from './campaign-strategy/DeliverableCard';
 
 interface Asset {
@@ -57,7 +57,8 @@ interface CampaignWorkspaceProps {
 
 export function CampaignWorkspace({ campaignId, initialTab, onBack }: CampaignWorkspaceProps) {
   // Load campaign data if campaignId provided
-  const campaignData = campaignId ? mockCampaigns[campaignId] : null;
+  const { campaignsMap } = useCampaignsContext();
+  const campaignData = campaignId ? campaignsMap[campaignId] : null;
   
   const [parametersExpanded, setParametersExpanded] = useState(true);
   const [budgetRange, setBudgetRange] = useState(campaignData?.budgetRange || [50, 100]);
