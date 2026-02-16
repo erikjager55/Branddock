@@ -53,9 +53,15 @@ Feature flag: `NEXT_PUBLIC_WORKSPACE_ID` in `.env.local`
 - Trends (5 trends) — `/api/trends` GET + POST
 - Dashboard — leest counts uit BrandAssetsContext + PersonasContext
 
-**Nog op mock data:**
-- Strategy tools (tool definitions, niet data-backed)
-- Overige mock imports: research-bundles, mock-trends, knowledge-resources, mock-products, mock-campaigns, strategy-tools, mock-collaboration, mock-activities, mock-bundles, mock-decision-analysis, mock-relationships
+**Nog op mock data (alleen fallback in contexts):**
+- `BrandAssetsContext.tsx` — importeert `mockBrandAssets` als API fallback (by design)
+- `PersonasContext.tsx` — importeert `mockPersonas` als API fallback (by design)
+- `TeamManagementPage.tsx` — `mockTeamMembers` (wacht op Auth implementatie)
+- `RelationshipService.ts` — `mockRelationships` (wacht op module implementatie)
+
+**Product catalogs (statische configuratie, geen mock data):**
+- `src/lib/catalogs/research-bundles.ts` — research bundle definities + helper functies
+- `src/lib/catalogs/strategy-tools.ts` — strategy tool definities
 
 ### Adapter Pattern (tijdelijk)
 Elke gemigreerde module heeft een adapter die DB data mapt naar het bestaande mock formaat. Dit voorkomt breaking changes in downstream componenten. Op termijn worden componenten herschreven om direct het DB-model te gebruiken.
@@ -88,7 +94,13 @@ src/
 │   ├── page.tsx                         ← Entry point ('use client')
 │   └── api/
 │       ├── brand-assets/route.ts        ← GET + POST (live)
-│       └── personas/route.ts            ← GET + POST (live)
+│       ├── personas/route.ts            ← GET + POST (live)
+│       ├── products/route.ts            ← GET + POST (live)
+│       ├── research-plans/route.ts      ← GET + POST + PATCH (live)
+│       ├── purchased-bundles/route.ts   ← GET + POST (live)
+│       ├── campaigns/route.ts           ← GET + POST + PATCH (live)
+│       ├── knowledge/route.ts           ← GET + POST (live)
+│       └── trends/route.ts             ← GET + POST (live)
 ├── components/
 │   ├── Dashboard.tsx                    ← Bijgewerkt: context ipv mock imports
 │   ├── BrandAssetsViewSimple.tsx        ← Brand Foundation pagina
@@ -100,16 +112,26 @@ src/
 │   ├── index.tsx                        ← AppProviders wrapper + hook exports
 │   ├── BrandAssetsContext.tsx            ← API first, mock fallback
 │   ├── PersonasContext.tsx               ← API first, mock fallback
+│   ├── CampaignsContext.tsx              ← API first, mock fallback
+│   ├── KnowledgeContext.tsx              ← API first, mock fallback (incl. collections)
+│   ├── TrendsContext.tsx                 ← API first, mock fallback
 │   ├── ChangeImpactContext.tsx
 │   ├── CollaborationContext.tsx
 │   ├── ProductsContext.tsx               ← Inline mock data (geen DB model)
 │   ├── ProductTierContext.tsx
-│   ├── ResearchBundleContext.tsx
+│   ├── ResearchBundleContext.tsx         ← Purchased bundles (API-backed)
 │   ├── ResearchPlanContext.tsx
 │   ├── TemplateContext.tsx
 │   ├── UIStateContext.tsx
 │   └── WhiteLabelContext.tsx
-├── data/                                ← 14 mock data bestanden
+├── data/                                ← Mock data bestanden (fallback only)
+│   ├── mock-brand-assets.ts
+│   ├── mock-campaigns.ts
+│   ├── mock-collaboration.ts
+│   ├── mock-knowledge.ts
+│   ├── mock-personas.ts
+│   ├── mock-trends.ts
+│   └── knowledge-resources.ts
 ├── hooks/
 │   ├── use-brand-assets.ts              ← TanStack Query hooks
 │   ├── use-personas.ts                  ← TanStack Query hooks
@@ -120,7 +142,13 @@ src/
 │   │   ├── brand-assets.ts              ← Type-safe fetch functies
 │   │   ├── brand-asset-adapter.ts       ← BrandAssetWithMeta → BrandAsset
 │   │   ├── personas.ts                  ← Type-safe fetch functies
-│   │   └── persona-adapter.ts           ← ApiPersona → MockPersona
+│   │   ├── persona-adapter.ts           ← ApiPersona → MockPersona
+│   │   ├── campaign-adapter.ts
+│   │   ├── knowledge-adapter.ts
+│   │   └── trend-adapter.ts
+│   ├── catalogs/                        ← Product catalogs (statische configuratie)
+│   │   ├── research-bundles.ts          ← Bundle definities + helper functies
+│   │   └── strategy-tools.ts            ← Strategy tool definities
 │   └── constants/
 │       ├── design-tokens.ts             ← Design tokens (649 regels)
 │       └── design-system.ts             ← scoreColor() utility
@@ -128,8 +156,22 @@ src/
 │   └── query-provider.tsx               ← TanStack QueryClientProvider
 ├── services/                            ← 9 service bestanden (static setters voor data injection)
 ├── stores/                              ← 9 Zustand stores
-├── types/                               ← 27 type bestanden
-└── utils/                               ← 14 utility bestanden (parametrische functies)
+├── types/                               ← Type bestanden (gecentraliseerd)
+│   ├── brand-asset.ts                   ← BrandAsset + CalculatedAssetStatus
+│   ├── campaign.ts
+│   ├── collaboration.ts
+│   ├── knowledge.ts
+│   ├── research-bundle.ts               ← ResearchBundle (uit catalog geëxtraheerd)
+│   ├── strategy.ts                      ← UnlockableTool + strategy types
+│   ├── team.ts                          ← Team member types
+│   ├── trend.ts
+│   ├── validation.ts
+│   └── ...
+└── utils/                               ← Utility bestanden (parametrische functies)
+    ├── campaign-helpers.ts              ← campaignToStrategy (uit mock-campaigns)
+    ├── asset-status.ts                  ← CalculatedAssetStatus logica
+    ├── entity-card-adapters.ts
+    └── ...
 
 prisma/
 ├── schema.prisma                        ← 44 database modellen
@@ -216,6 +258,10 @@ Directe klant (Organization type=DIRECT)
 | `/api/campaigns` | GET | Lijst met filters (status, type, search, sort) + stats |
 | `/api/campaigns` | POST | Nieuwe campaign aanmaken |
 | `/api/campaigns` | PATCH | Campaign updaten (status, deliverables, assets) |
+| `/api/knowledge` | GET | Lijst met filters |
+| `/api/knowledge` | POST | Nieuwe knowledge resource aanmaken |
+| `/api/trends` | GET | Lijst met filters |
+| `/api/trends` | POST | Nieuwe trend aanmaken |
 
 Alle routes vereisen `workspaceId` als query param (GET) of in body (POST).
 
@@ -227,14 +273,13 @@ Alle routes vereisen `workspaceId` als query param (GET) of in body (POST).
 5. Context updaten: API fetch in useEffect + mock fallback
 
 ## TypeScript Status
-- **678 errors** — blokkeren `npm run build` maar NIET dev server
-- Top issues: diverse component type mismatches, pre-existing ResearchItem/Persona type issues
-- Geleidelijk aanpakken, niet blokkerend voor development
+- **0 errors** — clean codebase, `npx tsc --noEmit` passeert volledig
+- Opgeschoond van 683 → 0 in Fase 2 refactor (feb 2026)
+- Key type fixes: Persona flat accessors (demographics.X → X), CalculatedAssetStatus, React 19 RefObject nullability, PersonaResearchMethodItem
 
 ## Werkwijze
-- Erik gebruikt geen code editor — wijzigingen via bash `cat >` commando's en scripts
+- Erik gebruikt Claude Code in Warp terminal voor codebase wijzigingen
 - Scripts/commando's draaien vanuit `~/Projects/branddock-app/`
-- Downloads komen in `~/Downloads/`
 - Dev server: `npm run dev` in apart terminal-tabblad
 - Testen API: `curl` in ander tabblad
 
@@ -262,38 +307,20 @@ Alle routes vereisen `workspaceId` als query param (GET) of in body (POST).
 12. `dashboard-decision-transformer` gerefactored naar parametrische functies
 13. **`mockBrandAssets` → `useBrandAssets()` in 12 componenten**
 14. Alle API routes gebouwd: products, research-plans, purchased-bundles, campaigns, knowledge, trends
-15. **`mockBrandAssets` + `mockPersonas` in utils/services → parametrische functies + static setters** (campaign-decision-gate, campaign-decision-calculator v1+v2, platform-decision-aggregator, GlobalSearchService, SmartSuggestionsService, RelationshipService)
+15. **`mockBrandAssets` + `mockPersonas` in utils/services → parametrische functies + static setters**
 16. **`useBreadcrumbs` hook → `useBrandAssets()` + `usePersonas()` intern**
-17. **`mockPersonas` → `usePersonas()` in 7 componenten** (ResearchHubEnhanced, StrategicResearchPlanner, ResearchTargetSelector, CampaignStrategyGeneratorDetail, UniversalStrategyGenerator, StrategicReport)
-18. **Callers bijgewerkt**: CampaignStrategyGeneratorDetail, UniversalStrategyGenerator, GlobalSearchModal, RelationshipsPage — passen nu brandAssets/personas door aan parametrische functies/services
+17. **`mockPersonas` → `usePersonas()` in 7 componenten**
+18. **Callers bijgewerkt**: CampaignStrategyGeneratorDetail, UniversalStrategyGenerator, GlobalSearchModal, RelationshipsPage
+19. **Fase 1C**: campaignToStrategy verplaatst, collections naar KnowledgeContext, dead imports verwijderd uit App.tsx
+20. **Fase 1D**: Product catalogs verplaatst naar `src/lib/catalogs/` (research-bundles, strategy-tools), types gecentraliseerd (UnlockableTool, BrandAssetOption, ResearchBundle)
+21. **Orphaned files verwijderd**: mock-activities, mock-bundles, mock-decision-analysis, mock-products, renderInProgressView_NEW, integrate.py, VISUAL_GUIDE.txt
+22. **Fase 2 (TS errors 683 → 0)**: Persona flat accessors, mock data sync, protected-components fix, CalculatedAssetStatus type, React 19 RefObject nullability, module-not-found fixes, function signature fixes, type annotations
 
 ### ⚠️ TECHNISCHE SCHULD
-- **678 TypeScript errors** — geleidelijk aanpakken
 - **Adapter pattern** — tijdelijk, componenten moeten op termijn direct DB-model gebruiken
-- **Pre-existing type issues**: ResearchItem/Persona mismatches, MockPersona vs Persona type conflicts
+- **`as any` casts** — enkele MockPersona/Persona compat casts in Dashboard.tsx, PersonasSection.tsx (opruimen wanneer mock fallback verdwijnt)
 
-### 🔧 HUIDIGE FASE: Mock Data → Context/API Refactor
-Doel: alle directe mock imports (`from '../data/mock-*'`) vervangen door context hooks of parametrische functies.
-
-**✅ AFGEROND:**
-- `mockBrandAssets` — alle imports gemigreerd (components, utils, services, hooks)
-- `mockPersonas` — alle imports gemigreerd (components, utils, services, hooks)
-- Enige uitzonderingen: `BrandAssetsContext.tsx` en `PersonasContext.tsx` (eigen mock fallback — OK), `src/examples/` (low priority)
-
-**⬜ NOG TE DOEN (overige mocks):**
-- `research-bundles` (7 imports) — App.tsx, ResearchBundleContext, StrategicResearchPlanner, ResearchPlansPage, ResearchPlansSectionGamified, ResearchBundlesSection, BundleDetailsPage
-- `mock-trends` (4 imports) — TrendLibrary, CampaignStrategyGeneratorDetail, UniversalStrategyGenerator, ResourceDetailModal
-- `mock-knowledge` / `knowledge-resources` (4 imports) — KnowledgeLibrary, CampaignStrategyGeneratorDetail, UniversalStrategyGenerator, AddResourceModal
-- `mock-products` (2 imports) — CampaignStrategyGeneratorDetail, UniversalStrategyGenerator
-- `mock-campaigns` (2 imports) — ActiveCampaignsPage, CampaignWorkspace
-- `strategy-tools` (2 imports) — StrategyHubSection, ResearchBundlesSection
-- `mock-collaboration` (1 import) — TeamManagementPage
-- `mock-activities` (1 import) — App.tsx
-- `mock-bundles` (1 import) — InterviewsManagerUpdated
-- `mock-decision-analysis` (1 import) — ResearchDashboard
-- `mock-relationships` (1 import) — RelationshipService
-
-### 📋 ROADMAP (na mock refactor, in volgorde)
+### 📋 ROADMAP (in volgorde)
 
 **A. Auth: NextAuth.js**
 - Login, register, sessie management
