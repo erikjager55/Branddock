@@ -63,7 +63,6 @@ import {
 import { GoldenCircleCanvas } from './canvases/GoldenCircleCanvas';
 import { VisionStatementCanvas } from './canvases/VisionStatementCanvas';
 import { DecisionAnalysisMain } from './decision-analysis/DecisionAnalysisMain';
-import { mockDecisionAnalysis } from '../data/mock-decision-analysis';
 import { AIGeneratedReport } from './AIGeneratedReport';
 import { MissionStatementCanvas } from './canvases/MissionStatementCanvas';
 import { BrandArchetypeCanvas } from './canvases/BrandArchetypeCanvas';

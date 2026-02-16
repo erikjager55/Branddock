@@ -28,7 +28,6 @@ import { getResearchOptionId, ResearchMethodType } from './utils/research-method
 import { logger } from './utils/logger';
 import { recentItems } from './services/RecentItemsService';
 import { calculateBrandScore } from './utils/brand-score-calculator';
-import { generateMockActivities } from './data/mock-activities';
 import { ActivityFeed } from './components/ActivityFeed';
 import { BrandAsset } from './types/brand-asset';
 import { useBreadcrumbs } from './hooks/useBreadcrumbs';
@@ -94,15 +93,6 @@ function AppContent() {
   // Generate breadcrumbs
   const breadcrumbs = useBreadcrumbs(activeSection, selectedAssetId);
 
-  // Initialize mock activities on first load
-  useEffect(() => {
-    // Only generate once per session
-    const hasGeneratedActivities = sessionStorage.getItem('mock-activities-generated');
-    if (!hasGeneratedActivities) {
-      generateMockActivities();
-      sessionStorage.setItem('mock-activities-generated', 'true');
-    }
-  }, []);
 
   // Track recent items when navigating
   useEffect(() => {
