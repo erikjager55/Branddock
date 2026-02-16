@@ -1,3 +1,5 @@
+import { BrandAsset } from '../types/brand-asset';
+import { Persona } from '../types/persona';
 import { 
   Relationship, 
   ImpactAnalysis, 
@@ -9,14 +11,18 @@ import {
   RelationType
 } from '../types/relationship';
 import { mockRelationships, getAllRelationships } from '../data/mock-relationships';
-import { mockBrandAssets } from '../data/mock-brand-assets';
-import { mockPersonas } from '../data/mock-personas';
 
 /**
  * RelationshipService
  * Core service for managing relationships between entities
  */
 export class RelationshipService {
+  private static brandAssets: BrandAsset[] = [];
+  private static personas: Persona[] = [];
+
+  static setBrandAssets(assets: BrandAsset[]) { RelationshipService.brandAssets = assets; }
+  static setPersonas(personas: Persona[]) { RelationshipService.personas = personas; }
+
   
   // ==================== BASIC CRUD ====================
   
@@ -230,10 +236,10 @@ export class RelationshipService {
   private static getEntityName(entityType: EntityType, entityId: string): string {
     switch (entityType) {
       case 'brand-asset':
-        const asset = mockBrandAssets.find(a => a.id === entityId);
+        const asset = RelationshipService.brandAssets.find(a => a.id === entityId);
         return asset?.title || 'Unknown Brand Asset';
       case 'persona':
-        const persona = mockPersonas.find(p => p.id === entityId);
+        const persona = RelationshipService.personas.find(p => p.id === entityId);
         return persona?.name || 'Unknown Persona';
       default:
         return `${entityType}-${entityId}`;
@@ -337,14 +343,14 @@ export class RelationshipService {
     const issues: ConsistencyIssue[] = [];
     
     // Example: Golden Circle should connect to all critical brand assets
-    const goldenCircle = mockBrandAssets.find(a => a.type === 'Golden Circle');
+    const goldenCircle = RelationshipService.brandAssets.find(a => a.type === 'Golden Circle');
     if (goldenCircle) {
       const gcRelationships = this.getForEntity('brand-asset', goldenCircle.id);
       const connectedAssetIds = gcRelationships
         .filter(r => r.targetType === 'brand-asset' || r.sourceType === 'brand-asset')
         .map(r => r.targetId === goldenCircle.id ? r.sourceId : r.targetId);
       
-      const criticalAssets = mockBrandAssets.filter(a => 
+      const criticalAssets = RelationshipService.brandAssets.filter(a => 
         a.isCritical && a.id !== goldenCircle.id
       );
       
@@ -380,7 +386,7 @@ export class RelationshipService {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    mockBrandAssets.forEach(asset => {
+    RelationshipService.brandAssets.forEach(asset => {
       const assetDate = new Date(asset.lastUpdated);
       if (assetDate < sixMonthsAgo) {
         const relationships = this.getForEntity('brand-asset', asset.id);
@@ -415,8 +421,8 @@ export class RelationshipService {
     const issues: ConsistencyIssue[] = [];
     
     // Simple keyword check (in production, use NLP)
-    const goldenCircle = mockBrandAssets.find(a => a.type === 'Golden Circle');
-    const vision = mockBrandAssets.find(a => a.type === 'Vision Statement');
+    const goldenCircle = RelationshipService.brandAssets.find(a => a.type === 'Golden Circle');
+    const vision = RelationshipService.brandAssets.find(a => a.type === 'Vision Statement');
     
     if (goldenCircle && vision) {
       // This is a simplified check - in production, use proper NLP
@@ -463,7 +469,7 @@ export class RelationshipService {
     const issues: ConsistencyIssue[] = [];
     
     // Find brand assets with no relationships
-    mockBrandAssets.forEach(asset => {
+    RelationshipService.brandAssets.forEach(asset => {
       const relationships = this.getForEntity('brand-asset', asset.id);
       if (relationships.length === 0) {
         issues.push({
@@ -545,7 +551,7 @@ export class RelationshipService {
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
-    return mockBrandAssets
+    return RelationshipService.brandAssets
       .filter(asset => new Date(asset.lastUpdated) > oneDayAgo)
       .slice(0, 5)
       .map(asset => ({
@@ -562,7 +568,7 @@ export class RelationshipService {
     const needsAttention: EntityReference[] = [];
 
     // Assets with status 'ready-to-validate'
-    mockBrandAssets
+    RelationshipService.brandAssets
       .filter(asset => asset.status === 'ready-to-validate')
       .forEach(asset => {
         needsAttention.push({
@@ -657,7 +663,7 @@ export class RelationshipService {
     });
 
     const orphanedEntities: EntityReference[] = [];
-    mockBrandAssets.forEach(asset => {
+    RelationshipService.brandAssets.forEach(asset => {
       if (!connectedIds.has(`brand-asset-${asset.id}`)) {
         orphanedEntities.push({
           id: asset.id,

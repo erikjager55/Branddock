@@ -21,6 +21,8 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { RelationshipService } from '../services/RelationshipService';
+import { useBrandAssets } from '../contexts/BrandAssetsContext';
+import { usePersonas } from '../contexts/PersonasContext';
 import { EntityType } from '../types/relationship';
 import { DecisionStatusBadge } from './decision-status/DecisionStatusBadge';
 
@@ -55,6 +57,14 @@ export function RelationshipsPage({
   onNavigate,
   onBack
 }: RelationshipsPageProps) {
+  const { brandAssets } = useBrandAssets();
+  const { personas } = usePersonas();
+
+  // Sync context data to static service
+  React.useEffect(() => {
+    RelationshipService.setBrandAssets(brandAssets);
+    RelationshipService.setPersonas(personas);
+  }, [brandAssets, personas]);
   const [selectedTab, setSelectedTab] = useState<string>('decision-insights');
   const [expandedInsight, setExpandedInsight] = useState<string | null>(null);
 

@@ -1,3 +1,5 @@
+import { BrandAsset } from '../types/brand-asset';
+import { Persona } from '../types/persona';
 /**
  * UTILITY: Platform Decision Aggregator
  * 
@@ -11,8 +13,6 @@
  */
 
 import { calculateDecisionStatus } from './decision-status-calculator';
-import { mockBrandAssets } from '../data/mock-brand-assets';
-import { mockPersonas } from '../data/mock-personas';
 
 export interface PlatformDecisionResult {
   status: 'safe-to-decide' | 'decision-at-risk' | 'do-not-decide';
@@ -31,11 +31,11 @@ export interface PlatformDecisionResult {
 /**
  * Dashboard - Overall platform status
  */
-export function calculateDashboardDecision(): PlatformDecisionResult {
+export function calculateDashboardDecision(brandAssets: BrandAsset[], personas: Persona[]): PlatformDecisionResult {
   // Alle assets + personas
   const allItems = [
-    ...mockBrandAssets.map(a => ({ ...a, itemType: 'asset' as const })),
-    ...mockPersonas.map(p => ({ ...p, itemType: 'persona' as const }))
+    ...brandAssets.map(a => ({ ...a, itemType: 'asset' as const })),
+    ...personas.map(p => ({ ...p, itemType: 'persona' as const }))
   ];
 
   const statuses = allItems.map(item => ({
@@ -106,13 +106,13 @@ export function calculateDashboardDecision(): PlatformDecisionResult {
 /**
  * Research Hub - Research impact on decisions
  */
-export function calculateResearchHubDecision(): PlatformDecisionResult {
-  const dashboardDecision = calculateDashboardDecision();
+export function calculateResearchHubDecision(brandAssets: BrandAsset[], personas: Persona[]): PlatformDecisionResult {
+  const dashboardDecision = calculateDashboardDecision(brandAssets, personas);
 
   // Determine wat research de grootste impact heeft
   const allItems = [
-    ...mockBrandAssets.map(a => ({ ...a, itemType: 'asset' as const })),
-    ...mockPersonas.map(p => ({ ...p, itemType: 'persona' as const }))
+    ...brandAssets.map(a => ({ ...a, itemType: 'asset' as const })),
+    ...personas.map(p => ({ ...p, itemType: 'persona' as const }))
   ];
 
   const needsResearch = allItems
@@ -158,8 +158,8 @@ export function calculateResearchHubDecision(): PlatformDecisionResult {
 /**
  * Asset Detail - Status van specifiek asset
  */
-export function calculateAssetDetailDecision(assetId: string): PlatformDecisionResult {
-  const asset = mockBrandAssets.find(a => a.id === assetId);
+export function calculateAssetDetailDecision(brandAssets: BrandAsset[], personas: Persona[], assetId: string): PlatformDecisionResult {
+  const asset = brandAssets.find(a => a.id === assetId);
   
   if (!asset) {
     return {
@@ -216,8 +216,8 @@ export function calculateAssetDetailDecision(assetId: string): PlatformDecisionR
 /**
  * Persona Detail - Status van specifieke persona
  */
-export function calculatePersonaDetailDecision(personaId: string): PlatformDecisionResult {
-  const persona = mockPersonas.find(p => p.id === personaId);
+export function calculatePersonaDetailDecision(brandAssets: BrandAsset[], personas: Persona[], personaId: string): PlatformDecisionResult {
+  const persona = personas.find(p => p.id === personaId);
   
   if (!persona) {
     return {
@@ -276,6 +276,8 @@ export function calculatePersonaDetailDecision(personaId: string): PlatformDecis
  * (Deze gebruikt bestaande campaign decision calculator)
  */
 export function calculateCampaignOutputDecision(
+  brandAssets: BrandAsset[],
+  personas: Persona[],
   selectedAssets: string[],
   selectedPersonas: string[]
 ): PlatformDecisionResult {
@@ -319,8 +321,8 @@ export function calculateCampaignOutputDecision(
 /**
  * Relationships & Insights - Betrouwbaarheid van relaties en insights
  */
-export function calculateRelationshipsDecision(): PlatformDecisionResult {
-  const dashboardDecision = calculateDashboardDecision();
+export function calculateRelationshipsDecision(brandAssets: BrandAsset[], personas: Persona[]): PlatformDecisionResult {
+  const dashboardDecision = calculateDashboardDecision(brandAssets, personas);
 
   // Relationships zijn safe als basis data safe is
   if (dashboardDecision.status === 'do-not-decide') {

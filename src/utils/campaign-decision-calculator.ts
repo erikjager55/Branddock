@@ -1,3 +1,5 @@
+import { BrandAsset } from '../types/brand-asset';
+import { Persona } from '../types/persona';
 /**
  * UTILITY: Campaign Decision Calculator
  * 
@@ -11,8 +13,6 @@
  */
 
 import { calculateDecisionStatus } from './decision-status-calculator';
-import { mockBrandAssets } from '../data/mock-brand-assets';
-import { mockPersonas } from '../data/mock-personas';
 
 export interface CampaignDecisionResult {
   /** Overall status voor de campagne */
@@ -45,6 +45,8 @@ export interface CampaignDecisionResult {
 }
 
 export function calculateCampaignDecision(
+  brandAssets: BrandAsset[],
+  personas: Persona[],
   selectedBrandAssets: string[],
   selectedPersonas: string[]
 ): CampaignDecisionResult {
@@ -52,11 +54,11 @@ export function calculateCampaignDecision(
   // Verzamel alle items
   const allItems = [
     ...selectedBrandAssets.map(id => {
-      const asset = mockBrandAssets.find(a => a.id === id);
+      const asset = brandAssets.find(a => a.id === id);
       return asset ? { ...asset, itemType: 'Brand Asset' } : null;
     }).filter(Boolean),
     ...selectedPersonas.map(id => {
-      const persona = mockPersonas.find(p => p.id === id);
+      const persona = personas.find(p => p.id === id);
       return persona ? { ...persona, itemType: 'Persona', type: persona.name } : null;
     }).filter(Boolean)
   ];
@@ -231,6 +233,8 @@ export function calculateCampaignDecision(
  * Bereken section-level decision status
  */
 export function calculateSectionDecision(
+  brandAssets: BrandAsset[],
+  personas: Persona[],
   sectionType: 'brand-assets' | 'personas' | 'campaign-details' | 'channels',
   selectedBrandAssets: string[],
   selectedPersonas: string[],
@@ -253,7 +257,7 @@ export function calculateSectionDecision(
       }
 
       const assetStatuses = selectedBrandAssets.map(id => {
-        const asset = mockBrandAssets.find(a => a.id === id);
+        const asset = brandAssets.find(a => a.id === id);
         return asset ? calculateDecisionStatus(asset) : null;
       }).filter(Boolean);
 
@@ -268,7 +272,7 @@ export function calculateSectionDecision(
         return {
           status: 'blocked',
           problematicInputs: blockedAssets.map(id => {
-            const asset = mockBrandAssets.find(a => a.id === id);
+            const asset = brandAssets.find(a => a.id === id);
             return `${asset?.type}: ${calculateDecisionStatus(asset!).coverage}% coverage`;
           }),
           requiredActions: ['Breng alle assets naar minimaal 50% coverage']
@@ -296,7 +300,7 @@ export function calculateSectionDecision(
       }
 
       const personaStatuses = selectedPersonas.map(id => {
-        const persona = mockPersonas.find(p => p.id === id);
+        const persona = personas.find(p => p.id === id);
         return persona ? calculateDecisionStatus(persona) : null;
       }).filter(Boolean);
 

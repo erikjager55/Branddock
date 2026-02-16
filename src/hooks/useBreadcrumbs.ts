@@ -1,3 +1,5 @@
+import { useBrandAssets } from '../contexts/BrandAssetsContext';
+import { usePersonas } from '../contexts/PersonasContext';
 /**
  * CUSTOM HOOK: useBreadcrumbs
  * 
@@ -6,14 +8,14 @@
 
 import { useMemo } from 'react';
 import { BreadcrumbItem } from '../types/workflow';
-import { mockBrandAssets } from '../data/mock-brand-assets';
-import { mockPersonas } from '../data/mock-personas';
 
 export function useBreadcrumbs(
   activeSection: string,
   selectedAssetId?: string,
   selectedPersonaId?: string
 ): BreadcrumbItem[] {
+  const { brandAssets } = useBrandAssets();
+  const { personas } = usePersonas();
   return useMemo(() => {
     const breadcrumbs: BreadcrumbItem[] = [];
 
@@ -31,7 +33,7 @@ export function useBreadcrumbs(
     
     // Specific Brand Asset
     else if (activeSection.startsWith('brand-') && selectedAssetId) {
-      const asset = mockBrandAssets.find(a => a.id === selectedAssetId);
+      const asset = brandAssets.find(a => a.id === selectedAssetId);
       
       breadcrumbs.push({
         id: 'brand',
@@ -71,7 +73,7 @@ export function useBreadcrumbs(
     
     // Specific Persona
     else if (activeSection.startsWith('persona-') && selectedPersonaId) {
-      const persona = mockPersonas.find(p => p.id === selectedPersonaId);
+      const persona = personas.find(p => p.id === selectedPersonaId);
       
       breadcrumbs.push({
         id: 'personas',

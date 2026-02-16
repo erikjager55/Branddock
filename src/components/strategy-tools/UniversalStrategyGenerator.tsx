@@ -43,6 +43,7 @@ import { EnhancedAssetPickerModal } from './EnhancedAssetPickerModal';
 import { AddTrendModal } from './AddTrendModal';
 import { EntityType } from '../../types/relationship';
 import { useBrandAssets } from '../../contexts/BrandAssetsContext';
+import { usePersonas } from '../../contexts/PersonasContext';
 import { mockPersonas } from '../../data/mock-personas';
 import { mockProducts } from '../../data/mock-products';
 import { mockTrends } from '../../data/mock-trends';
@@ -236,6 +237,7 @@ export function UniversalStrategyGenerator({
   onBack 
 }: UniversalStrategyGeneratorProps) {
   const { brandAssets } = useBrandAssets();
+  const { personas } = usePersonas();
   const config = frameworkConfigs[frameworkId];
   
   if (!config) {
@@ -289,6 +291,7 @@ export function UniversalStrategyGenerator({
   // Calculate decision status
   const campaignDecision = useMemo(() => {
     return calculateCampaignDecision(
+      brandAssets, personas,
       selectedBrandAssets,
       selectedPersonas,
       selectedProducts,
@@ -299,11 +302,11 @@ export function UniversalStrategyGenerator({
 
   const sectionDecisions = useMemo(() => {
     return {
-      brand: calculateSectionDecision('brand', selectedBrandAssets),
-      persona: calculateSectionDecision('persona', selectedPersonas),
-      products: calculateSectionDecision('products', selectedProducts),
-      trends: calculateSectionDecision('trends', selectedTrends),
-      knowledge: calculateSectionDecision('knowledge', selectedKnowledge)
+      brand: calculateSectionDecision(brandAssets, personas, 'brand', selectedBrandAssets),
+      persona: calculateSectionDecision(brandAssets, personas, 'persona', selectedPersonas),
+      products: calculateSectionDecision(brandAssets, personas, 'products', selectedProducts),
+      trends: calculateSectionDecision(brandAssets, personas, 'trends', selectedTrends),
+      knowledge: calculateSectionDecision(brandAssets, personas, 'knowledge', selectedKnowledge)
     };
   }, [selectedBrandAssets, selectedPersonas, selectedProducts, selectedTrends, selectedKnowledge]);
 

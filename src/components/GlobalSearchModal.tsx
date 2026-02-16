@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useBrandAssets } from '../contexts/BrandAssetsContext';
+import { usePersonas } from '../contexts/PersonasContext';
 import { Search, Command, ArrowRight, Clock, Zap } from 'lucide-react';
 import { globalSearch } from '../services/GlobalSearchService';
 import { SearchSection } from '../types/workflow';
@@ -12,6 +14,15 @@ interface GlobalSearchModalProps {
 }
 
 export function GlobalSearchModal({ isOpen, onClose, onNavigate, onAction }: GlobalSearchModalProps) {
+  const { brandAssets } = useBrandAssets();
+  const { personas } = usePersonas();
+
+  // Sync context data to search service
+  React.useEffect(() => {
+    globalSearch.setBrandAssets(brandAssets);
+    globalSearch.setPersonas(personas);
+  }, [brandAssets, personas]);
+
   const [query, setQuery] = useState('');
   const [sections, setSections] = useState<SearchSection[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);

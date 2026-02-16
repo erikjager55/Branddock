@@ -1,3 +1,5 @@
+import { BrandAsset } from '../types/brand-asset';
+import { Persona } from '../types/persona';
 /**
  * GLOBAL SEARCH SERVICE
  * 
@@ -6,8 +8,6 @@
  */
 
 import { SearchResult, SearchSection, SearchConfig, SearchResultType } from '../types/workflow';
-import { mockBrandAssets } from '../data/mock-brand-assets';
-import { mockPersonas } from '../data/mock-personas';
 
 const DEFAULT_CONFIG: SearchConfig = {
   placeholder: 'Search everything...',
@@ -18,6 +18,11 @@ const DEFAULT_CONFIG: SearchConfig = {
 };
 
 class GlobalSearchService {
+  private brandAssets: BrandAsset[] = [];
+  private personas: Persona[] = [];
+
+  setBrandAssets(assets: BrandAsset[]) { this.brandAssets = assets; }
+  setPersonas(personas: Persona[]) { this.personas = personas; }
   private config: SearchConfig;
 
   constructor(config: Partial<SearchConfig> = {}) {
@@ -135,7 +140,7 @@ class GlobalSearchService {
    * Search brand assets
    */
   private searchBrandAssets(query: string): SearchResult[] {
-    return mockBrandAssets
+    return this.brandAssets
       .filter(asset => {
         const titleMatch = asset.title.toLowerCase().includes(query);
         const descMatch = asset.description?.toLowerCase().includes(query);
@@ -162,7 +167,7 @@ class GlobalSearchService {
    * Search personas
    */
   private searchPersonas(query: string): SearchResult[] {
-    return mockPersonas
+    return this.personas
       .filter(persona => {
         const nameMatch = persona.name.toLowerCase().includes(query);
         const roleMatch = persona.role.toLowerCase().includes(query);

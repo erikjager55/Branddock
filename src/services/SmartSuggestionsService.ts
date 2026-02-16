@@ -1,13 +1,19 @@
+import { BrandAsset } from '../types/brand-asset';
+import { Persona } from '../types/persona';
 import { Suggestion, EntityType } from '../types/relationship';
 import { RelationshipService } from './RelationshipService';
-import { mockBrandAssets } from '../data/mock-brand-assets';
-import { mockPersonas } from '../data/mock-personas';
 
 /**
  * SmartSuggestionsService
  * Analyzes user's current state and provides intelligent next-step recommendations
  */
 export class SmartSuggestionsService {
+  private static brandAssets: BrandAsset[] = [];
+  private static personas: Persona[] = [];
+
+  static setBrandAssets(assets: BrandAsset[]) { SmartSuggestionsService.brandAssets = assets; }
+  static setPersonas(personas: Persona[]) { SmartSuggestionsService.personas = personas; }
+
   
   static getSuggestions(): Suggestion[] {
     const suggestions: Suggestion[] = [];
@@ -41,8 +47,8 @@ export class SmartSuggestionsService {
     const suggestions: Suggestion[] = [];
 
     // Pattern: Golden Circle → Brand Archetype
-    const goldenCircle = mockBrandAssets.find(a => a.type === 'Golden Circle');
-    const archetype = mockBrandAssets.find(a => a.type === 'Brand Archetype');
+    const goldenCircle = SmartSuggestionsService.brandAssets.find(a => a.type === 'Golden Circle');
+    const archetype = SmartSuggestionsService.brandAssets.find(a => a.type === 'Brand Archetype');
     
     if (goldenCircle?.status === 'validated' && (!archetype || archetype.status === 'not-started')) {
       suggestions.push({
@@ -61,8 +67,8 @@ export class SmartSuggestionsService {
     }
 
     // Pattern: Vision → Mission
-    const vision = mockBrandAssets.find(a => a.type === 'Vision Statement');
-    const mission = mockBrandAssets.find(a => a.type === 'Mission Statement');
+    const vision = SmartSuggestionsService.brandAssets.find(a => a.type === 'Vision Statement');
+    const mission = SmartSuggestionsService.brandAssets.find(a => a.type === 'Mission Statement');
     
     if (vision?.status === 'validated' && (!mission || mission.status === 'not-started')) {
       suggestions.push({
@@ -81,8 +87,8 @@ export class SmartSuggestionsService {
     }
 
     // Pattern: Brand Assets → First Persona
-    const validatedAssets = mockBrandAssets.filter(a => a.status === 'validated');
-    if (validatedAssets.length >= 3 && mockPersonas.length === 0) {
+    const validatedAssets = SmartSuggestionsService.brandAssets.filter(a => a.status === 'validated');
+    if (validatedAssets.length >= 3 && SmartSuggestionsService.personas.length === 0) {
       suggestions.push({
         id: 'suggest-first-persona',
         type: 'next-asset',
@@ -104,12 +110,12 @@ export class SmartSuggestionsService {
   private static checkMissingRelationships(): Suggestion[] {
     const suggestions: Suggestion[] = [];
 
-    const goldenCircle = mockBrandAssets.find(a => a.type === 'Golden Circle');
-    if (goldenCircle && mockPersonas.length > 0) {
+    const goldenCircle = SmartSuggestionsService.brandAssets.find(a => a.type === 'Golden Circle');
+    if (goldenCircle && SmartSuggestionsService.personas.length > 0) {
       const relationships = RelationshipService.getForEntity('brand-asset', goldenCircle.id);
       const linkedPersonas = relationships.filter(r => r.targetType === 'persona');
       
-      const unlinkedCount = mockPersonas.length - linkedPersonas.length;
+      const unlinkedCount = SmartSuggestionsService.personas.length - linkedPersonas.length;
       
       if (unlinkedCount > 0) {
         suggestions.push({
@@ -139,7 +145,7 @@ export class SmartSuggestionsService {
     const suggestions: Suggestion[] = [];
 
     // Find assets with only one research method
-    const assetsWithOnlyOneMethod = mockBrandAssets.filter(asset => {
+    const assetsWithOnlyOneMethod = SmartSuggestionsService.brandAssets.filter(asset => {
       const completedMethods = asset.researchMethods?.filter(m => m.status === 'completed') || [];
       return completedMethods.length === 1 && asset.status !== 'not-started';
     });
@@ -227,7 +233,7 @@ export class SmartSuggestionsService {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    const staleAssets = mockBrandAssets.filter(asset => {
+    const staleAssets = SmartSuggestionsService.brandAssets.filter(asset => {
       const assetDate = new Date(asset.lastUpdated);
       return assetDate < sixMonthsAgo && asset.status === 'validated';
     });
@@ -267,7 +273,7 @@ export class SmartSuggestionsService {
     const suggestions: Suggestion[] = [];
 
     // Find assets ready to validate
-    const readyToValidate = mockBrandAssets.filter(a => a.status === 'ready-to-validate');
+    const readyToValidate = SmartSuggestionsService.brandAssets.filter(a => a.status === 'ready-to-validate');
     
     if (readyToValidate.length > 0) {
       suggestions.push({
@@ -297,7 +303,7 @@ export class SmartSuggestionsService {
     }
 
     // Find assets with high coverage but not validated
-    const highCoverageUnvalidated = mockBrandAssets.filter(a => 
+    const highCoverageUnvalidated = SmartSuggestionsService.brandAssets.filter(a => 
       (a.researchCoverage || 0) >= 75 && 
       a.status !== 'validated' && 
       a.status !== 'ready-to-validate'
@@ -330,7 +336,7 @@ export class SmartSuggestionsService {
     const suggestions: Suggestion[] = [];
 
     // Find critical assets with low research coverage
-    const criticalLowCoverage = mockBrandAssets.filter(a => 
+    const criticalLowCoverage = SmartSuggestionsService.brandAssets.filter(a => 
       a.isCritical && 
       (a.researchCoverage || 0) < 50 && 
       a.status !== 'validated'

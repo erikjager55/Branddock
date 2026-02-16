@@ -1,3 +1,5 @@
+import { BrandAsset } from '../types/brand-asset';
+import { Persona } from '../types/persona';
 /**
  * UTILITY: Campaign Decision Calculator v2 (CONSISTENTIE CORRECTIE)
  * 
@@ -12,8 +14,6 @@
  */
 
 import { calculateDecisionStatus } from './decision-status-calculator';
-import { mockBrandAssets } from '../data/mock-brand-assets';
-import { mockPersonas } from '../data/mock-personas';
 
 export interface CampaignDecisionResult {
   /** Overall status voor de campagne */
@@ -53,6 +53,8 @@ function getResearchStatusLabel(coverage: number): string {
 }
 
 export function calculateCampaignDecision(
+  brandAssets: BrandAsset[],
+  personas: Persona[],
   selectedBrandAssets: string[],
   selectedPersonas: string[]
 ): CampaignDecisionResult {
@@ -60,11 +62,11 @@ export function calculateCampaignDecision(
   // Verzamel alle items
   const allItems = [
     ...selectedBrandAssets.map(id => {
-      const asset = mockBrandAssets.find(a => a.id === id);
+      const asset = brandAssets.find(a => a.id === id);
       return asset ? { ...asset, itemType: 'Brand Asset' } : null;
     }).filter(Boolean),
     ...selectedPersonas.map(id => {
-      const persona = mockPersonas.find(p => p.id === id);
+      const persona = personas.find(p => p.id === id);
       return persona ? { ...persona, itemType: 'Persona', type: persona.name } : null;
     }).filter(Boolean)
   ];
@@ -220,6 +222,8 @@ export function calculateCampaignDecision(
  * - Erf-logica correct geïmplementeerd
  */
 export function calculateSectionDecision(
+  brandAssets: BrandAsset[],
+  personas: Persona[],
   sectionType: 'template' | 'campaign-details' | 'brand-assets' | 'advanced' | 'channels',
   selectedBrandAssets: string[],
   selectedPersonas: string[],
@@ -288,11 +292,11 @@ export function calculateSectionDecision(
       // Bereken status van alle gekoppelde items
       const allItems = [
         ...selectedBrandAssets.map(id => {
-          const asset = mockBrandAssets.find(a => a.id === id);
+          const asset = brandAssets.find(a => a.id === id);
           return asset ? { item: asset, status: calculateDecisionStatus(asset) } : null;
         }).filter(Boolean),
         ...selectedPersonas.map(id => {
-          const persona = mockPersonas.find(p => p.id === id);
+          const persona = personas.find(p => p.id === id);
           return persona ? { item: persona, status: calculateDecisionStatus(persona) } : null;
         }).filter(Boolean)
       ];

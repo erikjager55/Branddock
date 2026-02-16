@@ -41,6 +41,7 @@ import { AddTrendModal } from './AddTrendModal';
 import { SmartSuggestionsService } from '../../services/SmartSuggestionsService';
 import { EntityType } from '../../types/relationship';
 import { useBrandAssets } from '../../contexts/BrandAssetsContext';
+import { usePersonas } from '../../contexts/PersonasContext';
 import { mockPersonas } from '../../data/mock-personas';
 import { mockProducts } from '../../data/mock-products';
 import { mockTrends } from '../../data/mock-trends';
@@ -79,6 +80,15 @@ export function CampaignStrategyGeneratorDetail({
   onBack 
 }: CampaignStrategyGeneratorDetailProps) {
   const { brandAssets } = useBrandAssets();
+  const { personas } = usePersonas();
+
+  // Sync context data to static services
+  React.useEffect(() => {
+    SmartSuggestionsService.setBrandAssets(brandAssets);
+    SmartSuggestionsService.setPersonas(personas);
+    RelationshipService.setBrandAssets(brandAssets);
+    RelationshipService.setPersonas(personas);
+  }, [brandAssets, personas]);
   const [selectedTab, setSelectedTab] = useState('configure');
   const [selectedBrandAssets, setSelectedBrandAssets] = useState<string[]>([]);
   const [selectedPersonas, setSelectedPersonas] = useState<string[]>([]);
@@ -509,12 +519,12 @@ export function CampaignStrategyGeneratorDetail({
 
   // Calculate overall campaign decision status
   const campaignDecision = React.useMemo(() => {
-    return calculateCampaignDecision(selectedBrandAssets, selectedPersonas);
+    return calculateCampaignDecision(brandAssets, personas, selectedBrandAssets, selectedPersonas);
   }, [selectedBrandAssets, selectedPersonas]);
 
   // NEW: Decision Gate calculation (for blocking generation)
   const decisionGate = React.useMemo(() => {
-    return calculateDecisionGate(selectedBrandAssets, selectedPersonas);
+    return calculateDecisionGate(brandAssets, personas, selectedBrandAssets, selectedPersonas);
   }, [selectedBrandAssets, selectedPersonas]);
 
   // Check for campaign impacts (nieuwere strategische input)
@@ -525,23 +535,23 @@ export function CampaignStrategyGeneratorDetail({
 
   // Calculate section-level decisions (VERFIJND v2)
   const templateDecision = React.useMemo(() => {
-    return calculateSectionDecision('template', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
+    return calculateSectionDecision(brandAssets, personas, 'template', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
   }, []);
 
   const campaignDetailsDecision = React.useMemo(() => {
-    return calculateSectionDecision('campaign-details', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
+    return calculateSectionDecision(brandAssets, personas, 'campaign-details', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
   }, [campaignConfig.name, campaignConfig.objective, campaignConfig.keyMessage]);
 
   const brandAssetsDecision = React.useMemo(() => {
-    return calculateSectionDecision('brand-assets', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
+    return calculateSectionDecision(brandAssets, personas, 'brand-assets', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
   }, [selectedBrandAssets, selectedPersonas]);
 
   const advancedDecision = React.useMemo(() => {
-    return calculateSectionDecision('advanced', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
+    return calculateSectionDecision(brandAssets, personas, 'advanced', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
   }, [campaignConfig.timeline, campaignConfig.budget]);
 
   const channelsDecision = React.useMemo(() => {
-    return calculateSectionDecision('channels', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
+    return calculateSectionDecision(brandAssets, personas, 'channels', selectedBrandAssets, selectedPersonas, campaignConfig, selectedChannels);
   }, [selectedChannels]);
 
   // Calculate readiness score

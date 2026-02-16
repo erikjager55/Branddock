@@ -1,3 +1,5 @@
+import { BrandAsset } from '../types/brand-asset';
+import { Persona } from '../types/persona';
 /**
  * UTILITY: Campaign Decision Gate
  * 
@@ -8,8 +10,6 @@
  */
 
 import { calculateDecisionStatus } from './decision-status-calculator';
-import { mockBrandAssets } from '../data/mock-brand-assets';
-import { mockPersonas } from '../data/mock-personas';
 
 export interface DecisionGateResult {
   status: 'safe' | 'at-risk' | 'blocked';
@@ -29,6 +29,8 @@ export interface DecisionGateResult {
  * Calculate decision gate status for campaign generation
  */
 export function calculateDecisionGate(
+  brandAssets: BrandAsset[],
+  personas: Persona[],
   selectedAssetIds: string[],
   selectedPersonaIds: string[]
 ): DecisionGateResult {
@@ -36,7 +38,7 @@ export function calculateDecisionGate(
 
   // Check selected assets
   selectedAssetIds.forEach(assetId => {
-    const asset = mockBrandAssets.find(a => a.id === assetId);
+    const asset = brandAssets.find(a => a.id === assetId);
     if (!asset) return;
 
     const decisionStatus = calculateDecisionStatus(asset);
@@ -64,7 +66,7 @@ export function calculateDecisionGate(
 
   // Check selected personas
   selectedPersonaIds.forEach(personaId => {
-    const persona = mockPersonas.find(p => p.id === personaId);
+    const persona = personas.find(p => p.id === personaId);
     if (!persona) return;
 
     const decisionStatus = calculateDecisionStatus(persona);
