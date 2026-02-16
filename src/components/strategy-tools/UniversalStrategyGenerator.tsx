@@ -44,9 +44,9 @@ import { AddTrendModal } from './AddTrendModal';
 import { EntityType } from '../../types/relationship';
 import { useBrandAssets } from '../../contexts/BrandAssetsContext';
 import { usePersonas } from '../../contexts/PersonasContext';
-import { mockProducts } from '../../data/mock-products';
-import { mockTrends } from '../../data/mock-trends';
-import { mockKnowledge } from '../../data/mock-knowledge';
+import { useProducts } from '../../contexts/ProductsContext';
+import { useTrendsContext } from '../../contexts/TrendsContext';
+import { useKnowledgeContext } from '../../contexts/KnowledgeContext';
 import { SavedStrategiesPanel, SavedStrategiesDropdown, SavedStrategy } from './campaign-output/SavedStrategiesPanel';
 import { CampaignDecisionHeader } from '../decision-status/CampaignDecisionHeader';
 import { SectionDecisionIndicator } from '../decision-status/SectionDecisionIndicator';
@@ -237,6 +237,9 @@ export function UniversalStrategyGenerator({
 }: UniversalStrategyGeneratorProps) {
   const { brandAssets } = useBrandAssets();
   const { personas } = usePersonas();
+  const { products } = useProducts();
+  const { trends: trendsData } = useTrendsContext();
+  const { knowledge } = useKnowledgeContext();
   const config = frameworkConfigs[frameworkId];
   
   if (!config) {
@@ -264,7 +267,7 @@ export function UniversalStrategyGenerator({
   const [selectedKnowledge, setSelectedKnowledge] = useState<string[]>([]);
   const [selectedResearch, setSelectedResearch] = useState<string[]>([]);
   const [hasGenerated, setHasGenerated] = useState(false);
-  const [trends, setTrends] = useState(mockTrends);
+  const [trends, setTrends] = useState(trendsData);
   
   // Form data
   const [formData, setFormData] = useState<Record<string, string>>({});
@@ -715,7 +718,7 @@ export function UniversalStrategyGenerator({
                       {selectedProducts.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {selectedProducts.map(id => {
-                            const product = mockProducts.find(p => p.id === id);
+                            const product = products.find(p => p.id === id);
                             return product ? (
                               <Badge key={id} variant="secondary" className="gap-2">
                                 {product.name}
@@ -917,7 +920,7 @@ export function UniversalStrategyGenerator({
         <EnhancedAssetPickerModal
           title="Select Products & Services"
           description="Choose products or services this strategy will focus on"
-          items={mockProducts.map(p => ({ 
+          items={products.map(p => ({ 
             id: p.id, 
             name: p.name, 
             subtitle: p.type || 'Product',

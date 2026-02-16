@@ -42,9 +42,9 @@ import { SmartSuggestionsService } from '../../services/SmartSuggestionsService'
 import { EntityType } from '../../types/relationship';
 import { useBrandAssets } from '../../contexts/BrandAssetsContext';
 import { usePersonas } from '../../contexts/PersonasContext';
-import { mockProducts } from '../../data/mock-products';
-import { mockTrends } from '../../data/mock-trends';
-import { mockKnowledge } from '../../data/mock-knowledge';
+import { useProducts } from '../../contexts/ProductsContext';
+import { useTrendsContext } from '../../contexts/TrendsContext';
+import { useKnowledgeContext } from '../../contexts/KnowledgeContext';
 import { StrategicReport } from './campaign-output/StrategicReport';
 import { NextStepsSuggestions } from './campaign-output/NextStepsSuggestions';
 import { ChatAssistant } from './campaign-output/ChatAssistant';
@@ -80,6 +80,9 @@ export function CampaignStrategyGeneratorDetail({
 }: CampaignStrategyGeneratorDetailProps) {
   const { brandAssets } = useBrandAssets();
   const { personas } = usePersonas();
+  const { products } = useProducts();
+  const { trends: trendsData } = useTrendsContext();
+  const { knowledge } = useKnowledgeContext();
 
   // Sync context data to static services
   React.useEffect(() => {
@@ -96,7 +99,7 @@ export function CampaignStrategyGeneratorDetail({
   const [selectedKnowledge, setSelectedKnowledge] = useState<string[]>([]);
   const [selectedResearch, setSelectedResearch] = useState<string[]>([]);
   const [hasGenerated, setHasGenerated] = useState(false);
-  const [trends, setTrends] = useState(mockTrends); // Local trends list
+  const [trends, setTrends] = useState(trendsData); // Local trends list
   const [showChat, setShowChat] = useState(false);
   
   // Change Impact Tracking

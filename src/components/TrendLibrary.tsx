@@ -4,10 +4,12 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Plus, Edit, Eye, TrendingUp, TrendingDown, BarChart3, Target, Calendar, Users } from 'lucide-react';
 import { AddTrendModal } from './strategy-tools/AddTrendModal';
-import { mockTrends, Trend } from '../data/mock-trends';
+import { Trend } from '../data/mock-trends';
+import { useTrendsContext } from '../contexts/TrendsContext';
 
 export function TrendLibrary() {
-  const [trends, setTrends] = useState<Trend[]>(mockTrends);
+  const { trends: trendsFromContext } = useTrendsContext();
+  const [trends, setTrends] = useState<Trend[]>(trendsFromContext);
   const [showAddTrendModal, setShowAddTrendModal] = useState(false);
 
   const getDirectionIcon = (direction: string) => {

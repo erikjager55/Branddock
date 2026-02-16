@@ -18,6 +18,8 @@ import { ChangeImpactProvider } from './ChangeImpactContext';
 import { ChangeImpactConnector } from '../components/impact/ChangeImpactConnector';
 import { ProductTierProvider } from './ProductTierContext';
 import { ProductsProvider } from './ProductsContext';
+import { TrendsProvider } from './TrendsContext';
+import { KnowledgeProvider } from './KnowledgeContext';
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -31,6 +33,8 @@ export function AppProviders({ children }: AppProvidersProps) {
           <ChangeImpactConnector />
           <PersonasProvider>
             <ProductsProvider>
+              <TrendsProvider>
+              <KnowledgeProvider>
               <ResearchPlanProvider>
                 <ResearchBundleProvider>
                   <CollaborationProvider>
@@ -44,7 +48,9 @@ export function AppProviders({ children }: AppProvidersProps) {
                   </CollaborationProvider>
                 </ResearchBundleProvider>
               </ResearchPlanProvider>
-            </ProductsProvider>
+            </KnowledgeProvider>
+              </TrendsProvider>
+              </ProductsProvider>
           </PersonasProvider>
         </ChangeImpactProvider>
       </BrandAssetsProvider>
@@ -63,4 +69,5 @@ export { useWhiteLabel } from './WhiteLabelContext';
 export { useTemplates } from './TemplateContext';
 export { useChangeImpact } from './ChangeImpactContext';
 export { useProductTier } from './ProductTierContext';
-export { useProducts } from './ProductsContext';
+export { useProducts } from './ProductsContext';export { useTrendsContext } from './TrendsContext';
+export { useKnowledgeContext } from './KnowledgeContext';

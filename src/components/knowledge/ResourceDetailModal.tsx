@@ -29,7 +29,7 @@ import {
   Package
 } from 'lucide-react';
 import { KnowledgeResource } from '../../data/knowledge-resources';
-import { mockTrends } from '../../data/mock-trends';
+import { useTrendsContext } from '../../contexts/TrendsContext';
 
 interface ResourceDetailModalProps {
   isOpen: boolean;
@@ -46,6 +46,7 @@ export function ResourceDetailModal({
   onToggleFavorite,
   onUpdateProgress
 }: ResourceDetailModalProps) {
+  const { trends: trendsFromContext } = useTrendsContext();
   const [personalNotes, setPersonalNotes] = useState(resource.personalNotes || '');
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -93,7 +94,7 @@ export function ResourceDetailModal({
 
   // Get related trends
   const relatedTrends = resource.relatedTrends 
-    ? mockTrends.filter(t => resource.relatedTrends?.includes(t.id))
+    ? trendsFromContext.filter(t => resource.relatedTrends?.includes(t.id))
     : [];
 
   return (

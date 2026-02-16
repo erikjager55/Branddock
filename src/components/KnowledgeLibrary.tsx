@@ -33,14 +33,16 @@ import {
 } from 'lucide-react';
 import { AddResourceModal } from './knowledge/AddResourceModal';
 import { ResourceDetailModal } from './knowledge/ResourceDetailModal';
-import { mockKnowledgeResources, mockCollections, KnowledgeResource, Collection } from '../data/knowledge-resources';
+import { mockCollections, KnowledgeResource, Collection } from '../data/knowledge-resources';
+import { useKnowledgeContext } from '../contexts/KnowledgeContext';
 
 type ViewMode = 'grid' | 'list' | 'compact';
 type SortOption = 'date-added-desc' | 'date-added-asc' | 'rating-desc' | 'rating-asc' | 'title-asc' | 'title-desc' | 'views-desc';
 
 export function KnowledgeLibrary() {
+  const { knowledge } = useKnowledgeContext();
   // State
-  const [resources, setResources] = useState<KnowledgeResource[]>(mockKnowledgeResources);
+  const [resources, setResources] = useState<KnowledgeResource[]>(knowledge);
   const [collections] = useState<Collection[]>(mockCollections);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedResource, setSelectedResource] = useState<KnowledgeResource | null>(null);
