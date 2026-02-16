@@ -37,7 +37,7 @@ import {
 import { Alert, AlertDescription } from './ui/alert';
 import { ResearchTargetCategory, ResearchTarget } from '../types/research-target';
 import { useBrandAssets } from '../contexts/BrandAssetsContext';
-import { mockPersonas } from '../data/mock-personas';
+import { usePersonas } from '../contexts/PersonasContext';
 import { researchBundles, getBundlesForTarget } from '../data/research-bundles';
 
 interface StrategicResearchPlannerProps {
@@ -218,6 +218,7 @@ const compatibleCombinations = {
 
 export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedPlan }: StrategicResearchPlannerProps) {
   const { brandAssets } = useBrandAssets();
+  const { personas } = usePersonas();
   // Navigation state - Skip target selection, go directly to entry
   const [step, setStep] = useState<'target-selection' | 'entry' | 'tool-selection' | 'asset-selection' | 'review' | 'bundle-selection' | 'plan-confirmation'>(
     preSelectedPlan ? 'plan-confirmation' : 'entry'
@@ -289,7 +290,7 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
     } else if (selectedTarget.category === 'persona') {
       if (selectedTarget.targetId) {
         // Specific persona
-        const persona = mockPersonas.find(p => p.id === selectedTarget.targetId);
+        const persona = personas.find(p => p.id === selectedTarget.targetId);
         return persona ? [{ 
           id: persona.id, 
           name: persona.name, 
@@ -300,7 +301,7 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
         }] : [];
       } else {
         // All personas
-        return mockPersonas.map(persona => ({
+        return personas.map(persona => ({
           id: persona.id,
           name: persona.name,
           description: persona.tagline,
@@ -1330,7 +1331,7 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
                           
                           // If not found, try personas
                           if (!item) {
-                            const persona = mockPersonas.find(p => p.id === itemId);
+                            const persona = personas.find(p => p.id === itemId);
                             if (persona) {
                               ItemIcon = Users;
                               itemName = persona.name;

@@ -42,7 +42,6 @@ import { SmartSuggestionsService } from '../../services/SmartSuggestionsService'
 import { EntityType } from '../../types/relationship';
 import { useBrandAssets } from '../../contexts/BrandAssetsContext';
 import { usePersonas } from '../../contexts/PersonasContext';
-import { mockPersonas } from '../../data/mock-personas';
 import { mockProducts } from '../../data/mock-products';
 import { mockTrends } from '../../data/mock-trends';
 import { mockKnowledge } from '../../data/mock-knowledge';
@@ -356,7 +355,7 @@ export function CampaignStrategyGeneratorDetail({
           };
         }),
         usedPersonas: selectedPersonas.map(id => {
-          const persona = mockPersonas.find(p => p.id === id);
+          const persona = personas.find(p => p.id === id);
           return {
             id,
             name: persona?.name || 'Unknown Persona'
@@ -441,7 +440,7 @@ export function CampaignStrategyGeneratorDetail({
         };
       }),
       usedPersonas: selectedPersonas.map(id => {
-        const persona = mockPersonas.find(p => p.id === id);
+        const persona = personas.find(p => p.id === id);
         return {
           id,
           name: persona?.name || 'Unknown Persona'
@@ -1119,7 +1118,7 @@ export function CampaignStrategyGeneratorDetail({
                     </Button>
                     {selectedPersonas.length > 0 && (
                       <div className="mt-3 space-y-2">
-                        {mockPersonas.filter(p => selectedPersonas.includes(p.id)).map(persona => (
+                        {personas.filter(p => selectedPersonas.includes(p.id)).map(persona => (
                           <div key={persona.id} className="group flex items-center gap-2 p-2.5 rounded-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 border border-purple-200 dark:border-purple-800 hover:border-purple-300 dark:hover:border-purple-700 transition-all">
                             <div className="h-9 w-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-xs font-semibold shrink-0 shadow-sm">
                               {persona.name.split(' ').map(n => n[0]).join('')}
@@ -1941,7 +1940,7 @@ export function CampaignStrategyGeneratorDetail({
           title="Select Target Personas"
           description="Choose personas to target your campaign messaging and channels effectively"
           type="personas"
-          items={mockPersonas.map(p => ({ 
+          items={personas.map(p => ({ 
             id: p.id, 
             name: p.name, 
             subtitle: p.demographics.occupation,

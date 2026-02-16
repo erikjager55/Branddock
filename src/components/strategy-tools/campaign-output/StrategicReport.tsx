@@ -30,7 +30,7 @@ import {
   Info
 } from 'lucide-react';
 import { useBrandAssets } from '../../../contexts/BrandAssetsContext';
-import { mockPersonas } from '../../../data/mock-personas';
+import { usePersonas } from '../../../contexts/PersonasContext';
 import { calculateDecisionStatus, getMethodLabel } from '../../../utils/decision-status-calculator';
 import { DecisionStatusBadge } from '../../decision-status/DecisionStatusBadge';
 
@@ -67,6 +67,7 @@ export function StrategicReport({
   channelBudgets
 }: StrategicReportProps) {
   const { brandAssets } = useBrandAssets();
+  const { personas } = usePersonas();
   const getObjectiveLabel = (value: string) => {
     const labels: Record<string, string> = {
       'brand-awareness': 'Build Brand Awareness',
@@ -139,7 +140,7 @@ export function StrategicReport({
         return asset ? { ...asset, category: 'Brand Asset' as const } : null;
       }).filter(Boolean),
       ...selectedPersonas.map(id => {
-        const persona = mockPersonas.find(p => p.id === id);
+        const persona = personas.find(p => p.id === id);
         return persona ? { ...persona, category: 'Persona' as const, type: persona.name } : null;
       }).filter(Boolean)
     ];

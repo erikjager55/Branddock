@@ -44,7 +44,6 @@ import { AddTrendModal } from './AddTrendModal';
 import { EntityType } from '../../types/relationship';
 import { useBrandAssets } from '../../contexts/BrandAssetsContext';
 import { usePersonas } from '../../contexts/PersonasContext';
-import { mockPersonas } from '../../data/mock-personas';
 import { mockProducts } from '../../data/mock-products';
 import { mockTrends } from '../../data/mock-trends';
 import { mockKnowledge } from '../../data/mock-knowledge';
@@ -679,7 +678,7 @@ export function UniversalStrategyGenerator({
                       {selectedPersonas.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                           {selectedPersonas.map(id => {
-                            const persona = mockPersonas.find(p => p.id === id);
+                            const persona = personas.find(p => p.id === id);
                             return persona ? (
                               <Badge key={id} variant="secondary" className="gap-2">
                                 {persona.name}
@@ -901,7 +900,7 @@ export function UniversalStrategyGenerator({
           title="Select Personas"
           description="Choose target personas to tailor your strategy to the right audience"
           type="personas"
-          items={mockPersonas.map(p => ({ 
+          items={personas.map(p => ({ 
             id: p.id, 
             name: p.name, 
             subtitle: p.role || 'Persona',

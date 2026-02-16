@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { ResearchTargetCategory, ResearchTargetOption, ResearchTarget } from '../types/research-target';
 import { useBrandAssets } from '../contexts/BrandAssetsContext';
-import { mockPersonas } from '../data/mock-personas';
+import { usePersonas } from '../contexts/PersonasContext';
 
 interface ResearchTargetSelectorProps {
   onTargetSelected: (target: ResearchTarget) => void;
@@ -69,6 +69,7 @@ const targetCategories: ResearchTargetOption[] = [
 
 export function ResearchTargetSelector({ onTargetSelected, onBack }: ResearchTargetSelectorProps) {
   const { brandAssets } = useBrandAssets();
+  const { personas } = usePersonas();
   const [selectedCategory, setSelectedCategory] = useState<ResearchTargetCategory | null>(null);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,7 +101,7 @@ export function ResearchTargetSelector({ onTargetSelected, onBack }: ResearchTar
   const renderCategorySelection = () => {
     // Get counts
     const brandAssetsCount = brandAssets.length;
-    const personasCount = mockPersonas.length;
+    const personasCount = personas.length;
 
     return (
       <div className="p-6 h-full overflow-auto">
@@ -220,7 +221,7 @@ export function ResearchTargetSelector({ onTargetSelected, onBack }: ResearchTar
         status: asset.status
       }));
     } else if (selectedCategory === 'persona') {
-      items = mockPersonas.map(persona => ({
+      items = personas.map(persona => ({
         id: persona.id,
         name: persona.name,
         description: persona.tagline,

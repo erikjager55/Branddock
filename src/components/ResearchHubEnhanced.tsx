@@ -40,7 +40,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { useBrandAssets } from '../contexts/BrandAssetsContext';
-import { mockPersonas } from '../data/mock-personas';
+import { usePersonas } from '../contexts/PersonasContext';
 import { ResearchTargetCategory } from '../types/research-target';
 import { DecisionStatusBadge } from './decision-status/DecisionStatusBadge';
 import { calculateDecisionStatus } from '../utils/decision-status-calculator';
@@ -54,6 +54,7 @@ interface ResearchHubEnhancedProps {
 
 export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnhancedProps) {
   const { brandAssets } = useBrandAssets();
+  const { personas } = usePersonas();
 
   const categoryConfig = {
     'brand': {
@@ -76,7 +77,7 @@ export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnh
       color: 'pink',
       colorClasses: 'bg-pink-500/10 text-pink-600 dark:bg-pink-500/20',
       hoverClasses: 'hover:border-pink-300 hover:bg-pink-50/50 dark:hover:bg-pink-950/20',
-      getItems: () => mockPersonas,
+      getItems: () => personas,
       getProgress: (items: any[]) => {
         const validated = items.filter((i: any) => i.status === 'validated').length;
         return (validated / items.length) * 100;
@@ -149,7 +150,7 @@ export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnh
     });
 
     // Count items with each method from personas
-    mockPersonas.forEach(persona => {
+    personas.forEach(persona => {
       const methods = persona.researchMethods || [];
       methods.forEach(method => {
         const methodId = method.type;
@@ -170,11 +171,11 @@ export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnh
   // Calculate overall stats
   const stats = useMemo(() => {
     const brandValidated = brandAssets.filter(a => a.status === 'validated').length;
-    const personaValidated = mockPersonas.filter(p => p.status === 'validated').length;
+    const personaValidated = personas.filter(p => p.status === 'validated').length;
     const totalValidated = brandValidated + personaValidated;
     
     const brandTotal = brandAssets.length;
-    const personaTotal = mockPersonas.length;
+    const personaTotal = personas.length;
     const totalItems = brandTotal + personaTotal;
     
     // Count active research (in-progress methods)
@@ -186,7 +187,7 @@ export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnh
       activeCount += inProgress.length;
       completedCount += completed.length;
     });
-    mockPersonas.forEach(persona => {
+    personas.forEach(persona => {
       const inProgress = persona.researchMethods.filter(m => m.status === 'in-progress');
       const completed = persona.researchMethods.filter(m => m.status === 'completed');
       activeCount += inProgress.length;
@@ -224,7 +225,7 @@ export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnh
     });
 
     // Persona items
-    mockPersonas.forEach(persona => {
+    personas.forEach(persona => {
       const inProgressMethods = persona.researchMethods.filter(m => m.status === 'in-progress');
       inProgressMethods.forEach(method => {
         items.push({
@@ -261,7 +262,7 @@ export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnh
     });
 
     // Personas ready to validate
-    mockPersonas.forEach(persona => {
+    personas.forEach(persona => {
       if (persona.status === 'ready-to-validate') {
         items.push({
           category: 'persona',
@@ -294,7 +295,7 @@ export function ResearchHubEnhanced({ onNavigate, onCreatePlan }: ResearchHubEnh
         categoryLabel: 'Brand Asset',
         icon: Palette
       })),
-      ...mockPersonas.map(persona => ({
+      ...personas.map(persona => ({
         ...persona,
         category: 'persona' as const,
         categoryLabel: 'Persona',
