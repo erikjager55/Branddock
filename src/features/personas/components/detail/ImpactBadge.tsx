@@ -10,7 +10,7 @@ export function ImpactBadge({ impact }: ImpactBadgeProps) {
   const style = IMPACT_BADGES[impact];
 
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${style.bg} ${style.color}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${style.bg} ${style.color} ${style.border}`}>
       {impact} impact
     </span>
   );

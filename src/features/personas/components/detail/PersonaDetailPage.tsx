@@ -15,6 +15,7 @@ import { BehaviorsSection } from './BehaviorsSection';
 import { StrategicImplicationsSection } from './StrategicImplicationsSection';
 import { ResearchMethodsSection } from './ResearchMethodsSection';
 import { ChatWithPersonaModal } from '../chat/ChatWithPersonaModal';
+import { WhatArePersonasPanel } from '../WhatArePersonasPanel';
 
 interface PersonaDetailPageProps {
   personaId: string;
@@ -91,20 +92,25 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
           Back to Personas
         </button>
 
-        {/* Header */}
-        <PersonaDetailHeader persona={persona} />
-
-        {/* Action Bar */}
-        <PersonaActionBar
+        {/* Header (now includes Edit/Regenerate/Lock buttons) */}
+        <PersonaDetailHeader
           persona={persona}
           isEditing={isEditing}
           onEditToggle={() => setEditing(!isEditing)}
           onLockToggle={() => toggleLock.mutate(!persona.isLocked)}
-          onChat={() => setChatModalOpen(true)}
           onRegenerate={() => {}}
+        />
+
+        {/* Action Bar (Duplicate + Chat only) */}
+        <PersonaActionBar
+          persona={persona}
+          onChat={() => setChatModalOpen(true)}
           onDuplicate={handleDuplicate}
           isDuplicating={duplicatePersona.isPending}
         />
+
+        {/* What Are Personas Panel */}
+        <WhatArePersonasPanel />
 
         {/* Stub toast */}
         {stubMessage && (

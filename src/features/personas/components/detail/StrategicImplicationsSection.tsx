@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { TrendingUp, Sparkles } from 'lucide-react';
 import { Button, EmptyState } from '@/components/shared';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
+import { ImpactBadge } from './ImpactBadge';
 
 interface StrategicImplicationsSectionProps {
   persona: PersonaWithMeta;
@@ -29,9 +30,15 @@ export function StrategicImplicationsSection({
   };
 
   return (
-    <section>
-      <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-base font-semibold text-gray-900">Strategic Implications</h2>
+    <section className="rounded-xl border border-gray-200 bg-white p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+            <TrendingUp className="w-5 h-5 text-emerald-600" />
+          </div>
+          <h2 className="text-base font-semibold text-gray-900">Strategic Implications</h2>
+        </div>
+        <ImpactBadge impact="high" />
       </div>
 
       {persona.strategicImplications ? (

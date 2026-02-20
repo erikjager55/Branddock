@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X } from 'lucide-react';
+import { Brain, X } from 'lucide-react';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 import { ImpactBadge } from './ImpactBadge';
 
@@ -36,10 +36,15 @@ export function PsychographicsSection({ persona, isEditing, onUpdate }: Psychogr
   };
 
   return (
-    <section>
-      <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-base font-semibold text-gray-900">Psychographics</h2>
-        <ImpactBadge impact="high" />
+    <section className="rounded-xl border border-gray-200 bg-white p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+            <Brain className="w-5 h-5 text-emerald-600" />
+          </div>
+          <h2 className="text-base font-semibold text-gray-900">Psychographics</h2>
+        </div>
+        <ImpactBadge impact="medium" />
       </div>
 
       <div className="space-y-5">
@@ -139,6 +144,13 @@ export function PsychographicsSection({ persona, isEditing, onUpdate }: Psychogr
             <p className="text-sm text-gray-300 italic">No interests defined</p>
           )}
         </div>
+      </div>
+
+      {/* Counts footer */}
+      <div className="mt-4 pt-4 border-t border-gray-100">
+        <p className="text-xs text-gray-400">
+          {persona.coreValues.length} values &middot; {persona.interests.length} interests
+        </p>
       </div>
     </section>
   );

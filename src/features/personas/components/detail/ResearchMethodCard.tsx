@@ -1,8 +1,8 @@
 'use client';
 
-import { Bot, MessageCircle, ClipboardList, Smartphone, CheckCircle, CheckCircle2 } from 'lucide-react';
+import { Bot, MessageCircle, ClipboardList, Smartphone, CheckCircle2, Plus } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Button, Badge, ProgressBar } from '@/components/shared';
+import { Badge, ProgressBar } from '@/components/shared';
 import type { ResearchMethodSummary } from '../../types/persona.types';
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -31,60 +31,75 @@ interface ResearchMethodCardProps {
 
 export function ResearchMethodCard({ config, method, onStart }: ResearchMethodCardProps) {
   const Icon = ICON_MAP[config.icon] ?? Bot;
+  const isValidated = method.status === 'VALIDATED' || method.status === 'COMPLETED';
+  const isAvailable = method.status === 'AVAILABLE';
 
   return (
-    <div className="border border-gray-200 rounded-xl p-4 flex items-start gap-3">
-      <div className="p-2 rounded-lg bg-gray-50">
-        <Icon className="w-5 h-5 text-gray-500" />
+    <div
+      className={`rounded-xl p-4 flex items-start gap-3 ${
+        isValidated
+          ? 'border border-emerald-200 bg-emerald-50/30'
+          : isAvailable
+            ? 'border border-dashed border-gray-300'
+            : 'border border-gray-200'
+      }`}
+    >
+      <div className={`p-2 rounded-lg ${isValidated ? 'bg-emerald-100' : 'bg-gray-50'}`}>
+        <Icon className={`w-5 h-5 ${isValidated ? 'text-emerald-600' : 'text-gray-500'}`} />
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="text-sm font-semibold text-gray-900">{config.label}</h3>
+          {isValidated && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
+              VALIDATED
+            </span>
+          )}
+          {isAvailable && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-white text-gray-500 border border-gray-300">
+              + AVAILABLE
+            </span>
+          )}
           {config.isFree && (
             <Badge variant="success" size="sm">Free</Badge>
           )}
           {config.isPaid && config.priceLabel && (
-            <Badge variant="info" size="sm">{config.priceLabel}</Badge>
+            <span className="text-xs text-gray-400">{config.priceLabel}</span>
           )}
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
           <span>{config.type}</span>
-          <span>·</span>
+          <span>&middot;</span>
           <span>{config.time}</span>
         </div>
 
-        {method.status === 'AVAILABLE' && (
-          <Button variant="secondary" size="sm" onClick={onStart}>
-            Start
-          </Button>
-        )}
-
         {method.status === 'IN_PROGRESS' && (
-          <div className="space-y-1">
+          <div className="space-y-1 mt-2">
             <ProgressBar value={method.progress} color="emerald" size="sm" />
             <p className="text-xs text-gray-500">{method.progress}% complete</p>
           </div>
         )}
+      </div>
 
-        {method.status === 'COMPLETED' && (
-          <div className="flex items-center gap-1.5 text-emerald-600">
-            <CheckCircle className="w-4 h-4" />
-            <span className="text-xs font-medium">Completed</span>
-            {method.completedAt && (
-              <span className="text-xs text-gray-400 ml-1">
-                {new Date(method.completedAt).toLocaleDateString()}
-              </span>
-            )}
-          </div>
+      {/* Right side action/status */}
+      <div className="flex-shrink-0 flex items-center">
+        {isValidated && (
+          <button className="text-xs font-medium text-emerald-600 hover:text-emerald-700">
+            View Results
+          </button>
         )}
-
-        {method.status === 'VALIDATED' && (
-          <div className="flex items-center gap-1.5 text-blue-600">
-            <CheckCircle2 className="w-4 h-4" />
-            <span className="text-xs font-medium">Validated</span>
-          </div>
+        {isAvailable && (
+          <button
+            onClick={onStart}
+            className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-emerald-600 hover:border-emerald-300 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+        )}
+        {method.status === 'IN_PROGRESS' && (
+          <CheckCircle2 className="w-5 h-5 text-amber-400" />
         )}
       </div>
     </div>

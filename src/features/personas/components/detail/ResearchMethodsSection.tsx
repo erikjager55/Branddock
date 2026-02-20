@@ -1,7 +1,6 @@
 'use client';
 
 import type { PersonaWithMeta } from '../../types/persona.types';
-import { PersonaConfidenceBadge } from '../PersonaConfidenceBadge';
 import { ResearchMethodCard } from './ResearchMethodCard';
 import { PERSONA_RESEARCH_METHODS } from '../../constants/persona-research-methods';
 
@@ -11,14 +10,25 @@ interface ResearchMethodsSectionProps {
 }
 
 export function ResearchMethodsSection({ persona, onStartMethod }: ResearchMethodsSectionProps) {
+  const completedMethods = persona.researchMethods.filter(
+    (m) => m.status === 'COMPLETED' || m.status === 'VALIDATED',
+  ).length;
+
   return (
     <section>
-      <div className="flex items-center gap-3 mb-4">
-        <h2 className="text-base font-semibold text-gray-900">Research & Validation</h2>
-        <PersonaConfidenceBadge percentage={persona.validationPercentage} />
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-base font-semibold text-gray-900">Research & Validation</h2>
+          <p className="text-sm text-gray-500 mt-0.5">
+            Strengthen this persona through evidence-based research
+          </p>
+        </div>
+        <span className="text-sm font-medium text-gray-600">
+          {completedMethods}/4 methods completed
+        </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="space-y-3">
         {PERSONA_RESEARCH_METHODS.map((config) => {
           const methodData = persona.researchMethods.find(
             (m) => m.method === config.method,

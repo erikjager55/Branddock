@@ -30,9 +30,9 @@ export function getConfidenceLevel(percentage: number) {
 
 export const IMPACT_BADGES: Record<
   string,
-  { bg: string; color: string }
+  { bg: string; color: string; border: string }
 > = {
-  high: { bg: 'bg-emerald-50', color: 'text-emerald-700' },
-  medium: { bg: 'bg-amber-50', color: 'text-amber-700' },
-  low: { bg: 'bg-gray-100', color: 'text-gray-600' },
+  high: { bg: 'bg-emerald-50', color: 'text-emerald-700', border: 'border border-emerald-200' },
+  medium: { bg: 'bg-amber-50', color: 'text-amber-700', border: 'border border-amber-200' },
+  low: { bg: 'bg-gray-100', color: 'text-gray-600', border: 'border border-gray-200' },
 };

@@ -104,28 +104,31 @@ export function AIPersonaAnalysisPage({ personaId, onBack }: AIPersonaAnalysisPa
   return (
     <PageShell>
     <div data-testid="persona-ai-analysis" className="space-y-6">
-      {/* Back link */}
-      <button
-        data-testid="analysis-back-link"
-        onClick={onBack}
-        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Persona
-      </button>
+      {/* Back link + Header (hidden when COMPLETED — complete component renders its own) */}
+      {status !== 'COMPLETED' && (
+        <>
+          <button
+            data-testid="analysis-back-link"
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Persona
+          </button>
 
-      {/* Header with AI icon */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
-          <Bot className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">AI Persona Analysis</h1>
-          <p className="text-sm text-muted-foreground">
-            Beantwoord de vragen om je persona te analyseren
-          </p>
-        </div>
-      </div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Bot className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-foreground">AI Persona Analysis</h1>
+              <p className="text-sm text-muted-foreground">
+                Beantwoord de vragen om je persona te analyseren
+              </p>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* State: In Progress */}
       {status !== 'COMPLETED' && status !== 'completing' && (
