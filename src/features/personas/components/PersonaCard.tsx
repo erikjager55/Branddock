@@ -37,26 +37,28 @@ const DEMO_ICONS: Record<string, LucideIcon> = {
   education: GraduationCap,
 };
 
-const METHOD_CONFIG: Record<PersonaResearchMethodType, { icon: LucideIcon; label: string; description: string }> = {
+const METHOD_CONFIG: Record<PersonaResearchMethodType, { icon: LucideIcon; label: string; description: string; priceLabel?: string }> = {
   AI_EXPLORATION: {
     icon: Sparkles,
     label: "AI Exploration",
-    description: "AI-powered persona analysis and insights generation",
+    description: "AI-assisted analysis and ideation for brand strategy",
+    priceLabel: "FREE",
   },
   INTERVIEWS: {
     icon: Mic,
     label: "Interviews",
-    description: "In-depth qualitative interviews with target audience",
+    description: "One-on-one deep-dive interviews with key stakeholders and customers",
   },
   QUESTIONNAIRE: {
     icon: ClipboardList,
     label: "Questionnaire",
-    description: "Quantitative survey to validate persona assumptions",
+    description: "Comprehensive surveys distributed to broader audience for quantitative insights",
+    priceLabel: "From $500",
   },
   USER_TESTING: {
     icon: FlaskConical,
     label: "User Testing",
-    description: "Usability testing sessions with real users",
+    description: "Observe users interacting with product to validate assumptions",
   },
 };
 
@@ -195,15 +197,12 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
           />
         </button>
 
-        {/* Accordion content */}
-        <div
-          className={`overflow-hidden transition-all duration-200 ${
-            isAccordionOpen ? "mt-2 max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-          }`}
-        >
-          <div className="space-y-2">
+        {/* Accordion content — conditional render for reliability */}
+        {isAccordionOpen && (
+          <div className="mt-2 space-y-2">
             {persona.researchMethods.map((m) => {
-              const config = METHOD_CONFIG[m.method];
+              const config = METHOD_CONFIG[m.method as PersonaResearchMethodType];
+              if (!config) return null;
               const MethodIcon = config.icon;
               const isValidated = m.status === "COMPLETED" || m.status === "VALIDATED";
 
@@ -213,7 +212,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
                   className={`rounded-lg p-3 ${
                     isValidated
                       ? "border border-emerald-200 bg-emerald-50/30"
-                      : "border border-dashed border-gray-200"
+                      : "border border-dashed border-gray-300"
                   }`}
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -230,22 +229,34 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
                         <div className="text-xs font-semibold text-gray-900">
                           {config.label}
                         </div>
-                        <div className="mt-0.5 text-xs text-gray-500 line-clamp-1">
+                        <div className="mt-0.5 text-xs text-gray-500 line-clamp-2">
                           {config.description}
                         </div>
                       </div>
                     </div>
-                    <div className="shrink-0">
+                    <div className="shrink-0 flex flex-col items-end gap-1">
                       {isValidated ? (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
-                          <CheckCircle className="h-3 w-3" />
-                          VALIDATED
-                        </span>
+                        <>
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                            <CheckCircle className="h-3 w-3" />
+                            VALIDATED
+                          </span>
+                          <span className="text-[10px] font-medium text-emerald-600 hover:underline cursor-pointer">
+                            View Results
+                          </span>
+                        </>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs text-gray-500">
-                          <Plus className="h-3 w-3" />
-                          AVAILABLE
-                        </span>
+                        <>
+                          <span className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                            <Plus className="h-3 w-3" />
+                            AVAILABLE
+                          </span>
+                          {config.priceLabel && (
+                            <span className="text-[10px] text-gray-400">
+                              {config.priceLabel}
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -253,7 +264,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
               );
             })}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Last updated */}
