@@ -1,5 +1,7 @@
 'use client';
 
+import { Check } from 'lucide-react';
+
 interface PersonaAnalysisProgressBarProps {
   progress: number;
   answeredDimensions: number;
@@ -13,48 +15,60 @@ const DIMENSIONS = [
 ];
 
 export function PersonaAnalysisProgressBar({
-  progress,
   answeredDimensions,
 }: PersonaAnalysisProgressBarProps) {
   return (
-    <div className="space-y-3">
-      {/* Bar */}
-      <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500"
-          style={{ width: `${Math.min(progress, 100)}%` }}
-        />
-      </div>
-
-      {/* Step dots */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-2">
+      {/* Step dots with connecting lines */}
+      <div className="flex items-center">
         {DIMENSIONS.map((label, i) => {
           const isComplete = i < answeredDimensions;
           const isCurrent = i === answeredDimensions;
 
           return (
-            <div key={label} className="flex flex-col items-center gap-1">
-              <div
-                className={`w-3 h-3 rounded-full border-2 transition-colors ${
-                  isComplete
-                    ? 'bg-purple-500 border-purple-500'
-                    : isCurrent
-                      ? 'bg-white border-blue-500'
-                      : 'bg-white border-gray-300'
-                }`}
-              />
-              <span className={`text-[10px] ${isComplete || isCurrent ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>
-                {label}
-              </span>
+            <div key={label} className="flex items-center flex-1 last:flex-none">
+              <div className="flex flex-col items-center gap-1.5">
+                {/* Step circle */}
+                <div
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
+                    isComplete
+                      ? 'bg-emerald-500 text-white'
+                      : isCurrent
+                        ? 'bg-emerald-500 text-white'
+                        : 'border-2 border-gray-300 text-gray-400'
+                  }`}
+                >
+                  {isComplete ? (
+                    <Check className="w-3.5 h-3.5" />
+                  ) : (
+                    <span>{i + 1}</span>
+                  )}
+                </div>
+                {/* Label */}
+                <span
+                  className={`text-[10px] whitespace-nowrap ${
+                    isComplete || isCurrent
+                      ? 'text-foreground font-medium'
+                      : 'text-muted-foreground'
+                  }`}
+                >
+                  {label}
+                </span>
+              </div>
+              {/* Connecting line */}
+              {i < DIMENSIONS.length - 1 && (
+                <div
+                  className={`h-0.5 flex-1 mx-2 mt-[-18px] transition-colors ${
+                    i < answeredDimensions
+                      ? 'bg-emerald-500'
+                      : 'bg-gray-200'
+                  }`}
+                />
+              )}
             </div>
           );
         })}
       </div>
-
-      {/* Label */}
-      <p className="text-xs text-gray-500 text-center">
-        {answeredDimensions} of 4 dimensions analyzed
-      </p>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Bot, Loader2 } from 'lucide-react';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
 import {
@@ -104,22 +104,27 @@ export function AIPersonaAnalysisPage({ personaId, onBack }: AIPersonaAnalysisPa
   return (
     <PageShell>
     <div data-testid="persona-ai-analysis" className="space-y-6">
-      {/* Breadcrumb */}
+      {/* Back link */}
       <button
         data-testid="analysis-back-link"
         onClick={onBack}
-        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to {persona.name}
+        Back to Persona
       </button>
 
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">AI Persona Analysis</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
-          {persona.name} {persona.tagline && `— ${persona.tagline}`}
-        </p>
+      {/* Header with AI icon */}
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
+          <Bot className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h1 className="text-xl font-semibold text-foreground">AI Persona Analysis</h1>
+          <p className="text-sm text-muted-foreground">
+            Beantwoord de vragen om je persona te analyseren
+          </p>
+        </div>
       </div>
 
       {/* State: In Progress */}
@@ -137,6 +142,8 @@ export function AIPersonaAnalysisPage({ personaId, onBack }: AIPersonaAnalysisPa
               onInputChange={setCurrentInput}
               onSubmit={handleSubmit}
               isSubmitting={sendAnswer.isPending}
+              progress={progress}
+              answeredDimensions={answeredDimensions}
             />
           </div>
         </>
@@ -146,7 +153,7 @@ export function AIPersonaAnalysisPage({ personaId, onBack }: AIPersonaAnalysisPa
       {status === 'completing' && (
         <div className="flex flex-col items-center justify-center py-16">
           <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-3" />
-          <p className="text-sm text-gray-500">Completing analysis...</p>
+          <p className="text-sm text-muted-foreground">Completing analysis...</p>
         </div>
       )}
 
