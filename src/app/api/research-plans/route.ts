@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveWorkspaceId } from "@/lib/auth-server";
 import type { ResearchPlanWithMeta, ResearchPlanListResponse } from "@/types/research-plan";
 
-// =============================================================
-// GET /api/research-plans?workspaceId=xxx
-// =============================================================
+// GET /api/research-plans
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const workspaceId = searchParams.get("workspaceId");
+    const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
-      return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
+    const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const where: Record<string, unknown> = { workspaceId };
     if (status) where.status = status;
@@ -51,16 +50,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// =============================================================
 // POST /api/research-plans
-// =============================================================
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { method, entryMode, unlockedMethods, unlockedAssets, rationale, configuration, workspaceId } = body;
+    const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
+    }
 
-    if (!method || !workspaceId) {
-      return NextResponse.json({ error: "method and workspaceId are required" }, { status: 400 });
+    const body = await request.json();
+    const { method, entryMode, unlockedMethods, unlockedAssets, rationale, configuration } = body;
+
+    if (!method) {
+      return NextResponse.json({ error: "method is required" }, { status: 400 });
     }
 
     const plan = await prisma.researchPlan.create({
@@ -82,9 +84,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// =============================================================
 // PATCH /api/research-plans  { id, ...updates }
-// =============================================================
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();

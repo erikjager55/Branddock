@@ -5,7 +5,7 @@
  * Provides CRUD operations and asset-related queries.
  *
  * DATA SOURCE STRATEGIE:
- * 1. Als NEXT_PUBLIC_WORKSPACE_ID is gezet → laad via API + adapter
+ * 1. Als workspace beschikbaar is (via sessie of env fallback) → laad via API + adapter
  * 2. Anders → fallback naar mock data + localStorage
  *
  * Alle downstream componenten ontvangen het bestaande BrandAsset formaat.
@@ -27,6 +27,7 @@ import { logger } from "../utils/logger";
 import { ChangeType } from "../types/change-impact";
 import { fetchBrandAssets } from "../lib/api/brand-assets";
 import { apiAssetsToMockFormat } from "../lib/api/brand-asset-adapter";
+import { useWorkspace } from "../hooks/use-workspace";
 
 interface BrandAssetsContextType {
   brandAssets: BrandAsset[];
@@ -44,6 +45,10 @@ interface BrandAssetsContextType {
   // Data source info
   dataSource: "api" | "mock";
   isLoading: boolean;
+  error: Error | null;
+
+  /** Re-fetch brand assets from the API */
+  refetch: () => void;
 
   // Change tracking callback - set by ChangeImpactContext
   setOnAssetChange: (
@@ -60,9 +65,8 @@ const BrandAssetsContext = createContext<BrandAssetsContextType | undefined>(
   undefined
 );
 
-const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID;
-
 export function BrandAssetsProvider({ children }: { children: ReactNode }) {
+  const { workspaceId, isLoading: wsLoading } = useWorkspace();
   const [brandAssets, setBrandAssets] = useState<BrandAsset[]>(() => {
     // Start met mock data of localStorage; API data wordt async geladen
     const stored = loadFromStorage<BrandAsset[]>(StorageKeys.BRAND_ASSETS, []);
@@ -74,6 +78,7 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
 
   const [dataSource, setDataSource] = useState<"api" | "mock">("mock");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   // Change tracking callback
   const onAssetChangeRef = useRef<
@@ -86,33 +91,37 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
     | undefined
   >(undefined);
 
-  // Fetch from API if workspaceId is configured
+  // Fetch from API when workspace is available (resolved via session)
   useEffect(() => {
-    if (!WORKSPACE_ID) {
-      logger.info("No WORKSPACE_ID configured, using mock data");
+    if (wsLoading) return;
+
+    if (!workspaceId) {
+      logger.info("No workspace available, using mock data");
       return;
     }
 
     let cancelled = false;
     setIsLoading(true);
+    setError(null);
 
-    fetchBrandAssets(WORKSPACE_ID)
+    fetchBrandAssets()
       .then((response) => {
         if (cancelled) return;
 
         const mapped = apiAssetsToMockFormat(response.assets);
         logger.info(
-          `Loaded ${mapped.length} brand assets from API (workspace: ${WORKSPACE_ID})`
+          `Loaded ${mapped.length} brand assets from API (workspace: ${workspaceId})`
         );
 
         setBrandAssets(mapped);
         setDataSource("api");
         setIsLoading(false);
       })
-      .catch((error) => {
+      .catch((err) => {
         if (cancelled) return;
 
-        logger.warn("API fetch failed, keeping current data:", error);
+        logger.warn("API fetch failed, keeping current data:", err);
+        setError(err instanceof Error ? err : new Error(String(err)));
         setIsLoading(false);
         // Blijft op mock/localStorage data
       });
@@ -120,7 +129,7 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [workspaceId, wsLoading]);
 
   // Persist to localStorage (alleen als we op mock data draaien)
   useEffect(() => {
@@ -193,6 +202,24 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
     setBrandAssets((prev) => prev.filter((asset) => asset.id !== id));
   }, []);
 
+  // Refetch brand assets from the API
+  const refetch = useCallback(() => {
+    if (!workspaceId) return;
+    setIsLoading(true);
+    setError(null);
+    fetchBrandAssets()
+      .then((response) => {
+        const mapped = apiAssetsToMockFormat(response.assets);
+        setBrandAssets(mapped);
+        setDataSource("api");
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err : new Error(String(err)));
+        setIsLoading(false);
+      });
+  }, [workspaceId]);
+
   return (
     <BrandAssetsContext.Provider
       value={{
@@ -204,6 +231,8 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
         removeBrandAsset,
         dataSource,
         isLoading,
+        error,
+        refetch,
         setOnAssetChange,
       }}
     >

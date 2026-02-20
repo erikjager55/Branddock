@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveWorkspaceId } from "@/lib/auth-server";
 import type { PurchasedBundleWithMeta, PurchasedBundleListResponse } from "@/types/research-plan";
 
-// =============================================================
-// GET /api/purchased-bundles?workspaceId=xxx
-// =============================================================
-export async function GET(request: NextRequest) {
+// GET /api/purchased-bundles
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const workspaceId = searchParams.get("workspaceId");
+    const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
-      return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
     const dbBundles = await prisma.purchasedBundle.findMany({
@@ -41,16 +39,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// =============================================================
-// POST /api/purchased-bundles  { bundleId, unlockedTools?, workspaceId }
-// =============================================================
+// POST /api/purchased-bundles  { bundleId, unlockedTools? }
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { bundleId, unlockedTools, workspaceId } = body;
+    const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
+    }
 
-    if (!bundleId || !workspaceId) {
-      return NextResponse.json({ error: "bundleId and workspaceId are required" }, { status: 400 });
+    const body = await request.json();
+    const { bundleId, unlockedTools } = body;
+
+    if (!bundleId) {
+      return NextResponse.json({ error: "bundleId is required" }, { status: 400 });
     }
 
     // Upsert: als bundle al gekocht is, skip

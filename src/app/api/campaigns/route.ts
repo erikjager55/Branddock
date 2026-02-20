@@ -1,100 +1,119 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { CampaignWithMeta, CampaignListResponse, CampaignAsset, CampaignDeliverable } from "@/types/campaign";
+import { resolveWorkspaceId } from "@/lib/auth-server";
+import { z } from "zod";
+import { getCampaignStats, CAMPAIGN_LIST_SELECT } from "@/lib/db/queries";
 
-// =============================================================
-// GET /api/campaigns?workspaceId=xxx&status=ready&...
-// =============================================================
+// ---------------------------------------------------------------------------
+// GET /api/campaigns — List campaigns with filters, counts, and stats
+// ---------------------------------------------------------------------------
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const workspaceId = searchParams.get("workspaceId");
+    const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
-      return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const status = searchParams.get("status");
-    const type = searchParams.get("type");
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get("type"); // STRATEGIC | QUICK
+    const status = searchParams.get("status"); // ACTIVE | COMPLETED | ARCHIVED
     const search = searchParams.get("search");
-    const sortBy = searchParams.get("sortBy") ?? "updatedAt";
-    const sortOrder = searchParams.get("sortOrder") ?? "desc";
+    const isArchivedParam = searchParams.get("isArchived");
+    const isArchived = isArchivedParam === "true" ? true : false; // default false
 
-    const where: Record<string, unknown> = { workspaceId };
-    if (status) where.status = status;
+    const where: Record<string, unknown> = { workspaceId, isArchived };
     if (type) where.type = type;
+    if (status) where.status = status;
     if (search) {
       where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { objective: { contains: search, mode: "insensitive" } },
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
       ];
     }
 
-    const orderByMap: Record<string, string> = {
-      name: "name",
-      status: "status",
-      updatedAt: "updatedAt",
-      createdAt: "createdAt",
-    };
-    const orderByField = orderByMap[sortBy] ?? "updatedAt";
-    const orderBy = { [orderByField]: sortOrder === "desc" ? "desc" : "asc" };
+    const dbCampaigns = await prisma.campaign.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      select: CAMPAIGN_LIST_SELECT,
+    });
 
-    const dbCampaigns = await prisma.campaign.findMany({ where, orderBy });
-
-    const campaigns: CampaignWithMeta[] = dbCampaigns.map((c) => ({
+    const campaigns = dbCampaigns.map((c) => ({
       id: c.id,
-      name: c.name,
+      title: c.title,
+      slug: c.slug,
       type: c.type,
       status: c.status,
-      objective: c.objective,
-      budgetMin: c.budgetMin,
-      budgetMax: c.budgetMax,
-      channels: (c.channels as CampaignWithMeta["channels"]) ?? null,
-      assets: (c.assets as unknown as CampaignAsset[]) ?? [],
-      deliverables: (c.deliverables as unknown as CampaignDeliverable[]) ?? [],
-      modifiedBy: c.modifiedBy,
+      confidence: c.confidence,
+      campaignGoalType: c.campaignGoalType,
+      description: c.description,
+      contentType: c.contentType,
+      contentCategory: c.contentCategory,
+      qualityScore: c.qualityScore,
+      isArchived: c.isArchived,
+      startDate: c.startDate?.toISOString() ?? null,
+      endDate: c.endDate?.toISOString() ?? null,
+      createdBy: c.createdBy,
       createdAt: c.createdAt.toISOString(),
       updatedAt: c.updatedAt.toISOString(),
+      knowledgeAssetCount: c._count.knowledgeAssets,
+      deliverableCount: c._count.deliverables,
+      teamMemberCount: c._count.teamMembers,
     }));
 
-    const response: CampaignListResponse = {
-      campaigns,
-      stats: {
-        total: campaigns.length,
-        ready: campaigns.filter((c) => c.status === "ready").length,
-        draft: campaigns.filter((c) => c.status === "draft").length,
-        generating: campaigns.filter((c) => c.status === "generating").length,
-      },
-    };
+    // Stats via count queries (no in-memory filtering)
+    const stats = await getCampaignStats(workspaceId);
 
-    return NextResponse.json(response);
+    return NextResponse.json({ campaigns, stats });
   } catch (error) {
     console.error("[GET /api/campaigns]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-// =============================================================
-// POST /api/campaigns
-// =============================================================
+// ---------------------------------------------------------------------------
+// POST /api/campaigns — Create a new campaign
+// ---------------------------------------------------------------------------
+const createSchema = z.object({
+  title: z.string().min(1, "title is required"),
+  description: z.string().optional(),
+  type: z.enum(["STRATEGIC", "QUICK"]).default("STRATEGIC"),
+  campaignGoalType: z.string().optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, type, objective, budgetMin, budgetMax, channels, assets, deliverables, workspaceId } = body;
-
-    if (!name || !workspaceId) {
-      return NextResponse.json({ error: "name and workspaceId are required" }, { status: 400 });
+    const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
+
+    const body = await request.json();
+    const parsed = createSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten() },
+        { status: 400 },
+      );
+    }
+
+    const { title, description, type, campaignGoalType, startDate, endDate } = parsed.data;
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
 
     const campaign = await prisma.campaign.create({
       data: {
-        name,
-        type: type ?? "campaign-strategy",
-        objective: objective ?? null,
-        budgetMin: budgetMin ?? null,
-        budgetMax: budgetMax ?? null,
-        channels: channels ?? undefined,
-        assets: assets ?? [],
-        deliverables: deliverables ?? [],
+        title,
+        slug: `${slug}-${Date.now()}`,
+        type,
+        status: "ACTIVE",
+        description: description ?? null,
+        campaignGoalType: campaignGoalType ?? null,
+        startDate: startDate ? new Date(startDate) : null,
+        endDate: endDate ? new Date(endDate) : null,
         workspaceId,
       },
     });
@@ -106,26 +125,41 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// =============================================================
-// PATCH /api/campaigns  { id, ...updates }
-// =============================================================
-export async function PATCH(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { id, ...updates } = body;
+// ---------------------------------------------------------------------------
+// DELETE /api/campaigns — Delete a campaign by id in body
+// ---------------------------------------------------------------------------
+const deleteSchema = z.object({
+  id: z.string().min(1, "id is required"),
+});
 
-    if (!id) {
-      return NextResponse.json({ error: "id is required" }, { status: 400 });
+export async function DELETE(request: NextRequest) {
+  try {
+    const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const campaign = await prisma.campaign.update({
-      where: { id },
-      data: updates,
-    });
+    const body = await request.json();
+    const parsed = deleteSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten() },
+        { status: 400 },
+      );
+    }
 
-    return NextResponse.json(campaign);
+    const campaign = await prisma.campaign.findFirst({
+      where: { id: parsed.data.id, workspaceId },
+    });
+    if (!campaign) {
+      return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+    }
+
+    await prisma.campaign.delete({ where: { id: campaign.id } });
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[PATCH /api/campaigns]", error);
+    console.error("[DELETE /api/campaigns]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

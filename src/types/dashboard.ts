@@ -1,14 +1,18 @@
+// =============================================================
+// Dashboard Types (S8)
+// =============================================================
+
 export interface DashboardResponse {
   readiness: {
     percentage: number;
-    breakdown: { ready: number; limited: number; unusable: number };
+    breakdown: { ready: number; needAttention: number; inProgress: number };
   };
   stats: {
-    brandAssets: number;
-    researchStudies: number;
-    personas: number;
-    products: number;
-    marketInsights: number;
+    readyToUse: number;
+    needAttention: number;
+    inProgress: number;
+    activeCampaigns: number;
+    contentCreated: number;
   };
   attention: AttentionItem[];
   recommended: RecommendedAction | null;
@@ -20,11 +24,11 @@ export interface AttentionItem {
   title: string;
   description: string;
   icon: string;
-  iconBg: string;
   iconColor: string;
-  actionType: "fix" | "take_action";
+  actionType: 'fix' | 'take_action';
   actionLabel: string;
   actionHref: string;
+  coveragePercentage: number;
 }
 
 export interface RecommendedAction {
@@ -39,7 +43,7 @@ export interface RecommendedAction {
 export interface CampaignPreviewItem {
   id: string;
   title: string;
-  type: "Strategic" | "Quick";
+  type: 'Strategic' | 'Quick';
   status: string;
   deliverableProgress: number;
 }
@@ -48,10 +52,5 @@ export interface DashboardPreferencesResponse {
   onboardingComplete: boolean;
   dontShowOnboarding: boolean;
   quickStartDismissed: boolean;
-  quickStartItems: {
-    key: string;
-    label: string;
-    completed: boolean;
-    href: string;
-  }[];
+  quickStartItems: { key: string; label: string; completed: boolean; href: string }[];
 }

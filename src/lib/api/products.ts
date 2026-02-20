@@ -31,6 +31,66 @@ export async function fetchProducts(
   return res.json();
 }
 
+// --- ProductPersona types ---
+export interface ProductPersonaLink {
+  id: string;
+  name: string;
+  tagline: string | null;
+  avatarUrl: string | null;
+  occupation: string | null;
+  location: string | null;
+}
+
+/**
+ * Fetch personas linked to a product.
+ */
+export async function fetchProductPersonas(
+  productId: string
+): Promise<{ personas: ProductPersonaLink[] }> {
+  const res = await fetch(`${API_BASE}/${productId}/personas`);
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Failed to fetch product personas (${res.status})`);
+  }
+  return res.json();
+}
+
+/**
+ * Link a persona to a product.
+ */
+export async function linkPersona(
+  productId: string,
+  personaId: string
+): Promise<{ productId: string; personaId: string }> {
+  const res = await fetch(`${API_BASE}/${productId}/personas`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ personaId }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Failed to link persona (${res.status})`);
+  }
+  return res.json();
+}
+
+/**
+ * Unlink a persona from a product.
+ */
+export async function unlinkPersona(
+  productId: string,
+  personaId: string
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${API_BASE}/${productId}/personas/${personaId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Failed to unlink persona (${res.status})`);
+  }
+  return res.json();
+}
+
 /**
  * Create a new product.
  */

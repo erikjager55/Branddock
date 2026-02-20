@@ -455,6 +455,8 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
   };
 
   const handleReset = () => {
+    if (!window.confirm('Weet je zeker dat je deze conversatie wilt resetten?')) return;
+    setMessages([]);
     setInsights([]);
     initializeConversation();
   };
@@ -485,7 +487,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0">
+      <DialogContent className="max-w-5xl h-[92vh] min-h-[600px] p-0 gap-0 flex flex-col overflow-hidden">
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <div className="flex items-start gap-4">
@@ -511,18 +513,18 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
             <div className="flex gap-2">
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={exportConversation}
-                className="flex-shrink-0"
-                title="Export conversatie"
+                className="h-9 w-9 p-0 hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                title="Download conversatie"
               >
                 <Download className="h-4 w-4" />
               </Button>
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={handleReset}
-                className="flex-shrink-0"
+                className="h-9 w-9 p-0 hover:bg-gray-100 text-gray-500 hover:text-gray-700"
                 title="Reset conversatie"
               >
                 <RotateCcw className="h-4 w-4" />
@@ -558,8 +560,8 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
         {/* Main Content */}
         <div className="flex-1 flex min-h-0">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col">
-            <TabsList className="mx-6 mt-3">
-              <TabsTrigger value="chat" className="gap-2">
+            <TabsList className="mx-6 mt-4 mb-0 self-start bg-gray-100/80 gap-1 p-1">
+              <TabsTrigger value="chat" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 <MessageCircle className="h-4 w-4" />
                 Conversation
                 {messages.length > 1 && (
@@ -568,7 +570,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="insights" className="gap-2">
+              <TabsTrigger value="insights" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 <Lightbulb className="h-4 w-4" />
                 Insights
                 {insights.length > 0 && (

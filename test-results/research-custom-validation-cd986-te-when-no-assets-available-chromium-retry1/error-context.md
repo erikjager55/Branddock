@@ -1,0 +1,333 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - button "Branddock Agency Branddock Demo" [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e21]:
+          - generic [ref=e22]: Branddock Agency
+          - generic [ref=e23]: Branddock Demo
+        - img [ref=e24]
+      - navigation "Breadcrumb" [ref=e28]:
+        - button "Dashboard" [ref=e29]:
+          - img [ref=e30]
+          - generic [ref=e33]: Dashboard
+        - img [ref=e34]
+        - button "Research Hub" [ref=e36]:
+          - img [ref=e37]
+          - generic [ref=e39]: Research Hub
+        - img [ref=e40]
+        - generic [ref=e43]: Custom Validation
+      - generic [ref=e44]:
+        - button "Quick Content" [ref=e45]:
+          - img
+          - generic [ref=e46]: Quick Content
+        - button "Search ⌘ + K" [ref=e47]:
+          - img
+          - generic [ref=e48]: Search
+          - generic [ref=e49]:
+            - generic [ref=e50]: ⌘
+            - generic [ref=e51]: +
+            - generic [ref=e52]: K
+        - button "Show Help ?" [ref=e54]:
+          - img
+          - text: Show Help
+          - generic [ref=e55]: "?"
+        - button "Notifications" [ref=e56]:
+          - img
+    - generic [ref=e57]:
+      - generic [ref=e58]:
+        - generic [ref=e60]:
+          - img "Branddock" [ref=e61]
+          - button [ref=e62]:
+            - img
+        - navigation [ref=e63]:
+          - generic [ref=e64]:
+            - heading "WORKSPACE" [level=3] [ref=e66]
+            - button "Overview" [ref=e67]:
+              - img
+              - generic [ref=e68]: Overview
+          - generic [ref=e69]:
+            - heading "STRATEGY" [level=3] [ref=e71]
+            - button "Campaigns" [ref=e72]:
+              - img
+              - generic [ref=e73]: Campaigns
+            - button "Content Library" [ref=e74]:
+              - img
+              - generic [ref=e75]: Content Library
+          - generic [ref=e76]:
+            - heading "KNOWLEDGE" [level=3] [ref=e78]
+            - button "Brand Foundation 3" [ref=e79]:
+              - img
+              - generic [ref=e80]: Brand Foundation
+              - generic [ref=e81]: "3"
+            - button "Business Strategy" [ref=e82]:
+              - img
+              - generic [ref=e83]: Business Strategy
+            - button "Brandstyle" [ref=e84]:
+              - img
+              - generic [ref=e85]: Brandstyle
+            - button "Personas" [ref=e86]:
+              - img
+              - generic [ref=e87]: Personas
+            - button "Products & Services" [ref=e88]:
+              - img
+              - generic [ref=e89]: Products & Services
+            - button "Market Insights" [ref=e90]:
+              - img
+              - generic [ref=e91]: Market Insights
+            - button "Knowledge Library" [ref=e92]:
+              - img
+              - generic [ref=e93]: Knowledge Library
+            - button "Brand Alignment 3" [ref=e94]:
+              - img
+              - generic [ref=e95]: Brand Alignment
+              - generic [ref=e96]: "3"
+          - generic [ref=e97]:
+            - heading "VALIDATION" [level=3] [ref=e99]
+            - button "Research Hub" [ref=e100]:
+              - img
+              - generic [ref=e101]: Research Hub
+            - button "Research Bundles" [ref=e102]:
+              - img
+              - generic [ref=e103]: Research Bundles
+            - button "Custom Validation" [ref=e104]:
+              - img
+              - generic [ref=e105]: Custom Validation
+          - generic [ref=e106]:
+            - button "Settings" [ref=e107]:
+              - generic [ref=e108]:
+                - img
+                - generic [ref=e109]: Settings
+              - img
+            - generic [ref=e110]:
+              - button "Account" [ref=e111]:
+                - img
+                - generic [ref=e112]: Account
+              - button "Team" [ref=e113]:
+                - img
+                - generic [ref=e114]: Team
+              - button "Agency" [ref=e115]:
+                - img
+                - generic [ref=e116]: Agency
+              - button "Clients" [ref=e117]:
+                - img
+                - generic [ref=e118]: Clients
+              - button "Billing & Payments" [ref=e119]:
+                - img
+                - generic [ref=e120]: Billing & Payments
+              - button "Notifications" [ref=e121]:
+                - img
+                - generic [ref=e122]: Notifications
+              - button "Appearance" [ref=e123]:
+                - img
+                - generic [ref=e124]: Appearance
+              - button "Commercial Demo" [ref=e125]:
+                - img
+                - generic [ref=e126]: Commercial Demo
+              - 'button "Demo: Compact Variant NEW" [ref=e127]':
+                - img
+                - generic [ref=e128]: "Demo: Compact Variant"
+                - generic [ref=e129]: NEW
+            - button "Help & Support" [ref=e130]:
+              - img
+              - generic [ref=e131]: Help & Support
+          - generic [ref=e134]:
+            - img [ref=e135]
+            - text: BETA
+      - main [ref=e138]:
+        - generic [ref=e141]:
+          - generic [ref=e144]:
+            - generic [ref=e145]:
+              - img [ref=e147]
+              - generic [ref=e149]:
+                - heading "Custom Validation" [level=1] [ref=e150]
+                - paragraph [ref=e151]: Create your own validation criteria
+            - button "New Plan" [ref=e153]:
+              - img [ref=e154]
+              - text: New Plan
+          - generic [ref=e155]:
+            - generic [ref=e157]:
+              - generic [ref=e158]:
+                - generic [ref=e159]:
+                  - img [ref=e160]
+                  - text: Expert-Led Research
+                - generic [ref=e162]:
+                  - img [ref=e163]
+                  - text: Data-Driven Insights
+                - generic [ref=e164]:
+                  - img [ref=e165]
+                  - text: Actionable Results
+              - generic [ref=e167]:
+                - 'heading "Step 1: Select Assets to Validate" [level=2] [ref=e168]'
+                - generic [ref=e169]:
+                  - button "E2E Grid Verify 1771604167750 PURPOSE 2-3 weeks" [ref=e171] [cursor=pointer]:
+                    - generic [ref=e173]:
+                      - paragraph [ref=e174]: E2E Grid Verify 1771604167750
+                      - paragraph [ref=e175]: PURPOSE
+                      - generic [ref=e178]:
+                        - img [ref=e179]
+                        - text: 2-3 weeks
+                  - button "E2E Long Description Asset PURPOSE 2-3 weeks" [ref=e184] [cursor=pointer]:
+                    - generic [ref=e186]:
+                      - paragraph [ref=e187]: E2E Long Description Asset
+                      - paragraph [ref=e188]: PURPOSE
+                      - generic [ref=e191]:
+                        - img [ref=e192]
+                        - text: 2-3 weeks
+                  - button "Brand \"Test\" <Asset> & Partners PURPOSE 2-3 weeks" [ref=e197] [cursor=pointer]:
+                    - generic [ref=e199]:
+                      - paragraph [ref=e200]: Brand "Test" <Asset> & Partners
+                      - paragraph [ref=e201]: PURPOSE
+                      - generic [ref=e204]:
+                        - img [ref=e205]
+                        - text: 2-3 weeks
+                  - button "E2E Full Asset PURPOSE 2-3 weeks" [ref=e210] [cursor=pointer]:
+                    - generic [ref=e212]:
+                      - paragraph [ref=e213]: E2E Full Asset
+                      - paragraph [ref=e214]: PURPOSE
+                      - generic [ref=e217]:
+                        - img [ref=e218]
+                        - text: 2-3 weeks
+                  - button "E2E Test Asset PURPOSE 2-3 weeks" [ref=e223] [cursor=pointer]:
+                    - generic [ref=e225]:
+                      - paragraph [ref=e226]: E2E Test Asset
+                      - paragraph [ref=e227]: PURPOSE
+                      - generic [ref=e230]:
+                        - img [ref=e231]
+                        - text: 2-3 weeks
+                  - button "Brand Tone & Voice COMMUNICATION 2-3 weeks" [ref=e236] [cursor=pointer]:
+                    - generic [ref=e238]:
+                      - paragraph [ref=e239]: Brand Tone & Voice
+                      - paragraph [ref=e240]: COMMUNICATION
+                      - generic [ref=e243]:
+                        - img [ref=e244]
+                        - text: 2-3 weeks
+              - generic [ref=e248]:
+                - 'heading "Step 2: Choose Validation Methods" [level=2] [ref=e249]'
+                - generic [ref=e250]:
+                  - generic [ref=e251]:
+                    - generic [ref=e252]:
+                      - generic [ref=e253]:
+                        - generic [ref=e254]: AI Exploration
+                        - generic [ref=e255]: FREE
+                      - paragraph [ref=e256]: Automated AI-driven analysis of your brand elements
+                      - generic [ref=e257]:
+                        - img [ref=e258]
+                        - text: "Confidence: Low"
+                    - generic [ref=e261]:
+                      - button [ref=e262]:
+                        - img [ref=e263]
+                      - generic [ref=e264]: "1"
+                      - button [ref=e265]:
+                        - img [ref=e266]
+                  - generic [ref=e267]:
+                    - generic [ref=e268]:
+                      - generic [ref=e269]:
+                        - generic [ref=e270]: Questionnaire
+                        - generic [ref=e271]: $10/response
+                      - paragraph [ref=e272]: Structured surveys to gather quantitative feedback
+                      - generic [ref=e273]:
+                        - img [ref=e274]
+                        - text: "Confidence: Medium"
+                    - generic [ref=e277]:
+                      - button [disabled] [ref=e278]:
+                        - img [ref=e279]
+                      - generic [ref=e280]: "0"
+                      - button [ref=e281]:
+                        - img [ref=e282]
+                  - generic [ref=e283]:
+                    - generic [ref=e284]:
+                      - generic [ref=e285]:
+                        - generic [ref=e286]: 1-on-1 Interviews
+                        - generic [ref=e287]: $80/interview
+                      - paragraph [ref=e288]: In-depth qualitative interviews with target audience
+                      - generic [ref=e289]:
+                        - img [ref=e290]
+                        - text: "Confidence: High"
+                    - generic [ref=e293]:
+                      - button [disabled] [ref=e294]:
+                        - img [ref=e295]
+                      - generic [ref=e296]: "0"
+                      - button [ref=e297]:
+                        - img [ref=e298]
+                  - generic [ref=e299]:
+                    - generic [ref=e300]:
+                      - generic [ref=e301]:
+                        - generic [ref=e302]: Workshop Session
+                        - generic [ref=e303]: $1200/session
+                      - paragraph [ref=e304]: Collaborative workshop sessions with stakeholders
+                      - generic [ref=e305]:
+                        - img [ref=e306]
+                        - text: "Confidence: Medium-High"
+                    - generic [ref=e309]:
+                      - button [disabled] [ref=e310]:
+                        - img [ref=e311]
+                      - generic [ref=e312]: "0"
+                      - button [ref=e313]:
+                        - img [ref=e314]
+            - generic [ref=e317]:
+              - heading "Your Validation Plan" [level=3] [ref=e318]
+              - generic [ref=e319]:
+                - generic [ref=e320]:
+                  - generic [ref=e321]: Assets
+                  - generic [ref=e322]: "0"
+                - paragraph [ref=e323]: No assets selected
+              - generic [ref=e324]:
+                - generic [ref=e325]:
+                  - generic [ref=e326]: Methods
+                  - generic [ref=e327]: "1"
+                - generic [ref=e329]:
+                  - generic [ref=e330]:
+                    - text: AI Exploration
+                    - generic [ref=e331]: 1 x $0
+                  - button [ref=e332]:
+                    - img [ref=e333]
+              - generic [ref=e337]:
+                - generic [ref=e339]:
+                  - generic [ref=e340]: AI Exploration x 1
+                  - generic [ref=e341]: Free
+                - generic [ref=e343]:
+                  - generic [ref=e344]: Total
+                  - generic [ref=e345]: $0
+              - generic [ref=e346]:
+                - button "Start Validation →" [disabled]
+              - paragraph [ref=e347]: Free methods start immediately. Paid methods require payment.
+              - generic [ref=e348]:
+                - img [ref=e349]
+                - text: 100% Satisfaction Guarantee
+  - generic [ref=e351]:
+    - generic [ref=e353]:
+      - generic [ref=e354]:
+        - img [ref=e355]
+        - heading "Notifications" [level=2] [ref=e358]
+      - generic [ref=e359]:
+        - button "Toggle filters" [ref=e360]:
+          - img
+        - button [ref=e361]:
+          - img
+    - generic [ref=e363]:
+      - img [ref=e364]
+      - paragraph [ref=e367]: No notifications
+      - paragraph [ref=e368]: Notifications will appear here as you work
+  - generic [ref=e369]:
+    - generic:
+      - generic:
+        - generic:
+          - img
+          - generic: Support Chat
+        - button:
+          - img
+      - generic:
+        - generic:
+          - img
+          - paragraph: Chat coming soon
+          - paragraph: We're working on live chat support.
+    - button "Open chat" [ref=e370]:
+      - img [ref=e371]
+```

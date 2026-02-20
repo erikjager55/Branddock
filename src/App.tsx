@@ -1,62 +1,88 @@
 import React, { useState, useEffect } from 'react';
-import { Dashboard } from './components/Dashboard';
-import { ResearchDashboard } from './components/ResearchDashboard';
-import { StrategicResearchPlanner } from './components/StrategicResearchPlanner';
-import { ResearchPlansSectionGamified } from './components/ResearchPlansSectionGamified';
-import { ResearchPlansPage } from './components/ResearchPlansPage';
-import { ResearchHubEnhanced } from './components/ResearchHubEnhanced';
-import { PersonasSection } from './components/PersonasSection';
-import { StrategyHubSection } from './components/StrategyHubSection';
-import { RelationshipsPage } from './components/RelationshipsPage';
+
+// ─── Shell components (always rendered, not lazy) ──────────
 import { WorkflowEnhancer } from './components/WorkflowEnhancer';
 import { TopNavigationBar } from './components/TopNavigationBar';
-import { ProductsServices } from './components/ProductsServices';
-import { ProductServiceView } from './components/ProductServiceView';
-import { TrendLibrary } from './components/TrendLibrary';
-import { KnowledgeLibrary } from './components/KnowledgeLibrary';
+import { EnhancedSidebarSimple } from './components/EnhancedSidebarSimple';
+import { ActivityFeed } from './components/ActivityFeed';
+import { FloatingChatWidget } from './features/help/components/FloatingChatWidget';
+import { QuickContentModal } from './features/campaigns/components';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TooltipProvider } from './components/ui/tooltip';
+import { LazyWrapper } from './components/shared';
+
+// ─── Contexts, stores, hooks, utils ────────────────────────
 import { AppProviders, useBrandAssets, useResearchPlan, useUIState } from './contexts';
-import { BrandAssetsViewSimple } from './components/BrandAssetsViewSimple';
-import { EnhancedSidebarSimple } from './components/EnhancedSidebarSimple';
-import { AssetUnlockDetailView } from './components/AssetUnlockDetailView';
-import { TransformativeGoalsDashboard } from './components/TransformativeGoalsDashboard';
-import { SocialRelevancyDashboard } from './components/SocialRelevancyDashboard';
-import { UniversalAssetDashboard } from './components/UniversalAssetDashboard';
+import { useProductsStore } from './features/products/stores/useProductsStore';
+import { useMarketInsightsStore } from './features/market-insights/stores/useMarketInsightsStore';
+import { useBusinessStrategyStore } from './features/business-strategy/stores/useBusinessStrategyStore';
+import { usePersonaDetailStore } from './features/personas/stores/usePersonaDetailStore';
+import { useResearchStore } from './features/research/stores/useResearchStore';
+import { useCampaignStore } from './features/campaigns/stores/useCampaignStore';
+import { useShellStore } from './stores/useShellStore';
 import { getResearchOptionId, ResearchMethodType } from './utils/research-method-helpers';
 import { logger } from './utils/logger';
 import { recentItems } from './services/RecentItemsService';
-import { calculateBrandScore } from './utils/brand-score-calculator';
-import { ActivityFeed } from './components/ActivityFeed';
-import { BrandAsset } from './types/brand-asset';
 import { useBreadcrumbs } from './hooks/useBreadcrumbs';
-import { TemplateLibraryPage } from './components/templates/TemplateLibraryPage';
-import { AgencySettingsPage } from './components/white-label/AgencySettingsPage';
-import { ClientManagementPage } from './components/white-label/ClientManagementPage';
-import { TeamManagementPage } from './components/collaboration/TeamManagementPage';
-import { AccountSettingsPage } from './components/settings/AccountSettingsPage';
-import { NotificationsSettingsPage } from './components/settings/NotificationsSettingsPage';
-import { AppearanceSettingsPage } from './components/settings/AppearanceSettingsPage';
-import { BillingSettingsPage } from './components/settings/BillingSettingsPage';
-import { CommercialDemoPage } from './components/commercial/CommercialDemoPage';
-import { ActiveCampaignsPage } from './components/ActiveCampaignsPage';
-import { NewStrategyPage } from './components/NewStrategyPage';
-import { CampaignWorkspace } from './components/CampaignWorkspace';
-import { ResearchValidationPage } from './components/ResearchValidationPage';
-import { ValidationPlanLandingPage } from './components/ValidationPlanLandingPage';
-import { BundleDetailsPage } from './components/BundleDetailsPage';
-import type { ResearchBundle } from './types/research-bundle';
-import { ValidationMethodDemo } from './components/ValidationMethodDemo';
-import { BrandstyleView } from './components/BrandstyleView';
-import { ComingSoonPage } from './components/shared/ComingSoonPage';
+
+// ─── Lazy-loaded page components ───────────────────────────
+import {
+  DashboardPage,
+  BrandFoundationPage,
+  BrandAssetDetailPage,
+  UniversalAssetDashboard,
+  TransformativeGoalsDashboard,
+  AIBrandAnalysisPage,
+  BrandstyleAnalyzerPage,
+  BrandStyleguidePage,
+  WorkshopPurchasePage,
+  WorkshopSessionPage,
+  WorkshopCompletePage,
+  InterviewsPage,
+  GoldenCirclePage,
+  BusinessStrategyPage,
+  StrategyDetailPage,
+  PersonasPage,
+  CreatePersonaPage,
+  PersonaDetailPage,
+  AIPersonaAnalysisPage,
+  ProductsOverviewPage,
+  ProductAnalyzerPage,
+  ProductDetailPage,
+  MarketInsightsPage,
+  InsightDetailPage,
+  KnowledgeLibraryPage,
+  ResearchHubPage,
+  ResearchBundlesPage,
+  BundleDetailPage,
+  CustomValidationPage,
+  ResearchDashboard,
+  StrategicResearchPlanner,
+  ResearchValidationPage,
+  ActiveCampaignsPage,
+  CampaignDetailPage,
+  QuickContentDetailPage,
+  ContentStudioPage,
+  ContentLibraryPage,
+  CampaignWizardPage,
+  BrandAlignmentPage,
+  SettingsPage,
+  AgencySettingsPage,
+  ClientManagementPage,
+  TeamManagementPage,
+  HelpPage,
+  HelpArticlePage,
+  NewStrategyPage,
+  CommercialDemoPage,
+  ValidationMethodDemo,
+  RelationshipsPage,
+} from './lib/lazy-imports';
 
 function AppContent() {
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [activityOpen, setActivityOpen] = useState(false);
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
-  const [selectedCampaignTab, setSelectedCampaignTab] = useState<'configure' | 'result'>('configure');
-  const [selectedBundle, setSelectedBundle] = useState<ResearchBundle | null>(null);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const { isNotificationPanelOpen, closeNotifications } = useShellStore();
+  // selectedCampaignId now in useCampaignStore
+  // selectedProductId now in useProductsStore
+  const [selectedWorkshopId, setSelectedWorkshopId] = useState<string | null>(null);
   
   // ✨ Use Context Hooks instead of local state
   const {
@@ -141,6 +167,22 @@ function AppContent() {
     }
   }, [activeSection, selectedAssetId, brandAssets]);
 
+  // Expose navigation helpers for E2E testing (development only)
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      (window as unknown as Record<string, unknown>).__testNavigation = {
+        setActiveSection: (section: string) => setActiveSectionRaw(section),
+        setSelectedWorkshopId,
+        setSelectedAssetId,
+      };
+    }
+    return () => {
+      if (process.env.NODE_ENV !== 'production') {
+        delete (window as unknown as Record<string, unknown>).__testNavigation;
+      }
+    };
+  }, [setActiveSectionRaw, setSelectedAssetId]);
+
   // Wrapper for setActiveSection to reset asset states when needed
   const handleSetActiveSection = (section: string) => {
     setActiveSectionRaw(section);
@@ -163,6 +205,11 @@ function AppContent() {
     setSelectedResearchOption(null); // Reset research option when switching assets
     setViewingAssetResults(true); // Show asset results by default
     setActiveSectionRaw(`brand-${assetId}`);
+  };
+
+  const handleNavigateAssetDetail = (assetId: string) => {
+    setSelectedAssetId(assetId);
+    handleSetActiveSection('brand-asset-detail');
   };
 
   const handleNavigateAssetResults = (assetId: string) => {
@@ -336,33 +383,58 @@ function AppContent() {
 
     switch (activeSection) {
       case 'dashboard':
-        return (
-          <Dashboard 
-            onStartResearch={() => setShowApproachSelection(true)}
-            onNavigate={(url) => {
-              // Handle URL navigation
-              logger.navigation('Navigating from Dashboard', { url });
-              handleSetActiveSection('strategy');
-            }}
-          />
-        );
+        return <DashboardPage onNavigate={handleSetActiveSection} />;
       case 'research':
+      case 'research-hub':
         return (
-          <ResearchHubEnhanced 
+          <ResearchHubPage
             onNavigate={handleSetActiveSection}
-            onCreatePlan={() => setShowApproachSelection(true)}
           />
         );
       case 'brand':
-        return <BrandAssetsViewSimple 
-          onAssetClick={handleNavigateAsset}
+        return <BrandFoundationPage
+          onAssetClick={handleNavigateAssetDetail}
           onNavigateToResearchMethod={handleNavigateToResearchMethod}
           onNavigate={handleSetActiveSection}
         />;
+
+      case 'brand-asset-detail':
+        return (
+          <BrandAssetDetailPage
+            assetId={selectedAssetId}
+            onNavigateBack={() => handleSetActiveSection('brand')}
+            onNavigateToAnalysis={(assetId) => {
+              setSelectedAssetId(assetId);
+              handleSetActiveSection('ai-brand-analysis');
+            }}
+            onNavigateToInterviews={(assetId) => {
+              setSelectedAssetId(assetId);
+              handleSetActiveSection('interviews');
+            }}
+            onNavigateToWorkshop={(assetId) => {
+              setSelectedAssetId(assetId);
+              handleSetActiveSection('workshop-purchase');
+            }}
+            onNavigateToGoldenCircle={(assetId) => {
+              setSelectedAssetId(assetId);
+              handleSetActiveSection('golden-circle');
+            }}
+          />
+        );
       
-      // 🎨 NEW: Brandstyle Analyzer
+      // 🎨 Brandstyle Analyzer + Styleguide
       case 'brandstyle':
-        return <BrandstyleView />;
+        return (
+          <BrandstyleAnalyzerPage
+            onNavigateToGuide={() => handleSetActiveSection('brandstyle-guide')}
+          />
+        );
+      case 'brandstyle-guide':
+        return (
+          <BrandStyleguidePage
+            onNavigateToAnalyzer={() => handleSetActiveSection('brandstyle')}
+          />
+        );
       
       // 🆕 NEW: Asset Unlock Detail View (Design Demo)
       case 'asset-unlock-demo':
@@ -374,116 +446,205 @@ function AppContent() {
           }}
         />;
       
-      case 'risks-priorities':
-      case 'research-plans': // Keep for backwards compatibility
-      case 'research-bundles': // New route for research bundles
+      case 'research-bundles':
         return (
-          <ResearchPlansPage 
-            onSelectBundle={(bundle) => {
-              logger.navigation('Bundle selected', { bundleId: bundle.id });
-              // Handle bundle selection - could navigate to payment or bundle details
-              setSelectedBundle(bundle);
-              handleSetActiveSection('bundle-details');
-            }}
-            onNavigateToCustomValidation={() => {
-              logger.navigation('Navigating to custom validation');
-              handleSetActiveSection('custom-validation');
+          <ResearchBundlesPage
+            onNavigate={handleSetActiveSection}
+            onNavigateToDetail={(bundleId) => {
+              useResearchStore.getState().setSelectedBundleId(bundleId);
+              handleSetActiveSection('research-bundle-detail');
             }}
           />
         );
-      case 'custom-validation': // New route for custom validation
-        return (
-          <ValidationPlanLandingPage
-            onBack={() => handleSetActiveSection('research-bundles')}
-            onStartPlan={(selectedAssets, selectedMethods) => {
-              logger.navigation('Custom validation plan started', { 
-                assetsCount: selectedAssets.length,
-                methodsCount: selectedMethods.length 
-              });
-              // Handle starting custom validation plan
-              handleSetActiveSection('research');
-            }}
-          />
-        );
-      case 'bundle-details': // New route for bundle details
-        if (!selectedBundle) {
+      case 'research-bundle-detail': {
+        const selectedBundleId = useResearchStore.getState().selectedBundleId;
+        if (!selectedBundleId) {
           handleSetActiveSection('research-bundles');
           return null;
         }
         return (
-          <BundleDetailsPage
-            bundle={selectedBundle}
-            onBack={() => {
-              setSelectedBundle(null);
-              handleSetActiveSection('research-bundles');
-            }}
-            onStartPlan={(selectedAssets, selectedMethods) => {
-              logger.navigation('Bundle plan started', { 
-                bundleId: selectedBundle.id,
-                assetsCount: selectedAssets.length,
-                methodsCount: selectedMethods.length 
-              });
-              // Handle starting bundle plan
-              handleSetActiveSection('research');
-            }}
+          <BundleDetailPage
+            bundleId={selectedBundleId}
+            onBack={() => handleSetActiveSection('research-bundles')}
+            onNavigate={handleSetActiveSection}
+          />
+        );
+      }
+      case 'research-custom':
+      case 'custom-validation':
+        return (
+          <CustomValidationPage
+            onBack={() => handleSetActiveSection('research-hub')}
+            onNavigate={handleSetActiveSection}
           />
         );
       case 'products':
-        return <ProductsServices onNavigate={(section, productId) => {
-          if (section === 'product-detail' && productId) {
-            setSelectedProductId(productId);
-            handleSetActiveSection('product-detail');
-          } else {
-            handleSetActiveSection(section);
-          }
-        }} />;
+        return (
+          <ProductsOverviewPage
+            onNavigateToAnalyzer={() => handleSetActiveSection('product-analyzer')}
+            onNavigateToDetail={(id) => {
+              useProductsStore.getState().setSelectedProductId(id);
+              handleSetActiveSection('product-detail');
+            }}
+          />
+        );
       case 'product-analyzer':
-        return <ProductServiceView />;
-      case 'product-detail':
-        if (!selectedProductId) {
+        return (
+          <ProductAnalyzerPage
+            onBack={() => handleSetActiveSection('products')}
+            onNavigateToDetail={(id) => {
+              useProductsStore.getState().setSelectedProductId(id);
+              handleSetActiveSection('product-detail');
+            }}
+          />
+        );
+      case 'product-detail': {
+        const pdProductId = useProductsStore.getState().selectedProductId;
+        if (!pdProductId) {
           handleSetActiveSection('products');
           return null;
         }
         return (
-          <ProductServiceView 
-            productId={selectedProductId}
-            onBack={() => {
-              setSelectedProductId(null);
-              handleSetActiveSection('products');
+          <ProductDetailPage
+            productId={pdProductId}
+            onBack={() => handleSetActiveSection('products')}
+          />
+        );
+      }
+      case 'personas':
+        return (
+          <PersonasPage
+            onNavigateToDetail={(personaId) => {
+              usePersonaDetailStore.getState().setSelectedPersonaId(personaId);
+              handleSetActiveSection('persona-detail');
+            }}
+            onNavigateToCreate={() => handleSetActiveSection('persona-create')}
+            onOpenChat={(persona) => {
+              usePersonaDetailStore.getState().setSelectedPersonaId(persona.id);
+              usePersonaDetailStore.getState().setChatModalOpen(true);
+              handleSetActiveSection('persona-detail');
             }}
           />
         );
-      case 'personas':
-        return <PersonasSection onNavigate={handleSetActiveSection} />;
+      case 'persona-create':
+        return (
+          <CreatePersonaPage
+            onBack={() => handleSetActiveSection('personas')}
+            onCreated={(personaId) => {
+              usePersonaDetailStore.getState().setSelectedPersonaId(personaId);
+              handleSetActiveSection('persona-detail');
+            }}
+          />
+        );
+      case 'persona-detail': {
+        const pdPersonaId = usePersonaDetailStore.getState().selectedPersonaId;
+        if (!pdPersonaId) {
+          handleSetActiveSection('personas');
+          return null;
+        }
+        return (
+          <PersonaDetailPage
+            personaId={pdPersonaId}
+            onBack={() => handleSetActiveSection('personas')}
+            onNavigateToAnalysis={() => handleSetActiveSection('persona-ai-analysis')}
+          />
+        );
+      }
+      case 'persona-ai-analysis': {
+        const paPersonaId = usePersonaDetailStore.getState().selectedPersonaId;
+        if (!paPersonaId) {
+          handleSetActiveSection('personas');
+          return null;
+        }
+        return (
+          <AIPersonaAnalysisPage
+            personaId={paPersonaId}
+            onBack={() => handleSetActiveSection('persona-detail')}
+          />
+        );
+      }
       case 'strategy':
       case 'new-strategy':
         return <NewStrategyPage />;
       case 'active-campaigns':
-        return <ActiveCampaignsPage onNavigateToCampaign={(campaignId, tab = 'result') => {
-          setSelectedCampaignId(campaignId);
-          setSelectedCampaignTab(tab);
-          handleSetActiveSection('campaign-workspace');
-        }} />;
-      case 'campaign-workspace':
-        if (!selectedCampaignId) {
+        return (
+          <ActiveCampaignsPage
+            onNavigateToCampaign={(campaignId) => {
+              useCampaignStore.getState().setSelectedCampaignId(campaignId);
+              handleSetActiveSection('campaign-detail');
+            }}
+            onNavigateToQuickDetail={(campaignId) => {
+              useCampaignStore.getState().setSelectedCampaignId(campaignId);
+              handleSetActiveSection('quick-content-detail');
+            }}
+            onNavigateToWizard={() => handleSetActiveSection('campaign-wizard')}
+          />
+        );
+      case 'campaign-detail': {
+        const cdCampaignId = useCampaignStore.getState().selectedCampaignId;
+        if (!cdCampaignId) {
           handleSetActiveSection('active-campaigns');
           return null;
         }
         return (
-          <CampaignWorkspace 
-            campaignId={selectedCampaignId} 
-            initialTab={selectedCampaignTab}
+          <CampaignDetailPage
+            campaignId={cdCampaignId}
             onBack={() => {
-              setSelectedCampaignId(null);
-              setSelectedCampaignTab('configure');
+              useCampaignStore.getState().setSelectedCampaignId(null);
               handleSetActiveSection('active-campaigns');
-            }} 
+            }}
+            onOpenInStudio={(campaignId, deliverableId) => {
+              useCampaignStore.getState().setSelectedCampaignId(campaignId);
+              useCampaignStore.getState().setSelectedDeliverableId(deliverableId);
+              handleSetActiveSection('content-studio');
+            }}
           />
         );
+      }
+      case 'quick-content-detail': {
+        const qcCampaignId = useCampaignStore.getState().selectedCampaignId;
+        if (!qcCampaignId) {
+          handleSetActiveSection('active-campaigns');
+          return null;
+        }
+        return (
+          <QuickContentDetailPage
+            campaignId={qcCampaignId}
+            onBack={() => {
+              useCampaignStore.getState().setSelectedCampaignId(null);
+              handleSetActiveSection('active-campaigns');
+            }}
+            onConverted={(campaignId) => {
+              useCampaignStore.getState().setSelectedCampaignId(campaignId);
+              handleSetActiveSection('campaign-detail');
+            }}
+          />
+        );
+      }
       case 'trends':
-        return <TrendLibrary />;
+        return (
+          <MarketInsightsPage
+            onNavigateToDetail={(id: string) => {
+              useMarketInsightsStore.getState().setSelectedInsightId(id);
+              handleSetActiveSection('insight-detail');
+            }}
+          />
+        );
+      case 'insight-detail': {
+        const selectedInsightId = useMarketInsightsStore.getState().selectedInsightId;
+        if (!selectedInsightId) return <MarketInsightsPage onNavigateToDetail={(id: string) => {
+          useMarketInsightsStore.getState().setSelectedInsightId(id);
+          handleSetActiveSection('insight-detail');
+        }} />;
+        return (
+          <InsightDetailPage
+            insightId={selectedInsightId}
+            onBack={() => handleSetActiveSection('trends')}
+          />
+        );
+      }
       case 'knowledge':
-        return <KnowledgeLibrary />;
+        return <KnowledgeLibraryPage />;
       case 'research-validation':
         return <ResearchValidationPage />;
       
@@ -503,27 +664,23 @@ function AppContent() {
       case 'team':
         return <TeamManagementPage />;
       
-      // ⚙️ Settings Subsections
+      // ⚙️ Settings — unified SettingsPage with tab routing
       case 'settings-account':
-        return <AccountSettingsPage />;
-      
+        return <SettingsPage initialTab="account" />;
       case 'settings-team':
-        return <TeamManagementPage />;
-      
+        return <SettingsPage initialTab="team" />;
+      case 'settings-billing':
+        return <SettingsPage initialTab="billing" />;
+      case 'settings-notifications':
+        return <SettingsPage initialTab="notifications" />;
+      case 'settings-appearance':
+        return <SettingsPage initialTab="appearance" />;
+
       case 'settings-agency':
         return <AgencySettingsPage />;
-      
+
       case 'settings-clients':
         return <ClientManagementPage />;
-      
-      case 'settings-notifications':
-        return <NotificationsSettingsPage />;
-      
-      case 'settings-appearance':
-        return <AppearanceSettingsPage />;
-      
-      case 'settings-billing':
-        return <BillingSettingsPage />;
       
       // 🆕 NEW: Commercial Demo
       case 'commercial-demo':
@@ -536,19 +693,157 @@ function AppContent() {
       
       // Coming Soon pages
       case 'help':
-        return <ComingSoonPage sectionId="help" onBack={() => handleSetActiveSection('dashboard')} />;
+        return <HelpPage />;
+
+      case 'help-article':
+        return <HelpArticlePage onNavigate={handleSetActiveSection} />;
 
       case 'business-strategy':
-        return <ComingSoonPage sectionId="business-strategy" onBack={() => handleSetActiveSection('dashboard')} />;
+        return (
+          <BusinessStrategyPage
+            onNavigateToDetail={(strategyId) => {
+              useBusinessStrategyStore.getState().setSelectedStrategyId(strategyId);
+              handleSetActiveSection('strategy-detail');
+            }}
+          />
+        );
+
+      case 'strategy-detail': {
+        const { selectedStrategyId } = useBusinessStrategyStore.getState();
+        return (
+          <StrategyDetailPage
+            strategyId={selectedStrategyId ?? ''}
+            onNavigateBack={() => handleSetActiveSection('business-strategy')}
+          />
+        );
+      }
 
       case 'brand-alignment':
-        return <ComingSoonPage sectionId="brand-alignment" onBack={() => handleSetActiveSection('brand')} />;
+        return <BrandAlignmentPage />;
+
+      case 'ai-brand-analysis':
+        return (
+          <AIBrandAnalysisPage
+            assetId={selectedAssetId ?? ''}
+            assetName={selectedAssetId ? getBrandAsset(selectedAssetId)?.title : undefined}
+            onBack={() => {
+              if (selectedAssetId) {
+                handleNavigateAssetDetail(selectedAssetId);
+              } else {
+                handleSetActiveSection('brand');
+              }
+            }}
+          />
+        );
+
+      case 'workshop-purchase':
+        return (
+          <WorkshopPurchasePage
+            assetId={selectedAssetId ?? ''}
+            onNavigateBack={() => {
+              if (selectedAssetId) {
+                handleNavigateAssetDetail(selectedAssetId);
+              } else {
+                handleSetActiveSection('brand');
+              }
+            }}
+            onPurchased={(workshopId) => {
+              setSelectedWorkshopId(workshopId);
+              handleSetActiveSection('workshop-session');
+            }}
+          />
+        );
+
+      case 'workshop-session':
+        return (
+          <WorkshopSessionPage
+            workshopId={selectedWorkshopId ?? ''}
+            onBack={() => {
+              if (selectedAssetId) {
+                handleNavigateAssetDetail(selectedAssetId);
+              } else {
+                handleSetActiveSection('brand');
+              }
+            }}
+            onComplete={(workshopId) => {
+              setSelectedWorkshopId(workshopId);
+              handleSetActiveSection('workshop-results');
+            }}
+          />
+        );
+
+      case 'workshop-results':
+        return (
+          <WorkshopCompletePage
+            workshopId={selectedWorkshopId ?? ''}
+            onBack={() => {
+              if (selectedAssetId) {
+                handleNavigateAssetDetail(selectedAssetId);
+              } else {
+                handleSetActiveSection('brand');
+              }
+            }}
+            onOpenInGoldenCircle={selectedAssetId ? () => {
+              handleSetActiveSection('golden-circle');
+            } : undefined}
+          />
+        );
+
+      case 'interviews':
+        return (
+          <InterviewsPage
+            assetId={selectedAssetId ?? ''}
+            onBack={() => {
+              if (selectedAssetId) {
+                handleNavigateAssetDetail(selectedAssetId);
+              } else {
+                handleSetActiveSection('brand');
+              }
+            }}
+          />
+        );
+
+      case 'golden-circle':
+        return (
+          <GoldenCirclePage
+            assetId={selectedAssetId ?? ''}
+            onBack={() => {
+              if (selectedAssetId) {
+                handleNavigateAssetDetail(selectedAssetId);
+              } else {
+                handleSetActiveSection('brand');
+              }
+            }}
+          />
+        );
+
+      case 'content-studio': {
+        const csCampaignId = useCampaignStore.getState().selectedCampaignId;
+        const csDeliverableId = useCampaignStore.getState().selectedDeliverableId;
+        if (!csCampaignId || !csDeliverableId) {
+          handleSetActiveSection('active-campaigns');
+          return null;
+        }
+        return (
+          <ContentStudioPage
+            deliverableId={csDeliverableId}
+            campaignId={csCampaignId}
+            onBack={() => {
+              useCampaignStore.getState().setSelectedDeliverableId(null);
+              handleSetActiveSection('campaign-detail');
+            }}
+          />
+        );
+      }
 
       case 'content-library':
-        return <ComingSoonPage sectionId="content-library" onBack={() => handleSetActiveSection('active-campaigns')} />;
+        return <ContentLibraryPage onNavigate={handleSetActiveSection} />;
+
+      case 'campaign-wizard':
+        return <CampaignWizardPage onNavigate={handleSetActiveSection} />;
 
       default:
-        return <Dashboard onStartResearch={() => setShowApproachSelection(true)} />;
+        return <DashboardPage onNavigate={handleSetActiveSection} />;
     }
   };
 
@@ -558,24 +853,19 @@ function AppContent() {
       onAction={(actionId) => {
         logger.interaction('Quick action executed', { actionId });
       }}
-      searchOpen={searchOpen}
-      setSearchOpen={setSearchOpen}
-      activityOpen={activityOpen}
-      setActivityOpen={setActivityOpen}
     >
       <div className="flex flex-col h-screen bg-background">
         {/* Top Navigation */}
         <TopNavigationBar
           breadcrumbs={breadcrumbs}
           onNavigate={handleSetActiveSection}
-          onSearchClick={() => setSearchOpen(true)}
-          onActivityClick={() => setActivityOpen(true)}
+          onQuickContent={() => useCampaignStore.getState().openQuickModal()}
         />
 
         {/* Main Layout */}
         <div className="flex flex-1 overflow-hidden">
-          <EnhancedSidebarSimple 
-            activeSection={activeSection} 
+          <EnhancedSidebarSimple
+            activeSection={activeSection}
             setActiveSection={handleSetActiveSection}
             onAssetClick={handleNavigateAsset}
             onMethodClick={(assetId, methodType) => handleNavigateToResearchMethod(assetId, methodType, 'work')}
@@ -583,20 +873,31 @@ function AppContent() {
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           />
           <main className="flex-1 overflow-y-auto bg-background">
-            {renderContent()}
+            <LazyWrapper>
+              {renderContent()}
+            </LazyWrapper>
           </main>
         </div>
       </div>
 
       {/* Activity Feed Modal */}
       <ActivityFeed
-        isOpen={activityOpen}
-        onClose={() => setActivityOpen(false)}
-        onNavigate={(route, metadata) => {
+        isOpen={isNotificationPanelOpen}
+        onClose={() => closeNotifications()}
+        onNavigate={(route: string) => {
           handleSetActiveSection(route);
-          setActivityOpen(false);
+          closeNotifications();
         }}
       />
+
+      {/* Quick Content Modal (global — opened from header) */}
+      <QuickContentModal
+        onCreated={(campaignId) => {
+          useCampaignStore.getState().setSelectedCampaignId(campaignId);
+          handleSetActiveSection('quick-content-detail');
+        }}
+      />
+      <FloatingChatWidget />
     </WorkflowEnhancer>
   );
 }

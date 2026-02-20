@@ -14,19 +14,20 @@ export const brandAssetKeys = {
 };
 
 /**
- * Hook: haal brand assets op voor een workspace met optionele filters.
+ * Hook: haal brand assets op met optionele filters.
+ * workspaceId wordt alleen gebruikt als cache key; server resolvet workspace via sessie.
  *
  * Gebruik:
- *   const { data, isLoading, error } = useBrandAssets(workspaceId);
- *   const { data } = useBrandAssets(workspaceId, { category: "STRATEGY" });
+ *   const { data, isLoading, error } = useBrandAssetsQuery(workspaceId);
+ *   const { data } = useBrandAssetsQuery(workspaceId, { category: "STRATEGY" });
  */
-export function useBrandAssets(
+export function useBrandAssetsQuery(
   workspaceId: string | undefined,
   params?: BrandAssetListParams
 ) {
   return useQuery<BrandAssetListResponse>({
     queryKey: brandAssetKeys.list(workspaceId ?? "", params),
-    queryFn: () => fetchBrandAssets(workspaceId!, params),
+    queryFn: () => fetchBrandAssets(params),
     enabled: !!workspaceId,
     staleTime: 30_000, // 30s — brand assets wijzigen niet vaak
   });
@@ -37,17 +38,16 @@ export function useBrandAssets(
  * Invalidate automatisch de lijst-cache na succes.
  *
  * Gebruik:
- *   const { mutate, isPending } = useCreateBrandAsset(workspaceId);
+ *   const { mutate, isPending } = useCreateBrandAsset();
  *   mutate({ name: "Brand Promise", category: "STRATEGY" });
  */
-export function useCreateBrandAsset(workspaceId: string) {
+export function useCreateBrandAsset() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (body: CreateBrandAssetBody) =>
-      createBrandAsset(workspaceId, body),
+      createBrandAsset(body),
     onSuccess: () => {
-      // Invalidate all brand asset lists for this workspace
       queryClient.invalidateQueries({
         queryKey: brandAssetKeys.all,
       });

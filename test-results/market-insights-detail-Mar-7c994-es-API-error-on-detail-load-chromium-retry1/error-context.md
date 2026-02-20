@@ -1,0 +1,161 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - button "Branddock Agency" [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e22]: Branddock Agency
+        - img [ref=e23]
+      - generic [ref=e26]:
+        - button "Quick Content" [ref=e27]:
+          - img
+          - generic [ref=e28]: Quick Content
+        - button "Search ⌘ + K" [ref=e29]:
+          - img
+          - generic [ref=e30]: Search
+          - generic [ref=e31]:
+            - generic [ref=e32]: ⌘
+            - generic [ref=e33]: +
+            - generic [ref=e34]: K
+        - button "Show Help ?" [ref=e36]:
+          - img
+          - text: Show Help
+          - generic [ref=e37]: "?"
+        - button "Notifications" [ref=e38]:
+          - img
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - generic [ref=e42]:
+          - img "Branddock" [ref=e43]
+          - button [ref=e44]:
+            - img
+        - navigation [ref=e45]:
+          - generic [ref=e46]:
+            - heading "WORKSPACE" [level=3] [ref=e48]
+            - button "Overview" [ref=e49]:
+              - img
+              - generic [ref=e50]: Overview
+          - generic [ref=e51]:
+            - heading "STRATEGY" [level=3] [ref=e53]
+            - button "Campaigns" [ref=e54]:
+              - img
+              - generic [ref=e55]: Campaigns
+            - button "Content Library" [ref=e56]:
+              - img
+              - generic [ref=e57]: Content Library
+          - generic [ref=e58]:
+            - heading "KNOWLEDGE" [level=3] [ref=e60]
+            - button "Brand Foundation 3" [ref=e61]:
+              - img
+              - generic [ref=e62]: Brand Foundation
+              - generic [ref=e63]: "3"
+            - button "Business Strategy" [ref=e64]:
+              - img
+              - generic [ref=e65]: Business Strategy
+            - button "Brandstyle" [ref=e66]:
+              - img
+              - generic [ref=e67]: Brandstyle
+            - button "Personas" [ref=e68]:
+              - img
+              - generic [ref=e69]: Personas
+            - button "Products & Services" [ref=e70]:
+              - img
+              - generic [ref=e71]: Products & Services
+            - button "Market Insights" [ref=e72]:
+              - img
+              - generic [ref=e73]: Market Insights
+            - button "Knowledge Library" [ref=e74]:
+              - img
+              - generic [ref=e75]: Knowledge Library
+            - button "Brand Alignment 3" [ref=e76]:
+              - img
+              - generic [ref=e77]: Brand Alignment
+              - generic [ref=e78]: "3"
+          - generic [ref=e79]:
+            - heading "VALIDATION" [level=3] [ref=e81]
+            - button "Research Hub" [ref=e82]:
+              - img
+              - generic [ref=e83]: Research Hub
+            - button "Research Bundles" [ref=e84]:
+              - img
+              - generic [ref=e85]: Research Bundles
+            - button "Custom Validation" [ref=e86]:
+              - img
+              - generic [ref=e87]: Custom Validation
+          - generic [ref=e88]:
+            - button "Settings" [ref=e89]:
+              - generic [ref=e90]:
+                - img
+                - generic [ref=e91]: Settings
+              - img
+            - generic [ref=e92]:
+              - button "Account" [ref=e93]:
+                - img
+                - generic [ref=e94]: Account
+              - button "Team" [ref=e95]:
+                - img
+                - generic [ref=e96]: Team
+              - button "Agency" [ref=e97]:
+                - img
+                - generic [ref=e98]: Agency
+              - button "Clients" [ref=e99]:
+                - img
+                - generic [ref=e100]: Clients
+              - button "Billing & Payments" [ref=e101]:
+                - img
+                - generic [ref=e102]: Billing & Payments
+              - button "Notifications" [ref=e103]:
+                - img
+                - generic [ref=e104]: Notifications
+              - button "Appearance" [ref=e105]:
+                - img
+                - generic [ref=e106]: Appearance
+              - button "Commercial Demo" [ref=e107]:
+                - img
+                - generic [ref=e108]: Commercial Demo
+              - 'button "Demo: Compact Variant NEW" [ref=e109]':
+                - img
+                - generic [ref=e110]: "Demo: Compact Variant"
+                - generic [ref=e111]: NEW
+            - button "Help & Support" [ref=e112]:
+              - img
+              - generic [ref=e113]: Help & Support
+          - generic [ref=e116]:
+            - img [ref=e117]
+            - text: BETA
+      - main [ref=e120]
+  - generic [ref=e130]:
+    - generic [ref=e132]:
+      - generic [ref=e133]:
+        - img [ref=e134]
+        - heading "Notifications" [level=2] [ref=e137]
+      - generic [ref=e138]:
+        - button "Toggle filters" [ref=e139]:
+          - img
+        - button [ref=e140]:
+          - img
+    - generic [ref=e142]:
+      - img [ref=e143]
+      - paragraph [ref=e146]: No notifications
+      - paragraph [ref=e147]: Notifications will appear here as you work
+  - generic [ref=e148]:
+    - generic:
+      - generic:
+        - generic:
+          - img
+          - generic: Support Chat
+        - button:
+          - img
+      - generic:
+        - generic:
+          - img
+          - paragraph: Chat coming soon
+          - paragraph: We're working on live chat support.
+    - button "Open chat" [ref=e149]:
+      - img [ref=e150]
+```

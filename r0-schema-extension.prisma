@@ -1,0 +1,944 @@
+// =============================================================================
+// R0.1 SCHEMA EXTENSION — All Missing Models from Implementation Guides
+// =============================================================================
+// Source: 13 Implementation Guides (Fase 1A-1E, 2, 3, 4, 5, 6, 7, 8)
+// Purpose: Single db push to add all missing models
+// Date: 2026-02-17
+// 
+// INSTRUCTION: Merge these models into prisma/schema.prisma
+// Then run: npx prisma db push
+//
+// ⚠️  EXISTING MODELS THAT NEED FIELD EXTENSIONS are marked with "// EXTEND:"
+// ⚠️  NEW ENUMS are grouped at the bottom
+// ⚠️  Relations to Workspace need corresponding relation fields added to Workspace model
+// =============================================================================
+
+
+// =============================================================================
+// FASE 1B — AI Brand Analysis
+// =============================================================================
+
+model AIBrandAnalysisSession {
+  id                String              @id @default(cuid())
+  brandAssetId      String
+  brandAsset        BrandAsset          @relation(fields: [brandAssetId], references: [id], onDelete: Cascade)
+  status            AIAnalysisStatus    @default(IDLE)
+  progress          Float               @default(0) // 0-100+
+  reportData        Json?               // { executiveSummary, findings[], recommendations[] }
+  messages          AIAnalysisMessage[]
+  workspaceId       String
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  @@index([brandAssetId])
+  @@index([workspaceId])
+}
+
+model AIAnalysisMessage {
+  id                String              @id @default(cuid())
+  sessionId         String
+  session           AIBrandAnalysisSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role              AIMessageType
+  content           String
+  createdAt         DateTime            @default(now())
+  @@index([sessionId])
+}
+
+
+// =============================================================================
+// FASE 1C — Brand Asset Detail (extensions + new models)
+// =============================================================================
+
+// EXTEND: BrandAsset — add these fields:
+//   content           Json?
+//   frameworkType      String?
+//   frameworkData      Json?
+//   isLocked          Boolean        @default(false)
+//   lockedById        String?
+//   lockedAt          DateTime?
+//   versions          BrandAssetVersion[]
+//   researchMethods   BrandAssetResearchMethod[]
+//   aiAnalysisSessions AIBrandAnalysisSession[]
+
+model BrandAssetVersion {
+  id                String              @id @default(cuid())
+  version           Int
+  content           Json?
+  frameworkData     Json?
+  changeDescription String?
+  createdById       String?
+  brandAssetId      String
+  brandAsset        BrandAsset          @relation(fields: [brandAssetId], references: [id], onDelete: Cascade)
+  createdAt         DateTime            @default(now())
+  @@index([brandAssetId])
+}
+
+model BrandAssetResearchMethod {
+  id                String                  @id @default(cuid())
+  type              ResearchMethodType
+  status            ResearchMethodStatus    @default(NOT_STARTED)
+  weight            Float                   @default(0.25) // AI 0.15, Workshop 0.30, Interview 0.25, Questionnaire 0.30
+  completedAt       DateTime?
+  resultData        Json?
+  brandAssetId      String
+  brandAsset        BrandAsset              @relation(fields: [brandAssetId], references: [id], onDelete: Cascade)
+  workspaceId       String
+  workspace         Workspace               @relation(fields: [workspaceId], references: [id])
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  @@index([brandAssetId])
+  @@index([workspaceId])
+}
+
+
+// =============================================================================
+// FASE 1D — Canvas Workshop
+// =============================================================================
+
+model Workshop {
+  id                String              @id @default(cuid())
+  title             String
+  status            WorkshopStatus      @default(TO_BUY)
+  brandAssetId      String
+  brandAsset        BrandAsset          @relation(fields: [brandAssetId], references: [id])
+  bundleId          String?
+  bundle            WorkshopBundle?     @relation(fields: [bundleId], references: [id])
+  scheduledAt       DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  duration          Int?                // minutes
+  facilitatorName   String?
+  facilitatorEmail  String?
+  reportData        Json?               // AI-generated report
+  steps             WorkshopStep[]
+  findings          WorkshopFinding[]
+  recommendations   WorkshopRecommendation[]
+  participants      WorkshopParticipant[]
+  notes             WorkshopNote[]
+  photos            WorkshopPhoto[]
+  objectives        WorkshopObjective[]
+  agendaItems       WorkshopAgendaItem[]
+  workspaceId       String
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  @@index([workspaceId])
+  @@index([brandAssetId])
+  @@index([status])
+}
+
+model WorkshopBundle {
+  id                String              @id @default(cuid())
+  name              String              // "Base", "Premium", "Enterprise"
+  price             Float               // e.g. 1200
+  description       String?
+  features          String[]
+  workshops         Workshop[]
+  createdAt         DateTime            @default(now())
+}
+
+model WorkshopStep {
+  id                String              @id @default(cuid())
+  stepNumber        Int
+  title             String
+  description       String?
+  duration          Int?                // minutes
+  isCompleted       Boolean             @default(false)
+  completedAt       DateTime?
+  workshopId        String
+  workshop          Workshop            @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  @@index([workshopId])
+}
+
+model WorkshopFinding {
+  id                String              @id @default(cuid())
+  content           String
+  category          String?
+  workshopId        String
+  workshop          Workshop            @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  createdAt         DateTime            @default(now())
+  @@index([workshopId])
+}
+
+model WorkshopRecommendation {
+  id                String              @id @default(cuid())
+  content           String
+  priority          Int?                @default(0)
+  workshopId        String
+  workshop          Workshop            @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  createdAt         DateTime            @default(now())
+  @@index([workshopId])
+}
+
+model WorkshopParticipant {
+  id                String              @id @default(cuid())
+  name              String
+  email             String?
+  role              String?
+  workshopId        String
+  workshop          Workshop            @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  @@index([workshopId])
+}
+
+model WorkshopNote {
+  id                String              @id @default(cuid())
+  content           String
+  createdById       String?
+  workshopId        String
+  workshop          Workshop            @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  createdAt         DateTime            @default(now())
+  @@index([workshopId])
+}
+
+model WorkshopPhoto {
+  id                String              @id @default(cuid())
+  url               String
+  caption           String?
+  workshopId        String
+  workshop          Workshop            @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  createdAt         DateTime            @default(now())
+  @@index([workshopId])
+}
+
+model WorkshopObjective {
+  id                String              @id @default(cuid())
+  content           String
+  isAchieved        Boolean             @default(false)
+  workshopId        String
+  workshop          Workshop            @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  @@index([workshopId])
+}
+
+model WorkshopAgendaItem {
+  id                String              @id @default(cuid())
+  title             String
+  duration          Int?                // minutes
+  order             Int                 @default(0)
+  workshopId        String
+  workshop          Workshop            @relation(fields: [workshopId], references: [id], onDelete: Cascade)
+  @@index([workshopId])
+}
+
+
+// =============================================================================
+// FASE 2 — Business Strategy
+// =============================================================================
+
+model BusinessStrategy {
+  id                String              @id @default(cuid())
+  name              String
+  slug              String              @unique
+  description       String?
+  type              StrategyType
+  status            StrategyStatus      @default(DRAFT)
+  startDate         DateTime?
+  endDate           DateTime?
+  objectives        Objective[]
+  focusAreas        FocusArea[]
+  milestones        Milestone[]
+  campaignStrategies CampaignStrategy[]
+  workspaceId       String
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  @@index([workspaceId])
+  @@index([type])
+  @@index([status])
+}
+
+model Objective {
+  id                String              @id @default(cuid())
+  title             String
+  description       String?
+  status            ObjectiveStatus     @default(NOT_STARTED)
+  priority          Priority            @default(MEDIUM)
+  progress          Float               @default(0) // 0-100
+  keyResults        KeyResult[]
+  strategyId        String
+  strategy          BusinessStrategy    @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  @@index([strategyId])
+}
+
+model KeyResult {
+  id                String              @id @default(cuid())
+  title             String
+  targetValue       Float?
+  currentValue      Float?              @default(0)
+  unit              String?             // "%", "count", "$"
+  status            KeyResultStatus     @default(NOT_STARTED)
+  metricType        MetricType          @default(NUMBER)
+  objectiveId       String
+  objective         Objective           @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  @@index([objectiveId])
+}
+
+model FocusArea {
+  id                String              @id @default(cuid())
+  name              String
+  description       String?
+  color             String?             // hex or tailwind color
+  strategyId        String
+  strategy          BusinessStrategy    @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  @@index([strategyId])
+}
+
+model Milestone {
+  id                String              @id @default(cuid())
+  title             String
+  description       String?
+  dueDate           DateTime?
+  status            MilestoneStatus     @default(UPCOMING)
+  strategyId        String
+  strategy          BusinessStrategy    @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  completedAt       DateTime?
+  createdAt         DateTime            @default(now())
+  @@index([strategyId])
+  @@index([dueDate])
+}
+
+// Join table: Strategy ↔ Campaign
+model CampaignStrategy {
+  id                String              @id @default(cuid())
+  campaignId        String
+  strategyId        String
+  strategy          BusinessStrategy    @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  createdAt         DateTime            @default(now())
+  @@unique([campaignId, strategyId])
+  @@index([campaignId])
+  @@index([strategyId])
+}
+
+// Join table: Campaign ↔ Objective
+model CampaignObjective {
+  id                String              @id @default(cuid())
+  campaignId        String
+  objectiveId       String
+  objective         Objective           @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  createdAt         DateTime            @default(now())
+  @@unique([campaignId, objectiveId])
+  @@index([campaignId])
+  @@index([objectiveId])
+}
+
+
+// =============================================================================
+// FASE 3 — Brandstyle
+// =============================================================================
+
+model BrandStyleguide {
+  id                String              @id @default(cuid())
+  status            StyleguideStatus    @default(NOT_STARTED)
+  source            StyleguideSource?
+  sourceUrl         String?             // URL input
+  sourceFileName    String?             // PDF upload name
+  analysisStatus    BrandstyleAnalysisStatus @default(NOT_STARTED)
+  analysisProgress  Float               @default(0)
+  // Logo
+  logoUrl           String?
+  logoVariations    Json?               // [{ name, url, usage }]
+  // Typography
+  primaryFont       String?             // "Inter"
+  secondaryFont     String?
+  typeScale         Json?               // [{ level, size, weight, lineHeight }]
+  // Tone of Voice
+  toneAttributes    String[]            // ["Professional", "Warm"]
+  toneDescription   String?
+  toneExamples      Json?
+  // Imagery
+  imageryStyle      String?
+  imageryGuidelines String?
+  imageryExamples   Json?
+  // Colors
+  colors            StyleguideColor[]
+  // Save for AI
+  savedForAi        Boolean             @default(false)
+  savedForAiAt      DateTime?
+  workspaceId       String              @unique // max 1 per workspace
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  @@index([workspaceId])
+}
+
+model StyleguideColor {
+  id                String              @id @default(cuid())
+  name              String              // "Primary Blue"
+  hex               String              // "#3B82F6"
+  category          ColorCategory       @default(PRIMARY)
+  order             Int                 @default(0)
+  styleguideId      String
+  styleguide        BrandStyleguide     @relation(fields: [styleguideId], references: [id], onDelete: Cascade)
+  @@index([styleguideId])
+}
+
+
+// =============================================================================
+// FASE 4 — Personas (extensions + new models)
+// =============================================================================
+
+// EXTEND: Persona — add these fields:
+//   avatarSource         PersonaAvatarSource  @default(PLACEHOLDER)
+//   strategicImplications String?
+//   isLocked             Boolean              @default(false)
+//   lockedById           String?
+//   lockedAt             DateTime?
+//   researchMethods      PersonaResearchMethod[]
+//   aiAnalysisSessions   AIPersonaAnalysisSession[]
+//   chatSessions         PersonaChatSession[]
+//   productPersonas      ProductPersona[]
+
+model PersonaResearchMethod {
+  id                String                      @id @default(cuid())
+  type              PersonaResearchMethodType
+  status            ResearchMethodStatus        @default(NOT_STARTED)
+  weight            Float                       @default(0.25) // AI 0.15, Interviews 0.30, Questionnaire 0.30, UserTesting 0.25
+  completedAt       DateTime?
+  resultData        Json?
+  personaId         String
+  persona           Persona                     @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  workspaceId       String
+  workspace         Workspace                   @relation(fields: [workspaceId], references: [id])
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+  @@index([personaId])
+  @@index([workspaceId])
+}
+
+model AIPersonaAnalysisSession {
+  id                String                      @id @default(cuid())
+  personaId         String
+  persona           Persona                     @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  status            AIPersonaAnalysisStatus     @default(IDLE)
+  progress          Float                       @default(0)
+  reportData        Json?
+  messages          AIPersonaAnalysisMessage[]
+  workspaceId       String
+  workspace         Workspace                   @relation(fields: [workspaceId], references: [id])
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+  @@index([personaId])
+  @@index([workspaceId])
+}
+
+model AIPersonaAnalysisMessage {
+  id                String                      @id @default(cuid())
+  sessionId         String
+  session           AIPersonaAnalysisSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role              AIMessageType
+  content           String
+  createdAt         DateTime                    @default(now())
+  @@index([sessionId])
+}
+
+model PersonaChatSession {
+  id                String              @id @default(cuid())
+  personaId         String
+  persona           Persona             @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  mode              PersonaChatMode     @default(EXPLORE)
+  messages          PersonaChatMessage[]
+  insights          PersonaChatInsight[]
+  workspaceId       String
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  @@index([personaId])
+  @@index([workspaceId])
+}
+
+model PersonaChatMessage {
+  id                String              @id @default(cuid())
+  sessionId         String
+  session           PersonaChatSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role              ChatRole
+  content           String
+  createdAt         DateTime            @default(now())
+  @@index([sessionId])
+}
+
+model PersonaChatInsight {
+  id                String              @id @default(cuid())
+  sessionId         String
+  session           PersonaChatSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  content           String
+  category          String?
+  createdAt         DateTime            @default(now())
+  @@index([sessionId])
+}
+
+
+// =============================================================================
+// FASE 5 — Products & Services (extension + join table)
+// =============================================================================
+
+// EXTEND: Product — add these fields (if not already present):
+//   source             ProductSource    @default(MANUAL)
+//   sourceUrl          String?
+//   sourceFileName     String?
+//   processingStatus   String?
+//   processingData     Json?
+//   productPersonas    ProductPersona[]
+
+model ProductPersona {
+  id                String              @id @default(cuid())
+  productId         String
+  personaId         String
+  persona           Persona             @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  relevanceNote     String?
+  createdAt         DateTime            @default(now())
+  @@unique([productId, personaId])
+  @@index([productId])
+  @@index([personaId])
+}
+
+
+// =============================================================================
+// FASE 6 — Market Insights
+// =============================================================================
+
+model MarketInsight {
+  id                String              @id @default(cuid())
+  title             String
+  slug              String              @unique
+  description       String?
+  category          InsightCategory
+  scope             InsightScope        @default(MICRO)
+  impactLevel       ImpactLevel         @default(MEDIUM)
+  timeframe         InsightTimeframe    @default(SHORT_TERM)
+  relevanceScore    Float               @default(75) // 0-100
+  source            InsightSource       @default(MANUAL)
+  industries        String[]
+  tags              String[]
+  sourceUrls        InsightSourceUrl[]
+  howToUse          String[]
+  aiResearchPrompt  String?
+  aiResearchConfig  Json?
+  useBrandContext   Boolean             @default(false)
+  workspaceId       String
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  @@index([workspaceId])
+  @@index([category])
+  @@index([impactLevel])
+  @@index([timeframe])
+}
+
+model InsightSourceUrl {
+  id                String              @id @default(cuid())
+  name              String
+  url               String
+  insightId         String
+  insight           MarketInsight       @relation(fields: [insightId], references: [id], onDelete: Cascade)
+  @@index([insightId])
+}
+
+
+// =============================================================================
+// FASE 7 — Knowledge Library
+// =============================================================================
+
+// NOTE: Check if KnowledgeResource already exists in the current schema.
+// The seed mentions "5 resources" in /api/knowledge, so it might already exist.
+// If it does, extend it with the fields below. If not, add this model.
+
+model KnowledgeResource {
+  id                String              @id @default(cuid())
+  title             String
+  slug              String              @unique
+  description       String?
+  type              ResourceType
+  category          String              // "Brand Strategy", "Marketing", etc.
+  author            String?
+  url               String?
+  source            ResourceSource      @default(MANUAL)
+  difficultyLevel   DifficultyLevel     @default(INTERMEDIATE)
+  estimatedDuration String?
+  rating            Float?              // 0-5
+  isFeatured        Boolean             @default(false)
+  isFavorite        Boolean             @default(false)
+  isArchived        Boolean             @default(false)
+  tags              String[]
+  publicationDate   DateTime?
+  // Book-specific
+  isbn              String?
+  pageCount         Int?
+  // File upload
+  fileName          String?
+  fileSize          Int?
+  fileType          String?
+  fileUrl           String?
+  // Smart Import
+  importedMetadata  Json?
+  workspaceId       String
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id])
+  createdBy         String?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  @@index([workspaceId])
+  @@index([type])
+  @@index([category])
+  @@index([isFeatured])
+  @@index([isArchived])
+}
+
+
+// =============================================================================
+// FASE 8 — Brand Alignment
+// =============================================================================
+
+model AlignmentScan {
+  id                String              @id @default(cuid())
+  score             Float               // 0-100
+  totalItems        Int
+  alignedCount      Int
+  reviewCount       Int
+  misalignedCount   Int
+  status            ScanStatus          @default(RUNNING)
+  startedAt         DateTime            @default(now())
+  completedAt       DateTime?
+  moduleScores      ModuleScore[]
+  issues            AlignmentIssue[]
+  workspaceId       String
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id])
+  @@index([workspaceId])
+  @@index([status])
+}
+
+model ModuleScore {
+  id                String              @id @default(cuid())
+  moduleName        AlignmentModule
+  score             Float               // 0-100
+  alignedCount      Int
+  reviewCount       Int
+  misalignedCount   Int
+  lastCheckedAt     DateTime            @default(now())
+  scanId            String
+  scan              AlignmentScan       @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  @@index([scanId])
+}
+
+model AlignmentIssue {
+  id                String              @id @default(cuid())
+  severity          IssueSeverity
+  title             String
+  modulePath        String              // "Personas → Tech-Savvy Millennial"
+  description       String
+  conflictsWith     String[]
+  recommendation    String?
+  status            IssueStatus         @default(OPEN)
+  dismissedAt       DateTime?
+  dismissReason     String?
+  fixAppliedAt      DateTime?
+  fixOption         String?             // "A", "B", "C", "MANUAL"
+  sourceItemId      String?
+  sourceItemType    String?
+  targetItemId      String?
+  targetItemType    String?
+  scanId            String
+  scan              AlignmentScan       @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  workspaceId       String
+  @@index([scanId])
+  @@index([workspaceId])
+  @@index([severity])
+  @@index([status])
+}
+
+
+// =============================================================================
+// ALL NEW ENUMS
+// =============================================================================
+
+// --- Fase 1B: AI Brand Analysis ---
+enum AIAnalysisStatus {
+  IDLE
+  ANALYZING
+  COMPLETED
+  FAILED
+}
+
+enum AIMessageType {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+// --- Fase 1C: Brand Asset Detail ---
+enum ResearchMethodType {
+  AI_EXPLORATION
+  WORKSHOP
+  INTERVIEWS
+  QUESTIONNAIRE
+}
+
+enum ResearchMethodStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+// --- Fase 1D: Canvas Workshop ---
+enum WorkshopStatus {
+  TO_BUY
+  PURCHASED
+  SCHEDULED
+  IN_PROGRESS_WS   // renamed to avoid conflict with other IN_PROGRESS enums
+  COMPLETED_WS     // renamed to avoid conflict
+  CANCELLED
+}
+
+// --- Fase 2: Business Strategy ---
+enum StrategyType {
+  GROWTH
+  BRAND_AWARENESS
+  MARKET_PENETRATION
+  PRODUCT_LAUNCH
+  CUSTOMER_RETENTION
+  DIGITAL_TRANSFORMATION
+}
+
+enum StrategyStatus {
+  DRAFT
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  ARCHIVED
+}
+
+enum ObjectiveStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  AT_RISK
+  COMPLETED
+}
+
+enum KeyResultStatus {
+  NOT_STARTED
+  ON_TRACK
+  AT_RISK
+  BEHIND
+  COMPLETED
+}
+
+enum MilestoneStatus {
+  UPCOMING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+}
+
+enum MetricType {
+  NUMBER
+  PERCENTAGE
+  CURRENCY
+  BOOLEAN
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// --- Fase 3: Brandstyle ---
+enum StyleguideStatus {
+  NOT_STARTED
+  ANALYZING
+  PARTIAL
+  COMPLETE
+}
+
+enum StyleguideSource {
+  URL
+  PDF
+}
+
+enum BrandstyleAnalysisStatus {
+  NOT_STARTED
+  FETCHING_URL
+  EXTRACTING_LOGO
+  ANALYZING_COLORS
+  DETECTING_TYPOGRAPHY
+  ANALYZING_TONE
+  COMPLETE
+}
+
+enum ColorCategory {
+  PRIMARY
+  SECONDARY
+  ACCENT
+  NEUTRAL
+  BACKGROUND
+  TEXT
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+// --- Fase 4: Personas ---
+enum PersonaAvatarSource {
+  PLACEHOLDER
+  UPLOADED
+  AI_GENERATED
+}
+
+enum PersonaResearchMethodType {
+  AI_EXPLORATION
+  INTERVIEWS
+  QUESTIONNAIRE
+  USER_TESTING
+}
+
+enum AIPersonaAnalysisStatus {
+  IDLE
+  ANALYZING
+  COMPLETED
+  FAILED
+}
+
+enum PersonaChatMode {
+  EXPLORE
+  VALIDATE
+  IDEATE
+  CHALLENGE
+}
+
+enum ChatRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+// --- Fase 5: Products ---
+enum ProductSource {
+  MANUAL
+  WEBSITE_URL
+  PDF_UPLOAD
+}
+
+// NOTE: ProductStatus may already exist. Check current schema.
+// If it conflicts, reuse the existing one.
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+// --- Fase 6: Market Insights ---
+enum InsightCategory {
+  TECHNOLOGY
+  ENVIRONMENTAL
+  SOCIAL
+  CONSUMER
+  BUSINESS
+}
+
+enum InsightScope {
+  MICRO
+  MESO
+  MACRO
+}
+
+enum ImpactLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum InsightTimeframe {
+  SHORT_TERM
+  MEDIUM_TERM
+  LONG_TERM
+}
+
+enum InsightSource {
+  MANUAL
+  AI_RESEARCH
+  IMPORTED
+}
+
+// --- Fase 7: Knowledge Library ---
+enum ResourceType {
+  BOOK
+  ARTICLE
+  RESEARCH
+  GUIDE
+  TEMPLATE
+  CASE_STUDY
+  WORKSHOP_RESOURCE   // renamed to avoid conflict with Workshop model
+  MASTERCLASS
+  PODCAST
+  WEBSITE
+  DESIGN
+  VIDEO
+}
+
+enum ResourceSource {
+  MANUAL
+  URL_IMPORT
+  FILE_UPLOAD
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+// --- Fase 8: Brand Alignment ---
+enum ScanStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AlignmentModule {
+  BRAND_FOUNDATION
+  BUSINESS_STRATEGY
+  BRANDSTYLE
+  PERSONAS
+  PRODUCTS_SERVICES
+  MARKET_INSIGHTS
+}
+
+enum IssueSeverity {
+  CRITICAL
+  WARNING
+  SUGGESTION
+}
+
+enum IssueStatus {
+  OPEN
+  DISMISSED
+  FIXED
+}
+
+
+// =============================================================================
+// WORKSPACE MODEL — REQUIRED RELATION ADDITIONS
+// =============================================================================
+// Add these relation fields to the existing Workspace model:
+//
+//   aiBrandAnalysisSessions  AIBrandAnalysisSession[]
+//   brandAssetResearchMethods BrandAssetResearchMethod[]
+//   workshops                Workshop[]
+//   businessStrategies       BusinessStrategy[]
+//   brandStyleguide          BrandStyleguide?
+//   personaResearchMethods   PersonaResearchMethod[]
+//   aiPersonaAnalysisSessions AIPersonaAnalysisSession[]
+//   personaChatSessions      PersonaChatSession[]
+//   marketInsights           MarketInsight[]
+//   knowledgeResources       KnowledgeResource[]
+//   alignmentScans           AlignmentScan[]
+
+
+// =============================================================================
+// OBJECTIVE MODEL — REQUIRED RELATION ADDITION
+// =============================================================================
+// Add to Objective model:
+//   campaignObjectives CampaignObjective[]

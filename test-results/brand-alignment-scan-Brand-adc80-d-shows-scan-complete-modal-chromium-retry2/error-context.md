@@ -1,0 +1,1022 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - button "Branddock Agency" [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e22]: Branddock Agency
+        - img [ref=e23]
+      - navigation "Breadcrumb" [ref=e27]:
+        - button "Dashboard" [ref=e28]:
+          - img [ref=e29]
+          - generic [ref=e32]: Dashboard
+        - img [ref=e33]
+        - generic [ref=e35]:
+          - img [ref=e36]
+          - generic [ref=e38]: Brand Alignment
+      - generic [ref=e39]:
+        - button "Quick Content" [ref=e40]:
+          - img
+          - generic [ref=e41]: Quick Content
+        - button "Search ⌘ + K" [ref=e42]:
+          - img
+          - generic [ref=e43]: Search
+          - generic [ref=e44]:
+            - generic [ref=e45]: ⌘
+            - generic [ref=e46]: +
+            - generic [ref=e47]: K
+        - button "Show Help ?" [ref=e49]:
+          - img
+          - text: Show Help
+          - generic [ref=e50]: "?"
+        - button "5" [ref=e51]:
+          - img
+          - generic [ref=e53]: "5"
+    - generic [ref=e54]:
+      - generic [ref=e55]:
+        - generic [ref=e57]:
+          - img "Branddock" [ref=e58]
+          - button [ref=e59]:
+            - img
+        - navigation [ref=e60]:
+          - generic [ref=e61]:
+            - heading "WORKSPACE" [level=3] [ref=e63]
+            - button "Overview" [ref=e64]:
+              - img
+              - generic [ref=e65]: Overview
+          - generic [ref=e66]:
+            - heading "STRATEGY" [level=3] [ref=e68]
+            - button "Campaigns" [ref=e69]:
+              - img
+              - generic [ref=e70]: Campaigns
+            - button "Content Library" [ref=e71]:
+              - img
+              - generic [ref=e72]: Content Library
+          - generic [ref=e73]:
+            - heading "KNOWLEDGE" [level=3] [ref=e75]
+            - button "Brand Foundation 3" [ref=e76]:
+              - img
+              - generic [ref=e77]: Brand Foundation
+              - generic [ref=e78]: "3"
+            - button "Business Strategy" [ref=e79]:
+              - img
+              - generic [ref=e80]: Business Strategy
+            - button "Brandstyle" [ref=e81]:
+              - img
+              - generic [ref=e82]: Brandstyle
+            - button "Personas" [ref=e83]:
+              - img
+              - generic [ref=e84]: Personas
+            - button "Products & Services" [ref=e85]:
+              - img
+              - generic [ref=e86]: Products & Services
+            - button "Market Insights" [ref=e87]:
+              - img
+              - generic [ref=e88]: Market Insights
+            - button "Knowledge Library" [ref=e89]:
+              - img
+              - generic [ref=e90]: Knowledge Library
+            - button "Brand Alignment" [ref=e91]:
+              - img
+              - generic [ref=e92]: Brand Alignment
+          - generic [ref=e93]:
+            - heading "VALIDATION" [level=3] [ref=e95]
+            - button "Research Hub" [ref=e96]:
+              - img
+              - generic [ref=e97]: Research Hub
+            - button "Research Bundles" [ref=e98]:
+              - img
+              - generic [ref=e99]: Research Bundles
+            - button "Custom Validation" [ref=e100]:
+              - img
+              - generic [ref=e101]: Custom Validation
+          - generic [ref=e102]:
+            - button "Settings" [ref=e103]:
+              - generic [ref=e104]:
+                - img
+                - generic [ref=e105]: Settings
+              - img
+            - generic [ref=e106]:
+              - button "Account" [ref=e107]:
+                - img
+                - generic [ref=e108]: Account
+              - button "Team" [ref=e109]:
+                - img
+                - generic [ref=e110]: Team
+              - button "Agency" [ref=e111]:
+                - img
+                - generic [ref=e112]: Agency
+              - button "Clients" [ref=e113]:
+                - img
+                - generic [ref=e114]: Clients
+              - button "Billing & Payments" [ref=e115]:
+                - img
+                - generic [ref=e116]: Billing & Payments
+              - button "Notifications" [ref=e117]:
+                - img
+                - generic [ref=e118]: Notifications
+              - button "Appearance" [ref=e119]:
+                - img
+                - generic [ref=e120]: Appearance
+              - button "Commercial Demo" [ref=e121]:
+                - img
+                - generic [ref=e122]: Commercial Demo
+              - 'button "Demo: Compact Variant NEW" [ref=e123]':
+                - img
+                - generic [ref=e124]: "Demo: Compact Variant"
+                - generic [ref=e125]: NEW
+            - button "Help & Support" [ref=e126]:
+              - img
+              - generic [ref=e127]: Help & Support
+          - generic [ref=e130]:
+            - img [ref=e131]
+            - text: BETA
+      - main [ref=e134]:
+        - generic [ref=e136]:
+          - generic [ref=e139]:
+            - generic [ref=e140]:
+              - img [ref=e142]
+              - generic [ref=e144]:
+                - heading "Brand Alignment" [level=1] [ref=e145]
+                - paragraph [ref=e146]: Ensure consistency across all brand touchpoints
+            - button "Run Alignment Check" [ref=e148]:
+              - img [ref=e149]
+              - text: Run Alignment Check
+          - generic [ref=e154]:
+            - generic [ref=e155]:
+              - generic [ref=e156]:
+                - img [ref=e157]
+                - generic [ref=e161]: 0%
+              - generic [ref=e163]:
+                - generic [ref=e164]:
+                  - img [ref=e165]
+                  - generic [ref=e168]: "0"
+                  - generic [ref=e169]: Aligned
+                - generic [ref=e170]:
+                  - img [ref=e171]
+                  - generic [ref=e173]: "0"
+                  - generic [ref=e174]: Needs Review
+                - generic [ref=e175]:
+                  - img [ref=e176]
+                  - generic [ref=e180]: "0"
+                  - generic [ref=e181]: Misaligned
+            - generic [ref=e182]:
+              - heading "Module Scores" [level=2] [ref=e183]
+              - generic [ref=e184]:
+                - generic [ref=e185]:
+                  - generic [ref=e186]:
+                    - img [ref=e188]
+                    - generic [ref=e192]: Brand Foundation
+                  - generic [ref=e193]:
+                    - generic [ref=e194]: 80%
+                    - generic [ref=e195]: alignment
+                  - progressbar [ref=e197]
+                  - generic [ref=e198]:
+                    - generic [ref=e199]: 5 aligned
+                    - generic [ref=e201]: 2 review
+                    - generic [ref=e203]: 1 issues
+                  - generic [ref=e205]: "Last checked: Just now"
+                  - button "View →" [ref=e206] [cursor=pointer]
+                - generic [ref=e207]:
+                  - generic [ref=e208]:
+                    - img [ref=e210]
+                    - generic [ref=e214]: Business Strategy
+                  - generic [ref=e215]:
+                    - generic [ref=e216]: 85%
+                    - generic [ref=e217]: alignment
+                  - progressbar [ref=e219]
+                  - generic [ref=e220]:
+                    - generic [ref=e221]: 4 aligned
+                    - generic [ref=e223]: 1 review
+                    - generic [ref=e225]: 0 issues
+                  - generic [ref=e227]: "Last checked: Just now"
+                  - button "View →" [ref=e228] [cursor=pointer]
+                - generic [ref=e229]:
+                  - generic [ref=e230]:
+                    - img [ref=e232]
+                    - generic [ref=e238]: Brandstyle
+                  - generic [ref=e239]:
+                    - generic [ref=e240]: 97%
+                    - generic [ref=e241]: alignment
+                  - progressbar [ref=e243]
+                  - generic [ref=e244]:
+                    - generic [ref=e245]: 6 aligned
+                    - generic [ref=e247]: 0 review
+                    - generic [ref=e249]: 0 issues
+                  - generic [ref=e251]: "Last checked: Just now"
+                  - button "View →" [ref=e252] [cursor=pointer]
+                - generic [ref=e253]:
+                  - generic [ref=e254]:
+                    - img [ref=e256]
+                    - generic [ref=e261]: Personas
+                  - generic [ref=e262]:
+                    - generic [ref=e263]: 73%
+                    - generic [ref=e264]: alignment
+                  - progressbar [ref=e266]
+                  - generic [ref=e267]:
+                    - generic [ref=e268]: 2 aligned
+                    - generic [ref=e270]: 1 review
+                    - generic [ref=e272]: 1 issues
+                  - generic [ref=e274]: "Last checked: Just now"
+                  - button "View →" [ref=e275] [cursor=pointer]
+                - generic [ref=e276]:
+                  - generic [ref=e277]:
+                    - img [ref=e279]
+                    - generic [ref=e283]: Products & Services
+                  - generic [ref=e284]:
+                    - generic [ref=e285]: 75%
+                    - generic [ref=e286]: alignment
+                  - progressbar [ref=e288]
+                  - generic [ref=e289]:
+                    - generic [ref=e290]: 2 aligned
+                    - generic [ref=e292]: 0 review
+                    - generic [ref=e294]: 1 issues
+                  - generic [ref=e296]: "Last checked: Just now"
+                  - button "View →" [ref=e297] [cursor=pointer]
+                - generic [ref=e298]:
+                  - generic [ref=e299]:
+                    - img [ref=e301]
+                    - generic [ref=e304]: Market Insights
+                  - generic [ref=e305]:
+                    - generic [ref=e306]: 93%
+                    - generic [ref=e307]: alignment
+                  - progressbar [ref=e309]
+                  - generic [ref=e310]:
+                    - generic [ref=e311]: 5 aligned
+                    - generic [ref=e313]: 1 review
+                    - generic [ref=e315]: 0 issues
+                  - generic [ref=e317]: "Last checked: Just now"
+                  - button "View →" [ref=e318] [cursor=pointer]
+            - generic [ref=e319]:
+              - generic [ref=e320]:
+                - img [ref=e321]
+                - heading "Alignment Issues" [level=2] [ref=e323]
+              - generic [ref=e324]:
+                - combobox [ref=e327]:
+                  - option "All Issues" [selected]
+                  - option "Open"
+                  - option "Dismissed"
+                  - option "Fixed"
+                - combobox [ref=e330]:
+                  - option "All Modules" [selected]
+                  - option "Brand Foundation"
+                  - option "Business Strategy"
+                  - option "Brandstyle"
+                  - option "Personas"
+                  - option "Products & Services"
+                  - option "Market Insights"
+                - combobox [ref=e333]:
+                  - option "All Severity" [selected]
+                  - option "Critical"
+                  - option "Warning"
+                  - option "Suggestion"
+              - generic [ref=e334]:
+                - generic [ref=e335]:
+                  - generic [ref=e336]: Critical
+                  - heading "Persona 'Tech-Savvy Millennial' contradicts Brand Positioning" [level=3] [ref=e337]
+                  - paragraph [ref=e338]: Personas → Tech-Savvy Millennial
+                  - paragraph [ref=e339]: The persona targets a millennial audience with casual communication preferences, but your brand positioning emphasizes enterprise decision-makers with formal, authoritative messaging.
+                  - generic [ref=e340]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e341]:
+                      - generic [ref=e342]: Brand Foundation (Positioning)
+                      - generic [ref=e343]: Business Strategy
+                  - generic [ref=e344]:
+                    - generic [ref=e345]:
+                      - img [ref=e346]
+                      - generic [ref=e349]: "AI Recommendation:"
+                    - paragraph [ref=e350]: Consider adjusting the persona to target enterprise decision-makers, or broaden your brand positioning to include multiple market segments.
+                  - generic [ref=e351]:
+                    - button "View Source" [ref=e352]:
+                      - img [ref=e353]
+                      - text: View Source
+                    - button "Dismiss" [ref=e357]
+                    - button "Fix" [ref=e358]:
+                      - text: Fix
+                      - img [ref=e359]
+                - generic [ref=e361]:
+                  - generic [ref=e362]: Critical
+                  - heading "Persona 'Tech-Savvy Millennial' contradicts Brand Positioning" [level=3] [ref=e363]
+                  - paragraph [ref=e364]: Personas → Tech-Savvy Millennial
+                  - paragraph [ref=e365]: The persona targets a millennial audience with casual communication preferences, but your brand positioning emphasizes enterprise decision-makers with formal, authoritative messaging.
+                  - generic [ref=e366]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e367]:
+                      - generic [ref=e368]: Brand Foundation (Positioning)
+                      - generic [ref=e369]: Business Strategy
+                  - generic [ref=e370]:
+                    - generic [ref=e371]:
+                      - img [ref=e372]
+                      - generic [ref=e375]: "AI Recommendation:"
+                    - paragraph [ref=e376]: Consider adjusting the persona to target enterprise decision-makers, or broaden your brand positioning to include multiple market segments.
+                  - generic [ref=e377]:
+                    - button "View Source" [ref=e378]:
+                      - img [ref=e379]
+                      - text: View Source
+                    - button "Dismiss" [ref=e383]
+                    - button "Fix" [ref=e384]:
+                      - text: Fix
+                      - img [ref=e385]
+                - generic [ref=e387]:
+                  - generic [ref=e388]: Critical
+                  - heading "Persona 'Tech-Savvy Millennial' contradicts Brand Positioning" [level=3] [ref=e389]
+                  - paragraph [ref=e390]: Personas → Tech-Savvy Millennial
+                  - paragraph [ref=e391]: The persona targets a millennial audience with casual communication preferences, but your brand positioning emphasizes enterprise decision-makers with formal, authoritative messaging.
+                  - generic [ref=e392]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e393]:
+                      - generic [ref=e394]: Brand Foundation (Positioning)
+                      - generic [ref=e395]: Business Strategy
+                  - generic [ref=e396]:
+                    - generic [ref=e397]:
+                      - img [ref=e398]
+                      - generic [ref=e401]: "AI Recommendation:"
+                    - paragraph [ref=e402]: Consider adjusting the persona to target enterprise decision-makers, or broaden your brand positioning to include multiple market segments.
+                  - generic [ref=e403]:
+                    - button "View Source" [ref=e404]:
+                      - img [ref=e405]
+                      - text: View Source
+                    - button "Dismiss" [ref=e409]
+                    - button "Fix" [ref=e410]:
+                      - text: Fix
+                      - img [ref=e411]
+                - generic [ref=e413]:
+                  - generic [ref=e414]: Critical
+                  - heading "Persona 'Tech-Savvy Millennial' contradicts Brand Positioning" [level=3] [ref=e415]
+                  - paragraph [ref=e416]: Personas → Tech-Savvy Millennial
+                  - paragraph [ref=e417]: The persona targets a millennial audience with casual communication preferences, but your brand positioning emphasizes enterprise decision-makers with formal, authoritative messaging.
+                  - generic [ref=e418]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e419]:
+                      - generic [ref=e420]: Brand Foundation (Positioning)
+                      - generic [ref=e421]: Business Strategy
+                  - generic [ref=e422]:
+                    - generic [ref=e423]:
+                      - img [ref=e424]
+                      - generic [ref=e427]: "AI Recommendation:"
+                    - paragraph [ref=e428]: Consider adjusting the persona to target enterprise decision-makers, or broaden your brand positioning to include multiple market segments.
+                  - generic [ref=e429]:
+                    - button "View Source" [ref=e430]:
+                      - img [ref=e431]
+                      - text: View Source
+                    - button "Dismiss" [ref=e435]
+                    - button "Fix" [ref=e436]:
+                      - text: Fix
+                      - img [ref=e437]
+                - generic [ref=e439]:
+                  - generic [ref=e440]: Critical
+                  - heading "Persona 'Tech-Savvy Millennial' contradicts Brand Positioning" [level=3] [ref=e441]
+                  - paragraph [ref=e442]: Personas → Tech-Savvy Millennial
+                  - paragraph [ref=e443]: The persona targets a millennial audience with casual communication preferences, but your brand positioning emphasizes enterprise decision-makers with formal, authoritative messaging.
+                  - generic [ref=e444]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e445]:
+                      - generic [ref=e446]: Brand Foundation (Positioning)
+                      - generic [ref=e447]: Business Strategy
+                  - generic [ref=e448]:
+                    - generic [ref=e449]:
+                      - img [ref=e450]
+                      - generic [ref=e453]: "AI Recommendation:"
+                    - paragraph [ref=e454]: Consider adjusting the persona to target enterprise decision-makers, or broaden your brand positioning to include multiple market segments.
+                  - generic [ref=e455]:
+                    - button "View Source" [ref=e456]:
+                      - img [ref=e457]
+                      - text: View Source
+                    - button "Dismiss" [ref=e461]
+                    - button "Fix" [ref=e462]:
+                      - text: Fix
+                      - img [ref=e463]
+                - generic [ref=e465]:
+                  - generic [ref=e466]: Critical
+                  - heading "Persona 'Tech-Savvy Millennial' contradicts Brand Positioning" [level=3] [ref=e467]
+                  - paragraph [ref=e468]: Personas → Tech-Savvy Millennial
+                  - paragraph [ref=e469]: The persona targets a millennial audience with casual communication preferences, but your brand positioning emphasizes enterprise decision-makers with formal, authoritative messaging.
+                  - generic [ref=e470]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e471]:
+                      - generic [ref=e472]: Brand Foundation (Positioning)
+                      - generic [ref=e473]: Business Strategy
+                  - generic [ref=e474]:
+                    - generic [ref=e475]:
+                      - img [ref=e476]
+                      - generic [ref=e479]: "AI Recommendation:"
+                    - paragraph [ref=e480]: Consider adjusting the persona to target enterprise decision-makers, or broaden your brand positioning to include multiple market segments.
+                  - generic [ref=e481]:
+                    - button "View Source" [ref=e482]:
+                      - img [ref=e483]
+                      - text: View Source
+                    - button "Dismiss" [ref=e487]
+                    - button "Fix" [ref=e488]:
+                      - text: Fix
+                      - img [ref=e489]
+                - generic [ref=e491]:
+                  - generic [ref=e492]: Warning
+                  - heading "Business Strategy growth targets conflict with market positioning" [level=3] [ref=e493]
+                  - paragraph [ref=e494]: Business Strategy → Growth Objectives
+                  - paragraph [ref=e495]: The strategy targets 200% growth in the SMB segment, but your brand is positioned as a premium enterprise solution. This creates a market segment mismatch.
+                  - generic [ref=e496]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e498]: Brand Foundation (Market Position)
+                  - generic [ref=e499]:
+                    - generic [ref=e500]:
+                      - img [ref=e501]
+                      - generic [ref=e504]: "AI Recommendation:"
+                    - paragraph [ref=e505]: Align growth targets with your current premium enterprise positioning, or update positioning to reflect broader market ambitions.
+                  - generic [ref=e506]:
+                    - button "View Source" [ref=e507]:
+                      - img [ref=e508]
+                      - text: View Source
+                    - button "Dismiss" [ref=e512]
+                    - button "Fix" [ref=e513]:
+                      - text: Fix
+                      - img [ref=e514]
+                - generic [ref=e516]:
+                  - generic [ref=e517]: Warning
+                  - heading "Business Strategy growth targets conflict with market positioning" [level=3] [ref=e518]
+                  - paragraph [ref=e519]: Business Strategy → Growth Objectives
+                  - paragraph [ref=e520]: The strategy targets 200% growth in the SMB segment, but your brand is positioned as a premium enterprise solution. This creates a market segment mismatch.
+                  - generic [ref=e521]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e523]: Brand Foundation (Market Position)
+                  - generic [ref=e524]:
+                    - generic [ref=e525]:
+                      - img [ref=e526]
+                      - generic [ref=e529]: "AI Recommendation:"
+                    - paragraph [ref=e530]: Align growth targets with your current premium enterprise positioning, or update positioning to reflect broader market ambitions.
+                  - generic [ref=e531]:
+                    - button "View Source" [ref=e532]:
+                      - img [ref=e533]
+                      - text: View Source
+                    - button "Dismiss" [ref=e537]
+                    - button "Fix" [ref=e538]:
+                      - text: Fix
+                      - img [ref=e539]
+                - generic [ref=e541]:
+                  - generic [ref=e542]: Warning
+                  - heading "Business Strategy growth targets conflict with market positioning" [level=3] [ref=e543]
+                  - paragraph [ref=e544]: Business Strategy → Growth Objectives
+                  - paragraph [ref=e545]: The strategy targets 200% growth in the SMB segment, but your brand is positioned as a premium enterprise solution. This creates a market segment mismatch.
+                  - generic [ref=e546]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e548]: Brand Foundation (Market Position)
+                  - generic [ref=e549]:
+                    - generic [ref=e550]:
+                      - img [ref=e551]
+                      - generic [ref=e554]: "AI Recommendation:"
+                    - paragraph [ref=e555]: Align growth targets with your current premium enterprise positioning, or update positioning to reflect broader market ambitions.
+                  - generic [ref=e556]:
+                    - button "View Source" [ref=e557]:
+                      - img [ref=e558]
+                      - text: View Source
+                    - button "Dismiss" [ref=e562]
+                    - button "Fix" [ref=e563]:
+                      - text: Fix
+                      - img [ref=e564]
+                - generic [ref=e566]:
+                  - generic [ref=e567]: Warning
+                  - heading "Business Strategy growth targets conflict with market positioning" [level=3] [ref=e568]
+                  - paragraph [ref=e569]: Business Strategy → Growth Objectives
+                  - paragraph [ref=e570]: The strategy targets 200% growth in the SMB segment, but your brand is positioned as a premium enterprise solution. This creates a market segment mismatch.
+                  - generic [ref=e571]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e573]: Brand Foundation (Market Position)
+                  - generic [ref=e574]:
+                    - generic [ref=e575]:
+                      - img [ref=e576]
+                      - generic [ref=e579]: "AI Recommendation:"
+                    - paragraph [ref=e580]: Align growth targets with your current premium enterprise positioning, or update positioning to reflect broader market ambitions.
+                  - generic [ref=e581]:
+                    - button "View Source" [ref=e582]:
+                      - img [ref=e583]
+                      - text: View Source
+                    - button "Dismiss" [ref=e587]
+                    - button "Fix" [ref=e588]:
+                      - text: Fix
+                      - img [ref=e589]
+                - generic [ref=e591]:
+                  - generic [ref=e592]: Warning
+                  - heading "Business Strategy growth targets conflict with market positioning" [level=3] [ref=e593]
+                  - paragraph [ref=e594]: Business Strategy → Growth Objectives
+                  - paragraph [ref=e595]: The strategy targets 200% growth in the SMB segment, but your brand is positioned as a premium enterprise solution. This creates a market segment mismatch.
+                  - generic [ref=e596]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e598]: Brand Foundation (Market Position)
+                  - generic [ref=e599]:
+                    - generic [ref=e600]:
+                      - img [ref=e601]
+                      - generic [ref=e604]: "AI Recommendation:"
+                    - paragraph [ref=e605]: Align growth targets with your current premium enterprise positioning, or update positioning to reflect broader market ambitions.
+                  - generic [ref=e606]:
+                    - button "View Source" [ref=e607]:
+                      - img [ref=e608]
+                      - text: View Source
+                    - button "Dismiss" [ref=e612]
+                    - button "Fix" [ref=e613]:
+                      - text: Fix
+                      - img [ref=e614]
+                - generic [ref=e616]:
+                  - generic [ref=e617]: Warning
+                  - heading "Product tone doesn't match Brandstyle guidelines" [level=3] [ref=e618]
+                  - paragraph [ref=e619]: Products & Services → Mobile App Framework
+                  - paragraph [ref=e620]: The product description uses casual, informal language ('super easy', 'awesome features') that conflicts with the brand style guide's professional tone of voice.
+                  - generic [ref=e621]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e623]: Brandstyle (Tone of Voice)
+                  - generic [ref=e624]:
+                    - generic [ref=e625]:
+                      - img [ref=e626]
+                      - generic [ref=e629]: "AI Recommendation:"
+                    - paragraph [ref=e630]: Rewrite the product description to use professional and authoritative language consistent with your brand style guide.
+                  - generic [ref=e631]:
+                    - button "View Source" [ref=e632]:
+                      - img [ref=e633]
+                      - text: View Source
+                    - button "Dismiss" [ref=e637]
+                    - button "Fix" [ref=e638]:
+                      - text: Fix
+                      - img [ref=e639]
+                - generic [ref=e641]:
+                  - generic [ref=e642]: Warning
+                  - heading "Product tone doesn't match Brandstyle guidelines" [level=3] [ref=e643]
+                  - paragraph [ref=e644]: Products & Services → Mobile App Framework
+                  - paragraph [ref=e645]: The product description uses casual, informal language ('super easy', 'awesome features') that conflicts with the brand style guide's professional tone of voice.
+                  - generic [ref=e646]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e648]: Brandstyle (Tone of Voice)
+                  - generic [ref=e649]:
+                    - generic [ref=e650]:
+                      - img [ref=e651]
+                      - generic [ref=e654]: "AI Recommendation:"
+                    - paragraph [ref=e655]: Rewrite the product description to use professional and authoritative language consistent with your brand style guide.
+                  - generic [ref=e656]:
+                    - button "View Source" [ref=e657]:
+                      - img [ref=e658]
+                      - text: View Source
+                    - button "Dismiss" [ref=e662]
+                    - button "Fix" [ref=e663]:
+                      - text: Fix
+                      - img [ref=e664]
+                - generic [ref=e666]:
+                  - generic [ref=e667]: Warning
+                  - heading "Product tone doesn't match Brandstyle guidelines" [level=3] [ref=e668]
+                  - paragraph [ref=e669]: Products & Services → Mobile App Framework
+                  - paragraph [ref=e670]: The product description uses casual, informal language ('super easy', 'awesome features') that conflicts with the brand style guide's professional tone of voice.
+                  - generic [ref=e671]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e673]: Brandstyle (Tone of Voice)
+                  - generic [ref=e674]:
+                    - generic [ref=e675]:
+                      - img [ref=e676]
+                      - generic [ref=e679]: "AI Recommendation:"
+                    - paragraph [ref=e680]: Rewrite the product description to use professional and authoritative language consistent with your brand style guide.
+                  - generic [ref=e681]:
+                    - button "View Source" [ref=e682]:
+                      - img [ref=e683]
+                      - text: View Source
+                    - button "Dismiss" [ref=e687]
+                    - button "Fix" [ref=e688]:
+                      - text: Fix
+                      - img [ref=e689]
+                - generic [ref=e691]:
+                  - generic [ref=e692]: Warning
+                  - heading "Product tone doesn't match Brandstyle guidelines" [level=3] [ref=e693]
+                  - paragraph [ref=e694]: Products & Services → Mobile App Framework
+                  - paragraph [ref=e695]: The product description uses casual, informal language ('super easy', 'awesome features') that conflicts with the brand style guide's professional tone of voice.
+                  - generic [ref=e696]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e698]: Brandstyle (Tone of Voice)
+                  - generic [ref=e699]:
+                    - generic [ref=e700]:
+                      - img [ref=e701]
+                      - generic [ref=e704]: "AI Recommendation:"
+                    - paragraph [ref=e705]: Rewrite the product description to use professional and authoritative language consistent with your brand style guide.
+                  - generic [ref=e706]:
+                    - button "View Source" [ref=e707]:
+                      - img [ref=e708]
+                      - text: View Source
+                    - button "Dismiss" [ref=e712]
+                    - button "Fix" [ref=e713]:
+                      - text: Fix
+                      - img [ref=e714]
+                - generic [ref=e716]:
+                  - generic [ref=e717]: Warning
+                  - heading "Product tone doesn't match Brandstyle guidelines" [level=3] [ref=e718]
+                  - paragraph [ref=e719]: Products & Services → Mobile App Framework
+                  - paragraph [ref=e720]: The product description uses casual, informal language ('super easy', 'awesome features') that conflicts with the brand style guide's professional tone of voice.
+                  - generic [ref=e721]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e723]: Brandstyle (Tone of Voice)
+                  - generic [ref=e724]:
+                    - generic [ref=e725]:
+                      - img [ref=e726]
+                      - generic [ref=e729]: "AI Recommendation:"
+                    - paragraph [ref=e730]: Rewrite the product description to use professional and authoritative language consistent with your brand style guide.
+                  - generic [ref=e731]:
+                    - button "View Source" [ref=e732]:
+                      - img [ref=e733]
+                      - text: View Source
+                    - button "Dismiss" [ref=e737]
+                    - button "Fix" [ref=e738]:
+                      - text: Fix
+                      - img [ref=e739]
+                - generic [ref=e741]:
+                  - generic [ref=e742]: Warning
+                  - heading "Product tone doesn't match Brandstyle guidelines" [level=3] [ref=e743]
+                  - paragraph [ref=e744]: Products & Services → Mobile App Framework
+                  - paragraph [ref=e745]: The product description uses casual, informal language ('super easy', 'awesome features') that conflicts with the brand style guide's professional tone of voice.
+                  - generic [ref=e746]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e748]: Brandstyle (Tone of Voice)
+                  - generic [ref=e749]:
+                    - generic [ref=e750]:
+                      - img [ref=e751]
+                      - generic [ref=e754]: "AI Recommendation:"
+                    - paragraph [ref=e755]: Rewrite the product description to use professional and authoritative language consistent with your brand style guide.
+                  - generic [ref=e756]:
+                    - button "View Source" [ref=e757]:
+                      - img [ref=e758]
+                      - text: View Source
+                    - button "Dismiss" [ref=e762]
+                    - button "Fix" [ref=e763]:
+                      - text: Fix
+                      - img [ref=e764]
+                - generic [ref=e766]:
+                  - generic [ref=e767]: Warning
+                  - heading "Product tone doesn't match Brandstyle guidelines" [level=3] [ref=e768]
+                  - paragraph [ref=e769]: Products & Services → Mobile App Framework
+                  - paragraph [ref=e770]: The product description uses casual, informal language ('super easy', 'awesome features') that conflicts with the brand style guide's professional tone of voice.
+                  - generic [ref=e771]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e773]: Brandstyle (Tone of Voice)
+                  - generic [ref=e774]:
+                    - generic [ref=e775]:
+                      - img [ref=e776]
+                      - generic [ref=e779]: "AI Recommendation:"
+                    - paragraph [ref=e780]: Rewrite the product description to use professional and authoritative language consistent with your brand style guide.
+                  - generic [ref=e781]:
+                    - button "View Source" [ref=e782]:
+                      - img [ref=e783]
+                      - text: View Source
+                    - button "Dismiss" [ref=e787]
+                    - button "Fix" [ref=e788]:
+                      - text: Fix
+                      - img [ref=e789]
+                - generic [ref=e791]:
+                  - generic [ref=e792]: Warning
+                  - heading "Product tone mismatch with Brand Voice" [level=3] [ref=e793]
+                  - paragraph [ref=e794]: Products & Services → AI Content Assistant
+                  - paragraph [ref=e795]: The AI Content Assistant product description uses technical jargon ('NLP pipeline', 'multi-channel orchestration') that conflicts with the Brand Tone & Voice guidelines emphasizing 'simple, clear language — avoid jargon'.
+                  - generic [ref=e796]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e798]: brand-tone-voice
+                  - generic [ref=e799]:
+                    - generic [ref=e800]:
+                      - img [ref=e801]
+                      - generic [ref=e804]: "AI Recommendation:"
+                    - paragraph [ref=e805]: Rewrite product descriptions to align with tone guidelines. Replace technical terms with benefit-focused language.
+                  - generic [ref=e806]:
+                    - button "Dismiss" [ref=e807]
+                    - button "Fix" [ref=e808]:
+                      - text: Fix
+                      - img [ref=e809]
+                - generic [ref=e811]:
+                  - generic [ref=e812]: Warning
+                  - heading "Strategy objective overlap detected" [level=3] [ref=e813]
+                  - paragraph [ref=e814]: Business Strategy → Growth Strategy 2026
+                  - paragraph [ref=e815]: The 'Increase MRR by 40%' objective and 'Secure 10 Beta Enterprise Clients' objective (Product Launch Strategy) target overlapping customer segments with potentially conflicting pricing strategies.
+                  - generic [ref=e816]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e817]:
+                      - generic [ref=e818]: growth-strategy-2026
+                      - generic [ref=e819]: product-launch-strategy
+                  - generic [ref=e820]:
+                    - generic [ref=e821]:
+                      - img [ref=e822]
+                      - generic [ref=e825]: "AI Recommendation:"
+                    - paragraph [ref=e826]: Define clear segment boundaries between growth targets and enterprise beta program. Consider a unified pricing strategy.
+                  - generic [ref=e827]:
+                    - button "Dismiss" [ref=e828]
+                    - button "Fix" [ref=e829]:
+                      - text: Fix
+                      - img [ref=e830]
+                - generic [ref=e832]:
+                  - generic [ref=e833]: Suggestion
+                  - heading "Brand Foundation values could be reflected in Product descriptions" [level=3] [ref=e834]
+                  - paragraph [ref=e835]: Brand Foundation → Core Values
+                  - paragraph [ref=e836]: Your core brand values (sustainability, innovation, transparency) are not consistently reflected in product descriptions and marketing materials.
+                  - generic [ref=e837]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e839]: Products & Services
+                  - generic [ref=e840]:
+                    - generic [ref=e841]:
+                      - img [ref=e842]
+                      - generic [ref=e845]: "AI Recommendation:"
+                    - paragraph [ref=e846]: Add sustainability messaging to product descriptions to reinforce core brand values across all touchpoints.
+                  - generic [ref=e847]:
+                    - button "View Source" [ref=e848]:
+                      - img [ref=e849]
+                      - text: View Source
+                    - button "Dismiss" [ref=e853]
+                    - button "Fix" [ref=e854]:
+                      - text: Fix
+                      - img [ref=e855]
+                - generic [ref=e857]:
+                  - generic [ref=e858]: Suggestion
+                  - heading "Brand Foundation values could be reflected in Product descriptions" [level=3] [ref=e859]
+                  - paragraph [ref=e860]: Brand Foundation → Core Values
+                  - paragraph [ref=e861]: Your core brand values (sustainability, innovation, transparency) are not consistently reflected in product descriptions and marketing materials.
+                  - generic [ref=e862]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e864]: Products & Services
+                  - generic [ref=e865]:
+                    - generic [ref=e866]:
+                      - img [ref=e867]
+                      - generic [ref=e870]: "AI Recommendation:"
+                    - paragraph [ref=e871]: Add sustainability messaging to product descriptions to reinforce core brand values across all touchpoints.
+                  - generic [ref=e872]:
+                    - button "View Source" [ref=e873]:
+                      - img [ref=e874]
+                      - text: View Source
+                    - button "Dismiss" [ref=e878]
+                    - button "Fix" [ref=e879]:
+                      - text: Fix
+                      - img [ref=e880]
+                - generic [ref=e882]:
+                  - generic [ref=e883]: Suggestion
+                  - heading "Brand Foundation values could be reflected in Product descriptions" [level=3] [ref=e884]
+                  - paragraph [ref=e885]: Brand Foundation → Core Values
+                  - paragraph [ref=e886]: Your core brand values (sustainability, innovation, transparency) are not consistently reflected in product descriptions and marketing materials.
+                  - generic [ref=e887]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e889]: Products & Services
+                  - generic [ref=e890]:
+                    - generic [ref=e891]:
+                      - img [ref=e892]
+                      - generic [ref=e895]: "AI Recommendation:"
+                    - paragraph [ref=e896]: Add sustainability messaging to product descriptions to reinforce core brand values across all touchpoints.
+                  - generic [ref=e897]:
+                    - button "View Source" [ref=e898]:
+                      - img [ref=e899]
+                      - text: View Source
+                    - button "Dismiss" [ref=e903]
+                    - button "Fix" [ref=e904]:
+                      - text: Fix
+                      - img [ref=e905]
+                - generic [ref=e907]:
+                  - generic [ref=e908]: Suggestion
+                  - heading "Brand Foundation values could be reflected in Product descriptions" [level=3] [ref=e909]
+                  - paragraph [ref=e910]: Brand Foundation → Core Values
+                  - paragraph [ref=e911]: Your core brand values (sustainability, innovation, transparency) are not consistently reflected in product descriptions and marketing materials.
+                  - generic [ref=e912]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e914]: Products & Services
+                  - generic [ref=e915]:
+                    - generic [ref=e916]:
+                      - img [ref=e917]
+                      - generic [ref=e920]: "AI Recommendation:"
+                    - paragraph [ref=e921]: Add sustainability messaging to product descriptions to reinforce core brand values across all touchpoints.
+                  - generic [ref=e922]:
+                    - button "View Source" [ref=e923]:
+                      - img [ref=e924]
+                      - text: View Source
+                    - button "Dismiss" [ref=e928]
+                    - button "Fix" [ref=e929]:
+                      - text: Fix
+                      - img [ref=e930]
+                - generic [ref=e932]:
+                  - generic [ref=e933]: Suggestion
+                  - heading "Brand Foundation values could be reflected in Product descriptions" [level=3] [ref=e934]
+                  - paragraph [ref=e935]: Brand Foundation → Core Values
+                  - paragraph [ref=e936]: Your core brand values (sustainability, innovation, transparency) are not consistently reflected in product descriptions and marketing materials.
+                  - generic [ref=e937]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e939]: Products & Services
+                  - generic [ref=e940]:
+                    - generic [ref=e941]:
+                      - img [ref=e942]
+                      - generic [ref=e945]: "AI Recommendation:"
+                    - paragraph [ref=e946]: Add sustainability messaging to product descriptions to reinforce core brand values across all touchpoints.
+                  - generic [ref=e947]:
+                    - button "View Source" [ref=e948]:
+                      - img [ref=e949]
+                      - text: View Source
+                    - button "Dismiss" [ref=e953]
+                    - button "Fix" [ref=e954]:
+                      - text: Fix
+                      - img [ref=e955]
+                - generic [ref=e957]:
+                  - generic [ref=e958]: Suggestion
+                  - heading "Brand Foundation values could be reflected in Product descriptions" [level=3] [ref=e959]
+                  - paragraph [ref=e960]: Brand Foundation → Core Values
+                  - paragraph [ref=e961]: Your core brand values (sustainability, innovation, transparency) are not consistently reflected in product descriptions and marketing materials.
+                  - generic [ref=e962]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e964]: Products & Services
+                  - generic [ref=e965]:
+                    - generic [ref=e966]:
+                      - img [ref=e967]
+                      - generic [ref=e970]: "AI Recommendation:"
+                    - paragraph [ref=e971]: Add sustainability messaging to product descriptions to reinforce core brand values across all touchpoints.
+                  - generic [ref=e972]:
+                    - button "View Source" [ref=e973]:
+                      - img [ref=e974]
+                      - text: View Source
+                    - button "Dismiss" [ref=e978]
+                    - button "Fix" [ref=e979]:
+                      - text: Fix
+                      - img [ref=e980]
+                - generic [ref=e982]:
+                  - generic [ref=e983]: Suggestion
+                  - heading "Core Values not reflected in Product descriptions" [level=3] [ref=e984]
+                  - paragraph [ref=e985]: Brand Foundation → Core Values × Products & Services
+                  - paragraph [ref=e986]: The stated Core Values (Innovation, Authenticity, Collaboration, Excellence, Empowerment) are not explicitly referenced or reflected in any of the 3 product descriptions. Values-aligned messaging strengthens brand coherence.
+                  - generic [ref=e987]:
+                    - text: "Conflicts with:"
+                    - generic [ref=e989]: core-values
+                  - generic [ref=e990]:
+                    - generic [ref=e991]:
+                      - img [ref=e992]
+                      - generic [ref=e995]: "AI Recommendation:"
+                    - paragraph [ref=e996]: Weave core values into product descriptions and feature lists. For example, frame AI features through the lens of 'Empowerment' and workshops through 'Collaboration'.
+                  - generic [ref=e997]:
+                    - button "Dismiss" [ref=e998]
+                    - button "Fix" [ref=e999]:
+                      - text: Fix
+                      - img [ref=e1000]
+          - dialog [ref=e1003]:
+            - generic [ref=e1004]:
+              - generic:
+                - heading [level=2]
+            - generic [ref=e1006]:
+              - img [ref=e1008]
+              - heading "Alignment Scan Complete" [level=3] [ref=e1011]
+              - paragraph [ref=e1012]: "Score: 83% · 3 issues found"
+              - button "View Results" [active] [ref=e1013]
+  - generic [ref=e1014]:
+    - generic [ref=e1016]:
+      - generic [ref=e1017]:
+        - img [ref=e1018]
+        - heading "Notifications" [level=2] [ref=e1021]
+        - generic [ref=e1022]: "5"
+      - generic [ref=e1023]:
+        - button "Toggle filters" [ref=e1024]:
+          - img
+        - button [ref=e1025]:
+          - img
+    - generic [ref=e1027]:
+      - button "Asset validated Brand Promise passed research validation System · 1m ago" [ref=e1028]:
+        - img [ref=e1030]
+        - generic [ref=e1035]:
+          - paragraph [ref=e1036]: Asset validated
+          - paragraph [ref=e1037]: Brand Promise passed research validation
+          - generic [ref=e1038]:
+            - generic [ref=e1039]: System
+            - generic [ref=e1040]: ·
+            - generic [ref=e1041]: 1m ago
+      - button "Strategy milestone All OKRs for Q1 defined System · 1m ago" [ref=e1042]:
+        - img [ref=e1044]
+        - generic [ref=e1050]:
+          - paragraph [ref=e1051]: Strategy milestone
+          - paragraph [ref=e1052]: All OKRs for Q1 defined
+          - generic [ref=e1053]:
+            - generic [ref=e1054]: System
+            - generic [ref=e1055]: ·
+            - generic [ref=e1056]: 1m ago
+      - button "Feedback received Sarah commented on persona research Sarah Chen · 1m ago" [ref=e1057]:
+        - img [ref=e1059]
+        - generic [ref=e1061]:
+          - paragraph [ref=e1062]: Feedback received
+          - paragraph [ref=e1063]: Sarah commented on persona research
+          - generic [ref=e1064]:
+            - generic [ref=e1065]: Sarah Chen
+            - generic [ref=e1066]: ·
+            - generic [ref=e1067]: 1m ago
+      - button "Design asset added Logo variations uploaded to Brand Assets Tom Wilson · 1m ago" [ref=e1068]:
+        - img [ref=e1070]
+        - generic [ref=e1073]:
+          - paragraph [ref=e1074]: Design asset added
+          - paragraph [ref=e1075]: Logo variations uploaded to Brand Assets
+          - generic [ref=e1076]:
+            - generic [ref=e1077]: Tom Wilson
+            - generic [ref=e1078]: ·
+            - generic [ref=e1079]: 1m ago
+      - button "Cross-reference found Market insight linked to Business Strategy System · 1m ago" [ref=e1080]:
+        - img [ref=e1082]
+        - generic [ref=e1085]:
+          - paragraph [ref=e1086]: Cross-reference found
+          - paragraph [ref=e1087]: Market insight linked to Business Strategy
+          - generic [ref=e1088]:
+            - generic [ref=e1089]: System
+            - generic [ref=e1090]: ·
+            - generic [ref=e1091]: 1m ago
+      - button "Research started User Testing for Product Page launched Sarah Chen · 1m ago" [ref=e1092]:
+        - img [ref=e1094]
+        - generic [ref=e1096]:
+          - paragraph [ref=e1097]: Research started
+          - paragraph [ref=e1098]: User Testing for Product Page launched
+          - generic [ref=e1099]:
+            - generic [ref=e1100]: Sarah Chen
+            - generic [ref=e1101]: ·
+            - generic [ref=e1102]: 1m ago
+      - button "New persona created Tech-Savvy Millennial added Erik Jager · 1m ago" [ref=e1103]:
+        - img [ref=e1105]
+        - generic [ref=e1108]:
+          - paragraph [ref=e1109]: New persona created
+          - paragraph [ref=e1110]: Tech-Savvy Millennial added
+          - generic [ref=e1111]:
+            - generic [ref=e1112]: Erik Jager
+            - generic [ref=e1113]: ·
+            - generic [ref=e1114]: 1m ago
+      - button "New insight added AI trend analysis found 3 new insights System · 1m ago" [ref=e1115]:
+        - img [ref=e1117]
+        - generic [ref=e1119]:
+          - paragraph [ref=e1120]: New insight added
+          - paragraph [ref=e1121]: AI trend analysis found 3 new insights
+          - generic [ref=e1122]:
+            - generic [ref=e1123]: System
+            - generic [ref=e1124]: ·
+            - generic [ref=e1125]: 1m ago
+      - button "Research plan created Q1 Persona Validation plan is ready Sarah Chen · 1m ago" [ref=e1126]:
+        - img [ref=e1128]
+        - generic [ref=e1131]:
+          - paragraph [ref=e1132]: Research plan created
+          - paragraph [ref=e1133]: Q1 Persona Validation plan is ready
+          - generic [ref=e1134]:
+            - generic [ref=e1135]: Sarah Chen
+            - generic [ref=e1136]: ·
+            - generic [ref=e1137]: 1m ago
+      - button "Asset status changed Mission Statement moved to Review Erik Jager · 1m ago" [ref=e1138]:
+        - img [ref=e1140]
+        - generic [ref=e1145]:
+          - paragraph [ref=e1146]: Asset status changed
+          - paragraph [ref=e1147]: Mission Statement moved to Review
+          - generic [ref=e1148]:
+            - generic [ref=e1149]: Erik Jager
+            - generic [ref=e1150]: ·
+            - generic [ref=e1151]: 1m ago
+      - button "New comment on Brand Voice Tom left feedback on tone guidelines Tom Wilson · 1m ago" [ref=e1152]:
+        - img [ref=e1154]
+        - generic [ref=e1157]:
+          - paragraph [ref=e1158]: New comment on Brand Voice
+          - paragraph [ref=e1159]: Tom left feedback on tone guidelines
+          - generic [ref=e1160]:
+            - generic [ref=e1161]: Tom Wilson
+            - generic [ref=e1162]: ·
+            - generic [ref=e1163]: 1m ago
+      - button "Milestone reached! Brand Foundation is now 80% complete System · 1m ago" [ref=e1164]:
+        - img [ref=e1166]
+        - generic [ref=e1173]:
+          - paragraph [ref=e1174]: Milestone reached!
+          - paragraph [ref=e1175]: Brand Foundation is now 80% complete
+          - generic [ref=e1176]:
+            - generic [ref=e1177]: System
+            - generic [ref=e1178]: ·
+            - generic [ref=e1179]: 1m ago
+      - button "New file uploaded Brand Guidelines v2.pdf added to library Erik Jager · 1m ago" [ref=e1180]:
+        - img [ref=e1182]
+        - generic [ref=e1186]:
+          - paragraph [ref=e1187]: New file uploaded
+          - paragraph [ref=e1188]: Brand Guidelines v2.pdf added to library
+          - generic [ref=e1189]:
+            - generic [ref=e1190]: Erik Jager
+            - generic [ref=e1191]: ·
+            - generic [ref=e1192]: 1m ago
+      - button "Research study completed Customer Interview Round 2 finished Sarah Chen · 1m ago" [ref=e1193]:
+        - img [ref=e1195]
+        - generic [ref=e1198]:
+          - paragraph [ref=e1199]: Research study completed
+          - paragraph [ref=e1200]: Customer Interview Round 2 finished
+          - generic [ref=e1201]:
+            - generic [ref=e1202]: Sarah Chen
+            - generic [ref=e1203]: ·
+            - generic [ref=e1204]: 1m ago
+      - button "New relationship discovered Brand Foundation linked to 3 personas System · 1m ago" [ref=e1205]:
+        - img [ref=e1207]
+        - generic [ref=e1211]:
+          - paragraph [ref=e1212]: New relationship discovered
+          - paragraph [ref=e1213]: Brand Foundation linked to 3 personas
+          - generic [ref=e1214]:
+            - generic [ref=e1215]: System
+            - generic [ref=e1216]: ·
+            - generic [ref=e1217]: 1m ago
+  - generic [ref=e1218]:
+    - generic:
+      - generic:
+        - generic:
+          - img
+          - generic: Support Chat
+        - button:
+          - img
+      - generic:
+        - generic:
+          - img
+          - paragraph: Chat coming soon
+          - paragraph: We're working on live chat support.
+    - button "Open chat" [ref=e1219]:
+      - img [ref=e1220]
+```

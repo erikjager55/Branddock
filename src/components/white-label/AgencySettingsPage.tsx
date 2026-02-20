@@ -8,13 +8,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Switch } from '../ui/switch';
 import { Badge } from '../ui/badge';
-import { 
-  Palette, Globe, Mail, Phone, MapPin, Link as LinkIcon, 
-  Building2, Save, Upload, Eye, Settings2 
+import {
+  Palette, Globe, Mail, Phone, MapPin, Link as LinkIcon,
+  Building2, Save, Upload, Eye, Settings2
 } from 'lucide-react';
+import { PageHeader } from '../shared/PageHeader';
+import { PageContainer } from '../shared/PageContainer';
+import { useUIState } from '../../contexts/UIStateContext';
 import { AgencySettings } from '../../types/white-label';
 
 export function AgencySettingsPage() {
+  const { setActiveSection } = useUIState();
   const { agencySettings, updateAgencySettings } = useWhiteLabel();
   const [localSettings, setLocalSettings] = useState(agencySettings);
   const [isSaving, setIsSaving] = useState(false);
@@ -40,27 +44,22 @@ export function AgencySettingsPage() {
   };
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="max-w-5xl mx-auto px-8 py-6 space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold mb-2">Agency Settings</h1>
-            <p className="text-muted-foreground">
-              Customize your agency branding and white-label configuration
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="gap-1">
-              <Building2 className="h-3 w-3" />
-              {localSettings.plan}
-            </Badge>
-            <Button onClick={handleSave} disabled={isSaving} className="gap-2">
-              <Save className="h-4 w-4" />
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
-        </div>
+    <PageContainer>
+      <PageHeader
+        icon={Building2}
+        iconBg="bg-gray-100"
+        iconColor="text-gray-600"
+        title="Agency Settings"
+        subtitle="Manage your agency profile and settings"
+        backLabel="Dashboard"
+        onBack={() => setActiveSection('dashboard')}
+        primaryAction={{
+          label: isSaving ? 'Saving...' : 'Save Changes',
+          icon: Save,
+          onClick: handleSave,
+          disabled: isSaving,
+        }}
+      />
 
         <Tabs defaultValue="branding" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
@@ -349,7 +348,6 @@ export function AgencySettingsPage() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+    </PageContainer>
   );
 }

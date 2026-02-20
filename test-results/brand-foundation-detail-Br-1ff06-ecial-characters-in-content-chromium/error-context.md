@@ -1,0 +1,280 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - button "Branddock Agency" [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e22]: Branddock Agency
+        - img [ref=e23]
+      - navigation "Breadcrumb" [ref=e27]:
+        - button "Dashboard" [ref=e28]:
+          - img [ref=e29]
+          - generic [ref=e32]: Dashboard
+        - img [ref=e33]
+        - button "Brand Assets" [ref=e35]:
+          - img [ref=e36]
+          - generic [ref=e42]: Brand Assets
+        - img [ref=e43]
+        - generic [ref=e46]: Brand "Test" <Asset> & Partners
+      - generic [ref=e47]:
+        - button "Quick Content" [ref=e48]:
+          - img
+          - generic [ref=e49]: Quick Content
+        - button "Search ⌘ + K" [ref=e50]:
+          - img
+          - generic [ref=e51]: Search
+          - generic [ref=e52]:
+            - generic [ref=e53]: ⌘
+            - generic [ref=e54]: +
+            - generic [ref=e55]: K
+        - button "Show Help ?" [ref=e57]:
+          - img
+          - text: Show Help
+          - generic [ref=e58]: "?"
+        - button "Notifications" [ref=e59]:
+          - img
+    - generic [ref=e60]:
+      - generic [ref=e61]:
+        - generic [ref=e63]:
+          - img "Branddock" [ref=e64]
+          - button [ref=e65]:
+            - img
+        - navigation [ref=e66]:
+          - generic [ref=e67]:
+            - heading "WORKSPACE" [level=3] [ref=e69]
+            - button "Overview" [ref=e70]:
+              - img
+              - generic [ref=e71]: Overview
+          - generic [ref=e72]:
+            - heading "STRATEGY" [level=3] [ref=e74]
+            - button "Campaigns" [ref=e75]:
+              - img
+              - generic [ref=e76]: Campaigns
+            - button "Content Library" [ref=e77]:
+              - img
+              - generic [ref=e78]: Content Library
+          - generic [ref=e79]:
+            - heading "KNOWLEDGE" [level=3] [ref=e81]
+            - button "Brand Foundation 3" [ref=e82]:
+              - img
+              - generic [ref=e83]: Brand Foundation
+              - generic [ref=e84]: "3"
+            - button "Business Strategy" [ref=e85]:
+              - img
+              - generic [ref=e86]: Business Strategy
+            - button "Brandstyle" [ref=e87]:
+              - img
+              - generic [ref=e88]: Brandstyle
+            - button "Personas" [ref=e89]:
+              - img
+              - generic [ref=e90]: Personas
+            - button "Products & Services" [ref=e91]:
+              - img
+              - generic [ref=e92]: Products & Services
+            - button "Market Insights" [ref=e93]:
+              - img
+              - generic [ref=e94]: Market Insights
+            - button "Knowledge Library" [ref=e95]:
+              - img
+              - generic [ref=e96]: Knowledge Library
+            - button "Brand Alignment 3" [ref=e97]:
+              - img
+              - generic [ref=e98]: Brand Alignment
+              - generic [ref=e99]: "3"
+          - generic [ref=e100]:
+            - heading "VALIDATION" [level=3] [ref=e102]
+            - button "Research Hub" [ref=e103]:
+              - img
+              - generic [ref=e104]: Research Hub
+            - button "Research Bundles" [ref=e105]:
+              - img
+              - generic [ref=e106]: Research Bundles
+            - button "Custom Validation" [ref=e107]:
+              - img
+              - generic [ref=e108]: Custom Validation
+          - generic [ref=e109]:
+            - button "Settings" [ref=e110]:
+              - generic [ref=e111]:
+                - img
+                - generic [ref=e112]: Settings
+              - img
+            - generic [ref=e113]:
+              - button "Account" [ref=e114]:
+                - img
+                - generic [ref=e115]: Account
+              - button "Team" [ref=e116]:
+                - img
+                - generic [ref=e117]: Team
+              - button "Agency" [ref=e118]:
+                - img
+                - generic [ref=e119]: Agency
+              - button "Clients" [ref=e120]:
+                - img
+                - generic [ref=e121]: Clients
+              - button "Billing & Payments" [ref=e122]:
+                - img
+                - generic [ref=e123]: Billing & Payments
+              - button "Notifications" [ref=e124]:
+                - img
+                - generic [ref=e125]: Notifications
+              - button "Appearance" [ref=e126]:
+                - img
+                - generic [ref=e127]: Appearance
+              - button "Commercial Demo" [ref=e128]:
+                - img
+                - generic [ref=e129]: Commercial Demo
+              - 'button "Demo: Compact Variant NEW" [ref=e130]':
+                - img
+                - generic [ref=e131]: "Demo: Compact Variant"
+                - generic [ref=e132]: NEW
+            - button "Help & Support" [ref=e133]:
+              - img
+              - generic [ref=e134]: Help & Support
+          - generic [ref=e137]:
+            - img [ref=e138]
+            - text: BETA
+      - main [ref=e141]:
+        - generic [ref=e143]:
+          - generic [ref=e144]:
+            - button "Back to Your Brand" [ref=e145]:
+              - img
+              - text: Back to Your Brand
+            - generic [ref=e146]:
+              - generic [ref=e147]:
+                - img [ref=e149]
+                - generic [ref=e153]:
+                  - heading "Brand \"Test\" <Asset> & Partners" [level=1] [ref=e154]
+                  - paragraph
+              - generic [ref=e155]:
+                - img
+                - text: Awaiting Research
+          - generic [ref=e156]:
+            - generic [ref=e157]:
+              - generic [ref=e158]:
+                - button "Edit Content" [ref=e159]:
+                  - img
+                  - text: Edit Content
+                - button "Regenerate with AI" [ref=e160]:
+                  - img
+                  - text: Regenerate with AI
+              - button "Lock for Editing" [ref=e161]:
+                - img
+                - text: Lock for Editing
+            - generic [ref=e163]:
+              - generic [ref=e165]:
+                - img [ref=e167]
+                - generic [ref=e170]:
+                  - heading "Content" [level=3] [ref=e171]
+                  - paragraph [ref=e172]: Define the core content for this asset
+              - paragraph [ref=e175]: No content defined yet. Click "Edit Content" to add content.
+          - generic [ref=e176]:
+            - generic [ref=e177]:
+              - generic [ref=e178]:
+                - generic [ref=e179]:
+                  - heading "Research Methods" [level=2] [ref=e180]
+                  - paragraph [ref=e181]: Validate and enrich this asset through research
+                - generic [ref=e182]:
+                  - generic [ref=e183]: 0%
+                  - paragraph [ref=e184]: Unlocked
+              - generic [ref=e185]:
+                - progressbar [ref=e186]
+                - generic [ref=e188]: 0 of 4 completed
+              - generic [ref=e189]:
+                - generic [ref=e190]:
+                  - img [ref=e191]
+                  - generic [ref=e194]: "Last updated: 2026-02-20T16:16:00.602Z"
+                - generic [ref=e195]:
+                  - img [ref=e196]
+                  - generic [ref=e198]: 0 artifacts generated
+            - generic [ref=e199]:
+              - generic [ref=e200] [cursor=pointer]:
+                - generic [ref=e201]:
+                  - generic [ref=e202]:
+                    - img [ref=e203]
+                    - text: AVAILABLE
+                  - img [ref=e205]
+                - generic [ref=e206]:
+                  - img [ref=e208]
+                  - generic [ref=e216]:
+                    - generic [ref=e217]: AI Exploration
+                    - generic [ref=e218]:
+                      - generic [ref=e219]: 1-2 days
+                      - generic [ref=e220]: •
+                      - generic [ref=e221]: AI-Powered
+              - generic [ref=e222] [cursor=pointer]:
+                - generic [ref=e223]:
+                  - generic [ref=e224]:
+                    - img [ref=e225]
+                    - text: AVAILABLE
+                  - img [ref=e227]
+                - generic [ref=e228]:
+                  - img [ref=e230]
+                  - generic [ref=e235]:
+                    - generic [ref=e236]: Workshop
+                    - generic [ref=e237]:
+                      - generic [ref=e238]: 2-4 hours
+                      - generic [ref=e239]: •
+                      - generic [ref=e240]: Collaborative
+              - generic [ref=e241] [cursor=pointer]:
+                - generic [ref=e242]:
+                  - generic [ref=e243]:
+                    - img [ref=e244]
+                    - text: AVAILABLE
+                  - img [ref=e246]
+                - generic [ref=e247]:
+                  - img [ref=e249]
+                  - generic [ref=e251]:
+                    - generic [ref=e252]: Interviews
+                    - generic [ref=e253]:
+                      - generic [ref=e254]: 45-60 min
+                      - generic [ref=e255]: •
+                      - generic [ref=e256]: Qualitative
+              - generic [ref=e257] [cursor=pointer]:
+                - generic [ref=e258]:
+                  - generic [ref=e259]:
+                    - img [ref=e260]
+                    - text: AVAILABLE
+                  - img [ref=e262]
+                - generic [ref=e263]:
+                  - img [ref=e265]
+                  - generic [ref=e268]:
+                    - generic [ref=e269]: Questionnaire
+                    - generic [ref=e270]:
+                      - generic [ref=e271]: 1-2 weeks
+                      - generic [ref=e272]: •
+                      - generic [ref=e273]: Quantitative
+  - generic [ref=e274]:
+    - generic [ref=e276]:
+      - generic [ref=e277]:
+        - img [ref=e278]
+        - heading "Notifications" [level=2] [ref=e281]
+      - generic [ref=e282]:
+        - button "Toggle filters" [ref=e283]:
+          - img
+        - button [ref=e284]:
+          - img
+    - generic [ref=e286]:
+      - img [ref=e287]
+      - paragraph [ref=e290]: No notifications
+      - paragraph [ref=e291]: Notifications will appear here as you work
+  - generic [ref=e292]:
+    - generic:
+      - generic:
+        - generic:
+          - img
+          - generic: Support Chat
+        - button:
+          - img
+      - generic:
+        - generic:
+          - img
+          - paragraph: Chat coming soon
+          - paragraph: We're working on live chat support.
+    - button "Open chat" [ref=e293]:
+      - img [ref=e294]
+```

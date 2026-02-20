@@ -7,7 +7,7 @@
 @layer utilities {
   /* ===== SPACING SYSTEM ===== */
   .section-spacing {
-    @apply py-8 px-6;
+    @apply py-8 px-8;
   }
 
   .card-spacing {

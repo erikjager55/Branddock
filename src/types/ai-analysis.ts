@@ -1,11 +1,17 @@
-// === Enums ===
+// =============================================================
+// AI Brand Analysis Types (S1 — Fase 1B)
+// =============================================================
+
+// ─── Enums (mirror Prisma) ──────────────────────────────────
+
 export type AIAnalysisStatus =
   | "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED"
   | "REPORT_GENERATING" | "REPORT_READY" | "ERROR";
 
 export type AIMessageType = "SYSTEM_INTRO" | "AI_QUESTION" | "USER_ANSWER" | "AI_FEEDBACK";
 
-// === Entities ===
+// ─── Message ────────────────────────────────────────────────
+
 export interface AIAnalysisMessage {
   id: string;
   type: AIMessageType;
@@ -15,6 +21,8 @@ export interface AIAnalysisMessage {
   createdAt: string;
 }
 
+// ─── Session ────────────────────────────────────────────────
+
 export interface AIBrandAnalysisSession {
   id: string;
   status: AIAnalysisStatus;
@@ -23,11 +31,37 @@ export interface AIBrandAnalysisSession {
   answeredQuestions: number;
   locked: boolean;
   completedAt: string | null;
+  lastUpdatedAt: string | null;
   brandAssetId: string;
+  workspaceId: string;
+  createdById: string;
+  personaId: string | null;
+  reportData: AIAnalysisReportData | null;
+  messages: AIAnalysisMessage[];
   createdAt: string;
 }
 
-// === Report ===
+// Alias for convenience
+export type AIAnalysisSession = AIBrandAnalysisSession;
+
+// ─── Report ─────────────────────────────────────────────────
+
+export type FindingKey = "brand_purpose" | "target_audience" | "unique_value" | "customer_challenge" | "market_position";
+
+export interface AIFinding {
+  key: FindingKey;
+  title: string;
+  description: string;
+  icon: string;
+}
+
+export interface AIRecommendation {
+  number: number;
+  title: string;
+  description: string;
+  priority: "high" | "medium" | "low";
+}
+
 export interface AIAnalysisReportData {
   executiveSummary: string;
   findings: AIFinding[];
@@ -39,43 +73,49 @@ export interface AIAnalysisReportData {
   lastUpdatedAt: string;
 }
 
-export type FindingKey = "brand_purpose" | "target_audience" | "unique_value" | "customer_challenge" | "market_position";
+// ─── API Request/Response Types ─────────────────────────────
 
-export interface AIFinding {
-  key: FindingKey;
-  title: string;
-  description: string;
-}
-
-export interface AIRecommendation {
-  number: number;
-  title: string;
-  description: string;
-  priority: "high" | "medium" | "low";
-}
-
-// === API Responses ===
-export interface StartAnalysisResponse {
+export interface StartSessionResponse {
   sessionId: string;
-  status: "IN_PROGRESS";
+  status: AIAnalysisStatus;
   messages: AIAnalysisMessage[];
 }
 
+// Keep backward compat alias
+export type StartAnalysisResponse = StartSessionResponse;
+
 export interface SubmitAnswerResponse {
-  feedback: AIAnalysisMessage;
-  nextQuestion: AIAnalysisMessage | null;
+  feedback: string;
+  nextQuestion: string | null;
   progress: number;
   answeredQuestions: number;
   totalQuestions: number;
   isComplete: boolean;
 }
 
-export interface SessionWithMessages {
-  session: AIBrandAnalysisSession;
-  messages: AIAnalysisMessage[];
+export interface GenerateReportResponse {
+  status: AIAnalysisStatus;
+  message: string;
 }
 
 export interface ReportResponse {
-  reportData: AIAnalysisReportData;
-  status: "REPORT_READY";
+  status: AIAnalysisStatus;
+  reportData: AIAnalysisReportData | null;
+  ready: boolean;
+}
+
+export interface RawReportResponse {
+  session: Omit<AIBrandAnalysisSession, "messages">;
+  messages: AIAnalysisMessage[];
+  reportData: AIAnalysisReportData | null;
+}
+
+export interface ToggleLockResponse {
+  locked: boolean;
+  sessionId: string;
+}
+
+export interface SessionWithMessages {
+  session: AIBrandAnalysisSession;
+  messages: AIAnalysisMessage[];
 }

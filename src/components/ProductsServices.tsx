@@ -40,12 +40,83 @@ import {
   Target,
   Smartphone,
   Zap,
-  Globe
+  Globe,
+  X,
+  Link2,
+  FileText,
+  Upload,
+  PenTool,
 } from 'lucide-react';
 import { useProducts } from '../contexts';
+import { useProductPersonas, useUnlinkPersona } from '../contexts/ProductsContext';
+import type { ProductPersonaLink } from '../lib/api/products';
 
 interface ProductsServicesProps {
   onNavigate?: (section: string, productId?: string) => void;
+}
+
+// ─── Source badge config ─────────────────────────────────────
+function getSourceConfig(source?: string) {
+  switch (source?.toUpperCase()) {
+    case 'URL':
+    case 'WEBSITE':
+      return { icon: Globe, label: 'URL', color: 'bg-blue-100 text-blue-700 border-blue-200' };
+    case 'PDF':
+    case 'FILE':
+      return { icon: FileText, label: 'PDF', color: 'bg-orange-100 text-orange-700 border-orange-200' };
+    case 'UPLOAD':
+      return { icon: Upload, label: 'Upload', color: 'bg-violet-100 text-violet-700 border-violet-200' };
+    default:
+      return { icon: PenTool, label: 'Manual', color: 'bg-gray-100 text-gray-600 border-gray-200' };
+  }
+}
+
+// ─── Persona tags sub-component ──────────────────────────────
+function PersonaTags({ productId }: { productId: string }) {
+  const { data, isLoading } = useProductPersonas(productId);
+  const unlinkMutation = useUnlinkPersona();
+  const personas = data?.personas ?? [];
+
+  if (isLoading) return null;
+  if (personas.length === 0) {
+    return (
+      <span className="text-xs text-muted-foreground italic flex items-center gap-1">
+        <Users className="h-3 w-3" />
+        No personas linked
+      </span>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {personas.slice(0, 3).map((p) => (
+        <span
+          key={p.id}
+          className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 border border-violet-200 pl-1 pr-2 py-0.5 text-xs text-violet-700 group/tag"
+        >
+          <span className="h-4 w-4 rounded-full bg-violet-200 flex items-center justify-center flex-shrink-0 text-[10px] font-semibold uppercase">
+            {p.name.charAt(0)}
+          </span>
+          <span className="truncate max-w-[80px]">{p.name}</span>
+          <button
+            className="h-3 w-3 rounded-full hover:bg-violet-300 flex items-center justify-center opacity-0 group-hover/tag:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              unlinkMutation.mutate({ productId, personaId: p.id });
+            }}
+            title="Unlink persona"
+          >
+            <X className="h-2 w-2" />
+          </button>
+        </span>
+      ))}
+      {personas.length > 3 && (
+        <span className="inline-flex items-center rounded-full bg-violet-50 border border-violet-200 px-2 py-0.5 text-xs text-violet-600">
+          +{personas.length - 3}
+        </span>
+      )}
+    </div>
+  );
 }
 
 export function ProductsServices({ onNavigate }: ProductsServicesProps) {
@@ -147,6 +218,14 @@ export function ProductsServices({ onNavigate }: ProductsServicesProps) {
                       <p className="text-sm text-muted-foreground line-clamp-2">
                         {product.description}
                       </p>
+
+                      {/* Persona tags */}
+                      {product.id && (
+                        <div className="flex items-center gap-2">
+                          <PersonaTags productId={product.id} />
+                        </div>
+                      )}
+
                       {product.features && product.features.length > 0 && (
                         <Stack direction="vertical" gap="sm">
                           <h4 className="text-sm font-medium">Key Features:</h4>
@@ -164,6 +243,20 @@ export function ProductsServices({ onNavigate }: ProductsServicesProps) {
                           </Flex>
                         </Stack>
                       )}
+
+                      {/* Source badge */}
+                      {(() => {
+                        const srcConfig = getSourceConfig(product.source);
+                        const SrcIcon = srcConfig.icon;
+                        return (
+                          <div className="flex items-center pt-2 border-t border-border/50">
+                            <Badge variant="outline" className={`text-[10px] gap-1 px-2 py-0.5 ${srcConfig.color}`}>
+                              <SrcIcon className="h-3 w-3" />
+                              {srcConfig.label}
+                            </Badge>
+                          </div>
+                        );
+                      })()}
                     </Stack>
                   </CardContent>
                 </Card>

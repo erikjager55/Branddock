@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
@@ -23,83 +23,157 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
-  MoreVertical,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
-import type { TeamMember, TeamRole } from '../../types/team';
-import { mockTeamMembers } from '../../data/mock-collaboration';
+import { PageHeader } from '../shared/PageHeader';
+import { PageContainer } from '../shared/PageContainer';
+import { useUIState } from '../../contexts/UIStateContext';
+import { useWorkspace } from '../../hooks/use-workspace';
+
+type TeamRole = 'owner' | 'admin' | 'member' | 'viewer';
+
+interface ApiMember {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  role: string;
+  avatar: string | null;
+  isActive: boolean;
+  joinedAt: string;
+}
+
+interface ApiInvitation {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  token: string;
+  expiresAt: string;
+  createdAt: string;
+}
 
 export function TeamManagementPage() {
-  const [members, setMembers] = useState<TeamMember[]>(mockTeamMembers);
+  const { setActiveSection } = useUIState();
+  const { organizationId } = useWorkspace();
+  const [members, setMembers] = useState<ApiMember[]>([]);
+  const [invitations, setInvitations] = useState<ApiInvitation[]>([]);
+  const [myRole, setMyRole] = useState<string>('viewer');
   const [searchQuery, setSearchQuery] = useState('');
   const [showInviteForm, setShowInviteForm] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<TeamRole>('viewer');
+  const [inviteRole, setInviteRole] = useState<TeamRole>('member');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isInviting, setIsInviting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filter members based on search
+  const canManage = ['owner', 'admin'].includes(myRole);
+
+  const loadMembers = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/organization/members');
+      if (!res.ok) throw new Error('Failed to load members');
+      const data = await res.json();
+      setMembers(data.members ?? []);
+      setInvitations(data.invitations ?? []);
+      setMyRole(data.myRole ?? 'viewer');
+    } catch (err) {
+      setError('Could not load team members');
+      console.error('[TeamManagement]', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMembers();
+  }, [loadMembers]);
+
   const filteredMembers = members.filter(
     (member) =>
       member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       member.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Count members by role
   const roleCounts = {
     owner: members.filter((m) => m.role === 'owner').length,
     admin: members.filter((m) => m.role === 'admin').length,
-    editor: members.filter((m) => m.role === 'editor').length,
+    member: members.filter((m) => m.role === 'member').length,
     viewer: members.filter((m) => m.role === 'viewer').length,
   };
 
-  const handleInvite = () => {
-    if (!inviteEmail) return;
+  const handleInvite = async () => {
+    if (!inviteEmail || !organizationId) return;
+    setIsInviting(true);
 
-    const newMember: TeamMember = {
-      id: `member-${Date.now()}`,
-      name: inviteEmail.split('@')[0],
-      email: inviteEmail,
-      role: inviteRole,
-      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${inviteEmail}`,
-      status: 'pending',
-      joinedAt: new Date().toISOString(),
-    };
+    try {
+      const res = await fetch('/api/organization/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteEmail,
+          role: inviteRole,
+          organizationId,
+        }),
+      });
 
-    setMembers([...members, newMember]);
-    setInviteEmail('');
-    setInviteRole('viewer');
-    setShowInviteForm(false);
-  };
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error ?? 'Failed to send invitation');
+        return;
+      }
 
-  const handleRoleChange = (memberId: string, newRole: TeamRole) => {
-    setMembers(
-      members.map((member) =>
-        member.id === memberId ? { ...member, role: newRole } : member
-      )
-    );
-  };
-
-  const handleRemoveMember = (memberId: string) => {
-    if (confirm('Are you sure you want to remove this team member?')) {
-      setMembers(members.filter((member) => member.id !== memberId));
+      setInviteEmail('');
+      setInviteRole('member');
+      setShowInviteForm(false);
+      loadMembers(); // Refresh to show new invitation
+    } catch (err) {
+      console.error('Invite failed:', err);
+      alert('Failed to send invitation');
+    } finally {
+      setIsInviting(false);
     }
   };
 
-  const getRoleIcon = (role: TeamRole) => {
+  const handleCancelInvite = async (invitationId: string) => {
+    try {
+      // Delete the invitation directly
+      await fetch(`/api/organization/invite?id=${invitationId}`, {
+        method: 'DELETE',
+      });
+      setInvitations((prev) => prev.filter((i) => i.id !== invitationId));
+    } catch (err) {
+      console.error('Cancel invite failed:', err);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!confirm('Are you sure you want to remove this team member?')) return;
+    // For now, just remove from local state — could add a DELETE endpoint later
+    setMembers((prev) => prev.filter((m) => m.id !== memberId));
+  };
+
+  const getRoleIcon = (role: string) => {
     switch (role) {
       case 'owner':
         return <Crown className="h-4 w-4 text-yellow-500" />;
       case 'admin':
         return <Shield className="h-4 w-4 text-blue-500" />;
-      case 'editor':
+      case 'member':
         return <Edit2 className="h-4 w-4 text-green-500" />;
       case 'viewer':
+        return <Users className="h-4 w-4 text-gray-500" />;
+      default:
         return <Users className="h-4 w-4 text-gray-500" />;
     }
   };
 
-  const getRoleBadgeVariant = (role: TeamRole): 'default' | 'secondary' | 'outline' => {
+  const getRoleBadgeVariant = (role: string): 'default' | 'secondary' | 'outline' => {
     switch (role) {
       case 'owner':
-        return 'default';
       case 'admin':
         return 'default';
       default:
@@ -107,36 +181,59 @@ export function TeamManagementPage() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <CheckCircle2 className="h-4 w-4 text-green-500" />;
-      case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'inactive':
-        return <XCircle className="h-4 w-4 text-gray-400" />;
-      default:
-        return null;
-    }
-  };
+  if (isLoading) {
+    return (
+      <PageContainer>
+        <div className="flex items-center justify-center py-32">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+            <p className="text-sm text-gray-500">Loading team...</p>
+          </div>
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageContainer>
+        <div className="flex items-center justify-center py-32">
+          <div className="text-center space-y-3">
+            <p className="text-gray-500">{error}</p>
+            <Button variant="outline" onClick={loadMembers} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Retry
+            </Button>
+          </div>
+        </div>
+      </PageContainer>
+    );
+  }
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
-        {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold">Team Management</h1>
-          <p className="text-muted-foreground">
-            Manage your team members, roles, and permissions
-          </p>
-        </div>
+    <PageContainer>
+      <div className="space-y-6">
+        <PageHeader
+          icon={Users}
+          iconBg="bg-gray-100"
+          iconColor="text-gray-600"
+          title="Team"
+          subtitle="Manage team members and permissions"
+          backLabel="Settings"
+          onBack={() => setActiveSection('settings-account')}
+          primaryAction={canManage ? {
+            label: '+ Invite Member',
+            icon: UserPlus,
+            onClick: () => setShowInviteForm(!showInviteForm),
+          } : undefined}
+        />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
-                <Crown className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <Crown className="h-5 w-5 text-yellow-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Owners</p>
@@ -147,8 +244,8 @@ export function TeamManagementPage() {
 
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
-                <Shield className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Shield className="h-5 w-5 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Admins</p>
@@ -159,20 +256,20 @@ export function TeamManagementPage() {
 
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
-                <Edit2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Edit2 className="h-5 w-5 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Editors</p>
-                <p className="text-2xl font-bold">{roleCounts.editor}</p>
+                <p className="text-sm text-muted-foreground">Members</p>
+                <p className="text-2xl font-bold">{roleCounts.member}</p>
               </div>
             </div>
           </Card>
 
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                <Users className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <Users className="h-5 w-5 text-gray-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Viewers</p>
@@ -182,7 +279,7 @@ export function TeamManagementPage() {
           </Card>
         </div>
 
-        {/* Actions Bar */}
+        {/* Search Bar */}
         <div className="flex items-center gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -193,20 +290,16 @@ export function TeamManagementPage() {
               className="pl-9"
             />
           </div>
-          <Button onClick={() => setShowInviteForm(!showInviteForm)} className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            Invite Member
-          </Button>
         </div>
 
         {/* Invite Form */}
-        {showInviteForm && (
+        {showInviteForm && canManage && (
           <Card className="p-6 border-2 border-primary/20">
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold mb-1">Invite Team Member</h3>
                 <p className="text-sm text-muted-foreground">
-                  Send an invitation to join your team
+                  Send an invitation to join your organization
                 </p>
               </div>
 
@@ -239,10 +332,10 @@ export function TeamManagementPage() {
                           <span>Viewer</span>
                         </div>
                       </SelectItem>
-                      <SelectItem value="editor">
+                      <SelectItem value="member">
                         <div className="flex items-center gap-2">
                           <Edit2 className="h-4 w-4" />
-                          <span>Editor</span>
+                          <span>Member</span>
                         </div>
                       </SelectItem>
                       <SelectItem value="admin">
@@ -257,14 +350,57 @@ export function TeamManagementPage() {
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleInvite} className="gap-2">
-                  <Mail className="h-4 w-4" />
+                <Button onClick={handleInvite} disabled={isInviting || !inviteEmail} className="gap-2">
+                  {isInviting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Mail className="h-4 w-4" />
+                  )}
                   Send Invitation
                 </Button>
                 <Button variant="outline" onClick={() => setShowInviteForm(false)}>
                   Cancel
                 </Button>
               </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Pending Invitations */}
+        {invitations.length > 0 && canManage && (
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Clock className="h-5 w-5 text-yellow-500" />
+              Pending Invitations ({invitations.length})
+            </h3>
+            <div className="space-y-3">
+              {invitations.map((invite) => (
+                <div
+                  key={invite.id}
+                  className="flex items-center gap-4 p-3 rounded-lg border border-yellow-200 bg-yellow-50"
+                >
+                  <Mail className="h-5 w-5 text-yellow-600 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{invite.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Invited as {invite.role} &middot; Expires{' '}
+                      {new Date(invite.expiresAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-yellow-700 border-yellow-300">
+                    Pending
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleCancelInvite(invite.id)}
+                    className="text-destructive hover:text-destructive"
+                    title="Cancel invitation"
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
           </Card>
         )}
@@ -283,24 +419,34 @@ export function TeamManagementPage() {
                   className="flex items-center gap-4 p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
                 >
                   {/* Avatar */}
-                  <img
-                    src={member.avatar}
-                    alt={member.name}
-                    className="h-12 w-12 rounded-full border-2 border-border"
-                  />
+                  {member.avatar ? (
+                    <img
+                      src={member.avatar}
+                      alt={member.name}
+                      className="h-12 w-12 rounded-full border-2 border-border"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-full border-2 border-border bg-primary/10 flex items-center justify-center">
+                      <span className="text-primary font-semibold text-lg">
+                        {member.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <h4 className="font-semibold truncate">{member.name}</h4>
-                      {member.status && (
-                        <div className="flex items-center gap-1">
-                          {getStatusIcon(member.status)}
-                          <span className="text-xs text-muted-foreground capitalize">
-                            {member.status}
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {member.isActive ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <XCircle className="h-4 w-4 text-gray-400" />
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {member.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
                     </div>
                     <p className="text-sm text-muted-foreground truncate">
                       {member.email}
@@ -318,23 +464,9 @@ export function TeamManagementPage() {
                     </Badge>
                   </div>
 
-                  {/* Actions */}
-                  {member.role !== 'owner' && (
+                  {/* Actions (only for non-owners, and only if current user can manage) */}
+                  {member.role !== 'owner' && canManage && (
                     <div className="flex items-center gap-2">
-                      <Select
-                        value={member.role}
-                        onValueChange={(value) => handleRoleChange(member.id, value as TeamRole)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="viewer">Viewer</SelectItem>
-                          <SelectItem value="editor">Editor</SelectItem>
-                          <SelectItem value="admin">Admin</SelectItem>
-                        </SelectContent>
-                      </Select>
-
                       <Button
                         variant="ghost"
                         size="sm"
@@ -383,7 +515,7 @@ export function TeamManagementPage() {
                 <div>
                   <h4 className="font-semibold">Admin</h4>
                   <p className="text-sm text-muted-foreground">
-                    Manage team members, projects, and organization settings
+                    Manage team members, workspaces, and organization settings
                   </p>
                 </div>
               </div>
@@ -393,7 +525,7 @@ export function TeamManagementPage() {
               <div className="flex items-start gap-3">
                 <Edit2 className="h-5 w-5 text-green-500 mt-0.5" />
                 <div>
-                  <h4 className="font-semibold">Editor</h4>
+                  <h4 className="font-semibold">Member</h4>
                   <p className="text-sm text-muted-foreground">
                     Create and edit content, strategies, and research
                   </p>
@@ -413,6 +545,6 @@ export function TeamManagementPage() {
           </div>
         </Card>
       </div>
-    </div>
+    </PageContainer>
   );
 }

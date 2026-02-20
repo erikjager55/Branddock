@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import '../index.css';
 import { QueryProvider } from '@/providers/query-provider';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'Branddock',
@@ -17,6 +18,7 @@ export default function RootLayout({
       <body>
         <QueryProvider>
           {children}
+          <Toaster position="bottom-right" richColors />
         </QueryProvider>
       </body>
     </html>

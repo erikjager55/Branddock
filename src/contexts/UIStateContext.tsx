@@ -42,7 +42,7 @@ interface UIStateContextType {
 const UIStateContext = createContext<UIStateContextType | undefined>(undefined);
 
 export function UIStateProvider({ children }: { children: ReactNode }) {
-  const [activeSection, setActiveSectionState] = useState('personas');
+  const [activeSection, setActiveSectionState] = useState('dashboard');
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [selectedResearchOption, setSelectedResearchOption] = useState<string | null>(null);
   const [viewingAssetResults, setViewingAssetResults] = useState(false);

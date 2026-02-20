@@ -1,0 +1,335 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - button "Branddock Agency" [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e22]: Branddock Agency
+        - img [ref=e23]
+      - navigation "Breadcrumb" [ref=e27]:
+        - button "Dashboard" [ref=e28]:
+          - img [ref=e29]
+          - generic [ref=e32]: Dashboard
+        - img [ref=e33]
+        - generic [ref=e35]:
+          - img [ref=e36]
+          - generic [ref=e38]: Research Hub
+      - generic [ref=e39]:
+        - button "Quick Content" [ref=e40]:
+          - img
+          - generic [ref=e41]: Quick Content
+        - button "Search ⌘ + K" [ref=e42]:
+          - img
+          - generic [ref=e43]: Search
+          - generic [ref=e44]:
+            - generic [ref=e45]: ⌘
+            - generic [ref=e46]: +
+            - generic [ref=e47]: K
+        - button "Show Help ?" [ref=e49]:
+          - img
+          - text: Show Help
+          - generic [ref=e50]: "?"
+        - button "Notifications" [ref=e51]:
+          - img
+    - generic [ref=e52]:
+      - generic [ref=e53]:
+        - generic [ref=e55]:
+          - img "Branddock" [ref=e56]
+          - button [ref=e57]:
+            - img
+        - navigation [ref=e58]:
+          - generic [ref=e59]:
+            - heading "WORKSPACE" [level=3] [ref=e61]
+            - button "Overview" [ref=e62]:
+              - img
+              - generic [ref=e63]: Overview
+          - generic [ref=e64]:
+            - heading "STRATEGY" [level=3] [ref=e66]
+            - button "Campaigns" [ref=e67]:
+              - img
+              - generic [ref=e68]: Campaigns
+            - button "Content Library" [ref=e69]:
+              - img
+              - generic [ref=e70]: Content Library
+          - generic [ref=e71]:
+            - heading "KNOWLEDGE" [level=3] [ref=e73]
+            - button "Brand Foundation 3" [ref=e74]:
+              - img
+              - generic [ref=e75]: Brand Foundation
+              - generic [ref=e76]: "3"
+            - button "Business Strategy" [ref=e77]:
+              - img
+              - generic [ref=e78]: Business Strategy
+            - button "Brandstyle" [ref=e79]:
+              - img
+              - generic [ref=e80]: Brandstyle
+            - button "Personas" [ref=e81]:
+              - img
+              - generic [ref=e82]: Personas
+            - button "Products & Services" [ref=e83]:
+              - img
+              - generic [ref=e84]: Products & Services
+            - button "Market Insights" [ref=e85]:
+              - img
+              - generic [ref=e86]: Market Insights
+            - button "Knowledge Library" [ref=e87]:
+              - img
+              - generic [ref=e88]: Knowledge Library
+            - button "Brand Alignment 3" [ref=e89]:
+              - img
+              - generic [ref=e90]: Brand Alignment
+              - generic [ref=e91]: "3"
+          - generic [ref=e92]:
+            - heading "VALIDATION" [level=3] [ref=e94]
+            - button "Research Hub" [active] [ref=e95]:
+              - img
+              - generic [ref=e96]: Research Hub
+            - button "Research Bundles" [ref=e97]:
+              - img
+              - generic [ref=e98]: Research Bundles
+            - button "Custom Validation" [ref=e99]:
+              - img
+              - generic [ref=e100]: Custom Validation
+          - generic [ref=e101]:
+            - button "Settings" [ref=e102]:
+              - generic [ref=e103]:
+                - img
+                - generic [ref=e104]: Settings
+              - img
+            - generic [ref=e105]:
+              - button "Account" [ref=e106]:
+                - img
+                - generic [ref=e107]: Account
+              - button "Team" [ref=e108]:
+                - img
+                - generic [ref=e109]: Team
+              - button "Agency" [ref=e110]:
+                - img
+                - generic [ref=e111]: Agency
+              - button "Clients" [ref=e112]:
+                - img
+                - generic [ref=e113]: Clients
+              - button "Billing & Payments" [ref=e114]:
+                - img
+                - generic [ref=e115]: Billing & Payments
+              - button "Notifications" [ref=e116]:
+                - img
+                - generic [ref=e117]: Notifications
+              - button "Appearance" [ref=e118]:
+                - img
+                - generic [ref=e119]: Appearance
+              - button "Commercial Demo" [ref=e120]:
+                - img
+                - generic [ref=e121]: Commercial Demo
+              - 'button "Demo: Compact Variant NEW" [ref=e122]':
+                - img
+                - generic [ref=e123]: "Demo: Compact Variant"
+                - generic [ref=e124]: NEW
+            - button "Help & Support" [ref=e125]:
+              - img
+              - generic [ref=e126]: Help & Support
+          - generic [ref=e129]:
+            - img [ref=e130]
+            - text: BETA
+      - main [ref=e133]:
+        - generic [ref=e136]:
+          - generic [ref=e139]:
+            - generic [ref=e140]:
+              - img [ref=e142]
+              - generic [ref=e144]:
+                - heading "Research Hub" [level=1] [ref=e145]
+                - paragraph [ref=e146]: Design and run brand research studies
+            - generic [ref=e148]:
+              - button "New Research Plan" [ref=e149]:
+                - img [ref=e150]
+                - text: New Research Plan
+              - button [ref=e151]:
+                - img [ref=e152]
+          - generic [ref=e154]:
+            - generic [ref=e155]:
+              - img [ref=e157]
+              - generic [ref=e159]:
+                - generic [ref=e160]: "3"
+                - generic [ref=e161]: Active Studies
+            - generic [ref=e162]:
+              - img [ref=e164]
+              - generic [ref=e167]:
+                - generic [ref=e168]: "0"
+                - generic [ref=e169]: Completed
+            - generic [ref=e170]:
+              - img [ref=e172]
+              - generic [ref=e175]:
+                - generic [ref=e176]: "0"
+                - generic [ref=e177]: Pending Review
+            - generic [ref=e178]:
+              - img [ref=e180]
+              - generic [ref=e182]:
+                - generic [ref=e183]: "0"
+                - generic [ref=e184]: Total Insights
+          - generic [ref=e185]:
+            - generic [ref=e186]:
+              - generic [ref=e187]:
+                - img [ref=e188]
+                - generic [ref=e192]: Workshop
+              - generic [ref=e193]:
+                - generic [ref=e194]: 0 Active
+                - generic [ref=e195]: 0 Done
+                - generic [ref=e196]: 0 Unlocked
+            - generic [ref=e197]:
+              - generic [ref=e198]:
+                - img [ref=e199]
+                - generic [ref=e201]: 1-on-1 Interviews
+              - generic [ref=e202]:
+                - generic [ref=e203]: 1 Active
+                - generic [ref=e204]: 0 Done
+                - generic [ref=e205]: 1 Unlocked
+            - generic [ref=e206]:
+              - generic [ref=e207]:
+                - img [ref=e208]
+                - generic [ref=e211]: Questionnaire
+              - generic [ref=e212]:
+                - generic [ref=e213]: 1 Active
+                - generic [ref=e214]: 0 Done
+                - generic [ref=e215]: 1 Unlocked
+            - generic [ref=e216]:
+              - generic [ref=e217]:
+                - img [ref=e218]
+                - generic [ref=e221]: AI Exploration
+              - generic [ref=e222]:
+                - generic [ref=e223]: 1 Active
+                - generic [ref=e224]: 0 Done
+                - generic [ref=e225]: 1 Unlocked
+          - generic [ref=e226]:
+            - button "Overview" [ref=e227] [cursor=pointer]:
+              - img [ref=e228]
+              - text: Overview
+            - button "By Category" [ref=e231] [cursor=pointer]:
+              - img [ref=e232]
+              - text: By Category
+            - button "Timeline" [ref=e233] [cursor=pointer]:
+              - img [ref=e234]
+              - text: Timeline
+          - generic [ref=e236]:
+            - generic [ref=e237]:
+              - generic [ref=e238]:
+                - heading "Active Research" [level=3] [ref=e239]
+                - generic [ref=e240]: "3"
+              - generic [ref=e241]:
+                - generic [ref=e242]:
+                  - generic [ref=e243]:
+                    - generic [ref=e244]:
+                      - generic [ref=e245]: Golden Circle
+                      - generic [ref=e246]: INTERVIEWS
+                    - generic [ref=e247]:
+                      - generic [ref=e248]: 5h ago
+                      - button "Resume" [ref=e249]
+                  - generic [ref=e253]: 85%
+                - generic [ref=e254]:
+                  - generic [ref=e255]:
+                    - generic [ref=e256]:
+                      - generic [ref=e257]: Brand Promise
+                      - generic [ref=e258]: QUESTIONNAIRE
+                    - generic [ref=e259]:
+                      - generic [ref=e260]: 1d ago
+                      - button "Resume" [ref=e261]
+                  - generic [ref=e265]: 40%
+                - generic [ref=e266]:
+                  - generic [ref=e267]:
+                    - generic [ref=e268]:
+                      - generic [ref=e269]: Sarah Chen
+                      - generic [ref=e270]: AI_EXPLORATION
+                    - generic [ref=e271]:
+                      - generic [ref=e272]: 3d ago
+                      - button "Resume" [ref=e273]
+                  - generic [ref=e277]: 65%
+            - generic [ref=e278]:
+              - heading "Validation Needed" [level=3] [ref=e279]
+              - generic [ref=e280]:
+                - generic [ref=e281]:
+                  - generic [ref=e282]: Brand PromiseBrand Asset
+                  - generic [ref=e283]:
+                    - generic [ref=e284]: Ready For Validation
+                    - button "Validate" [ref=e285]:
+                      - img [ref=e286]
+                      - text: Validate
+                - generic [ref=e289]:
+                  - generic [ref=e290]: Golden CircleBrand Asset
+                  - generic [ref=e291]:
+                    - generic [ref=e292]: Ready For Validation
+                    - button "Validate" [ref=e293]:
+                      - img [ref=e294]
+                      - text: Validate
+            - generic [ref=e297]:
+              - heading "Quick Insights" [level=3] [ref=e298]
+              - generic [ref=e299]:
+                - generic [ref=e300]:
+                  - img [ref=e302]
+                  - generic [ref=e305]:
+                    - generic [ref=e306]: Research Progress
+                    - generic [ref=e307]: Your brand research is 65% complete across all active studies.
+                - generic [ref=e308]:
+                  - img [ref=e310]
+                  - generic [ref=e312]:
+                    - generic [ref=e313]: Strong Momentum
+                    - generic [ref=e314]: 3 studies advanced this week, maintaining a consistent research pace.
+                - generic [ref=e315]:
+                  - img [ref=e317]
+                  - generic [ref=e321]:
+                    - generic [ref=e322]: Method Balance
+                    - generic [ref=e323]: Consider adding qualitative methods to complement your quantitative research.
+            - generic [ref=e324]:
+              - heading "Recommended Actions" [level=3] [ref=e325]
+              - generic [ref=e326]:
+                - button "Complete Brand Promise Validation Your Brand Promise needs interview validation to reach full confidence." [ref=e327] [cursor=pointer]:
+                  - img [ref=e328]
+                  - generic [ref=e330]:
+                    - generic [ref=e331]: Complete Brand Promise Validation
+                    - generic [ref=e332]: Your Brand Promise needs interview validation to reach full confidence.
+                  - img [ref=e333]
+                - button "Update Sarah Chen Persona New research data available. Review and update persona insights." [ref=e335] [cursor=pointer]:
+                  - img [ref=e336]
+                  - generic [ref=e341]:
+                    - generic [ref=e342]: Update Sarah Chen Persona
+                    - generic [ref=e343]: New research data available. Review and update persona insights.
+                  - img [ref=e344]
+                - button "Align Strategy with Findings Recent research findings may impact your growth strategy objectives." [ref=e346] [cursor=pointer]:
+                  - img [ref=e347]
+                  - generic [ref=e351]:
+                    - generic [ref=e352]: Align Strategy with Findings
+                    - generic [ref=e353]: Recent research findings may impact your growth strategy objectives.
+                  - img [ref=e354]
+  - generic [ref=e356]:
+    - generic [ref=e358]:
+      - generic [ref=e359]:
+        - img [ref=e360]
+        - heading "Notifications" [level=2] [ref=e363]
+      - generic [ref=e364]:
+        - button "Toggle filters" [ref=e365]:
+          - img
+        - button [ref=e366]:
+          - img
+    - generic [ref=e368]:
+      - img [ref=e369]
+      - paragraph [ref=e372]: No notifications
+      - paragraph [ref=e373]: Notifications will appear here as you work
+  - generic [ref=e374]:
+    - generic:
+      - generic:
+        - generic:
+          - img
+          - generic: Support Chat
+        - button:
+          - img
+      - generic:
+        - generic:
+          - img
+          - paragraph: Chat coming soon
+          - paragraph: We're working on live chat support.
+    - button "Open chat" [ref=e375]:
+      - img [ref=e376]
+```

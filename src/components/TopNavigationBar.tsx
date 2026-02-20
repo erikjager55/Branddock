@@ -1,64 +1,66 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Bell } from 'lucide-react';
+import React from 'react';
+import { Search, Bell, Zap } from 'lucide-react';
 import { Button } from './ui/button';
 import { ShortcutHint, getModifierKey } from './ShortcutHint';
 import { BreadcrumbNavigation } from './BreadcrumbNavigation';
 import { BreadcrumbItem } from '../types/workflow';
-import { activityService } from '../services/ActivityService';
+import { useNotificationCount } from '../hooks/use-notifications';
+import { useShellStore } from '../stores/useShellStore';
 import { HelpIndicator } from './HelpTooltip';
+import { OrganizationSwitcher } from './auth/OrganizationSwitcher';
 
 interface TopNavigationBarProps {
   breadcrumbs?: BreadcrumbItem[];
   onNavigate: (route: string) => void;
-  onSearchClick: () => void;
-  onActivityClick: () => void;
+  onQuickContent?: () => void;
 }
 
 export function TopNavigationBar({
   breadcrumbs = [],
   onNavigate,
-  onSearchClick,
-  onActivityClick,
+  onQuickContent,
 }: TopNavigationBarProps) {
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  useEffect(() => {
-    // Initial load
-    setUnreadCount(activityService.getUnreadCount());
-
-    // Subscribe to changes
-    const unsubscribe = activityService.subscribe(() => {
-      setUnreadCount(activityService.getUnreadCount());
-    });
-
-    return unsubscribe;
-  }, []);
+  const { data: countData } = useNotificationCount();
+  const unreadCount = countData?.count ?? 0;
+  const { openSearch, openNotifications } = useShellStore();
 
   return (
-    <div className="sticky top-0 z-30 w-full border-b border-gray-200 bg-white/95 backdrop-blur shadow-sm">
+    <div data-testid="top-nav" className="sticky top-0 z-30 w-full border-b border-gray-200 bg-white/95 backdrop-blur shadow-sm">
       <div className="flex h-14 items-center gap-4 px-6">
-        {/* Left: Breadcrumbs */}
+        {/* Left: Organization + Breadcrumbs */}
+        <OrganizationSwitcher />
+        <div className="w-px h-6 bg-gray-200" />
         <div className="flex-1 min-w-0">
-          {breadcrumbs.length > 0 ? (
+          {breadcrumbs.length > 0 && (
             <BreadcrumbNavigation
               items={breadcrumbs}
               onNavigate={onNavigate}
               showHome={true}
             />
-          ) : (
-            <div className="text-sm text-gray-500 font-medium">
-              Research Tool
-            </div>
           )}
         </div>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
+          {/* Quick Content */}
+          {onQuickContent && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onQuickContent}
+              className="gap-1.5 hidden sm:flex"
+            >
+              <Zap className="h-3.5 w-3.5 text-purple-500" />
+              <span className="hidden md:inline">Quick Content</span>
+            </Button>
+          )}
+
           {/* Global Search */}
           <Button
+            data-testid="topnav-search-button"
             variant="outline"
             size="sm"
-            onClick={onSearchClick}
+            onClick={() => openSearch()}
             className="gap-2 hidden sm:flex"
           >
             <Search className="h-4 w-4" />
@@ -71,13 +73,14 @@ export function TopNavigationBar({
             <HelpIndicator />
           </div>
 
-          {/* Activity Feed */}
+          {/* Notifications */}
           <Button
+            data-testid="topnav-notifications-button"
             variant="ghost"
             size="sm"
             className="h-9 w-9 p-0 relative"
-            title={`Activity Feed ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
-            onClick={onActivityClick}
+            title={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
+            onClick={() => openNotifications()}
           >
             <Bell className="h-4 w-4" />
             {unreadCount > 0 && (
@@ -96,7 +99,7 @@ export function TopNavigationBar({
           <Button
             variant="ghost"
             size="sm"
-            onClick={onSearchClick}
+            onClick={() => openSearch()}
             className="sm:hidden h-9 w-9 p-0"
           >
             <Search className="h-4 w-4" />

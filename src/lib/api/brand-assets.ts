@@ -10,12 +10,12 @@ const API_BASE = "/api/brand-assets";
 /**
  * Fetch brand assets list with optional filters.
  * Used as the queryFn in TanStack Query.
+ * workspaceId is resolved server-side from the session cookie.
  */
 export async function fetchBrandAssets(
-  workspaceId: string,
   params?: BrandAssetListParams
 ): Promise<BrandAssetListResponse> {
-  const searchParams = new URLSearchParams({ workspaceId });
+  const searchParams = new URLSearchParams();
 
   if (params?.category) searchParams.set("category", params.category);
   if (params?.status) searchParams.set("status", params.status);
@@ -23,7 +23,8 @@ export async function fetchBrandAssets(
   if (params?.sortBy) searchParams.set("sortBy", params.sortBy);
   if (params?.sortOrder) searchParams.set("sortOrder", params.sortOrder);
 
-  const res = await fetch(`${API_BASE}?${searchParams.toString()}`);
+  const qs = searchParams.toString();
+  const res = await fetch(qs ? `${API_BASE}?${qs}` : API_BASE);
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -36,15 +37,15 @@ export async function fetchBrandAssets(
 /**
  * Create a new brand asset.
  * Used as the mutationFn in TanStack Query.
+ * workspaceId is resolved server-side from the session cookie.
  */
 export async function createBrandAsset(
-  workspaceId: string,
   body: CreateBrandAssetBody
 ): Promise<BrandAssetWithMeta> {
   const res = await fetch(API_BASE, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...body, workspaceId }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {

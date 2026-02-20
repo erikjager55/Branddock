@@ -1,0 +1,431 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - button "Branddock Agency" [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e22]: Branddock Agency
+        - img [ref=e23]
+      - navigation "Breadcrumb" [ref=e27]:
+        - button "Dashboard" [ref=e28]:
+          - img [ref=e29]
+          - generic [ref=e32]: Dashboard
+        - img [ref=e33]
+        - button "Research Hub" [ref=e35]:
+          - img [ref=e36]
+          - generic [ref=e38]: Research Hub
+        - img [ref=e39]
+        - generic [ref=e42]: Research Bundles
+      - generic [ref=e43]:
+        - button "Quick Content" [ref=e44]:
+          - img
+          - generic [ref=e45]: Quick Content
+        - button "Search ⌘ + K" [ref=e46]:
+          - img
+          - generic [ref=e47]: Search
+          - generic [ref=e48]:
+            - generic [ref=e49]: ⌘
+            - generic [ref=e50]: +
+            - generic [ref=e51]: K
+        - button "Show Help ?" [ref=e53]:
+          - img
+          - text: Show Help
+          - generic [ref=e54]: "?"
+        - button "Notifications" [ref=e55]:
+          - img
+    - generic [ref=e56]:
+      - generic [ref=e57]:
+        - generic [ref=e59]:
+          - img "Branddock" [ref=e60]
+          - button [ref=e61]:
+            - img
+        - navigation [ref=e62]:
+          - generic [ref=e63]:
+            - heading "WORKSPACE" [level=3] [ref=e65]
+            - button "Overview" [ref=e66]:
+              - img
+              - generic [ref=e67]: Overview
+          - generic [ref=e68]:
+            - heading "STRATEGY" [level=3] [ref=e70]
+            - button "Campaigns" [ref=e71]:
+              - img
+              - generic [ref=e72]: Campaigns
+            - button "Content Library" [ref=e73]:
+              - img
+              - generic [ref=e74]: Content Library
+          - generic [ref=e75]:
+            - heading "KNOWLEDGE" [level=3] [ref=e77]
+            - button "Brand Foundation 3" [ref=e78]:
+              - img
+              - generic [ref=e79]: Brand Foundation
+              - generic [ref=e80]: "3"
+            - button "Business Strategy" [ref=e81]:
+              - img
+              - generic [ref=e82]: Business Strategy
+            - button "Brandstyle" [ref=e83]:
+              - img
+              - generic [ref=e84]: Brandstyle
+            - button "Personas" [ref=e85]:
+              - img
+              - generic [ref=e86]: Personas
+            - button "Products & Services" [ref=e87]:
+              - img
+              - generic [ref=e88]: Products & Services
+            - button "Market Insights" [ref=e89]:
+              - img
+              - generic [ref=e90]: Market Insights
+            - button "Knowledge Library" [ref=e91]:
+              - img
+              - generic [ref=e92]: Knowledge Library
+            - button "Brand Alignment 3" [ref=e93]:
+              - img
+              - generic [ref=e94]: Brand Alignment
+              - generic [ref=e95]: "3"
+          - generic [ref=e96]:
+            - heading "VALIDATION" [level=3] [ref=e98]
+            - button "Research Hub" [ref=e99]:
+              - img
+              - generic [ref=e100]: Research Hub
+            - button "Research Bundles" [ref=e101]:
+              - img
+              - generic [ref=e102]: Research Bundles
+            - button "Custom Validation" [ref=e103]:
+              - img
+              - generic [ref=e104]: Custom Validation
+          - generic [ref=e105]:
+            - button "Settings" [ref=e106]:
+              - generic [ref=e107]:
+                - img
+                - generic [ref=e108]: Settings
+              - img
+            - generic [ref=e109]:
+              - button "Account" [ref=e110]:
+                - img
+                - generic [ref=e111]: Account
+              - button "Team" [ref=e112]:
+                - img
+                - generic [ref=e113]: Team
+              - button "Agency" [ref=e114]:
+                - img
+                - generic [ref=e115]: Agency
+              - button "Clients" [ref=e116]:
+                - img
+                - generic [ref=e117]: Clients
+              - button "Billing & Payments" [ref=e118]:
+                - img
+                - generic [ref=e119]: Billing & Payments
+              - button "Notifications" [ref=e120]:
+                - img
+                - generic [ref=e121]: Notifications
+              - button "Appearance" [ref=e122]:
+                - img
+                - generic [ref=e123]: Appearance
+              - button "Commercial Demo" [ref=e124]:
+                - img
+                - generic [ref=e125]: Commercial Demo
+              - 'button "Demo: Compact Variant NEW" [ref=e126]':
+                - img
+                - generic [ref=e127]: "Demo: Compact Variant"
+                - generic [ref=e128]: NEW
+            - button "Help & Support" [ref=e129]:
+              - img
+              - generic [ref=e130]: Help & Support
+          - generic [ref=e133]:
+            - img [ref=e134]
+            - text: BETA
+      - main [ref=e137]:
+        - generic [ref=e140]:
+          - generic [ref=e144]:
+            - img [ref=e146]
+            - generic [ref=e148]:
+              - heading "Research Bundles" [level=1] [ref=e149]
+              - paragraph [ref=e150]: Pre-built research packages
+          - generic [ref=e151]:
+            - generic [ref=e152]:
+              - button "All Bundles" [ref=e153]
+              - button "Recommended" [ref=e154]
+            - generic [ref=e155]:
+              - img
+              - textbox "Search bundles..." [ref=e156]
+          - generic [ref=e157]:
+            - generic [ref=e158]:
+              - heading "Foundation Plans" [level=2] [ref=e159]
+              - paragraph [ref=e160]: Essential research packages to build your brand foundation
+            - generic [ref=e161]:
+              - generic [ref=e162]:
+                - heading "AI-First Validation" [level=3] [ref=e164]
+                - paragraph [ref=e165]: 2 Methods · 1 week
+                - paragraph [ref=e166]: Our fastest and most affordable validation package. Leverages AI-powered analysis for rapid insights with minimal questionnaire validation.
+                - generic [ref=e167]:
+                  - generic [ref=e168]: AI-Powered
+                  - generic [ref=e169]: Fast Results
+                - generic [ref=e170]:
+                  - generic [ref=e171]:
+                    - img [ref=e172]
+                    - generic [ref=e175]: AI Exploration (4 dimensions)
+                  - generic [ref=e176]:
+                    - img [ref=e177]
+                    - generic [ref=e180]: Brand Questionnaire (10 responses)
+                - generic [ref=e182]: $999
+                - generic [ref=e183]:
+                  - button "Learn More" [ref=e184]
+                  - button "Select Bundle" [ref=e185]
+              - generic [ref=e186]:
+                - heading "Foundation Quick" [level=3] [ref=e188]
+                - paragraph [ref=e189]: 2 Methods · 2 weeks
+                - paragraph [ref=e190]: Fast-track brand validation using AI-powered analysis and targeted questionnaires. Get actionable insights in just two weeks.
+                - generic [ref=e191]:
+                  - generic [ref=e192]: Quick Audit
+                  - generic [ref=e193]: 2 Methods
+                - generic [ref=e194]:
+                  - generic [ref=e195]:
+                    - img [ref=e196]
+                    - generic [ref=e199]: AI Exploration (4 dimensions)
+                  - generic [ref=e200]:
+                    - img [ref=e201]
+                    - generic [ref=e204]: Brand Questionnaire (20 responses)
+                - generic [ref=e206]: $1,499
+                - generic [ref=e207]:
+                  - button "Learn More" [ref=e208]
+                  - button "Select Bundle" [ref=e209]
+              - generic [ref=e210]:
+                - heading "Foundation Essential" [level=3] [ref=e212]
+                - paragraph [ref=e213]: 3 Methods · 4 weeks
+                - paragraph [ref=e214]: Core brand foundation validation with the three most impactful research methods. Ideal for mid-market companies starting their brand strategy journey.
+                - generic [ref=e215]:
+                  - generic [ref=e216]: Core Audit
+                  - generic [ref=e217]: 3 Methods
+                - generic [ref=e218]:
+                  - generic [ref=e219]:
+                    - img [ref=e220]
+                    - generic [ref=e223]: Stakeholder Interviews (6-8)
+                  - generic [ref=e224]:
+                    - img [ref=e225]
+                    - generic [ref=e228]: Brand Questionnaire (30 responses)
+                  - generic [ref=e229]:
+                    - img [ref=e230]
+                    - generic [ref=e233]: AI Exploration (4 dimensions)
+                - generic [ref=e234]:
+                  - generic [ref=e235]: $2,999
+                  - generic [ref=e236]: $3,500
+                  - generic [ref=e237]:
+                    - img [ref=e238]
+                    - text: Save 14%
+                - generic [ref=e241]:
+                  - button "Learn More" [ref=e242]
+                  - button "Select Bundle" [ref=e243]
+              - generic [ref=e244]:
+                - heading "Strategy Deep Dive" [level=3] [ref=e246]
+                - paragraph [ref=e247]: 3 Methods · 4 weeks
+                - paragraph [ref=e248]: Focused validation of your strategic brand assets with stakeholder interviews and expert-facilitated workshops for leadership alignment.
+                - generic [ref=e249]:
+                  - generic [ref=e250]: Strategy Focus
+                  - generic [ref=e251]: 3 Methods
+                - generic [ref=e252]:
+                  - generic [ref=e253]:
+                    - img [ref=e254]
+                    - generic [ref=e257]: Stakeholder Interviews (8-10)
+                  - generic [ref=e258]:
+                    - img [ref=e259]
+                    - generic [ref=e262]: AI Exploration (4 dimensions)
+                  - generic [ref=e263]:
+                    - img [ref=e264]
+                    - generic [ref=e267]: Workshop Session (half-day)
+                - generic [ref=e269]: $3,999
+                - generic [ref=e270]:
+                  - button "Learn More" [ref=e271]
+                  - button "Select Bundle" [ref=e272]
+              - generic [ref=e273]:
+                - generic [ref=e274]:
+                  - heading "Foundation Complete" [level=3] [ref=e275]
+                  - generic [ref=e277]:
+                    - img [ref=e278]
+                    - text: Recommended
+                - paragraph [ref=e280]: 4 Methods · 6 weeks
+                - paragraph [ref=e281]: The most comprehensive brand foundation validation package. Covers all core brand assets with every research method for maximum confidence.
+                - generic [ref=e282]:
+                  - generic [ref=e283]: Full Audit
+                  - generic [ref=e284]: All Methods
+                  - generic [ref=e285]: Expert Report
+                - generic [ref=e286]:
+                  - generic [ref=e287]:
+                    - img [ref=e288]
+                    - generic [ref=e291]: Stakeholder Interviews (10-12)
+                  - generic [ref=e292]:
+                    - img [ref=e293]
+                    - generic [ref=e296]: Brand Questionnaire (50 responses)
+                  - generic [ref=e297]:
+                    - img [ref=e298]
+                    - generic [ref=e301]: AI Exploration (4 dimensions)
+                  - generic [ref=e302]:
+                    - img [ref=e303]
+                    - generic [ref=e306]: Workshop Session (half-day)
+                - generic [ref=e307]:
+                  - generic [ref=e308]: $4,999
+                  - generic [ref=e309]: $5,880
+                  - generic [ref=e310]:
+                    - img [ref=e311]
+                    - text: Save 15%
+                - generic [ref=e314]:
+                  - button "Learn More" [ref=e315]
+                  - button "Select Bundle" [ref=e316]
+              - generic [ref=e317]:
+                - generic [ref=e318]:
+                  - heading "Leadership Alignment" [level=3] [ref=e319]
+                  - generic [ref=e321]:
+                    - img [ref=e322]
+                    - text: Popular
+                - paragraph [ref=e325]: 4 Methods · 5 weeks
+                - paragraph [ref=e326]: Workshop-led validation package designed to align leadership teams on brand strategy. Combines facilitated sessions with comprehensive stakeholder research.
+                - generic [ref=e327]:
+                  - generic [ref=e328]: Team Alignment
+                  - generic [ref=e329]: Workshop-Led
+                - generic [ref=e330]:
+                  - generic [ref=e331]:
+                    - img [ref=e332]
+                    - generic [ref=e335]: Workshop Session (full-day)
+                  - generic [ref=e336]:
+                    - img [ref=e337]
+                    - generic [ref=e340]: Stakeholder Interviews (12-15)
+                  - generic [ref=e341]:
+                    - img [ref=e342]
+                    - generic [ref=e345]: Brand Questionnaire (50 responses)
+                  - generic [ref=e346]:
+                    - img [ref=e347]
+                    - generic [ref=e350]: AI Exploration (4 dimensions)
+                - generic [ref=e351]:
+                  - generic [ref=e352]: $5,499
+                  - generic [ref=e353]: $6,200
+                  - generic [ref=e354]:
+                    - img [ref=e355]
+                    - text: Save 11%
+                - generic [ref=e358]:
+                  - button "Learn More" [ref=e359]
+                  - button "Select Bundle" [ref=e360]
+          - generic [ref=e361]:
+            - generic [ref=e362]:
+              - heading "Specialized Plans" [level=2] [ref=e363]
+              - paragraph [ref=e364]: Advanced research for specific brand challenges
+            - generic [ref=e365]:
+              - generic [ref=e366]:
+                - heading "Content & Messaging Audit" [level=3] [ref=e368]
+                - paragraph [ref=e369]: 2 Methods · 2 weeks
+                - paragraph [ref=e370]: Validate your brand messaging and content strategy with audience questionnaires and AI-powered content analysis for consistent, impactful communication.
+                - generic [ref=e371]:
+                  - generic [ref=e372]: Content Audit
+                  - generic [ref=e373]: Messaging
+                - generic [ref=e374]:
+                  - generic [ref=e375]:
+                    - img [ref=e376]
+                    - generic [ref=e379]: Brand Questionnaire (25 responses)
+                  - generic [ref=e380]:
+                    - img [ref=e381]
+                    - generic [ref=e384]: AI Exploration (content analysis)
+                - generic [ref=e386]: $1,999
+                - generic [ref=e387]:
+                  - button "Learn More" [ref=e388]
+                  - button "Select Bundle" [ref=e389]
+              - generic [ref=e390]:
+                - heading "Persona Validation" [level=3] [ref=e392]
+                - paragraph [ref=e393]: 3 Methods · 3 weeks
+                - paragraph [ref=e394]: Focused user research package to validate and refine your customer personas with real-world data from interviews, questionnaires, and AI analysis.
+                - generic [ref=e395]:
+                  - generic [ref=e396]: Persona Focus
+                  - generic [ref=e397]: User Research
+                - generic [ref=e398]:
+                  - generic [ref=e399]:
+                    - img [ref=e400]
+                    - generic [ref=e403]: User Interviews (8-10)
+                  - generic [ref=e404]:
+                    - img [ref=e405]
+                    - generic [ref=e408]: Persona Questionnaire (30 responses)
+                  - generic [ref=e409]:
+                    - img [ref=e410]
+                    - generic [ref=e413]: AI Exploration
+                - generic [ref=e415]: $2,499
+                - generic [ref=e416]:
+                  - button "Learn More" [ref=e417]
+                  - button "Select Bundle" [ref=e418]
+              - generic [ref=e419]:
+                - generic [ref=e420]:
+                  - heading "Competitive Intelligence" [level=3] [ref=e421]
+                  - generic [ref=e423]:
+                    - img [ref=e424]
+                    - text: Recommended
+                - paragraph [ref=e426]: 2 Methods · 3 weeks
+                - paragraph [ref=e427]: Deep competitive analysis package combining stakeholder insights with AI-powered market analysis to sharpen your competitive positioning.
+                - generic [ref=e428]:
+                  - generic [ref=e429]: Market Analysis
+                  - generic [ref=e430]: Competitor Audit
+                - generic [ref=e431]:
+                  - generic [ref=e432]:
+                    - img [ref=e433]
+                    - generic [ref=e436]: Stakeholder Interviews (6-8)
+                  - generic [ref=e437]:
+                    - img [ref=e438]
+                    - generic [ref=e441]: AI Exploration (competitive analysis)
+                - generic [ref=e443]: $3,499
+                - generic [ref=e444]:
+                  - button "Learn More" [ref=e445]
+                  - button "Select Bundle" [ref=e446]
+              - generic [ref=e447]:
+                - heading "Visual Identity Validation" [level=3] [ref=e449]
+                - paragraph [ref=e450]: 3 Methods · 4 weeks
+                - paragraph [ref=e451]: Comprehensive visual identity audit combining workshop sessions, audience questionnaires, and AI analysis to validate your design system and brand guidelines.
+                - generic [ref=e452]:
+                  - generic [ref=e453]: Visual Audit
+                  - generic [ref=e454]: Design Testing
+                - generic [ref=e455]:
+                  - generic [ref=e456]:
+                    - img [ref=e457]
+                    - generic [ref=e460]: Workshop Session (half-day)
+                  - generic [ref=e461]:
+                    - img [ref=e462]
+                    - generic [ref=e465]: Questionnaire (40 responses)
+                  - generic [ref=e466]:
+                    - img [ref=e467]
+                    - generic [ref=e470]: AI Exploration
+                - generic [ref=e471]:
+                  - generic [ref=e472]: $4,499
+                  - generic [ref=e473]: $5,200
+                  - generic [ref=e474]:
+                    - img [ref=e475]
+                    - text: Save 13%
+                - generic [ref=e478]:
+                  - button "Learn More" [ref=e479]
+                  - button "Select Bundle" [ref=e480]
+  - generic [ref=e481]:
+    - generic [ref=e483]:
+      - generic [ref=e484]:
+        - img [ref=e485]
+        - heading "Notifications" [level=2] [ref=e488]
+      - generic [ref=e489]:
+        - button "Toggle filters" [ref=e490]:
+          - img
+        - button [ref=e491]:
+          - img
+    - generic [ref=e493]:
+      - img [ref=e494]
+      - paragraph [ref=e497]: No notifications
+      - paragraph [ref=e498]: Notifications will appear here as you work
+  - generic [ref=e499]:
+    - generic:
+      - generic:
+        - generic:
+          - img
+          - generic: Support Chat
+        - button:
+          - img
+      - generic:
+        - generic:
+          - img
+          - paragraph: Chat coming soon
+          - paragraph: We're working on live chat support.
+    - button "Open chat" [ref=e500]:
+      - img [ref=e501]
+```

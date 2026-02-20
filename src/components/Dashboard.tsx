@@ -3,6 +3,7 @@ import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import {
   Layers,
+  LayoutDashboard,
   Users,
   Package,
   Megaphone,
@@ -12,7 +13,6 @@ import {
   ArrowRight,
   Sparkles,
 } from 'lucide-react';
-import { WelcomeModal, useShouldShowWelcome } from './WelcomeModal';
 import { generateNextBestAction } from '../utils/dashboard-decision-transformer';
 import {
   useBrandAssets,
@@ -98,8 +98,6 @@ function ModuleCard({
 // ─── Dashboard Component ──────────────────────────────────
 
 export function Dashboard({ onStartResearch, onNavigateToRelationships, onNavigate }: DashboardProps) {
-  const [showWelcome, setShowWelcome] = React.useState(false);
-  const shouldShowWelcome = useShouldShowWelcome();
 
   // All 6 context hooks
   const { brandAssets } = useBrandAssets();
@@ -108,10 +106,6 @@ export function Dashboard({ onStartResearch, onNavigateToRelationships, onNaviga
   const { trends } = useTrendsContext();
   const { knowledge } = useKnowledgeContext();
   const { campaigns } = useCampaignsContext();
-
-  React.useEffect(() => {
-    setShowWelcome(shouldShowWelcome);
-  }, [shouldShowWelcome]);
 
   // Next best action (keep existing logic)
   const nextBestAction = useMemo(() => {
@@ -151,9 +145,9 @@ export function Dashboard({ onStartResearch, onNavigateToRelationships, onNaviga
   }, [brandAssets]);
 
   const personaBreakdown = useMemo(() => {
-    const validated = personas.filter((p) => (p as any).validationPercentage ?? (p as any).validationScore ?? 0 >= 80).length;
-    const inResearch = personas.filter((p) => (p as any).validationPercentage ?? (p as any).validationScore ?? 0 >= 30 && (p as any).validationPercentage ?? (p as any).validationScore ?? 0 < 80).length;
-    const draft = personas.filter((p) => (p as any).validationPercentage ?? (p as any).validationScore ?? 0 < 30).length;
+    const validated = personas.filter((p) => ((p as any).validationPercentage ?? (p as any).validationScore ?? 0) >= 80).length;
+    const inResearch = personas.filter((p) => ((p as any).validationPercentage ?? (p as any).validationScore ?? 0) >= 30 && ((p as any).validationPercentage ?? (p as any).validationScore ?? 0) < 80).length;
+    const draft = personas.filter((p) => ((p as any).validationPercentage ?? (p as any).validationScore ?? 0) < 30).length;
     return [
       { label: 'validated', count: validated },
       { label: 'in research', count: inResearch },
@@ -220,7 +214,7 @@ export function Dashboard({ onStartResearch, onNavigateToRelationships, onNaviga
   return (
     <div className="h-full overflow-auto bg-background">
       {/* Page Header */}
-      <PageHeader moduleKey="overview" />
+      <PageHeader icon={LayoutDashboard} title="Dashboard" subtitle="Your brand strategy at a glance" />
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-8 py-8 space-y-8">
@@ -370,8 +364,6 @@ export function Dashboard({ onStartResearch, onNavigateToRelationships, onNaviga
         </Card>
       </div>
 
-      {/* Welcome Modal */}
-      <WelcomeModal isOpen={showWelcome} onClose={() => setShowWelcome(false)} />
     </div>
   );
 }

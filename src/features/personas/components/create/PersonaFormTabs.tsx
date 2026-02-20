@@ -1,0 +1,37 @@
+"use client";
+
+type TabId = "overview" | "psychographics" | "background";
+
+interface PersonaFormTabsProps {
+  activeTab: TabId;
+  onTabChange: (tab: TabId) => void;
+}
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: "overview", label: "Overview" },
+  { id: "psychographics", label: "Psychographics" },
+  { id: "background", label: "Background" },
+];
+
+export function PersonaFormTabs({
+  activeTab,
+  onTabChange,
+}: PersonaFormTabsProps) {
+  return (
+    <div className="flex gap-1 border-b border-gray-200">
+      {TABS.map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => onTabChange(tab.id)}
+          className={`px-4 py-2.5 text-sm font-medium transition-colors ${
+            activeTab === tab.id
+              ? "border-b-2 border-emerald-500 text-emerald-700"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}

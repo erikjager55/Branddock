@@ -5,20 +5,20 @@ import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { 
-  Plus, 
-  Edit, 
-  Eye, 
-  BookOpen, 
-  Video, 
-  Globe, 
-  Image, 
-  FileText, 
+import {
+  Plus,
+  Edit,
+  Eye,
+  BookOpen,
+  Video,
+  Globe,
+  Image,
+  FileText,
   Headphones,
   FileType,
   GraduationCap,
-  ExternalLink, 
-  Download, 
+  ExternalLink,
+  Download,
   Heart,
   Trash2,
   Search,
@@ -29,31 +29,59 @@ import {
   TrendingUp,
   Star,
   Clock,
-  Filter
+  Filter,
+  Archive,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 import { AddResourceModal } from './knowledge/AddResourceModal';
 import { ResourceDetailModal } from './knowledge/ResourceDetailModal';
-import type { KnowledgeResource } from '../types/knowledge';
-import { useKnowledgeContext } from '../contexts/KnowledgeContext';
+import type { KnowledgeResource, KnowledgeWithMeta } from '../types/knowledge';
+import { useKnowledgeContext, useFeaturedResources, useToggleFavorite, useToggleArchive } from '../contexts/KnowledgeContext';
+import { useKnowledgeLibraryStore } from '../stores/useKnowledgeLibraryStore';
 
 type ViewMode = 'grid' | 'list' | 'compact';
 type SortOption = 'date-added-desc' | 'date-added-asc' | 'rating-desc' | 'rating-asc' | 'title-asc' | 'title-desc' | 'views-desc';
 
 export function KnowledgeLibrary() {
   const { knowledge, collections } = useKnowledgeContext();
+
+  // TanStack Query hooks for API-backed actions
+  const { data: featuredData } = useFeaturedResources();
+  const toggleFavoriteMutation = useToggleFavorite();
+  const toggleArchiveMutation = useToggleArchive();
+
+  // Zustand store for view mode
+  const storeViewMode = useKnowledgeLibraryStore((s) => s.viewMode);
+  const setStoreViewMode = useKnowledgeLibraryStore((s) => s.setViewMode);
+
   // State
   const [resources, setResources] = useState<KnowledgeResource[]>(knowledge as any);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedResource, setSelectedResource] = useState<KnowledgeResource | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  
-  // Filters & View
+
+  // Featured carousel state
+  const [featuredIndex, setFeaturedIndex] = useState(0);
+  const featuredResources = featuredData?.resources ?? [];
+
+  // Filters & View — viewMode synced from Zustand store (compact is local-only)
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [localCompact, setLocalCompact] = useState(false);
+  const viewMode: ViewMode = localCompact ? 'compact' : (storeViewMode === 'list' ? 'list' : 'grid');
+  const setViewMode = (mode: ViewMode) => {
+    if (mode === 'compact') {
+      setLocalCompact(true);
+    } else {
+      setLocalCompact(false);
+      setStoreViewMode(mode);
+    }
+  };
   const [sortBy, setSortBy] = useState<SortOption>('date-added-desc');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
@@ -175,12 +203,21 @@ export function KnowledgeLibrary() {
   };
 
   const handleToggleFavorite = (id: string) => {
-    setResources(resources.map(r => 
+    // Optimistic local update
+    setResources(resources.map(r =>
       r.id === id ? { ...r, isFavorite: !r.isFavorite } : r
     ));
     if (selectedResource?.id === id) {
       setSelectedResource({ ...selectedResource, isFavorite: !selectedResource.isFavorite });
     }
+    // Fire API mutation (non-blocking)
+    toggleFavoriteMutation.mutate(id);
+  };
+
+  const handleToggleArchive = (id: string) => {
+    // Remove from local list immediately (archived = hidden by default)
+    setResources(resources.filter(r => r.id !== id));
+    toggleArchiveMutation.mutate(id);
   };
 
   const handleDeleteResource = (id: string) => {
@@ -236,6 +273,69 @@ export function KnowledgeLibrary() {
           </div>
         </div>
       </div>
+
+      {/* Featured Carousel */}
+      {featuredResources.length > 0 && (
+        <div className="max-w-7xl mx-auto px-8 pt-8 pb-2">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Featured</h2>
+            </div>
+            {featuredResources.length > 3 && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={() => setFeaturedIndex(Math.max(0, featuredIndex - 1))}
+                  disabled={featuredIndex === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={() => setFeaturedIndex(Math.min(featuredResources.length - 3, featuredIndex + 1))}
+                  disabled={featuredIndex >= featuredResources.length - 3}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {featuredResources.slice(featuredIndex, featuredIndex + 3).map((fr) => {
+              const FrIcon = typeIcons[(fr.type || 'document') as keyof typeof typeIcons] || FileText;
+              return (
+                <Card key={fr.id} className="rounded-xl border-amber-200/60 bg-gradient-to-br from-amber-50/50 to-white hover:shadow-md transition-all duration-200">
+                  <CardContent className="p-4 flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                      <FrIcon className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-sm line-clamp-1">{fr.title}</h3>
+                      <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{fr.author || 'Unknown'}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 rounded-md">
+                          {fr.type}
+                        </Badge>
+                        {fr.rating > 0 && (
+                          <span className="text-xs text-yellow-500 flex items-center gap-0.5">
+                            <Star className="h-3 w-3 fill-current" />
+                            {fr.rating.toFixed(1)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-8 py-8">
@@ -525,9 +625,18 @@ export function KnowledgeLibrary() {
                                   <Download className="h-4 w-4" />
                                 </Button>
                               )}
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 hover:text-amber-600"
+                                onClick={() => handleToggleArchive(resource.id)}
+                                title="Archive"
+                              >
+                                <Archive className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 className="h-8 w-8 p-0 hover:text-destructive"
                                 onClick={() => handleDeleteResource(resource.id)}
                               >
@@ -539,7 +648,7 @@ export function KnowledgeLibrary() {
                       </Card>
                     );
                   }
-                  
+
                   // List View
                   if (viewMode === 'list') {
                     return (
@@ -623,8 +732,17 @@ export function KnowledgeLibrary() {
                                       </>
                                     )}
                                   </Button>
-                                  <Button 
-                                    variant="ghost" 
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleToggleArchive(resource.id)}
+                                    className="h-9 w-9 p-0 hover:text-amber-600"
+                                    title="Archive"
+                                  >
+                                    <Archive className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
                                     size="sm"
                                     onClick={() => handleDeleteResource(resource.id)}
                                     className="h-9 w-9 p-0 hover:text-destructive"

@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveWorkspaceId } from "@/lib/auth-server";
 import type { TrendWithMeta, TrendListResponse } from "@/types/trend";
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const workspaceId = searchParams.get("workspaceId");
+    const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
-      return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
+    const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
     const impact = searchParams.get("impact");
     const timeframe = searchParams.get("timeframe");
@@ -59,11 +60,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { title, workspaceId, ...rest } = body;
+    const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
+    }
 
-    if (!title || !workspaceId) {
-      return NextResponse.json({ error: "title and workspaceId are required" }, { status: 400 });
+    const body = await request.json();
+    const { title, ...rest } = body;
+
+    if (!title) {
+      return NextResponse.json({ error: "title is required" }, { status: 400 });
     }
 
     const trend = await prisma.trend.create({

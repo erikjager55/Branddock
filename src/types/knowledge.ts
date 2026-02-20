@@ -100,6 +100,9 @@ export interface KnowledgeWithMeta {
   relatedTrends: string[] | null;
   relatedPersonas: string[] | null;
   relatedAssets: string[] | null;
+  isFeatured: boolean;
+  isFavorite: boolean;
+  isArchived: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -143,4 +146,7 @@ export interface CreateKnowledgeBody {
 
 export interface UpdateKnowledgeBody extends Partial<CreateKnowledgeBody> {
   status?: string;
+  isFeatured?: boolean;
+  isFavorite?: boolean;
+  isArchived?: boolean;
 }

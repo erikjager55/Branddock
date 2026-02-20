@@ -1,0 +1,493 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - button "Branddock Agency" [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e22]: Branddock Agency
+        - img [ref=e23]
+      - navigation "Breadcrumb" [ref=e27]:
+        - button "Dashboard" [ref=e28]:
+          - img [ref=e29]
+          - generic [ref=e32]: Dashboard
+        - img [ref=e33]
+        - generic [ref=e35]:
+          - img [ref=e36]
+          - generic [ref=e38]: Knowledge Library
+      - generic [ref=e39]:
+        - button "Quick Content" [ref=e40]:
+          - img
+          - generic [ref=e41]: Quick Content
+        - button "Search ⌘ + K" [ref=e42]:
+          - img
+          - generic [ref=e43]: Search
+          - generic [ref=e44]:
+            - generic [ref=e45]: ⌘
+            - generic [ref=e46]: +
+            - generic [ref=e47]: K
+        - button "Show Help ?" [ref=e49]:
+          - img
+          - text: Show Help
+          - generic [ref=e50]: "?"
+        - button "Notifications" [ref=e51]:
+          - img
+    - generic [ref=e52]:
+      - generic [ref=e53]:
+        - generic [ref=e55]:
+          - img "Branddock" [ref=e56]
+          - button [ref=e57]:
+            - img
+        - navigation [ref=e58]:
+          - generic [ref=e59]:
+            - heading "WORKSPACE" [level=3] [ref=e61]
+            - button "Overview" [ref=e62]:
+              - img
+              - generic [ref=e63]: Overview
+          - generic [ref=e64]:
+            - heading "STRATEGY" [level=3] [ref=e66]
+            - button "Campaigns" [ref=e67]:
+              - img
+              - generic [ref=e68]: Campaigns
+            - button "Content Library" [ref=e69]:
+              - img
+              - generic [ref=e70]: Content Library
+          - generic [ref=e71]:
+            - heading "KNOWLEDGE" [level=3] [ref=e73]
+            - button "Brand Foundation 3" [ref=e74]:
+              - img
+              - generic [ref=e75]: Brand Foundation
+              - generic [ref=e76]: "3"
+            - button "Business Strategy" [ref=e77]:
+              - img
+              - generic [ref=e78]: Business Strategy
+            - button "Brandstyle" [ref=e79]:
+              - img
+              - generic [ref=e80]: Brandstyle
+            - button "Personas" [ref=e81]:
+              - img
+              - generic [ref=e82]: Personas
+            - button "Products & Services" [ref=e83]:
+              - img
+              - generic [ref=e84]: Products & Services
+            - button "Market Insights" [ref=e85]:
+              - img
+              - generic [ref=e86]: Market Insights
+            - button "Knowledge Library" [ref=e87]:
+              - img
+              - generic [ref=e88]: Knowledge Library
+            - button "Brand Alignment 3" [ref=e89]:
+              - img
+              - generic [ref=e90]: Brand Alignment
+              - generic [ref=e91]: "3"
+          - generic [ref=e92]:
+            - heading "VALIDATION" [level=3] [ref=e94]
+            - button "Research Hub" [ref=e95]:
+              - img
+              - generic [ref=e96]: Research Hub
+            - button "Research Bundles" [ref=e97]:
+              - img
+              - generic [ref=e98]: Research Bundles
+            - button "Custom Validation" [ref=e99]:
+              - img
+              - generic [ref=e100]: Custom Validation
+          - generic [ref=e101]:
+            - button "Settings" [ref=e102]:
+              - generic [ref=e103]:
+                - img
+                - generic [ref=e104]: Settings
+              - img
+            - generic [ref=e105]:
+              - button "Account" [ref=e106]:
+                - img
+                - generic [ref=e107]: Account
+              - button "Team" [ref=e108]:
+                - img
+                - generic [ref=e109]: Team
+              - button "Agency" [ref=e110]:
+                - img
+                - generic [ref=e111]: Agency
+              - button "Clients" [ref=e112]:
+                - img
+                - generic [ref=e113]: Clients
+              - button "Billing & Payments" [ref=e114]:
+                - img
+                - generic [ref=e115]: Billing & Payments
+              - button "Notifications" [ref=e116]:
+                - img
+                - generic [ref=e117]: Notifications
+              - button "Appearance" [ref=e118]:
+                - img
+                - generic [ref=e119]: Appearance
+              - button "Commercial Demo" [ref=e120]:
+                - img
+                - generic [ref=e121]: Commercial Demo
+              - 'button "Demo: Compact Variant NEW" [ref=e122]':
+                - img
+                - generic [ref=e123]: "Demo: Compact Variant"
+                - generic [ref=e124]: NEW
+            - button "Help & Support" [ref=e125]:
+              - img
+              - generic [ref=e126]: Help & Support
+          - generic [ref=e129]:
+            - img [ref=e130]
+            - text: BETA
+      - main [ref=e133]:
+        - generic [ref=e136]:
+          - generic [ref=e139]:
+            - generic [ref=e140]:
+              - img [ref=e142]
+              - generic [ref=e144]:
+                - heading "Knowledge Library" [level=1] [ref=e145]
+                - paragraph [ref=e146]: Your research and knowledge base
+            - button "Upload" [ref=e148]:
+              - img [ref=e149]
+              - text: Upload
+          - generic [ref=e152]:
+            - generic [ref=e153]:
+              - heading "Featured Resources" [level=3] [ref=e154]
+              - generic [ref=e155]:
+                - generic [ref=e156]:
+                  - img [ref=e158]
+                  - generic [ref=e161]:
+                    - heading "Design System Gallery" [level=4] [ref=e162]
+                    - paragraph [ref=e163]: Design Systems
+                    - generic [ref=e164]:
+                      - generic [ref=e165]:
+                        - img [ref=e166]
+                        - text: Ongoing
+                      - generic [ref=e169]:
+                        - img [ref=e170]
+                        - text: "4.0"
+                      - generic [ref=e172]: website
+                - generic [ref=e173]:
+                  - img [ref=e175]
+                  - generic [ref=e178]:
+                    - heading "Data-Driven Marketing Masterclass" [level=4] [ref=e179]
+                    - paragraph [ref=e180]: Mark Ritson
+                    - generic [ref=e181]:
+                      - generic [ref=e182]:
+                        - img [ref=e183]
+                        - text: 12 hours
+                      - generic [ref=e186]:
+                        - img [ref=e187]
+                        - text: "5.0"
+                      - generic [ref=e189]: masterclass
+            - generic [ref=e190]:
+              - generic [ref=e192]:
+                - img
+                - textbox "Search resources..." [ref=e193]
+              - combobox [ref=e197]:
+                - option "All Types" [selected]
+                - option "Book"
+                - option "Article"
+                - option "Research"
+                - option "Guide"
+                - option "Template"
+                - option "Case Study"
+                - option "Workshop"
+                - option "Masterclass"
+                - option "Podcast"
+                - option "Website"
+                - option "Design"
+                - option "Video"
+              - combobox [ref=e201]:
+                - option "All Categories" [selected]
+                - option "Brand Strategy"
+                - option "Research"
+                - option "Content"
+                - option "Marketing"
+                - option "Design"
+                - option "Technology"
+                - option "Psychology"
+                - option "User Experience"
+                - option "Trends"
+              - generic [ref=e202]:
+                - button "Grid view" [ref=e203]:
+                  - img [ref=e204]
+                - button "List view" [ref=e209]:
+                  - img [ref=e210]
+            - generic [ref=e211]:
+              - generic [ref=e212]:
+                - generic [ref=e213]:
+                  - img [ref=e214]
+                  - button "Add to favorites" [ref=e218]:
+                    - img [ref=e219]
+                  - button [ref=e223]:
+                    - img [ref=e224]
+                - generic [ref=e228]:
+                  - heading "UX Research Methods" [level=4] [ref=e229]
+                  - paragraph [ref=e230]: Comprehensive guide from Nielsen Norman Group covering when and how to use the most common UX research methods for maximum impact on your product design.
+                  - generic [ref=e231]:
+                    - generic [ref=e232]: User Experience
+                    - generic [ref=e233]:
+                      - img [ref=e234]
+                      - text: 45 minutes
+                    - generic [ref=e237]: 2/20/2026
+                  - link "Open Resource" [ref=e238] [cursor=pointer]:
+                    - /url: https://nngroup.com/articles/which-ux-research-methods
+                    - text: Open Resource
+                    - img [ref=e239]
+              - generic [ref=e243]:
+                - generic [ref=e244]:
+                  - img [ref=e245]
+                  - button "Add to favorites" [ref=e249]:
+                    - img [ref=e250]
+                  - button [ref=e254]:
+                    - img [ref=e255]
+                - generic [ref=e259]:
+                  - heading "Content Strategy Template" [level=4] [ref=e260]
+                  - paragraph [ref=e261]: Ready-to-use content strategy template covering audience analysis, content pillars, editorial calendar, and distribution channels for B2B and B2C brands.
+                  - generic [ref=e262]:
+                    - generic [ref=e263]: Content
+                    - generic [ref=e264]: 2/20/2026
+                  - generic [ref=e265]: No URL
+              - generic [ref=e266]:
+                - generic [ref=e267]:
+                  - img [ref=e268]
+                  - button "Add to favorites" [ref=e272]:
+                    - img [ref=e273]
+                  - button [ref=e277]:
+                    - img [ref=e278]
+                - generic [ref=e282]:
+                  - heading "Positioning Podcast" [level=4] [ref=e283]
+                  - paragraph [ref=e284]: April Dunford shares practical positioning advice for B2B SaaS companies, covering competitive positioning, category creation, and value proposition development.
+                  - generic [ref=e285]:
+                    - generic [ref=e286]: Brand Strategy
+                    - generic [ref=e287]:
+                      - img [ref=e288]
+                      - text: 30 min/episode
+                    - generic [ref=e291]: 2/20/2026
+                  - link "Open Resource" [ref=e292] [cursor=pointer]:
+                    - /url: https://example.com/podcast
+                    - text: Open Resource
+                    - img [ref=e293]
+              - generic [ref=e297]:
+                - generic [ref=e298]:
+                  - img [ref=e299]
+                  - button "Add to favorites" [ref=e303]:
+                    - img [ref=e304]
+                  - button [ref=e308]:
+                    - img [ref=e309]
+                - generic [ref=e313]:
+                  - 'heading "Case Study: Nike Rebrand" [level=4] [ref=e314]'
+                  - paragraph [ref=e315]: In-depth analysis of Nike's brand evolution, covering strategy shifts, visual identity updates, and the role of storytelling in building one of the world's most valuable brands.
+                  - generic [ref=e316]:
+                    - generic [ref=e317]: Brand Strategy
+                    - generic [ref=e318]:
+                      - img [ref=e319]
+                      - text: 20 minutes
+                    - generic [ref=e322]: 2/20/2026
+                  - link "Open Resource" [ref=e323] [cursor=pointer]:
+                    - /url: https://example.com/nike-case
+                    - text: Open Resource
+                    - img [ref=e324]
+              - generic [ref=e328]:
+                - generic [ref=e329]:
+                  - img [ref=e330]
+                  - button "Add to favorites" [ref=e334]:
+                    - img [ref=e335]
+                  - button [ref=e339]:
+                    - img [ref=e340]
+                - generic [ref=e344]:
+                  - heading "Workshop Facilitation Guide" [level=4] [ref=e345]
+                  - paragraph [ref=e346]: IDEO's comprehensive guide to facilitating design thinking workshops, covering preparation, activities, synthesis, and follow-up for brand strategy sessions.
+                  - generic [ref=e347]:
+                    - generic [ref=e348]: Research
+                    - generic [ref=e349]:
+                      - img [ref=e350]
+                      - text: 2 hours
+                    - generic [ref=e353]: 2/20/2026
+                  - link "Open Resource" [ref=e354] [cursor=pointer]:
+                    - /url: https://example.com/facilitation
+                    - text: Open Resource
+                    - img [ref=e355]
+              - generic [ref=e359]:
+                - generic [ref=e360]:
+                  - img [ref=e361]
+                  - button "Add to favorites" [ref=e365]:
+                    - img [ref=e366]
+                  - button [ref=e370]:
+                    - img [ref=e371]
+                - generic [ref=e375]:
+                  - heading "Brand Identity Video Course" [level=4] [ref=e376]
+                  - paragraph [ref=e377]: The Futur's video course on building a complete brand identity, from logo design to color theory, typography selection, and brand guidelines creation.
+                  - generic [ref=e378]:
+                    - generic [ref=e379]: Design
+                    - generic [ref=e380]:
+                      - img [ref=e381]
+                      - text: 8 hours
+                    - generic [ref=e384]: 2/20/2026
+                  - link "Open Resource" [ref=e385] [cursor=pointer]:
+                    - /url: https://example.com/video-course
+                    - text: Open Resource
+                    - img [ref=e386]
+              - generic [ref=e390]:
+                - generic [ref=e391]:
+                  - img [ref=e392]
+                  - button "Remove from favorites" [ref=e396]:
+                    - img [ref=e397]
+                  - button [ref=e401]:
+                    - img [ref=e402]
+                - generic [ref=e406]:
+                  - heading "Design System Gallery" [level=4] [ref=e407]
+                  - paragraph [ref=e408]: Curated collection of real-world design systems from top companies. Browse patterns, components, and documentation approaches to build better products.
+                  - generic [ref=e409]:
+                    - generic [ref=e410]: Design
+                    - generic [ref=e411]:
+                      - img [ref=e412]
+                      - text: Ongoing
+                    - generic [ref=e415]: 2/20/2026
+                  - link "Open Resource" [ref=e416] [cursor=pointer]:
+                    - /url: https://designsystemsgallery.com
+                    - text: Open Resource
+                    - img [ref=e417]
+              - generic [ref=e421]:
+                - generic [ref=e422]:
+                  - img [ref=e423]
+                  - button "Remove from favorites" [ref=e427]:
+                    - img [ref=e428]
+                  - button [ref=e432]:
+                    - img [ref=e433]
+                - generic [ref=e437]:
+                  - heading "Data-Driven Marketing Masterclass" [level=4] [ref=e438]
+                  - paragraph [ref=e439]: Mark Ritson's acclaimed masterclass covering the fundamentals of data-driven marketing strategy, segmentation, targeting, and positioning with real-world case studies.
+                  - generic [ref=e440]:
+                    - generic [ref=e441]: Marketing
+                    - generic [ref=e442]:
+                      - img [ref=e443]
+                      - text: 12 hours
+                    - generic [ref=e446]: 2/20/2026
+                  - link "Open Resource" [ref=e447] [cursor=pointer]:
+                    - /url: https://example.com/masterclass
+                    - text: Open Resource
+                    - img [ref=e448]
+              - generic [ref=e452]:
+                - generic [ref=e453]:
+                  - img [ref=e454]
+                  - button "Remove from favorites" [ref=e458]:
+                    - img [ref=e459]
+                  - button [ref=e463]:
+                    - img [ref=e464]
+                - generic [ref=e468]:
+                  - heading "The Brand Gap" [level=4] [ref=e469]
+                  - paragraph [ref=e470]: Marty Neumeier bridges the gap between business strategy and design by explaining brand as a gut feeling — not a logo. Essential reading for understanding modern branding.
+                  - generic [ref=e471]:
+                    - generic [ref=e472]: Brand Strategy
+                    - generic [ref=e473]:
+                      - img [ref=e474]
+                      - text: 3 hours
+                    - generic [ref=e477]: 2/20/2026
+                  - link "Open Resource" [ref=e478] [cursor=pointer]:
+                    - /url: https://example.com/brand-gap
+                    - text: Open Resource
+                    - img [ref=e479]
+            - dialog "Add Resource" [ref=e484]:
+              - generic [ref=e485]:
+                - heading "Add Resource" [level=2] [ref=e487]
+                - button "Close" [ref=e488]:
+                  - img [ref=e489]
+              - generic [ref=e493]:
+                - generic [ref=e494]:
+                  - button "Manual Entry" [ref=e495]:
+                    - img [ref=e496]
+                    - text: Manual Entry
+                  - button "Smart Import" [ref=e499]:
+                    - img [ref=e500]
+                    - text: Smart Import
+                  - button "File Upload" [ref=e503]:
+                    - img [ref=e504]
+                    - text: File Upload
+                - generic [ref=e509]:
+                  - generic [ref=e510]:
+                    - generic [ref=e511]: Resource Type
+                    - combobox [ref=e512]:
+                      - option "Book"
+                      - option "Article" [selected]
+                      - option "Research"
+                      - option "Guide"
+                      - option "Template"
+                      - option "Case Study"
+                      - option "Workshop"
+                      - option "Masterclass"
+                      - option "Podcast"
+                      - option "Website"
+                      - option "Design"
+                      - option "Video"
+                  - generic [ref=e513]:
+                    - generic [ref=e514]: Title *
+                    - textbox "Resource title" [ref=e515]: E2E Grid Verify 1771604448550
+                  - generic [ref=e516]:
+                    - generic [ref=e517]:
+                      - generic [ref=e518]: Author *
+                      - textbox "Author name" [ref=e519]: Grid Author
+                    - generic [ref=e520]:
+                      - generic [ref=e521]: Category *
+                      - combobox [ref=e522]:
+                        - option "Select category" [selected]
+                        - option "Brand Strategy"
+                        - option "Research"
+                        - option "Content"
+                        - option "Marketing"
+                        - option "Design"
+                        - option "Technology"
+                        - option "Psychology"
+                        - option "User Experience"
+                        - option "Trends"
+                  - generic [ref=e523]:
+                    - generic [ref=e524]: URL
+                    - textbox "https://..." [ref=e525]
+                  - generic [ref=e526]:
+                    - generic [ref=e527]: Description
+                    - textbox "Brief description..." [ref=e528]
+                  - generic [ref=e529]:
+                    - generic [ref=e530]:
+                      - generic [ref=e531]: Difficulty Level
+                      - combobox [ref=e532]:
+                        - option "Beginner"
+                        - option "Intermediate" [selected]
+                        - option "Advanced"
+                    - generic [ref=e533]:
+                      - generic [ref=e534]: Est. Duration
+                      - textbox "e.g. 2 hours" [ref=e535]
+                  - generic [ref=e536]:
+                    - generic [ref=e537]: Tags (comma-separated)
+                    - textbox "e.g. Brand, Strategy, Research" [ref=e538]
+                  - generic [ref=e539]:
+                    - generic [ref=e540]: "Rating: 0.0/5"
+                    - slider [ref=e541]: "0"
+                  - button "Save Resource" [active] [ref=e543]
+  - generic [ref=e544]:
+    - generic [ref=e546]:
+      - generic [ref=e547]:
+        - img [ref=e548]
+        - heading "Notifications" [level=2] [ref=e551]
+      - generic [ref=e552]:
+        - button "Toggle filters" [ref=e553]:
+          - img
+        - button [ref=e554]:
+          - img
+    - generic [ref=e556]:
+      - img [ref=e557]
+      - paragraph [ref=e560]: No notifications
+      - paragraph [ref=e561]: Notifications will appear here as you work
+  - generic [ref=e562]:
+    - generic:
+      - generic:
+        - generic:
+          - img
+          - generic: Support Chat
+        - button:
+          - img
+      - generic:
+        - generic:
+          - img
+          - paragraph: Chat coming soon
+          - paragraph: We're working on live chat support.
+    - button "Open chat" [ref=e563]:
+      - img [ref=e564]
+```

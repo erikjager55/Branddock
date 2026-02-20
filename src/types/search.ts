@@ -1,3 +1,13 @@
+// =============================================================
+// Search Types (S8)
+// =============================================================
+
+export interface SearchParams {
+  query: string;
+  type?: 'all' | 'brand_assets' | 'personas' | 'products' | 'insights' | 'campaigns';
+  limit?: number;
+}
+
 export interface SearchResult {
   id: string;
   title: string;
@@ -7,10 +17,6 @@ export interface SearchResult {
   icon: string;
 }
 
-export interface QuickAction {
-  icon: string;
-  label: string;
-  description: string;
-  color: string;
-  href: string;
+export interface SearchResponse {
+  results: SearchResult[];
 }

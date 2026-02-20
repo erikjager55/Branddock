@@ -10,17 +10,14 @@ export function apiProductToMockFormat(product: ProductWithMeta): ProductService
     id: product.id,
     source: product.source,
     name: product.name,
-    description: product.description,
-    category: product.category,
+    description: product.description ?? "",
+    category: product.category ?? "",
     pricing: {
-      model: product.pricingModel,
-      amount: product.pricingAmount ?? undefined,
-      currency: product.pricingCurrency ?? undefined,
+      model: product.pricingModel ?? "Custom",
     },
     features: product.features,
     benefits: product.benefits,
     useCases: product.useCases,
-    specifications: product.specifications ?? undefined,
   };
 }
 

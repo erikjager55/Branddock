@@ -16,6 +16,7 @@ model Organization {
   slug             String             @unique
   type             OrganizationType   @default(DIRECT)
   logoUrl          String?
+  metadata         String?
   domain           String?            // voor toekomstige white-label
 
   // Billing (Stripe)
@@ -51,7 +52,7 @@ enum SubscriptionStatus {
 
 model OrganizationMember {
   id             String           @id @default(cuid())
-  role           MemberRole       @default(MEMBER)
+  role           String           @default("member")
   isActive       Boolean          @default(true)
 
   userId         String
@@ -81,19 +82,12 @@ model WorkspaceMemberAccess {
   @@index([workspaceId])
 }
 
-enum MemberRole {
-  OWNER     // Volledige controle, billing, kan org verwijderen
-  ADMIN     // User management, workspace management
-  MEMBER    // Kan werken in toegewezen workspaces
-  VIEWER    // Alleen lezen
-}
-
 model Invitation {
   id             String           @id @default(cuid())
   email          String
-  role           MemberRole       @default(MEMBER)
+  role           String           @default("member")
   token          String           @unique @default(cuid())
-  status         InvitationStatus @default(PENDING)
+  status         String           @default("pending")
   expiresAt      DateTime
 
   organizationId String
@@ -106,13 +100,6 @@ model Invitation {
   @@index([organizationId])
   @@index([token])
   @@index([email])
-}
-
-enum InvitationStatus {
-  PENDING
-  ACCEPTED
-  EXPIRED
-  REVOKED
 }
 
 // ============================================
@@ -155,14 +142,45 @@ model Workspace {
   knowledgeResources     KnowledgeResource[]
   trends                 Trend[]
 
+  // R0.1: Nieuwe relaties uit schema extension
+  brandAssetResearchMethods BrandAssetResearchMethod[]
+  personaResearchMethods    PersonaResearchMethod[]
+  marketInsights            MarketInsight[]
+  alignmentScans            AlignmentScan[]
+
+  // S5: Research & Validation relaties
+  validationPlans           ValidationPlan[]
+  researchStudies           ResearchStudy[]
+
+  // S6: Campaign Templates
+  campaignTemplates         CampaignTemplate[]
+
+  // Persona Chat AI config
+  personaChatConfig         PersonaChatConfig?
+
+  // S9: Help & Support
+  supportTickets            SupportTicket[]
+
+  // S9: Settings
+  subscription              Subscription?
+  paymentMethods            PaymentMethod[]
+  invoices                  Invoice[]
+
+  // S10: Stripe Billing
+  stripeCustomerId          String?          @unique
+  planTier                  PlanTier         @default(FREE)
+  aiUsageRecords            AiUsageRecord[]
+
   @@index([organizationId])
 }
 
 model User {
-  id          String    @id @default(cuid())
-  email       String    @unique
-  name        String?
-  avatarUrl   String?
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  avatarUrl     String?
+  emailVerified Boolean   @default(false)
+  image         String?
 
   // Legacy: directe workspace koppeling (wordt gefaseerd vervangen door OrganizationMember)
   workspaceId String?
@@ -175,17 +193,39 @@ model User {
   memberships        OrganizationMember[]
   sentInvitations    Invitation[]
 
+  // Better Auth relaties
+  sessions           Session[]
+  accounts           Account[]
+
   // Bestaande relaties
   aiAnalysisSessions AIBrandAnalysisSession[]
   lockedAssets       BrandAsset[]           @relation("LockedAssets")
   assetVersions      BrandAssetVersion[]
-  createdInterviews  Interview[]
+  createdInterviews  Interview[]       @relation("InterviewCreator")
+  lockedInterviews   Interview[]       @relation("InterviewLocker")
   createdStrategies  BusinessStrategy[]
   createdStyleguides BrandStyleguide[]
   lockedPersonas         Persona[]                    @relation("LockedPersonas")
   createdPersonas        Persona[]
   personaAnalyses        AIPersonaAnalysisSession[]
   personaChatSessions    PersonaChatSession[]
+
+  // S9: Help & Support
+  supportTickets         SupportTicket[]
+  featureRequests        FeatureRequest[]
+  featureVotes           FeatureVote[]
+  platformRating         PlatformRating?
+
+  // S9: Settings
+  userProfile            UserProfile?
+  userPassword           UserPassword?
+  emailPreference        EmailPreference?
+  connectedAccounts      ConnectedAccount[]
+  notificationPreference NotificationPreference?
+  appearancePreference   AppearancePreference?
+
+  // S10: Billing
+  aiUsageRecords         AiUsageRecord[]
 
   @@index([workspaceId])
 }
@@ -295,6 +335,8 @@ model BrandAsset {
   @@index([workspaceId])
   @@index([category])
   @@index([status])
+  @@index([workspaceId, category])
+  @@index([workspaceId, status])
 }
 
 enum AssetCategory {
@@ -334,6 +376,10 @@ model AIBrandAnalysisSession {
   workspace         Workspace         @relation(fields: [workspaceId], references: [id])
   createdById       String
   createdBy         User              @relation(fields: [createdById], references: [id])
+  personaId         String?
+  persona           Persona?          @relation("BrandAIAnalysis", fields: [personaId], references: [id])
+
+  lastUpdatedAt     DateTime?
 
   messages          AIAnalysisMessage[]
 
@@ -366,6 +412,10 @@ enum AIAnalysisStatus {
   REPORT_GENERATING
   REPORT_READY
   ERROR
+  // R0.1: nieuwe waarden uit extension
+  IDLE
+  ANALYZING
+  FAILED
 }
 
 enum AIMessageType {
@@ -373,6 +423,10 @@ enum AIMessageType {
   AI_QUESTION
   USER_ANSWER
   AI_FEEDBACK
+  // R0.1: nieuwe waarden uit extension
+  USER
+  ASSISTANT
+  SYSTEM
 }
 
 // === FASE 1C: BRAND ASSET DETAIL ===
@@ -403,8 +457,18 @@ model BrandAssetResearchMethod {
   brandAssetId   String
   brandAsset     BrandAsset            @relation(fields: [brandAssetId], references: [id], onDelete: Cascade)
 
+  // R0.1: nieuwe velden uit extension
+  weight         Float                 @default(0.25)
+  resultData     Json?
+  workspaceId    String?
+  workspace      Workspace?            @relation(fields: [workspaceId], references: [id])
+
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt @default(now())
+
   @@unique([brandAssetId, method])
   @@index([brandAssetId])
+  @@index([workspaceId])
 }
 
 enum ResearchMethodType {
@@ -419,6 +483,8 @@ enum ResearchMethodStatus {
   IN_PROGRESS
   COMPLETED
   VALIDATED
+  // R0.1: nieuwe waarde uit extension
+  NOT_STARTED
 }
 
 // === FASE 1D: CANVAS WORKSHOP ===
@@ -478,6 +544,8 @@ model Workshop {
 
   @@index([brandAssetId])
   @@index([workspaceId])
+  @@index([status])
+  @@index([workspaceId, status])
 }
 
 model WorkshopBundle {
@@ -520,6 +588,9 @@ model WorkshopFinding {
   workshop    Workshop  @relation(fields: [workshopId], references: [id], onDelete: Cascade)
   order       Int
   content     String    @db.Text
+  // R0.1: nieuwe velden uit extension
+  category    String?
+  createdAt   DateTime  @default(now())
 
   @@index([workshopId])
 }
@@ -542,6 +613,8 @@ model WorkshopParticipant {
   name        String
   role        String
   avatarUrl   String?
+  // R0.1: nieuw veld uit extension
+  email       String?
 
   @@index([workshopId])
 }
@@ -634,6 +707,8 @@ model Interview {
   // Review (Step 5)
   isLocked        Boolean           @default(false)
   lockedAt        DateTime?
+  lockedById      String?
+  lockedBy        User?             @relation("InterviewLocker", fields: [lockedById], references: [id])
   approvedAt      DateTime?
 
   // Wizard tracking
@@ -647,12 +722,13 @@ model Interview {
   workspaceId     String
   workspace       Workspace         @relation(fields: [workspaceId], references: [id])
   createdById     String
-  createdBy       User              @relation(fields: [createdById], references: [id])
+  createdBy       User              @relation("InterviewCreator", fields: [createdById], references: [id])
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
   @@index([brandAssetId])
   @@index([workspaceId])
+  @@index([workspaceId, status])
 }
 
 model InterviewAssetLink {
@@ -707,10 +783,14 @@ model InterviewQuestionTemplate {
 
 enum InterviewStatus {
   TO_SCHEDULE
+  DRAFT
   SCHEDULED
   INTERVIEW_HELD
+  IN_PROGRESS
   IN_REVIEW
   COMPLETED
+  APPROVED
+  CANCELLED
 }
 
 enum InterviewQuestionType {
@@ -722,32 +802,227 @@ enum InterviewQuestionType {
 }
 
 // ============================================
-// CAMPAIGN PLACEHOLDER (Fase 2 — tot Fase 10)
+// CAMPAIGNS + CONTENT STUDIO (S6)
 // ============================================
 
 model Campaign {
-  id             String              @id @default(cuid())
-  name           String
-  type           String              @default("campaign-strategy") // campaign-strategy | brand-refresh | content-strategy
-  status         String              @default("draft") // draft | ready | generating
-  objective      String?
-  budgetMin      Int?
-  budgetMax      Int?
-  channels       Json?               // { social?: boolean, email?: boolean, ooh?: boolean }
-  assets         Json                @default("[]") // CampaignAsset[]
-  deliverables   Json                @default("[]") // CampaignDeliverable[]
-  modifiedBy     String?
+  id                String                  @id @default(cuid())
+  title             String
+  slug              String
+  type              CampaignType
+  status            CampaignStatus          @default(ACTIVE)
 
-  workspaceId    String
-  workspace      Workspace           @relation(fields: [workspaceId], references: [id])
-  strategyLinks  CampaignStrategy[]
-  objectiveLinks CampaignObjective[]
+  // Strategic Campaign specifiek
+  confidence        Float?                  // 0-100
+  strategy          Json?                   // AI-gegenereerde strategie
+  campaignGoalType  String?                 // BRAND / PRODUCT / CONTENT / ENGAGEMENT
+  description       String?                 @db.Text
+  startDate         DateTime?
+  endDate           DateTime?
 
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  // AI Strategy (wizard stap 3)
+  strategyConfidence  Float?                // 0-100
+  strategicApproach   String?               @db.Text
+  keyMessages         String[]
+  targetAudienceInsights String?            @db.Text
+  recommendedChannels String[]
+  strategyGeneratedAt DateTime?
+
+  // Quick Content specifiek
+  contentType       String?                 // "Blog Post", "LinkedIn", etc.
+  contentCategory   String?                 // Written, Social, Visual, Video, Email
+  prompt            String?                 @db.Text
+  outputFormat      String?                 // Text, Image, Video, Carousel
+  qualityScore      Float?                  // 0-10
+
+  // Template
+  isSavedAsTemplate Boolean                 @default(false)
+  templateName      String?
+
+  // Shared
+  isArchived        Boolean                 @default(false)
+  knowledgeAssets   CampaignKnowledgeAsset[]
+  deliverables      Deliverable[]
+  teamMembers       CampaignTeamMember[]
+
+  // Existing relations (Business Strategy)
+  strategyLinks     CampaignStrategy[]
+  objectiveLinks    CampaignObjective[]
+
+  workspaceId       String
+  workspace         Workspace               @relation(fields: [workspaceId], references: [id])
+  createdBy         String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  @@index([workspaceId])
+  @@index([type])
+  @@index([status])
+  @@index([workspaceId, status])
+  @@index([workspaceId, type])
+  @@index([workspaceId, isArchived])
+  @@unique([workspaceId, slug])
+}
+
+model CampaignKnowledgeAsset {
+  id                String    @id @default(cuid())
+  campaignId        String
+  campaign          Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  brandAssetId      String?
+  personaId         String?
+  productId         String?
+  insightId         String?
+  assetName         String
+  assetType         String    // Brand, Persona, Product, Trend
+  validationStatus  String?   // Validated, Not Validated
+  isAutoSelected    Boolean   @default(false)
+
+  @@index([campaignId])
+}
+
+model Deliverable {
+  id                String              @id @default(cuid())
+  title             String
+  contentType       String              // Blog Post, Landing Page, etc.
+  status            DeliverableStatus   @default(NOT_STARTED)
+  progress          Float               @default(0)
+  assignedTo        String?
+
+  // Content Studio velden
+  contentTab        String?             // "text", "images", "video", "carousel"
+  prompt            String?             @db.Text
+  aiModel           String?             // "gpt-4", "claude", "gemini", "veo", "nanobanana"
+  settings          Json?               // Type-specifieke settings
+
+  // Generated Content
+  generatedContent  Json?               // legacy
+  generatedText     String?             @db.Text
+  generatedImageUrls String[]
+  generatedVideoUrl String?
+  generatedSlides   Json?
+
+  // Quality
+  qualityScore      Float?              // 0-100
+  qualityMetrics    Json?               // { brandAlignment: 85, ... }
+
+  // Checklist + Favorite
+  checklistItems    Json?
+  isFavorite        Boolean             @default(false)
+
+  // Auto-save
+  lastAutoSavedAt   DateTime?
+
+  // Relations
+  campaignId        String
+  campaign          Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  versions          ContentVersion[]
+  insertedInsights  InsertedInsight[]
+  improveSuggestions ImproveSuggestion[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([campaignId])
+  @@index([status])
+}
+
+model CampaignTeamMember {
+  id          String    @id @default(cuid())
+  campaignId  String
+  campaign    Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  userId      String
+  role        String    @default("member")
+
+  @@index([campaignId])
+  @@unique([campaignId, userId])
+}
+
+model ContentVersion {
+  id              String      @id @default(cuid())
+  versionNumber   Int
+  contentSnapshot Json
+  qualityScore    Float?
+  deliverableId   String
+  deliverable     Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  createdAt       DateTime    @default(now())
+  createdBy       String?
+
+  @@index([deliverableId])
+  @@unique([deliverableId, versionNumber])
+}
+
+model InsertedInsight {
+  id              String        @id @default(cuid())
+  insightTitle    String
+  insightSource   String?
+  insertFormat    InsertFormat  // INLINE / QUOTE / DATA_VIZ / AI_ADAPTED
+  insertLocation  String?
+  deliverableId   String
+  deliverable     Deliverable   @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  insertedAt      DateTime      @default(now())
+
+  @@index([deliverableId])
+}
+
+model ImproveSuggestion {
+  id              String            @id @default(cuid())
+  metric          String
+  impactPoints    Float
+  currentText     String?           @db.Text
+  suggestedText   String?           @db.Text
+  status          SuggestionStatus  @default(PENDING)
+  deliverableId   String
+  deliverable     Deliverable       @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  createdAt       DateTime          @default(now())
+
+  @@index([deliverableId])
+}
+
+model CampaignTemplate {
+  id                String    @id @default(cuid())
+  name              String
+  campaignGoalType  String?
+  knowledgePattern  Json?
+  deliverableMix    Json?
+  workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id])
+  createdAt         DateTime  @default(now())
+  lastUsedAt        DateTime?
 
   @@index([workspaceId])
 }
+
+// S6 Enums
+enum CampaignType {
+  STRATEGIC
+  QUICK
+}
+
+enum CampaignStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum DeliverableStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum InsertFormat {
+  INLINE
+  QUOTE
+  DATA_VIZ
+  AI_ADAPTED
+}
+
+enum SuggestionStatus {
+  PENDING
+  APPLIED
+  DISMISSED
+  PREVIEWING
+}
+
 // ============================================
 // BUSINESS STRATEGY MODELLEN (Fase 2)
 // ============================================
@@ -781,6 +1056,7 @@ model BusinessStrategy {
   @@unique([slug, workspaceId])
   @@index([workspaceId])
   @@index([status])
+  @@index([workspaceId, status])
 }
 
 model Objective {
@@ -829,6 +1105,8 @@ model FocusArea {
   name              String
   description       String?
   icon              String?
+  // R0.1: nieuw veld uit extension
+  color             String?
 
   strategyId        String
   strategy          BusinessStrategy  @relation(fields: [strategyId], references: [id], onDelete: Cascade)
@@ -847,6 +1125,10 @@ model Milestone {
 
   strategyId        String
   strategy          BusinessStrategy  @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  // R0.1: nieuwe velden uit extension
+  completedAt       DateTime?
+  createdAt         DateTime          @default(now())
 
   @@index([strategyId])
 }
@@ -877,6 +1159,11 @@ enum StrategyType {
   BRAND_BUILDING
   OPERATIONAL_EXCELLENCE
   CUSTOM
+  // R0.1: nieuwe waarden uit extension
+  BRAND_AWARENESS
+  MARKET_PENETRATION
+  CUSTOMER_RETENTION
+  DIGITAL_TRANSFORMATION
 }
 
 enum StrategyStatus {
@@ -884,6 +1171,8 @@ enum StrategyStatus {
   ACTIVE
   COMPLETED
   ARCHIVED
+  // R0.1: nieuwe waarde uit extension
+  ON_HOLD
 }
 
 enum ObjectiveStatus {
@@ -891,30 +1180,45 @@ enum ObjectiveStatus {
   AT_RISK
   BEHIND
   COMPLETED
+  // R0.1: nieuwe waarden uit extension
+  NOT_STARTED
+  IN_PROGRESS
 }
 
 enum KeyResultStatus {
   ON_TRACK
   COMPLETE
   BEHIND
+  // R0.1: nieuwe waarden uit extension
+  NOT_STARTED
+  AT_RISK
+  COMPLETED
 }
 
 enum MilestoneStatus {
   DONE
   UPCOMING
   FUTURE
+  // R0.1: nieuwe waarden uit extension
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
 }
 
 enum MetricType {
   PERCENTAGE
   NUMBER
   CURRENCY
+  // R0.1: nieuwe waarde uit extension
+  BOOLEAN
 }
 
 enum Priority {
   HIGH
   MEDIUM
   LOW
+  // R0.1: nieuwe waarde uit extension
+  CRITICAL
 }
 
 // ============================================
@@ -997,6 +1301,9 @@ enum StyleguideStatus {
   ANALYZING
   COMPLETE
   ERROR
+  // R0.1: nieuwe waarden uit extension
+  NOT_STARTED
+  PARTIAL
 }
 
 enum StyleguideSource {
@@ -1021,6 +1328,12 @@ enum ColorCategory {
   ACCENT
   NEUTRAL
   SEMANTIC
+  // R0.1: nieuwe waarden uit extension
+  BACKGROUND
+  TEXT
+  SUCCESS
+  WARNING
+  ERROR_COLOR
 }
 
 // ============================================
@@ -1067,17 +1380,24 @@ model Persona {
   researchMethods       PersonaResearchMethod[]
   aiAnalysisSessions    AIPersonaAnalysisSession[]
   chatSessions          PersonaChatSession[]
+  linkedProducts        ProductPersona[]
+  // S1: Brand AI Analysis sessions
+  brandAnalysisSessions AIBrandAnalysisSession[] @relation("BrandAIAnalysis")
 
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 
   @@index([workspaceId])
+  @@index([workspaceId, createdAt])
 }
 
 enum PersonaAvatarSource {
   NONE
   AI_GENERATED
   MANUAL_URL
+  // R0.1: nieuwe waarden uit extension
+  PLACEHOLDER
+  UPLOADED
 }
 
 model PersonaResearchMethod {
@@ -1091,8 +1411,18 @@ model PersonaResearchMethod {
   personaId      String
   persona        Persona                    @relation(fields: [personaId], references: [id], onDelete: Cascade)
 
+  // R0.1: nieuwe velden uit extension
+  weight         Float                      @default(0.25)
+  resultData     Json?
+  workspaceId    String?
+  workspace      Workspace?                 @relation(fields: [workspaceId], references: [id])
+
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt @default(now())
+
   @@unique([personaId, method])
   @@index([personaId])
+  @@index([workspaceId])
 }
 
 enum PersonaResearchMethodType {
@@ -1131,6 +1461,10 @@ enum AIPersonaAnalysisStatus {
   IN_PROGRESS
   COMPLETED
   ERROR
+  // R0.1: nieuwe waarden uit extension
+  IDLE
+  ANALYZING
+  FAILED
 }
 
 model AIPersonaAnalysisMessage {
@@ -1151,6 +1485,7 @@ model AIPersonaAnalysisMessage {
 model PersonaChatSession {
   id            String                  @id @default(cuid())
   mode          PersonaChatMode         @default(FREE_CHAT)
+  title         String?                 // Auto-generated na 3 berichten
 
   personaId     String
   persona       Persona                 @relation(fields: [personaId], references: [id], onDelete: Cascade)
@@ -1160,16 +1495,24 @@ model PersonaChatSession {
   createdBy     User                    @relation(fields: [createdById], references: [id])
   messages      PersonaChatMessage[]
   insights      PersonaChatInsight[]
+  knowledgeContext PersonaChatContext[]
 
   createdAt     DateTime                @default(now())
   updatedAt     DateTime                @updatedAt
 
   @@index([personaId])
+  @@index([workspaceId])
+  @@index([workspaceId, personaId])
 }
 
 enum PersonaChatMode {
   FREE_CHAT
   GUIDED
+  // R0.1: nieuwe waarden uit extension
+  EXPLORE
+  VALIDATE
+  IDEATE
+  CHALLENGE
 }
 
 model PersonaChatMessage {
@@ -1177,8 +1520,13 @@ model PersonaChatMessage {
   role        ChatRole
   content     String              @db.Text
 
+  // Token tracking
+  promptTokens     Int?
+  completionTokens Int?
+
   sessionId   String
   session     PersonaChatSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  insights    PersonaChatInsight[] // Insights gekoppeld aan dit bericht
 
   createdAt   DateTime            @default(now())
 
@@ -1188,54 +1536,104 @@ model PersonaChatMessage {
 enum ChatRole {
   USER
   ASSISTANT
+  // R0.1: nieuwe waarde uit extension
+  SYSTEM
 }
 
 model PersonaChatInsight {
   id          String              @id @default(cuid())
-  title       String
-  description String              @db.Text
-  category    String?
-
   sessionId   String
-  session     PersonaChatSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  messageId   String?             // Het specifieke bericht waaruit het insight komt
+
+  // Insight content
+  type        String              @default("behavior") // "pain_point" | "opportunity" | "preference" | "behavior" | "need" | "objection" | "motivation"
+  title       String              // Korte samenvatting
+  content     String              @db.Text              // Uitgebreide beschrijving
+  severity    String?             // "high" | "medium" | "low"
+
+  // Metadata
+  isAutoGenerated Boolean         @default(false) // true = AI gegenereerd, false = handmatig via 💡
 
   createdAt   DateTime            @default(now())
 
+  session     PersonaChatSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  message     PersonaChatMessage? @relation(fields: [messageId], references: [id])
+
   @@index([sessionId])
+  @@index([messageId])
+}
+
+// Geselecteerde knowledge context per sessie
+model PersonaChatContext {
+  id          String   @id @default(cuid())
+  sessionId   String
+
+  // Referentie naar het knowledge item
+  sourceType  String   // "brand_asset" | "product" | "market_insight" | "knowledge_resource" | "campaign" | "deliverable" | "brandstyle"
+  sourceId    String   // ID van het item
+  sourceName  String   // Naam voor weergave
+
+  // Snapshot van de context op moment van toevoegen
+  contextData Json     // Relevante velden als JSON snapshot
+
+  createdAt   DateTime @default(now())
+
+  session     PersonaChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, sourceType, sourceId])
+  @@index([sessionId])
+}
+
+// Chat configuratie — bewerkbaar door admin, niet zichtbaar voor gebruikers
+model PersonaChatConfig {
+  id                  String   @id @default(cuid())
+  workspaceId         String
+
+  // LLM Settings — multi-provider support
+  provider            String   @default("anthropic")  // "anthropic" | "openai"
+  model               String   @default("claude-sonnet-4-20250514")
+  temperature         Float    @default(0.8)
+  maxTokens           Int      @default(1000)
+
+  // System prompt template met variabelen
+  systemPromptTemplate String  @db.Text
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  workspace           Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId])
 }
 
 // =============================================================
 // Product & Services
 // =============================================================
 model Product {
-  id              String    @id @default(cuid())
+  id              String          @id @default(cuid())
   name            String
-  slug            String    @unique
-  description     String    @db.Text
-  category        String    // Software, Consulting, Mobile, etc.
-  source          String    @default("Manual Entry")
-
-  // Pricing
-  pricingModel    String    @default("Custom") // Enterprise, Subscription, Custom, Free
-  pricingAmount   String?   // e.g. "€149/month"
-  pricingCurrency String?   // e.g. "EUR"
-
-  // JSON arrays
-  features        Json      @default("[]") // string[]
-  benefits        Json      @default("[]") // string[]
-  useCases        Json      @default("[]") // string[]
-
-  // Optional extras
-  specifications  Json?     // { key: string, value: string }[]
-
-  // Relaties
+  slug            String          @unique
+  description     String?         @db.Text
+  category        String?
+  pricingModel    String?
+  pricingDetails  String?         @db.Text
+  source          ProductSource   @default(MANUAL)
+  sourceUrl       String?
+  status          ProductStatus   @default(DRAFT)
+  features        String[]        @default([])
+  benefits        String[]        @default([])
+  useCases        String[]        @default([])
+  categoryIcon    String?
+  analysisData    Json?
+  linkedPersonas  ProductPersona[]
   workspaceId     String
-  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
+  workspace       Workspace       @relation(fields: [workspaceId], references: [id])
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
   @@index([workspaceId])
+  @@index([status])
+  @@index([workspaceId, status])
+  @@index([workspaceId, category])
 }
 
 // =============================================================
@@ -1275,29 +1673,43 @@ model PurchasedBundle {
 }
 
 // =============================================================
-// Knowledge Library
+// Knowledge Library (Fase 7 — extended S5)
 // =============================================================
 model KnowledgeResource {
-  id                String   @id @default(cuid())
+  id                String          @id @default(cuid())
   title             String
-  description       String   @db.Text
-  type              String   @default("article") // book, video, website, image, document, podcast, article, course
-  author            String   @default("")
-  category          String   @default("")
-  tags              Json     @default("[]") // string[]
+  slug              String?         @unique
+  description       String          @db.Text
+  type              String          @default("article") // book, video, website, image, document, podcast, article, course
+  category          String          @default("")
+  author            String          @default("")
+  url               String          @default("")
+  source            ResourceSource  @default(MANUAL)
+  difficultyLevel   DifficultyLevel @default(INTERMEDIATE)
+  estimatedDuration String?
+  rating            Float           @default(0)
+  isFeatured        Boolean         @default(false)
+  isFavorite        Boolean         @default(false)
+  isArchived        Boolean         @default(false)
+  tags              Json            @default("[]") // string[]
+  publicationDate   DateTime?
+  isbn              String?
+  pageCount         Int?
+  fileName          String?
+  fileSize          Int?
+  fileType          String?
+  fileUrl           String?
+  importedMetadata  Json?
+  createdBy         String?
+
+  // Legacy fields (backward compat)
   difficulty        String?  // beginner, intermediate, advanced
   language          String   @default("en")
-  url               String   @default("")
   thumbnail         String?
-  rating            Float    @default(0)
-  status            String   @default("available") // available, archived, pending, unavailable
+  status            String   @default("available")
   addedBy           String?
-
-  // AI features
   aiSummary         String?  @db.Text
   aiKeyTakeaways    Json?    // string[]
-
-  // Relations metadata
   relatedTrends     Json?    // string[]
   relatedPersonas   Json?    // string[]
   relatedAssets     Json?    // string[]
@@ -1309,6 +1721,12 @@ model KnowledgeResource {
   updatedAt         DateTime @updatedAt
 
   @@index([workspaceId])
+  @@index([type])
+  @@index([category])
+  @@index([isFeatured])
+  @@index([isArchived])
+  @@index([workspaceId, type])
+  @@index([workspaceId, isArchived])
 }
 
 // =============================================================
@@ -1336,4 +1754,907 @@ model Trend {
   updatedAt           DateTime @updatedAt
 
   @@index([workspaceId])
+}
+
+// =============================================================
+// R0.1: NIEUWE MODELLEN — Fase 5 (Product-Persona join)
+// =============================================================
+
+model ProductPersona {
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  personaId String
+  persona   Persona @relation(fields: [personaId], references: [id], onDelete: Cascade)
+  @@id([productId, personaId])
+}
+
+// =============================================================
+// R0.1: NIEUWE MODELLEN — Fase 6 (Market Insights)
+// =============================================================
+
+model MarketInsight {
+  id                String              @id @default(cuid())
+  title             String
+  slug              String              @unique
+  description       String?
+  category          InsightCategory
+  scope             InsightScope        @default(MICRO)
+  impactLevel       ImpactLevel         @default(MEDIUM)
+  timeframe         InsightTimeframe    @default(SHORT_TERM)
+  relevanceScore    Float               @default(75)
+  source            InsightSource       @default(MANUAL)
+  industries        String[]
+  tags              String[]
+  sourceUrls        InsightSourceUrl[]
+  howToUse          String[]
+  aiResearchPrompt  String?
+  aiResearchConfig  Json?
+  useBrandContext   Boolean             @default(false)
+
+  workspaceId       String
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id])
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([workspaceId])
+  @@index([category])
+  @@index([impactLevel])
+  @@index([timeframe])
+  @@index([workspaceId, category])
+  @@index([workspaceId, impactLevel])
+}
+
+model InsightSourceUrl {
+  id                String              @id @default(cuid())
+  name              String
+  url               String
+  insightId         String
+  insight           MarketInsight       @relation(fields: [insightId], references: [id], onDelete: Cascade)
+
+  @@index([insightId])
+}
+
+// =============================================================
+// R0.1: NIEUWE MODELLEN — Fase 8 (Brand Alignment)
+// =============================================================
+
+model AlignmentScan {
+  id                String              @id @default(cuid())
+  score             Float
+  totalItems        Int
+  alignedCount      Int
+  reviewCount       Int
+  misalignedCount   Int
+  status            ScanStatus          @default(RUNNING)
+  startedAt         DateTime            @default(now())
+  completedAt       DateTime?
+  moduleScores      ModuleScore[]
+  issues            AlignmentIssue[]
+
+  workspaceId       String
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId])
+  @@index([status])
+  @@index([workspaceId, status])
+}
+
+model ModuleScore {
+  id                String              @id @default(cuid())
+  moduleName        AlignmentModule
+  score             Float
+  alignedCount      Int
+  reviewCount       Int
+  misalignedCount   Int
+  lastCheckedAt     DateTime            @default(now())
+
+  scanId            String
+  scan              AlignmentScan       @relation(fields: [scanId], references: [id], onDelete: Cascade)
+
+  @@index([scanId])
+}
+
+model AlignmentIssue {
+  id                String              @id @default(cuid())
+  severity          IssueSeverity
+  title             String
+  modulePath        String
+  description       String
+  conflictsWith     String[]
+  recommendation    String?
+  status            IssueStatus         @default(OPEN)
+  dismissedAt       DateTime?
+  dismissReason     String?
+  fixAppliedAt      DateTime?
+  fixOption         String?
+  sourceItemId      String?
+  sourceItemType    String?
+  targetItemId      String?
+  targetItemType    String?
+
+  scanId            String
+  scan              AlignmentScan       @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  workspaceId       String
+
+  @@index([scanId])
+  @@index([workspaceId])
+  @@index([severity])
+  @@index([status])
+  @@index([workspaceId, status])
+  @@index([workspaceId, severity])
+}
+
+// =============================================================
+// R0.1: NIEUWE ENUMS
+// =============================================================
+
+// Fase 3: Brandstyle Analysis
+enum BrandstyleAnalysisStatus {
+  NOT_STARTED
+  FETCHING_URL
+  EXTRACTING_LOGO
+  ANALYZING_COLORS
+  DETECTING_TYPOGRAPHY
+  ANALYZING_TONE
+  COMPLETE
+}
+
+// Fase 5: Products
+enum ProductSource {
+  MANUAL
+  WEBSITE_URL
+  PDF_UPLOAD
+}
+
+enum ProductStatus {
+  DRAFT
+  ANALYZED
+  ARCHIVED
+}
+
+// Fase 6: Market Insights
+enum InsightCategory {
+  TECHNOLOGY
+  ENVIRONMENTAL
+  SOCIAL
+  CONSUMER
+  BUSINESS
+}
+
+enum InsightScope {
+  MICRO
+  MESO
+  MACRO
+}
+
+enum ImpactLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum InsightTimeframe {
+  SHORT_TERM
+  MEDIUM_TERM
+  LONG_TERM
+}
+
+enum InsightSource {
+  MANUAL
+  AI_RESEARCH
+  IMPORTED
+}
+
+// Fase 7: Knowledge Library
+enum ResourceType {
+  BOOK
+  ARTICLE
+  RESEARCH
+  GUIDE
+  TEMPLATE
+  CASE_STUDY
+  WORKSHOP_RESOURCE
+  MASTERCLASS
+  PODCAST
+  WEBSITE
+  DESIGN
+  VIDEO
+}
+
+enum ResourceSource {
+  MANUAL
+  URL_IMPORT
+  FILE_UPLOAD
+}
+
+enum DifficultyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+// Fase 8: Brand Alignment
+enum ScanStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum AlignmentModule {
+  BRAND_FOUNDATION
+  BUSINESS_STRATEGY
+  BRANDSTYLE
+  PERSONAS
+  PRODUCTS_SERVICES
+  MARKET_INSIGHTS
+}
+
+enum IssueSeverity {
+  CRITICAL
+  WARNING
+  SUGGESTION
+}
+
+enum IssueStatus {
+  OPEN
+  DISMISSED
+  FIXED
+}
+
+// =============================================================
+// S5: Research & Validation (Knowledge Library extension)
+// =============================================================
+
+model ResearchBundle {
+  id              String            @id @default(cuid())
+  name            String
+  slug            String            @unique
+  description     String?           @db.Text
+  category        BundleCategory
+  price           Float
+  originalPrice   Float?
+  discount        Float?
+  timeline        String?
+  methodCount     Int
+  isRecommended   Boolean           @default(false)
+  isPopular       Boolean           @default(false)
+  includedTags    String[]          @default([])
+  trustSignals    String[]          @default([])
+  assets          BundleAsset[]
+  methods         BundleMethod[]
+  purchases       BundlePurchase[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model BundleAsset {
+  id               String           @id @default(cuid())
+  assetName        String
+  assetDescription String?
+  assetIcon        String?
+  bundleId         String
+  bundle           ResearchBundle   @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  @@index([bundleId])
+}
+
+model BundleMethod {
+  id              String            @id @default(cuid())
+  methodName      String
+  description     String?
+  bundleId        String
+  bundle          ResearchBundle    @relation(fields: [bundleId], references: [id], onDelete: Cascade)
+  @@index([bundleId])
+}
+
+model ValidationPlan {
+  id              String                @id @default(cuid())
+  status          ValidationPlanStatus  @default(DRAFT)
+  totalPrice      Float                 @default(0)
+  selectedAssets  ValidationPlanAsset[]
+  selectedMethods ValidationPlanMethod[]
+  purchasedAt     DateTime?
+  completedAt     DateTime?
+  workspaceId     String
+  workspace       Workspace             @relation(fields: [workspaceId], references: [id])
+  createdBy       String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  @@index([workspaceId])
+  @@index([status])
+  @@index([workspaceId, status])
+}
+
+model ValidationPlanAsset {
+  id                String          @id @default(cuid())
+  brandAssetId      String?
+  assetName         String
+  assetCategory     String?
+  estimatedDuration String?
+  planId            String
+  plan              ValidationPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  @@index([planId])
+}
+
+model ValidationPlanMethod {
+  id              String             @id @default(cuid())
+  methodType      ResearchMethodType
+  quantity        Int                @default(0)
+  unitPrice       Float
+  subtotal        Float              @default(0)
+  planId          String
+  plan            ValidationPlan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  @@index([planId])
+}
+
+model ResearchStudy {
+  id              String             @id @default(cuid())
+  title           String
+  method          ResearchMethodType
+  progress        Float              @default(0)
+  status          StudyStatus        @default(IN_PROGRESS)
+  personaId       String?
+  brandAssetId    String?
+  lastActivityAt  DateTime           @default(now())
+  completedAt     DateTime?
+  planId          String?
+  workspaceId     String
+  workspace       Workspace          @relation(fields: [workspaceId], references: [id])
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  @@index([workspaceId])
+  @@index([status])
+  @@index([personaId])
+  @@index([workspaceId, status])
+}
+
+model BundlePurchase {
+  id              String            @id @default(cuid())
+  bundleId        String
+  bundle          ResearchBundle    @relation(fields: [bundleId], references: [id])
+  pricePaid       Float
+  status          PurchaseStatus    @default(PENDING)
+  workspaceId     String
+  purchasedAt     DateTime          @default(now())
+  @@index([workspaceId])
+  @@index([bundleId])
+}
+
+enum BundleCategory {
+  FOUNDATION
+  SPECIALIZED
+}
+
+enum ValidationPlanStatus {
+  DRAFT
+  PURCHASED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum StudyStatus {
+  IN_PROGRESS
+  COMPLETED
+  PENDING_REVIEW
+  CANCELLED
+}
+
+enum PurchaseStatus {
+  PENDING
+  PAID
+  REFUNDED
+}
+
+// ============================================
+// BETTER AUTH MODELLEN
+// ============================================
+
+model Session {
+  id                     String    @id @default(cuid())
+  token                  String    @unique
+  expiresAt              DateTime
+  ipAddress              String?
+  userAgent              String?
+  activeOrganizationId   String?
+
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("session")
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  password              String?
+
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+  @@index([userId])
+}
+
+model Verification {
+  id          String    @id @default(cuid())
+  identifier  String
+  value       String
+  expiresAt   DateTime
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("verification")
+}
+
+// ─── S9: Help & Support Enums ─────────────────────────────────
+
+enum TicketCategory {
+  GENERAL
+  TECHNICAL
+  BILLING
+  FEATURE_REQUEST
+  BUG_REPORT
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum FeatureRequestStatus {
+  REQUESTED
+  UNDER_REVIEW
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  DECLINED
+}
+
+// ─── S9: Help & Support Models ────────────────────────────────
+
+model HelpCategory {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  icon         String
+  iconBg       String
+  iconColor    String
+  articleCount  Int           @default(0)
+  sortOrder    Int           @default(0)
+
+  articles     HelpArticle[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("help_category")
+}
+
+model HelpArticle {
+  id                String       @id @default(cuid())
+  title             String
+  slug              String       @unique
+  subtitle          String?
+  content           String       @db.Text
+  categoryId        String
+  category          HelpCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  readTimeMinutes   Int          @default(5)
+  helpfulYes        Int          @default(0)
+  helpfulNo         Int          @default(0)
+  relatedArticleIds String[]
+  publishedAt       DateTime     @default(now())
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([categoryId])
+  @@map("help_article")
+}
+
+model VideoTutorial {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  thumbnailUrl  String?
+  videoUrl      String
+  duration      String
+  categoryBadge String?
+  categoryColor String?
+  sortOrder     Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("video_tutorial")
+}
+
+model FaqItem {
+  id          String   @id @default(cuid())
+  question    String
+  answer      String   @db.Text
+  helpfulYes  Int      @default(0)
+  helpfulNo   Int      @default(0)
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("faq_item")
+}
+
+model SupportTicket {
+  id             String         @id @default(cuid())
+  subject        String
+  category       TicketCategory
+  description    String         @db.Text
+  priority       TicketPriority @default(MEDIUM)
+  status         TicketStatus   @default(OPEN)
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId    String
+  workspace      Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  attachmentUrls String[]
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([status])
+  @@index([workspaceId, status])
+  @@map("support_ticket")
+}
+
+model FeatureRequest {
+  id            String               @id @default(cuid())
+  title         String
+  description   String               @db.Text
+  status        FeatureRequestStatus @default(REQUESTED)
+  voteCount     Int                  @default(0)
+  submittedById String
+  submittedBy   User                 @relation(fields: [submittedById], references: [id], onDelete: Cascade)
+
+  votes         FeatureVote[]
+
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@index([submittedById])
+  @@index([status])
+  @@map("feature_request")
+}
+
+model FeatureVote {
+  id               String         @id @default(cuid())
+  featureRequestId String
+  featureRequest   FeatureRequest @relation(fields: [featureRequestId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime       @default(now())
+
+  @@unique([featureRequestId, userId])
+  @@map("feature_vote")
+}
+
+model PlatformRating {
+  id       String  @id @default(cuid())
+  userId   String  @unique
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating   Int
+  feedback String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("platform_rating")
+}
+
+// ─── S9: Settings Enums ──────────────────────────────────────
+
+enum OAuthProvider {
+  GOOGLE
+  SLACK
+  MICROSOFT
+}
+
+enum ConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+}
+
+enum BillingCycle {
+  MONTHLY
+  YEARLY
+}
+
+enum InvoiceStatus {
+  PAID
+  PENDING
+  FAILED
+  REFUNDED
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum AccentColor {
+  BLUE
+  PURPLE
+  GREEN
+  ORANGE
+  PINK
+  TEAL
+}
+
+enum FontSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+enum SidebarPosition {
+  LEFT
+  RIGHT
+}
+
+// ─── S10: Billing Enums ─────────────────────────────────────
+
+enum PlanTier {
+  FREE
+  PRO
+  AGENCY
+  ENTERPRISE
+}
+
+// ─── S10: Billing Models ────────────────────────────────────
+
+model ProcessedStripeEvent {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  eventType   String
+  processedAt DateTime @default(now())
+
+  @@index([eventType])
+  @@map("processed_stripe_event")
+}
+
+model AiUsageRecord {
+  id          String   @id @default(cuid())
+  workspaceId String
+  userId      String
+  tokens      Int
+  model       String
+  feature     String
+  cost        Float?
+  createdAt   DateTime @default(now())
+
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
+  @@index([userId, createdAt])
+  @@map("ai_usage_record")
+}
+
+// ─── S9: Settings Models ─────────────────────────────────────
+
+model UserProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName     String?
+  lastName      String?
+  email         String
+  emailVerified Boolean  @default(false)
+  jobTitle      String?
+  phone         String?
+  avatarUrl     String?
+  workspaceId   String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("user_profile")
+}
+
+model UserPassword {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  passwordHash   String
+  lastChangedAt  DateTime @default(now())
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("user_password")
+}
+
+model EmailPreference {
+  id                     String  @id @default(cuid())
+  userId                 String  @unique
+  user                   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productUpdates         Boolean @default(true)
+  researchNotifications  Boolean @default(true)
+  teamActivity           Boolean @default(true)
+  marketing              Boolean @default(false)
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("email_preference")
+}
+
+model ConnectedAccount {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider        OAuthProvider
+  providerUserId  String?
+  accessToken     String?
+  refreshToken    String?
+  status          ConnectionStatus @default(DISCONNECTED)
+  connectedAt     DateTime?
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("connected_account")
+}
+
+model Plan {
+  id                  String   @id @default(cuid())
+  name                String
+  slug                String   @unique
+  monthlyPrice        Float?
+  yearlyPrice         Float?
+  maxSeats            Int      @default(1)
+  maxAiGenerations    Int      @default(100)
+  maxResearchStudies  Int      @default(5)
+  maxStorageGb        Float    @default(5)
+  features            Json     @default("[]")
+  isRecommended       Boolean  @default(false)
+  sortOrder           Int      @default(0)
+
+  subscriptions       Subscription[]
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("plan")
+}
+
+model Subscription {
+  id                  String             @id @default(cuid())
+  workspaceId         String             @unique
+  workspace           Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  planId              String
+  plan                Plan               @relation(fields: [planId], references: [id])
+  status              SubscriptionStatus @default(ACTIVE)
+  billingCycle        BillingCycle       @default(MONTHLY)
+  currentPeriodStart  DateTime           @default(now())
+  currentPeriodEnd    DateTime
+  cancelAtPeriodEnd   Boolean            @default(false)
+
+  // S10: Stripe fields
+  stripeSubscriptionId      String?    @unique
+  stripePriceId             String?
+  stripeCurrentPeriodUsage  Int?
+  usageReportedAt           DateTime?
+
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@index([planId])
+  @@index([status])
+  @@map("subscription")
+}
+
+model PaymentMethod {
+  id                     String   @id @default(cuid())
+  workspaceId            String
+  workspace              Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  type                   String
+  last4                  String
+  expiryMonth            Int
+  expiryYear             Int
+  isDefault              Boolean  @default(false)
+  stripePaymentMethodId  String?
+
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@map("payment_method")
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  workspaceId    String
+  workspace      Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invoiceNumber  String
+  amount         Float
+  currency       String        @default("EUR")
+  status         InvoiceStatus @default(PENDING)
+  periodStart    DateTime
+  periodEnd      DateTime
+  pdfUrl         String?
+  issuedAt       DateTime      @default(now())
+
+  // S10: Stripe fields
+  stripeInvoiceId  String?     @unique
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+  @@map("invoice")
+}
+
+model NotificationPreference {
+  id                String  @id @default(cuid())
+  userId            String  @unique
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailEnabled      Boolean @default(true)
+  browserEnabled    Boolean @default(true)
+  slackEnabled      Boolean @default(false)
+  matrix            Json    @default("{}")
+  quietHoursStart   String?
+  quietHoursEnd     String?
+  quietHoursEnabled Boolean @default(false)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("notification_preference")
+}
+
+model AppearancePreference {
+  id              String          @id @default(cuid())
+  userId          String          @unique
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme           Theme           @default(SYSTEM)
+  accentColor     AccentColor     @default(TEAL)
+  language        String          @default("en")
+  fontSize        FontSize        @default(MEDIUM)
+  sidebarPosition SidebarPosition @default(LEFT)
+  compactMode     Boolean         @default(false)
+  animations      Boolean         @default(true)
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@map("appearance_preference")
 }

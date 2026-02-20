@@ -7,10 +7,11 @@ export interface PersonaListResponse {
   stats: PersonaStats;
 }
 
-export async function fetchPersonas(
-  workspaceId: string
-): Promise<PersonaListResponse> {
-  const res = await fetch(`${API_BASE}?workspaceId=${workspaceId}`);
+/**
+ * Fetch personas list. workspaceId is resolved server-side from session cookie.
+ */
+export async function fetchPersonas(): Promise<PersonaListResponse> {
+  const res = await fetch(API_BASE);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? `Failed to fetch personas (${res.status})`);
@@ -18,15 +19,16 @@ export async function fetchPersonas(
   return res.json();
 }
 
+/**
+ * Create a new persona. workspaceId is resolved server-side from session cookie.
+ */
 export async function createPersona(
-  workspaceId: string,
-  createdById: string,
-  body: CreatePersonaBody
+  body: CreatePersonaBody & { createdById?: string }
 ): Promise<Persona> {
   const res = await fetch(API_BASE, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...body, workspaceId, createdById }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));

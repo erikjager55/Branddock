@@ -1,35 +1,89 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { z } from "zod";
+import { PERSONA_RESEARCH_METHOD_SELECT } from "@/lib/db/queries";
+import { setCache, cachedJson, invalidateCache } from "@/lib/api/cache";
+import { cacheKeys, CACHE_TTL } from "@/lib/api/cache-keys";
 
-// GET /api/personas?workspaceId=xxx
+// Validation weights for computing validationPercentage
+const VALIDATION_WEIGHTS: Record<string, number> = {
+  AI_EXPLORATION: 0.15,
+  INTERVIEWS: 0.30,
+  QUESTIONNAIRE: 0.30,
+  USER_TESTING: 0.25,
+};
+
+function computeValidationPercentage(
+  researchMethods: { method: string; status: string }[]
+): number {
+  let total = 0;
+  for (const rm of researchMethods) {
+    if (rm.status === "COMPLETED") {
+      const weight = VALIDATION_WEIGHTS[rm.method] ?? 0;
+      total += weight * 100;
+    }
+  }
+  return Math.round(total);
+}
+
+const createPersonaSchema = z.object({
+  name: z.string().min(1).max(100),
+  tagline: z.string().max(200).optional(),
+  age: z.string().max(20).optional(),
+  gender: z.string().max(50).optional(),
+  location: z.string().max(100).optional(),
+  occupation: z.string().max(100).optional(),
+  education: z.string().max(150).optional(),
+  income: z.string().max(50).optional(),
+  familyStatus: z.string().max(100).optional(),
+  goals: z.array(z.string().max(500)).max(10).optional(),
+  motivations: z.array(z.string().max(500)).optional(),
+  frustrations: z.array(z.string().max(500)).optional(),
+  behaviors: z.array(z.string().max(500)).optional(),
+  coreValues: z.array(z.string().max(100)).max(10).optional(),
+  interests: z.array(z.string().max(200)).optional(),
+  personalityType: z.string().max(200).optional(),
+});
+
+// GET /api/personas
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const workspaceId = searchParams.get("workspaceId");
+    const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
-      return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get("search") || undefined;
+    const filter = searchParams.get("filter") || "all";
+
+    // Cache unfiltered requests
+    const isUnfiltered = !search && filter === "all";
+    if (isUnfiltered) {
+      const key = cacheKeys.personas.list(workspaceId);
+      const hit = cachedJson(key);
+      if (hit) return hit;
     }
 
     const dbPersonas = await prisma.persona.findMany({
-      where: { workspaceId },
+      where: {
+        workspaceId,
+        ...(search
+          ? { name: { contains: search, mode: "insensitive" as const } }
+          : {}),
+      },
       orderBy: { name: "asc" },
       include: {
-        researchMethods: true,
+        researchMethods: { select: PERSONA_RESEARCH_METHOD_SELECT },
         createdBy: { select: { name: true, avatarUrl: true } },
       },
     });
 
     const personas = dbPersonas.map((p) => {
-      const methodsCompleted = p.researchMethods.filter(
-        (m) => m.status === "COMPLETED" || m.status === "VALIDATED"
-      ).length;
-
-      // Validation percentage: gewogen op basis van methode progress
-      const totalWeight = p.researchMethods.length || 1;
-      const weightedProgress = p.researchMethods.reduce(
-        (sum, m) => sum + m.progress, 0
+      const validationPercentage = computeValidationPercentage(
+        p.researchMethods.map((m) => ({ method: m.method, status: m.status }))
       );
-      const validationPercentage = Math.round(weightedProgress / totalWeight);
 
       return {
         id: p.id,
@@ -72,13 +126,30 @@ export async function GET(request: NextRequest) {
       };
     });
 
+    // Apply filter after computing validation
+    const filtered =
+      filter === "ready"
+        ? personas.filter((p) => p.validationPercentage >= 80)
+        : filter === "needs_work"
+          ? personas.filter((p) => p.validationPercentage < 80)
+          : personas;
+
     const stats = {
       total: personas.length,
       ready: personas.filter((p) => p.validationPercentage >= 80).length,
       needsWork: personas.filter((p) => p.validationPercentage < 80).length,
     };
 
-    return NextResponse.json({ personas, stats });
+    const responseData = { personas: filtered, stats };
+
+    // Cache unfiltered response
+    if (isUnfiltered) {
+      setCache(cacheKeys.personas.list(workspaceId), responseData, CACHE_TTL.OVERVIEW);
+    }
+
+    return NextResponse.json(responseData, {
+      headers: isUnfiltered ? { 'X-Cache': 'MISS' } : {},
+    });
   } catch (error) {
     console.error("[GET /api/personas]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -88,40 +159,65 @@ export async function GET(request: NextRequest) {
 // POST /api/personas
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, workspaceId, createdById, ...rest } = body;
+    const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
+    }
 
-    if (!name || !workspaceId || !createdById) {
+    const session = await getServerSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const parsed = createPersonaSchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: "name, workspaceId and createdById are required" },
+        { error: "Validation failed", details: parsed.error.flatten() },
         { status: 400 }
       );
     }
 
+    const data = parsed.data;
+
     const persona = await prisma.persona.create({
       data: {
-        name,
+        name: data.name,
         workspaceId,
-        createdById,
-        tagline: rest.tagline ?? null,
-        age: rest.age ?? null,
-        gender: rest.gender ?? null,
-        location: rest.location ?? null,
-        occupation: rest.occupation ?? null,
-        education: rest.education ?? null,
-        income: rest.income ?? null,
-        familyStatus: rest.familyStatus ?? null,
-        personalityType: rest.personalityType ?? null,
-        coreValues: rest.coreValues ?? [],
-        interests: rest.interests ?? [],
-        goals: rest.goals ?? [],
-        motivations: rest.motivations ?? [],
-        frustrations: rest.frustrations ?? [],
-        behaviors: rest.behaviors ?? [],
+        createdById: session.user.id,
+        tagline: data.tagline ?? null,
+        age: data.age ?? null,
+        gender: data.gender ?? null,
+        location: data.location ?? null,
+        occupation: data.occupation ?? null,
+        education: data.education ?? null,
+        income: data.income ?? null,
+        familyStatus: data.familyStatus ?? null,
+        personalityType: data.personalityType ?? null,
+        coreValues: data.coreValues ?? [],
+        interests: data.interests ?? [],
+        goals: data.goals ?? [],
+        motivations: data.motivations ?? [],
+        frustrations: data.frustrations ?? [],
+        behaviors: data.behaviors ?? [],
+        researchMethods: {
+          create: [
+            { method: "AI_EXPLORATION", status: "AVAILABLE", workspaceId },
+            { method: "INTERVIEWS", status: "AVAILABLE", workspaceId },
+            { method: "QUESTIONNAIRE", status: "AVAILABLE", workspaceId },
+            { method: "USER_TESTING", status: "AVAILABLE", workspaceId },
+          ],
+        },
+      },
+      include: {
+        researchMethods: true,
       },
     });
 
-    return NextResponse.json(persona, { status: 201 });
+    invalidateCache(cacheKeys.prefixes.personas(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
+    return NextResponse.json({ persona }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/personas]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

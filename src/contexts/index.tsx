@@ -21,6 +21,8 @@ import { ProductsProvider } from './ProductsContext';
 import { TrendsProvider } from './TrendsContext';
 import { KnowledgeProvider } from './KnowledgeContext';
 import { CampaignsProvider } from './CampaignsContext';
+import { MarketInsightsProvider } from './MarketInsightsContext';
+import { BrandAlignmentProvider } from './BrandAlignmentContext';
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -37,6 +39,8 @@ export function AppProviders({ children }: AppProvidersProps) {
               <TrendsProvider>
               <KnowledgeProvider>
               <CampaignsProvider>
+              <MarketInsightsProvider>
+              <BrandAlignmentProvider>
               <ResearchPlanProvider>
                 <ResearchBundleProvider>
                   <CollaborationProvider>
@@ -50,6 +54,8 @@ export function AppProviders({ children }: AppProvidersProps) {
                   </CollaborationProvider>
                 </ResearchBundleProvider>
               </ResearchPlanProvider>
+              </BrandAlignmentProvider>
+            </MarketInsightsProvider>
             </CampaignsProvider>
               </KnowledgeProvider>
               </TrendsProvider>
@@ -75,3 +81,5 @@ export { useProductTier } from './ProductTierContext';
 export { useProducts } from './ProductsContext';export { useTrendsContext } from './TrendsContext';
 export { useKnowledgeContext } from './KnowledgeContext';
 export { useCampaignsContext } from './CampaignsContext';
+export { useMarketInsights } from './MarketInsightsContext';
+export { useBrandAlignment, useAlignmentModules, useAlignmentHistory, useAlignmentIssues, useAlignmentIssueDetail, useStartAlignmentScan, useDismissIssue, useScanProgress, useFixOptions, useApplyFix, useCancelScan } from './BrandAlignmentContext';

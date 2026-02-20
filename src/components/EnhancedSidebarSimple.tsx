@@ -1,17 +1,9 @@
 import React, { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import * as LucideIcons from 'lucide-react';
 import {
-  Home,
-  Palette,
-  Users,
-  Package,
-  TrendingUp,
-  BookOpen,
-  Rocket,
-  Target,
-  ClipboardList,
-  Sparkles,
   User,
   Building2,
   Network,
@@ -22,15 +14,18 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
   ChevronDown,
-  ChevronRight,
-  Layers,
+  Sparkles,
   Settings,
   HelpCircle,
-  Paintbrush,
-  Shield,
+  Users,
 } from 'lucide-react';
 import { useBrandAssets } from '../contexts/BrandAssetsContext';
+import { useBrandAlignment } from '../contexts/BrandAlignmentContext';
+import { SIDEBAR_NAV } from '../lib/constants/design-tokens';
 import { ResearchMethodType } from '../types/brand-asset';
+import { PlanBadge, UsageMeter } from './billing';
+import { useBillingPlan } from '../hooks/use-billing';
+import { preloadModule } from '../lib/lazy-imports';
 
 type NavigationItem = {
   id: string;
@@ -48,6 +43,10 @@ interface EnhancedSidebarSimpleProps {
   onToggleCollapse: () => void;
 }
 
+function getIcon(iconName: string): React.ComponentType<{ className?: string }> {
+  return (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[iconName] || LucideIcons.Circle;
+}
+
 export function EnhancedSidebarSimple({
   activeSection,
   setActiveSection,
@@ -55,32 +54,9 @@ export function EnhancedSidebarSimple({
   onToggleCollapse,
 }: EnhancedSidebarSimpleProps) {
   const { brandAssets } = useBrandAssets();
-  // Navigation groups
-  const workspaceItems: NavigationItem[] = [
-    { id: 'dashboard', label: 'Overview', icon: Home },
-  ];
-
-  const knowledgeItems: NavigationItem[] = [
-    { id: 'brand', label: 'Brand Foundation', icon: Layers },
-    { id: 'business-strategy', label: 'Business Strategy', icon: Target },
-    { id: 'brandstyle', label: 'Brandstyle', icon: Paintbrush },
-    { id: 'personas', label: 'Personas', icon: Users },
-    { id: 'products', label: 'Products & Services', icon: Package },
-    { id: 'trends', label: 'Market Insights', icon: TrendingUp },
-    { id: 'knowledge', label: 'Knowledge Library', icon: BookOpen },
-    { id: 'brand-alignment', label: 'Brand Alignment', icon: Shield },
-  ];
-
-  const strategyItems: NavigationItem[] = [
-    { id: 'new-strategy', label: 'New Strategy', icon: Rocket },
-    { id: 'active-campaigns', label: 'Active Campaigns', icon: Target },
-  ];
-
-  const validationItems: NavigationItem[] = [
-    { id: 'research', label: 'Research Hub', icon: Target },
-    { id: 'research-bundles', label: 'Research Bundles', icon: ClipboardList },
-    { id: 'custom-validation', label: 'Custom Validation', icon: Sparkles },
-  ];
+  const { overview: alignmentOverview } = useBrandAlignment();
+  const openIssuesCount = alignmentOverview?.openIssuesCount ?? 0;
+  const billing = useBillingPlan();
 
   const settingsItems: NavigationItem[] = [
     { id: 'settings-account', label: 'Account', icon: User },
@@ -91,20 +67,24 @@ export function EnhancedSidebarSimple({
     { id: 'settings-notifications', label: 'Notifications', icon: Bell },
     { id: 'settings-appearance', label: 'Appearance', icon: Globe },
     { id: 'settings-commercial-demo', label: 'Commercial Demo', icon: ShoppingCart },
-    { id: 'validation-demo', label: '🎨 Demo: Compact Variant', icon: Sparkles, badge: 'NEW' },
+    { id: 'validation-demo', label: 'Demo: Compact Variant', icon: Sparkles, badge: 'NEW' },
   ];
 
-  const [clientSelectorOpen, setClientSelectorOpen] = useState(false);
-  const [settingsExpanded, setSettingsExpanded] = useState(false);
+  const [settingsExpanded, setSettingsExpanded] = useState(true);
 
   // Count assets that need attention
   const needsAttentionCount = useMemo(() => {
     return brandAssets.filter(asset => asset.status === 'ready-to-validate').length;
+  }, [brandAssets]);
+
+  // All nav items flat for collapsed mode
+  const allNavItems = useMemo(() => {
+    return SIDEBAR_NAV.sections.flatMap(s => s.items);
   }, []);
 
   if (collapsed) {
     return (
-      <div className="h-screen bg-white border-r border-border w-16 flex-shrink-0 flex flex-col shadow-sm">
+      <div data-testid="sidebar" className="h-screen bg-white border-r border-border w-16 flex-shrink-0 flex flex-col shadow-sm">
         {/* Logo - Collapsed */}
         <div className="p-3 border-b border-border">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
@@ -123,21 +103,23 @@ export function EnhancedSidebarSimple({
           </Button>
         </div>
         <nav className="flex-1 p-2 space-y-1">
-          {[...workspaceItems, ...knowledgeItems, ...strategyItems, ...validationItems].map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSection === item.id || activeSection.startsWith(item.id + '-');
+          {allNavItems.map((item) => {
+            const Icon = getIcon(item.icon);
+            const isActive = activeSection === item.key || activeSection.startsWith(item.key + '-');
 
             return (
               <Button
-                key={item.id}
+                key={item.key}
                 variant="ghost"
                 size="icon"
+                data-section-id={item.key}
                 className={`w-full h-10 ${
                   isActive
                     ? 'bg-emerald-50 text-emerald-700'
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
-                onClick={() => setActiveSection(item.id)}
+                onClick={() => setActiveSection(item.key)}
+                onMouseEnter={() => preloadModule(item.key)}
                 title={item.label}
               >
                 <Icon className={`h-5 w-5 ${isActive ? 'text-emerald-600' : 'text-gray-400'}`} />
@@ -150,17 +132,19 @@ export function EnhancedSidebarSimple({
   }
 
   return (
-    <div className="h-screen bg-[#F8F9FA] border-r border-gray-200 flex-shrink-0 flex flex-col" style={{ fontFamily: 'Inter, system-ui, sans-serif', width: '208px' }}>
+    <div data-testid="sidebar" className="h-screen bg-gray-50 border-r border-gray-200 flex-shrink-0 flex flex-col w-[180px]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       {/* Top Section - Logo & Collapse Button */}
       <div className="px-4 pt-6 pb-4 border-b border-gray-200">
         {/* Logo/Brand */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0 shadow-sm">
-              <span className="text-white font-bold text-base">B</span>
-            </div>
-            <span className="text-base font-semibold text-foreground">Branddock</span>
-          </div>
+          <Image
+            src="/Logo_Branddock_RGB.png"
+            alt="Branddock"
+            width={130}
+            height={23}
+            priority
+            className="flex-shrink-0"
+          />
           <Button
             variant="ghost"
             size="icon"
@@ -172,194 +156,132 @@ export function EnhancedSidebarSimple({
         </div>
       </div>
 
-      {/* Main Navigation */}
+      {/* Main Navigation + Settings + Help (all scrollable) */}
       <nav className="flex-1 overflow-y-auto px-3 space-y-6">
-        {/* WORKSPACE Section */}
-        <div className="space-y-1">
-          <div className="px-2 mb-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-              Workspace
-            </h3>
-          </div>
-          {workspaceItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSection === item.id || activeSection.startsWith(item.id + '-');
-            const showBadge = item.id === 'risks-priorities' && needsAttentionCount > 0;
-
-            return (
-              <Button
-                key={item.id}
-                variant="ghost"
-                className={`w-full justify-start gap-3 h-9 px-3 ${
-                  isActive
-                    ? 'bg-emerald-50 text-emerald-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-                onClick={() => setActiveSection(item.id)}
-              >
-                <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-emerald-600' : 'text-gray-400'}`} />
-                <span className="flex-1 text-left text-sm">{item.label}</span>
-                {showBadge && (
-                  <Badge variant="secondary" className="bg-gray-300 text-gray-900 text-xs h-5 px-1.5">
-                    {needsAttentionCount}
-                  </Badge>
-                )}
-              </Button>
-            );
-          })}
-        </div>
-
-        {/* STRATEGY Section */}
-        <div className="space-y-1">
-          <div className="px-2 mb-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-              Strategy
-            </h3>
-          </div>
-          {strategyItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSection === item.id || activeSection.startsWith(item.id + '-');
-
-            return (
-              <Button
-                key={item.id}
-                variant="ghost"
-                className={`w-full justify-start gap-3 h-9 px-3 ${
-                  isActive
-                    ? 'bg-emerald-50 text-emerald-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-                onClick={() => setActiveSection(item.id)}
-              >
-                <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-emerald-600' : 'text-gray-400'}`} />
-                <span className="flex-1 text-left text-sm">{item.label}</span>
-              </Button>
-            );
-          })}
-        </div>
-
-        {/* KNOWLEDGE Section */}
-        <div className="space-y-1">
-          <div className="px-2 mb-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-              Knowledge
-            </h3>
-          </div>
-          {knowledgeItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSection === item.id || activeSection.startsWith(item.id + '-');
-            const showBadge = item.id === 'brand' && needsAttentionCount > 0;
-
-            return (
-              <Button
-                key={item.id}
-                variant="ghost"
-                className={`w-full justify-start gap-3 h-9 px-3 ${
-                  isActive
-                    ? 'bg-emerald-50 text-emerald-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-                onClick={() => setActiveSection(item.id)}
-              >
-                <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-emerald-600' : 'text-gray-400'}`} />
-                <span className="flex-1 text-left text-sm">{item.label}</span>
-                {showBadge && (
-                  <Badge variant="secondary" className="bg-gray-300 text-gray-900 text-xs h-5 px-1.5">
-                    {needsAttentionCount}
-                  </Badge>
-                )}
-              </Button>
-            );
-          })}
-        </div>
-
-        {/* VALIDATION Section */}
-        <div className="space-y-1">
-          <div className="px-2 mb-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-              Validation
-            </h3>
-          </div>
-          {validationItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeSection === item.id || activeSection.startsWith(item.id + '-');
-
-            return (
-              <Button
-                key={item.id}
-                variant="ghost"
-                className={`w-full justify-start gap-3 h-9 px-3 ${
-                  isActive
-                    ? 'bg-emerald-50 text-emerald-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-                onClick={() => setActiveSection(item.id)}
-              >
-                <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-emerald-600' : 'text-gray-400'}`} />
-                <span className="flex-1 text-left text-sm">{item.label}</span>
-              </Button>
-            );
-          })}
-        </div>
-      </nav>
-
-      {/* Footer - Settings & Help */}
-      <div className="border-t border-gray-200 p-3 pb-6 space-y-1">
-        <Button
-          variant="ghost"
-          className={`w-full justify-between h-9 px-3 ${
-            activeSection.startsWith('settings-')
-              ? 'bg-emerald-50 text-emerald-700 font-medium'
-              : 'text-gray-700 hover:bg-gray-50'
-          }`}
-          onClick={() => setSettingsExpanded(!settingsExpanded)}
-        >
-          <div className="flex items-center gap-3">
-            <Settings className={`h-4 w-4 flex-shrink-0 ${activeSection.startsWith('settings-') ? 'text-emerald-600' : 'text-gray-400'}`} />
-            <span className="text-sm">Settings</span>
-          </div>
-          <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${settingsExpanded ? 'rotate-180' : ''}`} />
-        </Button>
-
-        {settingsExpanded && (
-          <div className="pl-7 space-y-1">
-            {settingsItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = activeSection === item.id || activeSection.startsWith(item.id + '-');
+        {SIDEBAR_NAV.sections.map((section) => (
+          <div key={section.label} className="space-y-1">
+            {section.label && (
+              <div className="px-2 mb-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                  {section.label}
+                </h3>
+              </div>
+            )}
+            {section.items.map((item) => {
+              const Icon = getIcon(item.icon);
+              const isActive = activeSection === item.key || activeSection.startsWith(item.key + '-');
+              const showBrandBadge = item.key === 'brand' && needsAttentionCount > 0;
+              const showAlignmentBadge = item.key === 'brand-alignment' && openIssuesCount > 0;
 
               return (
                 <Button
-                  key={item.id}
+                  key={item.key}
                   variant="ghost"
-                  className={`w-full justify-start gap-3 h-8 px-3 ${
+                  data-section-id={item.key}
+                  className={`w-full justify-start gap-3 h-9 px-3 ${
                     isActive
                       ? 'bg-emerald-50 text-emerald-700 font-medium'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
-                  onClick={() => setActiveSection(item.id)}
+                  onClick={() => setActiveSection(item.key)}
+                  onMouseEnter={() => preloadModule(item.key)}
                 >
                   <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-emerald-600' : 'text-gray-400'}`} />
                   <span className="flex-1 text-left text-sm">{item.label}</span>
-                  {item.badge && (
+                  {showBrandBadge && (
                     <Badge variant="secondary" className="bg-gray-300 text-gray-900 text-xs h-5 px-1.5">
-                      {item.badge}
+                      {needsAttentionCount}
                     </Badge>
+                  )}
+                  {showAlignmentBadge && (
+                    <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                      {openIssuesCount}
+                    </span>
                   )}
                 </Button>
               );
             })}
           </div>
-        )}
+        ))}
 
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 h-9 px-3 text-gray-700 hover:bg-gray-50"
-          onClick={() => console.log('Help & support')}
-        >
-          <HelpCircle className="h-4 w-4 flex-shrink-0 text-gray-400" />
-          <span className="flex-1 text-left text-sm">Help & Support</span>
-        </Button>
-      </div>
+        {/* Settings & Help — inside scrollable area */}
+        <div className="border-t border-gray-200 pt-3 space-y-1">
+          <Button
+            variant="ghost"
+            className={`w-full justify-between h-9 px-3 ${
+              activeSection.startsWith('settings-')
+                ? 'bg-emerald-50 text-emerald-700 font-medium'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+            onClick={() => setSettingsExpanded(!settingsExpanded)}
+          >
+            <div className="flex items-center gap-3">
+              <Settings className={`h-4 w-4 flex-shrink-0 ${activeSection.startsWith('settings-') ? 'text-emerald-600' : 'text-gray-400'}`} />
+              <span className="text-sm">Settings</span>
+            </div>
+            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${settingsExpanded ? 'rotate-180' : ''}`} />
+          </Button>
+
+          {settingsExpanded && (
+            <div className="pl-7 space-y-1">
+              {settingsItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeSection === item.id || activeSection.startsWith(item.id + '-');
+
+                return (
+                  <Button
+                    key={item.id}
+                    variant="ghost"
+                    data-section-id={item.id}
+                    className={`w-full justify-start gap-3 h-8 px-3 ${
+                      isActive
+                        ? 'bg-emerald-50 text-emerald-700 font-medium'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                    onClick={() => setActiveSection(item.id)}
+                    onMouseEnter={() => preloadModule(item.id)}
+                  >
+                    <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-emerald-600' : 'text-gray-400'}`} />
+                    <span className="flex-1 text-left text-sm">{item.label}</span>
+                    {item.badge && (
+                      <Badge variant="secondary" className="bg-gray-300 text-gray-900 text-xs h-5 px-1.5">
+                        {item.badge}
+                      </Badge>
+                    )}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+
+          <Button
+            variant="ghost"
+            className={`w-full justify-start gap-3 h-9 px-3 ${
+              activeSection === 'help'
+                ? 'bg-emerald-50 text-emerald-700 font-medium'
+                : 'text-gray-700 hover:bg-gray-50'
+            }`}
+            onClick={() => setActiveSection('help')}
+          >
+            <HelpCircle className={`h-4 w-4 flex-shrink-0 ${activeSection === 'help' ? 'text-emerald-600' : 'text-gray-400'}`} />
+            <span className="flex-1 text-left text-sm">Help & Support</span>
+          </Button>
+        </div>
+
+        {/* Plan Badge + Usage Meter */}
+        <div className="border-t border-gray-200 pt-3 pb-4 px-1 space-y-2">
+          <div className="flex items-center justify-center">
+            <PlanBadge tier={billing.plan.tier} isFreeBeta={billing.isFreeBeta} />
+          </div>
+          {!billing.isFreeBeta && billing.usage.percentage > 50 && (
+            <UsageMeter
+              used={billing.usage.aiTokens}
+              limit={billing.usage.aiTokensLimit}
+              compact
+            />
+          )}
+        </div>
+      </nav>
     </div>
   );
 }

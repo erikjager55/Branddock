@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { Trend } from '../types/trend';
 import { apiTrendsToMockFormat } from '../lib/api/trend-adapter';
+import { useWorkspace } from '../hooks/use-workspace';
 
 interface TrendsContextType {
   trends: Trend[];
@@ -24,11 +25,13 @@ async function getMockFallback(): Promise<Trend[]> {
 }
 
 export function TrendsProvider({ children }: { children: ReactNode }) {
+  const { workspaceId, isLoading: wsLoading } = useWorkspace();
   const [trends, setTrends] = useState<Trend[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const workspaceId = process.env.NEXT_PUBLIC_WORKSPACE_ID;
+    if (wsLoading) return;
+
     if (!workspaceId) {
       getMockFallback().then(data => {
         setTrends(data);
@@ -37,7 +40,7 @@ export function TrendsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    fetch(`/api/trends?workspaceId=${workspaceId}`)
+    fetch('/api/trends')
       .then(res => res.json())
       .then(data => {
         if (data.trends && data.trends.length > 0) {
@@ -51,7 +54,7 @@ export function TrendsProvider({ children }: { children: ReactNode }) {
         getMockFallback().then(setTrends);
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [workspaceId, wsLoading]);
 
   const addTrend = (trend: Trend) => setTrends(prev => [...prev, trend]);
   const updateTrend = (id: string, trend: Trend) =>

@@ -1,104 +1,142 @@
 /**
  * COMPONENT: ActivityFeed
- * 
- * Displays a timeline of all activities with filtering and grouping.
+ *
+ * Notification panel — reads from Notification API via TanStack Query hooks.
+ * Filter state managed by useShellStore.
  */
 
-import React, { useState, useEffect } from 'react';
-import { Bell, X, Filter, CheckCheck, Trash2 } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
-import { activityService } from '../services/ActivityService';
-import { Activity, ActivityGroup, ActivityCategory } from '../types/activity';
+import React, { useState } from 'react';
+import {
+  Bell,
+  X,
+  Filter,
+  CheckCheck,
+  Trash2,
+  Link,
+  FlaskConical,
+  Upload,
+  Trophy,
+  MessageSquare,
+  ClipboardList,
+  RefreshCw,
+  Lightbulb,
+  UserPlus,
+  Play,
+  Circle,
+} from 'lucide-react';
 import { Button } from './ui/button';
+import { useShellStore } from '../stores/useShellStore';
+import {
+  useNotifications,
+  useNotificationCount,
+  useMarkRead,
+  useMarkAllRead,
+  useClearNotifications,
+} from '../hooks/use-notifications';
+import type { NotificationItem } from '../types/notifications';
+import type { NotificationType, NotificationCategory } from '@prisma/client';
 
 interface ActivityFeedProps {
   isOpen: boolean;
   onClose: () => void;
-  onNavigate?: (route: string, metadata?: any) => void;
+  onNavigate?: (route: string) => void;
 }
 
+const CATEGORY_FILTERS: { key: NotificationCategory | 'All'; label: string }[] = [
+  { key: 'All', label: 'All' },
+  { key: 'BRAND_ASSETS', label: 'Brand Assets' },
+  { key: 'RESEARCH', label: 'Research' },
+  { key: 'PERSONAS', label: 'Personas' },
+  { key: 'STRATEGY', label: 'Strategy' },
+  { key: 'COLLABORATION', label: 'Collaboration' },
+  { key: 'SYSTEM', label: 'System' },
+];
+
+const CATEGORY_COLORS: Record<NotificationCategory, string> = {
+  BRAND_ASSETS: 'bg-emerald-100 text-emerald-700',
+  RESEARCH: 'bg-blue-100 text-blue-700',
+  PERSONAS: 'bg-purple-100 text-purple-700',
+  STRATEGY: 'bg-amber-100 text-amber-700',
+  COLLABORATION: 'bg-pink-100 text-pink-700',
+  SYSTEM: 'bg-gray-100 text-gray-700',
+};
+
+const TYPE_ICONS: Record<NotificationType, React.ComponentType<{ className?: string }>> = {
+  DATA_RELATIONSHIP_CREATED: Link,
+  RESEARCH_COMPLETED: FlaskConical,
+  FILE_UPLOADED: Upload,
+  MILESTONE_REACHED: Trophy,
+  COMMENT_ADDED: MessageSquare,
+  RESEARCH_PLAN_CREATED: ClipboardList,
+  ASSET_STATUS_UPDATED: RefreshCw,
+  RESEARCH_INSIGHT_ADDED: Lightbulb,
+  NEW_PERSONA_CREATED: UserPlus,
+  NEW_RESEARCH_STARTED: Play,
+};
+
+const TYPE_COLORS: Record<NotificationType, string> = {
+  DATA_RELATIONSHIP_CREATED: 'bg-emerald-100 text-emerald-600',
+  RESEARCH_COMPLETED: 'bg-blue-100 text-blue-600',
+  FILE_UPLOADED: 'bg-gray-100 text-gray-600',
+  MILESTONE_REACHED: 'bg-amber-100 text-amber-600',
+  COMMENT_ADDED: 'bg-pink-100 text-pink-600',
+  RESEARCH_PLAN_CREATED: 'bg-indigo-100 text-indigo-600',
+  ASSET_STATUS_UPDATED: 'bg-emerald-100 text-emerald-600',
+  RESEARCH_INSIGHT_ADDED: 'bg-yellow-100 text-yellow-600',
+  NEW_PERSONA_CREATED: 'bg-purple-100 text-purple-600',
+  NEW_RESEARCH_STARTED: 'bg-blue-100 text-blue-600',
+};
+
 export function ActivityFeed({ isOpen, onClose, onNavigate }: ActivityFeedProps) {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [groupedActivities, setGroupedActivities] = useState<ActivityGroup[]>([]);
-  const [selectedCategories, setSelectedCategories] = useState<ActivityCategory[]>([]);
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const { notificationFilter, showUnreadOnly, setNotificationFilter, toggleUnreadOnly } = useShellStore();
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    // Load activities
-    loadActivities();
+  const { data } = useNotifications({
+    category: notificationFilter === 'All' ? undefined : notificationFilter,
+    unreadOnly: showUnreadOnly || undefined,
+    limit: 50,
+  });
 
-    // Subscribe to changes
-    const unsubscribe = activityService.subscribe(() => {
-      loadActivities();
-    });
+  const { data: countData } = useNotificationCount();
+  const markRead = useMarkRead();
+  const markAllRead = useMarkAllRead();
+  const clearAll = useClearNotifications();
 
-    return unsubscribe;
-  }, [selectedCategories, showUnreadOnly]);
+  const notifications = data?.items ?? [];
+  const unreadCount = countData?.count ?? 0;
 
-  const loadActivities = () => {
-    const filter = {
-      categories: selectedCategories.length > 0 ? selectedCategories : undefined,
-      showUnreadOnly
-    };
-
-    const allActivities = activityService.getActivities(filter);
-    const grouped = activityService.getActivitiesGrouped(filter);
-
-    setActivities(allActivities);
-    setGroupedActivities(grouped);
-  };
-
-  const handleActivityClick = (activity: Activity) => {
-    // Mark as read
-    activityService.markAsRead(activity.id);
-
-    // Navigate if applicable
-    if (onNavigate && activity.metadata) {
-      if (activity.metadata.assetId) {
-        onNavigate(`brand-${activity.metadata.assetId}`, activity.metadata);
-      } else if (activity.metadata.personaId) {
-        onNavigate(`persona-${activity.metadata.personaId}`, activity.metadata);
-      } else if (activity.metadata.planId) {
-        onNavigate('research-plans', activity.metadata);
-      }
+  const handleItemClick = (item: NotificationItem) => {
+    if (!item.isRead) {
+      markRead.mutate(item.id);
+    }
+    if (onNavigate && item.actionUrl) {
+      onNavigate(item.actionUrl);
+      onClose();
     }
   };
 
   const handleMarkAllRead = () => {
-    activityService.markAllAsRead();
+    markAllRead.mutate();
   };
 
   const handleClearAll = () => {
-    if (confirm('Clear all activities? This cannot be undone.')) {
-      activityService.clear();
+    if (confirm('Clear all notifications? This cannot be undone.')) {
+      clearAll.mutate();
     }
   };
-
-  const toggleCategory = (category: ActivityCategory) => {
-    setSelectedCategories(prev => 
-      prev.includes(category)
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
-    );
-  };
-
-  const unreadCount = activityService.getUnreadCount();
-
-  const categories: ActivityCategory[] = ['brand', 'research', 'personas', 'strategy', 'collaboration', 'system'];
 
   return (
     <>
       {/* Backdrop */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar */}
-      <div 
+      <div
         className={`fixed top-0 right-0 h-full w-96 bg-background border-l border-border shadow-2xl z-50 transition-transform duration-300 ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
@@ -108,7 +146,7 @@ export function ActivityFeed({ isOpen, onClose, onNavigate }: ActivityFeedProps)
           <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center gap-2">
               <Bell className="h-5 w-5 text-primary" />
-              <h2 className="font-semibold">Activity Feed</h2>
+              <h2 className="font-semibold">Notifications</h2>
               {unreadCount > 0 && (
                 <span className="px-2 py-0.5 text-xs rounded-full bg-primary text-primary-foreground">
                   {unreadCount}
@@ -143,17 +181,19 @@ export function ActivityFeed({ isOpen, onClose, onNavigate }: ActivityFeedProps)
               <div>
                 <div className="text-xs text-muted-foreground mb-2">Filter by category</div>
                 <div className="flex flex-wrap gap-2">
-                  {categories.map(category => (
+                  {CATEGORY_FILTERS.map((f) => (
                     <button
-                      key={category}
-                      onClick={() => toggleCategory(category)}
+                      key={f.key}
+                      onClick={() => setNotificationFilter(f.key)}
                       className={`px-2 py-1 text-xs rounded-md transition-colors ${
-                        selectedCategories.includes(category)
-                          ? activityService.getActivityColor(category)
+                        notificationFilter === f.key
+                          ? f.key === 'All'
+                            ? 'bg-primary text-primary-foreground'
+                            : CATEGORY_COLORS[f.key]
                           : 'bg-muted text-muted-foreground hover:bg-muted/80'
                       }`}
                     >
-                      {activityService.getCategoryLabel(category)}
+                      {f.label}
                     </button>
                   ))}
                 </div>
@@ -164,7 +204,7 @@ export function ActivityFeed({ isOpen, onClose, onNavigate }: ActivityFeedProps)
                 <input
                   type="checkbox"
                   checked={showUnreadOnly}
-                  onChange={(e) => setShowUnreadOnly(e.target.checked)}
+                  onChange={() => toggleUnreadOnly()}
                   className="rounded border-border"
                 />
                 <span className="text-sm">Show unread only</span>
@@ -183,7 +223,7 @@ export function ActivityFeed({ isOpen, onClose, onNavigate }: ActivityFeedProps)
                     Mark all read
                   </Button>
                 )}
-                {activities.length > 0 && (
+                {notifications.length > 0 && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -201,81 +241,66 @@ export function ActivityFeed({ isOpen, onClose, onNavigate }: ActivityFeedProps)
 
         {/* Content */}
         <div className="h-[calc(100%-65px)] overflow-y-auto">
-          {activities.length === 0 ? (
+          {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full px-6 text-center">
               <Bell className="h-12 w-12 text-muted-foreground/30 mb-3" />
-              <p className="text-muted-foreground">No activities yet</p>
+              <p className="text-muted-foreground">No notifications</p>
               <p className="text-sm text-muted-foreground mt-1">
-                {showUnreadOnly 
-                  ? 'No unread activities'
-                  : 'Activities will appear here as you work'
+                {showUnreadOnly
+                  ? 'No unread notifications'
+                  : 'Notifications will appear here as you work'
                 }
               </p>
             </div>
           ) : (
-            <div className="p-4">
-              {/* Timeline */}
-              {groupedActivities.map((group, groupIndex) => (
-                <div key={groupIndex} className="mb-6 last:mb-0">
-                  {/* Date header */}
-                  <div className="sticky top-0 bg-background/95 backdrop-blur-sm py-2 mb-3 z-10">
-                    <h3 className="text-xs font-medium text-muted-foreground">
-                      {group.date}
-                    </h3>
-                  </div>
+            <div className="p-2">
+              {notifications.map((item) => {
+                const Icon = TYPE_ICONS[item.type] || Circle;
+                const colorClass = TYPE_COLORS[item.type] || 'bg-gray-100 text-gray-600';
 
-                  {/* Activities */}
-                  <div className="space-y-3 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-px before:bg-border">
-                    {group.activities.map((activity, index) => {
-                      const Icon = (LucideIcons as any)[activityService.getActivityIcon(activity.type)];
-                      const colorClass = activityService.getActivityColor(activity.category);
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleItemClick(item)}
+                    className={`w-full relative flex items-start gap-3 px-3 py-3 rounded-lg transition-colors text-left ${
+                      !item.isRead
+                        ? 'bg-blue-50 hover:bg-blue-100/80'
+                        : 'hover:bg-accent/30'
+                    }`}
+                  >
+                    {/* Icon */}
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}>
+                      <Icon className="h-4 w-4" />
+                    </div>
 
-                      return (
-                        <div
-                          key={activity.id}
-                          onClick={() => handleActivityClick(activity)}
-                          className={`relative pl-10 pr-2 py-2 rounded-lg transition-colors cursor-pointer ${
-                            !activity.isRead 
-                              ? 'bg-accent/50 hover:bg-accent' 
-                              : 'hover:bg-accent/30'
-                          }`}
-                        >
-                          {/* Timeline dot with icon */}
-                          <div className={`absolute left-0 top-2 h-8 w-8 rounded-full flex items-center justify-center ${colorClass}`}>
-                            {Icon && <Icon className="h-4 w-4" />}
-                          </div>
+                    {/* Unread indicator */}
+                    {!item.isRead && (
+                      <div className="absolute right-3 top-3 h-2 w-2 rounded-full bg-primary" />
+                    )}
 
-                          {/* Unread indicator */}
-                          {!activity.isRead && (
-                            <div className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary" />
-                          )}
-
-                          {/* Content */}
-                          <div className="space-y-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <p className="text-sm font-medium leading-tight">
-                                {activity.title}
-                              </p>
-                            </div>
-
-                            {activity.description && (
-                              <p className="text-xs text-muted-foreground line-clamp-2">
-                                {activity.description}
-                              </p>
-                            )}
-
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{activity.user.name}</span>
-                              <span>•</span>
-                              <span>{formatTimeAgo(activity.timestamp)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+                    {/* Content */}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <p className="text-sm font-medium leading-tight truncate">
+                        {item.title}
+                      </p>
+                      {item.description && (
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {item.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        {item.actorName && (
+                          <>
+                            <span>{item.actorName}</span>
+                            <span>&middot;</span>
+                          </>
+                        )}
+                        <span>{formatTimeAgo(item.createdAt)}</span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -284,14 +309,13 @@ export function ActivityFeed({ isOpen, onClose, onNavigate }: ActivityFeedProps)
   );
 }
 
-// Helper function
-function formatTimeAgo(timestamp: number): string {
-  const seconds = Math.floor((Date.now() - timestamp) / 1000);
-  
+function formatTimeAgo(isoDate: string): string {
+  const seconds = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
+
   if (seconds < 60) return 'just now';
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-  
-  return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+  return new Date(isoDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }

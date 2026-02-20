@@ -1,0 +1,244 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - button "Branddock Agency" [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e22]: Branddock Agency
+        - img [ref=e23]
+      - generic [ref=e26]:
+        - button "Quick Content" [ref=e27]:
+          - img
+          - generic [ref=e28]: Quick Content
+        - button "Search ⌘ + K" [ref=e29]:
+          - img
+          - generic [ref=e30]: Search
+          - generic [ref=e31]:
+            - generic [ref=e32]: ⌘
+            - generic [ref=e33]: +
+            - generic [ref=e34]: K
+        - button "Show Help ?" [ref=e36]:
+          - img
+          - text: Show Help
+          - generic [ref=e37]: "?"
+        - button "Notifications" [ref=e38]:
+          - img
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - generic [ref=e42]:
+          - img "Branddock" [ref=e43]
+          - button [ref=e44]:
+            - img
+        - navigation [ref=e45]:
+          - generic [ref=e46]:
+            - heading "WORKSPACE" [level=3] [ref=e48]
+            - button "Overview" [ref=e49]:
+              - img
+              - generic [ref=e50]: Overview
+          - generic [ref=e51]:
+            - heading "STRATEGY" [level=3] [ref=e53]
+            - button "Campaigns" [ref=e54]:
+              - img
+              - generic [ref=e55]: Campaigns
+            - button "Content Library" [ref=e56]:
+              - img
+              - generic [ref=e57]: Content Library
+          - generic [ref=e58]:
+            - heading "KNOWLEDGE" [level=3] [ref=e60]
+            - button "Brand Foundation 3" [ref=e61]:
+              - img
+              - generic [ref=e62]: Brand Foundation
+              - generic [ref=e63]: "3"
+            - button "Business Strategy" [ref=e64]:
+              - img
+              - generic [ref=e65]: Business Strategy
+            - button "Brandstyle" [ref=e66]:
+              - img
+              - generic [ref=e67]: Brandstyle
+            - button "Personas" [ref=e68]:
+              - img
+              - generic [ref=e69]: Personas
+            - button "Products & Services" [ref=e70]:
+              - img
+              - generic [ref=e71]: Products & Services
+            - button "Market Insights" [ref=e72]:
+              - img
+              - generic [ref=e73]: Market Insights
+            - button "Knowledge Library" [ref=e74]:
+              - img
+              - generic [ref=e75]: Knowledge Library
+            - button "Brand Alignment 3" [ref=e76]:
+              - img
+              - generic [ref=e77]: Brand Alignment
+              - generic [ref=e78]: "3"
+          - generic [ref=e79]:
+            - heading "VALIDATION" [level=3] [ref=e81]
+            - button "Research Hub" [ref=e82]:
+              - img
+              - generic [ref=e83]: Research Hub
+            - button "Research Bundles" [ref=e84]:
+              - img
+              - generic [ref=e85]: Research Bundles
+            - button "Custom Validation" [ref=e86]:
+              - img
+              - generic [ref=e87]: Custom Validation
+          - generic [ref=e88]:
+            - button "Settings" [ref=e89]:
+              - generic [ref=e90]:
+                - img
+                - generic [ref=e91]: Settings
+              - img
+            - generic [ref=e92]:
+              - button "Account" [ref=e93]:
+                - img
+                - generic [ref=e94]: Account
+              - button "Team" [ref=e95]:
+                - img
+                - generic [ref=e96]: Team
+              - button "Agency" [ref=e97]:
+                - img
+                - generic [ref=e98]: Agency
+              - button "Clients" [ref=e99]:
+                - img
+                - generic [ref=e100]: Clients
+              - button "Billing & Payments" [ref=e101]:
+                - img
+                - generic [ref=e102]: Billing & Payments
+              - button "Notifications" [ref=e103]:
+                - img
+                - generic [ref=e104]: Notifications
+              - button "Appearance" [ref=e105]:
+                - img
+                - generic [ref=e106]: Appearance
+              - button "Commercial Demo" [ref=e107]:
+                - img
+                - generic [ref=e108]: Commercial Demo
+              - 'button "Demo: Compact Variant NEW" [ref=e109]':
+                - img
+                - generic [ref=e110]: "Demo: Compact Variant"
+                - generic [ref=e111]: NEW
+            - button "Help & Support" [ref=e112]:
+              - img
+              - generic [ref=e113]: Help & Support
+          - generic [ref=e116]:
+            - img [ref=e117]
+            - text: BETA
+      - main [ref=e120]:
+        - generic [ref=e123]:
+          - button "Back to Products" [ref=e124]:
+            - img [ref=e125]
+            - text: Back to Products
+          - generic [ref=e127]:
+            - generic [ref=e128]:
+              - heading "Digital Platform Suite" [level=1] [ref=e129]
+              - generic [ref=e130]:
+                - generic [ref=e131]: Manual Entry
+                - generic [ref=e132]: Analyzed
+            - button "Edit" [ref=e134]:
+              - img [ref=e135]
+              - text: Edit
+          - generic [ref=e137]:
+            - generic [ref=e138]:
+              - generic [ref=e139]:
+                - img [ref=e140]
+                - heading "Description" [level=3] [ref=e143]
+              - paragraph [ref=e144]: Updated description from E2E test
+            - generic [ref=e145]:
+              - generic [ref=e146]:
+                - img [ref=e147]
+                - heading "Pricing" [level=3] [ref=e149]
+              - generic [ref=e150]:
+                - generic [ref=e151]:
+                  - paragraph [ref=e152]: Model
+                  - paragraph [ref=e153]: Enterprise
+                - generic [ref=e154]:
+                  - paragraph [ref=e155]: Details
+                  - paragraph [ref=e156]: Custom pricing based on team size and features. Starting from €299/month for teams of 10.
+          - generic [ref=e157]:
+            - heading "Features & Specifications" [level=3] [ref=e158]
+            - generic [ref=e159]:
+              - generic [ref=e160]:
+                - img [ref=e161]
+                - generic [ref=e163]: Real-time collaboration workspace
+              - generic [ref=e164]:
+                - img [ref=e165]
+                - generic [ref=e167]: AI-powered analytics dashboard
+              - generic [ref=e168]:
+                - img [ref=e169]
+                - generic [ref=e171]: Custom workflow builder
+              - generic [ref=e172]:
+                - img [ref=e173]
+                - generic [ref=e175]: Enterprise SSO & security
+              - generic [ref=e176]:
+                - img [ref=e177]
+                - generic [ref=e179]: API integration hub
+          - generic [ref=e180]:
+            - heading "Benefits" [level=3] [ref=e181]
+            - generic [ref=e182]:
+              - generic [ref=e183]:
+                - generic [ref=e184]: "1"
+                - generic [ref=e185]: 40% faster project completion
+              - generic [ref=e186]:
+                - generic [ref=e187]: "2"
+                - generic [ref=e188]: Unified team communication
+              - generic [ref=e189]:
+                - generic [ref=e190]: "3"
+                - generic [ref=e191]: Data-driven decision making
+              - generic [ref=e192]:
+                - generic [ref=e193]: "4"
+                - generic [ref=e194]: Reduced tool fragmentation
+          - generic [ref=e195]:
+            - generic [ref=e196]:
+              - generic [ref=e197]:
+                - img [ref=e198]
+                - heading "Target Audience" [level=3] [ref=e203]
+              - button "Add Persona" [ref=e204]:
+                - img [ref=e205]
+                - text: Add Persona
+            - generic [ref=e207]:
+              - generic [ref=e208]: SC
+              - generic [ref=e209]: Sarah Chen
+              - button [ref=e210]:
+                - img [ref=e211]
+          - generic [ref=e214]:
+            - heading "Use Cases" [level=3] [ref=e215]
+            - generic [ref=e216]:
+              - paragraph [ref=e217]: 1. Enterprise digital transformation
+              - paragraph [ref=e218]: 2. Remote team coordination
+              - paragraph [ref=e219]: 3. Cross-department project management
+              - paragraph [ref=e220]: 4. Client reporting automation
+  - generic [ref=e221]:
+    - generic [ref=e223]:
+      - generic [ref=e224]:
+        - img [ref=e225]
+        - heading "Notifications" [level=2] [ref=e228]
+      - generic [ref=e229]:
+        - button "Toggle filters" [ref=e230]:
+          - img
+        - button [ref=e231]:
+          - img
+    - generic [ref=e233]:
+      - img [ref=e234]
+      - paragraph [ref=e237]: No notifications
+      - paragraph [ref=e238]: Notifications will appear here as you work
+  - generic [ref=e239]:
+    - generic:
+      - generic:
+        - generic:
+          - img
+          - generic: Support Chat
+        - button:
+          - img
+      - generic:
+        - generic:
+          - img
+          - paragraph: Chat coming soon
+          - paragraph: We're working on live chat support.
+    - button "Open chat" [ref=e240]:
+      - img [ref=e241]
+```

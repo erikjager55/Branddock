@@ -1,0 +1,450 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - button "Branddock Agency" [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e22]: Branddock Agency
+        - img [ref=e23]
+      - navigation "Breadcrumb" [ref=e27]:
+        - button "Dashboard" [ref=e28]:
+          - img [ref=e29]
+          - generic [ref=e32]: Dashboard
+        - img [ref=e33]
+        - generic [ref=e35]:
+          - img [ref=e36]
+          - generic [ref=e39]: Trend Library
+      - generic [ref=e40]:
+        - button "Quick Content" [ref=e41]:
+          - img
+          - generic [ref=e42]: Quick Content
+        - button "Search ⌘ + K" [ref=e43]:
+          - img
+          - generic [ref=e44]: Search
+          - generic [ref=e45]:
+            - generic [ref=e46]: ⌘
+            - generic [ref=e47]: +
+            - generic [ref=e48]: K
+        - button "Show Help ?" [ref=e50]:
+          - img
+          - text: Show Help
+          - generic [ref=e51]: "?"
+        - button "Notifications" [ref=e52]:
+          - img
+    - generic [ref=e53]:
+      - generic [ref=e54]:
+        - generic [ref=e56]:
+          - img "Branddock" [ref=e57]
+          - button [ref=e58]:
+            - img
+        - navigation [ref=e59]:
+          - generic [ref=e60]:
+            - heading "WORKSPACE" [level=3] [ref=e62]
+            - button "Overview" [ref=e63]:
+              - img
+              - generic [ref=e64]: Overview
+          - generic [ref=e65]:
+            - heading "STRATEGY" [level=3] [ref=e67]
+            - button "Campaigns" [ref=e68]:
+              - img
+              - generic [ref=e69]: Campaigns
+            - button "Content Library" [ref=e70]:
+              - img
+              - generic [ref=e71]: Content Library
+          - generic [ref=e72]:
+            - heading "KNOWLEDGE" [level=3] [ref=e74]
+            - button "Brand Foundation 3" [ref=e75]:
+              - img
+              - generic [ref=e76]: Brand Foundation
+              - generic [ref=e77]: "3"
+            - button "Business Strategy" [ref=e78]:
+              - img
+              - generic [ref=e79]: Business Strategy
+            - button "Brandstyle" [ref=e80]:
+              - img
+              - generic [ref=e81]: Brandstyle
+            - button "Personas" [ref=e82]:
+              - img
+              - generic [ref=e83]: Personas
+            - button "Products & Services" [ref=e84]:
+              - img
+              - generic [ref=e85]: Products & Services
+            - button "Market Insights" [active] [ref=e86]:
+              - img
+              - generic [ref=e87]: Market Insights
+            - button "Knowledge Library" [ref=e88]:
+              - img
+              - generic [ref=e89]: Knowledge Library
+            - button "Brand Alignment 3" [ref=e90]:
+              - img
+              - generic [ref=e91]: Brand Alignment
+              - generic [ref=e92]: "3"
+          - generic [ref=e93]:
+            - heading "VALIDATION" [level=3] [ref=e95]
+            - button "Research Hub" [ref=e96]:
+              - img
+              - generic [ref=e97]: Research Hub
+            - button "Research Bundles" [ref=e98]:
+              - img
+              - generic [ref=e99]: Research Bundles
+            - button "Custom Validation" [ref=e100]:
+              - img
+              - generic [ref=e101]: Custom Validation
+          - generic [ref=e102]:
+            - button "Settings" [ref=e103]:
+              - generic [ref=e104]:
+                - img
+                - generic [ref=e105]: Settings
+              - img
+            - generic [ref=e106]:
+              - button "Account" [ref=e107]:
+                - img
+                - generic [ref=e108]: Account
+              - button "Team" [ref=e109]:
+                - img
+                - generic [ref=e110]: Team
+              - button "Agency" [ref=e111]:
+                - img
+                - generic [ref=e112]: Agency
+              - button "Clients" [ref=e113]:
+                - img
+                - generic [ref=e114]: Clients
+              - button "Billing & Payments" [ref=e115]:
+                - img
+                - generic [ref=e116]: Billing & Payments
+              - button "Notifications" [ref=e117]:
+                - img
+                - generic [ref=e118]: Notifications
+              - button "Appearance" [ref=e119]:
+                - img
+                - generic [ref=e120]: Appearance
+              - button "Commercial Demo" [ref=e121]:
+                - img
+                - generic [ref=e122]: Commercial Demo
+              - 'button "Demo: Compact Variant NEW" [ref=e123]':
+                - img
+                - generic [ref=e124]: "Demo: Compact Variant"
+                - generic [ref=e125]: NEW
+            - button "Help & Support" [ref=e126]:
+              - img
+              - generic [ref=e127]: Help & Support
+          - generic [ref=e130]:
+            - img [ref=e131]
+            - text: BETA
+      - main [ref=e134]:
+        - generic [ref=e136]:
+          - generic [ref=e139]:
+            - generic [ref=e140]:
+              - img [ref=e142]
+              - generic [ref=e145]:
+                - heading "Market Insights" [level=1] [ref=e146]
+                - paragraph [ref=e147]: Track market trends and competitive intelligence
+            - button "Add Insight" [ref=e149]:
+              - img [ref=e150]
+              - text: Add Insight
+          - generic [ref=e151]:
+            - generic [ref=e152]:
+              - generic [ref=e153]:
+                - img [ref=e155]
+                - generic [ref=e158]: "10"
+                - generic [ref=e160]: Active Insights
+              - generic [ref=e161]:
+                - img [ref=e163]
+                - generic [ref=e165]: "7"
+                - generic [ref=e167]: High Impact
+              - generic [ref=e168]:
+                - img [ref=e170]
+                - generic [ref=e173]: "10"
+                - generic [ref=e175]: New This Month
+            - generic [ref=e176]:
+              - generic [ref=e178]:
+                - img
+                - textbox "Search insights..." [ref=e179]
+              - combobox [ref=e182]:
+                - option "All Categories" [selected]
+                - option "Technology"
+                - option "Environmental"
+                - option "Social"
+                - option "Consumer"
+                - option "Business"
+              - combobox [ref=e185]:
+                - option "All Impact" [selected]
+                - option "High"
+                - option "Medium"
+                - option "Low"
+              - combobox [ref=e188]:
+                - option "All Timeframes" [selected]
+                - option "Short-Term"
+                - option "Medium-Term"
+                - option "Long-Term"
+            - generic [ref=e189]:
+              - generic [ref=e190]:
+                - generic [ref=e191]:
+                  - heading "E2E Verify 1771604452465" [level=3] [ref=e192]
+                  - generic [ref=e193]:
+                    - generic [ref=e194]: Medium Impact
+                    - button [ref=e195]:
+                      - img [ref=e196]
+                - generic [ref=e200]:
+                  - generic [ref=e201]: Consumer
+                  - generic [ref=e202]: Micro
+                - paragraph
+                - generic [ref=e204]:
+                  - generic [ref=e205]: Relevance
+                  - generic [ref=e206]: 75%
+                - generic [ref=e210]:
+                  - img [ref=e211]
+                  - text: Short-Term
+                - generic [ref=e214]:
+                  - generic [ref=e215]: Feb 20, 2026
+                  - button "View Details >" [ref=e216]
+              - generic [ref=e217]:
+                - generic [ref=e218]:
+                  - heading "Insight \"Test\" <HTML> & Partners" [level=3] [ref=e219]
+                  - generic [ref=e220]:
+                    - generic [ref=e221]: Medium Impact
+                    - button [ref=e222]:
+                      - img [ref=e223]
+                - generic [ref=e227]:
+                  - generic [ref=e228]: Business
+                  - generic [ref=e229]: Micro
+                - paragraph
+                - generic [ref=e231]:
+                  - generic [ref=e232]: Relevance
+                  - generic [ref=e233]: 75%
+                - generic [ref=e237]:
+                  - img [ref=e238]
+                  - text: Short-Term
+                - generic [ref=e241]:
+                  - generic [ref=e242]: Feb 20, 2026
+                  - button "View Details >" [ref=e243]
+              - generic [ref=e244]:
+                - generic [ref=e245]:
+                  - heading "E2E Test Market Insight" [level=3] [ref=e246]
+                  - generic [ref=e247]:
+                    - generic [ref=e248]: High Impact
+                    - button [ref=e249]:
+                      - img [ref=e250]
+                - generic [ref=e254]:
+                  - generic [ref=e255]: Technology
+                  - generic [ref=e256]: Macro
+                - paragraph [ref=e257]: This is a test market insight created via E2E testing.
+                - generic [ref=e259]:
+                  - generic [ref=e260]: Relevance
+                  - generic [ref=e261]: 75%
+                - generic [ref=e265]:
+                  - img [ref=e266]
+                  - text: Short-Term
+                - generic [ref=e269]:
+                  - generic [ref=e270]: Feb 20, 2026
+                  - button "View Details >" [ref=e271]
+              - generic [ref=e272]:
+                - generic [ref=e273]:
+                  - heading "Experience Economy Evolution" [level=3] [ref=e274]
+                  - generic [ref=e275]:
+                    - generic [ref=e276]: High Impact
+                    - button [ref=e277]:
+                      - img [ref=e278]
+                - generic [ref=e282]:
+                  - generic [ref=e283]: Consumer
+                  - generic [ref=e284]: Macro
+                - paragraph [ref=e285]: Consumer preference is shifting from product ownership to memorable experiences, driving brands to create immersive, shareable moments across physical and digital spaces.
+                - generic [ref=e287]:
+                  - generic [ref=e288]: Relevance
+                  - generic [ref=e289]: 87%
+                - generic [ref=e293]:
+                  - img [ref=e294]
+                  - text: Long-Term
+                - generic [ref=e297]:
+                  - generic [ref=e298]: Experience Design
+                  - generic [ref=e299]: Immersive
+                  - generic [ref=e300]: Brand Experience
+                  - generic [ref=e301]: +1 more
+                - generic [ref=e302]:
+                  - generic [ref=e303]: Feb 20, 2026
+                  - button "View Details >" [ref=e304]
+              - generic [ref=e305]:
+                - generic [ref=e306]:
+                  - heading "Privacy-First Data Strategies" [level=3] [ref=e307]
+                  - generic [ref=e308]:
+                    - generic [ref=e309]: High Impact
+                    - button [ref=e310]:
+                      - img [ref=e311]
+                - generic [ref=e315]:
+                  - generic [ref=e316]: Technology
+                  - generic [ref=e317]: Micro
+                - paragraph [ref=e318]: With cookie deprecation and stricter regulations, brands must shift to first-party data collection and privacy-respecting personalization approaches.
+                - generic [ref=e320]:
+                  - generic [ref=e321]: Relevance
+                  - generic [ref=e322]: 92%
+                - generic [ref=e326]:
+                  - img [ref=e327]
+                  - text: Short-Term
+                - generic [ref=e330]:
+                  - generic [ref=e331]: Privacy
+                  - generic [ref=e332]: First-party Data
+                  - generic [ref=e333]: GDPR
+                  - generic [ref=e334]: +1 more
+                - generic [ref=e335]:
+                  - generic [ref=e336]: Feb 20, 2026
+                  - button "View Details >" [ref=e337]
+              - generic [ref=e338]:
+                - generic [ref=e339]:
+                  - heading "Community Commerce" [level=3] [ref=e340]
+                  - generic [ref=e341]:
+                    - generic [ref=e342]: Medium Impact
+                    - button [ref=e343]:
+                      - img [ref=e344]
+                - generic [ref=e348]:
+                  - generic [ref=e349]: Business
+                  - generic [ref=e350]: Meso
+                - paragraph [ref=e351]: Social communities are becoming direct sales channels, with peer recommendations and creator-led commerce outperforming traditional advertising.
+                - generic [ref=e353]:
+                  - generic [ref=e354]: Relevance
+                  - generic [ref=e355]: 85%
+                - generic [ref=e359]:
+                  - img [ref=e360]
+                  - text: Short-Term
+                - generic [ref=e363]:
+                  - generic [ref=e364]: Social Commerce
+                  - generic [ref=e365]: Community
+                  - generic [ref=e366]: Creator Economy
+                  - generic [ref=e367]: +1 more
+                - generic [ref=e368]:
+                  - generic [ref=e369]: Feb 20, 2026
+                  - button "View Details >" [ref=e370]
+              - generic [ref=e371]:
+                - generic [ref=e372]:
+                  - heading "Micro-Moment Marketing" [level=3] [ref=e373]
+                  - generic [ref=e374]:
+                    - generic [ref=e375]: High Impact
+                    - button [ref=e376]:
+                      - img [ref=e377]
+                - generic [ref=e381]:
+                  - generic [ref=e382]: Consumer
+                  - generic [ref=e383]: Micro
+                - paragraph [ref=e384]: Brief, intent-driven mobile interactions are replacing traditional customer journeys, requiring brands to deliver instant value at precisely the right moment.
+                - generic [ref=e386]:
+                  - generic [ref=e387]: Relevance
+                  - generic [ref=e388]: 90%
+                - generic [ref=e392]:
+                  - img [ref=e393]
+                  - text: Short-Term
+                - generic [ref=e396]:
+                  - generic [ref=e397]: Mobile
+                  - generic [ref=e398]: Real-time
+                  - generic [ref=e399]: Intent Marketing
+                  - generic [ref=e400]: +1 more
+                - generic [ref=e401]:
+                  - generic [ref=e402]: Feb 20, 2026
+                  - button "View Details >" [ref=e403]
+              - generic [ref=e404]:
+                - generic [ref=e405]:
+                  - heading "Remote-First Work Culture" [level=3] [ref=e406]
+                  - generic [ref=e407]:
+                    - generic [ref=e408]: High Impact
+                    - button [ref=e409]:
+                      - img [ref=e410]
+                - generic [ref=e414]:
+                  - generic [ref=e415]: Social
+                  - generic [ref=e416]: Meso
+                - paragraph [ref=e417]: Organizations are moving beyond hybrid models to truly remote-first cultures, fundamentally redesigning collaboration tools, management practices, and company culture.
+                - generic [ref=e419]:
+                  - generic [ref=e420]: Relevance
+                  - generic [ref=e421]: 82%
+                - generic [ref=e425]:
+                  - img [ref=e426]
+                  - text: Medium-Term
+                - generic [ref=e429]:
+                  - generic [ref=e430]: Remote Work
+                  - generic [ref=e431]: Culture
+                  - generic [ref=e432]: Digital Transformation
+                  - generic [ref=e433]: +1 more
+                - generic [ref=e434]:
+                  - generic [ref=e435]: Feb 20, 2026
+                  - button "View Details >" [ref=e436]
+              - generic [ref=e437]:
+                - generic [ref=e438]:
+                  - heading "Sustainability as Brand Standard" [level=3] [ref=e439]
+                  - generic [ref=e440]:
+                    - generic [ref=e441]: High Impact
+                    - button [ref=e442]:
+                      - img [ref=e443]
+                - generic [ref=e447]:
+                  - generic [ref=e448]: Environmental
+                  - generic [ref=e449]: Macro
+                - paragraph [ref=e450]: Consumers increasingly expect brands to demonstrate genuine environmental commitment, with sustainability shifting from differentiator to baseline requirement.
+                - generic [ref=e452]:
+                  - generic [ref=e453]: Relevance
+                  - generic [ref=e454]: 88%
+                - generic [ref=e458]:
+                  - img [ref=e459]
+                  - text: Long-Term
+                - generic [ref=e462]:
+                  - generic [ref=e463]: Sustainability
+                  - generic [ref=e464]: ESG
+                  - generic [ref=e465]: Consumer Trust
+                  - generic [ref=e466]: +1 more
+                - generic [ref=e467]:
+                  - generic [ref=e468]: Feb 20, 2026
+                  - button "View Details >" [ref=e469]
+              - generic [ref=e470]:
+                - generic [ref=e471]:
+                  - heading "AI-Powered Personalization at Scale" [level=3] [ref=e472]
+                  - generic [ref=e473]:
+                    - generic [ref=e474]: High Impact
+                    - button [ref=e475]:
+                      - img [ref=e476]
+                - generic [ref=e480]:
+                  - generic [ref=e481]: Technology
+                  - generic [ref=e482]: Micro
+                - paragraph [ref=e483]: Machine learning algorithms are enabling hyper-personalized customer experiences across all touchpoints, from product recommendations to dynamic pricing and content.
+                - generic [ref=e485]:
+                  - generic [ref=e486]: Relevance
+                  - generic [ref=e487]: 95%
+                - generic [ref=e491]:
+                  - img [ref=e492]
+                  - text: Short-Term
+                - generic [ref=e495]:
+                  - generic [ref=e496]: AI
+                  - generic [ref=e497]: Personalization
+                  - generic [ref=e498]: Customer Experience
+                  - generic [ref=e499]: +1 more
+                - generic [ref=e500]:
+                  - generic [ref=e501]: Feb 20, 2026
+                  - button "View Details >" [ref=e502]
+  - generic [ref=e503]:
+    - generic [ref=e505]:
+      - generic [ref=e506]:
+        - img [ref=e507]
+        - heading "Notifications" [level=2] [ref=e510]
+      - generic [ref=e511]:
+        - button "Toggle filters" [ref=e512]:
+          - img
+        - button [ref=e513]:
+          - img
+    - generic [ref=e515]:
+      - img [ref=e516]
+      - paragraph [ref=e519]: No notifications
+      - paragraph [ref=e520]: Notifications will appear here as you work
+  - generic [ref=e521]:
+    - generic:
+      - generic:
+        - generic:
+          - img
+          - generic: Support Chat
+        - button:
+          - img
+      - generic:
+        - generic:
+          - img
+          - paragraph: Chat coming soon
+          - paragraph: We're working on live chat support.
+    - button "Open chat" [ref=e522]:
+      - img [ref=e523]
+```

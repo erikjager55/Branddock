@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ProductServiceData } from '../components/ProductServiceAnalyzer';
 import { apiProductsToMockFormat } from '../lib/api/product-adapter';
+import {
+  fetchProductPersonas,
+  linkPersona,
+  unlinkPersona,
+  type ProductPersonaLink,
+} from '../lib/api/products';
+import { useWorkspace } from '../hooks/use-workspace';
 
 interface ProductsContextType {
   products: ProductServiceData[];
@@ -99,18 +107,20 @@ const MOCK_PRODUCTS: ProductServiceData[] = [
 ];
 
 export function ProductsProvider({ children }: { children: ReactNode }) {
+  const { workspaceId, isLoading: wsLoading } = useWorkspace();
   const [products, setProducts] = useState<ProductServiceData[]>(MOCK_PRODUCTS);
   const [isLoading, setIsLoading] = useState(true);
 
   // Try API first, fallback to mock data
   useEffect(() => {
-    const workspaceId = process.env.NEXT_PUBLIC_WORKSPACE_ID;
+    if (wsLoading) return;
+
     if (!workspaceId) {
       setIsLoading(false);
       return;
     }
 
-    fetch(`/api/products?workspaceId=${workspaceId}`)
+    fetch('/api/products')
       .then((res) => {
         if (!res.ok) throw new Error(`API error ${res.status}`);
         return res.json();
@@ -125,7 +135,7 @@ export function ProductsProvider({ children }: { children: ReactNode }) {
         console.warn('[ProductsContext] API fetch failed, using mock data:', err.message);
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [workspaceId, wsLoading]);
 
   const addProduct = (product: ProductServiceData) => {
     const newProduct = {
@@ -171,4 +181,55 @@ export function useProducts() {
     throw new Error('useProducts must be used within a ProductsProvider');
   }
   return context;
+}
+
+// =============================================================
+// TanStack Query hooks for ProductPersona
+// =============================================================
+
+const productPersonaKeys = {
+  all: ['product-personas'] as const,
+  list: (productId: string) => ['product-personas', productId] as const,
+};
+
+/**
+ * Hook: fetch personas linked to a product.
+ */
+export function useProductPersonas(productId: string | undefined) {
+  return useQuery<{ personas: ProductPersonaLink[] }>({
+    queryKey: productPersonaKeys.list(productId ?? ''),
+    queryFn: () => fetchProductPersonas(productId!),
+    enabled: !!productId,
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Mutation: link a persona to a product.
+ */
+export function useLinkPersona() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ productId, personaId }: {
+      productId: string;
+      personaId: string;
+    }) => linkPersona(productId, personaId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: productPersonaKeys.list(variables.productId) });
+    },
+  });
+}
+
+/**
+ * Mutation: unlink a persona from a product.
+ */
+export function useUnlinkPersona() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ productId, personaId }: { productId: string; personaId: string }) =>
+      unlinkPersona(productId, personaId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: productPersonaKeys.list(variables.productId) });
+    },
+  });
 }

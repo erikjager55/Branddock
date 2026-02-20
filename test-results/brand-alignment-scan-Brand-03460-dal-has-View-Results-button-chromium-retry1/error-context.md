@@ -1,0 +1,472 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - button "Branddock Agency" [ref=e16]:
+        - img [ref=e17]
+        - generic [ref=e22]: Branddock Agency
+        - img [ref=e23]
+      - navigation "Breadcrumb" [ref=e27]:
+        - button "Dashboard" [ref=e28]:
+          - img [ref=e29]
+          - generic [ref=e32]: Dashboard
+        - img [ref=e33]
+        - generic [ref=e35]:
+          - img [ref=e36]
+          - generic [ref=e41]: Dashboard
+      - generic [ref=e42]:
+        - button "Quick Content" [ref=e43]:
+          - img
+          - generic [ref=e44]: Quick Content
+        - button "Search ⌘ + K" [ref=e45]:
+          - img
+          - generic [ref=e46]: Search
+          - generic [ref=e47]:
+            - generic [ref=e48]: ⌘
+            - generic [ref=e49]: +
+            - generic [ref=e50]: K
+        - button "Show Help ?" [ref=e52]:
+          - img
+          - text: Show Help
+          - generic [ref=e53]: "?"
+        - button "5" [ref=e54]:
+          - img
+          - generic [ref=e56]: "5"
+    - generic [ref=e57]:
+      - generic [ref=e58]:
+        - generic [ref=e60]:
+          - img "Branddock" [ref=e61]
+          - button [ref=e62]:
+            - img
+        - navigation [ref=e63]:
+          - generic [ref=e64]:
+            - heading "WORKSPACE" [level=3] [ref=e66]
+            - button "Overview" [ref=e67]:
+              - img
+              - generic [ref=e68]: Overview
+          - generic [ref=e69]:
+            - heading "STRATEGY" [level=3] [ref=e71]
+            - button "Campaigns" [ref=e72]:
+              - img
+              - generic [ref=e73]: Campaigns
+            - button "Content Library" [ref=e74]:
+              - img
+              - generic [ref=e75]: Content Library
+          - generic [ref=e76]:
+            - heading "KNOWLEDGE" [level=3] [ref=e78]
+            - button "Brand Foundation 3" [ref=e79]:
+              - img
+              - generic [ref=e80]: Brand Foundation
+              - generic [ref=e81]: "3"
+            - button "Business Strategy" [ref=e82]:
+              - img
+              - generic [ref=e83]: Business Strategy
+            - button "Brandstyle" [ref=e84]:
+              - img
+              - generic [ref=e85]: Brandstyle
+            - button "Personas" [ref=e86]:
+              - img
+              - generic [ref=e87]: Personas
+            - button "Products & Services" [ref=e88]:
+              - img
+              - generic [ref=e89]: Products & Services
+            - button "Market Insights" [ref=e90]:
+              - img
+              - generic [ref=e91]: Market Insights
+            - button "Knowledge Library" [ref=e92]:
+              - img
+              - generic [ref=e93]: Knowledge Library
+            - button "Brand Alignment 3" [ref=e94]:
+              - img
+              - generic [ref=e95]: Brand Alignment
+              - generic [ref=e96]: "3"
+          - generic [ref=e97]:
+            - heading "VALIDATION" [level=3] [ref=e99]
+            - button "Research Hub" [ref=e100]:
+              - img
+              - generic [ref=e101]: Research Hub
+            - button "Research Bundles" [ref=e102]:
+              - img
+              - generic [ref=e103]: Research Bundles
+            - button "Custom Validation" [ref=e104]:
+              - img
+              - generic [ref=e105]: Custom Validation
+          - generic [ref=e106]:
+            - button "Settings" [ref=e107]:
+              - generic [ref=e108]:
+                - img
+                - generic [ref=e109]: Settings
+              - img
+            - generic [ref=e110]:
+              - button "Account" [ref=e111]:
+                - img
+                - generic [ref=e112]: Account
+              - button "Team" [ref=e113]:
+                - img
+                - generic [ref=e114]: Team
+              - button "Agency" [ref=e115]:
+                - img
+                - generic [ref=e116]: Agency
+              - button "Clients" [ref=e117]:
+                - img
+                - generic [ref=e118]: Clients
+              - button "Billing & Payments" [ref=e119]:
+                - img
+                - generic [ref=e120]: Billing & Payments
+              - button "Notifications" [ref=e121]:
+                - img
+                - generic [ref=e122]: Notifications
+              - button "Appearance" [ref=e123]:
+                - img
+                - generic [ref=e124]: Appearance
+              - button "Commercial Demo" [ref=e125]:
+                - img
+                - generic [ref=e126]: Commercial Demo
+              - 'button "Demo: Compact Variant NEW" [ref=e127]':
+                - img
+                - generic [ref=e128]: "Demo: Compact Variant"
+                - generic [ref=e129]: NEW
+            - button "Help & Support" [ref=e130]:
+              - img
+              - generic [ref=e131]: Help & Support
+          - generic [ref=e134]:
+            - img [ref=e135]
+            - text: BETA
+      - main [ref=e138]:
+        - generic [ref=e141]:
+          - generic [ref=e145]:
+            - img [ref=e147]
+            - generic [ref=e152]:
+              - heading "Dashboard" [level=1] [ref=e153]
+              - paragraph [ref=e154]: Your brand at a glance
+          - generic [ref=e156]:
+            - generic [ref=e157]:
+              - img [ref=e158]
+              - heading "Decision Readiness" [level=2] [ref=e161]
+            - generic [ref=e162]: 11%
+            - paragraph [ref=e165]:
+              - generic [ref=e166]: 2 ready
+              - text: ·
+              - generic [ref=e167]: 8 need attention
+              - text: ·
+              - generic [ref=e168]: 8 in progress
+          - generic [ref=e170]:
+            - button "2 Ready to use" [ref=e171] [cursor=pointer]:
+              - img [ref=e173]
+              - generic [ref=e176]: "2"
+              - generic [ref=e177]: Ready to use
+            - button "8 Need attention" [ref=e178] [cursor=pointer]:
+              - img [ref=e180]
+              - generic [ref=e182]: "8"
+              - generic [ref=e183]: Need attention
+            - button "8 In progress" [ref=e184] [cursor=pointer]:
+              - img [ref=e186]
+              - generic [ref=e189]: "8"
+              - generic [ref=e190]: In progress
+            - button "3 Active campaigns" [ref=e191] [cursor=pointer]:
+              - img [ref=e193]
+              - generic [ref=e196]: "3"
+              - generic [ref=e197]: Active campaigns
+            - button "6 Content created" [ref=e198] [cursor=pointer]:
+              - img [ref=e200]
+              - generic [ref=e203]: "6"
+              - generic [ref=e204]: Content created
+          - generic [ref=e205]:
+            - generic [ref=e206]:
+              - generic [ref=e207]:
+                - generic [ref=e208]:
+                  - img [ref=e209]
+                  - heading "What Needs Your Attention" [level=3] [ref=e211]
+                - generic [ref=e212]:
+                  - generic [ref=e213]:
+                    - generic [ref=e215]: "1"
+                    - img [ref=e217]
+                    - generic [ref=e220]:
+                      - generic [ref=e221]: E2E Grid Verify 1771604167750
+                      - generic [ref=e222]: Coverage is 0% (<50% threshold). E2E Grid Verify 1771604167750 has no content yet
+                    - button "Take Action >" [ref=e223]
+                  - generic [ref=e224]:
+                    - generic [ref=e226]: "2"
+                    - img [ref=e228]
+                    - generic [ref=e231]:
+                      - generic [ref=e232]: E2E Long Description Asset
+                      - generic [ref=e233]: Coverage is 0% (<50% threshold). E2E Long Description Asset has no content yet
+                    - button "Take Action >" [ref=e234]
+                  - generic [ref=e235]:
+                    - generic [ref=e237]: "3"
+                    - img [ref=e239]
+                    - generic [ref=e242]:
+                      - generic [ref=e243]: Brand "Test" <Asset> & Partners
+                      - generic [ref=e244]: Coverage is 0% (<50% threshold). Brand "Test" <Asset> & Partners has no content yet
+                    - button "Take Action >" [ref=e245]
+                  - generic [ref=e246]:
+                    - generic [ref=e248]: "4"
+                    - img [ref=e250]
+                    - generic [ref=e253]:
+                      - generic [ref=e254]: E2E Full Asset
+                      - generic [ref=e255]: Coverage is 0% (<50% threshold). E2E Full Asset has no content yet
+                    - button "Take Action >" [ref=e256]
+                  - generic [ref=e257]:
+                    - generic [ref=e259]: "5"
+                    - img [ref=e261]
+                    - generic [ref=e264]:
+                      - generic [ref=e265]: E2E Test Asset
+                      - generic [ref=e266]: Coverage is 0% (<50% threshold). E2E Test Asset has no content yet
+                    - button "Take Action >" [ref=e267]
+              - generic [ref=e268]:
+                - generic [ref=e270]:
+                  - generic [ref=e271]:
+                    - img [ref=e272]
+                    - text: AI RECOMMENDED
+                  - heading "Run a Brand Alignment Scan" [level=3] [ref=e275]
+                  - paragraph [ref=e276]: Check consistency across all your brand modules and identify misalignments before they become problems.
+                - button "Run Scan" [ref=e277]:
+                  - text: Run Scan
+                  - img [ref=e278]
+              - generic [ref=e280]:
+                - heading "Quick Access" [level=3] [ref=e281]
+                - generic [ref=e282]:
+                  - button "Brand Assets 18 assets" [ref=e283] [cursor=pointer]:
+                    - img [ref=e285]
+                    - generic [ref=e289]:
+                      - generic [ref=e290]: Brand Assets
+                      - generic [ref=e291]: 18 assets
+                    - img [ref=e292]
+                  - button "Personas Active personas" [ref=e294] [cursor=pointer]:
+                    - img [ref=e296]
+                    - generic [ref=e301]:
+                      - generic [ref=e302]: Personas
+                      - generic [ref=e303]: Active personas
+                    - img [ref=e304]
+                  - button "Research Hub Active research" [ref=e306] [cursor=pointer]:
+                    - img [ref=e308]
+                    - generic [ref=e310]:
+                      - generic [ref=e311]: Research Hub
+                      - generic [ref=e312]: Active research
+                    - img [ref=e313]
+            - generic [ref=e315]:
+              - generic [ref=e316]:
+                - generic [ref=e317]:
+                  - generic [ref=e318]:
+                    - img [ref=e319]
+                    - heading "Active Campaigns" [level=3] [ref=e322]
+                  - button "View All" [ref=e323]:
+                    - text: View All
+                    - img [ref=e324]
+                - generic [ref=e326]:
+                  - generic [ref=e327]:
+                    - generic [ref=e328]:
+                      - generic [ref=e329]: LinkedIn Product Update
+                      - generic [ref=e331]: Quick
+                    - generic [ref=e332]:
+                      - generic [ref=e334]:
+                        - progressbar
+                      - generic [ref=e335]: 0%
+                  - generic [ref=e336]:
+                    - generic [ref=e337]:
+                      - generic [ref=e338]: "Product Launch: AI Assistant"
+                      - generic [ref=e340]: Strategic
+                    - generic [ref=e341]:
+                      - progressbar [ref=e344]
+                      - generic [ref=e345]: 33%
+                  - generic [ref=e346]:
+                    - generic [ref=e347]:
+                      - generic [ref=e348]: Spring Brand Refresh 2025
+                      - generic [ref=e350]: Strategic
+                    - generic [ref=e351]:
+                      - progressbar [ref=e354]
+                      - generic [ref=e355]: 25%
+                - button "Start New Campaign" [ref=e356]:
+                  - img [ref=e357]
+                  - text: Start New Campaign
+              - generic [ref=e358]:
+                - generic [ref=e359]:
+                  - generic [ref=e360]:
+                    - img [ref=e361]
+                    - heading "Quick Start" [level=3] [ref=e366]
+                  - generic [ref=e367]:
+                    - generic [ref=e368]: 0/4 complete
+                    - button [ref=e369]:
+                      - img [ref=e370]
+                - generic [ref=e373]:
+                  - generic [ref=e374] [cursor=pointer]:
+                    - button [ref=e375]
+                    - generic [ref=e376]: Create your first brand asset
+                  - generic [ref=e377] [cursor=pointer]:
+                    - button [ref=e378]
+                    - generic [ref=e379]: Define your target persona
+                  - generic [ref=e380] [cursor=pointer]:
+                    - button [ref=e381]
+                    - generic [ref=e382]: Plan your first research session
+                  - generic [ref=e383] [cursor=pointer]:
+                    - button [ref=e384]
+                    - generic [ref=e385]: Generate your first campaign strategy
+                - button "Dismiss" [ref=e386]
+  - generic [ref=e387]:
+    - generic [ref=e389]:
+      - generic [ref=e390]:
+        - img [ref=e391]
+        - heading "Notifications" [level=2] [ref=e394]
+        - generic [ref=e395]: "5"
+      - generic [ref=e396]:
+        - button "Toggle filters" [ref=e397]:
+          - img
+        - button [ref=e398]:
+          - img
+    - generic [ref=e400]:
+      - button "Asset validated Brand Promise passed research validation System · 2m ago" [ref=e401]:
+        - img [ref=e403]
+        - generic [ref=e408]:
+          - paragraph [ref=e409]: Asset validated
+          - paragraph [ref=e410]: Brand Promise passed research validation
+          - generic [ref=e411]:
+            - generic [ref=e412]: System
+            - generic [ref=e413]: ·
+            - generic [ref=e414]: 2m ago
+      - button "Strategy milestone All OKRs for Q1 defined System · 2m ago" [ref=e415]:
+        - img [ref=e417]
+        - generic [ref=e423]:
+          - paragraph [ref=e424]: Strategy milestone
+          - paragraph [ref=e425]: All OKRs for Q1 defined
+          - generic [ref=e426]:
+            - generic [ref=e427]: System
+            - generic [ref=e428]: ·
+            - generic [ref=e429]: 2m ago
+      - button "Feedback received Sarah commented on persona research Sarah Chen · 2m ago" [ref=e430]:
+        - img [ref=e432]
+        - generic [ref=e434]:
+          - paragraph [ref=e435]: Feedback received
+          - paragraph [ref=e436]: Sarah commented on persona research
+          - generic [ref=e437]:
+            - generic [ref=e438]: Sarah Chen
+            - generic [ref=e439]: ·
+            - generic [ref=e440]: 2m ago
+      - button "Design asset added Logo variations uploaded to Brand Assets Tom Wilson · 2m ago" [ref=e441]:
+        - img [ref=e443]
+        - generic [ref=e446]:
+          - paragraph [ref=e447]: Design asset added
+          - paragraph [ref=e448]: Logo variations uploaded to Brand Assets
+          - generic [ref=e449]:
+            - generic [ref=e450]: Tom Wilson
+            - generic [ref=e451]: ·
+            - generic [ref=e452]: 2m ago
+      - button "Cross-reference found Market insight linked to Business Strategy System · 2m ago" [ref=e453]:
+        - img [ref=e455]
+        - generic [ref=e458]:
+          - paragraph [ref=e459]: Cross-reference found
+          - paragraph [ref=e460]: Market insight linked to Business Strategy
+          - generic [ref=e461]:
+            - generic [ref=e462]: System
+            - generic [ref=e463]: ·
+            - generic [ref=e464]: 2m ago
+      - button "Research started User Testing for Product Page launched Sarah Chen · 2m ago" [ref=e465]:
+        - img [ref=e467]
+        - generic [ref=e469]:
+          - paragraph [ref=e470]: Research started
+          - paragraph [ref=e471]: User Testing for Product Page launched
+          - generic [ref=e472]:
+            - generic [ref=e473]: Sarah Chen
+            - generic [ref=e474]: ·
+            - generic [ref=e475]: 2m ago
+      - button "New persona created Tech-Savvy Millennial added Erik Jager · 2m ago" [ref=e476]:
+        - img [ref=e478]
+        - generic [ref=e481]:
+          - paragraph [ref=e482]: New persona created
+          - paragraph [ref=e483]: Tech-Savvy Millennial added
+          - generic [ref=e484]:
+            - generic [ref=e485]: Erik Jager
+            - generic [ref=e486]: ·
+            - generic [ref=e487]: 2m ago
+      - button "New insight added AI trend analysis found 3 new insights System · 2m ago" [ref=e488]:
+        - img [ref=e490]
+        - generic [ref=e492]:
+          - paragraph [ref=e493]: New insight added
+          - paragraph [ref=e494]: AI trend analysis found 3 new insights
+          - generic [ref=e495]:
+            - generic [ref=e496]: System
+            - generic [ref=e497]: ·
+            - generic [ref=e498]: 2m ago
+      - button "Research plan created Q1 Persona Validation plan is ready Sarah Chen · 2m ago" [ref=e499]:
+        - img [ref=e501]
+        - generic [ref=e504]:
+          - paragraph [ref=e505]: Research plan created
+          - paragraph [ref=e506]: Q1 Persona Validation plan is ready
+          - generic [ref=e507]:
+            - generic [ref=e508]: Sarah Chen
+            - generic [ref=e509]: ·
+            - generic [ref=e510]: 2m ago
+      - button "Asset status changed Mission Statement moved to Review Erik Jager · 2m ago" [ref=e511]:
+        - img [ref=e513]
+        - generic [ref=e518]:
+          - paragraph [ref=e519]: Asset status changed
+          - paragraph [ref=e520]: Mission Statement moved to Review
+          - generic [ref=e521]:
+            - generic [ref=e522]: Erik Jager
+            - generic [ref=e523]: ·
+            - generic [ref=e524]: 2m ago
+      - button "New comment on Brand Voice Tom left feedback on tone guidelines Tom Wilson · 2m ago" [ref=e525]:
+        - img [ref=e527]
+        - generic [ref=e530]:
+          - paragraph [ref=e531]: New comment on Brand Voice
+          - paragraph [ref=e532]: Tom left feedback on tone guidelines
+          - generic [ref=e533]:
+            - generic [ref=e534]: Tom Wilson
+            - generic [ref=e535]: ·
+            - generic [ref=e536]: 2m ago
+      - button "Milestone reached! Brand Foundation is now 80% complete System · 2m ago" [ref=e537]:
+        - img [ref=e539]
+        - generic [ref=e546]:
+          - paragraph [ref=e547]: Milestone reached!
+          - paragraph [ref=e548]: Brand Foundation is now 80% complete
+          - generic [ref=e549]:
+            - generic [ref=e550]: System
+            - generic [ref=e551]: ·
+            - generic [ref=e552]: 2m ago
+      - button "New file uploaded Brand Guidelines v2.pdf added to library Erik Jager · 2m ago" [ref=e553]:
+        - img [ref=e555]
+        - generic [ref=e559]:
+          - paragraph [ref=e560]: New file uploaded
+          - paragraph [ref=e561]: Brand Guidelines v2.pdf added to library
+          - generic [ref=e562]:
+            - generic [ref=e563]: Erik Jager
+            - generic [ref=e564]: ·
+            - generic [ref=e565]: 2m ago
+      - button "Research study completed Customer Interview Round 2 finished Sarah Chen · 2m ago" [ref=e566]:
+        - img [ref=e568]
+        - generic [ref=e571]:
+          - paragraph [ref=e572]: Research study completed
+          - paragraph [ref=e573]: Customer Interview Round 2 finished
+          - generic [ref=e574]:
+            - generic [ref=e575]: Sarah Chen
+            - generic [ref=e576]: ·
+            - generic [ref=e577]: 2m ago
+      - button "New relationship discovered Brand Foundation linked to 3 personas System · 2m ago" [ref=e578]:
+        - img [ref=e580]
+        - generic [ref=e584]:
+          - paragraph [ref=e585]: New relationship discovered
+          - paragraph [ref=e586]: Brand Foundation linked to 3 personas
+          - generic [ref=e587]:
+            - generic [ref=e588]: System
+            - generic [ref=e589]: ·
+            - generic [ref=e590]: 2m ago
+  - generic [ref=e591]:
+    - generic:
+      - generic:
+        - generic:
+          - img
+          - generic: Support Chat
+        - button:
+          - img
+      - generic:
+        - generic:
+          - img
+          - paragraph: Chat coming soon
+          - paragraph: We're working on live chat support.
+    - button "Open chat" [ref=e592]:
+      - img [ref=e593]
+```

@@ -1,97 +1,92 @@
-'use client';
+import { ChevronLeft } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
-import * as LucideIcons from 'lucide-react';
-import { PAGE_HEADER, PAGE_ICONS, MODULE_META, cn } from '@/lib/constants/design-tokens';
+export interface PageHeaderAction {
+  label: string;
+  icon?: LucideIcon;
+  onClick: () => void;
+  disabled?: boolean;
+}
 
-// ─── Types ────────────────────────────────────────────────
-
-type LucideIconName = keyof typeof LucideIcons;
-
-interface PageHeaderProps {
-  /** Module key from PAGE_ICONS / MODULE_META, e.g. 'personas' */
-  moduleKey?: string;
-  /** Override: page title */
-  title?: string;
-  /** Override: page subtitle */
-  subtitle?: string;
-  /** Override: Lucide icon name */
-  icon?: string;
-  /** Override: icon circle background color class */
-  iconBgColor?: string;
-  /** Override: icon color class */
+export interface PageHeaderProps {
+  backLabel?: string;
+  onBack?: () => void;
+  icon: LucideIcon;
+  iconBg?: string;
   iconColor?: string;
-  /** CTA button label — omit to hide CTA */
-  ctaLabel?: string;
-  /** CTA click handler */
-  onCtaClick?: () => void;
-  /** CTA Lucide icon name (defaults to 'Plus') */
-  ctaIcon?: string;
-  /** Extra content rendered on the right side (instead of or next to CTA) */
-  rightContent?: React.ReactNode;
+  title: string;
+  subtitle?: string;
+  primaryAction?: PageHeaderAction;
+  secondaryAction?: PageHeaderAction;
+  actions?: React.ReactNode;
 }
-
-// ─── Icon Helper ──────────────────────────────────────────
-
-function getLucideIcon(name: string): LucideIcons.LucideIcon {
-  const icon = (LucideIcons as Record<string, unknown>)[name];
-  if (icon && typeof icon === 'function') {
-    return icon as LucideIcons.LucideIcon;
-  }
-  return LucideIcons.HelpCircle;
-}
-
-// ─── Component ────────────────────────────────────────────
 
 export function PageHeader({
-  moduleKey,
-  title: titleOverride,
-  subtitle: subtitleOverride,
-  icon: iconOverride,
-  iconBgColor: bgOverride,
-  iconColor: colorOverride,
-  ctaLabel,
-  onCtaClick,
-  ctaIcon = 'Plus',
-  rightContent,
+  backLabel,
+  onBack,
+  icon: Icon,
+  iconBg = 'bg-teal-100',
+  iconColor = 'text-teal-600',
+  title,
+  subtitle,
+  primaryAction,
+  secondaryAction,
+  actions,
 }: PageHeaderProps) {
-  // Resolve from tokens when moduleKey provided
-  const meta = moduleKey ? MODULE_META[moduleKey] : undefined;
-  const icons = moduleKey ? PAGE_ICONS[moduleKey] : undefined;
-
-  const title = titleOverride || meta?.title || 'Page';
-  const subtitle = subtitleOverride || meta?.subtitle;
-  const iconName = iconOverride || icons?.icon || 'FileText';
-  const bgColor = bgOverride || icons?.bgColor || 'bg-gray-100';
-  const iconColor = colorOverride || icons?.iconColor || 'text-gray-500';
-
-  const Icon = getLucideIcon(iconName);
-  const CtaIcon = getLucideIcon(ctaIcon);
-
   return (
-    <div className={PAGE_HEADER.container}>
-      {/* Left: icon circle + title group */}
-      <div className={PAGE_HEADER.titleGroup}>
-        <div className={cn(PAGE_HEADER.iconCircle.className, bgColor)}>
-          <Icon className={cn(PAGE_HEADER.iconCircle.iconSize, iconColor)} />
-        </div>
-        <div>
-          <h1 className={PAGE_HEADER.title}>{title}</h1>
-          {subtitle && <p className={PAGE_HEADER.subtitle}>{subtitle}</p>}
-        </div>
-      </div>
+    <div data-testid="page-header" className="mb-6">
+      {/* Back navigation */}
+      {backLabel && onBack && (
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-3 transition"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          {backLabel}
+        </button>
+      )}
 
-      {/* Right: CTA button and/or custom content */}
-      <div className="flex items-center gap-3">
-        {rightContent}
-        {ctaLabel && onCtaClick && (
-          <button onClick={onCtaClick} className={PAGE_HEADER.cta}>
-            <CtaIcon className="w-4 h-4" />
-            {ctaLabel}
-          </button>
-        )}
+      {/* Title row */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-3">
+          {/* Icon circle */}
+          <div className={`w-10 h-10 rounded-lg ${iconBg} flex items-center justify-center`}>
+            <Icon className={`w-5 h-5 ${iconColor}`} />
+          </div>
+          {/* Title + subtitle */}
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
+            {subtitle && (
+              <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3">
+          {secondaryAction && (
+            <button
+              onClick={secondaryAction.onClick}
+              disabled={secondaryAction.disabled}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-teal-600 border border-teal-200 rounded-xl text-sm font-medium hover:bg-teal-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {secondaryAction.icon && <secondaryAction.icon className="w-4 h-4" />}
+              {secondaryAction.label}
+            </button>
+          )}
+          {primaryAction && (
+            <button
+              onClick={primaryAction.onClick}
+              disabled={primaryAction.disabled}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-500 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-teal-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {primaryAction.icon && <primaryAction.icon className="w-4 h-4" />}
+              {primaryAction.label}
+            </button>
+          )}
+          {actions}
+        </div>
       </div>
     </div>
   );
 }
-
-export default PageHeader;

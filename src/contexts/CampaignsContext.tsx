@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { Campaign } from '../types/campaign';
 import { apiCampaignsToMockFormat } from '../lib/api/campaign-adapter';
+import { useWorkspace } from '../hooks/use-workspace';
 
 interface CampaignsContextType {
   campaigns: Campaign[];
@@ -25,11 +26,13 @@ async function getMockFallback(): Promise<Campaign[]> {
 }
 
 export function CampaignsProvider({ children }: { children: ReactNode }) {
+  const { workspaceId, isLoading: wsLoading } = useWorkspace();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const workspaceId = process.env.NEXT_PUBLIC_WORKSPACE_ID;
+    if (wsLoading) return;
+
     if (!workspaceId) {
       getMockFallback().then(data => {
         setCampaigns(data);
@@ -38,7 +41,7 @@ export function CampaignsProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    fetch(`/api/campaigns?workspaceId=${workspaceId}`)
+    fetch('/api/campaigns')
       .then(res => res.json())
       .then(data => {
         if (data.campaigns && data.campaigns.length > 0) {
@@ -52,7 +55,7 @@ export function CampaignsProvider({ children }: { children: ReactNode }) {
         getMockFallback().then(setCampaigns);
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [workspaceId, wsLoading]);
 
   const campaignsMap = React.useMemo(() => {
     const map: Record<string, Campaign> = {};

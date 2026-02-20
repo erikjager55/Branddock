@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import type { Knowledge, Collection } from '../types/knowledge';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Knowledge, Collection, KnowledgeWithMeta } from '../types/knowledge';
 import { apiKnowledgeToMockFormat } from '../lib/api/knowledge-adapter';
+import {
+  fetchFeaturedResources,
+  toggleFavorite,
+  toggleArchive,
+  toggleFeatured,
+} from '../lib/api/knowledge';
+import { useWorkspace } from '../hooks/use-workspace';
 
 interface KnowledgeContextType {
   knowledge: Knowledge[];
@@ -34,15 +42,16 @@ async function getCollectionsFallback(): Promise<Collection[]> {
 }
 
 export function KnowledgeProvider({ children }: { children: ReactNode }) {
+  const { workspaceId, isLoading: wsLoading } = useWorkspace();
   const [knowledge, setKnowledge] = useState<Knowledge[]>([]);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const workspaceId = process.env.NEXT_PUBLIC_WORKSPACE_ID;
-
     // Load collections (mock-only for now, no API yet)
     getCollectionsFallback().then(setCollections);
+
+    if (wsLoading) return;
 
     if (!workspaceId) {
       getMockFallback().then(data => {
@@ -52,11 +61,11 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    fetch(`/api/knowledge?workspaceId=${workspaceId}`)
+    fetch('/api/knowledge')
       .then(res => res.json())
       .then(data => {
-        if (data.knowledge && data.knowledge.length > 0) {
-          setKnowledge(apiKnowledgeToMockFormat(data.knowledge) as any);
+        if (data.resources && data.resources.length > 0) {
+          setKnowledge(apiKnowledgeToMockFormat(data.resources) as any);
         } else {
           return getMockFallback().then(setKnowledge);
         }
@@ -66,7 +75,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
         getMockFallback().then(setKnowledge);
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [workspaceId, wsLoading]);
 
   const addKnowledge = (item: Knowledge) => setKnowledge(prev => [...prev, item]);
   const updateKnowledge = (id: string, item: Knowledge) =>
@@ -87,4 +96,96 @@ export function useKnowledgeContext() {
     throw new Error('useKnowledgeContext must be used within a KnowledgeProvider');
   }
   return context;
+}
+
+// =============================================================
+// TanStack Query hooks for Knowledge extensions
+// =============================================================
+
+const knowledgeKeys = {
+  all: ['knowledge'] as const,
+  featured: (workspaceId: string) => ['knowledge', 'featured', workspaceId] as const,
+};
+
+/**
+ * Hook: fetch featured resources.
+ */
+export function useFeaturedResources() {
+  const { workspaceId } = useWorkspace();
+  return useQuery<{ resources: KnowledgeWithMeta[] }>({
+    queryKey: knowledgeKeys.featured(workspaceId ?? ''),
+    queryFn: fetchFeaturedResources,
+    enabled: !!workspaceId,
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Mutation: toggle isFavorite with optimistic update.
+ */
+export function useToggleFavorite() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => toggleFavorite(id),
+    onMutate: async (id) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: knowledgeKeys.all });
+
+      // Snapshot for rollback (featured query)
+      const previousFeatured = queryClient.getQueriesData({ queryKey: knowledgeKeys.all });
+
+      // Optimistic update on featured resources cache
+      queryClient.setQueriesData<{ resources: KnowledgeWithMeta[] }>(
+        { queryKey: ['knowledge', 'featured'] },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            resources: old.resources.map((r) =>
+              r.id === id ? { ...r, isFavorite: !r.isFavorite } : r
+            ),
+          };
+        }
+      );
+
+      return { previousFeatured };
+    },
+    onError: (_err, _id, context) => {
+      // Rollback on error
+      if (context?.previousFeatured) {
+        for (const [key, data] of context.previousFeatured) {
+          queryClient.setQueryData(key, data);
+        }
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: knowledgeKeys.all });
+    },
+  });
+}
+
+/**
+ * Mutation: toggle isArchived.
+ */
+export function useToggleArchive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => toggleArchive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: knowledgeKeys.all });
+    },
+  });
+}
+
+/**
+ * Mutation: toggle isFeatured.
+ */
+export function useToggleFeatured() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => toggleFeatured(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: knowledgeKeys.all });
+    },
+  });
 }

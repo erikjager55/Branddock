@@ -1,28 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import type { ProductWithMeta, ProductListResponse } from "@/types/product";
+import { resolveWorkspaceId } from "@/lib/auth-server";
+import { PRODUCT_LIST_SELECT } from "@/lib/db/queries";
+import { setCache, cachedJson, invalidateCache } from "@/lib/api/cache";
+import { cacheKeys, CACHE_TTL } from "@/lib/api/cache-keys";
 
-// =============================================================
-// GET /api/products?workspaceId=xxx&category=Software&...
-// =============================================================
+// ─── Zod Schemas ────────────────────────────────────────────
+
+const createProductSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  category: z.string().max(100).optional(),
+  pricingModel: z.string().max(100).optional(),
+  features: z
+    .array(z.string().max(500))
+    .max(20)
+    .optional(),
+  benefits: z
+    .array(z.string().max(500))
+    .max(10)
+    .optional(),
+  useCases: z
+    .array(z.string().max(500))
+    .max(10)
+    .optional(),
+  linkedPersonaIds: z
+    .array(z.string())
+    .max(20)
+    .optional(),
+});
+
+// GET /api/products
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-
-    const workspaceId = searchParams.get("workspaceId");
+    const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
-      return NextResponse.json(
-        { error: "workspaceId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
+    const { searchParams } = new URL(request.url);
     const category = searchParams.get("category");
     const search = searchParams.get("search");
     const sortBy = searchParams.get("sortBy") ?? "name";
     const sortOrder = searchParams.get("sortOrder") ?? "asc";
 
-    // Build where clause
+    // Cache unfiltered default requests
+    const isUnfiltered = !category && !search && sortBy === "name" && sortOrder === "asc";
+    if (isUnfiltered) {
+      const hit = cachedJson(cacheKeys.products.list(workspaceId));
+      if (hit) return hit;
+    }
+
     const where: Record<string, unknown> = { workspaceId };
     if (category) where.category = category;
     if (search) {
@@ -32,7 +61,6 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // Build orderBy
     const orderByMap: Record<string, string> = {
       name: "name",
       category: "category",
@@ -45,75 +73,72 @@ export async function GET(request: NextRequest) {
     const dbProducts = await prisma.product.findMany({
       where,
       orderBy,
+      select: PRODUCT_LIST_SELECT,
     });
 
-    // Map to ProductWithMeta
-    const products: ProductWithMeta[] = dbProducts.map((p) => ({
+    const products = dbProducts.map((p) => ({
       id: p.id,
       name: p.name,
       slug: p.slug,
       description: p.description,
       category: p.category,
       source: p.source,
+      status: p.status,
       pricingModel: p.pricingModel,
-      pricingAmount: p.pricingAmount,
-      pricingCurrency: p.pricingCurrency,
-      features: (p.features as string[]) ?? [],
-      benefits: (p.benefits as string[]) ?? [],
-      useCases: (p.useCases as string[]) ?? [],
-      specifications: (p.specifications as { key: string; value: string }[]) ?? null,
-      createdAt: p.createdAt.toISOString(),
+      categoryIcon: p.categoryIcon,
+      features: p.features,
+      linkedPersonaCount: p._count.linkedPersonas,
       updatedAt: p.updatedAt.toISOString(),
     }));
 
-    // Stats
     const byCategory: Record<string, number> = {};
     for (const p of products) {
-      byCategory[p.category] = (byCategory[p.category] ?? 0) + 1;
+      const cat = p.category ?? "uncategorized";
+      byCategory[cat] = (byCategory[cat] ?? 0) + 1;
     }
 
-    const response: ProductListResponse = {
-      products,
-      stats: { total: products.length, byCategory },
-    };
+    const responseData = { products, stats: { total: products.length, byCategory } };
 
-    return NextResponse.json(response);
+    if (isUnfiltered) {
+      setCache(cacheKeys.products.list(workspaceId), responseData, CACHE_TTL.OVERVIEW);
+    }
+
+    return NextResponse.json(responseData, {
+      headers: isUnfiltered ? { 'X-Cache': 'MISS' } : {},
+    });
   } catch (error) {
     console.error("[GET /api/products]", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
-// =============================================================
 // POST /api/products
-// =============================================================
 export async function POST(request: NextRequest) {
   try {
+    const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
+    }
+
     const body = await request.json();
+    const parsed = createProductSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten() },
+        { status: 400 },
+      );
+    }
+
     const {
       name,
-      category,
       description,
-      workspaceId,
-      source,
+      category,
       pricingModel,
-      pricingAmount,
-      pricingCurrency,
       features,
       benefits,
       useCases,
-      specifications,
-    } = body;
-
-    if (!name || !category || !workspaceId) {
-      return NextResponse.json(
-        { error: "name, category and workspaceId are required" },
-        { status: 400 }
-      );
-    }
+      linkedPersonaIds,
+    } = parsed.data;
 
     const slug = name
       .toLowerCase()
@@ -124,7 +149,7 @@ export async function POST(request: NextRequest) {
     if (existing) {
       return NextResponse.json(
         { error: `Product with slug "${slug}" already exists` },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -132,26 +157,33 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         slug,
-        description: description ?? "",
-        category,
-        source: source ?? "Manual Entry",
-        pricingModel: pricingModel ?? "Custom",
-        pricingAmount: pricingAmount ?? null,
-        pricingCurrency: pricingCurrency ?? null,
+        description: description ?? null,
+        category: category ?? null,
+        pricingModel: pricingModel ?? null,
         features: features ?? [],
         benefits: benefits ?? [],
         useCases: useCases ?? [],
-        specifications: specifications ?? undefined,
         workspaceId,
       },
     });
 
+    // Create ProductPersona records if linkedPersonaIds provided
+    if (linkedPersonaIds && linkedPersonaIds.length > 0) {
+      await prisma.productPersona.createMany({
+        data: linkedPersonaIds.map((personaId) => ({
+          productId: product.id,
+          personaId,
+        })),
+        skipDuplicates: true,
+      });
+    }
+
+    invalidateCache(cacheKeys.prefixes.products(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     console.error("[POST /api/products]", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

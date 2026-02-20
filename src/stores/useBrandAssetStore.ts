@@ -6,11 +6,13 @@ interface BrandAssetStore {
   categoryFilter: AssetCategory | null;
   statusFilter: AssetStatus | null;
   isCreateModalOpen: boolean;
+  selectedAssetId: string | null;
 
   setSearchQuery: (query: string) => void;
   setCategoryFilter: (category: AssetCategory | null) => void;
   setStatusFilter: (status: AssetStatus | null) => void;
   setCreateModalOpen: (open: boolean) => void;
+  setSelectedAssetId: (id: string | null) => void;
 }
 
 export const useBrandAssetStore = create<BrandAssetStore>((set) => ({
@@ -18,9 +20,11 @@ export const useBrandAssetStore = create<BrandAssetStore>((set) => ({
   categoryFilter: null,
   statusFilter: null,
   isCreateModalOpen: false,
+  selectedAssetId: null,
 
   setSearchQuery: (query) => set({ searchQuery: query }),
   setCategoryFilter: (category) => set({ categoryFilter: category }),
   setStatusFilter: (status) => set({ statusFilter: status }),
   setCreateModalOpen: (open) => set({ isCreateModalOpen: open }),
+  setSelectedAssetId: (id) => set({ selectedAssetId: id }),
 }));

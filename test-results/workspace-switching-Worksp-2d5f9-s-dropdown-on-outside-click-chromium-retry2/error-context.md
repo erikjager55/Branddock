@@ -1,0 +1,356 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - button "Branddock Agency Branddock Demo" [active] [ref=e16]:
+          - img [ref=e17]
+          - generic [ref=e21]:
+            - generic [ref=e22]: Branddock Agency
+            - generic [ref=e23]: Branddock Demo
+          - img [ref=e24]
+        - generic [ref=e26]:
+          - generic [ref=e27]: Workspaces
+          - button "Branddock Demo" [ref=e28]:
+            - img [ref=e29]
+            - generic [ref=e33]: Branddock Demo
+            - img [ref=e34]
+          - button "Duplicate Test 1771604579554" [ref=e36]:
+            - img [ref=e37]
+            - generic [ref=e41]: Duplicate Test 1771604579554
+          - button "E2E Test Workspace 1771604577858" [ref=e42]:
+            - img [ref=e43]
+            - generic [ref=e47]: E2E Test Workspace 1771604577858
+          - button "New workspace" [ref=e48]:
+            - img [ref=e49]
+            - generic [ref=e50]: New workspace
+      - navigation "Breadcrumb" [ref=e53]:
+        - button "Dashboard" [ref=e54]:
+          - img [ref=e55]
+          - generic [ref=e58]: Dashboard
+        - img [ref=e59]
+        - generic [ref=e61]:
+          - img [ref=e62]
+          - generic [ref=e67]: Dashboard
+      - generic [ref=e68]:
+        - button "Quick Content" [ref=e69]:
+          - img
+          - generic [ref=e70]: Quick Content
+        - button "Search ⌘ + K" [ref=e71]:
+          - img
+          - generic [ref=e72]: Search
+          - generic [ref=e73]:
+            - generic [ref=e74]: ⌘
+            - generic [ref=e75]: +
+            - generic [ref=e76]: K
+        - button "Show Help ?" [ref=e78]:
+          - img
+          - text: Show Help
+          - generic [ref=e79]: "?"
+        - button "Notifications" [ref=e80]:
+          - img
+    - generic [ref=e81]:
+      - generic [ref=e82]:
+        - generic [ref=e84]:
+          - img "Branddock" [ref=e85]
+          - button [ref=e86]:
+            - img
+        - navigation [ref=e87]:
+          - generic [ref=e88]:
+            - heading "WORKSPACE" [level=3] [ref=e90]
+            - button "Overview" [ref=e91]:
+              - img
+              - generic [ref=e92]: Overview
+          - generic [ref=e93]:
+            - heading "STRATEGY" [level=3] [ref=e95]
+            - button "Campaigns" [ref=e96]:
+              - img
+              - generic [ref=e97]: Campaigns
+            - button "Content Library" [ref=e98]:
+              - img
+              - generic [ref=e99]: Content Library
+          - generic [ref=e100]:
+            - heading "KNOWLEDGE" [level=3] [ref=e102]
+            - button "Brand Foundation 3" [ref=e103]:
+              - img
+              - generic [ref=e104]: Brand Foundation
+              - generic [ref=e105]: "3"
+            - button "Business Strategy" [ref=e106]:
+              - img
+              - generic [ref=e107]: Business Strategy
+            - button "Brandstyle" [ref=e108]:
+              - img
+              - generic [ref=e109]: Brandstyle
+            - button "Personas" [ref=e110]:
+              - img
+              - generic [ref=e111]: Personas
+            - button "Products & Services" [ref=e112]:
+              - img
+              - generic [ref=e113]: Products & Services
+            - button "Market Insights" [ref=e114]:
+              - img
+              - generic [ref=e115]: Market Insights
+            - button "Knowledge Library" [ref=e116]:
+              - img
+              - generic [ref=e117]: Knowledge Library
+            - button "Brand Alignment 3" [ref=e118]:
+              - img
+              - generic [ref=e119]: Brand Alignment
+              - generic [ref=e120]: "3"
+          - generic [ref=e121]:
+            - heading "VALIDATION" [level=3] [ref=e123]
+            - button "Research Hub" [ref=e124]:
+              - img
+              - generic [ref=e125]: Research Hub
+            - button "Research Bundles" [ref=e126]:
+              - img
+              - generic [ref=e127]: Research Bundles
+            - button "Custom Validation" [ref=e128]:
+              - img
+              - generic [ref=e129]: Custom Validation
+          - generic [ref=e130]:
+            - button "Settings" [ref=e131]:
+              - generic [ref=e132]:
+                - img
+                - generic [ref=e133]: Settings
+              - img
+            - generic [ref=e134]:
+              - button "Account" [ref=e135]:
+                - img
+                - generic [ref=e136]: Account
+              - button "Team" [ref=e137]:
+                - img
+                - generic [ref=e138]: Team
+              - button "Agency" [ref=e139]:
+                - img
+                - generic [ref=e140]: Agency
+              - button "Clients" [ref=e141]:
+                - img
+                - generic [ref=e142]: Clients
+              - button "Billing & Payments" [ref=e143]:
+                - img
+                - generic [ref=e144]: Billing & Payments
+              - button "Notifications" [ref=e145]:
+                - img
+                - generic [ref=e146]: Notifications
+              - button "Appearance" [ref=e147]:
+                - img
+                - generic [ref=e148]: Appearance
+              - button "Commercial Demo" [ref=e149]:
+                - img
+                - generic [ref=e150]: Commercial Demo
+              - 'button "Demo: Compact Variant NEW" [ref=e151]':
+                - img
+                - generic [ref=e152]: "Demo: Compact Variant"
+                - generic [ref=e153]: NEW
+            - button "Help & Support" [ref=e154]:
+              - img
+              - generic [ref=e155]: Help & Support
+          - generic [ref=e158]:
+            - img [ref=e159]
+            - text: BETA
+      - main [ref=e162]:
+        - generic [ref=e165]:
+          - generic [ref=e169]:
+            - img [ref=e171]
+            - generic [ref=e176]:
+              - heading "Dashboard" [level=1] [ref=e177]
+              - paragraph [ref=e178]: Your brand at a glance
+          - generic [ref=e180]:
+            - generic [ref=e181]:
+              - img [ref=e182]
+              - heading "Decision Readiness" [level=2] [ref=e185]
+            - generic [ref=e186]: 11%
+            - paragraph [ref=e189]:
+              - generic [ref=e190]: 2 ready
+              - text: ·
+              - generic [ref=e191]: 8 need attention
+              - text: ·
+              - generic [ref=e192]: 8 in progress
+          - generic [ref=e194]:
+            - button "2 Ready to use" [ref=e195] [cursor=pointer]:
+              - img [ref=e197]
+              - generic [ref=e200]: "2"
+              - generic [ref=e201]: Ready to use
+            - button "8 Need attention" [ref=e202] [cursor=pointer]:
+              - img [ref=e204]
+              - generic [ref=e206]: "8"
+              - generic [ref=e207]: Need attention
+            - button "8 In progress" [ref=e208] [cursor=pointer]:
+              - img [ref=e210]
+              - generic [ref=e213]: "8"
+              - generic [ref=e214]: In progress
+            - button "3 Active campaigns" [ref=e215] [cursor=pointer]:
+              - img [ref=e217]
+              - generic [ref=e220]: "3"
+              - generic [ref=e221]: Active campaigns
+            - button "5 Content created" [ref=e222] [cursor=pointer]:
+              - img [ref=e224]
+              - generic [ref=e227]: "5"
+              - generic [ref=e228]: Content created
+          - generic [ref=e229]:
+            - generic [ref=e230]:
+              - generic [ref=e231]:
+                - generic [ref=e232]:
+                  - img [ref=e233]
+                  - heading "What Needs Your Attention" [level=3] [ref=e235]
+                - generic [ref=e236]:
+                  - generic [ref=e237]:
+                    - generic [ref=e239]: "1"
+                    - img [ref=e241]
+                    - generic [ref=e244]:
+                      - generic [ref=e245]: E2E Grid Verify 1771604167750
+                      - generic [ref=e246]: Coverage is 0% (<50% threshold). E2E Grid Verify 1771604167750 has no content yet
+                    - button "Take Action >" [ref=e247]
+                  - generic [ref=e248]:
+                    - generic [ref=e250]: "2"
+                    - img [ref=e252]
+                    - generic [ref=e255]:
+                      - generic [ref=e256]: E2E Long Description Asset
+                      - generic [ref=e257]: Coverage is 0% (<50% threshold). E2E Long Description Asset has no content yet
+                    - button "Take Action >" [ref=e258]
+                  - generic [ref=e259]:
+                    - generic [ref=e261]: "3"
+                    - img [ref=e263]
+                    - generic [ref=e266]:
+                      - generic [ref=e267]: Brand "Test" <Asset> & Partners
+                      - generic [ref=e268]: Coverage is 0% (<50% threshold). Brand "Test" <Asset> & Partners has no content yet
+                    - button "Take Action >" [ref=e269]
+                  - generic [ref=e270]:
+                    - generic [ref=e272]: "4"
+                    - img [ref=e274]
+                    - generic [ref=e277]:
+                      - generic [ref=e278]: E2E Full Asset
+                      - generic [ref=e279]: Coverage is 0% (<50% threshold). E2E Full Asset has no content yet
+                    - button "Take Action >" [ref=e280]
+                  - generic [ref=e281]:
+                    - generic [ref=e283]: "5"
+                    - img [ref=e285]
+                    - generic [ref=e288]:
+                      - generic [ref=e289]: E2E Test Asset
+                      - generic [ref=e290]: Coverage is 0% (<50% threshold). E2E Test Asset has no content yet
+                    - button "Take Action >" [ref=e291]
+              - generic [ref=e292]:
+                - generic [ref=e294]:
+                  - generic [ref=e295]:
+                    - img [ref=e296]
+                    - text: AI RECOMMENDED
+                  - heading "Run a Brand Alignment Scan" [level=3] [ref=e299]
+                  - paragraph [ref=e300]: Check consistency across all your brand modules and identify misalignments before they become problems.
+                - button "Run Scan" [ref=e301]:
+                  - text: Run Scan
+                  - img [ref=e302]
+              - generic [ref=e304]:
+                - heading "Quick Access" [level=3] [ref=e305]
+                - generic [ref=e306]:
+                  - button "Brand Assets 18 assets" [ref=e307] [cursor=pointer]:
+                    - img [ref=e309]
+                    - generic [ref=e313]:
+                      - generic [ref=e314]: Brand Assets
+                      - generic [ref=e315]: 18 assets
+                    - img [ref=e316]
+                  - button "Personas Active personas" [ref=e318] [cursor=pointer]:
+                    - img [ref=e320]
+                    - generic [ref=e325]:
+                      - generic [ref=e326]: Personas
+                      - generic [ref=e327]: Active personas
+                    - img [ref=e328]
+                  - button "Research Hub Active research" [ref=e330] [cursor=pointer]:
+                    - img [ref=e332]
+                    - generic [ref=e334]:
+                      - generic [ref=e335]: Research Hub
+                      - generic [ref=e336]: Active research
+                    - img [ref=e337]
+            - generic [ref=e339]:
+              - generic [ref=e340]:
+                - generic [ref=e341]:
+                  - generic [ref=e342]:
+                    - img [ref=e343]
+                    - heading "Active Campaigns" [level=3] [ref=e346]
+                  - button "View All" [ref=e347]:
+                    - text: View All
+                    - img [ref=e348]
+                - generic [ref=e350]:
+                  - generic [ref=e351]:
+                    - generic [ref=e352]:
+                      - generic [ref=e353]: LinkedIn Product Update
+                      - generic [ref=e355]: Quick
+                    - generic [ref=e356]:
+                      - generic [ref=e358]:
+                        - progressbar
+                      - generic [ref=e359]: 0%
+                  - generic [ref=e360]:
+                    - generic [ref=e361]:
+                      - generic [ref=e362]: "Product Launch: AI Assistant"
+                      - generic [ref=e364]: Strategic
+                    - generic [ref=e365]:
+                      - progressbar [ref=e368]
+                      - generic [ref=e369]: 17%
+                  - generic [ref=e370]:
+                    - generic [ref=e371]:
+                      - generic [ref=e372]: Spring Brand Refresh 2025
+                      - generic [ref=e374]: Strategic
+                    - generic [ref=e375]:
+                      - progressbar [ref=e378]
+                      - generic [ref=e379]: 25%
+                - button "Start New Campaign" [ref=e380]:
+                  - img [ref=e381]
+                  - text: Start New Campaign
+              - generic [ref=e382]:
+                - generic [ref=e383]:
+                  - generic [ref=e384]:
+                    - img [ref=e385]
+                    - heading "Quick Start" [level=3] [ref=e390]
+                  - generic [ref=e391]:
+                    - generic [ref=e392]: 0/4 complete
+                    - button [ref=e393]:
+                      - img [ref=e394]
+                - generic [ref=e397]:
+                  - generic [ref=e398] [cursor=pointer]:
+                    - button [ref=e399]
+                    - generic [ref=e400]: Create your first brand asset
+                  - generic [ref=e401] [cursor=pointer]:
+                    - button [ref=e402]
+                    - generic [ref=e403]: Define your target persona
+                  - generic [ref=e404] [cursor=pointer]:
+                    - button [ref=e405]
+                    - generic [ref=e406]: Plan your first research session
+                  - generic [ref=e407] [cursor=pointer]:
+                    - button [ref=e408]
+                    - generic [ref=e409]: Generate your first campaign strategy
+                - button "Dismiss" [ref=e410]
+  - generic [ref=e411]:
+    - generic [ref=e413]:
+      - generic [ref=e414]:
+        - img [ref=e415]
+        - heading "Notifications" [level=2] [ref=e418]
+      - generic [ref=e419]:
+        - button "Toggle filters" [ref=e420]:
+          - img
+        - button [ref=e421]:
+          - img
+    - generic [ref=e423]:
+      - img [ref=e424]
+      - paragraph [ref=e427]: No notifications
+      - paragraph [ref=e428]: Notifications will appear here as you work
+  - generic [ref=e429]:
+    - generic:
+      - generic:
+        - generic:
+          - img
+          - generic: Support Chat
+        - button:
+          - img
+      - generic:
+        - generic:
+          - img
+          - paragraph: Chat coming soon
+          - paragraph: We're working on live chat support.
+    - button "Open chat" [ref=e430]:
+      - img [ref=e431]
+```

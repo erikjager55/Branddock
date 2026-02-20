@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveWorkspaceId } from "@/lib/auth-server";
 import type {
   BrandAssetWithMeta,
   BrandAssetListResponse,
@@ -8,22 +9,16 @@ import type {
 } from "@/types/brand-asset";
 
 // =============================================================
-// GET /api/brand-assets?workspaceId=xxx&category=STRATEGY&...
+// GET /api/brand-assets
 // =============================================================
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-
-    // TODO: haal workspaceId uit auth sessie zodra auth is geïmplementeerd
-    const workspaceId = searchParams.get("workspaceId");
+    const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
-      return NextResponse.json(
-        { error: "workspaceId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    // Filter params
+    const { searchParams } = new URL(request.url);
     const category = searchParams.get("category") as AssetCategory | null;
     const status = searchParams.get("status") as AssetStatus | null;
     const search = searchParams.get("search");
@@ -113,16 +108,21 @@ export async function GET(request: NextRequest) {
 }
 
 // =============================================================
-// POST /api/brand-assets  { name, category, description?, workspaceId }
+// POST /api/brand-assets  { name, category, description? }
 // =============================================================
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { name, category, description, workspaceId } = body;
+    const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
+    }
 
-    if (!name || !category || !workspaceId) {
+    const body = await request.json();
+    const { name, category, description } = body;
+
+    if (!name || !category) {
       return NextResponse.json(
-        { error: "name, category and workspaceId are required" },
+        { error: "name and category are required" },
         { status: 400 }
       );
     }

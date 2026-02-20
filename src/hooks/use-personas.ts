@@ -8,20 +8,24 @@ export const personaKeys = {
   list: (workspaceId: string) => ["personas", "list", workspaceId] as const,
 };
 
+/**
+ * Hook: haal personas op. workspaceId wordt alleen als cache key gebruikt;
+ * server resolvet workspace via sessie cookie.
+ */
 export function usePersonasQuery(workspaceId: string | undefined) {
   return useQuery<PersonaListResponse>({
     queryKey: personaKeys.list(workspaceId ?? ""),
-    queryFn: () => fetchPersonas(workspaceId!),
+    queryFn: () => fetchPersonas(),
     enabled: !!workspaceId,
     staleTime: 30_000,
   });
 }
 
-export function useCreatePersona(workspaceId: string, createdById: string) {
+export function useCreatePersona() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: CreatePersonaBody) =>
-      createPersona(workspaceId, createdById, body),
+    mutationFn: (body: CreatePersonaBody & { createdById?: string }) =>
+      createPersona(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: personaKeys.all });
     },

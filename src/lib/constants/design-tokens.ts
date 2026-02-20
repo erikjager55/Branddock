@@ -248,6 +248,13 @@ export const TYPOGRAPHY = {
   navSectionLabel: 'text-xs font-semibold uppercase tracking-wider text-gray-400',
   /** Badges */
   badgeText: 'text-xs font-medium',
+  /** Pattern Library tokens */
+  pageTitleLarge: 'text-4xl font-semibold',
+  pageTitleCompact: 'text-2xl font-semibold',
+  sectionTitle: 'text-xl font-semibold',
+  bodySmall: 'text-sm',
+  statLarge: 'text-3xl font-bold',
+  statMedium: 'text-2xl font-bold',
 } as const;
 
 // ─── COMPONENT TOKENS ──────────────────────────────────────
@@ -472,35 +479,35 @@ export const SIDEBAR_NAV: {
     {
       label: 'WORKSPACE',
       items: [
-        { key: 'overview', label: 'Overview', icon: 'LayoutDashboard', href: '/' },
+        { key: 'dashboard', label: 'Overview', icon: 'LayoutDashboard', href: '/' },
       ],
     },
     {
       label: 'STRATEGY',
       items: [
-        { key: 'campaigns', label: 'Active Campaigns', icon: 'Megaphone', href: '/strategy/campaigns' },
+        { key: 'active-campaigns', label: 'Campaigns', icon: 'Megaphone', href: '/strategy/campaigns' },
         { key: 'content-library', label: 'Content Library', icon: 'FileText', href: '/strategy/content-library' },
       ],
     },
     {
       label: 'KNOWLEDGE',
       items: [
-        { key: 'brand-foundation', label: 'Brand Foundation', icon: 'Lightbulb', href: '/knowledge/brand-foundation', badge: true, badgeColor: 'orange' },
+        { key: 'brand', label: 'Brand Foundation', icon: 'Shield', href: '/knowledge/brand-foundation', badge: true, badgeColor: 'orange' },
         { key: 'business-strategy', label: 'Business Strategy', icon: 'Target', href: '/knowledge/business-strategy' },
-        { key: 'brand-style', label: 'Brandstyle', icon: 'Palette', href: '/knowledge/brand-style' },
+        { key: 'brandstyle', label: 'Brandstyle', icon: 'Palette', href: '/knowledge/brand-style' },
         { key: 'personas', label: 'Personas', icon: 'Users', href: '/knowledge/personas' },
         { key: 'products', label: 'Products & Services', icon: 'Package', href: '/knowledge/products' },
-        { key: 'market-insights', label: 'Market Insights', icon: 'TrendingUp', href: '/knowledge/market-insights' },
-        { key: 'knowledge-library', label: 'Knowledge Library', icon: 'BookOpen', href: '/knowledge/library' },
-        { key: 'brand-alignment', label: 'Brand Alignment', icon: 'Shield', href: '/knowledge/brand-alignment', badge: true, badgeColor: 'pink' },
+        { key: 'trends', label: 'Market Insights', icon: 'TrendingUp', href: '/knowledge/market-insights' },
+        { key: 'knowledge', label: 'Knowledge Library', icon: 'BookOpen', href: '/knowledge/library' },
+        { key: 'brand-alignment', label: 'Brand Alignment', icon: 'GitCompare', href: '/knowledge/brand-alignment', badge: true, badgeColor: 'red' },
       ],
     },
     {
       label: 'VALIDATION',
       items: [
-        { key: 'research-hub', label: 'Research Hub', icon: 'FlaskConical', href: '/validation/research-hub' },
-        { key: 'research-bundles', label: 'Research Bundles', icon: 'Layers', href: '/validation/research-bundles' },
-        { key: 'custom-validations', label: 'Custom Validations', icon: 'Settings2', href: '/validation/custom-validations' },
+        { key: 'research', label: 'Research Hub', icon: 'FlaskConical', href: '/validation/research-hub' },
+        { key: 'research-bundles', label: 'Research Bundles', icon: 'Boxes', href: '/validation/research-bundles' },
+        { key: 'custom-validation', label: 'Custom Validation', icon: 'Sparkles', href: '/validation/custom-validations' },
       ],
     },
   ],
@@ -516,18 +523,18 @@ export const SIDEBAR_NAV: {
 export const PAGE_ICONS: Record<string, { icon: string; bgColor: string; iconColor: string }> = {
   'overview':          { icon: 'LayoutDashboard', bgColor: 'bg-blue-50',    iconColor: 'text-blue-500' },
   'campaigns':         { icon: 'Megaphone',       bgColor: 'bg-purple-50',  iconColor: 'text-purple-500' },
-  'content-library':   { icon: 'FileText',        bgColor: 'bg-indigo-50',  iconColor: 'text-indigo-500' },
-  'brand-foundation':  { icon: 'Lightbulb',       bgColor: 'bg-emerald-50', iconColor: 'text-emerald-500' },
-  'business-strategy': { icon: 'Target',          bgColor: 'bg-teal-50',    iconColor: 'text-teal-500' },
+  'content-library':   { icon: 'FileText',         bgColor: 'bg-indigo-50',  iconColor: 'text-indigo-500' },
+  'brand-foundation':  { icon: 'Shield',          bgColor: 'bg-emerald-50', iconColor: 'text-emerald-500' },
+  'business-strategy': { icon: 'Target',          bgColor: 'bg-blue-50',    iconColor: 'text-blue-500' },
   'brand-style':       { icon: 'Palette',         bgColor: 'bg-pink-50',    iconColor: 'text-pink-500' },
   'personas':          { icon: 'Users',           bgColor: 'bg-violet-50',  iconColor: 'text-violet-500' },
   'products':          { icon: 'Package',         bgColor: 'bg-orange-50',  iconColor: 'text-orange-500' },
   'market-insights':   { icon: 'TrendingUp',      bgColor: 'bg-cyan-50',    iconColor: 'text-cyan-500' },
   'knowledge-library': { icon: 'BookOpen',         bgColor: 'bg-amber-50',   iconColor: 'text-amber-500' },
-  'brand-alignment':   { icon: 'Shield',          bgColor: 'bg-rose-50',    iconColor: 'text-rose-500' },
+  'brand-alignment':   { icon: 'GitCompare',      bgColor: 'bg-rose-50',    iconColor: 'text-rose-500' },
   'research-hub':      { icon: 'FlaskConical',    bgColor: 'bg-lime-50',    iconColor: 'text-lime-600' },
-  'research-bundles':  { icon: 'Layers',          bgColor: 'bg-sky-50',     iconColor: 'text-sky-500' },
-  'custom-validations':{ icon: 'Settings2',       bgColor: 'bg-slate-50',   iconColor: 'text-slate-500' },
+  'research-bundles':  { icon: 'Boxes',            bgColor: 'bg-sky-50',     iconColor: 'text-sky-500' },
+  'custom-validations':{ icon: 'Sparkles',        bgColor: 'bg-slate-50',   iconColor: 'text-slate-500' },
   'settings':          { icon: 'Settings',        bgColor: 'bg-gray-100',   iconColor: 'text-gray-500' },
   'help':              { icon: 'HelpCircle',      bgColor: 'bg-emerald-50', iconColor: 'text-emerald-500' },
 };
@@ -639,6 +646,86 @@ export const MODULE_META: Record<string, {
   },
 };
 
+// ─── DASHBOARD TOKENS (S8) ─────────────────────────────────
+
+export const DASHBOARD_TOKENS = {
+  /** Decision Readiness widget */
+  decisionReadiness: {
+    container: 'bg-white rounded-lg border border-gray-200 p-6',
+    percentage: {
+      high: 'text-green-600',
+      medium: 'text-yellow-500',
+      low: 'text-red-500',
+    },
+    progressBar: {
+      track: 'w-full bg-gray-100 rounded-full h-3',
+      high: 'bg-green-500',
+      medium: 'bg-yellow-500',
+      low: 'bg-red-500',
+    },
+  },
+
+  /** Dashboard stats cards (5 KPIs) */
+  dashboardStats: {
+    container: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4',
+    card: 'bg-white rounded-lg border border-gray-200 p-4 text-left hover:shadow-md transition-shadow cursor-pointer',
+    iconContainer: 'w-10 h-10 rounded-lg flex items-center justify-center mb-3',
+    value: 'text-2xl font-bold text-gray-900',
+    label: 'text-xs text-gray-500 mt-0.5',
+  },
+
+  /** Attention list ("What Needs Your Attention") */
+  attentionList: {
+    container: 'bg-white rounded-lg border border-gray-200 p-5',
+    item: 'flex items-center gap-4 py-3',
+    fixBtn: 'px-3 py-1.5 text-xs font-medium rounded-md bg-orange-50 text-orange-700 hover:bg-orange-100',
+    actionBtn: 'px-3 py-1.5 text-xs font-medium rounded-md bg-green-50 text-green-700 hover:bg-green-100',
+  },
+
+  /** Recommended action card */
+  recommendedAction: {
+    container: 'bg-gradient-to-r from-green-50 to-green-100 border border-green-200 rounded-lg p-5',
+    badge: 'inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-green-200 text-green-800 rounded-full',
+    actionBtn: 'inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors',
+  },
+
+  /** Quick access cards */
+  quickAccess: {
+    container: 'grid grid-cols-1 sm:grid-cols-3 gap-3',
+    card: 'bg-white rounded-lg border border-gray-200 p-4 text-left hover:shadow-md transition-shadow cursor-pointer',
+  },
+
+  /** Active campaigns preview */
+  activeCampaignsPreview: {
+    container: 'bg-white rounded-lg border border-gray-200 p-5',
+    newCampaignBtn: 'w-full flex items-center justify-center gap-2 py-2 border border-green-200 text-green-600 text-sm font-medium rounded-lg hover:bg-green-50 transition-colors',
+  },
+
+  /** Onboarding wizard modal */
+  onboardingWizard: {
+    overlay: 'fixed inset-0 bg-black/50 z-50 flex items-center justify-center',
+    container: 'bg-white rounded-xl w-[520px] max-w-[95vw] p-8 text-center shadow-2xl',
+    stepDot: { active: 'bg-green-600', inactive: 'bg-gray-300' },
+    primaryBtn: 'px-5 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors',
+  },
+
+  /** Quick start widget */
+  quickStartWidget: {
+    container: 'bg-white rounded-lg border border-gray-200 p-4',
+    checkboxChecked: 'w-5 h-5 rounded-full bg-green-600 flex items-center justify-center',
+    checkboxUnchecked: 'w-5 h-5 rounded-full border-2 border-gray-300 hover:border-green-400',
+    labelChecked: 'text-sm text-gray-400 line-through',
+    labelUnchecked: 'text-sm text-gray-700',
+  },
+
+  /** Readiness thresholds */
+  thresholds: {
+    low:    { min: 0,  max: 49, color: 'red',    label: 'Unusable' },
+    medium: { min: 50, max: 79, color: 'yellow', label: 'Limited' },
+    high:   { min: 80, max: 100, color: 'green',  label: 'Ready' },
+  },
+} as const;
+
 // ─── HELPER: cn() ──────────────────────────────────────────
 // Utility om meerdere class strings samen te voegen (simpele versie)
 // Voor productie: gebruik clsx of tailwind-merge
@@ -646,3 +733,209 @@ export const MODULE_META: Record<string, {
 export function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ');
 }
+
+// ============================================================
+// PATTERN LIBRARY TOKENS — Gesynchroniseerd met Figma Reference
+// ============================================================
+
+// --- MODULE GRADIENTS ---
+export const MODULE_GRADIENTS = {
+  'dashboard':         { from: 'from-[#1FD1B2]', to: 'to-emerald-500',  icon: 'LayoutDashboard' },
+  'brand-foundation':  { from: 'from-[#5252E3]', to: 'to-purple-600',   icon: 'Shield' },
+  'business-strategy': { from: 'from-blue-500',   to: 'to-indigo-600',   icon: 'Target' },
+  'brandstyle':        { from: 'from-purple-500',  to: 'to-pink-600',     icon: 'Palette' },
+  'personas':          { from: 'from-[#5252E3]', to: 'to-[#1FD1B2]',   icon: 'Users' },
+  'products':          { from: 'from-orange-500',  to: 'to-amber-600',    icon: 'Package' },
+  'market-insights':   { from: 'from-green-500',   to: 'to-emerald-600',  icon: 'TrendingUp' },
+  'knowledge':         { from: 'from-blue-500',    to: 'to-indigo-600',   icon: 'BookOpen' },
+  'brand-alignment':   { from: 'from-[#1FD1B2]', to: 'to-emerald-500',  icon: 'GitCompare' },
+  'campaigns':         { from: 'from-[#5252E3]', to: 'to-purple-600',   icon: 'Megaphone' },
+  'content-library':   { from: 'from-purple-500',  to: 'to-pink-600',     icon: 'FileText' },
+  'research':          { from: 'from-green-500',   to: 'to-emerald-600',  icon: 'FlaskConical' },
+  'settings':          { from: 'from-gray-500',    to: 'to-gray-600',     icon: 'Settings' },
+  'help':              { from: 'from-blue-500',    to: 'to-indigo-600',   icon: 'HelpCircle' },
+} as const;
+
+export type ModuleKey = keyof typeof MODULE_GRADIENTS;
+
+// --- SPACING TOKENS ---
+export const SPACING = {
+  page: {
+    padding: 'px-8 py-8',
+    paddingX: 'px-8',
+    paddingY: 'py-8',
+  },
+  header: {
+    padding: 'px-8 py-6',
+    paddingCompact: 'px-8 py-4',
+  },
+  section: {
+    marginBottom: 'mb-8',
+    marginBottomSmall: 'mb-6',
+  },
+  card: {
+    padding: 'p-6',
+    paddingSmall: 'p-4',
+    paddingLarge: 'p-8',
+    gap: 'space-y-4',
+  },
+  grid: {
+    gap: 'gap-4',
+    cols2: 'grid grid-cols-1 md:grid-cols-2 gap-4',
+    cols3: 'grid grid-cols-1 md:grid-cols-3 gap-4',
+    cols4: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4',
+  },
+  component: {
+    gap: 'gap-2',
+    gapLarge: 'gap-4',
+  },
+} as const;
+
+// --- ICON SIZES ---
+export const ICON_SIZES = {
+  xs: 'h-3 w-3',
+  sm: 'h-4 w-4',
+  md: 'h-5 w-5',
+  lg: 'h-6 w-6',
+  xl: 'h-8 w-8',
+  '2xl': 'h-10 w-10',
+  '3xl': 'h-12 w-12',
+} as const;
+
+// --- ICON CONTAINERS ---
+export const ICON_CONTAINERS = {
+  small:  'h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0',
+  medium: 'h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0',
+  large:  'h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0',
+} as const;
+
+// --- LAYOUT PATTERNS ---
+export const LAYOUT_PATTERNS = {
+  fullPage: 'h-full overflow-auto bg-background',
+  centeredContentSm: 'max-w-3xl mx-auto',
+  centeredContentMd: 'max-w-5xl mx-auto',
+  centeredContentXl: 'max-w-7xl mx-auto',
+  centeredContentFull: 'max-w-[1800px] mx-auto',
+} as const;
+
+// --- HEADER PATTERNS ---
+export const HEADER_PATTERNS = {
+  sticky: {
+    wrapper: 'sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border z-10',
+    container: 'flex items-center justify-between',
+    left: 'flex items-center gap-4',
+    right: 'flex items-center gap-3',
+  },
+  backButton: 'flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-4',
+  section: {
+    wrapper: 'flex items-center justify-between',
+    title: 'text-xl font-semibold',
+  },
+} as const;
+
+// --- CARD VARIANTS ---
+export const CARD_VARIANTS = {
+  default: 'bg-card rounded-xl border border-border p-6',
+  interactive: 'bg-card rounded-xl border border-border p-6 hover:shadow-md hover:border-primary/20 transition-all cursor-pointer',
+  highlighted: 'bg-card rounded-xl border-2 border-primary/20 p-6 shadow-sm',
+  compact: 'bg-card rounded-xl border border-border p-4',
+  status: {
+    success: 'bg-card rounded-xl border border-green-200 p-6',
+    warning: 'bg-card rounded-xl border border-yellow-200 p-6',
+    error: 'bg-card rounded-xl border border-red-200 p-6',
+  },
+} as const;
+
+// --- STATUS COLORS ---
+export const STATUS_COLORS = {
+  success: { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', dot: 'bg-green-500' },
+  warning: { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200', dot: 'bg-yellow-500' },
+  error:   { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500' },
+  info:    { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500' },
+  neutral: { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200', dot: 'bg-gray-500' },
+} as const;
+
+// --- ANIMATION TOKENS ---
+export const ANIMATION = {
+  fadeIn: 'animate-in fade-in duration-200',
+  fadeInUp: 'animate-in fade-in slide-in-from-bottom-2 duration-300',
+  fadeInScale: 'animate-in fade-in zoom-in-95 duration-200',
+  hover: {
+    scale: 'transition-transform hover:scale-[1.02]',
+    shadow: 'transition-shadow hover:shadow-md',
+    all: 'transition-all duration-200',
+  },
+} as const;
+
+// --- EFFECTS ---
+export const EFFECTS = {
+  shadow: {
+    sm: 'shadow-sm',
+    md: 'shadow-md',
+    lg: 'shadow-lg',
+  },
+  backdrop: 'backdrop-blur-sm',
+  ring: 'ring-2 ring-primary/20 ring-offset-2',
+} as const;
+
+// --- FILTER PATTERNS ---
+export const FILTER_PATTERNS = {
+  contentFilterBar: 'flex flex-col sm:flex-row gap-4 items-start sm:items-center',
+  tabsContainer: 'flex items-center gap-1 bg-muted rounded-lg p-1',
+  tabItem: 'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+  tabItemActive: 'bg-background shadow-sm text-foreground',
+  tabItemInactive: 'text-muted-foreground hover:text-foreground',
+} as const;
+
+// --- HELPER: Get gradient classes for a module ---
+export function getModuleGradient(moduleKey: ModuleKey): string {
+  const gradient = MODULE_GRADIENTS[moduleKey];
+  return `bg-gradient-to-br ${gradient.from} ${gradient.to}`;
+}
+
+// --- HELPER: Get status color set ---
+export function getStatusColors(status: keyof typeof STATUS_COLORS) {
+  return STATUS_COLORS[status];
+}
+
+// --- SELECTION STATES (voor SelectionCard) ---
+export const SELECTION_STATES = {
+  default: 'rounded-xl border border-border p-4 hover:border-primary/40 cursor-pointer transition-all',
+  selected: 'rounded-xl border-2 border-primary bg-primary/5 p-4',
+  disabled: 'rounded-xl border border-border p-4 opacity-50 cursor-not-allowed',
+} as const;
+
+// --- SEVERITY COLORS (voor IssueCard, Brand Alignment) ---
+export const SEVERITY_COLORS = {
+  critical: {
+    badge: 'bg-red-100 text-red-700',
+    border: 'border-l-4 border-l-red-500',
+    dot: 'bg-red-500',
+  },
+  warning: {
+    badge: 'bg-orange-100 text-orange-700',
+    border: 'border-l-4 border-l-orange-500',
+    dot: 'bg-orange-500',
+  },
+  suggestion: {
+    badge: 'bg-blue-100 text-blue-700',
+    border: 'border-l-4 border-l-blue-500',
+    dot: 'bg-blue-500',
+  },
+} as const;
+
+// --- CONFIDENCE COLORS (voor validation methods) ---
+export const CONFIDENCE_COLORS = {
+  low:         { badge: 'bg-red-50 text-red-700 border border-red-200' },
+  medium:      { badge: 'bg-yellow-50 text-yellow-700 border border-yellow-200' },
+  'medium-high': { badge: 'bg-teal-50 text-teal-700 border border-teal-200' },
+  high:        { badge: 'bg-green-50 text-green-700 border border-green-200' },
+} as const;
+
+// --- RECOMMENDATION BLOCK (voor AI aanbevelingen) ---
+export const RECOMMENDATION_BLOCK = {
+  wrapper: 'bg-primary/5 rounded-lg p-4 mt-4',
+  icon: 'text-primary',
+  label: 'text-sm font-semibold text-primary',
+  text: 'text-sm text-muted-foreground mt-1',
+} as const;

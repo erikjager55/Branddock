@@ -6,16 +6,17 @@ export interface ProductWithMeta {
   id: string;
   name: string;
   slug: string;
-  description: string;
-  category: string;
+  description: string | null;
+  category: string | null;
   source: string;
-  pricingModel: string;
-  pricingAmount: string | null;
-  pricingCurrency: string | null;
+  status: string;
+  pricingModel: string | null;
+  pricingDetails: string | null;
+  categoryIcon: string | null;
   features: string[];
   benefits: string[];
   useCases: string[];
-  specifications: { key: string; value: string }[] | null;
+  linkedPersonaCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -37,16 +38,13 @@ export interface ProductListParams {
 
 export interface CreateProductBody {
   name: string;
-  category: string;
   description?: string;
-  source?: string;
+  category?: string;
   pricingModel?: string;
-  pricingAmount?: string;
-  pricingCurrency?: string;
   features?: string[];
   benefits?: string[];
   useCases?: string[];
-  specifications?: { key: string; value: string }[];
+  linkedPersonaIds?: string[];
 }
 
 export interface UpdateProductBody extends Partial<CreateProductBody> {}

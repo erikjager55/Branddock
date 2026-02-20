@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { saveToStorage, loadFromStorage, StorageKeys } from '../utils/storage';
+import { useWorkspace } from '../hooks/use-workspace';
 
 export interface ResearchPlan {
   id: string;
@@ -43,6 +44,7 @@ const DEMO_PLAN: ResearchPlan = {
 };
 
 export function ResearchPlanProvider({ children }: { children: ReactNode }) {
+  const { workspaceId, isLoading: wsLoading } = useWorkspace();
   const [activeResearchPlan, setActiveResearchPlan] = useState<ResearchPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -56,7 +58,8 @@ export function ResearchPlanProvider({ children }: { children: ReactNode }) {
 
   // API first, fallback to localStorage/demo
   useEffect(() => {
-    const workspaceId = process.env.NEXT_PUBLIC_WORKSPACE_ID;
+    if (wsLoading) return;
+
     if (!workspaceId) {
       const stored = loadFromStorage<ResearchPlan | null>(StorageKeys.ACTIVE_RESEARCH_PLAN, null);
       setActiveResearchPlan(stored ?? DEMO_PLAN);
@@ -64,7 +67,7 @@ export function ResearchPlanProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    fetch(`/api/research-plans?workspaceId=${workspaceId}&status=active`)
+    fetch('/api/research-plans?status=active')
       .then((res) => {
         if (!res.ok) throw new Error(`API error ${res.status}`);
         return res.json();
@@ -94,7 +97,7 @@ export function ResearchPlanProvider({ children }: { children: ReactNode }) {
         setActiveResearchPlan(stored ?? DEMO_PLAN);
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [workspaceId, wsLoading]);
 
   const updateSharedAssets = (tool: keyof SharedAssetSelection, assets: string[]) => {
     setSharedSelectedAssets((prev) => ({ ...prev, [tool]: assets }));

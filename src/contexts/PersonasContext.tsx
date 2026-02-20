@@ -4,6 +4,7 @@ import { saveToStorage, loadFromStorage, StorageKeys } from "../utils/storage";
 import { logger } from "../utils/logger";
 import { fetchPersonas } from "../lib/api/personas";
 import { apiPersonasToMockFormat, type MockPersona } from "../lib/api/persona-adapter";
+import { useWorkspace } from "../hooks/use-workspace";
 
 type ResearchMethodStatus = string;
 
@@ -43,9 +44,8 @@ interface PersonasContextType {
 
 const PersonasContext = createContext<PersonasContextType | undefined>(undefined);
 
-const WORKSPACE_ID = process.env.NEXT_PUBLIC_WORKSPACE_ID;
-
 export function PersonasProvider({ children }: { children: ReactNode }) {
+  const { workspaceId, isLoading: wsLoading } = useWorkspace();
   const [personas, setPersonas] = useState<MockPersona[]>(() => {
     const stored = loadFromStorage<MockPersona[]>(StorageKeys.PERSONAS, []);
     if (stored.length === 0) return mockPersonas as unknown as MockPersona[];
@@ -56,15 +56,17 @@ export function PersonasProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (!WORKSPACE_ID) {
-      logger.info("No WORKSPACE_ID configured, personas using mock data");
+    if (wsLoading) return;
+
+    if (!workspaceId) {
+      logger.info("No workspace available, personas using mock data");
       return;
     }
 
     let cancelled = false;
     setIsLoading(true);
 
-    fetchPersonas(WORKSPACE_ID)
+    fetchPersonas()
       .then((response) => {
         if (cancelled) return;
         const mapped = apiPersonasToMockFormat(response.personas);
@@ -80,7 +82,7 @@ export function PersonasProvider({ children }: { children: ReactNode }) {
       });
 
     return () => { cancelled = true; };
-  }, []);
+  }, [workspaceId, wsLoading]);
 
   useEffect(() => {
     if (dataSource === "mock" && personas && personas.length > 0) {

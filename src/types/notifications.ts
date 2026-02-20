@@ -1,22 +1,10 @@
-export type NotificationType =
-  | "DATA_RELATIONSHIP_CREATED"
-  | "RESEARCH_COMPLETED"
-  | "FILE_UPLOADED"
-  | "MILESTONE_REACHED"
-  | "COMMENT_ADDED"
-  | "RESEARCH_PLAN_CREATED"
-  | "ASSET_STATUS_UPDATED"
-  | "RESEARCH_INSIGHT_ADDED"
-  | "NEW_PERSONA_CREATED"
-  | "NEW_RESEARCH_STARTED";
+// =============================================================
+// Notification Types (S8)
+// =============================================================
 
-export type NotificationCategory =
-  | "BRAND_ASSETS"
-  | "RESEARCH"
-  | "PERSONAS"
-  | "STRATEGY"
-  | "COLLABORATION"
-  | "SYSTEM";
+import type { NotificationType, NotificationCategory } from '@prisma/client';
+
+export type { NotificationType, NotificationCategory };
 
 export interface NotificationItem {
   id: string;
@@ -30,9 +18,15 @@ export interface NotificationItem {
   createdAt: string;
 }
 
-export interface NotificationEventConfig {
-  type: NotificationType;
-  icon: string;       // Lucide icon name
-  bg: string;         // bg-{color}-100
-  iconColor: string;  // text-{color}-600
+export interface NotificationsParams {
+  category?: NotificationCategory;
+  unreadOnly?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface NotificationsResponse {
+  items: NotificationItem[];
+  total: number;
+  unreadCount: number;
 }

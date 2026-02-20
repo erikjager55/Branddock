@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { resolveWorkspaceId } from "@/lib/auth-server";
 import type { KnowledgeWithMeta, KnowledgeListResponse } from "@/types/knowledge";
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const workspaceId = searchParams.get("workspaceId");
+    const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
-      return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
+    const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
     const category = searchParams.get("category");
     const status = searchParams.get("status");
@@ -44,6 +45,9 @@ export async function GET(request: NextRequest) {
       relatedTrends: (r.relatedTrends as string[]) ?? null,
       relatedPersonas: (r.relatedPersonas as string[]) ?? null,
       relatedAssets: (r.relatedAssets as string[]) ?? null,
+      isFeatured: r.isFeatured,
+      isFavorite: r.isFavorite,
+      isArchived: r.isArchived,
       createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString(),
     }));
 
@@ -63,11 +67,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { title, workspaceId, ...rest } = body;
+    const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
+    }
 
-    if (!title || !workspaceId) {
-      return NextResponse.json({ error: "title and workspaceId are required" }, { status: 400 });
+    const body = await request.json();
+    const { title, ...rest } = body;
+
+    if (!title) {
+      return NextResponse.json({ error: "title is required" }, { status: 400 });
     }
 
     const resource = await prisma.knowledgeResource.create({
