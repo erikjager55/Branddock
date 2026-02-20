@@ -560,24 +560,14 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
         {/* Main Content */}
         <div className="flex-1 flex min-h-0">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col">
-            <TabsList className="mx-6 mt-4 mb-0 self-start bg-gray-100/80 gap-1 p-1">
-              <TabsTrigger value="chat" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <TabsList className="mx-6 mt-4 mb-0 self-start bg-gray-100/80 rounded-full p-1">
+              <TabsTrigger value="chat" className="gap-2 px-4 py-2 rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 <MessageCircle className="h-4 w-4" />
-                Conversation
-                {messages.length > 1 && (
-                  <Badge variant="secondary" className="ml-1 text-xs">
-                    {messages.length}
-                  </Badge>
-                )}
+                Chat
               </TabsTrigger>
-              <TabsTrigger value="insights" className="gap-2 px-4 py-2 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <TabsTrigger value="insights" className="gap-2 px-4 py-2 rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 <Lightbulb className="h-4 w-4" />
                 Insights
-                {insights.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 text-xs bg-amber-100 text-amber-700">
-                    {insights.length}
-                  </Badge>
-                )}
               </TabsTrigger>
             </TabsList>
 
