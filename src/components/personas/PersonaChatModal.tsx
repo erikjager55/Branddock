@@ -487,7 +487,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl h-[92vh] min-h-[600px] p-0 gap-0 flex flex-col overflow-hidden">
+      <DialogContent className="max-w-2xl h-[92vh] min-h-[600px] p-0 gap-0 flex flex-col overflow-hidden">
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
           <div className="flex items-start gap-4">
@@ -500,22 +500,33 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <DialogTitle className="text-xl">Chat met {persona.name}</DialogTitle>
-                <Badge variant="outline" className="gap-1">
-                  <Sparkles className="h-3 w-3" />
-                  AI Persona
-                </Badge>
-                <MoodIcon className={cn("h-4 w-4", moodColor)} />
               </div>
               <DialogDescription>
                 {persona.occupation || 'Professional'} • {persona.age || 'N/A'}
               </DialogDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600"
+                title="AI Persona"
+              >
+                <Sparkles className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600"
+                title={messages[messages.length - 1]?.mood ? MOOD_ICONS[messages[messages.length - 1].mood!].label : 'Mood'}
+              >
+                <MoodIcon className="h-4 w-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={exportConversation}
-                className="h-9 w-9 p-0 hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600"
                 title="Download conversatie"
               >
                 <Download className="h-4 w-4" />
@@ -524,7 +535,7 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
                 variant="ghost"
                 size="icon"
                 onClick={handleReset}
-                className="h-9 w-9 p-0 hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600"
                 title="Reset conversatie"
               >
                 <RotateCcw className="h-4 w-4" />
@@ -560,12 +571,12 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
         {/* Main Content */}
         <div className="flex-1 flex min-h-0">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="flex-1 flex flex-col">
-            <TabsList className="mx-6 mt-4 mb-0 self-start bg-gray-100/80 rounded-full p-1">
-              <TabsTrigger value="chat" className="gap-2 px-4 py-2 rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <TabsList className="mx-6 mt-4 mb-0 self-start bg-transparent p-0 h-auto gap-4">
+              <TabsTrigger value="chat" className="gap-2 px-0 py-2 rounded-none bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-teal-500 data-[state=active]:text-teal-600 text-gray-500 hover:text-gray-700">
                 <MessageCircle className="h-4 w-4" />
                 Chat
               </TabsTrigger>
-              <TabsTrigger value="insights" className="gap-2 px-4 py-2 rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              <TabsTrigger value="insights" className="gap-2 px-0 py-2 rounded-none bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-teal-500 data-[state=active]:text-teal-600 text-gray-500 hover:text-gray-700">
                 <Lightbulb className="h-4 w-4" />
                 Insights
               </TabsTrigger>
