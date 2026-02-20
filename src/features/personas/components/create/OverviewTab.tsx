@@ -1,6 +1,14 @@
 "use client";
 
-import { Input } from "@/components/shared";
+import {
+  Users,
+  Calendar,
+  User,
+  MapPin,
+  Briefcase,
+  GraduationCap,
+  DollarSign,
+} from "lucide-react";
 import { PersonaImageGenerator } from "./PersonaImageGenerator";
 import type { CreatePersonaBody } from "../../types/persona.types";
 
@@ -14,6 +22,40 @@ interface OverviewTabProps {
   onAvatarChange: (url: string) => void;
 }
 
+const DEMOGRAPHIC_FIELDS: {
+  key: keyof CreatePersonaBody;
+  label: string;
+  icon: typeof Calendar;
+  placeholder: string;
+}[] = [
+  { key: "age", label: "AGE", icon: Calendar, placeholder: "e.g., 32" },
+  { key: "gender", label: "GENDER", icon: User, placeholder: "e.g., Female" },
+  {
+    key: "location",
+    label: "LOCATION",
+    icon: MapPin,
+    placeholder: "e.g., Amsterdam, Netherlands",
+  },
+  {
+    key: "occupation",
+    label: "OCCUPATION",
+    icon: Briefcase,
+    placeholder: "e.g., Product Manager",
+  },
+  {
+    key: "education",
+    label: "EDUCATION",
+    icon: GraduationCap,
+    placeholder: "e.g., Bachelor's Degree",
+  },
+  {
+    key: "income",
+    label: "INCOME",
+    icon: DollarSign,
+    placeholder: "e.g., \u20AC60,000 - \u20AC80,000",
+  },
+];
+
 export function OverviewTab({
   form,
   avatarUrl,
@@ -21,74 +63,52 @@ export function OverviewTab({
   onAvatarChange,
 }: OverviewTabProps) {
   return (
-    <div className="space-y-6">
-      {/* Name + Tagline */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Input
-          label="Name *"
-          value={form.name}
-          onChange={(e) => onUpdate("name", e.target.value)}
-          placeholder="e.g. Sarah Chen"
-        />
-        <Input
-          label="Tagline"
-          value={form.tagline ?? ""}
-          onChange={(e) => onUpdate("tagline", e.target.value)}
-          placeholder="e.g. The Ambitious Startup Founder"
-        />
-      </div>
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      {/* Demographics card - ~60% */}
+      <div className="lg:col-span-3 bg-white border border-gray-200 rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Users className="w-5 h-5 text-muted-foreground" />
+          <h3 className="text-lg font-semibold text-gray-900">Demographics</h3>
+        </div>
 
-      {/* Demographics */}
-      <div>
-        <h3 className="mb-3 text-sm font-medium text-gray-700">
-          Demographics
-        </h3>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Input
-            label="Age"
-            value={form.age ?? ""}
-            onChange={(e) => onUpdate("age", e.target.value)}
-            placeholder="e.g. 28-35"
-          />
-          <Input
-            label="Location"
-            value={form.location ?? ""}
-            onChange={(e) => onUpdate("location", e.target.value)}
-            placeholder="e.g. Amsterdam, Netherlands"
-          />
-          <Input
-            label="Occupation"
-            value={form.occupation ?? ""}
-            onChange={(e) => onUpdate("occupation", e.target.value)}
-            placeholder="e.g. CEO & Co-founder"
-          />
-          <Input
-            label="Income"
-            value={form.income ?? ""}
-            onChange={(e) => onUpdate("income", e.target.value)}
-            placeholder="e.g. €80,000-120,000"
-          />
-          <Input
-            label="Family Status"
-            value={form.familyStatus ?? ""}
-            onChange={(e) => onUpdate("familyStatus", e.target.value)}
-            placeholder="e.g. Single, no children"
-          />
-          <Input
-            label="Education"
-            value={form.education ?? ""}
-            onChange={(e) => onUpdate("education", e.target.value)}
-            placeholder="e.g. MSc Computer Science"
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+          {DEMOGRAPHIC_FIELDS.map((field) => {
+            const Icon = field.icon;
+            return (
+              <div key={field.key}>
+                <div className="flex items-center gap-1.5 mb-1">
+                  <Icon className="w-4 h-4 text-muted-foreground" />
+                  <label className="text-xs uppercase tracking-wider text-muted-foreground font-medium">
+                    {field.label}
+                  </label>
+                </div>
+                <input
+                  value={(form[field.key] as string) ?? ""}
+                  onChange={(e) =>
+                    onUpdate(field.key, e.target.value)
+                  }
+                  placeholder={field.placeholder}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Avatar */}
-      <PersonaImageGenerator
-        name={form.name}
-        avatarUrl={avatarUrl}
-        onAvatarChange={onAvatarChange}
-      />
+      {/* Persona Image card - ~40% */}
+      <div className="lg:col-span-2">
+        <PersonaImageGenerator
+          name={form.name}
+          avatarUrl={avatarUrl}
+          demographics={{
+            age: form.age ?? undefined,
+            gender: form.gender ?? undefined,
+            occupation: form.occupation ?? undefined,
+          }}
+          onAvatarChange={onAvatarChange}
+        />
+      </div>
     </div>
   );
 }

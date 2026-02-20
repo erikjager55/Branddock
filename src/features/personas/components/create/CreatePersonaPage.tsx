@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Users, X, Plus } from "lucide-react";
 import { Button } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
 import { useCreatePersona } from "../../hooks";
@@ -57,7 +57,6 @@ export function CreatePersonaPage({
   const handleSave = () => {
     if (!form.name.trim()) return;
 
-    // Clean up empty strings
     const data: CreatePersonaBody = { name: form.name };
     if (form.tagline) data.tagline = form.tagline;
     if (form.age) data.age = form.age;
@@ -85,31 +84,70 @@ export function CreatePersonaPage({
   return (
     <PageShell maxWidth="5xl">
       <div data-testid="create-persona-page" className="space-y-6">
-        {/* Breadcrumb */}
+        {/* Back link */}
         <button
           data-testid="persona-back-link"
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-gray-900 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Personas
         </button>
 
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Create New Persona
-          </h1>
-          <p className="text-sm text-gray-500">
-            Define a research-based audience representation
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            {/* Purple persona icon */}
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-500">
+              <Users className="h-5 w-5 text-white" />
+            </div>
+
+            {/* Editable name + tagline */}
+            <div className="space-y-1 min-w-0">
+              <input
+                data-testid="persona-name-input"
+                value={form.name}
+                onChange={(e) => updateField("name", e.target.value)}
+                placeholder="Enter persona name"
+                className="block w-full text-xl font-semibold text-gray-900 placeholder:text-gray-400 bg-transparent border-none outline-none focus:ring-0 p-0"
+              />
+              <input
+                data-testid="persona-tagline-input"
+                value={form.tagline ?? ""}
+                onChange={(e) => updateField("tagline", e.target.value)}
+                placeholder="Enter persona tagline"
+                className="block w-full text-sm text-muted-foreground placeholder:text-muted-foreground/60 bg-transparent border-none outline-none focus:ring-0 p-0"
+              />
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-gray-900 transition-colors"
+            >
+              <X className="h-4 w-4" />
+              Cancel
+            </button>
+            <Button
+              data-testid="save-persona-button"
+              variant="cta"
+              icon={Plus}
+              onClick={handleSave}
+              disabled={!form.name.trim()}
+              isLoading={createMutation.isPending}
+            >
+              Create Persona
+            </Button>
+          </div>
         </div>
 
         {/* Tabs */}
         <PersonaFormTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
         {/* Tab Content */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div>
           {activeTab === "overview" && (
             <OverviewTab
               form={form}
@@ -124,22 +162,6 @@ export function CreatePersonaPage({
           {activeTab === "background" && (
             <BackgroundTab form={form} onUpdate={updateField} />
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3">
-          <Button variant="ghost" onClick={onBack}>
-            Cancel
-          </Button>
-          <Button
-            data-testid="save-persona-button"
-            variant="cta"
-            onClick={handleSave}
-            disabled={!form.name.trim()}
-            isLoading={createMutation.isPending}
-          >
-            Save Persona
-          </Button>
         </div>
       </div>
     </PageShell>

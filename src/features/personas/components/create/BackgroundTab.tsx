@@ -1,5 +1,6 @@
 "use client";
 
+import { Zap, Lightbulb } from "lucide-react";
 import { RepeatableListInput } from "./RepeatableListInput";
 import type { CreatePersonaBody } from "../../types/persona.types";
 
@@ -14,20 +15,24 @@ interface BackgroundTabProps {
 export function BackgroundTab({ form, onUpdate }: BackgroundTabProps) {
   return (
     <div className="space-y-6">
-      {/* Frustrations */}
-      <RepeatableListInput
-        label="Frustrations"
-        items={form.frustrations ?? []}
-        onChange={(items) => onUpdate("frustrations", items)}
-        placeholder="Add a frustration..."
-      />
-
-      {/* Behaviors */}
       <RepeatableListInput
         label="Behaviors"
+        description="How does this persona typically act or behave?"
+        icon={Zap}
         items={form.behaviors ?? []}
         onChange={(items) => onUpdate("behaviors", items)}
-        placeholder="Add a behavior..."
+        placeholder="Enter a behavior..."
+        addLabel="Add Behavior"
+      />
+
+      <RepeatableListInput
+        label="Interests"
+        description="What hobbies, topics, or activities interest this persona?"
+        icon={Lightbulb}
+        items={form.interests ?? []}
+        onChange={(items) => onUpdate("interests", items)}
+        placeholder="Enter an interest..."
+        addLabel="Add Interest"
       />
     </div>
   );
