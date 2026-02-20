@@ -46,7 +46,7 @@ export function PersonaChatBubble({
             <p className="text-sm whitespace-pre-wrap">{message.content}</p>
           </div>
           <div className="flex items-center justify-end gap-1 mt-1">
-            <span className="text-xs text-gray-400">{timestamp}</span>
+            <span className="text-xs text-muted-foreground">{timestamp}</span>
             <Check className="w-3 h-3 text-emerald-500" />
           </div>
         </div>
@@ -68,7 +68,7 @@ export function PersonaChatBubble({
         }
       />
       <div className="max-w-[80%]">
-        <div className="bg-gray-50 rounded-2xl rounded-tl-sm p-4">
+        <div className="bg-gray-50 rounded-xl rounded-tl-sm p-3">
           <p className="text-sm text-gray-700 whitespace-pre-wrap">
             {message.content}
             {isStreaming && (

@@ -35,7 +35,7 @@ export function PersonaChatInput({
   };
 
   return (
-    <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-teal-500 focus-within:border-teal-500">
+    <div className="flex items-center gap-2 border border-border rounded-full px-4 py-2 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -56,7 +56,7 @@ export function PersonaChatInput({
         <button
           onClick={handleSend}
           disabled={!value.trim() || isDisabled}
-          className="bg-teal-500 hover:bg-teal-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors flex-shrink-0"
+          className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full w-8 h-8 flex items-center justify-center transition-colors flex-shrink-0"
         >
           <ArrowUp className="w-4 h-4" />
         </button>

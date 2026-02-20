@@ -95,11 +95,11 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
             <OptimizedImage
               src={persona.avatarUrl}
               alt={persona.name}
-              width={48}
-              height={48}
-              className="rounded-full object-cover flex-shrink-0"
+              width={40}
+              height={40}
+              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
               fallback={
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                   {initials}
                 </div>
               }
@@ -140,14 +140,14 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
               onClick={() => setActiveTab('chat')}
               className={`flex items-center gap-1.5 py-3 mr-6 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'chat'
-                  ? 'border-teal-500 text-teal-600'
+                  ? 'border-emerald-500 text-emerald-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
               <MessageCircle className="w-4 h-4" />
               Chat
               {chat.messageCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-[10px] font-semibold bg-teal-100 text-teal-700 rounded-full leading-none">
+                <span className="ml-1 px-1.5 py-0.5 text-[10px] font-semibold bg-emerald-100 text-emerald-700 rounded-full leading-none">
                   {chat.messageCount}
                 </span>
               )}
@@ -157,7 +157,7 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
               onClick={() => setActiveTab('insights')}
               className={`flex items-center gap-1.5 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'insights'
-                  ? 'border-teal-500 text-teal-600'
+                  ? 'border-emerald-500 text-emerald-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >

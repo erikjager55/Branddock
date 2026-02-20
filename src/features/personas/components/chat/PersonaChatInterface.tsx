@@ -169,8 +169,8 @@ export function PersonaChatInterface({
         {/* Disclaimer + Add Context */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Info className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-            <p className="text-xs text-gray-400">
+            <Info className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+            <p className="text-xs text-muted-foreground">
               AI-simulated conversation in Free Chat mode
             </p>
           </div>

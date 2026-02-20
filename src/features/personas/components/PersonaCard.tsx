@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Calendar,
   MapPin,
@@ -9,11 +10,16 @@ import {
   GraduationCap,
   MessageCircle,
   CheckCircle,
+  ChevronDown,
   Sparkles,
+  ClipboardList,
+  Mic,
+  FlaskConical,
+  Plus,
 } from "lucide-react";
 import { OptimizedImage } from "@/components/shared";
 import { PersonaConfidenceBadge } from "./PersonaConfidenceBadge";
-import type { PersonaWithMeta } from "../types/persona.types";
+import type { PersonaWithMeta, PersonaResearchMethodType } from "../types/persona.types";
 import type { LucideIcon } from "lucide-react";
 
 interface PersonaCardProps {
@@ -31,10 +37,35 @@ const DEMO_ICONS: Record<string, LucideIcon> = {
   education: GraduationCap,
 };
 
+const METHOD_CONFIG: Record<PersonaResearchMethodType, { icon: LucideIcon; label: string; description: string }> = {
+  AI_EXPLORATION: {
+    icon: Sparkles,
+    label: "AI Exploration",
+    description: "AI-powered persona analysis and insights generation",
+  },
+  INTERVIEWS: {
+    icon: Mic,
+    label: "Interviews",
+    description: "In-depth qualitative interviews with target audience",
+  },
+  QUESTIONNAIRE: {
+    icon: ClipboardList,
+    label: "Questionnaire",
+    description: "Quantitative survey to validate persona assumptions",
+  },
+  USER_TESTING: {
+    icon: FlaskConical,
+    label: "User Testing",
+    description: "Usability testing sessions with real users",
+  },
+};
+
 const LEFT_FIELDS = ["age", "occupation", "income"];
 const RIGHT_FIELDS = ["location", "education", "familyStatus"];
 
 export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
+  const [isAccordionOpen, setIsAccordionOpen] = useState(false);
+
   const completedMethods = persona.researchMethods.filter(
     (m) => m.status === "COMPLETED" || m.status === "VALIDATED",
   ).length;
@@ -143,32 +174,91 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
         </button>
       </div>
 
-      {/* Validation Methods — always visible section */}
+      {/* Validation Methods — Accordion */}
       <div className="mb-3 border-t border-gray-100 pt-3">
-        <div className="mb-2 flex items-center gap-1.5 text-xs text-gray-500">
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>Validation Methods ({completedMethods}/{persona.researchMethods.length})</span>
-        </div>
-        <div className="space-y-1.5">
-          {persona.researchMethods.map((m) => (
-            <div
-              key={m.method}
-              className="flex items-center justify-between text-xs"
-            >
-              <span className="text-gray-600">{m.method.replace("_", " ")}</span>
-              {m.status === "COMPLETED" || m.status === "VALIDATED" ? (
-                <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />
-              ) : (
-                <span className="text-gray-400">{m.status}</span>
-              )}
-            </div>
-          ))}
+        <button
+          type="button"
+          className="flex w-full cursor-pointer items-center justify-between py-2"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsAccordionOpen(!isAccordionOpen);
+          }}
+        >
+          <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Validation Methods ({completedMethods}/{persona.researchMethods.length})</span>
+          </div>
+          <ChevronDown
+            className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
+              isAccordionOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {/* Accordion content */}
+        <div
+          className={`overflow-hidden transition-all duration-200 ${
+            isAccordionOpen ? "mt-2 max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className="space-y-2">
+            {persona.researchMethods.map((m) => {
+              const config = METHOD_CONFIG[m.method];
+              const MethodIcon = config.icon;
+              const isValidated = m.status === "COMPLETED" || m.status === "VALIDATED";
+
+              return (
+                <div
+                  key={m.method}
+                  className={`rounded-lg p-3 ${
+                    isValidated
+                      ? "border border-emerald-200 bg-emerald-50/30"
+                      : "border border-dashed border-gray-200"
+                  }`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2.5">
+                      <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${
+                        isValidated ? "bg-emerald-100" : "bg-gray-100"
+                      }`}>
+                        <MethodIcon className={`h-4 w-4 ${
+                          isValidated ? "text-emerald-600" : "text-gray-400"
+                        }`} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-gray-900">
+                          {config.label}
+                        </div>
+                        <div className="mt-0.5 text-xs text-gray-500 line-clamp-1">
+                          {config.description}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      {isValidated ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
+                          <CheckCircle className="h-3 w-3" />
+                          VALIDATED
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2 py-0.5 text-xs text-gray-500">
+                          <Plus className="h-3 w-3" />
+                          AVAILABLE
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* Last updated */}
       {persona.updatedAt && (
-        <p className="text-[11px] text-gray-400">
+        <p className="text-xs text-gray-400">
           Last updated: {new Date(persona.updatedAt).toLocaleDateString("nl-NL", {
             day: "numeric",
             month: "short",
