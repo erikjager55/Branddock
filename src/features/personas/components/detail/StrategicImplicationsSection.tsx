@@ -69,18 +69,7 @@ export function StrategicImplicationsSection({
             <p className="text-sm text-gray-500">How this persona impacts decisions</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {hasContent && !isGenerating && (
-            <button
-              onClick={() => setShowConfirm(true)}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              Rerun Analysis
-            </button>
-          )}
-          <ImpactBadge impact="high" />
-        </div>
+        <ImpactBadge impact="high" />
       </div>
 
       {/* Rerun confirmation dialog */}
@@ -178,6 +167,19 @@ export function StrategicImplicationsSection({
           </div>
         )}
       </div>
+
+      {/* Footer — Rerun Analysis button */}
+      {hasContent && !isGenerating && (
+        <div className="flex justify-end mt-4 pt-3 border-t border-dashed border-border">
+          <button
+            onClick={() => setShowConfirm(true)}
+            className="text-xs text-muted-foreground hover:text-emerald-600 flex items-center gap-1.5 transition-colors"
+          >
+            <RefreshCw className="w-3 h-3" />
+            Rerun Analysis
+          </button>
+        </div>
+      )}
     </section>
   );
 }
