@@ -54,7 +54,10 @@ export function DemographicsSection({ persona, isEditing, onUpdate }: Demographi
   return (
     <section className="relative rounded-xl border border-gray-200 bg-white overflow-hidden">
       {/* Gradient header — blue → cyan (Figma) */}
-      <div className="bg-gradient-to-r from-blue-500 to-cyan-400 px-6 py-4 flex items-center justify-between">
+      <div
+        className="px-6 py-4 flex items-center justify-between"
+        style={{ background: 'linear-gradient(to right in srgb, #3B82F6, #22D3EE)' }}
+      >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
             <User className="w-5 h-5 text-white" />
