@@ -139,19 +139,22 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
             onUpdate={(data) => updatePersona.mutate(data)}
           />
 
-          <BehaviorsSection
-            persona={persona}
-            isEditing={isEditing}
-            onUpdate={(data) => updatePersona.mutate(data)}
-          />
+          {/* Behaviors + Strategic Implications side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <BehaviorsSection
+              persona={persona}
+              isEditing={isEditing}
+              onUpdate={(data) => updatePersona.mutate(data)}
+            />
 
-          <StrategicImplicationsSection
-            persona={persona}
-            isEditing={isEditing}
-            onUpdate={(data) => updatePersona.mutate(data)}
-            onGenerate={() => generateImplications.mutate()}
-            isGenerating={generateImplications.isPending}
-          />
+            <StrategicImplicationsSection
+              persona={persona}
+              isEditing={isEditing}
+              onUpdate={(data) => updatePersona.mutate(data)}
+              onGenerate={() => generateImplications.mutate()}
+              isGenerating={generateImplications.isPending}
+            />
+          </div>
 
           <ResearchMethodsSection
             persona={persona}
