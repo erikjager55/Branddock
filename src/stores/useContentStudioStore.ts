@@ -54,6 +54,9 @@ interface ContentStudioState {
 
   // ─── Checklist ──────────────────────────────────────────
   checklistItems: ChecklistItem[];
+
+  // ─── Persona Context ──────────────────────────────────
+  selectedPersonaIds: string[];
 }
 
 interface ContentStudioActions {
@@ -100,6 +103,10 @@ interface ContentStudioActions {
   setChecklistItems: (items: ChecklistItem[]) => void;
   toggleChecklistItem: (index: number) => void;
 
+  // ─── Persona Context ──────────────────────────────────
+  setSelectedPersonaIds: (ids: string[]) => void;
+  togglePersonaId: (id: string) => void;
+
   // ─── Reset ──────────────────────────────────────────────
   resetStore: () => void;
 }
@@ -127,6 +134,7 @@ const initialState: ContentStudioState = {
   selectedInsertFormat: null,
   selectedInsertLocation: 'cursor',
   checklistItems: [],
+  selectedPersonaIds: [],
 };
 
 export const useContentStudioStore = create<ContentStudioState & ContentStudioActions>((set) => ({
@@ -188,6 +196,15 @@ export const useContentStudioStore = create<ContentStudioState & ContentStudioAc
       }
       return { checklistItems: items, isDirty: true };
     }),
+
+  // ─── Persona Context ──────────────────────────────────
+  setSelectedPersonaIds: (selectedPersonaIds) => set({ selectedPersonaIds }),
+  togglePersonaId: (id) =>
+    set((state) => ({
+      selectedPersonaIds: state.selectedPersonaIds.includes(id)
+        ? state.selectedPersonaIds.filter((pid) => pid !== id)
+        : [...state.selectedPersonaIds, id],
+    })),
 
   // ─── Reset ──────────────────────────────────────────────
   resetStore: () => set(initialState),

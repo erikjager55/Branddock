@@ -280,6 +280,42 @@ export async function buildAllPersonasContext(
 }
 
 /**
+ * Build combined context for selected personas (by IDs).
+ * Used by Content Studio to pass persona context to generation.
+ * Validates workspace ownership for each persona.
+ */
+export async function buildSelectedPersonasContext(
+  personaIds: string[],
+  workspaceId: string,
+): Promise<string> {
+  if (personaIds.length === 0) return "";
+
+  const personas = await prisma.persona.findMany({
+    where: {
+      id: { in: personaIds },
+      workspaceId,
+    },
+    select: PERSONA_SELECT,
+  });
+
+  if (personas.length === 0) return "";
+
+  const sections = personas.map((p) => {
+    const full = buildFull(p);
+    const impl = buildImplicationsText(p);
+    return impl ? `${full}\n\n${impl}` : full;
+  });
+
+  return [
+    `=== PERSONA CONTEXT (${personas.length} persona${personas.length > 1 ? "s" : ""}) ===`,
+    "",
+    sections.join("\n\n---\n\n"),
+    "",
+    "=== END PERSONA CONTEXT ===",
+  ].join("\n");
+}
+
+/**
  * Build a complete system prompt for persona chat.
  * Combines persona data with mode-specific instructions.
  */

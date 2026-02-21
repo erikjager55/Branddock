@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
+import { buildSelectedPersonasContext } from "@/lib/ai/persona-context";
 
 const generateSchema = z.object({
   model: z.string(),
   prompt: z.string(),
   settings: z.record(z.string(), z.unknown()),
   knowledgeAssetIds: z.array(z.string()).optional(),
+  personaIds: z.array(z.string()).optional(),
 });
 
 // POST /api/studio/[deliverableId]/generate — Generate content (stub)
@@ -46,6 +48,17 @@ export async function POST(
 
     if (deliverable.campaign.workspaceId !== workspaceId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    // Build persona context if personaIds provided
+    const { personaIds } = parsed.data;
+    let personaContext = "";
+    if (personaIds && personaIds.length > 0) {
+      personaContext = await buildSelectedPersonasContext(personaIds, workspaceId);
+      console.log("[generate] Persona context loaded:", {
+        requestedIds: personaIds,
+        contextLength: personaContext.length,
+      });
     }
 
     const contentTab = deliverable.contentTab || "text";

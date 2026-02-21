@@ -19,7 +19,7 @@ const TAB_LABELS: Record<ContentTab, string> = {
 };
 
 export function GenerateButton({ deliverableId, activeTab }: GenerateButtonProps) {
-  const { prompt, aiModel, settings, isGenerating, setIsGenerating, setTextContent, setImageUrls, setVideoUrl, setSlides, setIsDirty } = useContentStudioStore();
+  const { prompt, aiModel, settings, isGenerating, setIsGenerating, setTextContent, setImageUrls, setVideoUrl, setSlides, setIsDirty, selectedPersonaIds } = useContentStudioStore();
   const generate = useGenerateContent(deliverableId);
   const { data: costData } = useCostEstimate(deliverableId);
 
@@ -27,7 +27,7 @@ export function GenerateButton({ deliverableId, activeTab }: GenerateButtonProps
     if (!prompt.trim() || !settings) return;
     setIsGenerating(true);
     generate.mutate(
-      { model: aiModel, prompt, settings, knowledgeAssetIds: [] },
+      { model: aiModel, prompt, settings, knowledgeAssetIds: [], personaIds: selectedPersonaIds },
       {
         onSuccess: (data) => {
           // The API returns content as a string, but we set it based on active tab

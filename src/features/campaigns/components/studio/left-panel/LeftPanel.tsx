@@ -7,6 +7,7 @@ import { PromptSection } from "./PromptSection";
 import { AiModelSelector } from "./AiModelSelector";
 import { TypeSettingsPanel } from "./TypeSettingsPanel";
 import { KnowledgeContextPanel } from "./KnowledgeContextPanel";
+import { PersonaContextPanel } from "./PersonaContextPanel";
 import { GenerateButton } from "./GenerateButton";
 
 interface LeftPanelProps {
@@ -27,6 +28,7 @@ export function LeftPanel({ deliverableId, activeTab, knowledgeAssets, knowledge
           assets={knowledgeAssets}
           confidence={knowledgeConfidence}
         />
+        <PersonaContextPanel />
       </div>
       <div className="p-4 border-t">
         <GenerateButton deliverableId={deliverableId} activeTab={activeTab} />

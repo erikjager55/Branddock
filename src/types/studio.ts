@@ -80,6 +80,7 @@ export interface GenerateContentBody {
   prompt: string;
   settings: TypeSettings;
   knowledgeAssetIds?: string[];
+  personaIds?: string[];
 }
 
 export interface GenerateContentResponse {
