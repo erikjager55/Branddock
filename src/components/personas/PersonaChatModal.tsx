@@ -140,242 +140,36 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
     ]);
   };
 
-  const extractInsight = (message: string, category: Insight['category']): Insight | null => {
-    // Simple insight extraction based on message content
-    if (message.length > 30) {
-      return {
-        id: `insight-${Date.now()}`,
-        category,
-        content: message,
-        timestamp: new Date()
-      };
-    }
-    return null;
-  };
-
-  const generatePersonaResponse = (userMessage: string): { content: string; mood: Message['mood']; category?: string } => {
+  const fetchAIResponse = async (userMessageContent: string): Promise<{ content: string; mood: Message['mood'] }> => {
     if (!persona) return { content: 'Sorry, ik kan nu niet antwoorden.', mood: 'neutral' };
 
-    const lowerMessage = userMessage.toLowerCase();
+    try {
+      const response = await fetch('/api/personas/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          personaId: persona.id,
+          message: userMessageContent,
+          chatMode,
+          conversationHistory: messages.slice(-10).map(m => ({
+            role: m.role,
+            content: m.content,
+          })),
+        }),
+      });
 
-    // Personality traits to influence tone
-    const personality = persona.personalityType || 'professional';
-    const isEnthusiastic = personality.toLowerCase().includes('enthusiast') || personality.toLowerCase().includes('energetic');
-    const isAnalytical = personality.toLowerCase().includes('analytical') || personality.toLowerCase().includes('data');
+      const data = await response.json();
+      const mood = (['happy', 'neutral', 'frustrated', 'excited'] as const).includes(data.mood)
+        ? data.mood as Message['mood']
+        : 'neutral';
 
-    // Mode-specific responses
-    if (chatMode === 'interview') {
-      // More structured, detailed responses
-      if (lowerMessage.includes('doel') || lowerMessage.includes('goal')) {
-        const goals = persona.goals || [];
-        if (goals.length > 0) {
-          const insight = extractInsight(goals.join('. '), 'goal');
-          if (insight) setInsights(prev => [...prev, insight]);
-          
-          return {
-            content: `Mijn primaire doel is ${goals[0].toLowerCase()}. ${goals.length > 1 ? `Daarnaast werk ik ook aan ${goals[1].toLowerCase()}.` : ''} Dit is belangrijk voor me omdat het direct impact heeft op mijn ${persona.occupation ? 'werk als ' + persona.occupation!.toLowerCase() : 'dagelijkse taken'}.`,
-            mood: 'neutral',
-            category: 'Goals'
-          };
-        }
-      }
-    }
-
-    if (chatMode === 'empathy') {
-      // Focus on feelings and thoughts
-      if (lowerMessage.includes('voel') || lowerMessage.includes('emotie') || lowerMessage.includes('gevoel')) {
-        const frustrations = persona.frustrations || [];
-        if (frustrations.length > 0) {
-          return {
-            content: `Eerlijk gezegd voel ik me vaak gefrustreerd door ${frustrations[0].toLowerCase()}. Het geeft me stress en het gevoel dat ik niet optimaal presteer. ${isEnthusiastic ? 'Maar ik blijf positief en zoek naar oplossingen!' : 'Dit beïnvloedt mijn werkplezier.'}`,
-            mood: 'frustrated',
-            category: 'Feelings'
-          };
-        }
-        const motivations = persona.motivations || [];
-        if (motivations.length > 0) {
-          return {
-            content: `Wat me energie geeft is ${motivations[0].toLowerCase()}. ${isEnthusiastic ? 'Daar word ik echt enthousiast van!' : 'Dat motiveert me om door te gaan.'} Het helpt me om door moeilijke momenten heen te komen.`,
-            mood: 'excited',
-            category: 'Feelings'
-          };
-        }
-      }
-
-      if (lowerMessage.includes('denk') || lowerMessage.includes('mening') || lowerMessage.includes('vind')) {
-        return {
-          content: `Ik denk er ${isAnalytical ? 'analytisch en data-gedreven' : 'pragmatisch en praktisch'} over na. Voor mij is het belangrijk dat dingen werken en bewezen resultaat opleveren. Ik heb geen geduld voor oplossingen die mooie beloftes maken maar niet leveren.`,
-          mood: 'neutral',
-          category: 'Thinking'
-        };
-      }
-
-      if (lowerMessage.includes('doe') || lowerMessage.includes('actie') || lowerMessage.includes('gedrag')) {
-        const behaviors = persona.behaviors || [];
-        if (behaviors.length > 0) {
-          return {
-            content: `In mijn dagelijkse routine ${behaviors[0].toLowerCase()}. ${behaviors.length > 1 ? `Ook ${behaviors[1].toLowerCase()}.` : ''} Ik ben iemand die graag actie onderneemt en resultaten ziet.`,
-            mood: 'neutral',
-            category: 'Doing'
-          };
-        }
-      }
-
-      if (lowerMessage.includes('zeg') || lowerMessage.includes('communiceer')) {
-        return {
-          content: `Naar anderen toe ben ik ${personality.toLowerCase().includes('direct') ? 'heel direct en eerlijk' : 'professioneel en helder'}. Ik waardeer transparante communicatie en verwacht dat ook van anderen. Als iets niet werkt, zeg ik dat.`,
-          mood: 'neutral',
-          category: 'Saying'
-        };
-      }
-    }
-
-    if (chatMode === 'jtbd') {
-      // Focus on jobs, outcomes, and success criteria
-      if (lowerMessage.includes('taak') || lowerMessage.includes('werk') || lowerMessage.includes('job') || lowerMessage.includes('doe')) {
-        const goals = persona.goals || [];
-        return {
-          content: `De belangrijkste taak waar ik mee bezig ben is ${goals[0] || 'mijn werk optimaliseren'}. Het outcome dat ik zoek is niet alleen dat het af is, maar dat het echt waarde toevoegt. ${isAnalytical ? 'Ik meet succes aan concrete KPIs en resultaten.' : 'Voor mij is het belangrijk dat ik de impact kan zien.'}`,
-          mood: 'neutral',
-          category: 'Jobs-to-be-Done'
-        };
-      }
-
-      if (lowerMessage.includes('succes') || lowerMessage.includes('bereik') || lowerMessage.includes('win')) {
-        return {
-          content: `Succes betekent voor mij dat ik mijn doelen haal zonder onnodige overhead. Ik wil efficiënt werken en zichtbare resultaten boeken. ${isEnthusiastic ? 'Als ik vooruitgang zie, geeft me dat echt energie!' : 'Stagnatie frustreert me enorm.'}`,
-          mood: 'excited',
-          category: 'Success Criteria'
-        };
-      }
-
-      if (lowerMessage.includes('uitdaging') || lowerMessage.includes('probleem') || lowerMessage.includes('barrier')) {
-        const frustrations = persona.frustrations || [];
-        if (frustrations.length > 0) {
-          return {
-            content: `De grootste barrier die ik ervaar is ${frustrations[0].toLowerCase()}. Dit voorkomt dat ik optimaal presteer. ${frustrations.length > 1 ? `Ook ${frustrations[1].toLowerCase()} maakt het lastiger.` : ''} Een oplossing zou me echt helpen om mijn job beter te doen.`,
-            mood: 'frustrated',
-            category: 'Barriers'
-          };
-        }
-      }
-    }
-
-    // General responses (work for all modes)
-    if (lowerMessage.includes('probleem') || lowerMessage.includes('frustratie') || lowerMessage.includes('pain')) {
-      const frustrations = persona.frustrations || [];
-      if (frustrations.length > 0) {
-        const insight = extractInsight(frustrations[0], 'pain');
-        if (insight) setInsights(prev => [...prev, insight]);
-        
-        return {
-          content: `${isEnthusiastic ? 'Ik moet eerlijk zijn - ' : ''}wat me het meeste frustreert is ${frustrations[0].toLowerCase()}. Dit kost me tijd en energie die ik liever anders besteed. ${frustrations.length > 1 ? `Daarnaast heb ik ook last van ${frustrations[1].toLowerCase()}.` : ''} ${isAnalytical ? 'Ik heb berekend dat dit me gemiddeld X uur per week kost.' : 'Dit beïnvloedt mijn productiviteit enorm.'}`,
-          mood: 'frustrated',
-          category: 'Pain Points'
-        };
-      }
-    }
-
-    if (lowerMessage.includes('besliss') || lowerMessage.includes('koop') || lowerMessage.includes('kies')) {
+      return { content: data.content, mood };
+    } catch {
       return {
-        content: `Bij beslissingen ben ik ${isAnalytical ? 'zeer data-gedreven en grondig' : 'pragmatisch en resultaatgericht'}. Ik wil concrete bewijzen zien - case studies, reviews, resultaten. ${isEnthusiastic ? 'Als iets me enthousiast maakt én de data klopt, ben ik snel overtuigd!' : 'Ik neem geen overhaaste beslissingen.'} Ook betrek ik graag anderen in het proces om blinde vlekken te vermijden.`,
+        content: 'Sorry, ik kan momenteel niet antwoorden. Probeer het later opnieuw.',
         mood: 'neutral',
-        category: 'Decision Making'
       };
     }
-
-    if (lowerMessage.includes('budget') || lowerMessage.includes('prijs') || lowerMessage.includes('kost')) {
-      return {
-        content: `Qua budget kijk ik vooral naar ROI en totale waarde. ${isAnalytical ? 'Ik maak een business case met concrete cijfers.' : 'Ik wil weten wat het me oplevert.'} Als de investering zichzelf terugverdient binnen ${persona.income?.includes('hoog') ? '6' : '12'} maanden, dan ben ik bereid om te investeren. Goedkoop is niet altijd voordelig - kwaliteit telt.`,
-        mood: 'neutral',
-        category: 'Budget'
-      };
-    }
-
-    if (lowerMessage.includes('motiv') || lowerMessage.includes('waarom') || lowerMessage.includes('drijfveer')) {
-      const motivations = persona.motivations || [];
-      if (motivations.length > 0) {
-        const insight = extractInsight(motivations[0], 'motivation');
-        if (insight) setInsights(prev => [...prev, insight]);
-        
-        return {
-          content: `Wat me echt drijft is ${motivations[0].toLowerCase()}. ${motivations.length > 1 ? `Ook ${motivations[1].toLowerCase()} is heel belangrijk.` : ''} ${isEnthusiastic ? 'Dit geeft me zoveel energie - daar word ik elke dag voor wakker!' : 'Dit is mijn primaire motivatie om te blijven verbeteren.'}`,
-          mood: 'excited',
-          category: 'Motivations'
-        };
-      }
-    }
-
-    if (lowerMessage.includes('tool') || lowerMessage.includes('software') || lowerMessage.includes('technologie')) {
-      const values = persona.coreValues || [];
-      const valuesEaseOfUse = values.some(v => v.toLowerCase().includes('gebruiksvriendelijk') || v.toLowerCase().includes('simpel'));
-      
-      return {
-        content: `Ik gebruik dagelijks verschillende tools. Wat ik belangrijk vind: ${valuesEaseOfUse ? 'intuïtieve interface en snelle leercurve' : 'krachtige features en flexibiliteit'}. ${isAnalytical ? 'Ik evalueer tools op basis van efficiëntiewinst en integratiemogelijkheden.' : 'Het moet gewoon werken, zonder gedoe.'} Ik heb geen tijd voor tools die meer werk creëren dan ze oplossen.`,
-        mood: 'neutral',
-        category: 'Technology'
-      };
-    }
-
-    if (lowerMessage.includes('team') || lowerMessage.includes('collega') || lowerMessage.includes('samen')) {
-      return {
-        content: `Met mijn team werk ik ${personality.toLowerCase().includes('collaborat') ? 'graag nauw samen' : 'efficiënt en doelgericht'}. Ik waardeer input van anderen maar neem ook graag het voortouw. ${isEnthusiastic ? 'Samen bereiken we meer!' : 'Goede samenwerking is essentieel voor resultaat.'} Communicatie moet helder en transparant zijn.`,
-        mood: 'happy',
-        category: 'Collaboration'
-      };
-    }
-
-    if (lowerMessage.includes('dag') || lowerMessage.includes('routine') || lowerMessage.includes('typisch')) {
-      return {
-        content: `Een typische dag begint voor mij met ${persona.behaviors?.[0]?.toLowerCase() || 'het checken van prioriteiten'}. Ik ben het meest productief ${persona.age?.includes('20') || persona.age?.includes('30') ? 'in de ochtend en werk vaak tot laat' : 'als ik gefocuste tijd heb zonder onderbrekingen'}. ${isAnalytical ? 'Ik plan mijn dag zorgvuldig en track mijn tijd.' : 'Ik probeer flexibel te blijven maar wel gestructureerd te werken.'}`,
-        mood: 'neutral',
-        category: 'Daily Routine'
-      };
-    }
-
-    if (lowerMessage.includes('advies') || lowerMessage.includes('tip') || lowerMessage.includes('aanbeveling')) {
-      return {
-        content: `Mijn advies? ${isEnthusiastic ? 'Ga ervoor, maar doe je homework!' : 'Neem de tijd om grondig te onderzoeken.'} Wat voor mij werkt: focus op ${persona.goals?.[0] || 'je primaire doel'}, elimineer wat niet bijdraagt, en meet je resultaten. ${isAnalytical ? 'Data liegen niet - laat cijfers je beslissingen sturen.' : 'Vertrouw op je expertise maar blijf flexibel.'} En vergeet niet om te vieren als je vooruitgang boekt!`,
-        mood: 'excited',
-        category: 'Advice'
-      };
-    }
-
-    // Greeting
-    if (lowerMessage.includes('hoi') || lowerMessage.includes('hallo') || lowerMessage.includes('hey') || lowerMessage.includes('hi')) {
-      return {
-        content: `${isEnthusiastic ? 'Hey! Super dat je met me chat!' : 'Hallo!'} ${chatMode === 'interview' ? 'Bedankt voor je interesse in mijn perspectief.' : 'Vraag me gerust alles wat je wilt weten!'} Ik deel graag mijn ervaringen en inzichten.`,
-        mood: 'happy',
-        category: 'Greeting'
-      };
-    }
-
-    // Thanks
-    if (lowerMessage.includes('bedankt') || lowerMessage.includes('dank') || lowerMessage.includes('thanks')) {
-      return {
-        content: `${isEnthusiastic ? 'Graag gedaan! Ik vond het leuk om dit te delen!' : 'Geen probleem!'} Als je nog meer vragen hebt, stel ze gerust. ${chatMode === 'interview' ? 'Ik waardeer je interesse in mijn perspectief.' : 'Ik help je graag verder!'}`,
-        mood: 'happy',
-        category: 'Closing'
-      };
-    }
-
-    // Default fallback - personality-driven
-    const responses = [
-      {
-        content: `${isAnalytical ? 'Interessante vraag. Laat me daar analytisch over nadenken...' : 'Goede vraag!'} Vanuit mijn perspectief als ${persona.occupation || 'professional'}: ${(persona.tagline || '').toLowerCase()} ${isEnthusiastic ? 'Kun je me wat meer context geven? Dan kan ik je echt helpen!' : 'Wat wil je precies weten?'}`,
-        mood: 'neutral' as const,
-      },
-      {
-        content: `${isEnthusiastic ? 'Ooh, daar heb ik wel gedachten over!' : 'Dat is een onderwerp waar ik mee bezig ben.'} ${isAnalytical ? 'Ik zou graag meer specifieke details hebben om je een gefundeerd antwoord te geven.' : 'Kun je je vraag iets specifieker maken?'} Zo kan ik je beter helpen!`,
-        mood: 'neutral' as const,
-      },
-      {
-        content: `Laat me daar even over nadenken... Als ${persona.name} vind ik het belangrijk om ${isAnalytical ? 'data-gedreven en accuraat' : 'eerlijk en praktisch'} te zijn. ${isEnthusiastic ? 'Vertel me meer!' : 'Wat is precies je vraag?'} Dan kan ik je een beter antwoord geven.`,
-        mood: 'neutral' as const,
-      },
-    ];
-
-    return responses[Math.floor(Math.random() * responses.length)];
   };
 
   const getModeQuestions = (): string[] => {
@@ -413,10 +207,11 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading || !persona) return;
 
+    const userMessageContent = inputValue.trim();
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
-      content: inputValue.trim(),
+      content: userMessageContent,
       timestamp: new Date(),
     };
 
@@ -424,27 +219,21 @@ export function PersonaChatModal({ persona, open, onOpenChange }: PersonaChatMod
     setInputValue('');
     setIsLoading(true);
 
-    // Simulate AI thinking delay (mode-dependent)
-    const thinkingTime = chatMode === 'interview' ? 1500 : 800;
-    
-    setTimeout(() => {
-      const response = generatePersonaResponse(userMessage.content);
-      
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: response.content,
-        timestamp: new Date(),
-        mood: response.mood,
-        category: response.category,
-      };
+    const response = await fetchAIResponse(userMessageContent);
 
-      setMessages(prev => [...prev, assistantMessage]);
-      setIsLoading(false);
-      
-      // Focus back on input
-      inputRef.current?.focus();
-    }, thinkingTime + Math.random() * 800);
+    const assistantMessage: Message = {
+      id: `assistant-${Date.now()}`,
+      role: 'assistant',
+      content: response.content,
+      timestamp: new Date(),
+      mood: response.mood,
+    };
+
+    setMessages(prev => [...prev, assistantMessage]);
+    setIsLoading(false);
+
+    // Focus back on input
+    inputRef.current?.focus();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
