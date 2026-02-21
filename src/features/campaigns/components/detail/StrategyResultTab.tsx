@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Sparkles, Target, Users, Share2, FileText } from "lucide-react";
+import { Sparkles, Target, Users, Share2, FileText, Lightbulb } from "lucide-react";
 import { Badge, EmptyState } from "@/components/shared";
 import { useCampaignStore } from "../../stores/useCampaignStore";
 import type { StrategyResponse } from "@/types/campaign";
@@ -47,15 +47,27 @@ export function StrategyResultTab({ strategy, isLoading, onGenerate, isGeneratin
 
   return (
     <div>
-      {/* Confidence Badge */}
+      {/* Confidence Badge + Persona Context */}
       {strategy.confidence != null && (
-        <div className="mb-6 flex items-center gap-3">
+        <div className="mb-6 flex items-center gap-3 flex-wrap">
           <Badge variant="success">
             {Math.round(strategy.confidence)}% Confidence
           </Badge>
           {strategy.generatedAt && (
             <span className="text-xs text-gray-400">
               Generated {new Date(strategy.generatedAt).toLocaleDateString()}
+            </span>
+          )}
+          {strategy.personaCount != null && strategy.personaCount > 0 && (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Users className="w-3.5 h-3.5" />
+              {strategy.personaCount} persona{strategy.personaCount !== 1 ? "s" : ""} used as context
+            </span>
+          )}
+          {strategy.personaCount === 0 && (
+            <span className="flex items-center gap-1.5 text-xs text-amber-600">
+              <Lightbulb className="w-3.5 h-3.5" />
+              Add personas to get more targeted campaign strategies
             </span>
           )}
         </div>

@@ -184,6 +184,7 @@ export interface StrategyResponse {
   strategicApproach: string | null;
   keyMessages: string[];
   recommendedChannels: string[];
+  personaCount?: number;
 }
 
 export interface PromptSuggestionsResponse {

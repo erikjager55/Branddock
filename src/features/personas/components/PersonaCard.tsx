@@ -94,7 +94,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
   return (
     <div
       data-testid={`persona-card-${persona.id}`}
-      className="group cursor-pointer rounded-xl border border-gray-200 bg-white p-6 transition-shadow hover:shadow-md"
+      className="group cursor-pointer rounded-xl border border-gray-200 bg-white p-6 transition-all duration-200 hover:shadow-md hover:border-emerald-200"
       onClick={onClick}
     >
       {/* Header */}
@@ -117,7 +117,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
             {persona.name}
           </h3>
           {persona.tagline && (
-            <p className="line-clamp-2 text-sm text-gray-500">
+            <p className="line-clamp-2 text-sm text-muted-foreground">
               {persona.tagline}
             </p>
           )}
@@ -133,9 +133,9 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
 
       {/* Demographic Fields — icon + value only, two columns */}
       {(leftDemos.length > 0 || rightDemos.length > 0) && (
-        <div className="mb-4 grid grid-cols-2 gap-x-4 gap-y-2">
+        <div className="mb-4 grid grid-cols-2 gap-x-4 gap-y-3">
           {/* Left column */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             {leftDemos.map(({ key, value }) => {
               const Icon = DEMO_ICONS[key];
               return (
@@ -147,7 +147,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
             })}
           </div>
           {/* Right column */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             {rightDemos.map(({ key, value }) => {
               const Icon = DEMO_ICONS[key];
               return (

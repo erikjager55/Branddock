@@ -24,6 +24,9 @@ export async function GET(
       return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
     }
 
+    // Count personas in workspace for context indicator
+    const personaCount = await prisma.persona.count({ where: { workspaceId } });
+
     // strategy is a Json field that may contain coreConcept, channelMix, etc.
     const strategyJson = campaign.strategy as Record<string, unknown> | null;
 
@@ -36,6 +39,7 @@ export async function GET(
       strategicApproach: campaign.strategicApproach,
       keyMessages: campaign.keyMessages,
       recommendedChannels: campaign.recommendedChannels,
+      personaCount,
     });
   } catch (error) {
     console.error("[GET /api/campaigns/:id/strategy]", error);
