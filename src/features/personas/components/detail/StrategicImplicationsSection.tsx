@@ -1,9 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { TrendingUp, Sparkles } from 'lucide-react';
+import { TrendingUp, Sparkles, RefreshCw, Loader2 } from 'lucide-react';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 import { ImpactBadge } from './ImpactBadge';
+
+interface StrategicImplication {
+  category: string;
+  title: string;
+  description: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+function parseImplications(raw: string | null): StrategicImplication[] | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].category) {
+      return parsed;
+    }
+  } catch {
+    // Not JSON — legacy plain text
+  }
+  return null;
+}
 
 interface StrategicImplicationsSectionProps {
   persona: PersonaWithMeta;
@@ -20,7 +40,16 @@ export function StrategicImplicationsSection({
   onGenerate,
   isGenerating,
 }: StrategicImplicationsSectionProps) {
+  const [showConfirm, setShowConfirm] = useState(false);
   const [draft, setDraft] = useState(persona.strategicImplications ?? '');
+
+  const implications = parseImplications(persona.strategicImplications);
+  const hasContent = !!persona.strategicImplications;
+
+  const handleRerun = () => {
+    setShowConfirm(false);
+    onGenerate();
+  };
 
   const handleBlur = () => {
     if (draft !== persona.strategicImplications) {
@@ -40,11 +69,84 @@ export function StrategicImplicationsSection({
             <p className="text-sm text-gray-500">How this persona impacts decisions</p>
           </div>
         </div>
-        <ImpactBadge impact="high" />
+        <div className="flex items-center gap-2">
+          {hasContent && !isGenerating && (
+            <button
+              onClick={() => setShowConfirm(true)}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              Rerun Analysis
+            </button>
+          )}
+          <ImpactBadge impact="high" />
+        </div>
       </div>
 
+      {/* Rerun confirmation dialog */}
+      {showConfirm && (
+        <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between gap-4">
+          <p className="text-sm text-amber-800">
+            Weet je zeker dat je de strategische implicaties opnieuw wilt genereren? Dit overschrijft de huidige implicaties.
+          </p>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setShowConfirm(false)}
+              className="text-sm text-gray-600 hover:text-gray-800 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Annuleren
+            </button>
+            <button
+              onClick={handleRerun}
+              className="text-sm text-white bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Opnieuw genereren
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 flex-1">
-        {persona.strategicImplications ? (
+        {/* Loading state */}
+        {isGenerating && (
+          <div className="bg-blue-50/30 border border-blue-100 rounded-xl p-6 text-center">
+            <Loader2 className="w-6 h-6 text-blue-500 animate-spin mx-auto mb-3" />
+            <p className="text-sm font-medium">Generating strategic implications...</p>
+            <p className="text-xs text-muted-foreground mt-1">This may take a few seconds</p>
+          </div>
+        )}
+
+        {/* Structured implications list */}
+        {!isGenerating && implications && (
+          <div className="divide-y divide-border">
+            {implications.map((impl, idx) => (
+              <div key={idx} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                  impl.priority === 'high' ? 'bg-emerald-500' :
+                  impl.priority === 'medium' ? 'bg-amber-500' : 'bg-gray-400'
+                }`} />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      {impl.category}
+                    </span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded ${
+                      impl.priority === 'high' ? 'bg-emerald-100 text-emerald-700' :
+                      impl.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
+                    }`}>
+                      {impl.priority}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium mb-0.5">{impl.title}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{impl.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Legacy plain text (old data or editing) */}
+        {!isGenerating && hasContent && !implications && (
           isEditing ? (
             <textarea
               value={draft}
@@ -58,7 +160,10 @@ export function StrategicImplicationsSection({
               {persona.strategicImplications}
             </p>
           )
-        ) : (
+        )}
+
+        {/* Empty state */}
+        {!isGenerating && !hasContent && (
           <div className="bg-blue-50/50 border border-blue-200 rounded-xl p-6 text-center">
             <Sparkles className="w-8 h-8 text-blue-400 mx-auto mb-2" />
             <p className="text-sm text-gray-500">No strategic implications defined yet</p>
@@ -68,7 +173,7 @@ export function StrategicImplicationsSection({
               className="mt-3 inline-flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
             >
               <Sparkles className="w-4 h-4" />
-              {isGenerating ? 'Generating...' : 'Generate with AI'}
+              Generate with AI
             </button>
           </div>
         )}

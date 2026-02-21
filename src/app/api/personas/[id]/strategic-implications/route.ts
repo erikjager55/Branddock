@@ -1,6 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { openaiClient } from "@/lib/ai/openai-client";
+
+interface StrategicImplication {
+  category: string;
+  title: string;
+  description: string;
+  priority: "high" | "medium" | "low";
+}
+
+function buildPrompt(persona: Record<string, unknown>): string {
+  const lines: string[] = [];
+
+  lines.push(`Persona: ${persona.name}`);
+  if (persona.tagline) lines.push(`Tagline: ${persona.tagline}`);
+  if (persona.age) lines.push(`Leeftijd: ${persona.age}`);
+  if (persona.location) lines.push(`Locatie: ${persona.location}`);
+  if (persona.occupation) lines.push(`Beroep: ${persona.occupation}`);
+  if (persona.income) lines.push(`Inkomen: ${persona.income}`);
+  if (persona.education) lines.push(`Opleiding: ${persona.education}`);
+  if (persona.personalityType) lines.push(`Persoonlijkheidstype: ${persona.personalityType}`);
+
+  const arr = (v: unknown) => (Array.isArray(v) && v.length > 0 ? v.join(", ") : null);
+
+  const coreValues = arr(persona.coreValues);
+  if (coreValues) lines.push(`Kernwaarden: ${coreValues}`);
+  const interests = arr(persona.interests);
+  if (interests) lines.push(`Interesses: ${interests}`);
+  const goals = arr(persona.goals);
+  if (goals) lines.push(`Doelen: ${goals}`);
+  const motivations = arr(persona.motivations);
+  if (motivations) lines.push(`Motivaties: ${motivations}`);
+  const frustrations = arr(persona.frustrations);
+  if (frustrations) lines.push(`Frustraties: ${frustrations}`);
+  const behaviors = arr(persona.behaviors);
+  if (behaviors) lines.push(`Gedragingen: ${behaviors}`);
+
+  return lines.join("\n");
+}
 
 // POST /api/personas/[id]/strategic-implications
 export async function POST(
@@ -24,38 +62,66 @@ export async function POST(
       return NextResponse.json({ error: "Persona not found" }, { status: 404 });
     }
 
-    // Generate mock strategic implications text based on persona data
-    const name = persona.name;
-    const occupation = persona.occupation || "their profession";
-    const location = persona.location || "their region";
-    const personalityType = persona.personalityType || "their personality type";
-    const coreValues = persona.coreValues || [];
-    const frustrations = persona.frustrations || [];
+    const personaProfile = buildPrompt(persona as unknown as Record<string, unknown>);
 
-    const valuesText =
-      coreValues.length >= 2
-        ? `${coreValues[0]} and ${coreValues[1]}`
-        : coreValues.length === 1
-          ? coreValues[0]
-          : "their core values";
+    const systemPrompt = `Je bent een strategisch brand consultant. Je analyseert personas en genereert concrete, actionable strategische implicaties voor het merk.
 
-    const frustrationText =
-      frustrations.length > 0
-        ? frustrations[0]
-        : "common industry challenges";
+Antwoord ALTIJD in valid JSON met precies deze structuur:
+{
+  "implications": [
+    {
+      "category": "Messaging",
+      "title": "korte titel (max 8 woorden)",
+      "description": "2-3 zinnen concrete aanbeveling, specifiek voor deze persona",
+      "priority": "high"
+    }
+  ]
+}
 
-    const strategicImplications = `Based on ${name}'s profile as ${occupation} in ${location}, key strategic implications include: targeting ${personalityType} profiles who value ${valuesText}. Their frustrations with ${frustrationText} present opportunities for differentiation.`;
+De priority waarde moet "high", "medium" of "low" zijn.`;
 
-    const updated = await prisma.persona.update({
+    const userPrompt = `Analyseer de volgende persona en genereer 5 concrete strategische implicaties:
+
+${personaProfile}
+
+Genereer precies 5 strategische implicaties in deze categorieën:
+1. Messaging — Hoe communiceer je met deze persona?
+2. Channel Strategy — Via welke kanalen bereik je deze persona?
+3. Content — Welk type content resoneert?
+4. Product — Welke product-aanpassingen zijn nodig?
+5. Brand — Hoe bouw je vertrouwen op?
+
+Antwoord in JSON.`;
+
+    const result = await openaiClient.createStructuredCompletion<{
+      implications: StrategicImplication[];
+    }>(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      { useCase: "STRUCTURED" }
+    );
+
+    const implications = result.implications;
+    if (!Array.isArray(implications) || implications.length === 0) {
+      throw new Error("Invalid AI response: no implications array");
+    }
+
+    // Store as JSON string in the strategicImplications field
+    const strategicImplications = JSON.stringify(implications);
+
+    await prisma.persona.update({
       where: { id },
       data: { strategicImplications },
     });
 
-    return NextResponse.json({
-      strategicImplications: updated.strategicImplications,
-    });
+    return NextResponse.json({ strategicImplications });
   } catch (error) {
     console.error("[POST /api/personas/:id/strategic-implications]", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to generate strategic implications" },
+      { status: 500 }
+    );
   }
 }
