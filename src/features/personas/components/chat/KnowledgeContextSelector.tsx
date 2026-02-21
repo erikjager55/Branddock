@@ -20,6 +20,7 @@ type SourceType = 'all' | string;
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Building2,
+  Fingerprint: Building2, // Fingerprint maps to Building2 as visual fallback
   Package,
   TrendingUp,
   BookOpen,
@@ -39,6 +40,7 @@ const SOURCE_TYPE_META: Record<
   campaign: { label: 'Campaign', icon: Megaphone, color: 'bg-rose-100 text-rose-700' },
   deliverable: { label: 'Deliverable', icon: FileText, color: 'bg-sky-100 text-sky-700' },
   brandstyle: { label: 'Brandstyle', icon: Palette, color: 'bg-pink-100 text-pink-700' },
+  strategic_implication: { label: 'Implication', icon: TrendingUp, color: 'bg-emerald-100 text-emerald-700' },
 };
 
 interface FlatItem extends AvailableContextGroupItem {

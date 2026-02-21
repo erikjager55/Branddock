@@ -148,6 +148,34 @@ export async function fetchContextData(
       };
     }
 
+    case "strategic_implication": {
+      // sourceId format: "personaId:index"
+      const [implPersonaId, implIndexStr] = sourceId.split(":");
+      const implIndex = parseInt(implIndexStr, 10);
+      const implPersona = await prisma.persona.findFirst({
+        where: { id: implPersonaId, workspaceId },
+        select: { name: true, strategicImplications: true },
+      });
+      if (!implPersona?.strategicImplications) return null;
+      try {
+        const implications = JSON.parse(implPersona.strategicImplications);
+        if (!Array.isArray(implications) || !implications[implIndex]) return null;
+        const impl = implications[implIndex];
+        return {
+          name: `${impl.category}: ${impl.title}`,
+          contextData: {
+            category: impl.category,
+            title: impl.title,
+            description: impl.description,
+            priority: impl.priority,
+            personaName: implPersona.name,
+          },
+        };
+      } catch {
+        return null;
+      }
+    }
+
     case "brandstyle": {
       const styleguide = await prisma.brandStyleguide.findFirst({
         where: { id: sourceId, workspaceId },

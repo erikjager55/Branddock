@@ -15,6 +15,9 @@ export type { RateLimitTier, RateLimitConfig, RateLimitResult } from './rate-lim
 // ─── Brand Context ─────────────────────────────────────────
 export { getBrandContext, invalidateBrandContext } from './brand-context';
 
+// ─── Persona Context ──────────────────────────────────────
+export { buildAllPersonasContext } from './persona-context';
+
 // ─── Prompt Templates ──────────────────────────────────────
 export {
   SYSTEM_BASE,
