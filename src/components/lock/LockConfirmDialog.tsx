@@ -1,7 +1,7 @@
 'use client';
 
 import { ShieldAlert, ShieldCheck, Pencil, Trash2, Sparkles, MessageCircle, Eye, EyeOff, Copy, Download } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useCallback } from 'react';
 
 interface LockConfirmDialogProps {
@@ -53,6 +53,7 @@ export function LockConfirmDialog({
 }: LockConfirmDialogProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -89,9 +90,9 @@ export function LockConfirmDialog({
         >
           <motion.div
             ref={contentRef}
-            initial={{ scale: 0.95, opacity: 0, y: 10 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 10 }}
+            initial={prefersReducedMotion ? { opacity: 0 } : { scale: 0.95, opacity: 0, y: 10 }}
+            animate={prefersReducedMotion ? { opacity: 1 } : { scale: 1, opacity: 1, y: 0 }}
+            exit={prefersReducedMotion ? { opacity: 0 } : { scale: 0.95, opacity: 0, y: 10 }}
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             role="alertdialog"
             aria-modal="true"

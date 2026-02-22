@@ -1,7 +1,7 @@
 'use client';
 
 import { ShieldCheck, ShieldAlert } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/components/ui/utils';
 
 interface LockShieldProps {
@@ -9,6 +9,7 @@ interface LockShieldProps {
   isToggling?: boolean;
   onClick: () => void;
   size?: 'sm' | 'md' | 'lg';
+  entityName?: string;
   className?: string;
 }
 
@@ -23,17 +24,20 @@ export function LockShield({
   isToggling = false,
   onClick,
   size = 'md',
+  entityName,
   className,
 }: LockShieldProps) {
   const { button: buttonSize, icon: iconSize } = SIZE_MAP[size];
+  const prefersReducedMotion = useReducedMotion();
 
   return (
     <motion.button
       onClick={onClick}
       disabled={isToggling}
-      whileHover={{ scale: 1.08 }}
-      whileTap={{ scale: 0.94 }}
+      whileHover={prefersReducedMotion ? undefined : { scale: 1.08 }}
+      whileTap={prefersReducedMotion ? undefined : { scale: 0.94 }}
       transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+      style={{ willChange: 'transform' }}
       className={cn(
         'relative rounded-xl flex items-center justify-center transition-colors overflow-hidden',
         buttonSize,
@@ -43,24 +47,26 @@ export function LockShield({
         isToggling && 'opacity-60 cursor-wait',
         className,
       )}
-      aria-label={isLocked ? 'Ontgrendel item' : 'Vergrendel item'}
+      aria-label={isLocked ? `Ontgrendel ${entityName || 'item'}` : `Vergrendel ${entityName || 'item'}`}
       aria-pressed={isLocked}
     >
-      {/* Shimmer sweep */}
-      <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-        initial={{ x: '-100%' }}
-        animate={isToggling ? { x: '100%' } : { x: '-100%' }}
-        transition={isToggling ? { duration: 0.8, repeat: Infinity } : { duration: 0 }}
-      />
+      {/* Shimmer sweep — hidden when user prefers reduced motion */}
+      {!prefersReducedMotion && (
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+          initial={{ x: '-100%' }}
+          animate={isToggling ? { x: '100%' } : { x: '-100%' }}
+          transition={isToggling ? { duration: 0.8, repeat: Infinity } : { duration: 0 }}
+        />
+      )}
 
       {/* Icon swap */}
       <AnimatePresence mode="wait">
         <motion.div
           key={isLocked ? 'locked' : 'unlocked'}
-          initial={{ rotate: isLocked ? 20 : -20, opacity: 0, scale: 0.8 }}
-          animate={{ rotate: 0, opacity: 1, scale: 1 }}
-          exit={{ rotate: isLocked ? -20 : 20, opacity: 0, scale: 0.8 }}
+          initial={prefersReducedMotion ? { opacity: 0 } : { rotate: isLocked ? 20 : -20, opacity: 0, scale: 0.8 }}
+          animate={prefersReducedMotion ? { opacity: 1 } : { rotate: 0, opacity: 1, scale: 1 }}
+          exit={prefersReducedMotion ? { opacity: 0 } : { rotate: isLocked ? -20 : 20, opacity: 0, scale: 0.8 }}
           transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         >
           {isLocked ? (

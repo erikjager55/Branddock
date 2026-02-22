@@ -15,6 +15,7 @@ export interface SearchResult {
   description: string | null;
   href: string;
   icon: string;
+  isLocked?: boolean;
 }
 
 export interface SearchResponse {

@@ -26,14 +26,14 @@ export async function GET(request: NextRequest) {
     }
 
     const { query, type, limit } = parsed.data;
-    const results: Array<{ id: string; title: string; type: string; description: string | null; href: string; icon: string }> = [];
+    const results: Array<{ id: string; title: string; type: string; description: string | null; href: string; icon: string; isLocked?: boolean }> = [];
 
     // Search brand assets
     if (type === 'all' || type === 'brand_assets') {
       const assets = await prisma.brandAsset.findMany({
         where: { workspaceId, name: { contains: query, mode: 'insensitive' } },
         take: limit,
-        select: { id: true, name: true, description: true, category: true },
+        select: { id: true, name: true, description: true, category: true, isLocked: true },
       });
       results.push(...assets.map((a) => ({
         id: a.id,
@@ -42,6 +42,7 @@ export async function GET(request: NextRequest) {
         description: a.description,
         href: 'brand-asset-detail',
         icon: 'Layers',
+        isLocked: a.isLocked,
       })));
     }
 
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
       const personas = await prisma.persona.findMany({
         where: { workspaceId, name: { contains: query, mode: 'insensitive' } },
         take: limit,
-        select: { id: true, name: true, occupation: true },
+        select: { id: true, name: true, occupation: true, isLocked: true },
       });
       results.push(...personas.map((p) => ({
         id: p.id,
@@ -59,6 +60,7 @@ export async function GET(request: NextRequest) {
         description: p.occupation,
         href: 'persona-detail',
         icon: 'Users',
+        isLocked: p.isLocked,
       })));
     }
 
@@ -67,7 +69,7 @@ export async function GET(request: NextRequest) {
       const products = await prisma.product.findMany({
         where: { workspaceId, name: { contains: query, mode: 'insensitive' } },
         take: limit,
-        select: { id: true, name: true, description: true },
+        select: { id: true, name: true, description: true, isLocked: true },
       });
       results.push(...products.map((p) => ({
         id: p.id,
@@ -76,6 +78,7 @@ export async function GET(request: NextRequest) {
         description: p.description,
         href: 'product-detail',
         icon: 'Package',
+        isLocked: p.isLocked,
       })));
     }
 
@@ -101,7 +104,7 @@ export async function GET(request: NextRequest) {
       const campaigns = await prisma.campaign.findMany({
         where: { workspaceId, title: { contains: query, mode: 'insensitive' } },
         take: limit,
-        select: { id: true, title: true, type: true },
+        select: { id: true, title: true, type: true, isLocked: true },
       });
       results.push(...campaigns.map((c) => ({
         id: c.id,
@@ -110,6 +113,7 @@ export async function GET(request: NextRequest) {
         description: c.type === 'STRATEGIC' ? 'Strategic Campaign' : 'Quick Content',
         href: 'campaign-detail',
         icon: 'Megaphone',
+        isLocked: c.isLocked,
       })));
     }
 

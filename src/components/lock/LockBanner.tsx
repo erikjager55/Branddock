@@ -1,7 +1,7 @@
 'use client';
 
 import { ShieldAlert } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/components/ui/utils';
 
 interface LockBannerProps {
@@ -17,13 +17,15 @@ export function LockBanner({
   lockedBy,
   className,
 }: LockBannerProps) {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <AnimatePresence>
       {isLocked && (
         <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
+          initial={prefersReducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
+          animate={prefersReducedMotion ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
+          exit={prefersReducedMotion ? { opacity: 0 } : { height: 0, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 25 }}
           className="overflow-hidden"
         >
@@ -38,7 +40,7 @@ export function LockBanner({
           >
             <div className="flex items-center gap-3 min-w-0">
               <motion.div
-                animate={{ scale: [1, 1.15, 1] }}
+                animate={prefersReducedMotion ? undefined : { scale: [1, 1.15, 1] }}
                 transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
                 className="flex-shrink-0"
               >

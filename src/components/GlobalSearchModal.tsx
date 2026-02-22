@@ -15,6 +15,7 @@ import {
 import * as LucideIcons from 'lucide-react';
 import { useSearch, useQuickActions } from '../hooks/use-search';
 import { useShellStore } from '../stores/useShellStore';
+import { CardLockIndicator } from './lock';
 import type { SearchResult } from '../types/search';
 
 interface GlobalSearchModalProps {
@@ -33,6 +34,7 @@ interface DisplayItem {
   route?: string;
   section?: string;
   action?: () => void;
+  isLocked?: boolean;
 }
 
 const TYPE_FILTERS = [
@@ -104,6 +106,7 @@ export function GlobalSearchModal({ isOpen, onClose, onNavigate, onAction }: Glo
         description: r.description ?? undefined,
         icon: r.icon,
         route: r.href,
+        isLocked: r.isLocked,
       }));
       if (items.length > 0) {
         result.push({ id: 'results', label: 'Search Results', items });
@@ -288,9 +291,14 @@ export function GlobalSearchModal({ isOpen, onClose, onNavigate, onAction }: Glo
                               <div className="text-xs text-muted-foreground mt-1 line-clamp-1">{item.description}</div>
                             )}
                           </div>
-                          {isSelected && (
-                            <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-3" />
-                          )}
+                          <div className="flex items-center gap-1.5 flex-shrink-0 mt-3">
+                            {item.isLocked && (
+                              <CardLockIndicator isLocked className="w-5 h-5" />
+                            )}
+                            {isSelected && (
+                              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
                         </button>
                       );
                     })}

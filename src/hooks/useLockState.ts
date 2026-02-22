@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
+import { LockError } from '@/lib/api/client';
 
 type EntityType = 'personas' | 'brand-assets' | 'products' | 'campaigns' | 'strategies' | 'interviews';
 
@@ -77,6 +79,14 @@ export function useLockState({
         body: JSON.stringify({ locked: newLocked }),
       });
 
+      if (res.status === 423) {
+        const data = await res.json().catch(() => ({}));
+        toast.error('Item is vergrendeld', {
+          description: data.error || 'Ontgrendel het item om wijzigingen te maken.',
+        });
+        throw new LockError(data.error);
+      }
+
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Failed to toggle lock');
@@ -87,7 +97,18 @@ export function useLockState({
       setLockedAt(data.lockedAt ?? null);
       setLockedBy(data.lockedBy ?? null);
       onLockChange?.(data.isLocked);
+
+      toast.success(data.isLocked ? 'Item vergrendeld' : 'Item ontgrendeld', {
+        description: data.isLocked
+          ? `${entityName} is nu beschermd tegen wijzigingen.`
+          : `${entityName} kan weer bewerkt worden.`,
+      });
     } catch (err) {
+      if (!(err instanceof LockError)) {
+        toast.error('Vergrendeling mislukt', {
+          description: `Kon ${entityName} niet (ont)vergrendelen. Probeer opnieuw.`,
+        });
+      }
       console.error(`[useLockState] Failed to toggle lock for ${entityName}:`, err);
     } finally {
       setIsToggling(false);
