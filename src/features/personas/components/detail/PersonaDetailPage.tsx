@@ -103,9 +103,9 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
         )}
 
         {/* 2-Column Grid Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          {/* Main Content — left column */}
-          <div className="md:col-span-8 min-w-0 space-y-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Main Content — left column (2/3) */}
+          <div className="md:col-span-2 min-w-0 space-y-8">
             <DemographicsSection
               persona={persona}
               isEditing={isEditing}
@@ -149,8 +149,8 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
             />
           </div>
 
-          {/* Sidebar — right column, sticky */}
-          <div className="md:col-span-4 min-w-0">
+          {/* Sidebar — right column (1/3), sticky */}
+          <div className="min-w-0">
             <div className="md:sticky md:top-6 space-y-4">
               <ProfileCompletenessCard persona={persona} />
 
