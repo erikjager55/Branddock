@@ -68,7 +68,7 @@ const CARDS: {
 
 export function GoalsMotivationsCards({ persona, isEditing, onUpdate }: GoalsMotivationsCardsProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {CARDS.map(({ key, title, subtitle, impact, placeholder, icon: Icon, iconBg, iconColor, checkColor, subCardBg, subCardBorder }) => (
         <div
           key={key}

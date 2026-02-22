@@ -53,14 +53,14 @@ export function DemographicsSection({ persona, isEditing, onUpdate }: Demographi
 
       {/* 3×2 grid */}
       <div className="px-5 pb-4">
-        <div className="grid grid-cols-3 gap-x-6 gap-y-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
           {FIELDS.map(({ key, icon: Icon, label }) => {
             const value = persona[key] as string | null;
 
             return (
-              <div key={key}>
+              <div key={key} className="min-w-0">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <Icon className="h-3 w-3 text-gray-400" />
+                  <Icon className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                   <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">{label}</span>
                 </div>
                 {isEditing ? (
@@ -71,7 +71,7 @@ export function DemographicsSection({ persona, isEditing, onUpdate }: Demographi
                     className="w-full px-2 py-1 text-sm border border-gray-200 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 ) : (
-                  <p className="text-sm font-medium text-gray-900">
+                  <p className="text-sm font-medium text-gray-900 truncate" title={value ?? undefined}>
                     {value || <span className="text-gray-300">—</span>}
                   </p>
                 )}

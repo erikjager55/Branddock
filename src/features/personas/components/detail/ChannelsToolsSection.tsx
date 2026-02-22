@@ -19,19 +19,15 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
   const channels = persona.preferredChannels ?? [];
   const tools = persona.techStack ?? [];
 
-  // Compact empty state
+  // Card-like empty state
   if (channels.length === 0 && tools.length === 0 && !isEditing) {
     return (
-      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-indigo-100 flex items-center justify-center">
-            <Share2 className="h-4 w-4 text-indigo-600" />
-          </div>
-          <div>
-            <span className="text-sm font-medium text-gray-900">Channels & Tools</span>
-            <span className="text-xs text-gray-500 ml-2">No channels or tools defined yet</span>
-          </div>
+      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 py-8 flex flex-col items-center justify-center text-center">
+        <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center mb-3">
+          <Share2 className="h-5 w-5 text-indigo-500" />
         </div>
+        <p className="text-sm font-medium text-gray-900 mb-1">Channels & Tools</p>
+        <p className="text-xs text-gray-500 mb-3">No channels or tools defined yet</p>
         <Button variant="secondary" size="sm" icon={Plus}>
           Add Channels
         </Button>
@@ -75,7 +71,7 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
         <ImpactBadge impact="high" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Preferred Channels */}
           <div className="bg-indigo-50/30 border border-indigo-100 rounded-xl p-4">
             <div className="flex items-center gap-1.5 mb-3">
