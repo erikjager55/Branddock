@@ -121,7 +121,7 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
             />
 
             {/* Row 3: Psychographics + Channels (2 columns) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               <PsychographicsSection
                 persona={persona}
                 isEditing={isEditing}
@@ -142,7 +142,7 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
             />
 
             {/* Row 5: Behaviors + Buying Triggers (2 columns) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
               <BehaviorsSection
                 persona={persona}
                 isEditing={isEditing}

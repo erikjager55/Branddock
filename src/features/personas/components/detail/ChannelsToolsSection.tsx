@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Radio, Megaphone, Wrench, Share2, Sparkles, X } from 'lucide-react';
+import { Radio, Megaphone, Wrench, Share2, Plus, X } from 'lucide-react';
 import { Button } from '@/components/shared';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 import { ImpactBadge } from './ImpactBadge';
@@ -32,8 +32,8 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
             <span className="text-xs text-gray-500 ml-2">No channels or tools defined yet</span>
           </div>
         </div>
-        <Button variant="secondary" size="sm" icon={Sparkles}>
-          Fill with AI
+        <Button variant="secondary" size="sm" icon={Plus}>
+          Add Channels
         </Button>
       </div>
     );
