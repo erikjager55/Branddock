@@ -37,6 +37,12 @@ export interface PersonaWithMeta {
   frustrations: string[];
   behaviors: string[];
   strategicImplications: string | null;
+  preferredChannels: string[];
+  techStack: string[];
+  quote: string | null;
+  bio: string | null;
+  buyingTriggers: string[];
+  decisionCriteria: string[];
   isLocked: boolean;
   lockedById: string | null;
   lockedAt: string | null;
@@ -71,6 +77,12 @@ export interface CreatePersonaBody {
   motivations?: string[];
   frustrations?: string[];
   behaviors?: string[];
+  preferredChannels?: string[];
+  techStack?: string[];
+  quote?: string | null;
+  bio?: string | null;
+  buyingTriggers?: string[];
+  decisionCriteria?: string[];
 }
 
 export interface UpdatePersonaBody {
@@ -91,4 +103,10 @@ export interface UpdatePersonaBody {
   frustrations?: string[];
   behaviors?: string[];
   strategicImplications?: string;
+  preferredChannels?: string[];
+  techStack?: string[];
+  quote?: string | null;
+  bio?: string | null;
+  buyingTriggers?: string[];
+  decisionCriteria?: string[];
 }

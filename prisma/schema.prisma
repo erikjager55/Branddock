@@ -1367,6 +1367,15 @@ model Persona {
 
   // Strategic
   strategicImplications String?             @db.Text
+
+  // Persona enrichment
+  preferredChannels     Json?               // ["LinkedIn", "Dribbble", ...]
+  techStack             Json?               // ["Figma", "Notion", ...]
+  quote                 String?             @db.Text
+  bio                   String?             @db.Text
+  buyingTriggers        Json?               // ["Team scaling", ...]
+  decisionCriteria      Json?               // ["Design quality", ...]
+
   isLocked              Boolean             @default(false)
   lockedById            String?
   lockedBy              User?               @relation("LockedPersonas", fields: [lockedById], references: [id])

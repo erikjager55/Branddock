@@ -13,6 +13,9 @@ import { PsychographicsSection } from './PsychographicsSection';
 import { GoalsMotivationsCards } from './GoalsMotivationsCards';
 import { BehaviorsSection } from './BehaviorsSection';
 import { StrategicImplicationsSection } from './StrategicImplicationsSection';
+import { QuoteBioSection } from './QuoteBioSection';
+import { ChannelsToolsSection } from './ChannelsToolsSection';
+import { BuyingTriggersSection } from './BuyingTriggersSection';
 import { ResearchMethodsSection } from './ResearchMethodsSection';
 import { ChatWithPersonaModal } from '../chat/ChatWithPersonaModal';
 import { WhatArePersonasPanel } from '../WhatArePersonasPanel';
@@ -127,7 +130,19 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
             onUpdate={(data) => updatePersona.mutate(data)}
           />
 
+          <QuoteBioSection
+            persona={persona}
+            isEditing={isEditing}
+            onUpdate={(data) => updatePersona.mutate(data)}
+          />
+
           <PsychographicsSection
+            persona={persona}
+            isEditing={isEditing}
+            onUpdate={(data) => updatePersona.mutate(data)}
+          />
+
+          <ChannelsToolsSection
             persona={persona}
             isEditing={isEditing}
             onUpdate={(data) => updatePersona.mutate(data)}
@@ -155,6 +170,12 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
               isGenerating={generateImplications.isPending}
             />
           </div>
+
+          <BuyingTriggersSection
+            persona={persona}
+            isEditing={isEditing}
+            onUpdate={(data) => updatePersona.mutate(data)}
+          />
 
           <ResearchMethodsSection
             persona={persona}

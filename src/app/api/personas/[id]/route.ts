@@ -43,6 +43,12 @@ const updatePersonaSchema = z.object({
   coreValues: z.array(z.string().max(100)).max(10).optional(),
   interests: z.array(z.string().max(200)).optional(),
   personalityType: z.string().max(200).optional(),
+  preferredChannels: z.array(z.string().max(200)).max(20).optional(),
+  techStack: z.array(z.string().max(200)).max(20).optional(),
+  quote: z.string().max(500).optional().nullable(),
+  bio: z.string().max(1000).optional().nullable(),
+  buyingTriggers: z.array(z.string().max(500)).max(10).optional(),
+  decisionCriteria: z.array(z.string().max(500)).max(10).optional(),
 });
 
 // GET /api/personas/[id]
@@ -145,6 +151,12 @@ export async function PATCH(
         ...(data.coreValues !== undefined && { coreValues: data.coreValues }),
         ...(data.interests !== undefined && { interests: data.interests }),
         ...(data.personalityType !== undefined && { personalityType: data.personalityType }),
+        ...(data.preferredChannels !== undefined && { preferredChannels: data.preferredChannels }),
+        ...(data.techStack !== undefined && { techStack: data.techStack }),
+        ...(data.quote !== undefined && { quote: data.quote }),
+        ...(data.bio !== undefined && { bio: data.bio }),
+        ...(data.buyingTriggers !== undefined && { buyingTriggers: data.buyingTriggers }),
+        ...(data.decisionCriteria !== undefined && { decisionCriteria: data.decisionCriteria }),
       },
       include: {
         researchMethods: true,

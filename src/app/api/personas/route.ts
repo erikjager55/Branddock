@@ -44,6 +44,12 @@ const createPersonaSchema = z.object({
   coreValues: z.array(z.string().max(100)).max(10).optional(),
   interests: z.array(z.string().max(200)).optional(),
   personalityType: z.string().max(200).optional(),
+  preferredChannels: z.array(z.string().max(200)).max(20).optional(),
+  techStack: z.array(z.string().max(200)).max(20).optional(),
+  quote: z.string().max(500).optional().nullable(),
+  bio: z.string().max(1000).optional().nullable(),
+  buyingTriggers: z.array(z.string().max(500)).max(10).optional(),
+  decisionCriteria: z.array(z.string().max(500)).max(10).optional(),
 });
 
 // GET /api/personas
@@ -106,6 +112,12 @@ export async function GET(request: NextRequest) {
         frustrations: p.frustrations,
         behaviors: p.behaviors,
         strategicImplications: p.strategicImplications,
+        preferredChannels: (p.preferredChannels as string[]) ?? [],
+        techStack: (p.techStack as string[]) ?? [],
+        quote: p.quote,
+        bio: p.bio,
+        buyingTriggers: (p.buyingTriggers as string[]) ?? [],
+        decisionCriteria: (p.decisionCriteria as string[]) ?? [],
         isLocked: p.isLocked,
         lockedAt: p.lockedAt?.toISOString() ?? null,
         validationPercentage,
@@ -200,6 +212,12 @@ export async function POST(request: NextRequest) {
         motivations: data.motivations ?? [],
         frustrations: data.frustrations ?? [],
         behaviors: data.behaviors ?? [],
+        preferredChannels: data.preferredChannels ?? [],
+        techStack: data.techStack ?? [],
+        quote: data.quote ?? null,
+        bio: data.bio ?? null,
+        buyingTriggers: data.buyingTriggers ?? [],
+        decisionCriteria: data.decisionCriteria ?? [],
         researchMethods: {
           create: [
             { method: "AI_EXPLORATION", status: "AVAILABLE", workspaceId },
