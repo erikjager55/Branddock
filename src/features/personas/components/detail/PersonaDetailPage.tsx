@@ -4,18 +4,17 @@ import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
-import { usePersonaDetail, useUpdatePersona, useTogglePersonaLock, useGenerateImplications } from '../../hooks';
+import { usePersonaDetail, useUpdatePersona, useTogglePersonaLock, useGenerateImplications, useDuplicatePersona } from '../../hooks';
 import { usePersonaDetailStore } from '../../stores/usePersonaDetailStore';
 import { PersonaDetailHeader } from './PersonaDetailHeader';
 import { DemographicsSection } from './DemographicsSection';
 import { PsychographicsSection } from './PsychographicsSection';
 import { GoalsMotivationsCards } from './GoalsMotivationsCards';
 import { BehaviorsSection } from './BehaviorsSection';
-import { StrategicImplicationsSection } from './StrategicImplicationsSection';
 import { QuoteBioSection } from './QuoteBioSection';
 import { ChannelsToolsSection } from './ChannelsToolsSection';
 import { BuyingTriggersSection } from './BuyingTriggersSection';
-import { ResearchMethodsSection } from './ResearchMethodsSection';
+import { ProfileCompletenessCard, ResearchSidebarCard, QuickActionsCard, StrategicImplicationsSidebar } from './sidebar';
 import { ChatWithPersonaModal } from '../chat/ChatWithPersonaModal';
 
 interface PersonaDetailPageProps {
@@ -29,6 +28,7 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
   const updatePersona = useUpdatePersona(personaId);
   const toggleLock = useTogglePersonaLock(personaId);
   const generateImplications = useGenerateImplications(personaId);
+  const duplicatePersona = useDuplicatePersona(personaId);
   const [stubMessage, setStubMessage] = useState<string | null>(null);
 
   const isEditing = usePersonaDetailStore((s) => s.isEditing);
@@ -38,7 +38,7 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
 
   if (isLoading) {
     return (
-      <PageShell maxWidth="5xl">
+      <PageShell maxWidth="7xl">
         <div className="space-y-4">
           <SkeletonCard />
           <SkeletonCard />
@@ -50,7 +50,7 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
 
   if (!persona) {
     return (
-      <PageShell maxWidth="5xl">
+      <PageShell maxWidth="7xl">
         <div className="text-center text-gray-500">
           Persona not found.
         </div>
@@ -73,7 +73,7 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
   };
 
   return (
-    <PageShell maxWidth="5xl">
+    <PageShell maxWidth="7xl">
       <div data-testid="persona-detail" className="space-y-6">
         {/* Breadcrumb */}
         <button
@@ -102,65 +102,83 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
           </div>
         )}
 
-        {/* Sections */}
-        <div className="space-y-8">
-          <DemographicsSection
-            persona={persona}
-            isEditing={isEditing}
-            onUpdate={(data) => updatePersona.mutate(data)}
-          />
+        {/* 2-Column Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          {/* Main Content — left column */}
+          <div className="md:col-span-8 min-w-0 space-y-8">
+            <DemographicsSection
+              persona={persona}
+              isEditing={isEditing}
+              onUpdate={(data) => updatePersona.mutate(data)}
+            />
 
-          <QuoteBioSection
-            persona={persona}
-            isEditing={isEditing}
-            onUpdate={(data) => updatePersona.mutate(data)}
-          />
+            <QuoteBioSection
+              persona={persona}
+              isEditing={isEditing}
+              onUpdate={(data) => updatePersona.mutate(data)}
+            />
 
-          <PsychographicsSection
-            persona={persona}
-            isEditing={isEditing}
-            onUpdate={(data) => updatePersona.mutate(data)}
-          />
+            <PsychographicsSection
+              persona={persona}
+              isEditing={isEditing}
+              onUpdate={(data) => updatePersona.mutate(data)}
+            />
 
-          <ChannelsToolsSection
-            persona={persona}
-            isEditing={isEditing}
-            onUpdate={(data) => updatePersona.mutate(data)}
-          />
+            <ChannelsToolsSection
+              persona={persona}
+              isEditing={isEditing}
+              onUpdate={(data) => updatePersona.mutate(data)}
+            />
 
-          <GoalsMotivationsCards
-            persona={persona}
-            isEditing={isEditing}
-            onUpdate={(data) => updatePersona.mutate(data)}
-          />
+            <GoalsMotivationsCards
+              persona={persona}
+              isEditing={isEditing}
+              onUpdate={(data) => updatePersona.mutate(data)}
+            />
 
-          {/* Behaviors + Strategic Implications side by side */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <BehaviorsSection
               persona={persona}
               isEditing={isEditing}
               onUpdate={(data) => updatePersona.mutate(data)}
             />
 
-            <StrategicImplicationsSection
+            <BuyingTriggersSection
               persona={persona}
               isEditing={isEditing}
               onUpdate={(data) => updatePersona.mutate(data)}
-              onGenerate={() => generateImplications.mutate()}
-              isGenerating={generateImplications.isPending}
             />
           </div>
 
-          <BuyingTriggersSection
-            persona={persona}
-            isEditing={isEditing}
-            onUpdate={(data) => updatePersona.mutate(data)}
-          />
+          {/* Sidebar — right column, sticky */}
+          <div className="md:col-span-4 min-w-0">
+            <div className="md:sticky md:top-6 space-y-4">
+              <ProfileCompletenessCard persona={persona} />
 
-          <ResearchMethodsSection
-            persona={persona}
-            onStartMethod={handleStartMethod}
-          />
+              <ResearchSidebarCard
+                persona={persona}
+                onStartMethod={handleStartMethod}
+              />
+
+              <QuickActionsCard
+                onChat={() => setChatModalOpen(true)}
+                onRegenerate={() => {}}
+                onDuplicate={() => duplicatePersona.mutate()}
+                onExport={() => {
+                  setStubMessage('Export coming in a future sprint');
+                  setTimeout(() => setStubMessage(null), 3000);
+                }}
+                isLocked={persona.isLocked}
+              />
+
+              <StrategicImplicationsSidebar
+                persona={persona}
+                isEditing={isEditing}
+                onUpdate={(data) => updatePersona.mutate(data)}
+                onGenerate={() => generateImplications.mutate()}
+                isGenerating={generateImplications.isPending}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Chat Modal */}
