@@ -50,6 +50,12 @@ const PERSONA_SELECT = {
   frustrations: true,
   behaviors: true,
   strategicImplications: true,
+  preferredChannels: true,
+  techStack: true,
+  quote: true,
+  bio: true,
+  buyingTriggers: true,
+  decisionCriteria: true,
 } as const;
 
 type PersonaRow = {
@@ -71,6 +77,12 @@ type PersonaRow = {
   frustrations: string[];
   behaviors: string[];
   strategicImplications: string | null;
+  preferredChannels: unknown;
+  techStack: unknown;
+  quote: string | null;
+  bio: string | null;
+  buyingTriggers: unknown;
+  decisionCriteria: unknown;
 };
 
 // ─── Formatters ────────────────────────────────────────────
@@ -97,12 +109,18 @@ function parseImplications(raw: string | null): StrategicImplication[] | null {
   return null;
 }
 
+function asStringArray(val: unknown): string[] {
+  if (Array.isArray(val)) return val as string[];
+  return [];
+}
+
 function buildSummary(p: PersonaRow): string {
   const parts = [p.name];
   if (p.tagline) parts.push(`— ${p.tagline}`);
   if (p.occupation) parts.push(`| ${p.occupation}`);
   if (p.age) parts.push(`| ${p.age}`);
   if (p.location) parts.push(`| ${p.location}`);
+  if (p.quote) parts.push(`| "${p.quote}"`);
   return parts.join(' ');
 }
 
@@ -112,6 +130,8 @@ function buildFull(p: PersonaRow): string {
   // Identity
   lines.push(`# ${p.name}`);
   if (p.tagline) lines.push(p.tagline);
+  if (p.quote) lines.push(`> "${p.quote}"`);
+  if (p.bio) lines.push(p.bio);
   lines.push('');
 
   // Demographics
@@ -163,6 +183,26 @@ function buildFull(p: PersonaRow): string {
   if (p.behaviors.length > 0) {
     lines.push('## Behaviors');
     lines.push(`- ${formatList(p.behaviors)}`);
+    lines.push('');
+  }
+
+  // Channels & Tools
+  const channels = asStringArray(p.preferredChannels);
+  const tools = asStringArray(p.techStack);
+  if (channels.length > 0 || tools.length > 0) {
+    lines.push('## Channels & Tools');
+    if (channels.length > 0) lines.push(`- Preferred Channels: ${formatList(channels)}`);
+    if (tools.length > 0) lines.push(`- Tech Stack: ${formatList(tools)}`);
+    lines.push('');
+  }
+
+  // Buying Triggers & Decision Criteria
+  const triggers = asStringArray(p.buyingTriggers);
+  const criteria = asStringArray(p.decisionCriteria);
+  if (triggers.length > 0 || criteria.length > 0) {
+    lines.push('## Buying Triggers & Decision Criteria');
+    if (triggers.length > 0) lines.push(`- Buying Triggers: ${triggers.join('; ')}`);
+    if (criteria.length > 0) lines.push(`- Decision Criteria: ${criteria.join('; ')}`);
     lines.push('');
   }
 
@@ -375,6 +415,43 @@ export async function buildPersonaChatSystemPrompt(
   lines.push('## HOW YOU BEHAVE');
   lines.push(formatList(persona.behaviors));
   lines.push('');
+
+  // Channels & Tools
+  const channels = asStringArray(persona.preferredChannels);
+  const tools = asStringArray(persona.techStack);
+  if (channels.length > 0) {
+    lines.push('## WHERE YOU ARE ACTIVE');
+    lines.push(`You actively use these channels: ${channels.join(', ')}. Reference them naturally when discussing how you discover tools or stay informed.`);
+    lines.push('');
+  }
+  if (tools.length > 0) {
+    lines.push('## YOUR TOOLS');
+    lines.push(`Your daily tools include: ${tools.join(', ')}. You have strong opinions about these and compare new tools against your existing workflow.`);
+    lines.push('');
+  }
+
+  // Quote — core belief
+  if (persona.quote) {
+    lines.push('## YOUR CORE BELIEF');
+    lines.push(`Your core belief can be summarized as: "${persona.quote}". This shapes how you evaluate solutions.`);
+    lines.push('');
+  }
+
+  // Buying triggers
+  const triggers = asStringArray(persona.buyingTriggers);
+  if (triggers.length > 0) {
+    lines.push('## WHAT MAKES YOU LOOK FOR NEW SOLUTIONS');
+    lines.push(`You would start actively looking for a new solution when: ${triggers.join('; ')}. These are your buying triggers.`);
+    lines.push('');
+  }
+
+  // Decision criteria
+  const criteria = asStringArray(persona.decisionCriteria);
+  if (criteria.length > 0) {
+    lines.push('## HOW YOU EVALUATE');
+    lines.push(`When evaluating tools, you prioritize: ${criteria.join(', ')}. Weight these naturally in conversations about products or solutions.`);
+    lines.push('');
+  }
 
   // Mode-specific instructions
   lines.push(instructions);
