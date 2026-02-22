@@ -105,48 +105,55 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
         {/* 2-Column Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Main Content — left column (2/3) */}
-          <div className="md:col-span-2 min-w-0 space-y-8">
+          <div className="md:col-span-2 min-w-0 space-y-4">
+            {/* Row 1: Demographics (full width) */}
             <DemographicsSection
               persona={persona}
               isEditing={isEditing}
               onUpdate={(data) => updatePersona.mutate(data)}
             />
 
+            {/* Row 2: Quote & Bio (full width) */}
             <QuoteBioSection
               persona={persona}
               isEditing={isEditing}
               onUpdate={(data) => updatePersona.mutate(data)}
             />
 
-            <PsychographicsSection
-              persona={persona}
-              isEditing={isEditing}
-              onUpdate={(data) => updatePersona.mutate(data)}
-            />
+            {/* Row 3: Psychographics + Channels (2 columns) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <PsychographicsSection
+                persona={persona}
+                isEditing={isEditing}
+                onUpdate={(data) => updatePersona.mutate(data)}
+              />
+              <ChannelsToolsSection
+                persona={persona}
+                isEditing={isEditing}
+                onUpdate={(data) => updatePersona.mutate(data)}
+              />
+            </div>
 
-            <ChannelsToolsSection
-              persona={persona}
-              isEditing={isEditing}
-              onUpdate={(data) => updatePersona.mutate(data)}
-            />
-
+            {/* Row 4: Goals + Motivations + Frustrations (3 columns, internal grid) */}
             <GoalsMotivationsCards
               persona={persona}
               isEditing={isEditing}
               onUpdate={(data) => updatePersona.mutate(data)}
             />
 
-            <BehaviorsSection
-              persona={persona}
-              isEditing={isEditing}
-              onUpdate={(data) => updatePersona.mutate(data)}
-            />
-
-            <BuyingTriggersSection
-              persona={persona}
-              isEditing={isEditing}
-              onUpdate={(data) => updatePersona.mutate(data)}
-            />
+            {/* Row 5: Behaviors + Buying Triggers (2 columns) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <BehaviorsSection
+                persona={persona}
+                isEditing={isEditing}
+                onUpdate={(data) => updatePersona.mutate(data)}
+              />
+              <BuyingTriggersSection
+                persona={persona}
+                isEditing={isEditing}
+                onUpdate={(data) => updatePersona.mutate(data)}
+              />
+            </div>
           </div>
 
           {/* Sidebar — right column (1/3), sticky */}
