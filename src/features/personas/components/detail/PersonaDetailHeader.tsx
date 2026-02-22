@@ -36,24 +36,31 @@ export function PersonaDetailHeader({
         {/* Profile Photo */}
         <div className="relative flex-shrink-0">
           <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 overflow-hidden shadow-md">
-            <OptimizedImage
-              src={persona.avatarUrl}
-              alt={persona.name}
-              width={96}
-              height={96}
-              className="w-full h-full object-cover"
-              fallback={
-                <div className="w-full h-full flex items-center justify-center">
-                  <User className="h-10 w-10 text-white/70" />
-                </div>
-              }
-            />
+            {generateImage.isPending ? (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-500 to-cyan-400">
+                <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mb-1.5" />
+                <span className="text-[10px] text-white/80 font-medium">Generating...</span>
+              </div>
+            ) : (
+              <OptimizedImage
+                src={persona.avatarUrl}
+                alt={persona.name}
+                width={96}
+                height={96}
+                className="w-full h-full object-cover"
+                fallback={
+                  <div className="w-full h-full flex items-center justify-center">
+                    <User className="h-10 w-10 text-white/70" />
+                  </div>
+                }
+              />
+            )}
           </div>
           <button
             onClick={() => generateImage.mutate()}
             disabled={generateImage.isPending}
-            className="absolute -bottom-1 -right-1 w-7 h-7 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
-            title="Generate photo"
+            className="absolute -bottom-1 -right-1 w-7 h-7 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={persona.avatarUrl ? "Regenerate photo" : "Generate photo"}
           >
             <RefreshCw className={`h-3.5 w-3.5 text-gray-500 ${generateImage.isPending ? 'animate-spin' : ''}`} />
           </button>

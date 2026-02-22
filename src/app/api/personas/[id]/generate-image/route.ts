@@ -41,19 +41,8 @@ export async function POST(
       return NextResponse.json({ avatarUrl, provider: "fallback" });
     }
 
-    // Build descriptive prompt from persona demographics
-    const promptParts = [
-      "A photorealistic professional headshot portrait photo of a person.",
-      persona.age ? `Age: approximately ${persona.age}.` : null,
-      persona.gender ? `Gender: ${persona.gender}.` : null,
-      persona.occupation ? `Profession: ${persona.occupation}.` : null,
-      persona.location ? `Based in: ${persona.location}.` : null,
-      persona.education ? `Education level: ${persona.education}.` : null,
-      "Style: clean professional headshot, soft neutral background, natural studio lighting, high quality, photorealistic.",
-      "The photo should look like a real professional LinkedIn profile photo. No text, no watermarks.",
-    ]
-      .filter(Boolean)
-      .join(" ");
+    // Build photorealistic prompt from all available persona data
+    const promptParts = buildPhotoPrompt(persona);
 
     // Gemini 2.5 Flash Image — supports responseModalities: IMAGE
     const model = "gemini-2.5-flash-image";
@@ -121,4 +110,80 @@ export async function POST(
       { status: 500 }
     );
   }
+}
+
+/**
+ * Builds a photorealistic prompt from all available persona data.
+ * More filled fields → more specific and better photo.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildPhotoPrompt(persona: any): string {
+  const parts: string[] = [];
+
+  // Core instruction
+  parts.push("Generate a photorealistic professional headshot portrait photograph of a fictional person.");
+  parts.push("The photo should look like it was taken with a DSLR camera with an 85mm lens, shallow depth of field, natural lighting, neutral background.");
+  parts.push("This is NOT a real person — create a believable fictional individual.");
+
+  // Demographics
+  if (persona.age) parts.push(`Age: approximately ${persona.age} years old.`);
+  if (persona.gender) parts.push(`Gender: ${persona.gender}.`);
+  if (persona.location) {
+    parts.push(`This person lives in ${persona.location}. Their appearance should be ethnically appropriate for someone living in this region.`);
+  }
+  if (persona.occupation) {
+    parts.push(`Occupation: ${persona.occupation}. Their clothing and grooming should reflect this profession.`);
+  }
+  if (persona.education) {
+    parts.push(`Education level: ${persona.education}.`);
+  }
+
+  // Personality → expression & demeanor
+  if (persona.personalityType) {
+    const personalityMap: Record<string, string> = {
+      'INFP': 'warm, thoughtful, slightly creative expression',
+      'INTJ': 'composed, confident, analytical gaze',
+      'ENFP': 'bright, enthusiastic, warm smile',
+      'ENTJ': 'assertive, determined, professional demeanor',
+      'ISFJ': 'kind, approachable, gentle expression',
+      'ISTP': 'calm, observant, understated style',
+      'ENFJ': 'charismatic, welcoming, engaging smile',
+      'INTP': 'contemplative, curious, relaxed posture',
+      'ESFP': 'energetic, friendly, lively expression',
+      'ESTP': 'confident, bold, direct gaze',
+      'ISFP': 'gentle, artistic, serene expression',
+      'ESTJ': 'authoritative, organized, poised demeanor',
+      'ESFJ': 'warm, sociable, caring expression',
+      'ISTJ': 'serious, dependable, steady gaze',
+      'INFJ': 'insightful, calm, empathetic expression',
+      'ENTP': 'witty, energetic, mischievous smile',
+    };
+    const appearance = personalityMap[persona.personalityType] || 'approachable, professional';
+    parts.push(`Expression and demeanor: ${appearance}.`);
+  }
+
+  // Interests → subtle style cues
+  const interests = Array.isArray(persona.interests) ? persona.interests : [];
+  if (interests.length > 0) {
+    parts.push(`This person is interested in ${interests.slice(0, 3).join(', ')} — their style may subtly reflect this.`);
+  }
+
+  // Income → styling level
+  if (persona.income) {
+    const income = persona.income.toLowerCase();
+    if (income.includes('150') || income.includes('200') || income.includes('high') || income.includes('executive')) {
+      parts.push("Well-dressed, polished appearance suggesting upper-middle-class income.");
+    } else if (income.includes('100') || income.includes('upper')) {
+      parts.push("Professionally dressed with quality clothing and accessories.");
+    } else if (income.includes('50') || income.includes('70') || income.includes('middle')) {
+      parts.push("Neatly dressed, professional but not overly formal.");
+    }
+  }
+
+  // Technical requirements
+  parts.push("Square format (1:1 ratio). Sharp focus on the face. Clean, uncluttered background.");
+  parts.push("Do NOT include any text, watermarks, or logos in the image.");
+  parts.push("The result must be indistinguishable from a real photograph.");
+
+  return parts.join(" ");
 }
