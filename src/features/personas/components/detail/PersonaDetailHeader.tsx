@@ -1,7 +1,8 @@
 'use client';
 
-import { User, MapPin, Briefcase, RefreshCw, Pencil, Sparkles, Lock, Unlock, CheckCircle, MessageCircle } from 'lucide-react';
+import { User, MapPin, Briefcase, RefreshCw, Pencil, Sparkles, Lock, Unlock, CheckCircle, MessageCircle, HelpCircle } from 'lucide-react';
 import { OptimizedImage, Button, Badge } from '@/components/shared';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { PersonaWithMeta } from '../../types/persona.types';
 import { useGeneratePersonaImage } from '../../hooks';
 
@@ -87,6 +88,26 @@ export function PersonaDetailHeader({
                 <span className="text-xs text-gray-500">
                   {completedMethods}/{totalMethods} methods completed
                 </span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="h-5 w-5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 inline-flex items-center justify-center transition-colors">
+                      <HelpCircle className="h-3.5 w-3.5" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 text-sm" align="start">
+                    <div className="space-y-2">
+                      <p className="font-semibold">What are Personas?</p>
+                      <p className="text-gray-500 leading-relaxed">
+                        Personas are research-based representations of your target users. They synthesize data into fictional but realistic characters that represent key audience segments.
+                      </p>
+                      <div className="pt-2 border-t border-gray-200 space-y-1.5 text-xs text-gray-500">
+                        <p><span className="font-medium text-gray-900">User-Centered:</span> Evidence-based profiles from real research data</p>
+                        <p><span className="font-medium text-gray-900">Strategic Tool:</span> Guides content, messaging, and campaign targeting</p>
+                        <p><span className="font-medium text-gray-900">Validation-Driven:</span> Strengthen with interviews, surveys, and AI analysis</p>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
