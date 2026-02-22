@@ -13,7 +13,6 @@ import {
 } from '../../hooks';
 import { useAIPersonaAnalysisStore } from '../../stores/useAIPersonaAnalysisStore';
 import { PersonaAnalysisChatInterface } from './PersonaAnalysisChatInterface';
-import { PersonaAnalysisProgressBar } from './PersonaAnalysisProgressBar';
 import { PersonaAnalysisComplete } from './PersonaAnalysisComplete';
 
 interface AIPersonaAnalysisPageProps {
@@ -116,15 +115,13 @@ export function AIPersonaAnalysisPage({ personaId, onBack }: AIPersonaAnalysisPa
             Back to Persona
           </button>
 
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
-              <Bot className="w-5 h-5 text-white" />
+          <div className="flex items-start gap-4 mb-2">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+              <Bot className="h-7 w-7 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-foreground">AI Persona Analysis</h1>
-              <p className="text-sm text-muted-foreground">
-                Beantwoord de vragen om je persona te analyseren
-              </p>
+              <h1 className="text-2xl font-semibold text-foreground">AI Persona Analysis</h1>
+              <p className="text-muted-foreground">Beantwoord de vragen om je persona te analyseren</p>
             </div>
           </div>
         </>
@@ -132,24 +129,18 @@ export function AIPersonaAnalysisPage({ personaId, onBack }: AIPersonaAnalysisPa
 
       {/* State: In Progress */}
       {status !== 'COMPLETED' && status !== 'completing' && (
-        <>
-          <PersonaAnalysisProgressBar
+        <div className="h-[50vh]">
+          <PersonaAnalysisChatInterface
+            messages={sessionData?.messages ?? []}
+            isAITyping={isAITyping}
+            currentInput={currentInput}
+            onInputChange={setCurrentInput}
+            onSubmit={handleSubmit}
+            isSubmitting={sendAnswer.isPending}
             progress={progress}
             answeredDimensions={answeredDimensions}
           />
-          <div className="h-[50vh]">
-            <PersonaAnalysisChatInterface
-              messages={sessionData?.messages ?? []}
-              isAITyping={isAITyping}
-              currentInput={currentInput}
-              onInputChange={setCurrentInput}
-              onSubmit={handleSubmit}
-              isSubmitting={sendAnswer.isPending}
-              progress={progress}
-              answeredDimensions={answeredDimensions}
-            />
-          </div>
-        </>
+        </div>
       )}
 
       {/* State: Completing */}

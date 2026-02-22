@@ -55,6 +55,14 @@ export async function POST(
       return NextResponse.json({ error: "Persona not found" }, { status: 404 });
     }
 
+    const goals = (persona.goals as string[] | null) ?? [];
+    const motivations = (persona.motivations as string[] | null) ?? [];
+    const frustrations = (persona.frustrations as string[] | null) ?? [];
+    const behaviors = (persona.behaviors as string[] | null) ?? [];
+    const coreValues = (persona.coreValues as string[] | null) ?? [];
+    const buyingTriggers = (persona.buyingTriggers as string[] | null) ?? [];
+    const decisionCriteria = (persona.decisionCriteria as string[] | null) ?? [];
+
     const insightsData = {
       dimensions: [
         {
@@ -67,23 +75,65 @@ export async function POST(
           key: "goals_motivations",
           title: "Goals & Motivations",
           icon: "TrendingUp",
-          summary: `Driven by ${persona.motivations?.slice(0, 2).join(" and ") || "a desire for growth"}. ${persona.goals?.[0] ? `Primary goal: ${persona.goals[0]}.` : ""} Their motivations align with a need for meaningful professional impact.`,
+          summary: `Driven by ${motivations.slice(0, 2).join(" and ") || "a desire for growth"}. ${goals[0] ? `Primary goal: ${goals[0]}.` : ""} Their motivations align with a need for meaningful professional impact.`,
         },
         {
           key: "challenges_frustrations",
           title: "Challenges & Pain Points",
           icon: "Heart",
-          summary: `Key frustrations include ${persona.frustrations?.slice(0, 2).join(" and ") || "challenges with existing solutions"}. These pain points represent opportunities for targeted value delivery.`,
+          summary: `Key frustrations include ${frustrations.slice(0, 2).join(" and ") || "challenges with existing solutions"}. These pain points represent opportunities for targeted value delivery.`,
         },
         {
           key: "value_proposition",
           title: "Value Alignment",
           icon: "Zap",
-          summary: `The brand's offering directly addresses ${persona.name}'s core needs. ${persona.behaviors?.[0] ? `Their behavior pattern of "${persona.behaviors[0]}" suggests` : "Their profile suggests"} strong alignment with the product's value proposition.`,
+          summary: `The brand's offering directly addresses ${persona.name}'s core needs. ${behaviors[0] ? `Their behavior pattern of "${behaviors[0]}" suggests` : "Their profile suggests"} strong alignment with the product's value proposition.`,
         },
       ],
       researchBoostPercentage: 15,
       completedAt: new Date().toISOString(),
+
+      // Report fields
+      executiveSummary: `Op basis van de analyse van ${persona.name} blijkt dat deze persona een ${persona.occupation ?? "professional"} is${persona.location ? ` gevestigd in ${persona.location}` : ""}, met een focus op ${goals[0] ?? "professionele groei"}. De unieke waardepositie ligt in de combinatie van hun professionele context met hun persoonlijke drijfveren${coreValues.length > 0 ? ` en kernwaarden (${coreValues.slice(0, 3).join(", ")})` : ""}. Met aandacht voor de geïdentificeerde uitdagingen${frustrations.length > 0 ? ` — waaronder ${frustrations[0]}` : ""} — is er een solide basis voor strategische merkpositionering.`,
+
+      findings: [
+        {
+          title: "Demografisch Profiel",
+          description: `${persona.name} is een ${persona.age ?? "professional"} ${persona.gender?.toLowerCase() ?? "persoon"} met als rol ${persona.occupation ?? "niet gespecificeerd"}. ${persona.education ? `Opleidingsniveau: ${persona.education}.` : ""} ${persona.income ? `Inkomensniveau: ${persona.income}.` : ""} ${persona.familyStatus ? `Gezinssituatie: ${persona.familyStatus}.` : ""}`,
+        },
+        {
+          title: "Doelen & Motivaties",
+          description: goals.length > 0 || motivations.length > 0
+            ? `${goals.length > 0 ? `Doelen: ${goals.join("; ")}. ` : ""}${motivations.length > 0 ? `Motivaties: ${motivations.join("; ")}.` : ""}`
+            : "Geen specifieke doelen of motivaties gedefinieerd.",
+        },
+        {
+          title: "Uitdagingen & Pijnpunten",
+          description: frustrations.length > 0
+            ? `Belangrijkste frustraties: ${frustrations.join("; ")}. Deze pijnpunten bieden mogelijkheden voor gerichte waardecreatie.`
+            : "Geen specifieke frustraties gedefinieerd.",
+        },
+        {
+          title: "Gedrag & Beslispatronen",
+          description: `${behaviors.length > 0 ? `Gedragspatronen: ${behaviors.join("; ")}. ` : ""}${buyingTriggers.length > 0 ? `Kooptriggers: ${buyingTriggers.join("; ")}. ` : ""}${decisionCriteria.length > 0 ? `Besliscriteria: ${decisionCriteria.join("; ")}.` : ""}` || "Op basis van het profiel kunnen patronen worden geïdentificeerd in besluitvorming.",
+        },
+        {
+          title: "Waardepropositie & Aansluiting",
+          description: `Het aanbod sluit aan bij de kernbehoeften van ${persona.name}. ${coreValues.length > 0 ? `De kernwaarden (${coreValues.join(", ")}) vormen de basis voor merkvoorkeur. ` : ""}${persona.quote ? `In eigen woorden: "${persona.quote}"` : ""}`,
+        },
+      ],
+
+      recommendations: [
+        `Integreer het demografisch profiel van ${persona.name} in alle communicatie-uitingen`,
+        "Ontwikkel persona-specifieke customer journeys voor de gedefinieerde doelgroep",
+        "Creëer content die de unieke waarde tastbaar en begrijpelijk maakt",
+        frustrations.length > 0
+          ? `Bouw thought leadership rond oplossingen voor: ${frustrations[0]}`
+          : "Bouw thought leadership rond oplossingen voor klantuitdagingen",
+        coreValues.length > 0
+          ? `Vertaal de kernwaarden (${coreValues.slice(0, 3).join(", ")}) naar concrete gedragingen en besliscriteria`
+          : "Vertaal waarden naar concrete gedragingen en besliscriteria",
+      ],
     };
 
     // Mark session as completed

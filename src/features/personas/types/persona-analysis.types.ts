@@ -20,10 +20,18 @@ export interface AnalysisMessage {
   createdAt: string;
 }
 
+export interface ReportFinding {
+  title: string;
+  description: string;
+}
+
 export interface PersonaInsightsData {
   dimensions: DimensionInsight[];
   researchBoostPercentage: number;
   completedAt: string;
+  executiveSummary?: string;
+  findings?: ReportFinding[];
+  recommendations?: string[];
 }
 
 export interface DimensionInsight {
