@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 // ---------------------------------------------------------------------------
 // GET /api/campaigns/[id] — Campaign detail with all relations
@@ -24,6 +25,7 @@ export async function GET(
         knowledgeAssets: true,
         deliverables: { orderBy: { createdAt: "asc" } },
         teamMembers: true,
+        lockedBy: { select: { id: true, name: true } },
       },
     });
 
@@ -44,6 +46,9 @@ export async function GET(
       contentCategory: campaign.contentCategory,
       qualityScore: campaign.qualityScore,
       isArchived: campaign.isArchived,
+      isLocked: campaign.isLocked,
+      lockedAt: campaign.lockedAt?.toISOString() ?? null,
+      lockedBy: campaign.lockedBy ? { id: campaign.lockedBy.id, name: campaign.lockedBy.name } : null,
       isSavedAsTemplate: campaign.isSavedAsTemplate,
       templateName: campaign.templateName,
       prompt: campaign.prompt,
@@ -119,6 +124,9 @@ export async function PATCH(
 
     const { id } = await params;
 
+    const lockResponse = await requireUnlocked("campaign", id);
+    if (lockResponse) return lockResponse;
+
     const campaign = await prisma.campaign.findFirst({
       where: { id, workspaceId },
     });
@@ -182,6 +190,9 @@ export async function DELETE(
     }
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("campaign", id);
+    if (lockResponse) return lockResponse;
 
     const campaign = await prisma.campaign.findFirst({
       where: { id, workspaceId },

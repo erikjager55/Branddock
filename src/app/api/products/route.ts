@@ -87,6 +87,7 @@ export async function GET(request: NextRequest) {
       pricingModel: p.pricingModel,
       categoryIcon: p.categoryIcon,
       features: p.features,
+      isLocked: p.isLocked,
       linkedPersonaCount: p._count.linkedPersonas,
       updatedAt: p.updatedAt.toISOString(),
     }));

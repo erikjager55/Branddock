@@ -10,6 +10,7 @@ import {
   Package,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { CardLockIndicator } from "@/components/lock";
 import { CATEGORY_ICONS } from "../constants/product-constants";
 import type { ProductWithMeta } from "../types/product.types";
 
@@ -53,9 +54,11 @@ export function ProductCard({ product, onClick }: ProductCardProps) {
   return (
     <div
       data-testid="product-card"
-      className="flex cursor-pointer items-start gap-4 rounded-lg border border-gray-200 bg-white p-5 transition-all hover:border-gray-300 hover:shadow-sm"
+      className="relative flex cursor-pointer items-start gap-4 rounded-lg border border-gray-200 bg-white p-5 transition-all hover:border-gray-300 hover:shadow-sm"
       onClick={onClick}
     >
+      <CardLockIndicator isLocked={product.isLocked} className="absolute top-3 right-3" />
+
       {/* Content */}
       <div className="flex-1 min-w-0">
         {/* Top row: icon + name */}

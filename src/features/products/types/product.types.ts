@@ -14,6 +14,7 @@ export interface ProductWithMeta {
   features: string[];
   categoryIcon: string | null;
   linkedPersonaCount: number;
+  isLocked: boolean;
   updatedAt: string;
 }
 
@@ -24,6 +25,8 @@ export interface ProductDetail extends ProductWithMeta {
   sourceUrl: string | null;
   linkedPersonas: { id: string; name: string; avatarUrl: string | null }[];
   analysisData: unknown;
+  lockedAt: string | null;
+  lockedBy: { id: string; name: string } | null;
   createdAt: string;
 }
 

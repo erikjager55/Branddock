@@ -4,6 +4,9 @@ import React from "react";
 import { ArrowLeft, Megaphone, Zap } from "lucide-react";
 import { Badge, Button } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
+import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
+import { useLockState } from "@/hooks/useLockState";
+import { useLockVisibility } from "@/hooks/useLockVisibility";
 import { useCampaignStore } from "../../stores/useCampaignStore";
 import {
   useCampaignDetail,
@@ -27,6 +30,18 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
   const { activeCampaignTab, setActiveCampaignTab } = useCampaignStore();
 
   const { data: campaign, isLoading: campaignLoading } = useCampaignDetail(campaignId);
+
+  const lock = useLockState({
+    entityType: 'campaigns',
+    entityId: campaignId,
+    entityName: campaign?.title ?? 'Campaign',
+    initialState: {
+      isLocked: campaign?.isLocked ?? false,
+      lockedAt: campaign?.lockedAt ?? null,
+      lockedBy: campaign?.lockedBy ?? null,
+    },
+  });
+  const visibility = useLockVisibility(lock.isLocked);
   const { data: assets, isLoading: assetsLoading } = useKnowledgeAssets(campaignId);
   const { data: strategy, isLoading: strategyLoading } = useStrategy(campaignId);
   const { data: deliverables } = useDeliverables(campaignId);
@@ -97,6 +112,18 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
               <p className="text-sm text-gray-500 mt-1">{campaign.description}</p>
             )}
           </div>
+          <div className="flex items-center gap-2">
+            <LockShield
+              isLocked={lock.isLocked}
+              isToggling={lock.isToggling}
+              onClick={lock.requestToggle}
+            />
+            <LockStatusPill
+              isLocked={lock.isLocked}
+              lockedAt={lock.lockedAt}
+              lockedBy={lock.lockedBy}
+            />
+          </div>
         </div>
 
         {/* Tab Navigation (Strategic campaigns only) */}
@@ -120,40 +147,56 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
         )}
       </div>
 
+      {/* Lock Banner */}
+      <LockBanner isLocked={lock.isLocked} onUnlock={lock.requestToggle} />
+
       {/* Content */}
-      <div>
-        {isStrategic ? (
-          activeCampaignTab === "configure" ? (
-            <ConfigureInputsTab
-              assets={assets || []}
-              isLoading={assetsLoading}
-              onAddAssets={() => alert("Asset selection modal coming in S6.B")}
-              onRemoveAsset={(assetId) => removeAsset.mutate(assetId)}
-            />
+      <LockOverlay isLocked={lock.isLocked}>
+        <div>
+          {isStrategic ? (
+            activeCampaignTab === "configure" ? (
+              <ConfigureInputsTab
+                assets={assets || []}
+                isLoading={assetsLoading}
+                onAddAssets={() => alert("Asset selection modal coming in S6.B")}
+                onRemoveAsset={(assetId) => removeAsset.mutate(assetId)}
+              />
+            ) : (
+              <div className="space-y-8">
+                {visibility.showAITools && (
+                  <StrategyResultTab
+                    strategy={strategy}
+                    isLoading={strategyLoading}
+                    onGenerate={() => generateStrategy.mutate()}
+                    isGenerating={generateStrategy.isPending}
+                  />
+                )}
+                <DeliverablesTab
+                  deliverables={deliverables || campaign.deliverables || []}
+                  onAddDeliverable={() => alert("Add deliverable coming in S6.B")}
+                  onOpenInStudio={visibility.showAITools ? (did) => onOpenInStudio?.(campaignId, did) : undefined}
+                />
+              </div>
+            )
           ) : (
-            <div className="space-y-8">
-              <StrategyResultTab
-                strategy={strategy}
-                isLoading={strategyLoading}
-                onGenerate={() => generateStrategy.mutate()}
-                isGenerating={generateStrategy.isPending}
-              />
-              <DeliverablesTab
-                deliverables={deliverables || campaign.deliverables || []}
-                onAddDeliverable={() => alert("Add deliverable coming in S6.B")}
-                onOpenInStudio={(did) => onOpenInStudio?.(campaignId, did)}
-              />
-            </div>
-          )
-        ) : (
-          /* Quick Content shows deliverables directly */
-          <DeliverablesTab
-            deliverables={deliverables || campaign.deliverables || []}
-            onAddDeliverable={() => alert("Add deliverable coming in S6.B")}
-            onOpenInStudio={(did) => onOpenInStudio?.(campaignId, did)}
-          />
-        )}
-      </div>
+            /* Quick Content shows deliverables directly */
+            <DeliverablesTab
+              deliverables={deliverables || campaign.deliverables || []}
+              onAddDeliverable={() => alert("Add deliverable coming in S6.B")}
+              onOpenInStudio={visibility.showAITools ? (did) => onOpenInStudio?.(campaignId, did) : undefined}
+            />
+          )}
+        </div>
+      </LockOverlay>
+
+      {/* Lock Confirm Dialog */}
+      <LockConfirmDialog
+        isOpen={lock.showConfirm}
+        isLocking={!lock.isLocked}
+        entityName={campaign.title}
+        onConfirm={lock.confirmToggle}
+        onCancel={lock.cancelToggle}
+      />
     </PageShell>
   );
 }

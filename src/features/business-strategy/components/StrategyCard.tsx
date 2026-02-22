@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Badge } from '@/components/shared';
+import { CardLockIndicator } from '@/components/lock';
 import { STRATEGY_STATUS_COLORS } from '../constants/strategy-types';
 import type { StrategyWithMeta, StrategyType, StrategyStatus } from '../types/business-strategy.types';
 
@@ -70,8 +71,10 @@ export function StrategyCard({ strategy, onClick }: StrategyCardProps) {
     <div
       data-testid={`strategy-card-${strategy.id}`}
       onClick={onClick}
-      className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow cursor-pointer"
+      className="relative bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow cursor-pointer"
     >
+      <CardLockIndicator isLocked={strategy.isLocked} className="absolute top-3 right-3" />
+
       {/* Header: icon + type badge + status badge */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">

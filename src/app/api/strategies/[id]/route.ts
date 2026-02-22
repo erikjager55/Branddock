@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { mapStrategyDetail } from "../route";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -37,6 +38,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         focusAreas: { include: { _count: { select: { objectives: true } } } },
         milestones: { orderBy: { date: "asc" } },
         linkedCampaigns: true,
+        lockedBy: { select: { id: true, name: true } },
       },
     });
 
@@ -62,6 +64,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("businessStrategy", id);
+    if (lockResponse) return lockResponse;
 
     const existing = await prisma.businessStrategy.findFirst({
       where: { id, workspaceId },
@@ -116,6 +121,9 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     }
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("businessStrategy", id);
+    if (lockResponse) return lockResponse;
 
     const existing = await prisma.businessStrategy.findFirst({
       where: { id, workspaceId },

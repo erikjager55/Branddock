@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { ArrowLeft, Archive, Trash2, MoreHorizontal } from 'lucide-react';
 import { Badge, Button, SkeletonCard, SkeletonText } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
+import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from '@/components/lock';
+import { useLockState } from '@/hooks/useLockState';
+import { useLockVisibility } from '@/hooks/useLockVisibility';
 import { STRATEGY_TYPES, STRATEGY_STATUS_COLORS } from '../../constants/strategy-types';
 import {
   useStrategyDetail,
@@ -41,6 +44,18 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
     useBusinessStrategyStore();
 
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
+
+  const lock = useLockState({
+    entityType: 'strategies',
+    entityId: strategyId,
+    entityName: strategy?.name ?? 'Strategy',
+    initialState: {
+      isLocked: strategy?.isLocked ?? false,
+      lockedAt: strategy?.lockedAt ?? null,
+      lockedBy: strategy?.lockedBy ?? null,
+    },
+  });
+  const visibility = useLockVisibility(lock.isLocked);
 
   const handleContextUpdate = (data: UpdateContextBody) => {
     updateContext.mutate(data);
@@ -124,7 +139,18 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
             )}
           </div>
 
-          <div className="relative">
+          <div className="flex items-center gap-2">
+            <LockShield
+              isLocked={lock.isLocked}
+              isToggling={lock.isToggling}
+              onClick={lock.requestToggle}
+            />
+            <LockStatusPill
+              isLocked={lock.isLocked}
+              lockedAt={lock.lockedAt}
+              lockedBy={lock.lockedBy}
+            />
+            <div className="relative">
             <button
               data-testid="strategy-header-menu"
               onClick={() => setShowHeaderMenu(!showHeaderMenu)}
@@ -149,24 +175,37 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
                 </button>
               </div>
             )}
+            </div>
           </div>
         </div>
+
+        {/* Lock Banner */}
+        <LockBanner isLocked={lock.isLocked} onUnlock={lock.requestToggle} />
 
         {/* Progress */}
         <StrategyProgressSection strategy={strategy} />
 
         {/* Strategic Context */}
-        <StrategicContextSection
-          strategy={strategy}
-          onUpdate={handleContextUpdate}
-          isUpdating={updateContext.isPending}
-        />
+        <LockOverlay isLocked={lock.isLocked}>
+          <StrategicContextSection
+            strategy={strategy}
+            onUpdate={handleContextUpdate}
+            isUpdating={updateContext.isPending}
+          />
+        </LockOverlay>
 
         {/* Objectives */}
+        <LockOverlay isLocked={lock.isLocked}>
         <div data-testid="objectives-section" className="p-6 bg-white border border-gray-200 rounded-lg">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Objectives</h2>
-            <Button data-testid="add-objective-button" variant="cta" size="sm" onClick={() => setAddObjectiveModalOpen(true)}>
+            <Button
+              data-testid="add-objective-button"
+              variant="cta"
+              size="sm"
+              onClick={() => setAddObjectiveModalOpen(true)}
+              disabled={!lock.canEdit}
+            >
               Add Objective
             </Button>
           </div>
@@ -186,18 +225,23 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
             <p className="text-sm text-gray-400 italic">No objectives defined yet</p>
           )}
         </div>
+        </LockOverlay>
 
         {/* Focus Areas */}
-        <FocusAreaCards focusAreas={strategy.focusAreaDetails} strategyId={strategyId} />
+        <LockOverlay isLocked={lock.isLocked}>
+          <FocusAreaCards focusAreas={strategy.focusAreaDetails} strategyId={strategyId} />
+        </LockOverlay>
 
         {/* Linked Campaigns (stub) */}
         <LinkedCampaignsSection />
 
         {/* Milestones */}
-        <MilestoneTimeline
-          milestones={strategy.milestones}
-          onAdd={() => setAddMilestoneModalOpen(true)}
-        />
+        <LockOverlay isLocked={lock.isLocked}>
+          <MilestoneTimeline
+            milestones={strategy.milestones}
+            onAdd={() => setAddMilestoneModalOpen(true)}
+          />
+        </LockOverlay>
 
         {/* Modals */}
         <AddObjectiveModal
@@ -210,6 +254,15 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
           isOpen={isAddMilestoneModalOpen}
           onClose={() => setAddMilestoneModalOpen(false)}
           strategyId={strategyId}
+        />
+
+        {/* Lock Confirm Dialog */}
+        <LockConfirmDialog
+          isOpen={lock.showConfirm}
+          isLocking={!lock.isLocked}
+          entityName={strategy.name}
+          onConfirm={lock.confirmToggle}
+          onCancel={lock.cancelToggle}
         />
       </div>
     </PageShell>

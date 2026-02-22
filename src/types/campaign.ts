@@ -23,6 +23,7 @@ export interface CampaignSummary {
   contentCategory: string | null;
   qualityScore: number | null;
   isArchived: boolean;
+  isLocked: boolean;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
@@ -91,6 +92,9 @@ export interface CampaignDetail {
   contentCategory: string | null;
   qualityScore: number | null;
   isArchived: boolean;
+  isLocked: boolean;
+  lockedAt: string | null;
+  lockedBy: { id: string; name: string } | null;
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;

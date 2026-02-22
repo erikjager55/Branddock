@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { ArrowLeft, Edit3, Save, X } from "lucide-react";
 import { Button, SkeletonCard } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
+import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
+import { useLockState } from "@/hooks/useLockState";
+import { useLockVisibility } from "@/hooks/useLockVisibility";
 import { useProductDetail, useUpdateProduct, useUnlinkPersona, useProductPersonas } from "../../hooks";
 import {
   SOURCE_BADGES,
@@ -32,6 +35,18 @@ export function ProductDetailPage({
   const updateProduct = useUpdateProduct(productId);
   const [isPersonaSelectorOpen, setIsPersonaSelectorOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  const lock = useLockState({
+    entityType: 'products',
+    entityId: productId,
+    entityName: product?.name ?? 'Product',
+    initialState: {
+      isLocked: product?.isLocked ?? false,
+      lockedAt: product?.lockedAt ?? null,
+      lockedBy: product?.lockedBy ?? null,
+    },
+  });
+  const visibility = useLockVisibility(lock.isLocked);
 
   // Edit state
   const [editName, setEditName] = useState("");
@@ -157,8 +172,18 @@ export function ProductDetailPage({
             </div>
           </div>
 
-          {/* Edit/Save buttons */}
+          {/* Action buttons */}
           <div className="flex items-center gap-2 ml-4">
+            <LockShield
+              isLocked={lock.isLocked}
+              isToggling={lock.isToggling}
+              onClick={lock.requestToggle}
+            />
+            <LockStatusPill
+              isLocked={lock.isLocked}
+              lockedAt={lock.lockedAt}
+              lockedBy={lock.lockedBy}
+            />
             {isEditing ? (
               <>
                 <Button
@@ -174,15 +199,24 @@ export function ProductDetailPage({
                 </Button>
               </>
             ) : (
-              <Button data-testid="product-edit-button" variant="secondary" icon={Edit3} onClick={() => setIsEditing(true)}>
+              <Button
+                data-testid="product-edit-button"
+                variant="secondary"
+                icon={Edit3}
+                onClick={() => setIsEditing(true)}
+                disabled={!lock.canEdit}
+              >
                 Edit
               </Button>
             )}
           </div>
         </div>
 
+        {/* Lock Banner */}
+        <LockBanner isLocked={lock.isLocked} onUnlock={lock.requestToggle} />
+
         {/* 1. Description + Pricing (2-col on md+) */}
-        {isEditing ? (
+        {isEditing && lock.canEdit ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-5">
               <label className="text-sm font-semibold text-gray-900 mb-2 block">Description</label>
@@ -214,7 +248,17 @@ export function ProductDetailPage({
               </div>
             </div>
           </div>
-        ) : (
+        ) : (product.description || product.pricingModel) ? (
+          <LockOverlay isLocked={lock.isLocked}>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <DescriptionCard description={product.description} />
+              <PricingModelCard
+                pricingModel={product.pricingModel}
+                pricingDetails={product.pricingDetails}
+              />
+            </div>
+          </LockOverlay>
+        ) : visibility.showEmptySections ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <DescriptionCard description={product.description} />
             <PricingModelCard
@@ -222,29 +266,43 @@ export function ProductDetailPage({
               pricingDetails={product.pricingDetails}
             />
           </div>
-        )}
+        ) : null}
 
         {/* 2. Features & Specifications */}
-        {product.features.length > 0 && (
+        {product.features.length > 0 ? (
+          <LockOverlay isLocked={lock.isLocked}>
+            <FeaturesSpecsSection features={product.features} />
+          </LockOverlay>
+        ) : visibility.showEmptySections ? (
           <FeaturesSpecsSection features={product.features} />
-        )}
+        ) : null}
 
         {/* 3. Benefits */}
-        {product.benefits.length > 0 && (
+        {product.benefits.length > 0 ? (
+          <LockOverlay isLocked={lock.isLocked}>
+            <BenefitsSection benefits={product.benefits} />
+          </LockOverlay>
+        ) : visibility.showEmptySections ? (
           <BenefitsSection benefits={product.benefits} />
-        )}
+        ) : null}
 
         {/* 4. Target Audience (personas) */}
-        <TargetAudienceSection
-          personas={personas}
-          onAdd={() => setIsPersonaSelectorOpen(true)}
-          onRemove={handleRemovePersona}
-        />
+        <LockOverlay isLocked={lock.isLocked}>
+          <TargetAudienceSection
+            personas={personas}
+            onAdd={() => setIsPersonaSelectorOpen(true)}
+            onRemove={handleRemovePersona}
+          />
+        </LockOverlay>
 
         {/* 5. Use Cases */}
-        {product.useCases.length > 0 && (
+        {product.useCases.length > 0 ? (
+          <LockOverlay isLocked={lock.isLocked}>
+            <UseCasesSection useCases={product.useCases} />
+          </LockOverlay>
+        ) : visibility.showEmptySections ? (
           <UseCasesSection useCases={product.useCases} />
-        )}
+        ) : null}
 
         {/* Persona Selector Modal */}
         <PersonaSelectorModal
@@ -252,6 +310,15 @@ export function ProductDetailPage({
           onClose={() => setIsPersonaSelectorOpen(false)}
           productId={productId}
           linkedPersonaIds={linkedPersonaIds}
+        />
+
+        {/* Lock Confirm Dialog */}
+        <LockConfirmDialog
+          isOpen={lock.showConfirm}
+          isLocking={!lock.isLocked}
+          entityName={product.name}
+          onConfirm={lock.confirmToggle}
+          onCancel={lock.cancelToggle}
         />
       </div>
     </PageShell>

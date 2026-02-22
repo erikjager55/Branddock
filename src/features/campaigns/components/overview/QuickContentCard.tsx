@@ -3,6 +3,7 @@
 import React from "react";
 import { Zap, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/shared";
+import { CardLockIndicator } from "@/components/lock";
 import { CampaignOverflowMenu } from "./CampaignOverflowMenu";
 import { getContentTypeById } from "@/lib/campaigns/content-types";
 import type { CampaignSummary } from "@/types/campaign";
@@ -35,7 +36,10 @@ export function QuickContentCard({ campaign, onClick, onConvert, onDelete }: Qui
             <Badge variant="success">Done</Badge>
           )}
         </div>
-        <CampaignOverflowMenu onDelete={onDelete} />
+        <div className="flex items-center gap-1">
+          <CardLockIndicator isLocked={campaign.isLocked} />
+          <CampaignOverflowMenu onDelete={onDelete} />
+        </div>
       </div>
 
       {/* Title + Content Type */}

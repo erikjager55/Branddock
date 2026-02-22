@@ -3,6 +3,7 @@
 import React from "react";
 import { Megaphone, Database, FileText, Users } from "lucide-react";
 import { Badge, ProgressBar } from "@/components/shared";
+import { CardLockIndicator } from "@/components/lock";
 import { CampaignOverflowMenu } from "./CampaignOverflowMenu";
 import type { CampaignSummary } from "@/types/campaign";
 
@@ -34,7 +35,10 @@ export function StrategicCampaignCard({ campaign, onClick, onArchive, onDelete }
             </span>
           )}
         </div>
-        <CampaignOverflowMenu onArchive={onArchive} onDelete={onDelete} />
+        <div className="flex items-center gap-1">
+          <CardLockIndicator isLocked={campaign.isLocked} />
+          <CampaignOverflowMenu onArchive={onArchive} onDelete={onDelete} />
+        </div>
       </div>
 
       {/* Title */}

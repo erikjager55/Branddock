@@ -17,6 +17,7 @@ export const CAMPAIGN_LIST_SELECT = {
   contentCategory: true,
   qualityScore: true,
   isArchived: true,
+  isLocked: true,
   startDate: true,
   endDate: true,
   createdBy: true,
@@ -44,6 +45,7 @@ export const PRODUCT_LIST_SELECT = {
   pricingModel: true,
   categoryIcon: true,
   features: true,
+  isLocked: true,
   updatedAt: true,
   _count: { select: { linkedPersonas: true } },
 } as const;

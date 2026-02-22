@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
       contentCategory: c.contentCategory,
       qualityScore: c.qualityScore,
       isArchived: c.isArchived,
+      isLocked: c.isLocked,
       startDate: c.startDate?.toISOString() ?? null,
       endDate: c.endDate?.toISOString() ?? null,
       createdBy: c.createdBy,

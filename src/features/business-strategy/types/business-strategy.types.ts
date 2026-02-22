@@ -33,6 +33,7 @@ export interface StrategyWithMeta {
   objectives: { total: number; onTrack: number; atRisk: number };
   focusAreas: string[];
   linkedCampaignCount: number;
+  isLocked: boolean;
   startDate: string | null;
   endDate: string | null;
   updatedAt: string;
@@ -97,6 +98,8 @@ export interface StrategyDetailResponse extends Omit<StrategyWithMeta, 'objectiv
   focusAreaDetails: FocusAreaDetail[];
   milestones: MilestoneItem[];
   linkedCampaigns: never[];
+  lockedAt: string | null;
+  lockedBy: { id: string; name: string } | null;
 }
 
 // ─── Body Types ────────────────────────────────────────────

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 // ─── Zod Schema for PATCH ───────────────────────────────────
 
@@ -41,6 +42,7 @@ export async function GET(
             },
           },
         },
+        lockedBy: { select: { id: true, name: true } },
       },
     });
 
@@ -64,6 +66,9 @@ export async function GET(
       useCases: product.useCases,
       categoryIcon: product.categoryIcon,
       analysisData: product.analysisData,
+      isLocked: product.isLocked,
+      lockedAt: product.lockedAt?.toISOString() ?? null,
+      lockedBy: product.lockedBy ? { id: product.lockedBy.id, name: product.lockedBy.name } : null,
       linkedPersonaCount: product.linkedPersonas.length,
       linkedPersonas: product.linkedPersonas.map((lp) => ({
         id: lp.persona.id,
@@ -93,6 +98,9 @@ export async function PATCH(
     }
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("product", id);
+    if (lockResponse) return lockResponse;
 
     // Verify product belongs to workspace
     const existing = await prisma.product.findFirst({
@@ -142,6 +150,9 @@ export async function DELETE(
     }
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("product", id);
+    if (lockResponse) return lockResponse;
 
     // Verify product belongs to workspace
     const product = await prisma.product.findFirst({
