@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
-import { usePersonaDetail, useUpdatePersona, useTogglePersonaLock, useGenerateImplications, useDuplicatePersona } from '../../hooks';
+import { LockBanner, LockOverlay, LockConfirmDialog } from '@/components/lock';
+import { useLockState } from '@/hooks/useLockState';
+import { useLockVisibility } from '@/hooks/useLockVisibility';
+import { usePersonaDetail, useUpdatePersona, useGenerateImplications, useDuplicatePersona } from '../../hooks';
 import { usePersonaDetailStore } from '../../stores/usePersonaDetailStore';
 import { PersonaDetailHeader } from './PersonaDetailHeader';
 import { DemographicsSection } from './DemographicsSection';
@@ -26,7 +29,6 @@ interface PersonaDetailPageProps {
 export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: PersonaDetailPageProps) {
   const { data: persona, isLoading } = usePersonaDetail(personaId);
   const updatePersona = useUpdatePersona(personaId);
-  const toggleLock = useTogglePersonaLock(personaId);
   const generateImplications = useGenerateImplications(personaId);
   const duplicatePersona = useDuplicatePersona(personaId);
   const [stubMessage, setStubMessage] = useState<string | null>(null);
@@ -35,6 +37,19 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
   const setEditing = usePersonaDetailStore((s) => s.setEditing);
   const isChatModalOpen = usePersonaDetailStore((s) => s.isChatModalOpen);
   const setChatModalOpen = usePersonaDetailStore((s) => s.setChatModalOpen);
+
+  // Lock state & visibility
+  const lockState = useLockState({
+    entityType: 'personas',
+    entityId: personaId,
+    entityName: persona?.name ?? 'Persona',
+    initialState: {
+      isLocked: persona?.isLocked ?? false,
+      lockedAt: persona?.lockedAt ?? null,
+      lockedBy: persona?.lockedBy ?? null,
+    },
+  });
+  const visibility = useLockVisibility(lockState.isLocked);
 
   if (isLoading) {
     return (
@@ -72,6 +87,13 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
     }
   };
 
+  // Force editing off when locked
+  useEffect(() => {
+    if (lockState.isLocked && isEditing) {
+      setEditing(false);
+    }
+  }, [lockState.isLocked, isEditing, setEditing]);
+
   return (
     <PageShell maxWidth="7xl">
       <div data-testid="persona-detail" className="space-y-6">
@@ -89,10 +111,17 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
         <PersonaDetailHeader
           persona={persona}
           isEditing={isEditing}
+          lockState={lockState}
+          visibility={visibility}
           onEditToggle={() => setEditing(!isEditing)}
-          onLockToggle={() => toggleLock.mutate(!persona.isLocked)}
-          onRegenerate={() => {}}
           onChat={() => setChatModalOpen(true)}
+        />
+
+        {/* Lock Banner */}
+        <LockBanner
+          isLocked={lockState.isLocked}
+          onUnlock={lockState.requestToggle}
+          lockedBy={lockState.lockedBy}
         />
 
         {/* Stub toast */}
@@ -106,53 +135,75 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Main Content — left column (2/3) */}
           <div className="md:col-span-2 min-w-0 space-y-4">
-            {/* Row 1: Demographics (full width) */}
-            <DemographicsSection
-              persona={persona}
-              isEditing={isEditing}
-              onUpdate={(data) => updatePersona.mutate(data)}
-            />
+            {/* Row 1: Demographics (full width) — always visible, overlay when locked */}
+            <LockOverlay isLocked={lockState.isLocked}>
+              <DemographicsSection
+                persona={persona}
+                isEditing={isEditing}
+                onUpdate={(data) => updatePersona.mutate(data)}
+              />
+            </LockOverlay>
 
-            {/* Row 2: Quote & Bio (full width) */}
-            <QuoteBioSection
-              persona={persona}
-              isEditing={isEditing}
-              onUpdate={(data) => updatePersona.mutate(data)}
-            />
+            {/* Row 2: Quote & Bio — visible if filled, overlay when locked */}
+            {(persona.quote || persona.bio || !lockState.isLocked) && (
+              <LockOverlay isLocked={lockState.isLocked}>
+                <QuoteBioSection
+                  persona={persona}
+                  isEditing={isEditing}
+                  onUpdate={(data) => updatePersona.mutate(data)}
+                />
+              </LockOverlay>
+            )}
 
-            {/* Row 3: Psychographics + Channels (2 columns) */}
+            {/* Row 3: Psychographics + Channels — overlay when locked */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-              <PsychographicsSection
-                persona={persona}
-                isEditing={isEditing}
-                onUpdate={(data) => updatePersona.mutate(data)}
-              />
-              <ChannelsToolsSection
-                persona={persona}
-                isEditing={isEditing}
-                onUpdate={(data) => updatePersona.mutate(data)}
-              />
+              <LockOverlay isLocked={lockState.isLocked}>
+                <PsychographicsSection
+                  persona={persona}
+                  isEditing={isEditing}
+                  onUpdate={(data) => updatePersona.mutate(data)}
+                />
+              </LockOverlay>
+              {((persona.preferredChannels?.length ?? 0) > 0 || (persona.techStack?.length ?? 0) > 0 || !lockState.isLocked) && (
+                <LockOverlay isLocked={lockState.isLocked}>
+                  <ChannelsToolsSection
+                    persona={persona}
+                    isEditing={isEditing}
+                    onUpdate={(data) => updatePersona.mutate(data)}
+                  />
+                </LockOverlay>
+              )}
             </div>
 
-            {/* Row 4: Goals + Motivations + Frustrations (3 columns, internal grid) */}
-            <GoalsMotivationsCards
-              persona={persona}
-              isEditing={isEditing}
-              onUpdate={(data) => updatePersona.mutate(data)}
-            />
+            {/* Row 4: Goals + Motivations + Frustrations — overlay when locked */}
+            <LockOverlay isLocked={lockState.isLocked}>
+              <GoalsMotivationsCards
+                persona={persona}
+                isEditing={isEditing}
+                onUpdate={(data) => updatePersona.mutate(data)}
+              />
+            </LockOverlay>
 
-            {/* Row 5: Behaviors + Buying Triggers (2 columns) */}
+            {/* Row 5: Behaviors + Buying Triggers — hide empty sections when locked */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
-              <BehaviorsSection
-                persona={persona}
-                isEditing={isEditing}
-                onUpdate={(data) => updatePersona.mutate(data)}
-              />
-              <BuyingTriggersSection
-                persona={persona}
-                isEditing={isEditing}
-                onUpdate={(data) => updatePersona.mutate(data)}
-              />
+              {((persona.behaviors?.length ?? 0) > 0 || !lockState.isLocked) && (
+                <LockOverlay isLocked={lockState.isLocked}>
+                  <BehaviorsSection
+                    persona={persona}
+                    isEditing={isEditing}
+                    onUpdate={(data) => updatePersona.mutate(data)}
+                  />
+                </LockOverlay>
+              )}
+              {((persona.buyingTriggers?.length ?? 0) > 0 || (persona.decisionCriteria?.length ?? 0) > 0 || !lockState.isLocked) && (
+                <LockOverlay isLocked={lockState.isLocked}>
+                  <BuyingTriggersSection
+                    persona={persona}
+                    isEditing={isEditing}
+                    onUpdate={(data) => updatePersona.mutate(data)}
+                  />
+                </LockOverlay>
+              )}
             </div>
           </div>
 
@@ -167,21 +218,24 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
                   setStubMessage('Export coming in a future sprint');
                   setTimeout(() => setStubMessage(null), 3000);
                 }}
-                isLocked={persona.isLocked}
+                isLocked={lockState.isLocked}
               />
 
               <ProfileCompletenessCard persona={persona} />
 
+              {/* Research sidebar: hide non-started methods when locked */}
               <ResearchSidebarCard
                 persona={persona}
                 onStartMethod={handleStartMethod}
+                isLocked={lockState.isLocked}
               />
 
+              {/* Strategic Implications: show if filled, hide generate when locked */}
               <StrategicImplicationsSidebar
                 persona={persona}
                 isEditing={isEditing}
                 onUpdate={(data) => updatePersona.mutate(data)}
-                onGenerate={() => generateImplications.mutate()}
+                onGenerate={visibility.showAITools ? () => generateImplications.mutate() : undefined}
                 isGenerating={generateImplications.isPending}
               />
             </div>
@@ -196,6 +250,15 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
             onClose={() => setChatModalOpen(false)}
           />
         )}
+
+        {/* Lock Confirm Dialog */}
+        <LockConfirmDialog
+          isOpen={lockState.showConfirm}
+          isLocking={!lockState.isLocked}
+          entityName={persona.name}
+          onConfirm={lockState.confirmToggle}
+          onCancel={lockState.cancelToggle}
+        />
       </div>
     </PageShell>
   );
