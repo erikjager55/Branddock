@@ -159,13 +159,6 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
           {/* Sidebar — right column (1/3), sticky */}
           <div className="min-w-0">
             <div className="md:sticky md:top-6 space-y-4">
-              <ProfileCompletenessCard persona={persona} />
-
-              <ResearchSidebarCard
-                persona={persona}
-                onStartMethod={handleStartMethod}
-              />
-
               <QuickActionsCard
                 onChat={() => setChatModalOpen(true)}
                 onRegenerate={() => {}}
@@ -175,6 +168,13 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
                   setTimeout(() => setStubMessage(null), 3000);
                 }}
                 isLocked={persona.isLocked}
+              />
+
+              <ProfileCompletenessCard persona={persona} />
+
+              <ResearchSidebarCard
+                persona={persona}
+                onStartMethod={handleStartMethod}
               />
 
               <StrategicImplicationsSidebar
