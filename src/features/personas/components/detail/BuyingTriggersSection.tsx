@@ -1,6 +1,7 @@
 'use client';
 
-import { ShoppingCart, Zap, Scale, CheckCircle } from 'lucide-react';
+import { ShoppingCart, Zap, Scale, CheckCircle, Sparkles } from 'lucide-react';
+import { Button } from '@/components/shared';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 import { ImpactBadge } from './ImpactBadge';
 import { RepeatableListInput } from '../create/RepeatableListInput';
@@ -14,7 +15,26 @@ interface BuyingTriggersSectionProps {
 export function BuyingTriggersSection({ persona, isEditing, onUpdate }: BuyingTriggersSectionProps) {
   const triggers = persona.buyingTriggers ?? [];
   const criteria = persona.decisionCriteria ?? [];
-  const hasContent = triggers.length > 0 || criteria.length > 0;
+
+  // Compact empty state
+  if (triggers.length === 0 && criteria.length === 0 && !isEditing) {
+    return (
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center">
+            <Zap className="h-4 w-4 text-orange-600" />
+          </div>
+          <div>
+            <span className="text-sm font-medium text-gray-900">Buying Triggers & Criteria</span>
+            <span className="text-xs text-gray-500 ml-2">No triggers or criteria defined yet</span>
+          </div>
+        </div>
+        <Button variant="secondary" size="sm" icon={Sparkles}>
+          Fill with AI
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6">
@@ -31,13 +51,7 @@ export function BuyingTriggersSection({ persona, isEditing, onUpdate }: BuyingTr
         <ImpactBadge impact="high" />
       </div>
 
-      {!hasContent && !isEditing ? (
-        <div className="bg-orange-50/30 border border-orange-100 rounded-xl p-6 text-center">
-          <ShoppingCart className="w-8 h-8 text-orange-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">No buying triggers or decision criteria defined yet</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Buying Triggers */}
           <div className="bg-orange-50/30 border border-orange-100 rounded-xl p-4">
             <div className="flex items-center gap-1.5 mb-3">
@@ -90,7 +104,6 @@ export function BuyingTriggersSection({ persona, isEditing, onUpdate }: BuyingTr
             )}
           </div>
         </div>
-      )}
 
       {/* Counts footer */}
       <div className="border-t border-gray-100 mt-4 pt-3">

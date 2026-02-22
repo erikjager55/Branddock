@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Radio, Megaphone, Wrench, X } from 'lucide-react';
+import { Radio, Megaphone, Wrench, Share2, Sparkles, X } from 'lucide-react';
+import { Button } from '@/components/shared';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 import { ImpactBadge } from './ImpactBadge';
 
@@ -17,7 +18,26 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
 
   const channels = persona.preferredChannels ?? [];
   const tools = persona.techStack ?? [];
-  const hasContent = channels.length > 0 || tools.length > 0;
+
+  // Compact empty state
+  if (channels.length === 0 && tools.length === 0 && !isEditing) {
+    return (
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+            <Share2 className="h-4 w-4 text-indigo-600" />
+          </div>
+          <div>
+            <span className="text-sm font-medium text-gray-900">Channels & Tools</span>
+            <span className="text-xs text-gray-500 ml-2">No channels or tools defined yet</span>
+          </div>
+        </div>
+        <Button variant="secondary" size="sm" icon={Sparkles}>
+          Fill with AI
+        </Button>
+      </div>
+    );
+  }
 
   const handleAddTag = (field: 'preferredChannels' | 'techStack', value: string, setDraft: (v: string) => void) => {
     const trimmed = value.trim();
@@ -55,13 +75,7 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
         <ImpactBadge impact="high" />
       </div>
 
-      {!hasContent && !isEditing ? (
-        <div className="bg-indigo-50/30 border border-indigo-100 rounded-xl p-6 text-center">
-          <Radio className="w-8 h-8 text-indigo-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">No channels or tools defined yet</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Preferred Channels */}
           <div className="bg-indigo-50/30 border border-indigo-100 rounded-xl p-4">
             <div className="flex items-center gap-1.5 mb-3">
@@ -132,7 +146,6 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
             <p className="text-xs text-gray-400 mt-2">{tools.length} tools</p>
           </div>
         </div>
-      )}
 
       {/* Counts footer */}
       <div className="border-t border-gray-100 mt-4 pt-3">
