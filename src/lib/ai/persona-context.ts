@@ -346,10 +346,41 @@ export async function buildSelectedPersonasContext(
     return impl ? `${full}\n\n${impl}` : full;
   });
 
+  // Build content optimization summary (Stap 7: channel/trigger/criteria hints)
+  const optimizationLines: string[] = [];
+  for (const p of personas) {
+    const channels = asStringArray(p.preferredChannels);
+    const triggers = asStringArray(p.buyingTriggers);
+    const criteria = asStringArray(p.decisionCriteria);
+
+    if (channels.length > 0 || triggers.length > 0 || criteria.length > 0) {
+      if (channels.length > 0) {
+        optimizationLines.push(`- ${p.name} is most active on: ${channels.join(', ')}`);
+      }
+      if (criteria.length > 0) {
+        optimizationLines.push(`- ${p.name} evaluates based on: ${criteria.join(', ')}`);
+      }
+      if (triggers.length > 0) {
+        optimizationLines.push(`- Key triggers that would make ${p.name} act: ${triggers.join('; ')}`);
+      }
+    }
+  }
+
+  const optimizationSection = optimizationLines.length > 0
+    ? [
+        "",
+        "## Target Persona Channel Preferences & Decision Drivers",
+        ...optimizationLines,
+        "",
+        "Optimize the content for these channels and address these triggers and criteria where relevant.",
+      ].join("\n")
+    : "";
+
   return [
     `=== PERSONA CONTEXT (${personas.length} persona${personas.length > 1 ? "s" : ""}) ===`,
     "",
     sections.join("\n\n---\n\n"),
+    optimizationSection,
     "",
     "=== END PERSONA CONTEXT ===",
   ].join("\n");

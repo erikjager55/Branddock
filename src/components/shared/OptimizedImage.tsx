@@ -92,6 +92,22 @@ export function OptimizedImage({
     );
   }
 
+  // ─── Data URIs → regular <img> (next/image doesn't support data:) ──
+  if (src.startsWith('data:')) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={src}
+        alt={alt}
+        width={resolvedWidth}
+        height={resolvedHeight}
+        className={`${avatarClasses} ${className}`.trim()}
+        data-testid={testId}
+        onError={() => setHasError(true)}
+      />
+    );
+  }
+
   // ─── Placeholder data URL ──────────────────────────────
   let blurDataURL: string | undefined;
   if (placeholderStyle === 'shimmer') {

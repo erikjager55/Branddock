@@ -4,10 +4,9 @@ import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
-import { usePersonaDetail, useUpdatePersona, useTogglePersonaLock, useGenerateImplications, useDuplicatePersona } from '../../hooks';
+import { usePersonaDetail, useUpdatePersona, useTogglePersonaLock, useGenerateImplications } from '../../hooks';
 import { usePersonaDetailStore } from '../../stores/usePersonaDetailStore';
 import { PersonaDetailHeader } from './PersonaDetailHeader';
-import { PersonaActionBar } from './PersonaActionBar';
 import { DemographicsSection } from './DemographicsSection';
 import { PsychographicsSection } from './PsychographicsSection';
 import { GoalsMotivationsCards } from './GoalsMotivationsCards';
@@ -18,7 +17,6 @@ import { ChannelsToolsSection } from './ChannelsToolsSection';
 import { BuyingTriggersSection } from './BuyingTriggersSection';
 import { ResearchMethodsSection } from './ResearchMethodsSection';
 import { ChatWithPersonaModal } from '../chat/ChatWithPersonaModal';
-import { WhatArePersonasPanel } from '../WhatArePersonasPanel';
 
 interface PersonaDetailPageProps {
   personaId: string;
@@ -31,7 +29,6 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
   const updatePersona = useUpdatePersona(personaId);
   const toggleLock = useTogglePersonaLock(personaId);
   const generateImplications = useGenerateImplications(personaId);
-  const duplicatePersona = useDuplicatePersona(personaId);
   const [stubMessage, setStubMessage] = useState<string | null>(null);
 
   const isEditing = usePersonaDetailStore((s) => s.isEditing);
@@ -65,7 +62,6 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
     if (method === 'AI_EXPLORATION') {
       onNavigateToAnalysis();
     } else {
-      // Stub for other research methods
       const labels: Record<string, string> = {
         INTERVIEWS: 'Interview module',
         QUESTIONNAIRE: 'Questionnaire module',
@@ -74,12 +70,6 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
       setStubMessage(`${labels[method] ?? method} coming in a future sprint`);
       setTimeout(() => setStubMessage(null), 3000);
     }
-  };
-
-  const handleDuplicate = () => {
-    duplicatePersona.mutateAsync().then(() => {
-      onBack();
-    });
   };
 
   return (
@@ -95,25 +85,15 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
           Back to Personas
         </button>
 
-        {/* Header (now includes Edit/Regenerate/Lock buttons) */}
+        {/* Hero Header */}
         <PersonaDetailHeader
           persona={persona}
           isEditing={isEditing}
           onEditToggle={() => setEditing(!isEditing)}
           onLockToggle={() => toggleLock.mutate(!persona.isLocked)}
           onRegenerate={() => {}}
-        />
-
-        {/* Action Bar (Duplicate + Chat only) */}
-        <PersonaActionBar
-          persona={persona}
           onChat={() => setChatModalOpen(true)}
-          onDuplicate={handleDuplicate}
-          isDuplicating={duplicatePersona.isPending}
         />
-
-        {/* What Are Personas Panel */}
-        <WhatArePersonasPanel />
 
         {/* Stub toast */}
         {stubMessage && (

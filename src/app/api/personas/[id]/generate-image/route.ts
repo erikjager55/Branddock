@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 
+// DiceBear PNG fallback — works reliably with next/image
+function diceBearUrl(name: string) {
+  const seed = encodeURIComponent(name);
+  return `https://api.dicebear.com/9.x/avataaars/png?seed=${seed}&size=256`;
+}
+
 // POST /api/personas/[id]/generate-image
 export async function POST(
   _request: NextRequest,
@@ -27,15 +33,11 @@ export async function POST(
     const geminiApiKey = process.env.GEMINI_API_KEY;
 
     if (!geminiApiKey) {
-      // Fallback: DiceBear avatar when no API key configured
-      const seed = encodeURIComponent(persona.name);
-      const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
-
+      const avatarUrl = diceBearUrl(persona.name);
       await prisma.persona.update({
         where: { id },
         data: { avatarUrl, avatarSource: "AI_GENERATED" },
       });
-
       return NextResponse.json({ avatarUrl, provider: "fallback" });
     }
 
@@ -53,8 +55,8 @@ export async function POST(
       .filter(Boolean)
       .join(" ");
 
-    // Gemini 2.0 Flash with image generation
-    const model = "gemini-2.0-flash-exp";
+    // Gemini 2.5 Flash Image — supports responseModalities: IMAGE
+    const model = "gemini-2.5-flash-image";
 
     const geminiResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`,
@@ -74,15 +76,12 @@ export async function POST(
       const error = await geminiResponse.json().catch(() => ({}));
       console.error("[Gemini image generation error]", error);
 
-      // Fallback to DiceBear on API error
-      const seed = encodeURIComponent(persona.name);
-      const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
-
+      // Fallback to DiceBear on API error (quota exceeded, etc.)
+      const avatarUrl = diceBearUrl(persona.name);
       await prisma.persona.update({
         where: { id },
         data: { avatarUrl, avatarSource: "AI_GENERATED" },
       });
-
       return NextResponse.json({ avatarUrl, provider: "fallback" });
     }
 
@@ -95,15 +94,11 @@ export async function POST(
     );
 
     if (!imagePart?.inlineData?.data) {
-      // No image returned — fall back to DiceBear
-      const seed = encodeURIComponent(persona.name);
-      const avatarUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
-
+      const avatarUrl = diceBearUrl(persona.name);
       await prisma.persona.update({
         where: { id },
         data: { avatarUrl, avatarSource: "AI_GENERATED" },
       });
-
       return NextResponse.json({ avatarUrl, provider: "fallback" });
     }
 
@@ -118,7 +113,7 @@ export async function POST(
       data: { avatarUrl, avatarSource: "AI_GENERATED" },
     });
 
-    return NextResponse.json({ avatarUrl, provider: "nanobanana" });
+    return NextResponse.json({ avatarUrl, provider: "gemini" });
   } catch (error) {
     console.error("[POST /api/personas/:id/generate-image]", error);
     return NextResponse.json(

@@ -102,7 +102,8 @@ export function DemographicsSection({ persona, isEditing, onUpdate }: Demographi
             <button
               onClick={handleGeneratePhoto}
               disabled={isGenerating}
-              className="mt-3 inline-flex items-center gap-2 bg-emerald-500 text-white text-sm font-medium rounded-lg px-4 py-2 hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-3 inline-flex items-center gap-2 text-white text-sm font-medium rounded-lg px-4 py-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: isGenerating ? '#059669' : '#10B981' }}
             >
               {isGenerating ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
