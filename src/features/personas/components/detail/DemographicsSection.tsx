@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, MapPin, Building2, DollarSign, Users, GraduationCap, RefreshCw, Camera, CheckCircle, User } from 'lucide-react';
+import { Calendar, MapPin, Building2, DollarSign, Users, GraduationCap, Camera, CheckCircle, User, Loader2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { OptimizedImage } from '@/components/shared';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
+import { useGeneratePersonaImage } from '../../hooks';
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Calendar,
@@ -32,6 +33,7 @@ interface DemographicsSectionProps {
 
 export function DemographicsSection({ persona, isEditing, onUpdate }: DemographicsSectionProps) {
   const [draft, setDraft] = useState<Record<string, string>>({});
+  const generateImage = useGeneratePersonaImage(persona.id);
 
   const handleChange = (key: string, value: string) => {
     setDraft((prev) => ({ ...prev, [key]: value }));
@@ -43,7 +45,12 @@ export function DemographicsSection({ persona, isEditing, onUpdate }: Demographi
     }
   };
 
+  const handleGeneratePhoto = () => {
+    generateImage.mutate();
+  };
+
   const hasAvatar = !!persona.avatarUrl;
+  const isGenerating = generateImage.isPending;
 
   // Group fields into rows of 2 for separators
   const rows: (typeof FIELDS[number])[][] = [];
@@ -92,9 +99,17 @@ export function DemographicsSection({ persona, isEditing, onUpdate }: Demographi
             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
               AI-generated profile picture based on demographics
             </p>
-            <button className="mt-3 inline-flex items-center gap-2 bg-emerald-500 text-white text-sm font-medium rounded-lg px-4 py-2 hover:bg-emerald-600 transition-colors">
-              <Camera className="w-4 h-4" />
-              {hasAvatar ? 'Regenerate Photo' : 'Generate Photo'}
+            <button
+              onClick={handleGeneratePhoto}
+              disabled={isGenerating}
+              className="mt-3 inline-flex items-center gap-2 bg-emerald-500 text-white text-sm font-medium rounded-lg px-4 py-2 hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGenerating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Camera className="w-4 h-4" />
+              )}
+              {isGenerating ? 'Generating...' : hasAvatar ? 'Regenerate Photo' : 'Generate Photo'}
             </button>
           </div>
         </div>
