@@ -28,6 +28,12 @@ export interface PersonaPromptData {
   motivations: string[];
   frustrations: string[];
   behaviors: string[];
+  preferredChannels?: string[];
+  techStack?: string[];
+  quote?: string | null;
+  bio?: string | null;
+  buyingTriggers?: string[];
+  decisionCriteria?: string[];
 }
 
 /** Knowledge context item to inject into prompt */
@@ -56,6 +62,12 @@ function buildVariableMap(persona: PersonaPromptData): Record<string, string> {
     motivations: formatList(persona.motivations),
     frustrations: formatList(persona.frustrations),
     behaviors: formatList(persona.behaviors),
+    preferredChannels: formatList(persona.preferredChannels ?? []),
+    techStack: formatList(persona.techStack ?? []),
+    quote: persona.quote || '',
+    bio: persona.bio || '',
+    buyingTriggers: formatList(persona.buyingTriggers ?? []),
+    decisionCriteria: formatList(persona.decisionCriteria ?? []),
   };
 }
 
@@ -238,6 +250,18 @@ Motivations: {{motivations}}
 
 ## HOW YOU BEHAVE
 {{behaviors}}
+
+## YOUR CHANNELS & TOOLS
+You actively use these channels: {{preferredChannels}}. Reference them naturally when discussing how you discover tools or stay informed.
+Your daily tools include: {{techStack}}. You have strong opinions about these and compare new tools against your existing workflow.
+
+## YOUR CORE BELIEF
+{{quote}}
+This shapes how you evaluate solutions.
+
+## YOUR BUYING TRIGGERS & DECISION CRITERIA
+You would start actively looking for a new solution when: {{buyingTriggers}}. These are your buying triggers.
+When evaluating tools, you prioritize: {{decisionCriteria}}. Weight these naturally in conversations about products or solutions.
 
 {{#if knowledgeContext}}
 ## ADDITIONAL CONTEXT

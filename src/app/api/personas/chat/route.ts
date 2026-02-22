@@ -74,6 +74,12 @@ export async function POST(request: NextRequest) {
         motivations: persona.motivations ?? [],
         frustrations: persona.frustrations ?? [],
         behaviors: persona.behaviors ?? [],
+        preferredChannels: (persona.preferredChannels as string[]) ?? [],
+        techStack: (persona.techStack as string[]) ?? [],
+        quote: persona.quote,
+        bio: persona.bio,
+        buyingTriggers: (persona.buyingTriggers as string[]) ?? [],
+        decisionCriteria: (persona.decisionCriteria as string[]) ?? [],
       },
     );
 
