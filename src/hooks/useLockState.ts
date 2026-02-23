@@ -126,7 +126,7 @@ export function useLockState({
       canDelete: !isLocked,
       canStartResearch: !isLocked,
       canGenerateAI: !isLocked,
-      canStartChat: !isLocked,
+      canStartChat: true,
     }),
     [isLocked],
   );

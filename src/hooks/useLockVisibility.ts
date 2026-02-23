@@ -7,7 +7,6 @@ export interface LockVisibility {
   showEmptySections: boolean;
   showAITools: boolean;
   showResearchMethods: boolean;
-  showNewChatButton: boolean;
   showGeneratePhoto: boolean;
   showRegenerateButton: boolean;
 
@@ -17,6 +16,7 @@ export interface LockVisibility {
   showExistingChats: true;
   showExportOptions: true;
   showDuplicateOption: true;
+  showChat: true;
 }
 
 export function useLockVisibility(isLocked: boolean): LockVisibility {
@@ -26,7 +26,6 @@ export function useLockVisibility(isLocked: boolean): LockVisibility {
       showEmptySections: !isLocked,
       showAITools: !isLocked,
       showResearchMethods: !isLocked,
-      showNewChatButton: !isLocked,
       showGeneratePhoto: !isLocked,
       showRegenerateButton: !isLocked,
 
@@ -36,6 +35,7 @@ export function useLockVisibility(isLocked: boolean): LockVisibility {
       showExistingChats: true as const,
       showExportOptions: true as const,
       showDuplicateOption: true as const,
+      showChat: true as const,
     }),
     [isLocked],
   );
