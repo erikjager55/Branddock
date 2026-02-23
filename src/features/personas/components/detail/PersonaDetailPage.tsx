@@ -8,6 +8,7 @@ import { LockBanner, LockOverlay, LockConfirmDialog } from '@/components/lock';
 import { useLockState } from '@/hooks/useLockState';
 import { useLockVisibility } from '@/hooks/useLockVisibility';
 import { usePersonaDetail, useUpdatePersona, useGenerateImplications, useDuplicatePersona } from '../../hooks';
+import { useQueryClient } from '@tanstack/react-query';
 import { usePersonaDetailStore } from '../../stores/usePersonaDetailStore';
 import { PersonaDetailHeader } from './PersonaDetailHeader';
 import { DemographicsSection } from './DemographicsSection';
@@ -38,6 +39,8 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
   const isChatModalOpen = usePersonaDetailStore((s) => s.isChatModalOpen);
   const setChatModalOpen = usePersonaDetailStore((s) => s.setChatModalOpen);
 
+  const queryClient = useQueryClient();
+
   // Lock state & visibility
   const lockState = useLockState({
     entityType: 'personas',
@@ -47,6 +50,9 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
       isLocked: persona?.isLocked ?? false,
       lockedAt: persona?.lockedAt ?? null,
       lockedBy: persona?.lockedBy ?? null,
+    },
+    onLockChange: () => {
+      queryClient.invalidateQueries({ queryKey: ['personas', personaId] });
     },
   });
   const visibility = useLockVisibility(lockState.isLocked);
