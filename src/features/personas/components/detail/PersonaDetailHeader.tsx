@@ -169,7 +169,7 @@ export function PersonaDetailHeader({
               {/* Chat — hidden when locked (new chat), always visible for existing */}
               <Button
                 data-testid="persona-chat-detail-button"
-                variant="cta"
+                variant="secondary"
                 size="sm"
                 icon={MessageCircle}
                 onClick={onChat}

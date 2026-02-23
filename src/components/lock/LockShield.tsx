@@ -31,7 +31,7 @@ export function LockShield({ isLocked, isToggling, onClick, size = 'md' }: LockS
           'relative w-14 h-7 rounded-full transition-colors duration-300 border',
           isLocked
             ? 'bg-amber-100 border-amber-300'
-            : 'bg-gray-200 border-gray-300',
+            : 'bg-emerald-100 border-emerald-300',
         )}
       >
         <motion.div
@@ -39,7 +39,7 @@ export function LockShield({ isLocked, isToggling, onClick, size = 'md' }: LockS
           transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 30 }}
           className={cn(
             'absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full shadow-sm flex items-center justify-center',
-            isLocked ? 'bg-amber-500' : 'bg-gray-500',
+            isLocked ? 'bg-amber-500' : 'bg-emerald-500',
           )}
         >
           {isLocked ? (
