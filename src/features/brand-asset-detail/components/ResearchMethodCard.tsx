@@ -8,6 +8,7 @@ import {
   CheckCircle,
   Clock,
   Play,
+  Eye,
 } from "lucide-react";
 import { Badge, ProgressBar } from "@/components/shared";
 import type { ResearchMethodDetail } from "../types/brand-asset-detail.types";
@@ -89,7 +90,9 @@ export function ResearchMethodCard({
             isCompleted ? "bg-emerald-100" : "bg-gray-100"
           }`}
         >
-          {isCompleted ? (
+          {isCompleted && isClickable ? (
+            <Eye className="w-4 h-4 text-emerald-600" />
+          ) : isCompleted ? (
             <CheckCircle className="w-4 h-4 text-emerald-600" />
           ) : isClickable ? (
             <Play className="w-4 h-4 text-teal-600" />
@@ -117,6 +120,11 @@ export function ResearchMethodCard({
               color="teal"
               className="mt-2"
             />
+          )}
+          {isCompleted && isClickable && (
+            <p className="text-xs text-emerald-600 font-medium mt-1">
+              Bekijk Resultaten →
+            </p>
           )}
         </div>
       </div>

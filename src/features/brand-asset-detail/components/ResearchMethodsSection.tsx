@@ -56,16 +56,20 @@ export function ResearchMethodsSection({
       <Card.Body>
         <div className="grid grid-cols-2 gap-3">
           {visibleMethods.map((method) => {
-            const startHandler =
+            const navHandler =
               method.method === "AI_EXPLORATION" ? onStartAnalysis :
               method.method === "INTERVIEWS" ? onStartInterviews :
               method.method === "WORKSHOP" ? onStartWorkshop :
               undefined;
+            const isCompleted = method.status === "COMPLETED" || method.status === "VALIDATED";
+            // Completed/validated methods are always clickable (view results).
+            // Non-completed methods are only clickable when unlocked.
+            const handler = isCompleted ? navHandler : (isLocked ? undefined : navHandler);
             return (
               <ResearchMethodCard
                 key={method.id}
                 method={method}
-                onStart={startHandler}
+                onStart={handler}
               />
             );
           })}
