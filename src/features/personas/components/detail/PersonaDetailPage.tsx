@@ -51,6 +51,13 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
   });
   const visibility = useLockVisibility(lockState.isLocked);
 
+  // Force editing off when locked
+  useEffect(() => {
+    if (lockState.isLocked && isEditing) {
+      setEditing(false);
+    }
+  }, [lockState.isLocked, isEditing, setEditing]);
+
   if (isLoading) {
     return (
       <PageShell maxWidth="7xl">
@@ -86,13 +93,6 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
       setTimeout(() => setStubMessage(null), 3000);
     }
   };
-
-  // Force editing off when locked
-  useEffect(() => {
-    if (lockState.isLocked && isEditing) {
-      setEditing(false);
-    }
-  }, [lockState.isLocked, isEditing, setEditing]);
 
   return (
     <PageShell maxWidth="7xl">
