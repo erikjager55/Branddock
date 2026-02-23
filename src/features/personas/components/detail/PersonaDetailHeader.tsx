@@ -1,45 +1,48 @@
 'use client';
 
-import { User, MapPin, Briefcase, RefreshCw, Pencil, Sparkles, Lock, Unlock, CheckCircle, MessageCircle, HelpCircle } from 'lucide-react';
+import { User, MapPin, Briefcase, RefreshCw, Camera, Pencil, Sparkles, CheckCircle, MessageCircle, HelpCircle } from 'lucide-react';
 import { OptimizedImage, Button, Badge } from '@/components/shared';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { LockShield, LockStatusPill } from '@/components/lock';
 import type { PersonaWithMeta } from '../../types/persona.types';
+import type { UseLockStateReturn } from '@/hooks/useLockState';
+import type { LockVisibility } from '@/hooks/useLockVisibility';
 import { useGeneratePersonaImage } from '../../hooks';
 
 interface PersonaDetailHeaderProps {
   persona: PersonaWithMeta;
   isEditing: boolean;
+  lockState: UseLockStateReturn;
+  visibility: LockVisibility;
   onEditToggle: () => void;
-  onLockToggle: () => void;
-  onRegenerate: () => void;
   onChat: () => void;
 }
 
 export function PersonaDetailHeader({
   persona,
   isEditing,
+  lockState,
+  visibility,
   onEditToggle,
-  onLockToggle,
-  onRegenerate,
   onChat,
 }: PersonaDetailHeaderProps) {
-  const completedMethods = persona.researchMethods.filter(
+  const completedMethods = (persona.researchMethods ?? []).filter(
     (m) => m.status === 'COMPLETED' || m.status === 'VALIDATED',
   ).length;
-  const totalMethods = persona.researchMethods.length;
+  const totalMethods = (persona.researchMethods ?? []).length;
 
   const generateImage = useGeneratePersonaImage(persona.id);
 
   return (
     <div data-testid="persona-detail-header" className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
       <div className="flex items-start gap-6">
-        {/* Profile Photo */}
-        <div className="relative flex-shrink-0">
+        {/* Profile Photo + Generate Button */}
+        <div className="flex-shrink-0">
           <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 overflow-hidden shadow-md">
             {generateImage.isPending ? (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-500 to-cyan-400">
-                <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mb-1.5" />
-                <span className="text-[10px] text-white/80 font-medium">Generating...</span>
+              <div className="w-full h-full flex flex-col items-center justify-center">
+                <div className="w-7 h-7 border-2 border-white/30 border-t-white rounded-full animate-spin mb-1" />
+                <span className="text-[9px] text-white/80 font-medium">Generating...</span>
               </div>
             ) : (
               <OptimizedImage
@@ -56,21 +59,45 @@ export function PersonaDetailHeader({
               />
             )}
           </div>
-          <button
-            onClick={() => generateImage.mutate()}
-            disabled={generateImage.isPending}
-            className="absolute -bottom-1 -right-1 w-7 h-7 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            title={persona.avatarUrl ? "Regenerate photo" : "Generate photo"}
-          >
-            <RefreshCw className={`h-3.5 w-3.5 text-gray-500 ${generateImage.isPending ? 'animate-spin' : ''}`} />
-          </button>
+          {/* Generate Photo — hidden when locked */}
+          {visibility.showGeneratePhoto && (
+            <button
+              onClick={() => generateImage.mutate()}
+              disabled={generateImage.isPending}
+              className="mt-2 w-24 h-7 inline-flex items-center justify-center gap-1 border border-gray-200 bg-white rounded-lg text-[10px] font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {generateImage.isPending ? (
+                <>
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  <span>Bezig...</span>
+                </>
+              ) : persona.avatarUrl ? (
+                <>
+                  <RefreshCw className="h-3 w-3" />
+                  <span>Regenerate</span>
+                </>
+              ) : (
+                <>
+                  <Camera className="h-3 w-3" />
+                  <span>Generate</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">{persona.name}</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-gray-900">{persona.name}</h1>
+                <LockStatusPill
+                  isLocked={lockState.isLocked}
+                  lockedBy={lockState.lockedBy}
+                  lockedAt={lockState.lockedAt}
+                />
+              </div>
               {persona.tagline && (
                 <p className="text-base text-gray-500 mt-0.5">{persona.tagline}</p>
               )}
@@ -126,38 +153,41 @@ export function PersonaDetailHeader({
                 size="sm"
                 icon={Pencil}
                 onClick={onEditToggle}
-                disabled={persona.isLocked}
+                disabled={!lockState.canEdit}
               >
                 {isEditing ? 'Editing' : 'Edit'}
               </Button>
 
-              <Button
-                data-testid="persona-regenerate-button"
-                variant="secondary"
-                size="sm"
-                icon={Sparkles}
-                onClick={onRegenerate}
-                disabled={persona.isLocked}
-              >
-                Regenerate
-              </Button>
+              {/* Regenerate — hidden when locked */}
+              {visibility.showRegenerateButton && (
+                <Button
+                  data-testid="persona-regenerate-button"
+                  variant="secondary"
+                  size="sm"
+                  icon={Sparkles}
+                  onClick={() => {}}
+                  disabled={!lockState.canGenerateAI}
+                >
+                  Regenerate
+                </Button>
+              )}
 
-              <Button
-                data-testid="persona-lock-button"
-                variant="secondary"
+              {/* Lock Shield toggle */}
+              <LockShield
+                isLocked={lockState.isLocked}
+                isToggling={lockState.isToggling}
+                onClick={lockState.requestToggle}
                 size="sm"
-                icon={persona.isLocked ? Lock : Unlock}
-                onClick={onLockToggle}
-              >
-                {persona.isLocked ? 'Locked' : 'Unlock'}
-              </Button>
+              />
 
+              {/* Chat — hidden when locked (new chat), always visible for existing */}
               <Button
                 data-testid="persona-chat-detail-button"
                 variant="cta"
                 size="sm"
                 icon={MessageCircle}
                 onClick={onChat}
+                disabled={!lockState.canStartChat}
               >
                 Chat
               </Button>

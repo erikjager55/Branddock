@@ -32,6 +32,7 @@ export interface PersonaInsightsData {
   executiveSummary?: string;
   findings?: ReportFinding[];
   recommendations?: string[];
+  fieldSuggestions?: FieldSuggestion[];
 }
 
 export interface DimensionInsight {
@@ -43,4 +44,18 @@ export interface DimensionInsight {
 
 export interface SendAnswerBody {
   content: string;
+}
+
+// ─── Field Suggestions ──────────────────────────────────────
+
+export type FieldSuggestionStatus = 'pending' | 'accepted' | 'rejected' | 'edited';
+
+export interface FieldSuggestion {
+  id: string;
+  field: string;
+  label: string;
+  currentValue: string | string[] | null;
+  suggestedValue: string | string[];
+  reason: string;
+  status: FieldSuggestionStatus;
 }

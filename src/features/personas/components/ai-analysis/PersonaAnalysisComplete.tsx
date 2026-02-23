@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import {
   ArrowLeft,
   CheckCircle,
@@ -14,8 +15,12 @@ import {
   Lock,
   Download,
   Table2,
+  Lightbulb,
 } from 'lucide-react';
-import type { PersonaInsightsData } from '../../types/persona-analysis.types';
+import { toast } from 'sonner';
+import type { PersonaInsightsData, FieldSuggestion } from '../../types/persona-analysis.types';
+import type { UpdatePersonaBody } from '../../types/persona.types';
+import { FieldSuggestionCard } from './FieldSuggestionCard';
 
 const FINDING_CONFIGS = [
   { icon: Target, bgColor: 'bg-blue-100', iconColor: 'text-blue-600' },
@@ -29,9 +34,15 @@ interface PersonaAnalysisCompleteProps {
   insightsData: PersonaInsightsData;
   personaName: string;
   onBack: () => void;
+  onUpdatePersona?: (data: UpdatePersonaBody) => Promise<unknown>;
 }
 
-export function PersonaAnalysisComplete({ insightsData, personaName, onBack }: PersonaAnalysisCompleteProps) {
+export function PersonaAnalysisComplete({
+  insightsData,
+  personaName,
+  onBack,
+  onUpdatePersona,
+}: PersonaAnalysisCompleteProps) {
   const totalDimensions = insightsData.dimensions.length;
   const findings = insightsData.findings ?? insightsData.dimensions.map((d) => ({
     title: d.title,
@@ -46,6 +57,77 @@ export function PersonaAnalysisComplete({ insightsData, personaName, onBack }: P
   ];
   const executiveSummary = insightsData.executiveSummary
     ?? `De AI-analyse van ${personaName} heeft ${totalDimensions} strategische dimensies geanalyseerd en biedt inzichten voor merkpositionering en communicatie.`;
+
+  // ─── Field Suggestions State ─────────────────────────────
+  const [suggestions, setSuggestions] = useState<FieldSuggestion[]>(
+    insightsData.fieldSuggestions ?? [],
+  );
+  const [isApplying, setIsApplying] = useState(false);
+
+  const acceptedCount = suggestions.filter(
+    (s) => s.status === 'accepted' || s.status === 'edited',
+  ).length;
+  const pendingCount = suggestions.filter((s) => s.status === 'pending').length;
+  const hasSuggestions = suggestions.length > 0;
+  const hasApplicable = acceptedCount > 0;
+
+  const handleAccept = useCallback((id: string) => {
+    setSuggestions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, status: 'accepted' as const } : s)),
+    );
+  }, []);
+
+  const handleReject = useCallback((id: string) => {
+    setSuggestions((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, status: 'rejected' as const } : s)),
+    );
+  }, []);
+
+  const handleEdit = useCallback((id: string, newValue: string | string[]) => {
+    setSuggestions((prev) =>
+      prev.map((s) =>
+        s.id === id ? { ...s, suggestedValue: newValue, status: 'edited' as const } : s,
+      ),
+    );
+  }, []);
+
+  const handleAcceptAll = useCallback(() => {
+    setSuggestions((prev) =>
+      prev.map((s) => (s.status === 'pending' ? { ...s, status: 'accepted' as const } : s)),
+    );
+  }, []);
+
+  const handleApplyChanges = useCallback(async () => {
+    if (!onUpdatePersona) return;
+
+    const toApply = suggestions.filter(
+      (s) => s.status === 'accepted' || s.status === 'edited',
+    );
+    if (toApply.length === 0) return;
+
+    setIsApplying(true);
+    try {
+      const update: Record<string, string | string[] | null> = {};
+      for (const s of toApply) {
+        update[s.field] = s.suggestedValue;
+      }
+      await onUpdatePersona(update as UpdatePersonaBody);
+      toast.success(`${toApply.length} field${toApply.length > 1 ? 's' : ''} updated on persona`);
+      // Mark all applied as accepted (visual confirmation)
+      setSuggestions((prev) =>
+        prev.map((s) =>
+          s.status === 'accepted' || s.status === 'edited'
+            ? { ...s, status: 'accepted' as const }
+            : s,
+        ),
+      );
+      onBack();
+    } catch {
+      toast.error('Failed to update persona');
+    } finally {
+      setIsApplying(false);
+    }
+  }, [suggestions, onUpdatePersona, onBack]);
 
   return (
     <div className="space-y-6">
@@ -162,6 +244,46 @@ export function PersonaAnalysisComplete({ insightsData, personaName, onBack }: P
         </div>
       </div>
 
+      {/* Field Suggestions Section */}
+      {hasSuggestions && (
+        <div className="border border-amber-200 bg-amber-50/30 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Lightbulb className="h-5 w-5 text-amber-500" />
+              <h3 className="text-lg font-semibold text-gray-900">Voorgestelde Updates voor Persona</h3>
+              {pendingCount > 0 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                  {pendingCount} pending
+                </span>
+              )}
+            </div>
+            {pendingCount > 0 && (
+              <button
+                onClick={handleAcceptAll}
+                className="text-xs font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
+              >
+                Accept all
+              </button>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 mb-4">
+            Op basis van de analyse stellen we de volgende updates voor op het persona profiel.
+            Accepteer, bewerk, of weiger per veld.
+          </p>
+          <div className="space-y-3">
+            {suggestions.map((suggestion) => (
+              <FieldSuggestionCard
+                key={suggestion.id}
+                suggestion={suggestion}
+                onAccept={handleAccept}
+                onReject={handleReject}
+                onEdit={handleEdit}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Footer Navigation */}
       <div className="flex items-center justify-between pt-4">
         <button
@@ -171,13 +293,26 @@ export function PersonaAnalysisComplete({ insightsData, personaName, onBack }: P
           <ArrowLeft className="h-4 w-4" />
           Return to Persona
         </button>
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-        >
-          <CheckCircle className="h-4 w-4" />
-          Done
-        </button>
+        {hasApplicable && onUpdatePersona ? (
+          <button
+            onClick={handleApplyChanges}
+            disabled={isApplying}
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          >
+            <CheckCircle className="h-4 w-4" />
+            {isApplying
+              ? 'Applying...'
+              : `Apply ${acceptedCount} Change${acceptedCount > 1 ? 's' : ''} & Done`}
+          </button>
+        ) : (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+          >
+            <CheckCircle className="h-4 w-4" />
+            Done
+          </button>
+        )}
       </div>
     </div>
   );

@@ -8,6 +8,7 @@ import { PERSONA_RESEARCH_METHODS } from '../../../constants/persona-research-me
 interface ResearchSidebarCardProps {
   persona: PersonaWithMeta;
   onStartMethod: (method: string) => void;
+  isLocked?: boolean;
 }
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -17,7 +18,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Smartphone,
 };
 
-export function ResearchSidebarCard({ persona, onStartMethod }: ResearchSidebarCardProps) {
+export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }: ResearchSidebarCardProps) {
   const methods = persona.researchMethods ?? [];
   const completedMethods = methods.filter(
     (m) => m.status === 'COMPLETED' || m.status === 'VALIDATED',
@@ -54,6 +55,9 @@ export function ResearchSidebarCard({ persona, onStartMethod }: ResearchSidebarC
           const isCompleted = status === 'COMPLETED' || status === 'VALIDATED';
           const isInProgress = status === 'IN_PROGRESS';
           const isAvailable = !isCompleted && !isInProgress;
+
+          // Hide non-started methods when locked
+          if (isLocked && isAvailable) return null;
           const Icon = ICON_MAP[config.icon] ?? Bot;
 
           return (

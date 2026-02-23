@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 // POST /api/personas/[id]/regenerate
 export async function POST(
@@ -13,7 +14,10 @@ export async function POST(
     }
 
     await getServerSession();
-    await params; // consume params
+    const { id } = await params;
+
+    const lockResponse = await requireUnlocked("persona", id);
+    if (lockResponse) return lockResponse;
 
     return NextResponse.json(
       { error: "AI regeneration not yet available" },

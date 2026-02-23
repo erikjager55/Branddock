@@ -1,5 +1,5 @@
 # BRANDDOCK — Claude Code Context
-## Laatst bijgewerkt: 20 februari 2026 (Pattern Library Sprint)
+## Laatst bijgewerkt: 22 februari 2026 (Persona Restyling & AI Features)
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 
@@ -55,7 +55,8 @@ BETTER_AUTH_SECRET=<base64 secret>
 BETTER_AUTH_URL=http://localhost:3000
 DATABASE_URL=postgresql://erikjager:@localhost:5432/branddock
 OPENAI_API_KEY=           # Vereist voor AI features
-# ANTHROPIC_API_KEY=      # Optioneel
+ANTHROPIC_API_KEY=        # Vereist voor persona chat (Claude Sonnet 4)
+GEMINI_API_KEY=           # Optioneel, voor AI foto generatie (fallback: DiceBear)
 # BRANDDOCK_AI_MODEL=     # Default: gpt-4o
 ```
 
@@ -95,7 +96,7 @@ Feature flag: `NEXT_PUBLIC_WORKSPACE_ID` in `.env.local` (DEPRECATED)
 **Live op database:**
 - Brand Assets (13 assets, 3 met content+framework, 52 research methods, 6 versions) — `/api/brand-assets` GET + POST
 - AI Brand Analysis (1 demo session REPORT_READY, 10 messages) — `/api/brand-assets/:id/ai-analysis` POST (start) + `/:sessionId` GET + `/answer` POST + `/complete` POST + `/generate-report` POST + `/report` GET + `/report/raw` GET + `/lock` PATCH (8 endpoints)
-- Personas (3 personas) — `/api/personas` GET + POST, `/api/personas/:id` GET + PATCH + DELETE, `/api/personas/:id/{duplicate,lock,avatar,generate-image,regenerate,strategic-implications,export}`, `/api/personas/:id/research-methods/:method` PATCH, `/api/personas/:id/chat` POST + `/:sessionId/message` POST + `/:sessionId/insights` GET + `/:sessionId/export` GET, `/api/personas/:id/ai-analysis` POST + `/:sessionId` GET + `/answer` POST + `/complete` POST (21+ endpoints)
+- Personas (3 personas) — `/api/personas` GET + POST, `/api/personas/:id` GET + PATCH + DELETE, `/api/personas/:id/{duplicate,lock,avatar,generate-image,regenerate,generate-implications,export}`, `/api/personas/:id/research-methods/:method` PATCH, `/api/personas/:id/chat` POST + `/:sessionId/message` POST + `/:sessionId/insights` GET + `/:sessionId/export` GET, `/api/personas/:id/ai-analysis` POST + `/:sessionId` GET + `/answer` POST + `/complete` POST (21+ endpoints). **AI integrations**: Chat via Claude Sonnet 4 (`/api/personas/:id/chat/:sessionId/message`), Strategic Implications AI generatie (`/api/personas/:id/generate-implications`), Photo generatie via Gemini (`/api/personas/:id/generate-image`, fallback DiceBear).
 - Products & Services (3 products) — `/api/products` GET + POST + `/api/products/:id/personas` GET + POST + DELETE
 - Research Plans (1 active plan) — `/api/research-plans` GET + POST + PATCH
 - Purchased Bundles — `/api/purchased-bundles` GET + POST
@@ -142,6 +143,21 @@ Elke gemigreerde module heeft een adapter die DB data mapt naar het bestaande mo
 - Kleuren: #1FD1B2 primary (via CSS var --primary), bg-background (wit). Zie PATTERNS.md voor volledige tokens.
 - Sidebar: w-72 (288px), flex-shrink-0, active state: bg-emerald-50 text-emerald-700
 - Componenten: functioneel React, TypeScript strict
+
+### Key Principles
+8. **Function size:** Keep functions under 50 lines, break into smaller units if longer
+9. **Loading & error states:** Always handle loading and error states in UI components
+10. **No fetch loops:** Never fetch data in loops, batch requests instead
+11. **Performance:** Use React.memo for expensive re-renders, lazy load components that aren't immediately visible
+12. **Workarounds:** If adding a workaround, document why with a TODO comment
+
+### Component Conventions
+- Add JSDoc comments to all exported functions and components
+- Never commit without confirming changes with the user first
+
+### API Conventions
+- All API responses must include loading and error state handling in consuming UI components
+- Use the existing API client helpers, never raw fetch calls in components
 
 ## Sidebar Section IDs → Componenten
 Navigatie in de sidebar stuurt `setActiveSection(id)`. Mapping:
@@ -533,17 +549,20 @@ src/
 │       │   │   ├── PersonaImageGenerator.tsx   ← AI/URL avatar generator
 │       │   │   └── RepeatableListInput.tsx     ← Herbruikbaar list input
 │       │   ├── detail/
-│       │   │   ├── PersonaDetailPage.tsx       ← Orchestrator (all sections + chat modal)
-│       │   │   ├── PersonaDetailHeader.tsx     ← Avatar + naam + validation badge
-│       │   │   ├── PersonaActionBar.tsx        ← Edit/Regenerate/Lock/Chat buttons
-│       │   │   ├── DemographicsSection.tsx     ← 6 fields grid + inline edit
+│       │   │   ├── PersonaDetailPage.tsx       ← Orchestrator (hero header + 2-koloms grid + sidebar)
+│       │   │   ├── PersonaDetailHeader.tsx     ← 96×96 foto + naam/locatie/actions + Generate button
+│       │   │   ├── DemographicsSection.tsx     ← Compact 3×2 grid + inline edit
 │       │   │   ├── PsychographicsSection.tsx   ← Personality + values tags + interests tags
 │       │   │   ├── GoalsMotivationsCards.tsx   ← 3 cards (goals/motivations/frustrations)
 │       │   │   ├── BehaviorsSection.tsx        ← Bullet list + inline edit
-│       │   │   ├── StrategicImplicationsSection.tsx ← Text/AI generate empty state
-│       │   │   ├── ResearchMethodsSection.tsx  ← 4 method cards grid
-│       │   │   ├── ResearchMethodCard.tsx      ← 4 statussen (available/in_progress/completed/validated)
-│       │   │   └── ImpactBadge.tsx             ← high/medium/low impact badge
+│       │   │   ├── QuoteBioSection.tsx         ← Quote + bio inline edit
+│       │   │   ├── ChannelsToolsSection.tsx    ← Preferred channels + tech stack tags
+│       │   │   ├── BuyingTriggersSection.tsx   ← Buying triggers + decision criteria
+│       │   │   └── sidebar/
+│       │   │       ├── ProfileCompletenessCard.tsx    ← Completeness % ring
+│       │   │       ├── ResearchSidebarCard.tsx        ← 4 validation methods
+│       │   │       ├── QuickActionsCard.tsx           ← Chat + Regenerate + Duplicate + Export
+│       │   │       └── StrategicImplicationsSidebar.tsx ← AI-generated implications
 │       │   ├── chat/
 │       │   │   ├── ChatWithPersonaModal.tsx    ← Modal met chat/insights tabs
 │       │   │   ├── PersonaChatInterface.tsx    ← Messages + typing indicator + input
@@ -554,7 +573,8 @@ src/
 │       │       ├── AIPersonaAnalysisPage.tsx   ← Orchestrator (chat/completing/complete states)
 │       │       ├── PersonaAnalysisChatInterface.tsx ← Bot icon + user/AI bubbles
 │       │       ├── PersonaAnalysisProgressBar.tsx   ← Gradient bar + 4 step dots
-│       │       ├── PersonaAnalysisComplete.tsx      ← Success card + dimension grid
+│       │       ├── PersonaAnalysisComplete.tsx      ← Report + veldsuggesties + apply changes
+│       │       ├── FieldSuggestionCard.tsx          ← Accept/reject/edit per persona veld
 │       │       └── DimensionInsightCard.tsx         ← 4 kleur/icoon combos per dimension
 │       ├── constants/
 │       │   ├── persona-research-methods.ts    ← Methods + weights + calculator
@@ -1237,6 +1257,12 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 - Dev server: `npm run dev` in apart terminal-tabblad
 - Testen API: `curl` in ander tabblad
 
+## Common Mistakes to Avoid
+- Do NOT use `any` type in TypeScript, use proper types or `unknown`
+- Do NOT install new dependencies without discussing alternatives first
+- Do NOT use inline styles, always use Tailwind classes
+- Do NOT modify seed data without verifying migration compatibility
+
 ## Wat er NIET is
 - **Stripe billing** — niet geïmplementeerd (BILLING-01 t/m BILLING-04 in backlog)
 - **Server-side rendering** — alles is client-side
@@ -1451,6 +1477,23 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 - PLS.3: ✅ PATTERNS.md — Project root referentiedocument: verplichte imports, verboden patronen, standaard paginastructuren (overview/detail/selectie/sidebar/issue), module keys met gradient mappings, design token samenvatting, checklist per pagina
 - PLS.4: ✅ CLAUDE.md update — Verplicht-lees verwijzing naar PATTERNS.md bovenaan CLAUDE.md
 
+**PSR. Persona Restyling & AI Features (feb 20-22, 2026)**
+Visuele restyling van persona module op basis van Figma designs + nieuwe AI features.
+
+Onderdelen:
+- PSR.1: ✅ Persona Detail Restyling — Demographics gradient header, psychographics, goals/motivations/frustrations kaarten, behaviors, strategic implications header, research validation panel, persona cards, confidence ring, profile picture, accordion content. 17 fix-prompts uitgevoerd.
+- PSR.2: ✅ AI Features — Strategic Implications AI generatie (echte API call), Persona Chat met Claude Sonnet 4 (dynamische context, 4 chat modes, insights tracking), Generate Photo button
+- PSR.3: ✅ Persona Enrichment — 3 nieuwe secties: Preferred Channels, Quote/Bio, Buying Triggers/Decision Criteria. Tech Stack tags.
+- PSR.4: ✅ Persona Knowledge Doorvoer — getPersonaContext() utility, persona-chat API met Claude, 5 losse prompts voor chat/content studio/campaign strategy/knowledge modal
+- PSR.5: ✅ Layout Optimalisatie Fase 1 — Hero header (96×96 foto, naam, locatie, actions), 2-koloms grid (md:grid-cols-12, 8/4 split), 4 sidebar componenten (ProfileCompletenessCard, ResearchSidebarCard, QuickActionsCard, StrategicImplicationsSidebar), info tooltip i.p.v. "What are Personas" sectie
+- PSR.6: 📋 Layout Optimalisatie Fase 2 (6 prompts pending) — Grid containment fix, Quick Actions sidebar volgorde, Research sidebar styling, Demographics compact 3×2, Compact empty states, Sub-grid columns
+- PSR.7: 📋 AI Persona Analysis Redesign (4 prompts pending) — Chat restylen naar Brand Analysis stijl (teal kleuren, platte bubbels), Rapport fase (Executive Summary + Bevindingen + Aanbevelingen), Veldsuggesties per persona-veld (accept/reject/edit), FieldSuggestionCard component
+- PSR.8: 📋 Foto Generatie Fix — Echte Gemini API i.p.v. placeholder stub, DiceBear fallback, zichtbare Generate/Regenerate button onder hero foto
+
+Status: 34/52 prompts uitgevoerd, 16 pending, 2 deels.
+Prompt Log: Notion pagina 30f48b9c-6dc9-81a5-8b74-f62bfb6beeb3
+Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
+
 **S10-S12. Production Ready**
 - S10: Stripe Billing (checkout, webhooks, plan enforcement, agency model)
 - S11: OAuth (Google/Microsoft) + E2E testing (Playwright) + Performance
@@ -1461,7 +1504,8 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 - Gratis tier limieten
 - Workspace isolatie: soft (filter op orgId) vs hard (row-level security)
 - Agency white-label: eigen logo/domein of alleen Branddock branding
-- AI provider: OpenAI of Anthropic
+- AI provider: OpenAI (content gen, brand analysis) + Anthropic Claude Sonnet 4 (persona chat, analysis) — BEIDE in gebruik
+- AI foto generatie: Gemini (primair) met DiceBear fallback — GEMINI_API_KEY optioneel
 - Deployment: Vercel, Railway, of self-hosted
 
 ### ✅ GENOMEN BESLISSINGEN

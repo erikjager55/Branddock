@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 const StatusUpdateSchema = z.object({
   status: z.enum(["DRAFT", "IN_PROGRESS", "NEEDS_ATTENTION", "READY"]),
@@ -21,6 +22,9 @@ export async function PATCH(
     }
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("brandAsset", id);
+    if (lockResponse) return lockResponse;
 
     const asset = await prisma.brandAsset.findFirst({
       where: { id, workspaceId },

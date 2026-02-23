@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { requireUnlocked } from "@/lib/lock-guard";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 
@@ -23,6 +24,9 @@ export async function PATCH(
     }
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("brandAsset", id);
+    if (lockResponse) return lockResponse;
 
     const asset = await prisma.brandAsset.findFirst({
       where: { id, workspaceId },

@@ -206,6 +206,9 @@ model User {
   createdStrategies  BusinessStrategy[]
   createdStyleguides BrandStyleguide[]
   lockedPersonas         Persona[]                    @relation("LockedPersonas")
+  lockedProducts         Product[]                    @relation("LockedProducts")
+  lockedCampaigns        Campaign[]                   @relation("LockedCampaigns")
+  lockedStrategies       BusinessStrategy[]            @relation("LockedStrategies")
   createdPersonas        Persona[]
   personaAnalyses        AIPersonaAnalysisSession[]
   personaChatSessions    PersonaChatSession[]
@@ -839,6 +842,12 @@ model Campaign {
   isSavedAsTemplate Boolean                 @default(false)
   templateName      String?
 
+  // Lock fields
+  isLocked          Boolean                 @default(false)
+  lockedAt          DateTime?
+  lockedById        String?
+  lockedBy          User?                   @relation("LockedCampaigns", fields: [lockedById], references: [id])
+
   // Shared
   isArchived        Boolean                 @default(false)
   knowledgeAssets   CampaignKnowledgeAsset[]
@@ -1040,6 +1049,12 @@ model BusinessStrategy {
   startDate          DateTime?
   endDate            DateTime?
   progressPercentage Float             @default(0)
+
+  // Lock fields
+  isLocked           Boolean           @default(false)
+  lockedAt           DateTime?
+  lockedById         String?
+  lockedBy           User?             @relation("LockedStrategies", fields: [lockedById], references: [id])
 
   objectives         Objective[]
   focusAreas         FocusArea[]
@@ -1635,6 +1650,13 @@ model Product {
   categoryIcon    String?
   analysisData    Json?
   linkedPersonas  ProductPersona[]
+
+  // Lock fields
+  isLocked        Boolean         @default(false)
+  lockedAt        DateTime?
+  lockedById      String?
+  lockedBy        User?           @relation("LockedProducts", fields: [lockedById], references: [id])
+
   workspaceId     String
   workspace       Workspace       @relation(fields: [workspaceId], references: [id])
   createdAt       DateTime        @default(now())

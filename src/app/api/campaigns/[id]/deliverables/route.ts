@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 // ---------------------------------------------------------------------------
 // GET /api/campaigns/[id]/deliverables — List deliverables ordered by createdAt
@@ -69,6 +70,9 @@ export async function POST(
     }
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("campaign", id);
+    if (lockResponse) return lockResponse;
 
     const campaign = await prisma.campaign.findFirst({
       where: { id, workspaceId },

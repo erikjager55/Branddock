@@ -1,23 +1,26 @@
 "use client";
 
-import { Pencil, Sparkles, Lock, Unlock } from "lucide-react";
+import { Pencil, Sparkles } from "lucide-react";
 import { Button, Card } from "@/components/shared";
 import { ContentEditMode } from "./ContentEditMode";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
-import {
-  useToggleLock,
-  useRegenerateContent,
-} from "../hooks/useBrandAssetDetail";
+import { useRegenerateContent } from "../hooks/useBrandAssetDetail";
+import { LockOverlay } from "@/components/lock";
 import type { BrandAssetDetail } from "../types/brand-asset-detail.types";
 
 interface ContentEditorSectionProps {
   asset: BrandAssetDetail;
+  isLocked: boolean;
+  showRegenerate: boolean;
 }
 
-export function ContentEditorSection({ asset }: ContentEditorSectionProps) {
+export function ContentEditorSection({
+  asset,
+  isLocked,
+  showRegenerate,
+}: ContentEditorSectionProps) {
   const isEditing = useBrandAssetDetailStore((s) => s.isEditing);
   const setIsEditing = useBrandAssetDetailStore((s) => s.setIsEditing);
-  const toggleLock = useToggleLock(asset.id);
   const regenerate = useRegenerateContent(asset.id);
 
   const contentStr =
@@ -49,41 +52,37 @@ export function ContentEditorSection({ asset }: ContentEditorSectionProps) {
               size="sm"
               icon={Pencil}
               onClick={() => setIsEditing(true)}
-              disabled={asset.isLocked}
+              disabled={isLocked}
             >
               Edit
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={Sparkles}
-              onClick={() => regenerate.mutate(undefined)}
-              isLoading={regenerate.isPending}
-              disabled={asset.isLocked}
-            >
-              Regenerate
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={asset.isLocked ? Unlock : Lock}
-              onClick={() => toggleLock.mutate()}
-            >
-              {asset.isLocked ? "Unlock" : "Lock"}
-            </Button>
+            {showRegenerate && (
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={Sparkles}
+                onClick={() => regenerate.mutate(undefined)}
+                isLoading={regenerate.isPending}
+                disabled={isLocked}
+              >
+                Regenerate
+              </Button>
+            )}
           </div>
         </div>
       </Card.Header>
       <Card.Body>
-        {contentStr ? (
-          <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-            {contentStr}
-          </p>
-        ) : (
-          <p className="text-gray-400 italic">
-            No content yet. Click Edit or Regenerate to add content.
-          </p>
-        )}
+        <LockOverlay isLocked={isLocked}>
+          {contentStr ? (
+            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {contentStr}
+            </p>
+          ) : (
+            <p className="text-gray-400 italic">
+              No content yet. Click Edit or Regenerate to add content.
+            </p>
+          )}
+        </LockOverlay>
       </Card.Body>
     </Card>
   );

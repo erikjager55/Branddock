@@ -28,7 +28,7 @@ interface StrategicImplicationsSidebarProps {
   persona: PersonaWithMeta;
   isEditing: boolean;
   onUpdate: (data: UpdatePersonaBody) => void;
-  onGenerate: () => void;
+  onGenerate?: () => void;
   isGenerating: boolean;
 }
 
@@ -47,7 +47,7 @@ export function StrategicImplicationsSidebar({
 
   const handleRerun = () => {
     setShowConfirm(false);
-    onGenerate();
+    onGenerate?.();
   };
 
   const handleBlur = () => {
@@ -135,8 +135,8 @@ export function StrategicImplicationsSidebar({
         )
       )}
 
-      {/* Empty state */}
-      {!isGenerating && !hasContent && (
+      {/* Empty state — hidden when locked (onGenerate undefined) */}
+      {!isGenerating && !hasContent && onGenerate && (
         <div className="py-4 text-center">
           <Sparkles className="w-6 h-6 text-blue-300 mx-auto mb-2" />
           <p className="text-xs text-gray-400 mb-2">No implications yet</p>
@@ -151,8 +151,8 @@ export function StrategicImplicationsSidebar({
         </div>
       )}
 
-      {/* Rerun footer */}
-      {hasContent && !isGenerating && (
+      {/* Rerun footer — hidden when locked (onGenerate undefined) */}
+      {hasContent && !isGenerating && onGenerate && (
         <div className="flex justify-end mt-3 pt-2.5 border-t border-dashed border-gray-200">
           <button
             onClick={() => setShowConfirm(true)}

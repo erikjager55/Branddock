@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 
 // =============================================================
-// PATCH /api/brand-assets/[id]/lock — set lock state { locked: boolean }
+// PATCH /api/interviews/[id]/lock — toggle lock/unlock
 // =============================================================
 export async function PATCH(
   request: NextRequest,
@@ -20,56 +20,45 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json().catch(() => ({}));
+    const { id } = await params;
+
+    const existing = await prisma.interview.findFirst({
+      where: {
+        id,
+        brandAsset: { workspaceId },
+      },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: "Interview not found" }, { status: 404 });
+    }
+
+    const body = await request.json();
     const { locked } = body;
 
     if (typeof locked !== "boolean") {
       return NextResponse.json(
-        { error: "Request body must contain { locked: boolean }" },
+        { error: "locked must be a boolean" },
         { status: 400 }
       );
     }
 
-    const { id } = await params;
-
-    const asset = await prisma.brandAsset.findFirst({
-      where: { id, workspaceId },
-    });
-
-    if (!asset) {
-      return NextResponse.json({ error: "Asset not found" }, { status: 404 });
-    }
-
-    // If currently locked by someone else, deny
-    if (asset.isLocked && asset.lockedById !== session.user.id) {
-      return NextResponse.json(
-        { error: "Asset is locked by another user" },
-        { status: 423 }
-      );
-    }
-
-    const updated = await prisma.brandAsset.update({
+    const interview = await prisma.interview.update({
       where: { id },
       data: {
         isLocked: locked,
         lockedById: locked ? session.user.id : null,
         lockedAt: locked ? new Date() : null,
       },
-      select: {
-        isLocked: true,
-        lockedAt: true,
-        lockedBy: { select: { id: true, name: true } },
-      },
     });
 
     return NextResponse.json({
-      isLocked: updated.isLocked,
-      lockedById: updated.lockedBy?.id ?? null,
-      lockedBy: updated.lockedBy,
-      lockedAt: updated.lockedAt,
+      isLocked: interview.isLocked,
+      lockedById: interview.lockedById,
+      lockedAt: interview.lockedAt?.toISOString() ?? null,
     });
   } catch (error) {
-    console.error("[PATCH /api/brand-assets/:id/lock]", error);
+    console.error("[PATCH /api/interviews/:id/lock]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

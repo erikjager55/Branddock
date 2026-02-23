@@ -4,6 +4,7 @@ import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { z } from "zod";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 // Validation weights for computing validationPercentage
 const VALIDATION_WEIGHTS: Record<string, number> = {
@@ -69,6 +70,7 @@ export async function GET(
       include: {
         researchMethods: true,
         createdBy: { select: { name: true, avatarUrl: true } },
+        lockedBy: { select: { id: true, name: true } },
       },
     });
 
@@ -84,6 +86,7 @@ export async function GET(
       ...persona,
       validationPercentage,
       lockedAt: persona.lockedAt?.toISOString() ?? null,
+      lockedBy: persona.lockedBy ? { id: persona.lockedBy.id, name: persona.lockedBy.name } : null,
       createdAt: persona.createdAt.toISOString(),
       updatedAt: persona.updatedAt.toISOString(),
       researchMethods: persona.researchMethods.map((m) => ({
@@ -113,6 +116,9 @@ export async function PATCH(
     await getServerSession();
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("persona", id);
+    if (lockResponse) return lockResponse;
 
     const existing = await prisma.persona.findFirst({
       where: { id, workspaceId },
@@ -185,6 +191,9 @@ export async function DELETE(
     }
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("persona", id);
+    if (lockResponse) return lockResponse;
 
     const existing = await prisma.persona.findFirst({
       where: { id, workspaceId },

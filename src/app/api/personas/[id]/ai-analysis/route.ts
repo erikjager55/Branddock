@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 const DIMENSION_QUESTIONS: { key: string; title: string; icon: string; question: string }[] = [
   {
@@ -46,6 +47,9 @@ export async function POST(
     }
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("persona", id);
+    if (lockResponse) return lockResponse;
 
     const persona = await prisma.persona.findFirst({
       where: { id, workspaceId },

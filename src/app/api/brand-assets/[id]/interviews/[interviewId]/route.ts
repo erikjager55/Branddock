@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 type RouteParams = { params: Promise<{ id: string; interviewId: string }> };
 
@@ -70,6 +71,10 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id: assetId, interviewId } = await params;
+
+    const lockResponse = await requireUnlocked("interview", interviewId);
+    if (lockResponse) return lockResponse;
+
     const body = await request.json();
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) {
@@ -119,6 +124,9 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     }
 
     const { id: assetId, interviewId } = await params;
+
+    const lockResponse = await requireUnlocked("interview", interviewId);
+    if (lockResponse) return lockResponse;
 
     const existing = await prisma.interview.findFirst({
       where: { id: interviewId, brandAssetId: assetId, workspaceId },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { requireUnlocked } from "@/lib/lock-guard";
 import { openaiClient } from "@/lib/ai";
 import { parseAIError, getReadableErrorMessage, getAIErrorStatus } from "@/lib/ai/error-handler";
 
@@ -24,6 +25,9 @@ export async function POST(
 
     const { id } = await params;
 
+    const lockResponse = await requireUnlocked("brandAsset", id);
+    if (lockResponse) return lockResponse;
+
     const asset = await prisma.brandAsset.findFirst({
       where: { id, workspaceId },
       include: {
@@ -34,13 +38,6 @@ export async function POST(
 
     if (!asset) {
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
-    }
-
-    if (asset.isLocked && asset.lockedById !== session.user.id) {
-      return NextResponse.json(
-        { error: "Asset is locked by another user" },
-        { status: 423 }
-      );
     }
 
     const body = await request.json().catch(() => ({}));

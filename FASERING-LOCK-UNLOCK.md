@@ -635,12 +635,13 @@ git add -A && git commit -m "feat(lock): polish, edge cases, a11y, dark mode" &&
 
 ## Checklist
 
-- [ ] **Fase 1:** Prisma migratie succesvol
-- [ ] **Fase 1:** Lock guard op ~30 routes
-- [ ] **Fase 1:** 3 nieuwe lock endpoints
-- [ ] **Fase 2:** 6 componenten gebouwd en werkend
-- [ ] **Fase 2:** useLockState + useLockVisibility hooks
-- [ ] **Fase 2:** framer-motion geïnstalleerd
+- [x] **Fase 1:** Prisma schema — alle 6 modellen hebben isLocked, lockedAt, lockedById + relatie
+- [x] **Fase 1:** Lock guard middleware (`src/lib/lock-guard.ts`) — requireUnlocked() voor 6 modellen
+- [x] **Fase 1:** Lock guard op alle mutatie-routes (PATCH/DELETE/POST) voor Persona, BrandAsset, Product, Campaign, Strategy, Interview
+- [x] **Fase 1:** 6 lock toggle endpoints (personas, brand-assets, interviews, products, campaigns, strategies)
+- [x] **Fase 2:** 6 componenten gebouwd en werkend (LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog, CardLockIndicator)
+- [x] **Fase 2:** useLockState + useLockVisibility hooks
+- [x] **Fase 2:** framer-motion geïnstalleerd (v12.34.3)
 - [ ] **Fase 3:** Persona detail page volledig geïntegreerd
 - [ ] **Fase 3:** Verborgen secties werken bij lock
 - [ ] **Fase 3:** PersonaCard met lock indicator

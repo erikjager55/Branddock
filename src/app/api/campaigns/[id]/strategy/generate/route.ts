@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { buildAllPersonasContext } from "@/lib/ai/persona-context";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 // ---------------------------------------------------------------------------
 // POST /api/campaigns/[id]/strategy/generate — Generate campaign strategy
@@ -17,6 +18,9 @@ export async function POST(
     }
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("campaign", id);
+    if (lockResponse) return lockResponse;
 
     const campaign = await prisma.campaign.findFirst({
       where: { id, workspaceId },

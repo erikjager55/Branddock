@@ -46,6 +46,7 @@ export interface PersonaWithMeta {
   isLocked: boolean;
   lockedById: string | null;
   lockedAt: string | null;
+  lockedBy: { id: string; name: string } | null;
   validationPercentage: number;
   researchMethods: ResearchMethodSummary[];
   createdAt: string;

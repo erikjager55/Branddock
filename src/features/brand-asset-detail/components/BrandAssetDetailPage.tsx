@@ -11,6 +11,10 @@ import { DeleteAssetDialog } from "./DeleteAssetDialog";
 import { Skeleton, SkeletonCard } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
 import { AlertTriangle } from "lucide-react";
+import { useLockState } from "@/hooks/useLockState";
+import { useLockVisibility } from "@/hooks/useLockVisibility";
+import { LockBanner, LockConfirmDialog } from "@/components/lock";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface BrandAssetDetailPageProps {
   assetId: string | null;
@@ -34,6 +38,26 @@ export function BrandAssetDetailPage({
   const setShowDeleteDialog = useBrandAssetDetailStore(
     (s) => s.setShowDeleteDialog
   );
+  const qc = useQueryClient();
+
+  const lockState = useLockState({
+    entityType: 'brand-assets',
+    entityId: assetId ?? '',
+    entityName: asset?.name ?? '',
+    initialState: {
+      isLocked: asset?.isLocked ?? false,
+      lockedAt: asset?.lockedAt ?? null,
+      lockedBy: asset?.lockedBy
+        ? { id: asset.lockedBy.id, name: asset.lockedBy.name ?? '' }
+        : null,
+    },
+    onLockChange: () => {
+      qc.invalidateQueries({ queryKey: ['brand-asset-detail', assetId] });
+      qc.invalidateQueries({ queryKey: ['brand-assets'] });
+    },
+  });
+
+  const visibility = useLockVisibility(lockState.isLocked);
 
   if (!assetId) {
     return (
@@ -71,9 +95,20 @@ export function BrandAssetDetailPage({
         <AssetDetailHeader
           asset={asset}
           onNavigateBack={onNavigateBack}
+          lockState={lockState}
         />
 
-        <ContentEditorSection asset={asset} />
+        <LockBanner
+          isLocked={lockState.isLocked}
+          onUnlock={lockState.requestToggle}
+          lockedBy={lockState.lockedBy}
+        />
+
+        <ContentEditorSection
+          asset={asset}
+          isLocked={lockState.isLocked}
+          showRegenerate={visibility.showRegenerateButton}
+        />
 
         {asset.frameworkType && (
           <FrameworkSection
@@ -92,6 +127,7 @@ export function BrandAssetDetailPage({
           validationPercentage={asset.validationPercentage}
           completedMethods={asset.completedMethods}
           totalMethods={asset.totalMethods}
+          isLocked={lockState.isLocked}
           onStartAnalysis={() => onNavigateToAnalysis?.(asset.id)}
           onStartInterviews={() => onNavigateToInterviews?.(asset.id)}
           onStartWorkshop={() => onNavigateToWorkshop?.(asset.id)}
@@ -105,6 +141,14 @@ export function BrandAssetDetailPage({
           assetId={asset.id}
           assetName={asset.name}
           onDeleted={onNavigateBack}
+        />
+
+        <LockConfirmDialog
+          isOpen={lockState.showConfirm}
+          isLocking={!lockState.isLocked}
+          entityName={asset.name}
+          onConfirm={lockState.confirmToggle}
+          onCancel={lockState.cancelToggle}
         />
       </div>
     </PageShell>

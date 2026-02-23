@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 const RESEARCH_WEIGHTS: Record<string, number> = {
   AI_EXPLORATION: 0.15,
@@ -103,6 +104,9 @@ export async function DELETE(
     }
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("brandAsset", id);
+    if (lockResponse) return lockResponse;
 
     const asset = await prisma.brandAsset.findFirst({
       where: { id, workspaceId },

@@ -11,10 +11,10 @@ interface QuickActionsCardProps {
 }
 
 const ACTIONS = [
-  { key: 'chat', label: 'Chat with Persona', icon: MessageCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', needsUnlock: false },
-  { key: 'regenerate', label: 'Regenerate with AI', icon: Sparkles, color: 'text-blue-600', bg: 'bg-blue-50', needsUnlock: true },
-  { key: 'duplicate', label: 'Duplicate Persona', icon: Copy, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false },
-  { key: 'export', label: 'Export Data', icon: Download, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false },
+  { key: 'chat', label: 'Chat with Persona', icon: MessageCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', needsUnlock: true, hideWhenLocked: false },
+  { key: 'regenerate', label: 'Regenerate with AI', icon: Sparkles, color: 'text-blue-600', bg: 'bg-blue-50', needsUnlock: true, hideWhenLocked: true },
+  { key: 'duplicate', label: 'Duplicate Persona', icon: Copy, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false, hideWhenLocked: false },
+  { key: 'export', label: 'Export Data', icon: Download, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false, hideWhenLocked: false },
 ] as const;
 
 export function QuickActionsCard({ onChat, onRegenerate, onDuplicate, onExport, isLocked }: QuickActionsCardProps) {
@@ -31,6 +31,9 @@ export function QuickActionsCard({ onChat, onRegenerate, onDuplicate, onExport, 
 
       <div className="space-y-1.5">
         {ACTIONS.map((action) => {
+          // Hide certain actions entirely when locked
+          if (action.hideWhenLocked && isLocked) return null;
+
           const Icon = action.icon;
           const disabled = action.needsUnlock && isLocked;
 

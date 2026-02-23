@@ -18,6 +18,7 @@ import {
   Plus,
 } from "lucide-react";
 import { OptimizedImage } from "@/components/shared";
+import { CardLockIndicator } from "@/components/lock";
 import { PersonaConfidenceBadge } from "./PersonaConfidenceBadge";
 import type { PersonaWithMeta, PersonaResearchMethodType } from "../types/persona.types";
 import type { LucideIcon } from "lucide-react";
@@ -123,8 +124,9 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
           )}
         </div>
 
-        {/* Confidence Badge */}
-        <div className="absolute right-0 top-0">
+        {/* Lock Indicator + Confidence Badge */}
+        <div className="absolute right-0 top-0 flex items-center gap-1.5">
+          <CardLockIndicator isLocked={persona.isLocked} />
           <PersonaConfidenceBadge
             percentage={persona.validationPercentage}
           />
@@ -200,7 +202,13 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
         {/* Accordion content — conditional render for reliability */}
         {isAccordionOpen && (
           <div className="mt-2 space-y-2">
-            {persona.researchMethods.map((m) => {
+            {persona.researchMethods
+            .filter((m) => {
+              // When locked, hide non-started methods
+              if (!persona.isLocked) return true;
+              return m.status === "COMPLETED" || m.status === "VALIDATED" || m.status === "IN_PROGRESS";
+            })
+            .map((m) => {
               const config = METHOD_CONFIG[m.method as PersonaResearchMethodType];
               if (!config) return null;
               const MethodIcon = config.icon;

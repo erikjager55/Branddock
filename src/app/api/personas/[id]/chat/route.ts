@@ -7,6 +7,7 @@ import {
   DEFAULT_SYSTEM_PROMPT_TEMPLATE,
 } from "@/lib/ai/context/prompt-builder";
 import { parseAIError, getReadableErrorMessage, getAIErrorStatus } from "@/lib/ai/error-handler";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 // ─── POST /api/personas/[id]/chat ────────────────────────────
 // Two modes:
@@ -29,6 +30,9 @@ export async function POST(
     }
 
     const { id: personaId } = await params;
+
+    const lockResponse = await requireUnlocked("persona", personaId);
+    if (lockResponse) return lockResponse;
 
     const persona = await prisma.persona.findFirst({
       where: { id: personaId, workspaceId },

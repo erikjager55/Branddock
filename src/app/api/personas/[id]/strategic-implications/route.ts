@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { openaiClient } from "@/lib/ai/openai-client";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 interface StrategicImplication {
   category: string;
@@ -54,6 +55,9 @@ export async function POST(
     await getServerSession();
 
     const { id } = await params;
+
+    const lockResponse = await requireUnlocked("persona", id);
+    if (lockResponse) return lockResponse;
 
     const persona = await prisma.persona.findFirst({
       where: { id, workspaceId },

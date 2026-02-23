@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { requireUnlocked } from "@/lib/lock-guard";
 
-// DiceBear PNG fallback — works reliably with next/image
-function diceBearUrl(name: string) {
-  const seed = encodeURIComponent(name);
-  return `https://api.dicebear.com/9.x/avataaars/png?seed=${seed}&size=256`;
+// DiceBear PNG fallback — unique per persona, works reliably with next/image
+function diceBearUrl(persona: { name: string; age?: string | null; occupation?: string | null; location?: string | null }) {
+  const seed = encodeURIComponent(
+    `${persona.name}-${persona.age ?? ''}-${persona.occupation ?? ''}-${persona.location ?? ''}`
+  );
+  return `https://api.dicebear.com/9.x/notionists/png?seed=${seed}&size=256&backgroundColor=b6e3f4,c0aede,d1d4f9&backgroundType=gradientLinear`;
 }
 
 // POST /api/personas/[id]/generate-image
@@ -23,6 +26,9 @@ export async function POST(
 
     const { id } = await params;
 
+    const lockResponse = await requireUnlocked("persona", id);
+    if (lockResponse) return lockResponse;
+
     const persona = await prisma.persona.findFirst({
       where: { id, workspaceId },
     });
@@ -33,7 +39,7 @@ export async function POST(
     const geminiApiKey = process.env.GEMINI_API_KEY;
 
     if (!geminiApiKey) {
-      const avatarUrl = diceBearUrl(persona.name);
+      const avatarUrl = diceBearUrl(persona);
       await prisma.persona.update({
         where: { id },
         data: { avatarUrl, avatarSource: "AI_GENERATED" },
@@ -66,7 +72,7 @@ export async function POST(
       console.error("[Gemini image generation error]", error);
 
       // Fallback to DiceBear on API error (quota exceeded, etc.)
-      const avatarUrl = diceBearUrl(persona.name);
+      const avatarUrl = diceBearUrl(persona);
       await prisma.persona.update({
         where: { id },
         data: { avatarUrl, avatarSource: "AI_GENERATED" },
@@ -83,7 +89,7 @@ export async function POST(
     );
 
     if (!imagePart?.inlineData?.data) {
-      const avatarUrl = diceBearUrl(persona.name);
+      const avatarUrl = diceBearUrl(persona);
       await prisma.persona.update({
         where: { id },
         data: { avatarUrl, avatarSource: "AI_GENERATED" },

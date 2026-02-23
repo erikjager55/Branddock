@@ -5,6 +5,8 @@ import { Badge, Button } from "@/components/shared";
 import { AssetOverflowMenu } from "./AssetOverflowMenu";
 import type { BrandAssetDetail } from "../types/brand-asset-detail.types";
 import { useUpdateStatus } from "../hooks/useBrandAssetDetail";
+import { LockShield, LockStatusPill } from "@/components/lock";
+import type { UseLockStateReturn } from "@/hooks/useLockState";
 
 const STATUS_LABELS: Record<string, string> = {
   DRAFT: "Draft",
@@ -23,11 +25,13 @@ const STATUS_VARIANTS: Record<string, "default" | "warning" | "success" | "info"
 interface AssetDetailHeaderProps {
   asset: BrandAssetDetail;
   onNavigateBack?: () => void;
+  lockState: UseLockStateReturn;
 }
 
 export function AssetDetailHeader({
   asset,
   onNavigateBack,
+  lockState,
 }: AssetDetailHeaderProps) {
   const updateStatus = useUpdateStatus(asset.id);
 
@@ -51,10 +55,21 @@ export function AssetDetailHeader({
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900">{asset.name}</h1>
+            <LockShield
+              isLocked={lockState.isLocked}
+              isToggling={lockState.isToggling}
+              onClick={lockState.requestToggle}
+              size="sm"
+            />
             <Badge variant="teal" size="sm">
               {Math.round(asset.validationPercentage)}% Validated
             </Badge>
           </div>
+          <LockStatusPill
+            isLocked={lockState.isLocked}
+            lockedBy={lockState.lockedBy}
+            lockedAt={lockState.lockedAt}
+          />
           <p className="text-gray-500">{asset.description}</p>
         </div>
 
@@ -62,7 +77,8 @@ export function AssetDetailHeader({
           <select
             value={asset.status}
             onChange={(e) => handleStatusChange(e.target.value)}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+            disabled={lockState.isLocked}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {Object.entries(STATUS_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -75,7 +91,11 @@ export function AssetDetailHeader({
             {STATUS_LABELS[asset.status] ?? asset.status}
           </Badge>
 
-          <AssetOverflowMenu asset={asset} />
+          <AssetOverflowMenu
+            asset={asset}
+            onToggleLock={lockState.requestToggle}
+            isLocked={lockState.isLocked}
+          />
         </div>
       </div>
     </div>

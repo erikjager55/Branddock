@@ -134,6 +134,10 @@ export async function POST(
           ? `Vertaal de kernwaarden (${coreValues.slice(0, 3).join(", ")}) naar concrete gedragingen en besliscriteria`
           : "Vertaal waarden naar concrete gedragingen en besliscriteria",
       ],
+
+      fieldSuggestions: generateFieldSuggestions(persona, {
+        goals, motivations, frustrations, behaviors, coreValues, buyingTriggers, decisionCriteria,
+      }),
     };
 
     // Mark session as completed
@@ -173,4 +177,158 @@ export async function POST(
     console.error("[POST /api/personas/:id/ai-analysis/:sessionId/complete]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
+}
+
+/**
+ * Generates field suggestions based on persona data gaps and analysis insights.
+ * Each suggestion proposes a new or improved value for a persona field.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function generateFieldSuggestions(persona: any, arrays: {
+  goals: string[];
+  motivations: string[];
+  frustrations: string[];
+  behaviors: string[];
+  coreValues: string[];
+  buyingTriggers: string[];
+  decisionCriteria: string[];
+}) {
+  const suggestions: Array<{
+    id: string;
+    field: string;
+    label: string;
+    currentValue: string | string[] | null;
+    suggestedValue: string | string[];
+    reason: string;
+    status: string;
+  }> = [];
+
+  let counter = 1;
+  const add = (
+    field: string,
+    label: string,
+    currentValue: string | string[] | null,
+    suggestedValue: string | string[],
+    reason: string,
+  ) => {
+    suggestions.push({
+      id: `fs-${counter++}`,
+      field,
+      label,
+      currentValue,
+      suggestedValue,
+      reason,
+      status: "pending",
+    });
+  };
+
+  // Suggest tagline if missing
+  if (!persona.tagline) {
+    const role = persona.occupation ?? "professional";
+    const loc = persona.location ? ` uit ${persona.location}` : "";
+    add(
+      "tagline",
+      "Tagline",
+      null,
+      `De ${persona.age ?? "ambitieuze"} ${role}${loc} die waarde zoekt in kwaliteit en efficiëntie`,
+      "Een tagline vat de persona bondig samen en maakt het makkelijker te herkennen in je team.",
+    );
+  }
+
+  // Suggest quote if missing
+  if (!persona.quote) {
+    const goal = arrays.goals[0] ?? "groei en innovatie";
+    add(
+      "quote",
+      "Quote",
+      null,
+      `"Ik zoek oplossingen die me helpen bij ${goal} — zonder onnodige complexiteit."`,
+      "Een representatieve quote brengt de persona tot leven en maakt communicatie menselijker.",
+    );
+  }
+
+  // Suggest bio if missing
+  if (!persona.bio) {
+    const parts: string[] = [];
+    if (persona.age && persona.occupation) {
+      parts.push(`${persona.name} is een ${persona.age}-jarige ${persona.occupation}`);
+    } else {
+      parts.push(`${persona.name} is een gedreven professional`);
+    }
+    if (persona.location) parts.push(`gevestigd in ${persona.location}`);
+    if (persona.education) parts.push(`met een achtergrond in ${persona.education}`);
+    if (arrays.goals.length > 0) {
+      parts.push(`die streeft naar ${arrays.goals[0]}`);
+    }
+    add(
+      "bio",
+      "Bio",
+      null,
+      parts.join(", ") + ".",
+      "Een korte bio geeft context aan de persona en helpt bij content creatie.",
+    );
+  }
+
+  // Suggest buying triggers if empty or sparse
+  if (arrays.buyingTriggers.length < 2) {
+    const suggested = [
+      "Bewezen ROI en concrete resultaten",
+      "Aanbeveling van een vertrouwde peer",
+      "Tijdsdruk door deadline of marktverandering",
+    ];
+    add(
+      "buyingTriggers",
+      "Buying Triggers",
+      arrays.buyingTriggers.length > 0 ? arrays.buyingTriggers : null,
+      suggested,
+      "Kooptriggers helpen bij het timen van sales- en marketingmomenten.",
+    );
+  }
+
+  // Suggest decision criteria if empty or sparse
+  if (arrays.decisionCriteria.length < 2) {
+    const suggested = [
+      "Prijs-kwaliteitverhouding",
+      "Schaalbaarheid en toekomstbestendigheid",
+      "Gebruiksgemak en implementatietijd",
+    ];
+    add(
+      "decisionCriteria",
+      "Decision Criteria",
+      arrays.decisionCriteria.length > 0 ? arrays.decisionCriteria : null,
+      suggested,
+      "Besliscriteria zijn essentieel voor sales enablement en productpositionering.",
+    );
+  }
+
+  // Suggest additional frustrations if sparse
+  if (arrays.frustrations.length < 2) {
+    add(
+      "frustrations",
+      "Frustrations",
+      arrays.frustrations.length > 0 ? arrays.frustrations : null,
+      [
+        "Te veel tools die niet goed integreren",
+        "Gebrek aan data-gedreven inzichten voor besluitvorming",
+      ],
+      "Meer pijnpunten helpen bij het scherper formuleren van je waardepropositie.",
+    );
+  }
+
+  // Suggest behaviors if sparse
+  if (arrays.behaviors.length < 2) {
+    add(
+      "behaviors",
+      "Behaviors",
+      arrays.behaviors.length > 0 ? arrays.behaviors : null,
+      [
+        "Doet uitgebreid online onderzoek voor aankopen",
+        "Raadpleegt reviews en vergelijkingssites",
+        "Volgt thought leaders op LinkedIn",
+      ],
+      "Gedragspatronen informeren welke kanalen en contentformats het beste werken.",
+    );
+  }
+
+  return suggestions;
 }

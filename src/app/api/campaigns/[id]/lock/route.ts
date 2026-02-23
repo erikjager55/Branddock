@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
-import { invalidateCache } from "@/lib/api/cache";
-import { cacheKeys } from "@/lib/api/cache-keys";
 
-// PATCH /api/personas/[id]/lock
+// PATCH /api/campaigns/[id]/lock
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -22,11 +20,11 @@ export async function PATCH(
 
     const { id } = await params;
 
-    const existing = await prisma.persona.findFirst({
+    const existing = await prisma.campaign.findFirst({
       where: { id, workspaceId },
     });
     if (!existing) {
-      return NextResponse.json({ error: "Persona not found" }, { status: 404 });
+      return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
     }
 
     const body = await request.json();
@@ -39,27 +37,22 @@ export async function PATCH(
       );
     }
 
-    const persona = await prisma.persona.update({
+    const campaign = await prisma.campaign.update({
       where: { id },
       data: {
         isLocked: locked,
         lockedById: locked ? session.user.id : null,
         lockedAt: locked ? new Date() : null,
       },
-      include: {
-        lockedBy: { select: { id: true, name: true } },
-      },
     });
-
-    invalidateCache(cacheKeys.prefixes.personas(workspaceId));
 
     return NextResponse.json({
-      isLocked: persona.isLocked,
-      lockedAt: persona.lockedAt?.toISOString() ?? null,
-      lockedBy: persona.lockedBy ? { id: persona.lockedBy.id, name: persona.lockedBy.name } : null,
+      isLocked: campaign.isLocked,
+      lockedById: campaign.lockedById,
+      lockedAt: campaign.lockedAt?.toISOString() ?? null,
     });
   } catch (error) {
-    console.error("[PATCH /api/personas/:id/lock]", error);
+    console.error("[PATCH /api/campaigns/:id/lock]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

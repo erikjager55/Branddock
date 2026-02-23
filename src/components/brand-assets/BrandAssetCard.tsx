@@ -11,9 +11,10 @@
 
 import React, { useState } from 'react';
 import {
-  Lock, Layers, ChevronDown, CheckCircle, AlertCircle, AlertTriangle,
+  Layers, ChevronDown, CheckCircle, AlertCircle, AlertTriangle,
   Sparkles, Users as UsersIcon, FileQuestion, ClipboardList,
 } from 'lucide-react';
+import { CardLockIndicator } from '@/components/lock';
 import * as LucideIcons from 'lucide-react';
 import { Card } from '@/components/shared/Card';
 import { Badge } from '@/components/shared/Badge';
@@ -116,9 +117,11 @@ export function BrandAssetCard({
       hoverable={!!onClick}
       padding="none"
       onClick={onClick ? () => onClick(asset) : undefined}
-      className={cn('flex flex-col', className)}
+      className={cn('relative flex flex-col', className)}
       data-testid="brand-asset-card"
     >
+      <CardLockIndicator isLocked={isLocked} className="absolute top-3 right-3" />
+
       {/* Header — gradient icon + title + coverage badge */}
       <div className="p-6 pb-0">
         <div className="flex items-start gap-4">
@@ -134,9 +137,6 @@ export function BrandAssetCard({
 
           <div className="flex-1 min-w-0">
             <h3 className="text-base font-semibold text-foreground leading-snug line-clamp-1">
-              {isLocked && (
-                <Lock className="w-3.5 h-3.5 inline-block mr-1 text-muted-foreground -mt-0.5" />
-              )}
               {asset.name}
             </h3>
             <CategoryBadge category={asset.category} />

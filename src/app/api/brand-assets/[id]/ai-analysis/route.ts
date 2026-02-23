@@ -6,6 +6,7 @@ import { openaiClient } from "@/lib/ai/openai-client";
 import { getBrandContext } from "@/lib/ai/brand-context";
 import { buildAnalysisQuestionPrompt } from "@/lib/ai/prompts/brand-analysis";
 import { parseAIError, getReadableErrorMessage, getAIErrorStatus } from "@/lib/ai/error-handler";
+import { requireUnlocked } from "@/lib/lock-guard";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -30,6 +31,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const { id: brandAssetId } = await params;
+
+    const lockResponse = await requireUnlocked("brandAsset", brandAssetId);
+    if (lockResponse) return lockResponse;
+
     const body = await request.json();
     const parsed = startSchema.safeParse(body);
 

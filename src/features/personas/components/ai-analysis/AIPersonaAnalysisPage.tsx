@@ -6,6 +6,7 @@ import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
 import {
   usePersonaDetail,
+  useUpdatePersona,
   useStartAnalysisSession,
   useAnalysisSession,
   useSendAnalysisAnswer,
@@ -40,6 +41,7 @@ export function AIPersonaAnalysisPage({ personaId, onBack }: AIPersonaAnalysisPa
 
   const reset = useAIPersonaAnalysisStore((s) => s.reset);
 
+  const updatePersona = useUpdatePersona(personaId);
   const startSession = useStartAnalysisSession(personaId);
   const { data: sessionData } = useAnalysisSession(personaId, sessionId);
   const sendAnswer = useSendAnalysisAnswer(personaId, sessionId);
@@ -157,6 +159,7 @@ export function AIPersonaAnalysisPage({ personaId, onBack }: AIPersonaAnalysisPa
           insightsData={insightsData}
           personaName={persona.name}
           onBack={onBack}
+          onUpdatePersona={(data) => updatePersona.mutateAsync(data)}
         />
       )}
     </div>
