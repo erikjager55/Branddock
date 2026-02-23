@@ -1,6 +1,6 @@
 'use client';
 
-import { User, MapPin, Briefcase, RefreshCw, Camera, Pencil, Sparkles, CheckCircle, MessageCircle, HelpCircle } from 'lucide-react';
+import { User, MapPin, Briefcase, RefreshCw, Camera, Pencil, CheckCircle, MessageCircle, HelpCircle } from 'lucide-react';
 import { OptimizedImage, Button, Badge } from '@/components/shared';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LockShield, LockStatusPill } from '@/components/lock';
@@ -157,20 +157,6 @@ export function PersonaDetailHeader({
               >
                 {isEditing ? 'Editing' : 'Edit'}
               </Button>
-
-              {/* Regenerate — hidden when locked */}
-              {visibility.showRegenerateButton && (
-                <Button
-                  data-testid="persona-regenerate-button"
-                  variant="secondary"
-                  size="sm"
-                  icon={Sparkles}
-                  onClick={() => {}}
-                  disabled={!lockState.canGenerateAI}
-                >
-                  Regenerate
-                </Button>
-              )}
 
               {/* Lock Shield toggle */}
               <LockShield
