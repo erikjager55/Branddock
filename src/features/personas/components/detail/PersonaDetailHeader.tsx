@@ -149,7 +149,7 @@ export function PersonaDetailHeader({
             <div className="flex items-center gap-2 flex-shrink-0">
               <Button
                 data-testid="persona-edit-button"
-                variant={isEditing ? 'cta' : 'secondary'}
+                variant={isEditing ? 'primary' : 'secondary'}
                 size="sm"
                 icon={Pencil}
                 onClick={onEditToggle}

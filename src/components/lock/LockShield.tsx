@@ -1,7 +1,7 @@
 'use client';
 
 import { ShieldCheck, ShieldAlert } from 'lucide-react';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/components/ui/utils';
 
 interface LockShieldProps {
@@ -9,73 +9,60 @@ interface LockShieldProps {
   isToggling?: boolean;
   onClick: () => void;
   size?: 'sm' | 'md' | 'lg';
-  entityName?: string;
-  className?: string;
 }
 
-const SIZE_MAP = {
-  sm: { button: 'w-8 h-8', icon: 'w-4 h-4' },
-  md: { button: 'w-10 h-10', icon: 'w-5 h-5' },
-  lg: { button: 'w-12 h-12', icon: 'w-6 h-6' },
-};
-
-export function LockShield({
-  isLocked,
-  isToggling = false,
-  onClick,
-  size = 'md',
-  entityName,
-  className,
-}: LockShieldProps) {
-  const { button: buttonSize, icon: iconSize } = SIZE_MAP[size];
+export function LockShield({ isLocked, isToggling, onClick, size = 'md' }: LockShieldProps) {
   const prefersReducedMotion = useReducedMotion();
 
+  const sizes = {
+    sm: { track: 'w-14 h-7', thumb: 'w-5 h-5', icon: 'w-3 h-3', translate: 'translate-x-7', label: 'text-xs' },
+    md: { track: 'w-16 h-8', thumb: 'w-6 h-6', icon: 'w-3.5 h-3.5', translate: 'translate-x-8', label: 'text-sm' },
+    lg: { track: 'w-18 h-9', thumb: 'w-7 h-7', icon: 'w-4 h-4', translate: 'translate-x-9', label: 'text-sm' },
+  };
+
+  const s = sizes[size];
+
   return (
-    <motion.button
+    <button
       onClick={onClick}
       disabled={isToggling}
-      whileHover={prefersReducedMotion ? undefined : { scale: 1.08 }}
-      whileTap={prefersReducedMotion ? undefined : { scale: 0.94 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-      style={{ willChange: 'transform' }}
+      role="switch"
+      aria-checked={isLocked}
+      aria-label={isLocked ? 'Ontgrendel dit item' : 'Vergrendel dit item'}
       className={cn(
-        'relative rounded-xl flex items-center justify-center transition-colors overflow-hidden',
-        buttonSize,
-        isLocked
-          ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-          : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
+        'inline-flex items-center gap-2 group',
         isToggling && 'opacity-60 cursor-wait',
-        className,
       )}
-      aria-label={isLocked ? `Ontgrendel ${entityName || 'item'}` : `Vergrendel ${entityName || 'item'}`}
-      aria-pressed={isLocked}
     >
-      {/* Shimmer sweep — hidden when user prefers reduced motion */}
-      {!prefersReducedMotion && (
+      {/* Track */}
+      <div
+        className={cn(
+          s.track,
+          'relative rounded-full transition-colors duration-300 border',
+          isLocked
+            ? 'bg-amber-100 border-amber-300'
+            : 'bg-emerald-100 border-emerald-300',
+        )}
+      >
+        {/* Thumb */}
         <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-          initial={{ x: '-100%' }}
-          animate={isToggling ? { x: '100%' } : { x: '-100%' }}
-          transition={isToggling ? { duration: 0.8, repeat: Infinity } : { duration: 0 }}
-        />
-      )}
-
-      {/* Icon swap */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={isLocked ? 'locked' : 'unlocked'}
-          initial={prefersReducedMotion ? { opacity: 0 } : { rotate: isLocked ? 20 : -20, opacity: 0, scale: 0.8 }}
-          animate={prefersReducedMotion ? { opacity: 1 } : { rotate: 0, opacity: 1, scale: 1 }}
-          exit={prefersReducedMotion ? { opacity: 0 } : { rotate: isLocked ? -20 : 20, opacity: 0, scale: 0.8 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+          layout
+          transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 30 }}
+          className={cn(
+            s.thumb,
+            'absolute top-1/2 -translate-y-1/2 rounded-full shadow-sm flex items-center justify-center',
+            isLocked
+              ? 'left-[calc(100%-4px)] -translate-x-full bg-amber-500'
+              : 'left-1 bg-emerald-500',
+          )}
         >
           {isLocked ? (
-            <ShieldAlert className={iconSize} />
+            <ShieldAlert className={cn(s.icon, 'text-white')} />
           ) : (
-            <ShieldCheck className={iconSize} />
+            <ShieldCheck className={cn(s.icon, 'text-white')} />
           )}
         </motion.div>
-      </AnimatePresence>
-    </motion.button>
+      </div>
+    </button>
   );
 }

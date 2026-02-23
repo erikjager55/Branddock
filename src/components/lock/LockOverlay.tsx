@@ -1,6 +1,5 @@
 'use client';
 
-import { Lock } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/components/ui/utils';
 
@@ -25,17 +24,8 @@ export function LockOverlay({ isLocked, children, className }: LockOverlayProps)
             exit={{ opacity: 0 }}
             transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
             aria-hidden="true"
-            className="absolute inset-0 z-10 rounded-xl bg-amber-50/30 backdrop-blur-[0.5px] cursor-not-allowed flex items-center justify-center"
-          >
-            <motion.div
-              animate={prefersReducedMotion ? undefined : { y: [0, -4, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-              style={{ willChange: 'transform' }}
-              className="w-8 h-8 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center shadow-sm"
-            >
-              <Lock className="w-4 h-4 text-amber-600" />
-            </motion.div>
-          </motion.div>
+            className="absolute inset-0 z-10 rounded-xl bg-amber-50/20 cursor-not-allowed"
+          />
         )}
       </AnimatePresence>
     </div>
