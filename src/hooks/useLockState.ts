@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { LockError } from '@/lib/api/client';
 
@@ -52,12 +52,17 @@ export function useLockState({
   const [showConfirm, setShowConfirm] = useState(false);
 
   // Sync with external state changes (e.g. after refetch)
-  const prevLocked = initialState.isLocked;
-  if (prevLocked !== isLocked && !isToggling) {
-    setIsLocked(prevLocked);
-    setLockedAt(initialState.lockedAt ?? null);
-    setLockedBy(initialState.lockedBy ?? null);
-  }
+  const initialLocked = initialState.isLocked;
+  const initialLockedAt = initialState.lockedAt;
+  const initialLockedBy = initialState.lockedBy;
+
+  useEffect(() => {
+    if (!isToggling) {
+      setIsLocked(initialLocked);
+      setLockedAt(initialLockedAt ?? null);
+      setLockedBy(initialLockedBy ?? null);
+    }
+  }, [initialLocked, initialLockedAt, initialLockedBy]);
 
   const requestToggle = useCallback(() => {
     setShowConfirm(true);
