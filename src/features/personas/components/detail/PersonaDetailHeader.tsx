@@ -1,6 +1,6 @@
 'use client';
 
-import { User, MapPin, Briefcase, RefreshCw, Camera, Pencil, MessageCircle, HelpCircle, Check } from 'lucide-react';
+import { User, MapPin, Briefcase, RefreshCw, Camera, Pencil, MessageCircle, HelpCircle, Check, Save, X } from 'lucide-react';
 import { OptimizedImage, Button } from '@/components/shared';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LockShield, LockStatusPill } from '@/components/lock';
@@ -17,6 +17,8 @@ interface PersonaDetailHeaderProps {
   lockState: UseLockStateReturn;
   visibility: LockVisibility;
   onEditToggle: () => void;
+  onSave: () => void;
+  onCancelEdit: () => void;
   onChat: () => void;
   onUpdate: (data: UpdatePersonaBody) => void;
   onVersionRestore?: () => void;
@@ -28,6 +30,8 @@ export function PersonaDetailHeader({
   lockState,
   visibility,
   onEditToggle,
+  onSave,
+  onCancelEdit,
   onChat,
   onUpdate,
   onVersionRestore,
@@ -217,16 +221,37 @@ export function PersonaDetailHeader({
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Button
-                data-testid="persona-edit-button"
-                variant={isEditing ? 'primary' : 'secondary'}
-                size="sm"
-                icon={Pencil}
-                onClick={onEditToggle}
-                disabled={!lockState.canEdit}
-              >
-                {isEditing ? 'Editing' : 'Edit'}
-              </Button>
+              {/* Edit / Save / Cancel */}
+              {isEditing ? (
+                <>
+                  <Button
+                    variant="cta"
+                    size="sm"
+                    icon={Save}
+                    onClick={onSave}
+                  >
+                    Save
+                  </Button>
+                  <button
+                    onClick={onCancelEdit}
+                    className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <Button
+                  data-testid="persona-edit-button"
+                  variant="secondary"
+                  size="sm"
+                  icon={Pencil}
+                  onClick={onEditToggle}
+                  disabled={!lockState.canEdit}
+                >
+                  Edit
+                </Button>
+              )}
 
               {/* Lock Shield toggle */}
               <LockShield

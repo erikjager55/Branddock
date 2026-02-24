@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
 import { LockBanner, LockOverlay, LockConfirmDialog } from '@/components/lock';
@@ -26,9 +27,10 @@ interface PersonaDetailPageProps {
   personaId: string;
   onBack: () => void;
   onNavigateToAnalysis: () => void;
+  initialEditing?: boolean;
 }
 
-export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: PersonaDetailPageProps) {
+export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, initialEditing }: PersonaDetailPageProps) {
   const { data: persona, isLoading } = usePersonaDetail(personaId);
   const updatePersona = useUpdatePersona(personaId);
   const generateImplications = useGenerateImplications(personaId);
@@ -41,6 +43,13 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
   const setChatModalOpen = usePersonaDetailStore((s) => s.setChatModalOpen);
 
   const queryClient = useQueryClient();
+
+  // Set initial editing state from prop (for newly created personas)
+  useEffect(() => {
+    if (initialEditing) {
+      setEditing(true);
+    }
+  }, [initialEditing, setEditing]);
 
   // Lock state & visibility
   const lockState = useLockState({
@@ -102,6 +111,15 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
     }
   };
 
+  const handleSave = () => {
+    setEditing(false);
+    toast.success('Persona saved successfully');
+  };
+
+  const handleCancelEdit = () => {
+    setEditing(false);
+  };
+
   return (
     <PageShell maxWidth="7xl">
       <div data-testid="persona-detail" className="space-y-6">
@@ -122,6 +140,8 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
           lockState={lockState}
           visibility={visibility}
           onEditToggle={() => setEditing(!isEditing)}
+          onSave={handleSave}
+          onCancelEdit={handleCancelEdit}
           onChat={() => setChatModalOpen(true)}
           onUpdate={(data) => updatePersona.mutate(data)}
           onVersionRestore={() => {
