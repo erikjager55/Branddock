@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
@@ -21,6 +21,7 @@ import { ChannelsToolsSection } from './ChannelsToolsSection';
 import { BuyingTriggersSection } from './BuyingTriggersSection';
 import { ProfileCompletenessCard, ResearchSidebarCard, QuickActionsCard, StrategicImplicationsSidebar } from './sidebar';
 import { ChatWithPersonaModal } from '../chat/ChatWithPersonaModal';
+import { DeletePersonaConfirmDialog } from './DeletePersonaConfirmDialog';
 import { exportPersonaPdf } from '../../utils/exportPersonaPdf';
 
 interface PersonaDetailPageProps {
@@ -332,37 +333,12 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
 
         {/* Delete Confirm Dialog */}
         {showDeleteConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
-                  <Trash2 className="h-5 w-5 text-red-600" />
-                </div>
-                <div>
-                  <h3 className="text-base font-semibold text-gray-900">Delete Persona</h3>
-                  <p className="text-sm text-gray-500">This action cannot be undone</p>
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 mb-6">
-                Are you sure you want to delete <span className="font-medium">{persona.name}</span>? All associated data including chat history, research methods, and versions will be permanently removed.
-              </p>
-              <div className="flex items-center gap-3 justify-end">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={deletePersona.isPending}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
-                >
-                  {deletePersona.isPending ? 'Deleting...' : 'Delete Persona'}
-                </button>
-              </div>
-            </div>
-          </div>
+          <DeletePersonaConfirmDialog
+            personaName={persona?.name ?? 'this persona'}
+            isDeleting={deletePersona.isPending}
+            onConfirm={handleDelete}
+            onCancel={() => setShowDeleteConfirm(false)}
+          />
         )}
       </div>
     </PageShell>
