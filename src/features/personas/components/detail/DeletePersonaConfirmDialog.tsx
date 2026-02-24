@@ -59,13 +59,18 @@ export function DeletePersonaConfirmDialog({
 
         {/* Actions */}
         <div className="flex flex-col gap-2">
-          <button
-            onClick={onConfirm}
-            disabled={!isConfirmed || isDeleting}
-            className="w-full px-4 py-2.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {isDeleting ? 'Deleting...' : 'Delete Persona'}
-          </button>
+          {isConfirmed ? (
+            <button
+              onClick={onConfirm}
+              className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Persona'}
+            </button>
+          ) : (
+            <div className="w-full px-4 py-2.5 text-sm font-medium text-center text-gray-400 bg-gray-100 rounded-lg border border-gray-200 cursor-not-allowed select-none">
+              Delete Persona
+            </div>
+          )}
           <button
             onClick={onCancel}
             className="w-full px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-200"
