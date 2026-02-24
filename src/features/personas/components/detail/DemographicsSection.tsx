@@ -1,16 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, MapPin, Building2, DollarSign, Users, GraduationCap, User } from 'lucide-react';
+import { Calendar, MapPin, Building2, Users, GraduationCap, User, UserRound, Euro } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 
 const FIELDS: { key: keyof PersonaWithMeta; icon: LucideIcon; label: string }[] = [
   { key: 'age', icon: Calendar, label: 'AGE' },
+  { key: 'gender', icon: UserRound, label: 'GENDER' },
   { key: 'location', icon: MapPin, label: 'LOCATION' },
   { key: 'occupation', icon: Building2, label: 'OCCUPATION' },
   { key: 'education', icon: GraduationCap, label: 'EDUCATION' },
-  { key: 'income', icon: DollarSign, label: 'INCOME' },
+  { key: 'income', icon: Euro, label: 'INCOME' },
   { key: 'familyStatus', icon: Users, label: 'FAMILY STATUS' },
 ];
 
