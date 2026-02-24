@@ -1,6 +1,6 @@
 'use client';
 
-import { User, MapPin, Briefcase, RefreshCw, Camera, Pencil, MessageCircle, HelpCircle } from 'lucide-react';
+import { User, MapPin, Briefcase, RefreshCw, Camera, Pencil, MessageCircle, HelpCircle, Check } from 'lucide-react';
 import { OptimizedImage, Button } from '@/components/shared';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LockShield, LockStatusPill } from '@/components/lock';
@@ -43,13 +43,9 @@ export function PersonaDetailHeader({
       <div className="flex items-start gap-6">
         {/* Profile Photo + Generate Button */}
         <div className="flex-shrink-0">
-          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 overflow-hidden shadow-md">
-            {generateImage.isPending ? (
-              <div className="w-full h-full flex flex-col items-center justify-center">
-                <div className="w-7 h-7 border-2 border-white/30 border-t-white rounded-full animate-spin mb-1" />
-                <span className="text-[9px] text-white/80 font-medium">Generating...</span>
-              </div>
-            ) : (
+          <div className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 overflow-hidden shadow-md">
+            {/* Altijd de huidige foto tonen (als die er is) */}
+            {persona.avatarUrl && !generateImage.isPending && (
               <OptimizedImage
                 src={persona.avatarUrl}
                 alt={persona.name}
@@ -62,6 +58,29 @@ export function PersonaDetailHeader({
                   </div>
                 }
               />
+            )}
+
+            {/* Generating overlay */}
+            {generateImage.isPending && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-500/90 to-cyan-400/90 backdrop-blur-sm">
+                <div className="w-7 h-7 border-2 border-white/30 border-t-white rounded-full animate-spin mb-1.5" />
+                <span className="text-[9px] text-white font-medium">Generating</span>
+                <span className="text-[8px] text-white/60">This may take a moment...</span>
+              </div>
+            )}
+
+            {/* Geen foto en niet aan het genereren */}
+            {!persona.avatarUrl && !generateImage.isPending && (
+              <div className="w-full h-full flex items-center justify-center">
+                <User className="h-10 w-10 text-white/70" />
+              </div>
+            )}
+
+            {/* Success flash */}
+            {generateImage.isSuccess && !generateImage.isPending && (
+              <div className="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-sm animate-pulse">
+                <Check className="w-3 h-3 text-white" />
+              </div>
             )}
           </div>
           {/* Generate Photo — hidden when locked */}
@@ -88,6 +107,11 @@ export function PersonaDetailHeader({
                 </>
               )}
             </button>
+          )}
+          {generateImage.isError && (
+            <p className="mt-1 text-[9px] text-red-500 text-center w-24">
+              Generation failed. Try again.
+            </p>
           )}
         </div>
 

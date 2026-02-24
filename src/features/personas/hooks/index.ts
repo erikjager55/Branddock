@@ -130,6 +130,7 @@ export function useGeneratePersonaImage(id: string | undefined) {
     mutationFn: () => api.generatePersonaImage(id!),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: personaKeys.detail(id!) });
+      qc.invalidateQueries({ queryKey: personaKeys.list() });
     },
   });
 }
