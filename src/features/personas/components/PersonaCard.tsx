@@ -6,6 +6,7 @@ import {
   MapPin,
   Building2,
   Euro,
+  UserRound,
   Users,
   GraduationCap,
   MessageCircle,
@@ -29,6 +30,7 @@ interface PersonaCardProps {
 
 const DEMO_ICONS: Record<string, LucideIcon> = {
   age: Calendar,
+  gender: UserRound,
   location: MapPin,
   occupation: Building2,
   income: Euro,
@@ -61,7 +63,7 @@ const METHOD_CONFIG: Record<PersonaResearchMethodType, { icon: LucideIcon; label
   },
 };
 
-const LEFT_FIELDS = ["age", "occupation", "income"];
+const LEFT_FIELDS = ["age", "gender", "occupation", "income"];
 const RIGHT_FIELDS = ["location", "education", "familyStatus"];
 
 export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
@@ -102,12 +104,18 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
 
   const allFields: Record<string, string | null | undefined> = {
     age: persona.age,
+    gender: persona.gender,
     location: persona.location,
     occupation: persona.occupation,
     income: persona.income,
     familyStatus: persona.familyStatus,
     education: persona.education,
   };
+
+  // Normalize income to euro symbol
+  if (allFields.income) {
+    allFields.income = allFields.income.replace(/[£$]/g, '€');
+  }
 
   const leftDemos = LEFT_FIELDS.map((key) => ({ key, value: allFields[key] })).filter((f) => f.value);
   const rightDemos = RIGHT_FIELDS.map((key) => ({ key, value: allFields[key] })).filter((f) => f.value);
