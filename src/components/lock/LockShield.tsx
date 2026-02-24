@@ -1,7 +1,6 @@
 'use client';
 
 import { ShieldCheck, ShieldAlert } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/components/ui/utils';
 
 interface LockShieldProps {
@@ -11,9 +10,7 @@ interface LockShieldProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-export function LockShield({ isLocked, isToggling, onClick, size = 'md' }: LockShieldProps) {
-  const prefersReducedMotion = useReducedMotion();
-
+export function LockShield({ isLocked, isToggling, onClick }: LockShieldProps) {
   return (
     <button
       onClick={onClick}
@@ -22,33 +19,27 @@ export function LockShield({ isLocked, isToggling, onClick, size = 'md' }: LockS
       aria-checked={isLocked}
       aria-label={isLocked ? 'Unlock this item' : 'Lock this item'}
       className={cn(
-        'inline-flex items-center gap-2 group',
+        'relative inline-flex h-8 w-[52px] items-center rounded-full border-2 transition-all duration-300 ease-in-out cursor-pointer',
+        isLocked
+          ? 'bg-amber-100 border-amber-400'
+          : 'bg-emerald-100 border-emerald-400',
         isToggling && 'opacity-60 cursor-wait',
       )}
     >
-      <div
+      <span
         className={cn(
-          'relative w-14 h-7 rounded-full transition-colors duration-300 border',
+          'inline-flex h-6 w-6 items-center justify-center rounded-full shadow-md transition-all duration-300 ease-in-out',
           isLocked
-            ? 'bg-amber-100 border-amber-300'
-            : 'bg-emerald-200 border-emerald-400',
+            ? 'translate-x-[22px] bg-amber-500'
+            : 'translate-x-[2px] bg-emerald-500',
         )}
       >
-        <motion.div
-          animate={{ x: isLocked ? 28 : 2 }}
-          transition={prefersReducedMotion ? { duration: 0 } : { type: 'spring', stiffness: 500, damping: 30 }}
-          className={cn(
-            'absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full shadow-sm flex items-center justify-center',
-            isLocked ? 'bg-amber-500' : 'bg-emerald-600',
-          )}
-        >
-          {isLocked ? (
-            <ShieldAlert className="w-3 h-3 text-white" />
-          ) : (
-            <ShieldCheck className="w-3 h-3 text-white" />
-          )}
-        </motion.div>
-      </div>
+        {isLocked ? (
+          <ShieldAlert className="w-3.5 h-3.5 text-white" />
+        ) : (
+          <ShieldCheck className="w-3.5 h-3.5 text-white" />
+        )}
+      </span>
     </button>
   );
 }
