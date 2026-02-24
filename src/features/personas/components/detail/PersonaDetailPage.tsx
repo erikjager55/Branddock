@@ -124,6 +124,10 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
           onEditToggle={() => setEditing(!isEditing)}
           onChat={() => setChatModalOpen(true)}
           onUpdate={(data) => updatePersona.mutate(data)}
+          onVersionRestore={() => {
+            queryClient.invalidateQueries({ queryKey: personaKeys.detail(personaId) });
+            queryClient.invalidateQueries({ queryKey: personaKeys.list() });
+          }}
         />
 
         {/* Lock Banner */}

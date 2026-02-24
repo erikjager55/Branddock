@@ -4,6 +4,7 @@ import { User, MapPin, Briefcase, RefreshCw, Camera, Pencil, MessageCircle, Help
 import { OptimizedImage, Button } from '@/components/shared';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LockShield, LockStatusPill } from '@/components/lock';
+import { VersionPill } from '@/components/versioning/VersionPill';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 import type { UseLockStateReturn } from '@/hooks/useLockState';
 import type { LockVisibility } from '@/hooks/useLockVisibility';
@@ -17,6 +18,7 @@ interface PersonaDetailHeaderProps {
   onEditToggle: () => void;
   onChat: () => void;
   onUpdate: (data: UpdatePersonaBody) => void;
+  onVersionRestore?: () => void;
 }
 
 export function PersonaDetailHeader({
@@ -27,6 +29,7 @@ export function PersonaDetailHeader({
   onEditToggle,
   onChat,
   onUpdate,
+  onVersionRestore,
 }: PersonaDetailHeaderProps) {
   const completedMethods = (persona.researchMethods ?? []).filter(
     (m) => m.status === 'COMPLETED' || m.status === 'VALIDATED',
@@ -154,9 +157,11 @@ export function PersonaDetailHeader({
                 <span className="text-xs text-gray-500">
                   {completedMethods}/{totalMethods} methods completed
                 </span>
-                <span className="inline-flex items-center gap-1 text-xs text-gray-400">
-                  v1.0
-                </span>
+                <VersionPill
+                  resourceType="PERSONA"
+                  resourceId={persona.id}
+                  onRestore={onVersionRestore}
+                />
                 <Popover>
                   <PopoverTrigger asChild>
                     <button className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors border border-gray-200">
