@@ -221,42 +221,6 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
               <QuickActionsCard
                 onChat={() => setChatModalOpen(true)}
                 onDuplicate={() => duplicatePersona.mutate()}
-                onExport={() => {
-                  const exportData = {
-                    name: persona.name,
-                    tagline: persona.tagline,
-                    location: persona.location,
-                    occupation: persona.occupation,
-                    demographics: {
-                      age: persona.age,
-                      gender: persona.gender,
-                      education: persona.education,
-                      income: persona.income,
-                      familyStatus: persona.familyStatus,
-                    },
-                    psychographics: {
-                      personalityType: persona.personalityType,
-                      coreValues: persona.coreValues,
-                      interests: persona.interests,
-                    },
-                    goals: persona.goals,
-                    motivations: persona.motivations,
-                    frustrations: persona.frustrations,
-                    behaviors: persona.behaviors,
-                    preferredChannels: persona.preferredChannels,
-                    buyingTriggers: persona.buyingTriggers,
-                    strategicImplications: persona.strategicImplications,
-                    quote: persona.quote,
-                    bio: persona.bio,
-                  };
-                  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `${persona.name.toLowerCase().replace(/\s+/g, '-')}-persona.json`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
                 onExportPdf={() => {
                   exportPersonaPdf({
                     name: persona.name,
