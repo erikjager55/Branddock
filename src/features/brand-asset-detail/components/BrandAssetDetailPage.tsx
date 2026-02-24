@@ -96,6 +96,10 @@ export function BrandAssetDetailPage({
           asset={asset}
           onNavigateBack={onNavigateBack}
           lockState={lockState}
+          onVersionRestore={() => {
+            qc.invalidateQueries({ queryKey: ['brand-asset-detail', assetId] });
+            qc.invalidateQueries({ queryKey: ['brand-assets'] });
+          }}
         />
 
         <LockBanner

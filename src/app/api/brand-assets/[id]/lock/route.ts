@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { createVersion } from "@/lib/versioning";
+import { buildBrandAssetSnapshot } from "@/lib/snapshot-builders";
 
 // =============================================================
 // PATCH /api/brand-assets/[id]/lock — set lock state { locked: boolean }
@@ -61,6 +63,24 @@ export async function PATCH(
         lockedBy: { select: { id: true, name: true } },
       },
     });
+
+    // Create lock baseline snapshot when locking
+    if (locked) {
+      try {
+        const fullAsset = await prisma.brandAsset.findUniqueOrThrow({ where: { id } });
+        await createVersion({
+          resourceType: 'BRAND_ASSET',
+          resourceId: id,
+          snapshot: buildBrandAssetSnapshot(fullAsset),
+          changeType: 'LOCK_BASELINE',
+          changeNote: 'Locked — baseline snapshot',
+          userId: session.user.id,
+          workspaceId,
+        });
+      } catch (versionError) {
+        console.error('[BrandAsset lock baseline snapshot failed]', versionError);
+      }
+    }
 
     return NextResponse.json({
       isLocked: updated.isLocked,

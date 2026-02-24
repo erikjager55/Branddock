@@ -3,6 +3,7 @@
 import { ArrowLeft } from "lucide-react";
 import { Badge, Button } from "@/components/shared";
 import { AssetOverflowMenu } from "./AssetOverflowMenu";
+import { VersionPill } from "@/components/versioning/VersionPill";
 import type { BrandAssetDetail } from "../types/brand-asset-detail.types";
 import { useUpdateStatus } from "../hooks/useBrandAssetDetail";
 import { LockShield, LockStatusPill } from "@/components/lock";
@@ -26,12 +27,14 @@ interface AssetDetailHeaderProps {
   asset: BrandAssetDetail;
   onNavigateBack?: () => void;
   lockState: UseLockStateReturn;
+  onVersionRestore?: () => void;
 }
 
 export function AssetDetailHeader({
   asset,
   onNavigateBack,
   lockState,
+  onVersionRestore,
 }: AssetDetailHeaderProps) {
   const updateStatus = useUpdateStatus(asset.id);
 
@@ -64,6 +67,11 @@ export function AssetDetailHeader({
             <Badge variant="teal" size="sm">
               {Math.round(asset.validationPercentage)}% Validated
             </Badge>
+            <VersionPill
+              resourceType="BRAND_ASSET"
+              resourceId={asset.id}
+              onRestore={onVersionRestore}
+            />
           </div>
           <LockStatusPill
             isLocked={lockState.isLocked}

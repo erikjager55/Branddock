@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
+import { createVersion } from "@/lib/versioning";
+import { buildBrandAssetSnapshot } from "@/lib/snapshot-builders";
 import { z } from "zod";
 
 const ContentUpdateSchema = z.object({
@@ -68,6 +70,21 @@ export async function PATCH(
         },
       }),
     ]);
+
+    // Create ResourceVersion snapshot (new versioning system)
+    try {
+      await createVersion({
+        resourceType: 'BRAND_ASSET',
+        resourceId: id,
+        snapshot: buildBrandAssetSnapshot(updatedAsset),
+        changeType: 'MANUAL_SAVE',
+        changeNote: parsed.data.changeNote,
+        userId: session.user.id,
+        workspaceId,
+      });
+    } catch (versionError) {
+      console.error('[BrandAsset version snapshot failed]', versionError);
+    }
 
     return NextResponse.json({ asset: updatedAsset, version });
   } catch (error) {
