@@ -4,7 +4,7 @@ import { User, MapPin, Briefcase, RefreshCw, Camera, Pencil, MessageCircle, Help
 import { OptimizedImage, Button } from '@/components/shared';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LockShield, LockStatusPill } from '@/components/lock';
-import type { PersonaWithMeta } from '../../types/persona.types';
+import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 import type { UseLockStateReturn } from '@/hooks/useLockState';
 import type { LockVisibility } from '@/hooks/useLockVisibility';
 import { useGeneratePersonaImage } from '../../hooks';
@@ -16,6 +16,7 @@ interface PersonaDetailHeaderProps {
   visibility: LockVisibility;
   onEditToggle: () => void;
   onChat: () => void;
+  onUpdate: (data: UpdatePersonaBody) => void;
 }
 
 export function PersonaDetailHeader({
@@ -25,6 +26,7 @@ export function PersonaDetailHeader({
   visibility,
   onEditToggle,
   onChat,
+  onUpdate,
 }: PersonaDetailHeaderProps) {
   const completedMethods = (persona.researchMethods ?? []).filter(
     (m) => m.status === 'COMPLETED' || m.status === 'VALIDATED',
@@ -91,16 +93,49 @@ export function PersonaDetailHeader({
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-gray-900">{persona.name}</h1>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    defaultValue={persona.name}
+                    onBlur={(e) => {
+                      const newName = e.target.value.trim();
+                      if (newName && newName !== persona.name) {
+                        onUpdate({ name: newName });
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                    }}
+                    className="text-2xl font-bold text-gray-900 bg-transparent border-b-2 border-emerald-300 focus:border-emerald-500 outline-none w-full"
+                  />
+                ) : (
+                  <h1 className="text-2xl font-bold text-gray-900">{persona.name}</h1>
+                )}
                 <LockStatusPill
                   isLocked={lockState.isLocked}
                   lockedBy={lockState.lockedBy}
                   lockedAt={lockState.lockedAt}
                 />
               </div>
-              {persona.tagline && (
+              {isEditing ? (
+                <input
+                  type="text"
+                  defaultValue={persona.tagline ?? ''}
+                  placeholder="Add a tagline..."
+                  onBlur={(e) => {
+                    const newTagline = e.target.value.trim();
+                    if (newTagline !== (persona.tagline ?? '')) {
+                      onUpdate({ tagline: newTagline || undefined });
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                  }}
+                  className="text-base text-gray-500 mt-0.5 bg-transparent border-b border-gray-200 focus:border-emerald-500 outline-none w-full"
+                />
+              ) : persona.tagline ? (
                 <p className="text-base text-gray-500 mt-0.5">{persona.tagline}</p>
-              )}
+              ) : null}
               <div className="flex items-center gap-4 mt-2.5 text-sm text-gray-500">
                 {persona.location && (
                   <span className="flex items-center gap-1.5">

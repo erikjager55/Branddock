@@ -123,6 +123,7 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
           visibility={visibility}
           onEditToggle={() => setEditing(!isEditing)}
           onChat={() => setChatModalOpen(true)}
+          onUpdate={(data) => updatePersona.mutate(data)}
         />
 
         {/* Lock Banner */}
