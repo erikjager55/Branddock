@@ -83,6 +83,7 @@ function AppContent() {
   // selectedCampaignId now in useCampaignStore
   // selectedProductId now in useProductsStore
   const [selectedWorkshopId, setSelectedWorkshopId] = useState<string | null>(null);
+  const [isNewPersona, setIsNewPersona] = useState(false);
   
   // ✨ Use Context Hooks instead of local state
   const {
@@ -532,6 +533,7 @@ function AppContent() {
             onBack={() => handleSetActiveSection('personas')}
             onCreated={(personaId) => {
               usePersonaDetailStore.getState().setSelectedPersonaId(personaId);
+              setIsNewPersona(true);
               handleSetActiveSection('persona-detail');
             }}
           />
@@ -545,8 +547,12 @@ function AppContent() {
         return (
           <PersonaDetailPage
             personaId={pdPersonaId}
-            onBack={() => handleSetActiveSection('personas')}
+            onBack={() => {
+              setIsNewPersona(false);
+              handleSetActiveSection('personas');
+            }}
             onNavigateToAnalysis={() => handleSetActiveSection('persona-ai-analysis')}
+            initialEditing={isNewPersona}
           />
         );
       }
