@@ -129,21 +129,24 @@ export function useGeneratePersonaImage(id: string | undefined) {
   return useMutation({
     mutationFn: () => api.generatePersonaImage(id!),
     onSuccess: (data) => {
-      // Directly patch the cached persona with the new avatarUrl + cache-bust param
-      const bustUrl = data.avatarUrl.includes('?')
-        ? `${data.avatarUrl}&_t=${Date.now()}`
-        : `${data.avatarUrl}?_t=${Date.now()}`;
+      // Cache-bust: add timestamp to HTTP URLs only (NOT data: URIs)
+      const newUrl = data.avatarUrl.startsWith('data:')
+        ? data.avatarUrl
+        : data.avatarUrl.includes('?')
+          ? `${data.avatarUrl}&_t=${Date.now()}`
+          : `${data.avatarUrl}?_t=${Date.now()}`;
 
+      // Directly patch the cached persona — no refetch needed
       qc.setQueryData(personaKeys.detail(id!), (old: unknown) => {
         if (!old || typeof old !== 'object') return old;
         const rec = old as Record<string, unknown>;
-        // Handle both { persona: {...} } and flat persona shapes
         if (rec.persona && typeof rec.persona === 'object') {
-          return { ...rec, persona: { ...(rec.persona as Record<string, unknown>), avatarUrl: bustUrl } };
+          return { ...rec, persona: { ...(rec.persona as Record<string, unknown>), avatarUrl: newUrl } };
         }
-        return { ...rec, avatarUrl: bustUrl };
+        return { ...rec, avatarUrl: newUrl };
       });
-      // Also invalidate the list so overview cards update
+
+      // Invalidate list so overview cards pick up new avatar
       qc.invalidateQueries({ queryKey: personaKeys.list() });
     },
   });

@@ -39,40 +39,15 @@ export function PersonaDetailHeader({
 
   const generateImage = useGeneratePersonaImage(persona.id);
 
-  // Cache bust: voeg timestamp toe aan avatarUrl om browser cache te breken
-  const avatarUrlWithCacheBust = persona.avatarUrl
-    ? persona.avatarUrl.startsWith('data:')
-      ? persona.avatarUrl
-      : `${persona.avatarUrl}${persona.avatarUrl.includes('?') ? '&' : '?'}t=${new Date(persona.updatedAt).getTime()}`
-    : null;
-
   return (
     <div data-testid="persona-detail-header" className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
       <div className="flex items-start gap-6">
         {/* Profile Photo + Generate Button */}
         <div className="flex-shrink-0">
           <div className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 overflow-hidden shadow-md">
-            {/* Altijd de huidige foto tonen (als die er is) */}
-            {avatarUrlWithCacheBust && !generateImage.isPending && (
-              <OptimizedImage
-                key={avatarUrlWithCacheBust}
-                src={avatarUrlWithCacheBust}
-                alt={persona.name}
-                width={96}
-                height={96}
-                className="w-full h-full object-cover"
-                fallback={
-                  <div className="w-full h-full flex items-center justify-center">
-                    <User className="h-10 w-10 text-white/70" />
-                  </div>
-                }
-              />
-            )}
-
-            {/* Generating overlay — two variants */}
-            {generateImage.isPending && (
+            {generateImage.isPending ? (
               persona.avatarUrl ? (
-                <div className="absolute inset-0 overflow-hidden">
+                <div className="w-full h-full relative overflow-hidden">
                   <OptimizedImage
                     src={persona.avatarUrl}
                     alt=""
@@ -90,13 +65,20 @@ export function PersonaDetailHeader({
               ) : (
                 <AvatarGeneratingOverlay />
               )
-            )}
-
-            {/* Geen foto en niet aan het genereren */}
-            {!avatarUrlWithCacheBust && !generateImage.isPending && (
-              <div className="w-full h-full flex items-center justify-center">
-                <User className="h-10 w-10 text-white/70" />
-              </div>
+            ) : (
+              <OptimizedImage
+                key={persona.avatarUrl || 'no-avatar'}
+                src={persona.avatarUrl}
+                alt={persona.name}
+                width={96}
+                height={96}
+                className="w-full h-full object-cover"
+                fallback={
+                  <div className="w-full h-full flex items-center justify-center">
+                    <User className="h-10 w-10 text-white/70" />
+                  </div>
+                }
+              />
             )}
 
             {/* Success flash */}
@@ -118,7 +100,7 @@ export function PersonaDetailHeader({
                   <RefreshCw className="h-3 w-3 animate-spin" />
                   <span>Working...</span>
                 </>
-              ) : avatarUrlWithCacheBust ? (
+              ) : persona.avatarUrl ? (
                 <>
                   <RefreshCw className="h-3 w-3" />
                   <span>Regenerate</span>
