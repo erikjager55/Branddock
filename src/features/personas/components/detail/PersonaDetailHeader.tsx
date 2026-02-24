@@ -69,7 +69,7 @@ export function PersonaDetailHeader({
               {generateImage.isPending ? (
                 <>
                   <RefreshCw className="h-3 w-3 animate-spin" />
-                  <span>Bezig...</span>
+                  <span>Working...</span>
                 </>
               ) : persona.avatarUrl ? (
                 <>
@@ -118,6 +118,9 @@ export function PersonaDetailHeader({
               <div className="flex items-center gap-3 mt-3">
                 <span className="text-xs text-gray-500">
                   {completedMethods}/{totalMethods} methods completed
+                </span>
+                <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+                  v1.0
                 </span>
                 <Popover>
                   <PopoverTrigger asChild>

@@ -1,6 +1,6 @@
 'use client';
 
-import { FlaskConical, Bot, MessageCircle, ClipboardList, Smartphone, CheckCircle, Clock, Plus } from 'lucide-react';
+import { FlaskConical, Bot, MessageCircle, ClipboardList, Smartphone, CheckCircle, Clock, Plus, Eye, Play } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { PersonaWithMeta } from '../../../types/persona.types';
 import { PERSONA_RESEARCH_METHODS } from '../../../constants/persona-research-methods';
@@ -72,7 +72,7 @@ export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }
               <div className="flex items-start gap-3">
                 {/* Icon */}
                 <div className={`h-9 w-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                  isCompleted ? 'bg-emerald-100' : 'bg-gray-100'
+                  isCompleted ? 'bg-emerald-100' : isInProgress ? 'bg-blue-100' : 'bg-gray-100'
                 }`}>
                   {isCompleted ? (
                     <CheckCircle className="h-4 w-4 text-emerald-600" />
@@ -88,23 +88,31 @@ export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }
                     {isAvailable && (
                       <button
                         onClick={() => onStartMethod(config.method)}
-                        className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors flex-shrink-0"
+                        disabled={isLocked}
+                        className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Plus className="h-3 w-3" />
-                        AVAILABLE
+                        Start
                       </button>
                     )}
                     {isCompleted && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded-full">
-                        <CheckCircle className="h-3 w-3" />
-                        Done
-                      </span>
+                      <button
+                        onClick={() => onStartMethod(config.method)}
+                        className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-emerald-700 border border-emerald-200 rounded-md bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0"
+                      >
+                        <Eye className="h-3 w-3" />
+                        View Results
+                      </button>
                     )}
                     {isInProgress && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-blue-700 bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded-full">
-                        <Clock className="h-3 w-3" />
-                        Active
-                      </span>
+                      <button
+                        onClick={() => onStartMethod(config.method)}
+                        disabled={isLocked}
+                        className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-blue-700 border border-blue-200 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <Play className="h-3 w-3" />
+                        Continue
+                      </button>
                     )}
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{config.description}</p>
