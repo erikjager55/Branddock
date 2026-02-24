@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { TrendingUp, Sparkles, RefreshCw, Loader2 } from 'lucide-react';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
-import { ImpactBadge } from './ImpactBadge';
 
 interface StrategicImplication {
   category: string;
@@ -59,7 +58,7 @@ export function StrategicImplicationsSection({
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6 flex flex-col">
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center mb-1">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
             <TrendingUp className="w-5 h-5 text-emerald-600" />
@@ -69,27 +68,26 @@ export function StrategicImplicationsSection({
             <p className="text-sm text-gray-500">How this persona impacts decisions</p>
           </div>
         </div>
-        <ImpactBadge impact="high" />
       </div>
 
       {/* Rerun confirmation dialog */}
       {showConfirm && (
         <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between gap-4">
           <p className="text-sm text-amber-800">
-            Weet je zeker dat je de strategische implicaties opnieuw wilt genereren? Dit overschrijft de huidige implicaties.
+            Are you sure you want to regenerate strategic implications? This will overwrite the current implications.
           </p>
           <div className="flex items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setShowConfirm(false)}
               className="text-sm text-gray-600 hover:text-gray-800 px-3 py-1.5 rounded-lg transition-colors"
             >
-              Annuleren
+              Cancel
             </button>
             <button
               onClick={handleRerun}
               className="text-sm text-white bg-amber-500 hover:bg-amber-600 px-3 py-1.5 rounded-lg transition-colors"
             >
-              Opnieuw genereren
+              Regenerate
             </button>
           </div>
         </div>

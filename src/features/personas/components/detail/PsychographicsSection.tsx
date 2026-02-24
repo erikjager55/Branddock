@@ -37,7 +37,7 @@ export function PsychographicsSection({ persona, isEditing, onUpdate }: Psychogr
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center mb-1">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
             <Brain className="w-5 h-5 text-emerald-600" />
@@ -47,10 +47,6 @@ export function PsychographicsSection({ persona, isEditing, onUpdate }: Psychogr
             <p className="text-sm text-gray-500">Personality, values, and interests</p>
           </div>
         </div>
-        {/* Emerald "medium impact" badge per Figma */}
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-medium border border-emerald-200 text-emerald-600">
-          medium impact
-        </span>
       </div>
 
       <div className="space-y-4 mt-5">

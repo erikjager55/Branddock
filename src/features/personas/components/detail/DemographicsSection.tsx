@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, MapPin, Building2, DollarSign, Users, GraduationCap, CheckCircle, User } from 'lucide-react';
+import { Calendar, MapPin, Building2, DollarSign, Users, GraduationCap, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 
@@ -46,9 +46,6 @@ export function DemographicsSection({ persona, isEditing, onUpdate }: Demographi
             <p className="text-xs text-gray-500">Key demographic information</p>
           </div>
         </div>
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-blue-200 text-blue-600">
-          ID Profile
-        </span>
       </div>
 
       {/* 3×2 grid */}
@@ -81,19 +78,6 @@ export function DemographicsSection({ persona, isEditing, onUpdate }: Demographi
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="px-5 py-3 border-t border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-blue-500" />
-          <span className="text-xs text-gray-500 uppercase tracking-wider font-medium">
-            Persona &middot; Personal
-          </span>
-        </div>
-        <span className="inline-flex items-center gap-1.5 border border-emerald-200 text-emerald-600 text-xs px-2.5 py-0.5 rounded-full font-medium">
-          <CheckCircle className="w-3 h-3" />
-          Verified Profile
-        </span>
-      </div>
     </section>
   );
 }

@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 
 export class LockError extends Error {
   constructor(message?: string) {
-    super(message || 'Item is vergrendeld');
+    super(message || 'Item is locked');
     this.name = 'LockError';
   }
 }
@@ -22,8 +22,8 @@ export async function fetchApi<T = unknown>(
 
   if (res.status === 423) {
     const data = await res.json().catch(() => ({}));
-    toast.error('Item is vergrendeld', {
-      description: data.error || 'Ontgrendel het item om wijzigingen te maken.',
+    toast.error('Item is locked', {
+      description: data.error || 'Unlock the item to make changes.',
     });
     throw new LockError(data.error);
   }

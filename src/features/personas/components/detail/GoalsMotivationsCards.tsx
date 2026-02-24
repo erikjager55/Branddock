@@ -3,7 +3,7 @@
 import { Target, Heart, AlertTriangle, CheckCircle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
-import { ImpactBadge } from './ImpactBadge';
+
 import { RepeatableListInput } from '../create/RepeatableListInput';
 
 interface GoalsMotivationsCardsProps {
@@ -16,7 +16,6 @@ const CARDS: {
   key: 'goals' | 'motivations' | 'frustrations';
   title: string;
   subtitle: string;
-  impact: 'high' | 'medium' | 'low';
   placeholder: string;
   icon: LucideIcon;
   iconBg: string;
@@ -29,7 +28,6 @@ const CARDS: {
     key: 'goals',
     title: 'Goals',
     subtitle: 'What they want to achieve',
-    impact: 'high',
     placeholder: 'Add a goal...',
     icon: Target,
     iconBg: 'bg-emerald-100',
@@ -42,7 +40,6 @@ const CARDS: {
     key: 'motivations',
     title: 'Motivations',
     subtitle: 'What drives their decisions',
-    impact: 'high',
     placeholder: 'Add a motivation...',
     icon: Heart,
     iconBg: 'bg-pink-100',
@@ -55,7 +52,6 @@ const CARDS: {
     key: 'frustrations',
     title: 'Frustrations',
     subtitle: 'Pain points and challenges',
-    impact: 'medium',
     placeholder: 'Add a frustration...',
     icon: AlertTriangle,
     iconBg: 'bg-amber-100',
@@ -69,17 +65,16 @@ const CARDS: {
 export function GoalsMotivationsCards({ persona, isEditing, onUpdate }: GoalsMotivationsCardsProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      {CARDS.map(({ key, title, subtitle, impact, placeholder, icon: Icon, iconBg, iconColor, checkColor, subCardBg, subCardBorder }) => (
+      {CARDS.map(({ key, title, subtitle, placeholder, icon: Icon, iconBg, iconColor, checkColor, subCardBg, subCardBorder }) => (
         <div
           key={key}
           className="rounded-xl border border-gray-200 bg-white p-4"
         >
-          {/* Row 1: icon + impact badge */}
-          <div className="flex items-start justify-between mb-3">
+          {/* Row 1: icon */}
+          <div className="mb-3">
             <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0`}>
               <Icon className={`w-5 h-5 ${iconColor}`} />
             </div>
-            <ImpactBadge impact={impact} />
           </div>
 
           {/* Row 2: title */}

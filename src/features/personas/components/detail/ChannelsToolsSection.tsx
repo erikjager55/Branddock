@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Radio, Megaphone, Wrench, Share2, Plus, X } from 'lucide-react';
 import { Button } from '@/components/shared';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
-import { ImpactBadge } from './ImpactBadge';
 
 interface ChannelsToolsSectionProps {
   persona: PersonaWithMeta;
@@ -58,7 +57,7 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-100 flex items-center justify-center">
             <Radio className="w-5 h-5 text-indigo-600" />
@@ -68,7 +67,6 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
             <p className="text-sm text-gray-500">Where to reach this persona and what they use</p>
           </div>
         </div>
-        <ImpactBadge impact="high" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -219,7 +219,6 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
             <div className="md:sticky md:top-6 space-y-4">
               <QuickActionsCard
                 onChat={() => setChatModalOpen(true)}
-                onRegenerate={() => {}}
                 onDuplicate={() => duplicatePersona.mutate()}
                 onExport={() => {
                   setStubMessage('Export coming in a future sprint');

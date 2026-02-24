@@ -3,7 +3,6 @@
 import { ShoppingCart, Zap, Scale, CheckCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/shared';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
-import { ImpactBadge } from './ImpactBadge';
 import { RepeatableListInput } from '../create/RepeatableListInput';
 
 interface BuyingTriggersSectionProps {
@@ -38,7 +37,7 @@ export function BuyingTriggersSection({ persona, isEditing, onUpdate }: BuyingTr
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
             <ShoppingCart className="w-5 h-5 text-orange-600" />
@@ -48,7 +47,6 @@ export function BuyingTriggersSection({ persona, isEditing, onUpdate }: BuyingTr
             <p className="text-sm text-gray-500">What triggers action and influences decisions</p>
           </div>
         </div>
-        <ImpactBadge impact="high" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

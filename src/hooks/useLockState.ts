@@ -86,8 +86,8 @@ export function useLockState({
 
       if (res.status === 423) {
         const data = await res.json().catch(() => ({}));
-        toast.error('Item is vergrendeld', {
-          description: data.error || 'Ontgrendel het item om wijzigingen te maken.',
+        toast.error('Item is locked', {
+          description: data.error || 'Unlock the item to make changes.',
         });
         throw new LockError(data.error);
       }
@@ -103,15 +103,15 @@ export function useLockState({
       setLockedBy(data.lockedBy ?? null);
       onLockChange?.(data.isLocked);
 
-      toast.success(data.isLocked ? 'Item vergrendeld' : 'Item ontgrendeld', {
+      toast.success(data.isLocked ? 'Item locked' : 'Item unlocked', {
         description: data.isLocked
-          ? `${entityName} is nu beschermd tegen wijzigingen.`
-          : `${entityName} kan weer bewerkt worden.`,
+          ? `${entityName} is now protected from changes.`
+          : `${entityName} can be edited again.`,
       });
     } catch (err) {
       if (!(err instanceof LockError)) {
-        toast.error('Vergrendeling mislukt', {
-          description: `Kon ${entityName} niet (ont)vergrendelen. Probeer opnieuw.`,
+        toast.error('Lock toggle failed', {
+          description: `Could not toggle lock for ${entityName}. Please try again.`,
         });
       }
       console.error(`[useLockState] Failed to toggle lock for ${entityName}:`, err);

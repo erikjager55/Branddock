@@ -24,9 +24,9 @@ export function CardLockIndicator({ isLocked, className }: CardLockIndicatorProp
             'w-7 h-7 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center shadow-sm',
             className,
           )}
-          title="Vergrendeld"
+          title="Locked"
           role="img"
-          aria-label="Vergrendeld"
+          aria-label="Locked"
         >
           <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
         </motion.div>

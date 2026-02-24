@@ -13,35 +13,35 @@ interface LockConfirmDialogProps {
 }
 
 const LOCK_BLOCKED = [
-  { icon: Pencil, label: 'Inhoud bewerken' },
-  { icon: Trash2, label: 'Item verwijderen' },
-  { icon: Sparkles, label: 'AI generatie & regeneratie' },
-  { icon: MessageCircle, label: 'Nieuw gesprek starten' },
-  { icon: Pencil, label: 'Research methoden starten' },
+  { icon: Pencil, label: 'Edit content' },
+  { icon: Trash2, label: 'Delete item' },
+  { icon: Sparkles, label: 'AI generation & regeneration' },
+  { icon: MessageCircle, label: 'Start new conversation' },
+  { icon: Pencil, label: 'Start research methods' },
 ];
 
 const LOCK_HIDDEN = [
-  { icon: EyeOff, label: 'Lege/onvoltooide secties' },
-  { icon: EyeOff, label: 'AI tools & generatie knoppen' },
+  { icon: EyeOff, label: 'Empty/incomplete sections' },
+  { icon: EyeOff, label: 'AI tools & generation buttons' },
 ];
 
 const UNLOCK_ENABLED = [
-  { icon: Pencil, label: 'Inhoud bewerken' },
-  { icon: Trash2, label: 'Item verwijderen' },
-  { icon: Sparkles, label: 'AI generatie & regeneratie' },
-  { icon: MessageCircle, label: 'Nieuw gesprek starten' },
-  { icon: Pencil, label: 'Research methoden starten' },
+  { icon: Pencil, label: 'Edit content' },
+  { icon: Trash2, label: 'Delete item' },
+  { icon: Sparkles, label: 'AI generation & regeneration' },
+  { icon: MessageCircle, label: 'Start new conversation' },
+  { icon: Pencil, label: 'Start research methods' },
 ];
 
 const UNLOCK_VISIBLE = [
-  { icon: Eye, label: 'Lege/onvoltooide secties' },
-  { icon: Eye, label: 'AI tools & generatie knoppen' },
+  { icon: Eye, label: 'Empty/incomplete sections' },
+  { icon: Eye, label: 'AI tools & generation buttons' },
 ];
 
 const ALWAYS_AVAILABLE = [
-  { icon: Copy, label: 'Dupliceren (maakt onvergrendelde kopie)' },
-  { icon: Download, label: 'Exporteren (PDF, JSON)' },
-  { icon: Eye, label: 'Ingevulde secties bekijken' },
+  { icon: Copy, label: 'Duplicate (creates unlocked copy)' },
+  { icon: Download, label: 'Export (PDF, JSON)' },
+  { icon: Eye, label: 'View completed sections' },
 ];
 
 export function LockConfirmDialog({
@@ -96,7 +96,7 @@ export function LockConfirmDialog({
             transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             role="alertdialog"
             aria-modal="true"
-            aria-label={isLocking ? `${entityName} vergrendelen` : `${entityName} ontgrendelen`}
+            aria-label={isLocking ? `Lock ${entityName}` : `Unlock ${entityName}`}
             className="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden"
           >
             {/* Header */}
@@ -110,7 +110,7 @@ export function LockConfirmDialog({
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
-                  {isLocking ? 'Item vergrendelen' : 'Item ontgrendelen'}
+                  {isLocking ? 'Lock item' : 'Unlock item'}
                 </h2>
                 <p className="text-sm text-gray-500">{entityName}</p>
               </div>
@@ -121,7 +121,7 @@ export function LockConfirmDialog({
               {/* Block 1: blocked/enabled */}
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  {isLocking ? 'Wordt geblokkeerd' : 'Wordt weer mogelijk'}
+                  {isLocking ? 'Will be blocked' : 'Will be enabled'}
                 </p>
                 <div className="space-y-1.5">
                   {(isLocking ? LOCK_BLOCKED : UNLOCK_ENABLED).map(({ icon: Icon, label }) => (
@@ -136,7 +136,7 @@ export function LockConfirmDialog({
               {/* Block 2: hidden/visible */}
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  {isLocking ? 'Wordt verborgen' : 'Wordt weer zichtbaar'}
+                  {isLocking ? 'Will be hidden' : 'Will be visible'}
                 </p>
                 <div className="space-y-1.5">
                   {(isLocking ? LOCK_HIDDEN : UNLOCK_VISIBLE).map(({ icon: Icon, label }) => (
@@ -151,7 +151,7 @@ export function LockConfirmDialog({
               {/* Block 3: always available */}
               <div className="border-t border-gray-100 pt-3">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  Blijft altijd beschikbaar
+                  Always available
                 </p>
                 <div className="space-y-1.5">
                   {ALWAYS_AVAILABLE.map(({ icon: Icon, label }) => (
@@ -170,7 +170,7 @@ export function LockConfirmDialog({
                 onClick={onCancel}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Annuleren
+                Cancel
               </button>
               <button
                 onClick={onConfirm}
@@ -180,7 +180,7 @@ export function LockConfirmDialog({
                     : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700'
                 }`}
               >
-                {isLocking ? 'Vergrendelen' : 'Ontgrendelen'}
+                {isLocking ? 'Lock' : 'Unlock'}
               </button>
             </div>
           </motion.div>

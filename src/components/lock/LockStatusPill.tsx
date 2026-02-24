@@ -13,13 +13,13 @@ interface LockStatusPillProps {
 
 function timeAgo(dateString: string): string {
   const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
-  if (seconds < 60) return 'zojuist';
+  if (seconds < 60) return 'just now';
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} min geleden`;
+  if (minutes < 60) return `${minutes} min ago`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} uur geleden`;
+  if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
-  return `${days} dag${days > 1 ? 'en' : ''} geleden`;
+  return `${days} day${days > 1 ? 's' : ''} ago`;
 }
 
 export function LockStatusPill({
@@ -30,7 +30,7 @@ export function LockStatusPill({
 }: LockStatusPillProps) {
   const tooltipText =
     isLocked && lockedBy && lockedAt
-      ? `Vergrendeld door ${lockedBy.name} — ${timeAgo(lockedAt)}`
+      ? `Locked by ${lockedBy.name} — ${timeAgo(lockedAt)}`
       : undefined;
 
   return (
@@ -52,7 +52,7 @@ export function LockStatusPill({
       ) : (
         <ShieldCheck className="w-3.5 h-3.5" />
       )}
-      {isLocked ? 'Vergrendeld' : 'Bewerkbaar'}
+      {isLocked ? 'Locked' : 'Editable'}
     </motion.span>
   );
 }

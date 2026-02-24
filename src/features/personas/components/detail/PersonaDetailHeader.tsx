@@ -1,7 +1,7 @@
 'use client';
 
-import { User, MapPin, Briefcase, RefreshCw, Camera, Pencil, CheckCircle, MessageCircle, HelpCircle } from 'lucide-react';
-import { OptimizedImage, Button, Badge } from '@/components/shared';
+import { User, MapPin, Briefcase, RefreshCw, Camera, Pencil, MessageCircle, HelpCircle } from 'lucide-react';
+import { OptimizedImage, Button } from '@/components/shared';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { LockShield, LockStatusPill } from '@/components/lock';
 import type { PersonaWithMeta } from '../../types/persona.types';
@@ -116,16 +116,14 @@ export function PersonaDetailHeader({
                 )}
               </div>
               <div className="flex items-center gap-3 mt-3">
-                <Badge variant="success" icon={CheckCircle} size="sm">
-                  Verified Profile
-                </Badge>
                 <span className="text-xs text-gray-500">
                   {completedMethods}/{totalMethods} methods completed
                 </span>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <button className="h-5 w-5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 inline-flex items-center justify-center transition-colors">
-                      <HelpCircle className="h-3.5 w-3.5" />
+                    <button className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors border border-gray-200">
+                      <HelpCircle className="h-3 w-3" />
+                      What are Personas?
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80 text-sm" align="start">
@@ -169,7 +167,7 @@ export function PersonaDetailHeader({
               {/* Chat — hidden when locked (new chat), always visible for existing */}
               <Button
                 data-testid="persona-chat-detail-button"
-                variant="cta"
+                variant="secondary"
                 size="sm"
                 icon={MessageCircle}
                 onClick={onChat}

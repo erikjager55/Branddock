@@ -2,7 +2,7 @@
 
 import { Zap, CheckCircle } from 'lucide-react';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
-import { ImpactBadge } from './ImpactBadge';
+
 import { RepeatableListInput } from '../create/RepeatableListInput';
 
 interface BehaviorsSectionProps {
@@ -14,7 +14,7 @@ interface BehaviorsSectionProps {
 export function BehaviorsSection({ persona, isEditing, onUpdate }: BehaviorsSectionProps) {
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6 flex flex-col">
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center mb-1">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
             <Zap className="w-5 h-5 text-emerald-600" />
@@ -24,7 +24,6 @@ export function BehaviorsSection({ persona, isEditing, onUpdate }: BehaviorsSect
             <p className="text-sm text-gray-500">Observable actions and patterns</p>
           </div>
         </div>
-        <ImpactBadge impact="medium" />
       </div>
 
       <div className="mt-4 flex-1">

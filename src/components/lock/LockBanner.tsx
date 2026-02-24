@@ -48,11 +48,11 @@ export function LockBanner({
               </motion.div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-amber-900">
-                  Dit item is vergrendeld
+                  This item is locked
                 </p>
                 {lockedBy && (
                   <p className="text-xs text-amber-700 truncate">
-                    Vergrendeld door {lockedBy.name}
+                    Locked by {lockedBy.name}
                   </p>
                 )}
               </div>
@@ -62,7 +62,7 @@ export function LockBanner({
               onClick={onUnlock}
               className="flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg bg-white/70 backdrop-blur-sm border border-amber-300 text-amber-800 hover:bg-white transition-colors"
             >
-              Ontgrendel
+              Unlock
             </button>
           </div>
         </motion.div>
