@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
 import { useStyleguide } from "../hooks/useBrandstyleHooks";
@@ -24,8 +24,14 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
   const [activeInputTab, setActiveInputTab] = useState<InputTab>("url");
 
   // If styleguide is already COMPLETE, redirect to guide page
-  if (!isLoading && data?.styleguide?.status === "COMPLETE" && !isAnalyzing) {
-    onNavigateToGuide();
+  const shouldRedirect = !isLoading && data?.styleguide?.status === "COMPLETE" && !isAnalyzing;
+  useEffect(() => {
+    if (shouldRedirect) {
+      onNavigateToGuide();
+    }
+  }, [shouldRedirect, onNavigateToGuide]);
+
+  if (shouldRedirect) {
     return null;
   }
 
