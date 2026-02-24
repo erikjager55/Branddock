@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
+import { createVersion } from "@/lib/versioning";
+import { buildPersonaSnapshot } from "@/lib/snapshot-builders";
 
 // DiceBear PNG fallback — unique per persona, works reliably with next/image
 function diceBearUrl(persona: { name: string; age?: string | null; occupation?: string | null; location?: string | null }) {
@@ -22,7 +24,7 @@ export async function POST(
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    await getServerSession();
+    const session = await getServerSession();
 
     const { id } = await params;
 
@@ -107,6 +109,22 @@ export async function POST(
       where: { id },
       data: { avatarUrl, avatarSource: "AI_GENERATED" },
     });
+
+    // Create AI generation version snapshot
+    try {
+      const fullPersona = await prisma.persona.findUniqueOrThrow({ where: { id } });
+      await createVersion({
+        resourceType: 'PERSONA',
+        resourceId: id,
+        snapshot: buildPersonaSnapshot(fullPersona),
+        changeType: 'AI_GENERATED',
+        changeNote: 'Avatar image regenerated',
+        userId: session?.user?.id ?? 'unknown',
+        workspaceId,
+      });
+    } catch (versionError) {
+      console.error('[Image generation snapshot failed]', versionError);
+    }
 
     return NextResponse.json({ avatarUrl, provider: "gemini" });
   } catch (error) {

@@ -5,6 +5,8 @@ import { z } from "zod";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { requireUnlocked } from "@/lib/lock-guard";
+import { createVersion } from "@/lib/versioning";
+import { buildPersonaSnapshot } from "@/lib/snapshot-builders";
 
 // Validation weights for computing validationPercentage
 const VALIDATION_WEIGHTS: Record<string, number> = {
@@ -113,7 +115,7 @@ export async function PATCH(
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    await getServerSession();
+    const session = await getServerSession();
 
     const { id } = await params;
 
@@ -168,6 +170,21 @@ export async function PATCH(
         researchMethods: true,
       },
     });
+
+    // Create version snapshot
+    try {
+      await createVersion({
+        resourceType: 'PERSONA',
+        resourceId: id,
+        snapshot: buildPersonaSnapshot(persona),
+        changeType: 'MANUAL_SAVE',
+        changeNote: undefined,
+        userId: session?.user?.id ?? 'unknown',
+        workspaceId,
+      });
+    } catch (versionError) {
+      console.error('[Persona version snapshot failed]', versionError);
+    }
 
     invalidateCache(cacheKeys.prefixes.personas(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
