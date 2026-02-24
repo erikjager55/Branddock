@@ -17,23 +17,27 @@ interface CreatePersonaPageProps {
 export function CreatePersonaPage({ onBack, onCreated }: CreatePersonaPageProps) {
   const createMutation = useCreatePersona();
   const hasTriggered = useRef(false);
+  const onCreatedRef = useRef(onCreated);
+  const onBackRef = useRef(onBack);
+
+  // Keep refs in sync with latest props
+  onCreatedRef.current = onCreated;
+  onBackRef.current = onBack;
 
   useEffect(() => {
     if (hasTriggered.current) return;
     hasTriggered.current = true;
 
-    createMutation.mutate(
-      { name: "New Persona" },
-      {
-        onSuccess: (result) => {
-          onCreated?.(result.persona.id);
-        },
-        onError: () => {
-          // If creation fails, go back to overview
-          onBack?.();
-        },
-      },
-    );
+    async function create() {
+      try {
+        const result = await createMutation.mutateAsync({ name: "New Persona" });
+        onCreatedRef.current?.(result.persona.id);
+      } catch {
+        onBackRef.current?.();
+      }
+    }
+
+    create();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
