@@ -20,6 +20,7 @@ import { ChannelsToolsSection } from './ChannelsToolsSection';
 import { BuyingTriggersSection } from './BuyingTriggersSection';
 import { ProfileCompletenessCard, ResearchSidebarCard, QuickActionsCard, StrategicImplicationsSidebar } from './sidebar';
 import { ChatWithPersonaModal } from '../chat/ChatWithPersonaModal';
+import { exportPersonaPdf } from '../../utils/exportPersonaPdf';
 
 interface PersonaDetailPageProps {
   personaId: string;
@@ -255,6 +256,31 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis }: P
                   a.download = `${persona.name.toLowerCase().replace(/\s+/g, '-')}-persona.json`;
                   a.click();
                   URL.revokeObjectURL(url);
+                }}
+                onExportPdf={() => {
+                  exportPersonaPdf({
+                    name: persona.name,
+                    tagline: persona.tagline ?? undefined,
+                    location: persona.location ?? undefined,
+                    occupation: persona.occupation ?? undefined,
+                    quote: persona.quote ?? undefined,
+                    bio: persona.bio ?? undefined,
+                    age: persona.age ?? undefined,
+                    gender: persona.gender ?? undefined,
+                    education: persona.education ?? undefined,
+                    income: persona.income ?? undefined,
+                    familyStatus: persona.familyStatus ?? undefined,
+                    personalityType: persona.personalityType ?? undefined,
+                    coreValues: persona.coreValues ?? undefined,
+                    interests: persona.interests ?? undefined,
+                    goals: persona.goals ?? undefined,
+                    motivations: persona.motivations ?? undefined,
+                    frustrations: persona.frustrations ?? undefined,
+                    behaviors: persona.behaviors ?? undefined,
+                    preferredChannels: persona.preferredChannels ?? undefined,
+                    buyingTriggers: persona.buyingTriggers ?? undefined,
+                    strategicImplications: persona.strategicImplications ?? undefined,
+                  });
                 }}
                 isLocked={lockState.isLocked}
               />

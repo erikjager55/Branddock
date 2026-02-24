@@ -1,25 +1,28 @@
 'use client';
 
-import { MessageCircle, Copy, Download } from 'lucide-react';
+import { MessageCircle, Copy, FileJson, FileText } from 'lucide-react';
 
 interface QuickActionsCardProps {
   onChat: () => void;
   onDuplicate: () => void;
   onExport: () => void;
+  onExportPdf: () => void;
   isLocked: boolean;
 }
 
 const ACTIONS = [
   { key: 'chat', label: 'Chat with Persona', icon: MessageCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', needsUnlock: true, hideWhenLocked: false },
   { key: 'duplicate', label: 'Duplicate Persona', icon: Copy, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false, hideWhenLocked: false },
-  { key: 'export', label: 'Export Data', icon: Download, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false, hideWhenLocked: false },
+  { key: 'export-json', label: 'Export JSON', icon: FileJson, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false, hideWhenLocked: false },
+  { key: 'export-pdf', label: 'Export PDF', icon: FileText, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false, hideWhenLocked: false },
 ] as const;
 
-export function QuickActionsCard({ onChat, onDuplicate, onExport, isLocked }: QuickActionsCardProps) {
+export function QuickActionsCard({ onChat, onDuplicate, onExport, onExportPdf, isLocked }: QuickActionsCardProps) {
   const handlers: Record<string, () => void> = {
     chat: onChat,
     duplicate: onDuplicate,
-    export: onExport,
+    'export-json': onExport,
+    'export-pdf': onExportPdf,
   };
 
   return (
