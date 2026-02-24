@@ -55,6 +55,7 @@ export function PersonaDetailHeader({
             {/* Altijd de huidige foto tonen (als die er is) */}
             {avatarUrlWithCacheBust && !generateImage.isPending && (
               <OptimizedImage
+                key={avatarUrlWithCacheBust}
                 src={avatarUrlWithCacheBust}
                 alt={persona.name}
                 width={96}

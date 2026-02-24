@@ -129,14 +129,22 @@ export function useGeneratePersonaImage(id: string | undefined) {
   return useMutation({
     mutationFn: () => api.generatePersonaImage(id!),
     onSuccess: (data) => {
-      // Direct de cache updaten met de nieuwe avatarUrl
+      // Directly patch the cached persona with the new avatarUrl + cache-bust param
+      const bustUrl = data.avatarUrl.includes('?')
+        ? `${data.avatarUrl}&_t=${Date.now()}`
+        : `${data.avatarUrl}?_t=${Date.now()}`;
+
       qc.setQueryData(personaKeys.detail(id!), (old: unknown) => {
         if (!old || typeof old !== 'object') return old;
-        return { ...(old as Record<string, unknown>), avatarUrl: data.avatarUrl };
+        const rec = old as Record<string, unknown>;
+        // Handle both { persona: {...} } and flat persona shapes
+        if (rec.persona && typeof rec.persona === 'object') {
+          return { ...rec, persona: { ...(rec.persona as Record<string, unknown>), avatarUrl: bustUrl } };
+        }
+        return { ...rec, avatarUrl: bustUrl };
       });
+      // Also invalidate the list so overview cards update
       qc.invalidateQueries({ queryKey: personaKeys.list() });
-      // Force refetch voor detail om alles in sync te brengen
-      qc.invalidateQueries({ queryKey: personaKeys.detail(id!) });
     },
   });
 }

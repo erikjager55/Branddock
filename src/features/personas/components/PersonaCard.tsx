@@ -136,6 +136,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
       <div className="relative mb-4 flex items-start gap-4">
         {/* Avatar */}
         <OptimizedImage
+          key={avatarUrlWithCacheBust ?? persona.id}
           src={avatarUrlWithCacheBust}
           alt={persona.name}
           avatar="lg"
