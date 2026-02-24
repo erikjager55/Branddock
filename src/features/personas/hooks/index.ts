@@ -128,9 +128,15 @@ export function useGeneratePersonaImage(id: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () => api.generatePersonaImage(id!),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: personaKeys.detail(id!) });
+    onSuccess: (data) => {
+      // Direct de cache updaten met de nieuwe avatarUrl
+      qc.setQueryData(personaKeys.detail(id!), (old: unknown) => {
+        if (!old || typeof old !== 'object') return old;
+        return { ...(old as Record<string, unknown>), avatarUrl: data.avatarUrl };
+      });
       qc.invalidateQueries({ queryKey: personaKeys.list() });
+      // Force refetch voor detail om alles in sync te brengen
+      qc.invalidateQueries({ queryKey: personaKeys.detail(id!) });
     },
   });
 }

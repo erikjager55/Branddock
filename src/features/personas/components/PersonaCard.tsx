@@ -117,6 +117,12 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
     allFields.income = allFields.income.replace(/[£$]/g, '€');
   }
 
+  const avatarUrlWithCacheBust = persona.avatarUrl
+    ? persona.avatarUrl.startsWith('data:')
+      ? persona.avatarUrl
+      : `${persona.avatarUrl}${persona.avatarUrl.includes('?') ? '&' : '?'}t=${new Date(persona.updatedAt).getTime()}`
+    : null;
+
   const leftDemos = LEFT_FIELDS.map((key) => ({ key, value: allFields[key] })).filter((f) => f.value);
   const rightDemos = RIGHT_FIELDS.map((key) => ({ key, value: allFields[key] })).filter((f) => f.value);
 
@@ -130,7 +136,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
       <div className="relative mb-4 flex items-start gap-4">
         {/* Avatar */}
         <OptimizedImage
-          src={persona.avatarUrl}
+          src={avatarUrlWithCacheBust}
           alt={persona.name}
           avatar="lg"
           className="ring-2 ring-white"

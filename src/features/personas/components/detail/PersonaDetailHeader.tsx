@@ -38,6 +38,13 @@ export function PersonaDetailHeader({
 
   const generateImage = useGeneratePersonaImage(persona.id);
 
+  // Cache bust: voeg timestamp toe aan avatarUrl om browser cache te breken
+  const avatarUrlWithCacheBust = persona.avatarUrl
+    ? persona.avatarUrl.startsWith('data:')
+      ? persona.avatarUrl
+      : `${persona.avatarUrl}${persona.avatarUrl.includes('?') ? '&' : '?'}t=${new Date(persona.updatedAt).getTime()}`
+    : null;
+
   return (
     <div data-testid="persona-detail-header" className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
       <div className="flex items-start gap-6">
@@ -45,9 +52,9 @@ export function PersonaDetailHeader({
         <div className="flex-shrink-0">
           <div className="relative w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-400 overflow-hidden shadow-md">
             {/* Altijd de huidige foto tonen (als die er is) */}
-            {persona.avatarUrl && !generateImage.isPending && (
+            {avatarUrlWithCacheBust && !generateImage.isPending && (
               <OptimizedImage
-                src={persona.avatarUrl}
+                src={avatarUrlWithCacheBust}
                 alt={persona.name}
                 width={96}
                 height={96}
@@ -70,7 +77,7 @@ export function PersonaDetailHeader({
             )}
 
             {/* Geen foto en niet aan het genereren */}
-            {!persona.avatarUrl && !generateImage.isPending && (
+            {!avatarUrlWithCacheBust && !generateImage.isPending && (
               <div className="w-full h-full flex items-center justify-center">
                 <User className="h-10 w-10 text-white/70" />
               </div>
@@ -95,7 +102,7 @@ export function PersonaDetailHeader({
                   <RefreshCw className="h-3 w-3 animate-spin" />
                   <span>Working...</span>
                 </>
-              ) : persona.avatarUrl ? (
+              ) : avatarUrlWithCacheBust ? (
                 <>
                   <RefreshCw className="h-3 w-3" />
                   <span>Regenerate</span>
