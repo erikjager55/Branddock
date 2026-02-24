@@ -19,27 +19,47 @@ export function LockShield({ isLocked, isToggling, onClick }: LockShieldProps) {
       aria-checked={isLocked}
       aria-label={isLocked ? 'Unlock this item' : 'Lock this item'}
       className={cn(
-        'relative inline-flex h-8 w-[52px] items-center rounded-full border-2 transition-all duration-300 ease-in-out cursor-pointer',
-        isLocked
-          ? 'bg-amber-100 border-amber-400'
-          : 'bg-emerald-100 border-emerald-400',
+        'group',
         isToggling && 'opacity-60 cursor-wait',
       )}
+      style={{ display: 'inline-flex', alignItems: 'center' }}
     >
-      <span
-        className={cn(
-          'inline-flex h-6 w-6 items-center justify-center rounded-full shadow-md transition-all duration-300 ease-in-out',
-          isLocked
-            ? 'translate-x-[22px] bg-amber-500'
-            : 'translate-x-[2px] bg-emerald-500',
-        )}
+      <div
+        style={{
+          position: 'relative',
+          width: 52,
+          height: 28,
+          borderRadius: 14,
+          border: '2px solid',
+          borderColor: isLocked ? '#f59e0b' : '#34d399',
+          backgroundColor: isLocked ? '#fef3c7' : '#d1fae5',
+          transition: 'all 0.3s ease',
+          cursor: isToggling ? 'wait' : 'pointer',
+        }}
       >
-        {isLocked ? (
-          <ShieldAlert className="w-3.5 h-3.5 text-white" />
-        ) : (
-          <ShieldCheck className="w-3.5 h-3.5 text-white" />
-        )}
-      </span>
+        <div
+          style={{
+            position: 'absolute',
+            top: 2,
+            left: isLocked ? 24 : 2,
+            width: 20,
+            height: 20,
+            borderRadius: 10,
+            backgroundColor: isLocked ? '#f59e0b' : '#10b981',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'left 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+          }}
+        >
+          {isLocked ? (
+            <ShieldAlert style={{ width: 12, height: 12, color: 'white' }} />
+          ) : (
+            <ShieldCheck style={{ width: 12, height: 12, color: 'white' }} />
+          )}
+        </div>
+      </div>
     </button>
   );
 }
