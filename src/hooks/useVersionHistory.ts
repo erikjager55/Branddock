@@ -65,6 +65,7 @@ export function useVersionHistory(
     enabled: !!resourceId,
     staleTime: 30_000,
     gcTime: 5 * 60_000,
+    retry: false,
   });
 }
 

@@ -8,36 +8,41 @@ import type { VersionedResourceType, VersionChangeType } from '@prisma/client';
 export async function GET(request: NextRequest) {
   try {
     const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) return NextResponse.json({ error: 'No workspace' }, { status: 403 });
+    if (!workspaceId) return NextResponse.json({ versions: [] });
 
     const { searchParams } = new URL(request.url);
     const resourceType = searchParams.get('type') as VersionedResourceType;
     const resourceId = searchParams.get('resourceId');
 
     if (!resourceType || !resourceId) {
-      return NextResponse.json({ error: 'type and resourceId required' }, { status: 400 });
+      return NextResponse.json({ versions: [] });
     }
 
-    const versions = await prisma.resourceVersion.findMany({
-      where: { resourceType, resourceId, workspaceId },
-      orderBy: { version: 'desc' },
-      take: 50,
-      select: {
-        id: true,
-        version: true,
-        label: true,
-        changeNote: true,
-        changeType: true,
-        diff: true,
-        createdAt: true,
-        createdBy: { select: { id: true, name: true } },
-      },
-    });
+    try {
+      const versions = await prisma.resourceVersion.findMany({
+        where: { resourceType, resourceId, workspaceId },
+        orderBy: { version: 'desc' },
+        take: 50,
+        select: {
+          id: true,
+          version: true,
+          label: true,
+          changeNote: true,
+          changeType: true,
+          diff: true,
+          createdAt: true,
+          createdBy: { select: { id: true, name: true } },
+        },
+      });
 
-    return NextResponse.json({ versions });
+      return NextResponse.json({ versions });
+    } catch (prismaError) {
+      console.error('[GET /api/versions] Prisma error:', prismaError);
+      return NextResponse.json({ versions: [] });
+    }
   } catch (error) {
     console.error('[GET /api/versions]', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ versions: [] });
   }
 }
 
