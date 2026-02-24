@@ -9,6 +9,7 @@ import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.typ
 import type { UseLockStateReturn } from '@/hooks/useLockState';
 import type { LockVisibility } from '@/hooks/useLockVisibility';
 import { useGeneratePersonaImage } from '../../hooks';
+import { AvatarGeneratingOverlay } from './AvatarGeneratingOverlay';
 
 interface PersonaDetailHeaderProps {
   persona: PersonaWithMeta;
@@ -67,13 +68,27 @@ export function PersonaDetailHeader({
               />
             )}
 
-            {/* Generating overlay */}
+            {/* Generating overlay — two variants */}
             {generateImage.isPending && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-blue-500/90 to-cyan-400/90 backdrop-blur-sm">
-                <div className="w-7 h-7 border-2 border-white/30 border-t-white rounded-full animate-spin mb-1.5" />
-                <span className="text-[9px] text-white font-medium">Generating</span>
-                <span className="text-[8px] text-white/60">This may take a moment...</span>
-              </div>
+              persona.avatarUrl ? (
+                <div className="absolute inset-0 overflow-hidden">
+                  <OptimizedImage
+                    src={persona.avatarUrl}
+                    alt=""
+                    width={96}
+                    height={96}
+                    className="w-full h-full object-cover blur-sm brightness-50"
+                  />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+                    <div className="w-8 h-8 border-2 border-teal-300/30 border-t-teal-300/90 rounded-full animate-spin" />
+                    <span className="text-[8px] font-semibold uppercase tracking-widest text-white/85">
+                      Regenerating
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <AvatarGeneratingOverlay />
+              )
             )}
 
             {/* Geen foto en niet aan het genereren */}
