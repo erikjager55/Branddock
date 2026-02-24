@@ -5,7 +5,7 @@ import {
   Calendar,
   MapPin,
   Building2,
-  DollarSign,
+  Euro,
   Users,
   GraduationCap,
   MessageCircle,
@@ -18,8 +18,6 @@ import {
   Plus,
 } from "lucide-react";
 import { OptimizedImage } from "@/components/shared";
-import { CardLockIndicator } from "@/components/lock";
-import { PersonaConfidenceBadge } from "./PersonaConfidenceBadge";
 import type { PersonaWithMeta, PersonaResearchMethodType } from "../types/persona.types";
 import type { LucideIcon } from "lucide-react";
 
@@ -33,7 +31,7 @@ const DEMO_ICONS: Record<string, LucideIcon> = {
   age: Calendar,
   location: MapPin,
   occupation: Building2,
-  income: DollarSign,
+  income: Euro,
   familyStatus: Users,
   education: GraduationCap,
 };
@@ -80,6 +78,28 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
     .toUpperCase()
     .slice(0, 2);
 
+  // Profile completeness calculation
+  const profileFields = [
+    persona.name, persona.tagline, persona.avatarUrl,
+    persona.age, persona.gender, persona.location, persona.occupation,
+    persona.education, persona.income, persona.familyStatus,
+    persona.personalityType,
+    (persona.coreValues?.length ?? 0) > 0 ? 'filled' : null,
+    (persona.interests?.length ?? 0) > 0 ? 'filled' : null,
+    (persona.goals?.length ?? 0) > 0 ? 'filled' : null,
+    (persona.motivations?.length ?? 0) > 0 ? 'filled' : null,
+    (persona.frustrations?.length ?? 0) > 0 ? 'filled' : null,
+    (persona.behaviors?.length ?? 0) > 0 ? 'filled' : null,
+    persona.quote, persona.bio,
+    persona.strategicImplications,
+  ];
+  const filledFields = profileFields.filter(Boolean).length;
+  const profileCompleteness = Math.round((filledFields / profileFields.length) * 100);
+
+  // Validation score: based on research methods
+  const totalMethods = persona.researchMethods.length || 1;
+  const validationScore = Math.round((completedMethods / totalMethods) * 100);
+
   const allFields: Record<string, string | null | undefined> = {
     age: persona.age,
     location: persona.location,
@@ -124,12 +144,22 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
           )}
         </div>
 
-        {/* Lock Indicator + Confidence Badge */}
+        {/* Completeness + Validation Badges */}
         <div className="absolute right-0 top-0 flex items-center gap-1.5">
-          <CardLockIndicator isLocked={persona.isLocked} />
-          <PersonaConfidenceBadge
-            percentage={persona.validationPercentage}
-          />
+          <div className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+            profileCompleteness >= 80 ? 'border-emerald-200 text-emerald-600 bg-emerald-50' :
+            profileCompleteness >= 50 ? 'border-amber-200 text-amber-600 bg-amber-50' :
+            'border-red-200 text-red-500 bg-red-50'
+          }`}>
+            {profileCompleteness}% complete
+          </div>
+          <div className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+            validationScore >= 80 ? 'border-emerald-200 text-emerald-600 bg-emerald-50' :
+            validationScore >= 50 ? 'border-amber-200 text-amber-600 bg-amber-50' :
+            'border-gray-200 text-gray-500 bg-gray-50'
+          }`}>
+            {validationScore}% validated
+          </div>
         </div>
       </div>
 
@@ -278,7 +308,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
       {/* Last updated */}
       {persona.updatedAt && (
         <p className="text-xs text-gray-400">
-          Last updated: {new Date(persona.updatedAt).toLocaleDateString("nl-NL", {
+          Last updated: {new Date(persona.updatedAt).toLocaleDateString("en-GB", {
             day: "numeric",
             month: "short",
             year: "numeric",
