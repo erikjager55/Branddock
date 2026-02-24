@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { resolveWorkspaceId } from "@/lib/auth-server";
+import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { mapStrategyDetail } from "../route";
 import { requireUnlocked } from "@/lib/lock-guard";
+import { createVersion } from "@/lib/versioning";
+import { buildStrategySnapshot } from "@/lib/snapshot-builders";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -63,6 +65,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
+    const session = await getServerSession();
     const { id } = await params;
 
     const lockResponse = await requireUnlocked("businessStrategy", id);
@@ -102,6 +105,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         linkedCampaigns: true,
       },
     });
+
+    // Create version snapshot
+    try {
+      const fullStrategy = await prisma.businessStrategy.findUniqueOrThrow({ where: { id } });
+      await createVersion({
+        resourceType: 'STRATEGY',
+        resourceId: id,
+        snapshot: buildStrategySnapshot(fullStrategy),
+        changeType: 'MANUAL_SAVE',
+        userId: session?.user?.id ?? 'unknown',
+        workspaceId,
+      });
+    } catch (versionError) {
+      console.error('[Strategy version snapshot failed]', versionError);
+    }
 
     return NextResponse.json({ strategy: mapStrategyDetail(strategy) });
   } catch (error) {

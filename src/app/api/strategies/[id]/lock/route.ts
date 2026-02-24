@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { createVersion } from "@/lib/versioning";
+import { buildStrategySnapshot } from "@/lib/snapshot-builders";
 
 // PATCH /api/strategies/[id]/lock
 export async function PATCH(
@@ -45,6 +47,24 @@ export async function PATCH(
         lockedAt: locked ? new Date() : null,
       },
     });
+
+    // Create lock baseline snapshot when locking
+    if (locked) {
+      try {
+        const fullStrategy = await prisma.businessStrategy.findUniqueOrThrow({ where: { id } });
+        await createVersion({
+          resourceType: 'STRATEGY',
+          resourceId: id,
+          snapshot: buildStrategySnapshot(fullStrategy),
+          changeType: 'LOCK_BASELINE',
+          changeNote: 'Locked — baseline snapshot',
+          userId: session.user.id,
+          workspaceId,
+        });
+      } catch (versionError) {
+        console.error('[Strategy lock baseline snapshot failed]', versionError);
+      }
+    }
 
     return NextResponse.json({
       isLocked: strategy.isLocked,

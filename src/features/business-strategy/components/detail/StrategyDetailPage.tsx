@@ -5,9 +5,11 @@ import { ArrowLeft, Archive, Trash2, MoreHorizontal } from 'lucide-react';
 import { Badge, Button, SkeletonCard, SkeletonText } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
 import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from '@/components/lock';
+import { VersionPill } from '@/components/versioning/VersionPill';
 import { useLockState } from '@/hooks/useLockState';
 import { useLockVisibility } from '@/hooks/useLockVisibility';
 import { STRATEGY_TYPES, STRATEGY_STATUS_COLORS } from '../../constants/strategy-types';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useStrategyDetail,
   useUpdateContext,
@@ -16,6 +18,7 @@ import {
   useArchiveStrategy,
   useDeleteStrategy,
   useRecalculateProgress,
+  strategyKeys,
 } from '../../hooks';
 import { useBusinessStrategyStore } from '../../stores/useBusinessStrategyStore';
 import type { KeyResultStatus, UpdateContextBody } from '../../types/business-strategy.types';
@@ -40,6 +43,7 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
   const deleteStrategy = useDeleteStrategy(strategyId);
   const recalculate = useRecalculateProgress(strategyId);
 
+  const qc = useQueryClient();
   const { isAddObjectiveModalOpen, setAddObjectiveModalOpen, isAddMilestoneModalOpen, setAddMilestoneModalOpen } =
     useBusinessStrategyStore();
 
@@ -133,6 +137,14 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
                 <span className={`w-1.5 h-1.5 rounded-full ${statusColors.dot}`} />
                 {strategy.status}
               </span>
+              <VersionPill
+                resourceType="STRATEGY"
+                resourceId={strategy.id}
+                onRestore={() => {
+                  qc.invalidateQueries({ queryKey: strategyKeys.detail(strategyId) });
+                  qc.invalidateQueries({ queryKey: strategyKeys.list() });
+                }}
+              />
             </div>
             {strategy.description && (
               <p className="text-sm text-gray-600 mt-2 max-w-2xl">{strategy.description}</p>

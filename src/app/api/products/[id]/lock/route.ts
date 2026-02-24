@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { createVersion } from "@/lib/versioning";
+import { buildProductSnapshot } from "@/lib/snapshot-builders";
 
 // PATCH /api/products/[id]/lock
 export async function PATCH(
@@ -45,6 +47,24 @@ export async function PATCH(
         lockedAt: locked ? new Date() : null,
       },
     });
+
+    // Create lock baseline snapshot when locking
+    if (locked) {
+      try {
+        const fullProduct = await prisma.product.findUniqueOrThrow({ where: { id } });
+        await createVersion({
+          resourceType: 'PRODUCT',
+          resourceId: id,
+          snapshot: buildProductSnapshot(fullProduct),
+          changeType: 'LOCK_BASELINE',
+          changeNote: 'Locked — baseline snapshot',
+          userId: session.user.id,
+          workspaceId,
+        });
+      } catch (versionError) {
+        console.error('[Product lock baseline snapshot failed]', versionError);
+      }
+    }
 
     return NextResponse.json({
       isLocked: product.isLocked,

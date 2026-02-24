@@ -5,9 +5,11 @@ import { ArrowLeft, Edit3, Save, X } from "lucide-react";
 import { Button, SkeletonCard } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
 import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
+import { VersionPill } from "@/components/versioning/VersionPill";
 import { useLockState } from "@/hooks/useLockState";
 import { useLockVisibility } from "@/hooks/useLockVisibility";
-import { useProductDetail, useUpdateProduct, useUnlinkPersona, useProductPersonas } from "../../hooks";
+import { useQueryClient } from "@tanstack/react-query";
+import { useProductDetail, useUpdateProduct, useUnlinkPersona, useProductPersonas, productKeys } from "../../hooks";
 import {
   SOURCE_BADGES,
   STATUS_BADGES,
@@ -33,6 +35,7 @@ export function ProductDetailPage({
   const { data: personasData } = useProductPersonas(productId);
   const unlinkPersona = useUnlinkPersona(productId);
   const updateProduct = useUpdateProduct(productId);
+  const qc = useQueryClient();
   const [isPersonaSelectorOpen, setIsPersonaSelectorOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -169,6 +172,14 @@ export function ProductDetailPage({
               >
                 {statusBadge.label}
               </span>
+              <VersionPill
+                resourceType="PRODUCT"
+                resourceId={product.id}
+                onRestore={() => {
+                  qc.invalidateQueries({ queryKey: productKeys.detail(productId) });
+                  qc.invalidateQueries({ queryKey: productKeys.list() });
+                }}
+              />
             </div>
           </div>
 

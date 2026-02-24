@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { resolveWorkspaceId } from "@/lib/auth-server";
+import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
+import { createVersion } from "@/lib/versioning";
+import { buildProductSnapshot } from "@/lib/snapshot-builders";
 
 // ─── Zod Schema for PATCH ───────────────────────────────────
 
@@ -97,6 +99,7 @@ export async function PATCH(
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
+    const session = await getServerSession();
     const { id } = await params;
 
     const lockResponse = await requireUnlocked("product", id);
@@ -130,6 +133,20 @@ export async function PATCH(
       where: { id },
       data,
     });
+
+    // Create version snapshot
+    try {
+      await createVersion({
+        resourceType: 'PRODUCT',
+        resourceId: id,
+        snapshot: buildProductSnapshot(updated),
+        changeType: 'MANUAL_SAVE',
+        userId: session?.user?.id ?? 'unknown',
+        workspaceId,
+      });
+    } catch (versionError) {
+      console.error('[Product version snapshot failed]', versionError);
+    }
 
     return NextResponse.json(updated);
   } catch (error) {
