@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
 import { LockBanner, LockOverlay, LockConfirmDialog } from '@/components/lock';
 import { useLockState } from '@/hooks/useLockState';
 import { useLockVisibility } from '@/hooks/useLockVisibility';
-import { usePersonaDetail, useUpdatePersona, useGenerateImplications, useDuplicatePersona, personaKeys } from '../../hooks';
+import { usePersonaDetail, useUpdatePersona, useGenerateImplications, useDuplicatePersona, useDeletePersona, personaKeys } from '../../hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePersonaDetailStore } from '../../stores/usePersonaDetailStore';
 import { PersonaDetailHeader } from './PersonaDetailHeader';
@@ -35,7 +35,9 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
   const updatePersona = useUpdatePersona(personaId);
   const generateImplications = useGenerateImplications(personaId);
   const duplicatePersona = useDuplicatePersona(personaId);
+  const deletePersona = useDeletePersona(personaId);
   const [stubMessage, setStubMessage] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const isEditing = usePersonaDetailStore((s) => s.isEditing);
   const setEditing = usePersonaDetailStore((s) => s.setEditing);
@@ -118,6 +120,19 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
 
   const handleCancelEdit = () => {
     setEditing(false);
+  };
+
+  const handleDelete = () => {
+    deletePersona.mutate(undefined, {
+      onSuccess: () => {
+        toast.success('Persona deleted');
+        onBack();
+      },
+      onError: () => {
+        toast.error('Failed to delete persona');
+      },
+    });
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -271,7 +286,9 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
                     strategicImplications: persona.strategicImplications ?? undefined,
                   });
                 }}
+                onDelete={() => setShowDeleteConfirm(true)}
                 isLocked={lockState.isLocked}
+                isDeleting={deletePersona.isPending}
               />
 
               <ProfileCompletenessCard persona={persona} />
@@ -312,6 +329,41 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
           onConfirm={lockState.confirmToggle}
           onCancel={lockState.cancelToggle}
         />
+
+        {/* Delete Confirm Dialog */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                  <Trash2 className="h-5 w-5 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-gray-900">Delete Persona</h3>
+                  <p className="text-sm text-gray-500">This action cannot be undone</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 mb-6">
+                Are you sure you want to delete <span className="font-medium">{persona.name}</span>? All associated data including chat history, research methods, and versions will be permanently removed.
+              </p>
+              <div className="flex items-center gap-3 justify-end">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deletePersona.isPending}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {deletePersona.isPending ? 'Deleting...' : 'Delete Persona'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </PageShell>
   );
