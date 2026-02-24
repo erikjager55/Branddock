@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MessageSquare, Sparkles } from 'lucide-react';
-import { Button } from '@/components/shared';
+import { MessageSquare } from 'lucide-react';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 
 interface QuoteBioSectionProps {
@@ -18,25 +17,8 @@ export function QuoteBioSection({ persona, isEditing, onUpdate }: QuoteBioSectio
   const hasQuote = !!persona.quote;
   const hasBio = !!persona.bio;
 
-  // Compact empty state
-  if (!hasQuote && !hasBio && !isEditing) {
-    return (
-      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center">
-            <MessageSquare className="h-4 w-4 text-amber-600" />
-          </div>
-          <div>
-            <span className="text-sm font-medium text-gray-900">Quote & Bio</span>
-            <span className="text-xs text-gray-500 ml-2">No quote or bio defined yet</span>
-          </div>
-        </div>
-        <Button variant="secondary" size="sm" icon={Sparkles}>
-          Fill with AI
-        </Button>
-      </div>
-    );
-  }
+  // Hide empty section in view mode
+  if (!hasQuote && !hasBio && !isEditing) return null;
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6">

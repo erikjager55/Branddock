@@ -12,6 +12,9 @@ interface BehaviorsSectionProps {
 }
 
 export function BehaviorsSection({ persona, isEditing, onUpdate }: BehaviorsSectionProps) {
+  // Hide empty section in view mode
+  if (persona.behaviors.length === 0 && !isEditing) return null;
+
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6 flex flex-col">
       <div className="flex items-center mb-1">
@@ -44,9 +47,7 @@ export function BehaviorsSection({ persona, isEditing, onUpdate }: BehaviorsSect
               ))}
             </ul>
           </div>
-        ) : (
-          <p className="text-sm text-gray-300 italic">No behaviors defined</p>
-        )}
+        ) : null}
       </div>
 
       {/* Count footer */}

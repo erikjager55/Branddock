@@ -1,7 +1,6 @@
 'use client';
 
-import { ShoppingCart, Zap, Scale, CheckCircle, Sparkles } from 'lucide-react';
-import { Button } from '@/components/shared';
+import { ShoppingCart, Zap, Scale, CheckCircle } from 'lucide-react';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 import { RepeatableListInput } from '../create/RepeatableListInput';
 
@@ -15,25 +14,8 @@ export function BuyingTriggersSection({ persona, isEditing, onUpdate }: BuyingTr
   const triggers = persona.buyingTriggers ?? [];
   const criteria = persona.decisionCriteria ?? [];
 
-  // Compact empty state
-  if (triggers.length === 0 && criteria.length === 0 && !isEditing) {
-    return (
-      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="h-8 w-8 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
-            <Zap className="h-4 w-4 text-orange-600" />
-          </div>
-          <div className="min-w-0">
-            <span className="text-sm font-medium text-gray-900">Buying Triggers</span>
-            <span className="text-xs text-gray-500 ml-2 hidden sm:inline">Not defined yet</span>
-          </div>
-        </div>
-        <Button variant="secondary" size="sm" icon={Sparkles} className="flex-shrink-0 whitespace-nowrap">
-          Fill with AI
-        </Button>
-      </div>
-    );
-  }
+  // Hide empty section in view mode
+  if (triggers.length === 0 && criteria.length === 0 && !isEditing) return null;
 
   return (
     <section className="rounded-xl border border-gray-200 bg-white p-6">

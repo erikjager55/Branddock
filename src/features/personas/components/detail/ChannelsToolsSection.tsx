@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Radio, Megaphone, Wrench, Share2, Plus, X } from 'lucide-react';
-import { Button } from '@/components/shared';
+import { Radio, Megaphone, Wrench, X } from 'lucide-react';
 import type { PersonaWithMeta, UpdatePersonaBody } from '../../types/persona.types';
 
 interface ChannelsToolsSectionProps {
@@ -18,21 +17,8 @@ export function ChannelsToolsSection({ persona, isEditing, onUpdate }: ChannelsT
   const channels = persona.preferredChannels ?? [];
   const tools = persona.techStack ?? [];
 
-  // Card-like empty state
-  if (channels.length === 0 && tools.length === 0 && !isEditing) {
-    return (
-      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 py-8 flex flex-col items-center justify-center text-center">
-        <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center mb-3">
-          <Share2 className="h-5 w-5 text-indigo-500" />
-        </div>
-        <p className="text-sm font-medium text-gray-900 mb-1">Channels & Tools</p>
-        <p className="text-xs text-gray-500 mb-3">No channels or tools defined yet</p>
-        <Button variant="secondary" size="sm" icon={Plus}>
-          Add Channels
-        </Button>
-      </div>
-    );
-  }
+  // Hide empty section in view mode
+  if (channels.length === 0 && tools.length === 0 && !isEditing) return null;
 
   const handleAddTag = (field: 'preferredChannels' | 'techStack', value: string, setDraft: (v: string) => void) => {
     const trimmed = value.trim();
