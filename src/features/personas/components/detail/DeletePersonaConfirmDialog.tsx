@@ -62,18 +62,23 @@ export function DeletePersonaConfirmDialog({
           {isConfirmed ? (
             <button
               onClick={onConfirm}
-              className="w-full px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
+              className="w-full px-4 py-2.5 text-sm font-semibold rounded-lg transition-opacity hover:opacity-90"
             >
               {isDeleting ? 'Deleting...' : 'Delete Persona'}
             </button>
           ) : (
-            <div className="w-full px-4 py-2.5 text-sm font-medium text-center text-gray-400 bg-gray-100 rounded-lg border border-gray-200 cursor-not-allowed select-none">
+            <div
+              style={{ backgroundColor: '#f3f4f6', color: '#9ca3af', borderColor: '#e5e7eb' }}
+              className="w-full px-4 py-2.5 text-sm font-medium text-center rounded-lg border cursor-not-allowed select-none"
+            >
               Delete Persona
             </div>
           )}
           <button
             onClick={onCancel}
-            className="w-full px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-200"
+            style={{ borderColor: '#e5e7eb' }}
+            className="w-full px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border"
           >
             Cancel
           </button>
