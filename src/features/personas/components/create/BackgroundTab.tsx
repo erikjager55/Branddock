@@ -1,3 +1,4 @@
+/** @deprecated No longer used — create flow now uses instant-create + detail page edit mode */
 "use client";
 
 import { Zap, Lightbulb } from "lucide-react";
