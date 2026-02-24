@@ -171,6 +171,9 @@ model Workspace {
   planTier                  PlanTier         @default(FREE)
   aiUsageRecords            AiUsageRecord[]
 
+  // Versioning
+  resourceVersions          ResourceVersion[]
+
   @@index([organizationId])
 }
 
@@ -229,6 +232,9 @@ model User {
 
   // S10: Billing
   aiUsageRecords         AiUsageRecord[]
+
+  // Versioning
+  resourceVersions       ResourceVersion[]
 
   @@index([workspaceId])
 }
@@ -2688,4 +2694,44 @@ model AppearancePreference {
   updatedAt       DateTime        @updatedAt
 
   @@map("appearance_preference")
+}
+
+// === VERSIONING SYSTEM ===
+
+enum VersionedResourceType {
+  PERSONA
+  BRAND_ASSET
+  PRODUCT
+  STRATEGY
+  STYLEGUIDE
+}
+
+enum VersionChangeType {
+  MANUAL_SAVE
+  AUTO_SAVE
+  LOCK_BASELINE
+  AI_GENERATED
+  RESTORE
+  IMPORT
+}
+
+model ResourceVersion {
+  id             String               @id @default(cuid())
+  resourceType   VersionedResourceType
+  resourceId     String
+  version        Int
+  label          String?
+  changeNote     String?
+  changeType     VersionChangeType
+  snapshot       Json
+  diff           Json?
+  createdById    String
+  createdBy      User                 @relation(fields: [createdById], references: [id])
+  createdAt      DateTime             @default(now())
+  workspaceId    String
+  workspace      Workspace            @relation(fields: [workspaceId], references: [id])
+
+  @@index([resourceType, resourceId])
+  @@index([workspaceId])
+  @@unique([resourceType, resourceId, version])
 }
