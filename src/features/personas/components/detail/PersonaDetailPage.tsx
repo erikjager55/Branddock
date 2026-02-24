@@ -154,7 +154,7 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
           isEditing={isEditing}
           lockState={lockState}
           visibility={visibility}
-          onEditToggle={() => setEditing(!isEditing)}
+          onEditToggle={() => setEditing(true)}
           onSave={handleSave}
           onCancelEdit={handleCancelEdit}
           onChat={() => setChatModalOpen(true)}
