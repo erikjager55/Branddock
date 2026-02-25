@@ -55,10 +55,10 @@ export function PersonaChatInterface({
     isStreaming && (!lastMsg || lastMsg.role !== 'ASSISTANT' || lastMsg.content === '');
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Message limit warning */}
       {isNearLimit && !isAtLimit && (
-        <div className="flex items-center gap-2 px-6 py-1.5 bg-amber-50 border-b border-amber-200">
+        <div className="flex items-center gap-2 px-6 py-1.5 bg-amber-50 border-b border-amber-200 flex-shrink-0">
           <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
           <span className="text-xs text-amber-700">
             {maxMessages - messageCount} messages remaining in this session
@@ -66,7 +66,7 @@ export function PersonaChatInterface({
         </div>
       )}
       {isAtLimit && (
-        <div className="flex items-center gap-2 px-6 py-1.5 bg-red-50 border-b border-red-200">
+        <div className="flex items-center gap-2 px-6 py-1.5 bg-red-50 border-b border-red-200 flex-shrink-0">
           <AlertTriangle className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
           <span className="text-xs text-red-700">
             Message limit reached ({maxMessages}). Please start a new session.
@@ -76,7 +76,7 @@ export function PersonaChatInterface({
 
       {/* Error message */}
       {error && (
-        <div className="px-6">
+        <div className="px-6 flex-shrink-0">
           <AIErrorCard
             message={error}
             onRetry={retryLastMessage}
@@ -86,7 +86,7 @@ export function PersonaChatInterface({
       )}
 
       {/* Messages */}
-      <div ref={listRef} className="flex-1 overflow-y-auto space-y-3 px-6 py-4">
+      <div ref={listRef} className="flex-1 overflow-y-auto min-h-0 space-y-3 px-6 py-4">
         {/* Welcome message from persona */}
         {messages.length === 0 && !isStreaming && (
           <PersonaChatBubble
@@ -144,7 +144,7 @@ export function PersonaChatInterface({
       </div>
 
       {/* Footer: context chips + disclaimer + Add Context + input */}
-      <div className="border-t border-gray-100 px-6 py-4 space-y-3">
+      <div className="border-t border-gray-100 px-6 py-4 space-y-3 flex-shrink-0">
         {/* Context chips */}
         {selectedContext.length > 0 && (
           <div className="flex flex-wrap gap-1.5">

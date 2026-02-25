@@ -1,12 +1,19 @@
 import { NextResponse } from 'next/server';
 
 // ─── In-memory cache store ─────────────────────────────────
+// Uses globalThis to ensure a single shared Map across all Next.js
+// route handler module instances (Turbopack may load modules multiple
+// times, causing separate Map instances if declared at module scope).
+
 interface CacheEntry {
   data: unknown;
   expiresAt: number;
 }
 
-const cache = new Map<string, CacheEntry>();
+const globalKey = '__branddock_api_cache';
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const g = globalThis as any;
+const cache: Map<string, CacheEntry> = (g[globalKey] ??= new Map<string, CacheEntry>());
 
 /**
  * Get a cached value by key.

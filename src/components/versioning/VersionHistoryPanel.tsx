@@ -162,7 +162,8 @@ export function VersionHistoryPanel({
                                   type="button"
                                   onClick={() => handleRestore(v.id)}
                                   disabled={restoreMutation.isPending}
-                                  className="rounded bg-emerald-600 px-2 py-0.5 text-[11px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                                  style={{ backgroundColor: '#059669', color: '#ffffff' }}
+                                  className="rounded px-2 py-0.5 text-[11px] font-medium hover:opacity-90 disabled:opacity-50"
                                 >
                                   {restoreMutation.isPending
                                     ? 'Restoring...'

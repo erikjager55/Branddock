@@ -386,7 +386,7 @@ model AIBrandAnalysisSession {
   createdById       String
   createdBy         User              @relation(fields: [createdById], references: [id])
   personaId         String?
-  persona           Persona?          @relation("BrandAIAnalysis", fields: [personaId], references: [id])
+  persona           Persona?          @relation("BrandAIAnalysis", fields: [personaId], references: [id], onDelete: SetNull)
 
   lastUpdatedAt     DateTime?
 

@@ -112,6 +112,8 @@ async function main() {
   await prisma.trend.deleteMany();
   await prisma.researchPlan.deleteMany();
   await prisma.purchasedBundle.deleteMany();
+  // Versioning (generic table, references User)
+  await prisma.resourceVersion.deleteMany();
   await prisma.user.deleteMany();
   await prisma.workspace.deleteMany();
   await prisma.organization.deleteMany();

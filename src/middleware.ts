@@ -32,7 +32,8 @@ const cacheRules: CacheRule[] = [
     match: (p) => p.startsWith('/api/dashboard'),
     value: 'private, max-age=60, stale-while-revalidate=30',
   },
-  // Module overview lists
+  // Module overview lists — no browser cache (server-side + TanStack Query handle caching;
+  // browser max-age causes stale data after mutations like delete)
   {
     match: (p) =>
       p === '/api/personas' ||
@@ -43,16 +44,16 @@ const cacheRules: CacheRule[] = [
       p === '/api/notifications' ||
       p === '/api/campaigns' ||
       p === '/api/knowledge',
-    value: 'private, max-age=30, stale-while-revalidate=15',
+    value: 'private, no-cache',
   },
-  // Detail pages (routes with IDs)
+  // Detail pages (routes with IDs) — no browser cache for mutable data
   {
     match: (p) =>
       p.startsWith('/api/') &&
       /\/[a-z0-9-]{8,}/.test(p) &&
       !p.includes('/generate') &&
       !p.includes('/regenerate'),
-    value: 'private, max-age=60, stale-while-revalidate=30',
+    value: 'private, no-cache',
   },
 ];
 

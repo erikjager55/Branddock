@@ -23,6 +23,8 @@ export interface ModalProps {
   footer?: React.ReactNode;
   /** Whether to show the close (×) button — defaults to true */
   showCloseButton?: boolean;
+  /** Extra classes for the content container */
+  className?: string;
   /** Test ID for e2e tests */
   'data-testid'?: string;
 }
@@ -47,6 +49,7 @@ export function Modal({
   size = 'md',
   footer,
   showCloseButton = true,
+  className: extraClassName,
   'data-testid': testId,
 }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -100,6 +103,7 @@ export function Modal({
         className={cn(
           'bg-white rounded-xl shadow-2xl flex flex-col max-h-[80vh] w-full animate-in zoom-in-95 duration-200',
           SIZE_MAP[size],
+          extraClassName,
         )}
         role="dialog"
         aria-modal="true"

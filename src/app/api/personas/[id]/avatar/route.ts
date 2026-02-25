@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { createVersion } from "@/lib/versioning";
+import { buildPersonaSnapshot } from "@/lib/snapshot-builders";
 
 // PATCH /api/personas/[id]/avatar
 export async function PATCH(
@@ -52,6 +54,26 @@ export async function PATCH(
     });
 
     invalidateCache(cacheKeys.prefixes.personas(workspaceId));
+
+    // Auto-version for avatar change
+    try {
+      const session = await getServerSession();
+      const userId = session?.user?.id;
+      if (userId) {
+        const fullPersona = await prisma.persona.findUniqueOrThrow({ where: { id } });
+        await createVersion({
+          resourceType: 'PERSONA',
+          resourceId: id,
+          snapshot: buildPersonaSnapshot(fullPersona),
+          changeType: 'MANUAL_SAVE',
+          changeNote: 'Updated Avatar',
+          userId,
+          workspaceId,
+        });
+      }
+    } catch (versionError) {
+      console.error('[Avatar version snapshot failed]', versionError);
+    }
 
     return NextResponse.json({
       avatarUrl: persona.avatarUrl,

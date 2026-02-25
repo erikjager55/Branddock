@@ -126,14 +126,16 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
   const handleDelete = () => {
     deletePersona.mutate(undefined, {
       onSuccess: () => {
+        setShowDeleteConfirm(false);
         toast.success('Persona deleted');
         onBack();
       },
-      onError: () => {
-        toast.error('Failed to delete persona');
+      onError: (error) => {
+        setShowDeleteConfirm(false);
+        const message = error instanceof Error ? error.message : 'Failed to delete persona';
+        toast.error(message);
       },
     });
-    setShowDeleteConfirm(false);
   };
 
   return (
@@ -309,6 +311,8 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
                 onGenerate={visibility.showAITools ? () => generateImplications.mutate() : undefined}
                 isGenerating={generateImplications.isPending}
               />
+
+
             </div>
           </div>
         </div>

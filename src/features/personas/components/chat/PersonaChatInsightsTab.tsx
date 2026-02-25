@@ -105,25 +105,25 @@ export function PersonaChatInsightsTab({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center justify-between px-1 py-2">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
         <div className="flex items-center gap-2">
           <Lightbulb className="w-4 h-4 text-amber-500" />
-          <span className="text-sm font-medium text-gray-700">
+          <h3 className="text-sm font-semibold text-gray-900">
             Insights ({insightList.length})
-          </span>
+          </h3>
         </div>
         <button
           onClick={handleExport}
-          className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+          className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
         >
-          <Download className="w-3.5 h-3.5" />
+          <Download className="w-3 h-3" />
           Export
         </button>
       </div>
 
       {/* Cards */}
       <div className="space-y-3 py-1 overflow-y-auto flex-1 px-1">
-        {insightList.map((insight) => {
+        {insightList.map((insight, index) => {
           const typeConfig = INSIGHT_TYPE_CONFIG[insight.type] || INSIGHT_TYPE_CONFIG.behavior;
           const severityConfig = insight.severity
             ? SEVERITY_CONFIG[insight.severity] || SEVERITY_CONFIG.medium
@@ -132,11 +132,13 @@ export function PersonaChatInsightsTab({
           return (
             <div
               key={insight.id}
-              className={`border border-gray-200 ${typeConfig.borderColor} border-l-4 rounded-lg p-4 ${typeConfig.bgColor}`}
+              className={`border border-gray-200 ${typeConfig.borderColor} border-l-4 rounded-lg overflow-hidden`}
             >
-              {/* Type + severity badges */}
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`w-2 h-2 rounded-full ${typeConfig.dotColor} flex-shrink-0`} />
+              {/* Header bar with number, type, severity */}
+              <div className={`flex items-center gap-2 px-4 py-2 ${typeConfig.bgColor}`}>
+                <span className="text-xs font-bold text-gray-500 min-w-[20px]">
+                  #{index + 1}
+                </span>
                 <Badge variant={typeConfig.badgeVariant} size="sm">
                   {typeConfig.label}
                 </Badge>
@@ -147,20 +149,20 @@ export function PersonaChatInsightsTab({
                 )}
               </div>
 
-              {/* Title */}
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                {insight.title}
-              </h3>
-
               {/* Content */}
-              <p className="text-sm text-gray-600 mb-3">{insight.content}</p>
+              <div className="px-4 py-3">
+                <h4 className="text-sm font-semibold text-gray-900 mb-1">
+                  {insight.title}
+                </h4>
+                <p className="text-sm text-gray-600 leading-relaxed">{insight.content}</p>
+              </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-3 pt-2 border-t border-gray-200/60">
+              <div className="flex items-center gap-4 px-4 py-2 border-t border-gray-50">
                 {insight.messageId && (
                   <button
                     onClick={() => handleViewInChat(insight.messageId)}
-                    className="flex items-center gap-1 text-xs text-gray-500 hover:text-emerald-600 transition-colors"
+                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-teal-600 transition-colors"
                   >
                     <MessageCircle className="w-3 h-3" />
                     View in chat

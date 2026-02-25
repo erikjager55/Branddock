@@ -65,6 +65,8 @@ export function useUpdatePersona(id: string | undefined) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: personaKeys.detail(id!) });
       qc.invalidateQueries({ queryKey: personaKeys.list() });
+      // Invalidate version history so VersionHistoryCard picks up new version
+      qc.invalidateQueries({ queryKey: ['versions', 'PERSONA', id!] });
     },
   });
 }
@@ -101,6 +103,7 @@ export function useTogglePersonaLock(id: string | undefined) {
     mutationFn: (locked: boolean) => api.togglePersonaLock(id!, locked),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: personaKeys.detail(id!) });
+      qc.invalidateQueries({ queryKey: personaKeys.list() });
     },
   });
 }
@@ -148,6 +151,8 @@ export function useGeneratePersonaImage(id: string | undefined) {
 
       // Invalidate list so overview cards pick up new avatar
       qc.invalidateQueries({ queryKey: personaKeys.list() });
+      // Invalidate version history (avatar change creates a version)
+      qc.invalidateQueries({ queryKey: ['versions', 'PERSONA', id!] });
     },
   });
 }
@@ -373,6 +378,21 @@ export function useRemoveContext(
           queryKey: personaKeys.chatContext(personaId, sessionId),
         });
       }
+    },
+  });
+}
+
+// ─── 22. useRestorePersonaVersion ──────────────────────────
+
+export function useRestorePersonaVersion(personaId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (versionId: string) => api.restorePersonaVersion(personaId!, versionId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: personaKeys.detail(personaId!) });
+      qc.invalidateQueries({ queryKey: personaKeys.list() });
+      // Also invalidate generic version history used by VersionPill
+      qc.invalidateQueries({ queryKey: ['versions', 'PERSONA', personaId!] });
     },
   });
 }

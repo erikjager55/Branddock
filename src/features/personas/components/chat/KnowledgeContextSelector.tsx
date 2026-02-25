@@ -18,6 +18,9 @@ import type { AvailableContextGroupItem } from '../../api/persona-chat.api';
 
 type SourceType = 'all' | string;
 
+/** Groups to hide from the context selector (not useful as knowledge context) */
+const EXCLUDED_GROUPS = ['brand_asset', 'brandstyle', 'persona'];
+
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Building2,
   Fingerprint: Building2, // Fingerprint maps to Building2 as visual fallback
@@ -69,12 +72,13 @@ export function KnowledgeContextSelector({
   const { data, isLoading } = useAvailableContext(isOpen ? personaId : undefined);
   const saveContext = useSaveContext(personaId, sessionId);
 
-  // Build filter chips dynamically from groups
+  // Build filter chips dynamically from groups (excluding irrelevant ones)
   const filterChips = useMemo(() => {
     if (!data?.groups) return [{ key: 'all' as SourceType, label: 'All', icon: Search }];
+    const allowedGroups = data.groups.filter((g) => !EXCLUDED_GROUPS.includes(g.key));
     return [
       { key: 'all' as SourceType, label: 'All', icon: Search },
-      ...data.groups.map((g) => ({
+      ...allowedGroups.map((g) => ({
         key: g.key as SourceType,
         label: g.label,
         icon: ICON_MAP[g.icon] || FileText,
@@ -82,11 +86,12 @@ export function KnowledgeContextSelector({
     ];
   }, [data]);
 
-  // Flatten all items from groups into a single list
+  // Flatten all items from groups into a single list (excluding irrelevant groups)
   const flatItems = useMemo<FlatItem[]>(() => {
     if (!data?.groups) return [];
     const items: FlatItem[] = [];
     for (const group of data.groups) {
+      if (EXCLUDED_GROUPS.includes(group.key)) continue;
       for (const item of group.items) {
         items.push({ ...item, groupLabel: group.label });
       }
@@ -157,6 +162,7 @@ export function KnowledgeContextSelector({
       title="Select Knowledge Context"
       subtitle={`${flatItems.length} items available`}
       size="xl"
+      className="mt-8"
       footer={
         <div className="flex items-center justify-between w-full">
           <span className="text-sm text-gray-500">
@@ -172,7 +178,11 @@ export function KnowledgeContextSelector({
             <button
               onClick={handleApply}
               disabled={selected.size === 0 || saveContext.isPending}
-              className="px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: selected.size > 0 ? '#0d9488' : '#e5e7eb',
+                color: selected.size > 0 ? '#ffffff' : '#9ca3af',
+              }}
+              className="px-4 py-2 text-sm font-medium rounded-lg transition-opacity hover:opacity-90 disabled:cursor-not-allowed"
             >
               {saveContext.isPending ? 'Applying...' : 'Apply Selection'}
             </button>
@@ -242,11 +252,12 @@ export function KnowledgeContextSelector({
                 >
                   {/* Checkbox */}
                   <div
-                    className={`flex items-center justify-center w-5 h-5 rounded border flex-shrink-0 transition-colors ${
+                    className="flex items-center justify-center w-5 h-5 rounded border flex-shrink-0 transition-colors"
+                    style={
                       isSelected
-                        ? 'bg-teal-600 border-teal-600'
-                        : 'border-gray-300 bg-white'
-                    }`}
+                        ? { backgroundColor: '#0d9488', borderColor: '#0d9488' }
+                        : { backgroundColor: '#ffffff', borderColor: '#d1d5db' }
+                    }
                   >
                     {isSelected && <Check className="w-3 h-3 text-white" />}
                   </div>

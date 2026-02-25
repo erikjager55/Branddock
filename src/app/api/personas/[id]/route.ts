@@ -171,20 +171,62 @@ export async function PATCH(
       },
     });
 
-    // Create version snapshot
+    // ── Smart auto-versioning: only for content changes, with changeNote ──
     try {
-      await createVersion({
-        resourceType: 'PERSONA',
-        resourceId: id,
-        snapshot: buildPersonaSnapshot(persona),
-        changeType: 'MANUAL_SAVE',
-        changeNote: undefined,
-        userId: session?.user?.id ?? 'unknown',
-        workspaceId,
-      });
+      const userId = session?.user?.id;
+      if (userId) {
+        const CONTENT_FIELDS = [
+          'name', 'tagline', 'age', 'gender', 'location', 'occupation',
+          'education', 'income', 'familyStatus', 'personalityType',
+          'coreValues', 'interests', 'goals', 'motivations', 'frustrations',
+          'behaviors', 'preferredChannels', 'techStack', 'quote', 'bio',
+          'buyingTriggers', 'decisionCriteria',
+        ] as const;
+
+        const changedFields: string[] = [];
+        for (const field of CONTENT_FIELDS) {
+          if (data[field as keyof typeof data] !== undefined) {
+            const oldVal = JSON.stringify((existing as Record<string, unknown>)[field] ?? null);
+            const newVal = JSON.stringify(data[field as keyof typeof data] ?? null);
+            if (oldVal !== newVal) {
+              changedFields.push(field);
+            }
+          }
+        }
+
+        if (changedFields.length > 0) {
+          const fieldLabels: Record<string, string> = {
+            name: 'Name', tagline: 'Tagline', age: 'Age', gender: 'Gender',
+            location: 'Location', occupation: 'Occupation', education: 'Education',
+            income: 'Income', familyStatus: 'Family status',
+            personalityType: 'Personality type', coreValues: 'Core values',
+            interests: 'Interests', goals: 'Goals', motivations: 'Motivations',
+            frustrations: 'Frustrations', behaviors: 'Behaviors',
+            preferredChannels: 'Preferred channels', techStack: 'Tech stack',
+            quote: 'Quote', bio: 'Bio', buyingTriggers: 'Buying triggers',
+            decisionCriteria: 'Decision criteria',
+          };
+
+          const labels = changedFields.map(f => fieldLabels[f] || f);
+          const changeNote = labels.length <= 3
+            ? `Updated ${labels.join(', ')}`
+            : `Updated ${labels.slice(0, 2).join(', ')} +${labels.length - 2} more`;
+
+          await createVersion({
+            resourceType: 'PERSONA',
+            resourceId: id,
+            snapshot: buildPersonaSnapshot(persona),
+            changeType: 'MANUAL_SAVE',
+            changeNote,
+            userId,
+            workspaceId,
+          });
+        }
+      }
     } catch (versionError) {
       console.error('[Persona version snapshot failed]', versionError);
     }
+    // ── End auto-versioning ──
 
     invalidateCache(cacheKeys.prefixes.personas(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
@@ -209,6 +251,7 @@ export async function DELETE(
 
     const { id } = await params;
 
+    // Lock check — persona must be unlocked to delete
     const lockResponse = await requireUnlocked("persona", id);
     if (lockResponse) return lockResponse;
 
@@ -219,7 +262,33 @@ export async function DELETE(
       return NextResponse.json({ error: "Persona not found" }, { status: 404 });
     }
 
-    await prisma.persona.delete({ where: { id } });
+    try {
+      await prisma.persona.delete({ where: { id } });
+    } catch (deleteError: unknown) {
+      console.error("[DELETE /api/personas/:id] Prisma delete error:", deleteError);
+
+      // Foreign key constraint error — provide useful message
+      const prismaError = deleteError as { code?: string; message?: string };
+      if (prismaError?.code === "P2003") {
+        return NextResponse.json(
+          {
+            error: "Cannot delete: persona has related records without cascade.",
+            detail: prismaError.message,
+          },
+          { status: 409 }
+        );
+      }
+      throw deleteError;
+    }
+
+    // Clean up orphan ResourceVersion records (generic table, no FK)
+    await prisma.resourceVersion
+      .deleteMany({
+        where: { resourceType: "PERSONA", resourceId: id },
+      })
+      .catch((e: unknown) =>
+        console.error("[DELETE /api/personas/:id] ResourceVersion cleanup failed:", e)
+      );
 
     invalidateCache(cacheKeys.prefixes.personas(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));

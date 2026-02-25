@@ -59,7 +59,11 @@ export async function updatePersona(
 
 export async function deletePersona(id: string): Promise<{ success: boolean }> {
   const res = await fetch(`${BASE}/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("Failed to delete persona");
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const message = body?.error || `Failed to delete persona (${res.status})`;
+    throw new Error(message);
+  }
   return res.json();
 }
 
@@ -122,6 +126,24 @@ export async function generateStrategicImplications(
   if (!res.ok) throw new Error("Failed to generate strategic implications");
   return res.json();
 }
+
+// ─── Versions ─────────────────────────────────────────────
+
+export async function restorePersonaVersion(
+  personaId: string,
+  versionId: string,
+): Promise<{ restored: boolean; restoredFromVersion: number; newVersion: number }> {
+  const res = await fetch(`${BASE}/${personaId}/versions/${versionId}/restore`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: "Failed to restore" }));
+    throw new Error(err.error || "Failed to restore version");
+  }
+  return res.json();
+}
+
+// ─── Research Methods ─────────────────────────────────────
 
 export async function updateResearchMethod(
   id: string,

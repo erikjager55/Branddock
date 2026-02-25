@@ -42,7 +42,10 @@ export function PersonaChatBubble({
     return (
       <div className="flex justify-end">
         <div className="max-w-[80%]">
-          <div className="bg-emerald-500 text-white rounded-xl rounded-tr-sm p-3">
+          <div
+            className="rounded-xl rounded-tr-sm p-3"
+            style={{ backgroundColor: '#0d9488', color: '#ffffff' }}
+          >
             <p className="text-sm whitespace-pre-wrap">{message.content}</p>
           </div>
           <div className="flex items-center justify-end gap-1 mt-1">

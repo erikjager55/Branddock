@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 import { createVersion } from "@/lib/versioning";
 import { buildPersonaSnapshot } from "@/lib/snapshot-builders";
 
@@ -125,6 +127,8 @@ export async function POST(
     } catch (versionError) {
       console.error('[Image generation snapshot failed]', versionError);
     }
+
+    invalidateCache(cacheKeys.prefixes.personas(workspaceId));
 
     return NextResponse.json({ avatarUrl, provider: "gemini" });
   } catch (error) {

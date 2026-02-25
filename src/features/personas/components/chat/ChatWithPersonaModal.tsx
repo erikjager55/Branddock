@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
-import { Sparkles, Smile, Download, RefreshCw, MessageCircle, X } from 'lucide-react';
+import { Sparkles, MessageCircle, X } from 'lucide-react';
 import { OptimizedImage } from '@/components/shared';
 import type { PersonaWithMeta } from '../../types/persona.types';
 import { usePersonaChat } from '../../hooks/usePersonaChat';
@@ -91,7 +91,7 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
           aria-label={`Chat with ${persona.name}`}
         >
           {/* Header */}
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 flex-shrink-0">
             <OptimizedImage
               src={persona.avatarUrl}
               alt={persona.name}
@@ -110,22 +110,10 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
                 <p className="text-xs text-gray-500 truncate">{headerSubtitle}</p>
               )}
             </div>
-            <div className="flex items-center gap-3">
-              <button className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" aria-label="AI badge">
-                <Sparkles className="w-5 h-5" />
-              </button>
-              <button className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" aria-label="Sentiment">
-                <Smile className="w-5 h-5" />
-              </button>
-              <button className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" aria-label="Export">
-                <Download className="w-5 h-5" />
-              </button>
-              <button className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" aria-label="Reset">
-                <RefreshCw className="w-5 h-5" />
-              </button>
+            <div className="flex items-center">
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
+                className="p-1.5 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
                 aria-label="Close"
               >
                 <X className="w-5 h-5" />
@@ -134,11 +122,11 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
           </div>
 
           {/* Tabs */}
-          <div data-testid="persona-chat-tabs" className="flex px-6 border-b border-gray-100">
+          <div data-testid="persona-chat-tabs" className="flex items-center gap-6 px-6 border-b border-gray-100 flex-shrink-0">
             <button
               data-testid="persona-chat-tab-chat"
               onClick={() => setActiveTab('chat')}
-              className={`flex items-center gap-1.5 py-3 mr-6 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 px-1 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'chat'
                   ? 'border-emerald-500 text-emerald-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -155,7 +143,7 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
             <button
               data-testid="persona-chat-tab-insights"
               onClick={() => setActiveTab('insights')}
-              className={`flex items-center gap-1.5 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 px-1 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'insights'
                   ? 'border-emerald-500 text-emerald-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -167,7 +155,7 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden min-h-0">
             {activeTab === 'chat' ? (
               <PersonaChatInterface
                 persona={persona}

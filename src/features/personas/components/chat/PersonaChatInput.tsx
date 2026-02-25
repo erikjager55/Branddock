@@ -42,7 +42,8 @@ export function PersonaChatInput({
         onKeyDown={handleKeyDown}
         placeholder={`Ask ${personaName.split(' ')[0]} a question...`}
         disabled={isDisabled || isStreaming}
-        className="flex-1 text-sm outline-none bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+        className="flex-1 text-sm outline-none bg-transparent disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 placeholder:text-gray-400"
+        style={{ color: '#111827' }}
       />
       {isStreaming ? (
         <button

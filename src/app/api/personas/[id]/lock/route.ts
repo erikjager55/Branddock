@@ -3,8 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
-import { createVersion } from "@/lib/versioning";
-import { buildPersonaSnapshot } from "@/lib/snapshot-builders";
 
 // PATCH /api/personas/[id]/lock
 export async function PATCH(
@@ -52,24 +50,6 @@ export async function PATCH(
         lockedBy: { select: { id: true, name: true } },
       },
     });
-
-    // Create lock baseline snapshot when locking
-    if (locked) {
-      try {
-        const fullPersona = await prisma.persona.findUniqueOrThrow({ where: { id } });
-        await createVersion({
-          resourceType: 'PERSONA',
-          resourceId: id,
-          snapshot: buildPersonaSnapshot(fullPersona),
-          changeType: 'LOCK_BASELINE',
-          changeNote: 'Locked — baseline snapshot',
-          userId: session.user.id,
-          workspaceId,
-        });
-      } catch (versionError) {
-        console.error('[Lock baseline snapshot failed]', versionError);
-      }
-    }
 
     invalidateCache(cacheKeys.prefixes.personas(workspaceId));
 
