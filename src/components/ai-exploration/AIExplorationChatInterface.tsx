@@ -47,7 +47,7 @@ export function AIExplorationChatInterface({
   const progressPercent = Math.min(Math.round(progress), 100);
 
   // Filter out AI_FEEDBACK messages — go directly to next question
-  const visibleMessages = messages.filter((msg) => msg.type !== 'AI_FEEDBACK');
+  const visibleMessages = (messages ?? []).filter((msg) => msg.type !== 'AI_FEEDBACK');
 
   return (
     <div className="flex flex-col h-full rounded-xl border border-border overflow-hidden">
