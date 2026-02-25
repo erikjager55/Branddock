@@ -8,6 +8,7 @@
 // ────────────────────────────────────────────────────────────
 
 import { personaItemConfig } from './builders/persona-builder';
+import { brandAssetItemConfig } from './builders/brand-asset-builder';
 
 // ─── Types ─────────────────────────────────────────────────
 
@@ -54,8 +55,8 @@ export interface ItemTypeConfig {
 
 const ITEM_TYPE_CONFIGS: Record<string, ItemTypeConfig> = {
   persona: personaItemConfig,
-  // brand_asset: brandAssetItemConfig,  // Phase 3
-  // product: productItemConfig,          // Phase 3
+  brand_asset: brandAssetItemConfig,
+  // product: productItemConfig,          // Phase 4
 };
 
 /**

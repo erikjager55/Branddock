@@ -72,6 +72,9 @@ export const PersonaDetailPage = lazy(() =>
 export const AIPersonaAnalysisPage = lazy(() =>
   import('@/features/personas/components/ai-analysis/AIPersonaAnalysisPage').then(m => ({ default: m.AIPersonaAnalysisPage }))
 );
+export const AIBrandAssetExplorationPage = lazy(() =>
+  import('@/features/brand-asset-detail/components/ai-exploration/AIBrandAssetExplorationPage').then(m => ({ default: m.AIBrandAssetExplorationPage }))
+);
 
 // ─── Products ──────────────────────────────────────────────
 export const ProductsOverviewPage = lazy(() =>

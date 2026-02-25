@@ -46,6 +46,7 @@ import {
   CreatePersonaPage,
   PersonaDetailPage,
   AIPersonaAnalysisPage,
+  AIBrandAssetExplorationPage,
   ProductsOverviewPage,
   ProductAnalyzerPage,
   ProductDetailPage,
@@ -406,7 +407,7 @@ function AppContent() {
             onNavigateBack={() => handleSetActiveSection('brand')}
             onNavigateToAnalysis={(assetId) => {
               setSelectedAssetId(assetId);
-              handleSetActiveSection('ai-brand-analysis');
+              handleSetActiveSection('ai-exploration-brand-asset');
             }}
             onNavigateToInterviews={(assetId) => {
               setSelectedAssetId(assetId);
@@ -741,6 +742,20 @@ function AppContent() {
             }}
           />
         );
+
+      case 'ai-exploration-brand-asset': {
+        const aeAssetId = selectedAssetId;
+        if (!aeAssetId) {
+          handleSetActiveSection('brand');
+          return null;
+        }
+        return (
+          <AIBrandAssetExplorationPage
+            assetId={aeAssetId}
+            onBack={() => handleNavigateAssetDetail(aeAssetId)}
+          />
+        );
+      }
 
       case 'workshop-purchase':
         return (
