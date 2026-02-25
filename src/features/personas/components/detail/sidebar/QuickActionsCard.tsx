@@ -12,10 +12,10 @@ interface QuickActionsCardProps {
 }
 
 const ACTIONS = [
-  { key: 'chat', label: 'Chat with Persona', icon: MessageCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', needsUnlock: true, hideWhenLocked: false },
-  { key: 'duplicate', label: 'Duplicate Persona', icon: Copy, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false, hideWhenLocked: false },
-  { key: 'export-pdf', label: 'Export PDF', icon: FileText, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false, hideWhenLocked: false },
-  { key: 'delete', label: 'Delete Persona', icon: Trash2, color: 'text-red-600', bg: 'bg-red-50', needsUnlock: true, hideWhenLocked: true },
+  { key: 'chat', label: 'Chat with Persona', icon: MessageCircle, color: 'text-emerald-600', bg: 'bg-emerald-50', needsUnlock: false, hideWhenLocked: false, dangerZone: false },
+  { key: 'export-pdf', label: 'Export PDF', icon: FileText, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false, hideWhenLocked: false, dangerZone: false },
+  { key: 'duplicate', label: 'Duplicate Persona', icon: Copy, color: 'text-gray-600', bg: 'bg-gray-50', needsUnlock: false, hideWhenLocked: true, dangerZone: true },
+  { key: 'delete', label: 'Delete Persona', icon: Trash2, color: 'text-red-600', bg: 'bg-red-50', needsUnlock: true, hideWhenLocked: true, dangerZone: true },
 ] as const;
 
 export function QuickActionsCard({ onChat, onDuplicate, onExportPdf, onDelete, isLocked, isDeleting }: QuickActionsCardProps) {
@@ -31,16 +31,17 @@ export function QuickActionsCard({ onChat, onDuplicate, onExportPdf, onDelete, i
       <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Actions</h3>
 
       <div className="space-y-1.5">
-        {ACTIONS.map((action) => {
+        {ACTIONS.map((action, index) => {
           if (action.hideWhenLocked && isLocked) return null;
 
           const Icon = action.icon;
           const isDelete = action.key === 'delete';
           const disabled = (action.needsUnlock && isLocked) || (isDelete && isDeleting);
+          const isFirstDangerZone = action.dangerZone && !ACTIONS.slice(0, index).some((a) => a.dangerZone && !(a.hideWhenLocked && isLocked));
 
           return (
             <div key={action.key}>
-              {isDelete && (
+              {isFirstDangerZone && (
                 <div className="border-t border-gray-100 my-2" />
               )}
               <button

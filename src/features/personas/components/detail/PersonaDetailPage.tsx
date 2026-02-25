@@ -263,7 +263,13 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
             <div className="md:sticky md:top-6 space-y-4">
               <QuickActionsCard
                 onChat={() => setChatModalOpen(true)}
-                onDuplicate={() => duplicatePersona.mutate()}
+                onDuplicate={() => {
+                  duplicatePersona.mutate(undefined, {
+                    onSuccess: () => {
+                      toast.success('Persona duplicated successfully');
+                    },
+                  });
+                }}
                 onExportPdf={() => {
                   exportPersonaPdf({
                     name: persona.name,

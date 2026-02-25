@@ -54,8 +54,8 @@ export function AIExplorationChatInterface({
       {/* Messages */}
       <div
         ref={listRef}
-        className="flex-1 overflow-y-auto bg-white dark:bg-gray-900 p-6 space-y-4"
-        style={{ minHeight: 300 }}
+        className="flex-1 overflow-y-auto p-6 space-y-4"
+        style={{ minHeight: 300, backgroundColor: '#ffffff' }}
       >
         {visibleMessages.map((msg) => {
           const isUser = msg.type === 'USER_ANSWER';
@@ -64,9 +64,10 @@ export function AIExplorationChatInterface({
             return (
               <div
                 key={msg.id}
-                className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 border border-border ml-11"
+                className="rounded-xl p-4 border ml-11"
+                style={{ backgroundColor: '#f9fafb', color: '#111827', borderColor: '#e5e7eb' }}
               >
-                <p className="text-sm text-foreground whitespace-pre-wrap">{msg.content}</p>
+                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
               </div>
             );
           }
@@ -77,8 +78,11 @@ export function AIExplorationChatInterface({
                 <Bot className="h-4 w-4 text-white" />
               </div>
               <div className="flex-1">
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl rounded-tl-sm p-4 border border-border/50">
-                  <p className="text-sm text-foreground whitespace-pre-wrap">{msg.content}</p>
+                <div
+                  className="rounded-2xl rounded-tl-sm p-4 border"
+                  style={{ backgroundColor: '#f9fafb', color: '#111827', borderColor: '#e5e7eb' }}
+                >
+                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                 </div>
               </div>
             </div>
@@ -90,19 +94,22 @@ export function AIExplorationChatInterface({
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center flex-shrink-0">
               <Bot className="h-4 w-4 text-white" />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl rounded-tl-sm p-4 border border-border/50">
+            <div
+              className="rounded-2xl rounded-tl-sm p-4 border"
+              style={{ backgroundColor: '#f9fafb', borderColor: '#e5e7eb' }}
+            >
               <div className="flex gap-1">
                 <span
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '0ms' }}
+                  className="w-2 h-2 rounded-full animate-bounce"
+                  style={{ animationDelay: '0ms', backgroundColor: '#9ca3af' }}
                 />
                 <span
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '150ms' }}
+                  className="w-2 h-2 rounded-full animate-bounce"
+                  style={{ animationDelay: '150ms', backgroundColor: '#9ca3af' }}
                 />
                 <span
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: '300ms' }}
+                  className="w-2 h-2 rounded-full animate-bounce"
+                  style={{ animationDelay: '300ms', backgroundColor: '#9ca3af' }}
                 />
               </div>
             </div>
@@ -111,14 +118,14 @@ export function AIExplorationChatInterface({
       </div>
 
       {/* Bottom section: progress + input + navigation */}
-      <div className="border-t border-border bg-background">
+      <div className="border-t border-border" style={{ backgroundColor: 'var(--background, #ffffff)' }}>
         {/* Progress */}
         <div className="px-6 pt-4 pb-3">
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+          <div className="flex items-center justify-between text-xs mb-2" style={{ color: '#6b7280' }}>
             <span className="font-medium">Voortgang</span>
-            <span className="font-semibold text-teal-600">{progressPercent}%</span>
+            <span className="font-semibold" style={{ color: '#0d9488' }}>{progressPercent}%</span>
           </div>
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: '#e5e7eb' }}>
             <div
               className="h-full bg-gradient-to-r from-teal-400 to-emerald-500 transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
@@ -135,7 +142,8 @@ export function AIExplorationChatInterface({
             placeholder="Type je antwoord hier..."
             disabled={isAITyping || isSubmitting}
             rows={3}
-            className="w-full p-4 rounded-xl border border-border bg-white dark:bg-gray-900 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none disabled:opacity-50"
+            className="w-full p-4 rounded-xl border text-sm resize-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none disabled:opacity-50"
+            style={{ backgroundColor: '#ffffff', color: '#111827', borderColor: '#e5e7eb' }}
           />
         </div>
 
@@ -143,7 +151,8 @@ export function AIExplorationChatInterface({
         <div className="px-6 pb-4 flex items-center justify-between">
           <button
             disabled
-            className="flex items-center gap-2 text-sm text-muted-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ color: '#6b7280' }}
           >
             <ArrowLeft className="h-4 w-4" />
             Vorige

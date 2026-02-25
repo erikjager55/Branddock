@@ -155,7 +155,7 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-hidden min-h-0">
+          <div className="flex-1 flex flex-col overflow-hidden" style={{ minHeight: 0 }}>
             {activeTab === 'chat' ? (
               <PersonaChatInterface
                 persona={persona}

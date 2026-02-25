@@ -55,7 +55,7 @@ export function PersonaChatInterface({
     isStreaming && (!lastMsg || lastMsg.role !== 'ASSISTANT' || lastMsg.content === '');
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden" style={{ overflow: 'hidden', minHeight: 0 }}>
       {/* Message limit warning */}
       {isNearLimit && !isAtLimit && (
         <div className="flex items-center gap-2 px-6 py-1.5 bg-amber-50 border-b border-amber-200 flex-shrink-0">
@@ -86,7 +86,7 @@ export function PersonaChatInterface({
       )}
 
       {/* Messages */}
-      <div ref={listRef} className="flex-1 overflow-y-auto min-h-0 space-y-3 px-6 py-4">
+      <div ref={listRef} className="flex-1 overflow-y-auto space-y-3 px-6 py-4" style={{ minHeight: 0 }}>
         {/* Welcome message from persona */}
         {messages.length === 0 && !isStreaming && (
           <PersonaChatBubble

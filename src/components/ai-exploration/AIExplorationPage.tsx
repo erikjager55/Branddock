@@ -2,8 +2,6 @@
 
 import { useEffect } from 'react';
 import { ArrowLeft, Bot, Loader2 } from 'lucide-react';
-import { SkeletonCard } from '@/components/shared';
-import { PageShell } from '@/components/ui/layout';
 import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage } from './types';
 import { useAIExplorationStore } from './hooks/useAIExplorationStore';
 import { AIExplorationChatInterface } from './AIExplorationChatInterface';
@@ -34,10 +32,6 @@ interface AIExplorationPageProps {
   onComplete: (sessionId: string) => Promise<{
     insightsData: ExplorationInsightsData;
   }>;
-  /** Optional: current session data if resuming */
-  sessionData?: {
-    messages: ExplorationMessage[];
-  } | null;
 }
 
 export function AIExplorationPage({
@@ -45,7 +39,6 @@ export function AIExplorationPage({
   onStartSession,
   onSendAnswer,
   onComplete,
-  sessionData,
 }: AIExplorationPageProps) {
   const sessionId = useAIExplorationStore((s) => s.sessionId);
   const setSessionId = useAIExplorationStore((s) => s.setSessionId);
@@ -55,6 +48,9 @@ export function AIExplorationPage({
   const setProgress = useAIExplorationStore((s) => s.setProgress);
   const answeredDimensions = useAIExplorationStore((s) => s.answeredDimensions);
   const setAnsweredDimensions = useAIExplorationStore((s) => s.setAnsweredDimensions);
+  const messages = useAIExplorationStore((s) => s.messages);
+  const setMessages = useAIExplorationStore((s) => s.setMessages);
+  const addMessage = useAIExplorationStore((s) => s.addMessage);
   const isAITyping = useAIExplorationStore((s) => s.isAITyping);
   const setAITyping = useAIExplorationStore((s) => s.setAITyping);
   const currentInput = useAIExplorationStore((s) => s.currentInput);
@@ -70,6 +66,7 @@ export function AIExplorationPage({
 
     onStartSession().then((data) => {
       setSessionId(data.sessionId);
+      setMessages(data.messages);
       setProgress(data.progress);
       setAnsweredDimensions(data.answeredDimensions);
     });
@@ -82,12 +79,48 @@ export function AIExplorationPage({
 
     const content = currentInput.trim();
     setCurrentInput('');
+
+    // Add user message to store immediately
+    addMessage({
+      id: `user-${Date.now()}`,
+      type: 'USER_ANSWER',
+      content,
+      orderIndex: messages.length,
+      metadata: null,
+      createdAt: new Date().toISOString(),
+    });
+
     setAITyping(true);
 
     try {
       const result = await onSendAnswer(sessionId, content);
       setProgress(result.progress);
       setAnsweredDimensions(result.answeredDimensions);
+
+      // Add feedback message
+      addMessage({
+        id: `feedback-${Date.now()}`,
+        type: 'AI_FEEDBACK',
+        content: result.feedback,
+        orderIndex: messages.length + 1,
+        metadata: null,
+        createdAt: new Date().toISOString(),
+      });
+
+      // Add next question if available
+      if (result.nextQuestion) {
+        addMessage({
+          id: `question-${Date.now()}`,
+          type: 'AI_QUESTION',
+          content: result.nextQuestion.content,
+          orderIndex: messages.length + 2,
+          metadata: {
+            dimensionKey: result.nextQuestion.dimensionKey,
+            dimensionTitle: result.nextQuestion.dimensionTitle,
+          },
+          createdAt: new Date().toISOString(),
+        });
+      }
 
       if (result.isComplete) {
         setStatus('completing');
@@ -103,76 +136,73 @@ export function AIExplorationPage({
   // ─── Loading state ──────────────────────────────────────
   if (!sessionId && status !== 'completed') {
     return (
-      <PageShell>
-        <div className="space-y-4">
-          <SkeletonCard />
-          <SkeletonCard />
-        </div>
-      </PageShell>
+      <div className="space-y-4 p-6">
+        <div className="h-8 rounded animate-pulse" style={{ backgroundColor: '#e5e7eb' }} />
+        <div className="h-32 rounded animate-pulse" style={{ backgroundColor: '#e5e7eb' }} />
+      </div>
     );
   }
 
   return (
-    <PageShell>
-      <div data-testid="ai-exploration" className="space-y-6">
-        {/* Back link + Header (hidden when COMPLETED) */}
-        {status !== 'completed' && (
-          <>
-            <button
-              data-testid="exploration-back-link"
-              onClick={config.onBack}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              {config.backLabel ?? 'Back'}
-            </button>
+    <div data-testid="ai-exploration" className="space-y-6 p-6">
+      {/* Back link + Header (hidden when COMPLETED) */}
+      {status !== 'completed' && (
+        <>
+          <button
+            data-testid="exploration-back-link"
+            onClick={config.onBack}
+            className="flex items-center gap-1.5 text-sm transition-colors"
+            style={{ color: '#6b7280' }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {config.backLabel ?? 'Back'}
+          </button>
 
-            <div className="flex items-start gap-4 mb-2">
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center flex-shrink-0 shadow-lg">
-                <Bot className="h-7 w-7 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-semibold text-foreground">
-                  {config.pageTitle ?? 'AI Exploration'}
-                </h1>
-                <p className="text-muted-foreground">
-                  {config.pageDescription ?? 'Beantwoord de vragen om de analyse te starten'}
-                </p>
-              </div>
+          <div className="flex items-start gap-4 mb-2">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+              <Bot className="h-7 w-7 text-white" />
             </div>
-          </>
-        )}
-
-        {/* State: In Progress */}
-        {status === 'in_progress' && (
-          <div className="h-[50vh]">
-            <AIExplorationChatInterface
-              config={config}
-              messages={sessionData?.messages ?? []}
-              isAITyping={isAITyping}
-              currentInput={currentInput}
-              onInputChange={setCurrentInput}
-              onSubmit={handleSubmit}
-              isSubmitting={false}
-              progress={progress}
-              answeredDimensions={answeredDimensions}
-            />
+            <div>
+              <h1 className="text-2xl font-semibold" style={{ color: '#111827' }}>
+                {config.pageTitle ?? 'AI Exploration'}
+              </h1>
+              <p style={{ color: '#6b7280' }}>
+                {config.pageDescription ?? 'Beantwoord de vragen om de analyse te starten'}
+              </p>
+            </div>
           </div>
-        )}
+        </>
+      )}
 
-        {/* State: Completing */}
-        {status === 'completing' && (
-          <div className="flex flex-col items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-3" />
-            <p className="text-sm text-muted-foreground">Generating report...</p>
-          </div>
-        )}
+      {/* State: In Progress */}
+      {status === 'in_progress' && (
+        <div style={{ height: '50vh' }}>
+          <AIExplorationChatInterface
+            config={config}
+            messages={messages}
+            isAITyping={isAITyping}
+            currentInput={currentInput}
+            onInputChange={setCurrentInput}
+            onSubmit={handleSubmit}
+            isSubmitting={false}
+            progress={progress}
+            answeredDimensions={answeredDimensions}
+          />
+        </div>
+      )}
 
-        {/* State: Completed */}
-        {status === 'completed' && insightsData && (
-          <AIExplorationReport config={config} insightsData={insightsData} />
-        )}
-      </div>
-    </PageShell>
+      {/* State: Completing */}
+      {status === 'completing' && (
+        <div className="flex flex-col items-center justify-center py-16">
+          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-3" />
+          <p className="text-sm" style={{ color: '#6b7280' }}>Generating report...</p>
+        </div>
+      )}
+
+      {/* State: Completed */}
+      {status === 'completed' && insightsData && (
+        <AIExplorationReport config={config} insightsData={insightsData} />
+      )}
+    </div>
   );
 }
