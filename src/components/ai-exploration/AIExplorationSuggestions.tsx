@@ -7,7 +7,6 @@ import {
   Check,
   Pencil,
   X,
-  ArrowRight,
   Sparkles,
 } from 'lucide-react';
 import type { ExplorationConfig, ExplorationInsightsData, FieldSuggestion } from './types';
@@ -42,6 +41,8 @@ export function AIExplorationSuggestions({
     setActions(updated);
   };
 
+  const [applySuccess, setApplySuccess] = useState(false);
+
   const handleApply = async () => {
     setIsApplying(true);
     try {
@@ -49,13 +50,22 @@ export function AIExplorationSuggestions({
       suggestions.forEach((s) => {
         const action = actions[s.field];
         if (action === 'accepted') updates[s.field] = s.suggestedValue;
-        if (action === 'edited') updates[s.field] = editValues[s.field];
+        if (action === 'edited') {
+          // Parse comma-separated values back to array if the original was an array
+          const editVal = editValues[s.field];
+          updates[s.field] = Array.isArray(s.suggestedValue)
+            ? editVal.split(',').map((v) => v.trim()).filter(Boolean)
+            : editVal;
+        }
       });
       if (config.onApplyChanges && Object.keys(updates).length > 0) {
         await config.onApplyChanges(updates);
       }
-      onBackToReport();
-    } finally {
+      setApplySuccess(true);
+      // Navigate back after a short delay so user sees the success state
+      setTimeout(() => config.onBack(), 1200);
+    } catch (error) {
+      console.error('[AIExplorationSuggestions] Failed to apply changes:', error);
       setIsApplying(false);
     }
   };
@@ -147,31 +157,46 @@ export function AIExplorationSuggestions({
         ))}
       </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between" style={{ paddingTop: '16px', paddingBottom: '8px' }}>
-        <button
-          onClick={onBackToReport}
-          className="flex items-center gap-2 rounded-lg text-sm transition-colors hover:opacity-80"
-          style={{ padding: '10px 16px', color: '#4b5563', border: '1px solid #e5e7eb' }}
+      {/* Success banner */}
+      {applySuccess && (
+        <div
+          className="rounded-xl flex items-center gap-3"
+          style={{ padding: '16px 20px', backgroundColor: '#ecfdf5', border: '1px solid #6ee7b7' }}
         >
-          <ArrowLeft className="h-4 w-4" /> Back to Report
-        </button>
-        {acceptedCount > 0 && (
+          <Check className="h-5 w-5 flex-shrink-0" style={{ color: '#059669' }} />
+          <p className="text-sm font-medium" style={{ color: '#065f46' }}>
+            Changes applied successfully. Returning to {config.itemName}...
+          </p>
+        </div>
+      )}
+
+      {/* Footer */}
+      {!applySuccess && (
+        <div className="flex items-center justify-between" style={{ paddingTop: '16px', paddingBottom: '8px' }}>
           <button
-            onClick={handleApply}
-            disabled={isApplying}
-            className="flex items-center gap-2 rounded-lg text-sm font-medium text-white transition-all hover:opacity-90 disabled:opacity-50"
-            style={{
-              padding: '10px 24px',
-              background: 'linear-gradient(135deg, #14b8a6, #10b981)',
-              boxShadow: '0 2px 8px rgba(20,184,166,0.3)',
-            }}
+            onClick={onBackToReport}
+            className="flex items-center gap-2 rounded-lg text-sm transition-colors hover:opacity-80"
+            style={{ padding: '10px 16px', color: '#4b5563', border: '1px solid #e5e7eb' }}
           >
-            <Sparkles className="h-4 w-4" />
-            {isApplying ? 'Applying...' : `Apply ${acceptedCount} Changes`}
+            <ArrowLeft className="h-4 w-4" /> Back to Report
           </button>
-        )}
-      </div>
+          {acceptedCount > 0 && (
+            <button
+              onClick={handleApply}
+              disabled={isApplying}
+              className="flex items-center gap-2 rounded-lg text-sm font-medium text-white transition-all hover:opacity-90 disabled:opacity-50"
+              style={{
+                padding: '10px 24px',
+                background: 'linear-gradient(135deg, #14b8a6, #10b981)',
+                boxShadow: '0 2px 8px rgba(20,184,166,0.3)',
+              }}
+            >
+              <Sparkles className="h-4 w-4" />
+              {isApplying ? 'Applying...' : `Apply ${acceptedCount} Changes`}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

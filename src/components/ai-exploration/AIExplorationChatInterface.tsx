@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { ArrowLeft, ArrowRight, Bot, Cpu, User, Sparkles } from 'lucide-react';
+import { ArrowRight, Bot, Cpu, User, Sparkles } from 'lucide-react';
 import type { ExplorationMessage, ExplorationConfig, ExplorationModelOption } from './types';
 
 interface AIExplorationChatInterfaceProps {
@@ -251,11 +251,8 @@ export function AIExplorationChatInterface({
           />
         </div>
 
-        {/* Navigation — inside the card */}
-        <div className="flex items-center justify-between" style={{ padding: '0 24px 16px' }}>
-          <button disabled className="flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed" style={{ color: '#6b7280' }}>
-            <ArrowLeft className="h-4 w-4" /> Previous
-          </button>
+        {/* Submit button — inside the card */}
+        <div className="flex items-center justify-end" style={{ padding: '0 24px 16px' }}>
           <button
             onClick={onSubmit}
             disabled={!currentInput.trim() || isAITyping || isSubmitting}
