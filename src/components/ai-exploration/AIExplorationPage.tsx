@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { ArrowLeft, Bot, Cpu, Sparkles } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { ArrowLeft, Bot, Cpu, RefreshCw, Sparkles } from 'lucide-react';
 import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage, ExplorationModelOption } from './types';
 import { useAIExplorationStore } from './hooks/useAIExplorationStore';
 import { AIExplorationChatInterface } from './AIExplorationChatInterface';
@@ -60,6 +60,7 @@ export function AIExplorationPage({
   const [models, setModels] = useState<ExplorationModelOption[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>('claude-sonnet-4-6');
   const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   // Fetch available models on mount
   useEffect(() => {
@@ -74,15 +75,26 @@ export function AIExplorationPage({
       .catch(() => setModelsLoaded(true));
   }, []);
 
-  useEffect(() => {
+  const startSession = useCallback((modelId: string) => {
+    setStartError(null);
     reset();
     setStatus('in_progress');
-    onStartSession(selectedModelId).then((data) => {
-      setSessionId(data.sessionId);
-      setMessages(data.messages);
-      setProgress(data.progress);
-      setAnsweredDimensions(data.answeredDimensions);
-    });
+    onStartSession(modelId)
+      .then((data) => {
+        setSessionId(data.sessionId);
+        setMessages(data.messages);
+        setProgress(data.progress);
+        setAnsweredDimensions(data.answeredDimensions);
+      })
+      .catch((err) => {
+        console.error('[AIExplorationPage] Failed to start session:', err);
+        setStartError('Failed to start exploration session. Please try again.');
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onStartSession]);
+
+  useEffect(() => {
+    startSession(selectedModelId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.itemId]);
 
@@ -139,6 +151,35 @@ export function AIExplorationPage({
       setAITyping(false);
     }
   };
+
+  // Error state with retry
+  if (startError) {
+    return (
+      <div style={{ padding: '32px' }}>
+        <div className="max-w-4xl mx-auto">
+          <button
+            onClick={config.onBack}
+            className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
+            style={{ color: '#6b7280', marginBottom: '24px' }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {config.backLabel ?? 'Back'}
+          </button>
+          <div className="flex flex-col items-center justify-center rounded-xl" style={{ padding: '48px', border: '1px solid #fecaca', backgroundColor: '#fef2f2' }}>
+            <p className="text-sm font-medium" style={{ color: '#991b1b', marginBottom: '12px' }}>{startError}</p>
+            <button
+              onClick={() => startSession(selectedModelId)}
+              className="flex items-center gap-2 text-sm font-medium rounded-lg text-white transition-all"
+              style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #14b8a6, #10b981)' }}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Try again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Loading skeleton
   if (!sessionId && status !== 'completed') {
