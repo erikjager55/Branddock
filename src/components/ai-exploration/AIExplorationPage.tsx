@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Bot, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Bot, Sparkles } from 'lucide-react';
 import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage } from './types';
 import { useAIExplorationStore } from './hooks/useAIExplorationStore';
 import { AIExplorationChatInterface } from './AIExplorationChatInterface';
@@ -57,11 +57,9 @@ export function AIExplorationPage({
   const reset = useAIExplorationStore((s) => s.reset);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // ─── Auto-start session ─────────────────────────────────
   useEffect(() => {
     reset();
     setStatus('in_progress');
-
     onStartSession().then((data) => {
       setSessionId(data.sessionId);
       setMessages(data.messages);
@@ -71,10 +69,8 @@ export function AIExplorationPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.itemId]);
 
-  // ─── Submit answer ──────────────────────────────────────
   const handleSubmit = async () => {
     if (!sessionId || !currentInput.trim()) return;
-
     const content = currentInput.trim();
     setCurrentInput('');
 
@@ -88,7 +84,6 @@ export function AIExplorationPage({
     });
 
     setAITyping(true);
-
     try {
       const result = await onSendAnswer(sessionId, content);
       setProgress(result.progress);
@@ -128,102 +123,109 @@ export function AIExplorationPage({
     }
   };
 
-  // ─── Loading state ──────────────────────────────────────
+  // Loading skeleton
   if (!sessionId && status !== 'completed') {
     return (
-      <div className="space-y-4 p-6">
-        <div className="h-8 rounded-lg animate-pulse" style={{ backgroundColor: '#f3f4f6' }} />
-        <div className="h-48 rounded-xl animate-pulse" style={{ backgroundColor: '#f3f4f6' }} />
-        <div className="h-12 rounded-lg animate-pulse" style={{ backgroundColor: '#f3f4f6' }} />
+      <div style={{ padding: '32px' }}>
+        <div className="max-w-4xl mx-auto space-y-4">
+          <div className="h-8 rounded-lg animate-pulse" style={{ backgroundColor: '#f3f4f6' }} />
+          <div className="h-48 rounded-xl animate-pulse" style={{ backgroundColor: '#f3f4f6' }} />
+          <div className="h-12 rounded-lg animate-pulse" style={{ backgroundColor: '#f3f4f6' }} />
+        </div>
       </div>
     );
   }
 
   return (
-    <div data-testid="ai-exploration" className="space-y-6 p-6">
-      {/* Back link + Header */}
-      {status !== 'completed' && (
-        <>
-          <button
-            onClick={config.onBack}
-            className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
-            style={{ color: '#6b7280' }}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            {config.backLabel ?? 'Back'}
-          </button>
+    <div data-testid="ai-exploration" style={{ padding: '32px' }}>
+      <div className="max-w-4xl mx-auto">
+        {/* ─── Chat View ─── */}
+        {status === 'in_progress' && (
+          <div className="space-y-6">
+            {/* Back link */}
+            <button
+              onClick={config.onBack}
+              className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
+              style={{ color: '#6b7280' }}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              {config.backLabel ?? 'Back'}
+            </button>
 
-          <div className="flex items-start gap-4 mb-2">
+            {/* Header — uniform with other modules */}
+            <div className="flex items-start gap-4">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: 'linear-gradient(135deg, #14b8a6, #10b981)',
+                  boxShadow: '0 4px 12px rgba(20, 184, 166, 0.3)',
+                }}
+              >
+                <Bot className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold" style={{ color: '#111827' }}>
+                  {config.pageTitle ?? 'AI Exploration'}
+                </h1>
+                <p className="text-sm" style={{ color: '#6b7280' }}>
+                  {config.pageDescription ?? 'Answer the questions to start the analysis'}
+                </p>
+              </div>
+            </div>
+
+            {/* Chat card — fixed height */}
+            <div style={{ height: 'calc(100vh - 280px)', minHeight: '400px' }}>
+              <AIExplorationChatInterface
+                config={config}
+                messages={messages}
+                isAITyping={isAITyping}
+                currentInput={currentInput}
+                onInputChange={setCurrentInput}
+                onSubmit={handleSubmit}
+                isSubmitting={false}
+                progress={progress}
+                answeredDimensions={answeredDimensions}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ─── Completing ─── */}
+        {status === 'completing' && (
+          <div className="flex flex-col items-center justify-center" style={{ paddingTop: '80px', paddingBottom: '80px' }}>
             <div
-              className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+              className="w-16 h-16 rounded-full flex items-center justify-center"
               style={{
                 background: 'linear-gradient(135deg, #14b8a6, #10b981)',
-                boxShadow: '0 4px 12px rgba(20, 184, 166, 0.3)',
+                boxShadow: '0 4px 20px rgba(20, 184, 166, 0.3)',
+                marginBottom: '16px',
               }}
             >
-              <Bot className="h-7 w-7 text-white" />
+              <Sparkles className="w-8 h-8 text-white animate-pulse" />
             </div>
-            <div>
-              <h1 className="text-2xl font-semibold" style={{ color: '#111827' }}>
-                {config.pageTitle ?? 'AI Exploration'}
-              </h1>
-              <p style={{ color: '#6b7280' }}>
-                {config.pageDescription ?? 'Beantwoord de vragen om de analyse te starten'}
-              </p>
-            </div>
+            <p className="text-sm font-medium" style={{ color: '#111827' }}>Generating report...</p>
+            <p className="text-xs" style={{ color: '#9ca3af', marginTop: '4px' }}>This takes a few seconds</p>
           </div>
-        </>
-      )}
+        )}
 
-      {/* State: In Progress */}
-      {status === 'in_progress' && (
-        <div style={{ height: '55vh' }}>
-          <AIExplorationChatInterface
+        {/* ─── Report ─── */}
+        {status === 'completed' && insightsData && !showSuggestions && (
+          <AIExplorationReport
             config={config}
-            messages={messages}
-            isAITyping={isAITyping}
-            currentInput={currentInput}
-            onInputChange={setCurrentInput}
-            onSubmit={handleSubmit}
-            isSubmitting={false}
-            progress={progress}
-            answeredDimensions={answeredDimensions}
+            insightsData={insightsData}
+            onViewSuggestions={() => setShowSuggestions(true)}
           />
-        </div>
-      )}
+        )}
 
-      {/* State: Completing */}
-      {status === 'completing' && (
-        <div className="flex flex-col items-center justify-center py-20">
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
-            style={{
-              background: 'linear-gradient(135deg, #14b8a6, #10b981)',
-              boxShadow: '0 4px 20px rgba(20, 184, 166, 0.3)',
-            }}
-          >
-            <Sparkles className="w-8 h-8 text-white animate-pulse" />
-          </div>
-          <p className="text-sm font-medium" style={{ color: '#111827' }}>Rapport wordt gegenereerd...</p>
-          <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>Dit duurt enkele seconden</p>
-        </div>
-      )}
-
-      {/* State: Completed — Report or Suggestions */}
-      {status === 'completed' && insightsData && !showSuggestions && (
-        <AIExplorationReport
-          config={config}
-          insightsData={insightsData}
-          onViewSuggestions={() => setShowSuggestions(true)}
-        />
-      )}
-      {status === 'completed' && insightsData && showSuggestions && (
-        <AIExplorationSuggestions
-          config={config}
-          insightsData={insightsData}
-          onBackToReport={() => setShowSuggestions(false)}
-        />
-      )}
+        {/* ─── Suggestions ─── */}
+        {status === 'completed' && insightsData && showSuggestions && (
+          <AIExplorationSuggestions
+            config={config}
+            insightsData={insightsData}
+            onBackToReport={() => setShowSuggestions(false)}
+          />
+        )}
+      </div>
     </div>
   );
 }

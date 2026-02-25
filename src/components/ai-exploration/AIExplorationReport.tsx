@@ -12,7 +12,6 @@ import {
   TrendingUp,
   Brain,
   Lightbulb,
-  Users,
 } from 'lucide-react';
 import type { ExplorationConfig, ExplorationInsightsData } from './types';
 import { AIExplorationDimensionCard } from './AIExplorationDimensionCard';
@@ -40,7 +39,7 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
   const recommendations = insightsData.recommendations ?? [];
   const executiveSummary =
     insightsData.executiveSummary ??
-    `De AI-analyse van ${config.itemName} heeft ${totalDimensions} strategische dimensies geanalyseerd.`;
+    `The AI analysis of ${config.itemName} has analyzed ${totalDimensions} strategic dimensions and provides insights for market positioning and communication.`;
   const suggestionCount = (insightsData.fieldSuggestions ?? []).length;
   const researchBoost = insightsData.researchBoostPercentage ?? 15;
 
@@ -56,71 +55,48 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
         {config.backLabel ?? 'Back'}
       </button>
 
-      {/* Success Header — gradient card with stats */}
+      {/* Success Header */}
       <div
-        className="rounded-xl p-8 relative overflow-hidden"
+        className="rounded-xl relative overflow-hidden"
         style={{
+          padding: '32px',
           background: 'linear-gradient(135deg, #ecfdf5, #d1fae5, #a7f3d0)',
           border: '1px solid #6ee7b7',
         }}
       >
         <div className="flex items-start gap-4 relative z-10">
           <div
-            className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{
-              backgroundColor: 'rgba(5, 150, 105, 0.15)',
-              boxShadow: '0 2px 8px rgba(5, 150, 105, 0.15)',
-            }}
+            className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: 'rgba(5,150,105,0.15)' }}
           >
-            <CheckCircle className="h-7 w-7" style={{ color: '#059669' }} />
+            <CheckCircle className="h-6 w-6" style={{ color: '#059669' }} />
           </div>
           <div className="flex-1">
             <h2 className="text-xl font-semibold" style={{ color: '#064e3b' }}>
               {config.pageTitle ?? 'AI Analysis'} Complete
             </h2>
-            <p className="text-sm mt-1" style={{ color: '#047857' }}>
-              {config.itemName} is succesvol geanalyseerd op basis van {totalDimensions} strategische dimensies.
+            <p className="text-sm" style={{ color: '#047857', marginTop: '4px' }}>
+              {config.itemName} has been successfully analyzed across {totalDimensions} strategic dimensions.
             </p>
 
-            {/* Stats grid */}
-            <div className="grid grid-cols-2 gap-4 mt-6">
-              <div
-                className="rounded-lg p-4"
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.6)',
-                  border: '1px solid rgba(110, 231, 183, 0.5)',
-                }}
-              >
+            <div className="grid grid-cols-2 gap-4" style={{ marginTop: '24px' }}>
+              <div className="rounded-lg" style={{ padding: '16px', backgroundColor: 'rgba(255,255,255,0.6)', border: '1px solid rgba(110,231,183,0.5)' }}>
                 <div className="text-2xl font-bold" style={{ color: '#065f46' }}>{totalDimensions}</div>
-                <div className="text-sm" style={{ color: '#059669' }}>Dimensies geanalyseerd</div>
+                <div className="text-sm" style={{ color: '#059669' }}>Dimensions analyzed</div>
               </div>
-              <div
-                className="rounded-lg p-4"
-                style={{
-                  backgroundColor: 'rgba(255,255,255,0.6)',
-                  border: '1px solid rgba(110, 231, 183, 0.5)',
-                }}
-              >
+              <div className="rounded-lg" style={{ padding: '16px', backgroundColor: 'rgba(255,255,255,0.6)', border: '1px solid rgba(110,231,183,0.5)' }}>
                 <div className="text-2xl font-bold" style={{ color: '#065f46' }}>+{researchBoost}%</div>
-                <div className="text-sm" style={{ color: '#059669' }}>Research vertrouwen</div>
+                <div className="text-sm" style={{ color: '#059669' }}>Research confidence</div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Decorative element */}
-        <div
-          className="absolute -right-8 -bottom-8 w-40 h-40 rounded-full opacity-20"
-          style={{ background: 'radial-gradient(circle, #059669, transparent)' }}
-        />
+        <div className="absolute -right-8 -bottom-8 w-40 h-40 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #059669, transparent)' }} />
       </div>
 
       {/* Executive Summary */}
-      <div
-        className="rounded-xl p-6"
-        style={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
-      >
-        <div className="flex items-center gap-2 mb-4">
+      <div className="rounded-xl" style={{ padding: '24px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div className="flex items-center gap-2" style={{ marginBottom: '16px' }}>
           <Sparkles className="h-5 w-5" style={{ color: '#14b8a6' }} />
           <h3 className="text-lg font-semibold" style={{ color: '#111827' }}>Executive Summary</h3>
         </div>
@@ -130,23 +106,16 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
       {/* Dimension Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {insightsData.dimensions.map((dimension) => (
-          <AIExplorationDimensionCard
-            key={dimension.key}
-            dimension={dimension}
-            dimensionConfigs={config.dimensions}
-          />
+          <AIExplorationDimensionCard key={dimension.key} dimension={dimension} dimensionConfigs={config.dimensions} />
         ))}
       </div>
 
       {/* Findings */}
       {findings.length > 0 && (
-        <div
-          className="rounded-xl p-6"
-          style={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
-        >
-          <div className="flex items-center gap-2 mb-6">
+        <div className="rounded-xl" style={{ padding: '24px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div className="flex items-center gap-2" style={{ marginBottom: '24px' }}>
             <Bot className="h-5 w-5" style={{ color: '#14b8a6' }} />
-            <h3 className="text-lg font-semibold" style={{ color: '#111827' }}>Belangrijkste Bevindingen</h3>
+            <h3 className="text-lg font-semibold" style={{ color: '#111827' }}>Key Findings</h3>
           </div>
           <div className="space-y-5">
             {findings.map((finding, i) => {
@@ -154,15 +123,12 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
               const Icon = cfg.icon;
               return (
                 <div key={i} className="flex items-start gap-4">
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: cfg.bg }}
-                  >
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: cfg.bg }}>
                     <Icon className="h-5 w-5" style={{ color: cfg.color }} />
                   </div>
-                  <div className="pt-0.5">
+                  <div style={{ paddingTop: '2px' }}>
                     <h4 className="text-sm font-semibold" style={{ color: '#111827' }}>{finding.title}</h4>
-                    <p className="text-sm mt-0.5" style={{ color: '#6b7280' }}>{finding.description}</p>
+                    <p className="text-sm" style={{ color: '#6b7280', marginTop: '2px' }}>{finding.description}</p>
                   </div>
                 </div>
               );
@@ -173,36 +139,30 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
 
       {/* Recommendations */}
       {recommendations.length > 0 && (
-        <div
-          className="rounded-xl p-6"
-          style={{ backgroundColor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
-        >
-          <div className="flex items-center gap-2 mb-6">
+        <div className="rounded-xl" style={{ padding: '24px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+          <div className="flex items-center gap-2" style={{ marginBottom: '24px' }}>
             <TrendingUp className="h-5 w-5" style={{ color: '#14b8a6' }} />
-            <h3 className="text-lg font-semibold" style={{ color: '#111827' }}>Strategische Aanbevelingen</h3>
+            <h3 className="text-lg font-semibold" style={{ color: '#111827' }}>Strategic Recommendations</h3>
           </div>
           <div className="space-y-4">
             {recommendations.map((rec, i) => (
               <div key={i} className="flex items-start gap-4">
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'linear-gradient(135deg, #14b8a6, #10b981)' }}
-                >
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #14b8a6, #10b981)' }}>
                   <span className="text-sm font-bold text-white">{i + 1}</span>
                 </div>
-                <p className="text-sm pt-1.5" style={{ color: '#374151' }}>{rec}</p>
+                <p className="text-sm" style={{ color: '#374151', paddingTop: '6px' }}>{rec}</p>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Footer Navigation */}
-      <div className="flex items-center justify-between pt-4 pb-2">
+      {/* Footer */}
+      <div className="flex items-center justify-between" style={{ paddingTop: '16px', paddingBottom: '8px' }}>
         <button
           onClick={config.onBack}
-          className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm transition-colors hover:opacity-80"
-          style={{ color: '#4b5563', border: '1px solid #e5e7eb' }}
+          className="flex items-center gap-2 rounded-lg text-sm transition-colors hover:opacity-80"
+          style={{ padding: '10px 16px', color: '#4b5563', border: '1px solid #e5e7eb' }}
         >
           <ArrowLeft className="h-4 w-4" />
           {config.backLabel ?? 'Back'}
@@ -210,14 +170,15 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
         {suggestionCount > 0 && onViewSuggestions && (
           <button
             onClick={onViewSuggestions}
-            className="flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-medium text-white transition-all hover:opacity-90"
+            className="flex items-center gap-2 rounded-lg text-sm font-medium text-white transition-all hover:opacity-90"
             style={{
+              padding: '10px 24px',
               background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-              boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
+              boxShadow: '0 2px 8px rgba(245,158,11,0.3)',
             }}
           >
             <Lightbulb className="h-4 w-4" />
-            Bekijk {suggestionCount} Suggesties
+            View {suggestionCount} Suggestions
             <ArrowRight className="h-4 w-4" />
           </button>
         )}

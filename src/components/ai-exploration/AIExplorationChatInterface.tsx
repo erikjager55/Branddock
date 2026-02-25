@@ -49,15 +49,20 @@ export function AIExplorationChatInterface({
 
   return (
     <div
-      className="flex flex-col h-full rounded-xl overflow-hidden"
-      style={{ border: '1px solid #e5e7eb', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05)' }}
+      className="flex flex-col rounded-xl overflow-hidden"
+      style={{
+        border: '1px solid #e5e7eb',
+        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05)',
+        height: '100%',
+      }}
     >
       {/* Messages Area */}
       <div
         ref={listRef}
-        className="flex-1 overflow-y-auto p-6 space-y-5"
+        className="flex-1 overflow-y-auto space-y-5"
         style={{
-          minHeight: 300,
+          minHeight: 0,
+          padding: '24px',
           background: 'linear-gradient(to bottom right, #f8fafc, #ffffff)',
         }}
       >
@@ -66,13 +71,13 @@ export function AIExplorationChatInterface({
           const isFeedback = msg.type === 'AI_FEEDBACK';
           const isIntro = msg.type === 'SYSTEM_INTRO';
 
-          // User message — right aligned with gradient
           if (isUser) {
             return (
               <div key={msg.id} className="flex items-start gap-3 justify-end">
                 <div
-                  className="max-w-[80%] rounded-2xl rounded-tr-none p-4"
+                  className="max-w-[75%] rounded-2xl rounded-tr-none"
                   style={{
+                    padding: '14px 18px',
                     background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
                     color: '#ffffff',
                     boxShadow: '0 2px 8px rgba(99, 102, 241, 0.25)',
@@ -90,22 +95,20 @@ export function AIExplorationChatInterface({
             );
           }
 
-          // AI feedback — sparkle reaction bubble
           if (isFeedback) {
             return (
               <div key={msg.id} className="flex items-start gap-3">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{
-                    background: 'linear-gradient(135deg, #1FD1B2, #10b981)',
-                  }}
+                  style={{ background: 'linear-gradient(135deg, #1FD1B2, #10b981)' }}
                 >
                   <Sparkles className="h-4 w-4 text-white" />
                 </div>
-                <div className="flex-1 max-w-[80%]">
+                <div className="flex-1 max-w-[75%]">
                   <div
-                    className="rounded-2xl rounded-tl-none p-4"
+                    className="rounded-2xl rounded-tl-none"
                     style={{
+                      padding: '14px 18px',
                       background: 'linear-gradient(135deg, rgba(31,209,178,0.08), rgba(16,185,129,0.04))',
                       border: '1px solid rgba(31,209,178,0.25)',
                       color: '#374151',
@@ -118,7 +121,6 @@ export function AIExplorationChatInterface({
             );
           }
 
-          // AI question / system intro — teal bot bubble
           return (
             <div key={msg.id} className="flex items-start gap-3">
               <div
@@ -130,10 +132,11 @@ export function AIExplorationChatInterface({
               >
                 <Bot className="h-4 w-4 text-white" />
               </div>
-              <div className="flex-1 max-w-[80%]">
+              <div className="flex-1 max-w-[75%]">
                 <div
-                  className="rounded-2xl rounded-tl-none p-4"
+                  className="rounded-2xl rounded-tl-none"
                   style={{
+                    padding: '14px 18px',
                     backgroundColor: '#f9fafb',
                     border: '1px solid #e5e7eb',
                     color: '#111827',
@@ -148,77 +151,52 @@ export function AIExplorationChatInterface({
           );
         })}
 
-        {/* Typing indicator */}
         {isAITyping && (
           <div className="flex items-start gap-3">
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{
-                background: 'linear-gradient(135deg, #14b8a6, #10b981)',
-              }}
+              style={{ background: 'linear-gradient(135deg, #14b8a6, #10b981)' }}
             >
               <Bot className="h-4 w-4 text-white" />
             </div>
             <div
-              className="rounded-2xl rounded-tl-none p-4"
-              style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}
+              className="rounded-2xl rounded-tl-none"
+              style={{ padding: '14px 18px', backgroundColor: '#f9fafb', border: '1px solid #e5e7eb' }}
             >
               <div className="flex gap-1.5 items-center">
-                <div
-                  className="w-2 h-2 rounded-full animate-bounce"
-                  style={{ backgroundColor: '#14b8a6', animationDelay: '0ms' }}
-                />
-                <div
-                  className="w-2 h-2 rounded-full animate-bounce"
-                  style={{ backgroundColor: '#14b8a6', animationDelay: '150ms' }}
-                />
-                <div
-                  className="w-2 h-2 rounded-full animate-bounce"
-                  style={{ backgroundColor: '#14b8a6', animationDelay: '300ms' }}
-                />
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#14b8a6', animationDelay: '0ms' }} />
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#14b8a6', animationDelay: '150ms' }} />
+                <div className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: '#14b8a6', animationDelay: '300ms' }} />
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Bottom Section */}
+      {/* Bottom Section — all inside the card */}
       <div style={{ borderTop: '1px solid #e5e7eb', backgroundColor: '#ffffff' }}>
-        {/* Progress Bar with Step Dots */}
-        <div className="px-6 pt-4 pb-3">
-          <div className="flex items-center justify-between text-xs mb-3">
-            <span className="font-medium" style={{ color: '#6b7280' }}>Voortgang</span>
+        {/* Progress */}
+        <div style={{ padding: '16px 24px 12px' }}>
+          <div className="flex items-center justify-between text-xs" style={{ marginBottom: '10px' }}>
+            <span className="font-medium" style={{ color: '#6b7280' }}>Progress</span>
             <span className="font-semibold" style={{ color: '#14b8a6' }}>{progressPercent}%</span>
           </div>
-
-          {/* Step dots */}
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2" style={{ marginBottom: '6px' }}>
             {Array.from({ length: totalDimensions }).map((_, i) => (
-              <div key={i} className="flex-1 flex items-center gap-2">
+              <div key={i} className="flex-1">
                 <div
-                  className="h-1.5 flex-1 rounded-full transition-all duration-500"
+                  className="rounded-full transition-all duration-500"
                   style={{
-                    backgroundColor: i < answeredDimensions
-                      ? '#14b8a6'
-                      : i === answeredDimensions
-                        ? '#5eead4'
-                        : '#e5e7eb',
+                    height: '6px',
+                    backgroundColor: i < answeredDimensions ? '#14b8a6' : i === answeredDimensions ? '#99f6e4' : '#e5e7eb',
                   }}
                 />
               </div>
             ))}
           </div>
-
-          {/* Dimension labels */}
           <div className="flex items-center justify-between">
             {config.dimensions.map((dim, i) => (
-              <span
-                key={dim.key}
-                className="text-[10px] font-medium"
-                style={{
-                  color: i <= answeredDimensions ? '#14b8a6' : '#9ca3af',
-                }}
-              >
+              <span key={dim.key} className="font-medium" style={{ fontSize: '10px', color: i <= answeredDimensions ? '#14b8a6' : '#9ca3af' }}>
                 {dim.label}
               </span>
             ))}
@@ -226,67 +204,37 @@ export function AIExplorationChatInterface({
         </div>
 
         {/* Input */}
-        <div className="px-6 pb-3">
+        <div style={{ padding: '0 24px 12px' }}>
           <textarea
             value={currentInput}
             onChange={(e) => onInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type je antwoord hier..."
+            placeholder="Type your answer here..."
             disabled={isAITyping || isSubmitting}
             rows={3}
-            className="w-full p-4 rounded-xl text-sm resize-none outline-none disabled:opacity-50 transition-all"
-            style={{
-              backgroundColor: '#ffffff',
-              color: '#111827',
-              border: '1px solid #e5e7eb',
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = '#14b8a6';
-              e.target.style.boxShadow = '0 0 0 3px rgba(20, 184, 166, 0.1)';
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = '#e5e7eb';
-              e.target.style.boxShadow = 'none';
-            }}
+            className="w-full rounded-xl text-sm resize-none outline-none disabled:opacity-50 transition-all"
+            style={{ padding: '14px 16px', backgroundColor: '#ffffff', color: '#111827', border: '1px solid #e5e7eb' }}
+            onFocus={(e) => { e.target.style.borderColor = '#14b8a6'; e.target.style.boxShadow = '0 0 0 3px rgba(20,184,166,0.1)'; }}
+            onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
           />
         </div>
 
-        {/* Navigation */}
-        <div className="px-6 pb-4 flex items-center justify-between">
-          <button
-            disabled
-            className="flex items-center gap-2 text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ color: '#6b7280' }}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Vorige
+        {/* Navigation — inside the card */}
+        <div className="flex items-center justify-between" style={{ padding: '0 24px 16px' }}>
+          <button disabled className="flex items-center gap-2 text-sm disabled:opacity-40 disabled:cursor-not-allowed" style={{ color: '#6b7280' }}>
+            <ArrowLeft className="h-4 w-4" /> Previous
           </button>
           <button
             onClick={onSubmit}
             disabled={!currentInput.trim() || isAITyping || isSubmitting}
-            className="flex items-center gap-2 text-sm font-medium rounded-lg px-6 py-2.5 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="flex items-center gap-2 text-sm font-medium rounded-lg text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             style={{
-              background: isLastDimension
-                ? 'linear-gradient(135deg, #8b5cf6, #6366f1)'
-                : 'linear-gradient(135deg, #14b8a6, #10b981)',
-              boxShadow: !currentInput.trim() || isAITyping
-                ? 'none'
-                : isLastDimension
-                  ? '0 2px 8px rgba(139, 92, 246, 0.3)'
-                  : '0 2px 8px rgba(20, 184, 166, 0.3)',
+              padding: '10px 24px',
+              background: isLastDimension ? 'linear-gradient(135deg, #8b5cf6, #6366f1)' : 'linear-gradient(135deg, #14b8a6, #10b981)',
+              boxShadow: (!currentInput.trim() || isAITyping) ? 'none' : isLastDimension ? '0 2px 8px rgba(139,92,246,0.3)' : '0 2px 8px rgba(20,184,166,0.3)',
             }}
           >
-            {isLastDimension ? (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Genereer Rapport
-              </>
-            ) : (
-              <>
-                Volgende
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
+            {isLastDimension ? (<><Sparkles className="h-4 w-4" /> Generate Report</>) : (<>Next <ArrowRight className="h-4 w-4" /></>)}
           </button>
         </div>
       </div>

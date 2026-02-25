@@ -23,17 +23,15 @@ interface AIExplorationDimensionCardProps {
   dimensionConfigs: DimensionConfig[];
 }
 
-export function AIExplorationDimensionCard({
-  dimension,
-  dimensionConfigs,
-}: AIExplorationDimensionCardProps) {
+export function AIExplorationDimensionCard({ dimension, dimensionConfigs }: AIExplorationDimensionCardProps) {
   const IconComponent = ICON_MAP[dimension.icon] ?? Users;
   const style = DIMENSION_STYLES[dimension.key] ?? DEFAULT_STYLE;
 
   return (
     <div
-      className="rounded-xl p-5 transition-all hover:shadow-md"
+      className="rounded-xl transition-all hover:shadow-md"
       style={{
+        padding: '20px',
         backgroundColor: style.bg,
         border: `1px solid ${style.border}`,
       }}
@@ -45,9 +43,9 @@ export function AIExplorationDimensionCard({
         >
           <IconComponent className="h-5 w-5" style={{ color: style.iconColor }} />
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="flex-1" style={{ minWidth: 0 }}>
           <h4 className="text-sm font-semibold" style={{ color: '#111827' }}>{dimension.title}</h4>
-          <p className="text-sm mt-1" style={{ color: '#6b7280' }}>{dimension.summary}</p>
+          <p className="text-sm" style={{ color: '#6b7280', marginTop: '4px' }}>{dimension.summary}</p>
         </div>
       </div>
     </div>
