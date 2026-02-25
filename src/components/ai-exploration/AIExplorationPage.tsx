@@ -1,16 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Bot, Sparkles } from 'lucide-react';
-import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage } from './types';
+import { ArrowLeft, Bot, Cpu, Sparkles } from 'lucide-react';
+import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage, ExplorationModelOption } from './types';
 import { useAIExplorationStore } from './hooks/useAIExplorationStore';
 import { AIExplorationChatInterface } from './AIExplorationChatInterface';
 import { AIExplorationReport } from './AIExplorationReport';
 import { AIExplorationSuggestions } from './AIExplorationSuggestions';
+import { fetchExplorationModels } from '@/lib/api/exploration.api';
 
 interface AIExplorationPageProps {
   config: ExplorationConfig;
-  onStartSession: () => Promise<{
+  onStartSession: (modelId?: string) => Promise<{
     sessionId: string;
     messages: ExplorationMessage[];
     progress: number;
@@ -56,11 +57,27 @@ export function AIExplorationPage({
   const setInsightsData = useAIExplorationStore((s) => s.setInsightsData);
   const reset = useAIExplorationStore((s) => s.reset);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [models, setModels] = useState<ExplorationModelOption[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState<string>('claude-sonnet-4-6');
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+
+  // Fetch available models on mount
+  useEffect(() => {
+    fetchExplorationModels()
+      .then((data) => {
+        if (data.length > 0) {
+          setModels(data);
+          setSelectedModelId(data[0].id);
+        }
+        setModelsLoaded(true);
+      })
+      .catch(() => setModelsLoaded(true));
+  }, []);
 
   useEffect(() => {
     reset();
     setStatus('in_progress');
-    onStartSession().then((data) => {
+    onStartSession(selectedModelId).then((data) => {
       setSessionId(data.sessionId);
       setMessages(data.messages);
       setProgress(data.progress);
@@ -163,10 +180,18 @@ export function AIExplorationPage({
               >
                 <Bot className="h-6 w-6 text-white" />
               </div>
-              <div>
-                <h1 className="text-xl font-semibold" style={{ color: '#111827' }}>
-                  {config.pageTitle ?? 'AI Exploration'}
-                </h1>
+              <div className="flex-1">
+                <div className="flex items-center gap-3">
+                  <h1 className="text-xl font-semibold" style={{ color: '#111827' }}>
+                    {config.pageTitle ?? 'AI Exploration'}
+                  </h1>
+                  {modelsLoaded && models.length > 1 && (
+                    <span className="inline-flex items-center gap-1.5 text-xs rounded-full" style={{ padding: '4px 12px', backgroundColor: '#f3f4f6', color: '#6b7280' }}>
+                      <Cpu className="h-3 w-3" />
+                      {models.find((m) => m.id === selectedModelId)?.name ?? selectedModelId}
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm" style={{ color: '#6b7280' }}>
                   {config.pageDescription ?? 'Answer the questions to start the analysis'}
                 </p>

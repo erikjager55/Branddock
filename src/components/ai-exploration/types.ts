@@ -119,6 +119,15 @@ export interface ExplorationConfig {
   enableReport?: boolean;     // Default: true
 }
 
+// ─── Model Selection ───────────────────────────────────────
+
+export interface ExplorationModelOption {
+  id: string;
+  name: string;
+  provider: string;
+  description: string;
+}
+
 // ─── API Response Types ────────────────────────────────────
 
 export interface StartExplorationResponse {
@@ -128,6 +137,7 @@ export interface StartExplorationResponse {
   totalDimensions: number;
   answeredDimensions: number;
   messages: ExplorationMessage[];
+  modelId?: string;
 }
 
 export interface SendAnswerResponse {

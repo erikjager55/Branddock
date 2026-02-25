@@ -10,7 +10,7 @@ import { getItemTypeConfig } from '@/lib/ai/exploration/item-type-registry';
 // ────────────────────────────────────────────────────────────
 
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ itemType: string; itemId: string }> },
 ) {
   try {
@@ -48,6 +48,17 @@ export async function POST(
       );
     }
 
+    // Parse optional modelId from request body
+    let modelId: string | null = null;
+    try {
+      const body = await request.json();
+      if (body.modelId && typeof body.modelId === 'string') {
+        modelId = body.modelId;
+      }
+    } catch {
+      // No body or invalid JSON — use default model
+    }
+
     // Build intro + first question
     const dimensions = config.getDimensions();
     const totalDimensions = dimensions.length;
@@ -63,6 +74,7 @@ export async function POST(
         progress: 0,
         totalDimensions,
         answeredDimensions: 0,
+        modelId,
         workspaceId,
         createdById: session.user.id,
         messages: {

@@ -1528,6 +1528,7 @@ model ExplorationSession {
   progress           Float                   @default(0)
   totalDimensions    Int                     @default(4)
   answeredDimensions Int                     @default(0)
+  modelId            String?                 // 'claude-sonnet-4-6' | 'claude-sonnet-4' | 'gemini-3-1-pro'
   insightsData       Json?
   completedAt        DateTime?
 

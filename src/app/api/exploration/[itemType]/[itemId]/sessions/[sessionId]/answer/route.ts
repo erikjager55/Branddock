@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { z } from 'zod';
 import { getItemTypeConfig } from '@/lib/ai/exploration/item-type-registry';
-import { generateNextQuestion, generateFeedback } from '@/lib/ai/exploration/exploration-llm';
+import { generateNextQuestion, generateFeedback, resolveModelConfig } from '@/lib/ai/exploration/exploration-llm';
 
 const answerSchema = z.object({
   content: z.string().min(1).max(5000),
@@ -50,6 +50,9 @@ export async function POST(
     if (analysisSession.status === 'COMPLETED') {
       return NextResponse.json({ error: 'Analysis already completed' }, { status: 400 });
     }
+
+    // Resolve AI model from session
+    const modelConfig = resolveModelConfig(analysisSession.modelId);
 
     const body = await request.json();
     const parsed = answerSchema.safeParse(body);
@@ -107,13 +110,14 @@ export async function POST(
     const currentQuestionMsg = [...allMessages].reverse().find((m) => m.type === 'AI_QUESTION');
     const currentDimensionMeta = currentQuestionMsg?.metadata as { dimensionKey?: string; dimensionTitle?: string } | null;
 
-    // Generate feedback via Claude
+    // Generate feedback via AI model
     const feedbackContent = await generateFeedback({
       itemType,
       itemName: (item?.name as string) ?? itemType,
       dimensionTitle: currentDimensionMeta?.dimensionTitle ?? dimensionInfo?.title ?? 'General',
       question: currentQuestionMsg?.content ?? '',
       answer: content,
+      modelConfig,
     });
 
     await prisma.explorationMessage.create({
@@ -148,6 +152,7 @@ export async function POST(
         dimensions,
         currentDimension: nextDim,
         previousQA,
+        modelConfig,
       });
 
       await prisma.explorationMessage.create({
