@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, Bot, Loader2 } from 'lucide-react';
 import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage } from './types';
 import { useAIExplorationStore } from './hooks/useAIExplorationStore';
 import { AIExplorationChatInterface } from './AIExplorationChatInterface';
 import { AIExplorationReport } from './AIExplorationReport';
+import { AIExplorationSuggestions } from './AIExplorationSuggestions';
 
 interface AIExplorationPageProps {
   config: ExplorationConfig;
@@ -58,6 +59,7 @@ export function AIExplorationPage({
   const insightsData = useAIExplorationStore((s) => s.insightsData);
   const setInsightsData = useAIExplorationStore((s) => s.setInsightsData);
   const reset = useAIExplorationStore((s) => s.reset);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // ─── Auto-start session ─────────────────────────────────
   useEffect(() => {
@@ -199,9 +201,20 @@ export function AIExplorationPage({
         </div>
       )}
 
-      {/* State: Completed */}
-      {status === 'completed' && insightsData && (
-        <AIExplorationReport config={config} insightsData={insightsData} />
+      {/* State: Completed — Report or Suggestions */}
+      {status === 'completed' && insightsData && !showSuggestions && (
+        <AIExplorationReport
+          config={config}
+          insightsData={insightsData}
+          onViewSuggestions={() => setShowSuggestions(true)}
+        />
+      )}
+      {status === 'completed' && insightsData && showSuggestions && (
+        <AIExplorationSuggestions
+          config={config}
+          insightsData={insightsData}
+          onBackToReport={() => setShowSuggestions(false)}
+        />
       )}
     </div>
   );

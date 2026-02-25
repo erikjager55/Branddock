@@ -4,6 +4,7 @@
 export { AIExplorationPage } from './AIExplorationPage';
 export { AIExplorationChatInterface } from './AIExplorationChatInterface';
 export { AIExplorationReport } from './AIExplorationReport';
+export { AIExplorationSuggestions } from './AIExplorationSuggestions';
 export { AIExplorationFieldSuggestion } from './AIExplorationFieldSuggestion';
 export { AIExplorationDimensionCard } from './AIExplorationDimensionCard';
 
