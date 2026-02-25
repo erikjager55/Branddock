@@ -28,7 +28,7 @@ export const EXPLORATION_MODELS: {
     id: 'claude-sonnet-4-6',
     name: 'Claude Sonnet 4.6',
     provider: 'anthropic',
-    model: 'claude-sonnet-4-6-20250225',
+    model: 'claude-sonnet-4-6',
     description: 'Anthropic — Best for nuanced brand strategy',
   },
   {
@@ -350,18 +350,23 @@ ${fieldList}
   ]
 }`;
 
+  console.log('[exploration-llm] generateReport: allQA pairs:', allQA.length, '| model:', modelConfig.model);
+
   try {
     const text = await callLLM({
       modelConfig,
       systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
       temperature: 0.4,
-      maxTokens: 3000,
+      maxTokens: 4000,
     });
+
+    console.log('[exploration-llm] generateReport raw response length:', text.length);
+    console.log('[exploration-llm] generateReport raw response (first 300 chars):', text.slice(0, 300));
 
     return parseReportJSON(text, dimensions);
   } catch (error) {
-    console.error('[exploration-llm] generateReport failed:', error);
+    console.error('[exploration-llm] generateReport failed:', error instanceof Error ? error.message : error);
     return buildFallbackReport(itemName, dimensions, allQA);
   }
 }
@@ -370,11 +375,29 @@ ${fieldList}
 
 function parseReportJSON(raw: string, dimensions: DimensionDef[]): GeneratedReport {
   let cleaned = raw.trim();
+
+  // Strip markdown code blocks (```json ... ``` or ``` ... ```)
   if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?\s*```\s*$/, '');
   }
 
-  const parsed = JSON.parse(cleaned);
+  cleaned = cleaned.trim();
+
+  // Extract JSON object if there's extra text before/after
+  const jsonStart = cleaned.indexOf('{');
+  const jsonEnd = cleaned.lastIndexOf('}');
+  if (jsonStart !== -1 && jsonEnd !== -1 && jsonStart < jsonEnd) {
+    cleaned = cleaned.slice(jsonStart, jsonEnd + 1);
+  }
+
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch (parseError) {
+    console.error('[parseReportJSON] JSON parse failed:', parseError instanceof Error ? parseError.message : parseError);
+    console.error('[parseReportJSON] Raw input (first 500 chars):', cleaned.slice(0, 500));
+    throw parseError;
+  }
 
   return {
     executiveSummary: String(parsed.executiveSummary || 'Analysis complete.'),
@@ -399,7 +422,7 @@ function parseReportJSON(raw: string, dimensions: DimensionDef[]): GeneratedRepo
       ? parsed.fieldSuggestions.map((s: Record<string, unknown>) => ({
           field: String(s.field || ''),
           label: String(s.label || ''),
-          suggestedValue: s.suggestedValue ?? '',
+          suggestedValue: (Array.isArray(s.suggestedValue) ? s.suggestedValue.map(String) : String(s.suggestedValue ?? '')),
           reason: String(s.reason || ''),
         }))
       : [],

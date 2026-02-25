@@ -122,10 +122,14 @@ export const personaItemConfig: ItemTypeConfig = {
     const sessionId = (session as { id: string }).id;
     const modelId = (session as { modelId?: string }).modelId;
 
+    console.log('[persona-builder] generateInsights: sessionId:', sessionId, '| modelId:', modelId);
+
     const messages = await prisma.explorationMessage.findMany({
       where: { sessionId },
       orderBy: { orderIndex: 'asc' },
     });
+
+    console.log('[persona-builder] Found messages:', messages.length);
 
     // 2. Build Q&A pairs from messages
     const allQA: { question: string; answer: string; dimensionKey: string }[] = [];
@@ -144,6 +148,8 @@ export const personaItemConfig: ItemTypeConfig = {
         lastQuestion = null;
       }
     }
+
+    console.log('[persona-builder] Built Q&A pairs:', allQA.length);
 
     // 3. Build current field values
     const currentFieldValues: Record<string, unknown> = {};
