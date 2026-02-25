@@ -245,7 +245,10 @@ export function AIExplorationPage({
                 answeredDimensions={answeredDimensions}
                 models={modelsLoaded ? models : undefined}
                 selectedModelId={selectedModelId}
-                sessionStarted={!!sessionId}
+                onModelChange={(modelId) => {
+                  setSelectedModelId(modelId);
+                  startSession(modelId);
+                }}
               />
             </div>
           </div>

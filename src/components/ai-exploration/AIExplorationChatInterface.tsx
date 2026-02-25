@@ -18,10 +18,8 @@ interface AIExplorationChatInterfaceProps {
   models?: ExplorationModelOption[];
   /** Currently selected model ID */
   selectedModelId?: string;
-  /** Callback to change model (only works before session starts) */
+  /** Callback to change model (restarts session, disabled after first answer) */
   onModelChange?: (modelId: string) => void;
-  /** Whether the session has started (true = read-only badge, false = dropdown) */
-  sessionStarted?: boolean;
 }
 
 export function AIExplorationChatInterface({
@@ -37,7 +35,6 @@ export function AIExplorationChatInterface({
   models,
   selectedModelId,
   onModelChange,
-  sessionStarted = true,
 }: AIExplorationChatInterfaceProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const totalDimensions = config.dimensions.length;
@@ -72,23 +69,21 @@ export function AIExplorationChatInterface({
       {models && models.length > 1 && (
         <div className="flex items-center gap-2" style={{ padding: '8px 24px', borderBottom: '1px solid #f3f4f6', backgroundColor: 'rgba(249,250,251,0.5)' }}>
           <Cpu className="h-3.5 w-3.5 flex-shrink-0" style={{ color: '#9ca3af' }} />
-          {!sessionStarted && onModelChange ? (
-            <select
-              value={selectedModelId ?? ''}
-              onChange={(e) => onModelChange(e.target.value)}
-              className="text-sm bg-white rounded-md outline-none cursor-pointer"
-              style={{ padding: '2px 8px', color: '#4b5563', border: '1px solid #e5e7eb' }}
-            >
-              {models.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name} — {m.description}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <span className="text-xs rounded-full" style={{ padding: '2px 10px', backgroundColor: '#f3f4f6', color: '#6b7280' }}>
-              {models.find((m) => m.id === selectedModelId)?.name ?? selectedModelId}
-            </span>
+          <select
+            value={selectedModelId ?? ''}
+            onChange={(e) => onModelChange?.(e.target.value)}
+            disabled={answeredDimensions > 0}
+            className="text-sm bg-white rounded-md outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+            style={{ padding: '2px 8px', color: '#4b5563', border: '1px solid #e5e7eb' }}
+          >
+            {models.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name} — {m.description}
+              </option>
+            ))}
+          </select>
+          {answeredDimensions > 0 && (
+            <span className="text-xs" style={{ color: '#9ca3af' }}>(locked for this session)</span>
           )}
         </div>
       )}
