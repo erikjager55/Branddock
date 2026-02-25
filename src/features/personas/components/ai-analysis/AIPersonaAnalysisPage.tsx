@@ -39,7 +39,7 @@ export function AIPersonaAnalysisPage({ personaId, onBack }: AIPersonaAnalysisPa
         itemId: personaId,
         itemName: persona.name,
         pageTitle: 'AI Persona Analysis',
-        pageDescription: 'Beantwoord de vragen om je persona te analyseren',
+        pageDescription: 'Answer questions to validate and enrich your persona',
         backLabel: 'Back to Persona',
         onBack,
         dimensions: PERSONA_DIMENSIONS,

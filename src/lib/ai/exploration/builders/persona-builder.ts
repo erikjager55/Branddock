@@ -223,50 +223,52 @@ export const personaItemConfig: ItemTypeConfig = {
         summary: `Analysis of the ${d.title.toLowerCase()} dimension has been completed for ${name}.`,
       })),
 
-      executiveSummary: `De AI-analyse van ${name} heeft ${PERSONA_DIMENSIONS.length} strategische dimensies geanalyseerd en biedt inzichten voor merkpositionering en communicatie.`,
+      executiveSummary: `The AI analysis of ${name} has evaluated ${PERSONA_DIMENSIONS.length} strategic dimensions, providing actionable insights for brand positioning and communication strategy.`,
 
       findings: [
         {
-          title: 'Demografisch Profiel',
-          description: `${name} vertegenwoordigt een ${(persona.occupation as string) ?? 'professional'} segment met specifieke behoeften.`,
+          title: 'Demographic Profile',
+          description: `${name} represents a ${(persona.occupation as string) ?? 'professional'} segment with specific needs and behaviors.`,
         },
         {
-          title: 'Motivatie & Doelen',
+          title: 'Motivations & Goals',
           description:
             goals.length > 0
-              ? `Primaire doelen: ${goals.slice(0, 2).join(', ')}`
-              : 'Doelen nog niet specifiek gedefinieerd — verrijking aanbevolen.',
+              ? `Primary goals: ${goals.slice(0, 2).join(', ')}`
+              : 'Goals not yet defined — enrichment recommended.',
         },
         {
-          title: 'Uitdagingen',
+          title: 'Challenges',
           description:
             frustrations.length > 0
-              ? `Kernfrustraties: ${frustrations.slice(0, 2).join(', ')}`
-              : 'Frustraties nog niet geïdentificeerd.',
+              ? `Key frustrations: ${frustrations.slice(0, 2).join(', ')}`
+              : 'Frustrations not yet identified.',
         },
         {
-          title: 'Waarde-Aansluiting',
-          description: `${coreValues.length > 0 ? `Kernwaarden (${coreValues.slice(0, 3).join(', ')}) ` : ''}vormen de basis voor merkaffiniteit.`,
+          title: 'Value Alignment',
+          description: coreValues.length > 0
+            ? `Core values (${coreValues.slice(0, 3).join(', ')}) form the foundation for brand affinity.`
+            : 'Core values form the foundation for brand affinity.',
         },
         {
-          title: 'Gedragspatronen',
+          title: 'Behavioral Patterns',
           description:
             behaviors.length > 0
-              ? `Gedrag: ${behaviors.slice(0, 2).join(', ')}`
-              : 'Gedragspatronen verdienen verdere verdieping.',
+              ? `Behaviors: ${behaviors.slice(0, 2).join(', ')}`
+              : 'Behavioral patterns require further exploration.',
         },
       ],
 
       recommendations: [
-        `Integreer het demografisch profiel van ${name} in alle communicatie-uitingen`,
-        'Ontwikkel persona-specifieke customer journeys voor de gedefinieerde doelgroep',
-        'Creëer content die de unieke waarde tastbaar en begrijpelijk maakt',
+        `Integrate ${name}'s demographic profile into all communication touchpoints`,
+        'Develop persona-specific customer journeys for the defined target audience',
+        'Create content that makes the unique value proposition tangible and accessible',
         frustrations.length > 0
-          ? `Bouw thought leadership rond oplossingen voor: ${frustrations[0]}`
-          : 'Bouw thought leadership rond oplossingen voor klantuitdagingen',
+          ? `Build thought leadership around solutions for: ${frustrations[0]}`
+          : 'Build thought leadership around solutions for customer challenges',
         coreValues.length > 0
-          ? `Vertaal de kernwaarden (${coreValues.slice(0, 3).join(', ')}) naar concrete gedragingen en besliscriteria`
-          : 'Vertaal waarden naar concrete gedragingen en besliscriteria',
+          ? `Translate core values (${coreValues.slice(0, 3).join(', ')}) into concrete behaviors and decision criteria`
+          : 'Translate values into concrete behaviors and decision criteria',
       ],
 
       fieldSuggestions: generateFieldSuggestions(persona, {
