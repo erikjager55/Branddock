@@ -54,15 +54,15 @@ export async function POST(
     const introContent = config.buildIntro(item);
     const firstQuestion = dimensions[0];
 
-    // Create session using the existing AIPersonaAnalysisSession model
-    // (We reuse this model for now; Phase 2 will create a generic ExplorationSession model)
-    const analysisSession = await prisma.aIPersonaAnalysisSession.create({
+    // Create generic exploration session
+    const explorationSession = await prisma.explorationSession.create({
       data: {
+        itemType,
+        itemId,
         status: 'IN_PROGRESS',
         progress: 0,
         totalDimensions,
         answeredDimensions: 0,
-        personaId: itemId, // Required by schema — works for persona, needs generic model later
         workspaceId,
         createdById: session.user.id,
         messages: {
@@ -91,12 +91,12 @@ export async function POST(
 
     return NextResponse.json(
       {
-        sessionId: analysisSession.id,
-        status: analysisSession.status,
-        progress: analysisSession.progress,
-        totalDimensions: analysisSession.totalDimensions,
-        answeredDimensions: analysisSession.answeredDimensions,
-        messages: analysisSession.messages.map((m) => ({
+        sessionId: explorationSession.id,
+        status: explorationSession.status,
+        progress: explorationSession.progress,
+        totalDimensions: explorationSession.totalDimensions,
+        answeredDimensions: explorationSession.answeredDimensions,
+        messages: explorationSession.messages.map((m) => ({
           id: m.id,
           type: m.type,
           content: m.content,

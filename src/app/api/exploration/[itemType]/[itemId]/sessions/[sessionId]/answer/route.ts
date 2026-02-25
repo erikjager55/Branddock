@@ -37,7 +37,7 @@ export async function POST(
       );
     }
 
-    const analysisSession = await prisma.aIPersonaAnalysisSession.findFirst({
+    const analysisSession = await prisma.explorationSession.findFirst({
       where: { id: sessionId, workspaceId },
       include: { messages: { orderBy: { orderIndex: 'desc' }, take: 1 } },
     });
@@ -65,7 +65,7 @@ export async function POST(
     const dimensionInfo = dimensions[currentDimension];
 
     // Save user answer
-    await prisma.aIPersonaAnalysisMessage.create({
+    await prisma.explorationMessage.create({
       data: {
         sessionId,
         type: 'USER_ANSWER',
@@ -78,7 +78,7 @@ export async function POST(
     // Generate feedback
     const feedbackContent = `Thank you for that insight about ${dimensionInfo?.title ?? 'this dimension'}. Your response provides valuable context for the analysis.`;
 
-    await prisma.aIPersonaAnalysisMessage.create({
+    await prisma.explorationMessage.create({
       data: {
         sessionId,
         type: 'AI_FEEDBACK',
@@ -102,7 +102,7 @@ export async function POST(
     // If not complete, add next question
     if (!isComplete) {
       const nextDim = dimensions[newAnsweredDimensions];
-      await prisma.aIPersonaAnalysisMessage.create({
+      await prisma.explorationMessage.create({
         data: {
           sessionId,
           type: 'AI_QUESTION',
@@ -122,7 +122,7 @@ export async function POST(
     }
 
     // Update session progress
-    await prisma.aIPersonaAnalysisSession.update({
+    await prisma.explorationSession.update({
       where: { id: sessionId },
       data: {
         answeredDimensions: newAnsweredDimensions,

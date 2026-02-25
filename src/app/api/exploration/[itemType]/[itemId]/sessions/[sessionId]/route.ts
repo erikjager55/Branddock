@@ -35,7 +35,7 @@ export async function GET(
       );
     }
 
-    const session = await prisma.aIPersonaAnalysisSession.findFirst({
+    const session = await prisma.explorationSession.findFirst({
       where: { id: sessionId, workspaceId },
       include: {
         messages: { orderBy: { orderIndex: 'asc' } },

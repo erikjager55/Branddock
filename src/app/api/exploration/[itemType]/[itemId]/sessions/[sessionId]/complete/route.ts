@@ -32,7 +32,7 @@ export async function POST(
       );
     }
 
-    const analysisSession = await prisma.aIPersonaAnalysisSession.findFirst({
+    const analysisSession = await prisma.explorationSession.findFirst({
       where: { id: sessionId, workspaceId },
     });
 
@@ -54,7 +54,7 @@ export async function POST(
     const insightsData = await config.generateInsights(item, analysisSession);
 
     // Mark session as completed
-    await prisma.aIPersonaAnalysisSession.update({
+    await prisma.explorationSession.update({
       where: { id: sessionId },
       data: {
         status: 'COMPLETED',
