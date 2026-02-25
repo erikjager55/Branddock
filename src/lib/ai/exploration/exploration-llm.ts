@@ -249,6 +249,191 @@ export async function generateFeedback(params: {
   }
 }
 
+// ─── Report Types ───────────────────────────────────────────
+
+interface ReportDimensionInsight {
+  key: string;
+  title: string;
+  icon: string;
+  summary: string;
+}
+
+interface ReportFinding {
+  title: string;
+  description: string;
+}
+
+interface ReportFieldSuggestion {
+  field: string;
+  label: string;
+  suggestedValue: string | string[];
+  reason: string;
+}
+
+export interface GeneratedReport {
+  executiveSummary: string;
+  dimensions: ReportDimensionInsight[];
+  findings: ReportFinding[];
+  recommendations: string[];
+  fieldSuggestions: ReportFieldSuggestion[];
+}
+
+// ─── Generate Report ────────────────────────────────────────
+
+export async function generateReport(params: {
+  itemType: string;
+  itemName: string;
+  itemContext: string;
+  dimensions: DimensionDef[];
+  allQA: QAPair[];
+  fieldMapping: { field: string; label: string; type: string }[];
+  currentFieldValues: Record<string, unknown>;
+  modelConfig?: ExplorationModelConfig;
+}): Promise<GeneratedReport> {
+  const {
+    itemType, itemName, itemContext, dimensions, allQA,
+    fieldMapping, currentFieldValues,
+    modelConfig = DEFAULT_EXPLORATION_MODEL,
+  } = params;
+
+  const qaText = allQA
+    .map((qa, i) => `Q${i + 1} [${qa.dimensionKey}]: ${qa.question}\nA${i + 1}: ${qa.answer}`)
+    .join('\n\n');
+
+  const dimensionList = dimensions
+    .map((d) => `- ${d.title} (key: ${d.key}, icon: ${d.icon})`)
+    .join('\n');
+
+  const fieldList = fieldMapping
+    .map((f) => {
+      const currentVal = currentFieldValues[f.field];
+      const display = Array.isArray(currentVal) ? currentVal.join(', ') : (currentVal as string) ?? '(empty)';
+      return `- ${f.label} (field: ${f.field}, type: ${f.type}): current value = "${display}"`;
+    })
+    .join('\n');
+
+  const systemPrompt = `You are a senior brand strategist producing an analysis report for a ${itemType} called "${itemName}".
+
+## Item Context
+${itemContext}
+
+## Exploration Dimensions
+${dimensionList}
+
+## Updatable Fields
+${fieldList}
+
+## Rules
+- Write in English
+- Be specific and actionable — reference actual answers from the conversation
+- Executive summary: 2-3 sentences synthesizing the key takeaway
+- Dimension summaries: 1-2 sentences each, highlighting the most important insight from that dimension
+- Findings: 5 key findings with title + description (1-2 sentences each)
+- Recommendations: 5 strategic recommendations (1 sentence each)
+- Field suggestions: suggest updates ONLY for fields that are empty or could be meaningfully improved based on the conversation. Include the field key, label, suggested value, and a brief reason.
+- For string[] fields, provide an array of strings as suggestedValue
+- For string fields, provide a single string as suggestedValue
+- Respond ONLY with valid JSON, no markdown code blocks, no extra text`;
+
+  const userMessage = `Here is the full exploration conversation:\n\n${qaText}\n\nGenerate a comprehensive analysis report as JSON with this exact structure:
+{
+  "executiveSummary": "...",
+  "dimensions": [
+    { "key": "...", "title": "...", "icon": "...", "summary": "..." }
+  ],
+  "findings": [
+    { "title": "...", "description": "..." }
+  ],
+  "recommendations": ["...", "..."],
+  "fieldSuggestions": [
+    { "field": "fieldKey", "label": "Field Label", "suggestedValue": "..." or ["..."], "reason": "..." }
+  ]
+}`;
+
+  try {
+    const text = await callLLM({
+      modelConfig,
+      systemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
+      temperature: 0.4,
+      maxTokens: 3000,
+    });
+
+    return parseReportJSON(text, dimensions);
+  } catch (error) {
+    console.error('[exploration-llm] generateReport failed:', error);
+    return buildFallbackReport(itemName, dimensions, allQA);
+  }
+}
+
+// ─── Report JSON Parser ─────────────────────────────────────
+
+function parseReportJSON(raw: string, dimensions: DimensionDef[]): GeneratedReport {
+  let cleaned = raw.trim();
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+  }
+
+  const parsed = JSON.parse(cleaned);
+
+  return {
+    executiveSummary: String(parsed.executiveSummary || 'Analysis complete.'),
+    dimensions: Array.isArray(parsed.dimensions)
+      ? parsed.dimensions.map((d: Record<string, unknown>) => ({
+          key: String(d.key || ''),
+          title: String(d.title || ''),
+          icon: String(d.icon || ''),
+          summary: String(d.summary || ''),
+        }))
+      : dimensions.map((d) => ({ key: d.key, title: d.title, icon: d.icon, summary: 'Analysis complete.' })),
+    findings: Array.isArray(parsed.findings)
+      ? parsed.findings.slice(0, 5).map((f: Record<string, unknown>) => ({
+          title: String(f.title || 'Finding'),
+          description: String(f.description || ''),
+        }))
+      : [],
+    recommendations: Array.isArray(parsed.recommendations)
+      ? parsed.recommendations.slice(0, 5).map((r: unknown) => String(r))
+      : [],
+    fieldSuggestions: Array.isArray(parsed.fieldSuggestions)
+      ? parsed.fieldSuggestions.map((s: Record<string, unknown>) => ({
+          field: String(s.field || ''),
+          label: String(s.label || ''),
+          suggestedValue: s.suggestedValue ?? '',
+          reason: String(s.reason || ''),
+        }))
+      : [],
+  };
+}
+
+// ─── Fallback Report ────────────────────────────────────────
+
+function buildFallbackReport(
+  itemName: string,
+  dimensions: DimensionDef[],
+  allQA: QAPair[],
+): GeneratedReport {
+  return {
+    executiveSummary: `The AI analysis of ${itemName} has evaluated ${dimensions.length} strategic dimensions. Review the conversation for detailed insights.`,
+    dimensions: dimensions.map((d) => ({
+      key: d.key,
+      title: d.title,
+      icon: d.icon,
+      summary: `Analysis of the ${d.title.toLowerCase()} dimension has been completed.`,
+    })),
+    findings: allQA.slice(0, 5).map((qa) => ({
+      title: `Insight from ${qa.dimensionKey}`,
+      description: qa.answer.slice(0, 200),
+    })),
+    recommendations: [
+      `Review and refine ${itemName} based on the exploration insights`,
+      'Validate findings with additional research methods',
+      'Use the field suggestions to enrich the data model',
+    ],
+    fieldSuggestions: [],
+  };
+}
+
 // ─── Resolve Model Config ───────────────────────────────────
 
 /** Look up full model config from a model ID string (e.g. 'claude-sonnet-4-6') */
