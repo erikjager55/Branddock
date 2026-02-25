@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Bot, Loader2 } from 'lucide-react';
+import { ArrowLeft, Bot, Loader2, Sparkles } from 'lucide-react';
 import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage } from './types';
 import { useAIExplorationStore } from './hooks/useAIExplorationStore';
 import { AIExplorationChatInterface } from './AIExplorationChatInterface';
@@ -10,10 +10,6 @@ import { AIExplorationSuggestions } from './AIExplorationSuggestions';
 
 interface AIExplorationPageProps {
   config: ExplorationConfig;
-  /**
-   * Hook callbacks — the parent (thin wrapper) provides these
-   * so the generic page doesn't need to know about specific API routes.
-   */
   onStartSession: () => Promise<{
     sessionId: string;
     messages: ExplorationMessage[];
@@ -82,7 +78,6 @@ export function AIExplorationPage({
     const content = currentInput.trim();
     setCurrentInput('');
 
-    // Add user message to store immediately
     addMessage({
       id: `user-${Date.now()}`,
       type: 'USER_ANSWER',
@@ -99,7 +94,6 @@ export function AIExplorationPage({
       setProgress(result.progress);
       setAnsweredDimensions(result.answeredDimensions);
 
-      // Add feedback message
       addMessage({
         id: `feedback-${Date.now()}`,
         type: 'AI_FEEDBACK',
@@ -109,7 +103,6 @@ export function AIExplorationPage({
         createdAt: new Date().toISOString(),
       });
 
-      // Add next question if available
       if (result.nextQuestion) {
         addMessage({
           id: `question-${Date.now()}`,
@@ -139,21 +132,21 @@ export function AIExplorationPage({
   if (!sessionId && status !== 'completed') {
     return (
       <div className="space-y-4 p-6">
-        <div className="h-8 rounded animate-pulse" style={{ backgroundColor: '#e5e7eb' }} />
-        <div className="h-32 rounded animate-pulse" style={{ backgroundColor: '#e5e7eb' }} />
+        <div className="h-8 rounded-lg animate-pulse" style={{ backgroundColor: '#f3f4f6' }} />
+        <div className="h-48 rounded-xl animate-pulse" style={{ backgroundColor: '#f3f4f6' }} />
+        <div className="h-12 rounded-lg animate-pulse" style={{ backgroundColor: '#f3f4f6' }} />
       </div>
     );
   }
 
   return (
     <div data-testid="ai-exploration" className="space-y-6 p-6">
-      {/* Back link + Header (hidden when COMPLETED) */}
+      {/* Back link + Header */}
       {status !== 'completed' && (
         <>
           <button
-            data-testid="exploration-back-link"
             onClick={config.onBack}
-            className="flex items-center gap-1.5 text-sm transition-colors"
+            className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
             style={{ color: '#6b7280' }}
           >
             <ArrowLeft className="w-4 h-4" />
@@ -161,7 +154,13 @@ export function AIExplorationPage({
           </button>
 
           <div className="flex items-start gap-4 mb-2">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center flex-shrink-0 shadow-lg">
+            <div
+              className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{
+                background: 'linear-gradient(135deg, #14b8a6, #10b981)',
+                boxShadow: '0 4px 12px rgba(20, 184, 166, 0.3)',
+              }}
+            >
               <Bot className="h-7 w-7 text-white" />
             </div>
             <div>
@@ -178,7 +177,7 @@ export function AIExplorationPage({
 
       {/* State: In Progress */}
       {status === 'in_progress' && (
-        <div style={{ height: '50vh' }}>
+        <div style={{ height: '55vh' }}>
           <AIExplorationChatInterface
             config={config}
             messages={messages}
@@ -195,9 +194,18 @@ export function AIExplorationPage({
 
       {/* State: Completing */}
       {status === 'completing' && (
-        <div className="flex flex-col items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-3" />
-          <p className="text-sm" style={{ color: '#6b7280' }}>Generating report...</p>
+        <div className="flex flex-col items-center justify-center py-20">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mb-4"
+            style={{
+              background: 'linear-gradient(135deg, #14b8a6, #10b981)',
+              boxShadow: '0 4px 20px rgba(20, 184, 166, 0.3)',
+            }}
+          >
+            <Sparkles className="w-8 h-8 text-white animate-pulse" />
+          </div>
+          <p className="text-sm font-medium" style={{ color: '#111827' }}>Rapport wordt gegenereerd...</p>
+          <p className="text-xs mt-1" style={{ color: '#9ca3af' }}>Dit duurt enkele seconden</p>
         </div>
       )}
 
