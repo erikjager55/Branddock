@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { z } from 'zod';
 import { getItemTypeConfig } from '@/lib/ai/exploration/item-type-registry';
+import { generateNextQuestion, generateFeedback } from '@/lib/ai/exploration/exploration-llm';
 
 const answerSchema = z.object({
   content: z.string().min(1).max(5000),
@@ -59,6 +60,7 @@ export async function POST(
       );
     }
 
+    const content = parsed.data.content;
     const lastOrderIndex = analysisSession.messages[0]?.orderIndex ?? 0;
     const currentDimension = analysisSession.answeredDimensions;
     const dimensions = config.getDimensions();
@@ -69,14 +71,50 @@ export async function POST(
       data: {
         sessionId,
         type: 'USER_ANSWER',
-        content: parsed.data.content,
+        content,
         orderIndex: lastOrderIndex + 1,
         metadata: { dimensionKey: dimensionInfo?.key },
       },
     });
 
-    // Generate feedback
-    const feedbackContent = `Thank you for that insight about ${dimensionInfo?.title ?? 'this dimension'}. Your response provides valuable context for the analysis.`;
+    // Fetch item for context
+    const item = await config.fetchItem(itemId, workspaceId);
+
+    // Build previousQA from all messages
+    const allMessages = await prisma.explorationMessage.findMany({
+      where: { sessionId },
+      orderBy: { orderIndex: 'asc' },
+    });
+
+    const previousQA: { question: string; answer: string; dimensionKey: string }[] = [];
+    let lastQuestion: { content: string; dimensionKey: string } | null = null;
+
+    for (const msg of allMessages) {
+      if (msg.type === 'AI_QUESTION') {
+        const meta = msg.metadata as { dimensionKey?: string } | null;
+        lastQuestion = { content: msg.content, dimensionKey: meta?.dimensionKey ?? '' };
+      } else if (msg.type === 'USER_ANSWER' && lastQuestion) {
+        previousQA.push({
+          question: lastQuestion.content,
+          answer: msg.content,
+          dimensionKey: lastQuestion.dimensionKey,
+        });
+        lastQuestion = null;
+      }
+    }
+
+    // Find the current question message for feedback context
+    const currentQuestionMsg = [...allMessages].reverse().find((m) => m.type === 'AI_QUESTION');
+    const currentDimensionMeta = currentQuestionMsg?.metadata as { dimensionKey?: string; dimensionTitle?: string } | null;
+
+    // Generate feedback via Claude
+    const feedbackContent = await generateFeedback({
+      itemType,
+      itemName: (item?.name as string) ?? itemType,
+      dimensionTitle: currentDimensionMeta?.dimensionTitle ?? dimensionInfo?.title ?? 'General',
+      question: currentQuestionMsg?.content ?? '',
+      answer: content,
+    });
 
     await prisma.explorationMessage.create({
       data: {
@@ -99,14 +137,24 @@ export async function POST(
       dimensionTitle: string;
     } | null = null;
 
-    // If not complete, add next question
+    // If not complete, generate next question via Claude
     if (!isComplete) {
       const nextDim = dimensions[newAnsweredDimensions];
+
+      const nextQuestionContent = await generateNextQuestion({
+        itemType,
+        itemName: (item?.name as string) ?? itemType,
+        itemContext: item ? config.buildItemContext(item) : 'No context available.',
+        dimensions,
+        currentDimension: nextDim,
+        previousQA,
+      });
+
       await prisma.explorationMessage.create({
         data: {
           sessionId,
           type: 'AI_QUESTION',
-          content: nextDim.question,
+          content: nextQuestionContent,
           orderIndex: lastOrderIndex + 3,
           metadata: {
             dimensionKey: nextDim.key,
@@ -115,7 +163,7 @@ export async function POST(
         },
       });
       nextQuestion = {
-        content: nextDim.question,
+        content: nextQuestionContent,
         dimensionKey: nextDim.key,
         dimensionTitle: nextDim.title,
       };

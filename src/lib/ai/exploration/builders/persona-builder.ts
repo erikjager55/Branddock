@@ -41,6 +41,35 @@ const PERSONA_DIMENSIONS: DimensionQuestion[] = [
   },
 ];
 
+// ─── Item Context Builder ─────────────────────────────────
+
+export function buildPersonaContext(persona: Record<string, unknown>): string {
+  const lines: string[] = [];
+  const str = (key: string) => (persona[key] as string) ?? null;
+  const arr = (key: string) => {
+    const val = persona[key] as string[] | null;
+    return val && val.length > 0 ? val.join(', ') : null;
+  };
+
+  if (str('name')) lines.push(`Name: ${str('name')}`);
+  if (str('tagline')) lines.push(`Tagline: ${str('tagline')}`);
+  if (str('age')) lines.push(`Age: ${str('age')}`);
+  if (str('occupation')) lines.push(`Occupation: ${str('occupation')}`);
+  if (str('location')) lines.push(`Location: ${str('location')}`);
+  if (str('education')) lines.push(`Education: ${str('education')}`);
+  if (str('income')) lines.push(`Income: ${str('income')}`);
+  if (str('familyStatus')) lines.push(`Family: ${str('familyStatus')}`);
+  if (str('personalityType')) lines.push(`Personality: ${str('personalityType')}`);
+  if (arr('goals')) lines.push(`Goals: ${arr('goals')}`);
+  if (arr('motivations')) lines.push(`Motivations: ${arr('motivations')}`);
+  if (arr('frustrations')) lines.push(`Frustrations: ${arr('frustrations')}`);
+  if (arr('behaviors')) lines.push(`Behaviors: ${arr('behaviors')}`);
+  if (arr('coreValues')) lines.push(`Core values: ${arr('coreValues')}`);
+  if (arr('interests')) lines.push(`Interests: ${arr('interests')}`);
+
+  return lines.length > 0 ? lines.join('\n') : 'No details available yet — this is a new persona.';
+}
+
 // ─── Field Suggestion Generator ────────────────────────────
 
 function generateFieldSuggestions(
@@ -162,6 +191,10 @@ export const personaItemConfig: ItemTypeConfig = {
 
   getDimensions() {
     return PERSONA_DIMENSIONS;
+  },
+
+  buildItemContext(item) {
+    return buildPersonaContext(item);
   },
 
   buildIntro(item) {

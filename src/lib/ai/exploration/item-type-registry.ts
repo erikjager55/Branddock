@@ -31,6 +31,9 @@ export interface ItemTypeConfig {
   /** Get the dimension questions for this item type */
   getDimensions: () => DimensionQuestion[];
 
+  /** Build a text context summary of the item for LLM prompts */
+  buildItemContext: (item: Record<string, unknown>) => string;
+
   /** Build the intro message for the exploration session */
   buildIntro: (item: Record<string, unknown>) => string;
 
