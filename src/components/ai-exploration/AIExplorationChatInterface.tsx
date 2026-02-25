@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { ArrowLeft, ArrowRight, Bot, User, Sparkles } from 'lucide-react';
-import type { ExplorationMessage, ExplorationConfig } from './types';
+import { ArrowLeft, ArrowRight, Bot, Cpu, User, Sparkles } from 'lucide-react';
+import type { ExplorationMessage, ExplorationConfig, ExplorationModelOption } from './types';
 
 interface AIExplorationChatInterfaceProps {
   config: ExplorationConfig;
@@ -14,6 +14,14 @@ interface AIExplorationChatInterfaceProps {
   isSubmitting: boolean;
   progress: number;
   answeredDimensions: number;
+  /** Available AI models (from /api/exploration/models) */
+  models?: ExplorationModelOption[];
+  /** Currently selected model ID */
+  selectedModelId?: string;
+  /** Callback to change model (only works before session starts) */
+  onModelChange?: (modelId: string) => void;
+  /** Whether the session has started (true = read-only badge, false = dropdown) */
+  sessionStarted?: boolean;
 }
 
 export function AIExplorationChatInterface({
@@ -26,6 +34,10 @@ export function AIExplorationChatInterface({
   isSubmitting,
   progress,
   answeredDimensions,
+  models,
+  selectedModelId,
+  onModelChange,
+  sessionStarted = true,
 }: AIExplorationChatInterfaceProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const totalDimensions = config.dimensions.length;
@@ -56,6 +68,31 @@ export function AIExplorationChatInterface({
         height: '100%',
       }}
     >
+      {/* Model Selector */}
+      {models && models.length > 1 && (
+        <div className="flex items-center gap-2" style={{ padding: '8px 24px', borderBottom: '1px solid #f3f4f6', backgroundColor: 'rgba(249,250,251,0.5)' }}>
+          <Cpu className="h-3.5 w-3.5 flex-shrink-0" style={{ color: '#9ca3af' }} />
+          {!sessionStarted && onModelChange ? (
+            <select
+              value={selectedModelId ?? ''}
+              onChange={(e) => onModelChange(e.target.value)}
+              className="text-sm bg-white rounded-md outline-none cursor-pointer"
+              style={{ padding: '2px 8px', color: '#4b5563', border: '1px solid #e5e7eb' }}
+            >
+              {models.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} — {m.description}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-xs rounded-full" style={{ padding: '2px 10px', backgroundColor: '#f3f4f6', color: '#6b7280' }}>
+              {models.find((m) => m.id === selectedModelId)?.name ?? selectedModelId}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Messages Area */}
       <div
         ref={listRef}

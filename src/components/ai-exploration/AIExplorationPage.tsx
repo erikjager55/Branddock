@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { ArrowLeft, Bot, Cpu, RefreshCw, Sparkles } from 'lucide-react';
+import { ArrowLeft, Bot, RefreshCw, Sparkles } from 'lucide-react';
 import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage, ExplorationModelOption } from './types';
 import { useAIExplorationStore } from './hooks/useAIExplorationStore';
 import { AIExplorationChatInterface } from './AIExplorationChatInterface';
@@ -221,18 +221,10 @@ export function AIExplorationPage({
               >
                 <Bot className="h-6 w-6 text-white" />
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-xl font-semibold" style={{ color: '#111827' }}>
-                    {config.pageTitle ?? 'AI Exploration'}
-                  </h1>
-                  {modelsLoaded && models.length > 1 && (
-                    <span className="inline-flex items-center gap-1.5 text-xs rounded-full" style={{ padding: '4px 12px', backgroundColor: '#f3f4f6', color: '#6b7280' }}>
-                      <Cpu className="h-3 w-3" />
-                      {models.find((m) => m.id === selectedModelId)?.name ?? selectedModelId}
-                    </span>
-                  )}
-                </div>
+              <div>
+                <h1 className="text-xl font-semibold" style={{ color: '#111827' }}>
+                  {config.pageTitle ?? 'AI Exploration'}
+                </h1>
                 <p className="text-sm" style={{ color: '#6b7280' }}>
                   {config.pageDescription ?? 'Answer the questions to start the analysis'}
                 </p>
@@ -251,6 +243,9 @@ export function AIExplorationPage({
                 isSubmitting={false}
                 progress={progress}
                 answeredDimensions={answeredDimensions}
+                models={modelsLoaded ? models : undefined}
+                selectedModelId={selectedModelId}
+                sessionStarted={!!sessionId}
               />
             </div>
           </div>
