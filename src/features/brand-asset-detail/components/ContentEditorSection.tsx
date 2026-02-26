@@ -5,7 +5,6 @@ import { Button, Card } from "@/components/shared";
 import { ContentEditMode } from "./ContentEditMode";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
 import { useRegenerateContent } from "../hooks/useBrandAssetDetail";
-import { LockOverlay } from "@/components/lock";
 import type { BrandAssetDetail } from "../types/brand-asset-detail.types";
 
 interface ContentEditorSectionProps {
@@ -72,17 +71,15 @@ export function ContentEditorSection({
         </div>
       </Card.Header>
       <Card.Body>
-        <LockOverlay isLocked={isLocked}>
-          {contentStr ? (
-            <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-              {contentStr}
-            </p>
-          ) : (
-            <p className="text-gray-400 italic">
-              No content yet. Click Edit or Regenerate to add content.
-            </p>
-          )}
-        </LockOverlay>
+        {contentStr ? (
+          <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+            {contentStr}
+          </p>
+        ) : (
+          <p className="text-gray-400 italic">
+            No content yet. Click Edit or Regenerate to add content.
+          </p>
+        )}
       </Card.Body>
     </Card>
   );
