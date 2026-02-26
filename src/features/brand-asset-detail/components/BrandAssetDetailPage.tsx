@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import { useAssetDetail } from "../hooks/useBrandAssetDetail";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
 import { AssetDetailHeader } from "./AssetDetailHeader";
@@ -10,10 +13,9 @@ import { VersionHistoryTimeline } from "./VersionHistoryTimeline";
 import { DeleteAssetDialog } from "./DeleteAssetDialog";
 import { Skeleton, SkeletonCard } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
-import { AlertTriangle } from "lucide-react";
 import { useLockState } from "@/hooks/useLockState";
 import { useLockVisibility } from "@/hooks/useLockVisibility";
-import { LockBanner, LockConfirmDialog } from "@/components/lock";
+import { LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
 import { useQueryClient } from "@tanstack/react-query";
 
 interface BrandAssetDetailPageProps {
@@ -38,6 +40,8 @@ export function BrandAssetDetailPage({
   const setShowDeleteDialog = useBrandAssetDetailStore(
     (s) => s.setShowDeleteDialog
   );
+  const isEditing = useBrandAssetDetailStore((s) => s.isEditing);
+  const setIsEditing = useBrandAssetDetailStore((s) => s.setIsEditing);
   const qc = useQueryClient();
 
   const lockState = useLockState({
@@ -58,6 +62,13 @@ export function BrandAssetDetailPage({
   });
 
   const visibility = useLockVisibility(lockState.isLocked);
+
+  // Force editing off when locked
+  useEffect(() => {
+    if (lockState.isLocked && isEditing) {
+      setIsEditing(false);
+    }
+  }, [lockState.isLocked, isEditing, setIsEditing]);
 
   if (!assetId) {
     return (
@@ -89,43 +100,73 @@ export function BrandAssetDetailPage({
     );
   }
 
+  const handleSave = () => {
+    setIsEditing(false);
+    toast.success('Brand asset saved successfully');
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+  };
+
   return (
     <PageShell maxWidth="5xl">
       <div data-testid="brand-asset-detail-page" className="space-y-6">
+        {/* Breadcrumb */}
+        <button
+          onClick={onNavigateBack}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Your Brand
+        </button>
+
+        {/* Hero Header */}
         <AssetDetailHeader
           asset={asset}
-          onNavigateBack={onNavigateBack}
           lockState={lockState}
+          isEditing={isEditing}
+          onEditToggle={() => setIsEditing(true)}
+          onSave={handleSave}
+          onCancelEdit={handleCancelEdit}
           onVersionRestore={() => {
             qc.invalidateQueries({ queryKey: ['brand-asset-detail', assetId] });
             qc.invalidateQueries({ queryKey: ['brand-assets'] });
           }}
         />
 
+        {/* Lock Banner */}
         <LockBanner
           isLocked={lockState.isLocked}
           onUnlock={lockState.requestToggle}
           lockedBy={lockState.lockedBy}
         />
 
-        <ContentEditorSection
-          asset={asset}
-          isLocked={lockState.isLocked}
-          showRegenerate={visibility.showRegenerateButton}
-        />
-
-        {asset.frameworkType && (
-          <FrameworkSection
-            frameworkType={asset.frameworkType}
-            frameworkData={asset.frameworkData}
-            onNavigateToGoldenCircle={
-              asset.frameworkType === "GOLDEN_CIRCLE"
-                ? () => onNavigateToGoldenCircle?.(asset.id)
-                : undefined
-            }
+        {/* Content Editor — wrapped in LockOverlay */}
+        <LockOverlay isLocked={lockState.isLocked}>
+          <ContentEditorSection
+            asset={asset}
+            isLocked={lockState.isLocked}
+            showRegenerate={visibility.showRegenerateButton}
           />
+        </LockOverlay>
+
+        {/* Framework — wrapped in LockOverlay */}
+        {asset.frameworkType && (
+          <LockOverlay isLocked={lockState.isLocked}>
+            <FrameworkSection
+              frameworkType={asset.frameworkType}
+              frameworkData={asset.frameworkData}
+              onNavigateToGoldenCircle={
+                asset.frameworkType === "GOLDEN_CIRCLE"
+                  ? () => onNavigateToGoldenCircle?.(asset.id)
+                  : undefined
+              }
+            />
+          </LockOverlay>
         )}
 
+        {/* Research Methods */}
         <ResearchMethodsSection
           methods={asset.researchMethods}
           validationPercentage={asset.validationPercentage}
@@ -137,8 +178,10 @@ export function BrandAssetDetailPage({
           onStartWorkshop={() => onNavigateToWorkshop?.(asset.id)}
         />
 
+        {/* Version History — always visible (readonly) */}
         <VersionHistoryTimeline assetId={asset.id} />
 
+        {/* Delete Dialog */}
         <DeleteAssetDialog
           isOpen={showDeleteDialog}
           onClose={() => setShowDeleteDialog(false)}
@@ -147,6 +190,7 @@ export function BrandAssetDetailPage({
           onDeleted={onNavigateBack}
         />
 
+        {/* Lock Confirm Dialog */}
         <LockConfirmDialog
           isOpen={lockState.showConfirm}
           isLocking={!lockState.isLocked}
