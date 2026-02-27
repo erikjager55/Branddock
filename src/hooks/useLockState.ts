@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { LockError } from '@/lib/api/client';
 
-type EntityType = 'personas' | 'brand-assets' | 'products' | 'campaigns' | 'strategies' | 'interviews';
+type EntityType = 'personas' | 'brand-assets' | 'products' | 'campaigns' | 'strategies' | 'interviews' | 'brandstyle';
 
 interface LockInitialState {
   isLocked: boolean;
@@ -80,7 +80,10 @@ export function useLockState({
     setShowConfirm(false);
 
     try {
-      const res = await fetch(`/api/${entityType}/${entityId}/lock`, {
+      const lockUrl = entityType === 'brandstyle'
+        ? '/api/brandstyle/lock'
+        : `/api/${entityType}/${entityId}/lock`;
+      const res = await fetch(lockUrl, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ locked: newLocked }),

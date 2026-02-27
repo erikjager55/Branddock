@@ -216,6 +216,7 @@ model User {
   lockedProducts         Product[]                    @relation("LockedProducts")
   lockedCampaigns        Campaign[]                   @relation("LockedCampaigns")
   lockedStrategies       BusinessStrategy[]            @relation("LockedStrategies")
+  lockedStyleguides      BrandStyleguide[]             @relation("LockedStyleguides")
   createdPersonas        Persona[]
   personaAnalyses        AIPersonaAnalysisSession[]
   personaChatSessions    PersonaChatSession[]
@@ -1291,6 +1292,11 @@ model BrandStyleguide {
   illustrationGuidelines String[]
   imageryDonts          String[]
   imagerySavedForAi     Boolean           @default(false)
+
+  isLocked              Boolean           @default(false)
+  lockedAt              DateTime?
+  lockedById            String?
+  lockedBy              User?             @relation("LockedStyleguides", fields: [lockedById], references: [id])
 
   createdById           String
   createdBy             User              @relation(fields: [createdById], references: [id])

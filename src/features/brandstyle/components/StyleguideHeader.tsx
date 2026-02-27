@@ -2,15 +2,18 @@
 
 import { Paintbrush, Download, RefreshCw } from "lucide-react";
 import { Button } from "@/components/shared";
+import { LockShield, LockStatusPill } from "@/components/lock";
 import { useExportPdf } from "../hooks/useBrandstyleHooks";
 import type { BrandStyleguide } from "../types/brandstyle.types";
+import type { UseLockStateReturn } from "@/hooks/useLockState";
 
 interface StyleguideHeaderProps {
   styleguide: BrandStyleguide;
   onAnalyzeNext: () => void;
+  lockState: UseLockStateReturn;
 }
 
-export function StyleguideHeader({ styleguide, onAnalyzeNext }: StyleguideHeaderProps) {
+export function StyleguideHeader({ styleguide, onAnalyzeNext, lockState }: StyleguideHeaderProps) {
   const exportPdf = useExportPdf();
 
   const createdDate = new Date(styleguide.createdAt).toLocaleDateString("en-US", {
@@ -26,7 +29,19 @@ export function StyleguideHeader({ styleguide, onAnalyzeNext }: StyleguideHeader
           <Paintbrush className="w-5 h-5 text-teal-600" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Brand Styleguide</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900">Brand Styleguide</h1>
+            <LockShield
+              isLocked={lockState.isLocked}
+              isToggling={lockState.isToggling}
+              onClick={lockState.requestToggle}
+            />
+            <LockStatusPill
+              isLocked={lockState.isLocked}
+              lockedBy={lockState.lockedBy}
+              lockedAt={lockState.lockedAt}
+            />
+          </div>
           <div className="flex items-center gap-2 text-sm text-gray-500">
             {styleguide.createdBy.name && (
               <>
@@ -47,7 +62,12 @@ export function StyleguideHeader({ styleguide, onAnalyzeNext }: StyleguideHeader
         </div>
       </div>
       <div className="flex gap-2">
-        <Button variant="secondary" icon={RefreshCw} onClick={onAnalyzeNext}>
+        <Button
+          variant="secondary"
+          icon={RefreshCw}
+          onClick={onAnalyzeNext}
+          disabled={lockState.isLocked}
+        >
           Analyze Next
         </Button>
         <Button

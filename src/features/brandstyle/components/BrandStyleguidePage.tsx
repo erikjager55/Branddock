@@ -2,7 +2,10 @@
 
 import { Skeleton } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
-import { useStyleguide } from "../hooks/useBrandstyleHooks";
+import { LockBanner, LockConfirmDialog } from "@/components/lock";
+import { useLockState } from "@/hooks/useLockState";
+import { useQueryClient } from "@tanstack/react-query";
+import { useStyleguide, brandstyleKeys } from "../hooks/useBrandstyleHooks";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { StyleguideHeader } from "./StyleguideHeader";
 import { StyleguideTabNav } from "./StyleguideTabNav";
@@ -20,6 +23,7 @@ interface BrandStyleguidePageProps {
 export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePageProps) {
   const { data, isLoading, isError } = useStyleguide();
   const { activeTab, setActiveTab, selectedColorId, isColorModalOpen, closeColorModal } = useBrandstyleStore();
+  const qc = useQueryClient();
 
   if (isLoading) {
     return (
@@ -50,6 +54,20 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
     return null;
   }
 
+  const lockState = useLockState({
+    entityType: 'brandstyle',
+    entityId: styleguide.id,
+    entityName: 'Brand Styleguide',
+    initialState: {
+      isLocked: styleguide.isLocked,
+      lockedAt: styleguide.lockedAt,
+      lockedBy: styleguide.lockedBy ? { id: styleguide.lockedBy.id, name: styleguide.lockedBy.name ?? '' } : null,
+    },
+    onLockChange: () => {
+      qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
+    },
+  });
+
   const selectedColor = selectedColorId
     ? styleguide.colors.find((c) => c.id === selectedColorId) ?? null
     : null;
@@ -66,6 +84,13 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
       <StyleguideHeader
         styleguide={styleguide}
         onAnalyzeNext={onNavigateToAnalyzer}
+        lockState={lockState}
+      />
+
+      <LockBanner
+        isLocked={lockState.isLocked}
+        lockedBy={lockState.lockedBy}
+        onUnlock={lockState.requestToggle}
       />
 
       <StyleguideTabNav
@@ -85,6 +110,14 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
         isOpen={isColorModalOpen}
         onClose={closeColorModal}
         color={selectedColor}
+      />
+
+      <LockConfirmDialog
+        isOpen={lockState.showConfirm}
+        isLocking={!lockState.isLocked}
+        entityName="Brand Styleguide"
+        onConfirm={lockState.confirmToggle}
+        onCancel={lockState.cancelToggle}
       />
       </div>
     </PageShell>

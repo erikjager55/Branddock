@@ -1,4 +1,4 @@
-import type { Persona, BrandAsset, BusinessStrategy, Product } from '@prisma/client';
+import type { Persona, BrandAsset, BusinessStrategy, Product, BrandStyleguide } from '@prisma/client';
 
 export function buildPersonaSnapshot(persona: Persona): Record<string, unknown> {
   return {
@@ -61,5 +61,26 @@ export function buildProductSnapshot(product: Product): Record<string, unknown> 
     description: product.description,
     category: product.category,
     status: product.status,
+  };
+}
+
+export function buildStyleguideSnapshot(sg: BrandStyleguide): Record<string, unknown> {
+  return {
+    status: sg.status,
+    sourceType: sg.sourceType,
+    logoVariations: sg.logoVariations,
+    logoGuidelines: sg.logoGuidelines,
+    logoDonts: sg.logoDonts,
+    colorDonts: sg.colorDonts,
+    primaryFontName: sg.primaryFontName,
+    primaryFontUrl: sg.primaryFontUrl,
+    typeScale: sg.typeScale,
+    contentGuidelines: sg.contentGuidelines,
+    writingGuidelines: sg.writingGuidelines,
+    examplePhrases: sg.examplePhrases,
+    photographyStyle: sg.photographyStyle,
+    photographyGuidelines: sg.photographyGuidelines,
+    illustrationGuidelines: sg.illustrationGuidelines,
+    imageryDonts: sg.imageryDonts,
   };
 }

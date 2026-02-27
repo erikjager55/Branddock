@@ -84,6 +84,12 @@ export interface BrandStyleguide {
   imageryDonts: string[];
   imagerySavedForAi: boolean;
 
+  // Lock
+  isLocked: boolean;
+  lockedAt: string | null;
+  lockedById: string | null;
+  lockedBy: { id: string; name: string } | null;
+
   // Meta
   createdBy: { id: string; name: string | null; avatarUrl: string | null };
   createdAt: string;

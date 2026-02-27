@@ -18,6 +18,7 @@ export async function GET() {
       include: {
         colors: { orderBy: { sortOrder: "asc" } },
         createdBy: { select: { id: true, name: true, avatarUrl: true } },
+        lockedBy: { select: { id: true, name: true } },
       },
     });
 
@@ -71,6 +72,7 @@ export async function PATCH(request: NextRequest) {
       include: {
         colors: { orderBy: { sortOrder: "asc" } },
         createdBy: { select: { id: true, name: true, avatarUrl: true } },
+        lockedBy: { select: { id: true, name: true } },
       },
     });
 
