@@ -51,9 +51,15 @@ export function UIStateProvider({ children }: { children: ReactNode }) {
 
   const setActiveSection = (section: string) => {
     setActiveSectionState(section);
-    
+
     // If navigating away from brand assets, reset asset-related states
-    if (!section.startsWith('brand-') && section !== 'brand') {
+    const isAssetRelated = section.startsWith('brand-')
+      || section === 'brand'
+      || section === 'ai-exploration-brand-asset'
+      || section === 'interviews'
+      || section === 'workshop-purchase'
+      || section === 'golden-circle';
+    if (!isAssetRelated) {
       resetAssetStates();
     }
   };
