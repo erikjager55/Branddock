@@ -1,5 +1,5 @@
 # BRANDDOCK — Claude Code Context
-## Laatst bijgewerkt: 22 februari 2026 (Persona Restyling & AI Features)
+## Laatst bijgewerkt: 27 februari 2026 (AI Exploration + Brand Asset Lock/Unlock + Backend Config)
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 
@@ -55,9 +55,9 @@ BETTER_AUTH_SECRET=<base64 secret>
 BETTER_AUTH_URL=http://localhost:3000
 DATABASE_URL=postgresql://erikjager:@localhost:5432/branddock
 OPENAI_API_KEY=           # Vereist voor AI features
-ANTHROPIC_API_KEY=        # Vereist voor persona chat (Claude Sonnet 4)
+ANTHROPIC_API_KEY=        # Vereist voor AI Exploration + persona chat (Claude Sonnet 4.6)
 GEMINI_API_KEY=           # Optioneel, voor AI foto generatie (fallback: DiceBear)
-# BRANDDOCK_AI_MODEL=     # Default: gpt-4o
+# BRANDDOCK_AI_MODEL=     # Default: gpt-4o (content gen), Claude Sonnet 4.6 (exploration/analysis)
 ```
 
 ### Database tabellen (Better Auth)
@@ -96,6 +96,9 @@ Feature flag: `NEXT_PUBLIC_WORKSPACE_ID` in `.env.local` (DEPRECATED)
 **Live op database:**
 - Brand Assets (13 assets, 3 met content+framework, 52 research methods, 6 versions) — `/api/brand-assets` GET + POST
 - AI Brand Analysis (1 demo session REPORT_READY, 10 messages) — `/api/brand-assets/:id/ai-analysis` POST (start) + `/:sessionId` GET + `/answer` POST + `/complete` POST + `/generate-report` POST + `/report` GET + `/report/raw` GET + `/lock` PATCH (8 endpoints)
+- AI Exploration (generic) — `/api/exploration/[itemType]/[itemId]` POST (start) + `/sessions/[sessionId]/answer` POST + `/sessions/[sessionId]/complete` POST (3 endpoints per item type). Ondersteunt: persona, brand_asset. Backend-driven config via ExplorationConfig model.
+- AI Exploration Config (admin) — `/api/admin/exploration-configs` GET + POST, `/api/admin/exploration-configs/[id]` GET + PUT + DELETE (5 endpoints). Beheer van prompts, dimensies, AI modellen per item type/subtype.
+- Universal Versioning — `/api/versions` GET (polymorphic ResourceVersion). Werkt voor brand assets, personas, en toekomstige modules.
 - Personas (3 personas) — `/api/personas` GET + POST, `/api/personas/:id` GET + PATCH + DELETE, `/api/personas/:id/{duplicate,lock,avatar,generate-image,regenerate,generate-implications,export}`, `/api/personas/:id/research-methods/:method` PATCH, `/api/personas/:id/chat` POST + `/:sessionId/message` POST + `/:sessionId/insights` GET + `/:sessionId/export` GET, `/api/personas/:id/ai-analysis` POST + `/:sessionId` GET + `/answer` POST + `/complete` POST (21+ endpoints). **AI integrations**: Chat via Claude Sonnet 4 (`/api/personas/:id/chat/:sessionId/message`), Strategic Implications AI generatie (`/api/personas/:id/generate-implications`), Photo generatie via Gemini (`/api/personas/:id/generate-image`, fallback DiceBear).
 - Products & Services (3 products) — `/api/products` GET + POST + `/api/products/:id/personas` GET + POST + DELETE
 - Research Plans (1 active plan) — `/api/research-plans` GET + POST + PATCH
@@ -132,6 +135,32 @@ Elke gemigreerde module heeft een adapter die DB data mapt naar het bestaande mo
 - **Cross-module:** Leest uit 6 Knowledge modules, schrijft fixes naar Personas/Products/BrandAssets
 - **Sidebar:** Badge count met aantal open issues
 
+### AI Exploration (Universal — S2 nieuw generiek systeem)
+
+⚠️ **Er zijn twee AI chat systemen voor brand assets. S2 (nieuw) is het juiste:**
+
+| Systeem | Model | API Route | Component | Status |
+|---------|-------|-----------|-----------|--------|
+| **S1 (oud)** | `AIBrandAnalysisSession` | `/api/brand-assets/[id]/ai-analysis` | `AIBrandAnalysisPage` | Actief, legacy |
+| **S2 (nieuw)** | `ExplorationSession` | `/api/exploration/[itemType]/[itemId]` | `AIExplorationPage` / `AIBrandAssetExplorationPage` | Actief, generiek |
+
+- **Backend-driven config**: `ExplorationConfig` Prisma model met prompts, dimensies, AI provider/model per item type/subtype
+- **Config resolution**: DB lookup → hardcoded fallback → system defaults (`src/lib/ai/exploration/config-resolver.ts`)
+- **Template engine**: `{{brandContext}}`, `{{customKnowledge}}`, `{{itemName}}`, `{{userAnswer}}`, `{{currentDimension}}` variabelen (`src/lib/ai/exploration/prompt-engine.ts`)
+- **Multi-provider**: Anthropic Claude Sonnet 4.6 (default) + OpenAI GPT modellen via generic AI caller
+- **Registry**: Per item type builder registratie (`src/lib/ai/exploration/item-type-registry.ts`)
+- **Admin UI**: Settings → Administrator → AI Exploration Configuration (CRUD, per-config model/prompt/dimension editor)
+- **Custom Knowledge**: Per config een kennisbibliotheek (ExplorationKnowledgeItem) — wordt als `{{customKnowledge}}` geïnjecteerd in prompts
+- **Ondersteunde item types**: `persona`, `brand_asset` (social-relevancy, purpose-statement)
+
+### Brand Asset Detail (lock/unlock + 2-kolom layout)
+- **Component**: `src/features/brand-asset-detail/components/BrandAssetDetailPage.tsx`
+- **Layout**: 2-kolom grid matching Persona structuur (8/4 split)
+- **Sidebar**: QuickActionsCard, CompletenessCard, ValidationCard
+- **Lock/unlock**: Via `/api/brand-assets/[id]/lock` PATCH, met versioning
+- **Export PDF**: Beschikbaar via overflow menu
+- **Frameworks**: ESG → vervangen door Purpose Kompas (Mens/Milieu/Maatschappij) + Purpose Statement als apart asset type
+
 ## Conventies
 - Documentatie: Nederlands | Code/interfaces: Engels
 - ALTIJD Lucide React iconen, geen emoji's
@@ -143,6 +172,7 @@ Elke gemigreerde module heeft een adapter die DB data mapt naar het bestaande mo
 - Kleuren: #1FD1B2 primary (via CSS var --primary), bg-background (wit). Zie PATTERNS.md voor volledige tokens.
 - Sidebar: w-72 (288px), flex-shrink-0, active state: bg-emerald-50 text-emerald-700
 - Componenten: functioneel React, TypeScript strict
+- **Tailwind purge workaround**: `min-h-0` klassen werken niet door Tailwind CSS 4 purge. Gebruik inline styles: `style={{ minHeight: 0 }}`. Zelfde geldt voor custom colors die niet in de safelist staan.
 
 ### Key Principles
 8. **Function size:** Keep functions under 50 lines, break into smaller units if longer
@@ -163,13 +193,13 @@ Elke gemigreerde module heeft een adapter die DB data mapt naar het bestaande mo
 Navigatie in de sidebar stuurt `setActiveSection(id)`. Mapping:
 
 **Werkend:**
-dashboard→DashboardPage, brand→BrandFoundationPage, brand-asset-detail→BrandAssetDetailPage, workshop-purchase→WorkshopPurchasePage, workshop-session→WorkshopSessionPage, workshop-results→WorkshopCompletePage, brandstyle→BrandstyleAnalyzerPage, brandstyle-guide→BrandStyleguidePage, interviews→InterviewsPage, golden-circle→GoldenCirclePage, personas→PersonasPage, products→ProductsOverviewPage, trends→MarketInsightsPage, knowledge→KnowledgeLibraryPage, new-strategy→NewStrategyPage, active-campaigns→ActiveCampaignsPage, research/research-hub→ResearchHubPage, research-bundles→ResearchBundlesPage, research-custom/custom-validation→CustomValidationPage, settings-account→AccountSettingsPage, settings-team→TeamManagementPage, settings-agency→AgencySettingsPage, settings-clients→ClientManagementPage, settings-billing→BillingSettingsPage, settings-notifications→NotificationsSettingsPage, settings-appearance→AppearanceSettingsPage, brand-alignment→BrandAlignmentPage, ai-brand-analysis→AIBrandAnalysisPage, business-strategy→BusinessStrategyPage
+dashboard→DashboardPage, brand→BrandFoundationPage, brand-asset-detail→BrandAssetDetailPage, workshop-purchase→WorkshopPurchasePage, workshop-session→WorkshopSessionPage, workshop-results→WorkshopCompletePage, brandstyle→BrandstyleAnalyzerPage, brandstyle-guide→BrandStyleguidePage, interviews→InterviewsPage, golden-circle→GoldenCirclePage, personas→PersonasPage, products→ProductsOverviewPage, trends→MarketInsightsPage, knowledge→KnowledgeLibraryPage, new-strategy→NewStrategyPage, active-campaigns→ActiveCampaignsPage, research/research-hub→ResearchHubPage, research-bundles→ResearchBundlesPage, research-custom/custom-validation→CustomValidationPage, settings-account→AccountSettingsPage, settings-team→TeamManagementPage, settings-agency→AgencySettingsPage, settings-clients→ClientManagementPage, settings-billing→BillingSettingsPage, settings-notifications→NotificationsSettingsPage, settings-appearance→AppearanceSettingsPage, brand-alignment→BrandAlignmentPage, ai-brand-analysis→AIBrandAnalysisPage, business-strategy→BusinessStrategyPage, settings-admin→AdministratorTab (via SettingsPage initialTab='admin')
 
 **ComingSoonPage:** help
 
 **Campaigns module:** active-campaigns→ActiveCampaignsPage (features/campaigns), campaign-detail→CampaignDetailPage (useCampaignStore.selectedCampaignId), quick-content-detail→QuickContentDetailPage (useCampaignStore.selectedCampaignId), content-studio→ContentStudioPage (useCampaignStore.selectedCampaignId+selectedDeliverableId), content-library→ContentLibraryPage, campaign-wizard→CampaignWizardPage
 
-**Detail pages (via store):** strategy-detail→StrategyDetailPage (useBusinessStrategyStore.selectedStrategyId), persona-detail→PersonaDetailPage (usePersonaDetailStore.selectedPersonaId), persona-create→CreatePersonaPage, persona-ai-analysis→AIPersonaAnalysisPage, product-detail→ProductDetailPage (useProductsStore.selectedProductId), product-analyzer→ProductAnalyzerPage, insight-detail→InsightDetailPage (useMarketInsightsStore.selectedInsightId), research-bundle-detail→BundleDetailPage (useResearchStore.selectedBundleId)
+**Detail pages (via store):** strategy-detail→StrategyDetailPage (useBusinessStrategyStore.selectedStrategyId), persona-detail→PersonaDetailPage (usePersonaDetailStore.selectedPersonaId), persona-create→CreatePersonaPage, persona-ai-analysis→AIPersonaAnalysisPage, product-detail→ProductDetailPage (useProductsStore.selectedProductId), product-analyzer→ProductAnalyzerPage, insight-detail→InsightDetailPage (useMarketInsightsStore.selectedInsightId), research-bundle-detail→BundleDetailPage (useResearchStore.selectedBundleId), brand-asset-ai-exploration→AIBrandAssetExplorationPage (via selectedResearchOption='ai-exploration' in App.tsx)
 
 **Default** (onbekende IDs): rendert Dashboard.
 
@@ -317,9 +347,24 @@ src/
 │       │   ├── [id]/read/route.ts     ← PATCH (mark read)
 │       │   ├── mark-all-read/route.ts ← POST
 │       │   └── clear/route.ts         ← DELETE
-│       └── search/
-│           ├── route.ts               ← GET (global search, multi-module)
-│           └── quick-actions/route.ts ← GET (static quick actions)
+│       ├── search/
+│       │   ├── route.ts               ← GET (global search, multi-module)
+│       │   └── quick-actions/route.ts ← GET (static quick actions)
+│       ├── exploration/
+│       │   └── [itemType]/[itemId]/
+│       │       ├── analyze/route.ts           ← POST: start exploration session
+│       │       └── sessions/[sessionId]/
+│       │           ├── answer/route.ts        ← POST: submit answer, get AI feedback
+│       │           └── complete/route.ts      ← POST: complete session, generate report
+│       ├── admin/
+│       │   └── exploration-configs/
+│       │       ├── route.ts                   ← GET (list all) + POST (create)
+│       │       └── [id]/
+│       │           ├── route.ts               ← GET + PUT + DELETE
+│       │           └── knowledge/
+│       │               ├── route.ts           ← GET + POST (knowledge items)
+│       │               └── [itemId]/route.ts  ← PUT + DELETE (knowledge item)
+│       └── versions/route.ts                  ← GET: universal version history (polymorphic)
 ├── components/
 │   ├── auth/
 │   │   ├── AuthGate.tsx                 ← Session check → AuthPage of App
@@ -388,7 +433,15 @@ src/
 │   │   │   ├── ResearchMethodsSection.tsx   ← 4 method cards
 │   │   │   ├── ResearchMethodCard.tsx       ← Per-method card
 │   │   │   ├── VersionHistoryTimeline.tsx   ← Versie lijst
-│   │   │   └── DeleteAssetDialog.tsx
+│   │   │   ├── DeleteAssetDialog.tsx
+│   │   │   ├── ai-exploration/
+│   │   │   │   └── AIBrandAssetExplorationPage.tsx  ← Brand asset exploration wrapper
+│   │   │   ├── sidebar/
+│   │   │   │   ├── QuickActionsCard.tsx       ← Quick actions (AI Exploration, Export, etc.)
+│   │   │   │   ├── CompletenessCard.tsx       ← Completeness % ring
+│   │   │   │   └── ValidationCard.tsx         ← Validation research methods
+│   │   │   ├── PurposeKompasSection.tsx       ← Purpose Kompas framework (Mens/Milieu/Maatschappij)
+│   │   │   └── PurposeStatementSection.tsx    ← Purpose Statement als apart asset type
 │   │   ├── hooks/                   ← 8 TanStack Query hooks
 │   │   ├── store/                   ← useBrandAssetDetailStore
 │   │   ├── api/                     ← fetch functies
@@ -456,6 +509,16 @@ src/
 │   │   │   ├── FindingCard.tsx FindingCardsGrid.tsx
 │   │   │   └── RecommendationItem.tsx RecommendationsList.tsx
 │   │   ├── hooks/ store/ api/ types/ utils/
+│   ├── ai-exploration/                    ← Universal AI Exploration (S2 — nieuw generiek systeem)
+│   │   ├── components/
+│   │   │   ├── AIExplorationPage.tsx          ← Generieke exploration orchestrator (5-stap flow)
+│   │   │   ├── AIExplorationChatInterface.tsx ← Chat UI met AI vragen/antwoorden
+│   │   │   ├── AIExplorationDimensionCard.tsx ← Dimensie kaarten (scores + descriptions)
+│   │   │   ├── AIExplorationReport.tsx        ← Rapport weergave na afronding
+│   │   │   └── AIExplorationSuggestions.tsx   ← Field suggestions na rapport
+│   │   ├── hooks/
+│   │   │   └── useAIExplorationStore.ts       ← Zustand store voor exploration state
+│   │   └── types.ts                           ← ExplorationSession, ExplorationMessage, etc.
 │   └── brandstyle/                          ← S2b: Brandstyle Analyzer + Styleguide
 │       ├── components/
 │       │   ├── BrandstyleAnalyzerPage.tsx       ← Analyzer orchestrator (URL/PDF input + processing)
@@ -793,6 +856,12 @@ src/
 │       └── types/
 │           ├── content-library.types.ts            ← ContentLibraryItem, stats, params
 │           └── campaign-wizard.types.ts            ← Wizard types (knowledge, strategy, launch)
+│   └── settings/                                  ← S9: Settings + Admin
+│       └── components/
+│           └── administrator/
+│               ├── AdministratorTab.tsx            ← Admin settings tab (AI Configuration)
+│               ├── ExplorationConfigEditor.tsx     ← Config editor form (model, prompts, dimensions)
+│               └── KnowledgeLibrarySection.tsx     ← Knowledge library per config (CRUD)
 ├── contexts/
 │   ├── index.tsx                        ← AppProviders wrapper + hook exports
 │   ├── BrandAssetsContext.tsx            ← API first, mock fallback
@@ -859,9 +928,16 @@ src/
 │   │   │   ├── brand-analysis.ts          ← AI Brand Analysis prompts (S1)
 │   │   │   └── workshop-report.ts         ← Workshop report generation prompts (S2a)
 │   │   ├── middleware.ts                  ← withAi (auth + rate limit + brand context)
-│   │   └── hooks/
+│   │   ├── hooks/
 │   │       ├── useAiStream.ts             ← Streaming hook (abort support)
 │   │       └── useAiMutation.ts           ← Non-streaming hook (timeout)
+│   │   └── exploration/
+│   │       ├── config.types.ts               ← ExplorationConfig TypeScript types
+│   │       ├── config-resolver.ts            ← DB config lookup → fallback → system defaults
+│   │       ├── prompt-engine.ts              ← Template {{variable}} resolver voor prompts
+│   │       ├── ai-caller.ts                  ← Generic AI caller (Anthropic + OpenAI)
+│   │       ├── exploration-llm.ts            ← Multi-provider LLM client (Anthropic + Google)
+│   │       └── item-type-registry.ts         ← Registry per item type (persona, brand_asset)
 │   ├── catalogs/                        ← Product catalogs (statische configuratie)
 │   │   ├── research-bundles.ts          ← Bundle definities + helper functies
 │   │   └── strategy-tools.ts            ← Strategy tool definities
@@ -902,7 +978,7 @@ src/
     └── ...
 
 prisma/
-├── schema.prisma                        ← 73 database modellen (S5: +8 Research & Validation modellen, KnowledgeResource uitgebreid)
+├── schema.prisma                        ← 78+ database modellen (AE: +ExplorationSession/Message/Config/KnowledgeItem, BAD: +ResourceVersion)
 ├── prisma.config.ts                     ← Prisma 7 configuratie
 └── seed.ts                              ← Seed data (S1: +3 asset content, SWOT framework, 6 versions, 10-msg AI session)
 
@@ -933,13 +1009,16 @@ DATABASE_URL="postgresql://erikjager:@localhost:5432/branddock" npx tsx prisma/s
 ```
 
 ### Status
-- 73 tabellen live, schema in sync (`npx prisma db push` succesvol)
+- 78+ tabellen live, schema in sync (`npx prisma db push` succesvol)
 - R0.1 Schema Extension: 6 nieuwe modellen (ProductPersona, MarketInsight, InsightSourceUrl, AlignmentScan, ModuleScore, AlignmentIssue)
+- AI Exploration modellen: ExplorationSession (generieke chat sessie per item type), ExplorationMessage (Q&A + feedback berichten), ExplorationConfig (backend-driven AI configuratie per item type/subtype), ExplorationKnowledgeItem (custom knowledge per config)
+- Universal Versioning: ResourceVersion (polymorphic versie tracking, entityType + entityId + data JSON)
 - 24 enums: BrandstyleAnalysisStatus, ProductSource, ProductStatus, InsightCategory, InsightScope, ImpactLevel, InsightTimeframe, InsightSource, ResourceType, ResourceSource, DifficultyLevel, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus
 - 16 uitgebreide enums: AIAnalysisStatus, AIMessageType, ResearchMethodStatus, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, ColorCategory, PersonaAvatarSource, AIPersonaAnalysisStatus, PersonaChatMode, ChatRole
 - Veld-extensies op 9 bestaande modellen: Product (+sourceUrl, sourceFileName, processingStatus, processingData, productPersonas), Persona (+productPersonas), KnowledgeResource (+slug, source, isFeatured, isFavorite, isArchived, publicationDate, isbn, pageCount, fileName, fileSize, fileType, fileUrl, importedMetadata, estimatedDuration), BrandAssetResearchMethod (+weight, resultData, workspaceId), PersonaResearchMethod (+weight, resultData, workspaceId), FocusArea (+color), Milestone (+completedAt, createdAt), WorkshopParticipant (+email), WorkshopFinding (+category, createdAt)
 - Workspace model: +6 relatie-velden (brandAssetResearchMethods, personaResearchMethods, marketInsights, alignmentScans, validationPlans, researchStudies)
 - Seed gedraaid met multi-tenant demo data + R0.1/R0.2 extensies
+- ExplorationConfig seed: 3 configs (persona base, brand_asset social-relevancy, brand_asset purpose-statement) met dimensies, prompts, en AI model instellingen
 
 ### Seed Data
 - 2 Organizations: "Branddock Agency" (AGENCY, ACTIVE) + "TechCorp Inc." (DIRECT, TRIALING)
@@ -1230,6 +1309,15 @@ Directe klant (Organization type=DIRECT)
 | `/api/notifications/clear` | DELETE | Clear all notifications |
 | `/api/search` | GET | Global search (multi-module: assets, personas, strategies, campaigns, insights) |
 | `/api/search/quick-actions` | GET | Static quick actions list (12 items) |
+| `/api/exploration/[itemType]/[itemId]/analyze` | POST | Start exploration session (generic, per item type) |
+| `/api/exploration/[itemType]/[itemId]/sessions/[sessionId]/answer` | POST | Submit answer, get AI feedback + next question |
+| `/api/exploration/[itemType]/[itemId]/sessions/[sessionId]/complete` | POST | Complete session, generate AI report |
+| `/api/admin/exploration-configs` | GET | List all exploration configs |
+| `/api/admin/exploration-configs` | POST | Create new exploration config |
+| `/api/admin/exploration-configs/[id]` | GET, PUT, DELETE | CRUD single exploration config |
+| `/api/admin/exploration-configs/[id]/knowledge` | GET, POST | Knowledge items per config |
+| `/api/admin/exploration-configs/[id]/knowledge/[itemId]` | PUT, DELETE | CRUD single knowledge item |
+| `/api/versions` | GET | Universal version history (polymorphic ResourceVersion) |
 
 Alle module-routes resolven workspaceId uit sessie via `requireWorkspace()`.
 Fallback naar `NEXT_PUBLIC_WORKSPACE_ID` als sessie niet beschikbaar.
@@ -1260,7 +1348,7 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 ## Common Mistakes to Avoid
 - Do NOT use `any` type in TypeScript, use proper types or `unknown`
 - Do NOT install new dependencies without discussing alternatives first
-- Do NOT use inline styles, always use Tailwind classes
+- Do NOT use inline styles, always use Tailwind classes — **uitzondering**: `min-h-0` en custom colors die niet in Tailwind safelist staan (zie Conventies)
 - Do NOT modify seed data without verifying migration compatibility
 
 ## Wat er NIET is
@@ -1380,6 +1468,20 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 
 71. **S8 Dashboard & Global Components — compleet** — Prompt 1 (data layer): 16 API routes (9 dashboard + 5 notifications + 2 search), 3 hook files (use-dashboard.ts 9 hooks, use-notifications.ts 5 hooks, use-search.ts 2 hooks), 2 Zustand stores (useDashboardStore onboarding+quickStart, useShellStore notification panel+search modal). Prompt 2 (shell refactors): state centralization (searchOpen/activityOpen van App.tsx local state → useShellStore), WorkflowEnhancer/TopNavigationBar vereenvoudigd (props verwijderd, direct store access). Prompt 3 (dashboard UI): 7 dashboard componenten (DashboardPage orchestrator, DecisionReadiness weighted 5-module %, DashboardStatsCards 5 KPI cards, AttentionList dynamic Lucide icons, RecommendedAction gradient card, QuickAccess 3 action cards, ActiveCampaignsPreview progress bars). Dashboard helpers (thresholds.ts config+getters, readiness-calc.ts weighted scoring). Prompt 4 (onboarding+integration): OnboardingWizard 3-step modal (Welcome/How It Works/Get Started), QuickStartWidget 4-item persistent checklist, DASHBOARD_TOKENS in design-tokens.ts. App.tsx: Dashboard→DashboardPage, useShellStore integration. TypeScript 0 errors.
 
+72. **AE: AI Exploration Generic System** — Universeel AI exploration systeem (S2 nieuw) met backend-driven config. ExplorationSession + ExplorationMessage Prisma modellen. 3 API routes (`/api/exploration/[itemType]/[itemId]/analyze` POST, `/sessions/[sessionId]/answer` POST, `/sessions/[sessionId]/complete` POST). Config-resolver met DB lookup → fallback → system defaults. Template engine (`{{brandContext}}`, `{{customKnowledge}}`, `{{itemName}}`). Multi-provider AI caller (Anthropic Claude Sonnet 4.6 + OpenAI). Item-type registry (persona, brand_asset). AIExplorationPage + 4 componenten (ChatInterface, DimensionCard, Report, Suggestions). Zustand useAIExplorationStore. TypeScript 0 errors.
+
+73. **AE: AI Exploration Admin UI** — Settings → Administrator → AI Exploration Configuration. ExplorationConfig Prisma model (provider, model, temperature, maxTokens, systemPrompt, dimensions, feedbackPrompt, reportPrompt, fieldSuggestionsConfig, contextSources). CRUD API: `/api/admin/exploration-configs` GET+POST, `/[id]` GET+PUT+DELETE (5 endpoints). AdministratorTab + ExplorationConfigEditor componenten. Per-config model/prompt/dimension editor. TypeScript 0 errors.
+
+74. **AE: Exploration Knowledge Library** — ExplorationKnowledgeItem Prisma model (title, content, category per config). CRUD API: `/api/admin/exploration-configs/[id]/knowledge` GET+POST, `/[itemId]` PUT+DELETE. KnowledgeLibrarySection component (expandable, TanStack Query CRUD, 6 categorieën). Geïntegreerd in AdministratorTab ExplorationConfigCard. Custom knowledge wordt als `{{customKnowledge}}` geïnjecteerd in AI prompts via config-resolver + prompt-engine. TypeScript 0 errors.
+
+75. **AE: Brand Asset AI Exploration Routing** — AIBrandAssetExplorationPage wrapper component. Navigatie via `brand-asset-ai-exploration` section ID + `selectedResearchOption='ai-exploration'` in App.tsx. Breadcrumb "← Terug naar asset" → brand-asset-detail. ResearchMethodCard AI_EXPLORATION klik → exploration page. TypeScript 0 errors.
+
+76. **BAD: Brand Asset Detail 2-kolom Layout** — BrandAssetDetailPage refactored naar 2-kolom grid (md:grid-cols-12, 8/4 split) matching Persona structuur. Sidebar: QuickActionsCard (AI Exploration, Export PDF, Duplicate, Delete), CompletenessCard (completeness % ring), ValidationCard (research validation methods). TypeScript 0 errors.
+
+77. **BAD: Purpose Kompas + Purpose Statement** — PurposeKompasSection component (Mens/Milieu/Maatschappij framework, vervangt ESG). PurposeStatementSection component (apart asset type voor purpose statements). Geïntegreerd in BrandAssetDetailPage via framework type detection. TypeScript 0 errors.
+
+78. **BAD: Universal Versioning** — ResourceVersion Prisma model (polymorphic: entityType + entityId + data JSON). `/api/versions` GET endpoint. Vervangt per-module versie tracking. Werkt voor brand assets, personas, en toekomstige modules. TypeScript 0 errors.
+
 ### ⚠️ TECHNISCHE SCHULD
 - **Adapter pattern** — tijdelijk, componenten moeten op termijn direct DB-model gebruiken
 - **mock-to-meta-adapter.ts** — reverse adapter (mock→API format) voor Brand Foundation. Verdwijnt wanneer context direct BrandAssetWithMeta levert.
@@ -1388,8 +1490,11 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 - **NEXT_PUBLIC_WORKSPACE_ID** — deprecated, nog als fallback in useWorkspace(). Verwijderen wanneer alle flows via sessie werken.
 - **Hardcoded Tailwind colors** — BrandFoundationHeader, BrandAssetCard gebruiken text-gray-900/500 ipv design tokens (text-muted-foreground etc.). Migreren naar CSS custom properties.
 - **Geen Error Boundary** — BrandFoundationPage mist React Error Boundary wrapper. Toevoegen bij S1.
+- **S1 vs S2 AI systeem overlap** — Twee AI chat systemen voor brand assets (AIBrandAnalysisSession S1 + ExplorationSession S2). S1 kan op termijn deprecated worden wanneer S2 volledige feature parity heeft.
+- **ExplorationConfig hardcoded fallbacks** — System defaults in config-resolver.ts. Op termijn alle configs via DB seed beheren.
+- **Lock/unlock inconsistentie** — Brand assets lock endpoint is toggle (flipt !isLocked), terwijl alle andere endpoints `{ locked: boolean }` body accepteren. Harmoniseren naar body-based approach.
 
-### 📋 ROADMAP (herzien 18 feb 2026)
+### 📋 ROADMAP (herzien 27 feb 2026)
 
 **R0. Retroactieve Foundation ✅ VOLLEDIG**
 - R0.1: ✅ Schema Extension — 58 tabellen, 6 nieuwe modellen, 15+16 enums, 9 model extensies
@@ -1444,7 +1549,7 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 - S5.2: ✅ Integratie — all flows, pricing calculator, optimistic favorites, Open Resource links, Download stub, Resume/Validate stubs, 0 TS errors
 
 **S6. Campaigns + Content Library + Content Studio ✅ VOLLEDIG**
-- S6.0: ✅ Schema + Seed — Campaign herstructureerd, 7 nieuwe modellen, 5 enums, 73 tabellen
+- S6.0: ✅ Schema + Seed — Campaign herstructureerd, 7 nieuwe modellen, 5 enums, 78+ tabellen
 - S6.A: ✅ Campaigns Overview + Quick Content + Campaign Detail (Prompt 2) — 22 componenten, 20 API endpoints (14 route files), 20+ hooks, Zustand store, content type registry
 - S6.B: ✅ Content Library + Campaign Wizard (Prompt 3) — 18 componenten, 14 endpoints, 2 stores, 8 hooks, 3 helpers
 - S6.C: ✅ Content Studio Layout + Left Panel + Center Canvas (Prompt 4) — 16 componenten (layout+header+left panel 10+canvas 6), Zustand store, types
@@ -1494,6 +1599,17 @@ Status: 34/52 prompts uitgevoerd, 16 pending, 2 deels.
 Prompt Log: Notion pagina 30f48b9c-6dc9-81a5-8b74-f62bfb6beeb3
 Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 
+**AE. AI Exploration Sprint ✅ VOLLEDIG**
+- AE.1: ✅ Generic Exploration System — ExplorationSession + ExplorationMessage modellen, 3 API routes, config-resolver, template engine, multi-provider AI caller, item-type registry, AIExplorationPage + 4 componenten
+- AE.2: ✅ Admin UI — ExplorationConfig model, 5 CRUD endpoints, AdministratorTab + ExplorationConfigEditor
+- AE.3: ✅ Knowledge Library — ExplorationKnowledgeItem model, 4 CRUD endpoints, KnowledgeLibrarySection component, {{customKnowledge}} template injection
+- AE.4: ✅ Brand Asset Routing — AIBrandAssetExplorationPage wrapper, App.tsx routing, breadcrumb navigatie
+
+**BAD. Brand Asset Detail Sprint ✅ VOLLEDIG**
+- BAD.1: ✅ 2-kolom Layout — Grid refactor (8/4 split), sidebar componenten (QuickActions, Completeness, Validation)
+- BAD.2: ✅ Purpose Kompas + Statement — PurposeKompasSection (Mens/Milieu/Maatschappij), PurposeStatementSection (apart asset type)
+- BAD.3: ✅ Universal Versioning — ResourceVersion polymorphic model, /api/versions GET endpoint
+
 **S10-S12. Production Ready**
 - S10: Stripe Billing (checkout, webhooks, plan enforcement, agency model)
 - S11: OAuth (Google/Microsoft) + E2E testing (Playwright) + Performance
@@ -1504,8 +1620,9 @@ Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 - Gratis tier limieten
 - Workspace isolatie: soft (filter op orgId) vs hard (row-level security)
 - Agency white-label: eigen logo/domein of alleen Branddock branding
-- AI provider: OpenAI (content gen, brand analysis) + Anthropic Claude Sonnet 4 (persona chat, analysis) — BEIDE in gebruik
+- AI provider: OpenAI (content gen) + Anthropic Claude Sonnet 4.6 (exploration, persona chat, analysis) + Google Gemini (foto generatie) — DRIE providers in gebruik
 - AI foto generatie: Gemini (primair) met DiceBear fallback — GEMINI_API_KEY optioneel
+- AI Exploration: per item type/subtype aparte config vs. één generiek config met overrides
 - Deployment: Vercel, Railway, of self-hosted
 
 ### ✅ GENOMEN BESLISSINGEN
@@ -1515,6 +1632,9 @@ Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 - **Workspace resolution**: Priority: branddock-workspace-id cookie > activeOrganizationId → first workspace > user's first org > env var fallback.
 - **Workspace switching**: Via cookie (branddock-workspace-id), set door POST /api/workspace/switch.
 - **Password hashing**: scrypt via better-auth/crypto (standaard Better Auth methode)
+- **AI Exploration architectuur**: Generiek systeem (S2) met per item type/subtype config in DB. Backend-driven prompts, dimensies en AI model selectie via ExplorationConfig. Hardcoded fallbacks als safety net.
+- **Template engine**: `{{variable}}` syntax voor prompt variabelen. Eenvoudig, geen Handlebars/Mustache dependency.
+- **Multi-provider AI**: Generic AI caller met provider string ("anthropic"/"openai"). Geen abstractie layer — directe SDK calls per provider in ai-caller.ts.
 
 ---
 

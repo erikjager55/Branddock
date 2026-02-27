@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect } from "react";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import { useCallback, useEffect } from "react";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { useAssetDetail } from "../hooks/useBrandAssetDetail";
+import { useAssetDetail, useRegenerateContent, useUpdateContent } from "../hooks/useBrandAssetDetail";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
 import { AssetDetailHeader } from "./AssetDetailHeader";
 import { ContentEditorSection } from "./ContentEditorSection";
+import { PurposeStatementSection } from "./sections/PurposeStatementSection";
+import type { PurposeStatementData } from "./sections/PurposeStatementSection";
 import { FrameworkSection } from "./FrameworkSection";
-import { ResearchMethodsSection } from "./ResearchMethodsSection";
-import { VersionHistoryTimeline } from "./VersionHistoryTimeline";
 import { DeleteAssetDialog } from "./DeleteAssetDialog";
+import { AssetQuickActionsCard } from "./sidebar/AssetQuickActionsCard";
+import { AssetCompletenessCard } from "./sidebar/AssetCompletenessCard";
+import { AssetResearchSidebarCard } from "./sidebar/AssetResearchSidebarCard";
 import { Skeleton, SkeletonCard } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
 import { useLockState } from "@/hooks/useLockState";
@@ -44,6 +47,11 @@ export function BrandAssetDetailPage({
   const setIsEditing = useBrandAssetDetailStore((s) => s.setIsEditing);
   const qc = useQueryClient();
 
+  const handleLockChange = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ['brand-asset-detail', assetId] });
+    qc.invalidateQueries({ queryKey: ['brand-assets'] });
+  }, [qc, assetId]);
+
   const lockState = useLockState({
     entityType: 'brand-assets',
     entityId: assetId ?? '',
@@ -55,13 +63,12 @@ export function BrandAssetDetailPage({
         ? { id: asset.lockedBy.id, name: asset.lockedBy.name ?? '' }
         : null,
     },
-    onLockChange: () => {
-      qc.invalidateQueries({ queryKey: ['brand-asset-detail', assetId] });
-      qc.invalidateQueries({ queryKey: ['brand-assets'] });
-    },
+    onLockChange: handleLockChange,
   });
 
   const visibility = useLockVisibility(lockState.isLocked);
+  const regenerate = useRegenerateContent(assetId ?? '');
+  const updateContent = useUpdateContent(assetId ?? '');
 
   // Force editing off when locked
   useEffect(() => {
@@ -80,7 +87,7 @@ export function BrandAssetDetailPage({
 
   if (isLoading) {
     return (
-      <PageShell maxWidth="5xl">
+      <PageShell maxWidth="7xl">
         <div data-testid="skeleton-loader" className="space-y-6">
           <Skeleton className="h-10 w-64" />
           <SkeletonCard />
@@ -100,6 +107,19 @@ export function BrandAssetDetailPage({
     );
   }
 
+  const isPurposeStatement = (() => {
+    try {
+      const parsed = typeof asset.content === 'string' ? JSON.parse(asset.content) : null;
+      return parsed && typeof parsed === 'object' && 'why' in parsed && 'how' in parsed && 'impact' in parsed;
+    } catch {
+      return false;
+    }
+  })();
+
+  const purposeData: PurposeStatementData = isPurposeStatement
+    ? JSON.parse(asset.content as string)
+    : { why: '', how: '', impact: '' };
+
   const handleSave = () => {
     setIsEditing(false);
     toast.success('Brand asset saved successfully');
@@ -110,7 +130,7 @@ export function BrandAssetDetailPage({
   };
 
   return (
-    <PageShell maxWidth="5xl">
+    <PageShell maxWidth="7xl">
       <div data-testid="brand-asset-detail-page" className="space-y-6">
         {/* Breadcrumb */}
         <button
@@ -142,44 +162,64 @@ export function BrandAssetDetailPage({
           lockedBy={lockState.lockedBy}
         />
 
-        {/* Content Editor — wrapped in LockOverlay */}
-        <LockOverlay isLocked={lockState.isLocked}>
-          <ContentEditorSection
-            asset={asset}
-            isLocked={lockState.isLocked}
-            showRegenerate={visibility.showRegenerateButton}
-          />
-        </LockOverlay>
+        {/* 2-Column Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Main Content — left column (2/3) */}
+          <div className="md:col-span-2 min-w-0 space-y-6">
+            {/* Content Section */}
+            <LockOverlay isLocked={lockState.isLocked}>
+              {isPurposeStatement ? (
+                <PurposeStatementSection
+                  data={purposeData}
+                  isEditing={isEditing && !lockState.isLocked}
+                  onUpdate={(data) => updateContent.mutate({ content: JSON.stringify(data) })}
+                />
+              ) : (
+                <ContentEditorSection
+                  asset={asset}
+                  isLocked={lockState.isLocked}
+                  isEditing={isEditing}
+                />
+              )}
+            </LockOverlay>
 
-        {/* Framework — wrapped in LockOverlay */}
-        {asset.frameworkType && (
-          <LockOverlay isLocked={lockState.isLocked}>
-            <FrameworkSection
-              frameworkType={asset.frameworkType}
-              frameworkData={asset.frameworkData}
-              onNavigateToGoldenCircle={
-                asset.frameworkType === "GOLDEN_CIRCLE"
-                  ? () => onNavigateToGoldenCircle?.(asset.id)
-                  : undefined
-              }
-            />
-          </LockOverlay>
-        )}
+            {/* Framework Section (if present) */}
+            {asset.frameworkType && (
+              <LockOverlay isLocked={lockState.isLocked}>
+                <FrameworkSection
+                  frameworkType={asset.frameworkType}
+                  frameworkData={asset.frameworkData}
+                  onNavigateToGoldenCircle={
+                    asset.frameworkType === "GOLDEN_CIRCLE"
+                      ? () => onNavigateToGoldenCircle?.(asset.id)
+                      : undefined
+                  }
+                />
+              </LockOverlay>
+            )}
+          </div>
 
-        {/* Research Methods */}
-        <ResearchMethodsSection
-          methods={asset.researchMethods}
-          validationPercentage={asset.validationPercentage}
-          completedMethods={asset.completedMethods}
-          totalMethods={asset.totalMethods}
-          isLocked={lockState.isLocked}
-          onStartAnalysis={() => onNavigateToAnalysis?.(asset.id)}
-          onStartInterviews={() => onNavigateToInterviews?.(asset.id)}
-          onStartWorkshop={() => onNavigateToWorkshop?.(asset.id)}
-        />
+          {/* Sidebar — right column (1/3), sticky */}
+          <div className="min-w-0">
+            <div className="md:sticky md:top-6 space-y-4">
+              {/* Quick Actions */}
+              <AssetQuickActionsCard asset={asset} />
 
-        {/* Version History — always visible (readonly) */}
-        <VersionHistoryTimeline assetId={asset.id} />
+              {/* Asset Completeness */}
+              <AssetCompletenessCard asset={asset} />
+
+              {/* Validation Methods */}
+              <AssetResearchSidebarCard
+                asset={asset}
+                onStartAnalysis={() => onNavigateToAnalysis?.(asset.id)}
+                onStartInterviews={() => onNavigateToInterviews?.(asset.id)}
+                onStartWorkshop={() => onNavigateToWorkshop?.(asset.id)}
+                isLocked={lockState.isLocked}
+              />
+
+            </div>
+          </div>
+        </div>
 
         {/* Delete Dialog */}
         <DeleteAssetDialog

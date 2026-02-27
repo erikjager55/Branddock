@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { EXPLORATION_AI_MODELS } from '@/lib/ai/exploration/config.types';
 import type { ExplorationConfigData } from '@/lib/ai/exploration/config.types';
 import { ExplorationConfigEditor } from './ExplorationConfigEditor';
+import { KnowledgeLibrarySection } from './KnowledgeLibrarySection';
 
 // ─── API Functions ─────────────────────────────────────────
 
@@ -210,6 +211,8 @@ function ExplorationConfigCard({
           </button>
         </div>
       </div>
+
+      <KnowledgeLibrarySection configId={config.id} />
     </div>
   );
 }

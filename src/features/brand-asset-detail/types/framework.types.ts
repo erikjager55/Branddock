@@ -32,6 +32,19 @@ export interface SWOTFrameworkData {
   threats: string[];
 }
 
-export type FrameworkType = "ESG" | "GOLDEN_CIRCLE" | "SWOT";
+export interface PurposeKompasPillar {
+  impact: "high" | "medium" | "low";
+  description: string;
+}
 
-export type FrameworkData = ESGFrameworkData | GoldenCircleFrameworkData | SWOTFrameworkData;
+export interface PurposeKompasFrameworkData {
+  pillars: {
+    mens: PurposeKompasPillar;
+    milieu: PurposeKompasPillar;
+    maatschappij: PurposeKompasPillar;
+  };
+}
+
+export type FrameworkType = "ESG" | "GOLDEN_CIRCLE" | "SWOT" | "PURPOSE_KOMPAS";
+
+export type FrameworkData = ESGFrameworkData | GoldenCircleFrameworkData | SWOTFrameworkData | PurposeKompasFrameworkData;

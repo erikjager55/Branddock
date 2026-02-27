@@ -1,5 +1,6 @@
 // ─── Brand Asset Builder for AI Exploration ─────────────────
 // Implements ItemTypeConfig for brand asset items.
+// Supports asset-specific dimensions based on asset slug.
 // ────────────────────────────────────────────────────────────
 
 import { prisma } from '@/lib/prisma';
@@ -7,44 +8,144 @@ import type { ItemTypeConfig, DimensionQuestion } from '../item-type-registry';
 import { generateReport, resolveModelConfig } from '../exploration-llm';
 import type { GeneratedReport } from '../exploration-llm';
 
-// ─── Dimension Questions ───────────────────────────────────
+// ─── Dimension Questions per Asset Slug ────────────────────
 
-const BRAND_ASSET_DIMENSIONS: DimensionQuestion[] = [
+const SOCIAL_RELEVANCY_DIMENSIONS: DimensionQuestion[] = [
   {
-    key: 'definition_clarity',
-    title: 'Definition & Clarity',
+    key: 'purpose_clarity',
+    title: 'Purpose Clarity',
+    icon: 'Compass',
+    question:
+      "Let's start by exploring your brand's purpose. Why does your organization exist beyond making profit? What change do you want to see in the world, and how does your brand contribute to that change?",
+  },
+  {
+    key: 'mens',
+    title: 'Impact op Mens',
+    icon: 'Heart',
+    question:
+      "Now let's look at your brand's impact on people. How do your products or services contribute to personal growth, well-being, or a healthier lifestyle? Think about both your customers and your employees.",
+  },
+  {
+    key: 'milieu',
+    title: 'Impact op Milieu',
+    icon: 'Leaf',
+    question:
+      "Let's explore your environmental impact. What steps has your organization taken toward sustainability? This can include your production process, packaging, operations, or the way your products help reduce environmental impact.",
+  },
+  {
+    key: 'maatschappij',
+    title: 'Impact op Maatschappij',
+    icon: 'Globe',
+    question:
+      "Finally, let's discuss your societal contribution. How does your brand help improve society — whether through fighting inequality, building community, promoting education, or making professional tools accessible to a wider audience?",
+  },
+];
+
+const PURPOSE_STATEMENT_DIMENSIONS: DimensionQuestion[] = [
+  {
+    key: 'why',
+    title: 'Waarom — Bestaansrecht',
+    icon: 'Compass',
+    question:
+      "Let's define your brand's reason for existence. Why was your organization founded? What fundamental problem or inequality in the world drove its creation? Go deeper than your product — what belief or conviction is at the core?",
+  },
+  {
+    key: 'how',
+    title: 'Hoe — Unieke Aanpak',
+    icon: 'Lightbulb',
+    question:
+      "Now let's explore your unique approach. How do you fulfill your purpose in a way that's distinctly yours? What makes your method, process, or philosophy different from others trying to solve the same problem?",
+  },
+  {
+    key: 'impact',
+    title: 'Impact — Gewenst Effect',
+    icon: 'Rocket',
+    question:
+      "Let's articulate the impact you aim to create. When your purpose is fully realized, what does the world look like? How do people think, feel, and act differently because of your brand's existence?",
+  },
+  {
+    key: 'alignment',
+    title: 'Alignment — Organisatie & Uitvoering',
+    icon: 'Target',
+    question:
+      "Finally, let's assess alignment. How well does your current organization reflect your purpose? Is your purpose visible in daily decisions, product development, and how you treat employees and customers? Where are the gaps?",
+  },
+];
+
+const DEFAULT_BRAND_ASSET_DIMENSIONS: DimensionQuestion[] = [
+  {
+    key: 'definition',
+    title: 'Definition & Scope',
     icon: 'FileText',
     question:
-      "Let's start by examining the definition of this brand asset. How would you describe its core meaning and role within your brand? What makes it distinct and meaningful to your organization?",
+      "Let's start by defining this brand asset clearly. What does it mean for your organization specifically? How would you explain it to someone unfamiliar with your brand?",
   },
   {
-    key: 'audience_relevance',
-    title: 'Audience Relevance',
-    icon: 'Users',
+    key: 'current_state',
+    title: 'Current State',
+    icon: 'BarChart2',
     question:
-      "Now let's explore audience relevance. How does this brand asset resonate with your target audience? Can you describe situations where this asset directly influences how customers perceive or interact with your brand?",
+      "How would you describe the current state of this brand asset? Is it well-defined and actively used, or still in development? What's working well and what needs improvement?",
   },
   {
-    key: 'competitive_differentiation',
-    title: 'Competitive Differentiation',
-    icon: 'TrendingUp',
-    question:
-      "Let's look at competitive positioning. How does this brand asset set you apart from competitors? What unique perspective or value does it communicate that others in your market don't?",
-  },
-  {
-    key: 'strategic_application',
-    title: 'Strategic Application',
+    key: 'differentiation',
+    title: 'Differentiation',
     icon: 'Zap',
     question:
-      "Finally, let's discuss strategic application. How do you currently use this brand asset across your marketing channels and touchpoints? Where do you see the biggest opportunities to leverage it more effectively?",
+      "How does this brand asset set you apart from competitors? What makes your approach unique in your market? Can you give specific examples?",
+  },
+  {
+    key: 'activation',
+    title: 'Activation & Application',
+    icon: 'Rocket',
+    question:
+      "Finally, how is this brand asset activated across your organization? How does it influence marketing, product development, customer experience, and internal culture? Where do you see the biggest opportunity for better activation?",
   },
 ];
 
-// ─── Field Mapping ─────────────────────────────────────────
+// ─── Dimension Resolver ────────────────────────────────────
 
-export const BRAND_ASSET_FIELD_MAPPING = [
-  { field: 'description', label: 'Description', type: 'text' as const },
+function getDimensionsForAsset(slug: string): DimensionQuestion[] {
+  switch (slug) {
+    case 'social-relevancy':
+      return SOCIAL_RELEVANCY_DIMENSIONS;
+    case 'purpose-statement':
+      return PURPOSE_STATEMENT_DIMENSIONS;
+    default:
+      return DEFAULT_BRAND_ASSET_DIMENSIONS;
+  }
+}
+
+// ─── Field Mapping per Slug ───────────────────────────────
+
+const SOCIAL_RELEVANCY_FIELD_MAPPING = [
+  { field: 'content', label: 'Beschrijving', type: 'text' as const },
+  { field: 'frameworkData.pillars.mens.description', label: 'Mens — Beschrijving', type: 'text' as const },
+  { field: 'frameworkData.pillars.milieu.description', label: 'Milieu — Beschrijving', type: 'text' as const },
+  { field: 'frameworkData.pillars.maatschappij.description', label: 'Maatschappij — Beschrijving', type: 'text' as const },
 ];
+
+const PURPOSE_STATEMENT_FIELD_MAPPING = [
+  { field: 'content.why', label: 'Waarom — Bestaansrecht', type: 'text' as const },
+  { field: 'content.how', label: 'Hoe — Unieke Aanpak', type: 'text' as const },
+  { field: 'content.impact', label: 'Impact — Gewenst Effect', type: 'text' as const },
+];
+
+const DEFAULT_FIELD_MAPPING = [
+  { field: 'content', label: 'Content', type: 'text' as const },
+  { field: 'description', label: 'Beschrijving', type: 'text' as const },
+];
+
+function getFieldMappingForAsset(slug: string) {
+  switch (slug) {
+    case 'social-relevancy':
+      return SOCIAL_RELEVANCY_FIELD_MAPPING;
+    case 'purpose-statement':
+      return PURPOSE_STATEMENT_FIELD_MAPPING;
+    default:
+      return DEFAULT_FIELD_MAPPING;
+  }
+}
 
 // ─── Item Context Builder ─────────────────────────────────
 
@@ -70,7 +171,9 @@ function buildBrandAssetContext(item: Record<string, unknown>): string {
         if (summary) parts.push(`Content:\n${summary}`);
       }
     } catch {
-      // ignore parse errors
+      if (typeof item.content === 'string') {
+        parts.push(`Content: ${(item.content as string).slice(0, 200)}`);
+      }
     }
   }
   if (item.frameworkType) parts.push(`Framework: ${item.frameworkType}`);
@@ -96,6 +199,46 @@ function buildBrandAssetContext(item: Record<string, unknown>): string {
   return parts.join('\n');
 }
 
+// ─── Current Field Value Resolver ─────────────────────────
+
+function resolveCurrentFieldValues(
+  item: Record<string, unknown>,
+  fieldMapping: { field: string; label: string; type: string }[],
+): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+
+  let parsedContent: Record<string, unknown> | null = null;
+  try {
+    if (typeof item.content === 'string') parsedContent = JSON.parse(item.content as string);
+  } catch { /* plain text content */ }
+
+  let parsedFramework: Record<string, unknown> | null = null;
+  try {
+    if (typeof item.frameworkData === 'string') parsedFramework = JSON.parse(item.frameworkData as string);
+  } catch { /* noop */ }
+
+  for (const fm of fieldMapping) {
+    if (fm.field.startsWith('content.')) {
+      const key = fm.field.replace('content.', '');
+      values[fm.field] = parsedContent?.[key] ?? null;
+    } else if (fm.field.startsWith('frameworkData.')) {
+      const path = fm.field.replace('frameworkData.', '').split('.');
+      let obj: Record<string, unknown> | null = parsedFramework;
+      for (const segment of path) {
+        if (!obj || typeof obj !== 'object') { obj = null; break; }
+        obj = obj[segment] as Record<string, unknown> | null;
+      }
+      values[fm.field] = typeof obj === 'string' ? obj : (obj as unknown) ?? null;
+    } else if (fm.field === 'content') {
+      values[fm.field] = typeof item.content === 'string' ? item.content : null;
+    } else {
+      values[fm.field] = item[fm.field] ?? null;
+    }
+  }
+
+  return values;
+}
+
 // ─── Config ────────────────────────────────────────────────
 
 export const brandAssetItemConfig: ItemTypeConfig = {
@@ -108,8 +251,11 @@ export const brandAssetItemConfig: ItemTypeConfig = {
     return asset as unknown as Record<string, unknown> | null;
   },
 
-  getDimensions() {
-    return BRAND_ASSET_DIMENSIONS;
+  getDimensions(item?: Record<string, unknown>) {
+    if (item && item.slug) {
+      return getDimensionsForAsset(item.slug as string);
+    }
+    return DEFAULT_BRAND_ASSET_DIMENSIONS;
   },
 
   buildItemContext(item) {
@@ -118,19 +264,22 @@ export const brandAssetItemConfig: ItemTypeConfig = {
 
   buildIntro(item) {
     const name = item.name as string;
-    const category = item.category as string | null;
-    const categoryLabel = category
-      ? category.charAt(0) + category.slice(1).toLowerCase()
-      : 'Brand';
-    return `Welcome to the AI Exploration for **${name}** (${categoryLabel} asset). I'll guide you through ${BRAND_ASSET_DIMENSIONS.length} key dimensions to validate and strengthen this brand asset. Let's begin!`;
+    const slug = item.slug as string;
+    const description = item.description as string | null;
+    const dimensions = getDimensionsForAsset(slug);
+    return `Welcome to the AI Exploration for **${name}**${description ? ` — ${description}` : ''}. I'll guide you through ${dimensions.length} key dimensions to build a validated understanding of this brand asset. Let's begin!`;
   },
 
   async generateInsights(item, session) {
     const name = item.name as string;
+    const slug = (item.slug as string) ?? '';
     const sessionId = (session as { id: string }).id;
     const modelId = (session as { modelId?: string }).modelId;
 
-    console.log('[brand-asset-builder] generateInsights: sessionId:', sessionId, '| modelId:', modelId);
+    console.log('[brand-asset-builder] generateInsights: sessionId:', sessionId, '| slug:', slug, '| modelId:', modelId);
+
+    const dimensions = getDimensionsForAsset(slug);
+    const fieldMapping = getFieldMappingForAsset(slug);
 
     const messages = await prisma.explorationMessage.findMany({
       where: { sessionId },
@@ -159,11 +308,8 @@ export const brandAssetItemConfig: ItemTypeConfig = {
 
     console.log('[brand-asset-builder] Built Q&A pairs:', allQA.length);
 
-    // Build current field values
-    const currentFieldValues: Record<string, unknown> = {};
-    for (const fm of BRAND_ASSET_FIELD_MAPPING) {
-      currentFieldValues[fm.field] = item[fm.field] ?? null;
-    }
+    // Resolve current field values based on slug-specific mapping
+    const currentFieldValues = resolveCurrentFieldValues(item, fieldMapping);
 
     // Resolve model config
     const modelConfig = resolveModelConfig(modelId);
@@ -173,9 +319,9 @@ export const brandAssetItemConfig: ItemTypeConfig = {
       itemType: 'brand_asset',
       itemName: name,
       itemContext: buildBrandAssetContext(item),
-      dimensions: BRAND_ASSET_DIMENSIONS,
+      dimensions,
       allQA,
-      fieldMapping: BRAND_ASSET_FIELD_MAPPING,
+      fieldMapping,
       currentFieldValues,
       modelConfig,
     });

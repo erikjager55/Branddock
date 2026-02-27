@@ -55,6 +55,7 @@ export function useLockState({
   const initialLocked = initialState.isLocked;
   const initialLockedAt = initialState.lockedAt;
   const initialLockedBy = initialState.lockedBy;
+  const initialLockedByStr = JSON.stringify(initialLockedBy);
 
   useEffect(() => {
     if (!isToggling) {
@@ -62,7 +63,8 @@ export function useLockState({
       setLockedAt(initialLockedAt ?? null);
       setLockedBy(initialLockedBy ?? null);
     }
-  }, [initialLocked, initialLockedAt, initialLockedBy]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialLocked, initialLockedAt, initialLockedByStr, isToggling]);
 
   const requestToggle = useCallback(() => {
     setShowConfirm(true);

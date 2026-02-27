@@ -173,6 +173,7 @@ model Workspace {
 
   // AI Exploration (Generic)
   explorationSessions       ExplorationSession[]
+  explorationConfigs        ExplorationConfig[]
 
   // Versioning
   resourceVersions          ResourceVersion[]
@@ -1565,6 +1566,73 @@ model ExplorationMessage {
   createdAt   DateTime            @default(now())
 
   @@index([sessionId, orderIndex])
+}
+
+// =============================================================
+// AI Exploration Configuration — per item type
+// =============================================================
+
+model ExplorationConfig {
+  id                   String   @id @default(cuid())
+  workspaceId          String
+
+  // ─── Targeting ───────────────────────────
+  itemType             String   // "persona" | "brand_asset" | "product"
+  itemSubType          String?  // "social-relevancy" | "purpose-statement" | null (= default for type)
+
+  // ─── Display ─────────────────────────────
+  label                String?  // "Social Relevancy" — voor admin UI
+
+  // ─── AI Provider ─────────────────────────
+  provider             String   @default("anthropic") // "anthropic" | "openai"
+  model                String   @default("claude-sonnet-4-20250514")
+  temperature          Float    @default(0.4)
+  maxTokens            Int      @default(2048)
+
+  // ─── System Prompt ───────────────────────
+  systemPrompt         String   @db.Text
+
+  // ─── Dimensies (JSON array) ──────────────
+  dimensions           Json     // StoredDimension[]
+
+  // ─── Feedback Prompt ─────────────────────
+  feedbackPrompt       String   @db.Text
+
+  // ─── Report Prompt ───────────────────────
+  reportPrompt         String   @db.Text
+
+  // ─── Field Suggestions Config (JSON) ─────
+  fieldSuggestionsConfig Json?  // StoredFieldSuggestionConfig[]
+
+  // ─── Context Sources ─────────────────────
+  contextSources       String[] @default([])
+
+  // ─── Metadata ────────────────────────────
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  workspace            Workspace @relation(fields: [workspaceId], references: [id])
+  knowledgeItems       ExplorationKnowledgeItem[]
+
+  @@unique([workspaceId, itemType, itemSubType])
+  @@index([workspaceId])
+  @@index([itemType, itemSubType])
+}
+
+model ExplorationKnowledgeItem {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @db.Text
+  category  String?  // "Marktonderzoek", "Concurrentie", "Doelgroep", "Strategie", "Intern", "Anders"
+
+  configId  String
+  config    ExplorationConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([configId])
 }
 
 model PersonaChatSession {

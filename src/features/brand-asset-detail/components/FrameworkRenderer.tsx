@@ -3,7 +3,8 @@
 import { ESGFramework } from "./frameworks/ESGFramework";
 import { GoldenCircleFramework } from "./frameworks/GoldenCircleFramework";
 import { SWOTFramework } from "./frameworks/SWOTFramework";
-import type { FrameworkType } from "../types/framework.types";
+import { PurposeKompasFramework } from "./frameworks/PurposeKompasFramework";
+import type { FrameworkType, PurposeKompasFrameworkData } from "../types/framework.types";
 
 interface FrameworkRendererProps {
   type: FrameworkType;
@@ -22,6 +23,8 @@ export function FrameworkRenderer({ type, data }: FrameworkRendererProps) {
       return <GoldenCircleFramework data={parsed} />;
     case "SWOT":
       return <SWOTFramework data={parsed} />;
+    case "PURPOSE_KOMPAS":
+      return <PurposeKompasFramework data={parsed as PurposeKompasFrameworkData} />;
     default:
       return <p className="text-gray-500 italic">Unknown framework type</p>;
   }

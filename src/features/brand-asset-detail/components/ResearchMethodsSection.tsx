@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, ProgressBar } from "@/components/shared";
+import { Card } from "@/components/shared";
 import { ResearchMethodCard } from "./ResearchMethodCard";
 import type { ResearchMethodDetail } from "../types/brand-asset-detail.types";
 
@@ -19,7 +19,6 @@ interface ResearchMethodsSectionProps {
 
 export function ResearchMethodsSection({
   methods,
-  validationPercentage,
   completedMethods,
   totalMethods,
   isLocked = false,
@@ -37,20 +36,14 @@ export function ResearchMethodsSection({
       <Card.Header>
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              Research Methods
-            </h2>
-            <p className="text-sm text-gray-500">
-              {Math.round(validationPercentage)}% Validated · {completedMethods}{" "}
-              of {totalMethods} completed
-            </p>
+            <h3 className="text-lg font-semibold text-gray-900">Research Methods</h3>
+            <p className="text-sm text-gray-500">Validate and enrich this asset through research</p>
           </div>
-          <ProgressBar
-            value={validationPercentage}
-            color="teal"
-            size="sm"
-            className="w-32"
-          />
+          <div className="text-right">
+            <span className="text-sm font-medium text-gray-900">
+              {completedMethods}/{totalMethods} completed
+            </span>
+          </div>
         </div>
       </Card.Header>
       <Card.Body>

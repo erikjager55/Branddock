@@ -3,12 +3,9 @@
 import { useRef, useEffect } from "react";
 import {
   MoreVertical,
-  Pencil,
   Copy,
   Download,
   Trash2,
-  Lock,
-  Unlock,
 } from "lucide-react";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
 import { useDuplicateAsset } from "../hooks/useBrandAssetDetail";
@@ -16,19 +13,14 @@ import type { BrandAssetDetail } from "../types/brand-asset-detail.types";
 
 interface AssetOverflowMenuProps {
   asset: BrandAssetDetail;
-  onToggleLock: () => void;
-  isLocked: boolean;
 }
 
 export function AssetOverflowMenu({
   asset,
-  onToggleLock,
-  isLocked,
 }: AssetOverflowMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const showMenu = useBrandAssetDetailStore((s) => s.showOverflowMenu);
   const setShowMenu = useBrandAssetDetailStore((s) => s.setShowOverflowMenu);
-  const setIsEditing = useBrandAssetDetailStore((s) => s.setIsEditing);
   const setShowDelete = useBrandAssetDetailStore((s) => s.setShowDeleteDialog);
   const duplicateAsset = useDuplicateAsset(asset.id);
 
@@ -44,15 +36,6 @@ export function AssetOverflowMenu({
 
   const actions = [
     {
-      label: "Edit Content",
-      icon: Pencil,
-      disabled: isLocked,
-      onClick: () => {
-        setIsEditing(true);
-        setShowMenu(false);
-      },
-    },
-    {
       label: "Duplicate",
       icon: Copy,
       onClick: () => {
@@ -64,14 +47,6 @@ export function AssetOverflowMenu({
       label: "Export",
       icon: Download,
       onClick: () => setShowMenu(false),
-    },
-    {
-      label: isLocked ? "Unlock" : "Lock",
-      icon: isLocked ? Unlock : Lock,
-      onClick: () => {
-        onToggleLock();
-        setShowMenu(false);
-      },
     },
     {
       label: "Delete",
@@ -99,8 +74,7 @@ export function AssetOverflowMenu({
             <button
               key={action.label}
               onClick={action.onClick}
-              disabled={action.disabled}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
                 action.danger
                   ? "text-red-600 hover:bg-red-50"
                   : "text-gray-700 hover:bg-gray-50"

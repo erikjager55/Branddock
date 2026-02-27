@@ -1,26 +1,22 @@
 "use client";
 
-import { Pencil, Sparkles } from "lucide-react";
-import { Button, Card } from "@/components/shared";
+import { FileText } from "lucide-react";
 import { ContentEditMode } from "./ContentEditMode";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
-import { useRegenerateContent } from "../hooks/useBrandAssetDetail";
 import type { BrandAssetDetail } from "../types/brand-asset-detail.types";
 
 interface ContentEditorSectionProps {
   asset: BrandAssetDetail;
   isLocked: boolean;
-  showRegenerate: boolean;
+  isEditing: boolean;
 }
 
 export function ContentEditorSection({
   asset,
   isLocked,
-  showRegenerate,
+  isEditing,
 }: ContentEditorSectionProps) {
-  const isEditing = useBrandAssetDetailStore((s) => s.isEditing);
   const setIsEditing = useBrandAssetDetailStore((s) => s.setIsEditing);
-  const regenerate = useRegenerateContent(asset.id);
 
   const contentStr =
     typeof asset.content === "string"
@@ -41,46 +37,26 @@ export function ContentEditorSection({
   }
 
   return (
-    <Card>
-      <Card.Header>
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Content</h2>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              icon={Pencil}
-              onClick={() => setIsEditing(true)}
-              disabled={isLocked}
-            >
-              Edit
-            </Button>
-            {showRegenerate && (
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={Sparkles}
-                onClick={() => regenerate.mutate(undefined)}
-                isLoading={regenerate.isPending}
-                disabled={isLocked}
-              >
-                Regenerate
-              </Button>
-            )}
-          </div>
+    <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-8 h-8 rounded-lg bg-teal-50 flex items-center justify-center">
+          <FileText className="w-4 h-4 text-teal-600" />
         </div>
-      </Card.Header>
-      <Card.Body>
-        {contentStr ? (
-          <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-            {contentStr}
-          </p>
-        ) : (
-          <p className="text-gray-400 italic">
-            No content yet. Click Edit or Regenerate to add content.
-          </p>
-        )}
-      </Card.Body>
-    </Card>
+        <div>
+          <h3 className="font-semibold text-gray-900">Content</h3>
+          <p className="text-sm text-gray-500">Define the core content for this asset</p>
+        </div>
+      </div>
+
+      {contentStr ? (
+        <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed">
+          {contentStr}
+        </div>
+      ) : (
+        <div className="bg-gray-50 rounded-lg p-4 text-gray-500 text-sm">
+          No content defined yet. Click &quot;Edit&quot; in the header to add content.
+        </div>
+      )}
+    </div>
   );
 }

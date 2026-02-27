@@ -41,7 +41,17 @@ export async function startExplorationSession(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ modelId: modelId || null }),
   });
-  if (!res.ok) throw new Error('Failed to start exploration session');
+  if (!res.ok) {
+    const rawText = await res.text().catch(() => '');
+    let errorMsg = `Failed to start exploration session (${res.status})`;
+    try {
+      const errorData = JSON.parse(rawText);
+      if (errorData.error) errorMsg = String(errorData.error);
+      else if (errorData.debug) errorMsg = String(errorData.debug);
+    } catch { /* non-JSON response */ }
+    console.error('[exploration.api] startExplorationSession error:', res.status, rawText.slice(0, 500));
+    throw new Error(errorMsg);
+  }
   return res.json();
 }
 
@@ -55,7 +65,11 @@ export async function fetchExplorationSession(
   const res = await fetch(
     `${baseUrl(itemType, itemId)}/sessions/${sessionId}`,
   );
-  if (!res.ok) throw new Error('Failed to fetch exploration session');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    console.error('[exploration.api] fetchExplorationSession error:', res.status, errorData);
+    throw new Error(errorData.error || `Failed to fetch exploration session (${res.status})`);
+  }
   return res.json();
 }
 
@@ -85,7 +99,11 @@ export async function sendExplorationAnswer(
       body: JSON.stringify({ content }),
     },
   );
-  if (!res.ok) throw new Error('Failed to send exploration answer');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    console.error('[exploration.api] sendExplorationAnswer error:', res.status, errorData);
+    throw new Error(errorData.error || `Failed to send exploration answer (${res.status})`);
+  }
   return res.json();
 }
 
@@ -105,6 +123,10 @@ export async function completeExploration(
     `${baseUrl(itemType, itemId)}/sessions/${sessionId}/complete`,
     { method: 'POST' },
   );
-  if (!res.ok) throw new Error('Failed to complete exploration');
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    console.error('[exploration.api] completeExploration error:', res.status, errorData);
+    throw new Error(errorData.error || `Failed to complete exploration (${res.status})`);
+  }
   return res.json();
 }

@@ -34,6 +34,14 @@ export async function resolveExplorationConfig(
       return getSystemDefault(itemType, itemSubType);
     }
 
+    // 4. Fetch custom knowledge items for this config
+    const knowledgeItems = await prisma.explorationKnowledgeItem.findMany({
+      where: { configId: config.id },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const customKnowledge = formatKnowledgeItems(knowledgeItems);
+
     return {
       id: config.id,
       itemType: config.itemType,
@@ -50,6 +58,7 @@ export async function resolveExplorationConfig(
       fieldSuggestionsConfig: config.fieldSuggestionsConfig as unknown as StoredFieldSuggestionConfig[] | null,
       contextSources: config.contextSources,
       isActive: config.isActive,
+      customKnowledge,
     };
   } catch (error) {
     // DB lookup failed (model not yet pushed, stale client, etc.) → use defaults
@@ -58,6 +67,21 @@ export async function resolveExplorationConfig(
     );
     return getSystemDefault(itemType, itemSubType);
   }
+}
+
+// ─── Knowledge Items Formatter ──────────────────────────────
+
+function formatKnowledgeItems(
+  items: { title: string; content: string; category: string | null }[],
+): string {
+  if (items.length === 0) return '';
+
+  const sections = items.map((item) => {
+    const categoryTag = item.category ? ` [${item.category}]` : '';
+    return `### ${item.title}${categoryTag}\n${item.content}`;
+  });
+
+  return `## Custom Knowledge\n${sections.join('\n\n')}`;
 }
 
 // ─── System Defaults ────────────────────────────────────────
@@ -80,6 +104,7 @@ function getSystemDefault(itemType: string, itemSubType?: string | null): Explor
     fieldSuggestionsConfig: null,
     contextSources: ['brand_asset', 'product'],
     isActive: true,
+    customKnowledge: '',
   };
 }
 
@@ -89,7 +114,9 @@ Be warm but professional — like a trusted advisor.
 Ask ONE question at a time. Keep questions concise.
 Reference specific details from previous answers.
 
-{{brandContext}}`;
+{{brandContext}}
+
+{{customKnowledge}}`;
 
 const DEFAULT_FEEDBACK_PROMPT = `Provide brief, constructive feedback (2-3 sentences) on the user's answer.
 Dimension: {{dimensionTitle}}
@@ -108,6 +135,8 @@ Answers per dimension:
 
 Brand Context:
 {{brandContext}}
+
+{{customKnowledge}}
 
 Generate JSON:
 {

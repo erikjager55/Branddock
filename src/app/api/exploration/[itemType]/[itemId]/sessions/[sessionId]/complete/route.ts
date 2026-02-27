@@ -76,6 +76,7 @@ export async function POST(
       itemName: ((item as Record<string, unknown>)?.name as string) ?? 'Unknown',
       itemType,
       brandContext,
+      customKnowledge: explorationConfig.customKnowledge,
     });
 
     const reportUserPrompt = resolveTemplate(explorationConfig.reportPrompt, {
@@ -84,6 +85,7 @@ export async function POST(
       itemType,
       allAnswers,
       brandContext,
+      customKnowledge: explorationConfig.customKnowledge,
     });
 
     let insightsData: Record<string, unknown>;

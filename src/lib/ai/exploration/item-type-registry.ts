@@ -29,8 +29,8 @@ export interface ItemTypeConfig {
     workspaceId: string,
   ) => Promise<Record<string, unknown> | null>;
 
-  /** Get the dimension questions for this item type */
-  getDimensions: () => DimensionQuestion[];
+  /** Get the dimension questions for this item type. Optional item for item-specific dimensions. */
+  getDimensions: (item?: Record<string, unknown>) => DimensionQuestion[];
 
   /** Build a text context summary of the item for LLM prompts */
   buildItemContext: (item: Record<string, unknown>) => string;

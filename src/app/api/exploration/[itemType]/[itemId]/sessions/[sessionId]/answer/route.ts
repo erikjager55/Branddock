@@ -118,6 +118,7 @@ export async function POST(
       itemName: ((item as Record<string, unknown> | null)?.name as string) ?? 'Unknown',
       itemType,
       brandContext,
+      customKnowledge: explorationConfig.customKnowledge,
     });
 
     const feedbackUserPrompt = resolveTemplate(explorationConfig.feedbackPrompt, {
@@ -127,6 +128,7 @@ export async function POST(
       questionAsked: currentQuestionMsg?.content ?? '',
       userAnswer: content,
       brandContext,
+      customKnowledge: explorationConfig.customKnowledge,
     });
 
     let feedbackContent: string;

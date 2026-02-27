@@ -7,6 +7,7 @@ import { SettingsSubNav } from './SettingsSubNav';
 import { AccountTab } from './account/AccountTab';
 import { TeamTab } from './team/TeamTab';
 import { BillingTab } from './billing/BillingTab';
+import { AdministratorTab } from './administrator/AdministratorTab';
 
 interface SettingsPageProps {
   initialTab?: SettingsTab;
@@ -42,6 +43,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
             Appearance settings coming soon
           </div>
         );
+      case 'administrator':
+        return <AdministratorTab />;
       default:
         return <AccountTab />;
     }

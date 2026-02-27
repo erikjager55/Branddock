@@ -30,7 +30,6 @@ import {
   DashboardPage,
   BrandFoundationPage,
   BrandAssetDetailPage,
-  UniversalAssetDashboard,
   TransformativeGoalsDashboard,
   AIBrandAnalysisPage,
   BrandstyleAnalyzerPage,
@@ -202,13 +201,6 @@ function AppContent() {
     setActiveSectionRaw(`brand-${assetId}`);
   };
 
-  const handleNavigateAsset = (assetId: string) => {
-    setSelectedAssetId(assetId);
-    setSelectedResearchOption(null); // Reset research option when switching assets
-    setViewingAssetResults(true); // Show asset results by default
-    setActiveSectionRaw(`brand-${assetId}`);
-  };
-
   const handleNavigateAssetDetail = (assetId: string) => {
     setSelectedAssetId(assetId);
     handleSetActiveSection('brand-asset-detail');
@@ -245,7 +237,7 @@ function AppContent() {
     setSelectedAssetId(assetId);
     
     if (mode === 'results') {
-      // Navigating to results view - show the UniversalAssetDashboard
+      // Navigating to results view - show the BrandAssetDetailPage
       setSelectedResearchOption(null);
       setViewingAssetResults(true);
     } else {
@@ -301,6 +293,40 @@ function AppContent() {
     setActiveSectionRaw('dashboard');
   };
 
+  // ─── Redirect guards ──────────────────────────────────────
+  // Redirect when required IDs are missing (outside render cycle)
+  useEffect(() => {
+    let redirectTo: string | null = null;
+
+    if (activeSection === 'research-bundle-detail' && !useResearchStore.getState().selectedBundleId) {
+      redirectTo = 'research-bundles';
+    } else if (activeSection === 'product-detail' && !useProductsStore.getState().selectedProductId) {
+      redirectTo = 'products';
+    } else if (activeSection === 'persona-detail' && !usePersonaDetailStore.getState().selectedPersonaId) {
+      redirectTo = 'personas';
+    } else if (activeSection === 'persona-ai-analysis' && !usePersonaDetailStore.getState().selectedPersonaId) {
+      redirectTo = 'personas';
+    } else if (activeSection === 'campaign-detail' && !useCampaignStore.getState().selectedCampaignId) {
+      redirectTo = 'active-campaigns';
+    } else if (activeSection === 'quick-content-detail' && !useCampaignStore.getState().selectedCampaignId) {
+      redirectTo = 'active-campaigns';
+    } else if (activeSection === 'ai-exploration-brand-asset' && !selectedAssetId) {
+      redirectTo = 'brand';
+    } else if (activeSection === 'content-studio') {
+      const cs = useCampaignStore.getState();
+      if (!cs.selectedCampaignId || !cs.selectedDeliverableId) {
+        redirectTo = 'active-campaigns';
+      }
+    }
+
+    if (redirectTo) {
+      setActiveSectionRaw(redirectTo);
+      if (!redirectTo.startsWith('brand-') && redirectTo !== 'brand') {
+        resetAssetStates();
+      }
+    }
+  }, [activeSection, selectedAssetId, setActiveSectionRaw, resetAssetStates]);
+
   const renderContent = () => {
     // Show research approach selection if requested
     if (showApproachSelection) {
@@ -314,14 +340,25 @@ function AppContent() {
 
     // Check if we're viewing asset results page (canonical asset view)
     if (activeSection.startsWith('brand-') && selectedAssetId && viewingAssetResults) {
-      // Use UniversalAssetDashboard for ALL assets (replaces old specific dashboards)
       return (
-        <UniversalAssetDashboard 
+        <BrandAssetDetailPage
           assetId={selectedAssetId}
-          onBack={handleBackToBrand}
-          onStartResearch={(methodId, mode = 'work') => {
-            logger.navigation('Starting research from asset', { assetId: selectedAssetId, methodId, mode });
-            handleNavigateToResearchMethod(selectedAssetId, methodId as ResearchMethodType, mode);
+          onNavigateBack={handleBackToBrand}
+          onNavigateToAnalysis={(assetId) => {
+            setSelectedAssetId(assetId);
+            handleSetActiveSection('ai-exploration-brand-asset');
+          }}
+          onNavigateToInterviews={(assetId) => {
+            setSelectedAssetId(assetId);
+            handleSetActiveSection('interviews');
+          }}
+          onNavigateToWorkshop={(assetId) => {
+            setSelectedAssetId(assetId);
+            handleSetActiveSection('workshop-purchase');
+          }}
+          onNavigateToGoldenCircle={(assetId) => {
+            setSelectedAssetId(assetId);
+            handleSetActiveSection('golden-circle');
           }}
         />
       );
@@ -329,14 +366,27 @@ function AppContent() {
 
     // Check if we're viewing a specific validation method
     if (activeSection.startsWith('brand-') && selectedAssetId && selectedResearchOption) {
+      // AI Exploration is always accessible (free method, no unlock needed)
+      if (selectedResearchOption === 'ai-agent' || selectedResearchOption === 'ai-exploration') {
+        return (
+          <AIBrandAssetExplorationPage
+            assetId={selectedAssetId}
+            onBack={() => {
+              setSelectedResearchOption(null);
+              setViewingAssetResults(true);
+            }}
+          />
+        );
+      }
+
       // Check if this method is completed for this asset (using context)
       const asset = getBrandAsset(selectedAssetId);
       const isMethodCompleted = asset?.researchMethods?.some(
         m => m.type === selectedResearchOption && m.status === 'completed'
       );
-      
+
       const methodUnlocked = isMethodUnlocked(selectedResearchOption);
-      
+
       // Allow access if method is unlocked OR if it's already completed (for viewing)
       if (!methodUnlocked && !isMethodCompleted) {
         // Method not unlocked and not completed - redirect to research planner
@@ -369,15 +419,27 @@ function AppContent() {
       }
     }
 
-    // Deprecated: Old fallback - now using UniversalAssetDashboard for all assets
+    // Fallback: brand-{id} pattern with no research option selected
     if (activeSection.startsWith('brand-') && selectedAssetId) {
       return (
-        <UniversalAssetDashboard 
+        <BrandAssetDetailPage
           assetId={selectedAssetId}
-          onBack={handleBackToBrand}
-          onStartResearch={(methodId, mode = 'work') => {
-            logger.navigation('Starting research from asset', { assetId: selectedAssetId, methodId, mode });
-            handleNavigateToResearchMethod(selectedAssetId, methodId as ResearchMethodType, mode);
+          onNavigateBack={handleBackToBrand}
+          onNavigateToAnalysis={(assetId) => {
+            setSelectedAssetId(assetId);
+            handleSetActiveSection('ai-exploration-brand-asset');
+          }}
+          onNavigateToInterviews={(assetId) => {
+            setSelectedAssetId(assetId);
+            handleSetActiveSection('interviews');
+          }}
+          onNavigateToWorkshop={(assetId) => {
+            setSelectedAssetId(assetId);
+            handleSetActiveSection('workshop-purchase');
+          }}
+          onNavigateToGoldenCircle={(assetId) => {
+            setSelectedAssetId(assetId);
+            handleSetActiveSection('golden-circle');
           }}
         />
       );
@@ -461,8 +523,7 @@ function AppContent() {
       case 'research-bundle-detail': {
         const selectedBundleId = useResearchStore.getState().selectedBundleId;
         if (!selectedBundleId) {
-          handleSetActiveSection('research-bundles');
-          return null;
+          return null; // useEffect redirect handles navigation
         }
         return (
           <BundleDetailPage
@@ -503,8 +564,7 @@ function AppContent() {
       case 'product-detail': {
         const pdProductId = useProductsStore.getState().selectedProductId;
         if (!pdProductId) {
-          handleSetActiveSection('products');
-          return null;
+          return null; // useEffect redirect handles navigation
         }
         return (
           <ProductDetailPage
@@ -542,8 +602,7 @@ function AppContent() {
       case 'persona-detail': {
         const pdPersonaId = usePersonaDetailStore.getState().selectedPersonaId;
         if (!pdPersonaId) {
-          handleSetActiveSection('personas');
-          return null;
+          return null; // useEffect redirect handles navigation
         }
         return (
           <PersonaDetailPage
@@ -560,8 +619,7 @@ function AppContent() {
       case 'persona-ai-analysis': {
         const paPersonaId = usePersonaDetailStore.getState().selectedPersonaId;
         if (!paPersonaId) {
-          handleSetActiveSection('personas');
-          return null;
+          return null; // useEffect redirect handles navigation
         }
         return (
           <AIPersonaAnalysisPage
@@ -590,8 +648,7 @@ function AppContent() {
       case 'campaign-detail': {
         const cdCampaignId = useCampaignStore.getState().selectedCampaignId;
         if (!cdCampaignId) {
-          handleSetActiveSection('active-campaigns');
-          return null;
+          return null; // useEffect redirect handles navigation
         }
         return (
           <CampaignDetailPage
@@ -611,8 +668,7 @@ function AppContent() {
       case 'quick-content-detail': {
         const qcCampaignId = useCampaignStore.getState().selectedCampaignId;
         if (!qcCampaignId) {
-          handleSetActiveSection('active-campaigns');
-          return null;
+          return null; // useEffect redirect handles navigation
         }
         return (
           <QuickContentDetailPage
@@ -746,8 +802,7 @@ function AppContent() {
       case 'ai-exploration-brand-asset': {
         const aeAssetId = selectedAssetId;
         if (!aeAssetId) {
-          handleSetActiveSection('brand');
-          return null;
+          return null; // useEffect redirect handles navigation
         }
         return (
           <AIBrandAssetExplorationPage
@@ -842,8 +897,7 @@ function AppContent() {
         const csCampaignId = useCampaignStore.getState().selectedCampaignId;
         const csDeliverableId = useCampaignStore.getState().selectedDeliverableId;
         if (!csCampaignId || !csDeliverableId) {
-          handleSetActiveSection('active-campaigns');
-          return null;
+          return null; // useEffect redirect handles navigation
         }
         return (
           <ContentStudioPage
@@ -888,7 +942,7 @@ function AppContent() {
           <EnhancedSidebarSimple
             activeSection={activeSection}
             setActiveSection={handleSetActiveSection}
-            onAssetClick={handleNavigateAsset}
+            onAssetClick={handleNavigateAssetDetail}
             onMethodClick={(assetId, methodType) => handleNavigateToResearchMethod(assetId, methodType, 'work')}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}

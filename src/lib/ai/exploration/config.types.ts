@@ -32,6 +32,7 @@ export interface ExplorationConfigData {
   fieldSuggestionsConfig: StoredFieldSuggestionConfig[] | null;
   contextSources: string[];
   isActive: boolean;
+  customKnowledge: string;
 }
 
 // ─── Available AI Models ────────────────────────────────────

@@ -22,6 +22,11 @@ export const FRAMEWORK_REGISTRY: Record<FrameworkType, FrameworkMeta> = {
     label: "SWOT Analysis",
     description: "Strengths, Weaknesses, Opportunities & Threats",
   },
+  PURPOSE_KOMPAS: {
+    type: "PURPOSE_KOMPAS",
+    label: "Maatschappelijke Relevantie",
+    description: "Mens, Milieu & Maatschappij pijlers",
+  },
 };
 
 export function getFrameworkMeta(type: FrameworkType): FrameworkMeta {

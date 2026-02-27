@@ -100,7 +100,7 @@ export const personaItemConfig: ItemTypeConfig = {
     return persona as unknown as Record<string, unknown> | null;
   },
 
-  getDimensions() {
+  getDimensions(_item?: Record<string, unknown>) {
     return PERSONA_DIMENSIONS;
   },
 

@@ -114,6 +114,10 @@ async function main() {
   await prisma.purchasedBundle.deleteMany();
   // Versioning (generic table, references User)
   await prisma.resourceVersion.deleteMany();
+  // AI Exploration (generic, references User + Workspace)
+  await prisma.explorationMessage.deleteMany();
+  await prisma.explorationSession.deleteMany();
+  await prisma.explorationConfig.deleteMany();
   await prisma.user.deleteMany();
   await prisma.workspace.deleteMany();
   await prisma.organization.deleteMany();
@@ -326,6 +330,7 @@ async function main() {
     interview: boolean;
     questionnaire: boolean;
   }> = [
+    { name: "Purpose Statement",    slug: "purpose-statement",    category: "PURPOSE",       description: "Het waarom van je bestaan als organisatie",  status: "IN_PROGRESS",     coverage: 30,  ai: true,  workshop: false, interview: false, questionnaire: false },
     { name: "Social Relevancy",     slug: "social-relevancy",     category: "PURPOSE",       description: "How your brand contributes to society",     status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
     { name: "Brand Tone & Voice",   slug: "brand-tone-voice",     category: "COMMUNICATION", description: "Consistent voice and tone guidelines",      status: "IN_PROGRESS",     coverage: 35,  ai: true,  workshop: false, interview: false, questionnaire: false },
     { name: "Brand Promise",        slug: "brand-promise",        category: "STRATEGY",      description: "Core commitment to your customers",         status: "NEEDS_ATTENTION", coverage: 45,  ai: true,  workshop: false, interview: false, questionnaire: false },
@@ -461,11 +466,11 @@ async function main() {
 
   // Framework data for specific assets
   const frameworkAssignments = [
-    { slug: "social-relevancy", frameworkType: "ESG", frameworkData: {
+    { slug: "social-relevancy", frameworkType: "PURPOSE_KOMPAS", frameworkData: {
       pillars: {
-        environmental: { impact: "medium", description: "Sustainable packaging initiatives and carbon-neutral operations.", projectCount: 3 },
-        social: { impact: "high", description: "Community engagement programs and diversity initiatives.", programCount: 7 },
-        governance: { impact: "medium", description: "Transparent reporting and ethical supply chain.", policyCount: 5 },
+        mens: { impact: "high", description: "Stimuleren van bewustwording en zelfontwikkeling door organisaties te helpen hun authentieke verhaal te ontdekken en te vertellen." },
+        milieu: { impact: "medium", description: "Bevorderen van duurzame merkstrategieën die rekening houden met ecologische impact in communicatie en productie." },
+        maatschappij: { impact: "high", description: "Democratiseren van professionele merkstrategie zodat niet alleen grote corporates, maar ook MKB-bedrijven betekenisvol kunnen ondernemen." },
       },
     }},
     { slug: "golden-circle", frameworkType: "GOLDEN_CIRCLE", frameworkData: {
@@ -490,7 +495,12 @@ async function main() {
 
   // S1: Content for first 3 assets
   const assetContentUpdates = [
-    { slug: "social-relevancy", content: "Our brand purpose is to empower organizations to build authentic, research-validated brand strategies that drive meaningful connections with their audiences." },
+    { slug: "purpose-statement", content: JSON.stringify({
+      why: "Wij geloven dat elk merk een uniek verhaal heeft dat het verdient om consistent en overtuigend verteld te worden. Te veel organisaties missen de middelen om hun maatschappelijke relevantie te ontdekken en te activeren.",
+      how: "Door AI-gedreven brandstrategie tools te combineren met bewezen onderzoeksmethodieken, maken we professionele merkstrategie toegankelijk voor iedereen.",
+      impact: "Organisaties bouwen merken die niet alleen commercieel succesvol zijn, maar ook bijdragen aan de verbetering van mens, milieu en maatschappij.",
+    }) },
+    { slug: "social-relevancy", content: "Als merk dragen we bij aan de maatschappij door professionele merkstrategie toegankelijk te maken. We geloven dat merken die hun maatschappelijke relevantie begrijpen en activeren, een positievere impact hebben op mens, milieu en maatschappij." },
     { slug: "brand-tone-voice", content: "We stand for transparency, innovation, and human-centered design in everything we create. Our brand values guide every decision from product development to customer support." },
     { slug: "brand-promise", content: "Our target audience consists of mid-market companies (50-500 employees) seeking to professionalize their brand strategy without enterprise-level budgets." },
   ];
@@ -504,7 +514,7 @@ async function main() {
 
   // S1: Version history for first 3 assets
   const assetsForVersions = await prisma.brandAsset.findMany({
-    where: { slug: { in: ["social-relevancy", "brand-tone-voice", "brand-promise"] }, workspaceId: workspace.id },
+    where: { slug: { in: ["purpose-statement", "social-relevancy", "brand-tone-voice", "brand-promise"] }, workspaceId: workspace.id },
   });
 
   for (const asset of assetsForVersions) {
@@ -3764,7 +3774,189 @@ If issues persist, submit a support ticket with:
     },
   });
 
-  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 13 brand assets (3 with content+frameworks), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 10 knowledge resources (2 featured), 7 market insights (8 source URLs), 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, S9 Settings: 1 user profile, 1 email preference, 3 connected accounts, 3 plans, 1 subscription, 1 payment method, 4 invoices, 1 notification preference, 1 appearance preference, S9 Help: 6 help categories, 5 help articles, 6 video tutorials, 7 FAQ items, 5 feature requests");
+  // ============================================
+  // AI EXPLORATION CONFIGS (3 configs)
+  // ============================================
+
+  const explorationConfigSeeds = [
+    {
+      itemType: 'persona',
+      itemSubType: null,
+      label: 'Persona Exploration',
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      temperature: 0.4,
+      maxTokens: 2048,
+      systemPrompt: `Je bent een senior merkstrateeg die een gestructureerde persona-exploratie leidt.
+Begeleid de gebruiker door strategische dimensies met doordachte vragen.
+Wees warm maar professioneel — als een vertrouwde adviseur.
+Stel EEEN vraag tegelijk. Houd vragen beknopt.
+Verwijs naar specifieke details uit eerdere antwoorden.
+Reageer in dezelfde taal als de gebruiker.
+
+{{brandContext}}`,
+      dimensions: [
+        { key: 'demographics', title: 'Demografisch Profiel', icon: 'Users', question: 'Kun je me meer vertellen over de achtergrond van deze persona — leeftijdscategorie, locatie, opleiding, professionele context?' },
+        { key: 'goals_motivations', title: 'Doelen & Motivaties', icon: 'TrendingUp', question: 'Wat zijn de primaire doelstellingen van deze persona — zowel professioneel als persoonlijk?' },
+        { key: 'challenges_frustrations', title: 'Uitdagingen & Pijnpunten', icon: 'Heart', question: 'Wat zijn de belangrijkste obstakels voor deze persona? Welke pijnpunten ervaren ze?' },
+        { key: 'value_proposition', title: 'Waarde-aansluiting', icon: 'Zap', question: 'Hoe sluit het aanbod van jouw merk aan bij de behoeften van deze persona?' },
+      ],
+      feedbackPrompt: `Geef korte, constructieve feedback (2-3 zinnen) op het antwoord van de gebruiker.
+Dimensie: {{dimensionTitle}}
+Gestelde vraag: {{questionAsked}}
+Antwoord van gebruiker: {{userAnswer}}
+Erken wat sterk is. Als iets verder verkend kan worden, merk het vriendelijk op.
+Verwijs naar hun specifieke woorden. Stel nooit een vervolgvraag.
+Reageer in dezelfde taal als de gebruiker.`,
+      reportPrompt: `Genereer een analyserapport op basis van de persona-exploratie.
+Persona: {{itemName}}
+{{itemDescription}}
+
+Antwoorden per dimensie:
+{{allAnswers}}
+
+Merkcontext:
+{{brandContext}}
+
+Genereer JSON:
+{
+  "executiveSummary": "2-3 paragraaf strategische samenvatting",
+  "findings": [{ "title": "...", "description": "..." }],
+  "recommendations": ["..."],
+  "fieldSuggestions": [{ "field": "...", "label": "...", "suggestedValue": "...", "reason": "..." }]
+}
+Reageer alleen met geldige JSON.`,
+      fieldSuggestionsConfig: [
+        { field: 'bio', label: 'Bio', type: 'text' as const, extractionHint: 'Extraheer een beknopte biografie uit de antwoorden' },
+        { field: 'goals', label: 'Doelen', type: 'text' as const, extractionHint: 'Extraheer concrete doelen uit de antwoorden' },
+        { field: 'frustrations', label: 'Frustraties', type: 'text' as const, extractionHint: 'Extraheer frustraties en pijnpunten' },
+      ],
+      contextSources: ['brand_asset', 'product'],
+      isActive: true,
+    },
+    {
+      itemType: 'brand_asset',
+      itemSubType: 'social-relevancy',
+      label: 'Social Relevancy — Purpose Kompas',
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      temperature: 0.4,
+      maxTokens: 2048,
+      systemPrompt: `Je bent een senior merkstrateeg gespecialiseerd in maatschappelijke relevantie en purpose-driven branding.
+Je leidt een gestructureerde exploratie van het Purpose Kompas — de vier pijlers van social relevancy.
+Wees warm, professioneel en inspirerend. Help de gebruiker ontdekken hoe hun merk impact maakt.
+Stel EEEN vraag tegelijk. Verwijs naar specifieke details uit eerdere antwoorden.
+
+{{brandContext}}`,
+      dimensions: [
+        { key: 'purpose_clarity', title: 'Purpose Clarity', icon: 'Compass', question: 'Waarom bestaat jullie organisatie, los van winst maken? Welke verandering willen jullie zien in de wereld?' },
+        { key: 'mens', title: 'Impact op Mens', icon: 'Heart', question: 'Hoe dragen jullie producten of diensten bij aan persoonlijke groei en welzijn van mensen?' },
+        { key: 'milieu', title: 'Impact op Milieu', icon: 'Leaf', question: 'Welke stappen heeft jullie organisatie gezet richting duurzaamheid? Hoe minimaliseren jullie de ecologische voetafdruk?' },
+        { key: 'maatschappij', title: 'Impact op Maatschappij', icon: 'Globe', question: 'Hoe helpt jullie merk de maatschappij verbeteren? Denk aan inclusiviteit, toegankelijkheid of educatie.' },
+      ],
+      feedbackPrompt: `Geef korte, constructieve feedback (2-3 zinnen) op het antwoord over maatschappelijke relevantie.
+Dimensie: {{dimensionTitle}}
+Gestelde vraag: {{questionAsked}}
+Antwoord: {{userAnswer}}
+Erken concrete acties en intenties. Stel geen vervolgvraag.
+Reageer in dezelfde taal als de gebruiker.`,
+      reportPrompt: `Genereer een Social Relevancy rapport op basis van de Purpose Kompas exploratie.
+Brand Asset: {{itemName}}
+{{itemDescription}}
+
+Antwoorden per dimensie:
+{{allAnswers}}
+
+Merkcontext:
+{{brandContext}}
+
+Genereer JSON:
+{
+  "executiveSummary": "2-3 paragraaf samenvatting van de maatschappelijke relevantie",
+  "findings": [{ "title": "...", "description": "..." }],
+  "recommendations": ["..."],
+  "fieldSuggestions": [
+    { "field": "content", "label": "Beschrijving", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.pillars.mens.description", "label": "Mens", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.pillars.milieu.description", "label": "Milieu", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.pillars.maatschappij.description", "label": "Maatschappij", "suggestedValue": "...", "reason": "..." }
+  ]
+}
+Reageer alleen met geldige JSON.`,
+      fieldSuggestionsConfig: [
+        { field: 'content', label: 'Beschrijving', type: 'text' as const, extractionHint: 'Extraheer een samenvatting van de maatschappelijke relevantie' },
+        { field: 'frameworkData.pillars.mens.description', label: 'Mens — Beschrijving', type: 'text' as const, extractionHint: 'Extraheer de impact op mens' },
+        { field: 'frameworkData.pillars.milieu.description', label: 'Milieu — Beschrijving', type: 'text' as const, extractionHint: 'Extraheer de impact op milieu' },
+        { field: 'frameworkData.pillars.maatschappij.description', label: 'Maatschappij — Beschrijving', type: 'text' as const, extractionHint: 'Extraheer de impact op maatschappij' },
+      ],
+      contextSources: ['brand_asset', 'product', 'persona'],
+      isActive: true,
+    },
+    {
+      itemType: 'brand_asset',
+      itemSubType: 'purpose-statement',
+      label: 'Purpose Statement',
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      temperature: 0.4,
+      maxTokens: 2048,
+      systemPrompt: `Je bent een senior merkstrateeg gespecialiseerd in purpose-driven branding.
+Je leidt een gestructureerde exploratie van het Purpose Statement — waarom, hoe en impact.
+Help de gebruiker hun bestaansrecht helder formuleren.
+Wees warm, professioneel en inspirerend. Stel EEEN vraag tegelijk.
+
+{{brandContext}}`,
+      dimensions: [
+        { key: 'why', title: 'Waarom — Bestaansrecht', icon: 'Compass', question: 'Waarom is jullie organisatie opgericht? Welke fundamentele overtuiging ligt aan de basis?' },
+        { key: 'how', title: 'Hoe — Unieke Aanpak', icon: 'Lightbulb', question: 'Hoe vervullen jullie je purpose op een manier die uniek is voor jullie? Wat maakt jullie aanpak anders?' },
+        { key: 'impact', title: 'Impact — Gewenst Effect', icon: 'Rocket', question: 'Hoe ziet de wereld eruit als jullie purpose volledig is gerealiseerd? Welke meetbare impact streven jullie na?' },
+        { key: 'alignment', title: 'Alignment — Organisatie & Uitvoering', icon: 'Target', question: 'Hoe goed weerspiegelt jullie huidige organisatie jullie purpose? Waar zitten de gaps tussen purpose en uitvoering?' },
+      ],
+      feedbackPrompt: `Geef korte, constructieve feedback (2-3 zinnen) op het antwoord over het purpose statement.
+Dimensie: {{dimensionTitle}}
+Gestelde vraag: {{questionAsked}}
+Antwoord: {{userAnswer}}
+Erken de kerngedachte. Stel geen vervolgvraag.
+Reageer in dezelfde taal als de gebruiker.`,
+      reportPrompt: `Genereer een Purpose Statement rapport.
+Brand Asset: {{itemName}}
+{{itemDescription}}
+
+Antwoorden per dimensie:
+{{allAnswers}}
+
+Merkcontext:
+{{brandContext}}
+
+Genereer JSON:
+{
+  "executiveSummary": "2-3 paragraaf samenvatting van het purpose statement",
+  "findings": [{ "title": "...", "description": "..." }],
+  "recommendations": ["..."],
+  "fieldSuggestions": [
+    { "field": "content.why", "label": "Waarom", "suggestedValue": "...", "reason": "..." },
+    { "field": "content.how", "label": "Hoe", "suggestedValue": "...", "reason": "..." },
+    { "field": "content.impact", "label": "Impact", "suggestedValue": "...", "reason": "..." }
+  ]
+}
+Reageer alleen met geldige JSON.`,
+      fieldSuggestionsConfig: [
+        { field: 'content.why', label: 'Waarom — Bestaansrecht', type: 'text' as const, extractionHint: 'Extraheer de kern van het waarom/bestaansrecht' },
+        { field: 'content.how', label: 'Hoe — Unieke Aanpak', type: 'text' as const, extractionHint: 'Extraheer de unieke aanpak/methode' },
+        { field: 'content.impact', label: 'Impact — Gewenst Effect', type: 'text' as const, extractionHint: 'Extraheer het gewenste impact/effect' },
+      ],
+      contextSources: ['brand_asset', 'product'],
+      isActive: true,
+    },
+  ];
+
+  for (const cfg of explorationConfigSeeds) {
+    await prisma.explorationConfig.create({
+      data: { workspaceId: DEMO_WORKSPACE_ID, ...cfg },
+    });
+  }
+
+  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 13 brand assets (3 with content+frameworks), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 10 knowledge resources (2 featured), 7 market insights (8 source URLs), 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, 3 exploration configs, S9 Settings: 1 user profile, 1 email preference, 3 connected accounts, 3 plans, 1 subscription, 1 payment method, 4 invoices, 1 notification preference, 1 appearance preference, S9 Help: 6 help categories, 5 help articles, 6 video tutorials, 7 FAQ items, 5 feature requests");
 }
 
 main()
