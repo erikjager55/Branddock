@@ -16,13 +16,19 @@ interface LockConfirmDialogProps {
 }
 
 function getLockBlockedItems(entityType: LockEntityType) {
-  return [
+  const items = [
     { icon: Pencil, label: 'Edit content' },
-    { icon: Trash2, label: entityType === 'brand-asset' ? 'Delete asset' : 'Delete item' },
+  ];
+  // Brand assets cannot be deleted — only show delete for other entity types
+  if (entityType !== 'brand-asset') {
+    items.push({ icon: Trash2, label: 'Delete item' });
+  }
+  items.push(
     { icon: Sparkles, label: 'AI generation & regeneration' },
     { icon: MessageCircle, label: entityType === 'brand-asset' ? 'Start AI Exploration' : 'Start new conversation' },
     { icon: Pencil, label: 'Start research methods' },
-  ];
+  );
+  return items;
 }
 
 const LOCK_HIDDEN = [

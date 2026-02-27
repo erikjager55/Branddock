@@ -37,9 +37,13 @@ export interface CompletenessInput {
 }
 
 export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck[] {
-  const fields: FieldCheck[] = [
-    { label: 'Description', filled: !!(asset.description && asset.description.length > 0) },
-  ];
+  const fields: FieldCheck[] = [];
+
+  // PURPOSE_WHEEL completeness is driven entirely by frameworkData (4 cards)
+  // Other frameworks include Description as a base field
+  if (asset.frameworkType !== 'PURPOSE_WHEEL') {
+    fields.push({ label: 'Description', filled: !!(asset.description && asset.description.length > 0) });
+  }
 
   if (!asset.frameworkType || !asset.frameworkData) return fields;
 
@@ -51,11 +55,10 @@ export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck
     case 'PURPOSE_WHEEL': {
       const pw = data as PurposeWheelFrameworkData;
       fields.push(
-        { label: 'Statement', filled: !!pw?.statement },
-        { label: 'Impact Type', filled: !!pw?.impactType },
-        { label: 'Impact Description', filled: !!pw?.impactDescription },
-        { label: 'Mechanism', filled: !!pw?.mechanism },
-        { label: 'Pressure Test', filled: !!pw?.pressureTest },
+        { label: 'Statement', filled: !!pw?.statement?.trim() },
+        { label: 'Impact Type', filled: !!pw?.impactType?.trim() },
+        { label: 'Mechanism', filled: !!pw?.mechanism?.trim() },
+        { label: 'Pressure Test', filled: !!pw?.pressureTest?.trim() },
       );
       break;
     }
