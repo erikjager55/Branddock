@@ -189,7 +189,13 @@ function AppContent() {
     setActiveSectionRaw(section);
     
     // If navigating away from brand assets, reset asset-related states
-    if (!section.startsWith('brand-') && section !== 'brand') {
+    const isAssetRelated = section.startsWith('brand-')
+      || section === 'brand'
+      || section === 'ai-exploration-brand-asset'
+      || section === 'interviews'
+      || section === 'workshop-purchase'
+      || section === 'golden-circle';
+    if (!isAssetRelated) {
       resetAssetStates();
     }
   };
