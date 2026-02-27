@@ -86,18 +86,20 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
           </div>
         </div>
 
-        <div className="space-y-4">
-          {/* Impact Type */}
-          <div>
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-              <ClipboardList className="h-3.5 w-3.5" />
-              Impact Type
+        <div className="space-y-3">
+          {/* Impact Type — nested sub-card */}
+          <div className="bg-amber-50/30 border border-amber-100 rounded-xl p-4">
+            <div className="flex items-center gap-1.5 mb-2">
+              <ClipboardList className="h-4 w-4 text-amber-500" />
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Impact Type
+              </p>
             </div>
             {isEditing ? (
               <select
                 value={draft.impactType}
                 onChange={(e) => handleChange('impactType', e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
               >
                 <option value="">Select an impact type...</option>
                 {IMPACT_TYPE_OPTIONS.map((opt) => (
@@ -113,17 +115,19 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
             )}
           </div>
 
-          {/* Impact Description */}
-          <div>
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
-              <ClipboardList className="h-3.5 w-3.5" />
-              Impact Description
+          {/* Impact Description — nested sub-card */}
+          <div className="bg-amber-50/30 border border-amber-100 rounded-xl p-4">
+            <div className="flex items-center gap-1.5 mb-2">
+              <ClipboardList className="h-4 w-4 text-amber-500" />
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Impact Description
+              </p>
             </div>
             {isEditing ? (
               <textarea
                 value={draft.impactDescription}
                 onChange={(e) => handleChange('impactDescription', e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
                 rows={3}
                 placeholder="Describe how this impact looks..."
               />
