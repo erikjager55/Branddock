@@ -147,7 +147,7 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
         'https://images.unsplash.com/photo-1557683311-eac922347aa1?w=800&h=600&fit=crop',
       ],
       icons: {
-        style: 'Outlined, minimalistisch met 2px stroke',
+        style: 'Outlined, minimalist with 2px stroke',
         examples: [
           'https://images.unsplash.com/photo-1633409361618-c73427e4e206?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400',
           'https://images.unsplash.com/photo-1633409361618-c73427e4e206?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400',
@@ -155,45 +155,45 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
         ],
       },
       tonology: {
-        tone: 'Professioneel & betrouwbaar',
-        voice: 'Vriendelijk en toegankelijk, maar met autoriteit',
-        keywords: ['Innovatie', 'Kwaliteit', 'Betrouwbaarheid', 'Transparantie', 'Duurzaamheid'],
+        tone: 'Professional & trustworthy',
+        voice: 'Friendly and accessible, but with authority',
+        keywords: ['Innovation', 'Quality', 'Reliability', 'Transparency', 'Sustainability'],
         dosDonts: {
           dos: [
-            'Gebruik duidelijke, directe taal',
-            'Wees consistent in tone of voice',
-            'Spreek de klant persoonlijk aan',
-            'Gebruik actieve zinnen',
-            'Toon empathie en begrip'
+            'Use clear, direct language',
+            'Be consistent in tone of voice',
+            'Address the customer personally',
+            'Use active sentences',
+            'Show empathy and understanding'
           ],
           donts: [
-            'Gebruik geen jargon of vaaktermen',
-            'Vermijd vage uitspraken',
-            'Wees niet te formeel of afstandelijk',
-            'Gebruik geen negatieve framing',
-            'Maak geen ongefundeerde claims'
+            'Don\'t use jargon or technical terms',
+            'Avoid vague statements',
+            'Don\'t be too formal or distant',
+            'Don\'t use negative framing',
+            'Don\'t make unsubstantiated claims'
           ],
         },
       },
       shapes: {
-        description: 'De vormentaal combineert geometrische precisie met organische elementen voor een moderne, toegankelijke uitstraling.',
-        primaryShapes: ['Afgeronde rechthoeken', 'Cirkels', 'Zachte curves'],
+        description: 'The shape language combines geometric precision with organic elements for a modern, accessible appearance.',
+        primaryShapes: ['Rounded rectangles', 'Circles', 'Soft curves'],
         examples: [
-          { 
-            shape: 'Afgeronde rechthoeken (8-16px radius)', 
-            usage: 'Buttons, cards, containers en afbeeldingen' 
+          {
+            shape: 'Rounded rectangles (8-16px radius)',
+            usage: 'Buttons, cards, containers and images'
           },
-          { 
-            shape: 'Perfecte cirkels', 
-            usage: 'Avatars, icon containers en badges' 
+          {
+            shape: 'Perfect circles',
+            usage: 'Avatars, icon containers and badges'
           },
-          { 
-            shape: 'Zachte curves & waves', 
-            usage: 'Decoratieve elementen, section dividers en achtergronden' 
+          {
+            shape: 'Soft curves & waves',
+            usage: 'Decorative elements, section dividers and backgrounds'
           },
-          { 
-            shape: 'Subtiele schaduwlagen', 
-            usage: 'Depth & hierarchy in UI componenten' 
+          {
+            shape: 'Subtle shadow layers',
+            usage: 'Depth & hierarchy in UI components'
           },
         ],
       },
@@ -473,10 +473,10 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
                       <FileUp className="h-8 w-8 text-white" />
                     </div>
                     <div className="flex-1">
-                      <CardTitle className="text-2xl mb-2">PDF Styleguide Uploaden</CardTitle>
+                      <CardTitle className="text-2xl mb-2">Upload PDF Styleguide</CardTitle>
                       <CardDescription className="text-base">
-                        Upload een bestaande brand styleguide in PDF formaat. Onze AI analyseert 
-                        het document en extraheert alle visuele elementen automatisch.
+                        Upload an existing brand styleguide in PDF format. Our AI analyzes
+                        the document and extracts all visual elements automatically.
                       </CardDescription>
                     </div>
                   </div>
@@ -498,9 +498,9 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
                             <Upload className="h-6 w-6 text-primary" />
                           </div>
                           <div>
-                            <div className="font-medium mb-1">Klik om een bestand te uploaden</div>
+                            <div className="font-medium mb-1">Click to upload a file</div>
                             <div className="text-sm text-muted-foreground">
-                              Of sleep een PDF bestand hier naartoe
+                              Or drag a PDF file here
                             </div>
                           </div>
                           <div className="text-xs text-muted-foreground">
@@ -558,12 +558,12 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
                       {isAnalyzing ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          PDF Analyseren...
+                          Analyzing PDF...
                         </>
                       ) : (
                         <>
                           <Sparkles className="h-4 w-4 mr-2" />
-                          PDF Analyseren
+                          Analyze PDF
                         </>
                       )}
                     </Button>
@@ -574,29 +574,29 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
                     <div className="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border">
                       <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-medium text-sm">Automatische Extractie</div>
-                        <div className="text-xs text-muted-foreground">Kleuren, fonts en design elementen</div>
+                        <div className="font-medium text-sm">Automatic Extraction</div>
+                        <div className="text-xs text-muted-foreground">Colors, fonts and design elements</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border">
                       <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-medium text-sm">Logo Detectie</div>
-                        <div className="text-xs text-muted-foreground">Primaire logo's en variaties</div>
+                        <div className="font-medium text-sm">Logo Detection</div>
+                        <div className="text-xs text-muted-foreground">Primary logos and variations</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border">
                       <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
                         <div className="font-medium text-sm">Tone of Voice</div>
-                        <div className="text-xs text-muted-foreground">Communicatiestijl en richtlijnen</div>
+                        <div className="text-xs text-muted-foreground">Communication style and guidelines</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border">
                       <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-medium text-sm">Beeldmateriaal</div>
-                        <div className="text-xs text-muted-foreground">Foto's en illustraties</div>
+                        <div className="font-medium text-sm">Imagery</div>
+                        <div className="text-xs text-muted-foreground">Photos and illustrations</div>
                       </div>
                     </div>
                   </div>
@@ -606,7 +606,7 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
               {/* Info Card */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Wat voor PDF kan ik uploaden?</CardTitle>
+                  <CardTitle className="text-lg">What PDF can I upload?</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-start gap-3">
@@ -616,7 +616,7 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
                     <div>
                       <div className="font-medium text-sm mb-1">Brand Styleguides</div>
                       <div className="text-sm text-muted-foreground">
-                        Complete brand identity documenten met logo's, kleuren en typografie
+                        Complete brand identity documents with logos, colors and typography
                       </div>
                     </div>
                   </div>
@@ -627,7 +627,7 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
                     <div>
                       <div className="font-medium text-sm mb-1">Design Systems</div>
                       <div className="text-sm text-muted-foreground">
-                        Documenten met componenten, spacing en design tokens
+                        Documents with components, spacing and design tokens
                       </div>
                     </div>
                   </div>
@@ -638,7 +638,7 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
                     <div>
                       <div className="font-medium text-sm mb-1">Brand Manuals</div>
                       <div className="text-sm text-muted-foreground">
-                        Merkhandboeken met tone of voice en visuele richtlijnen
+                        Brand manuals with tone of voice and visual guidelines
                       </div>
                     </div>
                   </div>
@@ -650,7 +650,7 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
           {/* General Info Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Hoe werkt het?</CardTitle>
+              <CardTitle className="text-lg">How does it work?</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-start gap-3">
@@ -659,12 +659,12 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
                 </div>
                 <div>
                   <div className="font-medium text-sm mb-1">
-                    {mode === 'url' ? 'Voer een website URL in' : 'Upload een PDF styleguide'}
+                    {mode === 'url' ? 'Enter a website URL' : 'Upload a PDF styleguide'}
                   </div>
                   <div className="text-sm text-muted-foreground">
-                    {mode === 'url' 
-                      ? 'Plak de URL van een website waarvan je de huisstijl wilt analyseren'
-                      : 'Upload een bestaand brand styleguide document in PDF formaat'}
+                    {mode === 'url'
+                      ? 'Paste the URL of a website whose brand style you want to analyze'
+                      : 'Upload an existing brand styleguide document in PDF format'}
                   </div>
                 </div>
               </div>
@@ -674,12 +674,12 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
                 </div>
                 <div>
                   <div className="font-medium text-sm mb-1">
-                    {mode === 'url' ? 'AI analyseert de website' : 'AI analyseert de PDF'}
+                    {mode === 'url' ? 'AI analyzes the website' : 'AI analyzes the PDF'}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {mode === 'url'
-                      ? 'Onze AI scant de website en extraheert alle visuele design elementen'
-                      : 'Onze AI leest het document en extraheert alle design elementen en richtlijnen'}
+                      ? 'Our AI scans the website and extracts all visual design elements'
+                      : 'Our AI reads the document and extracts all design elements and guidelines'}
                   </div>
                 </div>
               </div>
@@ -688,9 +688,9 @@ export function BrandstyleAnalyzer({ onAnalysisComplete }: BrandstyleAnalyzerPro
                   3
                 </div>
                 <div>
-                  <div className="font-medium text-sm mb-1">Bekijk je styleguide</div>
+                  <div className="font-medium text-sm mb-1">View your styleguide</div>
                   <div className="text-sm text-muted-foreground">
-                    Je krijgt een volledige styleguide met alle kleuren, fonts en stijlelementen
+                    You get a complete styleguide with all colors, fonts and style elements
                   </div>
                 </div>
               </div>

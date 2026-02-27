@@ -468,9 +468,9 @@ async function main() {
   const frameworkAssignments = [
     { slug: "social-relevancy", frameworkType: "PURPOSE_KOMPAS", frameworkData: {
       pillars: {
-        mens: { impact: "high", description: "Stimuleren van bewustwording en zelfontwikkeling door organisaties te helpen hun authentieke verhaal te ontdekken en te vertellen." },
-        milieu: { impact: "medium", description: "Bevorderen van duurzame merkstrategieën die rekening houden met ecologische impact in communicatie en productie." },
-        maatschappij: { impact: "high", description: "Democratiseren van professionele merkstrategie zodat niet alleen grote corporates, maar ook MKB-bedrijven betekenisvol kunnen ondernemen." },
+        mens: { impact: "high", description: "Fostering awareness and self-development by helping organizations discover and tell their authentic story." },
+        milieu: { impact: "medium", description: "Promoting sustainable brand strategies that consider ecological impact in communication and production." },
+        maatschappij: { impact: "high", description: "Democratizing professional brand strategy so that not only large corporates, but also SMEs can do business meaningfully." },
       },
     }},
     { slug: "golden-circle", frameworkType: "GOLDEN_CIRCLE", frameworkData: {
@@ -3787,49 +3787,49 @@ If issues persist, submit a support ticket with:
       model: 'claude-sonnet-4-20250514',
       temperature: 0.4,
       maxTokens: 2048,
-      systemPrompt: `Je bent een senior merkstrateeg die een gestructureerde persona-exploratie leidt.
-Begeleid de gebruiker door strategische dimensies met doordachte vragen.
-Wees warm maar professioneel — als een vertrouwde adviseur.
-Stel EEEN vraag tegelijk. Houd vragen beknopt.
-Verwijs naar specifieke details uit eerdere antwoorden.
-Reageer in dezelfde taal als de gebruiker.
+      systemPrompt: `You are a senior brand strategist leading a structured persona exploration.
+Guide the user through strategic dimensions with thoughtful questions.
+Be warm but professional — like a trusted advisor.
+Ask ONE question at a time. Keep questions concise.
+Refer to specific details from previous answers.
+Respond in the same language as the user.
 
 {{brandContext}}`,
       dimensions: [
-        { key: 'demographics', title: 'Demografisch Profiel', icon: 'Users', question: 'Kun je me meer vertellen over de achtergrond van deze persona — leeftijdscategorie, locatie, opleiding, professionele context?' },
-        { key: 'goals_motivations', title: 'Doelen & Motivaties', icon: 'TrendingUp', question: 'Wat zijn de primaire doelstellingen van deze persona — zowel professioneel als persoonlijk?' },
-        { key: 'challenges_frustrations', title: 'Uitdagingen & Pijnpunten', icon: 'Heart', question: 'Wat zijn de belangrijkste obstakels voor deze persona? Welke pijnpunten ervaren ze?' },
-        { key: 'value_proposition', title: 'Waarde-aansluiting', icon: 'Zap', question: 'Hoe sluit het aanbod van jouw merk aan bij de behoeften van deze persona?' },
+        { key: 'demographics', title: 'Demographic Profile', icon: 'Users', question: 'Can you tell me more about the background of this persona — age range, location, education, professional context?' },
+        { key: 'goals_motivations', title: 'Goals & Motivations', icon: 'TrendingUp', question: 'What are the primary objectives of this persona — both professionally and personally?' },
+        { key: 'challenges_frustrations', title: 'Challenges & Pain Points', icon: 'Heart', question: 'What are the main obstacles for this persona? What pain points do they experience?' },
+        { key: 'value_proposition', title: 'Value Alignment', icon: 'Zap', question: 'How does your brand\'s offering align with the needs of this persona?' },
       ],
-      feedbackPrompt: `Geef korte, constructieve feedback (2-3 zinnen) op het antwoord van de gebruiker.
-Dimensie: {{dimensionTitle}}
-Gestelde vraag: {{questionAsked}}
-Antwoord van gebruiker: {{userAnswer}}
-Erken wat sterk is. Als iets verder verkend kan worden, merk het vriendelijk op.
-Verwijs naar hun specifieke woorden. Stel nooit een vervolgvraag.
-Reageer in dezelfde taal als de gebruiker.`,
-      reportPrompt: `Genereer een analyserapport op basis van de persona-exploratie.
+      feedbackPrompt: `Give brief, constructive feedback (2-3 sentences) on the user's answer.
+Dimension: {{dimensionTitle}}
+Question asked: {{questionAsked}}
+User's answer: {{userAnswer}}
+Acknowledge what is strong. If something can be explored further, note it kindly.
+Refer to their specific words. Never ask a follow-up question.
+Respond in the same language as the user.`,
+      reportPrompt: `Generate an analysis report based on the persona exploration.
 Persona: {{itemName}}
 {{itemDescription}}
 
-Antwoorden per dimensie:
+Answers per dimension:
 {{allAnswers}}
 
-Merkcontext:
+Brand context:
 {{brandContext}}
 
-Genereer JSON:
+Generate JSON:
 {
-  "executiveSummary": "2-3 paragraaf strategische samenvatting",
+  "executiveSummary": "2-3 paragraph strategic summary",
   "findings": [{ "title": "...", "description": "..." }],
   "recommendations": ["..."],
   "fieldSuggestions": [{ "field": "...", "label": "...", "suggestedValue": "...", "reason": "..." }]
 }
-Reageer alleen met geldige JSON.`,
+Respond only with valid JSON.`,
       fieldSuggestionsConfig: [
-        { field: 'bio', label: 'Bio', type: 'text' as const, extractionHint: 'Extraheer een beknopte biografie uit de antwoorden' },
-        { field: 'goals', label: 'Doelen', type: 'text' as const, extractionHint: 'Extraheer concrete doelen uit de antwoorden' },
-        { field: 'frustrations', label: 'Frustraties', type: 'text' as const, extractionHint: 'Extraheer frustraties en pijnpunten' },
+        { field: 'bio', label: 'Bio', type: 'text' as const, extractionHint: 'Extract a concise biography from the answers' },
+        { field: 'goals', label: 'Goals', type: 'text' as const, extractionHint: 'Extract concrete goals from the answers' },
+        { field: 'frustrations', label: 'Frustrations', type: 'text' as const, extractionHint: 'Extract frustrations and pain points' },
       ],
       contextSources: ['brand_asset', 'product'],
       isActive: true,
@@ -3842,52 +3842,52 @@ Reageer alleen met geldige JSON.`,
       model: 'claude-sonnet-4-20250514',
       temperature: 0.4,
       maxTokens: 2048,
-      systemPrompt: `Je bent een senior merkstrateeg gespecialiseerd in maatschappelijke relevantie en purpose-driven branding.
-Je leidt een gestructureerde exploratie van het Purpose Kompas — de vier pijlers van social relevancy.
-Wees warm, professioneel en inspirerend. Help de gebruiker ontdekken hoe hun merk impact maakt.
-Stel EEEN vraag tegelijk. Verwijs naar specifieke details uit eerdere antwoorden.
+      systemPrompt: `You are a senior brand strategist specialized in social relevancy and purpose-driven branding.
+You lead a structured exploration of the Purpose Compass — the three pillars of social relevancy.
+Be warm, professional and inspiring. Help the user discover how their brand makes impact.
+Ask ONE question at a time. Refer to specific details from previous answers.
 
 {{brandContext}}`,
       dimensions: [
-        { key: 'purpose_clarity', title: 'Purpose Clarity', icon: 'Compass', question: 'Waarom bestaat jullie organisatie, los van winst maken? Welke verandering willen jullie zien in de wereld?' },
-        { key: 'mens', title: 'Impact op Mens', icon: 'Heart', question: 'Hoe dragen jullie producten of diensten bij aan persoonlijke groei en welzijn van mensen?' },
-        { key: 'milieu', title: 'Impact op Milieu', icon: 'Leaf', question: 'Welke stappen heeft jullie organisatie gezet richting duurzaamheid? Hoe minimaliseren jullie de ecologische voetafdruk?' },
-        { key: 'maatschappij', title: 'Impact op Maatschappij', icon: 'Globe', question: 'Hoe helpt jullie merk de maatschappij verbeteren? Denk aan inclusiviteit, toegankelijkheid of educatie.' },
+        { key: 'purpose_clarity', title: 'Purpose Clarity', icon: 'Compass', question: 'Why does your organization exist, beyond making profit? What change do you want to see in the world?' },
+        { key: 'mens', title: 'Impact on People', icon: 'Heart', question: 'How do your products or services contribute to personal growth and well-being of people?' },
+        { key: 'milieu', title: 'Impact on Environment', icon: 'Leaf', question: 'What steps has your organization taken towards sustainability? How do you minimize your ecological footprint?' },
+        { key: 'maatschappij', title: 'Impact on Society', icon: 'Globe', question: 'How does your brand help improve society? Think about inclusivity, accessibility or education.' },
       ],
-      feedbackPrompt: `Geef korte, constructieve feedback (2-3 zinnen) op het antwoord over maatschappelijke relevantie.
-Dimensie: {{dimensionTitle}}
-Gestelde vraag: {{questionAsked}}
-Antwoord: {{userAnswer}}
-Erken concrete acties en intenties. Stel geen vervolgvraag.
-Reageer in dezelfde taal als de gebruiker.`,
-      reportPrompt: `Genereer een Social Relevancy rapport op basis van de Purpose Kompas exploratie.
+      feedbackPrompt: `Give brief, constructive feedback (2-3 sentences) on the answer about social relevancy.
+Dimension: {{dimensionTitle}}
+Question asked: {{questionAsked}}
+Answer: {{userAnswer}}
+Acknowledge concrete actions and intentions. Do not ask a follow-up question.
+Respond in the same language as the user.`,
+      reportPrompt: `Generate a Social Relevancy report based on the Purpose Compass exploration.
 Brand Asset: {{itemName}}
 {{itemDescription}}
 
-Antwoorden per dimensie:
+Answers per dimension:
 {{allAnswers}}
 
-Merkcontext:
+Brand context:
 {{brandContext}}
 
-Genereer JSON:
+Generate JSON:
 {
-  "executiveSummary": "2-3 paragraaf samenvatting van de maatschappelijke relevantie",
+  "executiveSummary": "2-3 paragraph summary of the social relevancy",
   "findings": [{ "title": "...", "description": "..." }],
   "recommendations": ["..."],
   "fieldSuggestions": [
-    { "field": "content", "label": "Beschrijving", "suggestedValue": "...", "reason": "..." },
-    { "field": "frameworkData.pillars.mens.description", "label": "Mens", "suggestedValue": "...", "reason": "..." },
-    { "field": "frameworkData.pillars.milieu.description", "label": "Milieu", "suggestedValue": "...", "reason": "..." },
-    { "field": "frameworkData.pillars.maatschappij.description", "label": "Maatschappij", "suggestedValue": "...", "reason": "..." }
+    { "field": "content", "label": "Description", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.pillars.mens.description", "label": "People", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.pillars.milieu.description", "label": "Environment", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.pillars.maatschappij.description", "label": "Society", "suggestedValue": "...", "reason": "..." }
   ]
 }
-Reageer alleen met geldige JSON.`,
+Respond only with valid JSON.`,
       fieldSuggestionsConfig: [
-        { field: 'content', label: 'Beschrijving', type: 'text' as const, extractionHint: 'Extraheer een samenvatting van de maatschappelijke relevantie' },
-        { field: 'frameworkData.pillars.mens.description', label: 'Mens — Beschrijving', type: 'text' as const, extractionHint: 'Extraheer de impact op mens' },
-        { field: 'frameworkData.pillars.milieu.description', label: 'Milieu — Beschrijving', type: 'text' as const, extractionHint: 'Extraheer de impact op milieu' },
-        { field: 'frameworkData.pillars.maatschappij.description', label: 'Maatschappij — Beschrijving', type: 'text' as const, extractionHint: 'Extraheer de impact op maatschappij' },
+        { field: 'content', label: 'Description', type: 'text' as const, extractionHint: 'Extract a summary of the social relevancy' },
+        { field: 'frameworkData.pillars.mens.description', label: 'People — Description', type: 'text' as const, extractionHint: 'Extract the impact on people' },
+        { field: 'frameworkData.pillars.milieu.description', label: 'Environment — Description', type: 'text' as const, extractionHint: 'Extract the impact on environment' },
+        { field: 'frameworkData.pillars.maatschappij.description', label: 'Society — Description', type: 'text' as const, extractionHint: 'Extract the impact on society' },
       ],
       contextSources: ['brand_asset', 'product', 'persona'],
       isActive: true,
@@ -3900,50 +3900,50 @@ Reageer alleen met geldige JSON.`,
       model: 'claude-sonnet-4-20250514',
       temperature: 0.4,
       maxTokens: 2048,
-      systemPrompt: `Je bent een senior merkstrateeg gespecialiseerd in purpose-driven branding.
-Je leidt een gestructureerde exploratie van het Purpose Statement — waarom, hoe en impact.
-Help de gebruiker hun bestaansrecht helder formuleren.
-Wees warm, professioneel en inspirerend. Stel EEEN vraag tegelijk.
+      systemPrompt: `You are a senior brand strategist specialized in purpose-driven branding.
+You lead a structured exploration of the Purpose Statement — why, how and impact.
+Help the user clearly formulate their reason for being.
+Be warm, professional and inspiring. Ask ONE question at a time.
 
 {{brandContext}}`,
       dimensions: [
-        { key: 'why', title: 'Waarom — Bestaansrecht', icon: 'Compass', question: 'Waarom is jullie organisatie opgericht? Welke fundamentele overtuiging ligt aan de basis?' },
-        { key: 'how', title: 'Hoe — Unieke Aanpak', icon: 'Lightbulb', question: 'Hoe vervullen jullie je purpose op een manier die uniek is voor jullie? Wat maakt jullie aanpak anders?' },
-        { key: 'impact', title: 'Impact — Gewenst Effect', icon: 'Rocket', question: 'Hoe ziet de wereld eruit als jullie purpose volledig is gerealiseerd? Welke meetbare impact streven jullie na?' },
-        { key: 'alignment', title: 'Alignment — Organisatie & Uitvoering', icon: 'Target', question: 'Hoe goed weerspiegelt jullie huidige organisatie jullie purpose? Waar zitten de gaps tussen purpose en uitvoering?' },
+        { key: 'why', title: 'Why — Reason for Being', icon: 'Compass', question: 'Why was your organization founded? What fundamental belief is at its core?' },
+        { key: 'how', title: 'How — Unique Approach', icon: 'Lightbulb', question: 'How do you fulfill your purpose in a way that is unique to you? What makes your approach different?' },
+        { key: 'impact', title: 'Impact — Desired Effect', icon: 'Rocket', question: 'What does the world look like when your purpose is fully realized? What measurable impact do you strive for?' },
+        { key: 'alignment', title: 'Alignment — Organization & Execution', icon: 'Target', question: 'How well does your current organization reflect your purpose? Where are the gaps between purpose and execution?' },
       ],
-      feedbackPrompt: `Geef korte, constructieve feedback (2-3 zinnen) op het antwoord over het purpose statement.
-Dimensie: {{dimensionTitle}}
-Gestelde vraag: {{questionAsked}}
-Antwoord: {{userAnswer}}
-Erken de kerngedachte. Stel geen vervolgvraag.
-Reageer in dezelfde taal als de gebruiker.`,
-      reportPrompt: `Genereer een Purpose Statement rapport.
+      feedbackPrompt: `Give brief, constructive feedback (2-3 sentences) on the answer about the purpose statement.
+Dimension: {{dimensionTitle}}
+Question asked: {{questionAsked}}
+Answer: {{userAnswer}}
+Acknowledge the core idea. Do not ask a follow-up question.
+Respond in the same language as the user.`,
+      reportPrompt: `Generate a Purpose Statement report.
 Brand Asset: {{itemName}}
 {{itemDescription}}
 
-Antwoorden per dimensie:
+Answers per dimension:
 {{allAnswers}}
 
-Merkcontext:
+Brand context:
 {{brandContext}}
 
-Genereer JSON:
+Generate JSON:
 {
-  "executiveSummary": "2-3 paragraaf samenvatting van het purpose statement",
+  "executiveSummary": "2-3 paragraph summary of the purpose statement",
   "findings": [{ "title": "...", "description": "..." }],
   "recommendations": ["..."],
   "fieldSuggestions": [
-    { "field": "content.why", "label": "Waarom", "suggestedValue": "...", "reason": "..." },
-    { "field": "content.how", "label": "Hoe", "suggestedValue": "...", "reason": "..." },
+    { "field": "content.why", "label": "Why", "suggestedValue": "...", "reason": "..." },
+    { "field": "content.how", "label": "How", "suggestedValue": "...", "reason": "..." },
     { "field": "content.impact", "label": "Impact", "suggestedValue": "...", "reason": "..." }
   ]
 }
-Reageer alleen met geldige JSON.`,
+Respond only with valid JSON.`,
       fieldSuggestionsConfig: [
-        { field: 'content.why', label: 'Waarom — Bestaansrecht', type: 'text' as const, extractionHint: 'Extraheer de kern van het waarom/bestaansrecht' },
-        { field: 'content.how', label: 'Hoe — Unieke Aanpak', type: 'text' as const, extractionHint: 'Extraheer de unieke aanpak/methode' },
-        { field: 'content.impact', label: 'Impact — Gewenst Effect', type: 'text' as const, extractionHint: 'Extraheer het gewenste impact/effect' },
+        { field: 'content.why', label: 'Why — Reason for Being', type: 'text' as const, extractionHint: 'Extract the core of the why/reason for being' },
+        { field: 'content.how', label: 'How — Unique Approach', type: 'text' as const, extractionHint: 'Extract the unique approach/method' },
+        { field: 'content.impact', label: 'Impact — Desired Effect', type: 'text' as const, extractionHint: 'Extract the desired impact/effect' },
       ],
       contextSources: ['brand_asset', 'product'],
       isActive: true,

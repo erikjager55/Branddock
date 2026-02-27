@@ -24,8 +24,8 @@ export const FRAMEWORK_REGISTRY: Record<FrameworkType, FrameworkMeta> = {
   },
   PURPOSE_KOMPAS: {
     type: "PURPOSE_KOMPAS",
-    label: "Maatschappelijke Relevantie",
-    description: "Mens, Milieu & Maatschappij pijlers",
+    label: "Social Relevancy",
+    description: "People, Environment & Society pillars",
   },
 };
 

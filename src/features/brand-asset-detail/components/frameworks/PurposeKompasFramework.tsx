@@ -6,22 +6,22 @@ import type { PurposeKompasFrameworkData, PurposeKompasPillar } from '../../type
 
 const PILLAR_CONFIG = {
   mens: {
-    label: 'Mens',
-    description: 'Gezonde leefstijl, zelfontwikkeling en persoonlijke groei',
+    label: 'People',
+    description: 'Healthy lifestyles, self-development and personal growth',
     icon: Heart,
     color: 'text-rose-600',
     bgColor: 'bg-rose-50',
   },
   milieu: {
-    label: 'Milieu',
-    description: 'Duurzaamheid, CO₂-reductie en circulaire productie',
+    label: 'Environment',
+    description: 'Sustainability, CO₂ reduction and circular production',
     icon: Leaf,
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-50',
   },
   maatschappij: {
-    label: 'Maatschappij',
-    description: 'Bestrijding ongelijkheid, community en sociale impact',
+    label: 'Society',
+    description: 'Fighting inequality, community and social impact',
     icon: Globe,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',

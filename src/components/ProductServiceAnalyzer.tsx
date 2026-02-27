@@ -84,7 +84,7 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
     return {
       source,
       name: 'Premium Marketing Suite',
-      description: 'Een complete marketingoplossing voor middelgrote bedrijven, met geavanceerde analytics, automation en campagne management tools.',
+      description: 'A complete marketing solution for mid-sized companies, with advanced analytics, automation and campaign management tools.',
       category: 'Marketing Software',
       pricing: {
         model: 'Subscription',
@@ -103,17 +103,17 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
         'Real-time reporting',
       ],
       benefits: [
-        'Verhoog conversie met 40% gemiddeld',
-        'Bespaar 15 uur per week op repetitieve taken',
-        'Krijg 360° inzicht in klantgedrag',
-        'Schaal je marketing zonder extra personeel',
-        'Verbeter ROI met data-driven beslissingen',
+        'Increase conversion by 40% on average',
+        'Save 15 hours per week on repetitive tasks',
+        'Get 360° insight into customer behavior',
+        'Scale your marketing without additional staff',
+        'Improve ROI with data-driven decisions',
       ],
       useCases: [
-        'Lead generation campagnes',
-        'Customer retention programma\'s',
+        'Lead generation campaigns',
+        'Customer retention programs',
         'Product launches',
-        'Brand awareness campagnes',
+        'Brand awareness campaigns',
         'Event marketing',
       ],
       specifications: [
@@ -140,12 +140,12 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
     setError('');
     
     if (!url.trim()) {
-      setError('Voer een product/service URL in');
+      setError('Enter a product/service URL');
       return;
     }
 
     if (!validateUrl(url)) {
-      setError('Voer een geldige URL in (bijv. www.example.com/product)');
+      setError('Enter a valid URL (e.g. www.example.com/product)');
       return;
     }
 
@@ -165,11 +165,11 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
     const file = e.target.files?.[0];
     if (file) {
       if (file.type !== 'application/pdf') {
-        setError('Alleen PDF bestanden zijn toegestaan');
+        setError('Only PDF files are allowed');
         return;
       }
       if (file.size > 10 * 1024 * 1024) { // 10MB limit
-        setError('Bestand mag maximaal 10MB zijn');
+        setError('File size must be 10MB or less');
         return;
       }
       setError('');
@@ -179,7 +179,7 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
 
   const handleAnalyzePDF = async () => {
     if (!uploadedFile) {
-      setError('Upload eerst een PDF bestand');
+      setError('Upload a PDF file first');
       return;
     }
 
@@ -204,11 +204,11 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
   const handleManualSubmit = () => {
     // Validate required fields
     if (!manualForm.name.trim()) {
-      setError('Product/service naam is verplicht');
+      setError('Product/service name is required');
       return;
     }
     if (!manualForm.description.trim()) {
-      setError('Beschrijving is verplicht');
+      setError('Description is required');
       return;
     }
 
@@ -262,7 +262,7 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
             <div>
               <h1 className="text-3xl font-semibold mb-1">Product & Service Analyzer</h1>
               <p className="text-muted-foreground">
-                Analyseer een product via URL, upload een PDF, of voer handmatig gegevens in
+                Analyze a product via URL, upload a PDF, or enter data manually
               </p>
             </div>
           </div>
@@ -315,7 +315,7 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
               }`}
             >
               <FileText className="h-4 w-4 inline-block mr-2" />
-              Handmatig Invoeren
+              Manual Entry
             </button>
           </div>
 
@@ -329,10 +329,10 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                       <Globe className="h-8 w-8 text-white" />
                     </div>
                     <div className="flex-1">
-                      <CardTitle className="text-2xl mb-2">Analyseer Product URL</CardTitle>
+                      <CardTitle className="text-2xl mb-2">Analyze Product URL</CardTitle>
                       <CardDescription className="text-base">
-                        Voer de URL van een productpagina in en onze AI analyseert automatisch alle kenmerken, 
-                        voordelen en specificaties van het product of de service.
+                        Enter the URL of a product page and our AI automatically analyzes all features,
+                        benefits and specifications of the product or service.
                       </CardDescription>
                     </div>
                   </div>
@@ -349,7 +349,7 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                         <Input
                           id="product-url"
                           type="text"
-                          placeholder="www.example.com/product of https://example.com/services"
+                          placeholder="www.example.com/product or https://example.com/services"
                           value={url}
                           onChange={(e) => {
                             setUrl(e.target.value);
@@ -368,12 +368,12 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                         {isAnalyzing ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Analyseren...
+                            Analyzing...
                           </>
                         ) : (
                           <>
                             <Sparkles className="h-4 w-4 mr-2" />
-                            Analyseren
+                            Analyze
                           </>
                         )}
                       </Button>
@@ -391,29 +391,29 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     <div className="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border">
                       <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-medium text-sm">Feature Extractie</div>
-                        <div className="text-xs text-muted-foreground">Kenmerken en specificaties</div>
+                        <div className="font-medium text-sm">Feature Extraction</div>
+                        <div className="text-xs text-muted-foreground">Features and specifications</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border">
                       <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-medium text-sm">Voordelen Analyse</div>
-                        <div className="text-xs text-muted-foreground">Benefits en USP's</div>
+                        <div className="font-medium text-sm">Benefits Analysis</div>
+                        <div className="text-xs text-muted-foreground">Benefits and USPs</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border">
                       <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-medium text-sm">Doelgroep Identificatie</div>
-                        <div className="text-xs text-muted-foreground">Target audience segmenten</div>
+                        <div className="font-medium text-sm">Audience Identification</div>
+                        <div className="text-xs text-muted-foreground">Target audience segments</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border">
                       <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-medium text-sm">Prijsmodel</div>
-                        <div className="text-xs text-muted-foreground">Pricing en value proposition</div>
+                        <div className="font-medium text-sm">Pricing Model</div>
+                        <div className="text-xs text-muted-foreground">Pricing and value proposition</div>
                       </div>
                     </div>
                   </div>
@@ -423,9 +423,9 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
               {/* Examples */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Voorbeelden om te proberen</CardTitle>
+                  <CardTitle className="text-lg">Examples to try</CardTitle>
                   <CardDescription>
-                    Klik op een voorbeeld om de analyse te starten
+                    Click an example to start the analysis
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -468,8 +468,8 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     <div className="flex-1">
                       <CardTitle className="text-2xl mb-2">Upload Product/Service PDF</CardTitle>
                       <CardDescription className="text-base">
-                        Upload een productsheet, brochure of servicebeschrijving in PDF formaat. Onze AI 
-                        analyseert het document en extraheert alle relevante informatie automatisch.
+                        Upload a product sheet, brochure or service description in PDF format. Our AI
+                        analyzes the document and extracts all relevant information automatically.
                       </CardDescription>
                     </div>
                   </div>
@@ -491,9 +491,9 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                             <Upload className="h-6 w-6 text-primary" />
                           </div>
                           <div>
-                            <div className="font-medium mb-1">Klik om een bestand te uploaden</div>
+                            <div className="font-medium mb-1">Click to upload a file</div>
                             <div className="text-sm text-muted-foreground">
-                              Of sleep een PDF bestand hier naartoe
+                              Or drag a PDF file here
                             </div>
                           </div>
                           <div className="text-xs text-muted-foreground">
@@ -551,12 +551,12 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                       {isAnalyzing ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          PDF Analyseren...
+                          Analyzing PDF...
                         </>
                       ) : (
                         <>
                           <Sparkles className="h-4 w-4 mr-2" />
-                          PDF Analyseren
+                          Analyze PDF
                         </>
                       )}
                     </Button>
@@ -567,29 +567,29 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     <div className="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border">
                       <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-medium text-sm">Automatische Extractie</div>
-                        <div className="text-xs text-muted-foreground">Features en specificaties</div>
+                        <div className="font-medium text-sm">Automatic Extraction</div>
+                        <div className="text-xs text-muted-foreground">Features and specifications</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border">
                       <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-medium text-sm">Prijsinformatie</div>
-                        <div className="text-xs text-muted-foreground">Pricing models en opties</div>
+                        <div className="font-medium text-sm">Pricing Information</div>
+                        <div className="text-xs text-muted-foreground">Pricing models and options</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border">
                       <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
                         <div className="font-medium text-sm">Use Cases</div>
-                        <div className="text-xs text-muted-foreground">Toepassingen en voorbeelden</div>
+                        <div className="text-xs text-muted-foreground">Applications and examples</div>
                       </div>
                     </div>
                     <div className="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border">
                       <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                       <div>
-                        <div className="font-medium text-sm">Afbeeldingen</div>
-                        <div className="text-xs text-muted-foreground">Product visuals extractie</div>
+                        <div className="font-medium text-sm">Images</div>
+                        <div className="text-xs text-muted-foreground">Product visuals extraction</div>
                       </div>
                     </div>
                   </div>
@@ -599,7 +599,7 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
               {/* Info Card */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Wat voor PDF kan ik uploaden?</CardTitle>
+                  <CardTitle className="text-lg">What kind of PDF can I upload?</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-start gap-3">
@@ -609,7 +609,7 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     <div>
                       <div className="font-medium text-sm mb-1">Product Sheets</div>
                       <div className="text-sm text-muted-foreground">
-                        Complete productbeschrijvingen met specificaties en kenmerken
+                        Complete product descriptions with specifications and features
                       </div>
                     </div>
                   </div>
@@ -620,7 +620,7 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     <div>
                       <div className="font-medium text-sm mb-1">Service Brochures</div>
                       <div className="text-sm text-muted-foreground">
-                        Documenten met servicebeschrijvingen en voordelen
+                        Documents with service descriptions and benefits
                       </div>
                     </div>
                   </div>
@@ -631,7 +631,7 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     <div>
                       <div className="font-medium text-sm mb-1">Product Catalogs</div>
                       <div className="text-sm text-muted-foreground">
-                        Catalogussen met meerdere producten en prijslijsten
+                        Catalogs with multiple products and price lists
                       </div>
                     </div>
                   </div>
@@ -650,10 +650,10 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                       <FileText className="h-8 w-8 text-white" />
                     </div>
                     <div className="flex-1">
-                      <CardTitle className="text-2xl mb-2">Handmatig Product/Service Invoeren</CardTitle>
+                      <CardTitle className="text-2xl mb-2">Manual Product/Service Entry</CardTitle>
                       <CardDescription className="text-base">
-                        Vul onderstaand formulier in met alle relevante informatie over je product of service. 
-                        Je kunt later altijd nog details aanpassen.
+                        Fill in the form below with all relevant information about your product or service.
+                        You can always adjust details later.
                       </CardDescription>
                     </div>
                   </div>
@@ -663,11 +663,11 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     {/* Name */}
                     <div className="space-y-2">
                       <Label htmlFor="manual-name">
-                        Product/Service Naam <span className="text-destructive">*</span>
+                        Product/Service Name <span className="text-destructive">*</span>
                       </Label>
                       <Input
                         id="manual-name"
-                        placeholder="Bijv. Premium Marketing Suite"
+                        placeholder="E.g. Premium Marketing Suite"
                         value={manualForm.name}
                         onChange={(e) => {
                           setManualForm({ ...manualForm, name: e.target.value });
@@ -679,11 +679,11 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     {/* Description */}
                     <div className="space-y-2">
                       <Label htmlFor="manual-description">
-                        Beschrijving <span className="text-destructive">*</span>
+                        Description <span className="text-destructive">*</span>
                       </Label>
                       <Textarea
                         id="manual-description"
-                        placeholder="Korte beschrijving van je product of service..."
+                        placeholder="Brief description of your product or service..."
                         value={manualForm.description}
                         onChange={(e) => {
                           setManualForm({ ...manualForm, description: e.target.value });
@@ -696,19 +696,19 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     {/* Category and Pricing */}
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="manual-category">Categorie</Label>
+                        <Label htmlFor="manual-category">Category</Label>
                         <Input
                           id="manual-category"
-                          placeholder="Bijv. Marketing Software"
+                          placeholder="E.g. Marketing Software"
                           value={manualForm.category}
                           onChange={(e) => setManualForm({ ...manualForm, category: e.target.value })}
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="manual-pricing">Prijsmodel</Label>
+                        <Label htmlFor="manual-pricing">Pricing Model</Label>
                         <Input
                           id="manual-pricing"
-                          placeholder="Bijv. €99/maand of Op aanvraag"
+                          placeholder="E.g. €99/month or On request"
                           value={manualForm.pricing}
                           onChange={(e) => setManualForm({ ...manualForm, pricing: e.target.value })}
                         />
@@ -718,8 +718,8 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     {/* Features */}
                     <div className="space-y-2">
                       <Label htmlFor="manual-features">
-                        Features & Kenmerken
-                        <span className="text-xs text-muted-foreground ml-2">(Eén per regel)</span>
+                        Features & Specifications
+                        <span className="text-xs text-muted-foreground ml-2">(One per line)</span>
                       </Label>
                       <Textarea
                         id="manual-features"
@@ -733,12 +733,12 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     {/* Benefits */}
                     <div className="space-y-2">
                       <Label htmlFor="manual-benefits">
-                        Voordelen & Benefits
-                        <span className="text-xs text-muted-foreground ml-2">(Eén per regel)</span>
+                        Benefits & Advantages
+                        <span className="text-xs text-muted-foreground ml-2">(One per line)</span>
                       </Label>
                       <Textarea
                         id="manual-benefits"
-                        placeholder="Verhoog conversie met 40% gemiddeld&#10;Bespaar 15 uur per week op repetitieve taken&#10;Krijg 360° inzicht in klantgedrag"
+                        placeholder="Increase conversion by 40% on average&#10;Save 15 hours per week on repetitive tasks&#10;Get 360° insight into customer behavior"
                         value={manualForm.benefits}
                         onChange={(e) => setManualForm({ ...manualForm, benefits: e.target.value })}
                         rows={4}
@@ -748,12 +748,12 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     {/* Use Cases */}
                     <div className="space-y-2">
                       <Label htmlFor="manual-usecases">
-                        Use Cases & Toepassingen
-                        <span className="text-xs text-muted-foreground ml-2">(Eén per regel)</span>
+                        Use Cases & Applications
+                        <span className="text-xs text-muted-foreground ml-2">(One per line)</span>
                       </Label>
                       <Textarea
                         id="manual-usecases"
-                        placeholder="Lead generation campagnes&#10;Customer retention programma's&#10;Product launches"
+                        placeholder="Lead generation campaigns&#10;Customer retention programs&#10;Product launches"
                         value={manualForm.useCases}
                         onChange={(e) => setManualForm({ ...manualForm, useCases: e.target.value })}
                         rows={3}
@@ -764,21 +764,21 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label>
-                          Doelgroep (Persona's)
-                          <span className="text-xs text-muted-foreground ml-2">Koppel aan bestaande persona's</span>
+                          Target Audience (Personas)
+                          <span className="text-xs text-muted-foreground ml-2">Link to existing personas</span>
                         </Label>
                         <Dialog open={showPersonaDialog} onOpenChange={setShowPersonaDialog}>
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm" className="gap-2">
                               <Plus className="h-4 w-4" />
-                              Selecteer Persona's
+                              Select Personas
                             </Button>
                           </DialogTrigger>
                           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                             <DialogHeader>
-                              <DialogTitle>Selecteer Doelgroep Persona's</DialogTitle>
+                              <DialogTitle>Select Target Audience Personas</DialogTitle>
                               <DialogDescription>
-                                Kies één of meerdere persona's die de doelgroep vormen voor dit product/service
+                                Choose one or more personas that form the target audience for this product/service
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-3 py-4">
@@ -786,11 +786,11 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                                 <div className="text-center py-8">
                                   <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                                   <p className="text-sm text-muted-foreground mb-4">
-                                    Je hebt nog geen persona's aangemaakt
+                                    You haven't created any personas yet
                                   </p>
                                   <Button variant="outline" onClick={() => setShowPersonaDialog(false)}>
                                     <Plus className="h-4 w-4 mr-2" />
-                                    Ga naar Persona's sectie
+                                    Go to Personas section
                                   </Button>
                                 </div>
                               ) : (
@@ -846,11 +846,11 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                             </div>
                             <div className="flex justify-end gap-2 pt-4 border-t">
                               <Button variant="outline" onClick={() => setShowPersonaDialog(false)}>
-                                Annuleren
+                                Cancel
                               </Button>
                               <Button onClick={() => setShowPersonaDialog(false)}>
                                 <Check className="h-4 w-4 mr-2" />
-                                Toepassen ({selectedPersonaIds.length})
+                                Apply ({selectedPersonaIds.length})
                               </Button>
                             </div>
                           </DialogContent>
@@ -888,7 +888,7 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                         <div className="border-2 border-dashed rounded-lg p-6 text-center">
                           <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                           <p className="text-sm text-muted-foreground mb-3">
-                            Geen persona's geselecteerd
+                            No personas selected
                           </p>
                           <Button
                             variant="outline"
@@ -896,7 +896,7 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                             onClick={() => setShowPersonaDialog(true)}
                           >
                             <Plus className="h-4 w-4 mr-2" />
-                            Voeg Persona's Toe
+                            Add Personas
                           </Button>
                         </div>
                       )}
@@ -919,12 +919,12 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                     {isAnalyzing ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Opslaan...
+                        Saving...
                       </>
                     ) : (
                       <>
                         <Check className="h-4 w-4 mr-2" />
-                        Product/Service Opslaan
+                        Save Product/Service
                       </>
                     )}
                   </Button>
@@ -934,7 +934,7 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
               {/* Tips Card */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Tips voor het invullen</CardTitle>
+                  <CardTitle className="text-lg">Tips for filling in</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-start gap-3">
@@ -942,9 +942,9 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                       💡
                     </div>
                     <div>
-                      <div className="font-medium text-sm mb-1">Wees specifiek</div>
+                      <div className="font-medium text-sm mb-1">Be specific</div>
                       <div className="text-sm text-muted-foreground">
-                        Hoe specifieker je bent in features en voordelen, hoe beter de AI je kan helpen
+                        The more specific you are about features and benefits, the better the AI can help you
                       </div>
                     </div>
                   </div>
@@ -953,9 +953,9 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                       📝
                     </div>
                     <div>
-                      <div className="font-medium text-sm mb-1">Eén item per regel</div>
+                      <div className="font-medium text-sm mb-1">One item per line</div>
                       <div className="text-sm text-muted-foreground">
-                        Bij features, benefits en use cases: zet elk punt op een nieuwe regel
+                        For features, benefits and use cases: put each point on a new line
                       </div>
                     </div>
                   </div>
@@ -964,9 +964,9 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                       ⚡
                     </div>
                     <div>
-                      <div className="font-medium text-sm mb-1">Later aanpassen</div>
+                      <div className="font-medium text-sm mb-1">Edit later</div>
                       <div className="text-sm text-muted-foreground">
-                        Je kunt alle informatie later nog bewerken en aanvullen
+                        You can always edit and supplement all information later
                       </div>
                     </div>
                   </div>
@@ -978,7 +978,7 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
           {/* General Info Card */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Hoe werkt het?</CardTitle>
+              <CardTitle className="text-lg">How does it work?</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-start gap-3">
@@ -986,9 +986,9 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                   1
                 </div>
                 <div>
-                  <div className="font-medium text-sm mb-1">Kies je methode</div>
+                  <div className="font-medium text-sm mb-1">Choose your method</div>
                   <div className="text-sm text-muted-foreground">
-                    Selecteer URL analyse, PDF upload, of handmatige invoer
+                    Select URL analysis, PDF upload, or manual entry
                   </div>
                 </div>
               </div>
@@ -997,9 +997,9 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                   2
                 </div>
                 <div>
-                  <div className="font-medium text-sm mb-1">Analyseer of voer in</div>
+                  <div className="font-medium text-sm mb-1">Analyze or enter</div>
                   <div className="text-sm text-muted-foreground">
-                    De AI analyseert automatisch alle productinformatie
+                    The AI automatically analyzes all product information
                   </div>
                 </div>
               </div>
@@ -1008,9 +1008,9 @@ export function ProductServiceAnalyzer({ onAnalysisComplete }: ProductServiceAna
                   3
                 </div>
                 <div>
-                  <div className="font-medium text-sm mb-1">Bekijk en gebruik</div>
+                  <div className="font-medium text-sm mb-1">View and use</div>
                   <div className="text-sm text-muted-foreground">
-                    Gebruik de geëxtraheerde data in je campaigns en strategies
+                    Use the extracted data in your campaigns and strategies
                   </div>
                 </div>
               </div>
