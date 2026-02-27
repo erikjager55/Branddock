@@ -4,8 +4,18 @@ import { CheckCircle, AlertCircle } from 'lucide-react';
 import { CircularProgress } from '@/features/personas/components/detail/CircularProgress';
 import type { BrandAssetDetail } from '../../types/brand-asset-detail.types';
 import type {
-  ESGFrameworkData,
   GoldenCircleFrameworkData,
+  PurposeWheelFrameworkData,
+  BrandEssenceFrameworkData,
+  BrandPromiseFrameworkData,
+  MissionStatementFrameworkData,
+  VisionStatementFrameworkData,
+  BrandArchetypeFrameworkData,
+  TransformativeGoalsFrameworkData,
+  BrandPersonalityFrameworkData,
+  BrandStoryFrameworkData,
+  BrandHouseValuesFrameworkData,
+  ESGFrameworkData,
   SWOTFrameworkData,
   PurposeKompasFrameworkData,
 } from '../../types/framework.types';
@@ -14,12 +24,19 @@ interface AssetCompletenessCardProps {
   asset: BrandAssetDetail;
 }
 
-interface FieldCheck {
+export interface FieldCheck {
   label: string;
   filled: boolean;
 }
 
-function getAssetFields(asset: BrandAssetDetail): FieldCheck[] {
+/** Minimal shape needed by the completeness calculator */
+export interface CompletenessInput {
+  description: string;
+  frameworkType: string | null;
+  frameworkData: unknown;
+}
+
+export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck[] {
   const fields: FieldCheck[] = [
     { label: 'Description', filled: !!(asset.description && asset.description.length > 0) },
   ];
@@ -31,12 +48,14 @@ function getAssetFields(asset: BrandAssetDetail): FieldCheck[] {
     : asset.frameworkData;
 
   switch (asset.frameworkType) {
-    case 'ESG': {
-      const pillars = (data as ESGFrameworkData)?.pillars;
+    case 'PURPOSE_WHEEL': {
+      const pw = data as PurposeWheelFrameworkData;
       fields.push(
-        { label: 'Environmental', filled: !!pillars?.environmental?.description },
-        { label: 'Social', filled: !!pillars?.social?.description },
-        { label: 'Governance', filled: !!pillars?.governance?.description },
+        { label: 'Statement', filled: !!pw?.statement },
+        { label: 'Impact Type', filled: !!pw?.impactType },
+        { label: 'Impact Description', filled: !!pw?.impactDescription },
+        { label: 'Mechanism', filled: !!pw?.mechanism },
+        { label: 'Pressure Test', filled: !!pw?.pressureTest },
       );
       break;
     }
@@ -46,6 +65,114 @@ function getAssetFields(asset: BrandAssetDetail): FieldCheck[] {
         { label: 'Why', filled: !!gc?.why?.statement },
         { label: 'How', filled: !!gc?.how?.statement },
         { label: 'What', filled: !!gc?.what?.statement },
+      );
+      break;
+    }
+    case 'BRAND_ESSENCE': {
+      const be = data as BrandEssenceFrameworkData;
+      fields.push(
+        { label: 'Essence Statement', filled: !!be?.essenceStatement },
+        { label: 'Emotional Benefit', filled: !!be?.emotionalBenefit },
+        { label: 'Functional Benefit', filled: !!be?.functionalBenefit },
+        { label: 'Personality Traits', filled: !!be?.brandPersonalityTraits },
+        { label: 'Proof Points', filled: !!be?.proofPoints },
+      );
+      break;
+    }
+    case 'BRAND_PROMISE': {
+      const bp = data as BrandPromiseFrameworkData;
+      fields.push(
+        { label: 'Promise Statement', filled: !!bp?.promiseStatement },
+        { label: 'Functional Value', filled: !!bp?.functionalValue },
+        { label: 'Emotional Value', filled: !!bp?.emotionalValue },
+        { label: 'Target Audience', filled: !!bp?.targetAudience },
+        { label: 'Differentiator', filled: !!bp?.differentiator },
+      );
+      break;
+    }
+    case 'MISSION_STATEMENT': {
+      const ms = data as MissionStatementFrameworkData;
+      fields.push(
+        { label: 'Mission Statement', filled: !!ms?.missionStatement },
+        { label: 'What We Do', filled: !!ms?.whatWeDo },
+        { label: 'For Whom', filled: !!ms?.forWhom },
+        { label: 'How We Do It', filled: !!ms?.howWeDoIt },
+        { label: 'Impact Goal', filled: !!ms?.impactGoal },
+      );
+      break;
+    }
+    case 'VISION_STATEMENT': {
+      const vs = data as VisionStatementFrameworkData;
+      fields.push(
+        { label: 'Vision Statement', filled: !!vs?.visionStatement },
+        { label: 'Time Horizon', filled: !!vs?.timeHorizon },
+        { label: 'Desired Future State', filled: !!vs?.desiredFutureState },
+        { label: 'Bold Aspiration', filled: !!vs?.boldAspiration },
+        { label: 'Success Indicators', filled: !!vs?.successIndicators },
+      );
+      break;
+    }
+    case 'BRAND_ARCHETYPE': {
+      const ba = data as BrandArchetypeFrameworkData;
+      fields.push(
+        { label: 'Primary Archetype', filled: !!ba?.primaryArchetype },
+        { label: 'Core Desire', filled: !!ba?.coreDesire },
+        { label: 'Brand Voice Description', filled: !!ba?.brandVoiceDescription },
+        { label: 'Archetype in Action', filled: !!ba?.archetypeInAction },
+      );
+      break;
+    }
+    case 'TRANSFORMATIVE_GOALS': {
+      const tg = data as TransformativeGoalsFrameworkData;
+      const goals = tg?.goals ?? [];
+      fields.push(
+        { label: 'Massive Transformative Purpose', filled: !!tg?.massiveTransformativePurpose },
+        { label: 'Goal 1', filled: !!(goals[0]?.title && goals[0]?.description) },
+        { label: 'Goal 2', filled: !!(goals[1]?.title && goals[1]?.description) },
+        { label: 'Goal 3', filled: !!(goals[2]?.title && goals[2]?.description) },
+      );
+      break;
+    }
+    case 'BRAND_PERSONALITY': {
+      const bpe = data as BrandPersonalityFrameworkData;
+      fields.push(
+        { label: 'Primary Dimension', filled: !!bpe?.primaryDimension },
+        { label: 'Personality Traits', filled: (bpe?.personalityTraits?.length ?? 0) >= 3 },
+        { label: 'Tone of Voice', filled: !!bpe?.toneOfVoice },
+        { label: 'Personality in Practice', filled: !!bpe?.personalityInPractice },
+      );
+      break;
+    }
+    case 'BRAND_STORY': {
+      const bs = data as BrandStoryFrameworkData;
+      fields.push(
+        { label: 'Elevator Pitch', filled: !!bs?.elevatorPitch },
+        { label: 'The Challenge', filled: !!bs?.theChallenge },
+        { label: 'The Solution', filled: !!bs?.theSolution },
+        { label: 'The Outcome', filled: !!bs?.theOutcome },
+        { label: 'Origin Story', filled: !!bs?.originStory },
+      );
+      break;
+    }
+    case 'BRANDHOUSE_VALUES': {
+      const bv = data as BrandHouseValuesFrameworkData;
+      fields.push(
+        { label: 'Anchor Value 1', filled: !!(bv?.anchorValue1?.name && bv?.anchorValue1?.description) },
+        { label: 'Anchor Value 2', filled: !!(bv?.anchorValue2?.name && bv?.anchorValue2?.description) },
+        { label: 'Aspiration Value 1', filled: !!(bv?.aspirationValue1?.name && bv?.aspirationValue1?.description) },
+        { label: 'Aspiration Value 2', filled: !!(bv?.aspirationValue2?.name && bv?.aspirationValue2?.description) },
+        { label: 'Own Value', filled: !!(bv?.ownValue?.name && bv?.ownValue?.description) },
+        { label: 'Value Tension', filled: !!bv?.valueTension },
+      );
+      break;
+    }
+    // Legacy framework types
+    case 'ESG': {
+      const pillars = (data as ESGFrameworkData)?.pillars;
+      fields.push(
+        { label: 'Environmental', filled: !!pillars?.environmental?.description },
+        { label: 'Social', filled: !!pillars?.social?.description },
+        { label: 'Governance', filled: !!pillars?.governance?.description },
       );
       break;
     }
@@ -74,7 +201,7 @@ function getAssetFields(asset: BrandAssetDetail): FieldCheck[] {
 }
 
 export function AssetCompletenessCard({ asset }: AssetCompletenessCardProps) {
-  const fields = getAssetFields(asset);
+  const fields = getAssetCompletenessFields(asset);
   const filledCount = fields.filter(f => f.filled).length;
   const percentage = Math.round((filledCount / fields.length) * 100);
 

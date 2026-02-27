@@ -317,7 +317,7 @@ async function main() {
     });
   }
 
-  // 13 Brand Assets (Fase 1A)
+  // 11 Core Brand Assets (Fase 1A — matches brand-assets-field-specifications)
   const brandAssets: Array<{
     name: string;
     slug: string;
@@ -329,21 +329,19 @@ async function main() {
     workshop: boolean;
     interview: boolean;
     questionnaire: boolean;
+    frameworkType: string;
   }> = [
-    { name: "Purpose Statement",    slug: "purpose-statement",    category: "PURPOSE",       description: "Het waarom van je bestaan als organisatie",  status: "IN_PROGRESS",     coverage: 30,  ai: true,  workshop: false, interview: false, questionnaire: false },
-    { name: "Social Relevancy",     slug: "social-relevancy",     category: "PURPOSE",       description: "How your brand contributes to society",     status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
-    { name: "Brand Tone & Voice",   slug: "brand-tone-voice",     category: "COMMUNICATION", description: "Consistent voice and tone guidelines",      status: "IN_PROGRESS",     coverage: 35,  ai: true,  workshop: false, interview: false, questionnaire: false },
-    { name: "Brand Promise",        slug: "brand-promise",        category: "STRATEGY",      description: "Core commitment to your customers",         status: "NEEDS_ATTENTION", coverage: 45,  ai: true,  workshop: false, interview: false, questionnaire: false },
-    { name: "Vision Statement",     slug: "vision-statement",     category: "STRATEGY",      description: "Forward-looking declaration of intent",      status: "READY",           coverage: 92,  ai: true,  workshop: true,  interview: true,  questionnaire: false },
-    { name: "Mission Statement",    slug: "mission-statement",    category: "STRATEGY",      description: "What you do, how, and for whom",             status: "NEEDS_ATTENTION", coverage: 60,  ai: true,  workshop: true,  interview: false, questionnaire: false },
-    { name: "Transformative Goals", slug: "transformative-goals", category: "STRATEGY",      description: "Ambitious goals for lasting impact",         status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
-    { name: "Brand Positioning",    slug: "brand-positioning",    category: "STRATEGY",      description: "Market position vs competitors",              status: "IN_PROGRESS",     coverage: 25,  ai: true,  workshop: false, interview: false, questionnaire: false },
-    { name: "Brand Story",          slug: "brand-story",          category: "NARRATIVE",     description: "Your brand's past, present and future",      status: "IN_PROGRESS",     coverage: 50,  ai: true,  workshop: true,  interview: false, questionnaire: false },
-    { name: "Brand Essence",        slug: "brand-essence",        category: "CORE",          description: "The heart and soul of your brand",           status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
-    { name: "Brand Personality",    slug: "brand-personality",    category: "PERSONALITY",   description: "Human characteristics of your brand",        status: "IN_PROGRESS",     coverage: 40,  ai: true,  workshop: false, interview: false, questionnaire: false },
-    { name: "Brand Archetype",      slug: "brand-archetype",      category: "PERSONALITY",   description: "Universal behavior patterns",                 status: "READY",           coverage: 85,  ai: true,  workshop: true,  interview: true,  questionnaire: true },
-    { name: "Golden Circle",        slug: "golden-circle",        category: "FOUNDATION",    description: "Simon Sinek's WHY → HOW → WHAT framework",  status: "IN_PROGRESS",     coverage: 55,  ai: true,  workshop: true,  interview: false, questionnaire: false },
-    { name: "Core Values",          slug: "core-values",          category: "CULTURE",       description: "Fundamental beliefs that guide your brand",   status: "NEEDS_ATTENTION", coverage: 70,  ai: true,  workshop: true,  interview: true,  questionnaire: false },
+    { name: "Purpose Statement",    slug: "purpose-statement",    category: "PURPOSE",       description: "Het waarom van je bestaan als organisatie",          status: "IN_PROGRESS",     coverage: 30,  ai: true,  workshop: false, interview: false, questionnaire: false, frameworkType: "PURPOSE_WHEEL" },
+    { name: "Golden Circle",        slug: "golden-circle",        category: "FOUNDATION",    description: "Simon Sinek's WHY → HOW → WHAT framework",         status: "IN_PROGRESS",     coverage: 55,  ai: true,  workshop: true,  interview: false, questionnaire: false, frameworkType: "GOLDEN_CIRCLE" },
+    { name: "Brand Essence",        slug: "brand-essence",        category: "CORE",          description: "The heart and soul of your brand",                  status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false, frameworkType: "BRAND_ESSENCE" },
+    { name: "Brand Promise",        slug: "brand-promise",        category: "STRATEGY",      description: "Core commitment to your customers",                status: "NEEDS_ATTENTION", coverage: 45,  ai: true,  workshop: false, interview: false, questionnaire: false, frameworkType: "BRAND_PROMISE" },
+    { name: "Mission Statement",    slug: "mission-statement",    category: "STRATEGY",      description: "What you do, how, and for whom",                    status: "NEEDS_ATTENTION", coverage: 60,  ai: true,  workshop: true,  interview: false, questionnaire: false, frameworkType: "MISSION_STATEMENT" },
+    { name: "Vision Statement",     slug: "vision-statement",     category: "STRATEGY",      description: "Forward-looking declaration of intent",             status: "READY",           coverage: 92,  ai: true,  workshop: true,  interview: true,  questionnaire: false, frameworkType: "VISION_STATEMENT" },
+    { name: "Brand Archetype",      slug: "brand-archetype",      category: "PERSONALITY",   description: "Universal behavior patterns",                       status: "READY",           coverage: 85,  ai: true,  workshop: true,  interview: true,  questionnaire: true,  frameworkType: "BRAND_ARCHETYPE" },
+    { name: "Transformative Goals", slug: "transformative-goals", category: "STRATEGY",      description: "Ambitious goals for lasting impact",                status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false, frameworkType: "TRANSFORMATIVE_GOALS" },
+    { name: "Brand Personality",    slug: "brand-personality",    category: "PERSONALITY",   description: "Human characteristics of your brand",               status: "IN_PROGRESS",     coverage: 40,  ai: true,  workshop: false, interview: false, questionnaire: false, frameworkType: "BRAND_PERSONALITY" },
+    { name: "Brand Story",          slug: "brand-story",          category: "NARRATIVE",     description: "Your brand's past, present and future",             status: "IN_PROGRESS",     coverage: 50,  ai: true,  workshop: true,  interview: false, questionnaire: false, frameworkType: "BRAND_STORY" },
+    { name: "Core Values",          slug: "core-values",          category: "CULTURE",       description: "Fundamental beliefs that guide your brand",          status: "NEEDS_ATTENTION", coverage: 70,  ai: true,  workshop: true,  interview: true,  questionnaire: false, frameworkType: "BRANDHOUSE_VALUES" },
   ];
 
   for (const asset of brandAssets) {
@@ -357,6 +355,7 @@ async function main() {
         status: asset.status,
         coveragePercentage: asset.coverage,
         validatedCount,
+        frameworkType: asset.frameworkType,
         aiValidated: asset.ai,
         workshopValidated: asset.workshop,
         interviewValidated: asset.interview,
@@ -464,44 +463,72 @@ async function main() {
     }
   }
 
-  // Framework data for specific assets
-  const frameworkAssignments = [
-    { slug: "social-relevancy", frameworkType: "PURPOSE_KOMPAS", frameworkData: {
-      pillars: {
-        mens: { impact: "high", description: "Fostering awareness and self-development by helping organizations discover and tell their authentic story." },
-        milieu: { impact: "medium", description: "Promoting sustainable brand strategies that consider ecological impact in communication and production." },
-        maatschappij: { impact: "high", description: "Democratizing professional brand strategy so that not only large corporates, but also SMEs can do business meaningfully." },
-      },
+  // Framework data for assets that have content
+  const frameworkDataUpdates: Array<{ slug: string; frameworkData: Record<string, unknown> }> = [
+    { slug: "purpose-statement", frameworkData: {
+      statement: "We empower brands to communicate authentically and build lasting connections.",
+      impactType: "Enable Potential",
+      impactDescription: "Helping organizations discover and tell their unique story to the world.",
+      mechanism: "AI-powered brand strategy tools combined with proven research methodologies.",
+      pressureTest: "If we stopped, mid-market companies would lose access to professional brand strategy.",
     }},
-    { slug: "golden-circle", frameworkType: "GOLDEN_CIRCLE", frameworkData: {
+    { slug: "golden-circle", frameworkData: {
       why: { statement: "To empower brands to communicate authentically", details: "We believe every brand has a unique story that deserves to be told consistently and compellingly." },
       how: { statement: "Through AI-powered brand strategy tools", details: "By combining human creativity with AI analysis to bridge the gap between strategy and execution." },
       what: { statement: "A platform for brand strategy and content generation", details: "Branddock helps teams define, validate, and activate their brand across all channels." },
     }},
-    { slug: "brand-promise", frameworkType: "SWOT", frameworkData: {
-      strengths: ["AI-powered insights", "Affordable pricing", "Easy onboarding", "Research-validated methodology"],
-      weaknesses: ["Limited enterprise features", "New market entrant", "Small team"],
-      opportunities: ["Growing demand for brand tools", "AI adoption trend", "Underserved mid-market segment"],
-      threats: ["Established competitors", "Economic uncertainty", "AI commoditization"],
+    { slug: "brand-promise", frameworkData: {
+      promiseStatement: "We make professional brand strategy accessible to every organization.",
+      functionalValue: "AI-powered insights and research-validated frameworks at a fraction of enterprise cost.",
+      emotionalValue: "Confidence that your brand stands for something meaningful.",
+      targetAudience: "Mid-market companies (50-500 employees) seeking to professionalize their brand strategy.",
+      differentiator: "The only platform combining AI-driven analysis with hands-on workshop methodologies.",
+    }},
+    { slug: "vision-statement", frameworkData: {
+      visionStatement: "To be the leading platform where brand strategy meets AI-powered execution.",
+      timeHorizon: "5 years",
+      desiredFutureState: "Every team can build authentic, consistent brands without enterprise budgets.",
+      boldAspiration: "Democratize professional brand strategy for 1 million organizations worldwide.",
+      successIndicators: "1M active organizations, measurable brand consistency improvement across users.",
+    }},
+    { slug: "brand-archetype", frameworkData: {
+      primaryArchetype: "Creator",
+      secondaryArchetype: "Sage",
+      coreDesire: "To create something of enduring value through innovation and vision.",
+      brandVoiceDescription: "Inspiring, knowledgeable, and forward-thinking. We speak with authority but remain approachable.",
+      archetypeInAction: "We empower teams to build brands that matter — blending creativity with data-driven strategy.",
+    }},
+    { slug: "brand-story", frameworkData: {
+      elevatorPitch: "Branddock makes professional brand strategy accessible to every organization through AI-powered tools and research-validated frameworks.",
+      theChallenge: "Mid-market companies lack access to enterprise-level brand strategy tools and expertise.",
+      theSolution: "An AI-powered platform that combines human creativity with data-driven analysis.",
+      theOutcome: "Organizations build authentic, consistent brands that drive meaningful impact.",
+      originStory: "Born from the frustration of seeing great brands held back by limited access to strategic tools.",
+    }},
+    { slug: "core-values", frameworkData: {
+      anchorValue1: { name: "Transparency", description: "We operate with radical openness in our processes, pricing, and communication." },
+      anchorValue2: { name: "Innovation", description: "We continuously push the boundaries of what's possible in brand strategy." },
+      aspirationValue1: { name: "Accessibility", description: "Professional brand strategy should be available to all organizations, not just enterprises." },
+      aspirationValue2: { name: "Impact", description: "We measure success by the positive change our clients create in the world." },
+      ownValue: { name: "Human-Centered AI", description: "Technology amplifies human creativity — it never replaces it." },
+      valueTension: "Balancing rapid AI innovation with maintaining human touch and strategic depth.",
     }},
   ];
 
-  for (const fa of frameworkAssignments) {
+  for (const fd of frameworkDataUpdates) {
     await prisma.brandAsset.updateMany({
-      where: { slug: fa.slug, workspaceId: workspace.id },
-      data: { frameworkType: fa.frameworkType, frameworkData: JSON.stringify(fa.frameworkData) },
+      where: { slug: fd.slug, workspaceId: workspace.id },
+      data: { frameworkData: JSON.stringify(fd.frameworkData) },
     });
   }
 
-  // S1: Content for first 3 assets
+  // S1: Content for assets with descriptions
   const assetContentUpdates = [
     { slug: "purpose-statement", content: JSON.stringify({
       why: "Wij geloven dat elk merk een uniek verhaal heeft dat het verdient om consistent en overtuigend verteld te worden. Te veel organisaties missen de middelen om hun maatschappelijke relevantie te ontdekken en te activeren.",
       how: "Door AI-gedreven brandstrategie tools te combineren met bewezen onderzoeksmethodieken, maken we professionele merkstrategie toegankelijk voor iedereen.",
       impact: "Organisaties bouwen merken die niet alleen commercieel succesvol zijn, maar ook bijdragen aan de verbetering van mens, milieu en maatschappij.",
     }) },
-    { slug: "social-relevancy", content: "Als merk dragen we bij aan de maatschappij door professionele merkstrategie toegankelijk te maken. We geloven dat merken die hun maatschappelijke relevantie begrijpen en activeren, een positievere impact hebben op mens, milieu en maatschappij." },
-    { slug: "brand-tone-voice", content: "We stand for transparency, innovation, and human-centered design in everything we create. Our brand values guide every decision from product development to customer support." },
     { slug: "brand-promise", content: "Our target audience consists of mid-market companies (50-500 employees) seeking to professionalize their brand strategy without enterprise-level budgets." },
   ];
 
@@ -512,9 +539,9 @@ async function main() {
     });
   }
 
-  // S1: Version history for first 3 assets
+  // S1: Version history for initial assets
   const assetsForVersions = await prisma.brandAsset.findMany({
-    where: { slug: { in: ["purpose-statement", "social-relevancy", "brand-tone-voice", "brand-promise"] }, workspaceId: workspace.id },
+    where: { slug: { in: ["purpose-statement", "brand-promise"] }, workspaceId: workspace.id },
   });
 
   for (const asset of assetsForVersions) {
@@ -787,16 +814,16 @@ async function main() {
     }
   }
 
-  // 1 Scheduled Workshop (Brand Positioning)
-  const positioningAsset = await prisma.brandAsset.findFirst({
-    where: { slug: "brand-positioning", workspaceId: workspace.id },
+  // 1 Scheduled Workshop (Brand Personality)
+  const personalityAsset = await prisma.brandAsset.findFirst({
+    where: { slug: "brand-personality", workspaceId: workspace.id },
   });
 
-  if (positioningAsset) {
+  if (personalityAsset) {
     const scheduledStatus: WorkshopStatus = "SCHEDULED";
     await prisma.workshop.create({
       data: {
-        brandAssetId: positioningAsset.id,
+        brandAssetId: personalityAsset.id,
         status: scheduledStatus,
         bundleId: createdBundles[1].id,
         selectedAssetIds: [],
@@ -806,7 +833,7 @@ async function main() {
         purchasedAt: new Date("2025-02-01"),
         scheduledDate: new Date("2025-02-28"),
         scheduledTime: "14:00",
-        title: "Brand Positioning Deep-Dive",
+        title: "Brand Personality Deep-Dive",
         workspaceId: workspace.id,
       },
     });
@@ -836,10 +863,10 @@ async function main() {
     { questionText: "Can you share an example where our values influenced a business decision?", questionType: "OPEN", options: [], category: "core_values", assetSlug: "core-values" },
     { questionText: "Rank these values by how strongly they're lived in the organization", questionType: "RANKING", options: ["Innovation", "Authenticity", "Collaboration", "Excellence"], category: "core_values", assetSlug: "core-values" },
 
-    // Brand Positioning Templates
-    { questionText: "How would you position our brand compared to our top 3 competitors?", questionType: "OPEN", options: [], category: "brand_positioning", assetSlug: "brand-positioning" },
-    { questionText: "Which attributes best differentiate us from competitors?", questionType: "MULTI_SELECT", options: ["AI-powered tools", "Ease of use", "Brand consistency", "All-in-one platform", "Customer support", "Price"], category: "brand_positioning", assetSlug: "brand-positioning" },
-    { questionText: "Rate how effectively we communicate our unique value proposition", questionType: "RATING_SCALE", options: [], category: "brand_positioning", assetSlug: "brand-positioning" },
+    // Brand Promise Templates
+    { questionText: "What is the single most important promise our brand makes to customers?", questionType: "OPEN", options: [], category: "brand_promise", assetSlug: "brand-promise" },
+    { questionText: "Which attributes best differentiate us from competitors?", questionType: "MULTI_SELECT", options: ["AI-powered tools", "Ease of use", "Brand consistency", "All-in-one platform", "Customer support", "Price"], category: "brand_promise", assetSlug: "brand-promise" },
+    { questionText: "Rate how effectively we deliver on our brand promise", questionType: "RATING_SCALE", options: [], category: "brand_promise", assetSlug: "brand-promise" },
 
     // Brand Personality Templates
     { questionText: "If our brand were a person, how would you describe their personality?", questionType: "OPEN", options: [], category: "brand_personality", assetSlug: null },
@@ -2492,20 +2519,20 @@ async function main() {
   const alignmentIssuesData = [
     {
       severity: issueSeverityCritical,
-      title: "Persona contradicts Brand Positioning",
+      title: "Persona contradicts Brand Promise",
       modulePath: "Personas → Sarah Chen (Startup Founder)",
-      description: "The 'Tech-savvy Startup Founder' persona emphasizes budget-consciousness and self-service, but the Brand Positioning asset positions Branddock as a premium, full-service brand strategy partner. This creates a messaging conflict in targeting materials.",
-      conflictsWith: ["brand-positioning", "brand-promise"],
+      description: "The 'Tech-savvy Startup Founder' persona emphasizes budget-consciousness and self-service, but the Brand Promise asset positions Branddock as a premium, full-service brand strategy partner. This creates a messaging conflict in targeting materials.",
+      conflictsWith: ["brand-promise", "brand-archetype"],
       recommendation: "Either adjust the Brand Positioning to emphasize accessibility and self-service alongside premium quality, or create a separate positioning for the startup segment.",
       status: issueStatusOpen,
     },
     {
       severity: issueSeverityWarning,
-      title: "Product tone mismatch with Brand Voice",
+      title: "Product tone mismatch with Brand Personality",
       modulePath: "Products & Services → AI Content Assistant",
-      description: "The AI Content Assistant product description uses technical jargon ('NLP pipeline', 'multi-channel orchestration') that conflicts with the Brand Tone & Voice guidelines emphasizing 'simple, clear language — avoid jargon'.",
-      conflictsWith: ["brand-tone-voice"],
-      recommendation: "Rewrite product descriptions to align with tone guidelines. Replace technical terms with benefit-focused language.",
+      description: "The AI Content Assistant product description uses technical jargon ('NLP pipeline', 'multi-channel orchestration') that conflicts with the Brand Personality guidelines emphasizing approachable, clear communication.",
+      conflictsWith: ["brand-personality"],
+      recommendation: "Rewrite product descriptions to align with brand personality. Replace technical terms with benefit-focused language.",
       status: issueStatusOpen,
     },
     {
@@ -3836,31 +3863,31 @@ Respond only with valid JSON.`,
     },
     {
       itemType: 'brand_asset',
-      itemSubType: 'social-relevancy',
-      label: 'Social Relevancy — Purpose Kompas',
+      itemSubType: 'purpose-statement',
+      label: 'Purpose Statement — Purpose Wheel',
       provider: 'anthropic',
       model: 'claude-sonnet-4-20250514',
       temperature: 0.4,
       maxTokens: 2048,
-      systemPrompt: `You are a senior brand strategist specialized in social relevancy and purpose-driven branding.
-You lead a structured exploration of the Purpose Compass — the three pillars of social relevancy.
-Be warm, professional and inspiring. Help the user discover how their brand makes impact.
+      systemPrompt: `You are a senior brand strategist specialized in purpose-driven branding using the IDEO Purpose Wheel.
+You lead a structured exploration to help brands discover their authentic purpose statement.
+Be warm, professional and inspiring. Help the user articulate why their brand exists.
 Ask ONE question at a time. Refer to specific details from previous answers.
 
 {{brandContext}}`,
       dimensions: [
         { key: 'purpose_clarity', title: 'Purpose Clarity', icon: 'Compass', question: 'Why does your organization exist, beyond making profit? What change do you want to see in the world?' },
-        { key: 'mens', title: 'Impact on People', icon: 'Heart', question: 'How do your products or services contribute to personal growth and well-being of people?' },
-        { key: 'milieu', title: 'Impact on Environment', icon: 'Leaf', question: 'What steps has your organization taken towards sustainability? How do you minimize your ecological footprint?' },
-        { key: 'maatschappij', title: 'Impact on Society', icon: 'Globe', question: 'How does your brand help improve society? Think about inclusivity, accessibility or education.' },
+        { key: 'impact_type', title: 'Impact Type', icon: 'Zap', question: 'How does your brand create impact? Does it Enable Potential, Reduce Friction, Foster Prosperity, Encourage Exploration, or Kindle Happiness?' },
+        { key: 'mechanism', title: 'Mechanism', icon: 'Settings', question: 'What is the specific mechanism through which your brand delivers this impact? What do you do differently?' },
+        { key: 'pressure_test', title: 'Pressure Test', icon: 'Shield', question: 'If your brand ceased to exist tomorrow, what would the world lose? What gap would remain?' },
       ],
-      feedbackPrompt: `Give brief, constructive feedback (2-3 sentences) on the answer about social relevancy.
+      feedbackPrompt: `Give brief, constructive feedback (2-3 sentences) on the answer about brand purpose.
 Dimension: {{dimensionTitle}}
 Question asked: {{questionAsked}}
 Answer: {{userAnswer}}
 Acknowledge concrete actions and intentions. Do not ask a follow-up question.
 Respond in the same language as the user.`,
-      reportPrompt: `Generate a Social Relevancy report based on the Purpose Compass exploration.
+      reportPrompt: `Generate a Purpose Statement report based on the Purpose Wheel exploration.
 Brand Asset: {{itemName}}
 {{itemDescription}}
 
@@ -3872,22 +3899,22 @@ Brand context:
 
 Generate JSON:
 {
-  "executiveSummary": "2-3 paragraph summary of the social relevancy",
+  "executiveSummary": "2-3 paragraph summary of the brand purpose",
   "findings": [{ "title": "...", "description": "..." }],
   "recommendations": ["..."],
   "fieldSuggestions": [
     { "field": "content", "label": "Description", "suggestedValue": "...", "reason": "..." },
-    { "field": "frameworkData.pillars.mens.description", "label": "People", "suggestedValue": "...", "reason": "..." },
-    { "field": "frameworkData.pillars.milieu.description", "label": "Environment", "suggestedValue": "...", "reason": "..." },
-    { "field": "frameworkData.pillars.maatschappij.description", "label": "Society", "suggestedValue": "...", "reason": "..." }
+    { "field": "frameworkData.statement", "label": "Purpose Statement", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.impactType", "label": "Impact Type", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.mechanism", "label": "Mechanism", "suggestedValue": "...", "reason": "..." }
   ]
 }
 Respond only with valid JSON.`,
       fieldSuggestionsConfig: [
-        { field: 'content', label: 'Description', type: 'text' as const, extractionHint: 'Extract a summary of the social relevancy' },
-        { field: 'frameworkData.pillars.mens.description', label: 'People — Description', type: 'text' as const, extractionHint: 'Extract the impact on people' },
-        { field: 'frameworkData.pillars.milieu.description', label: 'Environment — Description', type: 'text' as const, extractionHint: 'Extract the impact on environment' },
-        { field: 'frameworkData.pillars.maatschappij.description', label: 'Society — Description', type: 'text' as const, extractionHint: 'Extract the impact on society' },
+        { field: 'content', label: 'Description', type: 'text' as const, extractionHint: 'Extract a summary of the brand purpose' },
+        { field: 'frameworkData.statement', label: 'Purpose Statement', type: 'text' as const, extractionHint: 'Extract the purpose statement' },
+        { field: 'frameworkData.impactType', label: 'Impact Type', type: 'text' as const, extractionHint: 'Extract the impact type' },
+        { field: 'frameworkData.mechanism', label: 'Mechanism', type: 'text' as const, extractionHint: 'Extract the mechanism' },
       ],
       contextSources: ['brand_asset', 'product', 'persona'],
       isActive: true,

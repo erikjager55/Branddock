@@ -59,6 +59,8 @@ export interface BrandAssetWithMeta {
   coveragePercentage: number;
   validatedCount: number;
   artifactCount: number;
+  frameworkType: string | null;
+  frameworkData: Record<string, unknown> | null;
   validationMethods: {
     ai: boolean;
     workshop: boolean;

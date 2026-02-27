@@ -6,7 +6,23 @@ import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 
 const FrameworkUpdateSchema = z.object({
-  frameworkType: z.enum(["ESG", "GOLDEN_CIRCLE", "SWOT"]).optional(),
+  frameworkType: z.enum([
+    "PURPOSE_WHEEL",
+    "GOLDEN_CIRCLE",
+    "BRAND_ESSENCE",
+    "BRAND_PROMISE",
+    "MISSION_STATEMENT",
+    "VISION_STATEMENT",
+    "BRAND_ARCHETYPE",
+    "TRANSFORMATIVE_GOALS",
+    "BRAND_PERSONALITY",
+    "BRAND_STORY",
+    "BRANDHOUSE_VALUES",
+    // Legacy types
+    "ESG",
+    "SWOT",
+    "PURPOSE_KOMPAS",
+  ]).optional(),
   frameworkData: z.record(z.string(), z.unknown()),
 });
 

@@ -20,6 +20,7 @@ import { Card } from '@/components/shared/Card';
 import { cn } from '@/components/ui/utils';
 import type { BrandAssetWithMeta, AssetCategory } from '@/types/brand-asset';
 import { ICON_CONTAINERS } from '@/lib/constants/design-tokens';
+import { getAssetCompletenessFields } from '@/features/brand-asset-detail/components/sidebar/AssetCompletenessCard';
 
 // ─── Category gradient map ──────────────────────────────────
 
@@ -121,12 +122,14 @@ export function BrandAssetCard({
     (m) => asset.validationMethods[m.key],
   ).length;
 
-  // Completeness: how many content sections are filled
-  const completenessFields = [
-    !!asset.description,
-    asset.artifactCount > 0,
-  ].filter(Boolean).length;
-  const completenessPercent = Math.round((completenessFields / 2) * 100);
+  // Completeness: framework-aware field check
+  const fields = getAssetCompletenessFields({
+    description: asset.description,
+    frameworkType: asset.frameworkType,
+    frameworkData: asset.frameworkData,
+  });
+  const filledCount = fields.filter(f => f.filled).length;
+  const completenessPercent = Math.round((filledCount / fields.length) * 100);
 
   return (
     <Card

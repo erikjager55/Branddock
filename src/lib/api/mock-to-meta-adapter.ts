@@ -59,6 +59,8 @@ export function mockToMeta(asset: BrandAsset): BrandAssetWithMeta {
     coveragePercentage: asset.researchCoverage ?? 0,
     validatedCount: asset.artifactsValidated ?? 0,
     artifactCount: asset.artifactsGenerated ?? 0,
+    frameworkType: null,
+    frameworkData: null,
     validationMethods: {
       ai: aiDone,
       workshop: workshopDone,

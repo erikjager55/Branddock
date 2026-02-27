@@ -59,6 +59,8 @@ export async function GET(request: NextRequest) {
         coveragePercentage: true,
         validatedCount: true,
         artifactCount: true,
+        frameworkType: true,
+        frameworkData: true,
         aiValidated: true,
         workshopValidated: true,
         interviewValidated: true,
@@ -78,6 +80,8 @@ export async function GET(request: NextRequest) {
       coveragePercentage: a.coveragePercentage,
       validatedCount: a.validatedCount,
       artifactCount: a.artifactCount,
+      frameworkType: a.frameworkType,
+      frameworkData: a.frameworkData as Record<string, unknown> | null,
       validationMethods: {
         ai: a.aiValidated,
         workshop: a.workshopValidated,
