@@ -8,10 +8,12 @@ import {
   deleteAsset,
   regenerateAssetContent,
   fetchAssetVersions,
+  updateAssetFramework,
 } from "../api/brand-asset-detail.api";
 import type {
   ContentUpdatePayload,
   StatusUpdatePayload,
+  FrameworkUpdatePayload,
 } from "../types/brand-asset-detail.types";
 
 const assetDetailKeys = {
@@ -88,6 +90,19 @@ export function useDeleteAsset(id: string) {
   return useMutation({
     mutationFn: () => deleteAsset(id),
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["brand-assets"] });
+    },
+  });
+}
+
+export function useUpdateFramework(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: FrameworkUpdatePayload) =>
+      updateAssetFramework(id, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: assetDetailKeys.detail(id) });
+      qc.invalidateQueries({ queryKey: assetDetailKeys.versions(id) });
       qc.invalidateQueries({ queryKey: ["brand-assets"] });
     },
   });

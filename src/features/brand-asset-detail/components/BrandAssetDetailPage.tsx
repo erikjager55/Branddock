@@ -3,12 +3,12 @@
 import { useCallback, useEffect } from "react";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { useAssetDetail, useUpdateContent } from "../hooks/useBrandAssetDetail";
+import { useAssetDetail, useUpdateContent, useUpdateFramework } from "../hooks/useBrandAssetDetail";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
 import { AssetDetailHeader } from "./AssetDetailHeader";
-import { PurposeStatementSection } from "./sections/PurposeStatementSection";
-import type { PurposeStatementData } from "./sections/PurposeStatementSection";
+import { PurposeWheelSection } from "./PurposeWheelSection";
 import { FrameworkSection } from "./FrameworkSection";
+import type { PurposeWheelFrameworkData } from "../types/framework.types";
 import { DeleteAssetDialog } from "./DeleteAssetDialog";
 import { AssetQuickActionsCard } from "./sidebar/AssetQuickActionsCard";
 import { AssetCompletenessCard } from "./sidebar/AssetCompletenessCard";
@@ -67,6 +67,9 @@ export function BrandAssetDetailPage({
 
   const visibility = useLockVisibility(lockState.isLocked);
   const updateContent = useUpdateContent(assetId ?? '');
+  const updateFramework = useUpdateFramework(assetId ?? '');
+
+  const isPurposeWheel = asset?.frameworkType === 'PURPOSE_WHEEL';
 
   // Force editing off when locked
   useEffect(() => {
@@ -104,19 +107,6 @@ export function BrandAssetDetailPage({
       </div>
     );
   }
-
-  const isPurposeStatement = (() => {
-    try {
-      const parsed = typeof asset.content === 'string' ? JSON.parse(asset.content) : null;
-      return parsed && typeof parsed === 'object' && 'why' in parsed && 'how' in parsed && 'impact' in parsed;
-    } catch {
-      return false;
-    }
-  })();
-
-  const purposeData: PurposeStatementData = isPurposeStatement
-    ? JSON.parse(asset.content as string)
-    : { why: '', how: '', impact: '' };
 
   const handleSave = () => {
     setIsEditing(false);
@@ -164,19 +154,19 @@ export function BrandAssetDetailPage({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Main Content — left column (2/3) */}
           <div className="md:col-span-2 min-w-0 space-y-6">
-            {/* Purpose Statement Section (only for purpose-statement assets) */}
-            {isPurposeStatement && (
+            {/* Purpose Wheel — persona-style cards */}
+            {isPurposeWheel && (
               <LockOverlay isLocked={lockState.isLocked}>
-                <PurposeStatementSection
-                  data={purposeData}
+                <PurposeWheelSection
+                  data={asset.frameworkData as PurposeWheelFrameworkData | null}
                   isEditing={isEditing && !lockState.isLocked}
-                  onUpdate={(data) => updateContent.mutate({ content: JSON.stringify(data) })}
+                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
                 />
               </LockOverlay>
             )}
 
-            {/* Framework Section (if present) */}
-            {asset.frameworkType && (
+            {/* Framework Section (for other framework types) */}
+            {asset.frameworkType && !isPurposeWheel && (
               <LockOverlay isLocked={lockState.isLocked}>
                 <FrameworkSection
                   frameworkType={asset.frameworkType}
@@ -227,6 +217,7 @@ export function BrandAssetDetailPage({
           isOpen={lockState.showConfirm}
           isLocking={!lockState.isLocked}
           entityName={asset.name}
+          entityType="brand-asset"
           onConfirm={lockState.confirmToggle}
           onCancel={lockState.cancelToggle}
         />

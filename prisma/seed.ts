@@ -117,6 +117,7 @@ async function main() {
   // AI Exploration (generic, references User + Workspace)
   await prisma.explorationMessage.deleteMany();
   await prisma.explorationSession.deleteMany();
+  await prisma.explorationKnowledgeItem.deleteMany();
   await prisma.explorationConfig.deleteMany();
   await prisma.user.deleteMany();
   await prisma.workspace.deleteMany();
@@ -331,7 +332,7 @@ async function main() {
     questionnaire: boolean;
     frameworkType: string;
   }> = [
-    { name: "Purpose Statement",    slug: "purpose-statement",    category: "PURPOSE",       description: "Het waarom van je bestaan als organisatie",          status: "IN_PROGRESS",     coverage: 30,  ai: true,  workshop: false, interview: false, questionnaire: false, frameworkType: "PURPOSE_WHEEL" },
+    { name: "Purpose Statement",    slug: "purpose-statement",    category: "PURPOSE",       description: "The reason your organization exists beyond profit",  status: "IN_PROGRESS",     coverage: 30,  ai: true,  workshop: false, interview: false, questionnaire: false, frameworkType: "PURPOSE_WHEEL" },
     { name: "Golden Circle",        slug: "golden-circle",        category: "FOUNDATION",    description: "Simon Sinek's WHY → HOW → WHAT framework",         status: "IN_PROGRESS",     coverage: 55,  ai: true,  workshop: true,  interview: false, questionnaire: false, frameworkType: "GOLDEN_CIRCLE" },
     { name: "Brand Essence",        slug: "brand-essence",        category: "CORE",          description: "The heart and soul of your brand",                  status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false, frameworkType: "BRAND_ESSENCE" },
     { name: "Brand Promise",        slug: "brand-promise",        category: "STRATEGY",      description: "Core commitment to your customers",                status: "NEEDS_ATTENTION", coverage: 45,  ai: true,  workshop: false, interview: false, questionnaire: false, frameworkType: "BRAND_PROMISE" },
@@ -466,11 +467,11 @@ async function main() {
   // Framework data for assets that have content
   const frameworkDataUpdates: Array<{ slug: string; frameworkData: Record<string, unknown> }> = [
     { slug: "purpose-statement", frameworkData: {
-      statement: "We empower brands to communicate authentically and build lasting connections.",
+      statement: "To empower brands to communicate authentically and consistently across all channels.",
       impactType: "Enable Potential",
-      impactDescription: "Helping organizations discover and tell their unique story to the world.",
-      mechanism: "AI-powered brand strategy tools combined with proven research methodologies.",
-      pressureTest: "If we stopped, mid-market companies would lose access to professional brand strategy.",
+      impactDescription: "Organizations build brands that are not only commercially successful but also contribute to meaningful connections with their audiences. By democratizing professional brand strategy, we enable businesses of all sizes to compete with enterprise-level brand consistency.",
+      mechanism: "Through AI-powered brand strategy tools that combine research validation with content generation, making professional brand strategy accessible for everyone.",
+      pressureTest: "If this purpose were true, employees would feel empowered to innovate beyond traditional brand tooling.\nEvery product decision would be evaluated against whether it makes brand strategy more accessible.\nPartnerships would prioritize reach over revenue.",
     }},
     { slug: "golden-circle", frameworkData: {
       why: { statement: "To empower brands to communicate authentically", details: "We believe every brand has a unique story that deserves to be told consistently and compellingly." },
@@ -518,26 +519,16 @@ async function main() {
   for (const fd of frameworkDataUpdates) {
     await prisma.brandAsset.updateMany({
       where: { slug: fd.slug, workspaceId: workspace.id },
-      data: { frameworkData: JSON.stringify(fd.frameworkData) },
+      data: { frameworkData: fd.frameworkData as object },
     });
   }
 
   // S1: Content for assets with descriptions
-  const assetContentUpdates = [
-    { slug: "purpose-statement", content: JSON.stringify({
-      why: "Wij geloven dat elk merk een uniek verhaal heeft dat het verdient om consistent en overtuigend verteld te worden. Te veel organisaties missen de middelen om hun maatschappelijke relevantie te ontdekken en te activeren.",
-      how: "Door AI-gedreven brandstrategie tools te combineren met bewezen onderzoeksmethodieken, maken we professionele merkstrategie toegankelijk voor iedereen.",
-      impact: "Organisaties bouwen merken die niet alleen commercieel succesvol zijn, maar ook bijdragen aan de verbetering van mens, milieu en maatschappij.",
-    }) },
-    { slug: "brand-promise", content: "Our target audience consists of mid-market companies (50-500 employees) seeking to professionalize their brand strategy without enterprise-level budgets." },
-  ];
-
-  for (const update of assetContentUpdates) {
-    await prisma.brandAsset.updateMany({
-      where: { slug: update.slug, workspaceId: workspace.id },
-      data: { content: update.content },
-    });
-  }
+  // S1: Content for assets with free-form text content
+  await prisma.brandAsset.updateMany({
+    where: { slug: "brand-promise", workspaceId: workspace.id },
+    data: { content: "Our target audience consists of mid-market companies (50-500 employees) seeking to professionalize their brand strategy without enterprise-level budgets." },
+  });
 
   // S1: Version history for initial assets
   const assetsForVersions = await prisma.brandAsset.findMany({
@@ -3919,62 +3910,6 @@ Respond only with valid JSON.`,
       contextSources: ['brand_asset', 'product', 'persona'],
       isActive: true,
     },
-    {
-      itemType: 'brand_asset',
-      itemSubType: 'purpose-statement',
-      label: 'Purpose Statement',
-      provider: 'anthropic',
-      model: 'claude-sonnet-4-20250514',
-      temperature: 0.4,
-      maxTokens: 2048,
-      systemPrompt: `You are a senior brand strategist specialized in purpose-driven branding.
-You lead a structured exploration of the Purpose Statement — why, how and impact.
-Help the user clearly formulate their reason for being.
-Be warm, professional and inspiring. Ask ONE question at a time.
-
-{{brandContext}}`,
-      dimensions: [
-        { key: 'why', title: 'Why — Reason for Being', icon: 'Compass', question: 'Why was your organization founded? What fundamental belief is at its core?' },
-        { key: 'how', title: 'How — Unique Approach', icon: 'Lightbulb', question: 'How do you fulfill your purpose in a way that is unique to you? What makes your approach different?' },
-        { key: 'impact', title: 'Impact — Desired Effect', icon: 'Rocket', question: 'What does the world look like when your purpose is fully realized? What measurable impact do you strive for?' },
-        { key: 'alignment', title: 'Alignment — Organization & Execution', icon: 'Target', question: 'How well does your current organization reflect your purpose? Where are the gaps between purpose and execution?' },
-      ],
-      feedbackPrompt: `Give brief, constructive feedback (2-3 sentences) on the answer about the purpose statement.
-Dimension: {{dimensionTitle}}
-Question asked: {{questionAsked}}
-Answer: {{userAnswer}}
-Acknowledge the core idea. Do not ask a follow-up question.
-Respond in the same language as the user.`,
-      reportPrompt: `Generate a Purpose Statement report.
-Brand Asset: {{itemName}}
-{{itemDescription}}
-
-Answers per dimension:
-{{allAnswers}}
-
-Brand context:
-{{brandContext}}
-
-Generate JSON:
-{
-  "executiveSummary": "2-3 paragraph summary of the purpose statement",
-  "findings": [{ "title": "...", "description": "..." }],
-  "recommendations": ["..."],
-  "fieldSuggestions": [
-    { "field": "content.why", "label": "Why", "suggestedValue": "...", "reason": "..." },
-    { "field": "content.how", "label": "How", "suggestedValue": "...", "reason": "..." },
-    { "field": "content.impact", "label": "Impact", "suggestedValue": "...", "reason": "..." }
-  ]
-}
-Respond only with valid JSON.`,
-      fieldSuggestionsConfig: [
-        { field: 'content.why', label: 'Why — Reason for Being', type: 'text' as const, extractionHint: 'Extract the core of the why/reason for being' },
-        { field: 'content.how', label: 'How — Unique Approach', type: 'text' as const, extractionHint: 'Extract the unique approach/method' },
-        { field: 'content.impact', label: 'Impact — Desired Effect', type: 'text' as const, extractionHint: 'Extract the desired impact/effect' },
-      ],
-      contextSources: ['brand_asset', 'product'],
-      isActive: true,
-    },
   ];
 
   for (const cfg of explorationConfigSeeds) {
@@ -3983,7 +3918,7 @@ Respond only with valid JSON.`,
     });
   }
 
-  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 13 brand assets (3 with content+frameworks), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 10 knowledge resources (2 featured), 7 market insights (8 source URLs), 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, 3 exploration configs, S9 Settings: 1 user profile, 1 email preference, 3 connected accounts, 3 plans, 1 subscription, 1 payment method, 4 invoices, 1 notification preference, 1 appearance preference, S9 Help: 6 help categories, 5 help articles, 6 video tutorials, 7 FAQ items, 5 feature requests");
+  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 11 brand assets (7 with frameworkData), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 10 knowledge resources (2 featured), 7 market insights (8 source URLs), 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, 2 exploration configs, S9 Settings: 1 user profile, 1 email preference, 3 connected accounts, 3 plans, 1 subscription, 1 payment method, 4 invoices, 1 notification preference, 1 appearance preference, S9 Help: 6 help categories, 5 help articles, 6 video tutorials, 7 FAQ items, 5 feature requests");
 }
 
 main()

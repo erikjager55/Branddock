@@ -4,33 +4,30 @@ import { ShieldAlert, ShieldCheck, Pencil, Trash2, Sparkles, MessageCircle, Eye,
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useCallback } from 'react';
 
+type LockEntityType = 'persona' | 'brand-asset';
+
 interface LockConfirmDialogProps {
   isOpen: boolean;
   isLocking: boolean;
   entityName: string;
+  entityType?: LockEntityType;
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-const LOCK_BLOCKED = [
-  { icon: Pencil, label: 'Edit content' },
-  { icon: Trash2, label: 'Delete item' },
-  { icon: Sparkles, label: 'AI generation & regeneration' },
-  { icon: MessageCircle, label: 'Start new conversation' },
-  { icon: Pencil, label: 'Start research methods' },
-];
+function getLockBlockedItems(entityType: LockEntityType) {
+  return [
+    { icon: Pencil, label: 'Edit content' },
+    { icon: Trash2, label: entityType === 'brand-asset' ? 'Delete asset' : 'Delete item' },
+    { icon: Sparkles, label: 'AI generation & regeneration' },
+    { icon: MessageCircle, label: entityType === 'brand-asset' ? 'Start AI Exploration' : 'Start new conversation' },
+    { icon: Pencil, label: 'Start research methods' },
+  ];
+}
 
 const LOCK_HIDDEN = [
   { icon: EyeOff, label: 'Empty/incomplete sections' },
   { icon: EyeOff, label: 'AI tools & generation buttons' },
-];
-
-const UNLOCK_ENABLED = [
-  { icon: Pencil, label: 'Edit content' },
-  { icon: Trash2, label: 'Delete item' },
-  { icon: Sparkles, label: 'AI generation & regeneration' },
-  { icon: MessageCircle, label: 'Start new conversation' },
-  { icon: Pencil, label: 'Start research methods' },
 ];
 
 const UNLOCK_VISIBLE = [
@@ -48,9 +45,11 @@ export function LockConfirmDialog({
   isOpen,
   isLocking,
   entityName,
+  entityType = 'persona',
   onConfirm,
   onCancel,
 }: LockConfirmDialogProps) {
+  const blockedItems = getLockBlockedItems(entityType);
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = useReducedMotion();
@@ -124,7 +123,7 @@ export function LockConfirmDialog({
                   {isLocking ? 'Will be blocked' : 'Will be enabled'}
                 </p>
                 <div className="space-y-1.5">
-                  {(isLocking ? LOCK_BLOCKED : UNLOCK_ENABLED).map(({ icon: Icon, label }) => (
+                  {blockedItems.map(({ icon: Icon, label }) => (
                     <div key={label} className="flex items-center gap-2.5 text-sm text-gray-700">
                       <Icon className={`w-4 h-4 flex-shrink-0 ${isLocking ? 'text-amber-500' : 'text-emerald-500'}`} />
                       <span>{label}</span>
