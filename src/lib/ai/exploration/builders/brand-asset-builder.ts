@@ -8,6 +8,39 @@ import type { ItemTypeConfig, DimensionQuestion } from '../item-type-registry';
 import { generateReport, resolveModelConfig } from '../exploration-llm';
 import type { GeneratedReport } from '../exploration-llm';
 
+// ─── Framework-Specific Dimensions ─────────────────────────
+
+const PURPOSE_WHEEL_DIMENSIONS: DimensionQuestion[] = [
+  {
+    key: 'core_purpose',
+    title: 'Core Purpose',
+    icon: 'Target',
+    question:
+      "Let's start with the heart of your purpose. Why does your organization exist beyond making money? What fundamental belief or conviction drives everything you do? Try to express this as a clear, compelling statement.",
+  },
+  {
+    key: 'impact_type',
+    title: 'Impact & Reach',
+    icon: 'Lightbulb',
+    question:
+      "Now let's explore your impact. The IDEO Purpose Wheel identifies 5 types of impact: Enable Potential, Reduce Friction, Foster Prosperity, Encourage Exploration, and Kindle Happiness. Which of these best describes how your purpose manifests? How does this impact look in practice for your customers and stakeholders?",
+  },
+  {
+    key: 'mechanism',
+    title: 'Mechanism & Delivery',
+    icon: 'Cog',
+    question:
+      "How do you deliver on this purpose? What is the specific mechanism — the products, services, approach, or methodology — through which your impact is achieved? Be specific about what makes your delivery unique.",
+  },
+  {
+    key: 'pressure_test',
+    title: 'Pressure Test & Alignment',
+    icon: 'FlaskConical',
+    question:
+      "Finally, let's pressure-test your purpose. If this purpose were truly at the center of your organization: What would it unlock for employees? How would it change product decisions? What partnerships would you pursue or decline? Would a stranger recognize this purpose from your actions?",
+  },
+];
+
 // ─── Dimension Questions per Asset Slug ────────────────────
 
 const SOCIAL_RELEVANCY_DIMENSIONS: DimensionQuestion[] = [
@@ -105,7 +138,10 @@ const DEFAULT_BRAND_ASSET_DIMENSIONS: DimensionQuestion[] = [
 
 // ─── Dimension Resolver ────────────────────────────────────
 
-function getDimensionsForAsset(slug: string): DimensionQuestion[] {
+function getDimensionsForAsset(slug: string, frameworkType?: string): DimensionQuestion[] {
+  // Framework-specific dimensions take priority
+  if (frameworkType === 'PURPOSE_WHEEL') return PURPOSE_WHEEL_DIMENSIONS;
+
   switch (slug) {
     case 'social-relevancy':
       return SOCIAL_RELEVANCY_DIMENSIONS;
@@ -116,7 +152,14 @@ function getDimensionsForAsset(slug: string): DimensionQuestion[] {
   }
 }
 
-// ─── Field Mapping per Slug ───────────────────────────────
+// ─── Field Mapping per Framework / Slug ──────────────────
+
+const PURPOSE_WHEEL_FIELD_MAPPING = [
+  { field: 'frameworkData.statement', label: 'Purpose Statement', type: 'text' as const },
+  { field: 'frameworkData.impactType', label: 'Impact Type', type: 'string' as const },
+  { field: 'frameworkData.mechanism', label: 'Mechanism', type: 'text' as const },
+  { field: 'frameworkData.pressureTest', label: 'Pressure Test', type: 'text' as const },
+];
 
 const SOCIAL_RELEVANCY_FIELD_MAPPING = [
   { field: 'content', label: 'Beschrijving', type: 'text' as const },
@@ -136,7 +179,10 @@ const DEFAULT_FIELD_MAPPING = [
   { field: 'description', label: 'Beschrijving', type: 'text' as const },
 ];
 
-function getFieldMappingForAsset(slug: string) {
+function getFieldMappingForAsset(slug: string, frameworkType?: string) {
+  // Framework-specific field mapping takes priority
+  if (frameworkType === 'PURPOSE_WHEEL') return PURPOSE_WHEEL_FIELD_MAPPING;
+
   switch (slug) {
     case 'social-relevancy':
       return SOCIAL_RELEVANCY_FIELD_MAPPING;
@@ -183,7 +229,15 @@ function buildBrandAssetContext(item: Record<string, unknown>): string {
         typeof item.frameworkData === 'string'
           ? JSON.parse(item.frameworkData as string)
           : item.frameworkData;
-      if (typeof fw === 'object' && fw !== null) {
+
+      if (item.frameworkType === 'PURPOSE_WHEEL' && typeof fw === 'object' && fw !== null) {
+        const pwd = fw as Record<string, string>;
+        if (pwd.statement) parts.push(`Current Purpose Statement: "${pwd.statement}"`);
+        if (pwd.impactType) parts.push(`Impact Type: ${pwd.impactType}`);
+        if (pwd.impactDescription) parts.push(`Impact Description: ${pwd.impactDescription}`);
+        if (pwd.mechanism) parts.push(`Mechanism: ${pwd.mechanism}`);
+        if (pwd.pressureTest) parts.push(`Pressure Test: ${pwd.pressureTest}`);
+      } else if (typeof fw === 'object' && fw !== null) {
         const entries = Object.entries(fw as Record<string, unknown>);
         const summary = entries
           .filter(([, v]) => typeof v === 'string' && (v as string).length > 0)
@@ -252,8 +306,10 @@ export const brandAssetItemConfig: ItemTypeConfig = {
   },
 
   getDimensions(item?: Record<string, unknown>) {
-    if (item && item.slug) {
-      return getDimensionsForAsset(item.slug as string);
+    if (item) {
+      const slug = (item.slug as string) ?? '';
+      const frameworkType = item.frameworkType as string | undefined;
+      return getDimensionsForAsset(slug, frameworkType);
     }
     return DEFAULT_BRAND_ASSET_DIMENSIONS;
   },
@@ -264,9 +320,15 @@ export const brandAssetItemConfig: ItemTypeConfig = {
 
   buildIntro(item) {
     const name = item.name as string;
-    const slug = item.slug as string;
+    const slug = (item.slug as string) ?? '';
+    const frameworkType = item.frameworkType as string | undefined;
     const description = item.description as string | null;
-    const dimensions = getDimensionsForAsset(slug);
+
+    if (frameworkType === 'PURPOSE_WHEEL') {
+      return `Welcome to the AI Exploration for **${name}** — The reason your organization exists beyond profit. I'll guide you through 4 dimensions based on the IDEO Purpose Wheel methodology: your core purpose, impact type, delivery mechanism, and a pressure test to validate alignment. Let's begin!`;
+    }
+
+    const dimensions = getDimensionsForAsset(slug, frameworkType);
     return `Welcome to the AI Exploration for **${name}**${description ? ` — ${description}` : ''}. I'll guide you through ${dimensions.length} key dimensions to build a validated understanding of this brand asset. Let's begin!`;
   },
 
@@ -278,8 +340,9 @@ export const brandAssetItemConfig: ItemTypeConfig = {
 
     console.log('[brand-asset-builder] generateInsights: sessionId:', sessionId, '| slug:', slug, '| modelId:', modelId);
 
-    const dimensions = getDimensionsForAsset(slug);
-    const fieldMapping = getFieldMappingForAsset(slug);
+    const frameworkType = (item.frameworkType as string) ?? undefined;
+    const dimensions = getDimensionsForAsset(slug, frameworkType);
+    const fieldMapping = getFieldMappingForAsset(slug, frameworkType);
 
     const messages = await prisma.explorationMessage.findMany({
       where: { sessionId },

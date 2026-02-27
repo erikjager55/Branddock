@@ -114,8 +114,9 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
   }
 
   const slug = asset.slug ?? '';
-  const dimensions = getDimensionsForSlug(slug);
-  const fieldMapping = getFieldMappingForSlug(slug);
+  const frameworkType = (asset.frameworkType as string) ?? undefined;
+  const dimensions = getDimensionsForSlug(slug, frameworkType);
+  const fieldMapping = getFieldMappingForSlug(slug, frameworkType);
 
   return (
     <AIExplorationPage
@@ -123,6 +124,7 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
         itemType: 'brand_asset',
         itemId: assetId,
         itemName: asset.name,
+        itemSubType: frameworkType?.toLowerCase(),
         pageTitle: 'AI Brand Asset Exploration',
         pageDescription: 'Answer questions to validate and strengthen this brand asset',
         backLabel: 'Back to Brand Asset',

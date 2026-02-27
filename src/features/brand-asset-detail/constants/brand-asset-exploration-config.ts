@@ -3,7 +3,7 @@
 // Slug-specific dimensions and field mappings.
 // ────────────────────────────────────────────────────────────
 
-import { Compass, Heart, Leaf, Globe, Lightbulb, Rocket, Target, FileText, BarChart2, Zap } from 'lucide-react';
+import { Compass, Heart, Leaf, Globe, Lightbulb, Rocket, Target, FileText, BarChart2, Zap, Cog, FlaskConical } from 'lucide-react';
 import type { DimensionConfig, FieldMapping } from '@/components/ai-exploration/types';
 
 // ─── Social Relevancy Dimensions ──────────────────────────
@@ -59,6 +59,67 @@ const SOCIAL_RELEVANCY_DIMENSIONS: DimensionConfig[] = [
       'How does your brand improve society?',
       'Do you fight inequality or promote education?',
       'How do you make tools accessible to a wider audience?',
+    ],
+  },
+];
+
+// ─── Purpose Wheel Framework Dimensions ──────────────────
+
+const PURPOSE_WHEEL_DIMENSIONS: DimensionConfig[] = [
+  {
+    key: 'core_purpose',
+    label: 'Core Purpose',
+    icon: Target,
+    color: 'teal',
+    bgClass: 'bg-teal-100',
+    textClass: 'text-teal-600',
+    defaultQuestions: [
+      'Why does your organization exist beyond profit?',
+      'What fundamental belief drives everything you do?',
+      'Can you express your purpose in one clear sentence?',
+      'Would employees recognize this as the core purpose?',
+    ],
+  },
+  {
+    key: 'impact_type',
+    label: 'Impact & Reach',
+    icon: Lightbulb,
+    color: 'amber',
+    bgClass: 'bg-amber-100',
+    textClass: 'text-amber-600',
+    defaultQuestions: [
+      'Which IDEO impact type best describes your purpose?',
+      'How does this impact manifest for customers?',
+      'What tangible difference does your purpose make?',
+      'How would stakeholders describe your impact?',
+    ],
+  },
+  {
+    key: 'mechanism',
+    label: 'Mechanism & Delivery',
+    icon: Cog,
+    color: 'blue',
+    bgClass: 'bg-blue-100',
+    textClass: 'text-blue-600',
+    defaultQuestions: [
+      'Through what means do you deliver on your purpose?',
+      'What is unique about your mechanism?',
+      'How does your approach differ from competitors?',
+      'Is your mechanism scalable and sustainable?',
+    ],
+  },
+  {
+    key: 'pressure_test',
+    label: 'Pressure Test & Alignment',
+    icon: FlaskConical,
+    color: 'purple',
+    bgClass: 'bg-purple-100',
+    textClass: 'text-purple-600',
+    defaultQuestions: [
+      'What would this purpose unlock for employees?',
+      'How would it change product decisions?',
+      'What partnerships would you pursue or decline?',
+      'Would a stranger recognize this purpose from your actions?',
     ],
   },
 ];
@@ -173,7 +234,14 @@ const DEFAULT_BRAND_ASSET_DIMENSIONS: DimensionConfig[] = [
   },
 ];
 
-// ─── Field Mappings per Slug ──────────────────────────────
+// ─── Field Mappings per Framework / Slug ─────────────────
+
+const PURPOSE_WHEEL_FIELD_MAPPING: FieldMapping[] = [
+  { field: 'frameworkData.statement', label: 'Purpose Statement', type: 'text' },
+  { field: 'frameworkData.impactType', label: 'Impact Type', type: 'string' },
+  { field: 'frameworkData.mechanism', label: 'Mechanism', type: 'text' },
+  { field: 'frameworkData.pressureTest', label: 'Pressure Test', type: 'text' },
+];
 
 const SOCIAL_RELEVANCY_FIELD_MAPPING: FieldMapping[] = [
   { field: 'content', label: 'Description', type: 'text' },
@@ -195,7 +263,10 @@ const DEFAULT_FIELD_MAPPING: FieldMapping[] = [
 
 // ─── Resolver Functions ───────────────────────────────────
 
-export function getDimensionsForSlug(slug: string): DimensionConfig[] {
+export function getDimensionsForSlug(slug: string, frameworkType?: string): DimensionConfig[] {
+  // Framework-specific dimensions take priority
+  if (frameworkType === 'PURPOSE_WHEEL') return PURPOSE_WHEEL_DIMENSIONS;
+
   switch (slug) {
     case 'social-relevancy':
       return SOCIAL_RELEVANCY_DIMENSIONS;
@@ -206,7 +277,10 @@ export function getDimensionsForSlug(slug: string): DimensionConfig[] {
   }
 }
 
-export function getFieldMappingForSlug(slug: string): FieldMapping[] {
+export function getFieldMappingForSlug(slug: string, frameworkType?: string): FieldMapping[] {
+  // Framework-specific field mapping takes priority
+  if (frameworkType === 'PURPOSE_WHEEL') return PURPOSE_WHEEL_FIELD_MAPPING;
+
   switch (slug) {
     case 'social-relevancy':
       return SOCIAL_RELEVANCY_FIELD_MAPPING;
