@@ -1,8 +1,8 @@
 // =============================================================
-// BrandAssetCard — per-asset card (Figma 2-col design)
+// BrandAssetCard — per-asset card (PersonaCard-aligned design)
 //
-// Displays: gradient icon, name, description, coverage badge,
-// metadata row, expandable validation methods, last updated.
+// Displays: gradient icon, name, description subtitle, two pills
+// (complete + validated), expandable validation methods, last updated.
 //
 // Works with BrandAssetWithMeta (API/DB format).
 // =============================================================
@@ -11,14 +11,12 @@
 
 import React, { useState } from 'react';
 import {
-  Layers, ChevronDown, CheckCircle, AlertCircle, AlertTriangle,
+  ChevronDown, CheckCircle, Plus,
   Sparkles, Users as UsersIcon, FileQuestion, ClipboardList,
 } from 'lucide-react';
 import { CardLockIndicator } from '@/components/lock';
 import * as LucideIcons from 'lucide-react';
 import { Card } from '@/components/shared/Card';
-import { Badge } from '@/components/shared/Badge';
-import { CategoryBadge } from './CategoryBadge';
 import { cn } from '@/components/ui/utils';
 import type { BrandAssetWithMeta, AssetCategory } from '@/types/brand-asset';
 import { ICON_CONTAINERS } from '@/lib/constants/design-tokens';
@@ -47,22 +45,35 @@ const CATEGORY_ICONS: Record<AssetCategory, string> = {
   CULTURE: 'Users',
 };
 
-// ─── Coverage badge helpers ─────────────────────────────────
-
-function coverageVariant(pct: number): { color: string; icon: React.ElementType } {
-  if (pct >= 80) return { color: 'text-green-600 bg-green-50', icon: CheckCircle };
-  if (pct >= 50) return { color: 'text-primary bg-primary/10', icon: CheckCircle };
-  if (pct > 0) return { color: 'text-orange-600 bg-orange-50', icon: AlertCircle };
-  return { color: 'text-red-600 bg-red-50', icon: AlertTriangle };
-}
-
 // ─── Validation method config ───────────────────────────────
 
 const VALIDATION_METHODS = [
-  { key: 'ai' as const, label: 'AI Exploration', icon: Sparkles },
-  { key: 'workshop' as const, label: 'Workshop', icon: UsersIcon },
-  { key: 'interview' as const, label: 'Interviews', icon: FileQuestion },
-  { key: 'questionnaire' as const, label: 'Survey', icon: ClipboardList },
+  {
+    key: 'ai' as const,
+    label: 'AI Exploration',
+    icon: Sparkles,
+    description: 'AI-assisted analysis and ideation for brand strategy',
+    priceLabel: 'FREE',
+  },
+  {
+    key: 'workshop' as const,
+    label: 'Workshop',
+    icon: UsersIcon,
+    description: 'Collaborative workshop sessions with stakeholders',
+  },
+  {
+    key: 'interview' as const,
+    label: 'Interviews',
+    icon: FileQuestion,
+    description: 'One-on-one deep-dive interviews with key stakeholders and customers',
+  },
+  {
+    key: 'questionnaire' as const,
+    label: 'Survey',
+    icon: ClipboardList,
+    description: 'Comprehensive surveys distributed to broader audience for quantitative insights',
+    priceLabel: 'From $500',
+  },
 ];
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -105,12 +116,17 @@ export function BrandAssetCard({
   const gradient = CATEGORY_GRADIENTS[asset.category] ?? 'from-gray-500 to-gray-600';
   const iconName = CATEGORY_ICONS[asset.category] ?? 'FileText';
   const CategoryIcon = getIcon(iconName);
-  const coverage = coverageVariant(asset.coveragePercentage);
-  const CoverageIcon = coverage.icon;
 
   const completedMethods = VALIDATION_METHODS.filter(
     (m) => asset.validationMethods[m.key],
   ).length;
+
+  // Completeness: how many content sections are filled
+  const completenessFields = [
+    !!asset.description,
+    asset.artifactCount > 0,
+  ].filter(Boolean).length;
+  const completenessPercent = Math.round((completenessFields / 2) * 100);
 
   return (
     <Card
@@ -122,7 +138,7 @@ export function BrandAssetCard({
     >
       <CardLockIndicator isLocked={isLocked} className="absolute top-3 right-3" />
 
-      {/* Header — gradient icon + title + coverage badge */}
+      {/* Header — gradient icon + title + subtitle + two pills */}
       <div className="p-6 pb-0">
         <div className="flex items-start gap-4">
           {/* Gradient icon container */}
@@ -139,42 +155,33 @@ export function BrandAssetCard({
             <h3 className="text-base font-semibold text-foreground leading-snug line-clamp-1">
               {asset.name}
             </h3>
-            <CategoryBadge category={asset.category} />
+            <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">
+              {asset.description || 'No description yet'}
+            </p>
           </div>
 
-          {/* Coverage % badge */}
-          <div
-            className={cn(
-              'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold flex-shrink-0',
-              coverage.color,
-            )}
-          >
-            <CoverageIcon className="h-3.5 w-3.5" />
-            {Math.round(asset.coveragePercentage)}%
+          {/* Two pills: complete + validated */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
+              completenessPercent >= 80 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' :
+              completenessPercent >= 50 ? 'border-amber-200 bg-amber-50 text-amber-600' :
+              'border-red-200 bg-red-50 text-red-500'
+            }`}>
+              {completenessPercent}% complete
+            </span>
+            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
+              asset.coveragePercentage >= 80 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' :
+              asset.coveragePercentage >= 50 ? 'border-amber-200 bg-amber-50 text-amber-600' :
+              'border-gray-200 bg-gray-50 text-gray-600'
+            }`}>
+              {Math.round(asset.coveragePercentage)}% validated
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Description */}
-      <div className="px-6 pt-3 pb-4">
-        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-          {asset.description || 'No description yet.'}
-        </p>
-      </div>
-
-      {/* Metadata row */}
-      <div className="px-6 pb-4 flex items-center gap-3 text-xs text-muted-foreground">
-        <span>Validated {completedMethods}/4</span>
-        {asset.artifactCount > 0 && (
-          <span className="flex items-center gap-1">
-            <Layers className="w-3 h-3" />
-            {asset.artifactCount} artifact{asset.artifactCount !== 1 ? 's' : ''}
-          </span>
-        )}
-      </div>
-
       {/* Expandable Validation Methods */}
-      <div className="border-t border-border">
+      <div className="border-t border-border mt-4">
         <button
           type="button"
           onClick={(e) => {
@@ -183,7 +190,10 @@ export function BrandAssetCard({
           }}
           className="w-full flex items-center justify-between px-6 py-3 text-xs font-medium text-muted-foreground hover:bg-muted/50 transition-colors"
         >
-          <span>Validation Methods {completedMethods}/4</span>
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Validation Methods ({completedMethods}/4)</span>
+          </div>
           <ChevronDown
             className={cn(
               'h-4 w-4 transition-transform',
@@ -193,22 +203,65 @@ export function BrandAssetCard({
         </button>
 
         {methodsExpanded && (
-          <div className="px-6 pb-4 grid grid-cols-2 gap-2">
+          <div className="px-6 pb-4 space-y-2">
             {VALIDATION_METHODS.map((method) => {
               const done = asset.validationMethods[method.key];
               const MethodIcon = method.icon;
+
               return (
                 <div
                   key={method.key}
-                  className={cn(
-                    'flex items-center gap-2 rounded-lg px-3 py-2 text-xs',
+                  className={`rounded-lg p-3 ${
                     done
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-muted text-muted-foreground',
-                  )}
+                      ? 'border border-emerald-200 bg-emerald-50/30'
+                      : 'border border-dashed border-gray-300'
+                  }`}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <MethodIcon className="h-3.5 w-3.5 flex-shrink-0" />
-                  {method.label}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2.5">
+                      <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${
+                        done ? 'bg-emerald-100' : 'bg-gray-100'
+                      }`}>
+                        <MethodIcon className={`h-4 w-4 ${
+                          done ? 'text-emerald-600' : 'text-gray-400'
+                        }`} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-gray-900">
+                          {method.label}
+                        </div>
+                        <div className="mt-0.5 text-xs text-gray-500 line-clamp-2">
+                          {method.description}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="shrink-0 flex flex-col items-end gap-1">
+                      {done ? (
+                        <>
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                            <CheckCircle className="h-3 w-3" />
+                            VALIDATED
+                          </span>
+                          <span className="text-[10px] font-medium text-emerald-600 hover:underline cursor-pointer">
+                            View Results
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                            <Plus className="h-3 w-3" />
+                            AVAILABLE
+                          </span>
+                          {method.priceLabel && (
+                            <span className="text-[10px] text-gray-400">
+                              {method.priceLabel}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
               );
             })}
