@@ -24,7 +24,7 @@ const SOCIAL_RELEVANCY_DIMENSIONS: DimensionConfig[] = [
   },
   {
     key: 'mens',
-    label: 'Impact op Mens',
+    label: 'Impact on People',
     icon: Heart,
     color: 'rose',
     bgClass: 'bg-rose-100',
@@ -37,7 +37,7 @@ const SOCIAL_RELEVANCY_DIMENSIONS: DimensionConfig[] = [
   },
   {
     key: 'milieu',
-    label: 'Impact op Milieu',
+    label: 'Impact on Environment',
     icon: Leaf,
     color: 'emerald',
     bgClass: 'bg-emerald-100',
@@ -50,7 +50,7 @@ const SOCIAL_RELEVANCY_DIMENSIONS: DimensionConfig[] = [
   },
   {
     key: 'maatschappij',
-    label: 'Impact op Maatschappij',
+    label: 'Impact on Society',
     icon: Globe,
     color: 'blue',
     bgClass: 'bg-blue-100',
@@ -68,7 +68,7 @@ const SOCIAL_RELEVANCY_DIMENSIONS: DimensionConfig[] = [
 const PURPOSE_STATEMENT_DIMENSIONS: DimensionConfig[] = [
   {
     key: 'why',
-    label: 'Waarom — Bestaansrecht',
+    label: 'Why — Raison d\u2019\u00EAtre',
     icon: Compass,
     color: 'amber',
     bgClass: 'bg-amber-100',
@@ -81,7 +81,7 @@ const PURPOSE_STATEMENT_DIMENSIONS: DimensionConfig[] = [
   },
   {
     key: 'how',
-    label: 'Hoe — Unieke Aanpak',
+    label: 'How — Unique Approach',
     icon: Lightbulb,
     color: 'blue',
     bgClass: 'bg-blue-100',
@@ -94,7 +94,7 @@ const PURPOSE_STATEMENT_DIMENSIONS: DimensionConfig[] = [
   },
   {
     key: 'impact',
-    label: 'Impact — Gewenst Effect',
+    label: 'Impact — Desired Effect',
     icon: Rocket,
     color: 'emerald',
     bgClass: 'bg-emerald-100',
@@ -107,7 +107,7 @@ const PURPOSE_STATEMENT_DIMENSIONS: DimensionConfig[] = [
   },
   {
     key: 'alignment',
-    label: 'Alignment — Organisatie & Uitvoering',
+    label: 'Alignment — Organization & Execution',
     icon: Target,
     color: 'purple',
     bgClass: 'bg-purple-100',
@@ -176,21 +176,21 @@ const DEFAULT_BRAND_ASSET_DIMENSIONS: DimensionConfig[] = [
 // ─── Field Mappings per Slug ──────────────────────────────
 
 const SOCIAL_RELEVANCY_FIELD_MAPPING: FieldMapping[] = [
-  { field: 'content', label: 'Beschrijving', type: 'text' },
-  { field: 'frameworkData.pillars.mens.description', label: 'Mens — Beschrijving', type: 'text' },
-  { field: 'frameworkData.pillars.milieu.description', label: 'Milieu — Beschrijving', type: 'text' },
-  { field: 'frameworkData.pillars.maatschappij.description', label: 'Maatschappij — Beschrijving', type: 'text' },
+  { field: 'content', label: 'Description', type: 'text' },
+  { field: 'frameworkData.pillars.mens.description', label: 'People — Description', type: 'text' },
+  { field: 'frameworkData.pillars.milieu.description', label: 'Environment — Description', type: 'text' },
+  { field: 'frameworkData.pillars.maatschappij.description', label: 'Society — Description', type: 'text' },
 ];
 
 const PURPOSE_STATEMENT_FIELD_MAPPING: FieldMapping[] = [
-  { field: 'content.why', label: 'Waarom — Bestaansrecht', type: 'text' },
-  { field: 'content.how', label: 'Hoe — Unieke Aanpak', type: 'text' },
-  { field: 'content.impact', label: 'Impact — Gewenst Effect', type: 'text' },
+  { field: 'content.why', label: 'Why — Raison d\u2019\u00EAtre', type: 'text' },
+  { field: 'content.how', label: 'How — Unique Approach', type: 'text' },
+  { field: 'content.impact', label: 'Impact — Desired Effect', type: 'text' },
 ];
 
 const DEFAULT_FIELD_MAPPING: FieldMapping[] = [
   { field: 'content', label: 'Content', type: 'text' },
-  { field: 'description', label: 'Beschrijving', type: 'text' },
+  { field: 'description', label: 'Description', type: 'text' },
 ];
 
 // ─── Resolver Functions ───────────────────────────────────

@@ -46,8 +46,8 @@ export function AIPersonaAnalysisPage({ personaId, onBack }: AIPersonaAnalysisPa
         fieldMapping: [], // Field mapping handled by backend persona-builder
         onApplyChanges: (updates) => updatePersona.mutateAsync(updates),
       }}
-      onStartSession={(modelId) =>
-        explorationApi.startExplorationSession('persona', personaId, modelId)
+      onStartSession={() =>
+        explorationApi.startExplorationSession('persona', personaId)
       }
       onSendAnswer={(sessionId, content) =>
         explorationApi.sendExplorationAnswer('persona', personaId, sessionId, content)

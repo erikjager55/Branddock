@@ -3,10 +3,9 @@
 import { useCallback, useEffect } from "react";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { useAssetDetail, useRegenerateContent, useUpdateContent } from "../hooks/useBrandAssetDetail";
+import { useAssetDetail, useUpdateContent } from "../hooks/useBrandAssetDetail";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
 import { AssetDetailHeader } from "./AssetDetailHeader";
-import { ContentEditorSection } from "./ContentEditorSection";
 import { PurposeStatementSection } from "./sections/PurposeStatementSection";
 import type { PurposeStatementData } from "./sections/PurposeStatementSection";
 import { FrameworkSection } from "./FrameworkSection";
@@ -67,7 +66,6 @@ export function BrandAssetDetailPage({
   });
 
   const visibility = useLockVisibility(lockState.isLocked);
-  const regenerate = useRegenerateContent(assetId ?? '');
   const updateContent = useUpdateContent(assetId ?? '');
 
   // Force editing off when locked
@@ -166,22 +164,16 @@ export function BrandAssetDetailPage({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Main Content — left column (2/3) */}
           <div className="md:col-span-2 min-w-0 space-y-6">
-            {/* Content Section */}
-            <LockOverlay isLocked={lockState.isLocked}>
-              {isPurposeStatement ? (
+            {/* Purpose Statement Section (only for purpose-statement assets) */}
+            {isPurposeStatement && (
+              <LockOverlay isLocked={lockState.isLocked}>
                 <PurposeStatementSection
                   data={purposeData}
                   isEditing={isEditing && !lockState.isLocked}
                   onUpdate={(data) => updateContent.mutate({ content: JSON.stringify(data) })}
                 />
-              ) : (
-                <ContentEditorSection
-                  asset={asset}
-                  isLocked={lockState.isLocked}
-                  isEditing={isEditing}
-                />
-              )}
-            </LockOverlay>
+              </LockOverlay>
+            )}
 
             {/* Framework Section (if present) */}
             {asset.frameworkType && (

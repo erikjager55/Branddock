@@ -2,16 +2,15 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { ArrowLeft, Bot, RefreshCw, Sparkles } from 'lucide-react';
-import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage, ExplorationModelOption } from './types';
+import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage } from './types';
 import { useAIExplorationStore } from './hooks/useAIExplorationStore';
 import { AIExplorationChatInterface } from './AIExplorationChatInterface';
 import { AIExplorationReport } from './AIExplorationReport';
 import { AIExplorationSuggestions } from './AIExplorationSuggestions';
-import { fetchExplorationModels } from '@/lib/api/exploration.api';
 
 interface AIExplorationPageProps {
   config: ExplorationConfig;
-  onStartSession: (modelId?: string) => Promise<{
+  onStartSession: () => Promise<{
     sessionId: string;
     messages: ExplorationMessage[];
     progress: number;
@@ -57,29 +56,13 @@ export function AIExplorationPage({
   const setInsightsData = useAIExplorationStore((s) => s.setInsightsData);
   const reset = useAIExplorationStore((s) => s.reset);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [models, setModels] = useState<ExplorationModelOption[]>([]);
-  const [selectedModelId, setSelectedModelId] = useState<string>('claude-sonnet-4-6');
-  const [modelsLoaded, setModelsLoaded] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
-  // Fetch available models on mount
-  useEffect(() => {
-    fetchExplorationModels()
-      .then((data) => {
-        if (data.length > 0) {
-          setModels(data);
-          setSelectedModelId(data[0].id);
-        }
-        setModelsLoaded(true);
-      })
-      .catch(() => setModelsLoaded(true));
-  }, []);
-
-  const startSession = useCallback((modelId: string) => {
+  const startSession = useCallback(() => {
     setStartError(null);
     reset();
     setStatus('in_progress');
-    onStartSession(modelId)
+    onStartSession()
       .then((data) => {
         setSessionId(data.sessionId);
         setMessages(data.messages);
@@ -94,7 +77,7 @@ export function AIExplorationPage({
   }, [onStartSession]);
 
   useEffect(() => {
-    startSession(selectedModelId);
+    startSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.itemId]);
 
@@ -168,7 +151,7 @@ export function AIExplorationPage({
           <div className="flex flex-col items-center justify-center rounded-xl" style={{ padding: '48px', border: '1px solid #fecaca', backgroundColor: '#fef2f2' }}>
             <p className="text-sm font-medium" style={{ color: '#991b1b', marginBottom: '12px' }}>{startError}</p>
             <button
-              onClick={() => startSession(selectedModelId)}
+              onClick={() => startSession()}
               className="flex items-center gap-2 text-sm font-medium rounded-lg text-white transition-all"
               style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #14b8a6, #10b981)' }}
             >
@@ -243,12 +226,6 @@ export function AIExplorationPage({
                 isSubmitting={false}
                 progress={progress}
                 answeredDimensions={answeredDimensions}
-                models={modelsLoaded ? models : undefined}
-                selectedModelId={selectedModelId}
-                onModelChange={(modelId) => {
-                  setSelectedModelId(modelId);
-                  startSession(modelId);
-                }}
               />
             </div>
           </div>

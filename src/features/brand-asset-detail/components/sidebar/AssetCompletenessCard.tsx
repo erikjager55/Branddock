@@ -14,12 +14,9 @@ interface FieldCheck {
 }
 
 function getAssetFields(asset: BrandAssetDetail): FieldCheck[] {
-  const contentStr = typeof asset.content === 'string' ? asset.content : '';
   return [
-    { label: 'Content', filled: contentStr.length > 0 },
     { label: 'Description', filled: !!(asset.description && asset.description.length > 0) },
     { label: 'Framework', filled: !!(asset.frameworkType && asset.frameworkData) },
-    { label: 'AI Exploration', filled: asset.researchMethods?.some(m => m.status === 'COMPLETED' || m.status === 'VALIDATED') ?? false },
   ];
 }
 

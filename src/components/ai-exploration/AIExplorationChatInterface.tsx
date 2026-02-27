@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { ArrowRight, Bot, Cpu, User, Sparkles } from 'lucide-react';
-import type { ExplorationMessage, ExplorationConfig, ExplorationModelOption } from './types';
+import { ArrowRight, Bot, User, Sparkles } from 'lucide-react';
+import type { ExplorationMessage, ExplorationConfig } from './types';
 
 interface AIExplorationChatInterfaceProps {
   config: ExplorationConfig;
@@ -14,12 +14,6 @@ interface AIExplorationChatInterfaceProps {
   isSubmitting: boolean;
   progress: number;
   answeredDimensions: number;
-  /** Available AI models (from /api/exploration/models) */
-  models?: ExplorationModelOption[];
-  /** Currently selected model ID */
-  selectedModelId?: string;
-  /** Callback to change model (restarts session, disabled after first answer) */
-  onModelChange?: (modelId: string) => void;
 }
 
 export function AIExplorationChatInterface({
@@ -32,9 +26,6 @@ export function AIExplorationChatInterface({
   isSubmitting,
   progress,
   answeredDimensions,
-  models,
-  selectedModelId,
-  onModelChange,
 }: AIExplorationChatInterfaceProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const totalDimensions = config.dimensions.length;
@@ -65,29 +56,6 @@ export function AIExplorationChatInterface({
         height: '100%',
       }}
     >
-      {/* Model Selector */}
-      {models && models.length > 1 && (
-        <div className="flex items-center gap-2" style={{ padding: '8px 24px', borderBottom: '1px solid #f3f4f6', backgroundColor: 'rgba(249,250,251,0.5)' }}>
-          <Cpu className="h-3.5 w-3.5 flex-shrink-0" style={{ color: '#9ca3af' }} />
-          <select
-            value={selectedModelId ?? ''}
-            onChange={(e) => onModelChange?.(e.target.value)}
-            disabled={answeredDimensions > 0}
-            className="text-sm bg-white rounded-md outline-none disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{ padding: '2px 8px', color: '#4b5563', border: '1px solid #e5e7eb' }}
-          >
-            {models.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name} — {m.description}
-              </option>
-            ))}
-          </select>
-          {answeredDimensions > 0 && (
-            <span className="text-xs" style={{ color: '#9ca3af' }}>(locked for this session)</span>
-          )}
-        </div>
-      )}
-
       {/* Messages Area */}
       <div
         ref={listRef}

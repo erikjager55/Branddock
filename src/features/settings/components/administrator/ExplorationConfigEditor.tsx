@@ -115,14 +115,14 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
       {/* Header */}
       <div className="bg-teal-50 px-6 py-4 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-teal-900">
-          {isNew ? 'Nieuwe configuratie' : `Bewerken: ${label || itemType}`}
+          {isNew ? 'New configuration' : `Edit: ${label || itemType}`}
         </h3>
         <div className="flex items-center gap-2">
           <button
             onClick={onCancel}
             className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg transition-colors"
           >
-            Annuleren
+            Cancel
           </button>
           <button
             onClick={handleSave}
@@ -130,7 +130,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
             className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 rounded-lg transition-colors"
           >
             <Save className="w-3.5 h-3.5" />
-            {isSaving ? 'Opslaan...' : 'Opslaan'}
+            {isSaving ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>
@@ -154,7 +154,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              Sub Type <span className="text-gray-400">(optioneel)</span>
+              Sub Type <span className="text-gray-400">(optional)</span>
             </label>
             <input
               value={itemSubType}
@@ -169,7 +169,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
             <input
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="Weergavenaam"
+              placeholder="Display name"
               className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg"
             />
           </div>
@@ -183,7 +183,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
             onChange={(e) => setIsActive(e.target.checked)}
             className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
           />
-          <span className="text-sm text-gray-700">Actief</span>
+          <span className="text-sm text-gray-700">Active</span>
         </label>
 
         {/* ─── Model Section ─────────────────────────── */}
@@ -236,8 +236,8 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                 className="w-full accent-teal-600"
               />
               <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
-                <span>Precies (0)</span>
-                <span>Creatief (1)</span>
+                <span>Precise (0)</span>
+                <span>Creative (1)</span>
               </div>
             </div>
             <div>
@@ -257,7 +257,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
 
         {/* ─── Dimensions Section ────────────────────── */}
         <CollapsibleSection
-          title={`Dimensies (${dimensions.length})`}
+          title={`Dimensions (${dimensions.length})`}
           isOpen={openSections.dimensions}
           onToggle={() => toggleSection('dimensions')}
         >
@@ -265,7 +265,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
             {dimensions.map((dim, i) => (
               <div key={i} className="border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50/50">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-500">Dimensie {i + 1}</span>
+                  <span className="text-xs font-medium text-gray-500">Dimension {i + 1}</span>
                   <button
                     onClick={() => removeDimension(i)}
                     className="p-1 text-gray-400 hover:text-red-500 transition-colors"
@@ -283,7 +283,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                   <input
                     value={dim.title}
                     onChange={(e) => updateDimension(i, 'title', e.target.value)}
-                    placeholder="Titel"
+                    placeholder="Title"
                     className="px-2 py-1.5 text-xs border border-gray-200 rounded"
                   />
                   <input
@@ -296,14 +296,14 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                 <textarea
                   value={dim.question}
                   onChange={(e) => updateDimension(i, 'question', e.target.value)}
-                  placeholder="Vraag voor deze dimensie..."
+                  placeholder="Question for this dimension..."
                   rows={2}
                   className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded resize-none"
                 />
                 <input
                   value={dim.followUpHint ?? ''}
                   onChange={(e) => updateDimension(i, 'followUpHint', e.target.value)}
-                  placeholder="Follow-up hint voor AI (optioneel)"
+                  placeholder="Follow-up hint for AI (optional)"
                   className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded text-gray-500"
                 />
               </div>
@@ -313,7 +313,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
               className="flex items-center gap-1.5 text-xs text-teal-600 hover:text-teal-700 font-medium"
             >
               <Plus className="w-3.5 h-3.5" />
-              Dimensie toevoegen
+              Add dimension
             </button>
           </div>
         </CollapsibleSection>
@@ -337,7 +337,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                 onChange={(e) => setSystemPrompt(e.target.value)}
                 rows={6}
                 className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg font-mono resize-y"
-                placeholder="Je bent een senior merkstrateeg..."
+                placeholder="You are a senior brand strategist..."
               />
             </div>
             <div>
@@ -352,7 +352,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                 onChange={(e) => setFeedbackPrompt(e.target.value)}
                 rows={6}
                 className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg font-mono resize-y"
-                placeholder="Geef korte, constructieve feedback..."
+                placeholder="Provide brief, constructive feedback..."
               />
             </div>
             <div>
@@ -367,7 +367,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                 onChange={(e) => setReportPrompt(e.target.value)}
                 rows={8}
                 className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg font-mono resize-y"
-                placeholder="Genereer een analyserapport..."
+                placeholder="Generate an analysis report..."
               />
             </div>
           </div>
@@ -421,7 +421,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                     updated[i] = { ...updated[i], extractionHint: e.target.value };
                     setFieldSuggestions(updated);
                   }}
-                  placeholder="Extraction hint voor AI"
+                  placeholder="Extraction hint for AI"
                   className="px-2 py-1.5 text-xs border border-gray-200 rounded"
                 />
                 <button
@@ -437,7 +437,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
               className="flex items-center gap-1.5 text-xs text-teal-600 hover:text-teal-700 font-medium"
             >
               <Plus className="w-3.5 h-3.5" />
-              Field toevoegen
+              Add field
             </button>
           </div>
         </CollapsibleSection>
@@ -449,7 +449,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
           onToggle={() => toggleSection('context')}
         >
           <p className="text-xs text-gray-500 mb-3">
-            Selecteer welke workspace data automatisch meegegeven wordt aan de AI als context.
+            Select which workspace data is automatically provided to the AI as context.
           </p>
           <div className="grid grid-cols-2 gap-2">
             {AVAILABLE_CONTEXT_SOURCES.map((source) => (

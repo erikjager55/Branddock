@@ -131,8 +131,8 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
         fieldMapping,
         onApplyChanges: handleApplyChanges,
       }}
-      onStartSession={(modelId) =>
-        explorationApi.startExplorationSession('brand_asset', assetId, modelId)
+      onStartSession={() =>
+        explorationApi.startExplorationSession('brand_asset', assetId)
       }
       onSendAnswer={(sessionId, content) =>
         explorationApi.sendExplorationAnswer('brand_asset', assetId, sessionId, content)

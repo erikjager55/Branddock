@@ -14,16 +14,16 @@ interface PurposeLayer {
 const LAYERS: PurposeLayer[] = [
   {
     key: 'why',
-    label: 'Waarom',
-    description: 'Omschrijf waarom je als organisatie bestaat. Dit gaat verder dan winst.',
+    label: 'Why',
+    description: 'Describe why your organization exists. This goes beyond profit.',
     icon: Compass,
     color: 'text-amber-600',
     bgColor: 'bg-amber-50',
   },
   {
     key: 'how',
-    label: 'Hoe',
-    description: 'Omschrijf hoe je dit op je eigen unieke manier doet.',
+    label: 'How',
+    description: 'Describe how you do this in your own unique way.',
     icon: Lightbulb,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
@@ -31,7 +31,7 @@ const LAYERS: PurposeLayer[] = [
   {
     key: 'impact',
     label: 'Impact',
-    description: 'Omschrijf welke impact je purpose heeft op mens, milieu en maatschappij.',
+    description: 'Describe the impact your purpose has on people, environment, and society.',
     icon: Rocket,
     color: 'text-emerald-600',
     bgColor: 'bg-emerald-50',
@@ -61,7 +61,7 @@ export function PurposeStatementSection({ data, isEditing, onUpdate }: PurposeSt
           </div>
           <div>
             <h3 className="text-base font-semibold text-gray-900">Purpose Statement</h3>
-            <p className="text-sm text-gray-500">Het waarom van je bestaan als organisatie</p>
+            <p className="text-sm text-gray-500">The reason your organization exists</p>
           </div>
         </div>
       </div>
@@ -86,11 +86,11 @@ export function PurposeStatementSection({ data, isEditing, onUpdate }: PurposeSt
                     onChange={(e) => onUpdate({ ...data, [layer.key]: e.target.value })}
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
                     rows={3}
-                    placeholder={`Beschrijf het '${layer.label.toLowerCase()}'...`}
+                    placeholder={`Describe the '${layer.label.toLowerCase()}'...`}
                   />
                 ) : (
                   <p className="text-sm text-gray-700 leading-relaxed">
-                    {value || <span className="italic text-gray-400">Nog niet ingevuld</span>}
+                    {value || <span className="italic text-gray-400">Not yet filled in</span>}
                   </p>
                 )}
               </div>

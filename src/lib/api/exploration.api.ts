@@ -6,20 +6,10 @@ import type {
   ExplorationMessage,
   ExplorationSession,
   ExplorationInsightsData,
-  ExplorationModelOption,
 } from '@/components/ai-exploration/types';
 
 function baseUrl(itemType: string, itemId: string): string {
   return `/api/exploration/${itemType}/${itemId}`;
-}
-
-// ─── Fetch Available Models ─────────────────────────────────
-
-export async function fetchExplorationModels(): Promise<ExplorationModelOption[]> {
-  const res = await fetch('/api/exploration/models');
-  if (!res.ok) return [];
-  const data = await res.json();
-  return data.models ?? [];
 }
 
 // ─── Start Session ──────────────────────────────────────────
@@ -27,7 +17,6 @@ export async function fetchExplorationModels(): Promise<ExplorationModelOption[]
 export async function startExplorationSession(
   itemType: string,
   itemId: string,
-  modelId?: string,
 ): Promise<{
   sessionId: string;
   status: string;
@@ -39,7 +28,6 @@ export async function startExplorationSession(
   const res = await fetch(`${baseUrl(itemType, itemId)}/analyze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ modelId: modelId || null }),
   });
   if (!res.ok) {
     const rawText = await res.text().catch(() => '');
