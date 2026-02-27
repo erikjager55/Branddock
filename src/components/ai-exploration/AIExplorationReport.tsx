@@ -31,8 +31,9 @@ interface AIExplorationReportProps {
 }
 
 export function AIExplorationReport({ config, insightsData, onViewSuggestions }: AIExplorationReportProps) {
-  const totalDimensions = insightsData.dimensions.length;
-  const findings = insightsData.findings ?? insightsData.dimensions.map((d) => ({
+  const dimensions = insightsData.dimensions ?? [];
+  const totalDimensions = dimensions.length;
+  const findings = insightsData.findings ?? dimensions.map((d) => ({
     title: d.title,
     description: d.summary,
   }));
@@ -105,7 +106,7 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
 
       {/* Dimension Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {insightsData.dimensions.map((dimension) => (
+        {dimensions.map((dimension) => (
           <AIExplorationDimensionCard key={dimension.key} dimension={dimension} dimensionConfigs={config.dimensions} />
         ))}
       </div>

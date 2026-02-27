@@ -3,7 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { z } from 'zod';
 import { getItemTypeConfig } from '@/lib/ai/exploration/item-type-registry';
-import { generateNextQuestion, generateFeedback, resolveModelConfig } from '@/lib/ai/exploration/exploration-llm';
+import { resolveExplorationConfig } from '@/lib/ai/exploration/config-resolver';
+import { buildBrandContextString, resolveTemplate } from '@/lib/ai/exploration/prompt-engine';
+import { generateAIResponse } from '@/lib/ai/exploration/ai-caller';
 
 const answerSchema = z.object({
   content: z.string().min(1).max(5000),
@@ -51,9 +53,6 @@ export async function POST(
       return NextResponse.json({ error: 'Analysis already completed' }, { status: 400 });
     }
 
-    // Resolve AI model from session
-    const modelConfig = resolveModelConfig(analysisSession.modelId);
-
     const body = await request.json();
     const parsed = answerSchema.safeParse(body);
     if (!parsed.success) {
@@ -66,7 +65,12 @@ export async function POST(
     const content = parsed.data.content;
     const lastOrderIndex = analysisSession.messages[0]?.orderIndex ?? 0;
     const currentDimension = analysisSession.answeredDimensions;
-    const dimensions = config.getDimensions();
+
+    // Fetch item + resolve config-driven dimensions
+    const item = await config.fetchItem(itemId, workspaceId);
+    const slug = (item as Record<string, unknown> | null)?.slug as string | undefined ?? null;
+    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, slug);
+    const dimensions = explorationConfig.dimensions;
     const dimensionInfo = dimensions[currentDimension];
 
     // Save user answer
@@ -79,9 +83,6 @@ export async function POST(
         metadata: { dimensionKey: dimensionInfo?.key },
       },
     });
-
-    // Fetch item for context
-    const item = await config.fetchItem(itemId, workspaceId);
 
     // Build previousQA from all messages
     const allMessages = await prisma.explorationMessage.findMany({
@@ -110,15 +111,38 @@ export async function POST(
     const currentQuestionMsg = [...allMessages].reverse().find((m) => m.type === 'AI_QUESTION');
     const currentDimensionMeta = currentQuestionMsg?.metadata as { dimensionKey?: string; dimensionTitle?: string } | null;
 
-    // Generate feedback via AI model
-    const feedbackContent = await generateFeedback({
+    // Generate feedback via config-driven AI
+    const brandContext = await buildBrandContextString(workspaceId);
+
+    const feedbackSystemPrompt = resolveTemplate(explorationConfig.systemPrompt, {
+      itemName: ((item as Record<string, unknown> | null)?.name as string) ?? 'Unknown',
       itemType,
-      itemName: (item?.name as string) ?? itemType,
-      dimensionTitle: currentDimensionMeta?.dimensionTitle ?? dimensionInfo?.title ?? 'General',
-      question: currentQuestionMsg?.content ?? '',
-      answer: content,
-      modelConfig,
+      brandContext,
     });
+
+    const feedbackUserPrompt = resolveTemplate(explorationConfig.feedbackPrompt, {
+      itemName: ((item as Record<string, unknown> | null)?.name as string) ?? 'Unknown',
+      itemType,
+      dimensionTitle: currentDimensionMeta?.dimensionTitle ?? dimensionInfo?.title ?? 'this dimension',
+      questionAsked: currentQuestionMsg?.content ?? '',
+      userAnswer: content,
+      brandContext,
+    });
+
+    let feedbackContent: string;
+    try {
+      feedbackContent = await generateAIResponse(
+        explorationConfig.provider,
+        explorationConfig.model,
+        feedbackSystemPrompt,
+        feedbackUserPrompt,
+        explorationConfig.temperature,
+        512,
+      );
+    } catch (err) {
+      console.warn('[exploration-feedback] AI call failed, using fallback:', err);
+      feedbackContent = `Bedankt voor je inzicht over ${dimensionInfo?.title ?? 'deze dimensie'}. Dit helpt bij de analyse.`;
+    }
 
     await prisma.explorationMessage.create({
       data: {
@@ -141,19 +165,10 @@ export async function POST(
       dimensionTitle: string;
     } | null = null;
 
-    // If not complete, generate next question via Claude
+    // If not complete, use the next question from config dimensions
     if (!isComplete) {
       const nextDim = dimensions[newAnsweredDimensions];
-
-      const nextQuestionContent = await generateNextQuestion({
-        itemType,
-        itemName: (item?.name as string) ?? itemType,
-        itemContext: item ? config.buildItemContext(item) : 'No context available.',
-        dimensions,
-        currentDimension: nextDim,
-        previousQA,
-        modelConfig,
-      });
+      const nextQuestionContent = nextDim.question;
 
       await prisma.explorationMessage.create({
         data: {
@@ -191,7 +206,18 @@ export async function POST(
       isComplete,
     });
   } catch (error) {
-    console.error('[POST /api/exploration/.../answer]', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[POST /api/exploration/.../answer] Full error:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        ...(process.env.NODE_ENV === 'development' ? {
+          debug: error instanceof Error ? error.message : String(error),
+        } : {}),
+      },
+      { status: 500 },
+    );
   }
 }

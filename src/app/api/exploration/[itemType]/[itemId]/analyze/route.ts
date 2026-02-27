@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { requireUnlocked } from '@/lib/lock-guard';
 import { getItemTypeConfig } from '@/lib/ai/exploration/item-type-registry';
+import { resolveExplorationConfig } from '@/lib/ai/exploration/config-resolver';
+import { resolveTemplate } from '@/lib/ai/exploration/prompt-engine';
 
 // ─── POST /api/exploration/[itemType]/[itemId]/analyze ──────
 // Start a new exploration session for any item type.
@@ -59,10 +61,19 @@ export async function POST(
       // No body or invalid JSON — use default model
     }
 
-    // Build intro + first question
-    const dimensions = config.getDimensions();
+    // Resolve config-driven dimensions + intro
+    const slug = (item as Record<string, unknown>)?.slug as string | undefined ?? null;
+    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, slug);
+    const dimensions = explorationConfig.dimensions;
     const totalDimensions = dimensions.length;
-    const introContent = config.buildIntro(item);
+
+    const introContent = resolveTemplate(
+      `Welcome to the AI Exploration for **{{itemName}}**${(item as Record<string, unknown>)?.description ? ` — {{itemDescription}}` : ''}. I'll guide you through ${totalDimensions} key dimensions. Let's begin!`,
+      {
+        itemName: ((item as Record<string, unknown>)?.name as string) ?? 'this item',
+        itemDescription: ((item as Record<string, unknown>)?.description as string) ?? '',
+      },
+    );
     const firstQuestion = dimensions[0];
 
     // Create generic exploration session
@@ -120,9 +131,15 @@ export async function POST(
       { status: 201 },
     );
   } catch (error) {
-    console.error(`[POST /api/exploration] Error:`, error);
+    console.error('[POST /api/exploration] Error:', error instanceof Error ? error.message : error);
+
     return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        error: 'Internal server error',
+        ...(process.env.NODE_ENV === 'development' ? {
+          debug: error instanceof Error ? error.message : String(error),
+        } : {}),
+      },
       { status: 500 },
     );
   }

@@ -53,7 +53,11 @@ export async function updatePersona(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error("Failed to update persona");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    console.error('[personas.api] updatePersona error:', res.status, errorData);
+    throw new Error(errorData.error || `Failed to update persona (${res.status})`);
+  }
   return res.json();
 }
 
