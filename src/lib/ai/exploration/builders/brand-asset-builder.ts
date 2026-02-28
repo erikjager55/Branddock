@@ -330,14 +330,19 @@ function resolveCurrentFieldValues(
   const values: Record<string, unknown> = {};
 
   let parsedContent: Record<string, unknown> | null = null;
-  try {
-    if (typeof item.content === 'string') parsedContent = JSON.parse(item.content as string);
-  } catch { /* plain text content */ }
+  if (typeof item.content === 'string') {
+    try { parsedContent = JSON.parse(item.content as string); } catch { /* plain text content */ }
+  } else if (item.content && typeof item.content === 'object') {
+    parsedContent = item.content as Record<string, unknown>;
+  }
 
   let parsedFramework: Record<string, unknown> | null = null;
-  try {
-    if (typeof item.frameworkData === 'string') parsedFramework = JSON.parse(item.frameworkData as string);
-  } catch { /* noop */ }
+  if (typeof item.frameworkData === 'string') {
+    try { parsedFramework = JSON.parse(item.frameworkData as string); } catch { /* noop */ }
+  } else if (item.frameworkData && typeof item.frameworkData === 'object') {
+    // Prisma returns Json fields as already-parsed objects
+    parsedFramework = item.frameworkData as Record<string, unknown>;
+  }
 
   for (const fm of fieldMapping) {
     if (fm.field.startsWith('content.')) {
