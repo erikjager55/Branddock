@@ -3,6 +3,8 @@
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 
+> Brand Assets: 12 assets met elk een eigen frameworkType (PURPOSE_WHEEL, GOLDEN_CIRCLE, BRAND_ESSENCE, BRAND_PROMISE, MISSION_STATEMENT, VISION_STATEMENT, BRAND_ARCHETYPE, TRANSFORMATIVE_GOALS, BRAND_PERSONALITY, BRAND_STORY, BRANDHOUSE_VALUES, ESG). Veldspecificaties per asset: zie `docs/brand-assets-field-specifications.md`
+
 ---
 
 ## Project
