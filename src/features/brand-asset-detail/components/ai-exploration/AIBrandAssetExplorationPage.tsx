@@ -9,7 +9,7 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AIExplorationPage } from '@/components/ai-exploration';
 import { useAssetDetail } from '../../hooks/useBrandAssetDetail';
-import { getDimensionsForSlug, getFieldMappingForSlug } from '../../constants/brand-asset-exploration-config';
+import { getDimensionsForSlug } from '../../constants/brand-asset-exploration-config';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
 import * as explorationApi from '@/lib/api/exploration.api';
@@ -114,7 +114,6 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
   const slug = asset.slug ?? '';
   const frameworkType = (asset.frameworkType as string) ?? undefined;
   const dimensions = getDimensionsForSlug(slug, frameworkType);
-  const fieldMapping = getFieldMappingForSlug(slug, frameworkType);
 
   return (
     <AIExplorationPage
@@ -128,7 +127,7 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
         backLabel: 'Back to Brand Asset',
         onBack,
         dimensions,
-        fieldMapping,
+        fieldMapping: [],
         onApplyChanges: handleApplyChanges,
       }}
       onStartSession={() =>
