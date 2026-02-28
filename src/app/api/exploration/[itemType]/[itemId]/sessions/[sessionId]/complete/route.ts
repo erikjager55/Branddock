@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { getItemTypeConfig } from '@/lib/ai/exploration/item-type-registry';
 import { resolveExplorationConfig } from '@/lib/ai/exploration/config-resolver';
+import { createVersion } from '@/lib/versioning';
+import { buildPersonaSnapshot, buildBrandAssetSnapshot } from '@/lib/snapshot-builders';
+import type { VersionedResourceType } from '@prisma/client';
 
 // ─── POST /api/exploration/[itemType]/[itemId]/sessions/[sessionId]/complete ──
 export async function POST(
@@ -76,6 +79,36 @@ export async function POST(
         completedAt: new Date(),
       },
     });
+
+    // Create AI_GENERATED version snapshot
+    try {
+      const snapshotBuilders: Record<string, (data: Record<string, unknown>) => Record<string, unknown>> = {
+        persona: (d) => buildPersonaSnapshot(d as never),
+        brand_asset: (d) => buildBrandAssetSnapshot(d as never),
+      };
+      const resourceTypeMap: Record<string, VersionedResourceType> = {
+        persona: 'PERSONA',
+        brand_asset: 'BRAND_ASSET',
+      };
+      const builder = snapshotBuilders[itemType];
+      const resType = resourceTypeMap[itemType];
+      if (builder && resType) {
+        const freshItem = await config.fetchItem(itemId, workspaceId);
+        if (freshItem) {
+          await createVersion({
+            resourceType: resType,
+            resourceId: itemId,
+            snapshot: builder(freshItem),
+            changeType: 'AI_GENERATED',
+            changeNote: 'AI Exploration completed',
+            userId: analysisSession.createdById,
+            workspaceId,
+          });
+        }
+      }
+    } catch (versionError) {
+      console.error('[Exploration complete version snapshot failed]', versionError);
+    }
 
     // Update research method if applicable
     if (config.updateResearchMethod) {

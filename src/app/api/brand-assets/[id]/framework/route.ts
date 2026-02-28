@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { resolveWorkspaceId } from "@/lib/auth-server";
+import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
+import { createVersion } from "@/lib/versioning";
+import { buildBrandAssetSnapshot } from "@/lib/snapshot-builders";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 
@@ -72,6 +74,24 @@ export async function PATCH(
         frameworkData: mergedFrameworkData as Prisma.InputJsonValue,
       },
     });
+
+    // Auto-versioning
+    try {
+      const session = await getServerSession();
+      if (session?.user?.id) {
+        await createVersion({
+          resourceType: 'BRAND_ASSET',
+          resourceId: id,
+          snapshot: buildBrandAssetSnapshot(updated),
+          changeType: 'MANUAL_SAVE',
+          changeNote: 'Updated framework data',
+          userId: session.user.id,
+          workspaceId,
+        });
+      }
+    } catch (versionError) {
+      console.error('[Brand asset framework version snapshot failed]', versionError);
+    }
 
     return NextResponse.json(updated);
   } catch (error) {
