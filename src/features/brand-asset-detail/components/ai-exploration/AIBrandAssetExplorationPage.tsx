@@ -1,18 +1,34 @@
-// ─── AI Brand Asset Exploration — Slug-Aware Wrapper ─────────
+// ─── AI Brand Asset Exploration — Thin Wrapper ──────────────
 // Delegates to the generic AIExplorationPage with brand asset config.
-// Resolves dimensions and field mappings based on asset slug.
+// Uses dynamic field mapping — the backend handles field detection.
 // ────────────────────────────────────────────────────────────
 
 'use client';
 
-import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AIExplorationPage } from '@/components/ai-exploration';
 import { useAssetDetail } from '../../hooks/useBrandAssetDetail';
-import { getDimensionsForSlug } from '../../constants/brand-asset-exploration-config';
+import { BRAND_ASSET_DIMENSIONS } from '../../constants/brand-asset-exploration-config';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
 import * as explorationApi from '@/lib/api/exploration.api';
+
+// ─── Deep Set Helper ───────────────────────────────────────
+
+function deepSet(obj: Record<string, unknown>, path: string, value: unknown): void {
+  const keys = path.split('.');
+  let current = obj;
+  for (let i = 0; i < keys.length - 1; i++) {
+    const key = keys[i];
+    if (!(key in current) || typeof current[key] !== 'object' || current[key] === null) {
+      current[key] = {};
+    }
+    current = current[key] as Record<string, unknown>;
+  }
+  current[keys[keys.length - 1]] = value;
+}
+
+// ─── Component ─────────────────────────────────────────────
 
 interface AIBrandAssetExplorationPageProps {
   assetId: string;
@@ -22,83 +38,6 @@ interface AIBrandAssetExplorationPageProps {
 export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExplorationPageProps) {
   const { data: asset } = useAssetDetail(assetId);
   const queryClient = useQueryClient();
-
-  const handleApplyChanges = useCallback(async (updates: Record<string, unknown>) => {
-    if (!asset) return;
-
-    const regularUpdates: Record<string, unknown> = {};
-    const frameworkUpdates: Record<string, unknown> = {};
-    const contentUpdates: Record<string, unknown> = {};
-
-    for (const [key, value] of Object.entries(updates)) {
-      if (key.startsWith('frameworkData.')) {
-        const subKey = key.replace('frameworkData.', '');
-        frameworkUpdates[subKey] = value;
-      } else if (key.startsWith('content.')) {
-        contentUpdates[key.replace('content.', '')] = value;
-      } else {
-        regularUpdates[key] = value;
-      }
-    }
-
-    // Framework updates → /framework endpoint (server merges at top level)
-    if (Object.keys(frameworkUpdates).length > 0) {
-      // Deep-set nested paths (e.g. "why.statement" → { why: { statement: value } })
-      const existingData = (typeof asset.frameworkData === 'string'
-        ? JSON.parse(asset.frameworkData || '{}')
-        : (asset.frameworkData as Record<string, unknown>)) ?? {};
-      const mergedData = JSON.parse(JSON.stringify(existingData));
-
-      function deepSet(obj: Record<string, unknown>, path: string, value: unknown): void {
-        const keys = path.split('.');
-        let current = obj;
-        for (let i = 0; i < keys.length - 1; i++) {
-          if (!(keys[i] in current) || typeof current[keys[i]] !== 'object' || current[keys[i]] === null) {
-            current[keys[i]] = {};
-          }
-          current = current[keys[i]] as Record<string, unknown>;
-        }
-        current[keys[keys.length - 1]] = value;
-      }
-
-      for (const [key, value] of Object.entries(frameworkUpdates)) {
-        deepSet(mergedData, key, value);
-      }
-
-      await fetch(`/api/brand-assets/${assetId}/framework`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ frameworkData: mergedData }),
-      });
-    }
-
-    // Content updates → /content endpoint
-    if (Object.keys(contentUpdates).length > 0) {
-      let currentContent: Record<string, unknown> = {};
-      try {
-        currentContent = JSON.parse((asset.content as string) || '{}');
-      } catch { /* noop */ }
-      const merged = { ...currentContent, ...contentUpdates };
-      await fetch(`/api/brand-assets/${assetId}/content`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: JSON.stringify(merged) }),
-      });
-    }
-
-    // Regular updates → base endpoint
-    if (Object.keys(regularUpdates).length > 0) {
-      await fetch(`/api/brand-assets/${assetId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(regularUpdates),
-      });
-    }
-
-    // Invalidate cache so page refreshes
-    queryClient.invalidateQueries({ queryKey: ['brand-asset-detail', assetId] });
-    queryClient.invalidateQueries({ queryKey: ['brand-assets'] });
-  }, [asset, assetId, queryClient]);
 
   if (!asset) {
     return (
@@ -111,24 +50,76 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
     );
   }
 
-  const slug = asset.slug ?? '';
-  const frameworkType = (asset.frameworkType as string) ?? undefined;
-  const dimensions = getDimensionsForSlug(slug, frameworkType);
-
   return (
     <AIExplorationPage
       config={{
         itemType: 'brand_asset',
         itemId: assetId,
         itemName: asset.name,
-        itemSubType: frameworkType?.toLowerCase(),
         pageTitle: 'AI Brand Asset Exploration',
         pageDescription: 'Answer questions to validate and strengthen this brand asset',
         backLabel: 'Back to Brand Asset',
         onBack,
-        dimensions,
-        fieldMapping: [],
-        onApplyChanges: handleApplyChanges,
+        dimensions: BRAND_ASSET_DIMENSIONS,
+        fieldMapping: [], // Dynamic — backend generates field mapping from actual frameworkData
+        onApplyChanges: async (updates: Record<string, unknown>) => {
+          const regularUpdates: Record<string, unknown> = {};
+          const frameworkKeys: Record<string, unknown> = {};
+
+          // Split updates into regular fields vs frameworkData fields
+          for (const [key, value] of Object.entries(updates)) {
+            if (key.startsWith('frameworkData.')) {
+              frameworkKeys[key.replace('frameworkData.', '')] = value;
+            } else {
+              regularUpdates[key] = value;
+            }
+          }
+
+          // Send frameworkData updates to /framework endpoint (deep merge)
+          if (Object.keys(frameworkKeys).length > 0) {
+            const existing = asset?.frameworkData
+              ? (typeof asset.frameworkData === 'string'
+                  ? JSON.parse(asset.frameworkData as string)
+                  : asset.frameworkData)
+              : {};
+            const merged = JSON.parse(JSON.stringify(existing));
+
+            for (const [key, value] of Object.entries(frameworkKeys)) {
+              deepSet(merged, key, value);
+            }
+
+            const fwResponse = await fetch(`/api/brand-assets/${assetId}/framework`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ frameworkData: merged }),
+            });
+
+            if (!fwResponse.ok) {
+              const errText = await fwResponse.text();
+              console.error('[onApplyChanges] framework PATCH failed:', fwResponse.status, errText);
+              throw new Error(`Framework update failed: ${fwResponse.status}`);
+            }
+          }
+
+          // Send regular field updates to base PATCH endpoint
+          if (Object.keys(regularUpdates).length > 0) {
+            const baseResponse = await fetch(`/api/brand-assets/${assetId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(regularUpdates),
+            });
+
+            if (!baseResponse.ok) {
+              const errText = await baseResponse.text();
+              console.error('[onApplyChanges] base PATCH failed:', baseResponse.status, errText);
+              throw new Error(`Base update failed: ${baseResponse.status}`);
+            }
+          }
+
+          // Invalidate cache to refresh the detail page
+          queryClient.invalidateQueries({ queryKey: ['brand-asset-detail', assetId] });
+          queryClient.invalidateQueries({ queryKey: ['brand-assets'] });
+        },
       }}
       onStartSession={() =>
         explorationApi.startExplorationSession('brand_asset', assetId)
