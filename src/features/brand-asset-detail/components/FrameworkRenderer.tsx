@@ -25,7 +25,9 @@ export function FrameworkRenderer({ type, data }: FrameworkRendererProps) {
       return <SWOTFramework data={parsed} />;
     case "PURPOSE_KOMPAS":
       return <PurposeKompasFramework data={parsed as PurposeKompasFrameworkData} />;
+    case "PURPOSE_WHEEL":
+      return null; // Rendered by PurposeWheelSection instead
     default:
-      return <p className="text-gray-500 italic">Unknown framework type</p>;
+      return null; // New framework types are handled by their own sections
   }
 }

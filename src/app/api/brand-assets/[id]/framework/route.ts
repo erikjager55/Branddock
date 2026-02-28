@@ -61,11 +61,15 @@ export async function PATCH(
       );
     }
 
+    // Merge new frameworkData into existing (don't replace)
+    const existingFrameworkData = (asset.frameworkData as Record<string, unknown>) ?? {};
+    const mergedFrameworkData = { ...existingFrameworkData, ...parsed.data.frameworkData };
+
     const updated = await prisma.brandAsset.update({
       where: { id },
       data: {
         frameworkType: parsed.data.frameworkType ?? asset.frameworkType,
-        frameworkData: parsed.data.frameworkData as Prisma.InputJsonValue,
+        frameworkData: mergedFrameworkData as Prisma.InputJsonValue,
       },
     });
 

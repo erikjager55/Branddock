@@ -117,13 +117,18 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const ALLOWED_FIELDS = ["description"] as const;
+    const ALLOWED_STRING_FIELDS = ["description", "frameworkType"] as const;
     const data: Record<string, unknown> = {};
 
-    for (const field of ALLOWED_FIELDS) {
+    for (const field of ALLOWED_STRING_FIELDS) {
       if (field in body && typeof body[field] === "string") {
         data[field] = body[field];
       }
+    }
+
+    // Allow frameworkData as object
+    if ("frameworkData" in body && typeof body.frameworkData === "object" && body.frameworkData !== null) {
+      data.frameworkData = body.frameworkData;
     }
 
     if (Object.keys(data).length === 0) {

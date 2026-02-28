@@ -26,78 +26,76 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
   const handleApplyChanges = useCallback(async (updates: Record<string, unknown>) => {
     if (!asset) return;
 
-    const contentUpdates: Record<string, unknown> = {};
+    const regularUpdates: Record<string, unknown> = {};
     const frameworkUpdates: Record<string, unknown> = {};
+    const contentUpdates: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(updates)) {
       if (key.startsWith('frameworkData.')) {
-        frameworkUpdates[key] = value;
+        const subKey = key.replace('frameworkData.', '');
+        frameworkUpdates[subKey] = value;
       } else if (key.startsWith('content.')) {
         contentUpdates[key.replace('content.', '')] = value;
       } else {
-        contentUpdates[key] = value;
+        regularUpdates[key] = value;
       }
     }
 
-    // PATCH content updates
-    if (Object.keys(contentUpdates).length > 0) {
-      const isJsonContent = Object.keys(contentUpdates).some(k =>
-        ['why', 'how', 'impact'].includes(k),
-      );
-      if (isJsonContent) {
-        // Purpose statement: merge into existing JSON content
-        let currentContent: Record<string, unknown> = {};
-        try {
-          currentContent = JSON.parse((asset.content as string) || '{}');
-        } catch { /* noop */ }
-        const merged = { ...currentContent, ...contentUpdates };
-        await fetch(`/api/brand-assets/${assetId}/content`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: JSON.stringify(merged) }),
-        });
-      } else if (contentUpdates.content) {
-        await fetch(`/api/brand-assets/${assetId}/content`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content: contentUpdates.content }),
-        });
-      }
-
-      if (contentUpdates.description) {
-        await fetch(`/api/brand-assets/${assetId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ description: contentUpdates.description }),
-        });
-      }
-    }
-
-    // PATCH framework updates
+    // Framework updates → /framework endpoint (server merges at top level)
     if (Object.keys(frameworkUpdates).length > 0) {
-      let currentFramework: Record<string, unknown> = {};
-      try {
-        currentFramework = JSON.parse((asset.frameworkData as string) || '{}');
-      } catch { /* noop */ }
+      // Deep-set nested paths (e.g. "why.statement" → { why: { statement: value } })
+      const existingData = (typeof asset.frameworkData === 'string'
+        ? JSON.parse(asset.frameworkData || '{}')
+        : (asset.frameworkData as Record<string, unknown>)) ?? {};
+      const mergedData = JSON.parse(JSON.stringify(existingData));
+
+      function deepSet(obj: Record<string, unknown>, path: string, value: unknown): void {
+        const keys = path.split('.');
+        let current = obj;
+        for (let i = 0; i < keys.length - 1; i++) {
+          if (!(keys[i] in current) || typeof current[keys[i]] !== 'object' || current[keys[i]] === null) {
+            current[keys[i]] = {};
+          }
+          current = current[keys[i]] as Record<string, unknown>;
+        }
+        current[keys[keys.length - 1]] = value;
+      }
 
       for (const [key, value] of Object.entries(frameworkUpdates)) {
-        const path = key.replace('frameworkData.', '').split('.');
-        let obj: Record<string, unknown> = currentFramework;
-        for (let i = 0; i < path.length - 1; i++) {
-          obj[path[i]] = obj[path[i]] || {};
-          obj = obj[path[i]] as Record<string, unknown>;
-        }
-        obj[path[path.length - 1]] = value;
+        deepSet(mergedData, key, value);
       }
 
       await fetch(`/api/brand-assets/${assetId}/framework`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ frameworkData: JSON.stringify(currentFramework) }),
+        body: JSON.stringify({ frameworkData: mergedData }),
       });
     }
 
-    // Invalidate cache
+    // Content updates → /content endpoint
+    if (Object.keys(contentUpdates).length > 0) {
+      let currentContent: Record<string, unknown> = {};
+      try {
+        currentContent = JSON.parse((asset.content as string) || '{}');
+      } catch { /* noop */ }
+      const merged = { ...currentContent, ...contentUpdates };
+      await fetch(`/api/brand-assets/${assetId}/content`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: JSON.stringify(merged) }),
+      });
+    }
+
+    // Regular updates → base endpoint
+    if (Object.keys(regularUpdates).length > 0) {
+      await fetch(`/api/brand-assets/${assetId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(regularUpdates),
+      });
+    }
+
+    // Invalidate cache so page refreshes
     queryClient.invalidateQueries({ queryKey: ['brand-asset-detail', assetId] });
     queryClient.invalidateQueries({ queryKey: ['brand-assets'] });
   }, [asset, assetId, queryClient]);
