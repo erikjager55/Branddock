@@ -63,20 +63,31 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
         dimensions: BRAND_ASSET_DIMENSIONS,
         fieldMapping: [], // Dynamic — backend generates field mapping from actual frameworkData
         onApplyChanges: async (updates: Record<string, unknown>) => {
-          const regularUpdates: Record<string, unknown> = {};
-          const frameworkKeys: Record<string, unknown> = {};
+          // Only these are valid top-level brand asset fields.
+          // Everything else is a frameworkData field — the LLM may or may not
+          // include the 'frameworkData.' prefix, so we handle both cases.
+          const TOP_LEVEL_FIELDS = new Set(['description', 'name', 'status', 'category']);
 
-          // Split updates into regular fields vs frameworkData fields
+          const regularUpdates: Record<string, unknown> = {};
+          const frameworkUpdates: Record<string, unknown> = {};
+
           for (const [key, value] of Object.entries(updates)) {
             if (key.startsWith('frameworkData.')) {
-              frameworkKeys[key.replace('frameworkData.', '')] = value;
-            } else {
+              // Explicit prefix — strip it and add to framework updates
+              frameworkUpdates[key.replace('frameworkData.', '')] = value;
+            } else if (TOP_LEVEL_FIELDS.has(key)) {
+              // Known top-level field
               regularUpdates[key] = value;
+            } else {
+              // Unknown key without prefix — treat as frameworkData field
+              // This handles the case where the LLM returns 'statement' instead of 'frameworkData.statement'
+              console.log(`[onApplyChanges] Treating "${key}" as frameworkData field`);
+              frameworkUpdates[key] = value;
             }
           }
 
           // Send frameworkData updates to /framework endpoint (deep merge)
-          if (Object.keys(frameworkKeys).length > 0) {
+          if (Object.keys(frameworkUpdates).length > 0) {
             const existing = asset?.frameworkData
               ? (typeof asset.frameworkData === 'string'
                   ? JSON.parse(asset.frameworkData as string)
@@ -84,9 +95,11 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
               : {};
             const merged = JSON.parse(JSON.stringify(existing));
 
-            for (const [key, value] of Object.entries(frameworkKeys)) {
+            for (const [key, value] of Object.entries(frameworkUpdates)) {
               deepSet(merged, key, value);
             }
+
+            console.log('[onApplyChanges] Sending to /framework:', JSON.stringify(merged).slice(0, 200));
 
             const fwResponse = await fetch(`/api/brand-assets/${assetId}/framework`, {
               method: 'PATCH',
@@ -99,6 +112,8 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
               console.error('[onApplyChanges] framework PATCH failed:', fwResponse.status, errText);
               throw new Error(`Framework update failed: ${fwResponse.status}`);
             }
+
+            console.log('[onApplyChanges] Framework updated successfully');
           }
 
           // Send regular field updates to base PATCH endpoint
