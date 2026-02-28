@@ -3,8 +3,6 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { getItemTypeConfig } from '@/lib/ai/exploration/item-type-registry';
 import { resolveExplorationConfig } from '@/lib/ai/exploration/config-resolver';
-import { buildBrandContextString, resolveTemplate, formatAllAnswers } from '@/lib/ai/exploration/prompt-engine';
-import { generateAIResponse } from '@/lib/ai/exploration/ai-caller';
 
 // ─── POST /api/exploration/[itemType]/[itemId]/sessions/[sessionId]/complete ──
 export async function POST(
@@ -53,56 +51,18 @@ export async function POST(
       return NextResponse.json({ error: `${itemType} not found` }, { status: 404 });
     }
 
-    // Resolve config + generate AI report
+    // Resolve config for dimension count
     const slug = (item as Record<string, unknown>)?.slug as string | undefined ?? null;
     const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, slug);
 
-    // Get all messages for report context
-    const allMessages = await prisma.explorationMessage.findMany({
-      where: { sessionId },
-      orderBy: { orderIndex: 'asc' },
-    });
-
-    const brandContext = await buildBrandContextString(workspaceId);
-    const allAnswers = formatAllAnswers(
-      allMessages.map(m => ({
-        type: m.type,
-        content: m.content,
-        metadata: m.metadata as Record<string, unknown> | null,
-      })),
-    );
-
-    const reportSystemPrompt = resolveTemplate(explorationConfig.systemPrompt, {
-      itemName: ((item as Record<string, unknown>)?.name as string) ?? 'Unknown',
-      itemType,
-      brandContext,
-      customKnowledge: explorationConfig.customKnowledge,
-    });
-
-    const reportUserPrompt = resolveTemplate(explorationConfig.reportPrompt, {
-      itemName: ((item as Record<string, unknown>)?.name as string) ?? 'Unknown',
-      itemDescription: ((item as Record<string, unknown>)?.description as string) ?? '',
-      itemType,
-      allAnswers,
-      brandContext,
-      customKnowledge: explorationConfig.customKnowledge,
-    });
-
+    // Generate report via the item type builder — this ensures fieldSuggestions
+    // include id, currentValue, and status fields that the frontend needs.
     let insightsData: Record<string, unknown>;
     try {
-      const reportResponse = await generateAIResponse(
-        explorationConfig.provider,
-        explorationConfig.model,
-        reportSystemPrompt,
-        reportUserPrompt,
-        0.3,
-        explorationConfig.maxTokens,
-      );
-      const cleaned = reportResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      insightsData = JSON.parse(cleaned);
-    } catch (err) {
-      console.warn('[exploration-report] AI report failed, using builder fallback:', err);
       insightsData = await config.generateInsights(item, analysisSession);
+    } catch (err) {
+      console.error('[exploration-complete] generateInsights failed:', err);
+      throw err;
     }
 
     // Mark session as completed
