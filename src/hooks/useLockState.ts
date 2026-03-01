@@ -97,6 +97,13 @@ export function useLockState({
         throw new LockError(data.error);
       }
 
+      if (res.status === 401) {
+        toast.error('Session expired', {
+          description: 'Please refresh the page and log in again.',
+        });
+        return;
+      }
+
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Failed to toggle lock');

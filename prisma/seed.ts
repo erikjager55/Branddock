@@ -8,6 +8,19 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  // ============================================
+  // FIXED IDs — declared early so cleanup can preserve demo user session
+  // ============================================
+  const DEMO_ORG_ID = "demo-org-branddock-001";
+  const DEMO_WORKSPACE_ID = "demo-workspace-branddock-001";
+  const DEMO_USER_ID = "demo-user-erik-001";
+
+  // Detach demo user from workspace before cleanup (avoids FK violation on workspace delete)
+  await prisma.user.updateMany({
+    where: { id: DEMO_USER_ID },
+    data: { workspaceId: null },
+  });
+
   // Cleanup existing data (in reverse dependency order)
   // S9: Settings
   await prisma.appearancePreference.deleteMany();
@@ -31,9 +44,9 @@ async function main() {
   await prisma.helpArticle.deleteMany();
   await prisma.helpCategory.deleteMany();
 
-  // Better Auth
-  await prisma.session.deleteMany();
-  await prisma.account.deleteMany();
+  // Better Auth — preserve demo user's session so they stay logged in after re-seed
+  await prisma.session.deleteMany({ where: { userId: { not: DEMO_USER_ID } } });
+  await prisma.account.deleteMany({ where: { userId: { not: DEMO_USER_ID } } });
   await prisma.verification.deleteMany();
 
   // Organization / Multi-tenant
@@ -119,16 +132,11 @@ async function main() {
   await prisma.explorationSession.deleteMany();
   await prisma.explorationKnowledgeItem.deleteMany();
   await prisma.explorationConfig.deleteMany();
-  await prisma.user.deleteMany();
+  await prisma.user.deleteMany({ where: { id: { not: DEMO_USER_ID } } });
   await prisma.workspace.deleteMany();
   await prisma.organization.deleteMany();
 
-  // ============================================
-  // FIXED IDs — voorkomt .env.local wijziging bij reseed
-  // ============================================
-  const DEMO_ORG_ID = "demo-org-branddock-001";
-  const DEMO_WORKSPACE_ID = "demo-workspace-branddock-001";
-  const DEMO_USER_ID = "demo-user-erik-001";
+  // (Fixed IDs declared at top of main())
 
   // ============================================
   // ORGANIZATION (Agency demo)
@@ -155,14 +163,11 @@ async function main() {
     },
   });
 
-  // User
-  const user = await prisma.user.create({
-    data: {
-      id: DEMO_USER_ID,
-      email: "erik@branddock.com",
-      name: "Erik Jager",
-      workspaceId: workspace.id,
-    },
+  // User — upsert to preserve existing session
+  const user = await prisma.user.upsert({
+    where: { id: DEMO_USER_ID },
+    update: { name: "Erik Jager", email: "erik@branddock.com", workspaceId: workspace.id },
+    create: { id: DEMO_USER_ID, email: "erik@branddock.com", name: "Erik Jager", workspaceId: workspace.id },
   });
 
   // OrganizationMember — Erik als owner
@@ -257,14 +262,20 @@ async function main() {
   const seedPassword = await hashPassword("Password123!");
 
   for (const seedUser of [user, teamMember, directUser]) {
-    await prisma.account.create({
-      data: {
-        accountId: seedUser.id,
-        providerId: "credential",
-        userId: seedUser.id,
-        password: seedPassword,
-      },
+    // Skip if account already exists (demo user preserved across seeds)
+    const existing = await prisma.account.findFirst({
+      where: { userId: seedUser.id, providerId: "credential" },
     });
+    if (!existing) {
+      await prisma.account.create({
+        data: {
+          accountId: seedUser.id,
+          providerId: "credential",
+          userId: seedUser.id,
+          password: seedPassword,
+        },
+      });
+    }
   }
 
   // Dashboard Preferences

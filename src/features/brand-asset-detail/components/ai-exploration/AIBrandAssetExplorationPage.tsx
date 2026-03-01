@@ -8,7 +8,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { AIExplorationPage } from '@/components/ai-exploration';
 import { useAssetDetail } from '../../hooks/useBrandAssetDetail';
-import { BRAND_ASSET_DIMENSIONS } from '../../constants/brand-asset-exploration-config';
+import { getDimensionsForSlug } from '../../constants/brand-asset-exploration-config';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
 import * as explorationApi from '@/lib/api/exploration.api';
@@ -60,7 +60,7 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
         pageDescription: 'Answer questions to validate and strengthen this brand asset',
         backLabel: 'Back to Brand Asset',
         onBack,
-        dimensions: BRAND_ASSET_DIMENSIONS,
+        dimensions: getDimensionsForSlug(asset.slug ?? '', asset.frameworkType ?? ''),
         fieldMapping: [], // Dynamic — backend generates field mapping from actual frameworkData
         onApplyChanges: async (updates: Record<string, unknown>) => {
           // Only these are valid top-level brand asset fields.
