@@ -6,6 +6,7 @@ import { getItemTypeConfig } from '@/lib/ai/exploration/item-type-registry';
 import { resolveExplorationConfig } from '@/lib/ai/exploration/config-resolver';
 import { buildBrandContextString, resolveTemplate } from '@/lib/ai/exploration/prompt-engine';
 import { generateAIResponse } from '@/lib/ai/exploration/ai-caller';
+import { resolveItemSubType } from '@/lib/ai/exploration/constants';
 
 const answerSchema = z.object({
   content: z.string().min(1).max(5000),
@@ -68,8 +69,8 @@ export async function POST(
 
     // Fetch item + resolve config-driven dimensions
     const item = await config.fetchItem(itemId, workspaceId);
-    const slug = (item as Record<string, unknown> | null)?.slug as string | undefined ?? null;
-    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, slug);
+    const itemSubType = resolveItemSubType(item as Record<string, unknown> | null);
+    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, itemSubType);
     const dimensions = explorationConfig.dimensions;
     const dimensionInfo = dimensions[currentDimension];
 

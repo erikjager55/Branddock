@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { getItemTypeConfig } from '@/lib/ai/exploration/item-type-registry';
 import { resolveExplorationConfig } from '@/lib/ai/exploration/config-resolver';
+import { resolveItemSubType } from '@/lib/ai/exploration/constants';
 import { createVersion } from '@/lib/versioning';
 import { buildPersonaSnapshot, buildBrandAssetSnapshot } from '@/lib/snapshot-builders';
 import type { VersionedResourceType } from '@prisma/client';
@@ -55,8 +56,8 @@ export async function POST(
     }
 
     // Resolve config for dimension count
-    const slug = (item as Record<string, unknown>)?.slug as string | undefined ?? null;
-    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, slug);
+    const itemSubType = resolveItemSubType(item as Record<string, unknown>);
+    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, itemSubType);
 
     // Generate report via the item type builder — this ensures fieldSuggestions
     // include id, currentValue, and status fields that the frontend needs.

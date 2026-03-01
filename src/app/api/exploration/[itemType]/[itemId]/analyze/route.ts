@@ -5,6 +5,7 @@ import { requireUnlocked } from '@/lib/lock-guard';
 import { getItemTypeConfig } from '@/lib/ai/exploration/item-type-registry';
 import { resolveExplorationConfig } from '@/lib/ai/exploration/config-resolver';
 import { resolveTemplate } from '@/lib/ai/exploration/prompt-engine';
+import { resolveItemSubType } from '@/lib/ai/exploration/constants';
 
 // ─── POST /api/exploration/[itemType]/[itemId]/analyze ──────
 // Start a new exploration session for any item type.
@@ -62,8 +63,8 @@ export async function POST(
     }
 
     // Resolve config-driven dimensions + intro
-    const slug = (item as Record<string, unknown>)?.slug as string | undefined ?? null;
-    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, slug);
+    const itemSubType = resolveItemSubType(item as Record<string, unknown>);
+    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, itemSubType);
     const dimensions = explorationConfig.dimensions;
     const totalDimensions = dimensions.length;
 
