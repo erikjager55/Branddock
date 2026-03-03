@@ -153,7 +153,43 @@ Elke gemigreerde module heeft een adapter die DB data mapt naar het bestaande mo
 - **Registry**: Per item type builder registratie (`src/lib/ai/exploration/item-type-registry.ts`)
 - **Admin UI**: Settings → Administrator → AI Exploration Configuration (CRUD, per-config model/prompt/dimension editor)
 - **Custom Knowledge**: Per config een kennisbibliotheek (ExplorationKnowledgeItem) — wordt als `{{customKnowledge}}` geïnjecteerd in prompts
-- **Ondersteunde item types**: `persona`, `brand_asset` (social-relevancy, purpose-statement)
+- **Ondersteunde item types**: `persona`, `brand_asset` (alle 12 framework types)
+
+### AI Exploration Configuration System (maart 2026)
+
+**Config resolver prioriteit** (`src/lib/ai/exploration/config-resolver.ts`):
+1. DB config exact match (workspace + itemType + itemSubType) — bijv. `brand_asset` + `golden-circle`
+2. DB config type-only match (workspace + itemType, subtype null)
+3. System defaults via `getDefaultDimensions()` — alleen fallback
+
+**DB is leidend** — system defaults worden alleen gebruikt als er geen DB config bestaat.
+
+**Framework Type → SubType mapping** (`src/lib/ai/exploration/constants.ts` → `resolveItemSubType()`):
+`PURPOSE_WHEEL` → `purpose-statement`, `GOLDEN_CIRCLE` → `golden-circle`, `BRAND_ESSENCE` → `brand-essence`, `BRAND_PROMISE` → `brand-promise`, `MISSION_STATEMENT` → `mission-statement`, `VISION_STATEMENT` → `vision-statement`, `BRAND_ARCHETYPE` → `brand-archetype`, `TRANSFORMATIVE_GOALS` → `transformative-goals`, `BRAND_PERSONALITY` → `brand-personality`, `BRAND_STORY` → `brand-story`, `BRANDHOUSE_VALUES` → `brandhouse-values`
+
+**Exploration Config in DB** (13 records): Alle 11 brand asset framework types + Social Relevancy + Persona hebben eigen configs met dimensies (vragen, volgorde, iconen), AI model + temperature, system/feedback/report prompts, context sources, en custom knowledge items.
+
+**Progress bar sync**: De analyze route slaat dimensies op in `ExplorationSession.metadata`. Frontend leest deze uit voor progress bar labels via `mapBackendDimensions()`. Fallback naar `getDimensionsForSlug()` in `src/features/brand-asset-detail/constants/brand-asset-exploration-config.ts`.
+
+**Belangrijke bestanden**:
+- `src/lib/ai/exploration/config-resolver.ts` — Config resolve + system defaults
+- `src/lib/ai/exploration/constants.ts` — FRAMEWORK_TO_SUBTYPE mapping
+- `src/lib/ai/exploration/builders/brand-asset-builder.ts` — Rapport + field suggestions
+- `src/app/api/exploration/[itemType]/[itemId]/analyze/route.ts` — Sessie start (resolvet config, slaat dimensies op in metadata)
+- `src/app/api/admin/exploration-configs/route.ts` — Admin CRUD API
+- `src/features/settings/components/administrator/ExplorationConfigEditor.tsx` — Admin UI editor
+- `src/features/brand-asset-detail/constants/brand-asset-exploration-config.ts` — Frontend dimensie fallbacks
+- `src/components/ai-exploration/utils/map-backend-dimensions.ts` — Backend→frontend dimensie mapper
+
+**End-to-end flow**:
+1. Admin configureert vragen + volgorde in Settings > AI Configuration
+2. Gebruiker start AI Exploration vanuit asset detail page
+3. Backend resolvet DB config → maakt sessie met dimensies in `metadata`
+4. Frontend toont vragen + progress bar labels uit sessie metadata
+5. Antwoorden → AI feedback per dimensie → rapport + field suggestions
+6. Accept/Apply → framework velden bijgewerkt + versie snapshot (AI_GENERATED)
+
+**Versioning triggers**: Persona PATCH → MANUAL_SAVE, Persona lock → LOCK_BASELINE, Brand asset framework PATCH → MANUAL_SAVE, AI Exploration complete → AI_GENERATED.
 
 ### Brand Asset Detail (lock/unlock + 2-kolom layout)
 - **Component**: `src/features/brand-asset-detail/components/BrandAssetDetailPage.tsx`
@@ -1020,7 +1056,7 @@ DATABASE_URL="postgresql://erikjager:@localhost:5432/branddock" npx tsx prisma/s
 - Veld-extensies op 9 bestaande modellen: Product (+sourceUrl, sourceFileName, processingStatus, processingData, productPersonas), Persona (+productPersonas), KnowledgeResource (+slug, source, isFeatured, isFavorite, isArchived, publicationDate, isbn, pageCount, fileName, fileSize, fileType, fileUrl, importedMetadata, estimatedDuration), BrandAssetResearchMethod (+weight, resultData, workspaceId), PersonaResearchMethod (+weight, resultData, workspaceId), FocusArea (+color), Milestone (+completedAt, createdAt), WorkshopParticipant (+email), WorkshopFinding (+category, createdAt)
 - Workspace model: +6 relatie-velden (brandAssetResearchMethods, personaResearchMethods, marketInsights, alignmentScans, validationPlans, researchStudies)
 - Seed gedraaid met multi-tenant demo data + R0.1/R0.2 extensies
-- ExplorationConfig seed: 3 configs (persona base, brand_asset social-relevancy, brand_asset purpose-statement) met dimensies, prompts, en AI model instellingen
+- ExplorationConfig seed: 13 configs (1 persona base + 12 brand_asset: social-relevancy, purpose-statement, golden-circle, brand-essence, brand-promise, mission-statement, vision-statement, brand-archetype, transformative-goals, brand-personality, brand-story, brandhouse-values) met dimensies, prompts, en AI model instellingen
 
 ### Seed Data
 - 2 Organizations: "Branddock Agency" (AGENCY, ACTIVE) + "TechCorp Inc." (DIRECT, TRIALING)
@@ -1493,7 +1529,8 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 - **Hardcoded Tailwind colors** — BrandFoundationHeader, BrandAssetCard gebruiken text-gray-900/500 ipv design tokens (text-muted-foreground etc.). Migreren naar CSS custom properties.
 - **Geen Error Boundary** — BrandFoundationPage mist React Error Boundary wrapper. Toevoegen bij S1.
 - **S1 vs S2 AI systeem overlap** — Twee AI chat systemen voor brand assets (AIBrandAnalysisSession S1 + ExplorationSession S2). S1 kan op termijn deprecated worden wanneer S2 volledige feature parity heeft.
-- **ExplorationConfig hardcoded fallbacks** — System defaults in config-resolver.ts. Op termijn alle configs via DB seed beheren.
+- **ExplorationConfig hardcoded fallbacks** — System defaults in config-resolver.ts. Op termijn alle configs via DB seed beheren. **13 van 13 configs nu in DB** — fallbacks alleen nog relevant voor nieuwe item types.
+- **AI Exploration re-test na config wijziging** — Om opnieuw te testen na config-wijzigingen, moeten ExplorationSession + ExplorationMessage + BrandAssetResearchMethod (method: 'AI_EXPLORATION', status → 'AVAILABLE') gereset worden voor het betreffende asset. Alleen een nieuwe sessie pakt bijgewerkte config op.
 - **Lock/unlock inconsistentie** — Brand assets lock endpoint is toggle (flipt !isLocked), terwijl alle andere endpoints `{ locked: boolean }` body accepteren. Harmoniseren naar body-based approach.
 
 ### 📋 ROADMAP (herzien 27 feb 2026)
@@ -1624,7 +1661,6 @@ Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 - Agency white-label: eigen logo/domein of alleen Branddock branding
 - AI provider: OpenAI (content gen) + Anthropic Claude Sonnet 4.6 (exploration, persona chat, analysis) + Google Gemini (foto generatie) — DRIE providers in gebruik
 - AI foto generatie: Gemini (primair) met DiceBear fallback — GEMINI_API_KEY optioneel
-- AI Exploration: per item type/subtype aparte config vs. één generiek config met overrides
 - Deployment: Vercel, Railway, of self-hosted
 
 ### ✅ GENOMEN BESLISSINGEN
@@ -1637,6 +1673,7 @@ Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 - **AI Exploration architectuur**: Generiek systeem (S2) met per item type/subtype config in DB. Backend-driven prompts, dimensies en AI model selectie via ExplorationConfig. Hardcoded fallbacks als safety net.
 - **Template engine**: `{{variable}}` syntax voor prompt variabelen. Eenvoudig, geen Handlebars/Mustache dependency.
 - **Multi-provider AI**: Generic AI caller met provider string ("anthropic"/"openai"). Geen abstractie layer — directe SDK calls per provider in ai-caller.ts.
+- **AI Exploration config model**: Per item type/subtype aparte config in DB (13 records). Backend-driven dimensies, prompts, AI model. Frontend leest dimensies uit sessie metadata voor progress bar sync.
 
 ---
 
