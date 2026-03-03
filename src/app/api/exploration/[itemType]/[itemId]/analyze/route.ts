@@ -77,6 +77,13 @@ export async function POST(
     );
     const firstQuestion = dimensions[0];
 
+    // Build dimensions snapshot for frontend (labels, icons, order)
+    const dimensionsSnapshot = dimensions.map((d) => ({
+      key: d.key,
+      title: d.title,
+      icon: d.icon,
+    }));
+
     // Create generic exploration session
     const explorationSession = await prisma.explorationSession.create({
       data: {
@@ -87,6 +94,10 @@ export async function POST(
         totalDimensions,
         answeredDimensions: 0,
         modelId,
+        metadata: {
+          dimensions: dimensionsSnapshot,
+          configId: explorationConfig.id,
+        },
         workspaceId,
         createdById: session.user.id,
         messages: {
@@ -120,6 +131,7 @@ export async function POST(
         progress: explorationSession.progress,
         totalDimensions: explorationSession.totalDimensions,
         answeredDimensions: explorationSession.answeredDimensions,
+        dimensions: dimensionsSnapshot,
         messages: explorationSession.messages.map((m) => ({
           id: m.id,
           type: m.type,

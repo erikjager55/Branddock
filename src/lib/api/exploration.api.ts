@@ -6,6 +6,7 @@ import type {
   ExplorationMessage,
   ExplorationSession,
   ExplorationInsightsData,
+  BackendDimension,
 } from '@/components/ai-exploration/types';
 
 function baseUrl(itemType: string, itemId: string): string {
@@ -23,6 +24,7 @@ export async function startExplorationSession(
   progress: number;
   totalDimensions: number;
   answeredDimensions: number;
+  dimensions?: BackendDimension[];
   messages: ExplorationMessage[];
 }> {
   const res = await fetch(`${baseUrl(itemType, itemId)}/analyze`, {

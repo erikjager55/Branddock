@@ -1536,6 +1536,7 @@ model ExplorationSession {
   totalDimensions    Int                     @default(4)
   answeredDimensions Int                     @default(0)
   modelId            String?                 // 'claude-sonnet-4-6' | 'claude-sonnet-4' | 'gemini-3-1-pro'
+  metadata           Json?                   // Stores config snapshot (dimensions, configId) for frontend
   insightsData       Json?
   completedAt        DateTime?
 

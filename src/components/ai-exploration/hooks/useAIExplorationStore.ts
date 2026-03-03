@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ExplorationInsightsData, ExplorationMessage } from '../types';
+import type { ExplorationInsightsData, ExplorationMessage, BackendDimension } from '../types';
 
 interface AIExplorationStoreState {
   // Session
@@ -7,6 +7,9 @@ interface AIExplorationStoreState {
   status: string;
   progress: number;
   answeredDimensions: number;
+
+  // Backend-driven dimensions (from session start response)
+  backendDimensions: BackendDimension[] | null;
 
   // Messages
   messages: ExplorationMessage[];
@@ -23,6 +26,7 @@ interface AIExplorationStoreState {
   setStatus: (status: string) => void;
   setProgress: (progress: number) => void;
   setAnsweredDimensions: (count: number) => void;
+  setBackendDimensions: (dims: BackendDimension[] | null) => void;
   setAITyping: (typing: boolean) => void;
   setCurrentInput: (input: string) => void;
   setMessages: (messages: ExplorationMessage[]) => void;
@@ -36,6 +40,7 @@ export const useAIExplorationStore = create<AIExplorationStoreState>((set) => ({
   status: 'NOT_STARTED',
   progress: 0,
   answeredDimensions: 0,
+  backendDimensions: null,
   messages: [],
   isAITyping: false,
   currentInput: '',
@@ -45,6 +50,7 @@ export const useAIExplorationStore = create<AIExplorationStoreState>((set) => ({
   setStatus: (status) => set({ status }),
   setProgress: (progress) => set({ progress }),
   setAnsweredDimensions: (count) => set({ answeredDimensions: count }),
+  setBackendDimensions: (dims) => set({ backendDimensions: dims }),
   setAITyping: (typing) => set({ isAITyping: typing }),
   setCurrentInput: (input) => set({ currentInput: input }),
   setMessages: (messages) => set({ messages }),
@@ -56,6 +62,7 @@ export const useAIExplorationStore = create<AIExplorationStoreState>((set) => ({
       status: 'NOT_STARTED',
       progress: 0,
       answeredDimensions: 0,
+      backendDimensions: null,
       messages: [],
       isAITyping: false,
       currentInput: '',

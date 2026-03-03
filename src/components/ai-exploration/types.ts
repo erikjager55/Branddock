@@ -130,12 +130,19 @@ export interface ExplorationModelOption {
 
 // ─── API Response Types ────────────────────────────────────
 
+export interface BackendDimension {
+  key: string;
+  title: string;
+  icon?: string;
+}
+
 export interface StartExplorationResponse {
   sessionId: string;
   status: string;
   progress: number;
   totalDimensions: number;
   answeredDimensions: number;
+  dimensions?: BackendDimension[];
   messages: ExplorationMessage[];
   modelId?: string;
 }

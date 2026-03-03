@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { ArrowLeft, Bot, RefreshCw, Sparkles } from 'lucide-react';
-import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage } from './types';
+import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage, BackendDimension } from './types';
+import { mapBackendDimensions } from './utils/map-backend-dimensions';
 import { useAIExplorationStore } from './hooks/useAIExplorationStore';
 import { AIExplorationChatInterface } from './AIExplorationChatInterface';
 import { AIExplorationReport } from './AIExplorationReport';
@@ -15,6 +16,7 @@ interface AIExplorationPageProps {
     messages: ExplorationMessage[];
     progress: number;
     answeredDimensions: number;
+    dimensions?: BackendDimension[];
   }>;
   onSendAnswer: (
     sessionId: string,
@@ -54,9 +56,17 @@ export function AIExplorationPage({
   const setCurrentInput = useAIExplorationStore((s) => s.setCurrentInput);
   const insightsData = useAIExplorationStore((s) => s.insightsData);
   const setInsightsData = useAIExplorationStore((s) => s.setInsightsData);
+  const backendDimensions = useAIExplorationStore((s) => s.backendDimensions);
+  const setBackendDimensions = useAIExplorationStore((s) => s.setBackendDimensions);
   const reset = useAIExplorationStore((s) => s.reset);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+
+  // Build effective config: override dimensions with backend-driven ones when available
+  const effectiveConfig = useMemo(() => {
+    if (!backendDimensions || backendDimensions.length === 0) return config;
+    return { ...config, dimensions: mapBackendDimensions(backendDimensions) };
+  }, [config, backendDimensions]);
 
   const startSession = useCallback(() => {
     setStartError(null);
@@ -68,6 +78,9 @@ export function AIExplorationPage({
         setMessages(data.messages);
         setProgress(data.progress);
         setAnsweredDimensions(data.answeredDimensions);
+        if (data.dimensions) {
+          setBackendDimensions(data.dimensions);
+        }
       })
       .catch((err) => {
         console.error('[AIExplorationPage] Failed to start session:', err);
@@ -141,12 +154,12 @@ export function AIExplorationPage({
       <div style={{ padding: '32px' }}>
         <div className="max-w-4xl mx-auto">
           <button
-            onClick={config.onBack}
+            onClick={effectiveConfig.onBack}
             className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
             style={{ color: '#6b7280', marginBottom: '24px' }}
           >
             <ArrowLeft className="w-4 h-4" />
-            {config.backLabel ?? 'Back'}
+            {effectiveConfig.backLabel ?? 'Back'}
           </button>
           <div className="flex flex-col items-center justify-center rounded-xl" style={{ padding: '48px', border: '1px solid #fecaca', backgroundColor: '#fef2f2' }}>
             <p className="text-sm font-medium" style={{ color: '#991b1b', marginBottom: '12px' }}>{startError}</p>
@@ -185,12 +198,12 @@ export function AIExplorationPage({
           <div className="space-y-6">
             {/* Back link */}
             <button
-              onClick={config.onBack}
+              onClick={effectiveConfig.onBack}
               className="flex items-center gap-1.5 text-sm transition-colors hover:opacity-80"
               style={{ color: '#6b7280' }}
             >
               <ArrowLeft className="w-4 h-4" />
-              {config.backLabel ?? 'Back'}
+              {effectiveConfig.backLabel ?? 'Back'}
             </button>
 
             {/* Header — uniform with other modules */}
@@ -206,10 +219,10 @@ export function AIExplorationPage({
               </div>
               <div>
                 <h1 className="text-xl font-semibold" style={{ color: '#111827' }}>
-                  {config.pageTitle ?? 'AI Exploration'}
+                  {effectiveConfig.pageTitle ?? 'AI Exploration'}
                 </h1>
                 <p className="text-sm" style={{ color: '#6b7280' }}>
-                  {config.pageDescription ?? 'Answer the questions to start the analysis'}
+                  {effectiveConfig.pageDescription ?? 'Answer the questions to start the analysis'}
                 </p>
               </div>
             </div>
@@ -217,7 +230,7 @@ export function AIExplorationPage({
             {/* Chat card — fixed height */}
             <div style={{ height: 'calc(100vh - 280px)', minHeight: '400px' }}>
               <AIExplorationChatInterface
-                config={config}
+                config={effectiveConfig}
                 messages={messages}
                 isAITyping={isAITyping}
                 currentInput={currentInput}
@@ -252,7 +265,7 @@ export function AIExplorationPage({
         {/* ─── Report ─── */}
         {status === 'completed' && insightsData && !showSuggestions && (
           <AIExplorationReport
-            config={config}
+            config={effectiveConfig}
             insightsData={insightsData}
             onViewSuggestions={() => setShowSuggestions(true)}
           />
@@ -261,7 +274,7 @@ export function AIExplorationPage({
         {/* ─── Suggestions ─── */}
         {status === 'completed' && insightsData && showSuggestions && (
           <AIExplorationSuggestions
-            config={config}
+            config={effectiveConfig}
             insightsData={insightsData}
             onBackToReport={() => setShowSuggestions(false)}
           />
