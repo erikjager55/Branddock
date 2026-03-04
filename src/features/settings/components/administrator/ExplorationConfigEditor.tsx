@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import {
-  Save,
   Plus,
   Trash2,
   ChevronDown,
@@ -10,10 +9,8 @@ import {
   ChevronUp,
   GripVertical,
   Eye,
-  X,
-  MessageCircle,
-  Bot,
 } from 'lucide-react';
+import { ExplorationConfigPreviewModal } from './ExplorationConfigPreviewModal';
 import { EXPLORATION_AI_MODELS } from '@/lib/ai/exploration/config.types';
 import type {
   ExplorationConfigData,
@@ -175,9 +172,9 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
 
   return (
     <>
-      <div className="border-2 border-teal-200 rounded-xl bg-white overflow-hidden flex flex-col">
+      <div className="border-2 border-teal-200 rounded-xl bg-white overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)' }}>
         {/* Header */}
-        <div className="bg-teal-50 px-6 py-4 border-b border-teal-100">
+        <div className="bg-teal-50 px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid #ccfbf1' }}>
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-base font-semibold text-teal-900">
@@ -193,7 +190,8 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
           </div>
         </div>
 
-        <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+        {/* Scrollable content */}
+        <div className="p-6 space-y-6 flex-1 overflow-y-auto" style={{ minHeight: 0 }}>
 
           {/* ─── Targeting ──────────────────────────────── */}
           <div className="grid grid-cols-3 gap-4">
@@ -575,31 +573,73 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
         </div>
 
         {/* ─── Sticky Save/Cancel Bar ───────────────────── */}
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-3 flex items-center justify-between">
-          <div className="text-xs text-gray-400">
-            {dimensions.length} dimension{dimensions.length !== 1 ? 's' : ''} configured
+        <div
+          className="flex items-center justify-between flex-shrink-0"
+          style={{
+            padding: '12px 16px',
+            borderTop: '1px solid #e5e7eb',
+            backgroundColor: '#ffffff',
+            boxShadow: '0 -2px 8px rgba(0,0,0,0.05)',
+            borderRadius: '0 0 12px 12px',
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <span
+              className="text-xs font-bold uppercase tracking-wider rounded-full"
+              style={{
+                padding: '3px 10px',
+                backgroundColor: '#fef3c7',
+                color: '#92400e',
+                border: '1px solid #fde68a',
+              }}
+            >
+              EDITING
+            </span>
+            <span className="text-xs" style={{ color: '#9ca3af' }}>
+              {dimensions.length} dimensies geconfigureerd
+            </span>
           </div>
+
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => setShowPreview(true)}
-              disabled={dimensions.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-teal-600 hover:text-teal-700 border border-teal-300 hover:border-teal-400 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+              className="flex items-center gap-1.5 text-sm font-medium rounded-lg transition-colors"
+              style={{
+                padding: '8px 16px',
+                color: '#0d9488',
+                backgroundColor: '#f0fdfa',
+                border: '1px solid #99f6e4',
+              }}
             >
-              <Eye className="w-3.5 h-3.5" />
+              <Eye className="h-4 w-4" />
               Preview
             </button>
             <button
+              type="button"
               onClick={onCancel}
-              className="px-3 py-1.5 text-xs text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg transition-colors"
+              className="text-sm font-medium rounded-lg"
+              style={{
+                padding: '8px 20px',
+                color: '#6b7280',
+                backgroundColor: '#ffffff',
+                border: '1px solid #e5e7eb',
+              }}
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-50 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 text-sm font-medium rounded-lg disabled:opacity-50"
+              style={{
+                padding: '8px 24px',
+                color: '#ffffff',
+                background: 'linear-gradient(135deg, #14b8a6, #10b981)',
+                border: 'none',
+              }}
             >
-              <Save className="w-3.5 h-3.5" />
               {isSaving ? 'Saving...' : 'Save'}
             </button>
           </div>
@@ -607,13 +647,22 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
       </div>
 
       {/* ─── Preview Modal ────────────────────────────── */}
-      {showPreview && (
-        <PreviewModal
-          dimensions={dimensions}
-          label={label || itemSubType || itemType}
-          onClose={() => setShowPreview(false)}
-        />
-      )}
+      <ExplorationConfigPreviewModal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        configLabel={label || 'Untitled Config'}
+        itemType={itemType || ''}
+        itemSubType={itemSubType || null}
+        dimensions={dimensions.map((d) => ({
+          key: d.key,
+          title: d.title,
+          question: d.question,
+          followUpHint: d.followUpHint,
+          icon: d.icon,
+        }))}
+        provider={provider}
+        model={model}
+      />
     </>
   );
 }
@@ -649,94 +698,3 @@ function CollapsibleSection({
   );
 }
 
-// ─── Preview Modal ─────────────────────────────────────────
-
-function PreviewModal({
-  dimensions,
-  label,
-  onClose,
-}: {
-  dimensions: StoredDimension[];
-  label: string;
-  onClose: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
-        {/* Modal header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <div>
-            <h3 className="text-sm font-semibold text-gray-900">Exploration Preview</h3>
-            <p className="text-xs text-gray-500 mt-0.5">How users will experience the {label} exploration</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Modal body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {/* Welcome message */}
-          <div className="flex gap-3">
-            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center">
-              <Bot className="w-4 h-4 text-teal-600" />
-            </div>
-            <div className="bg-gray-50 rounded-xl rounded-tl-none px-4 py-3 max-w-[85%]">
-              <p className="text-sm text-gray-700">
-                Welcome! I&apos;ll guide you through {dimensions.length} strategic dimensions to explore and strengthen this asset. Let&apos;s begin.
-              </p>
-            </div>
-          </div>
-
-          {/* Progress bar */}
-          <div className="px-2">
-            <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1">
-              <span>Progress</span>
-              <span>0 / {dimensions.length}</span>
-            </div>
-            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-              <div className="h-full bg-teal-500 rounded-full" style={{ width: '0%' }} />
-            </div>
-          </div>
-
-          {/* Dimension questions */}
-          {dimensions.map((dim, i) => (
-            <div key={i} className="flex gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center">
-                <MessageCircle className="w-4 h-4 text-teal-600" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[10px] font-medium text-teal-600 bg-teal-50 px-1.5 py-0.5 rounded">
-                    {i + 1}/{dimensions.length}
-                  </span>
-                  <span className="text-xs font-medium text-gray-700">{dim.title || 'Untitled'}</span>
-                </div>
-                <div className="bg-gray-50 rounded-xl rounded-tl-none px-4 py-3">
-                  <p className="text-sm text-gray-700">{dim.question || 'No question set'}</p>
-                </div>
-                {/* Simulated answer area */}
-                <div className="mt-2 px-4 py-3 border border-dashed border-gray-200 rounded-xl">
-                  <p className="text-xs text-gray-400 italic">User types their answer here...</p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Modal footer */}
-        <div className="border-t border-gray-100 px-5 py-3 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg transition-colors"
-          >
-            Close Preview
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
