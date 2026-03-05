@@ -106,7 +106,7 @@ export function DimensionsTab({
         <div className="space-y-3">
           {dimensions.map((dim, i) => (
             <DimensionCard
-              key={`${dim.key}-${i}`}
+              key={i}
               dimension={dim}
               index={i}
               total={dimensions.length}

@@ -41,22 +41,31 @@ export function PromptEditor({
   maxLength = 20000,
 }: PromptEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const selectionRef = useRef({ start: 0, end: 0 });
+
+  // Save selection on blur/select so we know where to insert when clicking a chip
+  const saveSelection = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      selectionRef.current = { start: textarea.selectionStart, end: textarea.selectionEnd };
+    }
+  };
 
   const insertVariable = (variable: string) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
+    const { start, end } = selectionRef.current;
     const before = value.slice(0, start);
     const after = value.slice(end);
     const newValue = `${before}${variable}${after}`;
     onChange(newValue);
 
     // Restore cursor position after the inserted variable
+    const newPos = start + variable.length;
+    selectionRef.current = { start: newPos, end: newPos };
     requestAnimationFrame(() => {
       textarea.focus();
-      const newPos = start + variable.length;
       textarea.setSelectionRange(newPos, newPos);
     });
   };
@@ -110,6 +119,8 @@ export function PromptEditor({
         ref={textareaRef}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onBlur={saveSelection}
+        onSelect={saveSelection}
         rows={rows}
         maxLength={maxLength}
         placeholder={placeholder}
