@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { analyzePdf } from "@/lib/brandstyle/analysis-engine";
 
 // =============================================================
 // POST /api/brandstyle/analyze/pdf — start PDF analyse
@@ -24,9 +25,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    if (!file.name.endsWith(".pdf")) {
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
       return NextResponse.json({ error: "Only PDF files are accepted" }, { status: 400 });
     }
+
+    // Limit file size to 20MB
+    if (file.size > 20 * 1024 * 1024) {
+      return NextResponse.json({ error: "File size exceeds 20MB limit" }, { status: 400 });
+    }
+
+    // Read file buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
     // Delete existing styleguide if present
     const existing = await prisma.brandStyleguide.findUnique({ where: { workspaceId } });
@@ -47,17 +57,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Demo: simulate completion after delay (same as URL analysis)
-    setTimeout(async () => {
-      try {
-        await prisma.brandStyleguide.update({
-          where: { id: styleguide.id },
-          data: { status: "COMPLETE", analysisStatus: "COMPLETE" },
-        });
-      } catch (e) {
-        console.error("[analyze/pdf background]", e);
-      }
-    }, 8000);
+    // Start real PDF analysis as fire-and-forget background task
+    analyzePdf(styleguide.id, buffer, file.name).catch((err) => {
+      console.error("[analyze/pdf background] unhandled:", err);
+    });
 
     return NextResponse.json({ jobId: styleguide.analysisJobId }, { status: 201 });
   } catch (error) {

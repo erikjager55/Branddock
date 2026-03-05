@@ -19,6 +19,7 @@ interface BrandstyleState {
   openColorModal: (colorId: string) => void;
   closeColorModal: () => void;
   startAnalysis: (jobId: string) => void;
+  stopAnalysis: () => void;
   setAnalysisStatus: (status: string) => void;
   reset: () => void;
 }
@@ -43,6 +44,9 @@ export const useBrandstyleStore = create<BrandstyleState>((set) => ({
 
   startAnalysis: (jobId) =>
     set({ analysisJobId: jobId, isAnalyzing: true, analysisStatus: "SCANNING_STRUCTURE" }),
+
+  stopAnalysis: () =>
+    set({ analysisJobId: null, isAnalyzing: false, analysisStatus: null }),
 
   setAnalysisStatus: (status) =>
     set({ analysisStatus: status, isAnalyzing: status !== "COMPLETE" && status !== "ERROR" }),
