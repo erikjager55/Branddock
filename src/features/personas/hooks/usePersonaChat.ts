@@ -96,8 +96,9 @@ export function usePersonaChat(
       startSession.mutateAsync('FREE_CHAT').then((data) => {
         setSessionId(data.sessionId);
         setIsLoading(false);
-      }).catch(() => {
+      }).catch((err) => {
         setIsLoading(false);
+        setError(err?.message || 'Failed to start chat session. Please try again.');
       });
     }
   }, [isOpen, personaId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -244,8 +245,9 @@ export function usePersonaChat(
     startSession.mutateAsync('FREE_CHAT').then((data) => {
       setSessionId(data.sessionId);
       setIsLoading(false);
-    }).catch(() => {
+    }).catch((err) => {
       setIsLoading(false);
+      setError(err?.message || 'Failed to start chat session. Please try again.');
     });
   }, [startSession]);
 

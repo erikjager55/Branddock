@@ -7,7 +7,7 @@ import {
   DEFAULT_SYSTEM_PROMPT_TEMPLATE,
 } from "@/lib/ai/context/prompt-builder";
 import { parseAIError, getReadableErrorMessage, getAIErrorStatus } from "@/lib/ai/error-handler";
-import { requireUnlocked } from "@/lib/lock-guard";
+// Lock guard not needed: chatting doesn't modify persona data
 
 // ─── POST /api/personas/[id]/chat ────────────────────────────
 // Two modes:
@@ -31,8 +31,8 @@ export async function POST(
 
     const { id: personaId } = await params;
 
-    const lockResponse = await requireUnlocked("persona", personaId);
-    if (lockResponse) return lockResponse;
+    // NOTE: No requireUnlocked here — chatting with a persona doesn't modify it.
+    // Users should be able to chat with locked personas.
 
     const persona = await prisma.persona.findFirst({
       where: { id: personaId, workspaceId },
