@@ -57,20 +57,19 @@ const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, 
 
 Alle 12 brand asset types + 1 persona hebben nu DB configs. De vragen zijn gegenereerd op basis van system defaults en moeten nog per type verfijnd worden.
 
-### Admin UI verbeteringen (gedeeltelijk geïmplementeerd)
-**Voltooid:**
+### Admin UI verbeteringen ✅ (volledig geïmplementeerd)
 - ✅ Sub Type is nu een dropdown i.p.v. vrij tekstveld (gefilterd per Item Type)
-- ✅ "EDITING" badge bij edit modus
+- ✅ "EDITING" badge bij edit modus (header + sticky bar)
 - ✅ "Dimension 1 of 4" nummering
 - ✅ Up/down pijlen voor dimensie reordering
 - ✅ Grip handle icoon per dimensie
-- ✅ Collapsible accordeon secties
+- ✅ Collapsible accordeon secties (6 secties, standaard open/dicht)
+- ✅ Preview modal (`ExplorationConfigPreviewModal.tsx`, 581 regels) — 2 modes (Chat Flow & Overview), interactieve progress bar, dimensie-selectie
+- ✅ Sticky save/cancel bar onderaan (vaste footer met Preview/Cancel/Save buttons + EDITING badge)
+- ✅ Kennisbronnen sectie (`KnowledgeLibrarySection.tsx`, 315 regels) — CRUD voor custom knowledge per config
 
-**Nog te doen:**
-- ❌ Preview modal — hoe vragen eruitzien voor eindgebruikers
-- ❌ Drag & drop (als @dnd-kit beschikbaar is) — nu alleen up/down knoppen
-- ❌ Sticky save/cancel bar onderaan
-- ❌ Verfijning van alle 12 asset-specifieke vragensets
+**Niet geïmplementeerd (bewuste keuze):**
+- ❌ Drag & drop — up/down pijlen werken als alternatief, @dnd-kit niet geïnstalleerd
 
 ---
 
@@ -104,8 +103,11 @@ Alle 12 brand asset types + 1 persona hebben nu DB configs. De vragen zijn gegen
 | `src/components/ai-exploration/AIExplorationReport.tsx` | Rapport weergave |
 | `src/features/brand-asset-detail/components/ai-exploration/AIBrandAssetExplorationPage.tsx` | Brand asset-specifieke wrapper. Gebruikt `getDimensionsForSlug()` als fallback voor progress bar |
 | `src/features/brand-asset-detail/constants/brand-asset-exploration-config.ts` | Frontend dimensie configs per framework type (icon, color, labels). Bevat `getDimensionsForSlug()` |
-| `src/features/settings/components/administrator/ExplorationConfigEditor.tsx` | Admin UI voor configs (509+ regels) |
+| `src/features/settings/components/administrator/ExplorationConfigEditor.tsx` | Admin UI voor configs (509+ regels, sticky bar, accordeons) |
+| `src/features/settings/components/administrator/ExplorationConfigPreviewModal.tsx` | Preview modal (581 regels, Chat Flow + Overview modes) |
+| `src/features/settings/components/administrator/KnowledgeLibrarySection.tsx` | Kennisbronnen CRUD per config (315 regels) |
 | `src/features/settings/components/administrator/AdministratorTab.tsx` | Container voor admin tab in settings |
+| `src/components/shared/ItemKnowledgeSources.tsx` | Herbruikbare knowledge sources component (384 regels) |
 
 ### Database schema (relevant)
 - **ExplorationConfig** — Workspace-level config per itemType + itemSubType. Bevat dimensions (JSON), prompts, model settings
@@ -128,18 +130,12 @@ DB configs zijn nu leidend. System defaults dienen alleen als fallback voor type
 
 ## Wat nu gedaan moet worden
 
-### Prioriteit 1: Admin UI verfijnen
-De ExplorationConfigEditor (`src/features/settings/components/administrator/ExplorationConfigEditor.tsx`) heeft nog twee features nodig:
+### ~~Prioriteit 1: Admin UI verfijnen~~ ✅ AFGEROND
+~~Preview modal~~ en ~~sticky save/cancel bar~~ zijn beide geïmplementeerd:
+- Preview modal: `ExplorationConfigPreviewModal.tsx` (581 regels, Chat Flow + Overview modes)
+- Sticky bar: vaste footer in `ExplorationConfigEditor.tsx` (regels 591-662)
 
-1. **Preview modal** — Een knop naast "Save" die een modal opent met:
-   - Welkomstboodschap simulatie
-   - Alle dimensies met hun vragen in chat-bubble stijl
-   - Progress bar preview
-   - Dezelfde styling als `AIExplorationChatInterface.tsx`
-
-2. **Sticky save/cancel bar** — Nu moet je scrollen om te saven. Maak de buttons sticky onderaan.
-
-### Prioriteit 2: Vragen per asset type verfijnen
+### Prioriteit 1: Vragen per asset type verfijnen
 Alle 12 brand asset configs hebben nu generieke vragen. Per type moeten de vragen inhoudelijk kloppen met het framework:
 
 - **Golden Circle**: WHY/HOW/WHAT vragen (al goed, volgorde aangepast in backend)
@@ -155,7 +151,7 @@ Alle 12 brand asset configs hebben nu generieke vragen. Per type moeten de vrage
 - **Brandhouse Values**: Kernwaarden, geleefde waarden, spanningen
 - **Social Relevancy**: Purpose, mens, milieu, maatschappij (al goed)
 
-### Prioriteit 3: Field suggestions mapping per type
+### Prioriteit 2: Field suggestions mapping per type
 De `brand-asset-builder.ts` genereert field suggestions dynamisch uit frameworkData. Check of dit correct werkt voor alle 11 framework types — sommige hebben geneste structuren (bijv. Brand Archetype met traits array, Brand Personality met Aaker dimensies).
 
 ---
