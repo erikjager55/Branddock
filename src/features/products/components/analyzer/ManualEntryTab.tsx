@@ -4,16 +4,7 @@ import { useState } from "react";
 import { Button, Input } from "@/components/shared";
 import { Select } from "@/components/shared";
 import { useCreateProduct } from "../../hooks";
-
-// ─── Category options ─────────────────────────────────────
-
-const CATEGORY_OPTIONS = [
-  { value: "software", label: "Software" },
-  { value: "consulting", label: "Consulting" },
-  { value: "mobile", label: "Mobile" },
-  { value: "hardware", label: "Hardware" },
-  { value: "service", label: "Service" },
-];
+import { CATEGORY_OPTIONS } from "../../constants/product-constants";
 
 // ─── Component ────────────────────────────────────────────
 

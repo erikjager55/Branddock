@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { scrapeProductUrl } from "@/lib/products/url-scraper";
+import { createGeminiStructuredCompletion } from "@/lib/ai/gemini-client";
+import { getBrandContext } from "@/lib/ai/brand-context";
+import { formatBrandContext } from "@/lib/ai/prompt-templates";
+import {
+  PRODUCT_ANALYSIS_SYSTEM_PROMPT,
+  buildUrlAnalysisPrompt,
+  type ProductAnalysisResult,
+} from "@/lib/ai/prompts/product-analysis";
 import { ANALYZE_STEPS } from "@/features/products/constants/product-constants";
 
 const analyzeUrlSchema = z.object({
   url: z.string().url(),
 });
 
-// POST /api/products/analyze/url — stub: mock product from URL
+// POST /api/products/analyze/url — AI-powered product extraction from URL (Gemini 3.1)
 export async function POST(request: NextRequest) {
   try {
     const workspaceId = await resolveWorkspaceId();
@@ -26,18 +35,58 @@ export async function POST(request: NextRequest) {
 
     const { url } = parsed.data;
 
-    // Extract domain name for mock data
-    let domain = "unknown";
+    // 1. Scrape the URL
+    let scraped;
     try {
-      const urlObj = new URL(url);
-      domain = urlObj.hostname.replace("www.", "");
-    } catch {
-      // keep default
+      scraped = await scrapeProductUrl(url);
+    } catch (scrapeError) {
+      const message = scrapeError instanceof Error ? scrapeError.message : "Failed to fetch URL";
+      return NextResponse.json(
+        { error: `Could not access the URL: ${message}` },
+        { status: 422 },
+      );
     }
+
+    if (!scraped.bodyText || scraped.bodyText.length < 50) {
+      return NextResponse.json(
+        { error: "Not enough content found on this page to analyze" },
+        { status: 422 },
+      );
+    }
+
+    // 2. Get brand context (optional enrichment)
+    let brandContextStr: string | undefined;
+    try {
+      const brandContext = await getBrandContext(workspaceId);
+      const formatted = formatBrandContext(brandContext);
+      if (formatted.length > 20) {
+        brandContextStr = formatted;
+      }
+    } catch {
+      // Brand context is optional — continue without it
+    }
+
+    // 3. Build prompts and call Gemini 3.1
+    const userPrompt = buildUrlAnalysisPrompt({
+      url,
+      title: scraped.title,
+      description: scraped.description,
+      bodyText: scraped.bodyText,
+      brandContext: brandContextStr,
+    });
+
+    const result = await createGeminiStructuredCompletion<ProductAnalysisResult>(
+      PRODUCT_ANALYSIS_SYSTEM_PROMPT,
+      userPrompt,
+      { temperature: 0.3 },
+    );
+
+    // 4. Validate and normalize result
+    const validCategories = ["software", "consulting", "mobile", "hardware", "service"];
+    const category = validCategories.includes(result.category) ? result.category : "software";
 
     const jobId = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-    // Return completed mock result immediately
     return NextResponse.json({
       jobId,
       status: "complete",
@@ -49,21 +98,27 @@ export async function POST(request: NextRequest) {
       })),
       result: {
         id: "",
-        name: `Product from ${domain}`,
-        slug: domain.replace(/\./g, "-"),
-        description: `Automatically analyzed product from ${url}`,
-        category: "software",
-        pricingModel: "subscription",
+        name: result.name || `Product from ${new URL(url).hostname}`,
+        slug: "",
+        description: result.description || null,
+        category,
+        pricingModel: result.pricingModel || null,
+        pricingDetails: result.pricingDetails || null,
         source: "WEBSITE_URL",
+        sourceUrl: url,
         status: "ANALYZED",
-        features: ["Feature 1", "Feature 2", "Feature 3"],
+        features: (result.features || []).slice(0, 15),
+        benefits: (result.benefits || []).slice(0, 10),
+        useCases: (result.useCases || []).slice(0, 8),
         categoryIcon: "Globe",
         linkedPersonaCount: 0,
+        isLocked: false,
         updatedAt: new Date().toISOString(),
       },
     });
   } catch (error) {
     console.error("[POST /api/products/analyze/url]", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

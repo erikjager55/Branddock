@@ -22,7 +22,7 @@ import React, {
 } from "react";
 import { BrandAsset } from "../types/brand-asset";
 import { mockBrandAssets } from "../data/mock-brand-assets";
-import { saveToStorage, loadFromStorage, StorageKeys } from "../utils/storage";
+// localStorage persistence verwijderd — veroorzaakte stale mock ID mismatch
 import { logger } from "../utils/logger";
 import { ChangeType } from "../types/change-impact";
 import { fetchBrandAssets } from "../lib/api/brand-assets";
@@ -67,17 +67,11 @@ const BrandAssetsContext = createContext<BrandAssetsContextType | undefined>(
 
 export function BrandAssetsProvider({ children }: { children: ReactNode }) {
   const { workspaceId, isLoading: wsLoading } = useWorkspace();
-  const [brandAssets, setBrandAssets] = useState<BrandAsset[]>(() => {
-    // Start met mock data of localStorage; API data wordt async geladen
-    const stored = loadFromStorage<BrandAsset[]>(StorageKeys.BRAND_ASSETS, []);
-    if (stored.length === 0) {
-      return mockBrandAssets;
-    }
-    return stored;
-  });
+  // Start leeg — API data wordt async geladen, mock alleen als fallback zonder workspace
+  const [brandAssets, setBrandAssets] = useState<BrandAsset[]>([]);
 
   const [dataSource, setDataSource] = useState<"api" | "mock">("mock");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   // Change tracking callback
@@ -96,7 +90,10 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
     if (wsLoading) return;
 
     if (!workspaceId) {
-      logger.info("No workspace available, using mock data");
+      logger.info("No workspace available, using mock data as fallback");
+      setBrandAssets(mockBrandAssets);
+      setDataSource("mock");
+      setIsLoading(false);
       return;
     }
 
@@ -120,10 +117,11 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
       .catch((err) => {
         if (cancelled) return;
 
-        logger.warn("API fetch failed, keeping current data:", err);
+        logger.warn("API fetch failed, using mock data as fallback:", err);
+        setBrandAssets(mockBrandAssets);
+        setDataSource("mock");
         setError(err instanceof Error ? err : new Error(String(err)));
         setIsLoading(false);
-        // Blijft op mock/localStorage data
       });
 
     return () => {
@@ -131,13 +129,8 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
     };
   }, [workspaceId, wsLoading]);
 
-  // Persist to localStorage (alleen als we op mock data draaien)
-  useEffect(() => {
-    if (dataSource === "mock" && brandAssets && brandAssets.length > 0) {
-      saveToStorage(StorageKeys.BRAND_ASSETS, brandAssets);
-      logger.debug(`Persisted ${brandAssets.length} brand assets`);
-    }
-  }, [brandAssets, dataSource]);
+  // localStorage persistence verwijderd — veroorzaakte stale mock IDs
+  // die niet matchen met database IDs, wat leidde tot "asset not found" errors
 
   const getBrandAsset = (id: string): BrandAsset | undefined => {
     return brandAssets.find((asset) => asset.id === id);

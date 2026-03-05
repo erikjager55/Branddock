@@ -2,6 +2,14 @@
 // Product feature constants
 // =============================================================
 
+export const CATEGORY_OPTIONS = [
+  { value: "software", label: "Software" },
+  { value: "consulting", label: "Consulting" },
+  { value: "mobile", label: "Mobile" },
+  { value: "hardware", label: "Hardware" },
+  { value: "service", label: "Service" },
+];
+
 export const CATEGORY_ICONS: Record<string, string> = {
   software: "Globe",
   consulting: "Zap",

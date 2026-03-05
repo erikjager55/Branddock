@@ -50,10 +50,15 @@ export interface CreateProductBody {
   description?: string;
   category?: string;
   pricingModel?: string;
+  pricingDetails?: string;
   features?: string[];
   benefits?: string[];
   useCases?: string[];
   linkedPersonaIds?: string[];
+  source?: string;
+  sourceUrl?: string;
+  status?: string;
+  analysisData?: unknown;
 }
 
 export interface UpdateProductBody {
@@ -78,13 +83,20 @@ export interface AnalyzeStep {
   status: "pending" | "in_progress" | "complete";
 }
 
+export interface AnalyzeResultData extends ProductWithMeta {
+  pricingDetails?: string | null;
+  benefits?: string[];
+  useCases?: string[];
+  sourceUrl?: string | null;
+}
+
 export interface AnalyzeJobResponse {
   jobId: string;
   status: "pending" | "processing" | "complete" | "failed";
   currentStep: number;
   totalSteps: number;
   steps: AnalyzeStep[];
-  result?: ProductWithMeta;
+  result?: AnalyzeResultData;
   error?: string;
 }
 

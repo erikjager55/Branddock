@@ -60,13 +60,16 @@ export function PdfUploadTab({ onNavigateToDetail }: PdfUploadTabProps) {
   const handleUpload = () => {
     if (!file) return;
 
+    // Open modal immediately, then fire API call
+    setProcessingModalOpen(true);
+
     analyzePdf.mutate(file, {
       onSuccess: (data) => {
         setAnalyzeResultData(data);
-        setProcessingModalOpen(true);
       },
-      onError: () => {
-        setError("Failed to start analysis. Please try again.");
+      onError: (err) => {
+        setProcessingModalOpen(false);
+        setError(err instanceof Error ? err.message : "Failed to analyze PDF. Please try again.");
       },
     });
   };

@@ -49,7 +49,13 @@ export function ProductAnalyzerPage({
         description: result.description ?? undefined,
         category: result.category ?? undefined,
         pricingModel: result.pricingModel ?? undefined,
+        pricingDetails: result.pricingDetails ?? undefined,
         features: result.features,
+        benefits: result.benefits ?? [],
+        useCases: result.useCases ?? [],
+        source: result.source ?? undefined,
+        sourceUrl: result.sourceUrl ?? undefined,
+        status: result.status ?? "ANALYZED",
       }).then((created) => {
         setProcessingModalOpen(false);
         onNavigateToDetail(created.id);
@@ -128,6 +134,7 @@ export function ProductAnalyzerPage({
           <AnalyzingProductModal
             onComplete={handleModalComplete}
             onCancel={handleModalCancel}
+            isApiComplete={analyzeResultData?.status === "complete"}
           />
         )}
       </div>

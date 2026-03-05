@@ -5,6 +5,7 @@ import { resolveWorkspaceId } from "@/lib/auth-server";
 import { PRODUCT_LIST_SELECT } from "@/lib/db/queries";
 import { setCache, cachedJson, invalidateCache } from "@/lib/api/cache";
 import { cacheKeys, CACHE_TTL } from "@/lib/api/cache-keys";
+import { ProductStatus } from "@prisma/client";
 
 // ─── Zod Schemas ────────────────────────────────────────────
 
@@ -13,6 +14,7 @@ const createProductSchema = z.object({
   description: z.string().max(2000).optional(),
   category: z.string().max(100).optional(),
   pricingModel: z.string().max(100).optional(),
+  pricingDetails: z.string().max(2000).optional(),
   features: z
     .array(z.string().max(500))
     .max(20)
@@ -29,6 +31,10 @@ const createProductSchema = z.object({
     .array(z.string())
     .max(20)
     .optional(),
+  source: z.enum(["MANUAL", "WEBSITE_URL", "PDF_UPLOAD"]).optional(),
+  sourceUrl: z.string().url().optional(),
+  status: z.string().max(50).optional(),
+  analysisData: z.unknown().optional(),
 });
 
 // GET /api/products
@@ -135,10 +141,15 @@ export async function POST(request: NextRequest) {
       description,
       category,
       pricingModel,
+      pricingDetails,
       features,
       benefits,
       useCases,
       linkedPersonaIds,
+      source,
+      sourceUrl,
+      status,
+      analysisData,
     } = parsed.data;
 
     const slug = name
@@ -154,6 +165,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Determine source and status
+    const resolvedSource = source ?? "MANUAL";
+    const validStatuses = Object.values(ProductStatus) as string[];
+    const resolvedStatus = (status && validStatuses.includes(status)
+      ? status
+      : resolvedSource !== "MANUAL" ? "ANALYZED" : "DRAFT") as ProductStatus;
+
     const product = await prisma.product.create({
       data: {
         name,
@@ -161,9 +179,14 @@ export async function POST(request: NextRequest) {
         description: description ?? null,
         category: category ?? null,
         pricingModel: pricingModel ?? null,
+        pricingDetails: pricingDetails ?? null,
         features: features ?? [],
         benefits: benefits ?? [],
         useCases: useCases ?? [],
+        source: resolvedSource,
+        sourceUrl: sourceUrl ?? null,
+        status: resolvedStatus,
+        analysisData: analysisData ?? undefined,
         workspaceId,
       },
     });

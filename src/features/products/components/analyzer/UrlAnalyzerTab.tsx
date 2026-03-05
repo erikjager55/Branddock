@@ -34,15 +34,18 @@ export function UrlAnalyzerTab({ onNavigateToDetail }: UrlAnalyzerTabProps) {
 
     const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
 
+    // Open modal immediately, then fire API call
+    setProcessingModalOpen(true);
+
     analyzeUrl.mutate(
       normalizedUrl,
       {
         onSuccess: (data) => {
           setAnalyzeResultData(data);
-          setProcessingModalOpen(true);
         },
-        onError: () => {
-          setError("Failed to start analysis. Please try again.");
+        onError: (err) => {
+          setProcessingModalOpen(false);
+          setError(err instanceof Error ? err.message : "Failed to analyze URL. Please try again.");
         },
       },
     );

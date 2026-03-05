@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { parsePdf } from "@/lib/brandstyle/pdf-parser";
+import { createGeminiStructuredCompletion } from "@/lib/ai/gemini-client";
+import { getBrandContext } from "@/lib/ai/brand-context";
+import { formatBrandContext } from "@/lib/ai/prompt-templates";
+import {
+  PRODUCT_ANALYSIS_SYSTEM_PROMPT,
+  buildPdfAnalysisPrompt,
+  type ProductAnalysisResult,
+} from "@/lib/ai/prompts/product-analysis";
 import { ANALYZE_STEPS } from "@/features/products/constants/product-constants";
 
-// POST /api/products/analyze/pdf — stub: mock product from PDF upload
+// POST /api/products/analyze/pdf — AI-powered product extraction from PDF (Gemini 3.1)
 export async function POST(request: NextRequest) {
   try {
     const workspaceId = await resolveWorkspaceId();
@@ -17,11 +26,60 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "file is required" }, { status: 400 });
     }
 
-    const filename = file.name.replace(/\.[^.]+$/, "");
+    // 1. Parse the PDF
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    let pdfData;
+    try {
+      pdfData = await parsePdf(buffer, file.name);
+    } catch (parseError) {
+      const message = parseError instanceof Error ? parseError.message : "Failed to parse PDF";
+      return NextResponse.json(
+        { error: `Could not parse PDF: ${message}` },
+        { status: 422 },
+      );
+    }
 
+    if (!pdfData.text || pdfData.text.trim().length < 50) {
+      return NextResponse.json(
+        { error: "Not enough text content found in this PDF to analyze. The file may be image-based or too short." },
+        { status: 422 },
+      );
+    }
+
+    // 2. Get brand context (optional enrichment)
+    let brandContextStr: string | undefined;
+    try {
+      const brandContext = await getBrandContext(workspaceId);
+      const formatted = formatBrandContext(brandContext);
+      if (formatted.length > 20) {
+        brandContextStr = formatted;
+      }
+    } catch {
+      // Brand context is optional — continue without it
+    }
+
+    // 3. Build prompts and call Gemini 3.1
+    const userPrompt = buildPdfAnalysisPrompt({
+      fileName: file.name,
+      text: pdfData.text,
+      metadata: pdfData.metadata,
+      brandContext: brandContextStr,
+    });
+
+    const result = await createGeminiStructuredCompletion<ProductAnalysisResult>(
+      PRODUCT_ANALYSIS_SYSTEM_PROMPT,
+      userPrompt,
+      { temperature: 0.3 },
+    );
+
+    // 4. Validate and normalize result
+    const validCategories = ["software", "consulting", "mobile", "hardware", "service"];
+    const category = validCategories.includes(result.category) ? result.category : "software";
+
+    const filename = file.name.replace(/\.[^.]+$/, "");
     const jobId = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-    // Return completed mock result immediately
     return NextResponse.json({
       jobId,
       status: "complete",
@@ -33,24 +91,27 @@ export async function POST(request: NextRequest) {
       })),
       result: {
         id: "",
-        name: `Product from ${filename}`,
-        slug: filename
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, ""),
-        description: `Automatically analyzed product from uploaded PDF: ${file.name}`,
-        category: "software",
-        pricingModel: null,
+        name: result.name || `Product from ${filename}`,
+        slug: "",
+        description: result.description || null,
+        category,
+        pricingModel: result.pricingModel || null,
+        pricingDetails: result.pricingDetails || null,
         source: "PDF_UPLOAD",
+        sourceUrl: null,
         status: "ANALYZED",
-        features: ["Feature 1", "Feature 2"],
+        features: (result.features || []).slice(0, 15),
+        benefits: (result.benefits || []).slice(0, 10),
+        useCases: (result.useCases || []).slice(0, 8),
         categoryIcon: "FileText",
         linkedPersonaCount: 0,
+        isLocked: false,
         updatedAt: new Date().toISOString(),
       },
     });
   } catch (error) {
     console.error("[POST /api/products/analyze/pdf]", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

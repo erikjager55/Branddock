@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Edit3, Save, X } from "lucide-react";
-import { Button, SkeletonCard } from "@/components/shared";
+import { ArrowLeft, Edit3, Save, X, ExternalLink } from "lucide-react";
+import { Button, SkeletonCard, Select } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
 import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
 import { VersionPill } from "@/components/versioning/VersionPill";
@@ -13,6 +13,7 @@ import { useProductDetail, useUpdateProduct, useUnlinkPersona, useProductPersona
 import {
   SOURCE_BADGES,
   STATUS_BADGES,
+  CATEGORY_OPTIONS,
 } from "../../constants/product-constants";
 import { DescriptionCard } from "./DescriptionCard";
 import { PricingModelCard } from "./PricingModelCard";
@@ -56,6 +57,10 @@ export function ProductDetailPage({
   const [editDescription, setEditDescription] = useState("");
   const [editPricingModel, setEditPricingModel] = useState("");
   const [editPricingDetails, setEditPricingDetails] = useState("");
+  const [editCategory, setEditCategory] = useState<string | null>(null);
+  const [editFeatures, setEditFeatures] = useState<string[]>([]);
+  const [editBenefits, setEditBenefits] = useState<string[]>([]);
+  const [editUseCases, setEditUseCases] = useState<string[]>([]);
 
   // Sync edit state when product loads or editing starts
   useEffect(() => {
@@ -64,6 +69,10 @@ export function ProductDetailPage({
       setEditDescription(product.description ?? "");
       setEditPricingModel(product.pricingModel ?? "");
       setEditPricingDetails(product.pricingDetails ?? "");
+      setEditCategory(product.category ?? null);
+      setEditFeatures([...product.features]);
+      setEditBenefits([...product.benefits]);
+      setEditUseCases([...product.useCases]);
     }
   }, [product, isEditing]);
 
@@ -73,6 +82,10 @@ export function ProductDetailPage({
       description: editDescription || undefined,
       pricingModel: editPricingModel || undefined,
       pricingDetails: editPricingDetails || undefined,
+      category: editCategory ?? undefined,
+      features: editFeatures,
+      benefits: editBenefits,
+      useCases: editUseCases,
     }).then(() => {
       setIsEditing(false);
     });
@@ -131,6 +144,8 @@ export function ProductDetailPage({
     unlinkPersona.mutate(personaId);
   };
 
+  const canEdit = isEditing && lock.canEdit;
+
   return (
     <PageShell maxWidth="5xl">
       <div data-testid="product-detail" className="space-y-6">
@@ -162,6 +177,18 @@ export function ProductDetailPage({
 
             {/* Metadata bar */}
             <div className="flex items-center gap-3 flex-wrap">
+              {canEdit ? (
+                <Select
+                  value={editCategory}
+                  onChange={setEditCategory}
+                  options={CATEGORY_OPTIONS}
+                  placeholder="Category..."
+                />
+              ) : product.category ? (
+                <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 capitalize">
+                  {product.category}
+                </span>
+              ) : null}
               <span
                 className={`inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium ${sourceBadge.color}`}
               >
@@ -180,6 +207,17 @@ export function ProductDetailPage({
                   qc.invalidateQueries({ queryKey: productKeys.list() });
                 }}
               />
+              {product.sourceUrl && !isEditing && (
+                <a
+                  href={product.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Source URL
+                </a>
+              )}
             </div>
           </div>
 
@@ -227,7 +265,7 @@ export function ProductDetailPage({
         <LockBanner isLocked={lock.isLocked} onUnlock={lock.requestToggle} />
 
         {/* 1. Description + Pricing (2-col on md+) */}
-        {isEditing && lock.canEdit ? (
+        {canEdit ? (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-5">
               <label className="text-sm font-semibold text-gray-900 mb-2 block">Description</label>
@@ -280,7 +318,13 @@ export function ProductDetailPage({
         ) : null}
 
         {/* 2. Features & Specifications */}
-        {product.features.length > 0 ? (
+        {canEdit ? (
+          <FeaturesSpecsSection
+            features={editFeatures}
+            isEditing
+            onChange={setEditFeatures}
+          />
+        ) : product.features.length > 0 ? (
           <LockOverlay isLocked={lock.isLocked}>
             <FeaturesSpecsSection features={product.features} />
           </LockOverlay>
@@ -289,7 +333,13 @@ export function ProductDetailPage({
         ) : null}
 
         {/* 3. Benefits */}
-        {product.benefits.length > 0 ? (
+        {canEdit ? (
+          <BenefitsSection
+            benefits={editBenefits}
+            isEditing
+            onChange={setEditBenefits}
+          />
+        ) : product.benefits.length > 0 ? (
           <LockOverlay isLocked={lock.isLocked}>
             <BenefitsSection benefits={product.benefits} />
           </LockOverlay>
@@ -307,7 +357,13 @@ export function ProductDetailPage({
         </LockOverlay>
 
         {/* 5. Use Cases */}
-        {product.useCases.length > 0 ? (
+        {canEdit ? (
+          <UseCasesSection
+            useCases={editUseCases}
+            isEditing
+            onChange={setEditUseCases}
+          />
+        ) : product.useCases.length > 0 ? (
           <LockOverlay isLocked={lock.isLocked}>
             <UseCasesSection useCases={product.useCases} />
           </LockOverlay>

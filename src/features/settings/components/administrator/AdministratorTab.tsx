@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { Shield, Plus, Bot, Pencil, Trash2, BookOpen, AlertCircle, RefreshCw } from 'lucide-react';
+import { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { EXPLORATION_AI_MODELS } from '@/lib/ai/exploration/config.types';
 import type { ExplorationConfigData } from '@/lib/ai/exploration/config.types';
-import { ExplorationConfigEditor } from './ExplorationConfigEditor';
+import { ConfigListView } from './ConfigListView';
+import { ConfigDetailView } from './ConfigDetailView';
 
 // ─── API Functions ─────────────────────────────────────────
 
@@ -46,8 +45,9 @@ async function deleteConfig(id: string) {
 
 export function AdministratorTab() {
   const queryClient = useQueryClient();
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [duplicateData, setDuplicateData] = useState<ExplorationConfigData | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'exploration-configs'],
@@ -58,160 +58,123 @@ export function AdministratorTab() {
     mutationFn: deleteConfig,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'exploration-configs'] });
-      toast.success('Configuration deleted');
+      toast.success('Configuratie verwijderd');
+      setSelectedConfigId(null);
     },
   });
 
   const configs = (data?.configs ?? []) as ExplorationConfigData[];
+  const selectedConfig = selectedConfigId
+    ? configs.find((c) => c.id === selectedConfigId)
+    : null;
 
-  return (
-    <div className="max-w-5xl space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-teal-600" />
-            <h2 className="text-xl font-semibold text-gray-900">AI Exploration Configuration</h2>
-          </div>
-          <p className="mt-1 text-sm text-gray-500">
-            Configureer prompts, dimensies, AI model en context per onderdeel
-          </p>
-        </div>
-        <button
-          onClick={() => setIsCreating(true)}
-          className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 rounded-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Nieuwe configuratie
-        </button>
-      </div>
+  // ─── Handlers ──────────────────────────────────────────
 
-      {/* Create form */}
-      {isCreating && (
-        <ExplorationConfigEditor
-          onSave={async (configData) => {
-            await createConfig(configData);
-            queryClient.invalidateQueries({ queryKey: ['admin', 'exploration-configs'] });
-            setIsCreating(false);
-            toast.success('Configuration created');
-          }}
-          onCancel={() => setIsCreating(false)}
-        />
-      )}
+  const handleSelectConfig = useCallback((id: string) => {
+    setSelectedConfigId(id);
+    setIsCreating(false);
+    setDuplicateData(null);
+  }, []);
 
-      {/* Loading */}
-      {isLoading && (
-        <div className="space-y-3">
+  const handleCreateConfig = useCallback(() => {
+    setIsCreating(true);
+    setSelectedConfigId(null);
+    setDuplicateData(null);
+  }, []);
+
+  const handleDuplicateConfig = useCallback((config: ExplorationConfigData) => {
+    setDuplicateData({
+      ...config,
+      id: `new-duplicate-${Date.now()}`,
+      label: config.label ? `${config.label} (kopie)` : null,
+      isActive: false,
+    });
+    setIsCreating(true);
+    setSelectedConfigId(null);
+  }, []);
+
+  const handleDeleteConfig = useCallback((id: string) => {
+    if (confirm('Weet je zeker dat je deze configuratie wilt verwijderen?')) {
+      deleteMutation.mutate(id);
+    }
+  }, [deleteMutation]);
+
+  const handleCancel = useCallback(() => {
+    setSelectedConfigId(null);
+    setIsCreating(false);
+    setDuplicateData(null);
+  }, []);
+
+  const handleSaveCreate = useCallback(async (configData: Record<string, unknown>) => {
+    await createConfig(configData);
+    queryClient.invalidateQueries({ queryKey: ['admin', 'exploration-configs'] });
+    setIsCreating(false);
+    setDuplicateData(null);
+    toast.success('Configuratie aangemaakt');
+  }, [queryClient]);
+
+  const handleSaveUpdate = useCallback(async (configData: Record<string, unknown>) => {
+    if (!selectedConfigId) return;
+    await updateConfig(selectedConfigId, configData);
+    queryClient.invalidateQueries({ queryKey: ['admin', 'exploration-configs'] });
+    toast.success('Configuratie opgeslagen');
+  }, [selectedConfigId, queryClient]);
+
+  // ─── Loading state ─────────────────────────────────────
+
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl p-6 space-y-4">
+        <div className="h-8 w-64 bg-gray-100 rounded animate-pulse" />
+        <div className="h-4 w-96 bg-gray-100 rounded animate-pulse" />
+        <div className="grid grid-cols-3 gap-4 mt-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />
+            <div key={i} className="h-32 bg-gray-100 rounded-xl animate-pulse" />
           ))}
         </div>
-      )}
-
-      {/* Config list */}
-      {!isLoading && configs.length === 0 && !isCreating && (
-        <div className="text-center py-12 text-gray-400 text-sm">
-          <Bot className="w-10 h-10 mx-auto mb-3 opacity-40" />
-          <p>Nog geen AI Exploration configuraties.</p>
-          <p className="mt-1">Het systeem gebruikt standaard instellingen totdat je een configuratie aanmaakt.</p>
-        </div>
-      )}
-
-      <div className="space-y-3">
-        {configs.map((config) => (
-          <div key={config.id}>
-            {editingId === config.id ? (
-              <ExplorationConfigEditor
-                initialData={config}
-                onSave={async (configData) => {
-                  await updateConfig(config.id, configData);
-                  queryClient.invalidateQueries({ queryKey: ['admin', 'exploration-configs'] });
-                  setEditingId(null);
-                  toast.success('Configuration updated');
-                }}
-                onCancel={() => setEditingId(null)}
-              />
-            ) : (
-              <ExplorationConfigCard
-                config={config}
-                onEdit={() => setEditingId(config.id)}
-                onDelete={() => {
-                  if (confirm('Weet je zeker dat je deze configuratie wilt verwijderen?')) {
-                    deleteMutation.mutate(config.id);
-                  }
-                }}
-              />
-            )}
-          </div>
-        ))}
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-// ─── Config Card (collapsed view) ──────────────────────────
+  // ─── Detail View (editing or creating) ─────────────────
 
-function ExplorationConfigCard({
-  config,
-  onEdit,
-  onDelete,
-}: {
-  config: ExplorationConfigData;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const model = EXPLORATION_AI_MODELS.find((m) => m.id === config.model);
-  const dimensionCount = Array.isArray(config.dimensions) ? config.dimensions.length : 0;
+  if (selectedConfig) {
+    return (
+      <div className="max-w-5xl p-6">
+        <ConfigDetailView
+          initialData={selectedConfig}
+          onSave={handleSaveUpdate}
+          onCancel={handleCancel}
+          onDelete={() => handleDeleteConfig(selectedConfig.id)}
+          onDuplicate={() => handleDuplicateConfig(selectedConfig)}
+        />
+      </div>
+    );
+  }
+
+  if (isCreating) {
+    return (
+      <div className="max-w-5xl p-6">
+        <ConfigDetailView
+          initialData={duplicateData ?? undefined}
+          onSave={handleSaveCreate}
+          onCancel={handleCancel}
+        />
+      </div>
+    );
+  }
+
+  // ─── List View ─────────────────────────────────────────
 
   return (
-    <div className="border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${config.isActive ? 'bg-teal-50' : 'bg-gray-100'}`}>
-            <Bot className={`w-5 h-5 ${config.isActive ? 'text-teal-600' : 'text-gray-400'}`} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-semibold text-gray-900">
-                {config.label || `${config.itemType}${config.itemSubType ? ` → ${config.itemSubType}` : ''}`}
-              </h3>
-              {!config.isActive && (
-                <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
-                  Inactive
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
-              <span className="font-mono bg-gray-50 px-1.5 py-0.5 rounded">
-                {config.itemType}{config.itemSubType ? ` / ${config.itemSubType}` : ''}
-              </span>
-              <span>{model?.label ?? config.model}</span>
-              <span>·</span>
-              <span>{dimensionCount} dimensies</span>
-              <span>·</span>
-              <span>temp {config.temperature}</span>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={onEdit}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-            title="Bewerken"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-            title="Verwijderen"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      <KnowledgeLibrarySection configId={config.id} />
+    <div className="max-w-6xl p-6">
+      <ConfigListView
+        configs={configs}
+        onSelectConfig={handleSelectConfig}
+        onCreateConfig={handleCreateConfig}
+        onDeleteConfig={handleDeleteConfig}
+        onDuplicateConfig={handleDuplicateConfig}
+      />
     </div>
   );
 }

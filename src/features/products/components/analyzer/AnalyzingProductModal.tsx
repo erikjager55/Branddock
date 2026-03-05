@@ -8,17 +8,21 @@ import { ANALYZE_STEPS } from "../../constants/product-constants";
 interface AnalyzingProductModalProps {
   onComplete: () => void;
   onCancel: () => void;
+  /** When true, the API call has finished. Animation will fast-forward remaining steps. */
+  isApiComplete?: boolean;
 }
 
 export function AnalyzingProductModal({
   onComplete,
   onCancel,
+  isApiComplete = false,
 }: AnalyzingProductModalProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const completedRef = useRef(false);
 
-  // Client-side simulation: increment step every 500ms from 0 to ANALYZE_STEPS.length
+  // Animate steps: 500ms per step normally, 100ms when API is already done
   useEffect(() => {
+    const interval = isApiComplete && currentStep < ANALYZE_STEPS.length ? 100 : 500;
     const timer = setInterval(() => {
       setCurrentStep((prev) => {
         if (prev >= ANALYZE_STEPS.length) {
@@ -27,21 +31,38 @@ export function AnalyzingProductModal({
         }
         return prev + 1;
       });
-    }, 500);
+    }, interval);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [isApiComplete, currentStep]);
 
-  // When all steps complete, trigger product creation + navigation
+  // When all steps complete and API is done, trigger product creation + navigation
   useEffect(() => {
     if (currentStep >= ANALYZE_STEPS.length && !completedRef.current) {
+      if (isApiComplete) {
+        // API already done — complete immediately
+        completedRef.current = true;
+        const timeout = setTimeout(() => {
+          onComplete();
+        }, 300);
+        return () => clearTimeout(timeout);
+      }
+      // Animation done but API not yet — show "Finalizing..." state, wait for isApiComplete
+    }
+  }, [currentStep, isApiComplete, onComplete]);
+
+  // If API completes after animation already finished
+  useEffect(() => {
+    if (isApiComplete && currentStep >= ANALYZE_STEPS.length && !completedRef.current) {
       completedRef.current = true;
       const timeout = setTimeout(() => {
         onComplete();
       }, 300);
       return () => clearTimeout(timeout);
     }
-  }, [currentStep, onComplete]);
+  }, [isApiComplete, currentStep, onComplete]);
+
+  const isWaitingForApi = currentStep >= ANALYZE_STEPS.length && !isApiComplete;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -51,10 +72,12 @@ export function AnalyzingProductModal({
 
         {/* Title */}
         <h2 className="text-lg font-semibold text-gray-900 mb-1">
-          Analyzing your product...
+          {isWaitingForApi ? "Finalizing analysis..." : "Analyzing your product..."}
         </h2>
         <p className="text-sm text-gray-500 mb-6">
-          This usually takes about 30 seconds
+          {isWaitingForApi
+            ? "Almost done, processing AI response"
+            : "This usually takes about 15 seconds"}
         </p>
 
         {/* Steps list */}
@@ -64,15 +87,12 @@ export function AnalyzingProductModal({
             let iconClass;
 
             if (idx < currentStep) {
-              // Complete
               StepIcon = CheckCircle;
               iconClass = "h-5 w-5 text-green-500";
             } else if (idx === currentStep) {
-              // In progress
               StepIcon = Loader2;
               iconClass = "h-5 w-5 text-green-500 animate-spin";
             } else {
-              // Pending
               StepIcon = Circle;
               iconClass = "h-5 w-5 text-gray-300";
             }
