@@ -64,7 +64,7 @@ export async function POST(
 
     // Resolve config-driven dimensions + intro
     const itemSubType = resolveItemSubType(item as Record<string, unknown>);
-    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, itemSubType);
+    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, itemSubType, itemId);
     const dimensions = explorationConfig.dimensions;
     const totalDimensions = dimensions.length;
 

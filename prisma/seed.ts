@@ -132,6 +132,7 @@ async function main() {
   await prisma.explorationSession.deleteMany();
   await prisma.explorationKnowledgeItem.deleteMany();
   await prisma.explorationConfig.deleteMany();
+  await prisma.itemKnowledgeSource.deleteMany();
   await prisma.user.deleteMany({ where: { id: { not: DEMO_USER_ID } } });
   await prisma.workspace.deleteMany();
   await prisma.organization.deleteMany();
@@ -3926,6 +3927,36 @@ Respond only with valid JSON.`,
   for (const cfg of explorationConfigSeeds) {
     await prisma.explorationConfig.create({
       data: { workspaceId: DEMO_WORKSPACE_ID, ...cfg },
+    });
+  }
+
+  // ============================================
+  // ITEM KNOWLEDGE SOURCES — demo data for Golden Circle asset
+  // ============================================
+  if (goldenCircleAsset) {
+    await prisma.itemKnowledgeSource.createMany({
+      data: [
+        {
+          itemType: "brand_asset",
+          itemId: goldenCircleAsset.id,
+          title: "Simon Sinek — Start With Why (samenvatting)",
+          sourceType: "text",
+          description: "Kernpunten uit het boek Start With Why",
+          content: "Simon Sinek's Golden Circle framework stelt dat succesvolle organisaties communiceren vanuit hun WHY (kernovertuiging), via HOW (unieke aanpak), naar WHAT (producten/diensten). De meeste organisaties doen het andersom. Het WHY is niet om winst te maken — dat is een resultaat. Het WHY is het doel, de overtuiging die inspireert. Mensen kopen niet WAT je doet, maar WAAROM je het doet. Apple communiceert eerst hun WHY ('We geloven in anders denken'), dan HOW ('We maken producten die mooi ontworpen en gebruiksvriendelijk zijn'), en dan WHAT ('We maken computers'). Het WHY moet authentiek zijn en consistent doorleven in alle lagen van de organisatie.",
+          isProcessed: true,
+          workspaceId: DEMO_WORKSPACE_ID,
+        },
+        {
+          itemType: "brand_asset",
+          itemId: goldenCircleAsset.id,
+          title: "Competitor Golden Circle Analysis",
+          sourceType: "url",
+          description: "Analyse van concurrenten hun purpose statements",
+          url: "https://example.com/competitor-purpose-analysis",
+          isProcessed: false,
+          workspaceId: DEMO_WORKSPACE_ID,
+        },
+      ],
     });
   }
 

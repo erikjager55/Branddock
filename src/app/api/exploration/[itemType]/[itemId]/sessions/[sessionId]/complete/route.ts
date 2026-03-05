@@ -57,7 +57,7 @@ export async function POST(
 
     // Resolve config for dimension count
     const itemSubType = resolveItemSubType(item as Record<string, unknown>);
-    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, itemSubType);
+    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, itemSubType, itemId);
 
     // Generate report via the item type builder — this ensures fieldSuggestions
     // include id, currentValue, and status fields that the frontend needs.

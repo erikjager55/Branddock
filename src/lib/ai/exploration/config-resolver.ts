@@ -2,6 +2,35 @@ import { prisma } from '@/lib/prisma';
 import type { ExplorationConfigData, StoredDimension, StoredFieldSuggestionConfig } from './config.types';
 
 /**
+ * Fetch item-level knowledge sources and format as markdown.
+ */
+export async function fetchItemKnowledgeSources(
+  workspaceId: string,
+  itemType: string,
+  itemId: string,
+): Promise<string> {
+  try {
+    const sources = await prisma.itemKnowledgeSource.findMany({
+      where: { workspaceId, itemType, itemId, isProcessed: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (sources.length === 0) return '';
+
+    const sections = sources.map((s) => {
+      const typeTag = ` [${s.sourceType}]`;
+      const content = s.content ?? s.url ?? '';
+      return `### ${s.title}${typeTag}\n${content}`;
+    });
+
+    return `## Asset Knowledge\n${sections.join('\n\n')}`;
+  } catch (error) {
+    console.warn('[fetchItemKnowledgeSources] Failed:', error instanceof Error ? error.message : error);
+    return '';
+  }
+}
+
+/**
  * Resolve the exploration config for a given item type.
  * Priority: workspace + type + subtype → workspace + type (subtype null) → system defaults
  */
@@ -9,6 +38,7 @@ export async function resolveExplorationConfig(
   workspaceId: string,
   itemType: string,
   itemSubType?: string | null,
+  itemId?: string,
 ): Promise<ExplorationConfigData> {
   try {
     // 1. Try exact match (type + subtype)
@@ -31,7 +61,12 @@ export async function resolveExplorationConfig(
 
     // 3. No DB config → system defaults
     if (!config) {
-      return getSystemDefault(itemType, itemSubType);
+      const defaults = getSystemDefault(itemType, itemSubType);
+      // Still fetch item-level knowledge even for system defaults
+      if (itemId) {
+        defaults.assetKnowledge = await fetchItemKnowledgeSources(workspaceId, itemType, itemId);
+      }
+      return defaults;
     }
 
     // 4. Fetch custom knowledge items for this config
@@ -41,6 +76,11 @@ export async function resolveExplorationConfig(
     });
 
     const customKnowledge = formatKnowledgeItems(knowledgeItems);
+
+    // 5. Fetch item-level knowledge sources
+    const assetKnowledge = itemId
+      ? await fetchItemKnowledgeSources(workspaceId, itemType, itemId)
+      : '';
 
     return {
       id: config.id,
@@ -59,6 +99,7 @@ export async function resolveExplorationConfig(
       contextSources: config.contextSources,
       isActive: config.isActive,
       customKnowledge,
+      assetKnowledge,
     };
   } catch (error) {
     // DB lookup failed (model not yet pushed, stale client, etc.) → use defaults
@@ -105,6 +146,7 @@ function getSystemDefault(itemType: string, itemSubType?: string | null): Explor
     contextSources: ['brand_asset', 'product'],
     isActive: true,
     customKnowledge: '',
+    assetKnowledge: '',
   };
 }
 
@@ -116,7 +158,9 @@ Reference specific details from previous answers.
 
 {{brandContext}}
 
-{{customKnowledge}}`;
+{{customKnowledge}}
+
+{{assetKnowledge}}`;
 
 const DEFAULT_FEEDBACK_PROMPT = `Provide brief, constructive feedback (2-3 sentences) on the user's answer.
 Dimension: {{dimensionTitle}}
@@ -137,6 +181,8 @@ Brand Context:
 {{brandContext}}
 
 {{customKnowledge}}
+
+{{assetKnowledge}}
 
 Generate JSON:
 {

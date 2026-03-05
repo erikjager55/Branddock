@@ -178,6 +178,9 @@ model Workspace {
   // Versioning
   resourceVersions          ResourceVersion[]
 
+  // Item Knowledge Sources (per-asset custom knowledge)
+  itemKnowledgeSources      ItemKnowledgeSource[]
+
   @@index([organizationId])
 }
 
@@ -1640,6 +1643,37 @@ model ExplorationKnowledgeItem {
   updatedAt DateTime @updatedAt
 
   @@index([configId])
+}
+
+// ─── Item-level Knowledge Sources ────────────────────────────
+// Per-item (brand asset, persona, product) custom knowledge for AI sessions.
+// Generic coupling via itemType + itemId (same pattern as ExplorationSession).
+model ItemKnowledgeSource {
+  id               String   @id @default(cuid())
+  itemType         String   // "brand_asset", "persona", "product"
+  itemId           String
+
+  title            String
+  sourceType       String   // "text", "url", "file"
+  description      String?
+  content          String?  @db.Text
+  url              String?
+  fileName         String?
+  fileType         String?
+  fileSize         Int?
+  filePath         String?
+  isProcessed      Boolean  @default(false)
+  processingError  String?
+
+  workspaceId      String
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([itemType, itemId])
+  @@index([workspaceId])
+  @@index([workspaceId, itemType, itemId])
 }
 
 model PersonaChatSession {

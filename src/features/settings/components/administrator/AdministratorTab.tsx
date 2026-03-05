@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, Plus, Bot, Pencil, Trash2 } from 'lucide-react';
+import { Shield, Plus, Bot, Pencil, Trash2, FileText, ChevronDown, ChevronRight } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { EXPLORATION_AI_MODELS } from '@/lib/ai/exploration/config.types';
 import type { ExplorationConfigData } from '@/lib/ai/exploration/config.types';
 import { ExplorationConfigEditor } from './ExplorationConfigEditor';
 import { KnowledgeLibrarySection } from './KnowledgeLibrarySection';
+import { ItemKnowledgeSources } from '@/components/shared/ItemKnowledgeSources';
 
 // ─── API Functions ─────────────────────────────────────────
 
@@ -213,6 +214,38 @@ function ExplorationConfigCard({
       </div>
 
       <KnowledgeLibrarySection configId={config.id} />
+      <ItemKnowledgeSourcesSection configId={config.id} itemType={config.itemType} />
+    </div>
+  );
+}
+
+// ─── Item Knowledge Sources (expandable) ────────────────────
+
+function ItemKnowledgeSourcesSection({
+  configId,
+  itemType,
+}: {
+  configId: string;
+  itemType: string;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div className="border-t border-gray-100 mt-3 pt-3">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors w-full"
+      >
+        {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        <FileText className="w-3.5 h-3.5" />
+        Kennisbronnen
+      </button>
+
+      {isExpanded && (
+        <div className="mt-3">
+          <ItemKnowledgeSources itemType={itemType} itemId={configId} />
+        </div>
+      )}
     </div>
   );
 }

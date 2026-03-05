@@ -33,6 +33,7 @@ export interface ExplorationConfigData {
   contextSources: string[];
   isActive: boolean;
   customKnowledge: string;
+  assetKnowledge: string;
 }
 
 // ─── Available AI Models ────────────────────────────────────

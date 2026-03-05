@@ -9,6 +9,7 @@ interface TemplateVars {
   brandName?: string;
   brandContext?: string;
   customKnowledge?: string;
+  assetKnowledge?: string;
   dimensionTitle?: string;
   questionAsked?: string;
   userAnswer?: string;

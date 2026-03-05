@@ -70,7 +70,7 @@ export async function POST(
     // Fetch item + resolve config-driven dimensions
     const item = await config.fetchItem(itemId, workspaceId);
     const itemSubType = resolveItemSubType(item as Record<string, unknown> | null);
-    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, itemSubType);
+    const explorationConfig = await resolveExplorationConfig(workspaceId, itemType, itemSubType, itemId);
     const dimensions = explorationConfig.dimensions;
     const dimensionInfo = dimensions[currentDimension];
 
@@ -120,6 +120,7 @@ export async function POST(
       itemType,
       brandContext,
       customKnowledge: explorationConfig.customKnowledge,
+      assetKnowledge: explorationConfig.assetKnowledge,
     });
 
     const feedbackUserPrompt = resolveTemplate(explorationConfig.feedbackPrompt, {
@@ -130,6 +131,7 @@ export async function POST(
       userAnswer: content,
       brandContext,
       customKnowledge: explorationConfig.customKnowledge,
+      assetKnowledge: explorationConfig.assetKnowledge,
     });
 
     let feedbackContent: string;
