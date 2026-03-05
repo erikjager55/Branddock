@@ -1,5 +1,5 @@
 # BRANDDOCK — Claude Code Context
-## Laatst bijgewerkt: 5 maart 2026 (Product Categories 5→22 + Product Images + Market Insights Fully Functional)
+## Laatst bijgewerkt: 5 maart 2026 (Trend Radar vervangt Market Insights)
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 
@@ -19,7 +19,7 @@ Voorheen: Brandshift.ai / ULTIEM. Huidige naam: **Branddock**.
 - **Database**: PostgreSQL 17, Prisma 7.4
 - **Auth**: Better Auth (emailAndPassword, Prisma adapter, organization plugin)
 - **State**: Zustand 5 (17 stores), React Context (12 providers)
-- **Data fetching**: TanStack Query 5 (brand-assets, personas, market-insights, brand-alignment, knowledge-resources, product-personas, brandstyle, research, campaigns, studio)
+- **Data fetching**: TanStack Query 5 (brand-assets, personas, trend-radar, brand-alignment, knowledge-resources, product-personas, brandstyle, research, campaigns, studio)
 - **Icons**: Lucide React 0.564
 - **Package manager**: npm
 
@@ -109,7 +109,7 @@ Workspace resolution: sessie-based (activeOrganizationId → workspace resolutio
 - Campaigns (6 campaigns) — `/api/campaigns` GET + POST + DELETE, `/api/campaigns/stats` GET, `/api/campaigns/[id]` GET + PATCH + DELETE, `/api/campaigns/[id]/archive` PATCH, `/api/campaigns/quick` POST, `/api/campaigns/quick/prompt-suggestions` GET, `/api/campaigns/quick/[id]/convert` POST, `/api/campaigns/[id]/knowledge` GET + POST, `/api/campaigns/[id]/knowledge/[assetId]` DELETE, `/api/campaigns/[id]/coverage` GET, `/api/campaigns/[id]/deliverables` GET + POST, `/api/campaigns/[id]/deliverables/[did]` PATCH + DELETE, `/api/campaigns/[id]/strategy` GET, `/api/campaigns/[id]/strategy/generate` POST + feature: `src/features/campaigns/` (TanStack Query, campaignKeys, 20+ hooks, Zustand store)
 - Knowledge Library (10 resources) — `/api/knowledge` GET + POST + PATCH + `/api/knowledge/featured` GET + `/api/knowledge/:id/{favorite,archive,featured}` PATCH + `/api/knowledge-resources` (13 endpoints: CRUD, featured, archive/favorite/featured toggles, import-url, upload, types, categories)
 - Trends (5 trends) — `/api/trends` GET + POST
-- Market Insights (7 insights) — `/api/insights` CRUD (12 endpoints: CRUD + stats + sources + ai-research + categories + providers) + feature: `src/features/market-insights/` (TanStack Query, insightKeys, 10 hooks, Zustand store)
+- Trend Radar (8 trends, 4 sources) — `/api/trend-radar` (14 endpoints: trends CRUD + activate/dismiss + sources CRUD + pause + scan start/progress/cancel + stats + manual) + feature: `src/features/trend-radar/` (TanStack Query, trendRadarKeys, 16 hooks, Zustand store). Replaces old Market Insights module.
 - Brand Alignment (1 scan, 6 modules, 4 issues) — `/api/alignment` (10 endpoints) + context: `BrandAlignmentContext` (TanStack Query, scan polling, dismiss)
 - Brandstyle (1 styleguide, 9 kleuren) — `/api/brandstyle` (20 endpoints) + feature: `src/features/brandstyle/` (TanStack Query, Zustand store, 16 analyzer+styleguide componenten)
 - Dashboard (preferences, 15 notifications) — `/api/dashboard` GET, `/api/dashboard/readiness` GET, `/api/dashboard/stats` GET, `/api/dashboard/attention` GET, `/api/dashboard/recommended` GET, `/api/dashboard/campaigns-preview` GET, `/api/dashboard/preferences` GET + PATCH, `/api/dashboard/quick-start/[key]/complete` POST (9 endpoints)
@@ -241,13 +241,13 @@ Elke gemigreerde module heeft een adapter die DB data mapt naar het bestaande mo
 Navigatie in de sidebar stuurt `setActiveSection(id)`. Mapping:
 
 **Werkend:**
-dashboard→DashboardPage, brand→BrandFoundationPage, brand-asset-detail→BrandAssetDetailPage, workshop-purchase→WorkshopPurchasePage, workshop-session→WorkshopSessionPage, workshop-results→WorkshopCompletePage, brandstyle→BrandstyleAnalyzerPage, brandstyle-guide→BrandStyleguidePage, interviews→InterviewsPage, golden-circle→GoldenCirclePage, personas→PersonasPage, products→ProductsOverviewPage, trends→MarketInsightsPage, knowledge→KnowledgeLibraryPage, new-strategy→NewStrategyPage, active-campaigns→ActiveCampaignsPage, research/research-hub→ResearchHubPage, research-bundles→ResearchBundlesPage, research-custom/custom-validation→CustomValidationPage, settings-account→AccountSettingsPage, settings-team→TeamManagementPage, settings-agency→AgencySettingsPage, settings-clients→ClientManagementPage, settings-billing→BillingSettingsPage, settings-notifications→NotificationsSettingsPage, settings-appearance→AppearanceSettingsPage, brand-alignment→BrandAlignmentPage, ai-brand-analysis→AIBrandAnalysisPage, business-strategy→BusinessStrategyPage, settings-admin→AdministratorTab (via SettingsPage initialTab='admin')
+dashboard→DashboardPage, brand→BrandFoundationPage, brand-asset-detail→BrandAssetDetailPage, workshop-purchase→WorkshopPurchasePage, workshop-session→WorkshopSessionPage, workshop-results→WorkshopCompletePage, brandstyle→BrandstyleAnalyzerPage, brandstyle-guide→BrandStyleguidePage, interviews→InterviewsPage, golden-circle→GoldenCirclePage, personas→PersonasPage, products→ProductsOverviewPage, trends→TrendRadarPage, knowledge→KnowledgeLibraryPage, new-strategy→NewStrategyPage, active-campaigns→ActiveCampaignsPage, research/research-hub→ResearchHubPage, research-bundles→ResearchBundlesPage, research-custom/custom-validation→CustomValidationPage, settings-account→AccountSettingsPage, settings-team→TeamManagementPage, settings-agency→AgencySettingsPage, settings-clients→ClientManagementPage, settings-billing→BillingSettingsPage, settings-notifications→NotificationsSettingsPage, settings-appearance→AppearanceSettingsPage, brand-alignment→BrandAlignmentPage, ai-brand-analysis→AIBrandAnalysisPage, business-strategy→BusinessStrategyPage, settings-admin→AdministratorTab (via SettingsPage initialTab='admin')
 
 **ComingSoonPage:** help
 
 **Campaigns module:** active-campaigns→ActiveCampaignsPage (features/campaigns), campaign-detail→CampaignDetailPage (useCampaignStore.selectedCampaignId), quick-content-detail→QuickContentDetailPage (useCampaignStore.selectedCampaignId), content-studio→ContentStudioPage (useCampaignStore.selectedCampaignId+selectedDeliverableId), content-library→ContentLibraryPage, campaign-wizard→CampaignWizardPage
 
-**Detail pages (via store):** strategy-detail→StrategyDetailPage (useBusinessStrategyStore.selectedStrategyId), persona-detail→PersonaDetailPage (usePersonaDetailStore.selectedPersonaId), persona-create→CreatePersonaPage, persona-ai-analysis→AIPersonaAnalysisPage, product-detail→ProductDetailPage (useProductsStore.selectedProductId), product-analyzer→ProductAnalyzerPage, insight-detail→InsightDetailPage (useMarketInsightsStore.selectedInsightId), research-bundle-detail→BundleDetailPage (useResearchStore.selectedBundleId), brand-asset-ai-exploration→AIBrandAssetExplorationPage (via selectedResearchOption='ai-exploration' in App.tsx)
+**Detail pages (via store):** strategy-detail→StrategyDetailPage (useBusinessStrategyStore.selectedStrategyId), persona-detail→PersonaDetailPage (usePersonaDetailStore.selectedPersonaId), persona-create→CreatePersonaPage, persona-ai-analysis→AIPersonaAnalysisPage, product-detail→ProductDetailPage (useProductsStore.selectedProductId), product-analyzer→ProductAnalyzerPage, trend-detail→TrendDetailPage (useTrendRadarStore.selectedTrendId), research-bundle-detail→BundleDetailPage (useResearchStore.selectedBundleId), brand-asset-ai-exploration→AIBrandAssetExplorationPage (via selectedResearchOption='ai-exploration' in App.tsx)
 
 **Default** (onbekende IDs): rendert Dashboard.
 
@@ -474,8 +474,7 @@ src/
 │   │   ├── FixOptionsGroup.tsx          ← AI fix opties header + cards
 │   │   ├── FixOptionCard.tsx            ← Radio card met preview
 │   │   └── ScanProgressModal.tsx        ← Legacy scan dialog (niet meer gebruikt)
-│   ├── market-insights/
-│   │   └── MarketInsightsPage.tsx       ← Market insights view
+│   ├── [market-insights/ — VERWIJDERD, vervangen door src/features/trend-radar/]
 │   └── [module]/                        ← Per-module componenten
 ├── features/
 │   ├── brand-asset-detail/              ← S1: Asset detail pagina
@@ -741,39 +740,36 @@ src/
 │       ├── stores/useProductsStore.ts          ← Zustand (analyzerTab, processingModal, selectedProductId)
 │       ├── api/products.api.ts                 ← 14 fetch functies (incl. image CRUD)
 │       └── types/product.types.ts              ← ProductWithMeta, ProductDetail, ProductImage, ProductImageCategory, AnalyzeJobResponse
-│   └── market-insights/                        ← S4: Market Insights
+│   └── trend-radar/                             ← Trend Radar (vervangt Market Insights)
 │       ├── components/
-│       │   ├── MarketInsightsPage.tsx           ← Overview orchestrator (header+stats+filters+grid)
-│       │   ├── InsightStatsCards.tsx            ← 3 StatCards (active, high impact, new this month)
-│       │   ├── InsightSearchFilter.tsx          ← Search + 3 dropdown filters
-│       │   ├── InsightCard.tsx                  ← Card met 8+ datapunten
-│       │   ├── InsightImpactBadge.tsx           ← HIGH/MEDIUM/LOW badge
-│       │   ├── ScopeTag.tsx                     ← Micro/Meso/Macro tag
-│       │   ├── TimeframeBadge.tsx               ← Clock icon + label
-│       │   ├── RelevanceScoreBar.tsx            ← Progress bar sm/lg
-│       │   ├── add-modal/
-│       │   │   ├── AddInsightModal.tsx          ← 3-tab modal (AI/Manual/Import)
-│       │   │   ├── AiResearchTab.tsx            ← AI prompt + focus areas + settings
-│       │   │   ├── FocusAreasCheckboxes.tsx     ← 6 checkbox grid
-│       │   │   ├── TimeframeRadioCards.tsx      ← 3 radio cards
-│       │   │   ├── BrandContextToggle.tsx       ← Toggle switch
-│       │   │   ├── ManualEntryTab.tsx           ← 9-field form
-│       │   │   ├── RelevanceSlider.tsx          ← Range slider
-│       │   │   ├── ImportDatabaseTab.tsx        ← Provider grid
-│       │   │   └── ProviderCard.tsx             ← Provider info + connect
-│       │   └── detail/
-│       │       ├── InsightDetailPage.tsx        ← Orchestrator (all sections + delete)
-│       │       ├── RelevanceScoreCard.tsx       ← Big score + progress bar
-│       │       ├── AddedDateCard.tsx            ← Date + source badge
-│       │       ├── IndustriesTagsSection.tsx    ← Bullet list + outline badges
-│       │       ├── SourcesSection.tsx           ← Sources + add/remove inline
-│       │       ├── HowToUseSection.tsx          ← Green tips + 2 CTA buttons
-│       │       └── DeleteConfirmModal.tsx       ← Delete confirmation
-│       ├── constants/insight-constants.ts       ← IMPACT_BADGE_COLORS, CATEGORY_COLORS, TIMEFRAME_BADGES, IMPORT_PROVIDERS
-│       ├── hooks/index.ts                      ← 10 TanStack Query hooks + insightKeys
-│       ├── stores/useMarketInsightsStore.ts     ← Re-export van centralized store
-│       ├── api/insights.api.ts                  ← 9 fetch functies
-│       └── types/market-insight.types.ts        ← Re-exports + AiResearchBody, ImportProvider
+│       │   ├── TrendRadarPage.tsx               ← Orchestrator (header+stats+tabs+4 panels+modals)
+│       │   ├── TrendRadarStats.tsx              ← 4 StatCards (total, activated, new this week, sources healthy)
+│       │   ├── TrendRadarTabs.tsx               ← 4-tab switcher (Sources|Feed|Alerts|Activate)
+│       │   ├── AddManualTrendModal.tsx          ← Handmatig trend toevoegen
+│       │   ├── sources/                         ← Bronnen beheer
+│       │   │   ├── SourcesPanel.tsx             ← Bronnenlijst + grid
+│       │   │   ├── SourceCard.tsx               ← Bron card (status dot, last checked, trend count)
+│       │   │   ├── AddSourceModal.tsx           ← Bron toevoegen
+│       │   │   └── EditSourceModal.tsx          ← Bron bewerken
+│       │   ├── feed/                            ← Trends feed
+│       │   │   ├── TrendFeedPanel.tsx           ← Chronologische trends + dismissed toggle
+│       │   │   ├── TrendFeedCard.tsx            ← Trend card (relevance bar, badges, activate/dismiss)
+│       │   │   └── TrendFilterBar.tsx           ← Filters (search, category, impact, detection source)
+│       │   ├── alerts/AlertsPanel.tsx           ← Hoge-relevantie trends (>80)
+│       │   ├── activation/                      ← Activatie panel
+│       │   │   ├── ActivationPanel.tsx          ← Geactiveerde + beschikbare trends
+│       │   │   └── ActivatedTrendCard.tsx       ← Green border, deactivate button
+│       │   ├── detail/                          ← Trend detail
+│       │   │   ├── TrendDetailPage.tsx          ← 2-kolom detail (8/4 split)
+│       │   │   ├── TrendRelevanceCard.tsx       ← Relevance score visualisatie
+│       │   │   ├── TrendSourceInfoCard.tsx      ← Bron info
+│       │   │   └── TrendActivationCard.tsx      ← Activatie status + toggle
+│       │   └── scan/ScanProgressModal.tsx       ← Scan progress (polling, cache invalidation)
+│       ├── constants/trend-radar-constants.ts   ← Status/category/impact/scope/timeframe/direction configs
+│       ├── hooks/index.ts                       ← 16 TanStack Query hooks + trendRadarKeys
+│       ├── stores/useTrendRadarStore.ts         ← Zustand (tabs, filters, modals, scan state)
+│       ├── api/trend-radar.api.ts               ← 17 fetch functies
+│       └── types/trend-radar.types.ts           ← Enums, interfaces, API response types
 │   └── knowledge-library/                      ← S5: Knowledge Library
 │       ├── components/
 │       │   ├── KnowledgeLibraryPage.tsx          ← Overview orchestrator (header+featured+filters+grid/list)
@@ -938,7 +934,7 @@ src/
 │   ├── CampaignsContext.tsx              ← API first, mock fallback
 │   ├── KnowledgeContext.tsx              ← API first, mock fallback (+ TanStack: featured, favorite/archive/featured toggles)
 │   ├── TrendsContext.tsx                 ← API first, mock fallback
-│   ├── MarketInsightsContext.tsx         ← TanStack Query (insightKeys, filters, CRUD mutations)
+│   ├── [MarketInsightsContext.tsx — VERWIJDERD, vervangen door features/trend-radar/]
 │   ├── BrandAlignmentContext.tsx         ← TanStack Query (alignmentKeys, scan/issues/modules, dismiss)
 │   ├── ChangeImpactContext.tsx
 │   ├── CollaborationContext.tsx
@@ -1025,7 +1021,7 @@ src/
 ├── services/                            ← 9 service bestanden (static setters voor data injection)
 ├── stores/                              ← 14 Zustand stores
 │   ├── useBrandAssetStore.ts            ← Filters, create modal, selectedAssetId
-│   ├── useMarketInsightsStore.ts        ← Filters, add modal, AI research state
+│   ├── [useMarketInsightsStore.ts — VERWIJDERD, vervangen door features/trend-radar/stores/]
 │   ├── useBrandAlignmentStore.ts        ← Scan state, issue filters, fix modal
 │   ├── useKnowledgeLibraryStore.ts      ← View mode, filters, add modal
 │   ├── useDashboardStore.ts             ← Onboarding wizard, quick start state
@@ -1086,7 +1082,7 @@ DATABASE_URL="postgresql://erikjager:@localhost:5432/branddock" npx tsx prisma/s
 - R0.1 Schema Extension: 6 nieuwe modellen (ProductPersona, MarketInsight, InsightSourceUrl, AlignmentScan, ModuleScore, AlignmentIssue)
 - AI Exploration modellen: ExplorationSession (generieke chat sessie per item type), ExplorationMessage (Q&A + feedback berichten), ExplorationConfig (backend-driven AI configuratie per item type/subtype), ExplorationKnowledgeItem (custom knowledge per config)
 - Universal Versioning: ResourceVersion (polymorphic versie tracking, entityType + entityId + data JSON)
-- 25 enums: BrandstyleAnalysisStatus, ProductSource, ProductStatus, ProductImageCategory, InsightCategory, InsightScope, ImpactLevel, InsightTimeframe, InsightSource, ResourceType, ResourceSource, DifficultyLevel, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus
+- 28 enums: BrandstyleAnalysisStatus, ProductSource, ProductStatus, ProductImageCategory, InsightCategory (CONSUMER_BEHAVIOR/TECHNOLOGY/MARKET_DYNAMICS/COMPETITIVE/REGULATORY), InsightScope, ImpactLevel (CRITICAL/HIGH/MEDIUM/LOW), InsightTimeframe, InsightSource, ResourceType, ResourceSource, DifficultyLevel, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus, TrendSourceStatus, TrendDetectionSource, TrendScanStatus
 - 16 uitgebreide enums: AIAnalysisStatus, AIMessageType, ResearchMethodStatus, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, ColorCategory, PersonaAvatarSource, AIPersonaAnalysisStatus, PersonaChatMode, ChatRole
 - Veld-extensies op 9 bestaande modellen: Product (+sourceUrl, sourceFileName, processingStatus, processingData, productPersonas), Persona (+productPersonas), KnowledgeResource (+slug, source, isFeatured, isFavorite, isArchived, publicationDate, isbn, pageCount, fileName, fileSize, fileType, fileUrl, importedMetadata, estimatedDuration), BrandAssetResearchMethod (+weight, resultData, workspaceId), PersonaResearchMethod (+weight, resultData, workspaceId), FocusArea (+color), Milestone (+completedAt, createdAt), WorkshopParticipant (+email), WorkshopFinding (+category, createdAt)
 - Workspace model: +6 relatie-velden (brandAssetResearchMethods, personaResearchMethods, marketInsights, alignmentScans, validationPlans, researchStudies)
@@ -1276,18 +1272,18 @@ Directe klant (Organization type=DIRECT)
 | `/api/products/:id/personas` | GET | Gekoppelde personas voor product |
 | `/api/products/:id/personas` | POST | Persona koppelen aan product |
 | `/api/products/:id/personas/:personaId` | DELETE | Persona ontkoppelen van product |
-| `/api/insights` | GET | Lijst met filters (category, impactLevel, timeframe, search) + stats |
-| `/api/insights` | POST | Nieuw insight aanmaken (Zod validatie, slug generatie) |
-| `/api/insights/stats` | GET | Stats: active, highImpact, newThisMonth |
-| `/api/insights/:id` | GET | Detail met sourceUrls en howToUse |
-| `/api/insights/:id` | PATCH | Insight updaten (Zod validatie) |
-| `/api/insights/:id` | DELETE | Verwijderen (cascade naar InsightSourceUrl) |
-| `/api/insights/:id/sources` | POST | Bron URL toevoegen (Zod validatie) |
-| `/api/insights/:id/sources/:sourceId` | DELETE | Bron URL verwijderen |
-| `/api/insights/ai-research` | POST | AI research: genereer mock insights (Zod, stub sync) |
-| `/api/insights/ai-research/:jobId` | GET | Stub poll endpoint (404) |
-| `/api/insights/categories` | GET | Return InsightCategory enum waarden als array |
-| `/api/insights/providers` | GET | Return statische IMPORT_PROVIDERS lijst |
+| `/api/trend-radar` | GET | Trends lijst (filters: category, impactLevel, activated, dismissed, search) |
+| `/api/trend-radar/:id` | GET, PATCH, DELETE | Trend CRUD |
+| `/api/trend-radar/:id/activate` | PATCH | Toggle isActivated |
+| `/api/trend-radar/:id/dismiss` | PATCH | Toggle isDismissed |
+| `/api/trend-radar/sources` | GET, POST | Bronnen lijst (filters: status, search) + aanmaken |
+| `/api/trend-radar/sources/:id` | GET, PATCH, DELETE | Bron CRUD |
+| `/api/trend-radar/sources/:id/pause` | PATCH | Toggle isActive (pause/resume) |
+| `/api/trend-radar/scan` | POST | Start scan (alle bronnen of specifieke sourceId) |
+| `/api/trend-radar/scan/:jobId` | GET | Poll scan progress |
+| `/api/trend-radar/scan/:jobId/cancel` | POST | Cancel scan |
+| `/api/trend-radar/stats` | GET | Dashboard stats (total, activated, newThisWeek, sourcesHealthy) |
+| `/api/trend-radar/manual` | POST | Handmatig trend toevoegen |
 | `/api/alignment` | GET | Laatste scan resultaat (score, modules, openIssuesCount) |
 | `/api/alignment/modules` | GET | Per-module scores uit laatste completed scan |
 | `/api/alignment/history` | GET | Scan geschiedenis met module scores en issue counts |
@@ -1522,7 +1518,7 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 
 57. **S4 Sessie A: Products & Services — compleet** — ProductsOverviewPage + ProductCard (2 overview). ProductAnalyzerPage + UrlAnalyzerTab + PdfUploadTab + ManualEntryTab + WhatWeExtractGrid + AnalyzingProductModal (6 analyzer). ProductDetailPage + DescriptionCard + PricingModelCard + FeaturesSpecsSection + BenefitsSection + TargetAudienceSection + UseCasesSection + PersonaSelectorModal (8 detail). 10 API endpoints (products CRUD, analyze url/pdf stubs, link/unlink persona). Zustand useProductsStore (analyzerTab, processingModal, selectedProductId). 10 TanStack Query hooks + productKeys. Feature types (ProductWithMeta, ProductDetail, AnalyzeJobResponse). Constants (CATEGORY_ICONS, ANALYZE_STEPS, SOURCE_BADGES, STATUS_BADGES). Routing: products→ProductsOverviewPage, product-analyzer→ProductAnalyzerPage, product-detail→ProductDetailPage. TypeScript 0 errors.
 
-58. **S4 Sessie B: Market Insights — compleet** — MarketInsightsPage + InsightStatsCards + InsightSearchFilter + InsightCard + InsightImpactBadge + ScopeTag + TimeframeBadge + RelevanceScoreBar (8 overview). AddInsightModal + AiResearchTab + FocusAreasCheckboxes + TimeframeRadioCards + BrandContextToggle + ManualEntryTab + RelevanceSlider + ImportDatabaseTab + ProviderCard (9 add modal). InsightDetailPage + RelevanceScoreCard + AddedDateCard + IndustriesTagsSection + SourcesSection + HowToUseSection + DeleteConfirmModal (7 detail). 12 API endpoints (CRUD + stats + sources + ai-research + categories + providers). Zustand useMarketInsightsStore (re-export). 10 TanStack Query hooks + insightKeys. Feature types (AiResearchBody, ImportProvider). Constants (IMPACT_BADGE_COLORS, CATEGORY_COLORS, TIMEFRAME_BADGES, IMPORT_PROVIDERS). Routing: trends→MarketInsightsPage, insight-detail→InsightDetailPage. TypeScript 0 errors.
+58. **S4 Sessie B: Market Insights — compleet** — MarketInsightsPage + InsightStatsCards + InsightSearchFilter + InsightCard + InsightImpactBadge + ScopeTag + TimeframeBadge + RelevanceScoreBar (8 overview). AddInsightModal + AiResearchTab + FocusAreasCheckboxes + TimeframeRadioCards + BrandContextToggle + ManualEntryTab + RelevanceSlider + ImportDatabaseTab + ProviderCard (9 add modal). InsightDetailPage + RelevanceScoreCard + AddedDateCard + IndustriesTagsSection + SourcesSection + HowToUseSection + DeleteConfirmModal (7 detail). 12 API endpoints (CRUD + stats + sources + ai-research + categories + providers). Zustand useMarketInsightsStore (re-export). 10 TanStack Query hooks + insightKeys. Feature types (AiResearchBody, ImportProvider). Constants (IMPACT_BADGE_COLORS, CATEGORY_COLORS, TIMEFRAME_BADGES, IMPORT_PROVIDERS). Routing: trends→TrendRadarPage, insight-detail→InsightDetailPage. TypeScript 0 errors.
 
 59. **S4 Fase 2: Products + Market Insights Integratie** — Products: analyzer flow fix (URL/PDF analyze → animation → POST create product → navigate to detail), edit mode (inline edit name/description/pricing → PATCH → refresh), persona koppeling bevestigd. Market Insights: edit mode (inline edit title/description/category/impact/timeframe/scope → PATCH → refresh), add modal flow bevestigd, 3 filters bevestigd, detail delete+sources bevestigd. Brand context stub endpoint (`/api/ai-context/brand-summary` GET — asset/persona/product counts). Dashboard bevestigd (6 context hooks voor counts). Sidebar mapping bevestigd. 0 TS errors.
 

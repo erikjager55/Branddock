@@ -12,7 +12,7 @@ export async function GET() {
     const hit = cachedJson(cacheKeys.dashboard.recommended(workspaceId));
     if (hit) return hit;
 
-    const [assetCount, personaCount, productCount, insightCount] = await Promise.all([
+    const [assetCount, personaCount, productCount, trendCount] = await Promise.all([
       prisma.brandAsset.count({ where: { workspaceId } }),
       prisma.persona.count({ where: { workspaceId } }),
       prisma.product.count({ where: { workspaceId } }),
@@ -27,7 +27,7 @@ export async function GET() {
       data = { id: 'rec-personas', badge: 'AI RECOMMENDED', title: 'Define Your Target Audience', description: 'Create personas to understand who you are building for. This will improve your brand alignment and campaign effectiveness.', actionLabel: 'Create Persona', actionHref: 'persona-create' };
     } else if (productCount === 0) {
       data = { id: 'rec-products', badge: 'AI RECOMMENDED', title: 'Add Your Products & Services', description: 'Document your offerings to enable product-persona alignment and better campaign targeting.', actionLabel: 'Add Product', actionHref: 'product-analyzer' };
-    } else if (insightCount < 3) {
+    } else if (trendCount < 3) {
       data = { id: 'rec-trends', badge: 'AI RECOMMENDED', title: 'Monitor Market Trends', description: 'Add trend sources to automatically detect and activate market trends for your brand strategy.', actionLabel: 'Explore Trends', actionHref: 'trends' };
     } else {
       data = { id: 'rec-alignment', badge: 'AI RECOMMENDED', title: 'Run a Brand Alignment Scan', description: 'Check consistency across all your brand modules and identify misalignments before they become problems.', actionLabel: 'Run Scan', actionHref: 'brand-alignment' };

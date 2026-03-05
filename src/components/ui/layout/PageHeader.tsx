@@ -13,7 +13,7 @@ import {
 } from '@/lib/constants/design-tokens';
 import {
   LayoutDashboard, Building2, Target, Palette, Users, Package,
-  TrendingUp, BookOpen, Shield, Megaphone, FileText, FlaskConical,
+  Radar, BookOpen, Shield, Megaphone, FileText, FlaskConical,
   Settings, HelpCircle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -25,7 +25,7 @@ const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
   'brandstyle': Palette,
   'personas': Users,
   'products': Package,
-  'market-insights': TrendingUp,
+  'trend-radar': Radar,
   'knowledge': BookOpen,
   'brand-alignment': Shield,
   'campaigns': Megaphone,

@@ -26,9 +26,6 @@ export const cacheKeys = {
     resourceCategories: 'static:resource-categories',
     trendCategories: 'static:trend-categories',
     quickActions: 'static:quick-actions',
-    // Legacy aliases — TODO: remove after old insights routes are deleted (Fase 4)
-    insightCategories: 'static:trend-categories',
-    insightProviders: 'static:insight-providers',
   },
 
   // Dashboard (workspace-scoped)
@@ -49,10 +46,6 @@ export const cacheKeys = {
   trendRadar: {
     list: (wsId: string) => `trend-radar:${wsId}:list`,
   },
-  // Legacy alias — TODO: remove after old insights routes are deleted (Fase 4)
-  insights: {
-    list: (wsId: string) => `trend-radar:${wsId}:list`,
-  },
   knowledgeResources: {
     list: (wsId: string) => `knowledge-resources:${wsId}:list`,
   },
@@ -69,8 +62,6 @@ export const cacheKeys = {
     personas: (wsId: string) => `personas:${wsId}`,
     products: (wsId: string) => `products:${wsId}`,
     trendRadar: (wsId: string) => `trend-radar:${wsId}`,
-    // Legacy alias — TODO: remove after old insights routes are deleted (Fase 4)
-    insights: (wsId: string) => `trend-radar:${wsId}`,
     knowledgeResources: (wsId: string) => `knowledge-resources:${wsId}`,
     alignment: (wsId: string) => `alignment:${wsId}`,
     notifications: (wsId: string) => `notifications:${wsId}`,

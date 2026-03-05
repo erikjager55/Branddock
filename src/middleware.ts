@@ -38,7 +38,7 @@ const cacheRules: CacheRule[] = [
     match: (p) =>
       p === '/api/personas' ||
       p === '/api/products' ||
-      p === '/api/insights' ||
+      p === '/api/trend-radar' ||
       p === '/api/knowledge-resources' ||
       p === '/api/alignment/issues' ||
       p === '/api/notifications' ||

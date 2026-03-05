@@ -21,7 +21,6 @@ import { ProductsProvider } from './ProductsContext';
 import { TrendsProvider } from './TrendsContext';
 import { KnowledgeProvider } from './KnowledgeContext';
 import { CampaignsProvider } from './CampaignsContext';
-import { MarketInsightsProvider } from './MarketInsightsContext';
 import { BrandAlignmentProvider } from './BrandAlignmentContext';
 
 interface AppProvidersProps {
@@ -39,7 +38,6 @@ export function AppProviders({ children }: AppProvidersProps) {
               <TrendsProvider>
               <KnowledgeProvider>
               <CampaignsProvider>
-              <MarketInsightsProvider>
               <BrandAlignmentProvider>
               <ResearchPlanProvider>
                 <ResearchBundleProvider>
@@ -55,7 +53,6 @@ export function AppProviders({ children }: AppProvidersProps) {
                 </ResearchBundleProvider>
               </ResearchPlanProvider>
               </BrandAlignmentProvider>
-            </MarketInsightsProvider>
             </CampaignsProvider>
               </KnowledgeProvider>
               </TrendsProvider>
@@ -78,8 +75,8 @@ export { useWhiteLabel } from './WhiteLabelContext';
 export { useTemplates } from './TemplateContext';
 export { useChangeImpact } from './ChangeImpactContext';
 export { useProductTier } from './ProductTierContext';
-export { useProducts } from './ProductsContext';export { useTrendsContext } from './TrendsContext';
+export { useProducts } from './ProductsContext';
+export { useTrendsContext } from './TrendsContext';
 export { useKnowledgeContext } from './KnowledgeContext';
 export { useCampaignsContext } from './CampaignsContext';
-export { useMarketInsights } from './MarketInsightsContext';
 export { useBrandAlignment, useAlignmentModules, useAlignmentHistory, useAlignmentIssues, useAlignmentIssueDetail, useStartAlignmentScan, useDismissIssue, useScanProgress, useFixOptions, useApplyFix, useCancelScan } from './BrandAlignmentContext';

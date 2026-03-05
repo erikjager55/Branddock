@@ -87,12 +87,12 @@ export const ProductDetailPage = lazy(() =>
   import('@/features/products/components/detail/ProductDetailPage').then(m => ({ default: m.ProductDetailPage }))
 );
 
-// ─── Market Insights ───────────────────────────────────────
-export const MarketInsightsPage = lazy(() =>
-  import('@/features/market-insights/components/MarketInsightsPage').then(m => ({ default: m.MarketInsightsPage }))
+// ─── Trend Radar ────────────────────────────────────────────
+export const TrendRadarPage = lazy(() =>
+  import('@/features/trend-radar/components/TrendRadarPage').then(m => ({ default: m.TrendRadarPage }))
 );
-export const InsightDetailPage = lazy(() =>
-  import('@/features/market-insights/components/detail/InsightDetailPage').then(m => ({ default: m.InsightDetailPage }))
+export const TrendDetailPage = lazy(() =>
+  import('@/features/trend-radar/components/detail/TrendDetailPage').then(m => ({ default: m.TrendDetailPage }))
 );
 
 // ─── Knowledge Library ─────────────────────────────────────
@@ -194,7 +194,7 @@ const moduleLoaders: Record<string, () => Promise<unknown>> = {
   'brandstyle': () => import('@/features/brandstyle/components/BrandstyleAnalyzerPage'),
   'personas': () => import('@/features/personas/components/PersonasPage'),
   'products': () => import('@/features/products/components/ProductsOverviewPage'),
-  'trends': () => import('@/features/market-insights/components/MarketInsightsPage'),
+  'trends': () => import('@/features/trend-radar/components/TrendRadarPage'),
   'knowledge': () => import('@/features/knowledge-library/components/KnowledgeLibraryPage'),
   'research': () => import('@/features/research/components/hub/ResearchHubPage'),
   'active-campaigns': () => import('@/features/campaigns/components/overview/ActiveCampaignsPage'),

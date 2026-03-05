@@ -40,18 +40,21 @@ export function AddManualTrendModal() {
     e.preventDefault();
     if (!title.trim()) return;
 
-    await createMutation.mutateAsync({
-      title: title.trim(),
-      description: description.trim() || undefined,
-      category,
-      scope,
-      impactLevel,
-      timeframe,
-      relevanceScore,
-      sourceUrl: sourceUrl.trim() || undefined,
-    });
-
-    handleClose();
+    try {
+      await createMutation.mutateAsync({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        category,
+        scope,
+        impactLevel,
+        timeframe,
+        relevanceScore,
+        sourceUrl: sourceUrl.trim() || undefined,
+      });
+      handleClose();
+    } catch {
+      // Error handled by mutation state
+    }
   };
 
   const categoryOptions = Object.entries(CATEGORY_COLORS).map(([value, config]) => ({

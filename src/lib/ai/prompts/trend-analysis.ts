@@ -38,9 +38,9 @@ The JSON must match this exact structure:
     {
       "title": "Short, specific trend title (max 100 chars)",
       "description": "2-3 sentence description with concrete details and data points",
-      "category": "TECHNOLOGY" | "ENVIRONMENTAL" | "SOCIAL" | "CONSUMER" | "BUSINESS",
+      "category": "CONSUMER_BEHAVIOR" | "TECHNOLOGY" | "MARKET_DYNAMICS" | "COMPETITIVE" | "REGULATORY",
       "scope": "MICRO" | "MESO" | "MACRO",
-      "impactLevel": "HIGH" | "MEDIUM" | "LOW",
+      "impactLevel": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
       "timeframe": "SHORT_TERM" | "MEDIUM_TERM" | "LONG_TERM",
       "relevanceScore": 50-100,
       "direction": "rising" | "declining" | "stable",

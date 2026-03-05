@@ -31,9 +31,9 @@ interface TrendAnalysisResult {
 }
 
 // Valid enum values for sanitization
-const VALID_CATEGORIES = ['TECHNOLOGY', 'ENVIRONMENTAL', 'SOCIAL', 'CONSUMER', 'BUSINESS'] as const;
+const VALID_CATEGORIES = ['CONSUMER_BEHAVIOR', 'TECHNOLOGY', 'MARKET_DYNAMICS', 'COMPETITIVE', 'REGULATORY'] as const;
 const VALID_SCOPES = ['MICRO', 'MESO', 'MACRO'] as const;
-const VALID_IMPACTS = ['HIGH', 'MEDIUM', 'LOW'] as const;
+const VALID_IMPACTS = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const;
 const VALID_TIMEFRAMES = ['SHORT_TERM', 'MEDIUM_TERM', 'LONG_TERM'] as const;
 const VALID_DIRECTIONS = ['rising', 'declining', 'stable'] as const;
 

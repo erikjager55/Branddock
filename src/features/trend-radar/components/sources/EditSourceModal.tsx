@@ -26,6 +26,19 @@ export function EditSourceModal() {
     }
   }, [source]);
 
+  const resetForm = () => {
+    setName('');
+    setUrl('');
+    setCategory('');
+    setCheckInterval(360);
+    updateMutation.reset();
+  };
+
+  const handleClose = () => {
+    resetForm();
+    closeEditSourceModal();
+  };
+
   const handleSubmit = async () => {
     if (!selectedSourceId || !name.trim() || !url.trim()) return;
     try {
@@ -38,20 +51,20 @@ export function EditSourceModal() {
           category: category.trim() || undefined,
         },
       });
-      closeEditSourceModal();
+      handleClose();
     } catch {
-      // Error handled by mutation
+      // Error displayed below
     }
   };
 
   return (
     <Modal
       isOpen={isEditSourceModalOpen}
-      onClose={closeEditSourceModal}
+      onClose={handleClose}
       title="Edit Trend Source"
       footer={
         <div className="flex items-center justify-end gap-2">
-          <button onClick={closeEditSourceModal} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
+          <button onClick={handleClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800">
             Cancel
           </button>
           <Button
@@ -67,6 +80,11 @@ export function EditSourceModal() {
       }
     >
       <div className="space-y-4">
+        {updateMutation.isError && (
+          <div className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
+            {updateMutation.error instanceof Error ? updateMutation.error.message : 'Failed to update source'}
+          </div>
+        )}
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1.5">Name</label>
           <input

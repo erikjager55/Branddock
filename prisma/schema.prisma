@@ -2183,13 +2183,13 @@ enum TrendScanStatus {
   CANCELLED
 }
 
-// Fase 6: Market Insights (legacy — replaced by Trend Radar)
+// Insight/Trend categories (used by DetectedTrend)
 enum InsightCategory {
+  CONSUMER_BEHAVIOR
   TECHNOLOGY
-  ENVIRONMENTAL
-  SOCIAL
-  CONSUMER
-  BUSINESS
+  MARKET_DYNAMICS
+  COMPETITIVE
+  REGULATORY
 }
 
 enum InsightScope {
@@ -2199,6 +2199,7 @@ enum InsightScope {
 }
 
 enum ImpactLevel {
+  CRITICAL
   HIGH
   MEDIUM
   LOW

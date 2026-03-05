@@ -141,8 +141,9 @@ export interface ScanProgressResponse {
   trendsDetected: number;
   currentSourceName: string | null;
   errors: string[];
-  startedAt: string;
-  completedAt: string | null;
+  progress?: number;
+  startedAt?: string;
+  completedAt?: string | null;
 }
 
 // ─── Dashboard Stats ─────────────────────────────────────────

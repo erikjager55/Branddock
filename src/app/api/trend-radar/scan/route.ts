@@ -38,8 +38,5 @@ export async function POST(req: NextRequest) {
     }).catch(console.error);
   });
 
-  return NextResponse.json({
-    jobId: job.id,
-    status: 'PENDING',
-  }, { status: 202 });
+  return NextResponse.json(job, { status: 202 });
 }

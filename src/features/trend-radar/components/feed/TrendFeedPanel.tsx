@@ -25,7 +25,7 @@ export function TrendFeedPanel({ onTrendClick }: TrendFeedPanelProps) {
     category: categoryFilter,
     impactLevel: impactFilter,
     detectionSource: detectionSourceFilter,
-    dismissed: showDismissed ? true : false,
+    dismissed: showDismissed ? undefined : false,
   });
 
   const activateMutation = useActivateTrend();

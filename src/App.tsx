@@ -14,7 +14,7 @@ import { LazyWrapper } from './components/shared';
 // ─── Contexts, stores, hooks, utils ────────────────────────
 import { AppProviders, useBrandAssets, useResearchPlan, useUIState } from './contexts';
 import { useProductsStore } from './features/products/stores/useProductsStore';
-import { useMarketInsightsStore } from './features/market-insights/stores/useMarketInsightsStore';
+import { useTrendRadarStore } from './features/trend-radar/stores/useTrendRadarStore';
 import { useBusinessStrategyStore } from './features/business-strategy/stores/useBusinessStrategyStore';
 import { usePersonaDetailStore } from './features/personas/stores/usePersonaDetailStore';
 import { useResearchStore } from './features/research/stores/useResearchStore';
@@ -49,8 +49,8 @@ import {
   ProductsOverviewPage,
   ProductAnalyzerPage,
   ProductDetailPage,
-  MarketInsightsPage,
-  InsightDetailPage,
+  TrendRadarPage,
+  TrendDetailPage,
   KnowledgeLibraryPage,
   ResearchHubPage,
   ResearchBundlesPage,
@@ -151,7 +151,7 @@ function AppContent() {
         'personas': { title: 'Personas', subtitle: 'Strategic Decision Instruments' },
         'strategy': { title: 'Strategy & Goals', subtitle: 'Strategic Planning' },
         'products': { title: 'Products & Services', subtitle: 'Catalog' },
-        'trends': { title: 'Trend Library', subtitle: 'Market Insights' },
+        'trends': { title: 'Trend Radar', subtitle: 'Monitor Market Trends' },
         'knowledge': { title: 'Knowledge Library', subtitle: 'Resources' }
       };
 
@@ -691,31 +691,11 @@ function AppContent() {
         );
       }
       case 'trends':
-        return (
-          <MarketInsightsPage
-            onNavigateToDetail={(id: string) => {
-              useMarketInsightsStore.getState().setSelectedInsightId(id);
-              handleSetActiveSection('insight-detail');
-            }}
-            onNavigate={handleSetActiveSection}
-          />
-        );
-      case 'insight-detail': {
-        const selectedInsightId = useMarketInsightsStore.getState().selectedInsightId;
-        if (!selectedInsightId) return <MarketInsightsPage onNavigateToDetail={(id: string) => {
-          useMarketInsightsStore.getState().setSelectedInsightId(id);
-          handleSetActiveSection('insight-detail');
-        }} onNavigate={handleSetActiveSection} />;
-        return (
-          <InsightDetailPage
-            insightId={selectedInsightId}
-            onBack={() => {
-              useMarketInsightsStore.getState().setSelectedInsightId(null);
-              handleSetActiveSection('trends');
-            }}
-            onNavigate={handleSetActiveSection}
-          />
-        );
+        return <TrendRadarPage onNavigate={handleSetActiveSection} />;
+      case 'trend-detail': {
+        const selectedTrendId = useTrendRadarStore.getState().selectedTrendId;
+        if (!selectedTrendId) return <TrendRadarPage onNavigate={handleSetActiveSection} />;
+        return <TrendDetailPage onNavigate={handleSetActiveSection} />;
       }
       case 'knowledge':
         return <KnowledgeLibraryPage />;

@@ -6,7 +6,7 @@ import {
   CATEGORY_COLORS,
   IMPACT_COLORS,
   DETECTION_SOURCE_CONFIG,
-  getRelevanceBg,
+  RELEVANCE_THRESHOLDS,
 } from '../../constants/trend-radar-constants';
 import type { DetectedTrendWithMeta } from '../../types/trend-radar.types';
 
@@ -29,7 +29,10 @@ export function TrendFeedCard({ trend, onActivate, onDismiss, onClick }: TrendFe
   const sourceConfig = DETECTION_SOURCE_CONFIG[trend.detectionSource];
   const DirectionIcon = trend.direction ? DIRECTION_ICONS[trend.direction] : null;
 
-  const relevanceColor = getRelevanceBg(trend.relevanceScore);
+  const relevanceBarColor: 'emerald' | 'amber' | 'teal' =
+    trend.relevanceScore >= RELEVANCE_THRESHOLDS.HIGH ? 'emerald'
+    : trend.relevanceScore >= RELEVANCE_THRESHOLDS.MEDIUM ? 'amber'
+    : 'teal';
 
   return (
     <button
@@ -83,7 +86,7 @@ export function TrendFeedCard({ trend, onActivate, onDismiss, onClick }: TrendFe
           <span className="text-[10px] text-gray-400">Relevance</span>
           <span className="text-[10px] font-semibold text-gray-600">{trend.relevanceScore}%</span>
         </div>
-        <ProgressBar value={trend.relevanceScore} color={relevanceColor.includes('emerald') ? 'emerald' : relevanceColor.includes('amber') ? 'amber' : 'teal'} size="sm" />
+        <ProgressBar value={trend.relevanceScore} color={relevanceBarColor} size="sm" />
       </div>
 
       {/* Badges row */}

@@ -1,14 +1,35 @@
 'use client';
 
-import { Radar, X, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { Radar, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Modal, Button, ProgressBar } from '@/components/shared';
-import { useScanProgress, useCancelScan } from '../../hooks';
+import { useScanProgress, useCancelScan, trendRadarKeys } from '../../hooks';
 import { useTrendRadarStore } from '../../stores/useTrendRadarStore';
 
 export function ScanProgressModal() {
   const { isScanProgressModalOpen, closeScanProgressModal, scanJobId } = useTrendRadarStore();
   const { data: progress } = useScanProgress(isScanProgressModalOpen ? scanJobId : null);
   const cancelMutation = useCancelScan();
+  const qc = useQueryClient();
+  const didInvalidateRef = useRef(false);
+
+  // Invalidate trend/stats/source caches when scan finishes
+  useEffect(() => {
+    if (progress && (progress.status === 'COMPLETED' || progress.status === 'FAILED') && !didInvalidateRef.current) {
+      didInvalidateRef.current = true;
+      qc.invalidateQueries({ queryKey: trendRadarKeys.trends() });
+      qc.invalidateQueries({ queryKey: trendRadarKeys.stats() });
+      qc.invalidateQueries({ queryKey: trendRadarKeys.sources() });
+    }
+  }, [progress, qc]);
+
+  // Reset ref when modal opens with new job
+  useEffect(() => {
+    if (isScanProgressModalOpen) {
+      didInvalidateRef.current = false;
+    }
+  }, [isScanProgressModalOpen, scanJobId]);
 
   const isRunning = progress?.status === 'RUNNING' || progress?.status === 'PENDING';
   const isComplete = progress?.status === 'COMPLETED';

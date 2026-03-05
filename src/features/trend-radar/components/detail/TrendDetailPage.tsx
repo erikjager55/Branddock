@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Zap, ZapOff, Trash2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/shared';
-import { useTrendDetail, useActivateTrend, useDismissTrend, useDeleteTrend } from '../../hooks';
+import { useTrendDetail, useActivateTrend, useDeleteTrend } from '../../hooks';
 import { useTrendRadarStore } from '../../stores/useTrendRadarStore';
 import { TrendRelevanceCard } from './TrendRelevanceCard';
 import { TrendSourceInfoCard } from './TrendSourceInfoCard';
@@ -23,7 +23,6 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
   const { selectedTrendId } = useTrendRadarStore();
   const { data: trend, isLoading } = useTrendDetail(selectedTrendId);
   const activateMutation = useActivateTrend();
-  const dismissMutation = useDismissTrend();
   const deleteMutation = useDeleteTrend();
 
   if (isLoading || !trend) {

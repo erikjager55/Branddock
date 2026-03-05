@@ -74,5 +74,5 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({ trend }, { status: 201 });
+  return NextResponse.json(trend, { status: 201 });
 }

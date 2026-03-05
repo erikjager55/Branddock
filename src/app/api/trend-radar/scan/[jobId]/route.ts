@@ -24,7 +24,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
       status: 'RUNNING',
       sourcesTotal: inMemory.sourcesTotal,
       sourcesCompleted: inMemory.sourcesCompleted,
-      currentSource: inMemory.currentSource,
+      currentSourceName: inMemory.currentSource,
       trendsDetected: inMemory.trendsDetected,
       errors: inMemory.errors,
       progress: inMemory.sourcesTotal > 0
@@ -47,7 +47,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
     status: job.status,
     sourcesTotal: job.sourcesTotal,
     sourcesCompleted: job.sourcesCompleted,
-    currentSource: null,
+    currentSourceName: null,
     trendsDetected: job.trendsDetected,
     errors: job.errors,
     progress: job.status === 'COMPLETED' || job.status === 'FAILED' ? 100

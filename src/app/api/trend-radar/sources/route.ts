@@ -5,21 +5,37 @@ import { resolveWorkspaceId } from '@/lib/auth-server';
 /**
  * GET /api/trend-radar/sources — List trend sources
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   const workspaceId = await resolveWorkspaceId();
   if (!workspaceId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const sources = await prisma.trendSource.findMany({
-    where: { workspaceId },
-    include: {
-      _count: { select: { detectedTrends: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  const url = new URL(req.url);
+  const status = url.searchParams.get('status');
+  const search = url.searchParams.get('search');
 
-  return NextResponse.json({ sources });
+  const where: Record<string, unknown> = { workspaceId };
+  if (status) where.status = status;
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { url: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  const [sources, total] = await Promise.all([
+    prisma.trendSource.findMany({
+      where: where as never,
+      include: {
+        _count: { select: { detectedTrends: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.trendSource.count({ where: where as never }),
+  ]);
+
+  return NextResponse.json({ sources, total });
 }
 
 /**
@@ -69,5 +85,5 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json({ source }, { status: 201 });
+  return NextResponse.json(source, { status: 201 });
 }
