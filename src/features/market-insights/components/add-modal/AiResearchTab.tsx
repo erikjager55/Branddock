@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/shared';
 import { useStartAiResearch } from '../../hooks';
 import { useMarketInsightsStore } from '../../stores/useMarketInsightsStore';
@@ -28,15 +28,15 @@ export function AiResearchTab() {
       .map((s) => s.trim())
       .filter(Boolean);
 
-    startResearch.mutateAsync({
+    startResearch.mutate({
       prompt: prompt.trim(),
       focusAreas: focusAreas.length > 0 ? focusAreas : undefined,
       industries: industryList.length > 0 ? industryList : undefined,
       timeframeFocus,
       numberOfInsights,
       useBrandContext,
-    }).then(() => {
-      setAddModalOpen(false);
+    }, {
+      onSuccess: () => setAddModalOpen(false),
     });
   };
 
@@ -112,6 +112,16 @@ export function AiResearchTab() {
 
       {/* Brand context */}
       <BrandContextToggle checked={useBrandContext} onChange={setUseBrandContext} />
+
+      {/* Error feedback */}
+      {startResearch.isError && (
+        <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3">
+          <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-red-600">
+            {startResearch.error?.message || 'AI research failed. Please try again.'}
+          </p>
+        </div>
+      )}
 
       {/* Submit */}
       <Button

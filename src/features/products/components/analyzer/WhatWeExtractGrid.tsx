@@ -7,6 +7,7 @@ const DEFAULT_ITEMS = [
   "Pricing model & tiers",
   "Use cases & applications",
   "Target audience signals",
+  "Product images & visuals",
 ];
 
 interface WhatWeExtractGridProps {

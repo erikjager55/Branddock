@@ -9,7 +9,7 @@ import {
   buildPdfAnalysisPrompt,
   type ProductAnalysisResult,
 } from "@/lib/ai/prompts/product-analysis";
-import { ANALYZE_STEPS } from "@/features/products/constants/product-constants";
+import { ANALYZE_STEPS, VALID_CATEGORIES } from "@/features/products/constants/product-constants";
 
 // POST /api/products/analyze/pdf — AI-powered product extraction from PDF (Gemini 3.1)
 export async function POST(request: NextRequest) {
@@ -91,8 +91,7 @@ export async function POST(request: NextRequest) {
     );
 
     // 4. Validate and normalize result
-    const validCategories = ["software", "consulting", "mobile", "hardware", "service"];
-    const category = validCategories.includes(result.category) ? result.category : "software";
+    const category = VALID_CATEGORIES.includes(result.category) ? result.category : "other";
 
     const filename = file.name.replace(/\.[^.]+$/, "");
     const jobId = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -121,6 +120,7 @@ export async function POST(request: NextRequest) {
         benefits: (result.benefits || []).slice(0, 10),
         useCases: (result.useCases || []).slice(0, 8),
         categoryIcon: "FileText",
+        heroImageUrl: null,
         linkedPersonaCount: 0,
         isLocked: false,
         updatedAt: new Date().toISOString(),

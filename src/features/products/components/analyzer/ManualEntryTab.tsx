@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button, Input } from "@/components/shared";
 import { Select } from "@/components/shared";
 import { useCreateProduct } from "../../hooks";
-import { CATEGORY_OPTIONS } from "../../constants/product-constants";
+import { CATEGORY_OPTIONS, CATEGORY_GROUPS } from "../../constants/product-constants";
 
 // ─── Component ────────────────────────────────────────────
 
@@ -116,6 +116,7 @@ export function ManualEntryTab({
         value={category}
         onChange={setCategory}
         options={CATEGORY_OPTIONS}
+        groups={CATEGORY_GROUPS}
         placeholder="Select a category..."
       />
 

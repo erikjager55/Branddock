@@ -1,6 +1,6 @@
 'use client';
 
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, Lock } from 'lucide-react';
 import { Button } from '@/components/shared';
 import type { ImportProvider } from '../../types/market-insight.types';
 
@@ -33,18 +33,18 @@ export function ProviderCard({ provider }: ProviderCardProps) {
           variant="secondary"
           size="sm"
           icon={ExternalLink}
-          onClick={() => window.open(provider.websiteUrl, '_blank')}
+          onClick={() => window.open(provider.websiteUrl, '_blank', 'noopener,noreferrer')}
         >
           Visit Website
         </Button>
         <Button
           size="sm"
-          onClick={() => {
-            // Stub: show toast
-            alert('Import integration coming soon');
-          }}
+          variant="ghost"
+          icon={Lock}
+          disabled
+          className="cursor-not-allowed opacity-60"
         >
-          Connect
+          Coming Soon
         </Button>
       </div>
     </div>

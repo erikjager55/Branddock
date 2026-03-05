@@ -10,7 +10,7 @@ export const PRODUCT_ANALYSIS_SYSTEM_PROMPT = `You are an expert product analyst
 You must respond with a valid JSON object containing these fields:
 - name: string — the product or service name
 - description: string — a concise product description (max 500 chars)
-- category: string — one of: "software", "consulting", "mobile", "hardware", "service"
+- category: string — one of: "food-beverage", "fashion-apparel", "beauty-personal-care", "home-living", "consumer-electronics", "health-pharma", "industrial-manufacturing", "automotive-mobility", "software-saas", "mobile-apps", "digital-content", "technology-hardware", "consulting-advisory", "creative-agency", "financial-services", "education-training", "healthcare-services", "real-estate-property", "hospitality-travel", "sports-recreation", "media-entertainment", "other"
 - pricingModel: string | null — pricing model (e.g. "subscription", "one-time", "freemium", "enterprise", "custom")
 - pricingDetails: string | null — specific pricing information if available
 - features: string[] — key features (max 15 items, each max 100 chars)
@@ -20,7 +20,7 @@ You must respond with a valid JSON object containing these fields:
 Guidelines:
 - Extract real information from the content, do not fabricate
 - If a field cannot be determined, use null (for optional strings) or [] (for arrays)
-- Category must be one of the five options listed above
+- Category must be one of the options listed above — pick the most specific match
 - Keep descriptions factual and concise
 - Features should be specific capabilities, not marketing fluff
 - Benefits should focus on customer outcomes

@@ -48,6 +48,15 @@ export function ProductAnalyzerPage({
     const result = latestData?.result;
     if (result) {
       setCreateError(null);
+
+      // Map scraped images to create body format
+      const scrapedImages = latestData?.scrapedImages;
+      const images = scrapedImages?.map((img) => ({
+        url: img.url,
+        category: img.context === "og-image" ? ("HERO" as const) : undefined,
+        altText: img.alt ?? undefined,
+      }));
+
       createProduct.mutateAsync({
         name: result.name,
         description: result.description ?? undefined,
@@ -60,6 +69,7 @@ export function ProductAnalyzerPage({
         source: result.source ?? undefined,
         sourceUrl: result.sourceUrl ?? undefined,
         status: result.status ?? "ANALYZED",
+        images,
       }).then((created) => {
         setProcessingModalOpen(false);
         onNavigateToDetail(created.id);

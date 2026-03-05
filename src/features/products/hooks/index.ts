@@ -4,6 +4,9 @@ import type {
   CreateProductBody,
   UpdateProductBody,
   ProductListParams,
+  AddImageBody,
+  UpdateImageBody,
+  ReorderImagesBody,
 } from "../types/product.types";
 
 // ─── Query Keys ─────────────────────────────────────────────
@@ -13,6 +16,7 @@ export const productKeys = {
   list: () => [...productKeys.all, "list"] as const,
   detail: (id: string) => [...productKeys.all, "detail", id] as const,
   personas: (id: string) => [...productKeys.all, "personas", id] as const,
+  images: (id: string) => [...productKeys.all, "images", id] as const,
 };
 
 // ─── 1. useProducts ─────────────────────────────────────────
@@ -125,5 +129,59 @@ export function useProductPersonas(productId: string | null | undefined) {
     queryFn: () => api.fetchProductPersonas(productId!),
     enabled: !!productId,
     staleTime: 30_000,
+  });
+}
+
+// ─── 11. useAddProductImage ─────────────────────────────────
+
+export function useAddProductImage(productId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: AddImageBody) =>
+      api.addProductImage(productId!, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: productKeys.detail(productId!) });
+      qc.invalidateQueries({ queryKey: productKeys.list() });
+    },
+  });
+}
+
+// ─── 12. useUpdateProductImage ──────────────────────────────
+
+export function useUpdateProductImage(productId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ imageId, ...body }: UpdateImageBody & { imageId: string }) =>
+      api.updateProductImage(productId!, imageId, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: productKeys.detail(productId!) });
+    },
+  });
+}
+
+// ─── 13. useDeleteProductImage ──────────────────────────────
+
+export function useDeleteProductImage(productId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (imageId: string) =>
+      api.deleteProductImage(productId!, imageId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: productKeys.detail(productId!) });
+      qc.invalidateQueries({ queryKey: productKeys.list() });
+    },
+  });
+}
+
+// ─── 14. useReorderProductImages ────────────────────────────
+
+export function useReorderProductImages(productId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ReorderImagesBody) =>
+      api.reorderProductImages(productId!, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: productKeys.detail(productId!) });
+    },
   });
 }

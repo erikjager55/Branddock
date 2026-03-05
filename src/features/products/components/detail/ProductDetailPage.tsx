@@ -14,6 +14,7 @@ import {
   SOURCE_BADGES,
   STATUS_BADGES,
   CATEGORY_OPTIONS,
+  CATEGORY_GROUPS,
 } from "../../constants/product-constants";
 import { DescriptionCard } from "./DescriptionCard";
 import { PricingModelCard } from "./PricingModelCard";
@@ -22,6 +23,8 @@ import { BenefitsSection } from "./BenefitsSection";
 import { TargetAudienceSection } from "./TargetAudienceSection";
 import { UseCasesSection } from "./UseCasesSection";
 import { PersonaSelectorModal } from "./PersonaSelectorModal";
+import { ProductImagesSection } from "./ProductImagesSection";
+import { AddImageModal } from "./AddImageModal";
 
 interface ProductDetailPageProps {
   productId: string;
@@ -38,6 +41,7 @@ export function ProductDetailPage({
   const updateProduct = useUpdateProduct(productId);
   const qc = useQueryClient();
   const [isPersonaSelectorOpen, setIsPersonaSelectorOpen] = useState(false);
+  const [isAddImageOpen, setIsAddImageOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
   const lock = useLockState({
@@ -192,11 +196,12 @@ export function ProductDetailPage({
                   value={editCategory}
                   onChange={setEditCategory}
                   options={CATEGORY_OPTIONS}
+                  groups={CATEGORY_GROUPS}
                   placeholder="Category..."
                 />
               ) : product.category ? (
-                <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 capitalize">
-                  {product.category}
+                <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                  {CATEGORY_OPTIONS.find((o) => o.value === product.category)?.label ?? product.category}
                 </span>
               ) : null}
               <span
@@ -334,7 +339,19 @@ export function ProductDetailPage({
           </div>
         ) : null}
 
-        {/* 2. Features & Specifications */}
+        {/* 2. Product Images */}
+        {((product.images ?? []).length > 0 || canEdit || visibility.showEmptySections) && (
+          <LockOverlay isLocked={lock.isLocked}>
+            <ProductImagesSection
+              images={product.images ?? []}
+              productId={productId}
+              isEditing={canEdit}
+              onAddImage={() => setIsAddImageOpen(true)}
+            />
+          </LockOverlay>
+        )}
+
+        {/* 3. Features & Specifications */}
         {canEdit ? (
           <FeaturesSpecsSection
             features={editFeatures}
@@ -387,6 +404,13 @@ export function ProductDetailPage({
         ) : visibility.showEmptySections ? (
           <UseCasesSection useCases={product.useCases} />
         ) : null}
+
+        {/* Add Image Modal */}
+        <AddImageModal
+          isOpen={isAddImageOpen}
+          onClose={() => setIsAddImageOpen(false)}
+          productId={productId}
+        />
 
         {/* Persona Selector Modal */}
         <PersonaSelectorModal

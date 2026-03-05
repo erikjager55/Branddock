@@ -1,14 +1,18 @@
 'use client';
 
+import { useState } from 'react';
 import { TrendingUp, Plus } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { EmptyState, SkeletonCard, Button } from '@/components/shared';
 import { PageShell, PageHeader } from '@/components/ui/layout';
 import { useMarketInsightsStore } from '../stores/useMarketInsightsStore';
-import { useInsights } from '../hooks';
+import { useInsights, insightKeys } from '../hooks';
+import { deleteInsight } from '../api/insights.api';
 import { InsightStatsCards } from './InsightStatsCards';
 import { InsightSearchFilter } from './InsightSearchFilter';
 import { InsightCard } from './InsightCard';
 import { AddInsightModal } from './add-modal/AddInsightModal';
+import { DeleteConfirmModal } from './detail/DeleteConfirmModal';
 
 interface MarketInsightsPageProps {
   onNavigateToDetail: (id: string) => void;
@@ -22,6 +26,17 @@ export function MarketInsightsPage({ onNavigateToDetail, onNavigate }: MarketIns
   const timeframeFilter = useMarketInsightsStore((s) => s.timeframeFilter);
   const isAddModalOpen = useMarketInsightsStore((s) => s.isAddModalOpen);
   const setAddModalOpen = useMarketInsightsStore((s) => s.setAddModalOpen);
+
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
+
+  const queryClient = useQueryClient();
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteInsight(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: insightKeys.all });
+      setDeleteTarget(null);
+    },
+  });
 
   const { data, isLoading, isError } = useInsights({
     search: searchQuery || undefined,
@@ -81,6 +96,9 @@ export function MarketInsightsPage({ onNavigateToDetail, onNavigate }: MarketIns
               key={insight.id}
               insight={insight}
               onClick={() => onNavigateToDetail(insight.id)}
+              onEdit={() => onNavigateToDetail(insight.id)}
+              onDelete={() => setDeleteTarget({ id: insight.id, title: insight.title })}
+              onUseCampaign={onNavigate ? () => onNavigate('active-campaigns') : undefined}
             />
           ))}
         </div>
@@ -89,6 +107,16 @@ export function MarketInsightsPage({ onNavigateToDetail, onNavigate }: MarketIns
       {/* Add Modal */}
       {isAddModalOpen && (
         <AddInsightModal />
+      )}
+
+      {/* Delete Confirm Modal */}
+      {deleteTarget && (
+        <DeleteConfirmModal
+          insightTitle={deleteTarget.title}
+          isDeleting={deleteMutation.isPending}
+          onConfirm={() => deleteMutation.mutate(deleteTarget.id)}
+          onCancel={() => setDeleteTarget(null)}
+        />
       )}
       </div>
     </PageShell>

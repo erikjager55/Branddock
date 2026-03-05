@@ -2,27 +2,113 @@
 // Product feature constants
 // =============================================================
 
-export const CATEGORY_OPTIONS = [
-  { value: "software", label: "Software" },
-  { value: "consulting", label: "Consulting" },
-  { value: "mobile", label: "Mobile" },
-  { value: "hardware", label: "Hardware" },
-  { value: "service", label: "Service" },
+// ─── Category Groups & Options ────────────────────────────────
+
+export interface CategoryGroup {
+  label: string;
+  options: { value: string; label: string }[];
+}
+
+export const CATEGORY_GROUPS: CategoryGroup[] = [
+  {
+    label: "Physical Products",
+    options: [
+      { value: "food-beverage", label: "Food & Beverage" },
+      { value: "fashion-apparel", label: "Fashion & Apparel" },
+      { value: "beauty-personal-care", label: "Beauty & Personal Care" },
+      { value: "home-living", label: "Home & Living" },
+      { value: "consumer-electronics", label: "Consumer Electronics" },
+      { value: "health-pharma", label: "Health & Pharma" },
+      { value: "industrial-manufacturing", label: "Industrial & Manufacturing" },
+      { value: "automotive-mobility", label: "Automotive & Mobility" },
+    ],
+  },
+  {
+    label: "Digital Products",
+    options: [
+      { value: "software-saas", label: "Software & SaaS" },
+      { value: "mobile-apps", label: "Mobile Apps" },
+      { value: "digital-content", label: "Digital Content & Media" },
+      { value: "technology-hardware", label: "Technology & Hardware" },
+    ],
+  },
+  {
+    label: "Services",
+    options: [
+      { value: "consulting-advisory", label: "Consulting & Advisory" },
+      { value: "creative-agency", label: "Creative & Agency Services" },
+      { value: "financial-services", label: "Financial Services" },
+      { value: "education-training", label: "Education & Training" },
+      { value: "healthcare-services", label: "Healthcare Services" },
+      { value: "real-estate-property", label: "Real Estate & Property" },
+    ],
+  },
+  {
+    label: "Experience & Lifestyle",
+    options: [
+      { value: "hospitality-travel", label: "Hospitality & Travel" },
+      { value: "sports-recreation", label: "Sports & Recreation" },
+      { value: "media-entertainment", label: "Media & Entertainment" },
+    ],
+  },
+  {
+    label: "General",
+    options: [
+      { value: "other", label: "Other" },
+    ],
+  },
 ];
 
+/** Flat options list for backward-compatible usage */
+export const CATEGORY_OPTIONS = CATEGORY_GROUPS.flatMap((g) => g.options);
+
 export const CATEGORY_ICONS: Record<string, string> = {
+  // Physical Products
+  "food-beverage": "UtensilsCrossed",
+  "fashion-apparel": "Shirt",
+  "beauty-personal-care": "Sparkles",
+  "home-living": "Home",
+  "consumer-electronics": "Smartphone",
+  "health-pharma": "HeartPulse",
+  "industrial-manufacturing": "Factory",
+  "automotive-mobility": "Car",
+  // Digital Products
+  "software-saas": "Globe",
+  "mobile-apps": "TabletSmartphone",
+  "digital-content": "Play",
+  "technology-hardware": "Cpu",
+  // Services
+  "consulting-advisory": "BriefcaseBusiness",
+  "creative-agency": "Palette",
+  "financial-services": "Landmark",
+  "education-training": "GraduationCap",
+  "healthcare-services": "Stethoscope",
+  "real-estate-property": "Building2",
+  // Experience & Lifestyle
+  "hospitality-travel": "Plane",
+  "sports-recreation": "Dumbbell",
+  "media-entertainment": "Clapperboard",
+  // General
+  other: "Package",
+  // Legacy fallbacks (old categories → new icons)
   software: "Globe",
-  consulting: "Zap",
-  mobile: "Smartphone",
+  consulting: "BriefcaseBusiness",
+  mobile: "TabletSmartphone",
   hardware: "Cpu",
-  service: "Wrench",
+  service: "Package",
   default: "Package",
 };
+
+/** All valid category slugs for AI validation */
+export const VALID_CATEGORIES = CATEGORY_OPTIONS.map((o) => o.value);
+
+// ─── Analyze Steps ────────────────────────────────────────────
 
 export const ANALYZE_STEPS = [
   "Connecting to website",
   "Scanning product information",
   "Extracting features & specifications",
+  "Scanning product images",
   "Analyzing pricing model",
   "Identifying use cases",
   "Detecting target audience",
@@ -53,3 +139,27 @@ export const STATUS_BADGES: Record<
     label: "Archived",
   },
 };
+
+// ─── Image Category Options ──────────────────────────────────
+
+export const IMAGE_CATEGORY_OPTIONS = [
+  { value: "HERO", label: "Hero Image", description: "Main product image, shown in overviews" },
+  { value: "LIFESTYLE", label: "Lifestyle", description: "Product in real-world context" },
+  { value: "DETAIL", label: "Detail Shot", description: "Close-up of materials, textures, or quality" },
+  { value: "SCREENSHOT", label: "Screenshot", description: "App or software UI screenshots" },
+  { value: "FEATURE", label: "Feature Highlight", description: "Showcasing a specific feature" },
+  { value: "MOCKUP", label: "Mockup", description: "Product mockups or renders" },
+  { value: "PACKAGING", label: "Packaging", description: "Product packaging or unboxing" },
+  { value: "VARIANT", label: "Variant", description: "Color, size, or style variations" },
+  { value: "GROUP", label: "Group Shot", description: "Multiple products together" },
+  { value: "DIAGRAM", label: "Diagram", description: "Technical diagrams or infographics" },
+  { value: "PROCESS", label: "Process", description: "Manufacturing or service process" },
+  { value: "TEAM", label: "Team", description: "Team or people behind the product" },
+  { value: "OTHER", label: "Other", description: "Uncategorized image" },
+] as const;
+
+/** Pre-computed Select options for image categories (avoids DRY violation across components) */
+export const IMAGE_CATEGORY_SELECT_OPTIONS = IMAGE_CATEGORY_OPTIONS.map((c) => ({
+  value: c.value,
+  label: c.label,
+}));

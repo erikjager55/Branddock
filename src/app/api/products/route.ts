@@ -35,6 +35,11 @@ const createProductSchema = z.object({
   sourceUrl: z.string().url().optional(),
   status: z.string().max(50).optional(),
   analysisData: z.unknown().optional(),
+  images: z.array(z.object({
+    url: z.string().url(),
+    category: z.string().max(50).optional(),
+    altText: z.string().max(500).optional(),
+  })).max(20).optional(),
 });
 
 // GET /api/products
@@ -82,6 +87,16 @@ export async function GET(request: NextRequest) {
       select: PRODUCT_LIST_SELECT,
     });
 
+    // Batch-query hero images for all products
+    const productIds = dbProducts.map((p) => p.id);
+    const heroImages = productIds.length > 0 ? await prisma.productImage.findMany({
+      where: { productId: { in: productIds }, category: "HERO" },
+      distinct: ["productId"],
+      select: { productId: true, url: true },
+      orderBy: { sortOrder: "asc" },
+    }) : [];
+    const heroMap = new Map(heroImages.map((h) => [h.productId, h.url]));
+
     const products = dbProducts.map((p) => ({
       id: p.id,
       name: p.name,
@@ -95,6 +110,7 @@ export async function GET(request: NextRequest) {
       features: p.features,
       isLocked: p.isLocked,
       linkedPersonaCount: p._count.linkedPersonas,
+      heroImageUrl: heroMap.get(p.id) ?? null,
       updatedAt: p.updatedAt.toISOString(),
     }));
 
@@ -150,6 +166,7 @@ export async function POST(request: NextRequest) {
       sourceUrl,
       status,
       analysisData,
+      images,
     } = parsed.data;
 
     let slug = name
@@ -193,6 +210,29 @@ export async function POST(request: NextRequest) {
         workspaceId,
       },
     });
+
+    // Create ProductImage records if images provided
+    if (images && images.length > 0) {
+      const { ProductImageCategory: PIC } = await import("@prisma/client");
+      const validCategories = Object.values(PIC) as string[];
+      // Derive image source from product source
+      const imageSource = resolvedSource === "WEBSITE_URL" ? "SCRAPED"
+        : resolvedSource === "PDF_UPLOAD" ? "SCRAPED"
+        : "UPLOADED";
+
+      await prisma.productImage.createMany({
+        data: images.map((img, idx) => ({
+          productId: product.id,
+          url: img.url,
+          category: (img.category && validCategories.includes(img.category)
+            ? img.category
+            : "OTHER") as (typeof PIC)[keyof typeof PIC],
+          altText: img.altText ?? null,
+          sortOrder: idx,
+          source: imageSource,
+        })),
+      });
+    }
 
     // Create ProductPersona records if linkedPersonaIds provided
     if (linkedPersonaIds && linkedPersonaIds.length > 0) {

@@ -28,9 +28,7 @@ export interface AiResearchBody {
 }
 
 export interface AiResearchJobResponse {
-  jobId: string;
-  status: "pending" | "researching" | "complete" | "failed";
-  progress: number;
+  status: "complete" | "failed";
   insights?: import("@/types/market-insight").InsightWithMeta[];
   error?: string;
 }

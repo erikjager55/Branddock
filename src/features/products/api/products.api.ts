@@ -7,6 +7,10 @@ import type {
   UpdateProductBody,
   AnalyzeJobResponse,
   ProductPersonasResponse,
+  ProductImage,
+  AddImageBody,
+  UpdateImageBody,
+  ReorderImagesBody,
 } from "../types/product.types";
 
 const BASE = "/api/products";
@@ -170,6 +174,71 @@ export async function fetchProductPersonas(
     throw new Error(
       data.error ?? `Failed to fetch product personas (${res.status})`,
     );
+  }
+  return res.json();
+}
+
+// ─── Product Images ─────────────────────────────────────────
+
+export async function addProductImage(
+  productId: string,
+  body: AddImageBody,
+): Promise<ProductImage> {
+  const res = await fetch(`${BASE}/${productId}/images`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? `Failed to add image (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function updateProductImage(
+  productId: string,
+  imageId: string,
+  body: UpdateImageBody,
+): Promise<ProductImage> {
+  const res = await fetch(`${BASE}/${productId}/images/${imageId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? `Failed to update image (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function deleteProductImage(
+  productId: string,
+  imageId: string,
+): Promise<{ deleted: boolean }> {
+  const res = await fetch(`${BASE}/${productId}/images/${imageId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? `Failed to delete image (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function reorderProductImages(
+  productId: string,
+  body: ReorderImagesBody,
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${BASE}/${productId}/images/reorder`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? `Failed to reorder images (${res.status})`);
   }
   return res.json();
 }

@@ -697,6 +697,7 @@ function AppContent() {
               useMarketInsightsStore.getState().setSelectedInsightId(id);
               handleSetActiveSection('insight-detail');
             }}
+            onNavigate={handleSetActiveSection}
           />
         );
       case 'insight-detail': {
@@ -704,11 +705,15 @@ function AppContent() {
         if (!selectedInsightId) return <MarketInsightsPage onNavigateToDetail={(id: string) => {
           useMarketInsightsStore.getState().setSelectedInsightId(id);
           handleSetActiveSection('insight-detail');
-        }} />;
+        }} onNavigate={handleSetActiveSection} />;
         return (
           <InsightDetailPage
             insightId={selectedInsightId}
-            onBack={() => handleSetActiveSection('trends')}
+            onBack={() => {
+              useMarketInsightsStore.getState().setSelectedInsightId(null);
+              handleSetActiveSection('trends');
+            }}
+            onNavigate={handleSetActiveSection}
           />
         );
       }

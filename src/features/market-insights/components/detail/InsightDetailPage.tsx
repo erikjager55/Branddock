@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Edit3, Save, X, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, Edit3, Save, X, Trash2, AlertCircle } from 'lucide-react';
 import { Button, SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
 import { useInsightDetail, useUpdateInsight, useDeleteInsight, useAddSource, useDeleteSource } from '../../hooks';
@@ -25,10 +25,11 @@ const SCOPE_OPTIONS: InsightScope[] = ['MICRO', 'MESO', 'MACRO'];
 interface InsightDetailPageProps {
   insightId: string;
   onBack: () => void;
+  onNavigate?: (route: string) => void;
 }
 
-export function InsightDetailPage({ insightId, onBack }: InsightDetailPageProps) {
-  const { data: insight, isLoading } = useInsightDetail(insightId);
+export function InsightDetailPage({ insightId, onBack, onNavigate }: InsightDetailPageProps) {
+  const { data: insight, isLoading, isError } = useInsightDetail(insightId);
   const updateInsight = useUpdateInsight(insightId);
   const deleteInsight = useDeleteInsight(insightId);
   const addSourceMutation = useAddSource(insightId);
@@ -44,9 +45,10 @@ export function InsightDetailPage({ insightId, onBack }: InsightDetailPageProps)
   const [editTimeframe, setEditTimeframe] = useState<InsightTimeframe>('MEDIUM_TERM');
   const [editScope, setEditScope] = useState<InsightScope>('MESO');
 
-  // Sync edit state when entering edit mode
+  // Sync edit state only when entering edit mode (not on insight refetch)
+  const prevEditing = useRef(false);
   useEffect(() => {
-    if (insight && isEditing) {
+    if (insight && isEditing && !prevEditing.current) {
       setEditTitle(insight.title);
       setEditDescription(insight.description ?? '');
       setEditCategory(insight.category);
@@ -54,24 +56,26 @@ export function InsightDetailPage({ insightId, onBack }: InsightDetailPageProps)
       setEditTimeframe(insight.timeframe);
       setEditScope(insight.scope);
     }
+    prevEditing.current = isEditing;
   }, [insight, isEditing]);
 
   const handleSave = () => {
-    updateInsight.mutateAsync({
+    if (!editTitle.trim()) return;
+    updateInsight.mutate({
       title: editTitle,
       description: editDescription || null,
       category: editCategory,
       impactLevel: editImpact,
       timeframe: editTimeframe,
       scope: editScope,
-    }).then(() => {
-      setIsEditing(false);
+    }, {
+      onSuccess: () => setIsEditing(false),
     });
   };
 
   const handleDelete = () => {
-    deleteInsight.mutateAsync().then(() => {
-      onBack();
+    deleteInsight.mutate(undefined, {
+      onSuccess: () => onBack(),
     });
   };
 
@@ -83,12 +87,31 @@ export function InsightDetailPage({ insightId, onBack }: InsightDetailPageProps)
     deleteSourceMutation.mutate(sourceId);
   };
 
-  if (isLoading || !insight) {
+  if (isLoading) {
     return (
       <PageShell maxWidth="5xl">
         <div data-testid="skeleton-loader" className="space-y-4">
           <SkeletonCard />
           <SkeletonCard />
+        </div>
+      </PageShell>
+    );
+  }
+
+  if (isError || !insight) {
+    return (
+      <PageShell maxWidth="5xl">
+        <button
+          onClick={onBack}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-4"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Market Insights
+        </button>
+        <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
+          <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+          <p className="text-red-600 font-medium">Failed to load insight</p>
+          <p className="text-sm text-red-500 mt-1">The insight may have been deleted or is not accessible.</p>
         </div>
       </PageShell>
     );
@@ -214,8 +237,8 @@ export function InsightDetailPage({ insightId, onBack }: InsightDetailPageProps)
         {/* How to Use */}
         <HowToUseSection
           howToUse={insight.howToUse}
-          onUseCampaign={() => alert('Campaign module coming in a future sprint')}
-          onGenerateContent={() => alert('Content Studio coming in a future sprint')}
+          onUseCampaign={() => onNavigate?.('active-campaigns')}
+          onGenerateContent={() => onNavigate?.('content-library')}
         />
 
         {/* Action row */}

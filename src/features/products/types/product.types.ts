@@ -2,6 +2,36 @@
 // Product feature types — used by feature hooks, API client, and UI
 // =============================================================
 
+export type ProductImageCategory =
+  | "HERO"
+  | "LIFESTYLE"
+  | "DETAIL"
+  | "SCREENSHOT"
+  | "FEATURE"
+  | "MOCKUP"
+  | "PACKAGING"
+  | "VARIANT"
+  | "GROUP"
+  | "DIAGRAM"
+  | "PROCESS"
+  | "TEAM"
+  | "OTHER";
+
+export interface ProductImage {
+  id: string;
+  url: string;
+  category: ProductImageCategory;
+  altText: string | null;
+  sortOrder: number;
+  source: string;
+}
+
+export interface ScrapedImageSuggestion {
+  url: string;
+  alt: string | null;
+  context: "og-image" | "product" | "general";
+}
+
 export interface ProductWithMeta {
   id: string;
   name: string;
@@ -14,6 +44,7 @@ export interface ProductWithMeta {
   features: string[];
   categoryIcon: string | null;
   linkedPersonaCount: number;
+  heroImageUrl: string | null;
   isLocked: boolean;
   updatedAt: string;
 }
@@ -24,6 +55,7 @@ export interface ProductDetail extends ProductWithMeta {
   useCases: string[];
   sourceUrl: string | null;
   linkedPersonas: { id: string; name: string; avatarUrl: string | null }[];
+  images: ProductImage[];
   analysisData: unknown;
   lockedAt: string | null;
   lockedBy: { id: string; name: string } | null;
@@ -59,6 +91,7 @@ export interface CreateProductBody {
   sourceUrl?: string;
   status?: string;
   analysisData?: unknown;
+  images?: { url: string; category?: ProductImageCategory; altText?: string }[];
 }
 
 export interface UpdateProductBody {
@@ -83,11 +116,25 @@ export interface AnalyzeStep {
   status: "pending" | "in_progress" | "complete";
 }
 
-export interface AnalyzeResultData extends ProductWithMeta {
+export interface AnalyzeResultData {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  category: string | null;
+  pricingModel: string | null;
   pricingDetails?: string | null;
+  source: string;
+  sourceUrl?: string | null;
+  status: string;
+  features: string[];
   benefits?: string[];
   useCases?: string[];
-  sourceUrl?: string | null;
+  categoryIcon: string | null;
+  heroImageUrl: string | null;
+  linkedPersonaCount: number;
+  isLocked: boolean;
+  updatedAt: string;
 }
 
 export interface AnalyzeJobResponse {
@@ -97,6 +144,7 @@ export interface AnalyzeJobResponse {
   totalSteps: number;
   steps: AnalyzeStep[];
   result?: AnalyzeResultData;
+  scrapedImages?: ScrapedImageSuggestion[];
   error?: string;
 }
 
@@ -115,4 +163,20 @@ export interface ProductPersonasResponse {
     occupation: string | null;
     location: string | null;
   }[];
+}
+
+export interface AddImageBody {
+  url: string;
+  category?: ProductImageCategory;
+  altText?: string;
+}
+
+export interface UpdateImageBody {
+  category?: ProductImageCategory;
+  altText?: string;
+  sortOrder?: number;
+}
+
+export interface ReorderImagesBody {
+  imageIds: string[];
 }

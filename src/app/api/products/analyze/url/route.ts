@@ -10,7 +10,7 @@ import {
   buildUrlAnalysisPrompt,
   type ProductAnalysisResult,
 } from "@/lib/ai/prompts/product-analysis";
-import { ANALYZE_STEPS } from "@/features/products/constants/product-constants";
+import { ANALYZE_STEPS, VALID_CATEGORIES } from "@/features/products/constants/product-constants";
 
 const analyzeUrlSchema = z.object({
   url: z.string().url(),
@@ -82,10 +82,16 @@ export async function POST(request: NextRequest) {
     );
 
     // 4. Validate and normalize result
-    const validCategories = ["software", "consulting", "mobile", "hardware", "service"];
-    const category = validCategories.includes(result.category) ? result.category : "software";
+    const category = VALID_CATEGORIES.includes(result.category) ? result.category : "other";
 
     const jobId = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    // 5. Map scraped images for response
+    const scrapedImages = (scraped.images ?? []).map((img) => ({
+      url: img.url,
+      alt: img.alt,
+      context: img.context,
+    }));
 
     return NextResponse.json({
       jobId,
@@ -111,10 +117,12 @@ export async function POST(request: NextRequest) {
         benefits: (result.benefits || []).slice(0, 10),
         useCases: (result.useCases || []).slice(0, 8),
         categoryIcon: "Globe",
+        heroImageUrl: null,
         linkedPersonaCount: 0,
         isLocked: false,
         updatedAt: new Date().toISOString(),
       },
+      scrapedImages,
     });
   } catch (error) {
     console.error("[POST /api/products/analyze/url]", error);

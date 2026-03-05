@@ -18,10 +18,6 @@ interface MarketInsightsStore {
   isAddModalOpen: boolean;
   activeAddTab: AddTab;
 
-  // AI Research state
-  aiResearchJobId: string | null;
-  isResearching: boolean;
-
   // Detail
   selectedInsightId: string | null;
 
@@ -32,8 +28,6 @@ interface MarketInsightsStore {
   setTimeframeFilter: (t: InsightTimeframe | null) => void;
   setAddModalOpen: (open: boolean) => void;
   setActiveAddTab: (tab: AddTab) => void;
-  setAiResearchJobId: (id: string | null) => void;
-  setIsResearching: (v: boolean) => void;
   setSelectedInsightId: (id: string | null) => void;
   resetFilters: () => void;
 }
@@ -47,9 +41,6 @@ export const useMarketInsightsStore = create<MarketInsightsStore>((set) => ({
   isAddModalOpen: false,
   activeAddTab: "ai-research",
 
-  aiResearchJobId: null,
-  isResearching: false,
-
   selectedInsightId: null,
 
   setSearchQuery: (q) => set({ searchQuery: q }),
@@ -59,8 +50,6 @@ export const useMarketInsightsStore = create<MarketInsightsStore>((set) => ({
   setAddModalOpen: (open) =>
     set(open ? { isAddModalOpen: true } : { isAddModalOpen: false, activeAddTab: "ai-research" }),
   setActiveAddTab: (tab) => set({ activeAddTab: tab }),
-  setAiResearchJobId: (id) => set({ aiResearchJobId: id }),
-  setIsResearching: (v) => set({ isResearching: v }),
   setSelectedInsightId: (id) => set({ selectedInsightId: id }),
   resetFilters: () =>
     set({ searchQuery: "", categoryFilter: null, impactFilter: null, timeframeFilter: null }),
@@ -73,6 +62,4 @@ export const useImpactFilter = () => useMarketInsightsStore((s) => s.impactFilte
 export const useTimeframeFilter = () => useMarketInsightsStore((s) => s.timeframeFilter);
 export const useIsAddModalOpen = () => useMarketInsightsStore((s) => s.isAddModalOpen);
 export const useActiveAddTab = () => useMarketInsightsStore((s) => s.activeAddTab);
-export const useAiResearchJobId = () => useMarketInsightsStore((s) => s.aiResearchJobId);
-export const useIsResearching = () => useMarketInsightsStore((s) => s.isResearching);
 export const useSelectedInsightId = () => useMarketInsightsStore((s) => s.selectedInsightId);

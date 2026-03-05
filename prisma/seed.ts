@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 import { DEFAULT_PERSONA_CHAT_PROMPT } from "./seed/persona-chat-config";
-import type { NotificationType, NotificationCategory, AssetCategory, AssetStatus, AIMessageType, ResearchMethodType, ResearchMethodStatus, WorkshopStatus, InterviewStatus, InterviewQuestionType, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, StyleguideSource, AnalysisStatus, ColorCategory, PersonaAvatarSource, PersonaResearchMethodType, InsightCategory, InsightScope, ImpactLevel, InsightTimeframe, InsightSource, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, ResourceSource, ProductSource, ProductStatus, DifficultyLevel, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus, TicketCategory, TicketPriority, TicketStatus, FeatureRequestStatus, OAuthProvider, ConnectionStatus, BillingCycle, InvoiceStatus, Theme, AccentColor, FontSize, SidebarPosition, SubscriptionStatus } from "@prisma/client";
+import type { NotificationType, NotificationCategory, AssetCategory, AssetStatus, AIMessageType, ResearchMethodType, ResearchMethodStatus, WorkshopStatus, InterviewStatus, InterviewQuestionType, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, StyleguideSource, AnalysisStatus, ColorCategory, PersonaAvatarSource, PersonaResearchMethodType, InsightCategory, InsightScope, ImpactLevel, InsightTimeframe, InsightSource, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, ResourceSource, ProductSource, ProductStatus, DifficultyLevel, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus, TicketCategory, TicketPriority, TicketStatus, FeatureRequestStatus, OAuthProvider, ConnectionStatus, BillingCycle, InvoiceStatus, Theme, AccentColor, FontSize, SidebarPosition, SubscriptionStatus, ProductImageCategory } from "@prisma/client";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -63,6 +63,7 @@ async function main() {
   await prisma.aIPersonaAnalysisMessage.deleteMany();
   await prisma.aIPersonaAnalysisSession.deleteMany();
   await prisma.personaResearchMethod.deleteMany();
+  await prisma.productImage.deleteMany();
   await prisma.productPersona.deleteMany();
   await prisma.persona.deleteMany();
   await prisma.styleguideColor.deleteMany();
@@ -1729,7 +1730,7 @@ async function main() {
       name: "Digital Platform Suite",
       slug: "digital-platform-suite",
       description: "Comprehensive digital workspace solution that combines project management, real-time collaboration, and AI-powered analytics into a unified platform for modern teams.",
-      category: "software",
+      category: "software-saas",
       categoryIcon: "Globe",
       pricingModel: "Enterprise",
       pricingDetails: "Custom pricing based on team size and features. Starting from €299/month for teams of 10.",
@@ -1747,8 +1748,8 @@ async function main() {
       name: "Brand Strategy Consulting",
       slug: "brand-strategy-consulting",
       description: "Expert-led brand strategy development combining market research, competitive analysis, and creative direction to build distinctive, resonant brand identities.",
-      category: "consulting",
-      categoryIcon: "Zap",
+      category: "consulting-advisory",
+      categoryIcon: "BriefcaseBusiness",
       pricingModel: "Custom",
       pricingDetails: "Project-based pricing. Discovery phase from €5,000, full brand strategy from €15,000.",
       source: productSourceUrl,
@@ -1766,8 +1767,8 @@ async function main() {
       name: "Mobile App Framework",
       slug: "mobile-app-framework",
       description: "Cross-platform mobile development framework with built-in UI components, offline-first architecture, and native performance optimization for iOS and Android.",
-      category: "mobile",
-      categoryIcon: "Smartphone",
+      category: "mobile-apps",
+      categoryIcon: "TabletSmartphone",
       pricingModel: "€149/month",
       pricingDetails: "Per developer seat. Annual plans available at €1,490/year (2 months free).",
       source: productSourcePdf,
@@ -1777,6 +1778,35 @@ async function main() {
       useCases: ["Consumer mobile apps", "Internal enterprise tools", "MVP rapid prototyping"],
       workspaceId: workspace.id,
     },
+  });
+
+  // ============================================
+  // S4: PRODUCT IMAGES SEED DATA
+  // ============================================
+
+  const picHero: ProductImageCategory = "HERO";
+  const picLifestyle: ProductImageCategory = "LIFESTYLE";
+  const picScreenshot: ProductImageCategory = "SCREENSHOT";
+  const picFeature: ProductImageCategory = "FEATURE";
+  const picMockup: ProductImageCategory = "MOCKUP";
+  const picTeam: ProductImageCategory = "TEAM";
+  const picDetail: ProductImageCategory = "DETAIL";
+
+  await prisma.productImage.createMany({
+    data: [
+      // Product 1: Digital Platform Suite
+      { productId: product1.id, url: "https://placehold.co/800x600/0d9488/ffffff?text=Platform+Suite", category: picHero, altText: "Digital Platform Suite hero image", sortOrder: 0, source: "SCRAPED" },
+      { productId: product1.id, url: "https://placehold.co/800x600/1e40af/ffffff?text=Dashboard+View", category: picScreenshot, altText: "Analytics dashboard screenshot", sortOrder: 1, source: "SCRAPED" },
+      { productId: product1.id, url: "https://placehold.co/800x600/6366f1/ffffff?text=Team+Workspace", category: picFeature, altText: "Real-time collaboration workspace", sortOrder: 2, source: "SCRAPED" },
+      // Product 2: Brand Strategy Consulting
+      { productId: product2.id, url: "https://placehold.co/800x600/be185d/ffffff?text=Brand+Strategy", category: picHero, altText: "Brand Strategy Consulting hero image", sortOrder: 0, source: "SCRAPED" },
+      { productId: product2.id, url: "https://placehold.co/800x600/7c3aed/ffffff?text=Workshop+Session", category: picLifestyle, altText: "Brand workshop in progress", sortOrder: 1, source: "URL_ADDED" },
+      { productId: product2.id, url: "https://placehold.co/800x600/059669/ffffff?text=Expert+Team", category: picTeam, altText: "Brand strategy consulting team", sortOrder: 2, source: "URL_ADDED" },
+      // Product 3: Mobile App Framework
+      { productId: product3.id, url: "https://placehold.co/800x600/ea580c/ffffff?text=App+Framework", category: picHero, altText: "Mobile App Framework hero image", sortOrder: 0, source: "SCRAPED" },
+      { productId: product3.id, url: "https://placehold.co/800x600/0284c7/ffffff?text=iOS+%2B+Android", category: picMockup, altText: "Cross-platform mobile mockup", sortOrder: 1, source: "SCRAPED" },
+      { productId: product3.id, url: "https://placehold.co/800x600/4f46e5/ffffff?text=UI+Components", category: picDetail, altText: "Pre-built UI component library", sortOrder: 2, source: "SCRAPED" },
+    ],
   });
 
   // ============================================

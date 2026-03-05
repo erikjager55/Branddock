@@ -9,11 +9,19 @@ export interface SelectOption {
   label: string;
 }
 
+export interface SelectOptionGroup {
+  label: string;
+  options: SelectOption[];
+}
+
 export interface SelectProps {
   label?: string;
   value: string | null;
   onChange: (value: string | null) => void;
-  options: SelectOption[];
+  /** Flat option list. Required when `groups` is not provided. */
+  options?: SelectOption[];
+  /** Optional grouped options — renders HTML <optgroup>. When provided, flat `options` are ignored. */
+  groups?: SelectOptionGroup[];
   placeholder?: string;
   error?: string;
   disabled?: boolean;
@@ -31,6 +39,7 @@ export function Select({
   value,
   onChange,
   options,
+  groups,
   placeholder = 'Select...',
   error,
   disabled = false,
@@ -71,11 +80,23 @@ export function Select({
           )}
         >
           <option value="">{placeholder}</option>
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
+          {groups ? (
+            groups.map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.options.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))
+          ) : (
+            (options ?? []).map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))
+          )}
         </select>
 
         {allowClear && value && !disabled && (

@@ -44,6 +44,10 @@ export async function GET(
             },
           },
         },
+        images: {
+          orderBy: { sortOrder: "asc" },
+          select: { id: true, url: true, category: true, altText: true, sortOrder: true, source: true },
+        },
         lockedBy: { select: { id: true, name: true } },
       },
     });
@@ -77,6 +81,7 @@ export async function GET(
         name: lp.persona.name,
         avatarUrl: lp.persona.avatarUrl,
       })),
+      images: product.images,
       createdAt: product.createdAt.toISOString(),
       updatedAt: product.updatedAt.toISOString(),
     };
