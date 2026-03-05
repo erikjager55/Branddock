@@ -52,13 +52,6 @@ export async function toggleAssetLock(id: string): Promise<unknown> {
   return handleResponse(res);
 }
 
-export async function duplicateAsset(id: string): Promise<unknown> {
-  const res = await fetch(`${BASE}/${id}/duplicate`, {
-    method: "POST",
-  });
-  return handleResponse(res);
-}
-
 export async function deleteAsset(id: string): Promise<void> {
   const res = await fetch(`${BASE}/${id}`, {
     method: "DELETE",

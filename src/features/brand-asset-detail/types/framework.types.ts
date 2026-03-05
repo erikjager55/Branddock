@@ -46,6 +46,7 @@ export interface PurposeWheelFrameworkData {
   statement: string;
   impactType: string; // Enable Potential / Reduce Friction / Foster Prosperity / Encourage Exploration / Kindle Happiness
   impactDescription: string;
+  mechanismCategory: string; // One of the 15 IDEO Outer Wheel categories
   mechanism: string;
   pressureTest: string;
 }

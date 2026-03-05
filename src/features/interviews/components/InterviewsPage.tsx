@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus } from 'lucide-react';
-import { useInterviews, useCreateInterview, useDeleteInterview, useDuplicateInterview } from '../hooks/useInterviews';
+import { useInterviews, useCreateInterview, useDeleteInterview } from '../hooks/useInterviews';
 import { useInterviewStore } from '../stores/useInterviewStore';
 import { PageShell, PageHeader } from '@/components/ui/layout';
 import { Button, SkeletonCard } from '@/components/shared';
@@ -18,8 +18,6 @@ export function InterviewsPage({ assetId, onBack }: InterviewsPageProps) {
   const { data, isLoading } = useInterviews(assetId);
   const createInterview = useCreateInterview(assetId);
   const deleteInterview = useDeleteInterview(assetId);
-  const duplicateInterview = useDuplicateInterview(assetId);
-
   const selectedInterviewId = useInterviewStore((s) => s.selectedInterviewId);
   const setSelectedInterview = useInterviewStore((s) => s.setSelectedInterview);
 
@@ -37,10 +35,6 @@ export function InterviewsPage({ assetId, onBack }: InterviewsPageProps) {
 
   const handleDelete = (id: string) => {
     deleteInterview.mutate(id);
-  };
-
-  const handleDuplicate = (id: string) => {
-    duplicateInterview.mutate(id);
   };
 
   const handleBackFromWizard = () => {
@@ -95,7 +89,6 @@ export function InterviewsPage({ assetId, onBack }: InterviewsPageProps) {
               key={interview.id}
               interview={interview}
               onView={handleView}
-              onDuplicate={handleDuplicate}
               onDelete={handleDelete}
             />
           ))}

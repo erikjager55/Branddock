@@ -70,18 +70,6 @@ export async function deleteInterview(
   return res.json();
 }
 
-export async function duplicateInterview(
-  assetId: string,
-  interviewId: string,
-): Promise<{ interview: Interview }> {
-  const res = await fetch(
-    `/api/brand-assets/${assetId}/interviews/${interviewId}/duplicate`,
-    { method: "POST" },
-  );
-  if (!res.ok) throw new Error("Failed to duplicate interview");
-  return res.json();
-}
-
 // ─── Questions ───────────────────────────────────────────────
 
 export async function addQuestion(

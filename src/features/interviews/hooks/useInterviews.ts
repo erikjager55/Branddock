@@ -5,7 +5,6 @@ import {
   fetchInterviewDetail,
   updateInterview,
   deleteInterview,
-  duplicateInterview,
   addQuestion,
   updateQuestion,
   deleteQuestion,
@@ -91,21 +90,6 @@ export function useDeleteInterview(assetId: string | undefined) {
   return useMutation({
     mutationFn: (interviewId: string) =>
       deleteInterview(assetId!, interviewId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: interviewKeys.byAsset(assetId!),
-      });
-    },
-  });
-}
-
-// ─── Duplicate ───────────────────────────────────────────────
-
-export function useDuplicateInterview(assetId: string | undefined) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (interviewId: string) =>
-      duplicateInterview(assetId!, interviewId),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: interviewKeys.byAsset(assetId!),

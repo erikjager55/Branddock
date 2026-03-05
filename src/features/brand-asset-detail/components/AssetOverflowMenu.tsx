@@ -3,12 +3,10 @@
 import { useRef, useEffect } from "react";
 import {
   MoreVertical,
-  Copy,
   Download,
   Trash2,
 } from "lucide-react";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
-import { useDuplicateAsset } from "../hooks/useBrandAssetDetail";
 import type { BrandAssetDetail } from "../types/brand-asset-detail.types";
 
 interface AssetOverflowMenuProps {
@@ -22,7 +20,6 @@ export function AssetOverflowMenu({
   const showMenu = useBrandAssetDetailStore((s) => s.showOverflowMenu);
   const setShowMenu = useBrandAssetDetailStore((s) => s.setShowOverflowMenu);
   const setShowDelete = useBrandAssetDetailStore((s) => s.setShowDeleteDialog);
-  const duplicateAsset = useDuplicateAsset(asset.id);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -35,14 +32,6 @@ export function AssetOverflowMenu({
   }, [showMenu, setShowMenu]);
 
   const actions = [
-    {
-      label: "Duplicate",
-      icon: Copy,
-      onClick: () => {
-        duplicateAsset.mutate();
-        setShowMenu(false);
-      },
-    },
     {
       label: "Export",
       icon: Download,

@@ -83,19 +83,7 @@ export function useDeletePersona(id: string | undefined) {
   });
 }
 
-// ─── 6. useDuplicatePersona ────────────────────────────────
-
-export function useDuplicatePersona(id: string | undefined) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: () => api.duplicatePersona(id!),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: personaKeys.list() });
-    },
-  });
-}
-
-// ─── 7. useTogglePersonaLock ───────────────────────────────
+// ─── 6. useTogglePersonaLock ───────────────────────────────
 
 export function useTogglePersonaLock(id: string | undefined) {
   const qc = useQueryClient();

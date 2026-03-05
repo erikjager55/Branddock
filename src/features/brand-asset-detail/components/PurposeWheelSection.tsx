@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Target, Lightbulb, Cog, FlaskConical, CheckCircle,
-  Sparkles, Compass, Heart, TreePine, Building2, Smile,
+  Target, Cog, FlaskConical, CheckCircle,
+  Sparkles, Compass, Heart, TreePine, Smile,
 } from 'lucide-react';
 import type { PurposeWheelFrameworkData } from '../types/framework.types';
 
@@ -55,7 +55,7 @@ const IMPACT_TYPES: ImpactTypeOption[] = [
     value: 'Encourage Exploration',
     label: 'Encourage Exploration',
     description: 'Inspiring curiosity, discovery and new ways of thinking about the world',
-    icon: Lightbulb,
+    icon: Sparkles,
     bgColor: 'bg-purple-50',
     borderColor: 'border-purple-200',
     textColor: 'text-purple-700',
@@ -75,7 +75,7 @@ const IMPACT_TYPES: ImpactTypeOption[] = [
 
 // ─── IDEO Outer Wheel Mechanisms (15 categories) ────────────
 
-const MECHANISM_TAGS = [
+const MECHANISM_CATEGORIES = [
   'Celebrating Creativity',
   'Inspiring Curiosity',
   'Building Community',
@@ -104,38 +104,8 @@ const PRESSURE_TEST_QUESTIONS = [
 // ─── Empty state helper ─────────────────────────────────────
 
 const EMPTY_DATA: PurposeWheelFrameworkData = {
-  statement: '', impactType: '', impactDescription: '', mechanism: '', pressureTest: '',
+  statement: '', impactType: '', impactDescription: '', mechanismCategory: '', mechanism: '', pressureTest: '',
 };
-
-// ─── Purpose Score Calculation ──────────────────────────────
-
-function calculatePurposeScore(data: PurposeWheelFrameworkData) {
-  // Clarity: statement + impactType present and meaningful
-  let clarity = 0;
-  if (data.statement?.length > 10) clarity += 5;
-  if (data.statement?.length > 30) clarity += 2;
-  if (data.impactType) clarity += 3;
-  clarity = Math.min(10, clarity);
-
-  // Passion: impactDescription + mechanism have depth
-  let passion = 0;
-  if (data.impactDescription?.length > 10) passion += 3;
-  if (data.impactDescription?.length > 50) passion += 2;
-  if (data.mechanism?.length > 10) passion += 3;
-  if (data.mechanism?.length > 50) passion += 2;
-  passion = Math.min(10, passion);
-
-  // Usefulness: pressureTest validates purpose
-  let usefulness = 0;
-  if (data.pressureTest?.length > 10) usefulness += 4;
-  if (data.pressureTest?.length > 50) usefulness += 3;
-  if (data.pressureTest?.length > 100) usefulness += 3;
-  usefulness = Math.min(10, usefulness);
-
-  const overall = Math.round((clarity + passion + usefulness) / 3);
-
-  return { clarity, passion, usefulness, overall };
-}
 
 // ─── Props ──────────────────────────────────────────────────
 
@@ -143,43 +113,6 @@ interface PurposeWheelSectionProps {
   data: PurposeWheelFrameworkData | null;
   isEditing: boolean;
   onUpdate: (data: PurposeWheelFrameworkData) => void;
-}
-
-// ─── Score Meter Sub-component ──────────────────────────────
-
-function ScoreMeter({ label, value, color }: { label: string; value: number; color: string }) {
-  const clamped = Math.max(0, Math.min(10, value));
-  const percentage = (clamped / 10) * 100;
-
-  const colorMap: Record<string, { bar: string; text: string; bg: string }> = {
-    teal: { bar: 'bg-teal-500', text: 'text-teal-700', bg: 'bg-teal-50' },
-    amber: { bar: 'bg-amber-500', text: 'text-amber-700', bg: 'bg-amber-50' },
-    purple: { bar: 'bg-purple-500', text: 'text-purple-700', bg: 'bg-purple-50' },
-    emerald: { bar: 'bg-emerald-500', text: 'text-emerald-700', bg: 'bg-emerald-50' },
-  };
-  const c = colorMap[color] ?? colorMap.teal;
-
-  return (
-    <div className="flex-1">
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-xs font-medium text-gray-600">{label}</span>
-        <span className={`text-xs font-bold ${c.text}`}>{clamped}/10</span>
-      </div>
-      <div
-        className={`h-2 rounded-full ${c.bg}`}
-        role="progressbar"
-        aria-valuenow={clamped}
-        aria-valuemin={0}
-        aria-valuemax={10}
-        aria-label={`${label} score`}
-      >
-        <div
-          className={`h-2 rounded-full ${c.bar} transition-all duration-500`}
-          style={{ width: `${percentage}%` }}
-        />
-      </div>
-    </div>
-  );
 }
 
 // ─── Component ──────────────────────────────────────────────
@@ -200,18 +133,11 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
     onUpdate(next);
   };
 
-  // Use draft while editing, committed data while reading
-  const displayData = isEditing ? draft : d;
-
   // Parse pressureTest into list items (if it contains line breaks)
   const pressureItems = d.pressureTest
     ? d.pressureTest.split(/\n/).map(s => s.trim()).filter(Boolean)
     : [];
   const showAsList = pressureItems.length > 1;
-
-  // Score updates live during editing
-  const score = calculatePurposeScore(displayData);
-  const hasAnyContent = displayData.statement || displayData.impactType || displayData.impactDescription || displayData.mechanism || displayData.pressureTest;
 
   return (
     <div className="space-y-4">
@@ -271,7 +197,6 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
                 disabled={!isEditing}
                 onClick={() => {
                   if (!isEditing) return;
-                  // Toggle: clicking selected card deselects it
                   handleChange('impactType', draft.impactType === type.value ? '' : type.value);
                 }}
                 className={`
@@ -325,7 +250,7 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
         </div>
       </div>
 
-      {/* Card 3: Mechanism — with inspiration tags */}
+      {/* Card 3: Mechanism — selectable category + description */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start gap-3 mb-4">
           <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
@@ -337,55 +262,61 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
           </div>
         </div>
 
-        {isEditing ? (
-          <textarea
-            value={draft.mechanism}
-            onChange={(e) => handleChange('mechanism', e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
-            rows={3}
-            placeholder="Describe through what unique means you achieve your impact..."
-          />
-        ) : d.mechanism ? (
-          <p className="text-sm text-gray-700 leading-relaxed">{d.mechanism}</p>
-        ) : (
-          <p className="text-sm italic text-gray-400">Describe through what unique means you achieve your impact...</p>
-        )}
-
-        {/* Inspiration Tags — IDEO 15 Outer Wheel Categories */}
-        <div className="mt-4 pt-4 border-t border-gray-100">
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">
-            Inspiration — 15 outer wheel categories
+        {/* Selectable category — 15 outer wheel categories */}
+        <div className="mb-4">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+            Select your mechanism category
           </p>
           <div className="flex flex-wrap gap-1.5">
-            {MECHANISM_TAGS.map((tag) => {
-              const isIncluded = isEditing && draft.mechanism.includes(tag);
+            {MECHANISM_CATEGORIES.map((cat) => {
+              const currentCat = isEditing ? draft.mechanismCategory : d.mechanismCategory;
+              const isSelected = currentCat === cat;
               return (
                 <button
-                  key={tag}
+                  key={cat}
                   type="button"
                   disabled={!isEditing}
                   onClick={() => {
-                    if (!isEditing || isIncluded) return;
-                    const current = draft.mechanism;
-                    const separator = current ? (current.endsWith('.') || current.endsWith('\n') ? ' ' : '. ') : '';
-                    handleChange('mechanism', current + separator + tag);
+                    if (!isEditing) return;
+                    // Toggle: clicking selected deselects
+                    handleChange('mechanismCategory', draft.mechanismCategory === cat ? '' : cat);
                   }}
                   className={`
-                    inline-flex items-center rounded-full px-2.5 py-1 text-xs transition-colors
-                    ${isIncluded
-                      ? 'bg-blue-100 text-blue-700 border border-blue-200 cursor-default'
+                    inline-flex items-center rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-150
+                    ${isSelected
+                      ? 'bg-blue-600 text-white border border-blue-600 shadow-sm'
                       : isEditing
-                        ? 'bg-blue-50 text-blue-600 border border-blue-100 cursor-pointer hover:bg-blue-100'
+                        ? 'bg-blue-50 text-blue-700 border border-blue-200 cursor-pointer hover:bg-blue-100 hover:border-blue-300'
                         : 'bg-gray-50 text-gray-500 border border-gray-100 cursor-default'
                     }
                   `}
                 >
-                  {tag}
-                  {isIncluded && <CheckCircle className="h-3 w-3 ml-1" />}
+                  {cat}
+                  {isSelected && <CheckCircle className="h-3 w-3 ml-1.5" />}
                 </button>
               );
             })}
           </div>
+        </div>
+
+        {/* Mechanism description textarea */}
+        <div className="bg-blue-50/30 border border-blue-100 rounded-xl p-4">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+            Describe how this mechanism works for your organization
+          </p>
+          {isEditing ? (
+            <textarea
+              value={draft.mechanism}
+              onChange={(e) => handleChange('mechanism', e.target.value)}
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+              rows={3}
+              placeholder="Describe through what unique means you achieve your impact..."
+            />
+          ) : d.mechanism ? (
+            <p className="text-sm text-gray-700 leading-relaxed">{d.mechanism}</p>
+          ) : (
+            <p className="text-sm italic text-gray-400">Describe through what unique means you achieve your impact...</p>
+          )}
         </div>
       </div>
 
@@ -441,32 +372,6 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
           <p className="text-sm italic text-gray-400">Answer the pressure test questions above...</p>
         )}
       </div>
-
-      {/* Card 5: Purpose Score (read-only, updates live during editing) */}
-      {hasAnyContent && (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-start gap-3 mb-4">
-            <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-              <Building2 className="h-5 w-5 text-emerald-600" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-gray-900">Purpose Score</h2>
-                <div className="flex items-center gap-1.5 bg-emerald-50 rounded-full px-3 py-1">
-                  <span className="text-sm font-bold text-emerald-700">{score.overall}/10</span>
-                </div>
-              </div>
-              <p className="text-sm text-gray-500">Completeness assessment based on clarity, passion, and usefulness</p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <ScoreMeter label="Clarity" value={score.clarity} color="teal" />
-            <ScoreMeter label="Passion" value={score.passion} color="amber" />
-            <ScoreMeter label="Usefulness" value={score.usefulness} color="purple" />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

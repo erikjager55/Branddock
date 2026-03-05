@@ -4,7 +4,6 @@ import {
   updateAssetContent,
   updateAssetStatus,
   toggleAssetLock,
-  duplicateAsset,
   deleteAsset,
   regenerateAssetContent,
   fetchAssetVersions,
@@ -71,16 +70,6 @@ export function useToggleLock(id: string) {
     mutationFn: () => toggleAssetLock(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: assetDetailKeys.detail(id) });
-    },
-  });
-}
-
-export function useDuplicateAsset(id: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: () => duplicateAsset(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["brand-assets"] });
     },
   });
 }

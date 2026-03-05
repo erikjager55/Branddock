@@ -5,7 +5,7 @@
 // ────────────────────────────────────────────────────────────
 
 import {
-  Compass, Heart, Leaf, Globe, Lightbulb, Rocket, Target, FileText, BarChart2, Zap, Cog,
+  Compass, Heart, Leaf, Globe, Rocket, Target, FileText, BarChart2, Zap, Cog,
   Package, Fingerprint, Sparkles, Layers, Shield, CheckCircle, AlertTriangle, TrendingUp, Users, Eye,
   Mountain, Map, Crown, Activity, Moon, BookOpen, Award, User, MessageCircle, AlertCircle, Star,
   ArrowRight, Scale, Building,

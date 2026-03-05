@@ -8,7 +8,7 @@ import { PageShell } from '@/components/ui/layout';
 import { LockBanner, LockOverlay, LockConfirmDialog } from '@/components/lock';
 import { useLockState } from '@/hooks/useLockState';
 import { useLockVisibility } from '@/hooks/useLockVisibility';
-import { usePersonaDetail, useUpdatePersona, useGenerateImplications, useDuplicatePersona, useDeletePersona, personaKeys } from '../../hooks';
+import { usePersonaDetail, useUpdatePersona, useGenerateImplications, useDeletePersona, personaKeys } from '../../hooks';
 import { useQueryClient } from '@tanstack/react-query';
 import { usePersonaDetailStore } from '../../stores/usePersonaDetailStore';
 import { PersonaDetailHeader } from './PersonaDetailHeader';
@@ -35,7 +35,6 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
   const { data: persona, isLoading } = usePersonaDetail(personaId);
   const updatePersona = useUpdatePersona(personaId);
   const generateImplications = useGenerateImplications(personaId);
-  const duplicatePersona = useDuplicatePersona(personaId);
   const deletePersona = useDeletePersona(personaId);
   const [stubMessage, setStubMessage] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -263,13 +262,6 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
             <div className="md:sticky md:top-6 space-y-4">
               <QuickActionsCard
                 onChat={() => setChatModalOpen(true)}
-                onDuplicate={() => {
-                  duplicatePersona.mutate(undefined, {
-                    onSuccess: () => {
-                      toast.success('Persona duplicated successfully');
-                    },
-                  });
-                }}
                 onExportPdf={() => {
                   exportPersonaPdf({
                     name: persona.name,

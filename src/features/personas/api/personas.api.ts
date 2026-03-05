@@ -73,14 +73,6 @@ export async function deletePersona(id: string): Promise<{ success: boolean }> {
 
 // ─── Actions ───────────────────────────────────────────────
 
-export async function duplicatePersona(
-  id: string,
-): Promise<{ persona: PersonaWithMeta }> {
-  const res = await fetch(`${BASE}/${id}/duplicate`, { method: "POST" });
-  if (!res.ok) throw new Error("Failed to duplicate persona");
-  return res.json();
-}
-
 export async function togglePersonaLock(
   id: string,
   locked: boolean,

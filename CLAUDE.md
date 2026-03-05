@@ -1558,6 +1558,8 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 
 79. **AE: AI Config UX Redesign** — Volledige UI-herontwerp van AI Exploration Configuration in Settings > Administrator. Van platte lijst + 741-regels ExplorationConfigEditor naar list/detail pattern met tabbed navigatie. 10 nieuwe bestanden: ConfigListView (gegroepeerde grid per item type met zoekfunctie), ConfigCard (model/dimensies/status info), ConfigDetailView (4-tab form: Algemeen/Dimensies/Prompts/Kennisbronnen), GeneralTab (targeting+AI model+context bronnen), DimensionsTab+DimensionCard (verbeterde dimensie-editor), PromptsTab+PromptEditor (variable chips+karakter teller), KnowledgeTab (gepromoveerd naar volwaardige tab), IconPicker (30 Lucide icons visuele selector). Verwijderd: ExplorationConfigEditor.tsx + KnowledgeLibrarySection.tsx. 16 bugs gefixt na 3 rondes code review (double delete, prompt error indicators, HelpCircle icon, NaN guard, key collisions, click-outside handler, cursor tracking, sticky footer, React key stability, temperature toFixed). TypeScript 0 errors.
 
+80. **PW: Purpose Statement IDEO Purpose Wheel Verbetering** — PurposeWheelSection.tsx volledig herschreven op basis van IDEO Purpose Wheel framework. Impact Type: 5 visuele kaarten (klikbaar, toggle deselect, kleur-per-type). Mechanism: 15 outer wheel categorieën als selecteerbare pills (single-select) + vrij tekstveld. `mechanismCategory` veld toegevoegd aan `PurposeWheelFrameworkData`. Pressure Test: helper-tekst met 3 IDEO kernvragen. Purpose Score sectie verwijderd. AI Exploration config: 5 nieuwe dimensies (origin_belief, impact_exploration, mechanism, pressure_test, articulation), herziene system/feedback/report prompts in seed.ts, 6 field suggestions in rapport. Frontend dimension config gesynchroniseerd (brand-asset-exploration-config.ts + config-resolver.ts). Duplicate functionaliteit verwijderd uit alle modules: Brand Assets (AssetOverflowMenu, AssetQuickActionsCard, useBrandAssetDetail hook, brand-asset-detail.api), Personas (PersonaDetailPage, QuickActionsCard, hooks/index, personas.api), Interviews (InterviewsPage, InterviewCard, useInterviews hook, interview.api). TypeScript 0 nieuwe errors.
+
 ### ⚠️ TECHNISCHE SCHULD
 - **Adapter pattern** — tijdelijk, componenten moeten op termijn direct DB-model gebruiken
 - **mock-to-meta-adapter.ts** — reverse adapter (mock→API format) voor Brand Foundation. Verdwijnt wanneer context direct BrandAssetWithMeta levert.
@@ -1688,6 +1690,11 @@ Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 - BAD.1: ✅ 2-kolom Layout — Grid refactor (8/4 split), sidebar componenten (QuickActions, Completeness, Validation)
 - BAD.2: ✅ Purpose Kompas + Statement — PurposeKompasSection (Mens/Milieu/Maatschappij), PurposeStatementSection (apart asset type)
 - BAD.3: ✅ Universal Versioning — ResourceVersion polymorphic model, /api/versions GET endpoint
+
+**PW. Purpose Statement IDEO Verbetering ✅ VOLLEDIG**
+- PW.1: ✅ PurposeWheelSection redesign — Impact Type visuele kaarten, Mechanism selecteerbare categorieën (15 outer wheel), Pressure Test helper-vragen, Purpose Score verwijderd
+- PW.2: ✅ AI Exploration config — 5 nieuwe dimensies, herziene prompts, 6 field suggestions, frontend sync
+- PW.3: ✅ Duplicate verwijderd — uit brand assets, personas en interviews (12 bestanden)
 
 **S10-S12. Production Ready**
 - S10: Stripe Billing (checkout, webhooks, plan enforcement, agency model)

@@ -7,12 +7,8 @@ import {
   Clock,
   Layers,
   Mail,
-  Phone,
   MoreVertical,
-  Copy,
   Trash2,
-  Unlock,
-  FileText,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { Interview, InterviewStatus } from '../types/interview.types';
@@ -32,14 +28,12 @@ const STATUS_MAP: Record<InterviewStatus, { label: string; variant: 'default' | 
 interface InterviewCardProps {
   interview: Interview;
   onView: (id: string) => void;
-  onDuplicate: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
 export function InterviewCard({
   interview,
   onView,
-  onDuplicate,
   onDelete,
 }: InterviewCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -81,16 +75,6 @@ export function InterviewCard({
                   onClick={() => setMenuOpen(false)}
                 />
                 <div className="absolute right-0 top-8 z-20 w-44 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
-                  <button
-                    onClick={() => {
-                      onDuplicate(interview.id);
-                      setMenuOpen(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                    Duplicate
-                  </button>
                   <button
                     onClick={() => {
                       onDelete(interview.id);
