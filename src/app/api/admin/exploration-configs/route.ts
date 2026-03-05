@@ -11,6 +11,9 @@ export async function GET() {
     const configs = await prisma.explorationConfig.findMany({
       where: { workspaceId },
       orderBy: [{ itemType: 'asc' }, { itemSubType: 'asc' }],
+      include: {
+        _count: { select: { knowledgeItems: true } },
+      },
     });
 
     return NextResponse.json({ configs });
