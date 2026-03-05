@@ -311,15 +311,19 @@ src/
 │       │       └── generate-report/route.ts ← POST (AI generatie)
 │       ├── personas/route.ts            ← GET + POST (live)
 │       ├── products/
-│       │   ├── route.ts                 ← GET + POST (live)
+│       │   ├── route.ts                 ← GET + POST (live, images mee-aanmaken)
 │       │   ├── [id]/
-│       │   │   ├── route.ts             ← GET + PATCH (detail + update)
+│       │   │   ├── route.ts             ← GET + PATCH (detail + update, images included)
 │       │   │   ├── lock/route.ts        ← PATCH (lock/unlock)
-│       │   │   └── personas/
-│       │   │       ├── route.ts         ← GET + POST (koppel persona)
-│       │   │       └── [personaId]/route.ts ← DELETE (ontkoppel)
+│       │   │   ├── personas/
+│       │   │   │   ├── route.ts         ← GET + POST (koppel persona)
+│       │   │   │   └── [personaId]/route.ts ← DELETE (ontkoppel)
+│       │   │   └── images/
+│       │   │       ├── route.ts         ← POST (image toevoegen, max 20)
+│       │   │       ├── [imageId]/route.ts ← PATCH + DELETE (category/altText/sortOrder)
+│       │   │       └── reorder/route.ts ← PATCH (reorder imageIds)
 │       │   └── analyze/
-│       │       ├── url/route.ts         ← POST (Gemini AI URL analyse)
+│       │       ├── url/route.ts         ← POST (Gemini AI URL analyse + image scraping)
 │       │       └── pdf/route.ts         ← POST (Gemini AI PDF analyse)
 │       ├── research-plans/route.ts      ← GET + POST + PATCH (live)
 │       ├── purchased-bundles/route.ts   ← GET + POST (live)
@@ -729,12 +733,14 @@ src/
 │       │       ├── BenefitsSection.tsx         ← Genummerde badges (edit: add/remove)
 │       │       ├── TargetAudienceSection.tsx   ← Persona badges + link/unlink
 │       │       ├── UseCasesSection.tsx         ← Genummerde lijst (edit: add/remove)
-│       │       └── PersonaSelectorModal.tsx    ← Persona multi-select modal
-│       ├── constants/product-constants.ts      ← CATEGORY_ICONS, ANALYZE_STEPS, SOURCE/STATUS_BADGES
-│       ├── hooks/index.ts                      ← 10 TanStack Query hooks + productKeys
+│       │       ├── PersonaSelectorModal.tsx    ← Persona multi-select modal
+│       │       ├── ProductImagesSection.tsx    ← Image grid + hover overlay + category edit
+│       │       └── AddImageModal.tsx           ← URL tab (live preview) + upload tab (placeholder)
+│       ├── constants/product-constants.ts      ← CATEGORY_GROUPS/OPTIONS/ICONS (22), IMAGE_CATEGORY_OPTIONS (13), ANALYZE_STEPS, SOURCE/STATUS_BADGES
+│       ├── hooks/index.ts                      ← 14 TanStack Query hooks + productKeys (incl. image CRUD)
 │       ├── stores/useProductsStore.ts          ← Zustand (analyzerTab, processingModal, selectedProductId)
-│       ├── api/products.api.ts                 ← 10 fetch functies
-│       └── types/product.types.ts              ← ProductWithMeta, ProductDetail, AnalyzeJobResponse
+│       ├── api/products.api.ts                 ← 14 fetch functies (incl. image CRUD)
+│       └── types/product.types.ts              ← ProductWithMeta, ProductDetail, ProductImage, ProductImageCategory, AnalyzeJobResponse
 │   └── market-insights/                        ← S4: Market Insights
 │       ├── components/
 │       │   ├── MarketInsightsPage.tsx           ← Overview orchestrator (header+stats+filters+grid)
@@ -1216,8 +1222,12 @@ Directe klant (Organization type=DIRECT)
 | `/api/products/:id` | GET | Product detail met linkedPersonas |
 | `/api/products/:id` | PATCH | Product updaten (name, description, features, benefits, useCases, etc.) |
 | `/api/products/:id/lock` | PATCH | Lock/unlock product toggle |
-| `/api/products/analyze/url` | POST | AI URL analyse via Gemini 3.1 Pro (scrape → extract → structured JSON) |
+| `/api/products/analyze/url` | POST | AI URL analyse via Gemini 3.1 Pro (scrape → extract → structured JSON + images) |
 | `/api/products/analyze/pdf` | POST | AI PDF analyse via Gemini 3.1 Pro (parse → extract → structured JSON) |
+| `/api/products/:id/images` | POST | Image toevoegen (url, category?, altText?) — max 20 per product |
+| `/api/products/:id/images/:imageId` | PATCH | Image category/altText/sortOrder bijwerken |
+| `/api/products/:id/images/:imageId` | DELETE | Image verwijderen (ownership check) |
+| `/api/products/:id/images/reorder` | PATCH | Reorder images (imageIds array → sortOrder) |
 | `/api/research-plans` | GET | Lijst met filters (status) + stats |
 | `/api/research-plans` | POST | Nieuw research plan aanmaken |
 | `/api/research-plans` | PATCH | Research plan updaten (unlock methods/assets, status) |
@@ -1517,6 +1527,8 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 59. **S4 Fase 2: Products + Market Insights Integratie** — Products: analyzer flow fix (URL/PDF analyze → animation → POST create product → navigate to detail), edit mode (inline edit name/description/pricing → PATCH → refresh), persona koppeling bevestigd. Market Insights: edit mode (inline edit title/description/category/impact/timeframe/scope → PATCH → refresh), add modal flow bevestigd, 3 filters bevestigd, detail delete+sources bevestigd. Brand context stub endpoint (`/api/ai-context/brand-summary` GET — asset/persona/product counts). Dashboard bevestigd (6 context hooks voor counts). Sidebar mapping bevestigd. 0 TS errors.
 
 60a. **S4 Sessie C: AI Product Analyzer + Detail Page Editing** — Fase A (Detail page bewerkbaar): FeaturesSpecsSection/BenefitsSection/UseCasesSection uitgebreid met `isEditing` + `onChange` props (add/remove UI), ProductDetailPage uitgebreid met array edit state + category Select dropdown + sourceUrl ExternalLink + wasEditingRef patroon + saveError state. Fase B (AI Backend): `src/lib/ai/gemini-client.ts` (shared Gemini singleton via `@google/genai`, structured JSON output, 60s AbortSignal timeout, JSON parse try/catch), `src/lib/ai/prompts/product-analysis.ts` (system + user prompts voor URL/PDF), `src/lib/products/url-scraper.ts` (cheerio scraper, SSRF bescherming private IPs, Content-Type validatie), `/api/products/analyze/url/route.ts` (scrape → Gemini → AnalyzeJobResponse), `/api/products/analyze/pdf/route.ts` (PDF parse → Gemini, 20MB + type validatie). Fase C (Frontend): types uitgebreid (pricingDetails/source/sourceUrl/status/analysisData), ProductAnalyzerPage stale closure fix (getState() + useCallback), AnalyzingProductModal geconsolideerde effects (onCompleteRef + setTimeout), cancel race condition fix in URL/PDF tabs, slug collision auto-suffix in POST route. Code review: 2 rondes, 4 subagents, 50 issues → 15 critical fixes. TypeScript 0 errors.
+
+60b. **S4.4 Market Insights Fully Functional** — AI Research met Gemini 3.1 Pro: `src/lib/ai/prompts/market-research.ts` (nieuw, system+user prompts met brand context injectie), `/api/insights/ai-research/route.ts` (herschreven: Gemini structured JSON, sanitizeInsight enum validatie, generateUniqueSlug met Set+retry, Prisma $transaction callback, server-side cache invalidatie). InsightCard overflow menu: 4 acties (View Details/Edit/Use in Campaign/Delete) met stopPropagation op alle menu items + click-outside-to-close. CTA wiring: InsightDetailPage `onNavigate` prop (Use in Campaign→active-campaigns, Generate Content→content-library), App.tsx routing doorgewired. Type/store cleanup: ongebruikte `aiResearchJobId`/`isResearching` velden verwijderd uit useMarketInsightsStore, `AiResearchJobResponse` type gefixt. AiResearchTab error feedback UI (AlertCircle+border). ProviderCard: disabled "Coming Soon" button+Lock icon, noopener/noreferrer. Polling endpoint 410 Gone. 3 review rondes (6 subagents): stabiele delete mutation (inline useMutation), edit state sync (prevEditing ref), tag dedup, 0 TS errors.
 
 60. **S5 Fase 0: Knowledge Library + Research & Validation Schema + Seed** — KnowledgeResource uitgebreid (difficultyLevel enum, createdBy, indexes op type/category). 8 nieuwe modellen (ResearchBundle, BundleAsset, BundleMethod, ValidationPlan, ValidationPlanAsset, ValidationPlanMethod, ResearchStudy, BundlePurchase). 4 nieuwe enums (BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus). ResearchMethodType hergebruikt voor ValidationPlanMethod.methodType (identieke waarden). Workspace +2 relaties (validationPlans, researchStudies). Seed: 10 knowledge resources (2 featured), 10 research bundles (6 Foundation + 4 Specialized, 25 assets, 28 methods), 3 research studies (linked to personas/assets), 1 demo validation plan (2 assets, 3 methods, $180). TypeScript 0 errors.
 
