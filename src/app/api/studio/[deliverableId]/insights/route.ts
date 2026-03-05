@@ -4,7 +4,7 @@ import { resolveWorkspaceId } from '@/lib/auth-server';
 
 type RouteParams = { params: Promise<{ deliverableId: string }> };
 
-// GET /api/studio/[deliverableId]/insights — List available market insights
+// GET /api/studio/[deliverableId]/insights — List activated trends for content studio
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const workspaceId = await resolveWorkspaceId();
@@ -23,15 +23,16 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Deliverable not found' }, { status: 404 });
     }
 
-    // Fetch market insights from the workspace
-    const insights = await prisma.marketInsight.findMany({
+    // Fetch activated trends from the workspace
+    const trends = await prisma.detectedTrend.findMany({
       where: {
         workspaceId: workspaceId ?? undefined,
+        isActivated: true,
       },
       select: {
         id: true,
         title: true,
-        source: true,
+        detectionSource: true,
         category: true,
         relevanceScore: true,
       },
@@ -39,12 +40,12 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     });
 
     return NextResponse.json({
-      insights: insights.map((insight) => ({
-        id: insight.id,
-        title: insight.title,
-        source: insight.source,
-        category: insight.category,
-        relevanceScore: insight.relevanceScore,
+      insights: trends.map((trend) => ({
+        id: trend.id,
+        title: trend.title,
+        source: trend.detectionSource,
+        category: trend.category,
+        relevanceScore: trend.relevanceScore,
       })),
     });
   } catch (error) {

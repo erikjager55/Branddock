@@ -5,7 +5,7 @@ import { resolveWorkspaceId } from '@/lib/auth-server';
 
 const searchSchema = z.object({
   query: z.string().min(1).max(200),
-  type: z.enum(['all', 'brand_assets', 'personas', 'products', 'insights', 'campaigns']).optional().default('all'),
+  type: z.enum(['all', 'brand_assets', 'personas', 'products', 'trends', 'campaigns']).optional().default('all'),
   limit: z.coerce.number().min(1).max(50).optional().default(20),
 });
 
@@ -82,20 +82,20 @@ export async function GET(request: NextRequest) {
       })));
     }
 
-    // Search market insights
-    if (type === 'all' || type === 'insights') {
-      const insights = await prisma.marketInsight.findMany({
-        where: { workspaceId, title: { contains: query, mode: 'insensitive' } },
+    // Search trends
+    if (type === 'all' || type === 'trends') {
+      const trends = await prisma.detectedTrend.findMany({
+        where: { workspaceId, isActivated: true, title: { contains: query, mode: 'insensitive' } },
         take: limit,
         select: { id: true, title: true, description: true },
       });
-      results.push(...insights.map((i) => ({
-        id: i.id,
-        title: i.title,
-        type: 'Market Insight',
-        description: i.description,
-        href: 'insight-detail',
-        icon: 'TrendingUp',
+      results.push(...trends.map((t) => ({
+        id: t.id,
+        title: t.title,
+        type: 'Trend',
+        description: t.description,
+        href: 'trend-detail',
+        icon: 'Radar',
       })));
     }
 

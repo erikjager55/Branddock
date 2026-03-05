@@ -102,7 +102,7 @@ export async function getCurrentCount(
       return prisma.product.count({ where: { workspaceId } });
 
     case 'MARKET_INSIGHTS':
-      return prisma.marketInsight.count({ where: { workspaceId } });
+      return prisma.detectedTrend.count({ where: { workspaceId, isDismissed: false } });
 
     case 'KNOWLEDGE_RESOURCES':
       return prisma.knowledgeResource.count({ where: { workspaceId, isArchived: false } });

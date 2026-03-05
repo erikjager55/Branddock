@@ -59,8 +59,9 @@ export async function fetchContextData(
       };
     }
 
+    case "detected_trend":
     case "market_insight": {
-      const insight = await prisma.marketInsight.findFirst({
+      const trend = await prisma.detectedTrend.findFirst({
         where: { id: sourceId, workspaceId },
         select: {
           title: true,
@@ -70,14 +71,14 @@ export async function fetchContextData(
           relevanceScore: true,
         },
       });
-      if (!insight) return null;
+      if (!trend) return null;
       return {
-        name: insight.title,
+        name: trend.title,
         contextData: {
-          description: insight.description,
-          impactLevel: insight.impactLevel,
-          scope: insight.scope,
-          relevanceScore: insight.relevanceScore,
+          description: trend.description,
+          impactLevel: trend.impactLevel,
+          scope: trend.scope,
+          relevanceScore: trend.relevanceScore,
         },
       };
     }

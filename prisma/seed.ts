@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 import { DEFAULT_PERSONA_CHAT_PROMPT } from "./seed/persona-chat-config";
-import type { NotificationType, NotificationCategory, AssetCategory, AssetStatus, AIMessageType, ResearchMethodType, ResearchMethodStatus, WorkshopStatus, InterviewStatus, InterviewQuestionType, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, StyleguideSource, AnalysisStatus, ColorCategory, PersonaAvatarSource, PersonaResearchMethodType, InsightCategory, InsightScope, ImpactLevel, InsightTimeframe, InsightSource, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, ResourceSource, ProductSource, ProductStatus, DifficultyLevel, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus, TicketCategory, TicketPriority, TicketStatus, FeatureRequestStatus, OAuthProvider, ConnectionStatus, BillingCycle, InvoiceStatus, Theme, AccentColor, FontSize, SidebarPosition, SubscriptionStatus, ProductImageCategory } from "@prisma/client";
+import type { NotificationType, NotificationCategory, AssetCategory, AssetStatus, AIMessageType, ResearchMethodType, ResearchMethodStatus, WorkshopStatus, InterviewStatus, InterviewQuestionType, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, StyleguideSource, AnalysisStatus, ColorCategory, PersonaAvatarSource, PersonaResearchMethodType, InsightCategory, InsightScope, ImpactLevel, InsightTimeframe, InsightSource, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, ResourceSource, ProductSource, ProductStatus, DifficultyLevel, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus, TicketCategory, TicketPriority, TicketStatus, FeatureRequestStatus, OAuthProvider, ConnectionStatus, BillingCycle, InvoiceStatus, Theme, AccentColor, FontSize, SidebarPosition, SubscriptionStatus, ProductImageCategory, TrendSourceStatus, TrendDetectionSource, TrendScanStatus } from "@prisma/client";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -114,6 +114,11 @@ async function main() {
   await prisma.bundleMethod.deleteMany();
   await prisma.bundleAsset.deleteMany();
   await prisma.researchBundle.deleteMany();
+
+  // Trend Radar
+  await prisma.detectedTrend.deleteMany();
+  await prisma.trendScanJob.deleteMany();
+  await prisma.trendSource.deleteMany();
 
   // R0.1: Tables without cascade to workspace
   await prisma.insightSourceUrl.deleteMany();
@@ -2352,10 +2357,70 @@ async function main() {
   });
 
   // ============================================
-  // MARKET INSIGHTS SEED DATA (S4)
+  // TREND RADAR SEED DATA (replaces Market Insights)
   // ============================================
 
-  const insightsData: Array<{
+  // 1. Trend Sources — monitored websites
+  const trendSources = await Promise.all([
+    prisma.trendSource.create({
+      data: {
+        name: "McKinsey Digital",
+        url: "https://www.mckinsey.com/capabilities/mckinsey-digital/our-insights",
+        checkInterval: 360,
+        isActive: true,
+        status: "HEALTHY" as TrendSourceStatus,
+        lastCheckedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2h ago
+        lastContentHash: "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
+        nextCheckAt: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4h from now
+        category: "Technology",
+        workspaceId: workspace.id,
+      },
+    }),
+    prisma.trendSource.create({
+      data: {
+        name: "Think with Google",
+        url: "https://www.thinkwithgoogle.com/consumer-insights/consumer-trends/",
+        checkInterval: 720,
+        isActive: true,
+        status: "HEALTHY" as TrendSourceStatus,
+        lastCheckedAt: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6h ago
+        lastContentHash: "b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567a",
+        nextCheckAt: new Date(Date.now() + 6 * 60 * 60 * 1000),
+        category: "Consumer",
+        workspaceId: workspace.id,
+      },
+    }),
+    prisma.trendSource.create({
+      data: {
+        name: "Deloitte Insights",
+        url: "https://www2.deloitte.com/insights/us/en.html",
+        checkInterval: 1440,
+        isActive: true,
+        status: "WARNING" as TrendSourceStatus,
+        lastCheckedAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24h ago
+        lastContentHash: "c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567ab2",
+        lastError: "Timeout after 30s — retrying next cycle",
+        nextCheckAt: new Date(Date.now() + 1 * 60 * 60 * 1000),
+        category: "Business",
+        workspaceId: workspace.id,
+      },
+    }),
+    prisma.trendSource.create({
+      data: {
+        name: "Gartner Research",
+        url: "https://www.gartner.com/en/articles",
+        checkInterval: 360,
+        isActive: false,
+        status: "PAUSED" as TrendSourceStatus,
+        lastCheckedAt: new Date(Date.now() - 72 * 60 * 60 * 1000),
+        category: "Technology",
+        workspaceId: workspace.id,
+      },
+    }),
+  ]);
+
+  // 2. Detected Trends — migrated from MarketInsight data + new auto-scan trends
+  const trendsData: Array<{
     title: string;
     slug: string;
     description: string;
@@ -2364,12 +2429,20 @@ async function main() {
     impactLevel: ImpactLevel;
     timeframe: InsightTimeframe;
     relevanceScore: number;
-    source: InsightSource;
+    direction?: string;
+    confidence?: number;
+    rawExcerpt?: string;
+    aiAnalysis?: string;
     industries: string[];
     tags: string[];
     howToUse: string[];
-    aiResearchPrompt?: string;
-    useBrandContext?: boolean;
+    sourceUrl?: string;
+    isActivated: boolean;
+    activatedAt?: Date;
+    isDismissed: boolean;
+    dismissedAt?: Date;
+    detectionSource: TrendDetectionSource;
+    trendSourceIdx?: number; // index into trendSources array
   }> = [
     {
       title: "AI-Powered Personalization at Scale",
@@ -2380,12 +2453,19 @@ async function main() {
       impactLevel: "HIGH",
       timeframe: "SHORT_TERM",
       relevanceScore: 95,
-      source: "AI_RESEARCH",
+      direction: "rising",
+      confidence: 92,
+      rawExcerpt: "New research shows 78% of consumers expect personalized interactions, up from 52% in 2024.",
+      aiAnalysis: "This trend represents a fundamental shift in customer expectations. Brands that fail to implement AI-driven personalization risk losing market share to more agile competitors.",
       industries: ["SaaS", "E-commerce", "FinTech"],
       tags: ["AI", "Personalization", "Customer Experience", "Machine Learning"],
       howToUse: ["Implement AI-driven content recommendations in your product", "Use customer data to create personalized onboarding flows", "A/B test personalized vs generic messaging in campaigns"],
-      aiResearchPrompt: "What are the latest trends in AI-powered personalization for B2B SaaS?",
-      useBrandContext: true,
+      sourceUrl: "https://mckinsey.com/example",
+      isActivated: true,
+      activatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      isDismissed: false,
+      detectionSource: "AUTO_SCAN",
+      trendSourceIdx: 0,
     },
     {
       title: "Sustainability as Brand Standard",
@@ -2396,10 +2476,16 @@ async function main() {
       impactLevel: "HIGH",
       timeframe: "LONG_TERM",
       relevanceScore: 88,
-      source: "MANUAL",
+      direction: "rising",
+      confidence: 85,
       industries: ["Consumer Goods", "Fashion", "Food & Beverage"],
       tags: ["Sustainability", "ESG", "Consumer Trust", "Green Marketing"],
       howToUse: ["Audit your brand's environmental claims for authenticity", "Integrate sustainability messaging into brand positioning", "Develop transparent supply chain communication strategy"],
+      sourceUrl: "https://deloitte.com/example",
+      isActivated: true,
+      activatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      isDismissed: false,
+      detectionSource: "MANUAL",
     },
     {
       title: "Remote-First Work Culture",
@@ -2410,10 +2496,14 @@ async function main() {
       impactLevel: "HIGH",
       timeframe: "MEDIUM_TERM",
       relevanceScore: 82,
-      source: "AI_RESEARCH",
+      direction: "stable",
+      confidence: 78,
       industries: ["Technology", "Professional Services", "Education"],
       tags: ["Remote Work", "Culture", "Digital Transformation", "Collaboration"],
       howToUse: ["Position products for distributed team use cases", "Highlight async collaboration features in marketing", "Create content around remote-first best practices"],
+      isActivated: false,
+      isDismissed: false,
+      detectionSource: "AI_RESEARCH",
     },
     {
       title: "Micro-Moment Marketing",
@@ -2424,10 +2514,19 @@ async function main() {
       impactLevel: "HIGH",
       timeframe: "SHORT_TERM",
       relevanceScore: 90,
-      source: "MANUAL",
+      direction: "rising",
+      confidence: 88,
+      rawExcerpt: "Google reports 91% of smartphone users look up information while in the middle of a task.",
+      aiAnalysis: "Micro-moments are becoming the new battleground for brand attention. Success requires real-time data infrastructure and pre-built content libraries.",
       industries: ["Retail", "Travel", "Media"],
       tags: ["Mobile", "Real-time", "Intent Marketing", "Conversion"],
       howToUse: ["Map customer micro-moments across the journey", "Create snackable content for mobile touchpoints", "Implement real-time trigger-based campaigns"],
+      sourceUrl: "https://thinkwithgoogle.com/example",
+      isActivated: true,
+      activatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      isDismissed: false,
+      detectionSource: "AUTO_SCAN",
+      trendSourceIdx: 1,
     },
     {
       title: "Community Commerce",
@@ -2438,10 +2537,15 @@ async function main() {
       impactLevel: "MEDIUM",
       timeframe: "SHORT_TERM",
       relevanceScore: 85,
-      source: "IMPORTED",
+      direction: "rising",
+      confidence: 80,
       industries: ["E-commerce", "Fashion", "Beauty"],
       tags: ["Social Commerce", "Community", "Creator Economy", "D2C"],
       howToUse: ["Build brand ambassador programs", "Integrate social proof into product pages", "Develop community-driven content strategy"],
+      isActivated: false,
+      isDismissed: false,
+      detectionSource: "AUTO_SCAN",
+      trendSourceIdx: 2,
     },
     {
       title: "Privacy-First Data Strategies",
@@ -2452,10 +2556,19 @@ async function main() {
       impactLevel: "HIGH",
       timeframe: "SHORT_TERM",
       relevanceScore: 92,
-      source: "AI_RESEARCH",
+      direction: "rising",
+      confidence: 90,
+      rawExcerpt: "75% of marketers still rely on third-party cookies, yet 89% acknowledge they need a first-party data strategy within 12 months.",
+      aiAnalysis: "Privacy regulations are accelerating globally. Brands that invest in first-party data infrastructure now will have a significant competitive advantage.",
       industries: ["AdTech", "SaaS", "Healthcare"],
       tags: ["Privacy", "First-party Data", "GDPR", "Cookieless"],
       howToUse: ["Audit current data collection practices", "Develop first-party data strategy", "Create value exchanges for data consent"],
+      sourceUrl: "https://iab.com/example",
+      isActivated: true,
+      activatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      isDismissed: false,
+      detectionSource: "AUTO_SCAN",
+      trendSourceIdx: 0,
     },
     {
       title: "Experience Economy Evolution",
@@ -2466,41 +2579,65 @@ async function main() {
       impactLevel: "HIGH",
       timeframe: "LONG_TERM",
       relevanceScore: 87,
-      source: "MANUAL",
+      direction: "stable",
+      confidence: 82,
       industries: ["Hospitality", "Entertainment", "Luxury"],
       tags: ["Experience Design", "Immersive", "Brand Experience", "Storytelling"],
       howToUse: ["Design brand experiences that are inherently shareable", "Blend digital and physical brand touchpoints", "Measure experience metrics beyond satisfaction scores"],
+      isActivated: false,
+      isDismissed: true,
+      dismissedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      detectionSource: "MANUAL",
+    },
+    {
+      title: "Voice Search Optimization",
+      slug: "voice-search-optimization",
+      description: "Voice-based queries now account for 35% of all searches, requiring brands to optimize content for conversational language patterns and featured snippets.",
+      category: "TECHNOLOGY",
+      scope: "MICRO",
+      impactLevel: "MEDIUM",
+      timeframe: "SHORT_TERM",
+      relevanceScore: 76,
+      direction: "rising",
+      confidence: 72,
+      rawExcerpt: "Voice commerce transactions are projected to reach $80B by 2027, up from $19B in 2024.",
+      industries: ["E-commerce", "Media", "Retail"],
+      tags: ["Voice Search", "SEO", "Conversational AI", "Smart Speakers"],
+      howToUse: ["Optimize FAQ content for voice query patterns", "Structure data with schema.org markup", "Create conversational landing pages"],
+      sourceUrl: "https://thinkwithgoogle.com/consumer-insights/voice-search",
+      isActivated: false,
+      isDismissed: false,
+      detectionSource: "AUTO_SCAN",
+      trendSourceIdx: 1,
     },
   ];
 
-  const createdInsights = [];
-  for (const insight of insightsData) {
-    const created = await prisma.marketInsight.create({
-      data: { ...insight, workspaceId: workspace.id },
+  for (const trend of trendsData) {
+    const { trendSourceIdx, activatedAt, ...data } = trend;
+    await prisma.detectedTrend.create({
+      data: {
+        ...data,
+        activatedAt: data.isActivated ? (activatedAt ?? new Date()) : undefined,
+        activatedById: data.isActivated ? DEMO_USER_ID : undefined,
+        trendSourceId: trendSourceIdx !== undefined ? trendSources[trendSourceIdx].id : undefined,
+        workspaceId: workspace.id,
+      },
     });
-    createdInsights.push(created);
   }
 
-  // InsightSourceUrls
-  const sourceUrlData: Array<{ insightSlug: string; name: string; url: string }> = [
-    { insightSlug: "ai-powered-personalization", name: "McKinsey Digital Report", url: "https://mckinsey.com/example" },
-    { insightSlug: "ai-powered-personalization", name: "Gartner Predictions", url: "https://gartner.com/example" },
-    { insightSlug: "sustainability-brand-standard", name: "Deloitte Sustainability Report", url: "https://deloitte.com/example" },
-    { insightSlug: "remote-first-work-culture", name: "Buffer State of Remote", url: "https://buffer.com/example" },
-    { insightSlug: "micro-moment-marketing", name: "Google Think with Google", url: "https://thinkwithgoogle.com/example" },
-    { insightSlug: "privacy-first-data", name: "IAB Privacy Report", url: "https://iab.com/example" },
-    { insightSlug: "privacy-first-data", name: "Google Privacy Sandbox", url: "https://privacysandbox.com/example" },
-    { insightSlug: "experience-economy", name: "Pine & Gilmore Updated Framework", url: "https://example.com/experience-economy" },
-  ];
-
-  for (const su of sourceUrlData) {
-    const insight = createdInsights.find((i) => i.slug === su.insightSlug);
-    if (insight) {
-      await prisma.insightSourceUrl.create({
-        data: { name: su.name, url: su.url, insightId: insight.id },
-      });
-    }
-  }
+  // 3. Trend Scan Job — one completed scan
+  await prisma.trendScanJob.create({
+    data: {
+      status: "COMPLETED" as TrendScanStatus,
+      sourcesTotal: 3,
+      sourcesCompleted: 3,
+      trendsDetected: 5,
+      errors: [],
+      startedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      completedAt: new Date(Date.now() - 2 * 60 * 60 * 1000 + 45000), // 45s scan
+      workspaceId: workspace.id,
+    },
+  });
 
   // ============================================
   // R0.1: ALIGNMENT SCAN SEED DATA (Fase 8)
@@ -4029,7 +4166,7 @@ Respond only with valid JSON.`,
     });
   }
 
-  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 11 brand assets (7 with frameworkData), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 10 knowledge resources (2 featured), 7 market insights (8 source URLs), 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, 2 exploration configs, S9 Settings: 1 user profile, 1 email preference, 3 connected accounts, 3 plans, 1 subscription, 1 payment method, 4 invoices, 1 notification preference, 1 appearance preference, S9 Help: 6 help categories, 5 help articles, 6 video tutorials, 7 FAQ items, 5 feature requests");
+  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 11 brand assets (7 with frameworkData), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 10 knowledge resources (2 featured), 4 trend sources, 8 detected trends, 1 scan job, 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, 2 exploration configs, S9 Settings: 1 user profile, 1 email preference, 3 connected accounts, 3 plans, 1 subscription, 1 payment method, 4 invoices, 1 notification preference, 1 appearance preference, S9 Help: 6 help categories, 5 help articles, 6 video tutorials, 7 FAQ items, 5 feature requests");
 }
 
 main()

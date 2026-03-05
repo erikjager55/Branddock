@@ -142,7 +142,7 @@ function getModuleFromType(
       return "PERSONAS";
     case "Product":
       return "PRODUCTS_SERVICES";
-    case "MarketInsight":
+    case "DetectedTrend":
       return "MARKET_INSIGHTS";
     default:
       return "BRAND_FOUNDATION";

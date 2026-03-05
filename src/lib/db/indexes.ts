@@ -22,9 +22,10 @@ export const COMPOSITE_INDEXES: CompositeIndexDefinition[] = [
   { model: "Campaign", fields: ["workspaceId", "type"], rationale: "Campaign stats count by type" },
   { model: "Campaign", fields: ["workspaceId", "isArchived"], rationale: "Campaign list excludes archived" },
 
-  // MarketInsight
-  { model: "MarketInsight", fields: ["workspaceId", "category"], rationale: "Insights page filters by category" },
-  { model: "MarketInsight", fields: ["workspaceId", "impactLevel"], rationale: "Insights page filters by impact level" },
+  // DetectedTrend
+  { model: "DetectedTrend", fields: ["workspaceId", "category"], rationale: "Trend radar filters by category" },
+  { model: "DetectedTrend", fields: ["workspaceId", "impactLevel"], rationale: "Trend radar filters by impact level" },
+  { model: "DetectedTrend", fields: ["workspaceId", "isActivated"], rationale: "Activated trends for AI context" },
 
   // KnowledgeResource
   { model: "KnowledgeResource", fields: ["workspaceId", "type"], rationale: "Knowledge library filters by resource type" },

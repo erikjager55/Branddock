@@ -16,7 +16,7 @@ export async function GET() {
       prisma.brandAsset.count({ where: { workspaceId } }),
       prisma.persona.count({ where: { workspaceId } }),
       prisma.product.count({ where: { workspaceId } }),
-      prisma.marketInsight.count({ where: { workspaceId } }),
+      prisma.detectedTrend.count({ where: { workspaceId, isDismissed: false } }),
     ]);
 
     // Find the most incomplete module
@@ -28,7 +28,7 @@ export async function GET() {
     } else if (productCount === 0) {
       data = { id: 'rec-products', badge: 'AI RECOMMENDED', title: 'Add Your Products & Services', description: 'Document your offerings to enable product-persona alignment and better campaign targeting.', actionLabel: 'Add Product', actionHref: 'product-analyzer' };
     } else if (insightCount < 3) {
-      data = { id: 'rec-insights', badge: 'AI RECOMMENDED', title: 'Gather Market Intelligence', description: 'Add market insights to strengthen your brand strategy with data-driven decisions.', actionLabel: 'Add Insights', actionHref: 'trends' };
+      data = { id: 'rec-trends', badge: 'AI RECOMMENDED', title: 'Monitor Market Trends', description: 'Add trend sources to automatically detect and activate market trends for your brand strategy.', actionLabel: 'Explore Trends', actionHref: 'trends' };
     } else {
       data = { id: 'rec-alignment', badge: 'AI RECOMMENDED', title: 'Run a Brand Alignment Scan', description: 'Check consistency across all your brand modules and identify misalignments before they become problems.', actionLabel: 'Run Scan', actionHref: 'brand-alignment' };
     }

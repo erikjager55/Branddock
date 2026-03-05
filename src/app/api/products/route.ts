@@ -5,7 +5,7 @@ import { resolveWorkspaceId } from "@/lib/auth-server";
 import { PRODUCT_LIST_SELECT } from "@/lib/db/queries";
 import { setCache, cachedJson, invalidateCache } from "@/lib/api/cache";
 import { cacheKeys, CACHE_TTL } from "@/lib/api/cache-keys";
-import { ProductStatus } from "@prisma/client";
+import type { ProductStatus, ProductImageCategory, ProductSource } from "@prisma/client";
 
 // ─── Zod Schemas ────────────────────────────────────────────
 
@@ -185,9 +185,11 @@ export async function POST(request: NextRequest) {
       slug = `${slug}-${Date.now().toString(36)}`;
     }
 
-    // Determine source and status
-    const resolvedSource = source ?? "MANUAL";
-    const validStatuses = Object.values(ProductStatus) as string[];
+    // Determine source and status (hardcoded fallbacks in case enum import is undefined at runtime)
+    const validSources = ["MANUAL", "WEBSITE_URL", "PDF_UPLOAD"];
+    const resolvedSource = (source && validSources.includes(source)
+      ? source : "MANUAL") as ProductSource;
+    const validStatuses = ["DRAFT", "ANALYZED", "ARCHIVED"];
     const resolvedStatus = (status && validStatuses.includes(status)
       ? status
       : resolvedSource !== "MANUAL" ? "ANALYZED" : "DRAFT") as ProductStatus;
@@ -213,8 +215,11 @@ export async function POST(request: NextRequest) {
 
     // Create ProductImage records if images provided
     if (images && images.length > 0) {
-      const { ProductImageCategory: PIC } = await import("@prisma/client");
-      const validCategories = Object.values(PIC) as string[];
+      const validCategories = [
+        "HERO", "LIFESTYLE", "DETAIL", "SCREENSHOT", "FEATURE",
+        "MOCKUP", "PACKAGING", "VARIANT", "GROUP", "DIAGRAM",
+        "PROCESS", "TEAM", "OTHER",
+      ];
       // Derive image source from product source
       const imageSource = resolvedSource === "WEBSITE_URL" ? "SCRAPED"
         : resolvedSource === "PDF_UPLOAD" ? "SCRAPED"
@@ -226,7 +231,7 @@ export async function POST(request: NextRequest) {
           url: img.url,
           category: (img.category && validCategories.includes(img.category)
             ? img.category
-            : "OTHER") as (typeof PIC)[keyof typeof PIC],
+            : "OTHER") as ProductImageCategory,
           altText: img.altText ?? null,
           sortOrder: idx,
           source: imageSource,
@@ -251,6 +256,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     console.error("[POST /api/products]", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message || "Internal server error" }, { status: 500 });
   }
 }

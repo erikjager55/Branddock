@@ -42,21 +42,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const { insightId, format, location } = parsed.data;
 
-    // Fetch the insight to get title and source
-    const insight = await prisma.marketInsight.findUnique({
+    // Fetch the trend to get title and source
+    const trend = await prisma.detectedTrend.findUnique({
       where: { id: insightId },
-      select: { title: true, source: true },
+      select: { title: true, detectionSource: true },
     });
 
-    if (!insight) {
-      return NextResponse.json({ error: 'Insight not found' }, { status: 404 });
+    if (!trend) {
+      return NextResponse.json({ error: 'Trend not found' }, { status: 404 });
     }
 
     // Create InsertedInsight record
     const inserted = await prisma.insertedInsight.create({
       data: {
-        insightTitle: insight.title,
-        insightSource: insight.source,
+        insightTitle: trend.title,
+        insightSource: trend.detectionSource,
         insertFormat: format,
         insertLocation: location,
         deliverableId,

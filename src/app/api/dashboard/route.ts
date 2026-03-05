@@ -9,7 +9,7 @@ export async function GET() {
     if (!workspaceId) return NextResponse.json({ error: 'No workspace' }, { status: 403 });
 
     // Fetch all data in parallel — counts via DB, attention items via targeted findMany
-    const [counts, attentionAssets, activeCampaigns, contentCreated, personaCount, productCount, insightCount, campaigns] = await Promise.all([
+    const [counts, attentionAssets, activeCampaigns, contentCreated, personaCount, productCount, trendCount, campaigns] = await Promise.all([
       getBrandAssetStatusCounts(workspaceId),
       prisma.brandAsset.findMany({
         where: { workspaceId, status: { not: 'READY' } },
@@ -21,7 +21,7 @@ export async function GET() {
       prisma.deliverable.count({ where: { campaign: { workspaceId }, status: 'COMPLETED' } }),
       prisma.persona.count({ where: { workspaceId } }),
       prisma.product.count({ where: { workspaceId } }),
-      prisma.marketInsight.count({ where: { workspaceId } }),
+      prisma.detectedTrend.count({ where: { workspaceId, isDismissed: false } }),
       prisma.campaign.findMany({
         where: { workspaceId, status: 'ACTIVE' },
         orderBy: { updatedAt: 'desc' },
@@ -71,8 +71,8 @@ export async function GET() {
       recommended = { id: 'rec-personas', badge: 'AI RECOMMENDED', title: 'Define Your Target Audience', description: 'Create personas to understand who you are building for.', actionLabel: 'Create Persona', actionHref: 'persona-create' };
     } else if (productCount === 0) {
       recommended = { id: 'rec-products', badge: 'AI RECOMMENDED', title: 'Add Your Products & Services', description: 'Document your offerings to enable better targeting.', actionLabel: 'Add Product', actionHref: 'product-analyzer' };
-    } else if (insightCount < 3) {
-      recommended = { id: 'rec-insights', badge: 'AI RECOMMENDED', title: 'Gather Market Intelligence', description: 'Add market insights to strengthen your strategy.', actionLabel: 'Add Insights', actionHref: 'trends' };
+    } else if (trendCount < 3) {
+      recommended = { id: 'rec-trends', badge: 'AI RECOMMENDED', title: 'Monitor Market Trends', description: 'Add trend sources to stay ahead of market movements.', actionLabel: 'Open Trend Radar', actionHref: 'trends' };
     } else {
       recommended = { id: 'rec-alignment', badge: 'AI RECOMMENDED', title: 'Run a Brand Alignment Scan', description: 'Check consistency across all brand modules.', actionLabel: 'Run Scan', actionHref: 'brand-alignment' };
     }

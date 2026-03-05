@@ -9,7 +9,7 @@
 //  - BrandAsset (mission, vision, values, positioning)
 //  - Persona (primary target audience description)
 //  - Product (products overview)
-//  - MarketInsight (competitive landscape summary)
+//  - DetectedTrend (competitive landscape summary, activated trends only)
 //  - Workspace (brand name, industry)
 // =============================================================
 
@@ -66,7 +66,7 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
   if (cached) return cached;
 
   // Fetch all sources in parallel
-  const [workspace, brandAssets, personas, products, insights] = await Promise.all([
+  const [workspace, brandAssets, personas, products, activatedTrends] = await Promise.all([
     prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { name: true },
@@ -93,8 +93,8 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       take: 10,
     }),
 
-    prisma.marketInsight.findMany({
-      where: { workspaceId },
+    prisma.detectedTrend.findMany({
+      where: { workspaceId, isActivated: true },
       select: { title: true, category: true, impactLevel: true },
       orderBy: { relevanceScore: 'desc' },
       take: 5,
@@ -146,11 +146,11 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
     ctx.productsOverview = summaries.join(', ');
   }
 
-  // Competitive landscape from market insights
-  if (insights.length > 0) {
-    const highImpact = insights.filter((i) => i.impactLevel === 'HIGH');
-    const relevant = highImpact.length > 0 ? highImpact : insights.slice(0, 3);
-    ctx.competitiveLandscape = relevant.map((i) => `${i.title} (${i.category})`).join('; ');
+  // Competitive landscape from activated trends
+  if (activatedTrends.length > 0) {
+    const highImpact = activatedTrends.filter((t) => t.impactLevel === 'HIGH');
+    const relevant = highImpact.length > 0 ? highImpact : activatedTrends.slice(0, 3);
+    ctx.competitiveLandscape = relevant.map((t) => `${t.title} (${t.category})`).join('; ');
   }
 
   // Cache and return

@@ -130,7 +130,8 @@ function formatSourceType(sourceType: string): string {
   const labels: Record<string, string> = {
     brand_asset: 'Brand Asset',
     product: 'Product',
-    market_insight: 'Market Insight',
+    detected_trend: 'Trend',
+    market_insight: 'Trend', // legacy alias
     knowledge_resource: 'Knowledge Resource',
     campaign: 'Campaign',
     deliverable: 'Deliverable',
@@ -156,10 +157,12 @@ function formatContextData(sourceType: string, data: Record<string, unknown>): s
         lines.push(`Key features: ${(data.features as string[]).join(', ')}`);
       }
       break;
+    case 'detected_trend':
     case 'market_insight':
       if (data.description) lines.push(String(data.description));
       if (data.impactLevel) lines.push(`Impact: ${data.impactLevel}`);
       if (data.scope) lines.push(`Scope: ${data.scope}`);
+      if (data.direction) lines.push(`Direction: ${data.direction}`);
       break;
     case 'knowledge_resource':
       if (data.description) lines.push(String(data.description));

@@ -17,7 +17,7 @@ const ASSET_TYPE_ICONS: Record<string, typeof Shield> = {
   Persona: Users,
   Product: Package,
   Trend: TrendingUp,
-  MarketInsight: TrendingUp,
+  DetectedTrend: TrendingUp,
 };
 
 export function ConfigureInputsTab({ assets, isLoading, onAddAssets, onRemoveAsset }: ConfigureInputsTabProps) {

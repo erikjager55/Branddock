@@ -7,7 +7,7 @@ interface ReadinessInput {
   researchStudies: number;
   personas: number;
   products: number;
-  marketInsights: number;
+  detectedTrends: number;
 }
 
 /**
@@ -20,7 +20,7 @@ export function calculateReadiness(stats: ReadinessInput): number {
     researchStudies: 0.20,
     personas: 0.20,
     products: 0.15,
-    marketInsights: 0.15,
+    detectedTrends: 0.15,
   };
 
   // Each module contributes based on whether it has content
@@ -29,7 +29,7 @@ export function calculateReadiness(stats: ReadinessInput): number {
     researchStudies: stats.researchStudies > 0 ? Math.min(100, stats.researchStudies * 25) : 0,
     personas: stats.personas > 0 ? Math.min(100, stats.personas * 33) : 0,
     products: stats.products > 0 ? Math.min(100, stats.products * 33) : 0,
-    marketInsights: stats.marketInsights > 0 ? Math.min(100, stats.marketInsights * 15) : 0,
+    detectedTrends: stats.detectedTrends > 0 ? Math.min(100, stats.detectedTrends * 15) : 0,
   };
 
   const weighted =
@@ -37,7 +37,7 @@ export function calculateReadiness(stats: ReadinessInput): number {
     scores.researchStudies * weights.researchStudies +
     scores.personas * weights.personas +
     scores.products * weights.products +
-    scores.marketInsights * weights.marketInsights;
+    scores.detectedTrends * weights.detectedTrends;
 
   return Math.round(Math.min(100, Math.max(0, weighted)));
 }

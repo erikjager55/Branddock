@@ -181,6 +181,11 @@ model Workspace {
   // Item Knowledge Sources (per-asset custom knowledge)
   itemKnowledgeSources      ItemKnowledgeSource[]
 
+  // Trend Radar
+  trendSources              TrendSource[]
+  detectedTrends            DetectedTrend[]
+  trendScanJobs             TrendScanJob[]
+
   @@index([organizationId])
 }
 
@@ -246,6 +251,9 @@ model User {
 
   // Versioning
   resourceVersions       ResourceVersion[]
+
+  // Trend Radar
+  activatedTrends        DetectedTrend[]    @relation("TrendActivator")
 
   @@index([workspaceId])
 }
@@ -2152,7 +2160,30 @@ enum ProductStatus {
   ARCHIVED
 }
 
-// Fase 6: Market Insights
+// Trend Radar
+enum TrendSourceStatus {
+  PENDING
+  HEALTHY
+  WARNING
+  ERROR
+  PAUSED
+}
+
+enum TrendDetectionSource {
+  AUTO_SCAN
+  MANUAL
+  AI_RESEARCH
+}
+
+enum TrendScanStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// Fase 6: Market Insights (legacy — replaced by Trend Radar)
 enum InsightCategory {
   TECHNOLOGY
   ENVIRONMENTAL
@@ -2937,4 +2968,102 @@ model ResourceVersion {
   @@index([resourceType, resourceId])
   @@index([workspaceId])
   @@unique([resourceType, resourceId, version])
+}
+
+// =============================================================
+// Trend Radar
+// =============================================================
+
+model TrendSource {
+  id               String              @id @default(cuid())
+  name             String
+  url              String
+  checkInterval    Int                 @default(360) // minutes, default 6h
+  isActive         Boolean             @default(true)
+  status           TrendSourceStatus   @default(PENDING)
+  lastCheckedAt    DateTime?
+  lastContentHash  String?             // sha256 of last scraped body
+  lastError        String?
+  nextCheckAt      DateTime?
+  category         String?             // optional grouping
+
+  workspaceId      String
+  workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  detectedTrends   DetectedTrend[]
+  scanJobs         TrendScanJob[]
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([workspaceId])
+  @@index([isActive, nextCheckAt])
+}
+
+model DetectedTrend {
+  id               String              @id @default(cuid())
+  title            String
+  slug             String              @unique
+  description      String?             @db.Text
+  category         InsightCategory
+  scope            InsightScope        @default(MICRO)
+  impactLevel      ImpactLevel         @default(MEDIUM)
+  timeframe        InsightTimeframe    @default(SHORT_TERM)
+  relevanceScore   Float               @default(75)
+  direction        String?             // rising, declining, stable
+  confidence       Float?              // 0-100, AI confidence
+  rawExcerpt       String?             @db.Text
+  aiAnalysis       String?             @db.Text
+  industries       String[]
+  tags             String[]
+  howToUse         String[]
+  sourceUrl        String?
+
+  // Activation
+  isActivated      Boolean             @default(false)
+  activatedAt      DateTime?
+  activatedById    String?
+  activatedBy      User?               @relation("TrendActivator", fields: [activatedById], references: [id])
+
+  // Dismissal
+  isDismissed      Boolean             @default(false)
+  dismissedAt      DateTime?
+
+  // Detection
+  detectionSource  TrendDetectionSource @default(AUTO_SCAN)
+  trendSourceId    String?
+  trendSource      TrendSource?        @relation(fields: [trendSourceId], references: [id], onDelete: SetNull)
+
+  workspaceId      String
+  workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([workspaceId])
+  @@index([workspaceId, category])
+  @@index([workspaceId, impactLevel])
+  @@index([workspaceId, isActivated])
+  @@index([workspaceId, isDismissed])
+}
+
+model TrendScanJob {
+  id               String              @id @default(cuid())
+  status           TrendScanStatus     @default(PENDING)
+  sourcesTotal     Int                 @default(0)
+  sourcesCompleted Int                 @default(0)
+  trendsDetected   Int                 @default(0)
+  errors           String[]
+  startedAt        DateTime            @default(now())
+  completedAt      DateTime?
+
+  // Optional: single source scan
+  trendSourceId    String?
+  trendSource      TrendSource?        @relation(fields: [trendSourceId], references: [id], onDelete: SetNull)
+
+  workspaceId      String
+  workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([status])
 }
