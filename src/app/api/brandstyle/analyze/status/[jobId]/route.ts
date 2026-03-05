@@ -49,20 +49,7 @@ export async function GET(
     const isComplete = styleguide.analysisStatus === "COMPLETE";
     const isError = styleguide.analysisStatus === "ERROR";
 
-    // Simulate progressive step advancement in demo mode
-    // Each poll advances the step if not yet complete
-    if (!isComplete && !isError) {
-      const nextStatus = Object.entries(STATUS_TO_STEP).find(
-        ([, step]) => step === currentStepIndex + 1
-      );
-      if (nextStatus) {
-        await prisma.brandStyleguide.update({
-          where: { id: styleguide.id },
-          data: { analysisStatus: nextStatus[0] as never },
-        });
-      }
-    }
-
+    // Read-only: status is updated by the analysis engine, not by polling
     const steps = ANALYSIS_STEPS.map((name, i) => {
       const stepNum = i + 1;
       let status: "pending" | "active" | "complete" = "pending";
@@ -80,7 +67,7 @@ export async function GET(
       currentStep: currentStepIndex,
       totalSteps: 5,
       steps,
-      ...(isError && { error: "Analysis failed" }),
+      ...(isError && { error: "Analysis failed. Please try again." }),
     });
   } catch (error) {
     console.error("[GET /api/brandstyle/analyze/status]", error);
