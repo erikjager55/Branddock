@@ -38,6 +38,40 @@ function buildSocialProviders(): SocialProviders {
   return providers;
 }
 
+// ─── Auto-provision Organization + Workspace for new users ──
+
+async function provisionNewUser(userId: string, userName: string) {
+  // Check if user already has an organization
+  const existing = await prisma.organizationMember.findFirst({
+    where: { userId },
+  });
+  if (existing) return;
+
+  const slug = `user-${userId.substring(0, 8).toLowerCase()}`;
+
+  const org = await prisma.organization.create({
+    data: {
+      name: `${userName}'s Brand`,
+      slug,
+      type: 'DIRECT',
+      members: {
+        create: {
+          userId,
+          role: 'owner',
+        },
+      },
+      workspaces: {
+        create: {
+          name: `${userName}'s Workspace`,
+          slug: `ws-${slug}`,
+        },
+      },
+    },
+  });
+
+  console.log(`[auth] Provisioned org ${org.id} + workspace for user ${userId}`);
+}
+
 // ─── Better Auth server config ─────────────────────────────
 
 export const auth = betterAuth({
@@ -50,6 +84,15 @@ export const auth = betterAuth({
   socialProviders: buildSocialProviders(),
   user: {
     modelName: "User",
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          await provisionNewUser(user.id, user.name || user.email?.split('@')[0] || 'User');
+        },
+      },
+    },
   },
   plugins: [
     organization({

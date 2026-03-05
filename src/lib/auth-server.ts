@@ -32,32 +32,22 @@ export async function resolveWorkspaceId(): Promise<string | null> {
   const session = await getServerSession();
 
   if (session) {
-    console.log('[resolveWorkspaceId] session found, userId:', session.user.id);
-
     // 1. Check explicit workspace cookie
     const explicit = await getExplicitWorkspace(session.user.id);
-    if (explicit) {
-      console.log('[resolveWorkspaceId] explicit workspace:', explicit.id);
-      return explicit.id;
-    }
+    if (explicit) return explicit.id;
 
     // 2. Active organization's first workspace
     const activeOrgId = (session.session as Record<string, unknown>)
       .activeOrganizationId as string | undefined;
-    console.log('[resolveWorkspaceId] activeOrgId:', activeOrgId);
 
     if (activeOrgId) {
       const workspace = await getWorkspaceForOrganization(activeOrgId);
-      console.log('[resolveWorkspaceId] workspace for org:', workspace?.id);
       if (workspace) return workspace.id;
     }
 
     // 3. User's first org's first workspace
     const workspace = await getWorkspaceForUser(session.user.id);
-    console.log('[resolveWorkspaceId] workspace for user:', workspace?.id);
     if (workspace) return workspace.id;
-  } else {
-    console.log('[resolveWorkspaceId] NO SESSION FOUND');
   }
 
   return null;
