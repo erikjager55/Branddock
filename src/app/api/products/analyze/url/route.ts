@@ -34,12 +34,15 @@ export async function POST(request: NextRequest) {
     }
 
     const { url } = parsed.data;
+    console.log("[analyze/url] Starting analysis for:", url);
 
     // 1. Scrape the URL
     let scraped;
     try {
       scraped = await scrapeProductUrl(url);
+      console.log("[analyze/url] Scraped OK, body length:", scraped.bodyText.length, "images:", scraped.images.length);
     } catch (scrapeError) {
+      console.error("[analyze/url] Scrape failed:", scrapeError);
       const message = scrapeError instanceof Error ? scrapeError.message : "Failed to fetch URL";
       return NextResponse.json(
         { error: `Could not access the URL: ${message}` },
@@ -75,11 +78,13 @@ export async function POST(request: NextRequest) {
       brandContext: brandContextStr,
     });
 
+    console.log("[analyze/url] Calling Gemini...");
     const result = await createGeminiStructuredCompletion<ProductAnalysisResult>(
       PRODUCT_ANALYSIS_SYSTEM_PROMPT,
       userPrompt,
       { temperature: 0.3 },
     );
+    console.log("[analyze/url] Gemini returned, product name:", result?.name);
 
     // 4. Validate and normalize result
     const category = VALID_CATEGORIES.includes(result.category) ? result.category : "other";
@@ -126,7 +131,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("[POST /api/products/analyze/url]", error);
-    const message = error instanceof Error ? error.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    return NextResponse.json({ error: message || "Internal server error" }, { status: 500 });
   }
 }
