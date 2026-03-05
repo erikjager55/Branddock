@@ -35,20 +35,34 @@ const TIER_LIMITS: Record<RateLimitTier, RateLimitConfig> = {
   AGENCY: { requestsPerMinute: 120, requestsPerDay: 5000 },
 };
 
-// ─── Redis client (lazy init) ──────────────────────────────
+// ─── Redis client (lazy init with failure tracking) ────────
 
 let redis: Redis | null = null;
+let redisFailCount = 0;
+const MAX_REDIS_FAILURES = 5;
 
 function getRedis(): Redis | null {
+  if (redisFailCount >= MAX_REDIS_FAILURES) return null;
   if (redis) return redis;
 
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-
   if (!url || !token) return null;
 
   redis = new Redis({ url, token });
   return redis;
+}
+
+function markRedisFailure(): void {
+  redisFailCount++;
+  if (redisFailCount >= MAX_REDIS_FAILURES) {
+    redis = null;
+    console.warn(`[Rate limiter] ${MAX_REDIS_FAILURES} consecutive Redis failures. Falling back to in-memory.`);
+  }
+}
+
+function markRedisSuccess(): void {
+  redisFailCount = 0;
 }
 
 // ─── In-memory fallback ────────────────────────────────────
@@ -60,6 +74,7 @@ interface BucketEntry {
 }
 
 const memoryStore = new Map<string, BucketEntry>();
+const MEMORY_STORE_MAX_SIZE = 10_000;
 
 function getNextMidnightUTC(): number {
   const now = new Date();
@@ -76,6 +91,12 @@ function getOrCreateBucket(key: string): BucketEntry {
   const now = Date.now();
 
   if (!entry || now >= entry.dailyResetAt) {
+    // Evict oldest entry if store is too large
+    if (memoryStore.size >= MEMORY_STORE_MAX_SIZE) {
+      const firstKey = memoryStore.keys().next().value;
+      if (firstKey) memoryStore.delete(firstKey);
+    }
+
     entry = { timestamps: [], dailyCount: 0, dailyResetAt: getNextMidnightUTC() };
     memoryStore.set(key, entry);
   }
@@ -107,11 +128,20 @@ function checkRateLimitMemory(workspaceId: string, tier: RateLimitTier): RateLim
   const minuteRemaining = config.requestsPerMinute - bucket.timestamps.length;
   const dailyRemaining = config.requestsPerDay - bucket.dailyCount;
 
-  return { allowed: true, remaining: Math.min(minuteRemaining, dailyRemaining), resetAt: new Date(now + 60_000), tier };
+  return {
+    allowed: true,
+    remaining: Math.max(0, Math.min(minuteRemaining, dailyRemaining)),
+    resetAt: new Date(now + 60_000),
+    tier,
+  };
 }
 
 // ─── Redis-backed rate limiting ────────────────────────────
 
+/**
+ * Read-then-write approach: check limits first, only increment if allowed.
+ * Prevents denied requests from consuming daily quota.
+ */
 async function checkRateLimitRedis(
   client: Redis,
   workspaceId: string,
@@ -123,52 +153,57 @@ async function checkRateLimitRedis(
   const now = Date.now();
 
   try {
-    // Use pipeline for atomic operations
+    // Step 1: Read current counts without incrementing
+    const [minuteCount, dailyCount] = await Promise.all([
+      client.get<number>(minuteKey),
+      client.get<number>(dailyKey),
+    ]);
+
+    const currentMinute = minuteCount ?? 0;
+    const currentDaily = dailyCount ?? 0;
+
+    // Step 2: Check limits before consuming a token
+    if (currentMinute >= config.requestsPerMinute) {
+      const ttl = await client.ttl(minuteKey);
+      markRedisSuccess();
+      return { allowed: false, remaining: 0, resetAt: new Date(now + (ttl > 0 ? ttl * 1000 : 60_000)), tier };
+    }
+
+    if (currentDaily >= config.requestsPerDay) {
+      const ttl = await client.ttl(dailyKey);
+      markRedisSuccess();
+      return { allowed: false, remaining: 0, resetAt: new Date(now + (ttl > 0 ? ttl * 1000 : 86_400_000)), tier };
+    }
+
+    // Step 3: Increment + set TTL in one pipeline
     const pipe = client.pipeline();
     pipe.incr(minuteKey);
-    pipe.ttl(minuteKey);
     pipe.incr(dailyKey);
-    pipe.ttl(dailyKey);
 
-    const results = await pipe.exec();
-    const minuteCount = results[0] as number;
-    const minuteTtl = results[1] as number;
-    const dailyCount = results[2] as number;
-    const dailyTtl = results[3] as number;
-
-    // Set TTL on first request in window
-    if (minuteTtl === -1) {
-      await client.expire(minuteKey, 60);
+    // Set TTL only on the first request in a window (when key didn't exist)
+    if (currentMinute === 0) {
+      pipe.expire(minuteKey, 60);
     }
-    if (dailyTtl === -1) {
-      // Calculate seconds until midnight UTC
+    if (currentDaily === 0) {
       const midnightUTC = getNextMidnightUTC();
       const secondsUntilMidnight = Math.ceil((midnightUTC - now) / 1000);
-      await client.expire(dailyKey, secondsUntilMidnight);
+      pipe.expire(dailyKey, secondsUntilMidnight);
     }
 
-    // Check per-minute limit
-    if (minuteCount > config.requestsPerMinute) {
-      const resetAt = new Date(now + (minuteTtl > 0 ? minuteTtl * 1000 : 60_000));
-      return { allowed: false, remaining: 0, resetAt, tier };
-    }
+    await pipe.exec();
 
-    // Check daily limit
-    if (dailyCount > config.requestsPerDay) {
-      const resetAt = new Date(now + (dailyTtl > 0 ? dailyTtl * 1000 : 86_400_000));
-      return { allowed: false, remaining: 0, resetAt, tier };
-    }
+    const minuteRemaining = config.requestsPerMinute - (currentMinute + 1);
+    const dailyRemaining = config.requestsPerDay - (currentDaily + 1);
 
-    const minuteRemaining = config.requestsPerMinute - minuteCount;
-    const dailyRemaining = config.requestsPerDay - dailyCount;
-
+    markRedisSuccess();
     return {
       allowed: true,
-      remaining: Math.min(minuteRemaining, dailyRemaining),
+      remaining: Math.max(0, Math.min(minuteRemaining, dailyRemaining)),
       resetAt: new Date(now + 60_000),
       tier,
     };
   } catch (err) {
+    markRedisFailure();
     console.warn('[Rate limiter] Redis error, falling back to in-memory:', err);
     return checkRateLimitMemory(workspaceId, tier);
   }
@@ -204,17 +239,16 @@ export async function getRateLimitStatus(
   const client = getRedis();
 
   if (!client) {
-    // In-memory path
     const key = `ai:${workspaceId}`;
     const bucket = getOrCreateBucket(key);
     const now = Date.now();
     const recentTimestamps = bucket.timestamps.filter((t) => t > now - 60_000);
 
     return {
-      remaining: Math.min(
+      remaining: Math.max(0, Math.min(
         config.requestsPerMinute - recentTimestamps.length,
         config.requestsPerDay - bucket.dailyCount,
-      ),
+      )),
       resetAt: new Date(now + 60_000),
       tier,
       minuteUsed: recentTimestamps.length,
@@ -223,28 +257,27 @@ export async function getRateLimitStatus(
   }
 
   try {
-    const minuteKey = `rl:min:${workspaceId}`;
-    const dailyKey = `rl:day:${workspaceId}`;
-
     const [minuteCount, dailyCount] = await Promise.all([
-      client.get<number>(minuteKey),
-      client.get<number>(dailyKey),
+      client.get<number>(`rl:min:${workspaceId}`),
+      client.get<number>(`rl:day:${workspaceId}`),
     ]);
 
     const minuteUsed = minuteCount ?? 0;
     const dailyUsed = dailyCount ?? 0;
 
+    markRedisSuccess();
     return {
-      remaining: Math.min(
+      remaining: Math.max(0, Math.min(
         config.requestsPerMinute - minuteUsed,
         config.requestsPerDay - dailyUsed,
-      ),
+      )),
       resetAt: new Date(Date.now() + 60_000),
       tier,
       minuteUsed,
       dailyUsed,
     };
   } catch {
+    markRedisFailure();
     return {
       remaining: config.requestsPerMinute,
       resetAt: new Date(Date.now() + 60_000),

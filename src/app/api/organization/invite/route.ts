@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
 import { sendEmail, invitationEmail } from "@/lib/email";
 
+const VALID_INVITE_ROLES = new Set(["member", "admin", "viewer"]);
+
 // POST /api/organization/invite — create an invitation and send email
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +23,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate role (owners cannot be invited, only promoted)
     const inviteRole = role ?? "member";
+    if (!VALID_INVITE_ROLES.has(inviteRole)) {
+      return NextResponse.json(
+        { error: `Invalid role "${inviteRole}". Allowed: ${[...VALID_INVITE_ROLES].join(', ')}` },
+        { status: 400 }
+      );
+    }
+
+    // Validate organization exists
+    const org = await prisma.organization.findUnique({
+      where: { id: organizationId },
+    });
+
+    if (!org) {
+      return NextResponse.json(
+        { error: "Organization not found" },
+        { status: 404 }
+      );
+    }
 
     // Validate: only owner/admin may invite
     const membership = await prisma.organizationMember.findUnique({
@@ -79,16 +100,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check seat limit
-    const memberCount = await prisma.organizationMember.count({
-      where: { organizationId },
-    });
+    // Check seat limit (count members + pending invites)
+    const [memberCount, pendingInviteCount] = await Promise.all([
+      prisma.organizationMember.count({ where: { organizationId } }),
+      prisma.invitation.count({ where: { organizationId, status: "pending" } }),
+    ]);
 
-    const org = await prisma.organization.findUnique({
-      where: { id: organizationId },
-    });
-
-    if (org && memberCount >= org.maxSeats) {
+    if (memberCount + pendingInviteCount >= org.maxSeats) {
       return NextResponse.json(
         { error: `Seat limit reached (${org.maxSeats})` },
         { status: 403 }
@@ -107,16 +125,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send invitation email
+    // Send invitation email (use token field, not id)
     const baseUrl = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000';
-    const acceptUrl = `${baseUrl}/api/organization/invite/accept?token=${invitation.id}`;
+    const acceptUrl = `${baseUrl}/api/organization/invite/accept?token=${invitation.token}`;
 
     const inviterName = session.user.name || session.user.email || 'A team member';
-    const organizationName = org?.name || 'your organization';
 
     const { html, text } = invitationEmail({
       inviterName,
-      organizationName,
+      organizationName: org.name,
       role: inviteRole,
       acceptUrl,
       expiresInDays: 7,
@@ -124,14 +141,21 @@ export async function POST(request: NextRequest) {
 
     const emailResult = await sendEmail({
       to: email,
-      subject: `You've been invited to ${organizationName} on Branddock`,
+      subject: `You've been invited to ${org.name} on Branddock`,
       html,
       text,
     });
 
+    // Return safe subset (exclude token from response)
     return NextResponse.json(
       {
-        ...invitation,
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        status: invitation.status,
+        organizationId: invitation.organizationId,
+        expiresAt: invitation.expiresAt,
+        createdAt: invitation.createdAt,
         emailSent: emailResult.success,
         emailError: emailResult.error ?? null,
       },

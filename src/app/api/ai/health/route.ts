@@ -15,24 +15,22 @@ import { getRateLimitStatus } from '@/lib/ai/rate-limiter';
 export async function GET() {
   const workspaceId = await resolveWorkspaceId();
 
-  const rateLimitStatus = workspaceId
-    ? await getRateLimitStatus(workspaceId, 'FREE')
-    : null;
+  // Require authentication — don't expose config details to unauthenticated users
+  if (!workspaceId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const rateLimitStatus = await getRateLimitStatus(workspaceId, 'FREE');
 
   return NextResponse.json({
     status: 'ok',
-    model: aiConfig.model,
-    fallbackModel: aiConfig.fallbackModel,
-    hasApiKey: aiConfig.isConfigured,
-    hasAnthropicKey: !!aiConfig.anthropicApiKey,
-    rateLimit: rateLimitStatus
-      ? {
-          tier: rateLimitStatus.tier,
-          remaining: rateLimitStatus.remaining,
-          minuteUsed: rateLimitStatus.minuteUsed,
-          dailyUsed: rateLimitStatus.dailyUsed,
-          resetAt: rateLimitStatus.resetAt.toISOString(),
-        }
-      : null,
+    aiEnabled: aiConfig.isConfigured,
+    rateLimit: {
+      tier: rateLimitStatus.tier,
+      remaining: rateLimitStatus.remaining,
+      minuteUsed: rateLimitStatus.minuteUsed,
+      dailyUsed: rateLimitStatus.dailyUsed,
+      resetAt: rateLimitStatus.resetAt.toISOString(),
+    },
   });
 }

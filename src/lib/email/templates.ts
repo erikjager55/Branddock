@@ -8,6 +8,21 @@
 const BRAND_COLOR = '#1FD1B2';
 const BRAND_NAME = 'Branddock';
 
+/** Escape HTML special characters to prevent XSS in email templates. */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Encode a URL for safe use in href attributes. */
+function safeHref(url: string): string {
+  return url.replace(/"/g, '%22');
+}
+
 function baseLayout(content: string): string {
   return `
 <!DOCTYPE html>
@@ -58,16 +73,21 @@ export interface InvitationTemplateData {
 }
 
 export function invitationEmail(data: InvitationTemplateData): { html: string; text: string } {
+  const inviter = escapeHtml(data.inviterName);
+  const org = escapeHtml(data.organizationName);
+  const role = escapeHtml(data.role);
+  const url = safeHref(data.acceptUrl);
+
   const html = baseLayout(`
     <h2 style="margin:0 0 8px;font-size:20px;font-weight:600;color:#18181b;">You've been invited!</h2>
     <p style="margin:0 0 24px;font-size:15px;color:#52525b;line-height:1.6;">
-      <strong>${data.inviterName}</strong> has invited you to join
-      <strong>${data.organizationName}</strong> on ${BRAND_NAME} as a <strong>${data.role}</strong>.
+      <strong>${inviter}</strong> has invited you to join
+      <strong>${org}</strong> on ${BRAND_NAME} as a <strong>${role}</strong>.
     </p>
     <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
       <tr>
         <td style="background-color:${BRAND_COLOR};border-radius:8px;padding:12px 28px;">
-          <a href="${data.acceptUrl}" style="color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;display:inline-block;">
+          <a href="${url}" style="color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;display:inline-block;">
             Accept Invitation
           </a>
         </td>
@@ -99,6 +119,8 @@ export interface PasswordResetTemplateData {
 }
 
 export function passwordResetEmail(data: PasswordResetTemplateData): { html: string; text: string } {
+  const url = safeHref(data.resetUrl);
+
   const html = baseLayout(`
     <h2 style="margin:0 0 8px;font-size:20px;font-weight:600;color:#18181b;">Reset your password</h2>
     <p style="margin:0 0 24px;font-size:15px;color:#52525b;line-height:1.6;">
@@ -107,7 +129,7 @@ export function passwordResetEmail(data: PasswordResetTemplateData): { html: str
     <table cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
       <tr>
         <td style="background-color:${BRAND_COLOR};border-radius:8px;padding:12px 28px;">
-          <a href="${data.resetUrl}" style="color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;display:inline-block;">
+          <a href="${url}" style="color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;display:inline-block;">
             Reset Password
           </a>
         </td>

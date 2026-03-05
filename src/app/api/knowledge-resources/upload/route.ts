@@ -13,7 +13,7 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
   'image/gif',
   'image/webp',
-  'image/svg+xml',
+  // SVG excluded: can contain embedded JavaScript (XSS risk)
   'video/mp4',
   'video/webm',
   'audio/mpeg',
@@ -81,14 +81,17 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
+    const fileField = formData.get("file");
 
-    if (!file) {
+    // Validate that the field is actually a File, not a string
+    if (!fileField || typeof fileField === 'string' || !('arrayBuffer' in fileField)) {
       return NextResponse.json(
         { error: "No file provided" },
         { status: 400 }
       );
     }
+
+    const file = fileField as File;
 
     // Validate file size
     if (file.size > MAX_FILE_SIZE) {
@@ -111,16 +114,17 @@ export async function POST(request: NextRequest) {
     const category = formData.get("category")?.toString() || "General";
     const slug = generateSlug(title);
 
-    // Upload to R2 if configured, otherwise store path placeholder
-    let fileUrl: string;
-    if (isStorageConfigured()) {
-      const key = generateKey('knowledge-resources', workspaceId, file.name);
-      const result = await uploadWebFile(key, file);
-      fileUrl = result.url;
-    } else {
-      const cuid = Math.random().toString(36).slice(2, 10);
-      fileUrl = `/uploads/knowledge-resources/${cuid}-${file.name}`;
+    // Upload to R2 — required for actual file storage
+    if (!isStorageConfigured()) {
+      return NextResponse.json(
+        { error: "File storage is not configured. Set R2_* environment variables." },
+        { status: 503 }
+      );
     }
+
+    const key = generateKey('knowledge-resources', workspaceId, file.name);
+    const uploadResult = await uploadWebFile(key, file);
+    const fileUrl = uploadResult.url;
 
     const resource = await prisma.knowledgeResource.create({
       data: {
