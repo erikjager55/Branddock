@@ -19,48 +19,32 @@ export function AnalyzingProductModal({
 }: AnalyzingProductModalProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const completedRef = useRef(false);
+  // Use a ref for onComplete to avoid stale closures in timeouts
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   // Animate steps: 500ms per step normally, 100ms when API is already done
   useEffect(() => {
-    const interval = isApiComplete && currentStep < ANALYZE_STEPS.length ? 100 : 500;
-    const timer = setInterval(() => {
-      setCurrentStep((prev) => {
-        if (prev >= ANALYZE_STEPS.length) {
-          clearInterval(timer);
-          return prev;
-        }
-        return prev + 1;
-      });
-    }, interval);
+    if (currentStep >= ANALYZE_STEPS.length) return;
 
-    return () => clearInterval(timer);
+    const delay = isApiComplete ? 100 : 500;
+    const timer = setTimeout(() => {
+      setCurrentStep((prev) => prev + 1);
+    }, delay);
+
+    return () => clearTimeout(timer);
   }, [isApiComplete, currentStep]);
 
   // When all steps complete and API is done, trigger product creation + navigation
   useEffect(() => {
-    if (currentStep >= ANALYZE_STEPS.length && !completedRef.current) {
-      if (isApiComplete) {
-        // API already done — complete immediately
-        completedRef.current = true;
-        const timeout = setTimeout(() => {
-          onComplete();
-        }, 300);
-        return () => clearTimeout(timeout);
-      }
-      // Animation done but API not yet — show "Finalizing..." state, wait for isApiComplete
-    }
-  }, [currentStep, isApiComplete, onComplete]);
-
-  // If API completes after animation already finished
-  useEffect(() => {
-    if (isApiComplete && currentStep >= ANALYZE_STEPS.length && !completedRef.current) {
+    if (currentStep >= ANALYZE_STEPS.length && isApiComplete && !completedRef.current) {
       completedRef.current = true;
       const timeout = setTimeout(() => {
-        onComplete();
+        onCompleteRef.current();
       }, 300);
       return () => clearTimeout(timeout);
     }
-  }, [isApiComplete, currentStep, onComplete]);
+  }, [currentStep, isApiComplete]);
 
   const isWaitingForApi = currentStep >= ANALYZE_STEPS.length && !isApiComplete;
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import { ArrowLeft, Globe, FileText, Pencil } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { PageShell } from "@/components/ui/layout";
@@ -39,11 +40,14 @@ export function ProductAnalyzerPage({
     setProcessingModalOpen,
   } = useProductsStore();
   const createProduct = useCreateProduct();
+  const [createError, setCreateError] = useState<string | null>(null);
 
-  const handleModalComplete = () => {
-    const result = analyzeResultData?.result;
+  const handleModalComplete = useCallback(() => {
+    // Read latest store state to avoid stale closure
+    const latestData = useProductsStore.getState().analyzeResultData;
+    const result = latestData?.result;
     if (result) {
-      // Create the product in DB from analyze response data
+      setCreateError(null);
       createProduct.mutateAsync({
         name: result.name,
         description: result.description ?? undefined,
@@ -59,15 +63,19 @@ export function ProductAnalyzerPage({
       }).then((created) => {
         setProcessingModalOpen(false);
         onNavigateToDetail(created.id);
+      }).catch((err: unknown) => {
+        setProcessingModalOpen(false);
+        const message = err instanceof Error ? err.message : "Failed to save product";
+        setCreateError(message);
       });
     } else {
       setProcessingModalOpen(false);
     }
-  };
+  }, [createProduct, setProcessingModalOpen, onNavigateToDetail]);
 
-  const handleModalCancel = () => {
+  const handleModalCancel = useCallback(() => {
     setProcessingModalOpen(false);
-  };
+  }, [setProcessingModalOpen]);
 
   return (
     <PageShell maxWidth="5xl">
@@ -115,13 +123,16 @@ export function ProductAnalyzerPage({
           })}
         </div>
 
+        {/* Error from product creation */}
+        {createError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {createError}
+          </div>
+        )}
+
         {/* Tab content */}
-        {activeAnalyzerTab === "url" && (
-          <UrlAnalyzerTab onNavigateToDetail={onNavigateToDetail} />
-        )}
-        {activeAnalyzerTab === "pdf" && (
-          <PdfUploadTab onNavigateToDetail={onNavigateToDetail} />
-        )}
+        {activeAnalyzerTab === "url" && <UrlAnalyzerTab />}
+        {activeAnalyzerTab === "pdf" && <PdfUploadTab />}
         {activeAnalyzerTab === "manual" && (
           <ManualEntryTab
             onBack={onBack}

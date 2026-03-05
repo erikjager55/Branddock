@@ -103,7 +103,7 @@ Workspace resolution: sessie-based (activeOrganizationId → workspace resolutio
 - AI Exploration Config (admin) — `/api/admin/exploration-configs` GET + POST, `/api/admin/exploration-configs/[id]` GET + PUT + DELETE (5 endpoints). Beheer van prompts, dimensies, AI modellen per item type/subtype.
 - Universal Versioning — `/api/versions` GET (polymorphic ResourceVersion). Werkt voor brand assets, personas, en toekomstige modules.
 - Personas (3 personas) — `/api/personas` GET + POST, `/api/personas/:id` GET + PATCH + DELETE, `/api/personas/:id/{duplicate,lock,avatar,generate-image,regenerate,generate-implications,export}`, `/api/personas/:id/research-methods/:method` PATCH, `/api/personas/:id/chat` POST + `/:sessionId/message` POST + `/:sessionId/insights` GET + `/:sessionId/export` GET, `/api/personas/:id/ai-analysis` POST + `/:sessionId` GET + `/answer` POST + `/complete` POST (21+ endpoints). **AI integrations**: Chat via Claude Sonnet 4 (`/api/personas/:id/chat/:sessionId/message`), Strategic Implications AI generatie (`/api/personas/:id/generate-implications`), Photo generatie via Gemini (`/api/personas/:id/generate-image`, fallback DiceBear).
-- Products & Services (3 products) — `/api/products` GET + POST + `/api/products/:id/personas` GET + POST + DELETE
+- Products & Services (3 products) — `/api/products` GET + POST, `/api/products/:id` GET + PATCH, `/api/products/:id/lock` PATCH, `/api/products/analyze/url` POST (Gemini AI), `/api/products/analyze/pdf` POST (Gemini AI), `/api/products/:id/personas` GET + POST + DELETE (12 endpoints). **AI integrations**: URL + PDF product analysis via Gemini 3.1 Pro (`@google/genai`).
 - Research Plans (1 active plan) — `/api/research-plans` GET + POST + PATCH
 - Purchased Bundles — `/api/purchased-bundles` GET + POST
 - Campaigns (6 campaigns) — `/api/campaigns` GET + POST + DELETE, `/api/campaigns/stats` GET, `/api/campaigns/[id]` GET + PATCH + DELETE, `/api/campaigns/[id]/archive` PATCH, `/api/campaigns/quick` POST, `/api/campaigns/quick/prompt-suggestions` GET, `/api/campaigns/quick/[id]/convert` POST, `/api/campaigns/[id]/knowledge` GET + POST, `/api/campaigns/[id]/knowledge/[assetId]` DELETE, `/api/campaigns/[id]/coverage` GET, `/api/campaigns/[id]/deliverables` GET + POST, `/api/campaigns/[id]/deliverables/[did]` PATCH + DELETE, `/api/campaigns/[id]/strategy` GET, `/api/campaigns/[id]/strategy/generate` POST + feature: `src/features/campaigns/` (TanStack Query, campaignKeys, 20+ hooks, Zustand store)
@@ -216,7 +216,7 @@ Elke gemigreerde module heeft een adapter die DB data mapt naar het bestaande mo
 - Alle nieuwe componenten MOETEN design tokens importeren
 - Nieuwe componenten MOETEN shared primitives gebruiken uit `src/components/shared/` (Button, Badge, Modal, Card, Select, SearchInput, EmptyState, Skeleton, StatCard, ProgressBar)
 - **Brand Foundation is de referentie-implementatie** voor alle module views. Patroon: Page → Header + Stats + Filters + Grid + Detail + Create. Shared primitives, context hooks voor data, Zustand store voor UI state, mockToMeta adapter voor data conversie.
-- AI calls gaan via `src/lib/ai/` — gebruik `openaiClient`, NOOIT direct OpenAI SDK importeren in componenten
+- AI calls gaan via `src/lib/ai/` — gebruik `openaiClient` of `geminiClient`, NOOIT direct OpenAI/Gemini SDK importeren in componenten
 - Kleuren: #1FD1B2 primary (via CSS var --primary), bg-background (wit). Zie PATTERNS.md voor volledige tokens.
 - Sidebar: w-72 (288px), flex-shrink-0, active state: bg-emerald-50 text-emerald-700
 - Componenten: functioneel React, TypeScript strict
@@ -312,9 +312,15 @@ src/
 │       ├── personas/route.ts            ← GET + POST (live)
 │       ├── products/
 │       │   ├── route.ts                 ← GET + POST (live)
-│       │   └── [id]/personas/
-│       │       ├── route.ts             ← GET + POST (koppel persona)
-│       │       └── [personaId]/route.ts ← DELETE (ontkoppel)
+│       │   ├── [id]/
+│       │   │   ├── route.ts             ← GET + PATCH (detail + update)
+│       │   │   ├── lock/route.ts        ← PATCH (lock/unlock)
+│       │   │   └── personas/
+│       │   │       ├── route.ts         ← GET + POST (koppel persona)
+│       │   │       └── [personaId]/route.ts ← DELETE (ontkoppel)
+│       │   └── analyze/
+│       │       ├── url/route.ts         ← POST (Gemini AI URL analyse)
+│       │       └── pdf/route.ts         ← POST (Gemini AI PDF analyse)
 │       ├── research-plans/route.ts      ← GET + POST + PATCH (live)
 │       ├── purchased-bundles/route.ts   ← GET + POST (live)
 │       ├── campaigns/route.ts           ← GET + POST + PATCH (live)
@@ -714,15 +720,15 @@ src/
 │       │   │   ├── PdfUploadTab.tsx            ← Drag & drop PDF upload
 │       │   │   ├── ManualEntryTab.tsx          ← 7-field form
 │       │   │   ├── WhatWeExtractGrid.tsx       ← Herbruikbaar 4-item grid
-│       │   │   └── AnalyzingProductModal.tsx   ← 7-step processing simulatie
+│       │   │   └── AnalyzingProductModal.tsx   ← 7-step processing met API sync
 │       │   └── detail/
-│       │       ├── ProductDetailPage.tsx       ← Orchestrator (metadata+sections)
+│       │       ├── ProductDetailPage.tsx       ← Orchestrator (metadata+sections+edit mode)
 │       │       ├── DescriptionCard.tsx         ← Description card
 │       │       ├── PricingModelCard.tsx        ← Pricing model + details
-│       │       ├── FeaturesSpecsSection.tsx    ← Checklist grid
-│       │       ├── BenefitsSection.tsx         ← Genummerde badges
+│       │       ├── FeaturesSpecsSection.tsx    ← Checklist grid (edit: add/remove)
+│       │       ├── BenefitsSection.tsx         ← Genummerde badges (edit: add/remove)
 │       │       ├── TargetAudienceSection.tsx   ← Persona badges + link/unlink
-│       │       ├── UseCasesSection.tsx         ← Genummerde lijst
+│       │       ├── UseCasesSection.tsx         ← Genummerde lijst (edit: add/remove)
 │       │       └── PersonaSelectorModal.tsx    ← Persona multi-select modal
 │       ├── constants/product-constants.ts      ← CATEGORY_ICONS, ANALYZE_STEPS, SOURCE/STATUS_BADGES
 │       ├── hooks/index.ts                      ← 10 TanStack Query hooks + productKeys
@@ -977,12 +983,14 @@ src/
 │   │   ├── index.ts                       ← Barrel export (alle publieke API's)
 │   │   ├── config.ts                      ← Model config, temperature/maxTokens/timeout per use case
 │   │   ├── openai-client.ts               ← Singleton, retry, streaming + structured completion
+│   │   ├── gemini-client.ts               ← Shared Gemini singleton (@google/genai), structured JSON, 60s timeout
 │   │   ├── streaming.ts                   ← SSE helpers (createStreamingResponse, parseSSEStream)
 │   │   ├── rate-limiter.ts                ← In-memory, per workspace, 3 tiers (FREE/PRO/AGENCY)
 │   │   ├── brand-context.ts               ← Aggregator (5 Prisma models), 5 min cache
 │   │   ├── prompt-templates.ts            ← SYSTEM_BASE, ANALYSIS, STRUCTURED + message builders
 │   │   ├── prompts/
 │   │   │   ├── brand-analysis.ts          ← AI Brand Analysis prompts (S1)
+│   │   │   ├── product-analysis.ts        ← Product URL/PDF analysis prompts (S4)
 │   │   │   └── workshop-report.ts         ← Workshop report generation prompts (S2a)
 │   │   ├── middleware.ts                  ← withAi (auth + rate limit + brand context)
 │   │   ├── hooks/
@@ -995,6 +1003,8 @@ src/
 │   │       ├── ai-caller.ts                  ← Generic AI caller (Anthropic + OpenAI)
 │   │       ├── exploration-llm.ts            ← Multi-provider LLM client (Anthropic + Google)
 │   │       └── item-type-registry.ts         ← Registry per item type (persona, brand_asset)
+│   ├── products/
+│   │   └── url-scraper.ts               ← Lightweight URL scraper (cheerio, SSRF bescherming)
 │   ├── catalogs/                        ← Product catalogs (statische configuratie)
 │   │   ├── research-bundles.ts          ← Bundle definities + helper functies
 │   │   └── strategy-tools.ts            ← Strategy tool definities
@@ -1202,7 +1212,12 @@ Directe klant (Organization type=DIRECT)
 | `/api/personas/:id/ai-analysis/:sessionId/answer` | POST | Antwoord + feedback + next question + progress |
 | `/api/personas/:id/ai-analysis/:sessionId/complete` | POST | Complete + AI_EXPLORATION→COMPLETED + insights |
 | `/api/products` | GET | Lijst met filters (category, search, sortBy, sortOrder) + stats |
-| `/api/products` | POST | Nieuw product aanmaken (name, category, workspaceId, pricing, features, etc.) |
+| `/api/products` | POST | Nieuw product aanmaken (name, category, workspaceId, pricing, features, source, status, etc.) |
+| `/api/products/:id` | GET | Product detail met linkedPersonas |
+| `/api/products/:id` | PATCH | Product updaten (name, description, features, benefits, useCases, etc.) |
+| `/api/products/:id/lock` | PATCH | Lock/unlock product toggle |
+| `/api/products/analyze/url` | POST | AI URL analyse via Gemini 3.1 Pro (scrape → extract → structured JSON) |
+| `/api/products/analyze/pdf` | POST | AI PDF analyse via Gemini 3.1 Pro (parse → extract → structured JSON) |
 | `/api/research-plans` | GET | Lijst met filters (status) + stats |
 | `/api/research-plans` | POST | Nieuw research plan aanmaken |
 | `/api/research-plans` | PATCH | Research plan updaten (unlock methods/assets, status) |
@@ -1598,9 +1613,10 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 
 **S4. Products & Services + Market Insights ✅ VOLLEDIG**
 - S4.0: ✅ Schema + Seed — Product model herstructureerd (ProductSource enum, ProductStatus met ANALYZED, String[] arrays, categoryIcon, analysisData, pricingDetails), ProductPersona composite key, 3 producten + 7 insights (S4 spec)
-- S4.A: ✅ Products & Services — 16 componenten (2 overview + 6 analyzer + 8 detail), 10 API endpoints, Zustand store, 10 hooks, 3-tab analyzer (URL/PDF/Manual)
+- S4.A: ✅ Products & Services — 16 componenten (2 overview + 6 analyzer + 8 detail), 12 API endpoints, Zustand store, 10 hooks, 3-tab analyzer (URL/PDF/Manual)
 - S4.B: ✅ Market Insights — 24 componenten (8 overview + 9 add modal + 7 detail), 12 endpoints, 10 hooks
 - S4.2: ✅ Integratie — analyzer flow (URL/PDF→create product→detail), edit mode products+insights, persona koppeling, delete confirm, brand context endpoint, 0 TS errors
+- S4.3: ✅ AI Product Analyzer + Detail Edit — Gemini 3.1 Pro AI extractie (URL scrape + PDF parse → structured JSON), detail page bewerkbaar (features/benefits/useCases add/remove, category dropdown, sourceUrl display), gemini-client.ts (shared singleton, 60s timeout, JSON parse error handling), url-scraper.ts (SSRF bescherming), PDF file validatie (20MB, type check), stale closure fixes (getState pattern), cancel race condition handling, slug collision auto-suffix, wasEditingRef patroon, 0 TS errors
 
 **S5. Knowledge Library + Research & Validation ✅ VOLLEDIG**
 - S5.0: ✅ Schema + Seed — KnowledgeResource uitgebreid (difficultyLevel, createdBy, indexes), 8 nieuwe modellen, 4 nieuwe enums, seed: 10 resources + 10 bundles + 3 studies + 1 plan
@@ -1681,8 +1697,9 @@ Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 - Gratis tier limieten
 - Workspace isolatie: soft (filter op orgId) vs hard (row-level security)
 - Agency white-label: eigen logo/domein of alleen Branddock branding
-- AI provider: OpenAI (content gen) + Anthropic Claude Sonnet 4.6 (exploration, persona chat, analysis) + Google Gemini (foto generatie) — DRIE providers in gebruik
+- AI provider: OpenAI (content gen) + Anthropic Claude Sonnet 4.6 (exploration, persona chat, analysis) + Google Gemini 3.1 Pro (product analysis, foto generatie) — DRIE providers in gebruik
 - AI foto generatie: Gemini (primair) met DiceBear fallback — GEMINI_API_KEY optioneel
+- AI product analysis: Gemini 3.1 Pro (`gemini-3.1-pro-preview`) via `@google/genai` SDK — shared client in `src/lib/ai/gemini-client.ts`
 - Deployment: Vercel, Railway, of self-hosted
 
 ### ✅ GENOMEN BESLISSINGEN

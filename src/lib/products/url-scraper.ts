@@ -11,21 +11,48 @@ export interface ScrapedProductData {
   bodyText: string;
 }
 
+/** Block internal/private IPs to prevent SSRF attacks */
+function isPrivateHostname(hostname: string): boolean {
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return true;
+  // AWS metadata endpoint
+  if (hostname === '169.254.169.254') return true;
+  // Private IP ranges
+  const parts = hostname.split('.').map(Number);
+  if (parts.length === 4 && parts.every((n) => !isNaN(n))) {
+    if (parts[0] === 10) return true;
+    if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+    if (parts[0] === 192 && parts[1] === 168) return true;
+    if (parts[0] === 0) return true;
+  }
+  return false;
+}
+
 /**
  * Scrape a URL and extract product-relevant text content.
  * Simplified version of brandstyle url-scraper — no CSS/fonts/logos extraction.
  */
 export async function scrapeProductUrl(url: string): Promise<ScrapedProductData> {
+  const parsed = new URL(url);
+  if (isPrivateHostname(parsed.hostname)) {
+    throw new Error('URLs pointing to private or internal networks are not allowed');
+  }
+
   const response = await fetch(url, {
     headers: {
       'User-Agent': 'Branddock-ProductAnalyzer/1.0',
       'Accept': 'text/html,application/xhtml+xml',
     },
     signal: AbortSignal.timeout(15000),
+    redirect: 'follow',
   });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('text/html') && !contentType.includes('application/xhtml')) {
+    throw new Error('URL does not return HTML content');
   }
 
   const html = await response.text();

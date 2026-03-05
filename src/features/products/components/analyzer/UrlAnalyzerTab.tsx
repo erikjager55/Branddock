@@ -7,11 +7,7 @@ import { useAnalyzeUrl } from "../../hooks";
 import { useProductsStore } from "../../stores/useProductsStore";
 import { WhatWeExtractGrid } from "./WhatWeExtractGrid";
 
-interface UrlAnalyzerTabProps {
-  onNavigateToDetail: (id: string) => void;
-}
-
-export function UrlAnalyzerTab({ onNavigateToDetail }: UrlAnalyzerTabProps) {
+export function UrlAnalyzerTab() {
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
   const analyzeUrl = useAnalyzeUrl();
@@ -41,7 +37,10 @@ export function UrlAnalyzerTab({ onNavigateToDetail }: UrlAnalyzerTabProps) {
       normalizedUrl,
       {
         onSuccess: (data) => {
-          setAnalyzeResultData(data);
+          // Only set result if modal is still open (user hasn't cancelled)
+          if (useProductsStore.getState().isProcessingModalOpen) {
+            setAnalyzeResultData(data);
+          }
         },
         onError: (err) => {
           setProcessingModalOpen(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Edit3, Save, X, ExternalLink } from "lucide-react";
 import { Button, SkeletonCard, Select } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
@@ -62,9 +62,12 @@ export function ProductDetailPage({
   const [editBenefits, setEditBenefits] = useState<string[]>([]);
   const [editUseCases, setEditUseCases] = useState<string[]>([]);
 
-  // Sync edit state when product loads or editing starts
+  // Only populate edit fields on the transition from non-editing to editing
+  const wasEditingRef = useRef(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (product && isEditing) {
+    if (product && isEditing && !wasEditingRef.current) {
       setEditName(product.name);
       setEditDescription(product.description ?? "");
       setEditPricingModel(product.pricingModel ?? "");
@@ -73,26 +76,33 @@ export function ProductDetailPage({
       setEditFeatures([...product.features]);
       setEditBenefits([...product.benefits]);
       setEditUseCases([...product.useCases]);
+      setSaveError(null);
     }
+    wasEditingRef.current = isEditing;
   }, [product, isEditing]);
 
   const handleSave = () => {
+    setSaveError(null);
     updateProduct.mutateAsync({
       name: editName,
-      description: editDescription || undefined,
-      pricingModel: editPricingModel || undefined,
-      pricingDetails: editPricingDetails || undefined,
+      description: editDescription,
+      pricingModel: editPricingModel,
+      pricingDetails: editPricingDetails,
       category: editCategory ?? undefined,
       features: editFeatures,
       benefits: editBenefits,
       useCases: editUseCases,
     }).then(() => {
       setIsEditing(false);
+    }).catch((err: unknown) => {
+      const message = err instanceof Error ? err.message : "Failed to save changes";
+      setSaveError(message);
     });
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
+    setSaveError(null);
   };
 
   if (isLoading) {
@@ -263,6 +273,13 @@ export function ProductDetailPage({
 
         {/* Lock Banner */}
         <LockBanner isLocked={lock.isLocked} onUnlock={lock.requestToggle} />
+
+        {/* Save error */}
+        {saveError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {saveError}
+          </div>
+        )}
 
         {/* 1. Description + Pricing (2-col on md+) */}
         {canEdit ? (

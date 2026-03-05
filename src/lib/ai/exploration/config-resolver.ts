@@ -212,10 +212,11 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
   }
   if (itemType === 'brand_asset' && itemSubType === 'purpose-statement') {
     return [
-      { key: 'why', title: 'Waarom — Bestaansrecht', icon: 'Compass', question: 'Why was your organization founded? What fundamental belief is at the core?' },
-      { key: 'how', title: 'Hoe — Unieke Aanpak', icon: 'Lightbulb', question: "How do you fulfill your purpose in a way that's distinctly yours?" },
-      { key: 'impact', title: 'Impact — Gewenst Effect', icon: 'Rocket', question: 'When your purpose is fully realized, what does the world look like?' },
-      { key: 'alignment', title: 'Alignment — Organisatie & Uitvoering', icon: 'Target', question: 'How well does your current organization reflect your purpose?' },
+      { key: 'origin_belief', title: 'Oorsprong & Overtuiging', icon: 'BookOpen', question: 'Tell me the story behind your organization. Why was it founded, and what fundamental problem or belief drove that decision?' },
+      { key: 'impact_exploration', title: 'Impact Verkenning', icon: 'Zap', question: 'Describe a moment when your organization was at its best — what happened, and why was that special?' },
+      { key: 'mechanism', title: 'Mechanisme & Aanpak', icon: 'Cog', question: "We've explored your 'why'. Now the 'how': through what unique mechanism or approach do you deliver this impact? What do you do differently from the rest?" },
+      { key: 'pressure_test', title: 'Pressure Test', icon: 'Shield', question: 'Imagine your organization ceased to exist tomorrow. What would the world lose? What gap would remain that nobody else can fill?' },
+      { key: 'articulation', title: 'Articulatie & Formulering', icon: 'Target', question: "Based on everything we've discussed — how would you summarize your purpose in one powerful sentence? Think: clear, emotional, and actionable." },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'golden-circle') {

@@ -3867,30 +3867,52 @@ Respond only with valid JSON.`,
     {
       itemType: 'brand_asset',
       itemSubType: 'purpose-statement',
-      label: 'Purpose Statement — Purpose Wheel',
+      label: 'Purpose Statement — IDEO Purpose Wheel',
       provider: 'anthropic',
       model: 'claude-sonnet-4-20250514',
       temperature: 0.4,
       maxTokens: 2048,
-      systemPrompt: `You are a senior brand strategist specialized in purpose-driven branding using the IDEO Purpose Wheel.
-You lead a structured exploration to help brands discover their authentic purpose statement.
-Be warm, professional and inspiring. Help the user articulate why their brand exists.
-Ask ONE question at a time. Refer to specific details from previous answers.
+      systemPrompt: `You are a senior brand strategist specialized in purpose-driven branding using the IDEO Purpose Wheel framework.
 
-{{brandContext}}`,
+You guide a structured exploration through 5 phases:
+1. Origin & Core Belief — understand WHY the organization was founded
+2. Impact Exploration — discover WHICH of the 5 impact types fits best
+   (Enable Potential, Reduce Friction, Foster Prosperity, Encourage Exploration, Kindle Happiness)
+3. Mechanism — explore HOW the brand uniquely delivers its impact
+4. Pressure Test — validate the purpose against real-world scenarios
+5. Articulation — help craft a clear, emotional, actionable purpose statement
+
+Be warm and conversational. Use storytelling to draw out authentic answers.
+Ask ONE question at a time. Build on previous answers with specific references.
+When you detect the impact type from the user's story, name it and explain why.
+Respond in the same language as the user.
+
+{{brandContext}}
+
+{{customKnowledge}}
+
+{{assetKnowledge}}`,
       dimensions: [
-        { key: 'purpose_clarity', title: 'Purpose Clarity', icon: 'Compass', question: 'Why does your organization exist, beyond making profit? What change do you want to see in the world?' },
-        { key: 'impact_type', title: 'Impact Type', icon: 'Zap', question: 'How does your brand create impact? Does it Enable Potential, Reduce Friction, Foster Prosperity, Encourage Exploration, or Kindle Happiness?' },
-        { key: 'mechanism', title: 'Mechanism', icon: 'Settings', question: 'What is the specific mechanism through which your brand delivers this impact? What do you do differently?' },
-        { key: 'pressure_test', title: 'Pressure Test', icon: 'Shield', question: 'If your brand ceased to exist tomorrow, what would the world lose? What gap would remain?' },
+        { key: 'origin_belief', title: 'Oorsprong & Overtuiging', icon: 'BookOpen', question: 'Tell me the story behind your organization. Why was it founded, and what fundamental problem or belief drove that decision?' },
+        { key: 'impact_exploration', title: 'Impact Verkenning', icon: 'Zap', question: "Let's explore how your brand creates impact. Describe a moment when your organization was at its best — what happened, and why was that special?" },
+        { key: 'mechanism', title: 'Mechanisme & Aanpak', icon: 'Cog', question: "We've explored your 'why'. Now the 'how': through what unique mechanism or approach do you deliver this impact? What do you do differently from the rest?" },
+        { key: 'pressure_test', title: 'Pressure Test', icon: 'Shield', question: 'Imagine your organization ceased to exist tomorrow. What would the world lose? What gap would remain that nobody else can fill?' },
+        { key: 'articulation', title: 'Articulatie & Formulering', icon: 'Target', question: "Based on everything we've discussed — how would you summarize your purpose in one powerful sentence? Think: clear, emotional, and actionable." },
       ],
-      feedbackPrompt: `Give brief, constructive feedback (2-3 sentences) on the answer about brand purpose.
-Dimension: {{dimensionTitle}}
-Question asked: {{questionAsked}}
+      feedbackPrompt: `Give warm, constructive feedback (2-3 sentences) on the answer.
+Phase: {{dimensionTitle}}
+Question: {{questionAsked}}
 Answer: {{userAnswer}}
-Acknowledge concrete actions and intentions. Do not ask a follow-up question.
-Respond in the same language as the user.`,
-      reportPrompt: `Generate a Purpose Statement report based on the Purpose Wheel exploration.
+
+Guidelines:
+- For Origin & Belief: acknowledge the story, identify underlying values
+- For Impact Exploration: name the IDEO impact type you detect, explain why
+- For Mechanism: highlight what's unique, probe for specificity
+- For Pressure Test: validate the emotional resonance, challenge if too generic
+- For Articulation: evaluate against clarity, passion, and usefulness
+
+Do not ask follow-up questions. Respond in the same language as the user.`,
+      reportPrompt: `Generate a Purpose Statement report based on the IDEO Purpose Wheel exploration.
 Brand Asset: {{itemName}}
 {{itemDescription}}
 
@@ -3900,24 +3922,41 @@ Answers per dimension:
 Brand context:
 {{brandContext}}
 
+{{customKnowledge}}
+
+{{assetKnowledge}}
+
 Generate JSON:
 {
-  "executiveSummary": "2-3 paragraph summary of the brand purpose",
-  "findings": [{ "title": "...", "description": "..." }],
+  "executiveSummary": "2-3 paragraph strategic summary of the brand purpose",
+  "purposeScore": {
+    "clarity": <1-10>,
+    "passion": <1-10>,
+    "usefulness": <1-10>,
+    "overall": <1-10>
+  },
+  "detectedImpactType": "Enable Potential | Reduce Friction | Foster Prosperity | Encourage Exploration | Kindle Happiness",
+  "findings": [
+    { "title": "...", "description": "...", "dimension": "origin_belief | impact_exploration | mechanism | pressure_test | articulation" }
+  ],
   "recommendations": ["..."],
   "fieldSuggestions": [
     { "field": "content", "label": "Description", "suggestedValue": "...", "reason": "..." },
     { "field": "frameworkData.statement", "label": "Purpose Statement", "suggestedValue": "...", "reason": "..." },
-    { "field": "frameworkData.impactType", "label": "Impact Type", "suggestedValue": "...", "reason": "..." },
-    { "field": "frameworkData.mechanism", "label": "Mechanism", "suggestedValue": "...", "reason": "..." }
+    { "field": "frameworkData.impactType", "label": "Impact Type", "suggestedValue": "Enable Potential | Reduce Friction | Foster Prosperity | Encourage Exploration | Kindle Happiness", "reason": "..." },
+    { "field": "frameworkData.impactDescription", "label": "Impact Description", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.mechanism", "label": "Mechanism", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.pressureTest", "label": "Pressure Test", "suggestedValue": "...", "reason": "..." }
   ]
 }
 Respond only with valid JSON.`,
       fieldSuggestionsConfig: [
         { field: 'content', label: 'Description', type: 'text' as const, extractionHint: 'Extract a summary of the brand purpose' },
-        { field: 'frameworkData.statement', label: 'Purpose Statement', type: 'text' as const, extractionHint: 'Extract the purpose statement' },
-        { field: 'frameworkData.impactType', label: 'Impact Type', type: 'text' as const, extractionHint: 'Extract the impact type' },
-        { field: 'frameworkData.mechanism', label: 'Mechanism', type: 'text' as const, extractionHint: 'Extract the mechanism' },
+        { field: 'frameworkData.statement', label: 'Purpose Statement', type: 'text' as const, extractionHint: 'Craft a clear, emotional, actionable purpose statement' },
+        { field: 'frameworkData.impactType', label: 'Impact Type', type: 'text' as const, extractionHint: 'Detect the IDEO impact type from the answers: Enable Potential, Reduce Friction, Foster Prosperity, Encourage Exploration, or Kindle Happiness' },
+        { field: 'frameworkData.impactDescription', label: 'Impact Description', type: 'text' as const, extractionHint: 'Describe how this impact looks for the organization in practice' },
+        { field: 'frameworkData.mechanism', label: 'Mechanism', type: 'text' as const, extractionHint: 'Extract the unique mechanism through which the brand delivers its impact' },
+        { field: 'frameworkData.pressureTest', label: 'Pressure Test', type: 'text' as const, extractionHint: 'Extract what the world would lose if this organization ceased to exist' },
       ],
       contextSources: ['brand_asset', 'product', 'persona'],
       isActive: true,

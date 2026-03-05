@@ -152,17 +152,20 @@ export async function POST(request: NextRequest) {
       analysisData,
     } = parsed.data;
 
-    const slug = name
+    let slug = name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
 
+    // Fallback for non-ASCII names that produce empty slugs
+    if (!slug) {
+      slug = `product-${Date.now()}`;
+    }
+
+    // Check for existing slug and append suffix if collision
     const existing = await prisma.product.findUnique({ where: { slug } });
     if (existing) {
-      return NextResponse.json(
-        { error: `Product with slug "${slug}" already exists` },
-        { status: 409 },
-      );
+      slug = `${slug}-${Date.now().toString(36)}`;
     }
 
     // Determine source and status

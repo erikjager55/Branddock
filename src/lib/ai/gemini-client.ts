@@ -70,6 +70,8 @@ export async function createGeminiStructuredCompletion<T>(
       systemInstruction: systemPrompt,
       temperature,
       maxOutputTokens,
+      // 60s timeout to prevent indefinite hangs
+      abortSignal: AbortSignal.timeout(60_000),
     },
   });
 
@@ -91,5 +93,10 @@ export async function createGeminiStructuredCompletion<T>(
     cleaned = cleaned.slice(jsonStart, jsonEnd + 1);
   }
 
-  return JSON.parse(cleaned) as T;
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch (parseError) {
+    const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+    throw new Error(`Failed to parse Gemini response as JSON: ${msg}. Response starts with: "${cleaned.slice(0, 100)}"`);
+  }
 }

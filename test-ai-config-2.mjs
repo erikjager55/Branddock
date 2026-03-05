@@ -26,26 +26,28 @@ async function clickFirstVisible(page, selectors, label, timeout = 5000) {
 
 /**
  * Click a tab in the config list view's tab bar.
- * The tab bar is inside a div.border-b with buttons for Brand Assets, Personas, Products.
+ * The tab bar is inside the settings content area (x > 450px).
+ * We filter by bounding box x position to avoid clicking sidebar buttons.
  */
 async function clickConfigTab(page, tabLabel) {
-  // Find all buttons that are direct children of the tab bar (border-b container)
-  // The tabs are: "Brand Assets <count>", "Personas <count>", "Products <count>"
   const buttons = await page.locator('button').all();
   for (const btn of buttons) {
-    const text = (await btn.textContent())?.trim();
-    // Tab button text includes label + count badge, e.g. "Brand Assets12" or "Personas1"
-    if (text && text.startsWith(tabLabel)) {
-      // Verify it looks like a tab (not a sidebar button) by checking it's small text
-      const boundingBox = await btn.boundingBox();
-      if (boundingBox && boundingBox.width < 300) {
+    try {
+      const visible = await btn.isVisible();
+      if (!visible) continue;
+      const text = (await btn.textContent())?.trim();
+      if (!text || !text.startsWith(tabLabel)) continue;
+      const bb = await btn.boundingBox();
+      // Config tabs are in settings content area: x > 450 (sidebar 288 + subnav 200 + padding)
+      // and near the top of the content area, width < 200
+      if (bb && bb.x > 450 && bb.width < 250) {
         await btn.click();
-        console.log(`  Clicked "${tabLabel}" tab (text: "${text}", width: ${Math.round(boundingBox.width)}px)`);
+        console.log(`  Clicked "${tabLabel}" tab (text: "${text}", x:${Math.round(bb.x)}, y:${Math.round(bb.y)}, w:${Math.round(bb.width)})`);
         return true;
       }
-    }
+    } catch { /* skip */ }
   }
-  console.log(`  WARNING: Tab "${tabLabel}" not found`);
+  console.log(`  WARNING: Tab "${tabLabel}" not found in config area (x > 450)`);
   return false;
 }
 
@@ -55,6 +57,7 @@ async function run() {
   const page = await context.newPage();
 
   const results = {};
+  const sidebarHeadings = ['WORKSPACE', 'STRATEGY', 'KNOWLEDGE', 'VALIDATION'];
 
   try {
     // ─── Step 1: Open localhost:3000 ──────────────────────
@@ -77,11 +80,11 @@ async function run() {
     // ─── Step 3: Navigate to Settings > Administrator ─────
     console.log('\n=== Step 3: Navigate to Settings > Administrator ===');
 
-    // Click "Account" in sidebar
+    // Click "Account" in sidebar (first match will be sidebar item)
     await clickFirstVisible(page, ['button:has-text("Account")'], '"Account" sidebar');
     await page.waitForTimeout(2000);
 
-    // Click "AI Configuration" in settings sub-nav
+    // Click "AI Configuration" in settings sub-nav (has data-testid)
     const adminClicked = await clickFirstVisible(page, [
       '[data-testid="settings-tab-administrator"]',
     ], '"AI Configuration" tab');
@@ -90,6 +93,21 @@ async function run() {
 
     const pageContent = await page.textContent('body');
     console.log(`  Config list visible: ${pageContent?.includes('AI Exploration Configuratie')}`);
+
+    // Debug: log all config tab buttons
+    console.log('  Debugging config tabs:');
+    const allBtns = await page.locator('button').all();
+    for (const btn of allBtns) {
+      try {
+        const v = await btn.isVisible();
+        if (!v) continue;
+        const text = (await btn.textContent())?.trim();
+        const bb = await btn.boundingBox();
+        if (text && bb && bb.x > 450 && bb.y < 300 && text.length < 30) {
+          console.log(`    Tab candidate: "${text}" (x:${Math.round(bb.x)}, y:${Math.round(bb.y)}, w:${Math.round(bb.width)})`);
+        }
+      } catch { /* skip */ }
+    }
 
     // ─── Step 4: Click on "Golden Circle" config card ─────
     console.log('\n=== Step 4: Click Golden Circle config card ===');
@@ -103,6 +121,8 @@ async function run() {
     // ─── Step 5: Test Prompts tab ────────────────────────
     console.log('\n=== Step 5: Test Prompts tab ===');
 
+    // Detail view tabs: Algemeen, Dimensies, Prompts, Kennisbronnen
+    // These are inside the settings content area (x > 450)
     const promptsClicked = await clickFirstVisible(page, [
       'button:has-text("Prompts")',
     ], '"Prompts" tab');
@@ -113,15 +133,11 @@ async function run() {
     console.log(`  System prompt: ${promptsContent?.includes('System Prompt') || promptsContent?.includes('system')}`);
     console.log(`  Feedback prompt: ${promptsContent?.includes('Feedback')}`);
     console.log(`  Report prompt: ${promptsContent?.includes('Report')}`);
-    console.log(`  Template variables: ${promptsContent?.includes('{{brandContext}}') || promptsContent?.includes('brandContext')}`);
-
-    // Check for "Laad standaard" buttons
-    const hasLoadDefault = promptsContent?.includes('Laad standaard') || promptsContent?.includes('standaard');
-    console.log(`  "Laad standaard" buttons: ${hasLoadDefault}`);
+    console.log(`  Template variables: ${promptsContent?.includes('{{') || promptsContent?.includes('brandContext')}`);
 
     await screenshot(page, '05-prompts-tab.png');
     await page.screenshot({ path: `${SCREENSHOTS_DIR}/05-prompts-tab-full.png`, fullPage: true });
-    console.log('  Full page screenshot: 05-prompts-tab-full.png');
+    console.log('  Full page: 05-prompts-tab-full.png');
 
     // ─── Step 6: Test Kennisbronnen tab ──────────────────
     console.log('\n=== Step 6: Test Kennisbronnen tab ===');
@@ -133,16 +149,13 @@ async function run() {
     await page.waitForTimeout(2000);
 
     const knowledgeContent = await page.textContent('body');
-    console.log(`  Knowledge content: ${knowledgeContent?.includes('Kennisbronnen') || knowledgeContent?.includes('kennisbron')}`);
+    console.log(`  Knowledge content: ${knowledgeContent?.includes('kennisbron') || knowledgeContent?.includes('Kennisbronnen')}`);
     console.log(`  Add button: ${knowledgeContent?.includes('toevoegen') || knowledgeContent?.includes('Toevoegen')}`);
-
-    // Check for info tooltip about {{customKnowledge}}
-    const hasInfoText = knowledgeContent?.includes('customKnowledge') || knowledgeContent?.includes('geïnjecteerd');
-    console.log(`  Knowledge injection info: ${hasInfoText}`);
+    console.log(`  customKnowledge info: ${knowledgeContent?.includes('customKnowledge')}`);
 
     await screenshot(page, '06-kennisbronnen-tab.png');
     await page.screenshot({ path: `${SCREENSHOTS_DIR}/06-kennisbronnen-tab-full.png`, fullPage: true });
-    console.log('  Full page screenshot: 06-kennisbronnen-tab-full.png');
+    console.log('  Full page: 06-kennisbronnen-tab-full.png');
 
     // ─── Step 7: Click "Terug naar overzicht" ────────────
     console.log('\n=== Step 7: Click "Terug naar overzicht" ===');
@@ -160,9 +173,7 @@ async function run() {
     const listContent = await page.textContent('body');
     console.log(`  List title: ${listContent?.includes('AI Exploration Configuratie')}`);
 
-    // Count config cards (filter out sidebar headings)
     const h3Texts = await page.locator('h3').allTextContents();
-    const sidebarHeadings = ['WORKSPACE', 'STRATEGY', 'KNOWLEDGE', 'VALIDATION'];
     const configLabels = h3Texts.filter(t => {
       const trimmed = t.trim();
       return trimmed.length > 0 && trimmed.length < 100 && !sidebarHeadings.includes(trimmed);
@@ -179,13 +190,31 @@ async function run() {
     results.personasTabClicked = await clickConfigTab(page, 'Personas');
     await page.waitForTimeout(1500);
 
-    const personaH3s = await page.locator('h3').allTextContents();
-    const personaLabels = personaH3s.filter(t => {
-      const trimmed = t.trim();
-      return trimmed.length > 0 && trimmed.length < 100 && !sidebarHeadings.includes(trimmed);
-    });
-    console.log(`  Persona configs: ${personaLabels.length}`);
-    if (personaLabels.length > 0) console.log(`  Labels: ${personaLabels.join(', ')}`);
+    // Verify we're still on the admin page, not the Personas overview
+    const afterPersonasSwitch = await page.textContent('body');
+    const stillOnAdmin = afterPersonasSwitch?.includes('AI Exploration Configuratie') || afterPersonasSwitch?.includes('Nieuwe configuratie');
+    console.log(`  Still on admin page: ${stillOnAdmin}`);
+
+    if (stillOnAdmin) {
+      const personaH3s = await page.locator('h3').allTextContents();
+      const personaLabels = personaH3s.filter(t => {
+        const trimmed = t.trim();
+        return trimmed.length > 0 && trimmed.length < 100 && !sidebarHeadings.includes(trimmed);
+      });
+      console.log(`  Persona configs: ${personaLabels.length}`);
+      if (personaLabels.length > 0) console.log(`  Labels: ${personaLabels.join(', ')}`);
+    } else {
+      console.log('  WARNING: Navigated away from admin page!');
+      // Try to recover by going back to admin
+      await clickFirstVisible(page, ['button:has-text("Account")'], '"Account" sidebar');
+      await page.waitForTimeout(1500);
+      await clickFirstVisible(page, ['[data-testid="settings-tab-administrator"]'], '"AI Configuration" tab');
+      await page.waitForTimeout(2500);
+
+      // Retry clicking Personas tab with stricter x check
+      results.personasTabClicked = await clickConfigTab(page, 'Personas');
+      await page.waitForTimeout(1500);
+    }
 
     await screenshot(page, '08-personas-tab.png');
 
@@ -195,13 +224,18 @@ async function run() {
     results.brandAssetsTabClicked = await clickConfigTab(page, 'Brand Assets');
     await page.waitForTimeout(1500);
 
-    // Verify we're back on Brand Assets
+    // Verify still on admin
+    const afterBaSwitch = await page.textContent('body');
+    const stillOnAdminBa = afterBaSwitch?.includes('AI Exploration Configuratie') || afterBaSwitch?.includes('Nieuwe configuratie');
+    console.log(`  Still on admin page: ${stillOnAdminBa}`);
+
+    // Count configs
     const afterSwitchH3s = await page.locator('h3').allTextContents();
     const afterSwitchLabels = afterSwitchH3s.filter(t => {
       const trimmed = t.trim();
       return trimmed.length > 0 && trimmed.length < 100 && !sidebarHeadings.includes(trimmed);
     });
-    console.log(`  Brand Asset configs after switch: ${afterSwitchLabels.length}`);
+    console.log(`  Brand Asset configs: ${afterSwitchLabels.length}`);
 
     // Search for "golden"
     let searchWorked = false;
@@ -210,7 +244,7 @@ async function run() {
       if (await searchInput.isVisible({ timeout: 3000 })) {
         await searchInput.fill('golden');
         searchWorked = true;
-        console.log('  Typed "golden" in search input');
+        console.log('  Typed "golden" in search');
         await page.waitForTimeout(800);
 
         const filteredH3s = await page.locator('h3').allTextContents();
@@ -218,7 +252,7 @@ async function run() {
           const trimmed = t.trim();
           return trimmed.length > 0 && trimmed.length < 100 && !sidebarHeadings.includes(trimmed);
         });
-        console.log(`  Filtered results: ${filteredLabels.length} cards`);
+        console.log(`  Filtered: ${filteredLabels.length} cards`);
         if (filteredLabels.length > 0) console.log(`  Filtered labels: ${filteredLabels.join(', ')}`);
       } else {
         console.log('  Search input not visible');
@@ -233,7 +267,6 @@ async function run() {
     // ─── Step 11: Clear search + click "Nieuwe configuratie" ─
     console.log('\n=== Step 11: Clear search + click "Nieuwe configuratie" ===');
 
-    // Clear search
     try {
       const searchInput = await page.locator('input[placeholder*="Zoek"]').first();
       if (await searchInput.isVisible({ timeout: 2000 })) {
@@ -245,7 +278,6 @@ async function run() {
       console.log('  Could not clear search');
     }
 
-    // Click "Nieuwe configuratie"
     const createClicked = await clickFirstVisible(page, [
       'button:has-text("Nieuwe configuratie")',
     ], '"Nieuwe configuratie" button');
@@ -256,7 +288,7 @@ async function run() {
       const createContent = await page.textContent('body');
       console.log(`  "Nieuw" badge: ${createContent?.includes('Nieuw')}`);
       console.log(`  Tabs: Algemeen=${createContent?.includes('Algemeen')}, Dimensies=${createContent?.includes('Dimensies')}, Prompts=${createContent?.includes('Prompts')}, Kennisbronnen=${createContent?.includes('Kennisbronnen')}`);
-      console.log(`  Buttons: Annuleren=${createContent?.includes('Annuleren')}, Opslaan=${createContent?.includes('Opslaan')}`);
+      console.log(`  Actions: Annuleren=${createContent?.includes('Annuleren')}, Opslaan=${createContent?.includes('Opslaan')}, Preview=${createContent?.includes('Preview')}`);
 
       const labels = await page.locator('label').allTextContents();
       const relevantLabels = labels.filter(l => l.trim().length > 0);
@@ -267,7 +299,7 @@ async function run() {
 
     await screenshot(page, '10-create-form.png');
     await page.screenshot({ path: `${SCREENSHOTS_DIR}/10-create-form-full.png`, fullPage: true });
-    console.log('  Full page screenshot: 10-create-form-full.png');
+    console.log('  Full page: 10-create-form-full.png');
 
     // ─── Final Summary ───────────────────────────────────
     console.log('\n========================================');

@@ -7,11 +7,7 @@ import { useAnalyzePdf } from "../../hooks";
 import { useProductsStore } from "../../stores/useProductsStore";
 import { WhatWeExtractGrid } from "./WhatWeExtractGrid";
 
-interface PdfUploadTabProps {
-  onNavigateToDetail: (id: string) => void;
-}
-
-export function PdfUploadTab({ onNavigateToDetail }: PdfUploadTabProps) {
+export function PdfUploadTab() {
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -65,7 +61,10 @@ export function PdfUploadTab({ onNavigateToDetail }: PdfUploadTabProps) {
 
     analyzePdf.mutate(file, {
       onSuccess: (data) => {
-        setAnalyzeResultData(data);
+        // Only set result if modal is still open (user hasn't cancelled)
+        if (useProductsStore.getState().isProcessingModalOpen) {
+          setAnalyzeResultData(data);
+        }
       },
       onError: (err) => {
         setProcessingModalOpen(false);

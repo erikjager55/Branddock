@@ -5,7 +5,7 @@
 // ────────────────────────────────────────────────────────────
 
 import {
-  Compass, Heart, Leaf, Globe, Lightbulb, Rocket, Target, FileText, BarChart2, Zap, Cog, FlaskConical,
+  Compass, Heart, Leaf, Globe, Lightbulb, Rocket, Target, FileText, BarChart2, Zap, Cog,
   Package, Fingerprint, Sparkles, Layers, Shield, CheckCircle, AlertTriangle, TrendingUp, Users, Eye,
   Mountain, Map, Crown, Activity, Moon, BookOpen, Award, User, MessageCircle, AlertCircle, Star,
   ArrowRight, Scale, Building,
@@ -69,123 +69,77 @@ const SOCIAL_RELEVANCY_DIMENSIONS: DimensionConfig[] = [
   },
 ];
 
-// ─── Purpose Wheel Framework Dimensions ──────────────────
-
-const PURPOSE_WHEEL_DIMENSIONS: DimensionConfig[] = [
-  {
-    key: 'core_purpose',
-    label: 'Core Purpose',
-    icon: Target,
-    color: 'teal',
-    bgClass: 'bg-teal-100',
-    textClass: 'text-teal-600',
-    defaultQuestions: [
-      'Why does your organization exist beyond profit?',
-      'What fundamental belief drives everything you do?',
-      'Can you express your purpose in one clear sentence?',
-      'Would employees recognize this as the core purpose?',
-    ],
-  },
-  {
-    key: 'impact_type',
-    label: 'Impact & Reach',
-    icon: Lightbulb,
-    color: 'amber',
-    bgClass: 'bg-amber-100',
-    textClass: 'text-amber-600',
-    defaultQuestions: [
-      'Which IDEO impact type best describes your purpose?',
-      'How does this impact manifest for customers?',
-      'What tangible difference does your purpose make?',
-      'How would stakeholders describe your impact?',
-    ],
-  },
-  {
-    key: 'mechanism',
-    label: 'Mechanism & Delivery',
-    icon: Cog,
-    color: 'blue',
-    bgClass: 'bg-blue-100',
-    textClass: 'text-blue-600',
-    defaultQuestions: [
-      'Through what means do you deliver on your purpose?',
-      'What is unique about your mechanism?',
-      'How does your approach differ from competitors?',
-      'Is your mechanism scalable and sustainable?',
-    ],
-  },
-  {
-    key: 'pressure_test',
-    label: 'Pressure Test & Alignment',
-    icon: FlaskConical,
-    color: 'purple',
-    bgClass: 'bg-purple-100',
-    textClass: 'text-purple-600',
-    defaultQuestions: [
-      'What would this purpose unlock for employees?',
-      'How would it change product decisions?',
-      'What partnerships would you pursue or decline?',
-      'Would a stranger recognize this purpose from your actions?',
-    ],
-  },
-];
-
-// ─── Purpose Statement Dimensions ─────────────────────────
+// ─── Purpose Statement Dimensions (IDEO Purpose Wheel — 5 phases) ──
 
 const PURPOSE_STATEMENT_DIMENSIONS: DimensionConfig[] = [
   {
-    key: 'why',
-    label: 'Why — Raison d\u2019\u00EAtre',
-    icon: Compass,
+    key: 'origin_belief',
+    label: 'Oorsprong & Overtuiging',
+    icon: BookOpen,
     color: 'amber',
     bgClass: 'bg-amber-100',
     textClass: 'text-amber-600',
     defaultQuestions: [
       'Why was your organization founded?',
-      'What fundamental problem drove its creation?',
-      'What belief is at the core?',
+      'What fundamental belief drove that decision?',
+      'What problem were you trying to solve?',
     ],
   },
   {
-    key: 'how',
-    label: 'How — Unique Approach',
-    icon: Lightbulb,
+    key: 'impact_exploration',
+    label: 'Impact Verkenning',
+    icon: Zap,
     color: 'blue',
     bgClass: 'bg-blue-100',
     textClass: 'text-blue-600',
     defaultQuestions: [
-      'How do you fulfill your purpose uniquely?',
-      'What makes your method different?',
-      'What philosophy drives your approach?',
+      'Describe a moment when your organization was at its best.',
+      'What happened, and why was that special?',
+      'How does your brand create impact in the world?',
     ],
   },
   {
-    key: 'impact',
-    label: 'Impact — Desired Effect',
-    icon: Rocket,
+    key: 'mechanism',
+    label: 'Mechanisme & Aanpak',
+    icon: Cog,
     color: 'emerald',
     bgClass: 'bg-emerald-100',
     textClass: 'text-emerald-600',
     defaultQuestions: [
-      'What does the world look like when your purpose is realized?',
-      'How do people think differently because of your brand?',
-      'What measurable impact do you aim for?',
+      'Through what unique mechanism do you deliver your impact?',
+      'What do you do differently from the rest?',
+      'Why is your approach effective?',
     ],
   },
   {
-    key: 'alignment',
-    label: 'Alignment — Organization & Execution',
+    key: 'pressure_test',
+    label: 'Pressure Test',
+    icon: Shield,
+    color: 'rose',
+    bgClass: 'bg-rose-100',
+    textClass: 'text-rose-600',
+    defaultQuestions: [
+      'What would the world lose if your organization ceased to exist?',
+      'What gap would remain that nobody else can fill?',
+    ],
+  },
+  {
+    key: 'articulation',
+    label: 'Articulatie & Formulering',
     icon: Target,
     color: 'purple',
     bgClass: 'bg-purple-100',
     textClass: 'text-purple-600',
     defaultQuestions: [
-      'How well does your organization reflect your purpose?',
-      'Is your purpose visible in daily decisions?',
-      'Where are the gaps between purpose and execution?',
+      'How would you summarize your purpose in one powerful sentence?',
+      'Is it clear, emotional, and actionable?',
     ],
   },
 ];
+
+// PURPOSE_WHEEL and purpose-statement share the same 5-phase IDEO dimensions.
+// This alias ensures getDimensionsForSlug returns the correct config for both paths.
+const PURPOSE_WHEEL_DIMENSIONS = PURPOSE_STATEMENT_DIMENSIONS;
 
 // ─── Golden Circle Dimensions ────────────────────────────
 

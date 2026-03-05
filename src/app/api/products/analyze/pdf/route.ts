@@ -26,6 +26,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "file is required" }, { status: 400 });
     }
 
+    // Validate file size (max 20MB)
+    if (file.size > 20 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "File too large. Maximum size is 20MB." },
+        { status: 413 },
+      );
+    }
+
+    // Validate file type
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith(".pdf") && file.type !== "application/pdf") {
+      return NextResponse.json(
+        { error: "Only PDF files are accepted." },
+        { status: 400 },
+      );
+    }
+
     // 1. Parse the PDF
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
