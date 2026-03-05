@@ -78,7 +78,7 @@ export function TemplateLibraryPage({ onSelectTemplate }: { onSelectTemplate?: (
           </div>
           <select
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value as any)}
+            onChange={(e) => setSelectedCategory(e.target.value as TemplateCategory | 'all')}
             className="px-4 py-2 border border-border rounded-md bg-background"
           >
             {categories.map(cat => (

@@ -347,7 +347,7 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
       setSelectedBundle(bundleId);
       setPrimaryTool(bundle.primaryTool);
       // Support both 'assets' and 'items' property names
-      setSelectedAssets((bundle as any).items || (bundle as any).assets || []);
+      setSelectedAssets(bundle.items ?? []);
       setRationale({
         bundle: `Pre-configured ${bundle.name} path`,
         tools: researchTools[bundle.primaryTool as keyof typeof researchTools].shortName,
@@ -1320,7 +1320,7 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
                     <div>
                       <p className="text-xs font-medium text-muted-foreground mb-2">INCLUDED ITEMS</p>
                       <div className="flex flex-wrap gap-2">
-                        {((bundle as any).items || (bundle as any).assets || []).map((itemId: string) => {
+                        {(bundle.items ?? []).map((itemId: string) => {
                           // Try to find in brand assets first
                           let item = brandAssets.find(a => a.id === itemId);
                           let ItemIcon = Palette;
@@ -1369,7 +1369,7 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
                         <p className="text-xs text-muted-foreground mb-1">Items</p>
                         <p className="text-sm font-medium flex items-center gap-1.5">
                           <Layers className="h-3.5 w-3.5" />
-                          {((bundle as any).items || (bundle as any).assets || []).length} included
+                          {(bundle.items ?? []).length} included
                         </p>
                       </div>
                     </div>

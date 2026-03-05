@@ -1,3 +1,7 @@
+/**
+ * Intentional API fallback — used by PersonasContext when API is unavailable.
+ * Data is served from PostgreSQL via /api/personas in production.
+ */
 import { Persona } from '../types/persona';
 
 export const mockPersonas: Persona[] = [

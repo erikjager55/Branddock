@@ -215,7 +215,7 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview" className="gap-2">
             <Shield className="h-4 w-4" />

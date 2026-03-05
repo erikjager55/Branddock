@@ -1,3 +1,7 @@
+/**
+ * Intentional API fallback — used by BrandAssetsContext when API is unavailable.
+ * Data is served from PostgreSQL via /api/brand-assets in production.
+ */
 import { BrandAsset } from '../types/brand-asset';
 
 export const mockBrandAssets: BrandAsset[] = [

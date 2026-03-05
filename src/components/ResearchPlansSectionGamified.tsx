@@ -343,7 +343,10 @@ export function ResearchPlansSectionGamified({
     return (
       <StrategicResearchPlanner
         onPlanCreated={(plan) => {
-          onPlanCreated(plan as any);
+          onPlanCreated({
+            ...plan,
+            entryMode: plan.entryMode === 'bundle' ? 'bundle' : 'asset',
+          });
           setShowPurchaseFlow(false);
           setSelectedPlan(null);
           setSelectedPlanForFlow(null);

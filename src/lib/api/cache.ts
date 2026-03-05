@@ -11,8 +11,7 @@ interface CacheEntry {
 }
 
 const globalKey = '__branddock_api_cache';
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const g = globalThis as any;
+const g = globalThis as unknown as Record<string, Map<string, CacheEntry> | undefined>;
 const cache: Map<string, CacheEntry> = (g[globalKey] ??= new Map<string, CacheEntry>());
 
 /**

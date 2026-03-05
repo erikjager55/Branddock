@@ -23,6 +23,20 @@ import {
   hasForbiddenClassName,
   getComponentRecommendations,
 } from '../constants/protected-components';
+import type { ProtectedComponent } from '../constants/protected-components';
+
+declare global {
+  interface Window {
+    __ANALYTICS__?: {
+      trackViolation(data: {
+        component: string;
+        type: string;
+        severity: string;
+        message: string;
+      }): void;
+    };
+  }
+}
 
 // ============================================================================
 // CONFIGURATION
@@ -172,8 +186,8 @@ export function getViolationStatistics() {
 function logViolationToAnalytics(violation: Violation) {
   // Hook for analytics integration (e.g., Sentry, DataDog, custom analytics)
   // This is a placeholder - implement actual analytics logging as needed
-  if (typeof window !== 'undefined' && (window as any).__ANALYTICS__) {
-    (window as any).__ANALYTICS__.trackViolation({
+  if (typeof window !== 'undefined' && window.__ANALYTICS__) {
+    window.__ANALYTICS__.trackViolation({
       component: violation.componentName,
       type: violation.type,
       severity: violation.severity,
@@ -459,10 +473,10 @@ export function logProtectionStatistics() {
   console.group('🔒 Component Protection Statistics');
   console.log('Total Protected Components:', components.length);
   console.log('By Protection Level:');
-  console.log('  - LOCKED:', components.filter((c: any) => c.protection === ProtectionLevel.LOCKED).length);
-  console.log('  - RESTRICTED:', components.filter((c: any) => c.protection === ProtectionLevel.RESTRICTED).length);
-  console.log('  - MONITORED:', components.filter((c: any) => c.protection === ProtectionLevel.MONITORED).length);
-  console.log('  - FLEXIBLE:', components.filter((c: any) => c.protection === ProtectionLevel.FLEXIBLE).length);
+  console.log('  - LOCKED:', components.filter((c: ProtectedComponent) => c.protection === ProtectionLevel.LOCKED).length);
+  console.log('  - RESTRICTED:', components.filter((c: ProtectedComponent) => c.protection === ProtectionLevel.RESTRICTED).length);
+  console.log('  - MONITORED:', components.filter((c: ProtectedComponent) => c.protection === ProtectionLevel.MONITORED).length);
+  console.log('  - FLEXIBLE:', components.filter((c: ProtectedComponent) => c.protection === ProtectionLevel.FLEXIBLE).length);
   console.groupEnd();
 
   const violationStats = getViolationStatistics();

@@ -615,7 +615,7 @@ export function AddResourceModal({ isOpen, onClose, onAdd, initialType }: AddRes
               </div>
               <div className="space-y-2">
                 <Label htmlFor="difficulty">Difficulty Level</Label>
-                <Select value={manualResource.difficulty} onValueChange={(v) => setManualResource({ ...manualResource, difficulty: v as any })}>
+                <Select value={manualResource.difficulty} onValueChange={(v) => setManualResource({ ...manualResource, difficulty: v as 'beginner' | 'intermediate' | 'advanced' })}>
                   <SelectTrigger id="difficulty">
                     <SelectValue />
                   </SelectTrigger>

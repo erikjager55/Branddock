@@ -126,8 +126,8 @@ const deliverableIcons = {
 export function ActiveCampaignsPage({ onNavigateToCampaign }: ActiveCampaignsPageProps) {
   // Laad strategies vanuit gedeelde data source
   const { getAllCampaigns } = useCampaignsContext();
-  const [strategies, setStrategies] = useState(() => 
-    getAllCampaigns().map(campaignToStrategy)
+  const [strategies, setStrategies] = useState<Strategy[]>(() =>
+    getAllCampaigns().map(campaignToStrategy) as Strategy[]
   );
   const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -138,12 +138,12 @@ export function ActiveCampaignsPage({ onNavigateToCampaign }: ActiveCampaignsPag
 
   // Separate active and deleted strategies
   const activeStrategies = useMemo(() => 
-    strategies.filter(s => !(s as any).deletedAt),
+    strategies.filter(s => !s.deletedAt),
     [strategies]
   );
 
   const deletedStrategies = useMemo(() => 
-    strategies.filter(s => (s as any).deletedAt),
+    strategies.filter(s => s.deletedAt),
     [strategies]
   );
 

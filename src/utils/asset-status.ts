@@ -1,5 +1,6 @@
 import { BrandAsset, CalculatedAssetStatus, ResearchMethodType } from '../types/brand-asset';
 import { VALIDATION_METHODS, getValidationMethod } from '../config/validation-methods';
+import type { ValidationMethodId } from '../types/validation';
 
 /**
  * Calculate the status of an asset based on its research and content state
@@ -123,8 +124,9 @@ export function getStatusInfo(status: CalculatedAssetStatus) {
  * Now uses the centralized VALIDATION_METHODS configuration
  */
 export function getMethodInfo(methodType: ResearchMethodType) {
-  // Direct mapping - types are now synchronized
-  const validationMethod = getValidationMethod(methodType as any);
+  // Direct mapping - ResearchMethodType is a superset of ValidationMethodId;
+  // getValidationMethod returns undefined for unrecognized IDs.
+  const validationMethod = getValidationMethod(methodType as ValidationMethodId);
   
   if (validationMethod) {
     return {

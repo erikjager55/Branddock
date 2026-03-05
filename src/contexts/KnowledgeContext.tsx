@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Knowledge, Collection, KnowledgeWithMeta } from '../types/knowledge';
-import { apiKnowledgeToMockFormat } from '../lib/api/knowledge-adapter';
+import { apiKnowledgeToMockFormatList } from '../lib/api/knowledge-adapter';
 import {
   fetchFeaturedResources,
   toggleFavorite,
@@ -65,7 +65,7 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       .then(res => res.json())
       .then(data => {
         if (data.resources && data.resources.length > 0) {
-          setKnowledge(apiKnowledgeToMockFormat(data.resources) as any);
+          setKnowledge(apiKnowledgeToMockFormatList(data.resources) as unknown as Knowledge[]);
         } else {
           return getMockFallback().then(setKnowledge);
         }

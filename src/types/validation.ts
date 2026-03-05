@@ -60,10 +60,7 @@ export type ValidationMethodStatus =
  */
 export type ResearchMethodStatus = ValidationMethodStatus;
 
-/**
- * @deprecated ValidationMethodUIStatus is now merged with ValidationMethodStatus
- * Use ValidationMethodStatus instead
- */
+/** Alias for ValidationMethodStatus — used in UI component props */
 export type ValidationMethodUIStatus = ValidationMethodStatus;
 
 // ============================================================================
@@ -76,11 +73,8 @@ export type ValidationMethodUIStatus = ValidationMethodStatus;
  */
 export type UnlockTier = 'free' | 'basic' | 'pro' | 'premium' | 'enterprise';
 
-/**
- * @deprecated Use 'pro' instead of 'premium'
- * Some configs still use 'premium', map to 'pro' for consistency
- */
-export type LegacyUnlockTier = 'free' | 'basic' | 'premium' | 'enterprise';
+/** Legacy tier type — maps 'premium' to 'pro' via normalizeUnlockTier() */
+type LegacyUnlockTier = 'free' | 'basic' | 'premium' | 'enterprise';
 
 // ============================================================================
 // Decision Quality Types

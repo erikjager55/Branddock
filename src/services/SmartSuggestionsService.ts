@@ -1,7 +1,12 @@
 import { BrandAsset } from '../types/brand-asset';
-import { Persona } from '../types/persona';
 import { Suggestion, EntityType } from '../types/relationship';
 import { RelationshipService } from './RelationshipService';
+
+/** Minimal persona shape needed by SmartSuggestionsService (id + name + length) */
+interface ServicePersona {
+  id: string;
+  name: string;
+}
 
 /**
  * SmartSuggestionsService
@@ -9,10 +14,10 @@ import { RelationshipService } from './RelationshipService';
  */
 export class SmartSuggestionsService {
   private static brandAssets: BrandAsset[] = [];
-  private static personas: Persona[] = [];
+  private static personas: ServicePersona[] = [];
 
   static setBrandAssets(assets: BrandAsset[]) { SmartSuggestionsService.brandAssets = assets; }
-  static setPersonas(personas: Persona[]) { SmartSuggestionsService.personas = personas; }
+  static setPersonas(personas: ServicePersona[]) { SmartSuggestionsService.personas = personas; }
 
   
   static getSuggestions(): Suggestion[] {

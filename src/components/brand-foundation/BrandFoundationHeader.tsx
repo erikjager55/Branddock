@@ -22,8 +22,8 @@ export function BrandFoundationHeader() {
           <Layers className="w-6 h-6 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Brand Foundation</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 className="text-2xl font-bold text-foreground">Brand Foundation</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Build your strategic foundation with premium brand tools
           </p>
         </div>

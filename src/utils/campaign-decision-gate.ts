@@ -1,15 +1,23 @@
 import { BrandAsset } from '../types/brand-asset';
-import { Persona } from '../types/persona';
 /**
  * UTILITY: Campaign Decision Gate
- * 
+ *
  * Bepaalt of campaign generation safe is op basis van selected items.
  * Blokkeert generatie bij blocked items (<50% coverage).
- * 
+ *
  * DOEL: Voorkom campagnes gebouwd op onbetrouwbare data
  */
 
-import { calculateDecisionStatus } from './decision-status-calculator';
+import { calculateDecisionStatus, ResearchItem } from './decision-status-calculator';
+
+/**
+ * Minimal persona shape needed by the decision gate.
+ * Accepts both Persona (types/persona.ts) and MockPersona (persona-adapter.ts).
+ */
+interface GatePersona extends ResearchItem {
+  id: string;
+  name: string;
+}
 
 export interface DecisionGateResult {
   status: 'safe' | 'at-risk' | 'blocked';
@@ -30,7 +38,7 @@ export interface DecisionGateResult {
  */
 export function calculateDecisionGate(
   brandAssets: BrandAsset[],
-  personas: Persona[],
+  personas: GatePersona[],
   selectedAssetIds: string[],
   selectedPersonaIds: string[]
 ): DecisionGateResult {

@@ -57,7 +57,7 @@ export function KnowledgeLibrary() {
   const setStoreViewMode = useKnowledgeLibraryStore((s) => s.setViewMode);
 
   // State
-  const [resources, setResources] = useState<KnowledgeResource[]>(knowledge as any);
+  const [resources, setResources] = useState<KnowledgeResource[]>(knowledge as unknown as KnowledgeResource[]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedResource, setSelectedResource] = useState<KnowledgeResource | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);

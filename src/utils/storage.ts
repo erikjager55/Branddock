@@ -93,7 +93,7 @@ export function checkStorageVersion(): boolean {
   
   if ((currentVersion as string) !== STORAGE_VERSION) {
     logger.info(`Storage version mismatch. Current: ${currentVersion}, Expected: ${STORAGE_VERSION}`);
-    // TODO: Add migration logic here if needed
+    // No migration needed — storage is client-side cache only
     saveToStorage(StorageKeys.VERSION, STORAGE_VERSION);
     return false;
   }

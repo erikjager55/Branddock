@@ -36,10 +36,10 @@ export function AgencySettingsPage() {
     setLocalSettings(prev => prev ? { ...prev, [field]: value } : null);
   };
 
-  const updateNestedField = (parent: keyof AgencySettings, field: string, value: any) => {
+  const updateNestedField = (parent: 'branding' | 'contact' | 'whiteLabel' | 'features', field: string, value: unknown) => {
     setLocalSettings(prev => prev ? {
       ...prev,
-      [parent]: { ...(prev[parent] as any), [field]: value }
+      [parent]: { ...(prev[parent] as Record<string, unknown>), [field]: value }
     } : null);
   };
 

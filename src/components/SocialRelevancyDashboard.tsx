@@ -717,7 +717,7 @@ export function SocialRelevancyDashboard({ onBack, onStartResearch }: SocialRele
             setIsFlowModalOpen(false);
             setSelectedMethod(null);
           }}
-          method={selectedMethod as any}
+          method={selectedMethod as unknown as React.ComponentProps<typeof ResearchFlowModal>['method']}
           assetName="Social Relevancy"
           onComplete={handleResearchComplete}
         />

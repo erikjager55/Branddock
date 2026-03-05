@@ -3,6 +3,8 @@
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 
+> 📋 **TODO**: Zie `TODO.md` in project root voor de geprioriteerde development roadmap (8 fases, ~146 items). Raadpleeg dit bij het plannen van nieuwe werk.
+
 > Brand Assets: 12 assets met elk een eigen frameworkType (PURPOSE_WHEEL, GOLDEN_CIRCLE, BRAND_ESSENCE, BRAND_PROMISE, MISSION_STATEMENT, VISION_STATEMENT, BRAND_ARCHETYPE, TRANSFORMATIVE_GOALS, BRAND_PERSONALITY, BRAND_STORY, BRANDHOUSE_VALUES, ESG). Veldspecificaties per asset: zie `docs/brand-assets-field-specifications.md`
 
 ---
@@ -73,7 +75,7 @@ GEMINI_API_KEY=           # Optioneel, voor AI foto generatie (fallback: DiceBea
 - `sessions Session[]` en `accounts Account[]` relaties
 
 ### Bekende beperkingen
-- `NEXT_PUBLIC_WORKSPACE_ID` is deprecated — workspace komt nu uit sessie/cookie. Env var blijft als laatste fallback.
+- `NEXT_PUBLIC_WORKSPACE_ID` is verwijderd — workspace komt volledig uit sessie/cookie.
 - nextCookies() plugin MOET laatste in plugins array staan.
 - Role velden zijn nu String (lowercase: "owner", "admin", "member", "viewer") — niet meer MemberRole enum.
 - Workspace switching via `branddock-workspace-id` cookie (set door POST /api/workspace/switch).
@@ -89,11 +91,10 @@ PostgreSQL → Prisma → /api/[module] (route.ts)
   → UI componenten (ongewijzigd)
 ```
 
-Feature flag: `NEXT_PUBLIC_WORKSPACE_ID` in `.env.local` (DEPRECATED)
-- ~~Gezet → data uit API/PostgreSQL~~ Workspace komt nu uit sessie (activeOrganizationId → workspace resolution)
-- Env var blijft als fallback als sessie niet beschikbaar is
+Workspace resolution: sessie-based (activeOrganizationId → workspace resolution)
+- `NEXT_PUBLIC_WORKSPACE_ID` env var is volledig verwijderd — geen fallback meer
 - Adapter mapt DB formaat → mock formaat zodat UI ongewijzigd blijft
-- Alle contexts gebruiken `useWorkspace()` hook ipv env var
+- Alle contexts gebruiken `useWorkspace()` hook
 
 **Live op database:**
 - Brand Assets (13 assets, 3 met content+framework, 52 research methods, 6 versions) — `/api/brand-assets` GET + POST
@@ -1020,7 +1021,7 @@ prisma/
 ├── prisma.config.ts                     ← Prisma 7 configuratie
 └── seed.ts                              ← Seed data (S1: +3 asset content, SWOT framework, 6 versions, 10-msg AI session)
 
-.env.local                               ← BETTER_AUTH_SECRET, BETTER_AUTH_URL, DATABASE_URL, NEXT_PUBLIC_WORKSPACE_ID
+.env.local                               ← BETTER_AUTH_SECRET, BETTER_AUTH_URL, DATABASE_URL
 ```
 
 ## Database & Prisma 7
@@ -1357,8 +1358,8 @@ Directe klant (Organization type=DIRECT)
 | `/api/admin/exploration-configs/[id]/knowledge/[itemId]` | PUT, DELETE | CRUD single knowledge item |
 | `/api/versions` | GET | Universal version history (polymorphic ResourceVersion) |
 
-Alle module-routes resolven workspaceId uit sessie via `requireWorkspace()`.
-Fallback naar `NEXT_PUBLIC_WORKSPACE_ID` als sessie niet beschikbaar.
+Alle module-routes resolven workspaceId uit sessie via `resolveWorkspaceId()`.
+Geen env var fallback — sessie is verplicht voor workspace resolution.
 Auth route vereist GEEN workspaceId.
 
 ### Patroon voor nieuwe modules
@@ -1369,7 +1370,7 @@ Auth route vereist GEEN workspaceId.
 5. Context updaten: API fetch in useEffect + mock fallback
 
 ### API route beveiliging (✅ actief)
-Alle module-routes gebruiken `requireWorkspace()` uit `src/lib/auth-server.ts`.
+Alle module-routes gebruiken `resolveWorkspaceId()` uit `src/lib/auth-server.ts`.
 workspaceId komt uit sessie (activeOrganizationId → workspace resolution via workspace-resolver.ts).
 
 ## TypeScript Status
@@ -1524,10 +1525,10 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 - **Adapter pattern** — tijdelijk, componenten moeten op termijn direct DB-model gebruiken
 - **mock-to-meta-adapter.ts** — reverse adapter (mock→API format) voor Brand Foundation. Verdwijnt wanneer context direct BrandAssetWithMeta levert.
 - **BrandAssetsViewSimple.tsx** — behouden als backup, niet gerenderd. Verwijderen na S1 stabilisatie.
-- **`as any` casts** — enkele MockPersona/Persona compat casts in Dashboard.tsx, PersonasSection.tsx (opruimen wanneer mock fallback verdwijnt)
-- **NEXT_PUBLIC_WORKSPACE_ID** — deprecated, nog als fallback in useWorkspace(). Verwijderen wanneer alle flows via sessie werken.
-- **Hardcoded Tailwind colors** — BrandFoundationHeader, BrandAssetCard gebruiken text-gray-900/500 ipv design tokens (text-muted-foreground etc.). Migreren naar CSS custom properties.
-- **Geen Error Boundary** — BrandFoundationPage mist React Error Boundary wrapper. Toevoegen bij S1.
+- **`as any` casts** — ✅ Opgeruimd (47 → 0 in src/). Nog 146 `: any` type annotations in 68 bestanden (parameters/variabelen) — toekomstige pass.
+- **~~NEXT_PUBLIC_WORKSPACE_ID~~** — ✅ Volledig verwijderd uit code en .env bestanden.
+- **~~Hardcoded Tailwind colors~~** — ✅ BrandFoundationHeader en BrandAssetCard gemigreerd naar design tokens.
+- **~~Geen Error Boundary~~** — ✅ ErrorBoundary beschikbaar via shared barrel, top-level wrap in App.tsx.
 - **S1 vs S2 AI systeem overlap** — Twee AI chat systemen voor brand assets (AIBrandAnalysisSession S1 + ExplorationSession S2). S1 kan op termijn deprecated worden wanneer S2 volledige feature parity heeft.
 - **ExplorationConfig hardcoded fallbacks** — System defaults in config-resolver.ts. Op termijn alle configs via DB seed beheren. **13 van 13 configs nu in DB** — fallbacks alleen nog relevant voor nieuwe item types.
 - **AI Exploration re-test na config wijziging** — Om opnieuw te testen na config-wijzigingen, moeten ExplorationSession + ExplorationMessage + BrandAssetResearchMethod (method: 'AI_EXPLORATION', status → 'AVAILABLE') gereset worden voor het betreffende asset. Alleen een nieuwe sessie pakt bijgewerkte config op.

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
+import { DifficultyLevel } from "@prisma/client";
 import { KNOWLEDGE_RESOURCE_LIST_SELECT } from "@/lib/db/queries";
 import { setCache, cachedJson, invalidateCache } from "@/lib/api/cache";
 import { cacheKeys, CACHE_TTL } from "@/lib/api/cache-keys";
@@ -155,7 +156,7 @@ export async function POST(request: NextRequest) {
         author: data.author,
         url: data.url || "",
         source: "MANUAL",
-        difficultyLevel: data.difficultyLevel as any,
+        difficultyLevel: data.difficultyLevel as DifficultyLevel | undefined,
         estimatedDuration: data.estimatedDuration,
         tags: data.tags || [],
         rating: data.rating || 0,

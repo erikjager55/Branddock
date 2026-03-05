@@ -6,8 +6,14 @@
  * In production mode, logs are suppressed unless explicitly enabled.
  */
 
+declare global {
+  interface Window {
+    __DEBUG_MODE__?: boolean;
+  }
+}
+
 const isDevelopment = process.env.NODE_ENV !== 'production';
-const isDebugEnabled = typeof window !== 'undefined' && (window as any).__DEBUG_MODE__ === true;
+const isDebugEnabled = typeof window !== 'undefined' && window.__DEBUG_MODE__ === true;
 
 // Enable debug mode by setting: window.__DEBUG_MODE__ = true in browser console
 

@@ -16,12 +16,6 @@ export function useWorkspace() {
       return { workspaceId: activeOrgId, organizationId: activeOrgId, isLoading: false };
     }
 
-    // Fallback: env variable
-    const envWorkspaceId = process.env.NEXT_PUBLIC_WORKSPACE_ID;
-    if (envWorkspaceId) {
-      return { workspaceId: envWorkspaceId, organizationId: null, isLoading: false };
-    }
-
     return { workspaceId: null, organizationId: null, isLoading: false };
   }, [session, isPending]);
 

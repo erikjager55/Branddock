@@ -6,6 +6,7 @@ import { Progress } from './ui/progress';
 import { useBrandAssets } from '../contexts/BrandAssetsContext';
 import { calculateDecisionStatus } from '../utils/decision-status-calculator';
 import { ResearchFlowModal } from './ResearchFlowModal';
+import type { ResearchMethodType } from '../types/brand-asset';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
@@ -128,7 +129,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
       const methodExists = prev.researchMethods.some(m => m.type === methodId);
       if (!methodExists) {
         updatedMethods.push({
-          type: methodId as any,
+          type: methodId as ResearchMethodType,
           status: 'completed',
           completedAt: new Date().toISOString(),
         });
@@ -433,7 +434,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
           <ResearchFlowModal
             isOpen={isFlowModalOpen}
             onClose={() => setIsFlowModalOpen(false)}
-            method={selectedMethod as any}
+            method={selectedMethod as unknown as React.ComponentProps<typeof ResearchFlowModal>['method']}
             assetName={localAsset.type}
             onComplete={handleResearchComplete}
           />
@@ -577,7 +578,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
         <ResearchFlowModal
           isOpen={isFlowModalOpen}
           onClose={() => setIsFlowModalOpen(false)}
-          method={selectedMethod as any}
+          method={selectedMethod as unknown as React.ComponentProps<typeof ResearchFlowModal>['method']}
           assetName={localAsset.type}
           onComplete={handleResearchComplete}
         />

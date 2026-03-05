@@ -42,7 +42,7 @@ export function BreadcrumbNavigation({ items, onNavigate, showHome = true }: Bre
       {/* Breadcrumb items */}
       {visibleItems.map((item, index) => {
         const isLast = index === visibleItems.length - 1;
-        const Icon = item.icon ? (LucideIcons as any)[item.icon] : null;
+        const Icon = item.icon ? (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[item.icon] : null;
 
         return (
           <React.Fragment key={item.id}>

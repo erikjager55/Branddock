@@ -28,6 +28,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { DecisionStatusBadge } from '../../decision-status/DecisionStatusBadge';
+import type { DecisionStatus } from '../../../types/decision-status';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 
@@ -233,8 +234,8 @@ export function CampaignMetadataSections({
                 </p>
               </div>
             </div>
-            <DecisionStatusBadge 
-              status={metadata.decisionStatus as any}
+            <DecisionStatusBadge
+              status={(metadata.decisionStatus === 'do-not-decide' ? 'blocked' : metadata.decisionStatus) as DecisionStatus}
               showIcon={false}
             />
           </div>

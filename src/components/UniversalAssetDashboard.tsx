@@ -502,7 +502,7 @@ export function UniversalAssetDashboard({ assetId, onBack, onStartResearch }: Un
               setSelectedMethod(null);
             }}
             onComplete={() => handleResearchComplete(selectedMethod.id)}
-            method={{ ...selectedMethod, unlocksPotential: 25 } as any}
+            method={{ ...selectedMethod, unlocksPotential: 25 } as unknown as React.ComponentProps<typeof ResearchFlowModal>['method']}
             assetName={asset.type}
           />
         )}

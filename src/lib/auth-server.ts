@@ -27,7 +27,6 @@ export async function requireAuth() {
  * 1. Explicit workspace cookie (set by workspace switcher)
  * 2. First workspace of active organization
  * 3. First workspace of user's first org
- * 4. NEXT_PUBLIC_WORKSPACE_ID env variable (deprecated fallback)
  */
 export async function resolveWorkspaceId(): Promise<string | null> {
   const session = await getServerSession();
@@ -51,6 +50,5 @@ export async function resolveWorkspaceId(): Promise<string | null> {
     if (workspace) return workspace.id;
   }
 
-  // 4. Backward compat: use env variable
-  return process.env.NEXT_PUBLIC_WORKSPACE_ID ?? null;
+  return null;
 }

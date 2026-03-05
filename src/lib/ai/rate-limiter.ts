@@ -7,7 +7,7 @@
 //  - AGENCY:  120 req/min, 5000 req/day
 //
 // Sliding window approach. Resets daily at midnight UTC.
-// Production TODO: swap in-memory store for Redis.
+// Production: swap in-memory store for Redis (see TODO.md Fase 2.1).
 // =============================================================
 
 // ─── Types ─────────────────────────────────────────────────

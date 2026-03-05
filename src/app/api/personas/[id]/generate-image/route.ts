@@ -102,7 +102,7 @@ export async function POST(
     }
 
     // Convert base64 to data URI for direct display
-    // TODO: Upload to persistent storage (S3/R2/Cloudflare) for production
+    // Production: upload to persistent storage (see TODO.md Fase 2.2)
     const mimeType = imagePart.inlineData.mimeType;
     const base64Data = imagePart.inlineData.data;
     const avatarUrl = `data:${mimeType};base64,${base64Data}`;

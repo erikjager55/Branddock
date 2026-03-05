@@ -40,3 +40,5 @@ export { LazyWrapper } from './LazyWrapper';
 
 export { OptimizedImage } from './OptimizedImage';
 export type { OptimizedImageProps } from './OptimizedImage';
+
+export { ErrorBoundary } from '../ErrorBoundary';

@@ -49,7 +49,7 @@ const STORAGE_KEY = 'change-impact-store';
 export function ChangeImpactProvider({ children }: { children: ReactNode }) {
   const [store, setStore] = useState<ChangeImpactStore>(() => {
     // Load from localStorage
-    const stored = loadFromStorage<ChangeImpactStore>(STORAGE_KEY as any, {
+    const stored = loadFromStorage<ChangeImpactStore>(STORAGE_KEY, {
       changes: [],
       impactAnalyses: [],
       notifications: [],
@@ -62,7 +62,7 @@ export function ChangeImpactProvider({ children }: { children: ReactNode }) {
 
   // Persist to localStorage
   useEffect(() => {
-    saveToStorage(STORAGE_KEY as any, store);
+    saveToStorage(STORAGE_KEY, store);
   }, [store]);
 
   /**

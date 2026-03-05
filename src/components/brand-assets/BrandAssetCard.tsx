@@ -158,7 +158,7 @@ export function BrandAssetCard({
             <h3 className="text-base font-semibold text-foreground leading-snug line-clamp-1">
               {asset.name}
             </h3>
-            <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">
+            <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
               {asset.description || 'No description yet'}
             </p>
           </div>
@@ -231,10 +231,10 @@ export function BrandAssetCard({
                         }`} />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs font-semibold text-gray-900">
+                        <div className="text-xs font-semibold text-foreground">
                           {method.label}
                         </div>
-                        <div className="mt-0.5 text-xs text-gray-500 line-clamp-2">
+                        <div className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
                           {method.description}
                         </div>
                       </div>

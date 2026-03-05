@@ -9,6 +9,11 @@ type LockableModel =
   | "businessStrategy"
   | "interview";
 
+/** Prisma delegate with at least a findUnique method */
+interface LockableDelegate {
+  findUnique(args: { where: { id: string }; select: { isLocked: true } }): Promise<{ isLocked: boolean } | null>;
+}
+
 /**
  * Check if an entity is locked. Returns HTTP 423 response if locked,
  * or null if unlocked (safe to proceed).
@@ -21,8 +26,7 @@ export async function requireUnlocked(
   id: string
 ): Promise<NextResponse | null> {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const delegate = prisma[model] as any;
+    const delegate = prisma[model] as unknown as LockableDelegate;
     const record = await delegate.findUnique({
       where: { id },
       select: { isLocked: true },

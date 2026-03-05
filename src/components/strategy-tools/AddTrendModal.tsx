@@ -28,9 +28,11 @@ import {
   SelectValue,
 } from '../ui/select';
 
+import type { Trend } from '../../types/trend';
+
 interface AddTrendModalProps {
   onClose: () => void;
-  onAddTrend: (trend: any) => void;
+  onAddTrend: (trend: Trend) => void;
 }
 
 // Research-backed trend databases
@@ -142,22 +144,22 @@ export function AddTrendModal({ onClose, onAddTrend }: AddTrendModalProps) {
   const [sourceInput, setSourceInput] = useState('');
 
   const handleAddManualTrend = () => {
-    const trend = {
+    const trend: Trend = {
       id: `trend-${Date.now()}`,
       title: manualTrend.title,
-      category: manualTrend.category as any,
+      category: manualTrend.category as Trend['category'],
       description: manualTrend.description,
-      impact: manualTrend.impact as any,
-      timeframe: manualTrend.timeframe as any,
+      impact: manualTrend.impact as Trend['impact'],
+      timeframe: manualTrend.timeframe as Trend['timeframe'],
       relevantIndustries: manualTrend.relevantIndustries
         .split(',')
         .map(i => i.trim())
         .filter(i => i.length > 0),
       keyInsights: manualTrend.keyInsights || undefined,
       // NEW FIELDS
-      direction: manualTrend.direction as any,
+      direction: manualTrend.direction as Trend['direction'],
       relevance: manualTrend.relevance,
-      level: manualTrend.level,
+      level: manualTrend.level as Trend['level'],
       sources: manualTrend.sources,
       dateAdded: new Date().toISOString().split('T')[0], // Auto-set current date
       tags: manualTrend.tags

@@ -1,9 +1,8 @@
 import { BrandAsset } from '../types/brand-asset';
-import { Persona } from '../types/persona';
-import { 
-  Relationship, 
-  ImpactAnalysis, 
-  ConsistencyReport, 
+import {
+  Relationship,
+  ImpactAnalysis,
+  ConsistencyReport,
   ConsistencyIssue,
   EntityReference,
   EntityType,
@@ -12,16 +11,22 @@ import {
 } from '../types/relationship';
 import { mockRelationships, getAllRelationships } from '../data/mock-relationships';
 
+/** Minimal persona shape needed by RelationshipService (id + name) */
+interface ServicePersona {
+  id: string;
+  name: string;
+}
+
 /**
  * RelationshipService
  * Core service for managing relationships between entities
  */
 export class RelationshipService {
   private static brandAssets: BrandAsset[] = [];
-  private static personas: Persona[] = [];
+  private static personas: ServicePersona[] = [];
 
   static setBrandAssets(assets: BrandAsset[]) { RelationshipService.brandAssets = assets; }
-  static setPersonas(personas: Persona[]) { RelationshipService.personas = personas; }
+  static setPersonas(personas: ServicePersona[]) { RelationshipService.personas = personas; }
 
   
   // ==================== BASIC CRUD ====================

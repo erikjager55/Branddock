@@ -1,11 +1,10 @@
 import { BrandAsset } from '../types/brand-asset';
-import { Persona } from '../types/persona';
 /**
  * UTILITY: Campaign Decision Calculator v2 (CONSISTENTIE CORRECTIE)
- * 
+ *
  * Berekent overall decision status voor een campaign op basis van
  * alle gekoppelde brand assets en personas.
- * 
+ *
  * WIJZIGINGEN v2.1 (CONSISTENTIE):
  * - Microcopy: ALLEEN percentage OF status label (nooit beide)
  * - Format: "<naam>: <percentage>% research coverage"
@@ -13,7 +12,17 @@ import { Persona } from '../types/persona';
  * - Formulierstatus ("draft", "in-progress") VERWIJDERD uit decision feedback
  */
 
-import { calculateDecisionStatus } from './decision-status-calculator';
+import { calculateDecisionStatus, ResearchItem } from './decision-status-calculator';
+
+/**
+ * Minimal persona shape needed by the decision calculator.
+ * Accepts both Persona (types/persona.ts) and MockPersona (persona-adapter.ts).
+ */
+interface DecisionPersona extends ResearchItem {
+  id: string;
+  name: string;
+  type?: string;
+}
 
 export interface CampaignDecisionResult {
   /** Overall status voor de campagne */
@@ -54,7 +63,7 @@ function getResearchStatusLabel(coverage: number): string {
 
 export function calculateCampaignDecision(
   brandAssets: BrandAsset[],
-  personas: Persona[],
+  personas: DecisionPersona[],
   selectedBrandAssets: string[],
   selectedPersonas: string[]
 ): CampaignDecisionResult {
@@ -223,7 +232,7 @@ export function calculateCampaignDecision(
  */
 export function calculateSectionDecision(
   brandAssets: BrandAsset[],
-  personas: Persona[],
+  personas: DecisionPersona[],
   sectionType: 'template' | 'campaign-details' | 'brand-assets' | 'advanced' | 'channels',
   selectedBrandAssets: string[],
   selectedPersonas: string[],
@@ -290,39 +299,39 @@ export function calculateSectionDecision(
       }
 
       // Bereken status van alle gekoppelde items
-      const allItems = [
+      const allItems: Array<{ item: { type?: string; name?: string }; status: ReturnType<typeof calculateDecisionStatus> }> = [
         ...selectedBrandAssets.map(id => {
           const asset = brandAssets.find(a => a.id === id);
-          return asset ? { item: asset, status: calculateDecisionStatus(asset) } : null;
-        }).filter(Boolean),
+          return asset ? { item: asset as { type?: string; name?: string }, status: calculateDecisionStatus(asset) } : null;
+        }).filter((x): x is NonNullable<typeof x> => x !== null),
         ...selectedPersonas.map(id => {
           const persona = personas.find(p => p.id === id);
-          return persona ? { item: persona, status: calculateDecisionStatus(persona) } : null;
-        }).filter(Boolean)
+          return persona ? { item: persona as { type?: string; name?: string }, status: calculateDecisionStatus(persona) } : null;
+        }).filter((x): x is NonNullable<typeof x> => x !== null)
       ];
 
-      const hasBlocked = allItems.some(i => i!.status.status === 'blocked');
-      const hasAtRisk = allItems.some(i => i!.status.status === 'decision-at-risk');
+      const hasBlocked = allItems.some(i => i.status.status === 'blocked');
+      const hasAtRisk = allItems.some(i => i.status.status === 'decision-at-risk');
 
       if (hasBlocked) {
-        const blockedItems = allItems.filter(i => i!.status.status === 'blocked');
+        const blockedItems = allItems.filter(i => i.status.status === 'blocked');
         return {
           status: 'blocked',
           // CONSISTENTE FORMATTING: alleen naam + percentage + "research coverage"
           causes: blockedItems.map(i =>
-            `${(i!.item as any).type || (i!.item as any).name}: ${i!.status.coverage}% research coverage`
+            `${i.item.type || i.item.name}: ${i.status.coverage}% research coverage`
           ),
           requiredActions: ['Breng alle items naar minimaal 50% research coverage']
         };
       }
 
       if (hasAtRisk) {
-        const atRiskItems = allItems.filter(i => i!.status.status === 'decision-at-risk');
+        const atRiskItems = allItems.filter(i => i.status.status === 'decision-at-risk');
         return {
           status: 'risk',
           // CONSISTENTE FORMATTING: alleen naam + percentage + "research coverage"
           causes: atRiskItems.map(i =>
-            `${(i!.item as any).type || (i!.item as any).name}: ${i!.status.coverage}% research coverage`
+            `${i.item.type || i.item.name}: ${i.status.coverage}% research coverage`
           ),
           requiredActions: ['Verhoog research coverage naar 80%+ voor optimale resultaten']
         };

@@ -39,6 +39,7 @@ import {
   Zap
 } from 'lucide-react';
 import { StrategyTool } from '../../types/strategy';
+import type { Trend } from '../../types/trend';
 import { EnhancedAssetPickerModal } from './EnhancedAssetPickerModal';
 import { AddTrendModal } from './AddTrendModal';
 import { EntityType } from '../../types/relationship';
@@ -54,6 +55,7 @@ import { DecisionSummaryPanel } from '../decision-status/DecisionSummaryPanel';
 import { calculateCampaignDecision, calculateSectionDecision } from '../../utils/campaign-decision-calculator-v2';
 import { DecisionWarningModal } from '../decision-status/DecisionWarningModal';
 import type { DecisionStatusInfo } from '../../types/decision-status';
+import type { ValidationMethodId } from '../../types/validation';
 
 interface UniversalStrategyGeneratorProps {
   tool: StrategyTool;
@@ -293,7 +295,7 @@ export function UniversalStrategyGenerator({
   // Calculate decision status
   const campaignDecision = useMemo(() => {
     return calculateCampaignDecision(
-      brandAssets, personas as any,
+      brandAssets, personas,
       selectedBrandAssets,
       selectedPersonas
     );
@@ -301,7 +303,7 @@ export function UniversalStrategyGenerator({
 
   const sectionDecisions = useMemo(() => {
     return {
-      brand: calculateSectionDecision(brandAssets, personas as any, 'brand-assets', selectedBrandAssets, selectedPersonas, {}, []),
+      brand: calculateSectionDecision(brandAssets, personas, 'brand-assets', selectedBrandAssets, selectedPersonas, {}, []),
     };
   }, [brandAssets, personas, selectedBrandAssets, selectedPersonas]);
 
@@ -412,7 +414,7 @@ export function UniversalStrategyGenerator({
         coverage: campaignDecision.details.avgCoverage,
         completedMethods: [],
         topMethodsCompleted: false,
-        missingTopMethods: campaignDecision.details.missingResearch as any[],
+        missingTopMethods: campaignDecision.details.missingResearch as ValidationMethodId[],
         recommendation: campaignDecision.improvements[0] || '',
         risk: campaignDecision.risks[0] || '',
         nextSteps: campaignDecision.improvements,
@@ -912,7 +914,7 @@ export function UniversalStrategyGenerator({
           items={personas.map(p => ({
             id: p.id,
             name: p.name,
-            subtitle: (p as any).demographics?.occupation || (p as any).occupation || 'Persona',
+            subtitle: p.demographics?.occupation || 'Persona',
             description: p.tagline || '',
           }))}
           selected={selectedPersonas}
@@ -960,9 +962,9 @@ export function UniversalStrategyGenerator({
       {showAddTrendModal && (
         <AddTrendModal
           onClose={() => setShowAddTrendModal(false)}
-          onAddTrend={(newTrend: any) => {
-            setTrends((prev: any[]) => [...prev, newTrend]);
-            setSelectedTrends((prev: string[]) => [...prev, newTrend.id]);
+          onAddTrend={(newTrend: Trend) => {
+            setTrends((prev) => [...prev, newTrend]);
+            setSelectedTrends((prev) => [...prev, newTrend.id]);
             setShowAddTrendModal(false);
           }}
         />

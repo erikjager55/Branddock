@@ -707,7 +707,7 @@ export function TransformativeGoalsDashboard({ onBack, onStartResearch }: Transf
             setIsFlowModalOpen(false);
             setSelectedMethod(null);
           }}
-          method={selectedMethod as any}
+          method={selectedMethod as unknown as React.ComponentProps<typeof ResearchFlowModal>['method']}
           assetName="Transformative Goals"
           onComplete={handleResearchComplete}
         />

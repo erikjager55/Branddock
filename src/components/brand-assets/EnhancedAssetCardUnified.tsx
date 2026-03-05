@@ -28,8 +28,8 @@ export function EnhancedAssetCardUnified({
   unlockingToolId,
   onToolUnlockClick,
 }: EnhancedAssetCardUnifiedProps) {
-  // For now, we ignore locked tools in the EntityCard
-  // TODO: Add support for locked tools in EntityCard if needed
+  // Locked tools props (lockedToolIds, unlockingToolId, onToolUnlockClick) are
+  // not yet passed to EntityCard — add when tool unlocking UI is implemented
   const entityData = brandAssetToEntityCard(asset, onClick, onMethodClick);
 
   return <EntityCard data={entityData} />;

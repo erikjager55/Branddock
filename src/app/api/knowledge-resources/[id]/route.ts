@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
+import { DifficultyLevel } from "@prisma/client";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 
@@ -139,7 +140,7 @@ export async function PATCH(
     }
 
     if (data.difficultyLevel) {
-      updateData.difficultyLevel = data.difficultyLevel as any;
+      updateData.difficultyLevel = data.difficultyLevel as DifficultyLevel;
     }
 
     const resource = await prisma.knowledgeResource.update({
