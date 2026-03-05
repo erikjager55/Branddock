@@ -11,6 +11,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { ExplorationConfigPreviewModal } from './ExplorationConfigPreviewModal';
+import { ItemKnowledgeSources } from '@/components/shared/ItemKnowledgeSources';
 import { EXPLORATION_AI_MODELS } from '@/lib/ai/exploration/config.types';
 import type {
   ExplorationConfigData,
@@ -90,6 +91,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
     prompts: false,
     fields: false,
     context: false,
+    knowledge: false,
   });
   const toggleSection = (key: string) =>
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -569,6 +571,20 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
               ))}
             </div>
           </CollapsibleSection>
+
+          {/* ─── Kennisbronnen Section (only for existing configs) */}
+          {!isNew && initialData?.id && (
+            <CollapsibleSection
+              title="Kennisbronnen"
+              isOpen={openSections.knowledge}
+              onToggle={() => toggleSection('knowledge')}
+            >
+              <p className="text-xs text-gray-500 mb-3">
+                Voeg bestanden, URLs of tekst toe als extra context voor AI sessies van dit type.
+              </p>
+              <ItemKnowledgeSources itemType={itemType} itemId={initialData.id} />
+            </CollapsibleSection>
+          )}
 
         </div>
 
