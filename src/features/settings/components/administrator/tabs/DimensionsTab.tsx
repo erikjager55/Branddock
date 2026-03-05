@@ -10,7 +10,7 @@ import type { StoredDimension } from '@/lib/ai/exploration/config.types';
 interface DimensionsTabProps {
   dimensions: StoredDimension[];
   validationErrors: Set<number>;
-  onChange: (dimensions: StoredDimension[]) => void;
+  onChange: (dimensions: StoredDimension[], editedIndex?: number) => void;
   onLoadDefaults?: () => void;
 }
 
@@ -24,7 +24,7 @@ export function DimensionsTab({
 }: DimensionsTabProps) {
   const updateDimension = (index: number, field: keyof StoredDimension, value: string) => {
     const updated = dimensions.map((d, i) => (i === index ? { ...d, [field]: value } : d));
-    onChange(updated);
+    onChange(updated, index);
   };
 
   const addDimension = () => {
