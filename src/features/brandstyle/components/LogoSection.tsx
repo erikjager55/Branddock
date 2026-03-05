@@ -3,14 +3,18 @@
 import { CheckCircle, X } from "lucide-react";
 import { Card } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
+import { EditableStringList } from "./EditableStringList";
+import { useUpdateSection } from "../hooks/useBrandstyleHooks";
 import type { BrandStyleguide, LogoVariation } from "../types/brandstyle.types";
 
 interface LogoSectionProps {
   styleguide: BrandStyleguide;
+  canEdit: boolean;
 }
 
-export function LogoSection({ styleguide }: LogoSectionProps) {
+export function LogoSection({ styleguide, canEdit }: LogoSectionProps) {
   const variations = (styleguide.logoVariations ?? []) as LogoVariation[];
+  const updateLogo = useUpdateSection("logo");
 
   return (
     <div data-testid="logo-section" className="space-y-6">
@@ -33,37 +37,61 @@ export function LogoSection({ styleguide }: LogoSectionProps) {
       </Card>
 
       {/* Usage Guidelines */}
-      {styleguide.logoGuidelines.length > 0 && (
-        <Card>
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Usage Guidelines</h3>
-          <ul className="space-y-2">
-            {styleguide.logoGuidelines.map((g, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                {g}
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
+      <Card>
+        <EditableStringList
+          title="Usage Guidelines"
+          items={styleguide.logoGuidelines}
+          canEdit={canEdit}
+          isSaving={updateLogo.isPending}
+          placeholder="Add a guideline..."
+          onSave={(items) => updateLogo.mutate({ logoGuidelines: items })}
+        >
+          {(items) =>
+            items.length > 0 ? (
+              <ul className="space-y-2">
+                {items.map((g, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    {g}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-400">No usage guidelines yet.</p>
+            )
+          }
+        </EditableStringList>
+      </Card>
 
       {/* Don'ts */}
-      {styleguide.logoDonts.length > 0 && (
-        <Card>
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Don&apos;ts</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {styleguide.logoDonts.map((d, i) => (
-              <div
-                key={i}
-                className="flex items-start gap-2 text-sm text-gray-600 p-3 bg-red-50 rounded-lg"
-              >
-                <X className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                {d}
+      <Card>
+        <EditableStringList
+          title="Don'ts"
+          items={styleguide.logoDonts}
+          canEdit={canEdit}
+          isSaving={updateLogo.isPending}
+          placeholder="Add a don't..."
+          onSave={(items) => updateLogo.mutate({ logoDonts: items })}
+        >
+          {(items) =>
+            items.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {items.map((d, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-2 text-sm text-gray-600 p-3 bg-red-50 rounded-lg"
+                  >
+                    <X className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    {d}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </Card>
-      )}
+            ) : (
+              <p className="text-sm text-gray-400">No don&apos;ts defined yet.</p>
+            )
+          }
+        </EditableStringList>
+      </Card>
 
       <AiContentBanner section="logo" savedForAi={styleguide.logoSavedForAi} />
     </div>

@@ -3,15 +3,19 @@
 import { X } from "lucide-react";
 import { Card } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
+import { EditableStringList } from "./EditableStringList";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
+import { useUpdateSection } from "../hooks/useBrandstyleHooks";
 import type { BrandStyleguide } from "../types/brandstyle.types";
 
 interface ColorsSectionProps {
   styleguide: BrandStyleguide;
+  canEdit: boolean;
 }
 
-export function ColorsSection({ styleguide }: ColorsSectionProps) {
+export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
   const { openColorModal } = useBrandstyleStore();
+  const updateColors = useUpdateSection("colors");
 
   const colorsByCategory = styleguide.colors.reduce(
     (acc, c) => {
@@ -68,19 +72,31 @@ export function ColorsSection({ styleguide }: ColorsSectionProps) {
       </Card>
 
       {/* Color Don'ts */}
-      {styleguide.colorDonts.length > 0 && (
-        <Card>
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Don&apos;ts</h3>
-          <div className="space-y-2">
-            {styleguide.colorDonts.map((d, i) => (
-              <div key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                <X className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                {d}
+      <Card>
+        <EditableStringList
+          title="Don'ts"
+          items={styleguide.colorDonts}
+          canEdit={canEdit}
+          isSaving={updateColors.isPending}
+          placeholder="Add a color don't..."
+          onSave={(items) => updateColors.mutate({ colorDonts: items })}
+        >
+          {(items) =>
+            items.length > 0 ? (
+              <div className="space-y-2">
+                {items.map((d, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                    <X className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                    {d}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </Card>
-      )}
+            ) : (
+              <p className="text-sm text-gray-400">No color don&apos;ts defined yet.</p>
+            )
+          }
+        </EditableStringList>
+      </Card>
 
       <AiContentBanner section="colors" savedForAi={styleguide.colorsSavedForAi} />
     </div>

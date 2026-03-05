@@ -20,8 +20,8 @@ export function PdfUploadInput() {
       setError("Only PDF files are accepted");
       return;
     }
-    if (f.size > 50 * 1024 * 1024) {
-      setError("File size must be under 50MB");
+    if (f.size > 20 * 1024 * 1024) {
+      setError("File size must be under 20MB");
       return;
     }
     setFile(f);
@@ -74,7 +74,7 @@ export function PdfUploadInput() {
             <p className="text-sm text-gray-600 mb-1">
               Drag and drop your PDF here, or click to browse
             </p>
-            <p className="text-xs text-gray-400">PDF files up to 50MB</p>
+            <p className="text-xs text-gray-400">PDF files up to 20MB</p>
             <input
               ref={fileInputRef}
               type="file"

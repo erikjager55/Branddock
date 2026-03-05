@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
 import { useStyleguide } from "../hooks/useBrandstyleHooks";
@@ -23,17 +24,7 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
   const { analysisJobId, isAnalyzing } = useBrandstyleStore();
   const [activeInputTab, setActiveInputTab] = useState<InputTab>("url");
 
-  // If styleguide is already COMPLETE, redirect to guide page
-  const shouldRedirect = !isLoading && data?.styleguide?.status === "COMPLETE" && !isAnalyzing;
-  useEffect(() => {
-    if (shouldRedirect) {
-      onNavigateToGuide();
-    }
-  }, [shouldRedirect, onNavigateToGuide]);
-
-  if (shouldRedirect) {
-    return null;
-  }
+  const hasExistingStyleguide = !isLoading && data?.styleguide?.status === "COMPLETE";
 
   if (isLoading) {
     return (
@@ -78,6 +69,21 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
         title="Brandstyle"
         subtitle="Your visual identity guidelines"
       />
+
+      {/* Warning banner when re-analyzing */}
+      {hasExistingStyleguide && (
+        <div className="flex items-start gap-3 p-4 mb-6 bg-amber-50 border border-amber-200 rounded-lg">
+          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">
+              You already have a styleguide
+            </p>
+            <p className="text-sm text-amber-700 mt-0.5">
+              Running a new analysis will update your existing styleguide with the new results.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Input tabs */}
       <div className="mb-6">

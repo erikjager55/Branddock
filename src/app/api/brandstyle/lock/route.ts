@@ -40,7 +40,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const styleguide = await prisma.brandStyleguide.update({
+    await prisma.brandStyleguide.update({
       where: { workspaceId },
       data: {
         isLocked: locked,
@@ -49,10 +49,16 @@ export async function PATCH(request: Request) {
       },
     });
 
+    // Re-fetch with lockedBy relation so we can return { id, name }
+    const updated = await prisma.brandStyleguide.findUniqueOrThrow({
+      where: { workspaceId },
+      include: { lockedBy: true },
+    });
+
     return NextResponse.json({
-      isLocked: styleguide.isLocked,
-      lockedById: styleguide.lockedById,
-      lockedAt: styleguide.lockedAt?.toISOString() ?? null,
+      isLocked: updated.isLocked,
+      lockedBy: updated.lockedBy ? { id: updated.lockedBy.id, name: updated.lockedBy.name } : null,
+      lockedAt: updated.lockedAt?.toISOString() ?? null,
     });
   } catch (error) {
     console.error("[PATCH /api/brandstyle/lock]", error);

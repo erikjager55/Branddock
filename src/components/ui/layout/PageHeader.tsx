@@ -47,16 +47,18 @@ interface PageHeaderProps {
   children?: ReactNode;
   /** Compact variant: smaller padding + text-2xl title */
   compact?: boolean;
+  /** Extra classes on outer wrapper (e.g. border-b-0 to remove bottom border) */
+  className?: string;
 }
 
 export function PageHeader({
-  moduleKey, title, subtitle, icon, actions, children, compact = false
+  moduleKey, title, subtitle, icon, actions, children, compact = false, className,
 }: PageHeaderProps) {
   const Icon = icon || MODULE_ICONS[moduleKey];
   const gradientClasses = getModuleGradient(moduleKey);
 
   return (
-    <div data-testid="page-header" className={HEADER_PATTERNS.sticky.wrapper}>
+    <div data-testid="page-header" className={cn(HEADER_PATTERNS.sticky.wrapper, className)}>
       <div className={cn(
         LAYOUT_PATTERNS.centeredContentXl,
         compact ? SPACING.header.paddingCompact : SPACING.header.padding

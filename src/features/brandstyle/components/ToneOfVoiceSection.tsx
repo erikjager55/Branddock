@@ -3,54 +3,78 @@
 import { CheckCircle, X } from "lucide-react";
 import { Card } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
+import { EditableStringList } from "./EditableStringList";
+import { useUpdateSection } from "../hooks/useBrandstyleHooks";
 import type { BrandStyleguide, ExamplePhrase } from "../types/brandstyle.types";
 
 interface ToneOfVoiceSectionProps {
   styleguide: BrandStyleguide;
+  canEdit: boolean;
 }
 
-export function ToneOfVoiceSection({ styleguide }: ToneOfVoiceSectionProps) {
+export function ToneOfVoiceSection({ styleguide, canEdit }: ToneOfVoiceSectionProps) {
   const examples = (styleguide.examplePhrases ?? []) as ExamplePhrase[];
   const doExamples = examples.filter((e) => e.type === "do");
   const dontExamples = examples.filter((e) => e.type === "dont");
+  const updateTone = useUpdateSection("tone-of-voice");
 
   return (
     <div data-testid="tone-of-voice-section" className="space-y-6">
       {/* Content Guidelines */}
-      {styleguide.contentGuidelines.length > 0 && (
-        <Card>
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">
-            Content Guidelines
-          </h3>
-          <ol className="space-y-2">
-            {styleguide.contentGuidelines.map((g, i) => (
-              <li key={i} className="flex gap-3 text-sm text-gray-600">
-                <span className="w-5 h-5 rounded-full bg-teal-50 text-teal-600 text-xs font-bold flex items-center justify-center flex-shrink-0">
-                  {i + 1}
-                </span>
-                {g}
-              </li>
-            ))}
-          </ol>
-        </Card>
-      )}
+      <Card>
+        <EditableStringList
+          title="Content Guidelines"
+          items={styleguide.contentGuidelines}
+          canEdit={canEdit}
+          isSaving={updateTone.isPending}
+          placeholder="Add a content guideline..."
+          onSave={(items) => updateTone.mutate({ contentGuidelines: items })}
+        >
+          {(items) =>
+            items.length > 0 ? (
+              <ol className="space-y-2">
+                {items.map((g, i) => (
+                  <li key={i} className="flex gap-3 text-sm text-gray-600">
+                    <span className="w-5 h-5 rounded-full bg-teal-50 text-teal-600 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                      {i + 1}
+                    </span>
+                    {g}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="text-sm text-gray-400">No content guidelines yet.</p>
+            )
+          }
+        </EditableStringList>
+      </Card>
 
       {/* Writing Guidelines */}
-      {styleguide.writingGuidelines.length > 0 && (
-        <Card>
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">
-            Writing Guidelines
-          </h3>
-          <ul className="space-y-2">
-            {styleguide.writingGuidelines.map((g, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                {g}
-              </li>
-            ))}
-          </ul>
-        </Card>
-      )}
+      <Card>
+        <EditableStringList
+          title="Writing Guidelines"
+          items={styleguide.writingGuidelines}
+          canEdit={canEdit}
+          isSaving={updateTone.isPending}
+          placeholder="Add a writing guideline..."
+          onSave={(items) => updateTone.mutate({ writingGuidelines: items })}
+        >
+          {(items) =>
+            items.length > 0 ? (
+              <ul className="space-y-2">
+                {items.map((g, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                    {g}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-400">No writing guidelines yet.</p>
+            )
+          }
+        </EditableStringList>
+      </Card>
 
       {/* Do / Don't Examples */}
       {examples.length > 0 && (
