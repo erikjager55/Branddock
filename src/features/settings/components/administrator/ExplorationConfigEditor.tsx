@@ -9,9 +9,11 @@ import {
   ChevronUp,
   GripVertical,
   Eye,
+  Info,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { ExplorationConfigPreviewModal } from './ExplorationConfigPreviewModal';
-import { ItemKnowledgeSources } from '@/components/shared/ItemKnowledgeSources';
+import { KnowledgeLibrarySection } from './KnowledgeLibrarySection';
 import { EXPLORATION_AI_MODELS } from '@/lib/ai/exploration/config.types';
 import type {
   ExplorationConfigData,
@@ -51,6 +53,19 @@ const AVAILABLE_CONTEXT_SOURCES = [
   { key: 'brandstyle', label: 'Brand Style' },
 ];
 
+// ─── Template Variables Reference ───────────────────────────
+
+const TEMPLATE_VARIABLES = [
+  { variable: '{{brandContext}}', description: 'Brand assets, personas, products context' },
+  { variable: '{{customKnowledge}}', description: 'Kennisbronnen uit deze config' },
+  { variable: '{{assetKnowledge}}', description: 'Asset-specifieke context' },
+  { variable: '{{itemName}}', description: 'Naam van het item (asset/persona)' },
+  { variable: '{{dimensionTitle}}', description: 'Titel van de huidige dimensie' },
+  { variable: '{{questionAsked}}', description: 'De gestelde vraag' },
+  { variable: '{{userAnswer}}', description: 'Het antwoord van de gebruiker' },
+  { variable: '{{allAnswers}}', description: 'Alle antwoorden (voor rapport)' },
+];
+
 // ─── Props ──────────────────────────────────────────────────
 
 interface ExplorationConfigEditorProps {
@@ -83,12 +98,13 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true);
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Set<number>>(new Set());
 
   // ─── Collapsible Sections ────────────────────────────────
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     model: true,
     dimensions: true,
-    prompts: false,
+    prompts: true,
     fields: false,
     context: false,
     knowledge: false,
@@ -103,9 +119,48 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
   const subTypeOptions = SUB_TYPE_OPTIONS[itemType] ?? [];
   const hasSubTypes = subTypeOptions.length > 0;
 
+  // ─── Validation ────────────────────────────────────────────
+
+  const validate = (): boolean => {
+    const errors: string[] = [];
+    const invalidDimensions = new Set<number>();
+
+    if (dimensions.length === 0) {
+      errors.push('Voeg minimaal 1 dimensie toe');
+    } else {
+      dimensions.forEach((dim, i) => {
+        if (!dim.key?.trim() || !dim.title?.trim() || !dim.question?.trim()) {
+          invalidDimensions.add(i);
+          errors.push(`Dimensie ${i + 1}: key, title en question zijn verplicht`);
+        }
+      });
+    }
+
+    if (!systemPrompt.trim()) errors.push('System prompt is verplicht');
+    if (!feedbackPrompt.trim()) errors.push('Feedback prompt is verplicht');
+    if (!reportPrompt.trim()) errors.push('Report prompt is verplicht');
+
+    setValidationErrors(invalidDimensions);
+
+    if (errors.length > 0) {
+      toast.error(`Validatie mislukt: ${errors[0]}${errors.length > 1 ? ` (+${errors.length - 1} meer)` : ''}`);
+      if (!systemPrompt.trim() || !feedbackPrompt.trim() || !reportPrompt.trim()) {
+        setOpenSections((prev) => ({ ...prev, prompts: true }));
+      }
+      if (invalidDimensions.size > 0 || dimensions.length === 0) {
+        setOpenSections((prev) => ({ ...prev, dimensions: true }));
+      }
+      return false;
+    }
+
+    return true;
+  };
+
   // ─── Handlers ────────────────────────────────────────────
 
   const handleSave = async () => {
+    if (!validate()) return;
+
     setIsSaving(true);
     try {
       await onSave({
@@ -124,6 +179,8 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
         contextSources,
         isActive,
       });
+    } catch (err) {
+      toast.error(`Opslaan mislukt: ${err instanceof Error ? err.message : 'Onbekende fout'}`);
     } finally {
       setIsSaving(false);
     }
@@ -143,10 +200,25 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
 
   const removeDimension = (index: number) => {
     setDimensions((prev) => prev.filter((_, i) => i !== index));
+    setValidationErrors((prev) => {
+      const next = new Set<number>();
+      prev.forEach((i) => {
+        if (i < index) next.add(i);
+        else if (i > index) next.add(i - 1);
+      });
+      return next;
+    });
   };
 
   const updateDimension = (index: number, field: keyof StoredDimension, value: string) => {
     setDimensions((prev) => prev.map((d, i) => (i === index ? { ...d, [field]: value } : d)));
+    if (validationErrors.has(index)) {
+      setValidationErrors((prev) => {
+        const next = new Set(prev);
+        next.delete(index);
+        return next;
+      });
+    }
   };
 
   const moveDimension = (index: number, direction: 'up' | 'down') => {
@@ -156,6 +228,15 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
       const updated = [...prev];
       [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
       return updated;
+    });
+    setValidationErrors((prev) => {
+      const next = new Set<number>();
+      prev.forEach((i) => {
+        if (i === index) next.add(newIndex);
+        else if (i === newIndex) next.add(index);
+        else next.add(i);
+      });
+      return next;
     });
   };
 
@@ -176,11 +257,11 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
     <>
       <div className="border-2 border-teal-200 rounded-xl bg-white overflow-hidden flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)' }}>
         {/* Header */}
-        <div className="bg-teal-50 px-6 py-4 flex-shrink-0" style={{ borderBottom: '1px solid #ccfbf1' }}>
+        <div className="bg-teal-50 px-6 py-4 flex-shrink-0 border-b border-teal-100">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-base font-semibold text-teal-900">
-                {isNew ? 'New Exploration Configuration' : `Edit Configuration`}
+                {isNew ? 'New Exploration Configuration' : 'Edit Configuration'}
               </h3>
               <p className="text-xs text-teal-600 mt-0.5">
                 {isNew ? 'Create a new AI exploration config for an item type' : `${label || itemType}${itemSubType ? ` / ${itemSubType}` : ''}`}
@@ -313,7 +394,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                 <input
                   type="number"
                   value={maxTokens}
-                  onChange={(e) => setMaxTokens(parseInt(e.target.value))}
+                  onChange={(e) => setMaxTokens(parseInt(e.target.value, 10) || 2048)}
                   min={256}
                   max={8192}
                   step={256}
@@ -333,7 +414,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
               {dimensions.map((dim, i) => (
                 <div
                   key={i}
-                  className="border border-gray-200 rounded-lg bg-white shadow-sm overflow-hidden"
+                  className={`border rounded-lg bg-white shadow-sm overflow-hidden ${validationErrors.has(i) ? 'border-red-300 ring-1 ring-red-200' : 'border-gray-200'}`}
                 >
                   {/* Dimension card header */}
                   <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-100">
@@ -342,6 +423,9 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                       <span className="text-xs font-medium text-gray-500">
                         Dimension {i + 1} of {dimensions.length}
                       </span>
+                      {validationErrors.has(i) && (
+                        <span className="text-[10px] text-red-500 font-medium">Incompleet</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
                       <button
@@ -377,13 +461,13 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                         value={dim.key}
                         onChange={(e) => updateDimension(i, 'key', e.target.value)}
                         placeholder="key"
-                        className="px-2 py-1.5 text-xs border border-gray-200 rounded font-mono"
+                        className={`px-2 py-1.5 text-xs border rounded font-mono ${validationErrors.has(i) && !dim.key?.trim() ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                       />
                       <input
                         value={dim.title}
                         onChange={(e) => updateDimension(i, 'title', e.target.value)}
                         placeholder="Title"
-                        className="px-2 py-1.5 text-xs border border-gray-200 rounded"
+                        className={`px-2 py-1.5 text-xs border rounded ${validationErrors.has(i) && !dim.title?.trim() ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                       />
                       <input
                         value={dim.icon}
@@ -397,7 +481,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                       onChange={(e) => updateDimension(i, 'question', e.target.value)}
                       placeholder="Question for this dimension..."
                       rows={2}
-                      className="w-full px-2 py-1.5 text-xs border border-gray-200 rounded resize-none"
+                      className={`w-full px-2 py-1.5 text-xs border rounded resize-none ${validationErrors.has(i) && !dim.question?.trim() ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}
                     />
                     <input
                       value={dim.followUpHint ?? ''}
@@ -425,12 +509,28 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
             onToggle={() => toggleSection('prompts')}
           >
             <div className="space-y-4">
+              {/* Template variables reference */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Info className="w-3.5 h-3.5 text-gray-500" />
+                  <span className="text-xs font-medium text-gray-600">Beschikbare template variabelen</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                  {TEMPLATE_VARIABLES.map((tv) => (
+                    <div key={tv.variable} className="flex items-baseline gap-2">
+                      <code className="text-[10px] font-mono text-teal-700 bg-teal-50 px-1 py-0.5 rounded flex-shrink-0">
+                        {tv.variable}
+                      </code>
+                      <span className="text-[10px] text-gray-400 truncate">{tv.description}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   System Prompt
-                  <span className="ml-2 text-gray-400 font-normal">
-                    Variabelen: {'{{itemName}}, {{itemDescription}}, {{brandContext}}'}
-                  </span>
+                  {!systemPrompt.trim() && <span className="ml-2 text-red-400 font-normal">verplicht</span>}
                 </label>
                 <textarea
                   value={systemPrompt}
@@ -443,9 +543,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   Feedback Prompt
-                  <span className="ml-2 text-gray-400 font-normal">
-                    Variabelen: {'{{dimensionTitle}}, {{questionAsked}}, {{userAnswer}}, {{brandContext}}'}
-                  </span>
+                  {!feedbackPrompt.trim() && <span className="ml-2 text-red-400 font-normal">verplicht</span>}
                 </label>
                 <textarea
                   value={feedbackPrompt}
@@ -458,9 +556,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
                   Report Prompt
-                  <span className="ml-2 text-gray-400 font-normal">
-                    Variabelen: {'{{itemName}}, {{allAnswers}}, {{brandContext}}'}
-                  </span>
+                  {!reportPrompt.trim() && <span className="ml-2 text-red-400 font-normal">verplicht</span>}
                 </label>
                 <textarea
                   value={reportPrompt}
@@ -485,9 +581,8 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                   <input
                     value={fs.field}
                     onChange={(e) => {
-                      const updated = [...fieldSuggestions];
-                      updated[i] = { ...updated[i], field: e.target.value };
-                      setFieldSuggestions(updated);
+                      const val = e.target.value;
+                      setFieldSuggestions((prev) => prev.map((f, idx) => idx === i ? { ...f, field: val } : f));
                     }}
                     placeholder="field.path"
                     className="px-2 py-1.5 text-xs border border-gray-200 rounded font-mono"
@@ -495,9 +590,8 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                   <input
                     value={fs.label}
                     onChange={(e) => {
-                      const updated = [...fieldSuggestions];
-                      updated[i] = { ...updated[i], label: e.target.value };
-                      setFieldSuggestions(updated);
+                      const val = e.target.value;
+                      setFieldSuggestions((prev) => prev.map((f, idx) => idx === i ? { ...f, label: val } : f));
                     }}
                     placeholder="Label"
                     className="px-2 py-1.5 text-xs border border-gray-200 rounded"
@@ -505,9 +599,8 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                   <select
                     value={fs.type}
                     onChange={(e) => {
-                      const updated = [...fieldSuggestions];
-                      updated[i] = { ...updated[i], type: e.target.value as 'text' | 'select' };
-                      setFieldSuggestions(updated);
+                      const val = e.target.value as 'text' | 'select';
+                      setFieldSuggestions((prev) => prev.map((f, idx) => idx === i ? { ...f, type: val } : f));
                     }}
                     className="px-2 py-1.5 text-xs border border-gray-200 rounded"
                   >
@@ -517,9 +610,8 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
                   <input
                     value={fs.extractionHint}
                     onChange={(e) => {
-                      const updated = [...fieldSuggestions];
-                      updated[i] = { ...updated[i], extractionHint: e.target.value };
-                      setFieldSuggestions(updated);
+                      const val = e.target.value;
+                      setFieldSuggestions((prev) => prev.map((f, idx) => idx === i ? { ...f, extractionHint: val } : f));
                     }}
                     placeholder="Extraction hint for AI"
                     className="px-2 py-1.5 text-xs border border-gray-200 rounded"
@@ -580,38 +672,21 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
               onToggle={() => toggleSection('knowledge')}
             >
               <p className="text-xs text-gray-500 mb-3">
-                Voeg bestanden, URLs of tekst toe als extra context voor AI sessies van dit type.
+                {'Voeg kennis toe die de AI als extra context gebruikt tijdens exploration sessies. Deze items worden als {{customKnowledge}} ge\u00EFnjecteerd in de prompts.'}
               </p>
-              <ItemKnowledgeSources itemType={itemType} itemId={initialData.id} />
+              <KnowledgeLibrarySection configId={initialData.id} />
             </CollapsibleSection>
           )}
 
         </div>
 
         {/* ─── Sticky Save/Cancel Bar ───────────────────── */}
-        <div
-          className="flex items-center justify-between flex-shrink-0"
-          style={{
-            padding: '12px 16px',
-            borderTop: '1px solid #e5e7eb',
-            backgroundColor: '#ffffff',
-            boxShadow: '0 -2px 8px rgba(0,0,0,0.05)',
-            borderRadius: '0 0 12px 12px',
-          }}
-        >
+        <div className="flex items-center justify-between flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-white shadow-[0_-2px_8px_rgba(0,0,0,0.05)] rounded-b-xl">
           <div className="flex items-center gap-2">
-            <span
-              className="text-xs font-bold uppercase tracking-wider rounded-full"
-              style={{
-                padding: '3px 10px',
-                backgroundColor: '#fef3c7',
-                color: '#92400e',
-                border: '1px solid #fde68a',
-              }}
-            >
+            <span className="text-xs font-bold uppercase tracking-wider rounded-full px-2.5 py-0.5 bg-amber-100 text-amber-800 border border-amber-200">
               EDITING
             </span>
-            <span className="text-xs" style={{ color: '#9ca3af' }}>
+            <span className="text-xs text-gray-400">
               {dimensions.length} dimensies geconfigureerd
             </span>
           </div>
@@ -620,13 +695,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
             <button
               type="button"
               onClick={() => setShowPreview(true)}
-              className="flex items-center gap-1.5 text-sm font-medium rounded-lg transition-colors"
-              style={{
-                padding: '8px 16px',
-                color: '#0d9488',
-                backgroundColor: '#f0fdfa',
-                border: '1px solid #99f6e4',
-              }}
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors text-teal-700 bg-teal-50 border border-teal-200 hover:bg-teal-100"
             >
               <Eye className="h-4 w-4" />
               Preview
@@ -634,13 +703,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
             <button
               type="button"
               onClick={onCancel}
-              className="text-sm font-medium rounded-lg"
-              style={{
-                padding: '8px 20px',
-                color: '#6b7280',
-                backgroundColor: '#ffffff',
-                border: '1px solid #e5e7eb',
-              }}
+              className="px-5 py-2 text-sm font-medium rounded-lg text-gray-500 bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
@@ -648,13 +711,7 @@ export function ExplorationConfigEditor({ initialData, onSave, onCancel }: Explo
               type="button"
               onClick={handleSave}
               disabled={isSaving}
-              className="flex items-center gap-1.5 text-sm font-medium rounded-lg disabled:opacity-50"
-              style={{
-                padding: '8px 24px',
-                color: '#ffffff',
-                background: 'linear-gradient(135deg, #14b8a6, #10b981)',
-                border: 'none',
-              }}
+              className="flex items-center gap-1.5 px-6 py-2 text-sm font-medium rounded-lg text-white bg-gradient-to-br from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 disabled:opacity-50 transition-all"
             >
               {isSaving ? 'Saving...' : 'Save'}
             </button>
@@ -713,4 +770,3 @@ function CollapsibleSection({
     </div>
   );
 }
-

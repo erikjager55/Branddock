@@ -53,6 +53,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ config }, { status: 201 });
   } catch (error) {
+    // Handle unique constraint violation (workspace + itemType + itemSubType)
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'A configuration for this item type/sub type already exists' },
+        { status: 409 },
+      );
+    }
     console.error('[POST /api/admin/exploration-configs]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
