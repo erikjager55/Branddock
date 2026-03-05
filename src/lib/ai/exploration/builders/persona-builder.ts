@@ -114,7 +114,7 @@ export const personaItemConfig: ItemTypeConfig = {
     return `Welcome to the AI Persona Analysis for **${name}**${tagline ? ` — ${tagline}` : ''}. I'll guide you through ${PERSONA_DIMENSIONS.length} key dimensions to build a comprehensive understanding of this persona. Let's begin!`;
   },
 
-  async generateInsights(item, session) {
+  async generateInsights(item, session, knowledgeContext) {
     const persona = item;
     const name = persona.name as string;
 
@@ -170,6 +170,7 @@ export const personaItemConfig: ItemTypeConfig = {
       fieldMapping: PERSONA_FIELD_MAPPING,
       currentFieldValues,
       modelConfig,
+      knowledgeContext,
     });
 
     // 6. Transform to ExplorationInsightsData format

@@ -42,6 +42,7 @@ export interface ItemTypeConfig {
   generateInsights: (
     item: Record<string, unknown>,
     session: Record<string, unknown>,
+    knowledgeContext?: string,
   ) => Promise<Record<string, unknown>>;
 
   /** Optional: update research method status after completion */

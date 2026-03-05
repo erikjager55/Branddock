@@ -229,7 +229,7 @@ export const brandAssetItemConfig: ItemTypeConfig = {
     return `Welcome to the AI Exploration for **${name}** (${categoryLabel} asset). I'll guide you through ${BRAND_ASSET_DIMENSIONS.length} key dimensions to validate and strengthen this brand asset. Let's begin!`;
   },
 
-  async generateInsights(item, session) {
+  async generateInsights(item, session, knowledgeContext) {
     const name = item.name as string;
     const sessionId = (session as { id: string }).id;
     const modelId = (session as { modelId?: string }).modelId;
@@ -279,6 +279,7 @@ export const brandAssetItemConfig: ItemTypeConfig = {
       fieldMapping,
       currentFieldValues,
       modelConfig,
+      knowledgeContext,
     });
 
     // Transform to ExplorationInsightsData format

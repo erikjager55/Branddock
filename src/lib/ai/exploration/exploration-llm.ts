@@ -289,11 +289,13 @@ export async function generateReport(params: {
   fieldMapping: { field: string; label: string; type: string }[];
   currentFieldValues: Record<string, unknown>;
   modelConfig?: ExplorationModelConfig;
+  knowledgeContext?: string;
 }): Promise<GeneratedReport> {
   const {
     itemType, itemName, itemContext, dimensions, allQA,
     fieldMapping, currentFieldValues,
     modelConfig = DEFAULT_EXPLORATION_MODEL,
+    knowledgeContext,
   } = params;
 
   const qaText = allQA
@@ -312,11 +314,15 @@ export async function generateReport(params: {
     })
     .join('\n');
 
+  const knowledgeSection = knowledgeContext
+    ? `\n## Knowledge Sources\n${knowledgeContext}\n`
+    : '';
+
   const systemPrompt = `You are a senior brand strategist producing an analysis report for a ${itemType} called "${itemName}".
 
 ## Item Context
 ${itemContext}
-
+${knowledgeSection}
 ## Exploration Dimensions
 ${dimensionList}
 
