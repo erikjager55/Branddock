@@ -16,7 +16,7 @@ export async function GET() {
   const workspaceId = await resolveWorkspaceId();
 
   const rateLimitStatus = workspaceId
-    ? getRateLimitStatus(workspaceId, 'FREE')
+    ? await getRateLimitStatus(workspaceId, 'FREE')
     : null;
 
   return NextResponse.json({

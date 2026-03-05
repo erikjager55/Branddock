@@ -47,6 +47,10 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  rateLimit: {
+    window: 60,        // 60 second window
+    max: 10,           // max 10 requests per window for auth endpoints
+  },
   socialProviders: buildSocialProviders(),
   user: {
     modelName: "User",

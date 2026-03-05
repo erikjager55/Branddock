@@ -6,6 +6,7 @@ import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { createVersion } from "@/lib/versioning";
 import { buildPersonaSnapshot } from "@/lib/snapshot-builders";
+import { uploadBase64, generateKey, isStorageConfigured } from "@/lib/storage";
 
 // DiceBear PNG fallback — unique per persona, works reliably with next/image
 function diceBearUrl(persona: { name: string; age?: string | null; occupation?: string | null; location?: string | null }) {
@@ -101,11 +102,19 @@ export async function POST(
       return NextResponse.json({ avatarUrl, provider: "fallback" });
     }
 
-    // Convert base64 to data URI for direct display
-    // Production: upload to persistent storage (see TODO.md Fase 2.2)
     const mimeType = imagePart.inlineData.mimeType;
     const base64Data = imagePart.inlineData.data;
-    const avatarUrl = `data:${mimeType};base64,${base64Data}`;
+
+    // Upload to R2 if configured, otherwise fall back to data URI
+    let avatarUrl: string;
+    if (isStorageConfigured()) {
+      const ext = mimeType.includes('png') ? 'png' : 'jpg';
+      const key = generateKey('personas', id, `avatar.${ext}`);
+      const result = await uploadBase64(key, base64Data, mimeType);
+      avatarUrl = result.url;
+    } else {
+      avatarUrl = `data:${mimeType};base64,${base64Data}`;
+    }
 
     await prisma.persona.update({
       where: { id },

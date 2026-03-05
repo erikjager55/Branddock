@@ -1,8 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { uploadWebFile, generateKey, isStorageConfigured } from "@/lib/storage";
 
-function mapResource(r: any) {
+// ─── Constants ─────────────────────────────────────────────
+
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'video/mp4',
+  'video/webm',
+  'audio/mpeg',
+  'audio/wav',
+  'audio/ogg',
+  'text/plain',
+  'text/csv',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+]);
+
+// ─── Helpers ───────────────────────────────────────────────
+
+function mapResource(r: Record<string, unknown>) {
   return {
     id: r.id,
     title: r.title,
@@ -15,7 +41,11 @@ function mapResource(r: any) {
     rating: r.rating,
     isFavorite: r.isFavorite,
     isFeatured: r.isFeatured,
-    createdAt: r.createdAt.toISOString(),
+    fileUrl: r.fileUrl,
+    fileName: r.fileName,
+    fileSize: r.fileSize,
+    fileType: r.fileType,
+    createdAt: r.createdAt instanceof Date ? r.createdAt.toISOString() : r.createdAt,
   };
 }
 
@@ -38,6 +68,8 @@ function detectTypeFromMime(mimeType: string): string {
   return "article";
 }
 
+// ─── POST /api/knowledge-resources/upload ──────────────────
+
 export async function POST(request: NextRequest) {
   try {
     const workspaceId = await resolveWorkspaceId();
@@ -58,12 +90,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const cuid = Math.random().toString(36).slice(2, 10);
-    const fileUrl = `/uploads/knowledge-resources/${cuid}-${file.name}`;
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024}MB.` },
+        { status: 400 }
+      );
+    }
+
+    // Validate MIME type
+    if (!ALLOWED_MIME_TYPES.has(file.type)) {
+      return NextResponse.json(
+        { error: `File type "${file.type}" is not allowed.` },
+        { status: 400 }
+      );
+    }
+
     const detectedType = detectTypeFromMime(file.type);
     const title = formData.get("title")?.toString() || file.name;
     const category = formData.get("category")?.toString() || "General";
     const slug = generateSlug(title);
+
+    // Upload to R2 if configured, otherwise store path placeholder
+    let fileUrl: string;
+    if (isStorageConfigured()) {
+      const key = generateKey('knowledge-resources', workspaceId, file.name);
+      const result = await uploadWebFile(key, file);
+      fileUrl = result.url;
+    } else {
+      const cuid = Math.random().toString(36).slice(2, 10);
+      fileUrl = `/uploads/knowledge-resources/${cuid}-${file.name}`;
+    }
 
     const resource = await prisma.knowledgeResource.create({
       data: {
@@ -90,7 +147,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(mapResource(resource), { status: 201 });
+    return NextResponse.json(mapResource(resource as unknown as Record<string, unknown>), { status: 201 });
   } catch (error) {
     console.error("Error uploading file:", error);
     return NextResponse.json(

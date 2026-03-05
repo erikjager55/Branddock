@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
+import { sendEmail, invitationEmail } from "@/lib/email";
 
-// POST /api/organization/invite — create an invitation
+// POST /api/organization/invite — create an invitation and send email
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession();
@@ -94,17 +95,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
     const invitation = await prisma.invitation.create({
       data: {
         email,
         role: inviteRole,
         organizationId,
         invitedById: session.user.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+        expiresAt,
       },
     });
 
-    return NextResponse.json(invitation, { status: 201 });
+    // Send invitation email
+    const baseUrl = process.env.BETTER_AUTH_URL ?? 'http://localhost:3000';
+    const acceptUrl = `${baseUrl}/api/organization/invite/accept?token=${invitation.id}`;
+
+    const inviterName = session.user.name || session.user.email || 'A team member';
+    const organizationName = org?.name || 'your organization';
+
+    const { html, text } = invitationEmail({
+      inviterName,
+      organizationName,
+      role: inviteRole,
+      acceptUrl,
+      expiresInDays: 7,
+    });
+
+    const emailResult = await sendEmail({
+      to: email,
+      subject: `You've been invited to ${organizationName} on Branddock`,
+      html,
+      text,
+    });
+
+    return NextResponse.json(
+      {
+        ...invitation,
+        emailSent: emailResult.success,
+        emailError: emailResult.error ?? null,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("[POST /api/organization/invite]", error);
     return NextResponse.json(
