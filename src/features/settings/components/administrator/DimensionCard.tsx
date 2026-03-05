@@ -30,7 +30,6 @@ export function DimensionCard({
   onMoveDown,
   onRemove,
 }: DimensionCardProps) {
-  const [showKey, setShowKey] = useState(false);
   const [editingKey, setEditingKey] = useState(false);
   const Icon = resolveIcon(dimension.icon);
 
