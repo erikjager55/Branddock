@@ -10,6 +10,10 @@ import { SourcesPanel } from './sources/SourcesPanel';
 import { AddSourceModal } from './sources/AddSourceModal';
 import { EditSourceModal } from './sources/EditSourceModal';
 import { TrendFeedPanel } from './feed/TrendFeedPanel';
+import { AlertsPanel } from './alerts/AlertsPanel';
+import { ActivationPanel } from './activation/ActivationPanel';
+import { ScanProgressModal } from './scan/ScanProgressModal';
+import { AddManualTrendModal } from './AddManualTrendModal';
 
 interface TrendRadarPageProps {
   onNavigate: (section: string) => void;
@@ -40,19 +44,6 @@ export function TrendRadarPage({ onNavigate }: TrendRadarPageProps) {
     useTrendRadarStore.getState().setSelectedTrendId(id);
     onNavigate('trend-detail');
   };
-
-  // Lazy-loaded panels for Fase 3B
-  const renderAlerts = () => (
-    <div className="text-center py-12 text-sm text-gray-400">
-      Alerts panel — coming in Fase 3B
-    </div>
-  );
-
-  const renderActivation = () => (
-    <div className="text-center py-12 text-sm text-gray-400">
-      Activation panel — coming in Fase 3B
-    </div>
-  );
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -95,12 +86,14 @@ export function TrendRadarPage({ onNavigate }: TrendRadarPageProps) {
       {/* Tab content */}
       {activeTab === 'sources' && <SourcesPanel />}
       {activeTab === 'feed' && <TrendFeedPanel onTrendClick={handleTrendClick} />}
-      {activeTab === 'alerts' && renderAlerts()}
-      {activeTab === 'activate' && renderActivation()}
+      {activeTab === 'alerts' && <AlertsPanel onTrendClick={handleTrendClick} />}
+      {activeTab === 'activate' && <ActivationPanel onTrendClick={handleTrendClick} />}
 
       {/* Modals */}
       <AddSourceModal />
       <EditSourceModal />
+      <AddManualTrendModal />
+      <ScanProgressModal />
     </div>
   );
 }
