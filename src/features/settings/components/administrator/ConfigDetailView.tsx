@@ -394,7 +394,6 @@ export function ConfigDetailView({
               maxTokens={maxTokens}
               contextSources={contextSources}
               isActive={isActive}
-              isNew={isNew}
               onItemTypeChange={setItemType}
               onItemSubTypeChange={setItemSubType}
               onLabelChange={setLabel}

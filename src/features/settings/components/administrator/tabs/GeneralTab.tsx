@@ -28,7 +28,7 @@ const AVAILABLE_CONTEXT_SOURCES = [
   { key: 'brand_asset', label: 'Brand Assets', description: 'Content en framework data van brand assets' },
   { key: 'product', label: 'Products & Services', description: 'Product beschrijvingen en kenmerken' },
   { key: 'persona', label: 'Personas', description: 'Persona profielen en demographics' },
-  { key: 'market_insight', label: 'Market Insights', description: 'Marktinzichten en trends' },
+  { key: 'detected_trend', label: 'Trend Radar', description: 'Geactiveerde trends en marktinzichten' },
   { key: 'knowledge_resource', label: 'Knowledge Library', description: 'Kennisbronnen en artikelen' },
   { key: 'brandstyle', label: 'Brand Style', description: 'Huisstijl en visuele identiteit' },
 ];
@@ -45,7 +45,6 @@ interface GeneralTabProps {
   maxTokens: number;
   contextSources: string[];
   isActive: boolean;
-  isNew: boolean;
   onItemTypeChange: (value: string) => void;
   onItemSubTypeChange: (value: string) => void;
   onLabelChange: (value: string) => void;
@@ -69,7 +68,6 @@ export function GeneralTab({
   maxTokens,
   contextSources,
   isActive,
-  isNew,
   onItemTypeChange,
   onItemSubTypeChange,
   onLabelChange,
@@ -118,8 +116,7 @@ export function GeneralTab({
                   onItemTypeChange(e.target.value);
                   onItemSubTypeChange('');
                 }}
-                disabled={!isNew}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
               >
                 <option value="persona">Persona</option>
                 <option value="brand_asset">Brand Asset</option>
@@ -134,8 +131,7 @@ export function GeneralTab({
                 <select
                   value={itemSubType}
                   onChange={(e) => onItemSubTypeChange(e.target.value)}
-                  disabled={!isNew}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 disabled:bg-gray-50 disabled:text-gray-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
                 >
                   <option value="">-- Basis configuratie --</option>
                   {subTypeOptions.map((opt) => (
@@ -198,6 +194,7 @@ export function GeneralTab({
               >
                 <option value="anthropic">Anthropic</option>
                 <option value="openai">OpenAI</option>
+                <option value="google">Google (Gemini)</option>
               </select>
             </div>
             <div>

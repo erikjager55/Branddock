@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 
 // GET single config
@@ -45,6 +46,8 @@ export async function PUT(
     const config = await prisma.explorationConfig.update({
       where: { id },
       data: {
+        itemType: body.itemType ?? existing.itemType,
+        itemSubType: body.itemSubType !== undefined ? (body.itemSubType || null) : existing.itemSubType,
         label: body.label,
         provider: body.provider,
         model: body.model,
@@ -62,6 +65,12 @@ export async function PUT(
 
     return NextResponse.json({ config });
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json(
+        { error: 'Er bestaat al een configuratie voor deze combinatie van item type en sub type' },
+        { status: 409 },
+      );
+    }
     console.error('[PUT /api/admin/exploration-configs/:id]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

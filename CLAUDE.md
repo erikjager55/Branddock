@@ -150,7 +150,7 @@ Elke gemigreerde module heeft een adapter die DB data mapt naar het bestaande mo
 - **Backend-driven config**: `ExplorationConfig` Prisma model met prompts, dimensies, AI provider/model per item type/subtype
 - **Config resolution**: DB lookup → hardcoded fallback → system defaults (`src/lib/ai/exploration/config-resolver.ts`)
 - **Template engine**: `{{brandContext}}`, `{{customKnowledge}}`, `{{itemName}}`, `{{userAnswer}}`, `{{currentDimension}}` variabelen (`src/lib/ai/exploration/prompt-engine.ts`)
-- **Multi-provider**: Anthropic Claude Sonnet 4.6 (default) + OpenAI GPT modellen via generic AI caller
+- **Multi-provider**: Anthropic Claude Sonnet 4.6 (default) + OpenAI GPT + Google Gemini 3.1 via generic AI caller (singleton clients)
 - **Registry**: Per item type builder registratie (`src/lib/ai/exploration/item-type-registry.ts`)
 - **Admin UI**: Settings → Administrator → AI Exploration Configuration (CRUD, per-config model/prompt/dimension editor)
 - **Custom Knowledge**: Per config een kennisbibliotheek (ExplorationKnowledgeItem) — wordt als `{{customKnowledge}}` geïnjecteerd in prompts
@@ -1006,7 +1006,7 @@ src/
 │   │       ├── config.types.ts               ← ExplorationConfig TypeScript types
 │   │       ├── config-resolver.ts            ← DB config lookup → fallback → system defaults
 │   │       ├── prompt-engine.ts              ← Template {{variable}} resolver voor prompts
-│   │       ├── ai-caller.ts                  ← Generic AI caller (Anthropic + OpenAI)
+│   │       ├── ai-caller.ts                  ← Generic AI caller (Anthropic + OpenAI + Google, singleton clients)
 │   │       ├── exploration-llm.ts            ← Multi-provider LLM client (Anthropic + Google)
 │   │       └── item-type-registry.ts         ← Registry per item type (persona, brand_asset)
 │   ├── products/
@@ -1701,6 +1701,7 @@ Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 - AE.3: ✅ Knowledge Library — ExplorationKnowledgeItem model, 4 CRUD endpoints, KnowledgeTab (gepromoveerd naar volwaardige tab), {{customKnowledge}} template injection
 - AE.5: ✅ UX Redesign — List/detail pattern met ConfigListView (gegroepeerde grid per item type) + ConfigDetailView (4 tabs). 10 nieuwe bestanden, 2 verwijderd (ExplorationConfigEditor + KnowledgeLibrarySection). Sub-componenten: ConfigCard, DimensionCard, IconPicker (30 icons), PromptEditor (variable chips), GeneralTab, DimensionsTab, PromptsTab, KnowledgeTab. 16 bugs gefixt na 3 rondes code review.
 - AE.4: ✅ Brand Asset Routing — AIBrandAssetExplorationPage wrapper, App.tsx routing, breadcrumb navigatie
+- AE.6: ✅ Gemini Provider + Admin UI Fixes — Google Gemini als 3e provider in admin UI (GeneralTab), ai-caller.ts Gemini support + singleton pattern voor alle 3 providers, PUT route itemType/itemSubType bewerkbaar + P2002 error handling, model IDs aligned (gemini-3.1-pro-preview, gemini-3.1-flash)
 
 **BAD. Brand Asset Detail Sprint ✅ VOLLEDIG**
 - BAD.1: ✅ 2-kolom Layout — Grid refactor (8/4 split), sidebar componenten (QuickActions, Completeness, Validation)
@@ -1736,7 +1737,7 @@ Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 - **Password hashing**: scrypt via better-auth/crypto (standaard Better Auth methode)
 - **AI Exploration architectuur**: Generiek systeem (S2) met per item type/subtype config in DB. Backend-driven prompts, dimensies en AI model selectie via ExplorationConfig. Hardcoded fallbacks als safety net.
 - **Template engine**: `{{variable}}` syntax voor prompt variabelen. Eenvoudig, geen Handlebars/Mustache dependency.
-- **Multi-provider AI**: Generic AI caller met provider string ("anthropic"/"openai"). Geen abstractie layer — directe SDK calls per provider in ai-caller.ts.
+- **Multi-provider AI**: Generic AI caller met provider string ("anthropic"/"openai"/"google"). Singleton clients via globalThis. Directe SDK calls per provider in ai-caller.ts. Admin UI ondersteunt alle 3 providers met model selectie.
 - **AI Exploration config model**: Per item type/subtype aparte config in DB (13 records). Backend-driven dimensies, prompts, AI model. Frontend leest dimensies uit sessie metadata voor progress bar sync.
 
 ---

@@ -51,4 +51,6 @@ export const EXPLORATION_AI_MODELS: AIModelOption[] = [
   { id: 'claude-haiku-4-5-20251001', provider: 'anthropic', label: 'Claude Haiku 4.5', description: 'Snelste — voor eenvoudige taken' },
   { id: 'gpt-4o', provider: 'openai', label: 'GPT-4o', description: 'OpenAI flagship model' },
   { id: 'gpt-4o-mini', provider: 'openai', label: 'GPT-4o Mini', description: 'Sneller en goedkoper' },
+  { id: 'gemini-3.1-pro-preview', provider: 'google', label: 'Gemini 3.1 Pro', description: 'Google — Geavanceerd reasoning' },
+  { id: 'gemini-3.1-flash', provider: 'google', label: 'Gemini 3.1 Flash', description: 'Google — Snel en kostenefficiënt' },
 ];
