@@ -18,6 +18,7 @@ import {
   Settings,
   HelpCircle,
   Users,
+  Shield,
 } from 'lucide-react';
 import { useBrandAssets } from '../contexts/BrandAssetsContext';
 import { useBrandAlignment } from '../contexts/BrandAlignmentContext';
@@ -66,6 +67,7 @@ export function EnhancedSidebarSimple({
     { id: 'settings-billing', label: 'Billing & Payments', icon: CreditCard },
     { id: 'settings-notifications', label: 'Notifications', icon: Bell },
     { id: 'settings-appearance', label: 'Appearance', icon: Globe },
+    { id: 'settings-admin', label: 'AI Configuration', icon: Shield },
     { id: 'settings-commercial-demo', label: 'Commercial Demo', icon: ShoppingCart },
     { id: 'validation-demo', label: 'Demo: Compact Variant', icon: Sparkles, badge: 'NEW' },
   ];
