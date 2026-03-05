@@ -31,42 +31,45 @@ export async function parsePdf(
 ): Promise<ParsedPdfData> {
   const parser = new PDFParse({ data: buffer });
 
-  // getText() internally calls load() which is private
-  const textResult = await parser.getText();
-  const text = textResult.text || '';
-
-  // Get metadata
-  let metadata: { title: string | null; author: string | null; creator: string | null } = {
-    title: null,
-    author: null,
-    creator: null,
-  };
   try {
-    const info = await parser.getInfo();
-    metadata = {
-      title: info.info?.Title || null,
-      author: info.info?.Author || null,
-      creator: info.info?.Creator || null,
+    // getText() internally calls load() which is private
+    const textResult = await parser.getText();
+    const text = textResult.text || '';
+
+    // Get metadata
+    let metadata: { title: string | null; author: string | null; creator: string | null } = {
+      title: null,
+      author: null,
+      creator: null,
     };
-  } catch {
-    // Metadata extraction can fail on some PDFs — not critical
+    try {
+      const info = await parser.getInfo();
+      metadata = {
+        title: info.info?.Title || null,
+        author: info.info?.Author || null,
+        creator: info.info?.Creator || null,
+      };
+    } catch {
+      // Metadata extraction can fail on some PDFs — not critical
+    }
+
+    const pageCount = textResult.pages?.length || 0;
+    const hexColors = extractHexFromText(text);
+    const fontMentions = extractFontMentionsFromText(text);
+
+    return {
+      fileName,
+      text: text.slice(0, 8000), // Limit for AI prompt
+      pageCount,
+      hexColors,
+      fontMentions,
+      metadata,
+    };
+  } finally {
+    await parser.destroy().catch(() => {
+      // Ignore cleanup errors
+    });
   }
-
-  const pageCount = textResult.pages?.length || 0;
-  const hexColors = extractHexFromText(text);
-  const fontMentions = extractFontMentionsFromText(text);
-
-  // Clean up
-  await parser.destroy();
-
-  return {
-    fileName,
-    text: text.slice(0, 8000), // Limit for AI prompt
-    pageCount,
-    hexColors,
-    fontMentions,
-    metadata,
-  };
 }
 
 /**

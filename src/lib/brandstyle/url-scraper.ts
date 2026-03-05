@@ -233,8 +233,8 @@ function findLogoUrls($: cheerio.CheerioAPI, baseUrl: URL): string[] {
  * Extract body text content for tone-of-voice analysis
  */
 function extractBodyText($: cheerio.CheerioAPI): string {
-  // Remove script, style, nav, footer, header elements
-  $('script, style, nav, footer, noscript, iframe').remove();
+  // Remove non-content elements
+  $('script, style, nav, footer, header, noscript, iframe').remove();
 
   // Get text from headings and paragraphs
   const parts: string[] = [];

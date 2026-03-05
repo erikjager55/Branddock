@@ -29,11 +29,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    // Delete existing styleguide if present (max 1 per workspace)
+    // Delete existing styleguide if present (max 1 per workspace, atomic)
     const existing = await prisma.brandStyleguide.findUnique({ where: { workspaceId } });
     if (existing) {
-      await prisma.styleguideColor.deleteMany({ where: { styleguideId: existing.id } });
-      await prisma.brandStyleguide.delete({ where: { id: existing.id } });
+      await prisma.$transaction([
+        prisma.styleguideColor.deleteMany({ where: { styleguideId: existing.id } }),
+        prisma.brandStyleguide.delete({ where: { id: existing.id } }),
+      ]);
     }
 
     // Create new styleguide in ANALYZING state
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
         sourceType: "URL",
         sourceUrl: parsed.data.url,
         analysisStatus: "SCANNING_STRUCTURE",
-        analysisJobId: `job_${Date.now()}`,
+        analysisJobId: `job_${crypto.randomUUID()}`,
         createdById: session.user.id,
         workspaceId,
       },

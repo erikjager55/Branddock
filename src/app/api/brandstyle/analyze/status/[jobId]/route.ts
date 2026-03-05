@@ -67,7 +67,6 @@ export async function GET(
       currentStep: currentStepIndex,
       totalSteps: 5,
       steps,
-      ...(isComplete && { status: "COMPLETE" }),
       ...(isError && { error: "Analysis failed. Please try again." }),
     });
   } catch (error) {

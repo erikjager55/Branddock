@@ -38,11 +38,13 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Delete existing styleguide if present
+    // Delete existing styleguide if present (atomic)
     const existing = await prisma.brandStyleguide.findUnique({ where: { workspaceId } });
     if (existing) {
-      await prisma.styleguideColor.deleteMany({ where: { styleguideId: existing.id } });
-      await prisma.brandStyleguide.delete({ where: { id: existing.id } });
+      await prisma.$transaction([
+        prisma.styleguideColor.deleteMany({ where: { styleguideId: existing.id } }),
+        prisma.brandStyleguide.delete({ where: { id: existing.id } }),
+      ]);
     }
 
     const styleguide = await prisma.brandStyleguide.create({
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
         sourceType: "PDF",
         sourceFileName: file.name,
         analysisStatus: "SCANNING_STRUCTURE",
-        analysisJobId: `job_${Date.now()}`,
+        analysisJobId: `job_${crypto.randomUUID()}`,
         createdById: session.user.id,
         workspaceId,
       },

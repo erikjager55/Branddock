@@ -248,9 +248,13 @@ async function runAiAnalysis(userPrompt: string): Promise<AnalysisResult> {
 }
 
 /**
- * Write AI analysis results to the database
+ * Write AI analysis results to the database.
+ * Deletes existing colors first to prevent accumulation on re-analysis.
  */
 async function writeResultToDb(styleguideId: string, result: AnalysisResult): Promise<void> {
+  // Delete existing colors before creating new ones (prevents accumulation)
+  await prisma.styleguideColor.deleteMany({ where: { styleguideId } });
+
   // Update styleguide fields
   await prisma.brandStyleguide.update({
     where: { id: styleguideId },
@@ -282,7 +286,7 @@ async function writeResultToDb(styleguideId: string, result: AnalysisResult): Pr
   const colors = (result.colors || []).slice(0, 12);
   for (let i = 0; i < colors.length; i++) {
     const color = colors[i];
-    const hex = normalizeHex(color.hex);
+    const hex = normalizeHex(color.hex?.trim());
     if (!hex) continue;
 
     await prisma.styleguideColor.create({
@@ -304,16 +308,16 @@ async function writeResultToDb(styleguideId: string, result: AnalysisResult): Pr
   }
 }
 
-function validateCategory(
-  cat: string,
-): 'PRIMARY' | 'SECONDARY' | 'ACCENT' | 'NEUTRAL' | 'SEMANTIC' {
-  const valid = ['PRIMARY', 'SECONDARY', 'ACCENT', 'NEUTRAL', 'SEMANTIC'];
-  return valid.includes(cat) ? (cat as 'PRIMARY') : 'NEUTRAL';
+type ColorCategory = 'PRIMARY' | 'SECONDARY' | 'ACCENT' | 'NEUTRAL' | 'SEMANTIC';
+
+function validateCategory(cat: string): ColorCategory {
+  const valid: ColorCategory[] = ['PRIMARY', 'SECONDARY', 'ACCENT', 'NEUTRAL', 'SEMANTIC'];
+  return valid.includes(cat as ColorCategory) ? (cat as ColorCategory) : 'NEUTRAL';
 }
 
-function normalizeHex(hex: string): string | null {
+function normalizeHex(hex: string | undefined | null): string | null {
   if (!hex) return null;
-  const clean = hex.replace('#', '');
+  const clean = hex.trim().replace('#', '');
   if (clean.length === 3) {
     return `#${clean[0]}${clean[0]}${clean[1]}${clean[1]}${clean[2]}${clean[2]}`;
   }

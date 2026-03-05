@@ -16,7 +16,7 @@ interface ProcessingProgressProps {
  * Steps are updated by the analysis engine, not simulated.
  */
 export function ProcessingProgress({ jobId, onComplete }: ProcessingProgressProps) {
-  const { data } = useAnalysisStatus(jobId);
+  const { data, error: fetchError } = useAnalysisStatus(jobId);
   const { stopAnalysis } = useBrandstyleStore();
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export function ProcessingProgress({ jobId, onComplete }: ProcessingProgressProp
     }
   }, [data?.status, onComplete]);
 
-  const isError = data?.status === "ERROR";
+  const isError = data?.status === "ERROR" || !!fetchError;
 
   const steps = data?.steps ?? [
     { name: "Scanning website structure", status: "pending" as const },
