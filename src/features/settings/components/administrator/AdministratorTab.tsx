@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, Plus, Bot, Pencil, Trash2 } from 'lucide-react';
+import { Shield, Plus, Bot, Pencil, Trash2, BookOpen, AlertCircle, RefreshCw } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { EXPLORATION_AI_MODELS } from '@/lib/ai/exploration/config.types';
 import type { ExplorationConfigData } from '@/lib/ai/exploration/config.types';
 import { ExplorationConfigEditor } from './ExplorationConfigEditor';
-import { KnowledgeLibrarySection } from './KnowledgeLibrarySection';
 
 // ─── API Functions ─────────────────────────────────────────
 
@@ -43,6 +42,12 @@ async function deleteConfig(id: string) {
   return res.json();
 }
 
+// ─── Types ──────────────────────────────────────────────────
+
+interface ConfigWithCount extends ExplorationConfigData {
+  _count?: { knowledgeItems?: number };
+}
+
 // ─── Component ─────────────────────────────────────────────
 
 export function AdministratorTab() {
@@ -50,7 +55,7 @@ export function AdministratorTab() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['admin', 'exploration-configs'],
     queryFn: fetchConfigs,
   });
@@ -61,9 +66,12 @@ export function AdministratorTab() {
       queryClient.invalidateQueries({ queryKey: ['admin', 'exploration-configs'] });
       toast.success('Configuration deleted');
     },
+    onError: (err) => {
+      toast.error(`Verwijderen mislukt: ${err instanceof Error ? err.message : 'Onbekende fout'}`);
+    },
   });
 
-  const configs = (data?.configs ?? []) as ExplorationConfigData[];
+  const configs = (data?.configs ?? []) as ConfigWithCount[];
 
   return (
     <div className="max-w-5xl space-y-6 p-6">
@@ -109,8 +117,24 @@ export function AdministratorTab() {
         </div>
       )}
 
+      {/* Error state */}
+      {isError && (
+        <div className="text-center py-12 border border-red-200 bg-red-50 rounded-xl">
+          <AlertCircle className="w-10 h-10 mx-auto mb-3 text-red-400" />
+          <p className="text-sm text-red-700 font-medium">Kon configuraties niet laden</p>
+          <p className="text-xs text-red-500 mt-1">Controleer je verbinding en probeer opnieuw.</p>
+          <button
+            onClick={() => refetch()}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Opnieuw proberen
+          </button>
+        </div>
+      )}
+
       {/* Config list */}
-      {!isLoading && configs.length === 0 && !isCreating && (
+      {!isLoading && !isError && configs.length === 0 && !isCreating && (
         <div className="text-center py-12 text-gray-400 text-sm">
           <Bot className="w-10 h-10 mx-auto mb-3 opacity-40" />
           <p>Nog geen AI Exploration configuraties.</p>
@@ -157,12 +181,17 @@ function ExplorationConfigCard({
   onEdit,
   onDelete,
 }: {
-  config: ExplorationConfigData;
+  config: ConfigWithCount;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   const model = EXPLORATION_AI_MODELS.find((m) => m.id === config.model);
   const dimensionCount = Array.isArray(config.dimensions) ? config.dimensions.length : 0;
+  const knowledgeCount = config._count?.knowledgeItems ?? 0;
+
+  const hasSystemPrompt = !!config.systemPrompt?.trim();
+  const hasFeedbackPrompt = !!config.feedbackPrompt?.trim();
+  const hasReportPrompt = !!config.reportPrompt?.trim();
 
   return (
     <div className="border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-colors">
@@ -174,7 +203,7 @@ function ExplorationConfigCard({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-semibold text-gray-900">
-                {config.label || `${config.itemType}${config.itemSubType ? ` → ${config.itemSubType}` : ''}`}
+                {config.label || `${config.itemType}${config.itemSubType ? ` \u2192 ${config.itemSubType}` : ''}`}
               </h3>
               {!config.isActive && (
                 <span className="text-[10px] font-medium uppercase tracking-wide text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
@@ -187,32 +216,57 @@ function ExplorationConfigCard({
                 {config.itemType}{config.itemSubType ? ` / ${config.itemSubType}` : ''}
               </span>
               <span>{model?.label ?? config.model}</span>
-              <span>·</span>
+              <span>&middot;</span>
               <span>{dimensionCount} dimensies</span>
-              <span>·</span>
+              <span>&middot;</span>
               <span>temp {config.temperature}</span>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={onEdit}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
-            title="Bewerken"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-            title="Verwijderen"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+        <div className="flex items-center gap-2">
+          {/* Prompt status dots */}
+          <div className="flex items-center gap-1.5 mr-2" title="Prompt status: System / Feedback / Report">
+            <div
+              className={`w-2 h-2 rounded-full ${hasSystemPrompt ? 'bg-emerald-500' : 'bg-red-400'}`}
+              title={hasSystemPrompt ? 'System prompt ingevuld' : 'System prompt leeg'}
+            />
+            <div
+              className={`w-2 h-2 rounded-full ${hasFeedbackPrompt ? 'bg-emerald-500' : 'bg-red-400'}`}
+              title={hasFeedbackPrompt ? 'Feedback prompt ingevuld' : 'Feedback prompt leeg'}
+            />
+            <div
+              className={`w-2 h-2 rounded-full ${hasReportPrompt ? 'bg-emerald-500' : 'bg-red-400'}`}
+              title={hasReportPrompt ? 'Report prompt ingevuld' : 'Report prompt leeg'}
+            />
+          </div>
+          {/* Knowledge count badge */}
+          {knowledgeCount > 0 && (
+            <span
+              className="flex items-center gap-1 text-[10px] font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full"
+              title={`${knowledgeCount} kennisbronnen`}
+            >
+              <BookOpen className="w-3 h-3" />
+              {knowledgeCount}
+            </span>
+          )}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={onEdit}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+              title="Bewerken"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onDelete}
+              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              title="Verwijderen"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
-
-      <KnowledgeLibrarySection configId={config.id} />
     </div>
   );
 }

@@ -744,6 +744,8 @@ function AppContent() {
         return <SettingsPage initialTab="notifications" />;
       case 'settings-appearance':
         return <SettingsPage initialTab="appearance" />;
+      case 'settings-admin':
+        return <SettingsPage initialTab="administrator" />;
 
       case 'settings-agency':
         return <AgencySettingsPage />;
