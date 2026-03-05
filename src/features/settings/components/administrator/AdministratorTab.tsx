@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Shield, Plus, Bot, Pencil, Trash2 } from 'lucide-react';
+import { Shield, Plus, Bot, Pencil, Trash2, BookOpen, AlertCircle, RefreshCw } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { EXPLORATION_AI_MODELS } from '@/lib/ai/exploration/config.types';
 import type { ExplorationConfigData } from '@/lib/ai/exploration/config.types';
 import { ExplorationConfigEditor } from './ExplorationConfigEditor';
-import { KnowledgeLibrarySection } from './KnowledgeLibrarySection';
 
 // ─── API Functions ─────────────────────────────────────────
 
