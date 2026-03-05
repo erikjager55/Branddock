@@ -90,6 +90,7 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
       setIsAdding(false);
       toast.success('Kennisbron toegevoegd');
     },
+    onError: () => toast.error('Kennisbron toevoegen mislukt'),
   });
 
   const updateMutation = useMutation({
@@ -100,6 +101,7 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
       setEditingItemId(null);
       toast.success('Kennisbron bijgewerkt');
     },
+    onError: () => toast.error('Kennisbron bijwerken mislukt'),
   });
 
   const deleteMutation = useMutation({
@@ -108,6 +110,7 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
       queryClient.invalidateQueries({ queryKey });
       toast.success('Kennisbron verwijderd');
     },
+    onError: () => toast.error('Kennisbron verwijderen mislukt'),
   });
 
   const items = (data?.items ?? []) as KnowledgeItem[];

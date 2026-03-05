@@ -3,18 +3,12 @@ import { chromium } from 'playwright';
 const SCREENSHOTS_DIR = '/Users/erikjager/Projects/branddock-app/test-screenshots';
 const BASE_URL = 'http://localhost:3000';
 
-/**
- * Helper: take a screenshot with logging.
- */
 async function screenshot(page, name) {
   const path = `${SCREENSHOTS_DIR}/${name}`;
   await page.screenshot({ path });
   console.log(`  Screenshot saved: ${name}`);
 }
 
-/**
- * Helper: try multiple selectors, click first visible one.
- */
 async function clickFirstVisible(page, selectors, label, timeout = 5000) {
   for (const sel of selectors) {
     try {
@@ -27,6 +21,31 @@ async function clickFirstVisible(page, selectors, label, timeout = 5000) {
     } catch { /* try next */ }
   }
   console.log(`  WARNING: Could not find ${label}`);
+  return false;
+}
+
+/**
+ * Click a tab in the config list view's tab bar.
+ * The tab bar is inside a div.border-b with buttons for Brand Assets, Personas, Products.
+ */
+async function clickConfigTab(page, tabLabel) {
+  // Find all buttons that are direct children of the tab bar (border-b container)
+  // The tabs are: "Brand Assets <count>", "Personas <count>", "Products <count>"
+  const buttons = await page.locator('button').all();
+  for (const btn of buttons) {
+    const text = (await btn.textContent())?.trim();
+    // Tab button text includes label + count badge, e.g. "Brand Assets12" or "Personas1"
+    if (text && text.startsWith(tabLabel)) {
+      // Verify it looks like a tab (not a sidebar button) by checking it's small text
+      const boundingBox = await btn.boundingBox();
+      if (boundingBox && boundingBox.width < 300) {
+        await btn.click();
+        console.log(`  Clicked "${tabLabel}" tab (text: "${text}", width: ${Math.round(boundingBox.width)}px)`);
+        return true;
+      }
+    }
+  }
+  console.log(`  WARNING: Tab "${tabLabel}" not found`);
   return false;
 }
 
@@ -58,41 +77,26 @@ async function run() {
     // ─── Step 3: Navigate to Settings > Administrator ─────
     console.log('\n=== Step 3: Navigate to Settings > Administrator ===');
 
-    // Click "Account" text in the sidebar to enter Settings page
-    await clickFirstVisible(page, [
-      'button:has-text("Account")',
-    ], '"Account" sidebar item');
+    // Click "Account" in sidebar
+    await clickFirstVisible(page, ['button:has-text("Account")'], '"Account" sidebar');
     await page.waitForTimeout(2000);
 
-    // Click "AI Configuration" in the settings sub-nav
+    // Click "AI Configuration" in settings sub-nav
     const adminClicked = await clickFirstVisible(page, [
       '[data-testid="settings-tab-administrator"]',
-      'button:has-text("AI Configuration")',
     ], '"AI Configuration" tab');
     await page.waitForTimeout(3000);
-
     results.navigatedToAdmin = adminClicked;
 
-    // Verify the config list loaded
     const pageContent = await page.textContent('body');
     console.log(`  Config list visible: ${pageContent?.includes('AI Exploration Configuratie')}`);
 
     // ─── Step 4: Click on "Golden Circle" config card ─────
     console.log('\n=== Step 4: Click Golden Circle config card ===');
 
-    let gcClicked = false;
-    // The ConfigCard renders h3 with the display label
-    for (const sel of ['h3:has-text("Golden Circle")', 'text="Golden Circle"', ':text("golden-circle")']) {
-      try {
-        const el = await page.locator(sel).first();
-        if (await el.isVisible({ timeout: 2000 })) {
-          await el.click();
-          gcClicked = true;
-          console.log(`  Clicked Golden Circle via: ${sel}`);
-          break;
-        }
-      } catch { /* try next */ }
-    }
+    const gcClicked = await clickFirstVisible(page, [
+      'h3:has-text("Golden Circle")',
+    ], '"Golden Circle" card');
     results.configCardClicked = gcClicked;
     await page.waitForTimeout(2500);
 
@@ -105,19 +109,19 @@ async function run() {
     results.promptsTabClicked = promptsClicked;
     await page.waitForTimeout(1500);
 
-    // Verify prompts sections
     const promptsContent = await page.textContent('body');
-    console.log(`  System prompt visible: ${promptsContent?.includes('System Prompt') || promptsContent?.includes('system')}`);
-    console.log(`  Feedback prompt visible: ${promptsContent?.includes('Feedback')}`);
-    console.log(`  Report prompt visible: ${promptsContent?.includes('Report')}`);
+    console.log(`  System prompt: ${promptsContent?.includes('System Prompt') || promptsContent?.includes('system')}`);
+    console.log(`  Feedback prompt: ${promptsContent?.includes('Feedback')}`);
+    console.log(`  Report prompt: ${promptsContent?.includes('Report')}`);
+    console.log(`  Template variables: ${promptsContent?.includes('{{brandContext}}') || promptsContent?.includes('brandContext')}`);
 
-    // Check for template variables
-    const hasTemplateVars = promptsContent?.includes('{{brandContext}}') || promptsContent?.includes('brandContext');
-    console.log(`  Template variables shown: ${hasTemplateVars}`);
+    // Check for "Laad standaard" buttons
+    const hasLoadDefault = promptsContent?.includes('Laad standaard') || promptsContent?.includes('standaard');
+    console.log(`  "Laad standaard" buttons: ${hasLoadDefault}`);
 
     await screenshot(page, '05-prompts-tab.png');
     await page.screenshot({ path: `${SCREENSHOTS_DIR}/05-prompts-tab-full.png`, fullPage: true });
-    console.log('  Full page screenshot saved: 05-prompts-tab-full.png');
+    console.log('  Full page screenshot: 05-prompts-tab-full.png');
 
     // ─── Step 6: Test Kennisbronnen tab ──────────────────
     console.log('\n=== Step 6: Test Kennisbronnen tab ===');
@@ -129,12 +133,16 @@ async function run() {
     await page.waitForTimeout(2000);
 
     const knowledgeContent = await page.textContent('body');
-    console.log(`  Knowledge tab content loaded: ${knowledgeContent?.includes('Kennisbronnen') || knowledgeContent?.includes('kennisbron')}`);
-    console.log(`  Has add button: ${knowledgeContent?.includes('toevoegen') || knowledgeContent?.includes('Toevoegen')}`);
+    console.log(`  Knowledge content: ${knowledgeContent?.includes('Kennisbronnen') || knowledgeContent?.includes('kennisbron')}`);
+    console.log(`  Add button: ${knowledgeContent?.includes('toevoegen') || knowledgeContent?.includes('Toevoegen')}`);
+
+    // Check for info tooltip about {{customKnowledge}}
+    const hasInfoText = knowledgeContent?.includes('customKnowledge') || knowledgeContent?.includes('geïnjecteerd');
+    console.log(`  Knowledge injection info: ${hasInfoText}`);
 
     await screenshot(page, '06-kennisbronnen-tab.png');
     await page.screenshot({ path: `${SCREENSHOTS_DIR}/06-kennisbronnen-tab-full.png`, fullPage: true });
-    console.log('  Full page screenshot saved: 06-kennisbronnen-tab-full.png');
+    console.log('  Full page screenshot: 06-kennisbronnen-tab-full.png');
 
     // ─── Step 7: Click "Terug naar overzicht" ────────────
     console.log('\n=== Step 7: Click "Terug naar overzicht" ===');
@@ -152,14 +160,14 @@ async function run() {
     const listContent = await page.textContent('body');
     console.log(`  List title: ${listContent?.includes('AI Exploration Configuratie')}`);
 
-    // Count config cards in Brand Assets tab (default)
-    const h3Elements = await page.locator('h3').allTextContents();
-    const configLabels = h3Elements.filter(t =>
-      t.trim().length > 0 &&
-      t.length < 100 &&
-      !['WORKSPACE', 'STRATEGY', 'KNOWLEDGE', 'VALIDATION', 'Settings', 'AI Exploration Configuratie'].includes(t.trim())
-    );
-    console.log(`  Brand Asset config cards: ${configLabels.length}`);
+    // Count config cards (filter out sidebar headings)
+    const h3Texts = await page.locator('h3').allTextContents();
+    const sidebarHeadings = ['WORKSPACE', 'STRATEGY', 'KNOWLEDGE', 'VALIDATION'];
+    const configLabels = h3Texts.filter(t => {
+      const trimmed = t.trim();
+      return trimmed.length > 0 && trimmed.length < 100 && !sidebarHeadings.includes(trimmed);
+    });
+    console.log(`  Brand Asset configs: ${configLabels.length}`);
     console.log(`  Labels: ${configLabels.join(', ')}`);
 
     await screenshot(page, '07-config-list-view.png');
@@ -168,65 +176,36 @@ async function run() {
     // ─── Step 9: Switch to "Personas" tab ────────────────
     console.log('\n=== Step 9: Switch to Personas tab ===');
 
-    // The tab buttons are in a border-b container. Each tab is a <button> with text + count badge.
-    // "Personas" button text actually includes the count span, e.g. "Personas1"
-    // Use a more targeted selector
-    const personasTabClicked = await clickFirstVisible(page, [
-      'button:has-text("Personas")',
-    ], '"Personas" tab');
-    results.personasTabClicked = personasTabClicked;
+    results.personasTabClicked = await clickConfigTab(page, 'Personas');
     await page.waitForTimeout(1500);
 
     const personaH3s = await page.locator('h3').allTextContents();
-    const personaLabels = personaH3s.filter(t =>
-      t.trim().length > 0 &&
-      t.length < 100 &&
-      !['WORKSPACE', 'STRATEGY', 'KNOWLEDGE', 'VALIDATION', 'Settings', 'AI Exploration Configuratie'].includes(t.trim())
-    );
-    console.log(`  Persona config cards: ${personaLabels.length}`);
-    if (personaLabels.length > 0) {
-      console.log(`  Labels: ${personaLabels.join(', ')}`);
-    }
+    const personaLabels = personaH3s.filter(t => {
+      const trimmed = t.trim();
+      return trimmed.length > 0 && trimmed.length < 100 && !sidebarHeadings.includes(trimmed);
+    });
+    console.log(`  Persona configs: ${personaLabels.length}`);
+    if (personaLabels.length > 0) console.log(`  Labels: ${personaLabels.join(', ')}`);
 
     await screenshot(page, '08-personas-tab.png');
 
     // ─── Step 10: Switch back to Brand Assets + search ───
     console.log('\n=== Step 10: Switch to Brand Assets tab + search "golden" ===');
 
-    // We need to click "Brand Assets" tab. The button text is "Brand Assets" + count badge.
-    // The issue before: button:has-text("Brand Assets") matched something else.
-    // Let's use a more specific approach: get all buttons in the tab bar area.
-    let brandAssetsClicked = false;
-    const tabButtons = await page.locator('button').all();
-    for (const btn of tabButtons) {
-      const text = (await btn.textContent())?.trim();
-      // Match "Brand Assets" with possible count, e.g. "Brand Assets12"
-      if (text && /^Brand Assets\d*$/.test(text)) {
-        await btn.click();
-        brandAssetsClicked = true;
-        console.log(`  Clicked Brand Assets tab (text: "${text}")`);
-        break;
-      }
-    }
-    if (!brandAssetsClicked) {
-      // Fallback: try broader match
-      for (const btn of tabButtons) {
-        const text = (await btn.textContent())?.trim();
-        if (text && text.startsWith('Brand Assets')) {
-          await btn.click();
-          brandAssetsClicked = true;
-          console.log(`  Clicked Brand Assets tab via fallback (text: "${text}")`);
-          break;
-        }
-      }
-    }
-    results.brandAssetsTabClicked = brandAssetsClicked;
+    results.brandAssetsTabClicked = await clickConfigTab(page, 'Brand Assets');
     await page.waitForTimeout(1500);
 
-    // Now search for "golden"
+    // Verify we're back on Brand Assets
+    const afterSwitchH3s = await page.locator('h3').allTextContents();
+    const afterSwitchLabels = afterSwitchH3s.filter(t => {
+      const trimmed = t.trim();
+      return trimmed.length > 0 && trimmed.length < 100 && !sidebarHeadings.includes(trimmed);
+    });
+    console.log(`  Brand Asset configs after switch: ${afterSwitchLabels.length}`);
+
+    // Search for "golden"
     let searchWorked = false;
     try {
-      // The SearchInput has placeholder "Zoek op label of subtype..."
       const searchInput = await page.locator('input[placeholder*="Zoek"]').first();
       if (await searchInput.isVisible({ timeout: 3000 })) {
         await searchInput.fill('golden');
@@ -234,20 +213,18 @@ async function run() {
         console.log('  Typed "golden" in search input');
         await page.waitForTimeout(800);
 
-        // Check filtered results
         const filteredH3s = await page.locator('h3').allTextContents();
-        const filteredLabels = filteredH3s.filter(t =>
-          t.trim().length > 0 &&
-          t.length < 100 &&
-          !['WORKSPACE', 'STRATEGY', 'KNOWLEDGE', 'VALIDATION', 'Settings', 'AI Exploration Configuratie'].includes(t.trim())
-        );
+        const filteredLabels = filteredH3s.filter(t => {
+          const trimmed = t.trim();
+          return trimmed.length > 0 && trimmed.length < 100 && !sidebarHeadings.includes(trimmed);
+        });
         console.log(`  Filtered results: ${filteredLabels.length} cards`);
-        if (filteredLabels.length > 0) {
-          console.log(`  Filtered labels: ${filteredLabels.join(', ')}`);
-        }
+        if (filteredLabels.length > 0) console.log(`  Filtered labels: ${filteredLabels.join(', ')}`);
+      } else {
+        console.log('  Search input not visible');
       }
     } catch (e) {
-      console.log(`  Search input not found: ${e.message}`);
+      console.log(`  Search failed: ${e.message}`);
     }
     results.searchWorked = searchWorked;
 
@@ -256,17 +233,19 @@ async function run() {
     // ─── Step 11: Clear search + click "Nieuwe configuratie" ─
     console.log('\n=== Step 11: Clear search + click "Nieuwe configuratie" ===');
 
-    // Clear the search
+    // Clear search
     try {
       const searchInput = await page.locator('input[placeholder*="Zoek"]').first();
-      await searchInput.fill('');
-      console.log('  Search cleared');
-      await page.waitForTimeout(800);
+      if (await searchInput.isVisible({ timeout: 2000 })) {
+        await searchInput.fill('');
+        console.log('  Search cleared');
+        await page.waitForTimeout(600);
+      }
     } catch {
       console.log('  Could not clear search');
     }
 
-    // Click "Nieuwe configuratie" button
+    // Click "Nieuwe configuratie"
     const createClicked = await clickFirstVisible(page, [
       'button:has-text("Nieuwe configuratie")',
     ], '"Nieuwe configuratie" button');
@@ -274,20 +253,11 @@ async function run() {
     await page.waitForTimeout(2500);
 
     if (createClicked) {
-      // Verify create form
       const createContent = await page.textContent('body');
-      const hasNieuwBadge = createContent?.includes('Nieuw');
-      const hasAlgemeenTab = createContent?.includes('Algemeen');
-      const hasDimensiesTab = createContent?.includes('Dimensies');
-      const hasPromptsTab = createContent?.includes('Prompts');
-      const hasKennisbronnenTab = createContent?.includes('Kennisbronnen');
-      const hasAnnuleren = createContent?.includes('Annuleren');
-      const hasOpslaan = createContent?.includes('Opslaan');
-      console.log(`  "Nieuw" badge: ${hasNieuwBadge}`);
-      console.log(`  Tabs visible: Algemeen=${hasAlgemeenTab}, Dimensies=${hasDimensiesTab}, Prompts=${hasPromptsTab}, Kennisbronnen=${hasKennisbronnenTab}`);
-      console.log(`  Actions: Annuleren=${hasAnnuleren}, Opslaan=${hasOpslaan}`);
+      console.log(`  "Nieuw" badge: ${createContent?.includes('Nieuw')}`);
+      console.log(`  Tabs: Algemeen=${createContent?.includes('Algemeen')}, Dimensies=${createContent?.includes('Dimensies')}, Prompts=${createContent?.includes('Prompts')}, Kennisbronnen=${createContent?.includes('Kennisbronnen')}`);
+      console.log(`  Buttons: Annuleren=${createContent?.includes('Annuleren')}, Opslaan=${createContent?.includes('Opslaan')}`);
 
-      // List form labels
       const labels = await page.locator('label').allTextContents();
       const relevantLabels = labels.filter(l => l.trim().length > 0);
       if (relevantLabels.length > 0) {
@@ -297,26 +267,35 @@ async function run() {
 
     await screenshot(page, '10-create-form.png');
     await page.screenshot({ path: `${SCREENSHOTS_DIR}/10-create-form-full.png`, fullPage: true });
-    console.log('  Full page screenshot saved: 10-create-form-full.png');
+    console.log('  Full page screenshot: 10-create-form-full.png');
 
     // ─── Final Summary ───────────────────────────────────
     console.log('\n========================================');
     console.log('         TEST SUMMARY');
     console.log('========================================');
-    console.log(`Login successful:          ${results.loginSuccess ? 'PASS' : 'FAIL'}`);
-    console.log(`Navigated to Admin:        ${results.navigatedToAdmin ? 'PASS' : 'FAIL'}`);
-    console.log(`Config card clicked:       ${results.configCardClicked ? 'PASS' : 'FAIL'}`);
-    console.log(`Prompts tab clicked:       ${results.promptsTabClicked ? 'PASS' : 'FAIL'}`);
-    console.log(`Kennisbronnen tab clicked: ${results.knowledgeTabClicked ? 'PASS' : 'FAIL'}`);
-    console.log(`Back to list clicked:      ${results.backToListClicked ? 'PASS' : 'FAIL'}`);
-    console.log(`Personas tab clicked:      ${results.personasTabClicked ? 'PASS' : 'FAIL'}`);
-    console.log(`Brand Assets tab clicked:  ${results.brandAssetsTabClicked ? 'PASS' : 'FAIL'}`);
-    console.log(`Search functionality:      ${results.searchWorked ? 'PASS' : 'FAIL'}`);
-    console.log(`Create form opened:        ${results.createClicked ? 'PASS' : 'FAIL'}`);
-    console.log('========================================');
+    const checks = [
+      ['Login successful', results.loginSuccess],
+      ['Navigated to Admin', results.navigatedToAdmin],
+      ['Config card clicked', results.configCardClicked],
+      ['Prompts tab clicked', results.promptsTabClicked],
+      ['Kennisbronnen tab clicked', results.knowledgeTabClicked],
+      ['Back to list clicked', results.backToListClicked],
+      ['Personas tab clicked', results.personasTabClicked],
+      ['Brand Assets tab clicked', results.brandAssetsTabClicked],
+      ['Search functionality', results.searchWorked],
+      ['Create form opened', results.createClicked],
+    ];
 
-    const allPassed = Object.values(results).every(v => v === true);
-    console.log(`\nOverall: ${allPassed ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`);
+    let passed = 0;
+    let failed = 0;
+    for (const [label, result] of checks) {
+      const status = result ? 'PASS' : 'FAIL';
+      if (result) passed++; else failed++;
+      console.log(`${status.padEnd(6)} ${label}`);
+    }
+    console.log('========================================');
+    console.log(`${passed}/${checks.length} passed, ${failed} failed`);
+    console.log(`\nOverall: ${failed === 0 ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`);
 
   } catch (error) {
     console.error('\nTest FAILED with error:', error.message);
