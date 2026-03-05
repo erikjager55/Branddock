@@ -128,7 +128,7 @@ export function ConfigCard({ config, onSelect, onDuplicate, onDelete }: ConfigCa
           </div>
           <div className="flex items-center gap-1 text-xs text-gray-400">
             <BookOpen className="w-3 h-3" />
-            <span>temp {config.temperature}</span>
+            <span>temp {config.temperature.toFixed(1)}</span>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
 # BRANDDOCK — Claude Code Context
-## Laatst bijgewerkt: 27 februari 2026 (AI Exploration + Brand Asset Lock/Unlock + Backend Config)
+## Laatst bijgewerkt: 5 maart 2026 (AI Config UX Redesign + AI Exploration + Brand Asset Lock/Unlock + Backend Config)
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 
@@ -178,7 +178,16 @@ Elke gemigreerde module heeft een adapter die DB data mapt naar het bestaande mo
 - `src/lib/ai/exploration/builders/brand-asset-builder.ts` — Rapport + field suggestions
 - `src/app/api/exploration/[itemType]/[itemId]/analyze/route.ts` — Sessie start (resolvet config, slaat dimensies op in metadata)
 - `src/app/api/admin/exploration-configs/route.ts` — Admin CRUD API
-- `src/features/settings/components/administrator/ExplorationConfigEditor.tsx` — Admin UI editor
+- `src/features/settings/components/administrator/ConfigListView.tsx` — Config lijst (gegroepeerd per item type, zoekfunctie)
+- `src/features/settings/components/administrator/ConfigDetailView.tsx` — Config detail (4 tabs: Algemeen/Dimensies/Prompts/Kennisbronnen)
+- `src/features/settings/components/administrator/ConfigCard.tsx` — Config kaart (model, dimensies, status)
+- `src/features/settings/components/administrator/tabs/GeneralTab.tsx` — Targeting + AI model + context bronnen
+- `src/features/settings/components/administrator/tabs/DimensionsTab.tsx` — Dimensie-editor
+- `src/features/settings/components/administrator/tabs/PromptsTab.tsx` — Prompt editor met variable chips
+- `src/features/settings/components/administrator/tabs/KnowledgeTab.tsx` — Kennisbronnen CRUD
+- `src/features/settings/components/administrator/DimensionCard.tsx` — Enkele dimensie kaart
+- `src/features/settings/components/administrator/IconPicker.tsx` — Visuele icon selector (30 Lucide icons)
+- `src/features/settings/components/administrator/PromptEditor.tsx` — Herbruikbare textarea met variable chips
 - `src/features/brand-asset-detail/constants/brand-asset-exploration-config.ts` — Frontend dimensie fallbacks
 - `src/components/ai-exploration/utils/map-backend-dimensions.ts` — Backend→frontend dimensie mapper
 
@@ -898,9 +907,18 @@ src/
 │   └── settings/                                  ← S9: Settings + Admin
 │       └── components/
 │           └── administrator/
-│               ├── AdministratorTab.tsx            ← Admin settings tab (AI Configuration)
-│               ├── ExplorationConfigEditor.tsx     ← Config editor form (model, prompts, dimensions)
-│               └── KnowledgeLibrarySection.tsx     ← Knowledge library per config (CRUD)
+│               ├── AdministratorTab.tsx            ← Admin settings tab (view switcher list↔detail)
+│               ├── ConfigListView.tsx              ← Gegroepeerde config grid met tabs per item type
+│               ├── ConfigCard.tsx                  ← Config kaart (model, dimensies, status)
+│               ├── ConfigDetailView.tsx            ← 4-tab detail pagina (form state + validation)
+│               ├── DimensionCard.tsx               ← Enkele dimensie kaart met IconPicker
+│               ├── IconPicker.tsx                  ← Visuele icon selector (30 Lucide icons)
+│               ├── PromptEditor.tsx                ← Herbruikbare textarea met variable chips
+│               └── tabs/
+│                   ├── GeneralTab.tsx              ← Targeting + AI model + context bronnen
+│                   ├── DimensionsTab.tsx           ← Dimensie-editor (add/remove/reorder)
+│                   ├── PromptsTab.tsx              ← System/feedback/report prompts
+│                   └── KnowledgeTab.tsx            ← Kennisbronnen CRUD (TanStack Query)
 ├── contexts/
 │   ├── index.tsx                        ← AppProviders wrapper + hook exports
 │   ├── BrandAssetsContext.tsx            ← API first, mock fallback
@@ -1509,9 +1527,9 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 
 72. **AE: AI Exploration Generic System** — Universeel AI exploration systeem (S2 nieuw) met backend-driven config. ExplorationSession + ExplorationMessage Prisma modellen. 3 API routes (`/api/exploration/[itemType]/[itemId]/analyze` POST, `/sessions/[sessionId]/answer` POST, `/sessions/[sessionId]/complete` POST). Config-resolver met DB lookup → fallback → system defaults. Template engine (`{{brandContext}}`, `{{customKnowledge}}`, `{{itemName}}`). Multi-provider AI caller (Anthropic Claude Sonnet 4.6 + OpenAI). Item-type registry (persona, brand_asset). AIExplorationPage + 4 componenten (ChatInterface, DimensionCard, Report, Suggestions). Zustand useAIExplorationStore. TypeScript 0 errors.
 
-73. **AE: AI Exploration Admin UI** — Settings → Administrator → AI Exploration Configuration. ExplorationConfig Prisma model (provider, model, temperature, maxTokens, systemPrompt, dimensions, feedbackPrompt, reportPrompt, fieldSuggestionsConfig, contextSources). CRUD API: `/api/admin/exploration-configs` GET+POST, `/[id]` GET+PUT+DELETE (5 endpoints). AdministratorTab + ExplorationConfigEditor componenten. Per-config model/prompt/dimension editor. TypeScript 0 errors.
+73. **AE: AI Exploration Admin UI** — Settings → Administrator → AI Exploration Configuration. ExplorationConfig Prisma model (provider, model, temperature, maxTokens, systemPrompt, dimensions, feedbackPrompt, reportPrompt, fieldSuggestionsConfig, contextSources). CRUD API: `/api/admin/exploration-configs` GET+POST, `/[id]` GET+PUT+DELETE (5 endpoints). AdministratorTab (view switcher) + ConfigListView/ConfigDetailView (list/detail pattern, 4 tabs). TypeScript 0 errors.
 
-74. **AE: Exploration Knowledge Library** — ExplorationKnowledgeItem Prisma model (title, content, category per config). CRUD API: `/api/admin/exploration-configs/[id]/knowledge` GET+POST, `/[itemId]` PUT+DELETE. KnowledgeLibrarySection component (expandable, TanStack Query CRUD, 6 categorieën). Geïntegreerd in AdministratorTab ExplorationConfigCard. Custom knowledge wordt als `{{customKnowledge}}` geïnjecteerd in AI prompts via config-resolver + prompt-engine. TypeScript 0 errors.
+74. **AE: Exploration Knowledge Library** — ExplorationKnowledgeItem Prisma model (title, content, category per config). CRUD API: `/api/admin/exploration-configs/[id]/knowledge` GET+POST, `/[itemId]` PUT+DELETE. KnowledgeTab (volwaardige tab in ConfigDetailView, TanStack Query CRUD, 6 categorieën). Custom knowledge wordt als `{{customKnowledge}}` geïnjecteerd in AI prompts via config-resolver + prompt-engine. TypeScript 0 errors.
 
 75. **AE: Brand Asset AI Exploration Routing** — AIBrandAssetExplorationPage wrapper component. Navigatie via `brand-asset-ai-exploration` section ID + `selectedResearchOption='ai-exploration'` in App.tsx. Breadcrumb "← Terug naar asset" → brand-asset-detail. ResearchMethodCard AI_EXPLORATION klik → exploration page. TypeScript 0 errors.
 
@@ -1520,6 +1538,8 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 77. **BAD: Purpose Kompas + Purpose Statement** — PurposeKompasSection component (Mens/Milieu/Maatschappij framework, vervangt ESG). PurposeStatementSection component (apart asset type voor purpose statements). Geïntegreerd in BrandAssetDetailPage via framework type detection. TypeScript 0 errors.
 
 78. **BAD: Universal Versioning** — ResourceVersion Prisma model (polymorphic: entityType + entityId + data JSON). `/api/versions` GET endpoint. Vervangt per-module versie tracking. Werkt voor brand assets, personas, en toekomstige modules. TypeScript 0 errors.
+
+79. **AE: AI Config UX Redesign** — Volledige UI-herontwerp van AI Exploration Configuration in Settings > Administrator. Van platte lijst + 741-regels ExplorationConfigEditor naar list/detail pattern met tabbed navigatie. 10 nieuwe bestanden: ConfigListView (gegroepeerde grid per item type met zoekfunctie), ConfigCard (model/dimensies/status info), ConfigDetailView (4-tab form: Algemeen/Dimensies/Prompts/Kennisbronnen), GeneralTab (targeting+AI model+context bronnen), DimensionsTab+DimensionCard (verbeterde dimensie-editor), PromptsTab+PromptEditor (variable chips+karakter teller), KnowledgeTab (gepromoveerd naar volwaardige tab), IconPicker (30 Lucide icons visuele selector). Verwijderd: ExplorationConfigEditor.tsx + KnowledgeLibrarySection.tsx. 16 bugs gefixt na 3 rondes code review (double delete, prompt error indicators, HelpCircle icon, NaN guard, key collisions, click-outside handler, cursor tracking, sticky footer, React key stability, temperature toFixed). TypeScript 0 errors.
 
 ### ⚠️ TECHNISCHE SCHULD
 - **Adapter pattern** — tijdelijk, componenten moeten op termijn direct DB-model gebruiken
@@ -1641,8 +1661,9 @@ Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 
 **AE. AI Exploration Sprint ✅ VOLLEDIG**
 - AE.1: ✅ Generic Exploration System — ExplorationSession + ExplorationMessage modellen, 3 API routes, config-resolver, template engine, multi-provider AI caller, item-type registry, AIExplorationPage + 4 componenten
-- AE.2: ✅ Admin UI — ExplorationConfig model, 5 CRUD endpoints, AdministratorTab + ExplorationConfigEditor
-- AE.3: ✅ Knowledge Library — ExplorationKnowledgeItem model, 4 CRUD endpoints, KnowledgeLibrarySection component, {{customKnowledge}} template injection
+- AE.2: ✅ Admin UI — ExplorationConfig model, 5 CRUD endpoints, AdministratorTab + ConfigListView/ConfigDetailView (list/detail pattern, 4 tabs)
+- AE.3: ✅ Knowledge Library — ExplorationKnowledgeItem model, 4 CRUD endpoints, KnowledgeTab (gepromoveerd naar volwaardige tab), {{customKnowledge}} template injection
+- AE.5: ✅ UX Redesign — List/detail pattern met ConfigListView (gegroepeerde grid per item type) + ConfigDetailView (4 tabs). 10 nieuwe bestanden, 2 verwijderd (ExplorationConfigEditor + KnowledgeLibrarySection). Sub-componenten: ConfigCard, DimensionCard, IconPicker (30 icons), PromptEditor (variable chips), GeneralTab, DimensionsTab, PromptsTab, KnowledgeTab. 16 bugs gefixt na 3 rondes code review.
 - AE.4: ✅ Brand Asset Routing — AIBrandAssetExplorationPage wrapper, App.tsx routing, breadcrumb navigatie
 
 **BAD. Brand Asset Detail Sprint ✅ VOLLEDIG**

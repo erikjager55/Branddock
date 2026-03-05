@@ -29,7 +29,7 @@ export function DimensionsTab({
 
   const addDimension = () => {
     // Use counter that avoids collisions after deletions
-    const existingKeys = new Set(dimensions.map((d) => d.key));
+    const existingKeys = new Set(dimensions.map((d) => d.key).filter(Boolean));
     let num = dimensions.length + 1;
     while (existingKeys.has(`dim_${num}`)) num++;
     onChange([

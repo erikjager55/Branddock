@@ -412,11 +412,16 @@ export function ConfigDetailView({
               validationErrors={validationErrors}
               onChange={(dims, editedIndex) => {
                 setDimensions(dims);
-                // Clear validation error for the edited dimension only
-                if (editedIndex !== undefined && validationErrors.has(editedIndex)) {
-                  const next = new Set(validationErrors);
-                  next.delete(editedIndex);
-                  setValidationErrors(next);
+                if (editedIndex !== undefined) {
+                  // Single field edit — clear only that dimension's error
+                  if (validationErrors.has(editedIndex)) {
+                    const next = new Set(validationErrors);
+                    next.delete(editedIndex);
+                    setValidationErrors(next);
+                  }
+                } else {
+                  // Structural change (add/remove/move) — clear all since indices shifted
+                  if (validationErrors.size > 0) setValidationErrors(new Set());
                 }
               }}
               onLoadDefaults={handleLoadDefaultDimensions}
