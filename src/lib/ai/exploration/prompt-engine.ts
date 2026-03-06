@@ -1,4 +1,5 @@
 import { getBrandContext } from '@/lib/ai/brand-context';
+import { formatBrandContext } from '@/lib/ai/prompt-templates';
 
 // ─── Template Variables ────────────────────────────────────
 
@@ -29,19 +30,13 @@ export function resolveTemplate(template: string, vars: TemplateVars): string {
 }
 
 /**
- * Build brand context string for prompts
+ * Build brand context string for prompts.
+ * Delegates to formatBrandContext() so all 12 brand assets are included.
  */
 export async function buildBrandContextString(workspaceId: string): Promise<string> {
   try {
     const ctx = await getBrandContext(workspaceId);
-    const parts: string[] = [];
-    if (ctx.brandName) parts.push(`Brand: ${ctx.brandName}`);
-    if (ctx.brandMission) parts.push(`Mission: ${ctx.brandMission}`);
-    if (ctx.brandVision) parts.push(`Vision: ${ctx.brandVision}`);
-    if (ctx.brandValues) parts.push(`Values: ${(ctx.brandValues as string[]).join(', ')}`);
-    if (ctx.targetAudience) parts.push(`Target Audience: ${ctx.targetAudience}`);
-    if (ctx.productsOverview) parts.push(`Products: ${ctx.productsOverview}`);
-    return parts.length > 0 ? `## Brand Context\n${parts.join('\n')}` : '';
+    return formatBrandContext(ctx);
   } catch {
     return '';
   }

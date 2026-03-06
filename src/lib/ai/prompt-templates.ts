@@ -16,9 +16,20 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat/completio
 
 export interface BrandContextBlock {
   brandName?: string;
+  // Brand strategy assets (from 12 canonical brand assets)
+  brandPurpose?: string;
+  goldenCircle?: string;
+  brandEssence?: string;
+  brandPromise?: string;
   brandMission?: string;
   brandVision?: string;
+  brandArchetype?: string;
+  brandPersonality?: string;
+  brandStory?: string;
   brandValues?: string[];
+  transformativeGoals?: string;
+  socialRelevancy?: string;
+  // External context
   targetAudience?: string;
   industry?: string;
   productsOverview?: string;
@@ -57,9 +68,22 @@ export function formatBrandContext(ctx: BrandContextBlock): string {
   const lines: string[] = ['## Brand Context'];
 
   if (ctx.brandName) lines.push(`**Brand Name:** ${ctx.brandName}`);
+
+  // Brand strategy foundation
+  if (ctx.brandPurpose) lines.push(`**Purpose:** ${ctx.brandPurpose}`);
+  if (ctx.goldenCircle) lines.push(`**Golden Circle:**\n${ctx.goldenCircle}`);
+  if (ctx.brandEssence) lines.push(`**Brand Essence:** ${ctx.brandEssence}`);
+  if (ctx.brandPromise) lines.push(`**Brand Promise:** ${ctx.brandPromise}`);
   if (ctx.brandMission) lines.push(`**Mission:** ${ctx.brandMission}`);
   if (ctx.brandVision) lines.push(`**Vision:** ${ctx.brandVision}`);
-  if (ctx.brandValues?.length) lines.push(`**Values:** ${ctx.brandValues.join(', ')}`);
+  if (ctx.brandArchetype) lines.push(`**Brand Archetype:** ${ctx.brandArchetype}`);
+  if (ctx.brandPersonality) lines.push(`**Brand Personality:** ${ctx.brandPersonality}`);
+  if (ctx.brandStory) lines.push(`**Brand Story:** ${ctx.brandStory}`);
+  if (ctx.brandValues?.length) lines.push(`**Core Values:** ${ctx.brandValues.join(', ')}`);
+  if (ctx.transformativeGoals) lines.push(`**Transformative Goals:** ${ctx.transformativeGoals}`);
+  if (ctx.socialRelevancy) lines.push(`**Social Relevancy:** ${ctx.socialRelevancy}`);
+
+  // External context
   if (ctx.targetAudience) lines.push(`**Target Audience:** ${ctx.targetAudience}`);
   if (ctx.industry) lines.push(`**Industry:** ${ctx.industry}`);
   if (ctx.productsOverview) lines.push(`**Products/Services:** ${ctx.productsOverview}`);

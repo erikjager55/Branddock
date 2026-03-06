@@ -6,7 +6,7 @@
 // repeated DB reads within the same session.
 //
 // Models aggregated:
-//  - BrandAsset (mission, vision, values, positioning)
+//  - BrandAsset (all 12 canonical assets with content + framework data)
 //  - Persona (primary target audience description)
 //  - Product (products overview)
 //  - DetectedTrend (competitive landscape summary, activated trends only)
@@ -52,6 +52,72 @@ export function invalidateBrandContext(workspaceId: string): void {
   cache.delete(workspaceId);
 }
 
+// ─── Framework Data Formatters ─────────────────────────────
+
+interface GoldenCircleData {
+  why?: { statement?: string; details?: string };
+  how?: { statement?: string; details?: string };
+  what?: { statement?: string; details?: string };
+}
+
+interface PurposeWheelData {
+  impactType?: string;
+  mechanism?: string;
+  mechanismCategory?: string;
+  pressureTest?: string;
+}
+
+/** Format Golden Circle frameworkData into a readable string */
+function formatGoldenCircle(data: GoldenCircleData): string {
+  const parts: string[] = [];
+  if (data.why?.statement) parts.push(`  - WHY: ${data.why.statement}`);
+  if (data.how?.statement) parts.push(`  - HOW: ${data.how.statement}`);
+  if (data.what?.statement) parts.push(`  - WHAT: ${data.what.statement}`);
+  return parts.join('\n');
+}
+
+/** Format Purpose Wheel frameworkData into a readable string */
+function formatPurposeWheel(data: PurposeWheelData): string {
+  const parts: string[] = [];
+  if (data.impactType) parts.push(`Impact Type: ${data.impactType}`);
+  if (data.mechanismCategory) parts.push(`Mechanism: ${data.mechanismCategory}`);
+  if (data.mechanism) parts.push(`How: ${data.mechanism}`);
+  if (data.pressureTest) parts.push(`Pressure Test: ${data.pressureTest}`);
+  return parts.join('. ');
+}
+
+/** Extract a text summary from content JSON (typically has a "text" or "body" field) */
+function extractContentText(content: unknown): string | null {
+  if (!content) return null;
+  if (typeof content === 'string') return content;
+  if (typeof content === 'object') {
+    const obj = content as Record<string, unknown>;
+    // Common content shapes: { text: "..." }, { body: "..." }, { summary: "..." }
+    if (typeof obj.text === 'string' && obj.text) return obj.text;
+    if (typeof obj.body === 'string' && obj.body) return obj.body;
+    if (typeof obj.summary === 'string' && obj.summary) return obj.summary;
+  }
+  return null;
+}
+
+/** Extract Core Values from frameworkData (BRANDHOUSE_VALUES) */
+function extractCoreValues(data: unknown): string[] | null {
+  if (!data || typeof data !== 'object') return null;
+  const obj = data as Record<string, unknown>;
+  // Shape: { values: [{ name: "...", description: "..." }] } or { values: ["..."] }
+  if (Array.isArray(obj.values) && obj.values.length > 0) {
+    return obj.values.map((v: unknown) => {
+      if (typeof v === 'string') return v;
+      if (typeof v === 'object' && v !== null) {
+        const val = v as Record<string, unknown>;
+        return typeof val.name === 'string' ? val.name : String(v);
+      }
+      return String(v);
+    });
+  }
+  return null;
+}
+
 // ─── Aggregator ────────────────────────────────────────────
 
 /**
@@ -74,7 +140,15 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
 
     prisma.brandAsset.findMany({
       where: { workspaceId },
-      select: { name: true, category: true, description: true },
+      select: {
+        name: true,
+        slug: true,
+        category: true,
+        description: true,
+        content: true,
+        frameworkType: true,
+        frameworkData: true,
+      },
       orderBy: { updatedAt: 'desc' },
       take: 20,
     }),
@@ -101,13 +175,10 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
     }),
   ]);
 
-  // Extract values from brand assets by category
-  const assetsByCategory = new Map<string, string[]>();
+  // Build asset lookup by slug for reliable mapping
+  const assetBySlug = new Map<string, typeof brandAssets[0]>();
   for (const asset of brandAssets) {
-    const key = asset.category;
-    const existing = assetsByCategory.get(key) ?? [];
-    existing.push(asset.description || asset.name);
-    assetsByCategory.set(key, existing);
+    if (asset.slug) assetBySlug.set(asset.slug, asset);
   }
 
   // Build context block
@@ -115,16 +186,94 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
     brandName: workspace?.name,
   };
 
-  // Mission & Vision from brand assets
-  const missionAssets = assetsByCategory.get('MISSION') ?? assetsByCategory.get('PURPOSE');
-  if (missionAssets?.length) ctx.brandMission = missionAssets[0];
+  // ─── Map brand assets by slug to context fields ──────────
 
-  const visionAssets = assetsByCategory.get('VISION');
-  if (visionAssets?.length) ctx.brandVision = visionAssets[0];
+  // Purpose Statement (PURPOSE_WHEEL)
+  const purpose = assetBySlug.get('purpose-statement');
+  if (purpose) {
+    const contentText = extractContentText(purpose.content);
+    const fwData = purpose.frameworkData as PurposeWheelData | null;
+    const parts: string[] = [];
+    if (contentText) parts.push(contentText);
+    if (fwData) {
+      const formatted = formatPurposeWheel(fwData);
+      if (formatted) parts.push(formatted);
+    }
+    if (parts.length) ctx.brandPurpose = parts.join('. ');
+  }
 
-  // Values
-  const valueAssets = assetsByCategory.get('VALUES') ?? assetsByCategory.get('CORE_VALUES');
-  if (valueAssets?.length) ctx.brandValues = valueAssets;
+  // Golden Circle (WHY/HOW/WHAT)
+  const goldenCircle = assetBySlug.get('golden-circle');
+  if (goldenCircle?.frameworkData) {
+    const formatted = formatGoldenCircle(goldenCircle.frameworkData as GoldenCircleData);
+    if (formatted) ctx.goldenCircle = formatted;
+  }
+
+  // Brand Essence
+  const essence = assetBySlug.get('brand-essence');
+  if (essence) {
+    ctx.brandEssence = extractContentText(essence.content) || essence.description || undefined;
+  }
+
+  // Brand Promise
+  const promise = assetBySlug.get('brand-promise');
+  if (promise) {
+    ctx.brandPromise = extractContentText(promise.content) || promise.description || undefined;
+  }
+
+  // Mission Statement
+  const mission = assetBySlug.get('mission-statement');
+  if (mission) {
+    ctx.brandMission = extractContentText(mission.content) || mission.description || undefined;
+  }
+
+  // Vision Statement
+  const vision = assetBySlug.get('vision-statement');
+  if (vision) {
+    ctx.brandVision = extractContentText(vision.content) || vision.description || undefined;
+  }
+
+  // Brand Archetype
+  const archetype = assetBySlug.get('brand-archetype');
+  if (archetype) {
+    ctx.brandArchetype = extractContentText(archetype.content) || archetype.description || undefined;
+  }
+
+  // Brand Personality
+  const personality = assetBySlug.get('brand-personality');
+  if (personality) {
+    ctx.brandPersonality = extractContentText(personality.content) || personality.description || undefined;
+  }
+
+  // Brand Story
+  const story = assetBySlug.get('brand-story');
+  if (story) {
+    ctx.brandStory = extractContentText(story.content) || story.description || undefined;
+  }
+
+  // Core Values (BRANDHOUSE_VALUES)
+  const values = assetBySlug.get('core-values');
+  if (values) {
+    const extracted = extractCoreValues(values.frameworkData);
+    if (extracted?.length) {
+      ctx.brandValues = extracted;
+    } else {
+      const contentText = extractContentText(values.content);
+      if (contentText) ctx.brandValues = [contentText];
+    }
+  }
+
+  // Transformative Goals
+  const goals = assetBySlug.get('transformative-goals');
+  if (goals) {
+    ctx.transformativeGoals = extractContentText(goals.content) || goals.description || undefined;
+  }
+
+  // Social Relevancy (ESG)
+  const social = assetBySlug.get('social-relevancy');
+  if (social) {
+    ctx.socialRelevancy = extractContentText(social.content) || social.description || undefined;
+  }
 
   // Target audience from personas
   if (personas.length > 0) {
