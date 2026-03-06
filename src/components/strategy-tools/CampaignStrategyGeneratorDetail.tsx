@@ -237,8 +237,8 @@ export function CampaignStrategyGeneratorDetail({
     
     // Show feedback
     alert(isUpdate 
-      ? `✓ Strategie "${newStrategy.name}" opgeslagen!`
-      : `✓ Nieuwe strategie "${newStrategy.name}" aangemaakt!`
+      ? `Strategy "${newStrategy.name}" saved!`
+      : `New strategy "${newStrategy.name}" created!`
     );
   };
 
@@ -327,7 +327,7 @@ export function CampaignStrategyGeneratorDetail({
     
     // In real app: trigger export
     console.log('Exporting strategy:', strategy);
-    alert(`Exporting "${strategy.name}"... (Dit zou in de echte app een PDF/Word export triggeren)`);
+    alert(`Exporting "${strategy.name}"... (In the real app this would trigger a PDF/Word export)`);
   };
 
   // Recalculate campaign with current strategic inputs
@@ -378,7 +378,7 @@ export function CampaignStrategyGeneratorDetail({
     // Switch to the new recalculated version
     setCurrentStrategyId(recalculatedStrategy.id);
     
-    alert(`✓ Nieuwe versie "${recalculatedStrategy.name}" aangemaakt met huidige strategische input!`);
+    alert(`New version "${recalculatedStrategy.name}" created with current strategic input!`);
   };
 
   // CRITICAL: Decision Quality Pre-Flight Check
@@ -395,13 +395,13 @@ export function CampaignStrategyGeneratorDetail({
     // If do-not-decide, show strong warning with confirmation
     if (decision.status === 'do-not-decide') {
       const confirmed = window.confirm(
-        `⚠️ DO NOT DECIDE - Strategisch Risico\n\n` +
+        `DO NOT DECIDE - Strategic Risk\n\n` +
         `${decision.rootCauses.join('; ')}\n\n` +
-        `GEVOLGEN:\n${decision.risks.join('\n')}\n\n` +
-        `Deze campagne is gebaseerd op onvoldoende gevalideerde merkdata. ` +
-        `Strategische beslissingen zijn speculatief en hebben hoog risico op mislukken.\n\n` +
-        `AANBEVELING: ${decision.primaryAction}\n\n` +
-        `Wil je toch doorgaan? (Dit wordt sterk afgeraden)`
+        `CONSEQUENCES:\n${decision.risks.join('\n')}\n\n` +
+        `This campaign is based on insufficiently validated brand data. ` +
+        `Strategic decisions are speculative and have a high risk of failure.\n\n` +
+        `RECOMMENDATION: ${decision.primaryAction}\n\n` +
+        `Do you want to proceed anyway? (This is strongly discouraged)`
       );
 
       if (!confirmed) {
@@ -412,13 +412,13 @@ export function CampaignStrategyGeneratorDetail({
     // If decision-at-risk, show lighter warning with confirmation
     if (decision.status === 'decision-at-risk') {
       const confirmed = window.confirm(
-        `⚠️ DECISION AT RISK - Verhoogd Risico\n\n` +
+        `DECISION AT RISK - Elevated Risk\n\n` +
         `${decision.rootCauses.join('; ')}\n\n` +
-        `GEVOLGEN:\n${decision.risks.join('\n')}\n\n` +
-        `Deze campagne bevat elementen met beperkte validatie. ` +
-        `Je kunt doorgaan, maar houd rekening met verhoogd risico.\n\n` +
-        `AANBEVELING: ${decision.primaryAction}\n\n` +
-        `Wil je doorgaan of eerst het risico verminderen?`
+        `CONSEQUENCES:\n${decision.risks.join('\n')}\n\n` +
+        `This campaign contains elements with limited validation. ` +
+        `You can proceed, but be aware of the elevated risk.\n\n` +
+        `RECOMMENDATION: ${decision.primaryAction}\n\n` +
+        `Do you want to proceed or reduce the risk first?`
       );
       
       if (!confirmed) {
@@ -529,7 +529,7 @@ export function CampaignStrategyGeneratorDetail({
     return calculateDecisionGate(brandAssets, personas, selectedBrandAssets, selectedPersonas);
   }, [selectedBrandAssets, selectedPersonas]);
 
-  // Check for campaign impacts (nieuwere strategische input)
+  // Check for campaign impacts (newer strategic input)
   const campaignImpacts = React.useMemo(() => {
     const allSelectedAssets = [...selectedBrandAssets, ...selectedPersonas];
     return checkCampaignImpacts('current-campaign', allSelectedAssets);
@@ -681,7 +681,7 @@ export function CampaignStrategyGeneratorDetail({
             {/* Configure Tab */}
             <TabsContent value="configure" className="mt-6">
               <div className="space-y-6">
-                {/* DECISION GATE - Blocks generation if data unsafe (NIEUWE COMPONENT) */}
+                {/* DECISION GATE - Blocks generation if data unsafe */}
                 <DecisionGateWarning
                   status={decisionGate.status}
                   failedItems={decisionGate.failedItems}
@@ -689,21 +689,21 @@ export function CampaignStrategyGeneratorDetail({
                     // Navigate to brand or personas section
                     console.log('Fix item:', itemId, itemType);
                     // In real app, this would navigate to the specific item's detail page
-                    alert(`Navigeer naar ${itemType === 'asset' ? 'Brand Assets' : 'Personas'} sectie om ${itemId} te repareren`);
+                    alert(`Navigate to ${itemType === 'asset' ? 'Brand Assets' : 'Personas'} section to fix ${itemId}`);
                   }}
                 />
 
-                {/* CAMPAIGN IMPACT NOTIFICATION - Nieuwere strategische input beschikbaar */}
+                {/* CAMPAIGN IMPACT NOTIFICATION - Newer strategic input available */}
                 {campaignImpacts.length > 0 && (
                   <CampaignImpactNotification
                     impactAnalyses={campaignImpacts}
                     onRecalculate={() => {
-                      // Trigger regeneration met nieuwere data
+                      // Trigger regeneration with newer data
                       setHasGenerated(false);
-                      alert('Campaign wordt herberekend met de nieuwste strategische input...');
+                      alert('Campaign is being recalculated with the latest strategic input...');
                     }}
                     onDismiss={() => {
-                      // User heeft gezien en kiest ervoor om later te bekijken
+                      // User has seen and chooses to review later
                       console.log('Campaign impact notification dismissed');
                     }}
                   />
@@ -865,13 +865,13 @@ export function CampaignStrategyGeneratorDetail({
                             className={completed === total ? "bg-blue-600" : ""}
                           >
                             {completed === total ? (
-                              <><CheckCircle className="h-3 w-3 mr-1" /> Formulier Compleet</>
+                              <><CheckCircle className="h-3 w-3 mr-1" /> Form Complete</>
                             ) : (
-                              <>{completed}/{total} Velden</>
+                              <>{completed}/{total} Fields</>
                             )}
                           </Badge>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Formulier: {percentage}%
+                            Form: {percentage}%
                           </p>
                         </div>
                       );
@@ -1276,13 +1276,13 @@ export function CampaignStrategyGeneratorDetail({
                             className={completed === total ? "bg-blue-600" : ""}
                           >
                             {completed === total ? (
-                              <><CheckCircle className="h-3 w-3 mr-1" /> Formulier Compleet</>
+                              <><CheckCircle className="h-3 w-3 mr-1" /> Form Complete</>
                             ) : (
-                              <>{completed}/{total} Velden</>
+                              <>{completed}/{total} Fields</>
                             )}
                           </Badge>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Formulier: {percentage}%
+                            Form: {percentage}%
                           </p>
                         </div>
                       );
@@ -1698,15 +1698,15 @@ export function CampaignStrategyGeneratorDetail({
                     <div className="flex-1">
                       <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
                         <Sparkles className="h-5 w-5 text-primary" />
-                        {decisionGate.status === 'blocked' ? 'Generatie Geblokkeerd' : 'Ready to Generate'}
+                        {decisionGate.status === 'blocked' ? 'Generation Blocked' : 'Ready to Generate'}
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        {decisionGate.status === 'blocked' 
-                          ? 'Repareer eerst de geblokkeerde items hierboven om te kunnen genereren.'
-                          : `Formulier is ${readinessScore}% ingevuld. ${
-                              readinessScore < 60 
-                                ? ' Vul meer velden in om generatie te ontgrendelen.' 
-                                : ' Klik om je campagne strategie te genereren.'
+                        {decisionGate.status === 'blocked'
+                          ? 'Fix the blocked items above before you can generate.'
+                          : `Form is ${readinessScore}% complete. ${
+                              readinessScore < 60
+                                ? ' Fill in more fields to unlock generation.'
+                                : ' Click to generate your campaign strategy.'
                             }`
                         }
                       </p>
@@ -1719,7 +1719,7 @@ export function CampaignStrategyGeneratorDetail({
                         size="lg"
                       >
                         <Sparkles className="h-4 w-4" />
-                        {decisionGate.status === 'blocked' ? 'Generatie Geblokkeerd' : 'Generate Strategy'}
+                        {decisionGate.status === 'blocked' ? 'Generation Blocked' : 'Generate Strategy'}
                       </Button>
                       {(campaignConfig.name || campaignConfig.objective) && (
                         <Button 
@@ -1738,17 +1738,17 @@ export function CampaignStrategyGeneratorDetail({
                   {decisionGate.status === 'blocked' && (
                     <div className="mt-4 p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border-2 border-red-200">
                       <p className="text-sm font-semibold text-red-900 dark:text-red-100 mb-1">
-                        🚫 Generate button is uitgeschakeld
+                        Generate button is disabled
                       </p>
                       <p className="text-xs text-red-800 dark:text-red-200">
-                        {decisionGate.failedItems.length} {decisionGate.failedItems.length === 1 ? 'item heeft' : 'items hebben'} onvoldoende validatie. Scroll naar boven om te repareren.
+                        {decisionGate.failedItems.length} {decisionGate.failedItems.length === 1 ? 'item has' : 'items have'} insufficient validation. Scroll up to fix.
                       </p>
                     </div>
                   )}
                   {readinessScore < 100 && readinessScore >= 60 && decisionGate.status !== 'blocked' && (
                     <div className="mt-4 pt-4 border-t">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-medium text-muted-foreground">Formulier Voortgang</span>
+                        <span className="text-xs font-medium text-muted-foreground">Form Progress</span>
                         <span className="text-xs font-semibold">{readinessScore}%</span>
                       </div>
                       <Progress value={readinessScore} className="h-2" />

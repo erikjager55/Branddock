@@ -9,7 +9,7 @@ import type {
   TrendDetectionSource,
 } from '../types/trend-radar.types';
 
-type ActiveTab = 'sources' | 'feed' | 'alerts' | 'activate';
+type ActiveTab = 'feed' | 'alerts' | 'activate';
 
 interface TrendRadarState {
   // Tab
@@ -31,27 +31,22 @@ interface TrendRadarState {
 
   // Selected items
   selectedTrendId: string | null;
-  selectedSourceId: string | null;
   setSelectedTrendId: (id: string | null) => void;
-  setSelectedSourceId: (id: string | null) => void;
 
   // Modals
-  isAddSourceModalOpen: boolean;
-  isEditSourceModalOpen: boolean;
   isAddManualTrendModalOpen: boolean;
-  isScanProgressModalOpen: boolean;
-  openAddSourceModal: () => void;
-  closeAddSourceModal: () => void;
-  openEditSourceModal: (sourceId: string) => void;
-  closeEditSourceModal: () => void;
+  isResearchModalOpen: boolean;
+  isResearchProgressModalOpen: boolean;
   openAddManualTrendModal: () => void;
   closeAddManualTrendModal: () => void;
-  openScanProgressModal: () => void;
-  closeScanProgressModal: () => void;
+  openResearchModal: () => void;
+  closeResearchModal: () => void;
+  openResearchProgressModal: () => void;
+  closeResearchProgressModal: () => void;
 
-  // Scan state
-  scanJobId: string | null;
-  setScanJobId: (id: string | null) => void;
+  // Research state
+  researchJobId: string | null;
+  setResearchJobId: (id: string | null) => void;
 }
 
 export const useTrendRadarStore = create<TrendRadarState>((set) => ({
@@ -81,28 +76,21 @@ export const useTrendRadarStore = create<TrendRadarState>((set) => ({
 
   // Selected items
   selectedTrendId: null,
-  selectedSourceId: null,
   setSelectedTrendId: (id) => set({ selectedTrendId: id }),
-  setSelectedSourceId: (id) => set({ selectedSourceId: id }),
 
   // Modals
-  isAddSourceModalOpen: false,
-  isEditSourceModalOpen: false,
   isAddManualTrendModalOpen: false,
-  isScanProgressModalOpen: false,
-  openAddSourceModal: () => set({ isAddSourceModalOpen: true }),
-  closeAddSourceModal: () => set({ isAddSourceModalOpen: false }),
-  openEditSourceModal: (sourceId) =>
-    set({ isEditSourceModalOpen: true, selectedSourceId: sourceId }),
-  closeEditSourceModal: () =>
-    set({ isEditSourceModalOpen: false, selectedSourceId: null }),
+  isResearchModalOpen: false,
+  isResearchProgressModalOpen: false,
   openAddManualTrendModal: () => set({ isAddManualTrendModalOpen: true }),
   closeAddManualTrendModal: () => set({ isAddManualTrendModalOpen: false }),
-  openScanProgressModal: () => set({ isScanProgressModalOpen: true }),
-  closeScanProgressModal: () =>
-    set({ isScanProgressModalOpen: false, scanJobId: null }),
+  openResearchModal: () => set({ isResearchModalOpen: true }),
+  closeResearchModal: () => set({ isResearchModalOpen: false }),
+  openResearchProgressModal: () => set({ isResearchProgressModalOpen: true }),
+  closeResearchProgressModal: () =>
+    set({ isResearchProgressModalOpen: false, researchJobId: null }),
 
-  // Scan state
-  scanJobId: null,
-  setScanJobId: (id) => set({ scanJobId: id }),
+  // Research state
+  researchJobId: null,
+  setResearchJobId: (id) => set({ researchJobId: id }),
 }));

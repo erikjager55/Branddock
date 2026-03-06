@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
-import { cancelScan } from '@/lib/trend-radar/scanner';
+import { cancelResearch } from '@/lib/trend-radar/researcher';
 
 type RouteParams = { params: Promise<{ jobId: string }> };
 
 /**
- * POST /api/trend-radar/scan/[jobId]/cancel — Cancel a running scan
+ * POST /api/trend-radar/research/[jobId]/cancel — Cancel a running research job
  */
 export async function POST(_req: NextRequest, { params }: RouteParams) {
   const workspaceId = await resolveWorkspaceId();
@@ -14,11 +15,21 @@ export async function POST(_req: NextRequest, { params }: RouteParams) {
   }
 
   const { jobId } = await params;
-  const cancelled = cancelScan(jobId);
+
+  // Verify job belongs to this workspace
+  const job = await prisma.trendResearchJob.findFirst({
+    where: { id: jobId, workspaceId },
+    select: { id: true },
+  });
+  if (!job) {
+    return NextResponse.json({ error: 'Research job not found' }, { status: 404 });
+  }
+
+  const cancelled = cancelResearch(jobId);
 
   if (!cancelled) {
     return NextResponse.json(
-      { error: 'Scan not found or already completed' },
+      { error: 'Research job not found or already completed' },
       { status: 404 },
     );
   }

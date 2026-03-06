@@ -11,7 +11,7 @@ interface TrendActivationCardProps {
 
 export function TrendActivationCard({ trend, onToggle }: TrendActivationCardProps) {
   const activatedDate = trend.activatedAt
-    ? new Date(trend.activatedAt).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })
+    ? new Date(trend.activatedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
     : null;
 
   return (

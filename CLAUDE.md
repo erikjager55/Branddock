@@ -1,5 +1,5 @@
 # BRANDDOCK — Claude Code Context
-## Laatst bijgewerkt: 5 maart 2026 (Trend Radar vervangt Market Insights)
+## Laatst bijgewerkt: 6 maart 2026 (I18N: codebase English translation)
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 
@@ -1718,6 +1718,11 @@ Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 - TR.3: ✅ Frontend — 20+ componenten: TrendRadarPage (4-tab dashboard: sources/feed/alerts/activation), detail page, scan progress modal, add modals
 - TR.4: ✅ Integratie + Cleanup — ~40 oude Market Insights bestanden verwijderd, cross-module updates (brand-context, dashboard, search, studio, campaigns, settings), routing, design tokens, middleware
 - TR.5: ✅ Review — 2 rondes, 5 CRITICAL + 7 WARNING + ~7 MINOR issues gefixt, Prisma enum migratie, 0 openstaande issues
+
+**I18N. Codebase English Translation ✅ VOLLEDIG**
+- I18N.1: ✅ Vertaling — ~80+ bestanden in `src/` vertaald van Nederlands naar Engels via 5 parallelle agenten. UI-strings (labels, buttons, placeholders, empty states, tooltips), JSDoc/comments, `nl-NL` locale → `en-US`, error/toast messages, API route comments.
+- I18N.2: ✅ Review — 3 review-rondes met telkens 2 onafhankelijke review-agenten. Ronde 1: 12 items gevonden + gefixt. Ronde 2: 3 items gevonden + gefixt. Ronde 3: 0 items — verificatie geslaagd.
+- I18N.scope: Buiten scope (bewust Nederlands): CLAUDE.md, TODO.md, PATTERNS.md, `docs/`, `prisma/seed.ts`
 
 **S10-S12. Production Ready**
 - S10: Stripe Billing (checkout, webhooks, plan enforcement, agency model)

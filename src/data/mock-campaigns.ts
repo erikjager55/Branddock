@@ -2,10 +2,10 @@
  * Intentional API fallback — used by CampaignsContext when API is unavailable.
  * Data is served from PostgreSQL via /api/campaigns in production.
  *
- * Dit bestand bevat alle campaign data die wordt gebruikt in de applicatie.
- * Wijzigingen hier worden automatisch gesynchroniseerd tussen:
- * - ActiveCampaignsPage (overzichtspagina)
- * - CampaignWorkspace (detailpagina)
+ * This file contains all campaign data used in the application.
+ * Changes here are automatically synchronized between:
+ * - ActiveCampaignsPage (overview page)
+ * - CampaignWorkspace (detail page)
  */
 
 import type { Campaign, CampaignDeliverable, CampaignAsset } from '../types/campaign';

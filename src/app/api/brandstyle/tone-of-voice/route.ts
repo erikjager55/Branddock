@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 
 // =============================================================
-// GET /api/brandstyle/tone-of-voice — tone of voice sectie
+// GET /api/brandstyle/tone-of-voice — tone of voice section
 // =============================================================
 export async function GET() {
   try {

@@ -1,8 +1,8 @@
 /**
  * COMPONENT: Decision Scan Onboarding
  * 
- * Entry product: Onboarding flow die eindigt in decision status,
- * top 3 risico's, actieplan, en voorbeeldcampagne.
+ * Entry product: Onboarding flow that ends in decision status,
+ * top 3 risks, action plan, and example campaign.
  */
 
 import React, { useState } from 'react';
@@ -58,35 +58,35 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
     overallScore: 62,
     risks: [
       {
-        title: 'Beperkte persona validatie',
+        title: 'Limited persona validation',
         severity: 'high' as const,
-        impact: 'Marketing naar ongevalideerde doelgroepen verhoogt het risico op lage conversie met 45%',
-        action: 'Start user interviews voor top 3 persona segmenten'
+        impact: 'Marketing to unvalidated target audiences increases the risk of low conversion by 45%',
+        action: 'Start user interviews for top 3 persona segments'
       },
       {
-        title: 'Inconsistente brand messaging',
+        title: 'Inconsistent brand messaging',
         severity: 'medium' as const,
-        impact: 'Boodschap is niet consistent getest over verschillende kanalen',
-        action: 'Valideer kernboodschap via A/B testing'
+        impact: 'Messaging has not been consistently tested across different channels',
+        action: 'Validate core messaging via A/B testing'
       },
       {
-        title: 'Verouderde competitive data',
+        title: 'Outdated competitive data',
         severity: 'medium' as const,
-        impact: 'Positionering gebaseerd op 6+ maanden oude marktdata',
+        impact: 'Positioning based on 6+ months old market data',
         action: 'Update competitive analysis'
       }
     ],
     actionPlan: {
       immediate: [
-        'Valideer top 3 personas via user research',
-        'Test kernboodschap in primaire kanalen'
+        'Validate top 3 personas via user research',
+        'Test core messaging in primary channels'
       ],
       shortTerm: [
-        'Update competitive positioning analyse',
-        'Voer brand perception study uit'
+        'Update competitive positioning analysis',
+        'Conduct brand perception study'
       ],
       ongoing: [
-        'Implementeer kwartaal research reviews',
+        'Implement quarterly research reviews',
         'Monitor decision quality metrics'
       ]
     },
@@ -95,8 +95,8 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
       objective: 'product-launch',
       confidenceScore: 58,
       warnings: [
-        'Onvoldoende validatie van doelgroep segment',
-        'Beperkte data voor channel effectiviteit'
+        'Insufficient validation of target audience segment',
+        'Limited data on channel effectiveness'
       ]
     }
   };
@@ -117,14 +117,14 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
           <CardContent className="space-y-8">
             {/* Certainty Level */}
             <div className="text-center p-6 rounded-lg bg-muted/50 border">
-              <p className="text-sm font-medium text-muted-foreground mb-1">Besliszekerheid Niveau</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Decision Certainty Level</p>
               <p className="text-2xl font-bold mb-2">{tierInfo.certaintyLevel}</p>
               <p className="text-sm text-muted-foreground">{tierInfo.certaintyDescription}</p>
             </div>
 
             {/* What You'll Get */}
             <div>
-              <h3 className="font-semibold mb-4 text-center">Wat je krijgt na de scan:</h3>
+              <h3 className="font-semibold mb-4 text-center">What you get after the scan:</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {tierInfo.features.map((feature, index) => (
                   <div key={index} className="flex items-start gap-3 p-4 rounded-lg bg-background border">
@@ -138,10 +138,10 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
             {/* Limitations */}
             <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
               <p className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-2">
-                Let op: Dit is een eenmalige scan
+                Note: This is a one-time scan
               </p>
               <p className="text-sm text-amber-800 dark:text-amber-200">
-                Voor continue monitoring, campagne generatie en research tools heb je een Strategic Control abonnement nodig.
+                For continuous monitoring, campaign generation, and research tools you need a Strategic Control subscription.
               </p>
             </div>
 
@@ -152,7 +152,7 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
                 className="flex-1 gap-2"
                 onClick={startScan}
               >
-                Start Gratis Scan
+                Start Free Scan
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>
@@ -164,11 +164,11 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
 
   if (step === 'scanning') {
     const scanStages = [
-      { threshold: 20, label: 'Brand assets analyseren...' },
-      { threshold: 40, label: 'Research coverage berekenen...' },
-      { threshold: 60, label: 'Risico\'s identificeren...' },
-      { threshold: 80, label: 'Actieplan genereren...' },
-      { threshold: 100, label: 'Resultaten voorbereiden...' }
+      { threshold: 20, label: 'Analyzing brand assets...' },
+      { threshold: 40, label: 'Calculating research coverage...' },
+      { threshold: 60, label: 'Identifying risks...' },
+      { threshold: 80, label: 'Generating action plan...' },
+      { threshold: 100, label: 'Preparing results...' }
     ];
 
     const currentStage = scanStages.find(s => scanProgress <= s.threshold) || scanStages[scanStages.length - 1];
@@ -180,9 +180,9 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
             <div className="inline-flex items-center justify-center h-20 w-20 rounded-2xl bg-blue-100 dark:bg-blue-900/50 mx-auto mb-6 animate-pulse">
               <Shield className="h-10 w-10 text-blue-700 dark:text-blue-400" />
             </div>
-            <h2 className="text-2xl font-bold mb-3">Decision Scan Actief</h2>
+            <h2 className="text-2xl font-bold mb-3">Decision Scan Active</h2>
             <p className="text-muted-foreground mb-8">
-              We analyseren je strategische besluitvorming...
+              We are analyzing your strategic decision-making...
             </p>
 
             <div className="space-y-4">
@@ -228,9 +228,9 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-2xl mb-2">Je Decision Scan Resultaten</CardTitle>
+              <CardTitle className="text-2xl mb-2">Your Decision Scan Results</CardTitle>
               <CardDescription>
-                Inzicht in de kwaliteit van je strategische besluitvorming
+                Insight into the quality of your strategic decision-making
               </CardDescription>
             </div>
             <Badge className={tierInfo.color.badge} variant="outline">
@@ -255,7 +255,7 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
             </p>
             <p className="font-semibold mb-1">Decision at Risk</p>
             <p className="text-sm text-muted-foreground">
-              Je strategische beslissingen hebben matige validatie. Verhoogd risico op suboptimale resultaten.
+              Your strategic decisions have moderate validation. Increased risk of suboptimal outcomes.
             </p>
           </div>
         </CardContent>
@@ -266,7 +266,7 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
-            Top 3 Strategische Risico's
+            Top 3 Strategic Risks
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -280,13 +280,13 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="font-semibold text-sm">{risk.title}</h4>
                     <Badge className={getSeverityColor(risk.severity)} variant="outline">
-                      {risk.severity === 'high' ? 'Hoog' : 'Middel'}
+                      {risk.severity === 'high' ? 'High' : 'Medium'}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-2">{risk.impact}</p>
                   <div className="p-2 rounded bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
                     <p className="text-xs font-medium text-blue-900 dark:text-blue-100">
-                      Aanbevolen actie: {risk.action}
+                      Recommended action: {risk.action}
                     </p>
                   </div>
                 </div>
@@ -301,12 +301,12 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ListChecks className="h-5 w-5" />
-            Jouw Actieplan
+            Your Action Plan
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">Directe Acties</p>
+            <p className="text-sm font-medium text-muted-foreground mb-2">Immediate Actions</p>
             <div className="space-y-2">
               {scanResults.actionPlan.immediate.map((action, index) => (
                 <div key={index} className="flex items-start gap-2 p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
@@ -318,7 +318,7 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
           </div>
 
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">Korte Termijn (1-3 maanden)</p>
+            <p className="text-sm font-medium text-muted-foreground mb-2">Short Term (1-3 months)</p>
             <div className="space-y-2">
               {scanResults.actionPlan.shortTerm.map((action, index) => (
                 <div key={index} className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
@@ -330,7 +330,7 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
           </div>
 
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-2">Continu Proces</p>
+            <p className="text-sm font-medium text-muted-foreground mb-2">Ongoing Process</p>
             <div className="space-y-2">
               {scanResults.actionPlan.ongoing.map((action, index) => (
                 <div key={index} className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
@@ -348,10 +348,10 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
-            Voorbeeld Campagne
+            Example Campaign
           </CardTitle>
           <CardDescription>
-            Zo zou een campagne er nu uitzien met je huidige decision quality
+            This is how a campaign would look with your current decision quality
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -380,10 +380,10 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
 
           <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800">
             <p className="text-sm font-medium text-purple-900 dark:text-purple-100 mb-2">
-              Wil je campagnes genereren met hogere confidence scores?
+              Want to generate campaigns with higher confidence scores?
             </p>
             <p className="text-sm text-purple-800 dark:text-purple-200 mb-3">
-              Met Strategic Control krijg je toegang tot de volledige decision engine, research tools, en onbeperkte campagne generatie.
+              With Strategic Control you get access to the full decision engine, research tools, and unlimited campaign generation.
             </p>
             <Button
               variant="default"
@@ -391,7 +391,7 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
               className="w-full gap-2"
               onClick={onUpgrade}
             >
-              Upgrade naar Strategic Control
+              Upgrade to Strategic Control
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
@@ -401,10 +401,10 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
       {/* Footer Actions */}
       <div className="flex gap-3">
         <Button variant="outline" onClick={onComplete} className="flex-1">
-          Bekijk in Dashboard
+          View in Dashboard
         </Button>
         <Button onClick={onUpgrade} className="flex-1 gap-2">
-          Upgrade voor Volledige Controle
+          Upgrade for Full Control
           <ArrowRight className="h-4 w-4" />
         </Button>
       </div>

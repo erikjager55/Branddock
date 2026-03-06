@@ -14,6 +14,7 @@ interface ProductImagesSectionProps {
   images: ProductImage[];
   productId: string;
   isEditing?: boolean;
+  isLocked?: boolean;
   onAddImage: () => void;
 }
 
@@ -21,11 +22,13 @@ export function ProductImagesSection({
   images,
   productId,
   isEditing = false,
+  isLocked = false,
   onAddImage,
 }: ProductImagesSectionProps) {
   const updateImage = useUpdateProductImage(productId);
   const deleteImage = useDeleteProductImage(productId);
   const [editingImageId, setEditingImageId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleCategoryChange = (imageId: string, category: string | null) => {
     if (!category) return;
@@ -35,7 +38,13 @@ export function ProductImagesSection({
 
   const handleDelete = (imageId: string) => {
     if (!window.confirm("Delete this image? This cannot be undone.")) return;
-    deleteImage.mutate(imageId);
+    setDeleteError(null);
+    deleteImage.mutate(imageId, {
+      onError: (err) => {
+        const message = err instanceof Error ? err.message : "Failed to delete image";
+        setDeleteError(message);
+      },
+    });
   };
 
   return (
@@ -50,7 +59,7 @@ export function ProductImagesSection({
             <Badge variant="default">{images.length}</Badge>
           )}
         </div>
-        {isEditing && (
+        {!isLocked && (
           <Button
             variant="secondary"
             size="sm"
@@ -62,17 +71,20 @@ export function ProductImagesSection({
         )}
       </div>
 
+      {/* Delete error */}
+      {deleteError && (
+        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+          {deleteError}
+        </div>
+      )}
+
       {/* Grid */}
       {images.length === 0 ? (
         <EmptyState
           icon={ImagePlus}
           title="No images yet"
           description="Add product images to showcase your product visually"
-          action={
-            isEditing
-              ? { label: "Add Image", onClick: onAddImage }
-              : undefined
-          }
+          action={isLocked ? undefined : { label: "Add Image", onClick: onAddImage }}
         />
       ) : (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
@@ -90,20 +102,24 @@ export function ProductImagesSection({
                   loading="lazy"
                 />
 
-                {/* Hover overlay with actions */}
-                {isEditing && (
-                  <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-                    <button
-                      aria-label="Edit image category"
-                      onClick={() =>
-                        setEditingImageId(
-                          editingImageId === image.id ? null : image.id,
-                        )
-                      }
-                      className="rounded-full bg-white p-2 text-gray-700 shadow-sm hover:bg-gray-100 transition-colors"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
+                {/* Hover overlay with actions (hidden when locked) */}
+                {!isLocked && (
+                  <div className={`absolute inset-0 flex items-center justify-center gap-2 bg-black/40 transition-opacity ${
+                    isEditing ? "opacity-0 group-hover:opacity-100 focus-within:opacity-100" : "opacity-0 group-hover:opacity-100"
+                  }`}>
+                    {isEditing && (
+                      <button
+                        aria-label="Edit image category"
+                        onClick={() =>
+                          setEditingImageId(
+                            editingImageId === image.id ? null : image.id,
+                          )
+                        }
+                        className="rounded-full bg-white p-2 text-gray-700 shadow-sm hover:bg-gray-100 transition-colors"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    )}
                     <button
                       aria-label="Delete image"
                       onClick={() => handleDelete(image.id)}

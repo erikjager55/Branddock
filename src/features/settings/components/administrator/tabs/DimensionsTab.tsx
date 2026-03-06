@@ -56,10 +56,10 @@ export function DimensionsTab({
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-800">
-            Dimensies ({dimensions.length})
+            Dimensions ({dimensions.length})
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Elke dimensie bevat een strategische vraag die de AI stelt tijdens de exploration
+            Each dimension contains a strategic question that the AI asks during the exploration
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -70,7 +70,7 @@ export function DimensionsTab({
               icon={RotateCcw}
               onClick={onLoadDefaults}
             >
-              Laad standaard
+              Load defaults
             </Button>
           )}
           <Button
@@ -79,7 +79,7 @@ export function DimensionsTab({
             icon={Plus}
             onClick={addDimension}
           >
-            Dimensie toevoegen
+            Add dimension
           </Button>
         </div>
       </div>
@@ -87,18 +87,18 @@ export function DimensionsTab({
       {/* Dimension cards */}
       {dimensions.length === 0 ? (
         <div className="text-center py-12 border-2 border-dashed border-gray-200 rounded-xl">
-          <p className="text-sm text-gray-400">Nog geen dimensies geconfigureerd.</p>
+          <p className="text-sm text-gray-400">No dimensions configured yet.</p>
           <p className="text-xs text-gray-400 mt-1">
-            Voeg dimensies toe of laad de standaard configuratie.
+            Add dimensions or load the default configuration.
           </p>
           <div className="flex items-center justify-center gap-2 mt-4">
             {onLoadDefaults && (
               <Button variant="secondary" size="sm" icon={RotateCcw} onClick={onLoadDefaults}>
-                Laad standaard dimensies
+                Load default dimensions
               </Button>
             )}
             <Button variant="primary" size="sm" icon={Plus} onClick={addDimension}>
-              Eerste dimensie toevoegen
+              Add first dimension
             </Button>
           </div>
         </div>
@@ -128,7 +128,7 @@ export function DimensionsTab({
           className="flex items-center gap-1.5 text-xs text-teal-600 hover:text-teal-700 font-medium transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
-          Dimensie toevoegen
+          Add dimension
         </button>
       )}
     </div>

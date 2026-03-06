@@ -4,18 +4,14 @@
 
 import type {
   TrendListResponse,
-  SourceListResponse,
   TrendRadarStats,
   DetectedTrendWithMeta,
-  TrendSourceWithMeta,
-  TrendScanJobWithMeta,
-  ScanProgressResponse,
-  CreateSourceBody,
-  UpdateSourceBody,
+  TrendResearchJobResponse,
+  ResearchProgressResponse,
   CreateManualTrendBody,
   UpdateTrendBody,
   TrendListParams,
-  SourceListParams,
+  StartResearchBody,
 } from '../types/trend-radar.types';
 
 const BASE = '/api/trend-radar';
@@ -79,54 +75,28 @@ export function fetchTrendStats(): Promise<TrendRadarStats> {
   return json(`${BASE}/stats`);
 }
 
-// ─── Sources ─────────────────────────────────────────────────
+// ─── Research ────────────────────────────────────────────────
 
-export function fetchSources(params?: SourceListParams): Promise<SourceListResponse> {
-  return json(`${BASE}/sources${qs(params as Record<string, string | number | boolean | undefined> ?? {})}`);
-}
-
-export function fetchSourceById(id: string): Promise<TrendSourceWithMeta> {
-  return json(`${BASE}/sources/${id}`);
-}
-
-export function createSource(body: CreateSourceBody): Promise<TrendSourceWithMeta> {
-  return json(`${BASE}/sources`, {
+export function startResearch(body: StartResearchBody): Promise<TrendResearchJobResponse> {
+  return json(`${BASE}/research`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 }
 
-export function updateSource(id: string, body: UpdateSourceBody): Promise<TrendSourceWithMeta> {
-  return json(`${BASE}/sources/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+export function fetchResearchProgress(jobId: string): Promise<ResearchProgressResponse> {
+  return json(`${BASE}/research/${jobId}`);
 }
 
-export function deleteSource(id: string): Promise<{ success: boolean }> {
-  return json(`${BASE}/sources/${id}`, { method: 'DELETE' });
+export function cancelResearch(jobId: string): Promise<{ success: boolean }> {
+  return json(`${BASE}/research/${jobId}/cancel`, { method: 'POST' });
 }
 
-export function toggleSourcePause(id: string): Promise<TrendSourceWithMeta> {
-  return json(`${BASE}/sources/${id}/pause`, { method: 'PATCH' });
-}
-
-// ─── Scan ────────────────────────────────────────────────────
-
-export function startScan(sourceId?: string): Promise<TrendScanJobWithMeta> {
-  return json(`${BASE}/scan`, {
+export function approveResearchTrends(jobId: string, selectedIndices: number[]): Promise<{ approved: number; total: number }> {
+  return json(`${BASE}/research/${jobId}/approve`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(sourceId ? { sourceId } : {}),
+    body: JSON.stringify({ selectedIndices }),
   });
-}
-
-export function fetchScanProgress(jobId: string): Promise<ScanProgressResponse> {
-  return json(`${BASE}/scan/${jobId}`);
-}
-
-export function cancelScan(jobId: string): Promise<{ success: boolean }> {
-  return json(`${BASE}/scan/${jobId}/cancel`, { method: 'POST' });
 }

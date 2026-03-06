@@ -74,7 +74,7 @@ export function BenefitsSection({
             </button>
           </div>
         </div>
-      ) : (
+      ) : benefits.length > 0 ? (
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {benefits.map((benefit, idx) => (
             <div key={idx} className="flex items-start gap-3">
@@ -85,6 +85,8 @@ export function BenefitsSection({
             </div>
           ))}
         </div>
+      ) : (
+        <p className="text-sm text-gray-400">No benefits added yet</p>
       )}
     </div>
   );

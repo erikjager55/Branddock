@@ -1,7 +1,7 @@
 /**
- * COMPONENT: Chat Assistant (Laag 3)
- * 
- * AI chat voor custom verzoeken en edge cases
+ * COMPONENT: Chat Assistant (Layer 3)
+ *
+ * AI chat for custom requests and edge cases
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -47,14 +47,14 @@ export function ChatAssistant({ campaignConfig, onClose }: ChatAssistantProps) {
     {
       id: '1',
       role: 'assistant',
-      content: `Hoi! Ik heb je campagne strategie "${campaignConfig.name || 'Campaign Strategy'}" gelezen en kan je helpen met:
+      content: `Hi! I've reviewed your campaign strategy "${campaignConfig.name || 'Campaign Strategy'}" and can help you with:
 
-• Custom outputs maken (briefings, plannen, content)
-• Je strategie aanpassen of uitbreiden  
-• Vragen beantwoorden over je campagne
-• Advies geven over specifieke situaties
+• Creating custom outputs (briefings, plans, content)
+• Adjusting or expanding your strategy
+• Answering questions about your campaign
+• Providing advice on specific situations
 
-Waar kan ik je mee helpen?`,
+How can I help you?`,
       timestamp: new Date()
     }
   ]);
@@ -71,11 +71,11 @@ Waar kan ik je mee helpen?`,
   }, [messages]);
 
   const quickActions = [
-    'Maak een influencer brief voor 5 micro-influencers',
-    'Geef me een budget breakdown per kanaal',
-    'Schrijf een pitch email voor de CEO',
-    'Maak een content calendar voor de eerste maand',
-    'Geef me PR talking points voor persberichten'
+    'Create an influencer brief for 5 micro-influencers',
+    'Give me a budget breakdown per channel',
+    'Write a pitch email for the CEO',
+    'Create a content calendar for the first month',
+    'Give me PR talking points for press releases'
   ];
 
   const handleSend = async (messageText?: string) => {
@@ -113,7 +113,7 @@ Waar kan ik je mee helpen?`,
     const lowerInput = userInput.toLowerCase();
 
     if (lowerInput.includes('influencer') || lowerInput.includes('brief')) {
-      return `Ik heb een influencer brief voor je gemaakt! 🎯
+      return `I've created an influencer brief for you!
 
 **INFLUENCER PARTNERSHIP BRIEF**
 
@@ -145,11 +145,11 @@ Waar kan ik je mee helpen?`,
 
 [Download Full Brief] [Email to Team] [Customize]
 
-Wil je dat ik iets aanpas aan deze brief?`;
+Would you like me to adjust anything in this brief?`;
     }
 
     if (lowerInput.includes('budget') || lowerInput.includes('breakdown')) {
-      return `Hier is een gedetailleerde budget breakdown voor je campagne:
+      return `Here is a detailed budget breakdown for your campaign:
 
 **TOTAL BUDGET:** ${campaignConfig.budget}
 
@@ -168,11 +168,11 @@ Wil je dat ik iets aanpas aan deze brief?`;
 • Analytics: 2%
 • Contingency: 3%
 
-Wil je dat ik dit omzet naar een Excel spreadsheet of Google Sheets template?`;
+Would you like me to convert this to an Excel spreadsheet or Google Sheets template?`;
     }
 
     if (lowerInput.includes('ceo') || lowerInput.includes('pitch') || lowerInput.includes('email')) {
-      return `Hier is een pitch email voor je CEO:
+      return `Here is a pitch email for your CEO:
 
 **SUBJECT:** Campaign Approval Request: ${campaignConfig.name}
 
@@ -202,19 +202,19 @@ Best,
 
 [Copy to Clipboard] [Download as Draft]
 
-Wil je dat ik dit aanpas?`;
+Would you like me to adjust this?`;
     }
 
     // Default response
-    return `Interessante vraag! Ik kan je daar zeker mee helpen.
+    return `Interesting question! I can definitely help you with that.
 
-Op basis van je campagne strategie zou ik aanraden om:
+Based on your campaign strategy, I would recommend:
 
-1. **Eerst** je stakeholders te alignen op de kernboodschap
-2. **Dan** de creative brief af te ronden  
-3. **Daarna** te starten met media planning
+1. **First** align your stakeholders on the core message
+2. **Then** finalize the creative brief
+3. **After that** start with media planning
 
-Wil je dat ik een van deze stappen verder voor je uitwerk? Of heb je een andere vraag over je campagne?`;
+Would you like me to elaborate on any of these steps? Or do you have another question about your campaign?`;
   };
 
   const handleCopy = (content: string) => {
@@ -232,9 +232,9 @@ Wil je dat ik een van deze stappen verder voor je uitwerk? Of heb je een andere 
               <Bot className="h-5 w-5 text-white" />
             </div>
             <div>
-              <CardTitle className="text-lg">Campaign Strategy Assistent</CardTitle>
+              <CardTitle className="text-lg">Campaign Strategy Assistant</CardTitle>
               <CardDescription className="text-xs">
-                Context-aware AI die je campagne kent
+                Context-aware AI that knows your campaign
               </CardDescription>
             </div>
           </div>
@@ -310,7 +310,7 @@ Wil je dat ik een van deze stappen verder voor je uitwerk? Of heb je een andere 
                 )}
 
                 <p className="text-xs text-muted-foreground mt-1">
-                  {message.timestamp.toLocaleTimeString('nl-NL', {
+                  {message.timestamp.toLocaleTimeString('en-US', {
                     hour: '2-digit',
                     minute: '2-digit'
                   })}
@@ -376,7 +376,7 @@ Wil je dat ik een van deze stappen verder voor je uitwerk? Of heb je een andere 
                   handleSend();
                 }
               }}
-              placeholder="Typ je vraag of verzoek..."
+              placeholder="Type your question or request..."
               className="min-h-[60px] max-h-[120px] resize-none"
               disabled={isTyping}
             />
@@ -390,7 +390,7 @@ Wil je dat ik een van deze stappen verder voor je uitwerk? Of heb je een andere 
             </Button>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            De assistent kent je volledige campagne strategie. Press Enter to send, Shift+Enter for new line.
+            The assistant knows your complete campaign strategy. Press Enter to send, Shift+Enter for new line.
           </p>
         </div>
       </CardContent>

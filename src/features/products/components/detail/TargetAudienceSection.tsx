@@ -1,18 +1,20 @@
 "use client";
 
 import { Users, Plus, X } from "lucide-react";
-import { EmptyState, OptimizedImage } from "@/components/shared";
+import { EmptyState, Button, OptimizedImage } from "@/components/shared";
 
 interface TargetAudienceSectionProps {
   personas: { id: string; name: string; avatarUrl: string | null }[];
   onAdd: () => void;
   onRemove: (personaId: string) => void;
+  isLocked?: boolean;
 }
 
 export function TargetAudienceSection({
   personas,
   onAdd,
   onRemove,
+  isLocked = false,
 }: TargetAudienceSectionProps) {
   const getInitials = (name: string) =>
     name
@@ -31,14 +33,15 @@ export function TargetAudienceSection({
             Target Audience
           </h3>
         </div>
-        {personas.length > 0 && (
-          <button
+        {personas.length > 0 && !isLocked && (
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={Plus}
             onClick={onAdd}
-            className="flex items-center gap-1 text-xs font-medium text-green-600 hover:text-green-700 transition-colors"
           >
-            <Plus className="h-3.5 w-3.5" />
             Add Persona
-          </button>
+          </Button>
         )}
       </div>
 
@@ -60,12 +63,14 @@ export function TargetAudienceSection({
                 }
               />
               <span className="text-sm text-gray-700">{persona.name}</span>
-              <button
-                onClick={() => onRemove(persona.id)}
-                className="ml-0.5 p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="h-3 w-3" />
-              </button>
+              {!isLocked && (
+                <button
+                  onClick={() => onRemove(persona.id)}
+                  className="ml-0.5 p-0.5 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -74,7 +79,7 @@ export function TargetAudienceSection({
           icon={Users}
           title="No personas linked yet"
           description="Link personas to understand who this product serves."
-          action={{
+          action={isLocked ? undefined : {
             label: "+ Add Persona",
             onClick: onAdd,
           }}

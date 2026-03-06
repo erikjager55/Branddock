@@ -17,29 +17,20 @@ import {
   dismissTrend,
   createManualTrend,
   fetchTrendStats,
-  fetchSources,
-  fetchSourceById,
-  createSource,
-  updateSource,
-  deleteSource,
-  toggleSourcePause,
-  startScan,
-  fetchScanProgress,
-  cancelScan,
+  startResearch,
+  fetchResearchProgress,
+  cancelResearch,
+  approveResearchTrends,
 } from '../api/trend-radar.api';
 import type {
   TrendListParams,
-  SourceListParams,
   UpdateTrendBody,
   CreateManualTrendBody,
-  CreateSourceBody,
-  UpdateSourceBody,
   TrendListResponse,
-  SourceListResponse,
   TrendRadarStats,
   DetectedTrendWithMeta,
-  TrendSourceWithMeta,
-  ScanProgressResponse,
+  ResearchProgressResponse,
+  StartResearchBody,
 } from '../types/trend-radar.types';
 import { CACHE_TTL, GC_TIME } from '@/lib/api/cache-keys';
 
@@ -51,10 +42,7 @@ export const trendRadarKeys = {
   trendList: (params?: TrendListParams) => [...trendRadarKeys.trends(), params ?? {}] as const,
   trendDetail: (id: string) => [...trendRadarKeys.trends(), 'detail', id] as const,
   stats: () => [...trendRadarKeys.all, 'stats'] as const,
-  sources: () => [...trendRadarKeys.all, 'sources'] as const,
-  sourceList: (params?: SourceListParams) => [...trendRadarKeys.sources(), params ?? {}] as const,
-  sourceDetail: (id: string) => [...trendRadarKeys.sources(), 'detail', id] as const,
-  scan: (jobId: string) => [...trendRadarKeys.all, 'scan', jobId] as const,
+  research: (jobId: string) => [...trendRadarKeys.all, 'research', jobId] as const,
 };
 
 // ─── Trends ──────────────────────────────────────────────────
@@ -158,99 +146,25 @@ export function useTrendStats(
   });
 }
 
-// ─── Sources ─────────────────────────────────────────────────
+// ─── Research ────────────────────────────────────────────────
 
-export function useSources(
-  params?: SourceListParams,
-  options?: Partial<UseQueryOptions<SourceListResponse>>,
-) {
-  return useQuery({
-    queryKey: trendRadarKeys.sourceList(params),
-    queryFn: () => fetchSources(params),
-    staleTime: CACHE_TTL.OVERVIEW,
-    gcTime: GC_TIME.DETAIL,
-    ...options,
-  });
-}
-
-export function useSourceDetail(
-  id: string | null,
-  options?: Partial<UseQueryOptions<TrendSourceWithMeta>>,
-) {
-  return useQuery({
-    queryKey: trendRadarKeys.sourceDetail(id ?? ''),
-    queryFn: () => fetchSourceById(id!),
-    enabled: !!id,
-    staleTime: CACHE_TTL.DETAIL,
-    gcTime: GC_TIME.DETAIL,
-    ...options,
-  });
-}
-
-export function useCreateSource() {
+export function useStartResearch() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: CreateSourceBody) => createSource(body),
+    mutationFn: (body: StartResearchBody) => startResearch(body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: trendRadarKeys.sources() });
-      qc.invalidateQueries({ queryKey: trendRadarKeys.stats() });
+      qc.invalidateQueries({ queryKey: trendRadarKeys.trends() });
     },
   });
 }
 
-export function useUpdateSource() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: UpdateSourceBody }) => updateSource(id, body),
-    onSuccess: (_data, vars) => {
-      qc.invalidateQueries({ queryKey: trendRadarKeys.sources() });
-      qc.invalidateQueries({ queryKey: trendRadarKeys.sourceDetail(vars.id) });
-    },
-  });
-}
-
-export function useDeleteSource() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => deleteSource(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: trendRadarKeys.sources() });
-      qc.invalidateQueries({ queryKey: trendRadarKeys.stats() });
-    },
-  });
-}
-
-export function useToggleSourcePause() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => toggleSourcePause(id),
-    onSuccess: (_data, id) => {
-      qc.invalidateQueries({ queryKey: trendRadarKeys.sources() });
-      qc.invalidateQueries({ queryKey: trendRadarKeys.sourceDetail(id) });
-      qc.invalidateQueries({ queryKey: trendRadarKeys.stats() });
-    },
-  });
-}
-
-// ─── Scan ────────────────────────────────────────────────────
-
-export function useStartScan() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (sourceId?: string) => startScan(sourceId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: trendRadarKeys.sources() });
-    },
-  });
-}
-
-export function useScanProgress(
+export function useResearchProgress(
   jobId: string | null,
-  options?: Partial<UseQueryOptions<ScanProgressResponse>>,
+  options?: Partial<UseQueryOptions<ResearchProgressResponse>>,
 ) {
   return useQuery({
-    queryKey: trendRadarKeys.scan(jobId ?? ''),
-    queryFn: () => fetchScanProgress(jobId!),
+    queryKey: trendRadarKeys.research(jobId ?? ''),
+    queryFn: () => fetchResearchProgress(jobId!),
     enabled: !!jobId,
     refetchInterval: (query) => {
       const data = query.state.data;
@@ -264,12 +178,24 @@ export function useScanProgress(
   });
 }
 
-export function useCancelScan() {
+export function useCancelResearch() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (jobId: string) => cancelScan(jobId),
+    mutationFn: (jobId: string) => cancelResearch(jobId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: trendRadarKeys.all });
+    },
+  });
+}
+
+export function useApproveResearchTrends() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ jobId, selectedIndices }: { jobId: string; selectedIndices: number[] }) =>
+      approveResearchTrends(jobId, selectedIndices),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: trendRadarKeys.trends() });
+      qc.invalidateQueries({ queryKey: trendRadarKeys.stats() });
     },
   });
 }

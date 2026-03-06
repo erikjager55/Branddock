@@ -1,8 +1,8 @@
 /**
  * Change Impact Context
  * 
- * Globale state voor change tracking en impact analysis.
- * Zorgt ervoor dat alle wijzigingen worden gelogd en impact wordt geanalyseerd.
+ * Global state for change tracking and impact analysis.
+ * Ensures all changes are logged and impact is analyzed.
  */
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -66,7 +66,7 @@ export function ChangeImpactProvider({ children }: { children: ReactNode }) {
   }, [store]);
 
   /**
-   * Track een asset wijziging en analyseer de impact
+   * Track an asset change and analyze the impact
    */
   const trackAssetChange = (
     asset: BrandAsset,
@@ -76,7 +76,7 @@ export function ChangeImpactProvider({ children }: { children: ReactNode }) {
   ) => {
     logger.info(`Tracking change for asset ${asset.id}: ${changeType}`);
 
-    // Creëer change record
+    // Create change record
     const change: AssetChange = {
       id: `change-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       assetId: asset.id,
@@ -89,14 +89,14 @@ export function ChangeImpactProvider({ children }: { children: ReactNode }) {
       coverageChangeAfter: asset.researchCoverage,
     };
 
-    // Analyseer impact
+    // Analyze impact
     const impactAnalysis = ChangeImpactService.analyzeAssetChange(
       change,
       asset,
       previousAsset
     );
 
-    // Creëer notificatie als er impact is
+    // Create notification if there is impact
     let notification: ChangeNotification | undefined;
     if (impactAnalysis.decisionImpact.impactLevel !== 'none') {
       notification = ChangeImpactService.createNotification(
@@ -121,7 +121,7 @@ export function ChangeImpactProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Haal notificaties op, optioneel gefilterd per locatie
+   * Get notifications, optionally filtered by location
    */
   const getNotifications = (location?: 'decision-status' | 'campaign-generator'): ChangeNotification[] => {
     let notifications = store.notifications.filter(n => !n.dismissed);
@@ -136,7 +136,7 @@ export function ChangeImpactProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Markeer notificatie als gezien
+   * Mark notification as seen
    */
   const markNotificationSeen = (notificationId: string) => {
     setStore(prev => ({
@@ -148,7 +148,7 @@ export function ChangeImpactProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Dismiss een notificatie
+   * Dismiss a notification
    */
   const dismissNotification = (notificationId: string) => {
     setStore(prev => ({
@@ -162,20 +162,20 @@ export function ChangeImpactProvider({ children }: { children: ReactNode }) {
   };
 
   /**
-   * Haal de laatste impact analysis op voor een specifiek asset
+   * Get the latest impact analysis for a specific asset
    */
   const getLatestImpactForAsset = (assetId: string): ImpactAnalysis | undefined => {
     return store.impactAnalyses.find(ia => ia.change.assetId === assetId);
   };
 
   /**
-   * Check welke assets in een campagne nieuwere strategische input hebben
+   * Check which assets in a campaign have newer strategic input
    */
   const checkCampaignImpacts = (
     campaignId: string,
     selectedAssets: string[]
   ): ImpactAnalysis[] => {
-    // Vind alle impact analyses voor de geselecteerde assets
+    // Find all impact analyses for the selected assets
     return store.impactAnalyses.filter(ia => 
       selectedAssets.includes(ia.change.assetId) &&
       (ia.decisionImpact.decisionStatusChanged || ia.change.researchAdded)

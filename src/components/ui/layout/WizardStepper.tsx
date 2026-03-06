@@ -11,7 +11,7 @@ interface WizardStep {
 interface WizardStepperProps {
   steps: WizardStep[];
   currentStep: number;
-  /** Klik op stap om te navigeren (optioneel, alleen voor bezochte stappen) */
+  /** Click on a step to navigate (optional, only for visited steps) */
   onStepClick?: (index: number) => void;
   className?: string;
 }

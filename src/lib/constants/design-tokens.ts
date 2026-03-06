@@ -2,33 +2,33 @@
 // BRANDDOCK DESIGN TOKENS — Single Source of Truth
 // ============================================================
 //
-// Dit bestand is de ENIGE bron voor alle visuele constanten.
-// Gebaseerd op Figma design (figma.com/make/WTXNV6zhzsTyYLUOdkFGge)
-// + bestaande HANDOVER documentatie.
+// This file is the ONLY source for all visual constants.
+// Based on Figma design (figma.com/make/WTXNV6zhzsTyYLUOdkFGge)
+// + existing HANDOVER documentation.
 //
-// REGEL: Importeer tokens in elke component. Geen hardcoded kleuren,
-// spacing of typografie buiten dit bestand.
+// RULE: Import tokens in every component. No hardcoded colors,
+// spacing or typography outside this file.
 //
-// Pad: src/lib/constants/design-tokens.ts
-// Laatst bijgewerkt: 13 februari 2026
+// Path: src/lib/constants/design-tokens.ts
+// Last updated: 13 February 2026
 // ============================================================
 
 // ─── LAYOUT TOKENS ─────────────────────────────────────────
 
 export const LAYOUT = {
   sidebar: {
-    /** Breedte van de sidebar — breed genoeg voor volledige labels */
+    /** Width of the sidebar — wide enough for full labels */
     width: 'w-72',               // 288px
     widthPx: 288,
-    /** Collapsed (icon-only) breedte */
+    /** Collapsed (icon-only) width */
     collapsedWidth: 'w-16',      // 64px
     collapsedWidthPx: 64,
-    /** Content margin-left moet gelijk zijn aan sidebar width */
+    /** Content margin-left must equal sidebar width */
     contentOffset: 'ml-72',      // 288px
     collapsedContentOffset: 'ml-16',
-    /** Interne padding */
+    /** Internal padding */
     padding: 'px-4 py-4',
-    /** Individueel nav item */
+    /** Individual nav item */
     item: {
       padding: 'px-3 py-2',
       height: 40,                // ~40px per item
@@ -38,12 +38,12 @@ export const LAYOUT = {
       fontWeight: 'font-medium',
       iconSize: 'w-5 h-5',
     },
-    /** Sectie label (WORKSPACE, STRATEGY, KNOWLEDGE, etc.) */
+    /** Section label (WORKSPACE, STRATEGY, KNOWLEDGE, etc.) */
     sectionLabel: {
       className: 'text-xs font-semibold uppercase tracking-wider text-gray-400',
       spacing: 'mt-6 mb-2 px-3',
     },
-    /** Logo area bovenaan */
+    /** Logo area at top */
     logo: {
       height: 'h-14',           // 56px
       padding: 'px-4',
@@ -69,7 +69,7 @@ export const LAYOUT = {
     badge: {
       className: 'inline-flex items-center justify-center w-5 h-5 text-xs font-medium rounded-full',
       colors: {
-        orange: 'bg-orange-400 text-white',  // Default — Figma standaard
+        orange: 'bg-orange-400 text-white',  // Default — Figma standard
         red: 'bg-red-500 text-white',         // Urgent
         pink: 'bg-pink-400 text-white',       // Brand Alignment
       },
@@ -77,7 +77,7 @@ export const LAYOUT = {
   },
 
   topBar: {
-    /** Hoogte van de top bar */
+    /** Height of the top bar */
     height: 'h-14',               // 56px (Figma)
     heightPx: 56,
     padding: 'px-6',
@@ -86,7 +86,7 @@ export const LAYOUT = {
     bg: 'bg-white',
   },
 
-  /** Breadcrumb bar (onder top bar, boven content) */
+  /** Breadcrumb bar (below top bar, above content) */
   breadcrumbBar: {
     height: 'h-10',              // 40px
     padding: 'px-6 py-2',
@@ -95,10 +95,10 @@ export const LAYOUT = {
   },
 
   content: {
-    /** Maximale breedte van content area */
+    /** Maximum width of content area */
     maxWidth: 'max-w-7xl',       // 1280px
-    /** Standaard padding rondom content */
-    padding: 'p-8',              // 32px — Figma toont ruime spacing
+    /** Default padding around content */
+    padding: 'p-8',              // 32px — Figma shows spacious spacing
     paddingPx: 32,
   },
 
@@ -115,13 +115,13 @@ export const LAYOUT = {
   },
 } as const;
 
-// ─── KLEUR TOKENS ──────────────────────────────────────────
+// ─── COLOR TOKENS ──────────────────────────────────────────
 
 export const COLORS = {
   /**
    * Primary: Teal-600 (#0D9488)
-   * Gebruikt voor: links, active sidebar, focus rings, accents
-   * Dit is de brand kleur die door het hele platform terugkomt.
+   * Used for: links, active sidebar, focus rings, accents
+   * This is the brand color used throughout the platform.
    */
   primary: {
     50: 'teal-50',               // #F0FDFA
@@ -129,7 +129,7 @@ export const COLORS = {
     500: 'teal-500',             // #14B8A6
     600: 'teal-600',             // #0D9488
     700: 'teal-700',             // #0F766E
-    // Directe class helpers
+    // Direct class helpers
     text: 'text-teal-600',
     bg: 'bg-teal-600',
     bgLight: 'bg-teal-50',
@@ -140,7 +140,7 @@ export const COLORS = {
 
   /**
    * CTA / Success: Emerald-500 (#10B981)
-   * Gebruikt voor: primaire buttons, CTA's, success states, progress bars
+   * Used for: primary buttons, CTAs, success states, progress bars
    */
   cta: {
     50: 'emerald-50',            // #ECFDF5
@@ -154,7 +154,7 @@ export const COLORS = {
     border: 'border-emerald-200',
   },
 
-  /** Status kleuren — consistent door hele app */
+  /** Status colors — consistent throughout the app */
   status: {
     success: {
       text: 'text-emerald-500',
@@ -193,43 +193,43 @@ export const COLORS = {
     },
   },
 
-  /** Surface kleuren */
+  /** Surface colors */
   surface: {
     page: 'bg-gray-50',          // #F9FAFB — page background
-    card: 'bg-white',             // Cards en modals
+    card: 'bg-white',             // Cards and modals
     sidebar: 'bg-white',          // Sidebar background
     topBar: 'bg-white',           // Top bar background
     elevated: 'bg-white shadow-sm',
     overlay: 'bg-black/50',       // Modal overlays
   },
 
-  /** Border kleuren */
+  /** Border colors */
   border: {
-    DEFAULT: 'border-gray-200',   // #E5E7EB — standaard borders
-    light: 'border-gray-100',     // #F3F4F6 — subtiele borders
+    DEFAULT: 'border-gray-200',   // #E5E7EB — default borders
+    light: 'border-gray-100',     // #F3F4F6 — subtle borders
     dark: 'border-gray-300',      // #D1D5DB — emphasis borders
     focus: 'border-teal-500',     // Focus state
   },
 
-  /** Tekst kleuren */
+  /** Text colors */
   text: {
-    primary: 'text-gray-900',     // #111827 — headings, namen
+    primary: 'text-gray-900',     // #111827 — headings, names
     secondary: 'text-gray-600',   // #4B5563 — body text
     tertiary: 'text-gray-500',    // #6B7280 — labels, subtitles
     muted: 'text-gray-400',       // #9CA3AF — placeholders, disabled
-    inverse: 'text-white',        // White text op donkere bg
+    inverse: 'text-white',        // White text on dark bg
   },
 } as const;
 
-// ─── TYPOGRAFIE TOKENS ─────────────────────────────────────
+// ─── TYPOGRAPHY TOKENS ────────────────────────────────────
 
 export const TYPOGRAPHY = {
   /** Font family — Inter via Tailwind default */
   fontFamily: 'font-sans',
 
   /**
-   * Text stijlen — direct bruikbaar als className strings.
-   * Combineer met Tailwind: className={TYPOGRAPHY.pageTitle}
+   * Text styles — directly usable as className strings.
+   * Combine with Tailwind: className={TYPOGRAPHY.pageTitle}
    */
   pageTitle: 'text-2xl font-bold text-gray-900',
   pageSubtitle: 'text-sm text-gray-500',
@@ -240,7 +240,7 @@ export const TYPOGRAPHY = {
   label: 'text-xs text-gray-500 uppercase tracking-wider',
   labelSemibold: 'text-xs font-semibold text-gray-500 uppercase tracking-wider',
   caption: 'text-xs text-gray-400',
-  /** Stats / grote nummers */
+  /** Stats / large numbers */
   statValue: 'text-2xl font-bold text-gray-900',
   statLabel: 'text-sm text-gray-500',
   /** Navigation */
@@ -262,39 +262,39 @@ export const TYPOGRAPHY = {
 export const COMPONENTS = {
   // ── Cards ──────────────────────────────────────────────
   card: {
-    /** Standaard card — alleen border, geen shadow */
+    /** Default card — border only, no shadow */
     base: 'bg-white border border-gray-200 rounded-lg',
-    /** Card met padding */
+    /** Card with padding */
     padded: 'bg-white border border-gray-200 rounded-lg p-6',
-    /** Klikbare card met hover effect */
+    /** Clickable card with hover effect */
     hoverable: 'bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow cursor-pointer',
-    /** Card border radius — consistent rounded-lg (8px) conform Figma */
+    /** Card border radius — consistent rounded-lg (8px) per Figma */
     borderRadius: 'rounded-lg',
   },
 
   // ── Buttons ────────────────────────────────────────────
   button: {
-    /** Primaire CTA — emerald, witte tekst */
+    /** Primary CTA — emerald, white text */
     primary: 'bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2',
-    /** Secundaire — bordered, grijze tekst */
+    /** Secondary — bordered, gray text */
     secondary: 'border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2',
-    /** Ghost — geen border, subtiele hover */
+    /** Ghost — no border, subtle hover */
     ghost: 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 px-3 py-2 rounded-lg text-sm transition-colors inline-flex items-center gap-2',
-    /** Danger — rode button voor destructieve acties */
+    /** Danger — red button for destructive actions */
     danger: 'bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2',
-    /** Grote CTA — breder, hoger */
+    /** Large CTA — wider, taller */
     primaryLarge: 'bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2',
     /** Icon-only button */
     icon: 'p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors',
-    /** Disabled state (voeg toe met cn()) */
+    /** Disabled state (add with cn()) */
     disabled: 'opacity-50 cursor-not-allowed pointer-events-none',
   },
 
   // ── Badges ─────────────────────────────────────────────
   badge: {
-    /** Basis badge container */
+    /** Base badge container */
     base: 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
-    /** Kleur varianten */
+    /** Color variants */
     success: 'bg-emerald-50 text-emerald-700',
     warning: 'bg-amber-50 text-amber-700',
     danger: 'bg-red-50 text-red-700',
@@ -304,26 +304,26 @@ export const COMPONENTS = {
     teal: 'bg-teal-50 text-teal-700',
   },
 
-  // ── Input velden ───────────────────────────────────────
+  // ── Input fields ───────────────────────────────────────
   input: {
-    /** Standaard text input */
+    /** Default text input */
     base: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow',
-    /** Search input (met icon ruimte links) */
+    /** Search input (with icon space on left) */
     search: 'w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent',
     /** Textarea */
     textarea: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent',
-    /** Label boven een input */
+    /** Label above an input */
     label: 'block text-sm font-medium text-gray-700 mb-1.5',
     /** Error state */
     error: 'border-red-300 focus:ring-red-500',
-    /** Helper text onder input */
+    /** Helper text below input */
     helperText: 'mt-1.5 text-xs text-gray-500',
     errorText: 'mt-1.5 text-xs text-red-500',
   },
 
   // ── Tabs ───────────────────────────────────────────────
   tabs: {
-    /** Container met bottom border */
+    /** Container with bottom border */
     container: 'flex gap-0 border-b border-gray-200',
     /** Active tab */
     active: 'text-emerald-600 border-b-2 border-emerald-500 pb-3 px-4 text-sm font-medium cursor-pointer',
@@ -341,7 +341,7 @@ export const COMPONENTS = {
   progressBar: {
     track: 'h-2 rounded-full bg-gray-200 w-full overflow-hidden',
     fill: 'h-2 rounded-full transition-all duration-500',
-    /** Fill kleurvarianten */
+    /** Fill color variants */
     fillSuccess: 'bg-emerald-500',
     fillGradient: 'bg-gradient-to-r from-emerald-400 to-teal-500',
     fillAnalysis: 'bg-gradient-to-r from-blue-500 to-purple-500',
@@ -377,7 +377,7 @@ export const COMPONENTS = {
     lg: 'w-12 h-12 rounded-full',
     xl: 'w-16 h-16 rounded-full',
     xxl: 'w-24 h-24 rounded-full',
-    /** Placeholder met initialen */
+    /** Placeholder with initials */
     placeholder: 'bg-emerald-100 text-emerald-700 flex items-center justify-center font-medium',
   },
 
@@ -388,14 +388,14 @@ export const COMPONENTS = {
 } as const;
 
 // ─── PAGE HEADER PATTERN ───────────────────────────────────
-// Figma: Elke pagina heeft icon-cirkel + titel + subtitle + CTA
+// Figma: Every page has icon circle + title + subtitle + CTA
 
 export const PAGE_HEADER = {
-  /** Buitenste container — titel links, CTA rechts */
+  /** Outer container — title left, CTA right */
   container: 'flex items-start justify-between mb-8',
-  /** Groep: icon + titel + subtitle */
+  /** Group: icon + title + subtitle */
   titleGroup: 'flex items-center gap-4',
-  /** Icon cirkel (48px) */
+  /** Icon circle (48px) */
   iconCircle: {
     size: 'w-12 h-12',
     className: 'w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0',
@@ -403,7 +403,7 @@ export const PAGE_HEADER = {
   },
   title: 'text-2xl font-bold text-gray-900',
   subtitle: 'text-sm text-gray-500 mt-0.5',
-  /** CTA button rechts */
+  /** CTA button right */
   cta: 'bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium inline-flex items-center gap-2 transition-colors',
 } as const;
 
@@ -417,22 +417,22 @@ export const BREADCRUMB = {
   item: {
     base: 'flex items-center gap-1.5 transition-colors',
     icon: 'w-4 h-4',
-    /** Klikbaar item (niet de huidige pagina) */
+    /** Clickable item (not the current page) */
     link: 'text-gray-500 hover:text-gray-700 cursor-pointer',
-    /** Huidige pagina (niet klikbaar) */
+    /** Current page (not clickable) */
     current: 'text-gray-900 font-medium',
   },
 } as const;
 
 // ─── STATS CARDS PATTERN ───────────────────────────────────
-// Figma: Consistent 3-5 stat cards per overview pagina
+// Figma: Consistent 3-5 stat cards per overview page
 
 export const STATS_CARD = {
-  /** Grid container — cols stel je in per pagina */
+  /** Grid container — set cols per page */
   container: 'grid gap-4',
-  /** Individuele stat card */
+  /** Individual stat card */
   card: 'bg-white border border-gray-200 rounded-lg p-5',
-  /** Icon in gekleurde cirkel */
+  /** Icon in colored circle */
   iconCircle: {
     size: 'w-10 h-10',
     className: 'w-10 h-10 rounded-full flex items-center justify-center',
@@ -443,7 +443,7 @@ export const STATS_CARD = {
 } as const;
 
 // ─── COMING SOON PLACEHOLDER ───────────────────────────────
-// Vervangt 404 pagina's voor ongebouwde modules
+// Replaces 404 pages for unbuilt modules
 
 export const COMING_SOON = {
   container: 'flex flex-col items-center justify-center min-h-[60vh] text-center px-4',
@@ -454,20 +454,20 @@ export const COMING_SOON = {
   phaseBadge: 'inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full',
 } as const;
 
-// ─── SIDEBAR NAVIGATIE CONFIGURATIE ────────────────────────
-// Volledige navigatiestructuur met icoon-mapping
+// ─── SIDEBAR NAVIGATION CONFIGURATION ─────────────────────
+// Full navigation structure with icon mapping
 
 export type SidebarNavItem = {
   key: string;
   label: string;
-  icon: string;          // Lucide icon naam
+  icon: string;          // Lucide icon name
   href: string;
-  badge?: boolean;       // Toont notificatie badge
+  badge?: boolean;       // Shows notification badge
   badgeColor?: 'orange' | 'red' | 'pink';
 };
 
 export type SidebarSection = {
-  label: string | null;  // null = geen sectie header
+  label: string | null;  // null = no section header
   items: SidebarNavItem[];
 };
 
@@ -518,7 +518,7 @@ export const SIDEBAR_NAV: {
 };
 
 // ─── PAGE ICON MAPPING ─────────────────────────────────────
-// Elke pagina heeft een icon + achtergrondkleur (voor PageHeader + breadcrumbs)
+// Every page has an icon + background color (for PageHeader + breadcrumbs)
 
 export const PAGE_ICONS: Record<string, { icon: string; bgColor: string; iconColor: string }> = {
   'overview':          { icon: 'LayoutDashboard', bgColor: 'bg-blue-50',    iconColor: 'text-blue-500' },
@@ -540,7 +540,7 @@ export const PAGE_ICONS: Record<string, { icon: string; bgColor: string; iconCol
 };
 
 // ─── MODULE METADATA ───────────────────────────────────────
-// Per-module informatie voor Coming Soon pages en headers
+// Per-module information for Coming Soon pages and headers
 
 export const MODULE_META: Record<string, {
   title: string;
@@ -551,97 +551,97 @@ export const MODULE_META: Record<string, {
   'overview': {
     title: 'Dashboard',
     subtitle: 'Strategic overview of your brand research and validation progress',
-    phase: 'Fase 11',
+    phase: 'Phase 11',
     comingSoonDescription: '',
   },
   'campaigns': {
     title: 'Active Campaigns',
     subtitle: 'Manage and track your marketing campaigns',
-    phase: 'Fase 10',
+    phase: 'Phase 10',
     comingSoonDescription: 'Create, manage, and track your marketing campaigns with AI-powered content generation and performance analytics.',
   },
   'content-library': {
     title: 'Content Library',
     subtitle: 'Browse and manage all generated content',
-    phase: 'Fase 10',
+    phase: 'Phase 10',
     comingSoonDescription: 'Your centralized library for all AI-generated and manually created content assets, organized by campaign and type.',
   },
   'brand-foundation': {
     title: 'Brand Foundation',
     subtitle: 'Build your strategic foundation with premium brand tools',
-    phase: 'Fase 1',
+    phase: 'Phase 1',
     comingSoonDescription: '',
   },
   'business-strategy': {
     title: 'Business Strategy',
     subtitle: 'Define and track your strategic business objectives',
-    phase: 'Fase 2',
+    phase: 'Phase 2',
     comingSoonDescription: '',
   },
   'brand-style': {
     title: 'Brandstyle Analyzer',
     subtitle: 'Analyze a website or upload a brand styleguide PDF',
-    phase: 'Fase 3',
+    phase: 'Phase 3',
     comingSoonDescription: '',
   },
   'personas': {
     title: 'Personas',
     subtitle: 'Research-based target audience profiles',
-    phase: 'Fase 4',
+    phase: 'Phase 4',
     comingSoonDescription: 'Create detailed personas with AI-powered analysis, chat with your personas, and validate them through multiple research methods.',
   },
   'products': {
     title: 'Products & Services',
     subtitle: 'Define and manage your product portfolio',
-    phase: 'Fase 5',
+    phase: 'Phase 5',
     comingSoonDescription: 'Document your products and services with feature matrices, pricing tiers, competitive positioning, and brand alignment scores.',
   },
   'trend-radar': {
     title: 'Trend Radar',
     subtitle: 'Monitor market trends from your sources',
-    phase: 'Fase 6',
+    phase: 'Phase 6',
     comingSoonDescription: 'AI-powered trend monitoring with automatic source scanning, trend detection, and activation for brand context.',
   },
   'knowledge-library': {
     title: 'Knowledge Library',
     subtitle: 'Your centralized brand knowledge base',
-    phase: 'Fase 7',
+    phase: 'Phase 7',
     comingSoonDescription: 'A searchable library of all your brand knowledge: documents, research findings, brand guidelines, and AI-generated insights.',
   },
   'brand-alignment': {
     title: 'Brand Alignment',
     subtitle: 'Check consistency across all brand assets',
-    phase: 'Fase 8',
+    phase: 'Phase 8',
     comingSoonDescription: 'Automated brand consistency checker that identifies misalignments across your brand assets and provides AI-powered fix suggestions.',
   },
   'research-hub': {
     title: 'Research Hub',
     subtitle: 'Plan and manage brand research activities',
-    phase: 'Fase 9',
+    phase: 'Phase 9',
     comingSoonDescription: 'Your research command center: plan studies, manage participants, analyze results, and track validation progress across all brand assets.',
   },
   'research-bundles': {
     title: 'Research Bundles',
     subtitle: 'Pre-configured research packages',
-    phase: 'Fase 9',
+    phase: 'Phase 9',
     comingSoonDescription: 'Purchase pre-configured research bundles that combine multiple validation methods for comprehensive brand insights.',
   },
   'custom-validations': {
     title: 'Custom Validations',
     subtitle: 'Build custom research configurations',
-    phase: 'Fase 9',
+    phase: 'Phase 9',
     comingSoonDescription: 'Design custom validation workflows tailored to your specific research needs and brand objectives.',
   },
   'settings': {
     title: 'Settings',
     subtitle: 'Account, team, billing, and preferences',
-    phase: 'Fase 12',
+    phase: 'Phase 12',
     comingSoonDescription: 'Manage your account settings, team members, billing, notifications, and appearance preferences.',
   },
   'help': {
     title: 'Help & Support',
     subtitle: 'Documentation, tutorials, and contact support',
-    phase: 'Fase 12',
+    phase: 'Phase 12',
     comingSoonDescription: 'Browse help articles, watch tutorials, and contact our support team for assistance.',
   },
 };
@@ -727,15 +727,15 @@ export const DASHBOARD_TOKENS = {
 } as const;
 
 // ─── HELPER: cn() ──────────────────────────────────────────
-// Utility om meerdere class strings samen te voegen (simpele versie)
-// Voor productie: gebruik clsx of tailwind-merge
+// Utility to merge multiple class strings (simple version)
+// For production: use clsx or tailwind-merge
 
 export function cn(...classes: (string | undefined | null | false)[]): string {
   return classes.filter(Boolean).join(' ');
 }
 
 // ============================================================
-// PATTERN LIBRARY TOKENS — Gesynchroniseerd met Figma Reference
+// PATTERN LIBRARY TOKENS — Synchronized with Figma Reference
 // ============================================================
 
 // --- MODULE GRADIENTS ---
@@ -898,14 +898,14 @@ export function getStatusColors(status: keyof typeof STATUS_COLORS) {
   return STATUS_COLORS[status];
 }
 
-// --- SELECTION STATES (voor SelectionCard) ---
+// --- SELECTION STATES (for SelectionCard) ---
 export const SELECTION_STATES = {
   default: 'rounded-xl border border-border p-4 hover:border-primary/40 cursor-pointer transition-all',
   selected: 'rounded-xl border-2 border-primary bg-primary/5 p-4',
   disabled: 'rounded-xl border border-border p-4 opacity-50 cursor-not-allowed',
 } as const;
 
-// --- SEVERITY COLORS (voor IssueCard, Brand Alignment) ---
+// --- SEVERITY COLORS (for IssueCard, Brand Alignment) ---
 export const SEVERITY_COLORS = {
   critical: {
     badge: 'bg-red-100 text-red-700',
@@ -924,7 +924,7 @@ export const SEVERITY_COLORS = {
   },
 } as const;
 
-// --- CONFIDENCE COLORS (voor validation methods) ---
+// --- CONFIDENCE COLORS (for validation methods) ---
 export const CONFIDENCE_COLORS = {
   low:         { badge: 'bg-red-50 text-red-700 border border-red-200' },
   medium:      { badge: 'bg-yellow-50 text-yellow-700 border border-yellow-200' },
@@ -932,7 +932,7 @@ export const CONFIDENCE_COLORS = {
   high:        { badge: 'bg-green-50 text-green-700 border border-green-200' },
 } as const;
 
-// --- RECOMMENDATION BLOCK (voor AI aanbevelingen) ---
+// --- RECOMMENDATION BLOCK (for AI recommendations) ---
 export const RECOMMENDATION_BLOCK = {
   wrapper: 'bg-primary/5 rounded-lg p-4 mt-4',
   icon: 'text-primary',

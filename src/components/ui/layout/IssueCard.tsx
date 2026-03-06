@@ -16,14 +16,14 @@ const SEVERITY_LABELS: Record<Severity, string> = {
 interface IssueCardProps {
   severity: Severity;
   title: string;
-  /** Bijv. "Personas → Tech-Savvy Millennial" */
+  /** E.g. "Personas → Tech-Savvy Millennial" */
   subtitle?: string;
   description: string;
-  /** Tags die conflicten tonen */
+  /** Tags showing conflicts */
   conflictsWith?: string[];
-  /** AI aanbeveling tekst */
+  /** AI recommendation text */
   recommendation?: string;
-  /** Action links/buttons onderaan */
+  /** Action links/buttons at the bottom */
   actions?: ReactNode;
   className?: string;
   'data-testid'?: string;

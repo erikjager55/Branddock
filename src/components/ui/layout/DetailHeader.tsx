@@ -17,7 +17,7 @@ interface DetailHeaderProps {
 }
 
 export function DetailHeader({
-  onBack, backLabel = 'Terug', title, subtitle, badges, actions, avatar
+  onBack, backLabel = 'Back', title, subtitle, badges, actions, avatar
 }: DetailHeaderProps) {
   return (
     <div className="mb-6">

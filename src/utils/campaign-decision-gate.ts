@@ -2,10 +2,10 @@ import { BrandAsset } from '../types/brand-asset';
 /**
  * UTILITY: Campaign Decision Gate
  *
- * Bepaalt of campaign generation safe is op basis van selected items.
- * Blokkeert generatie bij blocked items (<50% coverage).
+ * Determines whether campaign generation is safe based on selected items.
+ * Blocks generation for blocked items (<50% coverage).
  *
- * DOEL: Voorkom campagnes gebouwd op onbetrouwbare data
+ * PURPOSE: Prevent campaigns built on unreliable data
  */
 
 import { calculateDecisionStatus, ResearchItem } from './decision-status-calculator';
@@ -50,7 +50,7 @@ export function calculateDecisionGate(
     if (!asset) return;
 
     const decisionStatus = calculateDecisionStatus(asset);
-    
+
     if (decisionStatus.status === 'blocked') {
       failedItems.push({
         id: asset.id,
@@ -78,7 +78,7 @@ export function calculateDecisionGate(
     if (!persona) return;
 
     const decisionStatus = calculateDecisionStatus(persona);
-    
+
     if (decisionStatus.status === 'blocked') {
       failedItems.push({
         id: persona.id,
@@ -132,27 +132,27 @@ export function calculateDecisionGate(
 
 /**
  * BUSINESS LOGIC:
- * 
+ *
  * 1. BLOCKED STATE (canProceed: false)
- *    - ≥1 item met <50% coverage
+ *    - >= 1 item with <50% coverage
  *    - Generate button disabled
- *    - Rode waarschuwing
- *    - Moet eerst gefixed worden
- * 
+ *    - Red warning
+ *    - Must be fixed first
+ *
  * 2. AT-RISK STATE (canProceed: true)
- *    - ≥1 item met 50-79% coverage (maar geen blocked)
+ *    - >= 1 item with 50-79% coverage (but none blocked)
  *    - Generate button enabled
- *    - Amber waarschuwing
- *    - Kan doorgaan maar niet aanbevolen
- * 
+ *    - Amber warning
+ *    - Can proceed but not recommended
+ *
  * 3. SAFE STATE (canProceed: true)
- *    - Alle items ≥80% coverage
+ *    - All items >= 80% coverage
  *    - Generate button enabled
- *    - Groene bevestiging
- *    - Veilig om door te gaan
- * 
- * WAAROM DEZE THRESHOLDS:
- * - <50%: Te weinig data voor betrouwbare beslissingen
- * - 50-79%: Bruikbaar maar sub-optimaal
- * - ≥80%: Optimale betrouwbaarheid
+ *    - Green confirmation
+ *    - Safe to proceed
+ *
+ * WHY THESE THRESHOLDS:
+ * - <50%: Too little data for reliable decisions
+ * - 50-79%: Usable but sub-optimal
+ * - >= 80%: Optimal reliability
  */

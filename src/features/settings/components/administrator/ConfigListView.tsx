@@ -69,13 +69,13 @@ export function ConfigListView({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">AI Exploration Configuratie</h2>
+          <h2 className="text-lg font-semibold text-gray-900">AI Exploration Configuration</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            Configureer prompts, dimensies, AI model en context per onderdeel
+            Configure prompts, dimensions, AI model and context per item type
           </p>
         </div>
         <Button variant="primary" size="md" icon={Plus} onClick={onCreateConfig}>
-          Nieuwe configuratie
+          New Configuration
         </Button>
       </div>
 
@@ -111,7 +111,7 @@ export function ConfigListView({
       <SearchInput
         value={search}
         onChange={setSearch}
-        placeholder="Zoek op label of subtype..."
+        placeholder="Search by label or subtype..."
         className="max-w-sm"
       />
 
@@ -119,16 +119,16 @@ export function ConfigListView({
       {filteredConfigs.length === 0 ? (
         <EmptyState
           icon={Bot}
-          title={search ? 'Geen resultaten' : 'Geen configuraties'}
+          title={search ? 'No results' : 'No configurations'}
           description={
             search
-              ? `Geen configuraties gevonden voor "${search}"`
-              : `Er zijn nog geen AI Exploration configuraties voor ${ITEM_TYPE_TABS.find((t) => t.key === activeTab)?.label ?? activeTab}. Het systeem gebruikt standaard instellingen.`
+              ? `No configurations found for "${search}"`
+              : `There are no AI Exploration configurations for ${ITEM_TYPE_TABS.find((t) => t.key === activeTab)?.label ?? activeTab} yet. The system uses default settings.`
           }
           action={
             !search
               ? {
-                  label: 'Nieuwe configuratie',
+                  label: 'New Configuration',
                   onClick: onCreateConfig,
                 }
               : undefined

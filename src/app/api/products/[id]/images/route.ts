@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { resolveWorkspaceId } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
-import { ProductImageCategory } from "@prisma/client";
+import { resolveWorkspaceForProduct } from "@/lib/products/resolve-workspace";
+import type { ProductImageCategory } from "@prisma/client";
 
 const MAX_IMAGES_PER_PRODUCT = 20;
+
+/** Hardcoded enum values — Prisma enums are not available at Next.js runtime */
+const VALID_IMAGE_CATEGORIES: string[] = [
+  "HERO", "LIFESTYLE", "DETAIL", "SCREENSHOT", "FEATURE", "MOCKUP",
+  "PACKAGING", "VARIANT", "GROUP", "DIAGRAM", "PROCESS", "TEAM", "OTHER",
+];
 
 const addImageSchema = z.object({
   url: z.string().url(),
@@ -21,23 +27,15 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const workspaceId = await resolveWorkspaceId();
+    const { id } = await params;
+
+    const workspaceId = await resolveWorkspaceForProduct(id);
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const { id } = await params;
-
     const lockResponse = await requireUnlocked("product", id);
     if (lockResponse) return lockResponse;
-
-    // Verify product belongs to workspace
-    const product = await prisma.product.findFirst({
-      where: { id, workspaceId },
-    });
-    if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
 
     const body = await request.json();
     const parsed = addImageSchema.safeParse(body);
@@ -65,10 +63,9 @@ export async function POST(
     });
     const nextOrder = (lastImage?.sortOrder ?? -1) + 1;
 
-    const validCategories = Object.values(ProductImageCategory) as string[];
-    const category = parsed.data.category && validCategories.includes(parsed.data.category)
+    const category = parsed.data.category && VALID_IMAGE_CATEGORIES.includes(parsed.data.category)
       ? (parsed.data.category as ProductImageCategory)
-      : ProductImageCategory.OTHER;
+      : ("OTHER" as ProductImageCategory);
 
     const image = await prisma.productImage.create({
       data: {

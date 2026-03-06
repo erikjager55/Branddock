@@ -1,8 +1,8 @@
 /**
  * Change Impact Connector
  * 
- * Verbindt BrandAssetsContext met ChangeImpactContext zodat alle asset wijzigingen
- * automatisch worden getracked en geanalyseerd.
+ * Connects BrandAssetsContext with ChangeImpactContext so that all asset changes
+ * are automatically tracked and analyzed.
  */
 
 import { useEffect } from 'react';

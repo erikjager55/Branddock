@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { resolveWorkspaceId } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
-import { ProductImageCategory } from "@prisma/client";
+import { resolveWorkspaceForProduct } from "@/lib/products/resolve-workspace";
+/** Hardcoded enum values — Prisma enums are not available at Next.js runtime */
+const VALID_IMAGE_CATEGORIES: string[] = [
+  "HERO", "LIFESTYLE", "DETAIL", "SCREENSHOT", "FEATURE", "MOCKUP",
+  "PACKAGING", "VARIANT", "GROUP", "DIAGRAM", "PROCESS", "TEAM", "OTHER",
+];
 
 const updateImageSchema = z.object({
   category: z.string().max(50).optional(),
@@ -19,23 +23,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; imageId: string }> },
 ) {
   try {
-    const workspaceId = await resolveWorkspaceId();
+    const { id, imageId } = await params;
+
+    const workspaceId = await resolveWorkspaceForProduct(id);
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const { id, imageId } = await params;
-
     const lockResponse = await requireUnlocked("product", id);
     if (lockResponse) return lockResponse;
-
-    // Verify product belongs to workspace
-    const product = await prisma.product.findFirst({
-      where: { id, workspaceId },
-    });
-    if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
 
     // Verify image belongs to product
     const image = await prisma.productImage.findFirst({
@@ -56,8 +52,7 @@ export async function PATCH(
 
     const data: Record<string, unknown> = {};
     if (parsed.data.category !== undefined) {
-      const validCategories = Object.values(ProductImageCategory) as string[];
-      data.category = validCategories.includes(parsed.data.category)
+      data.category = VALID_IMAGE_CATEGORIES.includes(parsed.data.category)
         ? parsed.data.category
         : "OTHER";
     }
@@ -88,23 +83,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; imageId: string }> },
 ) {
   try {
-    const workspaceId = await resolveWorkspaceId();
+    const { id, imageId } = await params;
+
+    const workspaceId = await resolveWorkspaceForProduct(id);
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const { id, imageId } = await params;
-
     const lockResponse = await requireUnlocked("product", id);
     if (lockResponse) return lockResponse;
-
-    // Verify product belongs to workspace
-    const product = await prisma.product.findFirst({
-      where: { id, workspaceId },
-    });
-    if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
-    }
 
     // Verify image belongs to product
     const image = await prisma.productImage.findFirst({

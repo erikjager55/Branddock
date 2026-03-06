@@ -33,6 +33,7 @@ const CATEGORY_GRADIENTS: Record<AssetCategory, string> = {
   CORE: 'from-[#1FD1B2] to-emerald-500',
   NARRATIVE: 'from-red-500 to-pink-600',
   CULTURE: 'from-yellow-500 to-orange-500',
+  ESG: 'from-teal-500 to-cyan-600',
 };
 
 const CATEGORY_ICONS: Record<AssetCategory, string> = {
@@ -44,6 +45,7 @@ const CATEGORY_ICONS: Record<AssetCategory, string> = {
   CORE: 'Shield',
   NARRATIVE: 'BookOpen',
   CULTURE: 'Users',
+  ESG: 'Leaf',
 };
 
 // ─── Validation method config ───────────────────────────────

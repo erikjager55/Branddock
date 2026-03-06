@@ -1,7 +1,7 @@
 /**
- * COMPONENT: Strategic Report (Laag 1)
- * 
- * Het volledige strategische verslag dat de campagne uitlegt
+ * COMPONENT: Strategic Report (Layer 1)
+ *
+ * The full strategic report that explains the campaign
  */
 
 import React, { useState, useEffect } from 'react';
@@ -491,7 +491,7 @@ export function StrategicReport({
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Campaign in het kort */}
+          {/* Campaign at a glance */}
           <div className="p-4 rounded-lg border-2 border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/10">
             <h3 className="font-semibold mb-3 text-blue-900 dark:text-blue-100">
               Campaign Overview
@@ -582,7 +582,7 @@ export function StrategicReport({
         </CardContent>
       </Card>
 
-      {/* 2. Strategisch Kader */}
+      {/* 2. Strategic Framework */}
       <Card id="section-2" className="scroll-mt-6">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -654,7 +654,7 @@ export function StrategicReport({
         </CardContent>
       </Card>
 
-      {/* 3. Doelgroep & Insights */}
+      {/* 3. Audience & Insights */}
       <Card id="section-3" className="scroll-mt-6">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -719,7 +719,7 @@ export function StrategicReport({
         </CardContent>
       </Card>
 
-      {/* 4. Campagne Aanpak */}
+      {/* 4. Campaign Approach */}
       <Card id="section-4" className="scroll-mt-6">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -788,7 +788,7 @@ export function StrategicReport({
         </CardContent>
       </Card>
 
-      {/* 5. Channel Strategie */}
+      {/* 5. Channel Strategy */}
       <Card id="section-5" className="scroll-mt-6">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -868,7 +868,7 @@ export function StrategicReport({
         </CardContent>
       </Card>
 
-      {/* 6. Meting & Optimalisatie */}
+      {/* 6. Measurement & Optimization */}
       <Card id="section-6" className="scroll-mt-6">
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -1008,7 +1008,7 @@ export function StrategicReport({
         </CardContent>
       </Card>
 
-      {/* 8. Risico's & Aandachtspunten */}
+      {/* 8. Risks & Key Considerations */}
       <Card id="section-8" className="scroll-mt-6">
         <CardHeader>
           <div className="flex items-center gap-2">

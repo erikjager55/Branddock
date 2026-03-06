@@ -84,7 +84,7 @@ export function VersionHistoryCard({ personaId, isLocked }: VersionHistoryCardPr
                   <span>{v.createdBy?.name ?? 'Unknown'}</span>
                   <span>·</span>
                   <span>
-                    {new Date(v.createdAt).toLocaleDateString('nl-NL', {
+                    {new Date(v.createdAt).toLocaleDateString('en-US', {
                       day: 'numeric',
                       month: 'short',
                       hour: '2-digit',

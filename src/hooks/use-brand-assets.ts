@@ -6,7 +6,7 @@ import type {
   CreateBrandAssetBody,
 } from "@/types/brand-asset";
 
-// Query key factory — houdt cache keys consistent
+// Query key factory — keeps cache keys consistent
 export const brandAssetKeys = {
   all: ["brand-assets"] as const,
   list: (workspaceId: string, params?: BrandAssetListParams) =>
@@ -14,10 +14,10 @@ export const brandAssetKeys = {
 };
 
 /**
- * Hook: haal brand assets op met optionele filters.
- * workspaceId wordt alleen gebruikt als cache key; server resolvet workspace via sessie.
+ * Hook: fetch brand assets with optional filters.
+ * workspaceId is only used as cache key; server resolves workspace via session.
  *
- * Gebruik:
+ * Usage:
  *   const { data, isLoading, error } = useBrandAssetsQuery(workspaceId);
  *   const { data } = useBrandAssetsQuery(workspaceId, { category: "STRATEGY" });
  */
@@ -29,15 +29,15 @@ export function useBrandAssetsQuery(
     queryKey: brandAssetKeys.list(workspaceId ?? "", params),
     queryFn: () => fetchBrandAssets(params),
     enabled: !!workspaceId,
-    staleTime: 30_000, // 30s — brand assets wijzigen niet vaak
+    staleTime: 30_000, // 30s — brand assets don't change often
   });
 }
 
 /**
- * Hook: maak een nieuw brand asset aan.
- * Invalidate automatisch de lijst-cache na succes.
+ * Hook: create a new brand asset.
+ * Automatically invalidates the list cache on success.
  *
- * Gebruik:
+ * Usage:
  *   const { mutate, isPending } = useCreateBrandAsset();
  *   mutate({ name: "Brand Promise", category: "STRATEGY" });
  */

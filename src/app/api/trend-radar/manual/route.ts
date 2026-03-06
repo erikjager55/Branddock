@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       workspaceId,
     },
     include: {
-      trendSource: { select: { id: true, name: true, url: true } },
+      researchJob: { select: { id: true, query: true } },
     },
   });
 

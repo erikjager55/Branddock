@@ -56,6 +56,47 @@ function isTrackingPixel(src: string): boolean {
   );
 }
 
+/** Try to add an image to the collection, deduplicating by URL */
+function addImage(
+  images: ScrapedImage[],
+  seen: Set<string>,
+  url: string,
+  alt: string | null,
+  context: ScrapedImage['context'],
+  maxImages: number = 20,
+): boolean {
+  if (images.length >= maxImages) return false;
+  if (seen.has(url)) return false;
+
+  try {
+    const parsed = new URL(url);
+    if (isPrivateHostname(parsed.hostname)) return false;
+  } catch {
+    return false;
+  }
+
+  seen.add(url);
+  images.push({ url, alt, context });
+  return true;
+}
+
+/** Pick the highest-resolution URL from a srcset attribute */
+function bestFromSrcset(srcset: string, baseUrl: string): string | null {
+  let best: { url: string; size: number } | null = null;
+  for (const candidate of srcset.split(',')) {
+    const parts = candidate.trim().split(/\s+/);
+    if (parts.length === 0) continue;
+    const resolved = resolveUrl(parts[0], baseUrl);
+    if (!resolved || resolved.startsWith('data:')) continue;
+    const descriptor = parts[1] ?? '';
+    const size = parseFloat(descriptor) || 0;
+    if (!best || size > best.size) {
+      best = { url: resolved, size };
+    }
+  }
+  return best?.url ?? null;
+}
+
 /**
  * Find product-relevant images from a parsed HTML page.
  * Pattern inspired by brandstyle url-scraper findLogoUrls.
@@ -66,6 +107,7 @@ function findProductImages(
 ): ScrapedImage[] {
   const seen = new Set<string>();
   const images: ScrapedImage[] = [];
+  const MAX_IMAGES = 20;
 
   // 1. OG image (always first if present)
   const ogImage =
@@ -73,25 +115,106 @@ function findProductImages(
     $('meta[name="twitter:image"]').attr('content');
   if (ogImage) {
     const resolved = resolveUrl(ogImage, baseUrl);
-    if (resolved && !seen.has(resolved)) {
-      seen.add(resolved);
-      images.push({
-        url: resolved,
-        alt: $('meta[property="og:image:alt"]').attr('content') ?? null,
-        context: 'og-image',
-      });
+    if (resolved) {
+      addImage(images, seen, resolved,
+        $('meta[property="og:image:alt"]').attr('content') ?? null,
+        'og-image', MAX_IMAGES);
     }
   }
 
-  // 2. <img> tags — filter out noise
+  // 2. JSON-LD structured data (Product, ImageObject)
+  $('script[type="application/ld+json"]').each((_, el) => {
+    if (images.length >= MAX_IMAGES) return false;
+    try {
+      const data = JSON.parse($(el).html() ?? '');
+      const items = Array.isArray(data) ? data : [data];
+      for (const item of items) {
+        // Direct image property
+        const imgProp = item.image ?? item.thumbnailUrl;
+        if (imgProp) {
+          const urls = Array.isArray(imgProp) ? imgProp : [imgProp];
+          for (const u of urls) {
+            const src = typeof u === 'string' ? u : u?.url;
+            if (src) {
+              const resolved = resolveUrl(src, baseUrl);
+              if (resolved) addImage(images, seen, resolved, item.name ?? null, 'product', MAX_IMAGES);
+            }
+          }
+        }
+        // @graph array (common in e-commerce sites)
+        if (Array.isArray(item['@graph'])) {
+          for (const node of item['@graph']) {
+            const nodeImg = node.image ?? node.thumbnailUrl;
+            if (nodeImg) {
+              const urls = Array.isArray(nodeImg) ? nodeImg : [nodeImg];
+              for (const u of urls) {
+                const src = typeof u === 'string' ? u : u?.url;
+                if (src) {
+                  const resolved = resolveUrl(src, baseUrl);
+                  if (resolved) addImage(images, seen, resolved, node.name ?? null, 'product', MAX_IMAGES);
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch {
+      // Invalid JSON — skip
+    }
+  });
+
+  // 3. <picture> / <source> elements
+  $('picture').each((_, pictureEl) => {
+    if (images.length >= MAX_IMAGES) return false;
+
+    // Prefer highest-quality <source> with srcset
+    let bestUrl: string | null = null;
+    $(pictureEl).find('source').each((__, sourceEl) => {
+      const srcset = $(sourceEl).attr('srcset');
+      if (srcset) {
+        const candidate = bestFromSrcset(srcset, baseUrl);
+        if (candidate) bestUrl = candidate;
+      }
+    });
+
+    // Fall back to the <img> inside <picture>
+    if (!bestUrl) {
+      const img = $(pictureEl).find('img').first();
+      const srcset = img.attr('srcset');
+      if (srcset) bestUrl = bestFromSrcset(srcset, baseUrl);
+      if (!bestUrl) {
+        const src = img.attr('src') ?? img.attr('data-src');
+        if (src && !src.startsWith('data:')) bestUrl = resolveUrl(src, baseUrl);
+      }
+    }
+
+    if (bestUrl) {
+      const alt = $(pictureEl).find('img').first().attr('alt')?.trim() || null;
+      addImage(images, seen, bestUrl, alt, 'product', MAX_IMAGES);
+    }
+  });
+
+  // 4. <img> tags — filter out noise
   $('img').each((_, el) => {
-    if (images.length >= 20) return false; // max 20
+    if (images.length >= MAX_IMAGES) return false;
 
-    const src = $(el).attr('src') ?? $(el).attr('data-src') ?? $(el).attr('data-lazy-src');
+    // Try srcset first for higher resolution
+    const srcset = $(el).attr('srcset') ?? $(el).attr('data-srcset');
+    let src: string | null = null;
+    if (srcset) {
+      src = bestFromSrcset(srcset, baseUrl);
+    }
+    if (!src) {
+      const rawSrc = $(el).attr('src')
+        ?? $(el).attr('data-src')
+        ?? $(el).attr('data-lazy-src')
+        ?? $(el).attr('data-original')
+        ?? $(el).attr('data-image-src');
+      if (rawSrc && !rawSrc.startsWith('data:')) {
+        src = resolveUrl(rawSrc, baseUrl);
+      }
+    }
     if (!src) return;
-
-    // Skip base64 data URIs
-    if (src.startsWith('data:')) return;
 
     // Skip tracking pixels
     if (isTrackingPixel(src)) return;
@@ -100,19 +223,6 @@ function findProductImages(
     const width = parseInt($(el).attr('width') ?? '0', 10);
     const height = parseInt($(el).attr('height') ?? '0', 10);
     if ((width > 0 && width < 50) || (height > 0 && height < 50)) return;
-
-    const resolved = resolveUrl(src, baseUrl);
-    if (!resolved || seen.has(resolved)) return;
-
-    // Skip private/internal URLs
-    try {
-      const parsed = new URL(resolved);
-      if (isPrivateHostname(parsed.hostname)) return;
-    } catch {
-      return;
-    }
-
-    seen.add(resolved);
 
     const alt = $(el).attr('alt')?.trim() || null;
     const className = $(el).attr('class') ?? '';
@@ -123,11 +233,7 @@ function findProductImages(
     const productKeywords = ['product', 'hero', 'featured', 'gallery', 'main-image', 'primary'];
     const isProduct = productKeywords.some((kw) => allText.includes(kw));
 
-    images.push({
-      url: resolved,
-      alt,
-      context: isProduct ? 'product' : 'general',
-    });
+    addImage(images, seen, src, alt, isProduct ? 'product' : 'general', MAX_IMAGES);
   });
 
   return images;

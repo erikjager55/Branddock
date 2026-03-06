@@ -4,7 +4,7 @@ import { SPACING } from '@/lib/constants/design-tokens';
 
 interface StatGridProps {
   children: ReactNode;
-  /** Default: 4 columns. Pas aan voor minder stats */
+  /** Default: 4 columns. Adjust for fewer stats */
   columns?: 2 | 3 | 4;
   className?: string;
 }

@@ -47,7 +47,7 @@ function progressColor(percentage: number): 'emerald' | 'amber' | 'red' | 'teal'
 
 function formatDate(dateStr: string): string {
   try {
-    return new Date(dateStr).toLocaleDateString('nl-NL', {
+    return new Date(dateStr).toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',

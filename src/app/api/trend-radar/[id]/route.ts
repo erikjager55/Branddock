@@ -18,7 +18,7 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
   const trend = await prisma.detectedTrend.findFirst({
     where: { id, workspaceId },
     include: {
-      trendSource: { select: { id: true, name: true, url: true, status: true, lastCheckedAt: true } },
+      researchJob: { select: { id: true, query: true } },
       activatedBy: { select: { id: true, name: true } },
     },
   });
@@ -65,7 +65,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     where: { id },
     data,
     include: {
-      trendSource: { select: { id: true, name: true, url: true } },
+      researchJob: { select: { id: true, query: true } },
       activatedBy: { select: { id: true, name: true } },
     },
   });

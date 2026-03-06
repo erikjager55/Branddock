@@ -1,10 +1,10 @@
 /**
- * 🛡️ RUNTIME VALIDATION GUARDS
+ * RUNTIME VALIDATION GUARDS
  * ==============================
- * 
- * Runtime validatie systeem dat component usage controleert en
- * waarschuwingen/errors genereert bij violations van het protection system.
- * 
+ *
+ * Runtime validation system that checks component usage and
+ * generates warnings/errors for violations of the protection system.
+ *
  * FEATURES:
  * - Runtime className validation
  * - Variant whitelist checking

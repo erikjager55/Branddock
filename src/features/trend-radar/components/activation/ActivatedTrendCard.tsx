@@ -13,7 +13,7 @@ interface ActivatedTrendCardProps {
 export function ActivatedTrendCard({ trend, onDeactivate, onClick }: ActivatedTrendCardProps) {
   const categoryConfig = CATEGORY_COLORS[trend.category];
   const activatedDate = trend.activatedAt
-    ? new Date(trend.activatedAt).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })
+    ? new Date(trend.activatedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
     : null;
 
   return (

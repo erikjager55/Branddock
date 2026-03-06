@@ -108,13 +108,13 @@ function formatFieldValue(
 
   // Format hints
   if (hint === 'currency' && typeof value === 'number') {
-    return `\u20AC${value.toLocaleString('nl-NL')}`;
+    return `\u20AC${value.toLocaleString('en-US')}`;
   }
   if (hint === 'percentage' && typeof value === 'number') {
     return `${value}%`;
   }
   if (hint === 'date' && value) {
-    return new Date(value as string).toLocaleDateString('nl-NL');
+    return new Date(value as string).toLocaleDateString('en-US');
   }
 
   // Booleans

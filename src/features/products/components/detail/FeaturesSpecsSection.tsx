@@ -74,7 +74,7 @@ export function FeaturesSpecsSection({
             </button>
           </div>
         </div>
-      ) : (
+      ) : features.length > 0 ? (
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           {features.map((feature, idx) => (
             <div key={idx} className="flex items-start gap-2">
@@ -83,6 +83,8 @@ export function FeaturesSpecsSection({
             </div>
           ))}
         </div>
+      ) : (
+        <p className="text-sm text-gray-400">No features added yet</p>
       )}
     </div>
   );

@@ -5,7 +5,8 @@ import { createGeminiStructuredCompletion } from "@/lib/ai/gemini-client";
 import { getBrandContext } from "@/lib/ai/brand-context";
 import { formatBrandContext } from "@/lib/ai/prompt-templates";
 import {
-  PRODUCT_ANALYSIS_SYSTEM_PROMPT,
+  getProductAnalysisSystemPrompt,
+  parseOutputLanguage,
   buildPdfAnalysisPrompt,
   type ProductAnalysisResult,
 } from "@/lib/ai/prompts/product-analysis";
@@ -77,6 +78,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 3. Build prompts and call Gemini 3.1
+    const outputLanguage = parseOutputLanguage(request.headers.get("accept-language"));
+    const systemPrompt = getProductAnalysisSystemPrompt(outputLanguage);
+
     const userPrompt = buildPdfAnalysisPrompt({
       fileName: file.name,
       text: pdfData.text,
@@ -85,7 +89,7 @@ export async function POST(request: NextRequest) {
     });
 
     const result = await createGeminiStructuredCompletion<ProductAnalysisResult>(
-      PRODUCT_ANALYSIS_SYSTEM_PROMPT,
+      systemPrompt,
       userPrompt,
       { temperature: 0.3 },
     );

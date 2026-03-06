@@ -81,8 +81,10 @@ export async function analyzeTrends(params: {
   sourceUrl: string;
   content: string;
   workspaceId: string;
-  trendSourceId: string;
+  researchJobId?: string;
   brandContext?: BrandContextBlock;
+  maxTrends?: number;
+  detectionSource?: 'MANUAL' | 'AI_RESEARCH';
 }): Promise<{
   trends: Array<{
     title: string;
@@ -102,7 +104,7 @@ export async function analyzeTrends(params: {
     howToUse: string[];
     sourceUrl: string;
     detectionSource: string;
-    trendSourceId: string;
+    researchJobId: string | undefined;
     workspaceId: string;
   }>;
   error?: string;
@@ -118,7 +120,7 @@ export async function analyzeTrends(params: {
     const result = await createGeminiStructuredCompletion<TrendAnalysisResult>(
       systemPrompt,
       userPrompt,
-      { temperature: 0.3, maxOutputTokens: 4000 },
+      { temperature: 0.3, maxOutputTokens: 8000 },
     );
 
     if (!result?.trends?.length) {
@@ -133,8 +135,9 @@ export async function analyzeTrends(params: {
     const existingTitles = new Set(existingTrends.map((t) => t.title.toLowerCase()));
     const existingSlugs = new Set(existingTrends.map((t) => t.slug));
 
+    const maxCount = params.maxTrends ?? 5;
     const sanitized = [];
-    for (const raw of result.trends.slice(0, 5)) {
+    for (const raw of result.trends.slice(0, maxCount)) {
       // Skip if duplicate title
       if (existingTitles.has(raw.title.toLowerCase())) continue;
 
@@ -160,8 +163,8 @@ export async function analyzeTrends(params: {
         tags: Array.isArray(raw.tags) ? raw.tags.slice(0, 10) : [],
         howToUse: Array.isArray(raw.howToUse) ? raw.howToUse.slice(0, 5) : [],
         sourceUrl: params.sourceUrl,
-        detectionSource: 'AUTO_SCAN' as const,
-        trendSourceId: params.trendSourceId,
+        detectionSource: params.detectionSource ?? 'AI_RESEARCH',
+        researchJobId: params.researchJobId,
         workspaceId: params.workspaceId,
       });
     }

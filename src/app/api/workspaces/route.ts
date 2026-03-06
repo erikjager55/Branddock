@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
+import { CANONICAL_BRAND_ASSETS, RESEARCH_METHOD_TYPES } from "@/lib/constants/canonical-brand-assets";
 
 // GET /api/workspaces — list workspaces for the active organization
 export async function GET() {
@@ -119,12 +120,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const workspace = await prisma.workspace.create({
-      data: {
-        name,
-        slug,
-        organizationId: activeOrgId,
-      },
+    // Create workspace + 12 canonical brand assets + research methods atomically
+    const workspace = await prisma.$transaction(async (tx) => {
+      const ws = await tx.workspace.create({
+        data: {
+          name,
+          slug,
+          organizationId: activeOrgId,
+        },
+      });
+
+      // Create 12 canonical brand assets with 4 research methods each
+      for (const asset of CANONICAL_BRAND_ASSETS) {
+        await tx.brandAsset.create({
+          data: {
+            name: asset.name,
+            slug: asset.slug,
+            description: asset.description,
+            category: asset.category as never,
+            status: "DRAFT",
+            frameworkType: asset.frameworkType,
+            workspaceId: ws.id,
+            researchMethods: {
+              create: RESEARCH_METHOD_TYPES.map((method) => ({
+                method: method as never,
+                status: "AVAILABLE" as never,
+                progress: 0,
+              })),
+            },
+          },
+        });
+      }
+
+      return ws;
     });
 
     return NextResponse.json(workspace, { status: 201 });

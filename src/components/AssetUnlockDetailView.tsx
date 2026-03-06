@@ -140,8 +140,8 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
 
     // Show success toast
     const method = researchMethods.find((m) => m.id === methodId);
-    toast.success(`${method?.name} voltooid!`, {
-      description: `+${method?.unlocksPotential}% besliskracht toegevoegd aan ${localAsset.type}`,
+    toast.success(`${method?.name} completed!`, {
+      description: `+${method?.unlocksPotential}% decision power added to ${localAsset.type}`,
       duration: 5000,
     });
 
@@ -169,7 +169,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
           bg: 'bg-green-50 dark:bg-green-900/20',
           border: 'border-green-200 dark:border-green-800',
           label: 'Ready to Decide',
-          message: 'Dit asset heeft voldoende onderzoek om strategische beslissingen te maken',
+          message: 'This asset has sufficient research to support strategic decisions',
         };
       case 'decision-at-risk':
         return {
@@ -177,8 +177,8 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
           color: 'text-orange-600',
           bg: 'bg-orange-50 dark:bg-orange-900/20',
           border: 'border-orange-200 dark:border-orange-800',
-          label: 'Meer onderzoek aanbevolen',
-          message: 'Voer extra onderzoek uit om besluitvorming te versterken',
+          label: 'More research recommended',
+          message: 'Perform additional research to strengthen decision-making',
         };
       case 'blocked':
         return {
@@ -186,8 +186,8 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
           color: 'text-red-600',
           bg: 'bg-red-50 dark:bg-red-900/20',
           border: 'border-red-200 dark:border-red-800',
-          label: 'Geblokkeerd',
-          message: 'Minimaal onderzoek is vereist om dit asset te ontgrendelen',
+          label: 'Blocked',
+          message: 'Minimum research is required to unlock this asset',
         };
     }
   };
@@ -209,7 +209,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
               className="mb-4 -ml-2"
             >
               <ArrowLeft className={ICON_SIZES.sm + " mr-2"} />
-              Terug naar overzicht
+              Back to overview
             </Button>
 
             <div className="flex items-start justify-between gap-6">
@@ -234,7 +234,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
                 <CardHeader className="pb-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Zap className={ICON_SIZES.md + " text-[#1FD1B2]"} />
-                    <h3 className={TYPOGRAPHY.cardTitle}>Beslisimpact</h3>
+                    <h3 className={TYPOGRAPHY.cardTitle}>Decision Impact</h3>
                   </div>
                   <div className={TYPOGRAPHY.statLarge + " text-[#1FD1B2]"}>
                     {totalUnlockPotential}%
@@ -250,12 +250,12 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
                     disabled={decisionStatus.status === 'safe-to-decide'}
                   >
                     <Unlock className={ICON_SIZES.md + " mr-2"} />
-                    Ontgrendel met onderzoek
+                    Unlock with research
                   </Button>
                   <p className={TYPOGRAPHY.caption + " text-center mt-2"}>
-                    {decisionStatus.status === 'safe-to-decide' 
-                      ? 'Dit asset is volledig ontgrendeld'
-                      : 'Start onderzoek om campagnestrategie te ontgrendelen'
+                    {decisionStatus.status === 'safe-to-decide'
+                      ? 'This asset is fully unlocked'
+                      : 'Start research to unlock campaign strategy'
                     }
                   </p>
                 </CardContent>
@@ -275,9 +275,9 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
             {/* Progress Bar */}
             <div className="mt-4">
               <div className="flex items-center justify-between mb-2">
-                <span className={TYPOGRAPHY.label}>Onderzoeksvoortgang</span>
+                <span className={TYPOGRAPHY.label}>Research Progress</span>
                 <span className={TYPOGRAPHY.bodySmall + " " + TYPOGRAPHY.muted}>
-                  {completedMethods.length} van {totalMethods} voltooid
+                  {completedMethods.length} of {totalMethods} completed
                 </span>
               </div>
               <Progress value={unlockProgress} className="h-2" />
@@ -286,7 +286,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
 
           {/* Research Methods Grid */}
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold mb-6">Beschikbare onderzoeken</h2>
+            <h2 className="text-xl font-semibold mb-6">Available Research</h2>
             
             {researchMethods.map((method) => {
               const assetMethod = localAsset.researchMethods.find((m) => m.type === method.id);
@@ -356,10 +356,10 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
                             <>
                               <div className="flex items-center gap-2 text-green-600">
                                 <CheckCircle2 className="h-5 w-5" />
-                                <span className="font-semibold text-sm">Voltooid</span>
+                                <span className="font-semibold text-sm">Completed</span>
                               </div>
                               <Button variant="outline" size="sm" className="w-full">
-                                Bekijk resultaten
+                                View results
                               </Button>
                             </>
                           )}
@@ -368,10 +368,10 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
                             <>
                               <div className="flex items-center gap-2 text-blue-600">
                                 <Shield className="h-5 w-5" />
-                                <span className="font-semibold text-sm">Bezig</span>
+                                <span className="font-semibold text-sm">In Progress</span>
                               </div>
                               <Button variant="outline" size="sm" className="w-full">
-                                Doorgaan
+                                Continue
                               </Button>
                             </>
                           )}
@@ -386,7 +386,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
                                 className="w-full"
                                 onClick={() => handleStartResearch(method.id)}
                               >
-                                Start onderzoek
+                                Start Research
                               </Button>
                             </>
                           )}
@@ -407,9 +407,9 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
                   <Sparkles className="h-6 w-6 text-[#1FD1B2]" />
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-1">Dit onderzoek ontgrendelt campagnestrategie</h3>
+                  <h3 className="font-semibold mb-1">This research unlocks campaign strategy</h3>
                   <p className="text-sm text-muted-foreground">
-                    Voltooien van alle onderzoeken geeft je toegang tot geavanceerde strategische tools en AI-gegenereerde campagne-aanbevelingen.
+                    Completing all research gives you access to advanced strategic tools and AI-generated campaign recommendations.
                   </p>
                 </div>
               </div>
@@ -425,7 +425,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
             onClick={() => setSelectedLayout('alternative')}
             className="shadow-lg"
           >
-            Alternatieve layout →
+            Alternative layout →
           </Button>
         </div>
 
@@ -467,7 +467,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
                   </div>
                   <div className="h-1 w-1 rounded-full bg-muted-foreground" />
                   <span className="text-sm text-muted-foreground">
-                    {completedMethods.length}/{totalMethods} onderzoeken
+                    {completedMethods.length}/{totalMethods} research methods
                   </span>
                 </div>
               </div>
@@ -475,7 +475,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
 
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <div className="text-sm text-muted-foreground">Beslisimpact</div>
+                <div className="text-sm text-muted-foreground">Decision Impact</div>
                 <div className="text-2xl font-bold text-[#1FD1B2]">{totalUnlockPotential}%</div>
               </div>
               <Button 
@@ -483,7 +483,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
                 disabled={decisionStatus.status === 'safe-to-decide'}
               >
                 <Unlock className="h-4 w-4 mr-2" />
-                Ontgrendel
+                Unlock
               </Button>
             </div>
           </div>
@@ -569,7 +569,7 @@ export function AssetUnlockDetailView({ assetId, onBack, onStartResearch }: Asse
           onClick={() => setSelectedLayout('default')}
           className="shadow-lg"
         >
-          ← Standaard layout
+          ← Default layout
         </Button>
       </div>
 

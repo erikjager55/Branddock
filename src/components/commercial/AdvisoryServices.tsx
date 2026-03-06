@@ -1,8 +1,8 @@
 /**
  * COMPONENT: Advisory & Services
  * 
- * Premium tier: Upsell omgeving met geplande reviews,
- * begeleide validaties, en research ondersteuning.
+ * Premium tier: Upsell environment with scheduled reviews,
+ * guided validations, and research support.
  */
 
 import React, { useState } from 'react';
@@ -40,11 +40,11 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
     {
       id: '1',
       type: 'Quarterly Strategic Review',
-      date: '15 januari 2025',
+      date: 'January 15, 2025',
       time: '14:00 - 16:00',
       advisor: 'Sarah van den Berg',
       topics: [
-        'Q4 campaign performance analyse',
+        'Q4 campaign performance analysis',
         'Research coverage assessment',
         'Q1 strategic priorities'
       ],
@@ -53,11 +53,11 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
     {
       id: '2',
       type: 'Brand Asset Deep Dive',
-      date: '22 januari 2025',
+      date: 'January 22, 2025',
       time: '10:00 - 11:30',
       advisor: 'Marcus de Vries',
       topics: [
-        'Core value proposition validatie',
+        'Core value proposition validation',
         'Messaging consistency review',
         'Competitive positioning update'
       ],
@@ -69,11 +69,11 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
     {
       id: '1',
       title: 'Persona Validation Program',
-      description: 'Expert-begeleide user research voor top 3 persona segmenten',
-      duration: '4 weken',
+      description: 'Expert-guided user research for top 3 persona segments',
+      duration: '4 weeks',
       deliverables: [
         '15+ user interviews',
-        'Persona profiles + validatie rapport',
+        'Persona profiles + validation report',
         'Strategic recommendations'
       ],
       status: 'available' as const
@@ -81,10 +81,10 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
     {
       id: '2',
       title: 'Brand Messaging Test',
-      description: 'Multi-channel messaging validatie met A/B testing expertise',
-      duration: '3 weken',
+      description: 'Multi-channel messaging validation with A/B testing expertise',
+      duration: '3 weeks',
       deliverables: [
-        'Test design + implementatie',
+        'Test design + implementation',
         'Statistical analysis',
         'Optimization roadmap'
       ],
@@ -95,26 +95,26 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
   const supportServices = [
     {
       icon: MessageSquare,
-      title: 'Prioritaire Chat Support',
-      description: 'Directe toegang tot strategy advisors binnen 2 uur',
+      title: 'Priority Chat Support',
+      description: 'Direct access to strategy advisors within 2 hours',
       included: true
     },
     {
       icon: Video,
       title: 'On-Demand Video Calls',
-      description: 'Flexibele expert consultaties voor acute vraagstukken',
+      description: 'Flexible expert consultations for urgent issues',
       included: true
     },
     {
       icon: FileText,
       title: 'Custom Research Design',
-      description: 'Ontwerp van onderzoek specifiek voor jouw strategische vragen',
+      description: 'Research design tailored to your specific strategic questions',
       included: true
     },
     {
       icon: Users,
-      title: 'Stakeholder Presentaties',
-      description: 'Expert presentaties voor board en senior management',
+      title: 'Stakeholder Presentations',
+      description: 'Expert presentations for board and senior management',
       included: true
     }
   ];
@@ -135,14 +135,14 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
           <CardContent className="space-y-8">
             {/* Certainty Level */}
             <div className="text-center p-6 rounded-lg bg-muted/50 border">
-              <p className="text-sm font-medium text-muted-foreground mb-1">Besliszekerheid Niveau</p>
+              <p className="text-sm font-medium text-muted-foreground mb-1">Decision Certainty Level</p>
               <p className="text-2xl font-bold mb-2">{tierInfo.certaintyLevel}</p>
               <p className="text-sm text-muted-foreground">{tierInfo.certaintyDescription}</p>
             </div>
 
             {/* What's Included */}
             <div>
-              <h3 className="font-semibold mb-4 text-center">Wat je krijgt:</h3>
+              <h3 className="font-semibold mb-4 text-center">What you get:</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {tierInfo.features.map((feature, index) => (
                   <div key={index} className="flex items-start gap-3 p-4 rounded-lg bg-background border">
@@ -155,11 +155,11 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
 
             {/* Value Proposition */}
             <div className={`p-6 rounded-lg ${tierInfo.color.bg} border-2 border-current`}>
-              <h3 className="font-semibold mb-3">Maximale Besliszekerheid met Expert Begeleiding</h3>
+              <h3 className="font-semibold mb-3">Maximum Decision Certainty with Expert Guidance</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Voor organisaties die kritieke strategische beslissingen nemen met significante impact. 
-                Ons Advisory & Services programma combineert de kracht van het Strategic Control platform 
-                met hands-on expert begeleiding voor maximale confidence in elke beslissing.
+                For organizations making critical strategic decisions with significant impact.
+                Our Advisory & Services program combines the power of the Strategic Control platform
+                with hands-on expert guidance for maximum confidence in every decision.
               </p>
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="text-center p-3 rounded-lg bg-background/60">
@@ -168,11 +168,11 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
                 </div>
                 <div className="text-center p-3 rounded-lg bg-background/60">
                   <p className="text-2xl font-bold">4x</p>
-                  <p className="text-xs text-muted-foreground mt-1">Sneller Valideren</p>
+                  <p className="text-xs text-muted-foreground mt-1">Faster Validation</p>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-background/60">
                   <p className="text-2xl font-bold">24/7</p>
-                  <p className="text-xs text-muted-foreground mt-1">Expert Toegang</p>
+                  <p className="text-xs text-muted-foreground mt-1">Expert Access</p>
                 </div>
               </div>
             </div>
@@ -180,9 +180,9 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
             {/* Pricing & CTA */}
             <div className="text-center space-y-4">
               <div className="p-4 rounded-lg bg-muted/50 border inline-block">
-                <p className="text-sm text-muted-foreground mb-1">Investering</p>
+                <p className="text-sm text-muted-foreground mb-1">Investment</p>
                 <p className="text-3xl font-bold">{tierInfo.price}</p>
-                <p className="text-sm text-muted-foreground mt-1">Gebaseerd op je organisatie en behoeften</p>
+                <p className="text-sm text-muted-foreground mt-1">Based on your organization and needs</p>
               </div>
               <div className="flex gap-3 max-w-md mx-auto">
                 <Button size="lg" className="flex-1 gap-2" onClick={onScheduleConsultation}>
@@ -205,7 +205,7 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
         <div>
           <h1 className="text-3xl font-bold mb-2">Advisory & Services</h1>
           <p className="text-muted-foreground">
-            Expert begeleiding voor maximale besliszekerheid
+            Expert guidance for maximum decision certainty
           </p>
         </div>
         <Badge className={tierInfo.color.badge} variant="outline">
@@ -278,7 +278,7 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold mb-1">&lt; 2h</p>
-                <p className="text-sm text-muted-foreground">Prioritaire support toegang</p>
+                <p className="text-sm text-muted-foreground">Priority support access</p>
               </CardContent>
             </Card>
           </div>
@@ -286,18 +286,18 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
           {/* Recent Activity */}
           <Card>
             <CardHeader>
-              <CardTitle>Recente Expert Interacties</CardTitle>
+              <CardTitle>Recent Expert Interactions</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                   <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5" />
                   <div className="flex-1">
-                    <p className="font-medium text-sm">Brand Messaging Review Afgerond</p>
+                    <p className="font-medium text-sm">Brand Messaging Review Completed</p>
                     <p className="text-sm text-muted-foreground">
-                      Expert validatie van kernboodschap - 3 optimalisaties aanbevolen
+                      Expert validation of core messaging - 3 optimizations recommended
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">2 dagen geleden</p>
+                    <p className="text-xs text-muted-foreground mt-1">2 days ago</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
@@ -305,9 +305,9 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
                   <div className="flex-1">
                     <p className="font-medium text-sm">Strategic Consultation: Q1 Campagne Planning</p>
                     <p className="text-sm text-muted-foreground">
-                      1-op-1 sessie met Sarah - actieplan gedefinieerd
+                      1-on-1 session with Sarah - action plan defined
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">5 dagen geleden</p>
+                    <p className="text-xs text-muted-foreground mt-1">5 days ago</p>
                   </div>
                 </div>
               </div>
@@ -319,9 +319,9 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
         <TabsContent value="reviews" className="space-y-6 mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Geplande Strategic Reviews</CardTitle>
+              <CardTitle>Scheduled Strategic Reviews</CardTitle>
               <CardDescription>
-                Kwartaal reviews en deep-dive sessies met je strategy advisor
+                Quarterly reviews and deep-dive sessions with your strategy advisor
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -342,7 +342,7 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
                       </div>
                     </div>
                     <Badge variant={review.status === 'scheduled' ? 'default' : 'outline'}>
-                      {review.status === 'scheduled' ? 'Gepland' : 'In afwachting'}
+                      {review.status === 'scheduled' ? 'Scheduled' : 'Pending'}
                     </Badge>
                   </div>
                   <div className="mb-3">
@@ -380,9 +380,9 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
         <TabsContent value="validations" className="space-y-6 mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Begeleide Validatie Programma's</CardTitle>
+              <CardTitle>Guided Validation Programs</CardTitle>
               <CardDescription>
-                Expert-ondersteuning voor kritieke research en validatie projecten
+                Expert support for critical research and validation projects
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -398,7 +398,7 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
                       </Badge>
                     </div>
                     <Badge variant={validation.status === 'in-progress' ? 'default' : 'outline'}>
-                      {validation.status === 'in-progress' ? 'In Progress' : 'Beschikbaar'}
+                      {validation.status === 'in-progress' ? 'In Progress' : 'Available'}
                     </Badge>
                   </div>
                   <div>
@@ -414,7 +414,7 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
                   </div>
                   {validation.status === 'available' && (
                     <Button className="w-full mt-4" variant="outline">
-                      Start Validatie Program
+                      Start Validation Program
                     </Button>
                   )}
                 </div>
@@ -439,11 +439,11 @@ export function AdvisoryServices({ onScheduleConsultation, currentTier = 'strate
                         <h3 className="font-semibold mb-1">{service.title}</h3>
                         <p className="text-sm text-muted-foreground mb-3">{service.description}</p>
                         <Button size="sm" variant="outline">
-                          Gebruik Service
+                          Use Service
                         </Button>
                       </div>
                       <Badge variant="outline" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
-                        Inbegrepen
+                        Included
                       </Badge>
                     </div>
                   </CardContent>

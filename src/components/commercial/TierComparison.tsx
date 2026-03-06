@@ -1,8 +1,8 @@
 /**
  * COMPONENT: Tier Comparison
  * 
- * Vergelijking van de drie productlagen gepositioneerd als
- * niveaus van besliszekerheid.
+ * Comparison of the three product tiers positioned as
+ * levels of decision certainty.
  */
 
 import React from 'react';
@@ -29,25 +29,25 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
 
   const comparisonFeatures = [
     {
-      category: 'Besliszekerheid',
+      category: 'Decision Certainty',
       features: [
-        { name: 'Decision Status Inzicht', scan: true, control: true, advisory: true },
+        { name: 'Decision Status Insight', scan: true, control: true, advisory: true },
         { name: 'Real-time Quality Monitoring', scan: false, control: true, advisory: true },
-        { name: 'Expert Validatie', scan: false, control: false, advisory: true },
+        { name: 'Expert Validation', scan: false, control: false, advisory: true },
       ]
     },
     {
-      category: 'Platform Functionaliteit',
+      category: 'Platform Functionality',
       features: [
         { name: 'Decision Engine', scan: false, control: true, advisory: true },
-        { name: 'Campagne Generatie', scan: 'limited', control: true, advisory: true },
+        { name: 'Campaign Generation', scan: 'limited', control: true, advisory: true },
         { name: 'Research Planning', scan: false, control: true, advisory: true },
         { name: 'Brand Asset Management', scan: false, control: true, advisory: true },
         { name: 'Persona Development', scan: false, control: true, advisory: true },
       ]
     },
     {
-      category: 'Rapportage & Communicatie',
+      category: 'Reporting & Communication',
       features: [
         { name: 'Stakeholder Views', scan: false, control: true, advisory: true },
         { name: 'Professional Reports', scan: false, control: true, advisory: true },
@@ -55,12 +55,12 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
       ]
     },
     {
-      category: 'Expert Ondersteuning',
+      category: 'Expert Support',
       features: [
         { name: 'Quarterly Strategic Reviews', scan: false, control: false, advisory: true },
-        { name: 'Begeleide Validaties', scan: false, control: false, advisory: true },
+        { name: 'Guided Validations', scan: false, control: false, advisory: true },
         { name: 'Dedicated Strategy Advisor', scan: false, control: false, advisory: true },
-        { name: 'Prioritaire Support', scan: false, control: false, advisory: true },
+        { name: 'Priority Support', scan: false, control: false, advisory: true },
       ]
     }
   ];
@@ -82,7 +82,7 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
     } else if (value === 'limited') {
       return (
         <div className="text-center">
-          <Badge variant="outline" className="text-xs">Beperkt</Badge>
+          <Badge variant="outline" className="text-xs">Limited</Badge>
         </div>
       );
     } else {
@@ -94,10 +94,10 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
     <div className="max-w-7xl mx-auto p-6 space-y-8">
       {/* Header */}
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Kies je Niveau van Besliszekerheid</h1>
+        <h1 className="text-4xl font-bold mb-4">Choose Your Level of Decision Certainty</h1>
         <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-          Van quick insights tot expert-gevalideerde strategie. 
-          Elke tier geeft je een hoger niveau van confidence in je beslissingen.
+          From quick insights to expert-validated strategy.
+          Each tier gives you a higher level of confidence in your decisions.
         </p>
       </div>
 
@@ -123,7 +123,7 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
               {isRecommended && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                   <Badge className="bg-purple-600 text-white">
-                    Meest Gekozen
+                    Most Popular
                   </Badge>
                 </div>
               )}
@@ -137,7 +137,7 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
                 {/* Certainty Level */}
                 <div className={`p-3 rounded-lg ${tier.color.bg} border`}>
                   <p className="text-xs font-medium text-muted-foreground mb-1">
-                    Besliszekerheid
+                    Decision Certainty
                   </p>
                   <p className={`font-bold ${tier.color.text}`}>
                     {tier.certaintyLevel}
@@ -176,7 +176,7 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
                   disabled={isCurrentTier}
                 >
                   {isCurrentTier ? (
-                    'Je Huidige Tier'
+                    'Your Current Tier'
                   ) : (
                     <>
                       {tier.cta}
@@ -193,9 +193,9 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
       {/* Detailed Comparison Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Volledige Feature Vergelijking</CardTitle>
+          <CardTitle>Full Feature Comparison</CardTitle>
           <CardDescription>
-            Gedetailleerd overzicht van alle mogelijkheden per tier
+            Detailed overview of all capabilities per tier
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -253,19 +253,19 @@ export function TierComparison({ onSelectTier, currentTier }: TierComparisonProp
       <Card className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border-2">
         <CardContent className="p-8 text-center">
           <h3 className="text-2xl font-bold mb-4">
-            Investeer in Besliszekerheid, Niet in Features
+            Invest in Decision Certainty, Not in Features
           </h3>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-6">
-            Elke tier is ontworpen voor een specifiek niveau van strategische confidence. 
-            Kies op basis van hoeveel zekerheid je nodig hebt bij je beslissingen, 
-            niet op basis van een feature lijst.
+            Each tier is designed for a specific level of strategic confidence.
+            Choose based on how much certainty you need in your decisions,
+            not based on a feature list.
           </p>
           <div className="flex gap-4 justify-center">
             <Button size="lg" onClick={() => onSelectTier?.('strategic-control')}>
               Start met Strategic Control
             </Button>
             <Button size="lg" variant="outline" onClick={() => onSelectTier?.('decision-scan')}>
-              Begin met Gratis Scan
+              Start with Free Scan
             </Button>
           </div>
         </CardContent>

@@ -9,8 +9,8 @@ export const personaKeys = {
 };
 
 /**
- * Hook: haal personas op. workspaceId wordt alleen als cache key gebruikt;
- * server resolvet workspace via sessie cookie.
+ * Hook: fetch personas. workspaceId is only used as cache key;
+ * server resolves workspace via session cookie.
  */
 export function usePersonasQuery(workspaceId: string | undefined) {
   return useQuery<PersonaListResponse>({

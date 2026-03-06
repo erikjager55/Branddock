@@ -80,7 +80,7 @@ export function QualityTooltip({
             {/* What does this mean? */}
             <div>
               <h4 className="text-xs font-semibold text-gray-900 mb-2">
-                Wat betekent deze score?
+                What does this score mean?
               </h4>
               <p className="text-xs text-gray-600 leading-relaxed">
                 {messages.message}
@@ -99,7 +99,7 @@ export function QualityTooltip({
                 <div className="flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                    <span className="text-gray-700 font-medium">Voltooid</span>
+                    <span className="text-gray-700 font-medium">Completed</span>
                   </div>
                   <span className="font-bold text-green-600">
                     {completedCount} / {totalCount}
@@ -109,7 +109,7 @@ export function QualityTooltip({
                   <div className="flex items-center justify-between text-xs">
                     <div className="flex items-center gap-2">
                       <Circle className="h-3.5 w-3.5 text-gray-400" />
-                      <span className="text-gray-700">Nog te valideren</span>
+                      <span className="text-gray-700">Still to validate</span>
                     </div>
                     <span className="font-bold text-gray-600">
                       {pendingCount}
@@ -121,7 +121,7 @@ export function QualityTooltip({
               {/* Visual Progress */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600">Validatie voortgang</span>
+                  <span className="text-gray-600">Validation progress</span>
                   <span className={cn('font-bold', config.textColor)}>
                     {Math.round(completionRate)}%
                   </span>
@@ -140,10 +140,10 @@ export function QualityTooltip({
               {/* Quality Calculation */}
               <div className="mt-3 p-2.5 bg-gray-50 rounded-lg">
                 <p className="text-xs text-gray-600 leading-relaxed">
-                  <span className="font-semibold text-gray-900">Berekening:</span>{' '}
-                  De kwaliteitsscore wordt berekend op basis van het aantal voltooide 
-                  validation methods. Meer voltooide methods = hogere betrouwbaarheid 
-                  van de data.
+                  <span className="font-semibold text-gray-900">Calculation:</span>{' '}
+                  The quality score is calculated based on the number of completed
+                  validation methods. More completed methods = higher reliability
+                  of the data.
                 </p>
               </div>
             </div>
@@ -153,7 +153,7 @@ export function QualityTooltip({
               <div className="pt-3 border-t">
                 <h4 className="text-xs font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <AlertCircle className="h-3.5 w-3.5 text-blue-600" />
-                  Volgende stap
+                  Next step
                 </h4>
                 <p className="text-xs text-gray-600 leading-relaxed">
                   {messages.action}
@@ -164,7 +164,7 @@ export function QualityTooltip({
             {/* Thresholds Guide */}
             <div className="pt-3 border-t">
               <h4 className="text-xs font-semibold text-gray-900 mb-2">
-                Kwaliteitsniveaus
+                Quality levels
               </h4>
               <div className="space-y-1.5">
                 <QualityThresholdItem 
@@ -268,7 +268,7 @@ export function QualityTooltipCompact({
               </span>
             </div>
             <p className="text-xs text-gray-600">
-              {completedCount} van {totalCount} validation methods voltooid
+              {completedCount} of {totalCount} validation methods completed
             </p>
             <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
               <div

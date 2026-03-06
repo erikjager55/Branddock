@@ -1,12 +1,12 @@
 /**
  * COMPONENT: Decision Summary Panel
  * 
- * Panel voor OUTPUT scherm dat decision status, oorzaken,
- * risico's en verbeteracties samenvat.
- * 
- * Verschil met CampaignDecisionHeader: 
- * - Header = proactief (voor generate)
- * - Summary = retrospectief (na generate)
+ * Panel for OUTPUT screen that summarizes decision status, causes,
+ * risks, and improvement actions.
+ *
+ * Difference with CampaignDecisionHeader:
+ * - Header = proactive (before generate)
+ * - Summary = retrospective (after generate)
  */
 
 import React from 'react';
@@ -24,17 +24,17 @@ import {
 } from 'lucide-react';
 
 interface DecisionSummaryPanelProps {
-  /** Huidige decision status */
+  /** Current decision status */
   status: 'safe-to-decide' | 'decision-at-risk' | 'do-not-decide';
-  /** Belangrijkste oorzaken (max 3) */
+  /** Key root causes (max 3) */
   rootCauses: string[];
-  /** Concrete risico's van deze status */
+  /** Concrete risks of this status */
   risks: string[];
-  /** Concrete verbeteracties */
+  /** Concrete improvement actions */
   improvements: string[];
-  /** Callback voor improvement acties */
+  /** Callback for improvement actions */
   onImproveClick?: () => void;
-  /** Optional: metadata voor context */
+  /** Optional: metadata for context */
   metadata?: {
     generatedAt: Date;
     avgCoverage: number;
@@ -52,7 +52,7 @@ export function DecisionSummaryPanel({
   metadata
 }: DecisionSummaryPanelProps) {
   
-  // Status configuratie
+  // Status configuration
   const statusConfig = {
     'safe-to-decide': {
       icon: CheckCircle,
@@ -62,7 +62,7 @@ export function DecisionSummaryPanel({
       textColor: 'text-green-900 dark:text-green-100',
       badgeBg: 'bg-green-600',
       iconColor: 'text-green-600',
-      message: 'Deze campagne is gebaseerd op voldoende gevalideerde merkdata. Strategische beslissingen kunnen met vertrouwen genomen worden.'
+      message: 'This campaign is based on sufficiently validated brand data. Strategic decisions can be made with confidence.'
     },
     'decision-at-risk': {
       icon: AlertTriangle,
@@ -72,7 +72,7 @@ export function DecisionSummaryPanel({
       textColor: 'text-amber-900 dark:text-amber-100',
       badgeBg: 'bg-amber-600',
       iconColor: 'text-amber-600',
-      message: 'Deze campagne bevat elementen met beperkte validatie. Beslissingen dragen verhoogd risico. Overweeg pilot testing.'
+      message: 'This campaign contains elements with limited validation. Decisions carry increased risk. Consider pilot testing.'
     },
     'do-not-decide': {
       icon: XCircle,
@@ -82,7 +82,7 @@ export function DecisionSummaryPanel({
       textColor: 'text-red-900 dark:text-red-100',
       badgeBg: 'bg-red-600',
       iconColor: 'text-red-600',
-      message: 'Deze campagne is gebaseerd op onvoldoende gevalideerde data. Strategische beslissingen zijn speculatief. Research eerst voltooien wordt sterk aangeraden.'
+      message: 'This campaign is based on insufficiently validated data. Strategic decisions are speculative. Completing research first is strongly recommended.'
     }
   };
 
@@ -104,10 +104,10 @@ export function DecisionSummaryPanel({
           </div>
           {metadata && (
             <div className="text-right text-xs text-muted-foreground">
-              <p>Gegenereerd op {metadata.generatedAt.toLocaleDateString('nl-NL')}</p>
+              <p>Generated on {metadata.generatedAt.toLocaleDateString('en-US')}</p>
               <p className="mt-1">
-                {metadata.safeAssets} van {metadata.totalAssets} assets veilig
-                ({metadata.avgCoverage}% gem. coverage)
+                {metadata.safeAssets} of {metadata.totalAssets} assets safe
+                ({metadata.avgCoverage}% avg. coverage)
               </p>
             </div>
           )}
@@ -115,19 +115,19 @@ export function DecisionSummaryPanel({
       </CardHeader>
       
       <CardContent className="space-y-4">
-        {/* Status uitleg */}
+        {/* Status explanation */}
         <Alert className={config.bgColor}>
           <AlertDescription className={config.textColor}>
             {config.message}
           </AlertDescription>
         </Alert>
 
-        {/* Belangrijkste oorzaken */}
+        {/* Key root causes */}
         {rootCauses.length > 0 && (
           <div>
             <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
-              Belangrijkste oorzaken
+              Key root causes
             </h4>
             <ul className="space-y-1.5 text-sm">
               {rootCauses.map((cause, i) => (
@@ -140,12 +140,12 @@ export function DecisionSummaryPanel({
           </div>
         )}
 
-        {/* Concrete risico's */}
+        {/* Concrete risks */}
         {risks.length > 0 && (
           <div>
             <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
               <TrendingDown className="h-4 w-4 text-amber-600" />
-              Risico's bij huidige status
+              Risks at current status
             </h4>
             <ul className="space-y-1.5 text-sm">
               {risks.map((risk, i) => (
@@ -158,12 +158,12 @@ export function DecisionSummaryPanel({
           </div>
         )}
 
-        {/* Verbeteracties */}
+        {/* Improvement actions */}
         {improvements.length > 0 && (
           <div>
             <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
               <ArrowRight className="h-4 w-4 text-blue-600" />
-              Verbeteracties
+              Improvement actions
             </h4>
             <ul className="space-y-1.5 text-sm mb-3">
               {improvements.map((improvement, i) => (
@@ -175,20 +175,20 @@ export function DecisionSummaryPanel({
             </ul>
             {onImproveClick && (
               <Button onClick={onImproveClick} variant="outline" className="w-full">
-                Start met verbeteren
+                Start improving
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             )}
           </div>
         )}
 
-        {/* Disclaimer bij niet-safe status */}
+        {/* Disclaimer for non-safe status */}
         {status !== 'safe-to-decide' && (
           <div className="pt-3 border-t">
             <p className="text-xs text-muted-foreground">
-              <strong>Let op:</strong> Deze campagne kan worden uitgevoerd, maar de kwaliteit 
-              van strategische beslissingen is beperkt door onvolledige research validatie. 
-              Behandel outputs als hypotheses die getest moeten worden, niet als gevalideerde strategieën.
+              <strong>Note:</strong> This campaign can be executed, but the quality
+              of strategic decisions is limited by incomplete research validation.
+              Treat outputs as hypotheses that need to be tested, not as validated strategies.
             </p>
           </div>
         )}
@@ -198,35 +198,35 @@ export function DecisionSummaryPanel({
 }
 
 /**
- * MOTIVATIE:
- * 
- * 1. RETROSPECTIEF BEWUSTZIJN
- *    - Na generate: gebruiker moet weten op welke basis campagne gemaakt is
- *    - "Gegenereerd op" + coverage stats geven context
- *    - Niet alleen "leuk idee", maar "hoe betrouwbaar?"
- * 
- * 2. ROOT CAUSE ANALYSE
- *    - "Belangrijkste oorzaken" helpt bij begrip
- *    - Niet alleen "dit is fout", maar "waarom is dit fout"
- *    - Educatief, niet alleen correctief
- * 
+ * RATIONALE:
+ *
+ * 1. RETROSPECTIVE AWARENESS
+ *    - After generate: user needs to know what basis the campaign was built on
+ *    - "Generated on" + coverage stats provide context
+ *    - Not just "nice idea", but "how reliable?"
+ *
+ * 2. ROOT CAUSE ANALYSIS
+ *    - "Key root causes" helps understanding
+ *    - Not just "this is wrong", but "why is this wrong"
+ *    - Educational, not just corrective
+ *
  * 3. RISK AWARENESS
- *    - "Risico's" maakt impact concreet
- *    - Business taal: "inconsistente positionering", "verspilling budget"
- *    - Niet tech taal: "low coverage", "missing methods"
- * 
+ *    - "Risks" makes impact concrete
+ *    - Business language: "inconsistent positioning", "budget waste"
+ *    - Not tech language: "low coverage", "missing methods"
+ *
  * 4. ACTIONABLE IMPROVEMENTS
- *    - Genummerde lijst (1, 2, 3) geeft prioriteit
- *    - "Start met verbeteren" CTA maakt next step evident
- *    - Gebruiker kan kiezen: accepteer risico of verbeter
- * 
+ *    - Numbered list (1, 2, 3) gives priority
+ *    - "Start improving" CTA makes next step evident
+ *    - User can choose: accept risk or improve
+ *
  * 5. DISCLAIMER
- *    - "Behandel outputs als hypotheses" = realistisch
- *    - Niet blokkerend, maar wel eerlijk over kwaliteit
- *    - Gebruiker kan informed decision maken
- * 
- * 6. VERSCHIL MET HEADER
- *    - Header (configure) = "mag je dit doen?"
- *    - Summary (output) = "wat heb je gedaan en wat betekent dat?"
- *    - Header = preventief, Summary = retrospectief
+ *    - "Treat outputs as hypotheses" = realistic
+ *    - Not blocking, but honest about quality
+ *    - User can make an informed decision
+ *
+ * 6. DIFFERENCE WITH HEADER
+ *    - Header (configure) = "are you allowed to do this?"
+ *    - Summary (output) = "what did you do and what does it mean?"
+ *    - Header = preventive, Summary = retrospective
  */

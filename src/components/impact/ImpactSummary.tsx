@@ -1,8 +1,8 @@
 /**
  * Impact Summary Component
  * 
- * Toont een korte, rustige samenvatting van wat een wijziging betekent voor beslissingen.
- * Subtiel, coachend, en zonder alarm.
+ * Shows a brief, calm summary of what a change means for decisions.
+ * Subtle, coaching, and without alarm.
  */
 
 import React, { useState } from 'react';
@@ -25,7 +25,7 @@ export function ImpactSummary({
   const [expanded, setExpanded] = useState(false);
   const { decisionImpact } = impactAnalysis;
 
-  // Bepaal icoon en kleur op basis van impact level
+  // Determine icon and color based on impact level
   const getImpactDisplay = () => {
     if (decisionImpact.impactLevel === 'none') {
       return {
@@ -84,7 +84,7 @@ export function ImpactSummary({
       display.borderClass,
       className
     )}>
-      {/* Header - altijd zichtbaar */}
+      {/* Header - always visible */}
       <button
         onClick={() => setExpanded(!expanded)}
         className={cn(
@@ -95,7 +95,7 @@ export function ImpactSummary({
       >
         <Icon className="w-5 h-5 mt-0.5 flex-shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium">Wat betekent deze wijziging?</p>
+          <p className="text-sm font-medium">What does this change mean?</p>
           <p className="text-sm mt-1 opacity-90">{shortSummary}</p>
         </div>
         {expanded ? (
@@ -121,7 +121,7 @@ export function ImpactSummary({
 
           <div className="pt-2 border-t">
             <p className="text-xs text-slate-500">
-              {new Date(impactAnalysis.analyzedAt).toLocaleString('nl-NL', {
+              {new Date(impactAnalysis.analyzedAt).toLocaleString('en-US', {
                 day: 'numeric',
                 month: 'short',
                 hour: '2-digit',
@@ -136,7 +136,7 @@ export function ImpactSummary({
 }
 
 /**
- * Lijst van impact summaries
+ * List of impact summaries
  */
 interface ImpactSummaryListProps {
   impactAnalyses: ImpactAnalysis[];
@@ -173,7 +173,7 @@ export function ImpactSummaryList({
           onClick={() => setShowAll(true)}
           className="text-sm text-blue-600 hover:text-blue-700 font-medium"
         >
-          Toon {impactAnalyses.length - maxVisible} meer wijziging(en)
+          Show {impactAnalyses.length - maxVisible} more change(s)
         </button>
       )}
 
@@ -182,7 +182,7 @@ export function ImpactSummaryList({
           onClick={() => setShowAll(false)}
           className="text-sm text-slate-600 hover:text-slate-700 font-medium"
         >
-          Toon minder
+          Show less
         </button>
       )}
     </div>

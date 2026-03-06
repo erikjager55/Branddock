@@ -29,6 +29,7 @@ const CATEGORY_ORDER: Record<AssetCategory, number> = {
   NARRATIVE: 5,
   COMMUNICATION: 6,
   CULTURE: 7,
+  ESG: 8,
 };
 
 // ─── Props ───────────────────────────────────────────────

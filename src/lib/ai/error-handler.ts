@@ -27,23 +27,23 @@ export interface AIError {
   raw?: unknown;
 }
 
-// ─── Dutch user-facing messages ────────────────────────────
+// ─── User-facing error messages ────────────────────────────
 
 const ERROR_MESSAGES: Record<AIErrorType, string> = {
   overloaded:
-    'Het AI-model is momenteel overbelast. Probeer het over een paar minuten opnieuw.',
+    'The AI model is currently overloaded. Please try again in a few minutes.',
   rate_limit:
-    'Je hebt te veel verzoeken verstuurd. Wacht even voordat je opnieuw probeert.',
+    'You have sent too many requests. Please wait a moment before trying again.',
   authentication:
-    'Er is een probleem met de API configuratie. Neem contact op met de beheerder.',
+    'There is a problem with the API configuration. Please contact the administrator.',
   invalid_request:
-    'Er ging iets mis bij het verwerken van je verzoek. Probeer het opnieuw.',
+    'Something went wrong while processing your request. Please try again.',
   network:
-    'Kan geen verbinding maken met de AI service. Controleer je internetverbinding.',
+    'Unable to connect to the AI service. Please check your internet connection.',
   timeout:
-    'Het verzoek duurde te lang. Probeer het opnieuw met een korter bericht.',
+    'The request took too long. Please try again with a shorter message.',
   unknown:
-    'Er ging iets mis. Probeer het opnieuw.',
+    'Something went wrong. Please try again.',
 };
 
 // ─── HTTP status mapping ───────────────────────────────────
@@ -169,7 +169,7 @@ export function parseAIError(error: unknown): AIError {
 // ─── getReadableErrorMessage ───────────────────────────────
 
 /**
- * Returns a Dutch user-friendly error message.
+ * Returns a user-friendly error message.
  * Accepts either a parsed AIError or a raw error (will parse internally).
  */
 export function getReadableErrorMessage(error: unknown): string {

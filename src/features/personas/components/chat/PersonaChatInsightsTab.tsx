@@ -95,7 +95,7 @@ export function PersonaChatInsightsTab({
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(120, 120, 120);
-    doc.text(`${insightList.length} insight${insightList.length !== 1 ? 's' : ''} · Exported ${new Date().toLocaleDateString('nl-NL')}`, margin, y);
+    doc.text(`${insightList.length} insight${insightList.length !== 1 ? 's' : ''} · Exported ${new Date().toLocaleDateString('en-US')}`, margin, y);
     y += 12;
 
     // Separator line

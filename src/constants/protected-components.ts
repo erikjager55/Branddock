@@ -2,16 +2,16 @@
  * 🔒 PROTECTED COMPONENT REGISTRY
  * =================================
  * 
- * IMMUTABLE LOCK SYSTEM voor alle basiscomponenten en design styles.
- * Dit systeem voorkomt dat toekomstige bewerkingen buiten de gedefinieerde variants plaatsvinden.
- * 
- * 🚨 KRITISCHE WAARSCHUWING:
- * Deze componenten zijn LOCKED en mogen ALLEEN worden aangepast via:
- * 1. Het variant systeem (nieuwe variants toevoegen)
- * 2. Design system tokens uit /constants/design-system.ts
- * 3. Formele design system updates via governance proces
- * 
- * GEEN DIRECTE CLASSNAME OVERRIDES TOEGESTAAN!
+ * IMMUTABLE LOCK SYSTEM for all base components and design styles.
+ * This system prevents future edits from going outside the defined variants.
+ *
+ * 🚨 CRITICAL WARNING:
+ * These components are LOCKED and may ONLY be modified via:
+ * 1. The variant system (adding new variants)
+ * 2. Design system tokens from /constants/design-system.ts
+ * 3. Formal design system updates via governance process
+ *
+ * NO DIRECT CLASSNAME OVERRIDES ALLOWED!
  */
 
 import { SPACING, COLORS, TYPOGRAPHY, EFFECTS } from './design-system';
@@ -21,13 +21,13 @@ import { SPACING, COLORS, TYPOGRAPHY, EFFECTS } from './design-system';
 // ============================================================================
 
 export enum ProtectionLevel {
-  /** LOCKED - Mag niet worden aangepast zonder design system approval */
+  /** LOCKED - Cannot be modified without design system approval */
   LOCKED = 'LOCKED',
-  /** RESTRICTED - Alleen variant extensions toegestaan */
+  /** RESTRICTED - Only variant extensions allowed */
   RESTRICTED = 'RESTRICTED',
-  /** MONITORED - Waarschuwingen bij custom styling */
+  /** MONITORED - Warnings on custom styling */
   MONITORED = 'MONITORED',
-  /** FLEXIBLE - Vrij aanpasbaar (met best practices) */
+  /** FLEXIBLE - Freely customizable (with best practices) */
   FLEXIBLE = 'FLEXIBLE',
 }
 
@@ -46,30 +46,30 @@ export enum ComponentCategory {
 // ============================================================================
 
 export interface ProtectedComponent {
-  /** Component naam */
+  /** Component name */
   name: string;
-  /** Bestandslocatie */
+  /** File location */
   path: string;
   /** Protection level */
   protection: ProtectionLevel;
-  /** Component categorie */
+  /** Component category */
   category: ComponentCategory;
-  /** Toegestane variants (whitelist) */
+  /** Allowed variants (whitelist) */
   allowedVariants: string[];
-  /** Toegestane props (whitelist) */
+  /** Allowed props (whitelist) */
   allowedProps: string[];
-  /** Verboden className overrides (blacklist patterns) */
+  /** Forbidden className overrides (blacklist patterns) */
   forbiddenClassNames: RegExp[];
-  /** Design system tokens die moeten worden gebruikt (hint for developers) */
+  /** Design system tokens that must be used (hint for developers) */
   requiredTokens: {
     colors?: string;
     spacing?: string;
     typography?: string;
     effects?: string;
   };
-  /** Laatste review datum */
+  /** Last review date */
   lastReviewed: string;
-  /** Verantwoordelijke team */
+  /** Responsible team */
   owner: 'design-system' | 'frontend' | 'platform';
 }
 
@@ -93,7 +93,7 @@ export const PROTECTED_COMPONENTS: Record<string, ProtectedComponent> = {
     ],
     allowedProps: [
       'variant', 'size', 'fullWidth', 'asChild', 'disabled', 'onClick',
-      'type', 'children', 'className' // className alleen voor spacing/layout
+      'type', 'children', 'className' // className only for spacing/layout
     ],
     forbiddenClassNames: [
       /bg-(?!transparent)/,  // No background overrides except transparent
@@ -335,17 +335,17 @@ export const PROTECTED_COMPONENTS: Record<string, ProtectedComponent> = {
 // ============================================================================
 
 export interface ProtectedToken {
-  /** Token naam */
+  /** Token name */
   name: string;
-  /** Token categorie */
+  /** Token category */
   category: 'color' | 'spacing' | 'typography' | 'effect';
   /** Protection level */
   protection: ProtectionLevel;
-  /** Token waarde(s) */
+  /** Token value(s) */
   values: Record<string, string | number>;
-  /** Gebruik instructies */
+  /** Usage instructions */
   usage: string;
-  /** Laatste review */
+  /** Last review */
   lastReviewed: string;
 }
 
@@ -361,7 +361,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     values: {
       DEFAULT: COLORS.primary,
     },
-    usage: 'Primary brand color (Minty Green #1FD1B2). Gebruik voor primary actions, highlights.',
+    usage: 'Primary brand color (Minty Green #1FD1B2). Use for primary actions, highlights.',
     lastReviewed: '2025-01-15',
   },
 
@@ -375,7 +375,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
       error: COLORS.status.error.text,
       info: COLORS.status.info.text,
     },
-    usage: 'Status en feedback kleuren. Gebruik voor success/warning/error/info states.',
+    usage: 'Status and feedback colors. Use for success/warning/error/info states.',
     lastReviewed: '2025-01-15',
   },
 
@@ -387,7 +387,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
       primary: COLORS.primary,
       secondary: COLORS.secondary,
     },
-    usage: 'Accent kleuren voor categories, highlights, en variety.',
+    usage: 'Accent colors for categories, highlights, and variety.',
     lastReviewed: '2025-01-15',
   },
 
@@ -400,7 +400,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     category: 'spacing',
     protection: ProtectionLevel.LOCKED,
     values: SPACING.component,
-    usage: 'Unified spacing scale voor margins, padding, gaps. Gebruik via props (gap="md").',
+    usage: 'Unified spacing scale for margins, padding, gaps. Use via props (gap="md").',
     lastReviewed: '2025-01-15',
   },
 
@@ -409,7 +409,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     category: 'spacing',
     protection: ProtectionLevel.LOCKED,
     values: SPACING.page,
-    usage: 'Container padding presets. Gebruik Container component met paddingX/paddingY props.',
+    usage: 'Container padding presets. Use Container component with paddingX/paddingY props.',
     lastReviewed: '2025-01-15',
   },
 
@@ -428,7 +428,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
       label: TYPOGRAPHY.label,
       caption: TYPOGRAPHY.caption,
     },
-    usage: 'Font size scale. GEEN text-* classes gebruiken, gebruik variant props.',
+    usage: 'Font size scale. Do NOT use text-* classes, use variant props.',
     lastReviewed: '2025-01-15',
   },
 
@@ -439,7 +439,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     values: {
       emphasis: TYPOGRAPHY.emphasis,
     },
-    usage: 'Font weight scale. GEEN font-* classes gebruiken, gebruik variant props.',
+    usage: 'Font weight scale. Do NOT use font-* classes, use variant props.',
     lastReviewed: '2025-01-15',
   },
 
@@ -452,7 +452,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     category: 'effect',
     protection: ProtectionLevel.LOCKED,
     values: EFFECTS.shadow,
-    usage: 'Shadow presets. Gebruik via component variants (Card hover="shadow").',
+    usage: 'Shadow presets. Use via component variants (Card hover="shadow").',
     lastReviewed: '2025-01-15',
   },
 
@@ -461,7 +461,7 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
     category: 'effect',
     protection: ProtectionLevel.LOCKED,
     values: EFFECTS.radius,
-    usage: 'Border radius scale. Gebruik component defaults, GEEN rounded-* overrides.',
+    usage: 'Border radius scale. Use component defaults, NO rounded-* overrides.',
     lastReviewed: '2025-01-15',
   },
 };
@@ -471,14 +471,14 @@ export const PROTECTED_TOKENS: Record<string, ProtectedToken> = {
 // ============================================================================
 
 /**
- * Check of een component protected is
+ * Check if a component is protected
  */
 export function isComponentProtected(componentName: string): boolean {
   return componentName in PROTECTED_COMPONENTS;
 }
 
 /**
- * Get protection level van een component
+ * Get protection level of a component
  */
 export function getProtectionLevel(componentName: string): ProtectionLevel | null {
   const component = PROTECTED_COMPONENTS[componentName];
@@ -486,7 +486,7 @@ export function getProtectionLevel(componentName: string): ProtectionLevel | nul
 }
 
 /**
- * Check of een variant toegestaan is
+ * Check if a variant is allowed
  */
 export function isVariantAllowed(
   componentName: string,
@@ -498,7 +498,7 @@ export function isVariantAllowed(
 }
 
 /**
- * Check of een className verboden patronen bevat
+ * Check if a className contains forbidden patterns
  */
 export function hasForbiddenClassName(
   componentName: string,
@@ -536,28 +536,28 @@ export function getComponentRecommendations(
   const recommendations: string[] = [];
 
   recommendations.push(
-    `✅ Gebruik toegestane variants: ${component.allowedVariants.join(', ')}`
+    `✅ Use allowed variants: ${component.allowedVariants.join(', ')}`
   );
 
   recommendations.push(
-    `✅ Gebruik toegestane props: ${component.allowedProps.join(', ')}`
+    `✅ Use allowed props: ${component.allowedProps.join(', ')}`
   );
 
   if (component.forbiddenClassNames.length > 0) {
     recommendations.push(
-      `❌ GEEN className overrides voor: styling properties (gebruik variants)`
+      `❌ NO className overrides for: styling properties (use variants)`
     );
   }
 
   if (component.requiredTokens.colors) {
     recommendations.push(
-      `🎨 Gebruik ${component.requiredTokens.colors} tokens voor kleuren`
+      `🎨 Use ${component.requiredTokens.colors} tokens for colors`
     );
   }
 
   if (component.requiredTokens.spacing) {
     recommendations.push(
-      `📏 Gebruik ${component.requiredTokens.spacing} tokens voor spacing`
+      `📏 Use ${component.requiredTokens.spacing} tokens for spacing`
     );
   }
 

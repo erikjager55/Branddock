@@ -149,7 +149,7 @@ export const COLORS = {
   primaryRgb: '31, 209, 178',
   secondary: '#5252E3',       // Electric Blue
   
-  // Brand gradients (CONSOLIDATED - gebruik deze altijd)
+  // Brand gradients (CONSOLIDATED - always use these)
   gradients: {
     // Primary brand gradients
     primary: 'bg-gradient-to-br from-[#1FD1B2] to-emerald-500',
@@ -158,7 +158,7 @@ export const COLORS = {
     combined: 'bg-gradient-to-br from-[#5252E3] to-[#1FD1B2]',
     combinedHorizontal: 'bg-gradient-to-r from-[#5252E3] to-[#1FD1B2]',
     
-    // Semantic color gradients (voor icons/decoratie)
+    // Semantic color gradients (for icons/decoration)
     blue: 'bg-gradient-to-br from-blue-500 to-indigo-600',
     purple: 'bg-gradient-to-br from-purple-500 to-pink-600',
     green: 'bg-gradient-to-br from-green-500 to-emerald-600',
@@ -168,7 +168,7 @@ export const COLORS = {
     muted: 'bg-gradient-to-b from-muted/30 to-background',
     slate: 'bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-800',
     
-    // Colored backgrounds (voor sections)
+    // Colored backgrounds (for sections)
     purpleSubtle: 'bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20',
     blueSubtle: 'bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20',
     greenSubtle: 'bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20',

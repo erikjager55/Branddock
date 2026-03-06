@@ -1,7 +1,7 @@
 /**
  * COMPONENT: View Mode Selector
  * 
- * Schakel tussen normale view, executive view, en report mode.
+ * Switch between normal view, executive view, and report mode.
  */
 
 import React from 'react';
@@ -53,11 +53,11 @@ export function ViewModeSelector({ currentMode, onModeChange }: ViewModeSelector
   const getModeDescription = (mode: ViewMode) => {
     switch (mode) {
       case 'executive':
-        return 'Overzicht voor directie en stakeholders';
+        return 'Overview for executives and stakeholders';
       case 'report':
-        return 'Genereer rapporten voor externe communicatie';
+        return 'Generate reports for external communication';
       default:
-        return 'Volledige platform functionaliteit';
+        return 'Full platform functionality';
     }
   };
 
@@ -78,7 +78,7 @@ export function ViewModeSelector({ currentMode, onModeChange }: ViewModeSelector
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[280px]">
         <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-          Weergave Modus
+          View Mode
         </div>
         <DropdownMenuSeparator />
         
@@ -94,7 +94,7 @@ export function ViewModeSelector({ currentMode, onModeChange }: ViewModeSelector
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm">Platform View</p>
               <p className="text-xs text-muted-foreground">
-                Volledige platform functionaliteit
+                Full platform functionality
               </p>
             </div>
           </div>
@@ -112,7 +112,7 @@ export function ViewModeSelector({ currentMode, onModeChange }: ViewModeSelector
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm">Executive View</p>
               <p className="text-xs text-muted-foreground">
-                Overzicht voor directie en stakeholders
+                Overview for executives and stakeholders
               </p>
             </div>
           </div>
@@ -130,7 +130,7 @@ export function ViewModeSelector({ currentMode, onModeChange }: ViewModeSelector
             <div className="flex-1 min-w-0">
               <p className="font-medium text-sm">Report Mode</p>
               <p className="text-xs text-muted-foreground">
-                Genereer rapporten voor externe communicatie
+                Generate reports for external communication
               </p>
             </div>
           </div>
@@ -139,7 +139,7 @@ export function ViewModeSelector({ currentMode, onModeChange }: ViewModeSelector
         <DropdownMenuSeparator />
         <div className="px-2 py-2">
           <p className="text-xs text-muted-foreground">
-            Alle views gebruiken dezelfde onderliggende data
+            All views use the same underlying data
           </p>
         </div>
       </DropdownMenuContent>

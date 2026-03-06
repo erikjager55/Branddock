@@ -58,13 +58,16 @@ export function useLockState({
   const initialLockedByStr = JSON.stringify(initialLockedBy);
 
   useEffect(() => {
+    // Only sync when external data changes (e.g. refetch), NOT on isToggling change.
+    // Including isToggling in deps would cause the stale initialState to overwrite
+    // the fresh local state right after a successful toggle.
     if (!isToggling) {
       setIsLocked(initialLocked);
       setLockedAt(initialLockedAt ?? null);
       setLockedBy(initialLockedBy ?? null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialLocked, initialLockedAt, initialLockedByStr, isToggling]);
+  }, [initialLocked, initialLockedAt, initialLockedByStr]);
 
   const requestToggle = useCallback(() => {
     setShowConfirm(true);

@@ -1,10 +1,10 @@
 /**
  * COMPONENT: Decision Gate Warning
  * 
- * Blokkeert campaign generation wanneer personas/assets onveilig zijn.
- * Toont waarom + snelste fix.
- * 
- * DOEL: Voorkom campagnes gebouwd op onbetrouwbare data
+ * Blocks campaign generation when personas/assets are unsafe.
+ * Shows why + quickest fix.
+ *
+ * PURPOSE: Prevent campaigns built on unreliable data
  */
 
 import React from 'react';
@@ -61,7 +61,7 @@ export function DecisionGateWarning({
                 </Badge>
               </div>
               <p className="text-sm text-green-700 dark:text-green-300">
-                Alle geselecteerde personas en assets zijn voldoende gevalideerd. Je campagne wordt gebouwd op betrouwbare data.
+                All selected personas and assets are sufficiently validated. Your campaign will be built on reliable data.
               </p>
             </div>
             <CheckCircle className="h-8 w-8 text-green-600 shrink-0" />
@@ -87,14 +87,14 @@ export function DecisionGateWarning({
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-semibold text-amber-900 dark:text-amber-100">
-                    Verhoogd Strategisch Risico
+                    Increased Strategic Risk
                   </h3>
                   <Badge className="bg-amber-600 text-white text-xs">
                     {atRiskItems.length} item{atRiskItems.length > 1 ? 's' : ''} at risk
                   </Badge>
                 </div>
                 <p className="text-sm text-amber-700 dark:text-amber-300">
-                  Je kunt doorgaan, maar enkele elementen hebben beperkte validatie (50-79% coverage). Dit verhoogt de kans op sub-optimale strategische keuzes.
+                  You can proceed, but some elements have limited validation (50-79% coverage). This increases the chance of sub-optimal strategic choices.
                 </p>
               </div>
               <AlertTriangle className="h-8 w-8 text-amber-600 shrink-0" />
@@ -119,12 +119,12 @@ export function DecisionGateWarning({
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mb-3">
-                        <strong>Risico:</strong> Campagne-keuzes gebaseerd op dit {item.type === 'persona' ? 'persona' : 'asset'} kunnen 
-                        leiden tot 40-60% lagere ROI dan optimaal mogelijk.
+                        <strong>Risk:</strong> Campaign choices based on this {item.type === 'persona' ? 'persona' : 'asset'} may
+                        lead to 40-60% lower ROI than optimally possible.
                       </p>
                       {item.missingTopMethod && (
                         <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-                          <strong>Snelste fix:</strong> Voeg {item.missingTopMethod} toe (~1-2 uur)
+                          <strong>Quickest fix:</strong> Add {item.missingTopMethod} (~1-2 hours)
                         </p>
                       )}
                     </div>
@@ -135,7 +135,7 @@ export function DecisionGateWarning({
                         onClick={() => onFixItem(item.id, item.type)}
                         className="shrink-0"
                       >
-                        Fix Nu
+                        Fix Now
                         <ArrowRight className="h-4 w-4 ml-1" />
                       </Button>
                     )}
@@ -147,7 +147,7 @@ export function DecisionGateWarning({
             {/* Notice */}
             <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200">
               <p className="text-xs text-amber-800 dark:text-amber-200">
-                ⚠️ Je kunt doorgaan met genereren, maar we raden aan om eerst de bovenstaande items te verbeteren voor optimale resultaten.
+                You can proceed with generation, but we recommend improving the items above first for optimal results.
               </p>
             </div>
           </div>
@@ -171,14 +171,14 @@ export function DecisionGateWarning({
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-semibold text-red-900 dark:text-red-100">
-                  Generatie Geblokkeerd
+                  Generation Blocked
                 </h3>
                 <Badge className="bg-red-600 text-white text-xs">
                   {blockedItems.length} item{blockedItems.length > 1 ? 's' : ''} blocked
                 </Badge>
               </div>
               <p className="text-sm text-red-700 dark:text-red-300">
-                Je kunt niet doorgaan met genereren. Kritieke research ontbreekt op onderstaande elementen (&lt;50% coverage). Campagnes gebaseerd op deze data dragen onaanvaardbaar hoog risico.
+                You cannot proceed with generation. Critical research is missing on the elements below (&lt;50% coverage). Campaigns based on this data carry unacceptably high risk.
               </p>
             </div>
             <ShieldX className="h-8 w-8 text-red-600 shrink-0" />
@@ -203,17 +203,17 @@ export function DecisionGateWarning({
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">
-                      <strong>Waarom geblokkeerd:</strong> Dit {item.type === 'persona' ? 'persona' : 'asset'} heeft onvoldoende validatie. 
-                      Strategische beslissingen gebaseerd hierop kunnen leiden tot fundamentele fouten en verspilde budgetten.
+                      <strong>Why blocked:</strong> This {item.type === 'persona' ? 'persona' : 'asset'} has insufficient validation.
+                      Strategic decisions based on this can lead to fundamental errors and wasted budgets.
                     </p>
                     {item.missingTopMethod && (
                       <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 mb-3">
                         <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-1">
                           <Zap className="h-4 w-4 inline mr-1" />
-                          Snelste reparatie
+                          Quickest fix
                         </p>
                         <p className="text-sm text-green-700 dark:text-green-300">
-                          Start {item.missingTopMethod} research (~{item.missingTopMethod === 'Workshop' ? '2-4' : '1-2'} uur) om dit item te ontgrendelen
+                          Start {item.missingTopMethod} research (~{item.missingTopMethod === 'Workshop' ? '2-4' : '1-2'} hours) to unlock this item
                         </p>
                       </div>
                     )}
@@ -225,7 +225,7 @@ export function DecisionGateWarning({
                       onClick={() => onFixItem(item.id, item.type)}
                     >
                       <Zap className="h-4 w-4" />
-                      Fix Nu
+                      Fix Now
                     </Button>
                   )}
                 </div>
@@ -236,10 +236,10 @@ export function DecisionGateWarning({
           {/* Critical Notice */}
           <div className="p-4 rounded-lg bg-red-100 dark:bg-red-950/40 border-2 border-red-300">
             <p className="text-sm font-semibold text-red-900 dark:text-red-100 mb-2">
-              🚫 Generate button is uitgeschakeld
+              Generate button is disabled
             </p>
             <p className="text-xs text-red-800 dark:text-red-200">
-              Repareer eerst alle geblokkeerde items om door te gaan. Dit beschermt je tegen campagnes gebouwd op onbetrouwbare data.
+              Fix all blocked items first to proceed. This protects you from campaigns built on unreliable data.
             </p>
           </div>
         </div>
@@ -249,40 +249,40 @@ export function DecisionGateWarning({
 }
 
 /**
- * DESIGN PRINCIPES:
- * 
+ * DESIGN PRINCIPLES:
+ *
  * 1. DECISION GATE
- *    - Safe: groen, kan doorgaan
- *    - At Risk: amber, waarschuwing maar kan doorgaan
- *    - Blocked: rood, GEBLOKKEERD
- * 
+ *    - Safe: green, can proceed
+ *    - At Risk: amber, warning but can proceed
+ *    - Blocked: red, BLOCKED
+ *
  * 2. BLOCKED STATE
- *    - Rood blok (border-2 border-red-300)
- *    - Welk element faalt (naam + type)
- *    - Waarom strategisch risico (business impact)
- *    - Snelste reparatie (concrete actie + tijd)
- *    - "Fix Nu" CTA prominent
- * 
+ *    - Red block (border-2 border-red-300)
+ *    - Which element fails (name + type)
+ *    - Why strategic risk (business impact)
+ *    - Quickest fix (concrete action + time)
+ *    - "Fix Now" CTA prominent
+ *
  * 3. AT-RISK STATE
- *    - Amber blok (border-2 border-amber-300)
- *    - Waarschuwing
- *    - Kan doorgaan maar niet aanbevolen
- *    - Fix optie beschikbaar
- * 
+ *    - Amber block (border-2 border-amber-300)
+ *    - Warning
+ *    - Can proceed but not recommended
+ *    - Fix option available
+ *
  * 4. SAFE STATE
- *    - Groen blok (border-2 border-green-200)
- *    - Positieve bevestiging
+ *    - Green block (border-2 border-green-200)
+ *    - Positive confirmation
  *    - "Verified Data" badge
  *    - Checkmark
- * 
+ *
  * 5. BUSINESS FRAMING
- *    - "40-60% lagere ROI" (niet "coverage laag")
- *    - "Fundamentele fouten" (niet "onvoldoende data")
- *    - "Verspilde budgetten" (niet "risico")
- *    - Concrete tijd (~1-2 uur)
- * 
+ *    - "40-60% lower ROI" (not "low coverage")
+ *    - "Fundamental errors" (not "insufficient data")
+ *    - "Wasted budgets" (not "risk")
+ *    - Concrete time (~1-2 hours)
+ *
  * 6. NON-DISMISSABLE
- *    - Geen close button
- *    - Altijd zichtbaar
- *    - Moet actief gefixed worden
+ *    - No close button
+ *    - Always visible
+ *    - Must be actively fixed
  */

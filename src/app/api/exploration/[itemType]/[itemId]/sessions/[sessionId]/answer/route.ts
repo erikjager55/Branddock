@@ -146,7 +146,7 @@ export async function POST(
       );
     } catch (err) {
       console.warn('[exploration-feedback] AI call failed, using fallback:', err);
-      feedbackContent = `Bedankt voor je inzicht over ${dimensionInfo?.title ?? 'deze dimensie'}. Dit helpt bij de analyse.`;
+      feedbackContent = `Thank you for your insight on ${dimensionInfo?.title ?? 'this dimension'}. This helps with the analysis.`;
     }
 
     await prisma.explorationMessage.create({

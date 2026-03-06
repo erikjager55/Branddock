@@ -25,7 +25,7 @@ import type {
   StoredFieldSuggestionConfig,
 } from '@/lib/ai/exploration/config.types';
 
-// ─── Default prompts (voor "Laad standaard" functionaliteit) ─
+// ─── Default prompts (for "Load defaults" functionality) ────
 
 const DEFAULT_SYSTEM_PROMPT = `You are a senior brand strategist conducting a structured exploration session.
 Guide the user through strategic dimensions with thoughtful questions.
@@ -118,10 +118,10 @@ interface TabConfig {
 }
 
 const TABS: TabConfig[] = [
-  { key: 'general', label: 'Algemeen', icon: Settings },
-  { key: 'dimensions', label: 'Dimensies', icon: MessageCircle },
+  { key: 'general', label: 'General', icon: Settings },
+  { key: 'dimensions', label: 'Dimensions', icon: MessageCircle },
   { key: 'prompts', label: 'Prompts', icon: FileText },
-  { key: 'knowledge', label: 'Kennisbronnen', icon: BookOpen },
+  { key: 'knowledge', label: 'Knowledge Sources', icon: BookOpen },
 ];
 
 // ─── Props ──────────────────────────────────────────────────
@@ -207,26 +207,26 @@ export function ConfigDetailView({
     const invalidDimensions = new Set<number>();
 
     if (dimensions.length === 0) {
-      errors.push('Voeg minimaal 1 dimensie toe');
+      errors.push('Add at least 1 dimension');
     } else {
       dimensions.forEach((dim, i) => {
         if (!dim.key?.trim() || !dim.title?.trim() || !dim.question?.trim()) {
           invalidDimensions.add(i);
-          errors.push(`Dimensie ${i + 1}: key, titel en vraag zijn verplicht`);
+          errors.push(`Dimension ${i + 1}: key, title and question are required`);
         }
       });
     }
 
     const hasPromptErrors = !systemPrompt.trim() || !feedbackPrompt.trim() || !reportPrompt.trim();
-    if (!systemPrompt.trim()) errors.push('System prompt is verplicht');
-    if (!feedbackPrompt.trim()) errors.push('Feedback prompt is verplicht');
-    if (!reportPrompt.trim()) errors.push('Report prompt is verplicht');
+    if (!systemPrompt.trim()) errors.push('System prompt is required');
+    if (!feedbackPrompt.trim()) errors.push('Feedback prompt is required');
+    if (!reportPrompt.trim()) errors.push('Report prompt is required');
 
     setValidationErrors(invalidDimensions);
     setPromptErrors(hasPromptErrors);
 
     if (errors.length > 0) {
-      toast.error(`Validatie mislukt: ${errors[0]}${errors.length > 1 ? ` (+${errors.length - 1} meer)` : ''}`);
+      toast.error(`Validation failed: ${errors[0]}${errors.length > 1 ? ` (+${errors.length - 1} more)` : ''}`);
       // Navigate to tab with first error
       if (invalidDimensions.size > 0 || dimensions.length === 0) {
         setActiveTab('dimensions');
@@ -262,7 +262,7 @@ export function ConfigDetailView({
         isActive,
       });
     } catch (err) {
-      toast.error(`Opslaan mislukt: ${err instanceof Error ? err.message : 'Onbekende fout'}`);
+      toast.error(`Save failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsSaving(false);
     }
@@ -270,14 +270,14 @@ export function ConfigDetailView({
 
   // ─── Load defaults handlers ────────────────────────────
   const handleLoadDefaultDimensions = () => {
-    if (dimensions.length > 0 && !confirm('Huidige dimensies worden vervangen. Doorgaan?')) return;
+    if (dimensions.length > 0 && !confirm('Current dimensions will be replaced. Continue?')) return;
     setDimensions(getDefaultDimensionsForType(itemType, itemSubType || null));
     setValidationErrors(new Set());
   };
 
   const handleLoadDefaultPrompt = (type: 'system' | 'feedback' | 'report') => {
     const current = type === 'system' ? systemPrompt : type === 'feedback' ? feedbackPrompt : reportPrompt;
-    if (current.trim() && !confirm('Huidige prompt wordt vervangen. Doorgaan?')) return;
+    if (current.trim() && !confirm('Current prompt will be replaced. Continue?')) return;
     switch (type) {
       case 'system': setSystemPrompt(DEFAULT_SYSTEM_PROMPT); break;
       case 'feedback': setFeedbackPrompt(DEFAULT_FEEDBACK_PROMPT); break;
@@ -298,17 +298,17 @@ export function ConfigDetailView({
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors mb-4"
           >
             <ArrowLeft className="w-4 h-4" />
-            Terug naar overzicht
+            Back to overview
           </button>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <h2 className="text-lg font-semibold text-gray-900">{displayLabel}</h2>
               <Badge variant={isActive ? 'success' : 'default'} size="sm">
-                {isActive ? 'Actief' : 'Inactief'}
+                {isActive ? 'Active' : 'Inactive'}
               </Badge>
               {isNew && (
-                <Badge variant="info" size="sm">Nieuw</Badge>
+                <Badge variant="info" size="sm">New</Badge>
               )}
             </div>
             {!isNew && (
@@ -329,7 +329,7 @@ export function ConfigDetailView({
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                       >
                         <Copy className="w-3.5 h-3.5" />
-                        Dupliceren
+                        Duplicate
                       </button>
                     )}
                     {onDelete && (
@@ -341,7 +341,7 @@ export function ConfigDetailView({
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
-                          Verwijderen
+                          Delete
                         </button>
                       </>
                     )}
@@ -453,7 +453,7 @@ export function ConfigDetailView({
         <div className="flex items-center justify-between py-4 border-t border-gray-200 bg-white">
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-400">
-              {dimensions.length} dimensies geconfigureerd
+              {dimensions.length} dimensions configured
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -466,7 +466,7 @@ export function ConfigDetailView({
               Preview
             </Button>
             <Button variant="secondary" size="md" onClick={onCancel}>
-              Annuleren
+              Cancel
             </Button>
             <Button
               variant="primary"
@@ -474,7 +474,7 @@ export function ConfigDetailView({
               onClick={handleSave}
               isLoading={isSaving}
             >
-              Opslaan
+              Save
             </Button>
           </div>
         </div>

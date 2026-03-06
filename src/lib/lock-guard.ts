@@ -40,7 +40,7 @@ export async function requireUnlocked(
     if (record.isLocked) {
       return NextResponse.json(
         {
-          error: "Dit item is vergrendeld. Ontgrendel het om wijzigingen te maken.",
+          error: "This item is locked. Unlock it to make changes.",
           code: "LOCKED",
         },
         { status: 423 }

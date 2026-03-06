@@ -23,7 +23,7 @@ export function FavoriteButton({ isFavorite, onToggle, size = 'sm', className }:
           : 'text-muted-foreground hover:text-red-400',
         className
       )}
-      aria-label={isFavorite ? 'Verwijder uit favorieten' : 'Toevoegen aan favorieten'}
+      aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
     >
       <Heart
         className={size === 'sm' ? ICON_SIZES.sm : ICON_SIZES.md}

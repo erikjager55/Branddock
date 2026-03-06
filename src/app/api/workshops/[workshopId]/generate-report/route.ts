@@ -9,7 +9,7 @@ type RouteParams = { params: Promise<{ workshopId: string }> };
 
 // =============================================================
 // POST /api/workshops/[workshopId]/generate-report
-// AI rapport generatie via OpenAI
+// AI report generation via OpenAI
 // =============================================================
 export async function POST(_request: NextRequest, { params }: RouteParams) {
   try {

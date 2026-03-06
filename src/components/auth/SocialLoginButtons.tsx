@@ -45,17 +45,17 @@ const PROVIDER_BUTTON_CONFIG: Record<OAuthProviderId, {
   className: string;
 }> = {
   google: {
-    label: 'Doorgaan met Google',
+    label: 'Continue with Google',
     icon: GoogleIcon,
     className: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300',
   },
   microsoft: {
-    label: 'Doorgaan met Microsoft',
+    label: 'Continue with Microsoft',
     icon: MicrosoftIcon,
     className: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300',
   },
   apple: {
-    label: 'Doorgaan met Apple',
+    label: 'Continue with Apple',
     icon: AppleIcon,
     className: 'bg-gray-900 hover:bg-gray-800 text-white border border-gray-900',
   },
@@ -89,17 +89,17 @@ export function SocialLoginButtons() {
       const result = await signInWithProvider(provider, '/');
 
       if (result.error) {
-        const message = result.error.message ?? 'Inloggen mislukt';
+        const message = result.error.message ?? 'Login failed';
         if (message.includes('popup')) {
-          setError('Popup geblokkeerd. Sta popups toe voor deze site.');
+          setError('Popup blocked. Please allow popups for this site.');
         } else if (message.includes('account') && message.includes('exist')) {
-          setError('Dit e-mailadres is al gekoppeld aan een ander account. Probeer in te loggen met e-mail.');
+          setError('This email address is already linked to another account. Try signing in with email.');
         } else {
           setError(message);
         }
       }
     } catch {
-      setError('Er ging iets mis. Probeer het opnieuw.');
+      setError('Something went wrong. Please try again.');
     } finally {
       setLoadingProvider(null);
     }

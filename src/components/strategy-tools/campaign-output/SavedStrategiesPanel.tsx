@@ -1,7 +1,7 @@
 /**
  * COMPONENT: Saved Strategies Panel
  * 
- * Beheer meerdere opgeslagen campagne strategieën
+ * Manage multiple saved campaign strategies
  */
 
 import React, { useState } from 'react';
@@ -140,10 +140,10 @@ export function SavedStrategiesPanel({
           <div>
             <CardTitle className="text-lg flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Mijn Strategieën
+              My Strategies
             </CardTitle>
             <CardDescription className="text-xs mt-1">
-              {strategies.length} opgeslagen {strategies.length === 1 ? 'strategie' : 'strategieën'}
+              {strategies.length} saved {strategies.length === 1 ? 'strategy' : 'strategies'}
             </CardDescription>
           </div>
         </div>
@@ -177,7 +177,7 @@ export function SavedStrategiesPanel({
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
                 <p className="text-sm text-muted-foreground">
-                  {searchQuery ? 'Geen strategieën gevonden' : 'Nog geen strategieën'}
+                  {searchQuery ? 'No strategies found' : 'No strategies yet'}
                 </p>
                 {!searchQuery && (
                   <Button
@@ -186,7 +186,7 @@ export function SavedStrategiesPanel({
                     className="mt-3"
                     onClick={onNewStrategy}
                   >
-                    Maak je eerste strategie
+                    Create your first strategy
                   </Button>
                 )}
               </div>
@@ -264,7 +264,7 @@ export function SavedStrategiesPanel({
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            {new Date(strategy.updatedAt).toLocaleDateString('nl-NL', {
+                            {new Date(strategy.updatedAt).toLocaleDateString('en-US', {
                               day: 'numeric',
                               month: 'short'
                             })}
@@ -389,7 +389,7 @@ export function SavedStrategiesDropdown({
               >
                 <p className="font-medium text-sm truncate">{strategy.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(strategy.updatedAt).toLocaleDateString('nl-NL')}
+                  {new Date(strategy.updatedAt).toLocaleDateString('en-US')}
                 </p>
               </button>
             ))}

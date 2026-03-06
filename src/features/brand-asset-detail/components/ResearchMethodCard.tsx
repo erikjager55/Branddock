@@ -123,7 +123,7 @@ export function ResearchMethodCard({
           )}
           {isCompleted && isClickable && (
             <p className="text-xs text-emerald-600 font-medium mt-1">
-              Bekijk Resultaten →
+              View Results →
             </p>
           )}
         </div>

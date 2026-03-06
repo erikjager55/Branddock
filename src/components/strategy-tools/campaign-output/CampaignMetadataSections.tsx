@@ -1,10 +1,10 @@
 /**
  * COMPONENT: Campaign Metadata Sections
  * 
- * Toont drie vaste secties bovenaan elke gegenereerde campagne:
- * 1. Strategy Snapshot - gebruikte inputs en metadata
- * 2. Decision Quality - status op moment van genereren
- * 3. Change Awareness - wijzigingen sinds genereren
+ * Shows three fixed sections at the top of every generated campaign:
+ * 1. Strategy Snapshot - used inputs and metadata
+ * 2. Decision Quality - status at time of generation
+ * 3. Change Awareness - changes since generation
  */
 
 import React from 'react';
@@ -30,7 +30,6 @@ import {
 import { DecisionStatusBadge } from '../../decision-status/DecisionStatusBadge';
 import type { DecisionStatus } from '../../../types/decision-status';
 import { formatDistanceToNow } from 'date-fns';
-import { nl } from 'date-fns/locale';
 
 interface CampaignMetadata {
   generatedAt: string;
@@ -63,9 +62,9 @@ export function CampaignMetadataSections({
   onRecalculate
 }: CampaignMetadataSectionsProps) {
   const generatedDate = new Date(metadata.generatedAt);
-  const timeAgo = formatDistanceToNow(generatedDate, { addSuffix: true, locale: nl });
+  const timeAgo = formatDistanceToNow(generatedDate, { addSuffix: true });
 
-  // Bereken of er significante wijzigingen zijn
+  // Determine if there are significant changes
   const hasSignificantChanges = changeImpact && (
     changeImpact.hasAssetChanges || 
     changeImpact.hasNewResearch ||
@@ -111,16 +110,16 @@ export function CampaignMetadataSections({
               <div>
                 <CardTitle className="text-base">Strategy Snapshot</CardTitle>
                 <CardDescription className="text-xs">
-                  Gegenereerd {timeAgo}
+                  Generated {timeAgo}
                 </CardDescription>
               </div>
             </div>
             <Badge variant="outline" className="text-xs gap-1">
               <Calendar className="h-3 w-3" />
-              {generatedDate.toLocaleDateString('nl-NL', { 
-                day: 'numeric', 
-                month: 'short', 
-                year: 'numeric' 
+              {generatedDate.toLocaleDateString('en-US', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
               })}
             </Badge>
           </div>
@@ -205,7 +204,7 @@ export function CampaignMetadataSections({
             <div>
               <CardTitle className="text-base">Decision Quality</CardTitle>
               <CardDescription className="text-xs">
-                Status op moment van genereren
+                Status at time of generation
               </CardDescription>
             </div>
           </div>
@@ -228,9 +227,9 @@ export function CampaignMetadataSections({
                   {getDecisionStatusLabel(metadata.decisionStatus)}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {metadata.decisionStatus === 'safe-to-decide' && 'Voldoende onderzoek voor besluitvorming'}
-                  {metadata.decisionStatus === 'decision-at-risk' && 'Beperkt onderzoek - voorzichtigheid geboden'}
-                  {metadata.decisionStatus === 'do-not-decide' && 'Onvoldoende onderzoek voor besluitvorming'}
+                  {metadata.decisionStatus === 'safe-to-decide' && 'Sufficient research for decision-making'}
+                  {metadata.decisionStatus === 'decision-at-risk' && 'Limited research - caution advised'}
+                  {metadata.decisionStatus === 'do-not-decide' && 'Insufficient research for decision-making'}
                 </p>
               </div>
             </div>
@@ -245,7 +244,7 @@ export function CampaignMetadataSections({
             <div>
               <p className="text-sm font-medium mb-2 flex items-center gap-2">
                 <Info className="h-4 w-4 text-muted-foreground" />
-                Belangrijkste Risico's
+                Key Risks
               </p>
               <div className="space-y-1.5">
                 {metadata.decisionRisks.map((risk, index) => (
@@ -287,16 +286,16 @@ export function CampaignMetadataSections({
                 <div>
                   <CardTitle className="text-base">Change Awareness</CardTitle>
                   <CardDescription className="text-xs">
-                    {hasSignificantChanges 
-                      ? 'Wijzigingen gedetecteerd sinds genereren' 
-                      : 'Geen wijzigingen sinds genereren'
+                    {hasSignificantChanges
+                      ? 'Changes detected since generation'
+                      : 'No changes since generation'
                     }
                   </CardDescription>
                 </div>
               </div>
               {hasSignificantChanges && (
                 <Badge variant="outline" className="text-xs bg-amber-100 dark:bg-amber-900/50 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400">
-                  Updates beschikbaar
+                  Updates available
                 </Badge>
               )}
             </div>
@@ -306,7 +305,7 @@ export function CampaignMetadataSections({
               <Alert className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20">
                 <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <AlertDescription className="text-sm text-green-900 dark:text-green-100">
-                  Deze campagne is actueel. Er zijn geen wijzigingen in de onderliggende strategie sinds het genereren.
+                  This campaign is up to date. There have been no changes to the underlying strategy since generation.
                 </AlertDescription>
               </Alert>
             ) : (
@@ -316,7 +315,7 @@ export function CampaignMetadataSections({
                   <div>
                     <p className="text-sm font-medium mb-2 flex items-center gap-2">
                       <Package className="h-4 w-4 text-muted-foreground" />
-                      Gewijzigde Brand Assets
+                      Changed Brand Assets
                       <Badge variant="secondary" className="text-xs">
                         {changeImpact.changedAssets.length}
                       </Badge>
@@ -343,7 +342,7 @@ export function CampaignMetadataSections({
                   <div>
                     <p className="text-sm font-medium mb-2 flex items-center gap-2">
                       <FileText className="h-4 w-4 text-muted-foreground" />
-                      Nieuw Onderzoek Toegevoegd
+                      New Research Added
                       <Badge variant="secondary" className="text-xs">
                         +{changeImpact.newResearchCount}
                       </Badge>
@@ -351,7 +350,7 @@ export function CampaignMetadataSections({
                     <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
                       <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       <AlertDescription className="text-sm text-blue-900 dark:text-blue-100">
-                        Er is nieuw onderzoek beschikbaar dat de strategische keuzes kan beïnvloeden.
+                        New research is available that may influence strategic decisions.
                       </AlertDescription>
                     </Alert>
                   </div>
@@ -362,7 +361,7 @@ export function CampaignMetadataSections({
                   <Alert className="border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20">
                     <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                     <AlertDescription className="text-sm text-amber-900 dark:text-amber-100">
-                      <strong>Aanbeveling:</strong> Herbereken de campagne met de huidige strategische input voor de meest actuele inzichten.
+                      <strong>Recommendation:</strong> Recalculate the campaign with the current strategic input for the most up-to-date insights.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -374,10 +373,10 @@ export function CampaignMetadataSections({
                   variant="default"
                 >
                   <RefreshCw className="h-4 w-4" />
-                  Herbereken Campagne met Huidige Strategie
+                  Recalculate Campaign with Current Strategy
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">
-                  Dit creëert een nieuwe versie zonder de originele campagne aan te passen
+                  This creates a new version without modifying the original campaign
                 </p>
               </>
             )}

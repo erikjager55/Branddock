@@ -4,11 +4,9 @@
  * Global state management for brand assets data.
  * Provides CRUD operations and asset-related queries.
  *
- * DATA SOURCE STRATEGIE:
- * 1. Als workspace beschikbaar is (via sessie of env fallback) → laad via API + adapter
- * 2. Anders → fallback naar mock data + localStorage
- *
- * Alle downstream componenten ontvangen het bestaande BrandAsset formaat.
+ * DATA SOURCE: API only — no mock data fallback.
+ * Mock fallback caused "Asset not found" errors because mock IDs ('1'-'13')
+ * did not match database CUIDs. Removed as of March 2026.
  */
 
 import React, {
@@ -21,8 +19,6 @@ import React, {
   ReactNode,
 } from "react";
 import { BrandAsset } from "../types/brand-asset";
-import { mockBrandAssets } from "../data/mock-brand-assets";
-// localStorage persistence verwijderd — veroorzaakte stale mock ID mismatch
 import { logger } from "../utils/logger";
 import { ChangeType } from "../types/change-impact";
 import { fetchBrandAssets } from "../lib/api/brand-assets";
@@ -43,7 +39,7 @@ interface BrandAssetsContextType {
   removeBrandAsset: (id: string) => void;
 
   // Data source info
-  dataSource: "api" | "mock";
+  dataSource: "api" | "loading";
   isLoading: boolean;
   error: Error | null;
 
@@ -67,10 +63,8 @@ const BrandAssetsContext = createContext<BrandAssetsContextType | undefined>(
 
 export function BrandAssetsProvider({ children }: { children: ReactNode }) {
   const { workspaceId, isLoading: wsLoading } = useWorkspace();
-  // Start leeg — API data wordt async geladen, mock alleen als fallback zonder workspace
   const [brandAssets, setBrandAssets] = useState<BrandAsset[]>([]);
-
-  const [dataSource, setDataSource] = useState<"api" | "mock">("mock");
+  const [dataSource, setDataSource] = useState<"api" | "loading">("loading");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -90,9 +84,9 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
     if (wsLoading) return;
 
     if (!workspaceId) {
-      logger.info("No workspace available, using mock data as fallback");
-      setBrandAssets(mockBrandAssets);
-      setDataSource("mock");
+      logger.info("No workspace available, showing empty state");
+      setBrandAssets([]);
+      setDataSource("loading");
       setIsLoading(false);
       return;
     }
@@ -117,9 +111,9 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
       .catch((err) => {
         if (cancelled) return;
 
-        logger.warn("API fetch failed, using mock data as fallback:", err);
-        setBrandAssets(mockBrandAssets);
-        setDataSource("mock");
+        logger.warn("Brand assets API fetch failed:", err);
+        setBrandAssets([]);
+        setDataSource("loading");
         setError(err instanceof Error ? err : new Error(String(err)));
         setIsLoading(false);
       });
@@ -129,8 +123,8 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
     };
   }, [workspaceId, wsLoading]);
 
-  // localStorage persistence verwijderd — veroorzaakte stale mock IDs
-  // die niet matchen met database IDs, wat leidde tot "asset not found" errors
+  // localStorage persistence removed — caused stale mock IDs
+  // that did not match database IDs, leading to "asset not found" errors
 
   const getBrandAsset = (id: string): BrandAsset | undefined => {
     return brandAssets.find((asset) => asset.id === id);
@@ -243,7 +237,7 @@ export function useBrandAssets() {
 }
 
 /**
- * Genereert automatisch een beschrijving van de wijziging
+ * Automatically generates a description of the change
  */
 function generateChangeDescription(
   updates: Partial<BrandAsset>,
@@ -251,15 +245,15 @@ function generateChangeDescription(
 ): string {
   switch (changeType) {
     case "research-added":
-      return "Nieuw onderzoek toegevoegd";
+      return "New research added";
     case "validation":
-      return "Asset gevalideerd";
+      return "Asset validated";
     case "status-change":
-      return `Status gewijzigd naar ${updates.status}`;
+      return `Status changed to ${updates.status}`;
     case "content-update":
     default:
-      if (updates.content) return "Content geüpdatet";
-      if (updates.title) return "Titel gewijzigd";
-      return "Asset geüpdatet";
+      if (updates.content) return "Content updated";
+      if (updates.title) return "Title changed";
+      return "Asset updated";
   }
 }

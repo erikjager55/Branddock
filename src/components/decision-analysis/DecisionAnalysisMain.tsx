@@ -43,28 +43,28 @@ export function DecisionAnalysisMain({ analysis, onGenerateBrief }: DecisionAnal
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
       borderColor: 'border-emerald-200',
-      label: analysis.readinessLabel || 'Beslisklaar – Laag risico',
+      label: analysis.readinessLabel || 'Ready to Decide – Low Risk',
     },
     uncertain: {
       icon: AlertCircle,
       color: 'text-amber-600',
       bgColor: 'bg-amber-50',
       borderColor: 'border-amber-200',
-      label: analysis.readinessLabel || 'Onzeker – Gemiddeld risico',
+      label: analysis.readinessLabel || 'Uncertain – Medium Risk',
     },
     blocked: {
       icon: XCircle,
       color: 'text-red-600',
       bgColor: 'bg-red-50',
       borderColor: 'border-red-200',
-      label: analysis.readinessLabel || 'Geblokkeerd – Hoog risico',
+      label: analysis.readinessLabel || 'Blocked – High Risk',
     },
     outdated: {
       icon: Clock,
       color: 'text-slate-600',
       bgColor: 'bg-slate-50',
       borderColor: 'border-slate-200',
-      label: analysis.readinessLabel || 'Verouderd – Data niet meer actueel',
+      label: analysis.readinessLabel || 'Outdated – Data no longer current',
     },
   };
 
@@ -73,9 +73,9 @@ export function DecisionAnalysisMain({ analysis, onGenerateBrief }: DecisionAnal
 
   // Risk severity configuration
   const riskConfig = {
-    high: { color: 'text-red-600', bgColor: 'bg-red-50', label: 'Hoog' },
-    medium: { color: 'text-amber-600', bgColor: 'bg-amber-50', label: 'Gemiddeld' },
-    low: { color: 'text-blue-600', bgColor: 'bg-blue-50', label: 'Laag' },
+    high: { color: 'text-red-600', bgColor: 'bg-red-50', label: 'High' },
+    medium: { color: 'text-amber-600', bgColor: 'bg-amber-50', label: 'Medium' },
+    low: { color: 'text-blue-600', bgColor: 'bg-blue-50', label: 'Low' },
   };
 
   // Metric status configuration
@@ -122,7 +122,7 @@ export function DecisionAnalysisMain({ analysis, onGenerateBrief }: DecisionAnal
             <div className="mb-6">
               <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
-                Belangrijkste risico's
+                Key Risks
               </h3>
               <div className="space-y-2">
                 {analysis.risks.map((risk) => {
@@ -165,7 +165,7 @@ export function DecisionAnalysisMain({ analysis, onGenerateBrief }: DecisionAnal
             className="bg-[#1FD1B2] hover:bg-[#1FD1B2]/90 text-white gap-2"
           >
             <FileText className="h-4 w-4" />
-            Genereer decision brief
+            Generate decision brief
           </Button>
         </CardContent>
       </Card>
@@ -175,16 +175,16 @@ export function DecisionAnalysisMain({ analysis, onGenerateBrief }: DecisionAnal
         <CardContent className="p-6">
           <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
             <Database className="h-4 w-4" />
-            Bronverantwoording
+            Source Accountability
           </h3>
 
           <div className="space-y-4 text-sm">
             
             {/* Data Source */}
             <div className="flex gap-3">
-              <span className="text-slate-500 min-w-[120px]">Herkomst data</span>
+              <span className="text-slate-500 min-w-[120px]">Data Source</span>
               <span className="text-slate-900 font-medium">
-                {analysis.dataSource.type === 'ai-analysis' && 'AI Exploratie'}
+                {analysis.dataSource.type === 'ai-analysis' && 'AI Exploration'}
                 {analysis.dataSource.type === 'workshop' && 'Workshop'}
                 {analysis.dataSource.type === 'interview' && 'Interviews'}
                 {analysis.dataSource.type === 'questionnaire' && 'Questionnaire'}
@@ -193,10 +193,10 @@ export function DecisionAnalysisMain({ analysis, onGenerateBrief }: DecisionAnal
 
             {/* Date */}
             <div className="flex gap-3">
-              <span className="text-slate-500 min-w-[120px]">Datum</span>
+              <span className="text-slate-500 min-w-[120px]">Date</span>
               <span className="text-slate-900 flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                {new Date(analysis.dataSource.date).toLocaleDateString('nl-NL', {
+                {new Date(analysis.dataSource.date).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'
@@ -207,7 +207,7 @@ export function DecisionAnalysisMain({ analysis, onGenerateBrief }: DecisionAnal
             {/* Participants */}
             {analysis.dataSource.participants && (
               <div className="flex gap-3">
-                <span className="text-slate-500 min-w-[120px]">Deelnemers</span>
+                <span className="text-slate-500 min-w-[120px]">Participants</span>
                 <span className="text-slate-900">{analysis.dataSource.participants}</span>
               </div>
             )}
@@ -215,7 +215,7 @@ export function DecisionAnalysisMain({ analysis, onGenerateBrief }: DecisionAnal
             {/* Assumptions */}
             {analysis.dataSource.assumptions && analysis.dataSource.assumptions.length > 0 && (
               <div>
-                <div className="text-slate-500 mb-2">Aannames</div>
+                <div className="text-slate-500 mb-2">Assumptions</div>
                 <ul className="space-y-1.5 ml-0">
                   {analysis.dataSource.assumptions.map((assumption, idx) => (
                     <li key={idx} className="text-slate-600 flex items-start gap-2">

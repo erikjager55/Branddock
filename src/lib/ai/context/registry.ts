@@ -107,7 +107,7 @@ export const CONTEXT_REGISTRY: ContextSourceConfig[] = [
       'id', 'createdAt', 'updatedAt', 'workspaceId', 'slug',
       'rawExcerpt', 'aiAnalysis', 'isDismissed', 'dismissedAt',
     ],
-    includeRelations: ['trendSource'],
+    includeRelations: [],
   },
   {
     key: 'knowledge_resource',

@@ -172,9 +172,9 @@ export function ProductsServices({ onNavigate }: ProductsServicesProps) {
         {products.length === 0 ? (
           <EmptyState
             icon={Package}
-            title="Nog geen producten of diensten"
-            description="Voeg je eerste product of dienst toe om te beginnen"
-            actionLabel="Product/Service Toevoegen"
+            title="No products or services yet"
+            description="Add your first product or service to get started"
+            actionLabel="Add Product/Service"
             onAction={() => onNavigate?.('product-analyzer')}
           />
         ) : (
@@ -231,7 +231,7 @@ export function ProductsServices({ onNavigate }: ProductsServicesProps) {
                             ))}
                             {product.features.length > 4 && (
                               <Badge variant="outline" className="text-xs rounded-md bg-muted">
-                                +{product.features.length - 4} meer
+                                +{product.features.length - 4} more
                               </Badge>
                             )}
                           </Flex>

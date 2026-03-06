@@ -1,18 +1,15 @@
 'use client';
 
-import { Radar, Plus, PenLine, ScanSearch } from 'lucide-react';
+import { Radar, PenLine, Sparkles } from 'lucide-react';
 import { Button } from '@/components/shared';
 import { useTrendRadarStore } from '../stores/useTrendRadarStore';
-import { useStartScan } from '../hooks';
 import { TrendRadarStats } from './TrendRadarStats';
 import { TrendRadarTabs } from './TrendRadarTabs';
-import { SourcesPanel } from './sources/SourcesPanel';
-import { AddSourceModal } from './sources/AddSourceModal';
-import { EditSourceModal } from './sources/EditSourceModal';
 import { TrendFeedPanel } from './feed/TrendFeedPanel';
 import { AlertsPanel } from './alerts/AlertsPanel';
 import { ActivationPanel } from './activation/ActivationPanel';
-import { ScanProgressModal } from './scan/ScanProgressModal';
+import { AIResearchModal } from './research/AIResearchModal';
+import { ResearchProgressModal } from './scan/ResearchProgressModal';
 import { AddManualTrendModal } from './AddManualTrendModal';
 
 interface TrendRadarPageProps {
@@ -22,23 +19,9 @@ interface TrendRadarPageProps {
 export function TrendRadarPage({ onNavigate }: TrendRadarPageProps) {
   const {
     activeTab,
-    openAddSourceModal,
     openAddManualTrendModal,
-    openScanProgressModal,
-    setScanJobId,
+    openResearchModal,
   } = useTrendRadarStore();
-
-  const startScanMutation = useStartScan();
-
-  const handleScanNow = async () => {
-    try {
-      const job = await startScanMutation.mutateAsync(undefined);
-      setScanJobId(job.id);
-      openScanProgressModal();
-    } catch {
-      // Error handled by mutation
-    }
-  };
 
   const handleTrendClick = (id: string) => {
     useTrendRadarStore.getState().setSelectedTrendId(id);
@@ -55,24 +38,20 @@ export function TrendRadarPage({ onNavigate }: TrendRadarPageProps) {
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">Trend Radar</h1>
-            <p className="text-sm text-gray-500">Monitor market trends from your sources</p>
+            <p className="text-sm text-gray-500">Discover market trends with AI research</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" icon={Plus} onClick={openAddSourceModal}>
-            Add Source
-          </Button>
           <Button variant="secondary" size="sm" icon={PenLine} onClick={openAddManualTrendModal}>
             Add Trend
           </Button>
           <Button
             variant="primary"
             size="sm"
-            icon={ScanSearch}
-            onClick={handleScanNow}
-            isLoading={startScanMutation.isPending}
+            icon={Sparkles}
+            onClick={openResearchModal}
           >
-            Scan Now
+            AI Research
           </Button>
         </div>
       </div>
@@ -84,16 +63,14 @@ export function TrendRadarPage({ onNavigate }: TrendRadarPageProps) {
       <TrendRadarTabs />
 
       {/* Tab content */}
-      {activeTab === 'sources' && <SourcesPanel />}
       {activeTab === 'feed' && <TrendFeedPanel onTrendClick={handleTrendClick} />}
       {activeTab === 'alerts' && <AlertsPanel onTrendClick={handleTrendClick} />}
       {activeTab === 'activate' && <ActivationPanel onTrendClick={handleTrendClick} />}
 
       {/* Modals */}
-      <AddSourceModal />
-      <EditSourceModal />
       <AddManualTrendModal />
-      <ScanProgressModal />
+      <AIResearchModal />
+      <ResearchProgressModal />
     </div>
   );
 }

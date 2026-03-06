@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 
 // =============================================================
-// GET /api/brandstyle — haal styleguide op (max 1 per workspace)
+// GET /api/brandstyle — fetch styleguide (max 1 per workspace)
 // =============================================================
 export async function GET() {
   try {

@@ -40,7 +40,7 @@ export async function PATCH(_req: NextRequest, { params }: RouteParams) {
       dismissedAt: isActivated ? null : existing.dismissedAt,
     },
     include: {
-      trendSource: { select: { id: true, name: true, url: true } },
+      researchJob: { select: { id: true, query: true } },
       activatedBy: { select: { id: true, name: true } },
     },
   });

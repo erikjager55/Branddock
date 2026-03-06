@@ -1,7 +1,7 @@
 /**
  * CONTEXT: Product Tier
  * 
- * Beheert gebruiker's product tier en feature access.
+ * Manages user's product tier and feature access.
  */
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';

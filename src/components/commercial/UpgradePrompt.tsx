@@ -1,8 +1,8 @@
 /**
  * COMPONENT: Upgrade Prompt
  * 
- * Getoond wanneer gebruiker probeert een gated feature te gebruiken.
- * Gepositioneerd als niveau van besliszekerheid.
+ * Shown when a user tries to use a gated feature.
+ * Positioned as a level of decision certainty.
  */
 
 import React from 'react';
@@ -63,11 +63,11 @@ export function UpgradePrompt({
             
             <div className="flex items-center gap-3 mb-4">
               <Badge variant="outline" className={currentTierInfo.color.badge}>
-                Je niveau: {current.label}
+                Your level: {current.label}
               </Badge>
               <ArrowRight className="h-4 w-4 text-muted-foreground" />
               <Badge variant="outline" className={tierInfo.color.badge}>
-                Vereist: {required.label}
+                Required: {required.label}
               </Badge>
             </div>
 
@@ -76,7 +76,7 @@ export function UpgradePrompt({
               className="gap-2"
               onClick={onUpgrade}
             >
-              Upgrade naar {tierInfo.name}
+              Upgrade to {tierInfo.name}
               <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
@@ -95,9 +95,9 @@ export function UpgradePrompt({
                 <Lock className={`h-6 w-6 ${tierInfo.color.text}`} />
               </div>
               <div>
-                <CardTitle className="mb-2">Upgrade voor Hogere Besliszekerheid</CardTitle>
+                <CardTitle className="mb-2">Upgrade for Higher Decision Certainty</CardTitle>
                 <CardDescription>
-                  Deze functie vereist {tierInfo.certaintyLevel} niveau
+                  This feature requires {tierInfo.certaintyLevel} level
                 </CardDescription>
               </div>
             </div>
@@ -122,7 +122,7 @@ export function UpgradePrompt({
 
           {/* Certainty Level Progression */}
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-4">Niveaus van Besliszekerheid</p>
+            <p className="text-sm font-medium text-muted-foreground mb-4">Levels of Decision Certainty</p>
             <div className="space-y-3">
               {/* Current Level */}
               <div className={`p-4 rounded-lg border-2 ${currentTierInfo.color.bg} border-current`}>
@@ -136,7 +136,7 @@ export function UpgradePrompt({
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-semibold">{currentTierInfo.certaintyLevel}</p>
                       <Badge variant="outline" className={currentTierInfo.color.badge}>
-                        Je huidige niveau
+                        Your current level
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -163,7 +163,7 @@ export function UpgradePrompt({
                     <div className="flex items-center gap-2 mb-1">
                       <p className="font-semibold">{tierInfo.certaintyLevel}</p>
                       <Badge variant="outline" className={tierInfo.color.badge}>
-                        Vereist niveau
+                        Required level
                       </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
@@ -178,7 +178,7 @@ export function UpgradePrompt({
           {/* What You Get */}
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-3">
-              Met {tierInfo.name} krijg je:
+              With {tierInfo.name} you get:
             </p>
             <div className="grid gap-2">
               {tierInfo.features.slice(0, 4).map((feature, index) => (
@@ -192,7 +192,7 @@ export function UpgradePrompt({
 
           {/* Pricing */}
           <div className="p-4 rounded-lg bg-muted/50 border text-center">
-            <p className="text-sm text-muted-foreground mb-1">Investering</p>
+            <p className="text-sm text-muted-foreground mb-1">Investment</p>
             <div className="flex items-baseline justify-center gap-2">
               <p className="text-3xl font-bold">{tierInfo.price}</p>
               {tierInfo.billingCycle && (
@@ -205,7 +205,7 @@ export function UpgradePrompt({
           <div className="flex gap-3">
             {onClose && (
               <Button variant="outline" onClick={onClose} className="flex-1">
-                Terug
+                Back
               </Button>
             )}
             <Button onClick={onUpgrade} className="flex-1 gap-2">

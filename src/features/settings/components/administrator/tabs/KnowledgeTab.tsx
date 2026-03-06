@@ -88,9 +88,9 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       setIsAdding(false);
-      toast.success('Kennisbron toegevoegd');
+      toast.success('Knowledge source added');
     },
-    onError: () => toast.error('Kennisbron toevoegen mislukt'),
+    onError: () => toast.error('Failed to add knowledge source'),
   });
 
   const updateMutation = useMutation({
@@ -99,18 +99,18 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
       setEditingItemId(null);
-      toast.success('Kennisbron bijgewerkt');
+      toast.success('Knowledge source updated');
     },
-    onError: () => toast.error('Kennisbron bijwerken mislukt'),
+    onError: () => toast.error('Failed to update knowledge source'),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (itemId: string) => deleteKnowledgeItem(configId!, itemId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey });
-      toast.success('Kennisbron verwijderd');
+      toast.success('Knowledge source deleted');
     },
-    onError: () => toast.error('Kennisbron verwijderen mislukt'),
+    onError: () => toast.error('Failed to delete knowledge source'),
   });
 
   const items = (data?.items ?? []) as KnowledgeItem[];
@@ -120,16 +120,16 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
     return (
       <div className="space-y-4">
         <div>
-          <h3 className="text-sm font-semibold text-gray-800">Kennisbronnen</h3>
+          <h3 className="text-sm font-semibold text-gray-800">Knowledge Sources</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Kennisbronnen worden als extra context aan de AI meegegeven tijdens exploration sessies.
+            Knowledge sources are provided as additional context to the AI during exploration sessions.
           </p>
         </div>
         <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
           <Info className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500 font-medium">Sla de configuratie eerst op</p>
+          <p className="text-sm text-gray-500 font-medium">Save the configuration first</p>
           <p className="text-xs text-gray-400 mt-1">
-            Je kunt kennisbronnen toevoegen nadat de configuratie is opgeslagen.
+            You can add knowledge sources after saving the configuration.
           </p>
         </div>
       </div>
@@ -142,16 +142,16 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-800">
-            Kennisbronnen ({items.length})
+            Knowledge Sources ({items.length})
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Deze kennisbronnen worden automatisch als context meegegeven aan de AI tijdens
-            exploration sessies. Ze worden geïnjecteerd via de <code className="text-[10px] font-mono bg-gray-100 px-1 py-0.5 rounded">{'{{customKnowledge}}'}</code> variabele in je prompts.
+            These knowledge sources are automatically provided as context to the AI during
+            exploration sessions. They are injected via the <code className="text-[10px] font-mono bg-gray-100 px-1 py-0.5 rounded">{'{{customKnowledge}}'}</code> variable in your prompts.
           </p>
         </div>
         {!isAdding && (
           <Button variant="primary" size="sm" icon={Plus} onClick={() => setIsAdding(true)}>
-            Toevoegen
+            Add
           </Button>
         )}
       </div>
@@ -169,10 +169,10 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
       {!isLoading && items.length === 0 && !isAdding && (
         <EmptyState
           icon={BookOpen}
-          title="Nog geen kennisbronnen"
-          description="Voeg context toe die de AI als extra informatie gebruikt tijdens exploration sessies van dit type."
+          title="No knowledge sources yet"
+          description="Add context that the AI uses as additional information during exploration sessions of this type."
           action={{
-            label: 'Eerste kennisbron toevoegen',
+            label: 'Add first knowledge source',
             onClick: () => setIsAdding(true),
           }}
         />
@@ -193,10 +193,10 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5">Titel</th>
-                <th className="text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5 w-32">Categorie</th>
+                <th className="text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5">Title</th>
+                <th className="text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5 w-32">Category</th>
                 <th className="text-left text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5">Preview</th>
-                <th className="text-right text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5 w-20">Acties</th>
+                <th className="text-right text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-2.5 w-20">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -234,18 +234,18 @@ export function KnowledgeTab({ configId }: KnowledgeTabProps) {
                         <button
                           onClick={() => setEditingItemId(item.id)}
                           className="p-1.5 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
-                          title="Bewerken"
+                          title="Edit"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => {
-                            if (confirm('Weet je zeker dat je deze kennisbron wilt verwijderen?')) {
+                            if (confirm('Are you sure you want to delete this knowledge source?')) {
                               deleteMutation.mutate(item.id);
                             }
                           }}
                           className="p-1.5 text-gray-400 hover:text-red-500 rounded-md hover:bg-red-50 transition-colors"
-                          title="Verwijderen"
+                          title="Delete"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -289,7 +289,7 @@ function KnowledgeItemForm({
     <form onSubmit={handleSubmit} className="border border-teal-200 bg-teal-50/30 rounded-xl p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-gray-700">
-          {initialData ? 'Kennisbron bewerken' : 'Nieuwe kennisbron'}
+          {initialData ? 'Edit knowledge source' : 'New knowledge source'}
         </span>
         <button type="button" onClick={onCancel} className="p-1 text-gray-400 hover:text-gray-600 rounded">
           <X className="w-4 h-4" />
@@ -298,24 +298,24 @@ function KnowledgeItemForm({
 
       <div className="grid grid-cols-[1fr_200px] gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Titel</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Title</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Bijv. Marktonderzoek Q1 2026"
+            placeholder="E.g. Market Research Q1 2026"
             required
             className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">Categorie</label>
+          <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
           >
-            <option value="">Geen categorie</option>
+            <option value="">No category</option>
             {CATEGORIES.map((cat) => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
@@ -328,18 +328,18 @@ function KnowledgeItemForm({
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="De informatie die als context aan de AI wordt meegegeven..."
+          placeholder="The information provided as context to the AI..."
           required
           maxLength={10000}
           rows={8}
           className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 resize-y"
         />
-        <div className="text-[10px] text-gray-400 text-right mt-1">{content.length} / 10.000</div>
+        <div className="text-[10px] text-gray-400 text-right mt-1">{content.length} / 10,000</div>
       </div>
 
       <div className="flex items-center justify-end gap-2 pt-1">
         <Button variant="secondary" size="sm" onClick={onCancel} type="button">
-          Annuleren
+          Cancel
         </Button>
         <Button
           variant="primary"
@@ -348,7 +348,7 @@ function KnowledgeItemForm({
           disabled={isSaving || !title.trim() || !content.trim()}
           isLoading={isSaving}
         >
-          Opslaan
+          Save
         </Button>
       </div>
     </form>

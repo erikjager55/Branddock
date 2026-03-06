@@ -1,28 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { resolveWorkspaceId } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { resolveWorkspaceForProduct } from "@/lib/products/resolve-workspace";
 
-// DELETE /api/products/:id/personas/:personaId — ontkoppel
+// DELETE /api/products/:id/personas/:personaId — unlink
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; personaId: string }> }
 ) {
   try {
-    const workspaceId = await resolveWorkspaceId();
-    if (!workspaceId) {
-      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
-    }
-
     const { id, personaId } = await params;
 
-    // Verify product belongs to workspace
-    const product = await prisma.product.findFirst({
-      where: { id, workspaceId },
-    });
-    if (!product) {
-      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    const workspaceId = await resolveWorkspaceForProduct(id);
+    if (!workspaceId) {
+      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
     // Check if link exists

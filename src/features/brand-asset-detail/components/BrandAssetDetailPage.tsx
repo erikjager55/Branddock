@@ -9,7 +9,6 @@ import { AssetDetailHeader } from "./AssetDetailHeader";
 import { PurposeWheelSection } from "./PurposeWheelSection";
 import { FrameworkSection } from "./FrameworkSection";
 import type { PurposeWheelFrameworkData } from "../types/framework.types";
-import { DeleteAssetDialog } from "./DeleteAssetDialog";
 import { AssetQuickActionsCard } from "./sidebar/AssetQuickActionsCard";
 import { AssetCompletenessCard } from "./sidebar/AssetCompletenessCard";
 import { AssetResearchSidebarCard } from "./sidebar/AssetResearchSidebarCard";
@@ -38,10 +37,6 @@ export function BrandAssetDetailPage({
   onNavigateToGoldenCircle,
 }: BrandAssetDetailPageProps) {
   const { data: asset, isLoading, error } = useAssetDetail(assetId);
-  const showDeleteDialog = useBrandAssetDetailStore((s) => s.showDeleteDialog);
-  const setShowDeleteDialog = useBrandAssetDetailStore(
-    (s) => s.setShowDeleteDialog
-  );
   const isEditing = useBrandAssetDetailStore((s) => s.isEditing);
   const setIsEditing = useBrandAssetDetailStore((s) => s.setIsEditing);
   const qc = useQueryClient();
@@ -202,15 +197,6 @@ export function BrandAssetDetailPage({
             </div>
           </div>
         </div>
-
-        {/* Delete Dialog */}
-        <DeleteAssetDialog
-          isOpen={showDeleteDialog}
-          onClose={() => setShowDeleteDialog(false)}
-          assetId={asset.id}
-          assetName={asset.name}
-          onDeleted={onNavigateBack}
-        />
 
         {/* Lock Confirm Dialog */}
         <LockConfirmDialog

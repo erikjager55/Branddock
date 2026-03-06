@@ -2,7 +2,8 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 import { DEFAULT_PERSONA_CHAT_PROMPT } from "./seed/persona-chat-config";
-import type { NotificationType, NotificationCategory, AssetCategory, AssetStatus, AIMessageType, ResearchMethodType, ResearchMethodStatus, WorkshopStatus, InterviewStatus, InterviewQuestionType, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, StyleguideSource, AnalysisStatus, ColorCategory, PersonaAvatarSource, PersonaResearchMethodType, InsightCategory, InsightScope, ImpactLevel, InsightTimeframe, InsightSource, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, ResourceSource, ProductSource, ProductStatus, DifficultyLevel, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus, TicketCategory, TicketPriority, TicketStatus, FeatureRequestStatus, OAuthProvider, ConnectionStatus, BillingCycle, InvoiceStatus, Theme, AccentColor, FontSize, SidebarPosition, SubscriptionStatus, ProductImageCategory, TrendSourceStatus, TrendDetectionSource, TrendScanStatus } from "@prisma/client";
+import { CANONICAL_BRAND_ASSETS, RESEARCH_METHOD_TYPES } from "../src/lib/constants/canonical-brand-assets";
+import type { NotificationType, NotificationCategory, AssetCategory, AssetStatus, AIMessageType, ResearchMethodType, ResearchMethodStatus, WorkshopStatus, InterviewStatus, InterviewQuestionType, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, StyleguideSource, AnalysisStatus, ColorCategory, PersonaAvatarSource, PersonaResearchMethodType, InsightCategory, InsightScope, ImpactLevel, InsightTimeframe, InsightSource, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, ResourceSource, ProductSource, ProductStatus, DifficultyLevel, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus, TicketCategory, TicketPriority, TicketStatus, FeatureRequestStatus, OAuthProvider, ConnectionStatus, BillingCycle, InvoiceStatus, Theme, AccentColor, FontSize, SidebarPosition, SubscriptionStatus, ProductImageCategory, TrendDetectionSource, TrendScanStatus } from "@prisma/client";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -117,8 +118,7 @@ async function main() {
 
   // Trend Radar
   await prisma.detectedTrend.deleteMany();
-  await prisma.trendScanJob.deleteMany();
-  await prisma.trendSource.deleteMany();
+  await prisma.trendResearchJob.deleteMany();
 
   // R0.1: Tables without cascade to workspace
   await prisma.insightSourceUrl.deleteMany();
@@ -336,49 +336,40 @@ async function main() {
     });
   }
 
-  // 11 Core Brand Assets (Fase 1A — matches brand-assets-field-specifications)
-  const brandAssets: Array<{
-    name: string;
-    slug: string;
-    category: AssetCategory;
-    description: string;
-    status: AssetStatus;
-    coverage: number;
-    ai: boolean;
-    workshop: boolean;
-    interview: boolean;
-    questionnaire: boolean;
-    frameworkType: string;
-  }> = [
-    { name: "Purpose Statement",    slug: "purpose-statement",    category: "PURPOSE",       description: "The reason your organization exists beyond profit",  status: "IN_PROGRESS",     coverage: 30,  ai: true,  workshop: false, interview: false, questionnaire: false, frameworkType: "PURPOSE_WHEEL" },
-    { name: "Golden Circle",        slug: "golden-circle",        category: "FOUNDATION",    description: "Simon Sinek's WHY → HOW → WHAT framework",         status: "IN_PROGRESS",     coverage: 55,  ai: true,  workshop: true,  interview: false, questionnaire: false, frameworkType: "GOLDEN_CIRCLE" },
-    { name: "Brand Essence",        slug: "brand-essence",        category: "CORE",          description: "The heart and soul of your brand",                  status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false, frameworkType: "BRAND_ESSENCE" },
-    { name: "Brand Promise",        slug: "brand-promise",        category: "STRATEGY",      description: "Core commitment to your customers",                status: "NEEDS_ATTENTION", coverage: 45,  ai: true,  workshop: false, interview: false, questionnaire: false, frameworkType: "BRAND_PROMISE" },
-    { name: "Mission Statement",    slug: "mission-statement",    category: "STRATEGY",      description: "What you do, how, and for whom",                    status: "NEEDS_ATTENTION", coverage: 60,  ai: true,  workshop: true,  interview: false, questionnaire: false, frameworkType: "MISSION_STATEMENT" },
-    { name: "Vision Statement",     slug: "vision-statement",     category: "STRATEGY",      description: "Forward-looking declaration of intent",             status: "READY",           coverage: 92,  ai: true,  workshop: true,  interview: true,  questionnaire: false, frameworkType: "VISION_STATEMENT" },
-    { name: "Brand Archetype",      slug: "brand-archetype",      category: "PERSONALITY",   description: "Universal behavior patterns",                       status: "READY",           coverage: 85,  ai: true,  workshop: true,  interview: true,  questionnaire: true,  frameworkType: "BRAND_ARCHETYPE" },
-    { name: "Transformative Goals", slug: "transformative-goals", category: "STRATEGY",      description: "Ambitious goals for lasting impact",                status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false, frameworkType: "TRANSFORMATIVE_GOALS" },
-    { name: "Brand Personality",    slug: "brand-personality",    category: "PERSONALITY",   description: "Human characteristics of your brand",               status: "IN_PROGRESS",     coverage: 40,  ai: true,  workshop: false, interview: false, questionnaire: false, frameworkType: "BRAND_PERSONALITY" },
-    { name: "Brand Story",          slug: "brand-story",          category: "NARRATIVE",     description: "Your brand's past, present and future",             status: "IN_PROGRESS",     coverage: 50,  ai: true,  workshop: true,  interview: false, questionnaire: false, frameworkType: "BRAND_STORY" },
-    { name: "Core Values",          slug: "core-values",          category: "CULTURE",       description: "Fundamental beliefs that guide your brand",          status: "NEEDS_ATTENTION", coverage: 70,  ai: true,  workshop: true,  interview: true,  questionnaire: false, frameworkType: "BRANDHOUSE_VALUES" },
-  ];
+  // 12 Canonical Brand Assets (from shared constant)
+  // Demo-specific overrides (status, coverage, validation booleans) per slug
+  const demoOverrides: Record<string, { status: AssetStatus; coverage: number; ai: boolean; workshop: boolean; interview: boolean; questionnaire: boolean }> = {
+    "purpose-statement":    { status: "IN_PROGRESS",     coverage: 30,  ai: true,  workshop: false, interview: false, questionnaire: false },
+    "golden-circle":        { status: "IN_PROGRESS",     coverage: 55,  ai: true,  workshop: true,  interview: false, questionnaire: false },
+    "brand-essence":        { status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
+    "brand-promise":        { status: "NEEDS_ATTENTION", coverage: 45,  ai: true,  workshop: false, interview: false, questionnaire: false },
+    "mission-statement":    { status: "NEEDS_ATTENTION", coverage: 60,  ai: true,  workshop: true,  interview: false, questionnaire: false },
+    "vision-statement":     { status: "READY",           coverage: 92,  ai: true,  workshop: true,  interview: true,  questionnaire: false },
+    "brand-archetype":      { status: "READY",           coverage: 85,  ai: true,  workshop: true,  interview: true,  questionnaire: true },
+    "transformative-goals": { status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
+    "brand-personality":    { status: "IN_PROGRESS",     coverage: 40,  ai: true,  workshop: false, interview: false, questionnaire: false },
+    "brand-story":          { status: "IN_PROGRESS",     coverage: 50,  ai: true,  workshop: true,  interview: false, questionnaire: false },
+    "core-values":          { status: "NEEDS_ATTENTION", coverage: 70,  ai: true,  workshop: true,  interview: true,  questionnaire: false },
+    "social-relevancy":     { status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
+  };
 
-  for (const asset of brandAssets) {
-    const validatedCount = [asset.ai, asset.workshop, asset.interview, asset.questionnaire].filter(Boolean).length;
+  for (const asset of CANONICAL_BRAND_ASSETS) {
+    const override = demoOverrides[asset.slug] ?? { status: "DRAFT" as const, coverage: 0, ai: false, workshop: false, interview: false, questionnaire: false };
+    const validatedCount = [override.ai, override.workshop, override.interview, override.questionnaire].filter(Boolean).length;
     await prisma.brandAsset.create({
       data: {
         name: asset.name,
         slug: asset.slug,
-        category: asset.category,
+        category: asset.category as AssetCategory,
         description: asset.description,
-        status: asset.status,
-        coveragePercentage: asset.coverage,
+        status: override.status,
+        coveragePercentage: override.coverage,
         validatedCount,
         frameworkType: asset.frameworkType,
-        aiValidated: asset.ai,
-        workshopValidated: asset.workshop,
-        interviewValidated: asset.interview,
-        questionnaireValidated: asset.questionnaire,
+        aiValidated: override.ai,
+        workshopValidated: override.workshop,
+        interviewValidated: override.interview,
+        questionnaireValidated: override.questionnaire,
         workspaceId: workspace.id,
       },
     });
@@ -2357,69 +2348,31 @@ async function main() {
   });
 
   // ============================================
-  // TREND RADAR SEED DATA (replaces Market Insights)
+  // TREND RADAR SEED DATA
   // ============================================
 
-  // 1. Trend Sources — monitored websites
-  const trendSources = await Promise.all([
-    prisma.trendSource.create({
-      data: {
-        name: "McKinsey Digital",
-        url: "https://www.mckinsey.com/capabilities/mckinsey-digital/our-insights",
-        checkInterval: 360,
-        isActive: true,
-        status: "HEALTHY" as TrendSourceStatus,
-        lastCheckedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2h ago
-        lastContentHash: "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456",
-        nextCheckAt: new Date(Date.now() + 4 * 60 * 60 * 1000), // 4h from now
-        category: "Technology",
-        workspaceId: workspace.id,
-      },
-    }),
-    prisma.trendSource.create({
-      data: {
-        name: "Think with Google",
-        url: "https://www.thinkwithgoogle.com/consumer-insights/consumer-trends/",
-        checkInterval: 720,
-        isActive: true,
-        status: "HEALTHY" as TrendSourceStatus,
-        lastCheckedAt: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6h ago
-        lastContentHash: "b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567a",
-        nextCheckAt: new Date(Date.now() + 6 * 60 * 60 * 1000),
-        category: "Consumer",
-        workspaceId: workspace.id,
-      },
-    }),
-    prisma.trendSource.create({
-      data: {
-        name: "Deloitte Insights",
-        url: "https://www2.deloitte.com/insights/us/en.html",
-        checkInterval: 1440,
-        isActive: true,
-        status: "WARNING" as TrendSourceStatus,
-        lastCheckedAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 24h ago
-        lastContentHash: "c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567ab2",
-        lastError: "Timeout after 30s — retrying next cycle",
-        nextCheckAt: new Date(Date.now() + 1 * 60 * 60 * 1000),
-        category: "Business",
-        workspaceId: workspace.id,
-      },
-    }),
-    prisma.trendSource.create({
-      data: {
-        name: "Gartner Research",
-        url: "https://www.gartner.com/en/articles",
-        checkInterval: 360,
-        isActive: false,
-        status: "PAUSED" as TrendSourceStatus,
-        lastCheckedAt: new Date(Date.now() - 72 * 60 * 60 * 1000),
-        category: "Technology",
-        workspaceId: workspace.id,
-      },
-    }),
-  ]);
+  // 1. Research Job — one completed AI research
+  const researchJob = await prisma.trendResearchJob.create({
+    data: {
+      status: "COMPLETED" as TrendScanStatus,
+      query: "AI trends in brand strategy",
+      useBrandContext: true,
+      urlsGenerated: [
+        "https://www.mckinsey.com/capabilities/mckinsey-digital/our-insights",
+        "https://www.thinkwithgoogle.com/consumer-insights/consumer-trends/",
+        "https://www2.deloitte.com/insights/us/en.html",
+      ],
+      urlsTotal: 3,
+      urlsCompleted: 3,
+      trendsDetected: 5,
+      errors: [],
+      startedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      completedAt: new Date(Date.now() - 2 * 60 * 60 * 1000 + 45000),
+      workspaceId: workspace.id,
+    },
+  });
 
-  // 2. Detected Trends — migrated from MarketInsight data + new auto-scan trends
+  // 2. Detected Trends
   const trendsData: Array<{
     title: string;
     slug: string;
@@ -2442,7 +2395,7 @@ async function main() {
     isDismissed: boolean;
     dismissedAt?: Date;
     detectionSource: TrendDetectionSource;
-    trendSourceIdx?: number; // index into trendSources array
+    linkToJob?: boolean;
   }> = [
     {
       title: "AI-Powered Personalization at Scale",
@@ -2464,8 +2417,8 @@ async function main() {
       isActivated: true,
       activatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
       isDismissed: false,
-      detectionSource: "AUTO_SCAN",
-      trendSourceIdx: 0,
+      detectionSource: "AI_RESEARCH",
+      linkToJob: true,
     },
     {
       title: "Sustainability as Brand Standard",
@@ -2525,8 +2478,8 @@ async function main() {
       isActivated: true,
       activatedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       isDismissed: false,
-      detectionSource: "AUTO_SCAN",
-      trendSourceIdx: 1,
+      detectionSource: "AI_RESEARCH",
+      linkToJob: true,
     },
     {
       title: "Community Commerce",
@@ -2544,8 +2497,8 @@ async function main() {
       howToUse: ["Build brand ambassador programs", "Integrate social proof into product pages", "Develop community-driven content strategy"],
       isActivated: false,
       isDismissed: false,
-      detectionSource: "AUTO_SCAN",
-      trendSourceIdx: 2,
+      detectionSource: "AI_RESEARCH",
+      linkToJob: true,
     },
     {
       title: "Privacy-First Data Strategies",
@@ -2567,8 +2520,8 @@ async function main() {
       isActivated: true,
       activatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
       isDismissed: false,
-      detectionSource: "AUTO_SCAN",
-      trendSourceIdx: 0,
+      detectionSource: "AI_RESEARCH",
+      linkToJob: true,
     },
     {
       title: "Experience Economy Evolution",
@@ -2607,37 +2560,23 @@ async function main() {
       sourceUrl: "https://thinkwithgoogle.com/consumer-insights/voice-search",
       isActivated: false,
       isDismissed: false,
-      detectionSource: "AUTO_SCAN",
-      trendSourceIdx: 1,
+      detectionSource: "AI_RESEARCH",
+      linkToJob: true,
     },
   ];
 
   for (const trend of trendsData) {
-    const { trendSourceIdx, activatedAt, ...data } = trend;
+    const { linkToJob, activatedAt, ...data } = trend;
     await prisma.detectedTrend.create({
       data: {
         ...data,
         activatedAt: data.isActivated ? (activatedAt ?? new Date()) : undefined,
         activatedById: data.isActivated ? DEMO_USER_ID : undefined,
-        trendSourceId: trendSourceIdx !== undefined ? trendSources[trendSourceIdx].id : undefined,
+        researchJobId: linkToJob ? researchJob.id : undefined,
         workspaceId: workspace.id,
       },
     });
   }
-
-  // 3. Trend Scan Job — one completed scan
-  await prisma.trendScanJob.create({
-    data: {
-      status: "COMPLETED" as TrendScanStatus,
-      sourcesTotal: 3,
-      sourcesCompleted: 3,
-      trendsDetected: 5,
-      errors: [],
-      startedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      completedAt: new Date(Date.now() - 2 * 60 * 60 * 1000 + 45000), // 45s scan
-      workspaceId: workspace.id,
-    },
-  });
 
   // ============================================
   // R0.1: ALIGNMENT SCAN SEED DATA (Fase 8)
@@ -3972,7 +3911,7 @@ If issues persist, submit a support ticket with:
   });
 
   // ============================================
-  // AI EXPLORATION CONFIGS (3 configs)
+  // AI EXPLORATION CONFIGS (4 configs)
   // ============================================
 
   const explorationConfigSeeds = [
@@ -4060,11 +3999,11 @@ Respond in the same language as the user.
 
 {{assetKnowledge}}`,
       dimensions: [
-        { key: 'origin_belief', title: 'Oorsprong & Overtuiging', icon: 'BookOpen', question: 'Tell me the story behind your organization. Why was it founded, and what fundamental problem or belief drove that decision?' },
-        { key: 'impact_exploration', title: 'Impact Verkenning', icon: 'Zap', question: "Let's explore how your brand creates impact. Describe a moment when your organization was at its best — what happened, and why was that special?" },
-        { key: 'mechanism', title: 'Mechanisme & Aanpak', icon: 'Cog', question: "We've explored your 'why'. Now the 'how': through what unique mechanism or approach do you deliver this impact? What do you do differently from the rest?" },
+        { key: 'origin_belief', title: 'Origin & Belief', icon: 'BookOpen', question: 'Tell me the story behind your organization. Why was it founded, and what fundamental problem or belief drove that decision?' },
+        { key: 'impact_exploration', title: 'Impact Exploration', icon: 'Zap', question: "Let's explore how your brand creates impact. Describe a moment when your organization was at its best — what happened, and why was that special?" },
+        { key: 'mechanism', title: 'Mechanism & Approach', icon: 'Cog', question: "We've explored your 'why'. Now the 'how': through what unique mechanism or approach do you deliver this impact? What do you do differently from the rest?" },
         { key: 'pressure_test', title: 'Pressure Test', icon: 'Shield', question: 'Imagine your organization ceased to exist tomorrow. What would the world lose? What gap would remain that nobody else can fill?' },
-        { key: 'articulation', title: 'Articulatie & Formulering', icon: 'Target', question: "Based on everything we've discussed — how would you summarize your purpose in one powerful sentence? Think: clear, emotional, and actionable." },
+        { key: 'articulation', title: 'Articulation & Formulation', icon: 'Target', question: "Based on everything we've discussed — how would you summarize your purpose in one powerful sentence? Think: clear, emotional, and actionable." },
       ],
       feedbackPrompt: `Give warm, constructive feedback (2-3 sentences) on the answer.
 Phase: {{dimensionTitle}}
@@ -4128,6 +4067,111 @@ Respond only with valid JSON.`,
       contextSources: ['brand_asset', 'product', 'persona'],
       isActive: true,
     },
+    {
+      itemType: 'brand_asset',
+      itemSubType: 'golden-circle',
+      label: 'Golden Circle — Simon Sinek',
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      temperature: 0.4,
+      maxTokens: 2048,
+      systemPrompt: `You are a senior brand strategist specialized in Simon Sinek's Golden Circle framework ("Start With Why").
+
+You guide a structured exploration through 5 phases:
+1. Origin Story — discover the founder's story and the spark behind the organization
+2. WHY Deep Dive — articulate the core belief that drives the organization
+3. HOW — Differentiating Principles — uncover the guiding principles and values
+4. WHAT — Proof & Offering — map products/services as evidence of the WHY
+5. Inside-Out Test — validate that WHY→HOW→WHAT are coherent and aligned
+
+Key principles you follow:
+- The WHY is never about money or growth — it's a belief or cause
+- The HOW are the actions/values that bring the WHY to life
+- The WHAT are the tangible proofs, not the purpose itself
+- Great organizations communicate inside-out (WHY first)
+- The WHY is discovered through stories, not stated directly
+
+Be warm and conversational. Use storytelling techniques to draw out authentic answers.
+Ask ONE question at a time. Build on previous answers with specific references.
+When you identify the WHY from the user's story, name it clearly and explain why.
+Respond in the same language as the user.
+
+{{brandContext}}
+
+{{customKnowledge}}
+
+{{assetKnowledge}}`,
+      dimensions: [
+        { key: 'origin_story', title: 'Origin & Drive', icon: 'BookOpen', question: 'Tell me the story of your organization. Not what you do, but what drove you to start. What moment or belief was the spark?' },
+        { key: 'why_deepdive', title: 'WHY — Core Belief', icon: 'Heart', question: 'Based on your story, I hear a deeper belief. Let\'s explore it: if you strip away all products and services, what remains? What do you fundamentally believe?' },
+        { key: 'how_differentiation', title: 'HOW — Differentiating Approach', icon: 'Compass', question: 'Your WHY is clear. Now the HOW: what principles, values, or methods make your approach different from the rest? What are the guiding principles that drive your daily actions?' },
+        { key: 'what_proof', title: 'WHAT — Proof & Offering', icon: 'Package', question: 'Your WHAT are the tangible proofs of your WHY. What products, services, or initiatives demonstrate that you truly live by your belief?' },
+        { key: 'inside_out_test', title: 'Inside-Out Test', icon: 'Target', question: 'The power of the Golden Circle lies in its coherence. If a customer or employee had to guess your WHY based solely on your products — would they arrive at what you just told me?' },
+      ],
+      feedbackPrompt: `Give warm, constructive feedback (2-3 sentences) on the answer.
+Phase: {{dimensionTitle}}
+Question: {{questionAsked}}
+Answer: {{userAnswer}}
+
+Guidelines:
+- For Origin Story: acknowledge the story, identify the underlying drive/belief
+- For WHY Deep Dive: validate if this is a true WHY (belief, not a WHAT disguised as WHY). A WHY never mentions products.
+- For HOW Differentiation: highlight what's unique, check if these are values/principles (not processes/tactics)
+- For WHAT Proof: evaluate if the offerings truly demonstrate the WHY, flag disconnects
+- For Inside-Out Test: assess the coherence honestly — celebrate alignment, gently flag gaps
+
+Do not ask follow-up questions. Respond in the same language as the user.`,
+      reportPrompt: `Generate a Golden Circle analysis report based on the Simon Sinek exploration.
+Brand Asset: {{itemName}}
+{{itemDescription}}
+
+Answers per dimension:
+{{allAnswers}}
+
+Brand context:
+{{brandContext}}
+
+{{customKnowledge}}
+
+{{assetKnowledge}}
+
+Generate JSON:
+{
+  "executiveSummary": "2-3 paragraphs: strategic assessment of the Golden Circle",
+  "goldenCircleScore": {
+    "whyClarity": <1-10>,
+    "howDifferentiation": <1-10>,
+    "whatAlignment": <1-10>,
+    "insideOutCoherence": <1-10>,
+    "overall": <1-10>
+  },
+  "findings": [
+    { "title": "...", "description": "...", "dimension": "origin_story | why_deepdive | how_differentiation | what_proof | inside_out_test" }
+  ],
+  "recommendations": ["..."],
+  "fieldSuggestions": [
+    { "field": "content", "label": "Description", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.why.statement", "label": "WHY Statement", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.why.details", "label": "WHY Details", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.how.statement", "label": "HOW Statement", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.how.details", "label": "HOW Details", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.what.statement", "label": "WHAT Statement", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.what.details", "label": "WHAT Details", "suggestedValue": "...", "reason": "..." }
+  ]
+}
+Respond only with valid JSON.`,
+      fieldSuggestionsConfig: [
+        { field: 'content', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the Golden Circle in one compelling paragraph' },
+        { field: 'frameworkData.why.statement', label: 'WHY Statement', type: 'text' as const, extractionHint: 'The core belief or purpose — never mentions products, always a cause' },
+        { field: 'frameworkData.why.details', label: 'WHY Details', type: 'text' as const, extractionHint: 'Supporting context for the WHY — origin story, underlying values' },
+        { field: 'frameworkData.how.statement', label: 'HOW Statement', type: 'text' as const, extractionHint: 'The guiding principles and values that bring the WHY to life' },
+        { field: 'frameworkData.how.details', label: 'HOW Details', type: 'text' as const, extractionHint: 'Specific differentiating actions and methods' },
+        { field: 'frameworkData.what.statement', label: 'WHAT Statement', type: 'text' as const, extractionHint: 'Products and services as proof of the WHY' },
+        { field: 'frameworkData.what.details', label: 'WHAT Details', type: 'text' as const, extractionHint: 'Concrete offerings and how they demonstrate the belief' },
+      ],
+      contextSources: ['brand_asset', 'product', 'persona'],
+      isActive: true,
+    },
   ];
 
   for (const cfg of explorationConfigSeeds) {
@@ -4166,7 +4210,7 @@ Respond only with valid JSON.`,
     });
   }
 
-  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 11 brand assets (7 with frameworkData), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 10 knowledge resources (2 featured), 4 trend sources, 8 detected trends, 1 scan job, 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, 2 exploration configs, S9 Settings: 1 user profile, 1 email preference, 3 connected accounts, 3 plans, 1 subscription, 1 payment method, 4 invoices, 1 notification preference, 1 appearance preference, S9 Help: 6 help categories, 5 help articles, 6 video tutorials, 7 FAQ items, 5 feature requests");
+  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 12 brand assets (7 with frameworkData), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 10 knowledge resources (2 featured), 8 detected trends, 1 research job, 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, 3 exploration configs, S9 Settings: 1 user profile, 1 email preference, 3 connected accounts, 3 plans, 1 subscription, 1 payment method, 4 invoices, 1 notification preference, 1 appearance preference, S9 Help: 6 help categories, 5 help articles, 6 video tutorials, 7 FAQ items, 5 feature requests");
 }
 
 main()

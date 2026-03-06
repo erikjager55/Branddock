@@ -35,9 +35,12 @@ export function TrendFeedCard({ trend, onActivate, onDismiss, onClick }: TrendFe
     : 'teal';
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onClick(trend.id)}
-      className={`w-full text-left p-4 rounded-xl border transition-colors hover:border-gray-300 ${
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(trend.id); } }}
+      className={`w-full text-left p-4 rounded-xl border transition-colors hover:border-gray-300 cursor-pointer ${
         trend.isActivated
           ? 'border-emerald-200 bg-emerald-50/30'
           : trend.isDismissed
@@ -107,12 +110,12 @@ export function TrendFeedCard({ trend, onActivate, onDismiss, onClick }: TrendFe
         )}
       </div>
 
-      {/* Source */}
-      {trend.trendSource && (
+      {/* Research job */}
+      {trend.researchJob && (
         <p className="text-[10px] text-gray-400 mt-2 truncate">
-          via {trend.trendSource.name}
+          via AI Research: {trend.researchJob.query}
         </p>
       )}
-    </button>
+    </div>
   );
 }

@@ -1,15 +1,15 @@
 import { BrandAsset } from '../types/brand-asset';
 /**
- * UTILITY: Campaign Decision Calculator v2 (CONSISTENTIE CORRECTIE)
+ * UTILITY: Campaign Decision Calculator v2 (CONSISTENCY CORRECTION)
  *
- * Berekent overall decision status voor een campaign op basis van
- * alle gekoppelde brand assets en personas.
+ * Calculates the overall decision status for a campaign based on
+ * all linked brand assets and personas.
  *
- * WIJZIGINGEN v2.1 (CONSISTENTIE):
- * - Microcopy: ALLEEN percentage OF status label (nooit beide)
- * - Format: "<naam>: <percentage>% research coverage"
- * - Of: "<naam>: research status: insufficient/partial/validated"
- * - Formulierstatus ("draft", "in-progress") VERWIJDERD uit decision feedback
+ * CHANGES v2.1 (CONSISTENCY):
+ * - Microcopy: ONLY percentage OR status label (never both)
+ * - Format: "<name>: <percentage>% research coverage"
+ * - Or: "<name>: research status: insufficient/partial/validated"
+ * - Form status ("draft", "in-progress") REMOVED from decision feedback
  */
 
 import { calculateDecisionStatus, ResearchItem } from './decision-status-calculator';
@@ -25,28 +25,28 @@ interface DecisionPersona extends ResearchItem {
 }
 
 export interface CampaignDecisionResult {
-  /** Overall status voor de campagne */
+  /** Overall status for the campaign */
   status: 'safe-to-decide' | 'decision-at-risk' | 'do-not-decide';
-  
-  /** Primaire actie */
+
+  /** Primary action */
   primaryAction: string;
-  
-  /** Details voor expansion */
+
+  /** Details for expansion */
   details: {
     totalAssets: number;
     safeAssets: number;
     atRiskAssets: number;
     blockedAssets: number;
     avgCoverage: number;
-    affectedAssets: Array<{ 
-      name: string; 
+    affectedAssets: Array<{
+      name: string;
       coverage: number;
-      // GEEN status field meer - voorkomt tegenstrijdigheden
+      // NO status field anymore — prevents contradictions
     }>;
     missingResearch: string[];
   };
-  
-  /** Voor output summary */
+
+  /** For output summary */
   rootCauses: string[];
   risks: string[];
   improvements: string[];
@@ -67,8 +67,8 @@ export function calculateCampaignDecision(
   selectedBrandAssets: string[],
   selectedPersonas: string[]
 ): CampaignDecisionResult {
-  
-  // Verzamel alle items
+
+  // Collect all items
   const allItems = [
     ...selectedBrandAssets.map(id => {
       const asset = brandAssets.find(a => a.id === id);
@@ -80,11 +80,11 @@ export function calculateCampaignDecision(
     }).filter(Boolean)
   ];
 
-  // Als geen items geselecteerd, return safe (geen risk)
+  // If no items selected, return safe (no risk)
   if (allItems.length === 0) {
     return {
       status: 'safe-to-decide',
-      primaryAction: 'Koppel merkdata voor meer relevantie',
+      primaryAction: 'Link brand data for more relevance',
       details: {
         totalAssets: 0,
         safeAssets: 0,
@@ -100,7 +100,7 @@ export function calculateCampaignDecision(
     };
   }
 
-  // Bereken status voor elk item
+  // Calculate status for each item
   const itemsWithStatus = allItems.map(item => ({
     item: item!,
     statusInfo: calculateDecisionStatus(item!)
@@ -114,23 +114,23 @@ export function calculateCampaignDecision(
     itemsWithStatus.reduce((sum, i) => sum + i.statusInfo.coverage, 0) / itemsWithStatus.length
   );
 
-  // Affected assets (niet-safe items)
-  // CONSISTENTIE: Alleen naam + coverage, GEEN status field
+  // Affected assets (non-safe items)
+  // CONSISTENCY: Only name + coverage, NO status field
   const affectedAssets = itemsWithStatus
     .filter(i => i.statusInfo.status !== 'safe-to-decide')
     .map(i => ({
       name: i.item.type,
       coverage: i.statusInfo.coverage
-      // REMOVED: status field (voorkomt "status = draft, 50%" tegenstrijdigheid)
+      // REMOVED: status field (prevents "status = draft, 50%" contradiction)
     }));
 
-  // Verzamel alle missing research methods (uniek)
+  // Collect all missing research methods (unique)
   const allMissingMethods = new Set<string>();
   itemsWithStatus.forEach(i => {
     i.statusInfo.missingTopMethods.forEach(method => allMissingMethods.add(method));
   });
 
-  // Bepaal overall status
+  // Determine overall status
   let overallStatus: 'safe-to-decide' | 'decision-at-risk' | 'do-not-decide';
   let primaryAction: string;
   let rootCauses: string[];
@@ -138,67 +138,67 @@ export function calculateCampaignDecision(
   let improvements: string[];
 
   if (blockedCount > 0) {
-    // DO NOT DECIDE: een of meer items < 50%
+    // DO NOT DECIDE: one or more items < 50%
     overallStatus = 'do-not-decide';
-    
+
     const blockedNames = affectedAssets
       .filter(a => a.coverage < 50)
       .map(a => a.name)
       .slice(0, 2)
-      .join(' en ');
-    
-    primaryAction = `Valideer ${blockedNames}`;
-    
+      .join(' and ');
+
+    primaryAction = `Validate ${blockedNames}`;
+
     rootCauses = [
-      `${blockedCount} ${blockedCount === 1 ? 'asset heeft' : 'assets hebben'} onvoldoende research validatie`,
-      'Kritieke merkfundamenten missen strategische basis'
+      `${blockedCount} ${blockedCount === 1 ? 'asset has' : 'assets have'} insufficient research validation`,
+      'Critical brand foundations lack a strategic basis'
     ];
-    
+
     risks = [
-      'Campagne positionering kan conflicteren met werkelijke merkidentiteit',
-      'Budget wordt ingezet op ongevalideerde aannames',
-      'Kans op brand damage door inconsistente communicatie'
+      'Campaign positioning may conflict with actual brand identity',
+      'Budget is being spent on unvalidated assumptions',
+      'Risk of brand damage due to inconsistent communication'
     ];
-    
+
     improvements = [
-      `Complete minimaal Workshop en 1-on-1 Interviews voor ${blockedNames}`,
-      'Breng alle assets naar minimaal 50% research coverage',
-      'Overweeg pilot test met kleine budget om aannames te valideren'
+      `Complete at least Workshop and 1-on-1 Interviews for ${blockedNames}`,
+      'Bring all assets to at least 50% research coverage',
+      'Consider a pilot test with a small budget to validate assumptions'
     ];
 
   } else if (atRiskCount > 0) {
-    // DECISION AT RISK: alle ≥ 50% maar sommige < 80%
+    // DECISION AT RISK: all >= 50% but some < 80%
     overallStatus = 'decision-at-risk';
-    
+
     const atRiskNames = affectedAssets
       .map(a => a.name)
       .slice(0, 2)
-      .join(' en ');
-    
-    primaryAction = `Verhoog coverage van ${atRiskNames}`;
-    
+      .join(' and ');
+
+    primaryAction = `Increase coverage of ${atRiskNames}`;
+
     rootCauses = [
-      `${atRiskCount} ${atRiskCount === 1 ? 'asset heeft' : 'assets hebben'} beperkte research validatie`,
-      Array.from(allMissingMethods).length > 0 
-        ? `Kritieke research methods ontbreken`
-        : 'Strategische basis is bruikbaar maar niet optimaal'
+      `${atRiskCount} ${atRiskCount === 1 ? 'asset has' : 'assets have'} limited research validation`,
+      Array.from(allMissingMethods).length > 0
+        ? `Critical research methods are missing`
+        : 'Strategic basis is usable but not optimal'
     ];
-    
+
     risks = [
-      'Campagne messaging kan naast doelgroep schieten',
-      'ROI zal waarschijnlijk onder potentieel blijven'
+      'Campaign messaging may miss the target audience',
+      'ROI will likely remain below potential'
     ];
-    
+
     improvements = [
-      `Complete top 2 research methods voor ${atRiskNames}`,
-      'Breng alle assets naar 80%+ research coverage voor optimale resultaten',
-      'Start met pilot fase om hypotheses te testen'
+      `Complete top 2 research methods for ${atRiskNames}`,
+      'Bring all assets to 80%+ research coverage for optimal results',
+      'Start with a pilot phase to test hypotheses'
     ];
 
   } else {
-    // SAFE TO DECIDE: alle ≥ 80% en top methods
+    // SAFE TO DECIDE: all >= 80% and top methods
     overallStatus = 'safe-to-decide';
-    primaryAction = 'Genereer campagne';
+    primaryAction = 'Generate campaign';
     rootCauses = [];
     risks = [];
     improvements = [];
@@ -223,12 +223,12 @@ export function calculateCampaignDecision(
 }
 
 /**
- * Bereken section-level decision status (VERFIJND v2.1)
- * 
- * CONSISTENTIE CORRECTIE:
- * - causes gebruikt consistente formatting
- * - ALLEEN research coverage percentage (geen formulier status)
- * - Erf-logica correct geïmplementeerd
+ * Calculate section-level decision status (REFINED v2.1)
+ *
+ * CONSISTENCY CORRECTION:
+ * - causes uses consistent formatting
+ * - ONLY research coverage percentage (no form status)
+ * - Inheritance logic correctly implemented
  */
 export function calculateSectionDecision(
   brandAssets: BrandAsset[],
@@ -243,10 +243,10 @@ export function calculateSectionDecision(
   causes: string[];
   requiredActions: string[];
 } {
-  
+
   switch (sectionType) {
     case 'template': {
-      // Template sectie is altijd safe (geen data dependency)
+      // Template section is always safe (no data dependency)
       return {
         status: 'safe',
         causes: [],
@@ -255,14 +255,14 @@ export function calculateSectionDecision(
     }
 
     case 'campaign-details': {
-      // FORMULIER STATUS CHECK (niet decision status)
-      // Dit controleert alleen of formulier compleet is
+      // FORM STATUS CHECK (not decision status)
+      // This only checks whether the form is complete
       const hasName = campaignConfig.name && campaignConfig.name.length > 0;
       const hasObjective = campaignConfig.objective && campaignConfig.objective.length > 0;
       const hasMessage = campaignConfig.keyMessage && campaignConfig.keyMessage.length > 0;
 
       const missingFields = [
-        !hasName ? 'Campaign naam' : '',
+        !hasName ? 'Campaign name' : '',
         !hasObjective ? 'Campaign objective' : '',
         !hasMessage ? 'Key message' : ''
       ].filter(Boolean);
@@ -270,18 +270,18 @@ export function calculateSectionDecision(
       if (missingFields.length > 0) {
         return {
           status: 'blocked',
-          causes: missingFields.map(f => `${f} ontbreekt`),
-          requiredActions: ['Vul alle verplichte campagne details in']
+          causes: missingFields.map(f => `${f} is missing`),
+          requiredActions: ['Fill in all required campaign details']
         };
       }
 
       // DECISION STATUS CHECK
-      // Zelfs als formulier compleet is, controleer gekoppelde data
+      // Even if the form is complete, check linked data
       if (selectedBrandAssets.length === 0 && selectedPersonas.length === 0) {
         return {
           status: 'risk',
-          causes: ['Geen merkdata gekoppeld aan campagne'],
-          requiredActions: ['Koppel brand assets of personas voor strategische context']
+          causes: ['No brand data linked to campaign'],
+          requiredActions: ['Link brand assets or personas for strategic context']
         };
       }
 
@@ -289,16 +289,16 @@ export function calculateSectionDecision(
     }
 
     case 'brand-assets': {
-      // INHERITANCE: erft status van gekoppelde brand assets en personas
+      // INHERITANCE: inherits status from linked brand assets and personas
       if (selectedBrandAssets.length === 0 && selectedPersonas.length === 0) {
         return {
           status: 'risk',
-          causes: ['Geen merkdata gekoppeld'],
-          requiredActions: ['Koppel minimaal 1 brand asset of persona voor merkcontext']
+          causes: ['No brand data linked'],
+          requiredActions: ['Link at least 1 brand asset or persona for brand context']
         };
       }
 
-      // Bereken status van alle gekoppelde items
+      // Calculate status of all linked items
       const allItems: Array<{ item: { type?: string; name?: string }; status: ReturnType<typeof calculateDecisionStatus> }> = [
         ...selectedBrandAssets.map(id => {
           const asset = brandAssets.find(a => a.id === id);
@@ -317,11 +317,11 @@ export function calculateSectionDecision(
         const blockedItems = allItems.filter(i => i.status.status === 'blocked');
         return {
           status: 'blocked',
-          // CONSISTENTE FORMATTING: alleen naam + percentage + "research coverage"
+          // CONSISTENT FORMATTING: only name + percentage + "research coverage"
           causes: blockedItems.map(i =>
             `${i.item.type || i.item.name}: ${i.status.coverage}% research coverage`
           ),
-          requiredActions: ['Breng alle items naar minimaal 50% research coverage']
+          requiredActions: ['Bring all items to at least 50% research coverage']
         };
       }
 
@@ -329,11 +329,11 @@ export function calculateSectionDecision(
         const atRiskItems = allItems.filter(i => i.status.status === 'decision-at-risk');
         return {
           status: 'risk',
-          // CONSISTENTE FORMATTING: alleen naam + percentage + "research coverage"
+          // CONSISTENT FORMATTING: only name + percentage + "research coverage"
           causes: atRiskItems.map(i =>
             `${i.item.type || i.item.name}: ${i.status.coverage}% research coverage`
           ),
-          requiredActions: ['Verhoog research coverage naar 80%+ voor optimale resultaten']
+          requiredActions: ['Increase research coverage to 80%+ for optimal results']
         };
       }
 
@@ -341,15 +341,15 @@ export function calculateSectionDecision(
     }
 
     case 'advanced': {
-      // Advanced settings zijn optioneel, MAAR beïnvloeden decision quality
+      // Advanced settings are optional, BUT affect decision quality
       const hasTimeline = campaignConfig.timeline && campaignConfig.timeline.length > 0;
       const hasBudget = campaignConfig.budget && campaignConfig.budget.length > 0;
 
       if (!hasTimeline && !hasBudget) {
         return {
           status: 'risk',
-          causes: ['Timeline en budget niet ingevuld'],
-          requiredActions: ['Vul timeline en budget in voor betere strategische planning']
+          causes: ['Timeline and budget not filled in'],
+          requiredActions: ['Fill in timeline and budget for better strategic planning']
         };
       }
 
@@ -360,8 +360,8 @@ export function calculateSectionDecision(
       if (selectedChannels.length === 0) {
         return {
           status: 'risk',
-          causes: ['Geen kanalen geselecteerd'],
-          requiredActions: ['Selecteer minimaal 1 campagne kanaal']
+          causes: ['No channels selected'],
+          requiredActions: ['Select at least 1 campaign channel']
         };
       }
 
@@ -374,27 +374,27 @@ export function calculateSectionDecision(
 }
 
 /**
- * MOTIVATIE CONSISTENTIE CORRECTIE:
- * 
- * 1. VERWIJDERD: status field in affectedAssets
- *    - Voorkomt: "Core Values: status = draft, 50% coverage" (tegenstrijdig)
- *    - Nu: "Core Values: 50% research coverage" (consistent)
- * 
- * 2. CONSISTENTE FORMATTING:
- *    - Altijd: "<naam>: <percentage>% research coverage"
- *    - Nooit: mix van formulier status (draft, in-progress) en research percentage
- * 
- * 3. FORMULIER vs DECISION gescheiden:
- *    - campaign-details sectie: eerst formulier check, dan decision check
- *    - Formulier kan 100% compleet zijn, maar decision toch risk (geen data gekoppeld)
- * 
+ * MOTIVATION CONSISTENCY CORRECTION:
+ *
+ * 1. REMOVED: status field in affectedAssets
+ *    - Prevents: "Core Values: status = draft, 50% coverage" (contradictory)
+ *    - Now: "Core Values: 50% research coverage" (consistent)
+ *
+ * 2. CONSISTENT FORMATTING:
+ *    - Always: "<name>: <percentage>% research coverage"
+ *    - Never: mix of form status (draft, in-progress) and research percentage
+ *
+ * 3. FORM vs DECISION separated:
+ *    - campaign-details section: first form check, then decision check
+ *    - Form can be 100% complete, but decision still risk (no data linked)
+ *
  * 4. INHERITANCE CORRECT:
- *    - brand-assets sectie erft status van ALLE gekoppelde items
- *    - Causes tonen concrete percentages (50%, 75%, etc)
- *    - Consistent format: altijd "research coverage"
- * 
- * 5. MICROCOPY VERBETERD:
- *    - "onvoldoende research validatie" (niet "low coverage")
- *    - "beperkte research validatie" (niet "insufficient validation")
- *    - "research coverage" overal (consistent term)
+ *    - brand-assets section inherits status from ALL linked items
+ *    - Causes show concrete percentages (50%, 75%, etc.)
+ *    - Consistent format: always "research coverage"
+ *
+ * 5. MICROCOPY IMPROVED:
+ *    - "insufficient research validation" (not "low coverage")
+ *    - "limited research validation" (not "insufficient validation")
+ *    - "research coverage" everywhere (consistent term)
  */

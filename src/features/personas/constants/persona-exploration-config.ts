@@ -16,10 +16,10 @@ export const PERSONA_DIMENSIONS: DimensionConfig[] = [
     bgClass: 'bg-blue-100',
     textClass: 'text-blue-600',
     defaultQuestions: [
-      'Wat is de leeftijd, geslacht en locatie van deze persona?',
-      'Wat is het opleidingsniveau en inkomensniveau?',
-      'Wat is de gezinssituatie en levensfase?',
-      'Wat is de functie of beroepsachtergrond?',
+      'What is the age, gender, and location of this persona?',
+      'What is the education level and income level?',
+      'What is the family situation and life stage?',
+      'What is the job title or professional background?',
     ],
   },
   {
@@ -30,10 +30,10 @@ export const PERSONA_DIMENSIONS: DimensionConfig[] = [
     bgClass: 'bg-pink-100',
     textClass: 'text-pink-600',
     defaultQuestions: [
-      'Wat zijn de kernwaarden van deze persona?',
-      'Welk persoonlijkheidstype past het beste?',
-      'Wat zijn de belangrijkste interesses en hobby\'s?',
-      'Hoe zou je de levensstijl omschrijven?',
+      'What are the core values of this persona?',
+      'Which personality type fits best?',
+      'What are the main interests and hobbies?',
+      'How would you describe the lifestyle?',
     ],
   },
   {
@@ -44,10 +44,10 @@ export const PERSONA_DIMENSIONS: DimensionConfig[] = [
     bgClass: 'bg-amber-100',
     textClass: 'text-amber-600',
     defaultQuestions: [
-      'Wat zijn de professionele doelen van deze persona?',
-      'Wat motiveert deze persona in het dagelijks leven?',
-      'Wat zijn de grootste frustraties of pijnpunten?',
-      'Welke triggers leiden tot aankoopbeslissingen?',
+      'What are the professional goals of this persona?',
+      'What motivates this persona in daily life?',
+      'What are the biggest frustrations or pain points?',
+      'Which triggers lead to purchase decisions?',
     ],
   },
   {
@@ -58,10 +58,10 @@ export const PERSONA_DIMENSIONS: DimensionConfig[] = [
     bgClass: 'bg-purple-100',
     textClass: 'text-purple-600',
     defaultQuestions: [
-      'Hoe verzamelt deze persona informatie voor beslissingen?',
-      'Welke kanalen en platformen gebruikt deze persona het meest?',
-      'Hoe ziet een typisch beslissingsproces eruit?',
-      'Wat zijn de belangrijkste besliscriteria?',
+      'How does this persona gather information for decisions?',
+      'Which channels and platforms does this persona use most?',
+      'What does a typical decision-making process look like?',
+      'What are the most important decision criteria?',
     ],
   },
 ];

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 
 // =============================================================
-// GET /api/brandstyle/colors — colors sectie
+// GET /api/brandstyle/colors — colors section
 // =============================================================
 export async function GET() {
   try {
@@ -71,7 +71,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 // =============================================================
-// POST /api/brandstyle/colors — voeg kleur toe
+// POST /api/brandstyle/colors — add color
 // =============================================================
 const addColorSchema = z.object({
   name: z.string().min(1),

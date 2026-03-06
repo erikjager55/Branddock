@@ -377,7 +377,7 @@ export function ValidationMethodDemo() {
 
                 <div>
                   <div className="text-xs text-muted-foreground mb-2">
-                    Compact: 4 items = ~168px (~30% minder ruimte)
+                    Compact: 4 items = ~168px (~30% less space)
                   </div>
                   <div className="space-y-2">
                     <ValidationMethodButtonCompact label="Method 1" icon={Sparkles} status="completed" onPrimaryClick={() => {}} />

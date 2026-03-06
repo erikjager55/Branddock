@@ -7,7 +7,7 @@
  *   DATABASE_URL="postgresql://erikjager:@localhost:5432/branddock" npx tsx scripts/seed-exploration-configs.ts
  */
 
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -235,7 +235,7 @@ async function main() {
       systemPrompt: SYSTEM_PROMPT,
       feedbackPrompt: FEEDBACK_PROMPT,
       reportPrompt: REPORT_PROMPT,
-      dimensions: cfg.dimensions,
+      dimensions: cfg.dimensions as unknown as Prisma.InputJsonValue,
       fieldSuggestionsConfig: undefined,
       contextSources: ['brand_asset', 'product'],
     };

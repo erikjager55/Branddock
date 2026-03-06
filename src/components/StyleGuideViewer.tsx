@@ -366,7 +366,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
   // Helper functions for editing arrays
   const addKeyword = () => {
     if (!editableData.tonology) return;
-    const newKeyword = prompt('Voeg een keyword toe:');
+    const newKeyword = prompt('Add a keyword:');
     if (newKeyword) {
       setEditableData({
         ...editableData,
@@ -393,7 +393,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
 
   const addDo = () => {
     if (!editableData.tonology) return;
-    const newDo = prompt('Voeg een Do toe:');
+    const newDo = prompt('Add a Do:');
     if (newDo) {
       setEditableData({
         ...editableData,
@@ -426,7 +426,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
 
   const addDont = () => {
     if (!editableData.tonology) return;
-    const newDont = prompt("Voeg een Don't toe:");
+    const newDont = prompt("Add a Don't:");
     if (newDont) {
       setEditableData({
         ...editableData,
@@ -580,7 +580,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
         <div ref={visualIdentityRef}>
           <SectionDivider 
             title="Visual Identity" 
-            description="Kernvisuele elementen die de merkidentiteit definiëren"
+            description="Core visual elements that define the brand identity"
           />
 
           <div className="space-y-6">
@@ -592,14 +592,14 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                     <Sparkles className="h-5 w-5 text-muted-foreground" />
                     <div>
                       <CardTitle>Logo & Branding</CardTitle>
-                      <CardDescription>Primaire logo's en variaties</CardDescription>
+                      <CardDescription>Primary logos and variations</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Primary Logo */}
                   <div className="space-y-3">
-                    <div className="text-sm font-medium">Primair Logo</div>
+                    <div className="text-sm font-medium">Primary Logo</div>
                     <div className="p-8 border-2 border-dashed rounded-lg bg-muted/30 flex items-center justify-center">
                       <img 
                         src={styleData.logo.primary} 
@@ -608,20 +608,20 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                       />
                     </div>
                     {isEditing && (
-                      <p className="text-xs text-muted-foreground">💡 Upload functionaliteit kan worden toegevoegd</p>
+                      <p className="text-xs text-muted-foreground">Upload functionality can be added</p>
                     )}
                   </div>
 
                   {/* Logo Variations */}
                   {styleData.logo.variations && styleData.logo.variations.length > 0 && (
                     <div className="space-y-3">
-                      <div className="text-sm font-medium">Logo Variaties</div>
+                      <div className="text-sm font-medium">Logo Variations</div>
                       <div className="grid grid-cols-3 gap-4">
                         {styleData.logo.variations.map((variation, index) => (
                           <div key={index} className="p-6 border rounded-lg bg-muted/30 flex items-center justify-center">
                             <img 
                               src={variation} 
-                              alt={`Logo Variatie ${index + 1}`} 
+                              alt={`Logo Variation ${index + 1}`}
                               className="max-h-16 object-contain"
                             />
                           </div>
@@ -653,9 +653,9 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                 <div className="flex items-center gap-3">
                   <Paintbrush className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <CardTitle>Kleurenpalet</CardTitle>
+                    <CardTitle>Color Palette</CardTitle>
                     <CardDescription>
-                      {isEditing ? 'Klik op de color picker of voer hex code in om kleuren aan te passen' : 'Klik op een kleur om de HEX code te kopiëren'}
+                      {isEditing ? 'Click on the color picker or enter a hex code to adjust colors' : 'Click on a color to copy the HEX code'}
                     </CardDescription>
                   </div>
                 </div>
@@ -697,7 +697,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
         <div ref={designSystemRef}>
           <SectionDivider 
             title="Design System" 
-            description="Typografie, spacing en vormtaal voor consistente design"
+            description="Typography, spacing, and visual language for consistent design"
           />
 
           <div className="space-y-6">
@@ -707,8 +707,8 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                 <div className="flex items-center gap-3">
                   <Type className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <CardTitle>Typografie</CardTitle>
-                    <CardDescription>Font families en groottes gebruikt in de website</CardDescription>
+                    <CardTitle>Typography</CardTitle>
+                    <CardDescription>Font families and sizes used on the website</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -794,7 +794,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                   <div className="flex items-center gap-3">
                     <Shapes className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <CardTitle>Vormentaal</CardTitle>
+                      <CardTitle>Visual Language</CardTitle>
                       <CardDescription>{styleData.shapes.description}</CardDescription>
                     </div>
                   </div>
@@ -802,7 +802,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                 <CardContent className="space-y-6">
                   {/* Primary Shapes */}
                   <div>
-                    <div className="text-sm font-medium mb-3">Primaire Vormen</div>
+                    <div className="text-sm font-medium mb-3">Primary Shapes</div>
                     <div className="flex flex-wrap gap-2">
                       {styleData.shapes.primaryShapes.map((shape, index) => (
                         <Badge key={index} variant="outline" className="text-sm px-3 py-1">
@@ -814,7 +814,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
 
                   {/* Shape Examples */}
                   <div>
-                    <div className="text-sm font-medium mb-3">Toepassingen</div>
+                    <div className="text-sm font-medium mb-3">Applications</div>
                     <div className="grid gap-3">
                       {styleData.shapes.examples.map((example, index) => (
                         <div key={index} className="p-4 border rounded-lg bg-muted/30 flex items-start gap-3">
@@ -842,7 +842,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                     <Layout className="h-5 w-5 text-muted-foreground" />
                     <div>
                       <CardTitle>Spacing</CardTitle>
-                      <CardDescription>Padding en margin systeem</CardDescription>
+                      <CardDescription>Padding and margin system</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -890,7 +890,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                     <Circle className="h-5 w-5 text-muted-foreground" />
                     <div>
                       <CardTitle>Border Radius</CardTitle>
-                      <CardDescription>Afrondingen voor componenten</CardDescription>
+                      <CardDescription>Corner rounding for components</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -939,7 +939,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                   <div className="flex items-center gap-3">
                     <Square className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <CardTitle>Iconen</CardTitle>
+                      <CardTitle>Icons</CardTitle>
                       <CardDescription>
                         Icon stijl: <Badge variant="outline" className="ml-2">{styleData.icons.style}</Badge>
                       </CardDescription>
@@ -968,7 +968,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
         <div ref={contentAssetsRef}>
           <SectionDivider 
             title="Content Assets" 
-            description="Fotografie en illustraties voor merkuitingen"
+            description="Photography and illustrations for brand expressions"
           />
 
           <div className="space-y-6">
@@ -979,8 +979,8 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                   <div className="flex items-center gap-3">
                     <Camera className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <CardTitle>Corporate Fotografie</CardTitle>
-                      <CardDescription>Professionele bedrijfsfoto's en team impressies</CardDescription>
+                      <CardTitle>Corporate Photography</CardTitle>
+                      <CardDescription>Professional company photos and team impressions</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -990,7 +990,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                       <div key={index} className="aspect-square rounded-lg border overflow-hidden bg-muted group">
                         <img 
                           src={photo} 
-                          alt={`Corporate foto ${index + 1}`}
+                          alt={`Corporate photo ${index + 1}`}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       </div>
@@ -1007,8 +1007,8 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                   <div className="flex items-center gap-3">
                     <Megaphone className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <CardTitle>Campagne Fotografie</CardTitle>
-                      <CardDescription>Marketing en campagne visuals</CardDescription>
+                      <CardTitle>Campaign Photography</CardTitle>
+                      <CardDescription>Marketing and campaign visuals</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -1018,7 +1018,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                       <div key={index} className="aspect-square rounded-lg border overflow-hidden bg-muted group">
                         <img 
                           src={photo} 
-                          alt={`Campagne foto ${index + 1}`}
+                          alt={`Campaign photo ${index + 1}`}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                       </div>
@@ -1035,8 +1035,8 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                   <div className="flex items-center gap-3">
                     <ImageIcon className="h-5 w-5 text-muted-foreground" />
                     <div>
-                      <CardTitle>Illustraties</CardTitle>
-                      <CardDescription>Grafische elementen en illustraties</CardDescription>
+                      <CardTitle>Illustrations</CardTitle>
+                      <CardDescription>Graphic elements and illustrations</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -1046,7 +1046,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                       <div key={index} className="aspect-square rounded-lg border overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-4 flex items-center justify-center">
                         <img 
                           src={illustration} 
-                          alt={`Illustratie ${index + 1}`}
+                          alt={`Illustration ${index + 1}`}
                           className="max-w-full max-h-full object-contain"
                         />
                       </div>
@@ -1062,7 +1062,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
         <div ref={brandVoiceRef}>
           <SectionDivider 
             title="Brand Voice" 
-            description="Tone of voice en communicatiestijl"
+            description="Tone of voice and communication style"
           />
 
           <div className="space-y-6">
@@ -1074,7 +1074,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                     <MessageSquare className="h-5 w-5 text-muted-foreground" />
                     <div>
                       <CardTitle>Tone of Voice</CardTitle>
-                      <CardDescription>Communicatiestijl en merkpersoonlijkheid</CardDescription>
+                      <CardDescription>Communication style and brand personality</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -1094,7 +1094,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                             }
                           })}
                           className="text-base font-medium"
-                          placeholder="Bijv. Vriendelijk, professioneel"
+                          placeholder="E.g. Friendly, professional"
                         />
                       ) : (
                         <div className="text-base font-medium">{editableData.tonology?.tone}</div>
@@ -1113,7 +1113,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                             }
                           })}
                           className="text-base font-medium"
-                          placeholder="Bijv. Authentiek, inspirerend"
+                          placeholder="E.g. Authentic, inspiring"
                         />
                       ) : (
                         <div className="text-base font-medium">{editableData.tonology?.voice}</div>
@@ -1124,11 +1124,11 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                   {/* Keywords */}
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <div className="text-sm font-medium">Kernwaarden & Keywords</div>
+                      <div className="text-sm font-medium">Core Values & Keywords</div>
                       {isEditing && (
                         <Button size="sm" variant="outline" onClick={addKeyword}>
                           <Plus className="h-3 w-3 mr-1" />
-                          Toevoegen
+                          Add
                         </Button>
                       )}
                     </div>
@@ -1232,7 +1232,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
         <div ref={technicalRef}>
           <SectionDivider 
             title="Technical Implementation" 
-            description="CSS variabelen voor developers"
+            description="CSS variables for developers"
           />
 
           <div className="space-y-6">
@@ -1244,7 +1244,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                   <div>
                     <CardTitle>CSS Variables</CardTitle>
                     <CardDescription>
-                      {isEditing ? 'Live preview van je aangepaste CSS variabelen' : 'Kopieer deze CSS variabelen naar je stylesheet'}
+                      {isEditing ? 'Live preview of your customized CSS variables' : 'Copy these CSS variables to your stylesheet'}
                     </CardDescription>
                   </div>
                 </div>
@@ -1260,12 +1260,12 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                     {copiedItem === 'css-vars' ? (
                       <>
                         <Check className="h-4 w-4 mr-2" />
-                        Gekopieerd
+                        Copied
                       </>
                     ) : (
                       <>
                         <Copy className="h-4 w-4 mr-2" />
-                        Kopieer
+                        Copy
                       </>
                     )}
                   </Button>
@@ -1279,7 +1279,7 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
             {/* Usage Tips */}
             <Card className="border-primary/20 bg-primary/5">
               <CardHeader>
-                <CardTitle className="text-lg">💡 Volgende stappen</CardTitle>
+                <CardTitle className="text-lg">Next Steps</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-start gap-3">
@@ -1287,9 +1287,9 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                     1
                   </div>
                   <div>
-                    <div className="font-medium text-sm mb-1">Pas de styleguide aan</div>
+                    <div className="font-medium text-sm mb-1">Customize the styleguide</div>
                     <div className="text-sm text-muted-foreground">
-                      Klik op "Bewerken" om kleuren, typografie en andere elementen aan te passen
+                      Click "Edit" to adjust colors, typography, and other elements
                     </div>
                   </div>
                 </div>
@@ -1298,9 +1298,9 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                     2
                   </div>
                   <div>
-                    <div className="font-medium text-sm mb-1">Exporteer de styleguide</div>
+                    <div className="font-medium text-sm mb-1">Export the styleguide</div>
                     <div className="text-sm text-muted-foreground">
-                      Klik op "Exporteren" om een PDF of Figma bestand te genereren
+                      Click "Export" to generate a PDF or Figma file
                     </div>
                   </div>
                 </div>
@@ -1309,9 +1309,9 @@ export function StyleGuideViewer({ styleData, onBack }: StyleGuideViewerProps) {
                     3
                   </div>
                   <div>
-                    <div className="font-medium text-sm mb-1">Lock de styleguide</div>
+                    <div className="font-medium text-sm mb-1">Lock the styleguide</div>
                     <div className="text-sm text-muted-foreground">
-                      Vergrendel de styleguide om ongewenste wijzigingen te voorkomen
+                      Lock the styleguide to prevent unwanted changes
                     </div>
                   </div>
                 </div>

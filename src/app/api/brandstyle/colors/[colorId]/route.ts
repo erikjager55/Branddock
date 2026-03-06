@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 
 // =============================================================
-// DELETE /api/brandstyle/colors/[colorId] — verwijder kleur
+// DELETE /api/brandstyle/colors/[colorId] — delete color
 // =============================================================
 export async function DELETE(
   _request: NextRequest,

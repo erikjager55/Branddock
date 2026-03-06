@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Search, Users } from "lucide-react";
+import { Search, Users, UserPlus, Loader2 } from "lucide-react";
 import { Modal, Button, Input, OptimizedImage } from "@/components/shared";
-import { usePersonas } from "@/contexts/PersonasContext";
+import { usePersonas as usePersonasQuery } from "@/features/personas/hooks";
 import { useLinkPersona } from "../../hooks";
 
 interface PersonaSelectorModalProps {
@@ -11,6 +11,7 @@ interface PersonaSelectorModalProps {
   onClose: () => void;
   productId: string;
   linkedPersonaIds: string[];
+  onNavigateToCreatePersona?: () => void;
 }
 
 export function PersonaSelectorModal({
@@ -18,11 +19,15 @@ export function PersonaSelectorModal({
   onClose,
   productId,
   linkedPersonaIds,
+  onNavigateToCreatePersona,
 }: PersonaSelectorModalProps) {
-  const { personas } = usePersonas();
+  const { data, isLoading, isError } = usePersonasQuery();
+  const personas = data?.personas ?? [];
   const linkPersona = useLinkPersona(productId);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [isLinking, setIsLinking] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   // Filter out already linked personas and apply search
   const availablePersonas = useMemo(() => {
@@ -47,19 +52,38 @@ export function PersonaSelectorModal({
   };
 
   const handleLink = async () => {
-    for (const personaId of selectedIds) {
-      linkPersona.mutate(personaId);
+    setIsLinking(true);
+    setLinkError(null);
+    try {
+      for (const personaId of selectedIds) {
+        await linkPersona.mutateAsync(personaId);
+      }
+      setSelectedIds([]);
+      setSearchQuery("");
+      onClose();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to link persona";
+      setLinkError(message);
+    } finally {
+      setIsLinking(false);
     }
-    setSelectedIds([]);
-    setSearchQuery("");
-    onClose();
   };
 
   const handleClose = () => {
     setSelectedIds([]);
     setSearchQuery("");
+    setLinkError(null);
     onClose();
   };
+
+  const handleCreatePersona = () => {
+    handleClose();
+    onNavigateToCreatePersona?.();
+  };
+
+  // Determine empty state message
+  const hasNoPersonasInWorkspace = personas.length === 0 && !isLoading;
+  const allLinked = personas.length > 0 && personas.length === linkedPersonaIds.length;
 
   return (
     <Modal
@@ -76,7 +100,7 @@ export function PersonaSelectorModal({
             variant="cta"
             onClick={handleLink}
             disabled={selectedIds.length === 0}
-            isLoading={linkPersona.isPending}
+            isLoading={isLinking}
           >
             Link Selected ({selectedIds.length})
           </Button>
@@ -93,14 +117,61 @@ export function PersonaSelectorModal({
         />
       </div>
 
-      {/* Persona list */}
-      {availablePersonas.length === 0 ? (
+      {/* Error banner */}
+      {linkError && (
+        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+          {linkError}
+        </div>
+      )}
+
+      {/* Loading state */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="mx-auto h-6 w-6 text-gray-400 animate-spin mb-2" />
+          <p className="text-sm text-gray-500">Loading personas...</p>
+        </div>
+      ) : isError ? (
         <div className="text-center py-8">
-          <Users className="mx-auto h-8 w-8 text-gray-300 mb-2" />
+          <Users className="mx-auto h-8 w-8 text-red-300 mb-2" />
+          <p className="text-sm text-red-600">
+            Could not load personas. Please try again.
+          </p>
+        </div>
+      ) : hasNoPersonasInWorkspace ? (
+        /* No personas exist in workspace */
+        <div className="text-center py-8">
+          <UserPlus className="mx-auto h-8 w-8 text-gray-300 mb-2" />
+          <p className="text-sm font-medium text-gray-700 mb-1">
+            No personas in this workspace yet
+          </p>
+          <p className="text-xs text-gray-500 mb-4">
+            Create a persona first, then link it to this product.
+          </p>
+          {onNavigateToCreatePersona && (
+            <Button
+              variant="primary"
+              size="sm"
+              icon={UserPlus}
+              onClick={handleCreatePersona}
+            >
+              Create Persona
+            </Button>
+          )}
+        </div>
+      ) : allLinked ? (
+        /* All personas already linked */
+        <div className="text-center py-8">
+          <Users className="mx-auto h-8 w-8 text-green-300 mb-2" />
           <p className="text-sm text-gray-500">
-            {personas.length === linkedPersonaIds.length
-              ? "All personas are already linked"
-              : "No personas match your search"}
+            All personas are already linked to this product
+          </p>
+        </div>
+      ) : availablePersonas.length === 0 ? (
+        /* Search returned no results */
+        <div className="text-center py-8">
+          <Search className="mx-auto h-8 w-8 text-gray-300 mb-2" />
+          <p className="text-sm text-gray-500">
+            No personas match your search
           </p>
         </div>
       ) : (
@@ -132,7 +203,7 @@ export function PersonaSelectorModal({
 
                 {/* Avatar */}
                 <OptimizedImage
-                  src={(persona as { avatarUrl?: string | null }).avatarUrl}
+                  src={persona.avatarUrl}
                   alt={persona.name}
                   avatar="sm"
                   fallback={

@@ -6,6 +6,7 @@
 // in the database progressively so the frontend can poll for progress.
 // =============================================================
 
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { openaiClient } from '@/lib/ai/openai-client';
 import { scrapeUrl, type ScrapedData } from './url-scraper';
@@ -274,7 +275,7 @@ async function writeResultToDb(styleguideId: string, result: AnalysisResult): Pr
       examplePhrases: result.examplePhrases || null,
 
       // Imagery
-      photographyStyle: result.photographyStyle || null,
+      photographyStyle: result.photographyStyle || Prisma.JsonNull,
       photographyGuidelines: result.photographyGuidelines || [],
       illustrationGuidelines: result.illustrationGuidelines || [],
       imageryDonts: result.imageryDonts || [],

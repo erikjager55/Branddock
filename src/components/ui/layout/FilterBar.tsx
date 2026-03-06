@@ -10,18 +10,18 @@ interface FilterBarProps {
   searchValue: string;
   onSearchChange: (value: string) => void;
   searchPlaceholder?: string;
-  /** Filter dropdowns/selects als children */
+  /** Filter dropdowns/selects as children */
   filters?: ReactNode;
   /** View mode toggle */
   viewMode?: ViewMode;
   onViewModeChange?: (mode: ViewMode) => void;
-  /** Extra acties rechts */
+  /** Extra actions on the right */
   actions?: ReactNode;
   className?: string;
 }
 
 export function FilterBar({
-  searchValue, onSearchChange, searchPlaceholder = 'Zoeken...',
+  searchValue, onSearchChange, searchPlaceholder = 'Search...',
   filters, viewMode, onViewModeChange, actions, className,
 }: FilterBarProps) {
   return (
@@ -43,7 +43,7 @@ export function FilterBar({
                 FILTER_PATTERNS.tabItem,
                 viewMode === 'grid' ? FILTER_PATTERNS.tabItemActive : FILTER_PATTERNS.tabItemInactive
               )}
-              aria-label="Grid weergave"
+              aria-label="Grid view"
             >
               <LayoutGrid className={ICON_SIZES.sm} />
             </button>
@@ -53,7 +53,7 @@ export function FilterBar({
                 FILTER_PATTERNS.tabItem,
                 viewMode === 'list' ? FILTER_PATTERNS.tabItemActive : FILTER_PATTERNS.tabItemInactive
               )}
-              aria-label="Lijst weergave"
+              aria-label="List view"
             >
               <List className={ICON_SIZES.sm} />
             </button>

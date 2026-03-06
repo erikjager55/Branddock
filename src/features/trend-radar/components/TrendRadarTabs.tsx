@@ -1,10 +1,9 @@
 'use client';
 
-import { Server, Rss, Bell, Zap } from 'lucide-react';
+import { Rss, Bell, Zap } from 'lucide-react';
 import { useTrendRadarStore } from '../stores/useTrendRadarStore';
 
 const TABS = [
-  { key: 'sources' as const, label: 'Sources', icon: Server },
   { key: 'feed' as const, label: 'Feed', icon: Rss },
   { key: 'alerts' as const, label: 'Alerts', icon: Bell },
   { key: 'activate' as const, label: 'Activate', icon: Zap },

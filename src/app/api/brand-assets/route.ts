@@ -137,9 +137,9 @@ export async function POST(request: NextRequest) {
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
 
-    // Check for duplicate slug
-    const existing = await prisma.brandAsset.findUnique({
-      where: { slug },
+    // Check for duplicate slug within workspace
+    const existing = await prisma.brandAsset.findFirst({
+      where: { slug, workspaceId },
     });
     if (existing) {
       return NextResponse.json(

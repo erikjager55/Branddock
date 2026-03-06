@@ -1,23 +1,20 @@
 // =============================================================
 // BrandFoundationPage — orchestrator for the Brand Foundation view
 //
-// Composes: Header, Stats, Filters, Grid, DetailPanel, CreateModal
+// Composes: Header, Stats, Filters, Grid, DetailPanel
 //
 // This is the reference implementation for all module views:
-//  Page → Header + Stats + Filters + Grid + Detail + Create
+//  Page → Header + Stats + Filters + Grid + Detail
 // =============================================================
 
 'use client';
 
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { Plus } from 'lucide-react';
 import { PageShell, PageHeader } from '@/components/ui/layout';
-import { Button } from '@/components/shared';
 import { BrandFoundationStats } from './BrandFoundationStats';
 import { BrandAssetFilters } from './BrandAssetFilters';
 import { BrandAssetGrid } from './BrandAssetGrid';
 import { BrandAssetDetailPanel } from '@/components/brand-assets/BrandAssetDetailPanel';
-import { BrandAssetCreateModal } from '@/components/brand-assets/BrandAssetCreateModal';
 import { useBrandAssetStore } from '@/stores/useBrandAssetStore';
 import { useBrandAssets } from '@/contexts';
 import { mockToMeta } from '@/lib/api/mock-to-meta-adapter';
@@ -47,8 +44,6 @@ export function BrandFoundationPage({
   // Refresh data when the page mounts (ensures fresh data on navigation)
   useEffect(() => { refetch(); }, [refetch]);
 
-  const isCreateModalOpen = useBrandAssetStore((s) => s.isCreateModalOpen);
-  const setCreateModalOpen = useBrandAssetStore((s) => s.setCreateModalOpen);
   const selectedAssetId = useBrandAssetStore((s) => s.selectedAssetId);
   const setSelectedAssetId = useBrandAssetStore((s) => s.setSelectedAssetId);
 
@@ -78,12 +73,6 @@ export function BrandFoundationPage({
     setSelectedAssetId(null);
   }, [setSelectedAssetId]);
 
-  // After create: close modal and refresh data
-  const handleCreated = useCallback(() => {
-    setCreateModalOpen(false);
-    refetch();
-  }, [setCreateModalOpen, refetch]);
-
   return (
     <PageShell>
       <div data-testid="brand-foundation-page">
@@ -91,12 +80,6 @@ export function BrandFoundationPage({
         moduleKey="brand-foundation"
         title="Brand Foundation"
         subtitle="Your core brand assets and identity"
-        actions={
-          <Button onClick={() => setCreateModalOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Asset
-          </Button>
-        }
       />
       <div className="space-y-6">
         <BrandFoundationStats />
@@ -104,20 +87,13 @@ export function BrandFoundationPage({
         <BrandAssetGrid onAssetClick={handleAssetClick} />
       </div>
 
-      {/* Detail Panel — conditioneel bij selectie */}
+      {/* Detail Panel — conditional on selection */}
 
       <BrandAssetDetailPanel
         asset={selectedAsset}
         isOpen={!!selectedAsset}
         onClose={handleDetailClose}
         onEdit={onAssetClick ? (a) => onAssetClick(a.id) : undefined}
-      />
-
-      {/* Create Modal — conditioneel bij open */}
-      <BrandAssetCreateModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setCreateModalOpen(false)}
-        onCreated={handleCreated}
       />
       </div>
     </PageShell>

@@ -98,7 +98,7 @@ export function PersonaAnalysisChatInterface({
         {/* Progress */}
         <div className="px-6 pt-4 pb-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-            <span className="font-medium">Voortgang</span>
+            <span className="font-medium">Progress</span>
             <span className="font-semibold text-teal-600">{progressPercent}%</span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -115,7 +115,7 @@ export function PersonaAnalysisChatInterface({
             value={currentInput}
             onChange={(e) => onInputChange(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type je antwoord hier..."
+            placeholder="Type your answer here..."
             disabled={isAITyping || isSubmitting}
             rows={3}
             className="w-full p-4 rounded-xl border border-border bg-white dark:bg-gray-900 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none disabled:opacity-50"
@@ -129,14 +129,14 @@ export function PersonaAnalysisChatInterface({
             className="flex items-center gap-2 text-sm text-muted-foreground transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ArrowLeft className="h-4 w-4" />
-            Vorige
+            Previous
           </button>
           <button
             onClick={onSubmit}
             disabled={!currentInput.trim() || isAITyping || isSubmitting}
             className="flex items-center gap-2 text-sm font-medium rounded-lg px-6 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            {isLastDimension ? 'Genereer Rapport' : 'Next'}
+            {isLastDimension ? 'Generate Report' : 'Next'}
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>

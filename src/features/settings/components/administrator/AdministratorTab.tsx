@@ -58,7 +58,7 @@ export function AdministratorTab() {
     mutationFn: deleteConfig,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'exploration-configs'] });
-      toast.success('Configuratie verwijderd');
+      toast.success('Configuration deleted');
       setSelectedConfigId(null);
     },
   });
@@ -86,7 +86,7 @@ export function AdministratorTab() {
     setDuplicateData({
       ...config,
       id: `new-duplicate-${Date.now()}`,
-      label: config.label ? `${config.label} (kopie)` : null,
+      label: config.label ? `${config.label} (copy)` : null,
       isActive: false,
     });
     setIsCreating(true);
@@ -94,7 +94,7 @@ export function AdministratorTab() {
   }, []);
 
   const handleDeleteConfig = useCallback((id: string) => {
-    if (confirm('Weet je zeker dat je deze configuratie wilt verwijderen?')) {
+    if (confirm('Are you sure you want to delete this configuration?')) {
       deleteMutation.mutate(id);
     }
   }, [deleteMutation]);
@@ -110,14 +110,14 @@ export function AdministratorTab() {
     queryClient.invalidateQueries({ queryKey: ['admin', 'exploration-configs'] });
     setIsCreating(false);
     setDuplicateData(null);
-    toast.success('Configuratie aangemaakt');
+    toast.success('Configuration created');
   }, [queryClient]);
 
   const handleSaveUpdate = useCallback(async (configData: Record<string, unknown>) => {
     if (!selectedConfigId) return;
     await updateConfig(selectedConfigId, configData);
     queryClient.invalidateQueries({ queryKey: ['admin', 'exploration-configs'] });
-    toast.success('Configuratie opgeslagen');
+    toast.success('Configuration saved');
   }, [selectedConfigId, queryClient]);
 
   // ─── Loading state ─────────────────────────────────────

@@ -6,26 +6,26 @@ import { PromptEditor } from '../PromptEditor';
 
 const SYSTEM_PROMPT_VARIABLES = [
   { variable: '{{brandContext}}', description: 'Brand assets, personas, products context' },
-  { variable: '{{customKnowledge}}', description: 'Kennisbronnen uit deze config' },
-  { variable: '{{assetKnowledge}}', description: 'Asset-specifieke context' },
-  { variable: '{{itemName}}', description: 'Naam van het item (asset/persona)' },
+  { variable: '{{customKnowledge}}', description: 'Knowledge sources from this config' },
+  { variable: '{{assetKnowledge}}', description: 'Asset-specific context' },
+  { variable: '{{itemName}}', description: 'Name of the item (asset/persona)' },
 ];
 
 const FEEDBACK_PROMPT_VARIABLES = [
-  { variable: '{{dimensionTitle}}', description: 'Titel van de huidige dimensie' },
-  { variable: '{{questionAsked}}', description: 'De gestelde vraag' },
-  { variable: '{{userAnswer}}', description: 'Het antwoord van de gebruiker' },
-  { variable: '{{itemName}}', description: 'Naam van het item' },
+  { variable: '{{dimensionTitle}}', description: 'Title of the current dimension' },
+  { variable: '{{questionAsked}}', description: 'The question that was asked' },
+  { variable: '{{userAnswer}}', description: 'The user\'s answer' },
+  { variable: '{{itemName}}', description: 'Name of the item' },
 ];
 
 const REPORT_PROMPT_VARIABLES = [
-  { variable: '{{allAnswers}}', description: 'Alle antwoorden (voor rapport)' },
-  { variable: '{{itemName}}', description: 'Naam van het item' },
-  { variable: '{{itemType}}', description: 'Type item (persona/brand_asset)' },
-  { variable: '{{itemDescription}}', description: 'Beschrijving van het item' },
+  { variable: '{{allAnswers}}', description: 'All answers (for report)' },
+  { variable: '{{itemName}}', description: 'Name of the item' },
+  { variable: '{{itemType}}', description: 'Item type (persona/brand_asset)' },
+  { variable: '{{itemDescription}}', description: 'Description of the item' },
   { variable: '{{brandContext}}', description: 'Brand assets, personas, products context' },
-  { variable: '{{customKnowledge}}', description: 'Kennisbronnen uit deze config' },
-  { variable: '{{assetKnowledge}}', description: 'Asset-specifieke context' },
+  { variable: '{{customKnowledge}}', description: 'Knowledge sources from this config' },
+  { variable: '{{assetKnowledge}}', description: 'Asset-specific context' },
 ];
 
 // ─── Props ──────────────────────────────────────────────────
@@ -67,15 +67,15 @@ export function PromptsTab({
       <div>
         <h3 className="text-sm font-semibold text-gray-800">Prompts</h3>
         <p className="text-xs text-gray-500 mt-0.5">
-          Configureer de AI instructies voor elke fase van het exploration gesprek.
-          Klik op een variabele chip om deze in te voegen op de cursor positie.
+          Configure the AI instructions for each phase of the exploration conversation.
+          Click a variable chip to insert it at the cursor position.
         </p>
       </div>
 
       {/* System Prompt */}
       <PromptEditor
         label="System Prompt"
-        description="Definieert de AI persona en instructies voor het gehele exploration gesprek"
+        description="Defines the AI persona and instructions for the entire exploration conversation"
         value={systemPrompt}
         onChange={onSystemPromptChange}
         variables={SYSTEM_PROMPT_VARIABLES}
@@ -89,7 +89,7 @@ export function PromptsTab({
       {/* Feedback Prompt */}
       <PromptEditor
         label="Feedback Prompt"
-        description="Template voor de AI reactie na elk antwoord van de gebruiker"
+        description="Template for the AI response after each user answer"
         value={feedbackPrompt}
         onChange={onFeedbackPromptChange}
         variables={FEEDBACK_PROMPT_VARIABLES}
@@ -103,7 +103,7 @@ export function PromptsTab({
       {/* Report Prompt */}
       <PromptEditor
         label="Report Prompt"
-        description="Template voor het eindrapport dat gegenereerd wordt na alle dimensies"
+        description="Template for the final report generated after all dimensions"
         value={reportPrompt}
         onChange={onReportPromptChange}
         variables={REPORT_PROMPT_VARIABLES}

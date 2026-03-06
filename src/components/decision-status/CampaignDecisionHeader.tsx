@@ -1,15 +1,15 @@
 /**
- * COMPONENT: Campaign Decision Header (VERFIJND)
- * 
- * Strategisch control panel dat decision status toont.
- * NIET een foutmelding. WEL een rustig, duidelijk overzicht met directe actie.
- * 
- * WIJZIGINGEN v2:
- * - Compacter (minder "error" gevoel)
- * - Primaire actie links, visueel dominant
- * - Secundaire "doorgaan met risico" rechts
- * - Toon minstens 2 oorzaken indien aanwezig
- * - Rustiger kleurgebruik
+ * COMPONENT: Campaign Decision Header (REFINED)
+ *
+ * Strategic control panel that displays decision status.
+ * NOT an error message. IS a calm, clear overview with direct action.
+ *
+ * CHANGES v2:
+ * - More compact (less "error" feel)
+ * - Primary action left, visually dominant
+ * - Secondary "proceed with risk" right
+ * - Show at least 2 causes if present
+ * - Calmer color usage
  */
 
 import React from 'react';
@@ -19,15 +19,15 @@ import { Button } from '../ui/button';
 import { AlertTriangle, CheckCircle, ShieldAlert, ArrowRight, AlertCircle } from 'lucide-react';
 
 interface CampaignDecisionHeaderProps {
-  /** Overall decision status voor de campagne */
+  /** Overall decision status for the campaign */
   status: 'safe-to-decide' | 'decision-at-risk' | 'do-not-decide';
-  /** Primaire actie die gebruiker moet nemen */
+  /** Primary action the user needs to take */
   primaryAction: string;
-  /** Callback voor primaire actie button */
+  /** Callback for primary action button */
   onPrimaryAction?: () => void;
-  /** Callback voor "doorgaan met risico" */
+  /** Callback for "proceed with risk" */
   onProceedAnyway?: () => void;
-  /** Details over affected assets - GEEN status field meer (consistentie) */
+  /** Details about affected assets - NO status field anymore (consistency) */
   details?: {
     affectedAssets: Array<{ name: string; coverage: number }>;
     missingResearch: string[];
@@ -42,7 +42,7 @@ export function CampaignDecisionHeader({
   details
 }: CampaignDecisionHeaderProps) {
   
-  // Status configuratie - rustiger, minder "error" gevoel
+  // Status configuration - calmer, less "error" feel
   const statusConfig = {
     'safe-to-decide': {
       icon: CheckCircle,
@@ -63,7 +63,7 @@ export function CampaignDecisionHeader({
     'do-not-decide': {
       icon: ShieldAlert,
       label: 'Do Not Decide',
-      bgColor: 'bg-slate-50 dark:bg-slate-950/20', // Rustiger dan rood
+      bgColor: 'bg-slate-50 dark:bg-slate-950/20', // Calmer than red
       borderColor: 'border-l-red-600',
       iconColor: 'text-red-600',
       badgeColor: 'bg-red-600/90'
@@ -73,11 +73,11 @@ export function CampaignDecisionHeader({
   const config = statusConfig[status];
   const StatusIcon = config.icon;
 
-  // Verzamel oorzaken (minimaal 2 indien aanwezig)
+  // Collect causes (minimum 2 if present)
   const rootCauses = details?.affectedAssets || [];
-  const displayCauses = rootCauses.slice(0, 3); // Max 3 voor compactheid
+  const displayCauses = rootCauses.slice(0, 3); // Max 3 for compactness
 
-  // Alleen tonen indien niet safe
+  // Only show if not safe
   if (status === 'safe-to-decide') {
     return (
       <Card className={`border-l-4 ${config.borderColor} ${config.bgColor}`}>
@@ -88,7 +88,7 @@ export function CampaignDecisionHeader({
               {config.label}
             </Badge>
             <p className="text-sm text-muted-foreground">
-              Alle gekoppelde merkdata is voldoende gevalideerd. Je kunt veilig campagne genereren.
+              All linked brand data is sufficiently validated. You can safely generate campaigns.
             </p>
           </div>
         </CardContent>
@@ -100,7 +100,7 @@ export function CampaignDecisionHeader({
     <Card className={`border-l-4 ${config.borderColor} ${config.bgColor}`}>
       <CardContent className="py-3 px-4">
         <div className="flex items-start gap-4">
-          {/* Left: Status + Oorzaken */}
+          {/* Left: Status + Causes */}
           <div className="flex-1 min-w-0">
             {/* Status header - compact */}
             <div className="flex items-center gap-2 mb-2">
@@ -109,11 +109,11 @@ export function CampaignDecisionHeader({
                 {config.label}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                Strategische risico's gedetecteerd
+                Strategic risks detected
               </span>
             </div>
 
-            {/* Oorzaken - altijd minstens 2 tonen indien aanwezig */}
+            {/* Causes - always show at least 2 if present */}
             {displayCauses.length > 0 && (
               <div className="space-y-1.5 ml-7">
                 {displayCauses.map((asset, i) => (
@@ -132,32 +132,32 @@ export function CampaignDecisionHeader({
                 ))}
                 {rootCauses.length > 3 && (
                   <p className="text-xs text-muted-foreground ml-5">
-                    + {rootCauses.length - 3} meer {rootCauses.length - 3 === 1 ? 'item' : 'items'}
+                    + {rootCauses.length - 3} more {rootCauses.length - 3 === 1 ? 'item' : 'items'}
                   </p>
                 )}
               </div>
             )}
           </div>
 
-          {/* Right: Acties - PRIMAIR + SECUNDAIR */}
+          {/* Right: Actions - PRIMARY + SECONDARY */}
           <div className="flex flex-col gap-2 flex-shrink-0">
-            {/* PRIMAIRE ACTIE - Visueel Dominant */}
+            {/* PRIMARY ACTION - Visually Dominant */}
             <Button 
               onClick={onPrimaryAction}
               size="default"
               className="font-semibold shadow-md"
             >
-              Los dit nu op
+              Fix this now
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
 
-            {/* SECUNDAIRE ACTIE - Tekstlink */}
+            {/* SECONDARY ACTION - Text link */}
             {onProceedAnyway && (
               <button
                 onClick={onProceedAnyway}
                 className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors text-center"
               >
-                Doorgaan met risico
+                Proceed with risk
               </button>
             )}
           </div>
@@ -168,40 +168,40 @@ export function CampaignDecisionHeader({
 }
 
 /**
- * MOTIVATIE WIJZIGINGEN v2:
- * 
- * 1. COMPACTER & RUSTIGER
- *    - py-3 ipv py-4 (minder hoogte)
- *    - bg-slate-50 bij do-not-decide (niet fel rood)
- *    - Rustiger gradaties (/70, /90)
- *    - Geen grote iconografie meer
- * 
- * 2. STRATEGISCH CONTROL PANEL GEVOEL
- *    - "Strategische risico's gedetecteerd" (niet "ERROR")
- *    - Oorzaken met bullet points (gestructureerd)
- *    - Compacte typografie (text-sm)
- *    - Minder ruimte, meer inhoud
- * 
- * 3. PRIMAIRE ACTIE DOMINANT
- *    - "Los dit nu op" button links (eerste wat je ziet)
- *    - size="default" + shadow-md (visueel zwaarder)
- *    - Secundaire actie is kleine tekstlink (veel lichter)
- *    - Actie hiërarchie is kristalhelder
- * 
- * 4. OORZAKEN ALTIJD TONEN (min 2)
+ * RATIONALE CHANGES v2:
+ *
+ * 1. MORE COMPACT & CALMER
+ *    - py-3 instead of py-4 (less height)
+ *    - bg-slate-50 for do-not-decide (not bright red)
+ *    - Calmer gradients (/70, /90)
+ *    - No large iconography
+ *
+ * 2. STRATEGIC CONTROL PANEL FEEL
+ *    - "Strategic risks detected" (not "ERROR")
+ *    - Causes with bullet points (structured)
+ *    - Compact typography (text-sm)
+ *    - Less space, more content
+ *
+ * 3. PRIMARY ACTION DOMINANT
+ *    - "Fix this now" button left (first thing you see)
+ *    - size="default" + shadow-md (visually heavier)
+ *    - Secondary action is small text link (much lighter)
+ *    - Action hierarchy is crystal clear
+ *
+ * 4. ALWAYS SHOW CAUSES (min 2)
  *    - "Sarah: 48% research coverage"
  *    - "Core Values: 50% research coverage"
- *    - Concrete, specifieke informatie
- *    - Geen abstracte "some items have issues"
- *    - CONSISTENTIE: alleen percentage, geen formulier status
- * 
- * 5. GEDRAGSSTURING
- *    - Primaire actie = probleem oplossen (encouraged)
- *    - Secundaire actie = doorgaan (discouraged maar mogelijk)
- *    - Visual hierarchy stuurt naar gewenst gedrag
- * 
+ *    - Concrete, specific information
+ *    - No abstract "some items have issues"
+ *    - CONSISTENCY: percentage only, no form status
+ *
+ * 5. BEHAVIORAL STEERING
+ *    - Primary action = solve problem (encouraged)
+ *    - Secondary action = proceed (discouraged but possible)
+ *    - Visual hierarchy steers toward desired behavior
+ *
  * 6. SAFE STATE
  *    - Compact (py-3)
- *    - Geen prominentie (green is good, geen aandacht nodig)
- *    - Korte bevestiging, dan door
+ *    - No prominence (green is good, no attention needed)
+ *    - Short confirmation, then move on
  */

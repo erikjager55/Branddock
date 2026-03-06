@@ -1,7 +1,7 @@
 /**
- * COMPONENT: Next Steps Suggestions (Laag 2)
- * 
- * Contextuele suggestie kaarten voor vervolgstappen
+ * COMPONENT: Next Steps Suggestions (Layer 2)
+ *
+ * Contextual suggestion cards for next steps
  */
 
 import React, { useState } from 'react';
@@ -157,10 +157,10 @@ export function NextStepsSuggestions({
   const mediumPriority = relevantSuggestions.filter(s => s.priority === 'medium');
 
   const handleGenerate = (suggestionId: string) => {
-    // In werkelijke implementatie: trigger de generatie van deze output
+    // In real implementation: trigger the generation of this output
     console.log('Generating:', suggestionId);
-    // Voor nu: simuleer een download
-    alert(`Generating ${suggestionId}... (Dit zou in de echte app de output genereren)`);
+    // For now: simulate a download
+    alert(`Generating ${suggestionId}... (This would generate the output in the real app)`);
   };
 
   return (
@@ -287,7 +287,7 @@ export function NextStepsSuggestions({
                           setExpandedCard(suggestion.id);
                         }}
                       >
-                        Meer info
+                        More info
                         <ArrowRight className="h-3 w-3" />
                       </Button>
                     </CardContent>
@@ -339,7 +339,7 @@ export function NextStepsSuggestions({
                       onClick={() => handleGenerate(suggestion.id)}
                     >
                       <Download className="h-3 w-3" />
-                      Genereer
+                      Generate
                     </Button>
                   </CardContent>
                 </Card>

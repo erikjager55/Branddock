@@ -146,13 +146,13 @@ export function ResearchDashboard({
   const [aiAnalysisViewStatus, setAiAnalysisViewStatus] = useState<'in-progress' | 'result'>('in-progress');
   const [isReportLocked, setIsReportLocked] = useState(false);
   const [reportAnswers, setReportAnswers] = useState({
-    brandPurpose: 'het empoweren van bedrijven door middel van innovatieve AI-oplossingen die mensen centraal stellen',
-    targetAudience: 'mid-market bedrijven die willen innoveren maar niet de resources hebben van grote enterprises',
-    uniqueValue: 'de combinatie van cutting-edge AI technologie met human-centered design principes',
-    competitiveLandscape: 'veel concurrenten focussen alleen op technologie, wij balanceren tech met menselijke ervaring',
-    customerChallenge: 'complexiteit van AI-implementatie en gebrek aan interne expertise',
-    brandValues: 'innovatie, toegankelijkheid, transparantie, en mensgerichtheid',
-    futureVision: 'een toekomst waarin AI technologie naadloos integreert in dagelijkse bedrijfsprocessen en mensen versterkt in plaats van vervangt'
+    brandPurpose: 'empowering businesses through innovative AI solutions that put people first',
+    targetAudience: 'mid-market companies that want to innovate but lack the resources of large enterprises',
+    uniqueValue: 'the combination of cutting-edge AI technology with human-centered design principles',
+    competitiveLandscape: 'many competitors focus only on technology, we balance tech with human experience',
+    customerChallenge: 'complexity of AI implementation and lack of internal expertise',
+    brandValues: 'innovation, accessibility, transparency, and human-centricity',
+    futureVision: 'a future where AI technology seamlessly integrates into daily business processes and empowers people instead of replacing them'
   });
   
   const [chatMessages, setChatMessages] = useState([
@@ -710,7 +710,7 @@ export function ResearchDashboard({
                   </div>
                   <div>
                     <h1 className="mb-1">AI Brand Analysis</h1>
-                    <p className="text-muted-foreground">Beantwoord de vragen om je brand framework te genereren</p>
+                    <p className="text-muted-foreground">Answer the questions to generate your brand framework</p>
                   </div>
                 </div>
                 
@@ -763,7 +763,7 @@ export function ResearchDashboard({
                   <div className="flex-1">
                     <div className="bg-white dark:bg-slate-800 rounded-2xl rounded-tl-sm p-4 shadow-sm border border-border/50">
                       <p className="text-sm text-foreground">
-                        Hallo! Ik help je graag om je brand framework te ontwikkelen. Laten we beginnen met een paar vragen over jouw bedrijf.
+                        Hello! I would love to help you develop your brand framework. Let us start with a few questions about your business.
                       </p>
                     </div>
                   </div>
@@ -771,10 +771,10 @@ export function ResearchDashboard({
 
                 {/* Previous Q&A Pairs */}
                 {[
-                  { id: 'q1', question: 'Wat doet jouw bedrijf en wat maakt het uniek?' },
-                  { id: 'q2', question: 'Wat is de diepere purpose achter wat je doet?' },
-                  { id: 'q3', question: 'Hoe lever je deze waarde en wat is je unieke aanpak?' },
-                  { id: 'q4', question: 'Wie is je doelgroep en welke uitdagingen lossen jullie op?' }
+                  { id: 'q1', question: 'What does your company do and what makes it unique?' },
+                  { id: 'q2', question: 'What is the deeper purpose behind what you do?' },
+                  { id: 'q3', question: 'How do you deliver this value and what is your unique approach?' },
+                  { id: 'q4', question: 'Who is your target audience and what challenges do you solve?' }
                 ].map((q, index) => {
                   const stepNumber = index + 1;
                   const answer = questionnaireAnswers[q.id as keyof typeof questionnaireAnswers] || '';
@@ -870,7 +870,7 @@ export function ResearchDashboard({
                 {/* Progress Bar */}
                 <div className="px-6 pt-4 pb-3 border-b border-border/50">
                   <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                    <span className="font-medium">Voortgang</span>
+                    <span className="font-medium">Progress</span>
                     <span className="font-semibold text-[#5252E3]">{Math.round((currentStep / totalSteps) * 100)}%</span>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -893,7 +893,7 @@ export function ResearchDashboard({
                             [`q${currentStep}`]: e.target.value
                           });
                         }}
-                        placeholder="Typ hier je antwoord..."
+                        placeholder="Type your answer here..."
                         rows={3}
                         className="w-full px-4 py-3 rounded-lg border border-input bg-background text-sm resize-none focus:ring-2 focus:ring-[#5252E3] focus:border-transparent transition-all"
                         disabled={isTyping}
@@ -906,7 +906,7 @@ export function ResearchDashboard({
                           disabled={currentStep === 1 || isTyping}
                         >
                           <ArrowLeft className="h-4 w-4 mr-1" />
-                          Vorige
+                          Previous
                         </Button>
                         <Button
                           onClick={() => {
@@ -916,15 +916,15 @@ export function ResearchDashboard({
                               
                               setTimeout(() => {
                                 const reactions = {
-                                  q1: `Interessant! Je focus op "${answer.toLowerCase().includes('ai') ? 'AI-oplossingen' : 'innovatie'}" positioneert je in een dynamische markt. Dit geeft een sterke basis voor je merkidentiteit.`,
-                                  q2: `Mooi verwoord. Deze purpose laat een duidelijke waardepropositie zien die verder gaat dan alleen product features.`,
-                                  q3: `Uitstekend! Je unieke aanpak combineert meerdere elementen op een onderscheidende manier. Dit is een sterke differentiator in de markt.`,
-                                  q4: `Perfect. Je doelgroep-definitie is specifiek genoeg om gericht te zijn, maar breed genoeg voor groei. Dit helpt bij het ontwikkelen van gerichte communicatie.`
+                                  q1: `Interesting! Your focus on "${answer.toLowerCase().includes('ai') ? 'AI solutions' : 'innovation'}" positions you in a dynamic market. This provides a strong foundation for your brand identity.`,
+                                  q2: `Well articulated. This purpose shows a clear value proposition that goes beyond just product features.`,
+                                  q3: `Excellent! Your unique approach combines multiple elements in a distinctive way. This is a strong differentiator in the market.`,
+                                  q4: `Perfect. Your target audience definition is specific enough to be focused, yet broad enough for growth. This helps in developing targeted communications.`
                                 };
-                                
+
                                 setAiReactions(prev => ({
                                   ...prev,
-                                  [`q${currentStep}`]: reactions[`q${currentStep}` as keyof typeof reactions] || 'Bedankt voor je input!'
+                                  [`q${currentStep}`]: reactions[`q${currentStep}` as keyof typeof reactions] || 'Thanks for your input!'
                                 }));
                                 
                                 setIsTyping(false);

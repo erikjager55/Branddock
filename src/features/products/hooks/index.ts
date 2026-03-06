@@ -146,6 +146,20 @@ export function useAddProductImage(productId: string | undefined) {
   });
 }
 
+// ─── 11b. useUploadProductImage ────────────────────────────
+
+export function useUploadProductImage(productId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, category, altText }: { file: File; category?: string; altText?: string }) =>
+      api.uploadProductImage(productId!, file, category, altText),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: productKeys.detail(productId!) });
+      qc.invalidateQueries({ queryKey: productKeys.list() });
+    },
+  });
+}
+
 // ─── 12. useUpdateProductImage ──────────────────────────────
 
 export function useUpdateProductImage(productId: string | undefined) {

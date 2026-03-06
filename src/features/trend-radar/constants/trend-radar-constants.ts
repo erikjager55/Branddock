@@ -3,7 +3,6 @@
 // =============================================================
 
 import type {
-  TrendSourceStatus,
   TrendDetectionSource,
   TrendScanStatus,
   InsightCategory,
@@ -12,26 +11,12 @@ import type {
   InsightTimeframe,
 } from '../types/trend-radar.types';
 
-// ─── Source Status ───────────────────────────────────────────
-
-export const SOURCE_STATUS_CONFIG: Record<
-  TrendSourceStatus,
-  { label: string; color: string; dotColor: string }
-> = {
-  PENDING: { label: 'Pending', color: 'bg-gray-100 text-gray-700', dotColor: 'bg-gray-400' },
-  HEALTHY: { label: 'Healthy', color: 'bg-emerald-100 text-emerald-700', dotColor: 'bg-emerald-500' },
-  WARNING: { label: 'Warning', color: 'bg-amber-100 text-amber-700', dotColor: 'bg-amber-500' },
-  ERROR: { label: 'Error', color: 'bg-red-100 text-red-700', dotColor: 'bg-red-500' },
-  PAUSED: { label: 'Paused', color: 'bg-gray-100 text-gray-500', dotColor: 'bg-gray-400' },
-};
-
 // ─── Detection Source ────────────────────────────────────────
 
 export const DETECTION_SOURCE_CONFIG: Record<
   TrendDetectionSource,
   { label: string; color: string; icon: string }
 > = {
-  AUTO_SCAN: { label: 'Auto Scan', color: 'bg-blue-100 text-blue-700', icon: 'Radar' },
   MANUAL: { label: 'Manual', color: 'bg-gray-100 text-gray-700', icon: 'PenLine' },
   AI_RESEARCH: { label: 'AI Research', color: 'bg-purple-100 text-purple-700', icon: 'Sparkles' },
 };
@@ -91,17 +76,6 @@ export const DIRECTION_CONFIG: Record<string, { label: string; icon: string; col
   declining: { label: 'Declining', icon: 'TrendingDown', color: 'text-red-600' },
   stable: { label: 'Stable', icon: 'Minus', color: 'text-gray-500' },
 };
-
-// ─── Check Interval Options ──────────────────────────────────
-
-export const CHECK_INTERVAL_OPTIONS = [
-  { value: 60, label: 'Every hour' },
-  { value: 180, label: 'Every 3 hours' },
-  { value: 360, label: 'Every 6 hours' },
-  { value: 720, label: 'Every 12 hours' },
-  { value: 1440, label: 'Once a day' },
-  { value: 10080, label: 'Once a week' },
-] as const;
 
 // ─── Relevance Score Thresholds ──────────────────────────────
 

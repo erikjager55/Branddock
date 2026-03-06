@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 
 // =============================================================
-// GET /api/brandstyle/ai-context — alle saved secties als AI prompt context
+// GET /api/brandstyle/ai-context — all saved sections as AI prompt context
 // =============================================================
 export async function GET() {
   try {

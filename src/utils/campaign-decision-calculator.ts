@@ -2,32 +2,32 @@ import { BrandAsset } from '../types/brand-asset';
 import { Persona } from '../types/persona';
 /**
  * UTILITY: Campaign Decision Calculator
- * 
- * Berekent overall decision status voor een campaign op basis van
- * alle gekoppelde brand assets en personas.
- * 
- * BESLISLOGICA:
- * - Alle items < 50% coverage → DO NOT DECIDE
- * - Alle items ≥ 50% maar één of meer < 80% → DECISION AT RISK
- * - Alle items ≥ 80% en top 2 methods → SAFE TO DECIDE
+ *
+ * Calculates the overall decision status for a campaign based on
+ * all linked brand assets and personas.
+ *
+ * DECISION LOGIC:
+ * - All items < 50% coverage → DO NOT DECIDE
+ * - All items >= 50% but one or more < 80% → DECISION AT RISK
+ * - All items >= 80% and top 2 methods → SAFE TO DECIDE
  */
 
 import { calculateDecisionStatus } from './decision-status-calculator';
 
 export interface CampaignDecisionResult {
-  /** Overall status voor de campagne */
+  /** Overall status for the campaign */
   status: 'safe-to-decide' | 'decision-at-risk' | 'do-not-decide';
-  
-  /** Reden in 1 zin (max 120 chars) */
+
+  /** Reason in 1 sentence (max 120 chars) */
   reason: string;
-  
-  /** Concrete gevolgen */
+
+  /** Concrete consequences */
   consequences: string;
-  
-  /** Primaire actie */
+
+  /** Primary action */
   primaryAction: string;
-  
-  /** Details voor expansion */
+
+  /** Details for expansion */
   details: {
     totalAssets: number;
     safeAssets: number;
@@ -37,8 +37,8 @@ export interface CampaignDecisionResult {
     affectedAssets: Array<{ name: string; coverage: number; status: string }>;
     missingResearch: string[];
   };
-  
-  /** Voor output summary */
+
+  /** For output summary */
   rootCauses: string[];
   risks: string[];
   improvements: string[];
@@ -50,8 +50,8 @@ export function calculateCampaignDecision(
   selectedBrandAssets: string[],
   selectedPersonas: string[]
 ): CampaignDecisionResult {
-  
-  // Verzamel alle items
+
+  // Collect all items
   const allItems = [
     ...selectedBrandAssets.map(id => {
       const asset = brandAssets.find(a => a.id === id);
@@ -63,13 +63,13 @@ export function calculateCampaignDecision(
     }).filter(Boolean)
   ];
 
-  // Als geen items geselecteerd, return safe (geen risk)
+  // If no items selected, return safe (no risk)
   if (allItems.length === 0) {
     return {
       status: 'safe-to-decide',
-      reason: 'Geen specifieke merkdata gekoppeld aan deze campagne.',
-      consequences: 'Campagne zal generiek zijn zonder merkcontext. Dit is acceptabel voor pure awareness of test-campagnes.',
-      primaryAction: 'Koppel merkdata voor meer relevantie',
+      reason: 'No specific brand data linked to this campaign.',
+      consequences: 'Campaign will be generic without brand context. This is acceptable for pure awareness or test campaigns.',
+      primaryAction: 'Link brand data for more relevance',
       details: {
         totalAssets: 0,
         safeAssets: 0,
@@ -85,7 +85,7 @@ export function calculateCampaignDecision(
     };
   }
 
-  // Bereken status voor elk item
+  // Calculate status for each item
   const itemsWithStatus = allItems.map(item => ({
     item: item!,
     statusInfo: calculateDecisionStatus(item!)
@@ -99,7 +99,7 @@ export function calculateCampaignDecision(
     itemsWithStatus.reduce((sum, i) => sum + i.statusInfo.coverage, 0) / itemsWithStatus.length
   );
 
-  // Affected assets (niet-safe items)
+  // Affected assets (non-safe items)
   const affectedAssets = itemsWithStatus
     .filter(i => i.statusInfo.status !== 'safe-to-decide')
     .map(i => ({
@@ -108,13 +108,13 @@ export function calculateCampaignDecision(
       status: i.statusInfo.status
     }));
 
-  // Verzamel alle missing research methods (uniek)
+  // Collect all missing research methods (unique)
   const allMissingMethods = new Set<string>();
   itemsWithStatus.forEach(i => {
     i.statusInfo.missingTopMethods.forEach(method => allMissingMethods.add(method));
   });
 
-  // Bepaal overall status
+  // Determine overall status
   let overallStatus: 'safe-to-decide' | 'decision-at-risk' | 'do-not-decide';
   let reason: string;
   let consequences: string;
@@ -124,86 +124,86 @@ export function calculateCampaignDecision(
   let improvements: string[];
 
   if (blockedCount > 0) {
-    // DO NOT DECIDE: een of meer items < 50%
+    // DO NOT DECIDE: one or more items < 50%
     overallStatus = 'do-not-decide';
-    
+
     const blockedNames = affectedAssets
       .filter(a => a.coverage < 50)
       .map(a => a.name)
       .slice(0, 2)
-      .join(' en ');
-    
-    reason = `${blockedNames} ${blockedCount > 1 ? 'zijn' : 'is'} onvoldoende gevalideerd voor deze campagne (< 50% coverage).`;
-    
-    consequences = 'Strategische beslissingen zijn speculatief. Hoog risico op inconsistente merkboodschap, verspilling van mediabudget en teleurstellende campagne-resultaten.';
-    
-    primaryAction = `Valideer ${blockedNames} eerst`;
-    
+      .join(' and ');
+
+    reason = `${blockedNames} ${blockedCount > 1 ? 'are' : 'is'} insufficiently validated for this campaign (< 50% coverage).`;
+
+    consequences = 'Strategic decisions are speculative. High risk of inconsistent brand messaging, wasted media budget, and disappointing campaign results.';
+
+    primaryAction = `Validate ${blockedNames} first`;
+
     rootCauses = [
-      `${blockedCount} ${blockedCount === 1 ? 'asset heeft' : 'assets hebben'} minder dan 50% research coverage`,
-      'Kritieke merkfundamenten ontbreken in strategische basis',
-      affectedAssets.length > 2 ? `In totaal ${affectedAssets.length} items met validatieproblemen` : ''
+      `${blockedCount} ${blockedCount === 1 ? 'asset has' : 'assets have'} less than 50% research coverage`,
+      'Critical brand foundations are missing from the strategic basis',
+      affectedAssets.length > 2 ? `In total ${affectedAssets.length} items with validation issues` : ''
     ].filter(Boolean);
-    
+
     risks = [
-      'Campagne positionering kan conflicteren met werkelijke merkidentiteit',
-      'Budget wordt ingezet op ongevalideerde aannames en hypotheses',
-      'Target audience messaging kan volledig mis zijn',
-      'Kans op brand damage door inconsistente communicatie'
+      'Campaign positioning may conflict with actual brand identity',
+      'Budget is being spent on unvalidated assumptions and hypotheses',
+      'Target audience messaging may be completely off',
+      'Risk of brand damage due to inconsistent communication'
     ];
-    
+
     improvements = [
-      `Complete minimaal Workshop en 1-on-1 Interviews voor ${blockedNames}`,
-      'Breng alle assets naar minimaal 50% coverage voordat campagne wordt uitgevoerd',
-      'Overweeg pilot test met kleine budget om aannames te valideren'
+      `Complete at least Workshop and 1-on-1 Interviews for ${blockedNames}`,
+      'Bring all assets to at least 50% coverage before executing the campaign',
+      'Consider a pilot test with a small budget to validate assumptions'
     ];
 
   } else if (atRiskCount > 0) {
-    // DECISION AT RISK: alle ≥ 50% maar sommige < 80%
+    // DECISION AT RISK: all >= 50% but some < 80%
     overallStatus = 'decision-at-risk';
-    
+
     const atRiskNames = affectedAssets
       .map(a => a.name)
       .slice(0, 2)
-      .join(' en ');
-    
-    reason = `${atRiskNames} ${atRiskCount > 1 ? 'hebben' : 'heeft'} beperkte validatie (50-79% coverage of missende top research methods).`;
-    
-    consequences = 'Verhoogd risico op sub-optimale positionering, beperkte target audience fit en gemiste kansen door onvolledige inzichten.';
-    
-    primaryAction = `Verhoog coverage van ${atRiskNames}`;
-    
+      .join(' and ');
+
+    reason = `${atRiskNames} ${atRiskCount > 1 ? 'have' : 'has'} limited validation (50-79% coverage or missing top research methods).`;
+
+    consequences = 'Increased risk of sub-optimal positioning, limited target audience fit, and missed opportunities due to incomplete insights.';
+
+    primaryAction = `Increase coverage of ${atRiskNames}`;
+
     rootCauses = [
-      `${atRiskCount} ${atRiskCount === 1 ? 'asset heeft' : 'assets hebben'} coverage tussen 50-79%`,
-      Array.from(allMissingMethods).length > 0 
-        ? `Kritieke research methods ontbreken: ${Array.from(allMissingMethods).slice(0, 2).join(', ')}`
+      `${atRiskCount} ${atRiskCount === 1 ? 'asset has' : 'assets have'} coverage between 50-79%`,
+      Array.from(allMissingMethods).length > 0
+        ? `Critical research methods are missing: ${Array.from(allMissingMethods).slice(0, 2).join(', ')}`
         : '',
-      'Strategische basis is bruikbaar maar niet optimaal'
+      'Strategic basis is usable but not optimal'
     ].filter(Boolean);
-    
+
     risks = [
-      'Campagne messaging kan naast doelgroep schieten',
-      'Concurrenten met betere research kunnen marktaandeel afpakken',
-      'ROI zal waarschijnlijk onder potentieel blijven',
-      'Iteraties tijdens campagne nodig om bij te sturen'
+      'Campaign messaging may miss the target audience',
+      'Competitors with better research can capture market share',
+      'ROI will likely remain below potential',
+      'Iterations during the campaign needed to course-correct'
     ];
-    
+
     improvements = [
-      `Complete top 2 research methods (Workshop + 1-on-1 Interviews) voor ${atRiskNames}`,
-      'Breng alle assets naar 80%+ coverage voor optimale besluitvorming',
-      'Start campagne met pilot fase om hypotheses te testen voordat full-scale'
+      `Complete top 2 research methods (Workshop + 1-on-1 Interviews) for ${atRiskNames}`,
+      'Bring all assets to 80%+ coverage for optimal decision-making',
+      'Start campaign with a pilot phase to test hypotheses before going full-scale'
     ];
 
   } else {
-    // SAFE TO DECIDE: alle ≥ 80% en top methods
+    // SAFE TO DECIDE: all >= 80% and top methods
     overallStatus = 'safe-to-decide';
-    
-    reason = 'Alle gekoppelde merkdata is voldoende gevalideerd (≥ 80% coverage + top research methods).';
-    
-    consequences = 'Campagne is gebaseerd op sterke research fundamenten. Strategische beslissingen kunnen met vertrouwen genomen worden.';
-    
-    primaryAction = 'Ga door met campagne generatie';
-    
+
+    reason = 'All linked brand data is sufficiently validated (>= 80% coverage + top research methods).';
+
+    consequences = 'Campaign is based on strong research foundations. Strategic decisions can be made with confidence.';
+
+    primaryAction = 'Proceed with campaign generation';
+
     rootCauses = [];
     risks = [];
     improvements = [];
@@ -230,7 +230,7 @@ export function calculateCampaignDecision(
 }
 
 /**
- * Bereken section-level decision status
+ * Calculate section-level decision status
  */
 export function calculateSectionDecision(
   brandAssets: BrandAsset[],
@@ -245,14 +245,14 @@ export function calculateSectionDecision(
   problematicInputs: string[];
   requiredActions: string[];
 } {
-  
+
   switch (sectionType) {
     case 'brand-assets': {
       if (selectedBrandAssets.length === 0) {
         return {
           status: 'risk',
-          problematicInputs: ['Geen brand assets geselecteerd'],
-          requiredActions: ['Koppel minimaal 1 brand asset voor merkcontext']
+          problematicInputs: ['No brand assets selected'],
+          requiredActions: ['Link at least 1 brand asset for brand context']
         };
       }
 
@@ -268,22 +268,22 @@ export function calculateSectionDecision(
         const blockedAssets = assetStatuses
           .filter(s => s!.status === 'blocked')
           .map((s, i) => selectedBrandAssets[i]);
-        
+
         return {
           status: 'blocked',
           problematicInputs: blockedAssets.map(id => {
             const asset = brandAssets.find(a => a.id === id);
             return `${asset?.type}: ${calculateDecisionStatus(asset!).coverage}% coverage`;
           }),
-          requiredActions: ['Breng alle assets naar minimaal 50% coverage']
+          requiredActions: ['Bring all assets to at least 50% coverage']
         };
       }
 
       if (hasAtRisk) {
         return {
           status: 'risk',
-          problematicInputs: ['Sommige assets hebben beperkte validatie (50-79%)'],
-          requiredActions: ['Verhoog coverage naar 80%+ voor optimale resultaten']
+          problematicInputs: ['Some assets have limited validation (50-79%)'],
+          requiredActions: ['Increase coverage to 80%+ for optimal results']
         };
       }
 
@@ -294,8 +294,8 @@ export function calculateSectionDecision(
       if (selectedPersonas.length === 0) {
         return {
           status: 'risk',
-          problematicInputs: ['Geen personas geselecteerd'],
-          requiredActions: ['Koppel minimaal 1 persona voor doelgroep targeting']
+          problematicInputs: ['No personas selected'],
+          requiredActions: ['Link at least 1 persona for target audience targeting']
         };
       }
 
@@ -310,16 +310,16 @@ export function calculateSectionDecision(
       if (hasBlocked) {
         return {
           status: 'blocked',
-          problematicInputs: ['Een of meer personas hebben < 50% coverage'],
-          requiredActions: ['Valideer personas met Workshop en Interviews']
+          problematicInputs: ['One or more personas have < 50% coverage'],
+          requiredActions: ['Validate personas with Workshop and Interviews']
         };
       }
 
       if (hasAtRisk) {
         return {
           status: 'risk',
-          problematicInputs: ['Sommige personas hebben beperkte validatie'],
-          requiredActions: ['Verhoog persona research voor betere targeting']
+          problematicInputs: ['Some personas have limited validation'],
+          requiredActions: ['Increase persona research for better targeting']
         };
       }
 
@@ -336,11 +336,11 @@ export function calculateSectionDecision(
         return {
           status: 'blocked',
           problematicInputs: [
-            !hasName ? 'Campaign naam ontbreekt' : '',
-            !hasObjective ? 'Campaign objective ontbreekt' : '',
-            !hasMessage ? 'Key message ontbreekt' : ''
+            !hasName ? 'Campaign name is missing' : '',
+            !hasObjective ? 'Campaign objective is missing' : '',
+            !hasMessage ? 'Key message is missing' : ''
           ].filter(Boolean),
-          requiredActions: ['Vul alle verplichte campagne details in']
+          requiredActions: ['Fill in all required campaign details']
         };
       }
 
@@ -351,8 +351,8 @@ export function calculateSectionDecision(
       if (selectedChannels.length === 0) {
         return {
           status: 'risk',
-          problematicInputs: ['Geen kanalen geselecteerd'],
-          requiredActions: ['Selecteer minimaal 1 campagne kanaal']
+          problematicInputs: ['No channels selected'],
+          requiredActions: ['Select at least 1 campaign channel']
         };
       }
 

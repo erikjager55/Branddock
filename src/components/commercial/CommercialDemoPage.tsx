@@ -1,7 +1,7 @@
 /**
  * COMPONENT: Commercial Demo Page
  * 
- * Demo pagina om alle commerciële features te testen.
+ * Demo page to test all commercial features.
  */
 
 import React, { useState } from 'react';
@@ -50,7 +50,7 @@ export function CommercialDemoPage() {
       upgradeTier(tier);
       setShowUpgradePrompt(false);
     }
-    alert(`Upgrade naar ${tier || 'strategic-control'} - Demo mode`);
+    alert(`Upgrade to ${tier || 'strategic-control'} - Demo mode`);
   };
 
   if (showDecisionScan) {
@@ -71,7 +71,7 @@ export function CommercialDemoPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Commercial Features Demo</h1>
         <p className="text-muted-foreground">
-          Test alle commerciële functionaliteit en product tiers
+          Test all commercial functionality and product tiers
         </p>
       </div>
 
@@ -94,7 +94,7 @@ export function CommercialDemoPage() {
                   <Shield className="h-6 w-6 text-blue-700 dark:text-blue-400" />
                 </div>
                 <CardTitle>Decision Scan</CardTitle>
-                <CardDescription>Entry product - basis niveau</CardDescription>
+                <CardDescription>Entry product - basic level</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button className="w-full" onClick={() => setShowDecisionScan(true)}>
@@ -109,7 +109,7 @@ export function CommercialDemoPage() {
                   <Package className="h-6 w-6 text-purple-700 dark:text-purple-400" />
                 </div>
                 <CardTitle>Strategic Control</CardTitle>
-                <CardDescription>Core product - control niveau</CardDescription>
+                <CardDescription>Core product - control level</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
@@ -118,7 +118,7 @@ export function CommercialDemoPage() {
                   disabled={currentTier === 'strategic-control' || currentTier === 'advisory-services'}
                 >
                   {currentTier === 'strategic-control' || currentTier === 'advisory-services' 
-                    ? 'Actief' 
+                    ? 'Active'
                     : 'Upgrade'}
                 </Button>
               </CardContent>
@@ -130,7 +130,7 @@ export function CommercialDemoPage() {
                   <Star className="h-6 w-6 text-amber-700 dark:text-amber-400" />
                 </div>
                 <CardTitle>Advisory & Services</CardTitle>
-                <CardDescription>Premium - confidence niveau</CardDescription>
+                <CardDescription>Premium - confidence level</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
@@ -138,7 +138,7 @@ export function CommercialDemoPage() {
                   onClick={() => handleUpgrade('advisory-services')}
                   disabled={currentTier === 'advisory-services'}
                 >
-                  {currentTier === 'advisory-services' ? 'Actief' : 'Upgrade'}
+                  {currentTier === 'advisory-services' ? 'Active' : 'Upgrade'}
                 </Button>
               </CardContent>
             </Card>
@@ -148,7 +148,7 @@ export function CommercialDemoPage() {
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Test verschillende commerciële flows</CardDescription>
+              <CardDescription>Test various commercial flows</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <Button
@@ -157,7 +157,7 @@ export function CommercialDemoPage() {
                 onClick={() => setActiveTab('tiers')}
               >
                 <FileText className="h-4 w-4 mr-2" />
-                Bekijk Tier Comparison
+                View Tier Comparison
               </Button>
               <Button
                 variant="outline"
@@ -173,7 +173,7 @@ export function CommercialDemoPage() {
                 onClick={() => setActiveTab('advisory')}
               >
                 <Users className="h-4 w-4 mr-2" />
-                Bekijk Advisory Dashboard
+                View Advisory Dashboard
               </Button>
             </CardContent>
           </Card>
@@ -194,8 +194,8 @@ export function CommercialDemoPage() {
               <Shield className="h-16 w-16 mx-auto mb-4 text-blue-700 dark:text-blue-400" />
               <h3 className="text-2xl font-bold mb-4">Decision Scan Flow</h3>
               <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                Een complete onboarding flow die eindigt in decision status, top 3 risico's, 
-                actieplan, en voorbeeldcampagne.
+                A complete onboarding flow that ends in decision status, top 3 risks,
+                action plan, and example campaign.
               </p>
               <Button size="lg" onClick={() => setShowDecisionScan(true)}>
                 Start Decision Scan Demo
@@ -218,7 +218,7 @@ export function CommercialDemoPage() {
             <CardHeader>
               <CardTitle>Feature Gating Examples</CardTitle>
               <CardDescription>
-                Test hoe gated features worden gepresenteerd aan gebruikers
+                Test how gated features are presented to users
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -226,8 +226,8 @@ export function CommercialDemoPage() {
               <div>
                 <p className="text-sm font-medium mb-3">Inline Upgrade Prompt</p>
                 <UpgradePrompt
-                  feature="Onbeperkte Campagne Generatie"
-                  featureDescription="Genereer zoveel campagnes als je wilt met volledige decision quality tracking"
+                  feature="Unlimited Campaign Generation"
+                  featureDescription="Generate as many campaigns as you want with full decision quality tracking"
                   requiredTier="strategic-control"
                   onUpgrade={() => handleUpgrade('strategic-control')}
                   inline
@@ -247,7 +247,7 @@ export function CommercialDemoPage() {
                 <p className="text-sm font-medium mb-3">Advisory Services Upsell</p>
                 <UpgradePrompt
                   feature="Expert Strategic Reviews"
-                  featureDescription="Kwartaal reviews met dedicated strategy advisor voor maximale besliszekerheid"
+                  featureDescription="Quarterly reviews with a dedicated strategy advisor for maximum decision certainty"
                   requiredTier="advisory-services"
                   onUpgrade={() => handleUpgrade('advisory-services')}
                   inline
@@ -263,7 +263,7 @@ export function CommercialDemoPage() {
             <CardHeader>
               <CardTitle>Brand Assets & Research Methods Unlock</CardTitle>
               <CardDescription>
-                Beheer welke brand assets en validation methods beschikbaar zijn voor gebruikers
+                Manage which brand assets and validation methods are available to users
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -274,9 +274,9 @@ export function CommercialDemoPage() {
                     <Unlock className="h-6 w-6 text-purple-700 dark:text-purple-400" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold mb-2">Demo State Initialiseren</h3>
+                    <h3 className="font-semibold mb-2">Initialize Demo State</h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Ontgrendel alle 13 brand assets, maar vergrendel een selectie van validation methods om de unlock flow te demonstreren.
+                      Unlock all 13 brand assets, but lock a selection of validation methods to demonstrate the unlock flow.
                     </p>
                     <div className="flex gap-3">
                       <Button
@@ -383,7 +383,7 @@ export function CommercialDemoPage() {
                 <CardHeader>
                   <CardTitle className="text-base">Research Methods Status per Asset</CardTitle>
                   <CardDescription>
-                    Real-time overzicht van welke methods ontgrendeld/vergrendeld zijn per brand asset
+                    Real-time overview of which methods are unlocked/locked per brand asset
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -471,32 +471,32 @@ export function CommercialDemoPage() {
                 </CardContent>
               </Card>
 
-              {/* Instructies */}
+              {/* Instructions */}
               <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                   <FileText className="h-4 w-4 text-blue-600" />
                   Demo Scenario
                 </h4>
                 <ol className="text-sm text-muted-foreground space-y-1 ml-5 list-decimal">
-                  <li>Klik op "Initialiseer Demo State" om alle brand assets te ontgrendelen</li>
-                  <li>Ga naar "Your Brand" sectie in de sidebar</li>
-                  <li>Open een brand asset (bijv. "Golden Circle" of "Brand Archetype")</li>
-                  <li>Probeer een vergrendelde research method te starten (Workshop of Interviews)</li>
-                  <li>Je ziet nu de "Unlock" modal met prijsopties</li>
-                  <li>Na aankoop wordt de method ontgrendeld en kun je deze starten</li>
+                  <li>Click "Initialize Demo State" to unlock all brand assets</li>
+                  <li>Go to the "Your Brand" section in the sidebar</li>
+                  <li>Open a brand asset (e.g. "Golden Circle" or "Brand Archetype")</li>
+                  <li>Try to start a locked research method (Workshop or Interviews)</li>
+                  <li>You will now see the "Unlock" modal with pricing options</li>
+                  <li>After purchase, the method is unlocked and you can start it</li>
                 </ol>
               </div>
 
               {/* Method Lock Status */}
               <div>
-                <h4 className="font-semibold mb-3">Demo Lock Configuratie</h4>
+                <h4 className="font-semibold mb-3">Demo Lock Configuration</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200">
                     <p className="text-sm font-medium text-green-900 dark:text-green-100 mb-1">
                       ✅ AI Exploration
                     </p>
                     <p className="text-xs text-green-700 dark:text-green-300">
-                      Ontgrendeld voor alle assets (free tier)
+                      Unlocked for all assets (free tier)
                     </p>
                   </div>
                   
@@ -528,7 +528,7 @@ export function CommercialDemoPage() {
       {showUpgradePrompt && (
         <UpgradePrompt
           feature="Advanced Research Planning"
-          featureDescription="Gebruik de volledige research planning tools voor gestructureerde validatie van je strategische beslissingen"
+          featureDescription="Use the full research planning tools for structured validation of your strategic decisions"
           requiredTier="strategic-control"
           onUpgrade={() => handleUpgrade('strategic-control')}
           onClose={() => setShowUpgradePrompt(false)}

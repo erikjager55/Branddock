@@ -35,7 +35,7 @@ export async function PATCH(_req: NextRequest, { params }: RouteParams) {
       activatedById: isDismissed ? null : existing.activatedById,
     },
     include: {
-      trendSource: { select: { id: true, name: true, url: true } },
+      researchJob: { select: { id: true, query: true } },
       activatedBy: { select: { id: true, name: true } },
     },
   });

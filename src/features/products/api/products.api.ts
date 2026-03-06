@@ -137,7 +137,7 @@ export async function linkPersona(
   productId: string,
   personaId: string,
 ): Promise<{ productId: string; personaId: string }> {
-  const res = await fetch(`${BASE}/${productId}/link-persona`, {
+  const res = await fetch(`${BASE}/${productId}/personas`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ personaId }),
@@ -153,7 +153,7 @@ export async function unlinkPersona(
   productId: string,
   personaId: string,
 ): Promise<{ success: boolean }> {
-  const res = await fetch(`${BASE}/${productId}/unlink-persona/${personaId}`, {
+  const res = await fetch(`${BASE}/${productId}/personas/${personaId}`, {
     method: "DELETE",
   });
   if (!res.ok) {
@@ -223,6 +223,28 @@ export async function deleteProductImage(
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error ?? `Failed to delete image (${res.status})`);
+  }
+  return res.json();
+}
+
+export async function uploadProductImage(
+  productId: string,
+  file: File,
+  category?: string,
+  altText?: string,
+): Promise<ProductImage> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (category) formData.append("category", category);
+  if (altText) formData.append("altText", altText);
+
+  const res = await fetch(`${BASE}/${productId}/images/upload`, {
+    method: "POST",
+    body: formData,
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? `Failed to upload image (${res.status})`);
   }
   return res.json();
 }

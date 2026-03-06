@@ -13,7 +13,7 @@ export const productKeys = {
 };
 
 /**
- * Hook: haal products op voor een workspace.
+ * Hook: fetch products for a workspace.
  */
 export function useProducts(
   workspaceId: string | undefined,
@@ -28,7 +28,7 @@ export function useProducts(
 }
 
 /**
- * Hook: maak een nieuw product aan.
+ * Hook: create a new product.
  */
 export function useCreateProduct(workspaceId: string) {
   const queryClient = useQueryClient();

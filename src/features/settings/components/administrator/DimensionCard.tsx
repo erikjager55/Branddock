@@ -48,11 +48,11 @@ export function DimensionCard({
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-gray-700">
-              {index + 1}. {dimension.title || 'Naamloze dimensie'}
+              {index + 1}. {dimension.title || 'Unnamed dimension'}
             </span>
             {hasError && (
               <span className="text-[10px] text-red-500 font-medium bg-red-50 px-1.5 py-0.5 rounded-full">
-                Incompleet
+                Incomplete
               </span>
             )}
           </div>
@@ -63,7 +63,7 @@ export function DimensionCard({
             onClick={onMoveUp}
             disabled={index === 0}
             className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-md hover:bg-gray-100"
-            title="Omhoog"
+            title="Move up"
           >
             <ChevronUp className="w-3.5 h-3.5" />
           </button>
@@ -72,7 +72,7 @@ export function DimensionCard({
             onClick={onMoveDown}
             disabled={index === total - 1}
             className="p-1.5 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded-md hover:bg-gray-100"
-            title="Omlaag"
+            title="Move down"
           >
             <ChevronDown className="w-3.5 h-3.5" />
           </button>
@@ -81,7 +81,7 @@ export function DimensionCard({
             type="button"
             onClick={onRemove}
             className="p-1.5 text-gray-400 hover:text-red-500 transition-colors rounded-md hover:bg-red-50"
-            title="Verwijderen"
+            title="Delete"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -94,12 +94,12 @@ export function DimensionCard({
         <div className="grid grid-cols-[1fr_160px] gap-3">
           <div>
             <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">
-              Titel
+              Title
             </label>
             <input
               value={dimension.title}
               onChange={(e) => onChange('title', e.target.value)}
-              placeholder="Bijv. Waarom — Bestaansrecht"
+              placeholder="E.g. WHY — Core Belief"
               className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 ${
                 hasError && !dimension.title?.trim() ? 'border-red-300 bg-red-50' : 'border-gray-200'
               }`}
@@ -107,7 +107,7 @@ export function DimensionCard({
           </div>
           <div>
             <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">
-              Icoon
+              Icon
             </label>
             <IconPicker
               value={dimension.icon}
@@ -119,12 +119,12 @@ export function DimensionCard({
         {/* Question */}
         <div>
           <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">
-            Vraag
+            Question
           </label>
           <textarea
             value={dimension.question}
             onChange={(e) => onChange('question', e.target.value)}
-            placeholder="De vraag die de AI aan de gebruiker stelt voor deze dimensie..."
+            placeholder="The question the AI asks the user for this dimension..."
             rows={3}
             className={`w-full px-3 py-2 text-sm border rounded-lg resize-y focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 ${
               hasError && !dimension.question?.trim() ? 'border-red-300 bg-red-50' : 'border-gray-200'
@@ -135,12 +135,12 @@ export function DimensionCard({
         {/* Follow-up hint */}
         <div>
           <label className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">
-            Follow-up hint <span className="text-gray-400 normal-case">(optioneel)</span>
+            Follow-up hint <span className="text-gray-400 normal-case">(optional)</span>
           </label>
           <input
             value={dimension.followUpHint ?? ''}
             onChange={(e) => onChange('followUpHint', e.target.value)}
-            placeholder="Extra instructie voor de AI om dieper door te vragen..."
+            placeholder="Additional instruction for the AI to probe deeper..."
             className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
           />
         </div>
@@ -169,7 +169,7 @@ export function DimensionCard({
                 onClick={() => setEditingKey(true)}
                 className="text-gray-300 hover:text-teal-500 ml-1 cursor-pointer"
               >
-                bewerken
+                edit
               </button>
             </div>
           )}

@@ -20,7 +20,7 @@ interface PromptEditorProps {
   placeholder?: string;
   required?: boolean;
   hasError?: boolean;
-  /** Called when user clicks "Laad standaard prompt" */
+  /** Called when user clicks "Load default prompt" */
   onLoadDefault?: () => void;
   maxLength?: number;
 }
@@ -79,7 +79,7 @@ export function PromptEditor({
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-800">{label}</span>
               {required && !value.trim() && (
-                <span className="text-[10px] text-red-400 font-medium">verplicht</span>
+                <span className="text-[10px] text-red-400 font-medium">required</span>
               )}
             </div>
             <p className="text-xs text-gray-500 mt-0.5">{description}</p>
@@ -91,7 +91,7 @@ export function PromptEditor({
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <RotateCcw className="w-3 h-3" />
-              Standaard
+              Default
             </button>
           )}
         </div>

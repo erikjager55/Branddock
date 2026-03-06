@@ -74,7 +74,7 @@ const SOCIAL_RELEVANCY_DIMENSIONS: DimensionConfig[] = [
 const PURPOSE_STATEMENT_DIMENSIONS: DimensionConfig[] = [
   {
     key: 'origin_belief',
-    label: 'Oorsprong & Overtuiging',
+    label: 'Origin & Belief',
     icon: BookOpen,
     color: 'amber',
     bgClass: 'bg-amber-100',
@@ -87,7 +87,7 @@ const PURPOSE_STATEMENT_DIMENSIONS: DimensionConfig[] = [
   },
   {
     key: 'impact_exploration',
-    label: 'Impact Verkenning',
+    label: 'Impact Exploration',
     icon: Zap,
     color: 'blue',
     bgClass: 'bg-blue-100',
@@ -100,7 +100,7 @@ const PURPOSE_STATEMENT_DIMENSIONS: DimensionConfig[] = [
   },
   {
     key: 'mechanism',
-    label: 'Mechanisme & Aanpak',
+    label: 'Mechanism & Approach',
     icon: Cog,
     color: 'emerald',
     bgClass: 'bg-emerald-100',
@@ -125,7 +125,7 @@ const PURPOSE_STATEMENT_DIMENSIONS: DimensionConfig[] = [
   },
   {
     key: 'articulation',
-    label: 'Articulatie & Formulering',
+    label: 'Articulation & Formulation',
     icon: Target,
     color: 'purple',
     bgClass: 'bg-purple-100',
@@ -141,44 +141,53 @@ const PURPOSE_STATEMENT_DIMENSIONS: DimensionConfig[] = [
 // This alias ensures getDimensionsForSlug returns the correct config for both paths.
 const PURPOSE_WHEEL_DIMENSIONS = PURPOSE_STATEMENT_DIMENSIONS;
 
-// ─── Golden Circle Dimensions ────────────────────────────
+// ─── Golden Circle Dimensions (Simon Sinek — 5 phases) ──
 
 const GOLDEN_CIRCLE_DIMENSIONS: DimensionConfig[] = [
   {
-    key: 'why',
-    label: 'WHY — Core Belief',
-    icon: Heart,
+    key: 'origin_story',
+    label: 'Origin & Drive',
+    icon: BookOpen,
     color: 'amber',
     bgClass: 'bg-amber-100',
     textClass: 'text-amber-600',
-    defaultQuestions: ['Why does your organization exist?', 'What is the fundamental belief that drives everything you do?'],
+    defaultQuestions: ['Tell me the story of your organization.', 'What moment or belief was the spark?'],
   },
   {
-    key: 'how',
-    label: 'HOW — Unique Approach',
-    icon: Cog,
+    key: 'why_deepdive',
+    label: 'WHY — Core Belief',
+    icon: Heart,
+    color: 'rose',
+    bgClass: 'bg-rose-100',
+    textClass: 'text-rose-600',
+    defaultQuestions: ['If you strip away all products and services, what remains?', 'What do you fundamentally believe?'],
+  },
+  {
+    key: 'how_differentiation',
+    label: 'HOW — Differentiating Approach',
+    icon: Compass,
     color: 'blue',
     bgClass: 'bg-blue-100',
     textClass: 'text-blue-600',
-    defaultQuestions: ['How do you bring your WHY to life?', 'What processes or values make your approach unique?'],
+    defaultQuestions: ['What principles, values, or methods make your approach different?', 'What are your guiding principles?'],
   },
   {
-    key: 'what',
-    label: 'WHAT — Offering',
+    key: 'what_proof',
+    label: 'WHAT — Proof & Offering',
     icon: Package,
     color: 'emerald',
     bgClass: 'bg-emerald-100',
     textClass: 'text-emerald-600',
-    defaultQuestions: ['What exactly do you offer?', 'How do your products prove your WHY and HOW?'],
+    defaultQuestions: ['Which products or services prove your WHY?', 'How do you truly live up to your belief?'],
   },
   {
-    key: 'coherence',
-    label: 'Inside-Out Coherence',
+    key: 'inside_out_test',
+    label: 'Inside-Out Test',
     icon: Target,
     color: 'purple',
     bgClass: 'bg-purple-100',
     textClass: 'text-purple-600',
-    defaultQuestions: ['How consistently does your organization communicate from WHY to HOW to WHAT?', 'Where are the gaps?'],
+    defaultQuestions: ['Would customers guess your WHY based solely on your products?', 'How coherent is WHY→HOW→WHAT?'],
   },
 ];
 

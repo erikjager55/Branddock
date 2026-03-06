@@ -28,7 +28,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   microsoft: 'Microsoft',
   APPLE: 'Apple',
   apple: 'Apple',
-  credential: 'E-mail & Wachtwoord',
+  credential: 'Email & Password',
 };
 
 export function ConnectedAccountItem({ account }: ConnectedAccountItemProps) {

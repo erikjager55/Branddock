@@ -1,6 +1,6 @@
 export type AssetCategory =
   | "PURPOSE" | "COMMUNICATION" | "STRATEGY" | "NARRATIVE"
-  | "CORE" | "PERSONALITY" | "FOUNDATION" | "CULTURE";
+  | "CORE" | "PERSONALITY" | "FOUNDATION" | "CULTURE" | "ESG";
 
 export type AssetStatus = "DRAFT" | "IN_PROGRESS" | "NEEDS_ATTENTION" | "READY";
 
@@ -106,6 +106,7 @@ export const CATEGORY_MAP: Record<string, AssetCategory[]> = {
   "Personality":    ["PERSONALITY"],
   "Foundation":     ["FOUNDATION"],
   "Culture":        ["CULTURE"],
+  "ESG":            ["ESG"],
 };
 
 // --- BrandAssetOption (gebruikt in BrandAssetsViewSimple) ---

@@ -4,7 +4,6 @@ import { useRef, useEffect } from "react";
 import {
   MoreVertical,
   Download,
-  Trash2,
 } from "lucide-react";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
 import type { BrandAssetDetail } from "../types/brand-asset-detail.types";
@@ -19,7 +18,6 @@ export function AssetOverflowMenu({
   const menuRef = useRef<HTMLDivElement>(null);
   const showMenu = useBrandAssetDetailStore((s) => s.showOverflowMenu);
   const setShowMenu = useBrandAssetDetailStore((s) => s.setShowOverflowMenu);
-  const setShowDelete = useBrandAssetDetailStore((s) => s.setShowDeleteDialog);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -36,15 +34,6 @@ export function AssetOverflowMenu({
       label: "Export",
       icon: Download,
       onClick: () => setShowMenu(false),
-    },
-    {
-      label: "Delete",
-      icon: Trash2,
-      onClick: () => {
-        setShowDelete(true);
-        setShowMenu(false);
-      },
-      danger: true,
     },
   ];
 
@@ -63,11 +52,7 @@ export function AssetOverflowMenu({
             <button
               key={action.label}
               onClick={action.onClick}
-              className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
-                action.danger
-                  ? "text-red-600 hover:bg-red-50"
-                  : "text-gray-700 hover:bg-gray-50"
-              }`}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <action.icon className="w-4 h-4" />
               {action.label}

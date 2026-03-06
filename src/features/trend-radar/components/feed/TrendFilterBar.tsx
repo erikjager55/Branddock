@@ -20,7 +20,6 @@ const IMPACT_OPTIONS = [
 ];
 
 const SOURCE_OPTIONS = [
-  { value: 'AUTO_SCAN', label: 'Auto Scan' },
   { value: 'MANUAL', label: 'Manual' },
   { value: 'AI_RESEARCH', label: 'AI Research' },
 ];

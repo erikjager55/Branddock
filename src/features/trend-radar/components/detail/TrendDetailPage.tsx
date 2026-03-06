@@ -5,7 +5,6 @@ import { Button } from '@/components/shared';
 import { useTrendDetail, useActivateTrend, useDeleteTrend } from '../../hooks';
 import { useTrendRadarStore } from '../../stores/useTrendRadarStore';
 import { TrendRelevanceCard } from './TrendRelevanceCard';
-import { TrendSourceInfoCard } from './TrendSourceInfoCard';
 import { TrendActivationCard } from './TrendActivationCard';
 import {
   CATEGORY_COLORS,
@@ -13,6 +12,7 @@ import {
   SCOPE_LABELS,
   TIMEFRAME_LABELS,
   DIRECTION_CONFIG,
+  DETECTION_SOURCE_CONFIG,
 } from '../../constants/trend-radar-constants';
 
 interface TrendDetailPageProps {
@@ -37,6 +37,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
   const categoryConfig = CATEGORY_COLORS[trend.category];
   const impactConfig = IMPACT_COLORS[trend.impactLevel];
   const directionConfig = trend.direction ? DIRECTION_CONFIG[trend.direction] : null;
+  const sourceConfig = DETECTION_SOURCE_CONFIG[trend.detectionSource];
 
   const handleDelete = async () => {
     if (!confirm('Delete this trend? This action cannot be undone.')) return;
@@ -196,7 +197,38 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
         {/* Sidebar — 4 cols */}
         <div className="md:col-span-4 space-y-4">
           <TrendRelevanceCard score={trend.relevanceScore} confidence={trend.confidence} />
-          <TrendSourceInfoCard trend={trend} />
+
+          {/* Detection Info Card (replaces TrendSourceInfoCard) */}
+          <div className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Detection Info</h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Detection</span>
+                <span className={`text-[10px] font-medium px-2 py-0.5 rounded ${sourceConfig.color}`}>
+                  {sourceConfig.label}
+                </span>
+              </div>
+              {trend.researchJob && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">Research</span>
+                  <span className="text-xs text-gray-600 truncate max-w-[160px]" title={trend.researchJob.query}>
+                    {trend.researchJob.query}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-500">Detected</span>
+                <span className="text-xs text-gray-600">
+                  {new Date(trend.createdAt).toLocaleDateString('en-US', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </span>
+              </div>
+            </div>
+          </div>
+
           <TrendActivationCard trend={trend} onToggle={() => activateMutation.mutate(trend.id)} />
         </div>
       </div>

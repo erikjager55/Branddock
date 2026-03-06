@@ -93,7 +93,8 @@ export function Modal({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] bg-black/50 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 animate-in fade-in duration-200"
+      style={{ paddingTop: '12vh' }}
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose();
       }}

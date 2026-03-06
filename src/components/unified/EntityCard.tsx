@@ -195,7 +195,7 @@ export function EntityCard({ data }: { data: EntityCardData }) {
             }}
           >
             <MessageCircle className="h-4 w-4" />
-            Chat met {title}
+            Chat with {title}
           </Button>
         )}
 
@@ -291,7 +291,7 @@ export function EntityCard({ data }: { data: EntityCardData }) {
         {lastUpdated && (
           <div className="pt-3 border-t text-xs text-muted-foreground">
             <div>
-              Last updated: {new Date(lastUpdated).toLocaleDateString('nl-NL', { 
+              Last updated: {new Date(lastUpdated).toLocaleDateString('en-US', {
                 day: 'numeric',
                 month: 'short', 
                 year: 'numeric'

@@ -1,18 +1,16 @@
 // =============================================================
-// BrandFoundationHeader — page header with title, count, add button
+// BrandFoundationHeader — page header with title and count
 //
-// Shared primitives: Button, Badge
+// Shared primitives: Badge
 // =============================================================
 
 import React from 'react';
-import { Layers, Plus } from 'lucide-react';
-import { Button, Badge } from '@/components/shared';
+import { Layers } from 'lucide-react';
+import { Badge } from '@/components/shared';
 import { useBrandAssets } from '@/contexts';
-import { useBrandAssetStore } from '@/stores/useBrandAssetStore';
 
 export function BrandFoundationHeader() {
   const { brandAssets } = useBrandAssets();
-  const setCreateModalOpen = useBrandAssetStore((s) => s.setCreateModalOpen);
 
   return (
     <div className="flex items-start justify-between">
@@ -29,12 +27,9 @@ export function BrandFoundationHeader() {
         </div>
       </div>
 
-      {/* Right: count badge + add button */}
+      {/* Right: count badge */}
       <div className="flex items-center gap-3">
         <Badge>{brandAssets.length} assets</Badge>
-        <Button variant="cta" icon={Plus} onClick={() => setCreateModalOpen(true)}>
-          Add Asset
-        </Button>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
 import { prisma } from "./prisma";
 import { ac, owner, admin, member, viewer } from "./auth-permissions";
+import { CANONICAL_BRAND_ASSETS, RESEARCH_METHOD_TYPES } from "./constants/canonical-brand-assets";
 import type { SocialProviders } from "better-auth/social-providers";
 
 // ─── Build socialProviders config from env vars ────────────
@@ -49,27 +50,55 @@ async function provisionNewUser(userId: string, userName: string) {
 
   const slug = `user-${userId.substring(0, 8).toLowerCase()}`;
 
-  const org = await prisma.organization.create({
-    data: {
-      name: `${userName}'s Brand`,
-      slug,
-      type: 'DIRECT',
-      members: {
-        create: {
-          userId,
-          role: 'owner',
+  await prisma.$transaction(async (tx) => {
+    const org = await tx.organization.create({
+      data: {
+        name: `${userName}'s Brand`,
+        slug,
+        type: 'DIRECT',
+        members: {
+          create: {
+            userId,
+            role: 'owner',
+          },
+        },
+        workspaces: {
+          create: {
+            name: `${userName}'s Workspace`,
+            slug: `ws-${slug}`,
+          },
         },
       },
-      workspaces: {
-        create: {
-          name: `${userName}'s Workspace`,
-          slug: `ws-${slug}`,
-        },
-      },
-    },
-  });
+      include: { workspaces: true },
+    });
 
-  console.log(`[auth] Provisioned org ${org.id} + workspace for user ${userId}`);
+    const workspace = org.workspaces[0];
+    if (!workspace) return;
+
+    // Create 12 canonical brand assets with 4 research methods each
+    for (const asset of CANONICAL_BRAND_ASSETS) {
+      await tx.brandAsset.create({
+        data: {
+          name: asset.name,
+          slug: asset.slug,
+          description: asset.description,
+          category: asset.category as never,
+          status: "DRAFT",
+          frameworkType: asset.frameworkType,
+          workspaceId: workspace.id,
+          researchMethods: {
+            create: RESEARCH_METHOD_TYPES.map((method) => ({
+              method: method as never,
+              status: "AVAILABLE" as never,
+              progress: 0,
+            })),
+          },
+        },
+      });
+    }
+
+    console.log(`[auth] Provisioned org ${org.id} + workspace + 12 brand assets for user ${userId}`);
+  });
 }
 
 // ─── Better Auth server config ─────────────────────────────

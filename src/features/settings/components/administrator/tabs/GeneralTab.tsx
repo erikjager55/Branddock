@@ -25,12 +25,12 @@ const SUB_TYPE_OPTIONS: Record<string, Array<{ value: string; label: string }>> 
 };
 
 const AVAILABLE_CONTEXT_SOURCES = [
-  { key: 'brand_asset', label: 'Brand Assets', description: 'Content en framework data van brand assets' },
-  { key: 'product', label: 'Products & Services', description: 'Product beschrijvingen en kenmerken' },
-  { key: 'persona', label: 'Personas', description: 'Persona profielen en demographics' },
-  { key: 'detected_trend', label: 'Trend Radar', description: 'Geactiveerde trends en marktinzichten' },
-  { key: 'knowledge_resource', label: 'Knowledge Library', description: 'Kennisbronnen en artikelen' },
-  { key: 'brandstyle', label: 'Brand Style', description: 'Huisstijl en visuele identiteit' },
+  { key: 'brand_asset', label: 'Brand Assets', description: 'Content and framework data from brand assets' },
+  { key: 'product', label: 'Products & Services', description: 'Product descriptions and features' },
+  { key: 'persona', label: 'Personas', description: 'Persona profiles and demographics' },
+  { key: 'detected_trend', label: 'Trend Radar', description: 'Activated trends and market insights' },
+  { key: 'knowledge_resource', label: 'Knowledge Library', description: 'Knowledge sources and articles' },
+  { key: 'brandstyle', label: 'Brand Style', description: 'Brand style and visual identity' },
 ];
 
 // ─── Props ──────────────────────────────────────────────────
@@ -103,7 +103,7 @@ export function GeneralTab({
         <div className="px-5 pt-4 pb-1">
           <h3 className="text-sm font-semibold text-gray-800">Targeting</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Bepaal voor welk item type en subtype deze configuratie geldt
+            Define which item type and subtype this configuration applies to
           </p>
         </div>
         <div className="px-5 py-4">
@@ -125,7 +125,7 @@ export function GeneralTab({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Sub Type <span className="text-gray-400">(optioneel)</span>
+                Sub Type <span className="text-gray-400">(optional)</span>
               </label>
               {hasSubTypes ? (
                 <select
@@ -133,14 +133,14 @@ export function GeneralTab({
                   onChange={(e) => onItemSubTypeChange(e.target.value)}
                   className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
                 >
-                  <option value="">-- Basis configuratie --</option>
+                  <option value="">-- Base configuration --</option>
                   {subTypeOptions.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
               ) : (
                 <div className="px-3 py-2 text-sm text-gray-400 border border-gray-200 rounded-lg bg-gray-50">
-                  Geen sub types voor {itemType}
+                  No sub types for {itemType}
                 </div>
               )}
             </div>
@@ -149,7 +149,7 @@ export function GeneralTab({
               <input
                 value={label}
                 onChange={(e) => onLabelChange(e.target.value)}
-                placeholder="Weergavenaam"
+                placeholder="Display name"
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
               />
             </div>
@@ -168,8 +168,8 @@ export function GeneralTab({
               <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isActive ? 'translate-x-4' : ''}`} />
             </div>
             <div>
-              <span className="text-sm text-gray-700 font-medium">Actief</span>
-              <p className="text-xs text-gray-400">Wanneer uitgeschakeld wordt de standaard configuratie gebruikt</p>
+              <span className="text-sm text-gray-700 font-medium">Active</span>
+              <p className="text-xs text-gray-400">When disabled, the default configuration will be used</p>
             </div>
           </label>
         </div>
@@ -180,7 +180,7 @@ export function GeneralTab({
         <div className="px-5 pt-4 pb-1">
           <h3 className="text-sm font-semibold text-gray-800">AI Model & Parameters</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Kies de AI provider, het model en de creatieve instellingen
+            Choose the AI provider, model and creative settings
           </p>
         </div>
         <div className="px-5 py-4">
@@ -225,8 +225,8 @@ export function GeneralTab({
                 className="w-full accent-teal-600"
               />
               <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-                <span>Precies (0)</span>
-                <span>Creatief (1)</span>
+                <span>Precise (0)</span>
+                <span>Creative (1)</span>
               </div>
             </div>
             <div>
@@ -251,9 +251,9 @@ export function GeneralTab({
       {/* ─── Context Sources ──────────────────────────── */}
       <Card padding="none">
         <div className="px-5 pt-4 pb-1">
-          <h3 className="text-sm font-semibold text-gray-800">Context Bronnen</h3>
+          <h3 className="text-sm font-semibold text-gray-800">Context Sources</h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Selecteer welke workspace data automatisch als context aan de AI wordt meegegeven
+            Select which workspace data is automatically provided as context to the AI
           </p>
         </div>
         <div className="px-5 py-4">

@@ -1,7 +1,7 @@
 /**
  * TYPE: Product Tier
- * 
- * Commerciële structuur met drie niveaus van besliszekerheid.
+ *
+ * Commercial structure with three levels of decision certainty.
  */
 
 export type ProductTier = 'decision-scan' | 'strategic-control' | 'advisory-services';
@@ -29,22 +29,22 @@ export const PRODUCT_TIERS: Record<ProductTier, ProductTierInfo> = {
   'decision-scan': {
     id: 'decision-scan',
     name: 'Decision Scan',
-    tagline: 'Ontdek waar je staat',
-    description: 'Krijg snel inzicht in de kwaliteit van je strategische besluitvorming',
+    tagline: 'Discover where you stand',
+    description: 'Quickly gain insight into the quality of your strategic decision-making',
     certaintyLevel: 'Awareness',
-    certaintyDescription: 'Begrijp je risico\'s en weet wat je moet valideren',
-    price: 'Gratis',
+    certaintyDescription: 'Understand your risks and know what to validate',
+    price: 'Free',
     features: [
       'Complete decision status scan',
-      'Top 3 strategische risico\'s',
-      'Gepersonaliseerd actieplan',
-      'Voorbeeld campagne strategie'
+      'Top 3 strategic risks',
+      'Personalized action plan',
+      'Sample campaign strategy'
     ],
     limitations: [
-      'Eenmalige scan zonder updates',
-      'Geen toegang tot research tools',
-      'Geen campagne generatie',
-      'Geen stakeholder rapportage'
+      'One-time scan without updates',
+      'No access to research tools',
+      'No campaign generation',
+      'No stakeholder reporting'
     ],
     cta: 'Start Decision Scan',
     color: {
@@ -56,23 +56,23 @@ export const PRODUCT_TIERS: Record<ProductTier, ProductTierInfo> = {
   'strategic-control': {
     id: 'strategic-control',
     name: 'Strategic Control',
-    tagline: 'Neem controle over je beslissingen',
-    description: 'Volledig platform voor continue strategische validatie en besluitvorming',
+    tagline: 'Take control of your decisions',
+    description: 'Complete platform for continuous strategic validation and decision-making',
     certaintyLevel: 'Control',
-    certaintyDescription: 'Real-time inzicht en gevalideerde beslissingen',
+    certaintyDescription: 'Real-time insight and validated decisions',
     price: '€499',
-    billingCycle: 'per maand',
+    billingCycle: 'per month',
     features: [
-      'Volledige Decision Engine',
-      'Onbeperkte campagne generatie',
+      'Full Decision Engine',
+      'Unlimited campaign generation',
       'Research planning & tracking',
       'Executive & stakeholder views',
-      'Professional rapportage',
+      'Professional reporting',
       'Change impact monitoring',
       'Brand asset management',
       'Persona development'
     ],
-    cta: 'Upgrade naar Strategic Control',
+    cta: 'Upgrade to Strategic Control',
     color: {
       bg: 'bg-purple-50 dark:bg-purple-950/20',
       text: 'text-purple-700 dark:text-purple-400',
@@ -82,22 +82,22 @@ export const PRODUCT_TIERS: Record<ProductTier, ProductTierInfo> = {
   'advisory-services': {
     id: 'advisory-services',
     name: 'Advisory & Services',
-    tagline: 'Expertbegeleiding voor maximale zekerheid',
-    description: 'Strategic Control + dedicated ondersteuning voor kritieke beslissingen',
+    tagline: 'Expert guidance for maximum certainty',
+    description: 'Strategic Control + dedicated support for critical decisions',
     certaintyLevel: 'Confidence',
-    certaintyDescription: 'Expert-gevalideerde strategie en hands-on begeleiding',
-    price: 'Op maat',
+    certaintyDescription: 'Expert-validated strategy and hands-on guidance',
+    price: 'Custom',
     features: [
-      'Alles van Strategic Control',
+      'Everything in Strategic Control',
       'Dedicated strategy advisor',
-      'Kwartaal strategic reviews',
-      'Begeleide research validaties',
-      'Expert campagne evaluatie',
-      'Prioritaire ondersteuning',
-      'Custom onderzoeksontwerp',
-      'Stakeholder presentaties'
+      'Quarterly strategic reviews',
+      'Guided research validations',
+      'Expert campaign evaluation',
+      'Priority support',
+      'Custom research design',
+      'Stakeholder presentations'
     ],
-    cta: 'Plan Adviesgesprek',
+    cta: 'Schedule Consultation',
     color: {
       bg: 'bg-amber-50 dark:bg-amber-950/20',
       text: 'text-amber-700 dark:text-amber-400',

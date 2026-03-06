@@ -67,7 +67,7 @@ export async function PUT(
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
       return NextResponse.json(
-        { error: 'Er bestaat al een configuratie voor deze combinatie van item type en sub type' },
+        { error: 'A configuration already exists for this item type and sub type combination' },
         { status: 409 },
       );
     }

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 
 // =============================================================
-// GET /api/brandstyle/imagery — imagery sectie
+// GET /api/brandstyle/imagery — imagery section
 // =============================================================
 export async function GET() {
   try {

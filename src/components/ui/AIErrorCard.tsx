@@ -24,10 +24,10 @@ export function AIErrorCard({ message, onRetry, isRetrying }: AIErrorCardProps) 
               {isRetrying ? (
                 <>
                   <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  Even geduld, opnieuw proberen...
+                  Please wait, retrying...
                 </>
               ) : (
-                'Opnieuw proberen'
+                'Retry'
               )}
             </button>
           )}

@@ -2,7 +2,8 @@
 
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { COMPONENTS, TYPOGRAPHY, cn } from '@/lib/constants/design-tokens';
+import { COMPONENTS } from '@/lib/constants/design-tokens';
+import { Button } from './Button';
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -30,16 +31,12 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
       <h3 className={COMPONENTS.emptyState.title}>{title}</h3>
       <p className={COMPONENTS.emptyState.description}>{description}</p>
       {action && (
-        <button
+        <Button
+          variant={action.variant === 'secondary' ? 'secondary' : 'primary'}
           onClick={action.onClick}
-          className={
-            action.variant === 'secondary'
-              ? COMPONENTS.button.secondary
-              : COMPONENTS.button.primary
-          }
         >
           {action.label}
-        </button>
+        </Button>
       )}
     </div>
   );

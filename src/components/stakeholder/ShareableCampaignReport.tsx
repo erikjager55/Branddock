@@ -1,7 +1,7 @@
 /**
  * COMPONENT: Shareable Campaign Report
  * 
- * Printbare en deelbare rapportversie van een campagne.
+ * Printable and shareable report version of a campaign.
  */
 
 import React from 'react';
@@ -29,7 +29,6 @@ import {
   Sparkles
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { nl } from 'date-fns/locale';
 
 interface CampaignMetadata {
   generatedAt: string;
@@ -64,10 +63,10 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
           <CardContent className="p-12 text-center">
             <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
             <p className="text-muted-foreground">
-              Geen metadata beschikbaar voor dit rapport
+              No metadata available for this report
             </p>
             <Button className="mt-4" onClick={onBack}>
-              Terug
+              Back
             </Button>
           </CardContent>
         </Card>
@@ -77,7 +76,7 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
 
   const metadata = campaign.generationMetadata;
   const generatedDate = new Date(metadata.generatedAt);
-  const timeAgo = formatDistanceToNow(generatedDate, { addSuffix: true, locale: nl });
+  const timeAgo = formatDistanceToNow(generatedDate, { addSuffix: true });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -128,7 +127,7 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
           <div className="flex items-center justify-between">
             <Button variant="ghost" onClick={onBack} className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Terug
+              Back
             </Button>
             <div className="flex items-center gap-2">
               <Button
@@ -138,7 +137,7 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
                 onClick={() => alert('Share link: https://platform.example.com/reports/campaign/' + campaign.id)}
               >
                 <Share2 className="h-4 w-4" />
-                Deel Link
+                Share Link
               </Button>
               <Button
                 variant="outline"
@@ -153,7 +152,7 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
                 variant="default"
                 size="sm"
                 className="gap-2"
-                onClick={() => alert('Download als PDF...')}
+                onClick={() => alert('Downloading as PDF...')}
               >
                 <Download className="h-4 w-4" />
                 Download
@@ -177,9 +176,9 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
               {campaign.objective.replace('-', ' ')}
             </Badge>
             <span>•</span>
-            <span>Gegenereerd: {generatedDate.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            <span>Generated: {generatedDate.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
             <span>•</span>
-            <span>Rapport: {new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            <span>Report: {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
           </div>
         </div>
 
@@ -195,12 +194,12 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
             {/* Generation Info */}
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Generatiedatum</p>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Generation Date</p>
                 <p className="font-medium">
-                  {generatedDate.toLocaleDateString('nl-NL', { 
-                    day: 'numeric', 
-                    month: 'long', 
-                    year: 'numeric' 
+                  {generatedDate.toLocaleDateString('en-US', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
                   })}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -262,7 +261,7 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span>Gemiddelde validatie van gebruikte assets</span>
+                  <span>Average validation of used assets</span>
                   <span className="font-semibold">{metadata.researchCoverageSnapshot}%</span>
                 </div>
                 <Progress value={metadata.researchCoverageSnapshot} className="h-3" />
@@ -287,24 +286,24 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
                 <div className="flex-1">
                   <p className="font-semibold text-lg">{getStatusLabel(metadata.decisionStatus)}</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Status op moment van genereren
+                    Status at time of generation
                   </p>
                 </div>
               </div>
               <p className="text-sm leading-relaxed">
                 {metadata.decisionStatus === 'safe-to-decide' && 
-                  'Deze campagne is gegenereerd met voldoende gevalideerde strategische input. Alle gebruikte brand assets en personas hebben adequate onderzoeksvalidatie.'}
-                {metadata.decisionStatus === 'decision-at-risk' && 
-                  'Deze campagne bevat elementen met beperkte validatie. De strategische keuzes zijn gebaseerd op gedeeltelijk gevalideerde input. Aanbevolen wordt extra validatie voordat uitvoering.'}
-                {metadata.decisionStatus === 'do-not-decide' && 
-                  'Deze campagne is gegenereerd met onvoldoende gevalideerde input. Sterke aanbeveling: valideer eerst de onderliggende strategie voordat uitvoering.'}
+                  'This campaign was generated with sufficiently validated strategic input. All used brand assets and personas have adequate research validation.'}
+                {metadata.decisionStatus === 'decision-at-risk' &&
+                  'This campaign contains elements with limited validation. Strategic choices are based on partially validated input. Additional validation is recommended before execution.'}
+                {metadata.decisionStatus === 'do-not-decide' &&
+                  'This campaign was generated with insufficiently validated input. Strong recommendation: validate the underlying strategy before execution.'}
               </p>
             </div>
 
             {/* Risks */}
             {metadata.decisionRisks && metadata.decisionRisks.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-3">Geïdentificeerde Risico's</p>
+                <p className="text-sm font-medium text-muted-foreground mb-3">Identified Risks</p>
                 <div className="space-y-2">
                   {metadata.decisionRisks.map((risk, index) => (
                     <div key={index} className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
@@ -344,30 +343,30 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
                 <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-green-900 dark:text-green-100 mb-1">
-                    Campagne is Stabiel
+                    Campaign is Stable
                   </p>
                   <p className="text-sm text-green-800 dark:text-green-200">
-                    Er zijn geen significante wijzigingen gedetecteerd in de onderliggende strategische assets sinds het genereren van deze campagne. De campagne strategie blijft valide en actueel.
+                    No significant changes have been detected in the underlying strategic assets since this campaign was generated. The campaign strategy remains valid and up to date.
                   </p>
                 </div>
               </div>
             </div>
 
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-2">Laatste Verificatie</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">Last Verification</p>
               <p className="text-sm">
-                {new Date().toLocaleDateString('nl-NL', { 
-                  day: 'numeric', 
-                  month: 'long', 
-                  year: 'numeric' 
+                {new Date().toLocaleDateString('en-US', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
                 })}
               </p>
             </div>
 
             <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
               <p className="text-sm text-blue-900 dark:text-blue-100">
-                <strong>Aanbeveling:</strong> Monitor de onderliggende brand assets en personas voor wijzigingen. 
-                Herbereken de campagne als er significante updates zijn in de strategische input.
+                <strong>Recommendation:</strong> Monitor the underlying brand assets and personas for changes.
+                Recalculate the campaign if there are significant updates in the strategic input.
               </p>
             </div>
           </CardContent>
@@ -378,28 +377,28 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lightbulb className="h-5 w-5 text-amber-700 dark:text-amber-400" />
-              Aanbevelingen
+              Recommendations
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {metadata.decisionStatus === 'safe-to-decide' ? (
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-background border">
-                  <p className="font-medium text-sm mb-1">✓ Campagne Executie</p>
+                  <p className="font-medium text-sm mb-1">✓ Campaign Execution</p>
                   <p className="text-sm text-muted-foreground">
-                    Deze campagne is klaar voor uitvoering. Alle strategische elementen zijn voldoende gevalideerd.
+                    This campaign is ready for execution. All strategic elements have been sufficiently validated.
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-background border">
                   <p className="font-medium text-sm mb-1">Monitor & Optimize</p>
                   <p className="text-sm text-muted-foreground">
-                    Track campagne performance en vergelijk met de onderzoeksvoorspellingen. Gebruik learnings voor toekomstige optimalisaties.
+                    Track campaign performance and compare with research predictions. Use learnings for future optimizations.
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-background border">
-                  <p className="font-medium text-sm mb-1">Periodieke Review</p>
+                  <p className="font-medium text-sm mb-1">Periodic Review</p>
                   <p className="text-sm text-muted-foreground">
-                    Plan kwartaal reviews van de onderliggende strategie om validiteit te waarborgen.
+                    Schedule quarterly reviews of the underlying strategy to ensure continued validity.
                   </p>
                 </div>
               </div>
@@ -407,16 +406,16 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
                   <p className="font-medium text-sm mb-1 text-amber-900 dark:text-amber-100">
-                    ⚠ Verhoogd Risico - Extra Validatie Aanbevolen
+                    Elevated Risk - Additional Validation Recommended
                   </p>
                   <p className="text-sm text-amber-800 dark:text-amber-200">
-                    Voer aanvullend onderzoek uit voor de zwakke elementen voordat je significant budget investeert in deze campagne.
+                    Conduct additional research on the weak elements before investing significant budget in this campaign.
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-background border">
-                  <p className="font-medium text-sm mb-1">Start met Kleine Test</p>
+                  <p className="font-medium text-sm mb-1">Start with a Small Test</p>
                   <p className="text-sm text-muted-foreground">
-                    Begin met een beperkte pilot of A/B test om de aannames te valideren voordat volledige uitrol.
+                    Begin with a limited pilot or A/B test to validate assumptions before full rollout.
                   </p>
                 </div>
               </div>
@@ -424,16 +423,16 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
                   <p className="font-medium text-sm mb-1 text-red-900 dark:text-red-100">
-                    🚫 Niet Uitvoeren - Validatie Vereist
+                    Do Not Execute - Validation Required
                   </p>
                   <p className="text-sm text-red-800 dark:text-red-200">
-                    Deze campagne heeft onvoldoende strategische validatie. Sterke aanbeveling om eerst onderzoek uit te voeren voordat budget allocatie.
+                    This campaign has insufficient strategic validation. Strong recommendation to conduct research first before budget allocation.
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-background border">
-                  <p className="font-medium text-sm mb-1">Start Validatie Onderzoek</p>
+                  <p className="font-medium text-sm mb-1">Start Validation Research</p>
                   <p className="text-sm text-muted-foreground">
-                    Begin met de aanbevolen onderzoeksmethoden voor de kritieke brand assets en personas.
+                    Begin with the recommended research methods for the critical brand assets and personas.
                   </p>
                 </div>
               </div>
@@ -443,8 +442,8 @@ export function ShareableCampaignReport({ campaign, onBack }: ShareableCampaignR
 
         {/* Report Footer */}
         <div className="pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>Dit rapport is automatisch gegenereerd op {new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-          <p className="mt-1">Gebaseerd op campagne generatie metadata en real-time platformdata</p>
+          <p>This report was automatically generated on {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          <p className="mt-1">Based on campaign generation metadata and real-time platform data</p>
         </div>
       </div>
     </div>

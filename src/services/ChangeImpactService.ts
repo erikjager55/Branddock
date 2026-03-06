@@ -1,14 +1,14 @@
 /**
  * Change Impact Service
- * 
- * Analyseert de impact van asset wijzigingen op beslissingen, campagnes, en persona's.
- * Zorgt ervoor dat NIETS automatisch wordt aangepast zonder expliciete gebruikerstoestemming.
+ *
+ * Analyzes the impact of asset changes on decisions, campaigns, and personas.
+ * Ensures that NOTHING is automatically adjusted without explicit user consent.
  */
 
-import { 
-  AssetChange, 
-  ImpactAnalysis, 
-  DecisionImpact, 
+import {
+  AssetChange,
+  ImpactAnalysis,
+  DecisionImpact,
   CampaignImpact,
   ChangeNotification,
   ImpactLevel,
@@ -20,7 +20,7 @@ import { calculateDecisionStatus } from '../utils/decision-status-calculator';
 
 export class ChangeImpactService {
   /**
-   * Analyseert een asset wijziging en bepaalt de impact op beslissingen
+   * Analyzes an asset change and determines the impact on decisions
    */
   static analyzeAssetChange(
     change: AssetChange,
@@ -29,29 +29,29 @@ export class ChangeImpactService {
   ): ImpactAnalysis {
     logger.info(`Analyzing impact for change ${change.id} on asset ${asset.id}`);
 
-    // Bereken decision impact
+    // Calculate decision impact
     const decisionImpact = this.calculateDecisionImpact(
       change,
       asset,
       previousAsset
     );
 
-    // Bepaal welke persona's mogelijk beïnvloed worden (maar NIET aanpassen!)
+    // Determine which personas may be affected (but NOT modify them!)
     const affectedPersonas = this.identifyAffectedPersonas(asset);
 
-    // Genereer menselijke samenvattingen
+    // Generate human-readable summaries
     const personaNote = affectedPersonas.length > 0
-      ? `Deze wijziging kan relevant zijn voor ${affectedPersonas.length} persona('s). Check handmatig of updates nodig zijn.`
-      : 'Deze wijziging heeft waarschijnlijk geen directe impact op bestaande persona\'s.';
+      ? `This change may be relevant to ${affectedPersonas.length} persona(s). Manually check if updates are needed.`
+      : 'This change likely has no direct impact on existing personas.';
 
     const researchPriorityNote = change.researchAdded
-      ? 'Nieuw onderzoek toegevoegd. Overweeg of research prioriteiten aangepast moeten worden.'
-      : 'Geen nieuwe onderzoeksinput. Research prioriteiten blijven ongewijzigd.';
+      ? 'New research added. Consider whether research priorities need to be adjusted.'
+      : 'No new research input. Research priorities remain unchanged.';
 
     const impactAnalysis: ImpactAnalysis = {
       change,
       decisionImpact,
-      campaignImpacts: [], // Wordt gevuld door checkCampaignImpacts
+      campaignImpacts: [], // Populated by checkCampaignImpacts
       affectedPersonas,
       personaNote,
       researchPriorityNote,
@@ -63,16 +63,16 @@ export class ChangeImpactService {
   }
 
   /**
-   * Berekent of en hoe de decision status verandert
+   * Calculates whether and how the decision status changes
    */
   private static calculateDecisionImpact(
     change: AssetChange,
     asset: BrandAsset,
     previousAsset?: BrandAsset
   ): DecisionImpact {
-    // Decision status verandert ALLEEN bij nieuw onderzoek of validatie
-    const shouldRecalculate = 
-      change.changeType === 'research-added' || 
+    // Decision status changes ONLY with new research or validation
+    const shouldRecalculate =
+      change.changeType === 'research-added' ||
       change.changeType === 'validation';
 
     if (!shouldRecalculate) {
@@ -80,34 +80,34 @@ export class ChangeImpactService {
         decisionStatusChanged: false,
         affectedDecisions: [],
         impactLevel: 'none',
-        summary: 'Content update zonder nieuw onderzoek. Decision status blijft ongewijzigd.',
+        summary: 'Content update without new research. Decision status remains unchanged.',
       };
     }
 
-    // Bereken oude en nieuwe decision status
-    const previousStatus = previousAsset 
+    // Calculate old and new decision status
+    const previousStatus = previousAsset
       ? this.getSimplifiedStatus(previousAsset)
       : undefined;
-    
+
     const newStatus = this.getSimplifiedStatus(asset);
 
     const statusChanged = previousStatus !== newStatus;
 
-    // Bepaal impact level
+    // Determine impact level
     let impactLevel: ImpactLevel = 'none';
     if (statusChanged) {
       if (newStatus === 'safe' && previousStatus !== 'safe') {
-        impactLevel = 'high'; // Beslissing is nu veilig!
+        impactLevel = 'high'; // Decision is now safe!
       } else if (newStatus === 'blocked' && previousStatus !== 'blocked') {
-        impactLevel = 'high'; // Beslissing is nu geblokkeerd
+        impactLevel = 'high'; // Decision is now blocked
       } else {
         impactLevel = 'medium';
       }
     } else if (change.changeType === 'research-added') {
-      impactLevel = 'low'; // Onderzoek toegevoegd maar status niet veranderd
+      impactLevel = 'low'; // Research added but status not changed
     }
 
-    // Genereer menselijke samenvatting
+    // Generate human-readable summary
     const summary = this.generateDecisionSummary(
       change,
       statusChanged,
@@ -127,17 +127,17 @@ export class ChangeImpactService {
   }
 
   /**
-   * Controleert impact op lopende campagnes
+   * Checks impact on active campaigns
    */
   static checkCampaignImpacts(
     impactAnalysis: ImpactAnalysis,
     activeCampaigns: any[] // Type from campaign strategy
   ): CampaignImpact[] {
     const assetId = impactAnalysis.change.assetId;
-    
+
     return activeCampaigns
       .filter(campaign => {
-        // Check of deze campagne het gewijzigde asset gebruikt
+        // Check if this campaign uses the modified asset
         return campaign.selectedAssets?.includes(assetId);
       })
       .map(campaign => {
@@ -145,8 +145,8 @@ export class ChangeImpactService {
                              impactAnalysis.change.researchAdded === true;
 
         const summary = hasNewerInput
-          ? `Nieuwere strategische input beschikbaar voor "${impactAnalysis.change.assetTitle}". Overweeg herberekening.`
-          : `Asset "${impactAnalysis.change.assetTitle}" geüpdatet, maar geen impact op strategie.`;
+          ? `Newer strategic input available for "${impactAnalysis.change.assetTitle}". Consider recalculation.`
+          : `Asset "${impactAnalysis.change.assetTitle}" updated, but no impact on strategy.`;
 
         return {
           campaignId: campaign.id,
@@ -160,31 +160,31 @@ export class ChangeImpactService {
   }
 
   /**
-   * Identificeert welke persona's mogelijk beïnvloed worden
-   * LET OP: Dit past de persona's NIET aan!
+   * Identifies which personas may be affected
+   * NOTE: This does NOT modify the personas!
    */
   private static identifyAffectedPersonas(asset: BrandAsset): string[] {
-    // Simpele logica: als het asset validated is en essentieel,
-    // kan het relevant zijn voor persona development
+    // Simple logic: if the asset is validated and essential,
+    // it can be relevant for persona development
     if (asset.status === 'validated' && asset.priority === 'essential') {
-      return ['all-personas']; // Placeholder - in echte implementatie zou dit specifieker zijn
+      return ['all-personas']; // Placeholder — in a real implementation this would be more specific
     }
     return [];
   }
 
   /**
-   * Vereenvoudigde decision status voor vergelijking
+   * Simplified decision status for comparison
    */
   private static getSimplifiedStatus(asset: BrandAsset): 'safe' | 'at-risk' | 'blocked' {
     const coverage = asset.researchCoverage || 0;
-    
+
     if (coverage >= 80) return 'safe';
     if (coverage >= 50) return 'at-risk';
     return 'blocked';
   }
 
   /**
-   * Genereert menselijke samenvatting van decision impact
+   * Generates a human-readable summary of the decision impact
    */
   private static generateDecisionSummary(
     change: AssetChange,
@@ -195,22 +195,22 @@ export class ChangeImpactService {
   ): string {
     if (!statusChanged) {
       if (change.changeType === 'research-added') {
-        return `Onderzoek toegevoegd aan "${asset.title}". Decision status blijft ${this.statusToText(newStatus)} (${asset.researchCoverage}% coverage).`;
+        return `Research added to "${asset.title}". Decision status remains ${this.statusToText(newStatus)} (${asset.researchCoverage}% coverage).`;
       }
-      return `Update aan "${asset.title}" zonder impact op decision status.`;
+      return `Update to "${asset.title}" without impact on decision status.`;
     }
 
-    // Status is veranderd
+    // Status has changed
     if (newStatus === 'safe') {
-      return `✓ "${asset.title}" is nu safe to decide! (${asset.researchCoverage}% research coverage bereikt)`;
+      return `"${asset.title}" is now safe to decide! (${asset.researchCoverage}% research coverage reached)`;
     }
 
     if (newStatus === 'blocked') {
-      return `⚠ "${asset.title}" is nu blocked voor beslissingen (${asset.researchCoverage}% coverage, minimum 50% vereist).`;
+      return `"${asset.title}" is now blocked for decisions (${asset.researchCoverage}% coverage, minimum 50% required).`;
     }
 
     // at-risk
-    return `"${asset.title}" status gewijzigd naar ${this.statusToText(newStatus)} (${asset.researchCoverage}% coverage).`;
+    return `"${asset.title}" status changed to ${this.statusToText(newStatus)} (${asset.researchCoverage}% coverage).`;
   }
 
   private static statusToText(status: 'safe' | 'at-risk' | 'blocked'): string {
@@ -223,7 +223,7 @@ export class ChangeImpactService {
   }
 
   /**
-   * Creëert een notificatie voor de gebruiker
+   * Creates a notification for the user
    */
   static createNotification(
     impactAnalysis: ImpactAnalysis,
@@ -241,28 +241,28 @@ export class ChangeImpactService {
   }
 
   /**
-   * Formatteert een korte samenvatting voor UI display
+   * Formats a short summary for UI display
    */
   static formatShortSummary(impactAnalysis: ImpactAnalysis): string {
     const { decisionImpact, change } = impactAnalysis;
-    
+
     if (decisionImpact.impactLevel === 'none') {
-      return 'Content update – geen impact op beslissingen';
+      return 'Content update — no impact on decisions';
     }
 
     if (decisionImpact.impactLevel === 'high' && decisionImpact.newStatus === 'safe') {
-      return `✓ ${change.assetTitle} is nu safe to decide`;
+      return `${change.assetTitle} is now safe to decide`;
     }
 
     if (change.researchAdded) {
-      return `Nieuw onderzoek toegevoegd aan ${change.assetTitle}`;
+      return `New research added to ${change.assetTitle}`;
     }
 
     return decisionImpact.summary;
   }
 
   /**
-   * Formatteert een uitgebreide samenvatting voor tooltips/modals
+   * Formats a detailed summary for tooltips/modals
    */
   static formatDetailedSummary(impactAnalysis: ImpactAnalysis): {
     title: string;
@@ -272,32 +272,32 @@ export class ChangeImpactService {
 
     const sections = [
       {
-        label: 'Wat is er veranderd?',
+        label: 'What changed?',
         content: change.description,
       },
       {
-        label: 'Impact op beslissingen',
+        label: 'Impact on decisions',
         content: decisionImpact.summary,
       }
     ];
 
-    // Alleen tonen als relevant
+    // Only show if relevant
     if (decisionImpact.impactLevel !== 'none') {
       sections.push({
-        label: 'Persona\'s',
+        label: 'Personas',
         content: personaNote,
       });
     }
 
     if (change.researchAdded) {
       sections.push({
-        label: 'Research prioriteiten',
+        label: 'Research priorities',
         content: researchPriorityNote,
       });
     }
 
     return {
-      title: `Wijziging: ${change.assetTitle}`,
+      title: `Change: ${change.assetTitle}`,
       sections,
     };
   }

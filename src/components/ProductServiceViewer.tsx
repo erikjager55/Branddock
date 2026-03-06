@@ -62,7 +62,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
               className="gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
-              Terug
+              Back
             </Button>
             <div className="ml-auto">
               {!isEditing ? (
@@ -73,7 +73,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
                   className="gap-2"
                 >
                   <Edit className="h-4 w-4" />
-                  Bewerken
+                  Edit
                 </Button>
               ) : (
                 <div className="flex gap-2">
@@ -84,7 +84,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
                     className="gap-2"
                   >
                     <X className="h-4 w-4" />
-                    Annuleren
+                    Cancel
                   </Button>
                   <Button
                     variant="default"
@@ -93,7 +93,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
                     className="gap-2 bg-primary"
                   >
                     <Save className="h-4 w-4" />
-                    Opslaan
+                    Save
                   </Button>
                 </div>
               )}
@@ -116,7 +116,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
                       value={editedData.category}
                       onChange={(e) => setEditedData({ ...editedData, category: e.target.value })}
                       className="text-sm px-2 py-1 bg-background"
-                      placeholder="Categorie"
+                      placeholder="Category"
                     />
                   </div>
                 ) : (
@@ -141,11 +141,11 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-xs text-muted-foreground mb-1">Analysebron</div>
+                  <div className="text-xs text-muted-foreground mb-1">Analysis Source</div>
                   <div className="font-medium">{data.source}</div>
                 </div>
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">
-                  Geanalyseerd
+                  Analyzed
                 </Badge>
               </div>
             </CardContent>
@@ -157,7 +157,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Package className="h-5 w-5 text-primary" />
-                  Beschrijving
+                  Description
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -179,7 +179,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5 text-primary" />
-                  Prijsmodel
+                  Pricing Model
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -190,11 +190,11 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
                   </div>
                   {data.pricing.price && (
                     <div>
-                      <div className="text-sm text-muted-foreground mb-1">Prijs</div>
+                      <div className="text-sm text-muted-foreground mb-1">Price</div>
                       <div className="text-2xl font-bold text-primary">
                         {data.pricing.price}
-                        {data.pricing.model.toLowerCase().includes('maand') && (
-                          <span className="text-base text-muted-foreground">/maand</span>
+                        {data.pricing.model.toLowerCase().includes('month') && (
+                          <span className="text-base text-muted-foreground">/month</span>
                         )}
                       </div>
                     </div>
@@ -210,7 +210,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-primary" />
-                  Features & Kenmerken
+                  Features & Characteristics
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -232,7 +232,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-primary" />
-                  Voordelen & Benefits
+                  Advantages & Benefits
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -258,20 +258,20 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     <Users className="h-5 w-5 text-primary" />
-                    Doelgroep (Persona's)
+                    Target Audience (Personas)
                   </CardTitle>
                   <Dialog open={showPersonaDialog} onOpenChange={setShowPersonaDialog}>
                     <DialogTrigger asChild>
                       <Button variant="outline" size="sm" className="gap-2">
                         <Edit className="h-4 w-4" />
-                        {selectedPersonaIds.length > 0 ? 'Bewerken' : 'Toevoegen'}
+                        {selectedPersonaIds.length > 0 ? 'Edit' : 'Add'}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                       <DialogHeader>
-                        <DialogTitle>Selecteer Doelgroep Persona's</DialogTitle>
+                        <DialogTitle>Select Target Audience Personas</DialogTitle>
                         <DialogDescription>
-                          Kies één of meerdere persona's die de doelgroep vormen voor dit product/service
+                          Choose one or more personas that represent the target audience for this product/service
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-3 py-4">
@@ -279,11 +279,11 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
                           <div className="text-center py-8">
                             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
                             <p className="text-sm text-muted-foreground mb-4">
-                              Je hebt nog geen persona's aangemaakt
+                              You haven't created any personas yet
                             </p>
                             <Button variant="outline" onClick={() => setShowPersonaDialog(false)}>
                               <Plus className="h-4 w-4 mr-2" />
-                              Ga naar Persona's sectie
+                              Go to Personas section
                             </Button>
                           </div>
                         ) : (
@@ -339,11 +339,11 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
                       </div>
                       <div className="flex justify-end gap-2 pt-4 border-t">
                         <Button variant="outline" onClick={() => setShowPersonaDialog(false)}>
-                          Annuleren
+                          Cancel
                         </Button>
                         <Button onClick={() => setShowPersonaDialog(false)}>
                           <Check className="h-4 w-4 mr-2" />
-                          Toepassen ({selectedPersonaIds.length})
+                          Apply ({selectedPersonaIds.length})
                         </Button>
                       </div>
                     </DialogContent>
@@ -398,7 +398,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
                   <div className="border-2 border-dashed rounded-lg p-8 text-center">
                     <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                     <p className="text-sm text-muted-foreground mb-3">
-                      Nog geen persona's gekoppeld
+                      No personas linked yet
                     </p>
                     <Button
                       variant="outline"
@@ -406,7 +406,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
                       onClick={() => setShowPersonaDialog(true)}
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Voeg Persona's Toe
+                      Add Personas
                     </Button>
                   </div>
                 )}
@@ -419,7 +419,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Lightbulb className="h-5 w-5 text-primary" />
-                    Use Cases & Toepassingen
+                    Use Cases & Applications
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -444,7 +444,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Package className="h-5 w-5 text-primary" />
-                  Specificaties
+                  Specifications
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -464,7 +464,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
           {data.images && data.images.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Product Afbeeldingen</CardTitle>
+                <CardTitle>Product Images</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -472,7 +472,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
                     <div key={index} className="aspect-square rounded-lg overflow-hidden border">
                       <img
                         src={image}
-                        alt={`${data.name} - afbeelding ${index + 1}`}
+                        alt={`${data.name} - image ${index + 1}`}
                         className="w-full h-full object-cover"
                       />
                     </div>
@@ -486,7 +486,7 @@ export function ProductServiceViewer({ data, onBack, onSave }: ProductServiceVie
           {data.competitors && data.competitors.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Concurrenten</CardTitle>
+                <CardTitle>Competitors</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">

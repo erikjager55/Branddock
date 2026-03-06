@@ -15,6 +15,7 @@ const CATEGORY_OPTIONS = [
   { value: 'PERSONALITY', label: 'Personality' },
   { value: 'FOUNDATION', label: 'Foundation' },
   { value: 'CULTURE', label: 'Culture' },
+  { value: 'ESG', label: 'ESG' },
 ];
 
 const STATUS_OPTIONS = [

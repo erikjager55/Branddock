@@ -1,14 +1,14 @@
 /**
- * COMPONENT: Section Decision Indicator (VERFIJND)
- * 
- * Mini indicator bij elke sectie titel (groen/oranje/rood) die toont
- * of deze sectie veilig is voor besluitvorming.
- * 
- * WIJZIGINGEN v2:
- * - Simpeler visueel (badge only, geen grote cards)
- * - Hover/click: tooltip met oorzaak + wat nodig is
- * - Consistent met header kleuren
- * - Erft status van gekoppelde items
+ * COMPONENT: Section Decision Indicator (REFINED)
+ *
+ * Mini indicator next to each section title (green/amber/red) that shows
+ * whether this section is safe for decision-making.
+ *
+ * CHANGES v2:
+ * - Simpler visual (badge only, no large cards)
+ * - Hover/click: tooltip with cause + what is needed
+ * - Consistent with header colors
+ * - Inherits status from linked items
  */
 
 import React, { useState } from 'react';
@@ -21,15 +21,15 @@ import {
 } from '../ui/popover';
 
 interface SectionDecisionIndicatorProps {
-  /** Status van deze sectie */
+  /** Status of this section */
   status: 'safe' | 'risk' | 'blocked';
-  /** Sectie naam voor labeling */
+  /** Section name for labeling */
   sectionName: string;
-  /** Welke oorzaak(en) deze sectie raken */
+  /** Which cause(s) affect this section */
   causes?: string[];
-  /** Wat nodig is om deze sectie veilig te maken */
+  /** What is needed to make this section safe */
   requiredActions?: string[];
-  /** Optional callback voor action */
+  /** Optional callback for action */
   onActionClick?: () => void;
 }
 
@@ -41,11 +41,11 @@ export function SectionDecisionIndicator({
   onActionClick
 }: SectionDecisionIndicatorProps) {
 
-  // Status configuratie - consistent met header
+  // Status configuration - consistent with header
   const statusConfig = {
     'safe': {
       icon: CheckCircle,
-      label: 'Veilig',
+      label: 'Safe',
       color: 'text-green-600',
       bg: 'bg-green-100/80 dark:bg-green-900/20',
       border: 'border-green-300',
@@ -53,7 +53,7 @@ export function SectionDecisionIndicator({
     },
     'risk': {
       icon: AlertTriangle,
-      label: 'Risico',
+      label: 'Risk',
       color: 'text-amber-600',
       bg: 'bg-amber-100/80 dark:bg-amber-900/20',
       border: 'border-amber-300',
@@ -61,7 +61,7 @@ export function SectionDecisionIndicator({
     },
     'blocked': {
       icon: ShieldAlert,
-      label: 'Niet Veilig',
+      label: 'Unsafe',
       color: 'text-red-600',
       bg: 'bg-red-100/80 dark:bg-red-900/20',
       border: 'border-red-300',
@@ -73,7 +73,7 @@ export function SectionDecisionIndicator({
   const StatusIcon = config.icon;
   const hasDetails = causes.length > 0 || requiredActions.length > 0;
 
-  // Als safe en geen details, toon compacte badge
+  // If safe and no details, show compact badge
   if (status === 'safe' && !hasDetails) {
     return (
       <Badge variant="outline" className={`${config.bg} ${config.color} ${config.border} text-xs`}>
@@ -83,7 +83,7 @@ export function SectionDecisionIndicator({
     );
   }
 
-  // Bij risk/blocked of indien details: toon met popover
+  // For risk/blocked or when details present: show with popover
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -103,16 +103,16 @@ export function SectionDecisionIndicator({
       {hasDetails && (
         <PopoverContent className="w-80 p-3 text-sm" align="start">
           <div className="space-y-2">
-            {/* Sectie naam */}
+            {/* Section name */}
             <div className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">
               {sectionName}
             </div>
 
-            {/* Oorzaken */}
+            {/* Causes */}
             {causes.length > 0 && (
               <div>
                 <p className="text-xs font-medium mb-1">
-                  Oorzaak{causes.length > 1 ? 'en' : ''}:
+                  Cause{causes.length > 1 ? 's' : ''}:
                 </p>
                 <ul className="space-y-0.5 text-xs text-muted-foreground">
                   {causes.map((cause, i) => (
@@ -125,11 +125,11 @@ export function SectionDecisionIndicator({
               </div>
             )}
 
-            {/* Vereiste acties */}
+            {/* Required actions */}
             {requiredActions.length > 0 && (
               <div className="pt-2 border-t">
                 <p className="text-xs font-medium mb-1">
-                  Nodig om veilig te maken:
+                  Required to make safe:
                 </p>
                 <ul className="space-y-0.5 text-xs text-muted-foreground">
                   {requiredActions.map((action, i) => (
@@ -149,38 +149,38 @@ export function SectionDecisionIndicator({
 }
 
 /**
- * MOTIVATIE WIJZIGINGEN v2:
- * 
- * 1. SIMPELER VISUEEL
- *    - Badge only (geen grote expandable cards)
- *    - Compacte afmetingen (text-xs, px-2 py-1)
- *    - Minder visuele ruis bij "safe" state
- * 
- * 2. POPOVER IN PLAATS VAN EXPAND
- *    - Hover/click toont tooltip
- *    - Geen layout shift
- *    - Betere UX op mobile (click)
- *    - Desktop: hover is genoeg
- * 
- * 3. CONSISTENT MET HEADER
- *    - Zelfde kleurenschema
- *    - Zelfde iconografie (ShieldAlert ipv XCircle)
- *    - Zelfde taal ("Niet Veilig" niet "Blocked")
- * 
- * 4. STRUCTUUR IN POPOVER
- *    - Sectie naam als header
- *    - Oorzaken eerst
- *    - Dan vereiste acties (genummerd)
- *    - Logische flow
- * 
+ * RATIONALE CHANGES v2:
+ *
+ * 1. SIMPLER VISUAL
+ *    - Badge only (no large expandable cards)
+ *    - Compact dimensions (text-xs, px-2 py-1)
+ *    - Less visual noise in "safe" state
+ *
+ * 2. POPOVER INSTEAD OF EXPAND
+ *    - Hover/click shows tooltip
+ *    - No layout shift
+ *    - Better UX on mobile (click)
+ *    - Desktop: hover is enough
+ *
+ * 3. CONSISTENT WITH HEADER
+ *    - Same color scheme
+ *    - Same iconography (ShieldAlert instead of XCircle)
+ *    - Same language ("Unsafe" not "Blocked")
+ *
+ * 4. STRUCTURE IN POPOVER
+ *    - Section name as header
+ *    - Causes first
+ *    - Then required actions (numbered)
+ *    - Logical flow
+ *
  * 5. CURSOR-HELP
- *    - Cursor verandert naar help (?)
- *    - Signaleert: "klik voor info"
- *    - Betere discoverability
- * 
- * 6. INHERITANCE LOGICA
- *    - Component ontvangt status van parent
- *    - "Connect Brand Assets" sectie kan blocked zijn
- *      als gekoppelde asset blocked is
- *    - Status wordt doorgegeven, niet berekend in component
+ *    - Cursor changes to help (?)
+ *    - Signals: "click for info"
+ *    - Better discoverability
+ *
+ * 6. INHERITANCE LOGIC
+ *    - Component receives status from parent
+ *    - "Connect Brand Assets" section can be blocked
+ *      if linked asset is blocked
+ *    - Status is passed down, not calculated in component
  */

@@ -4,49 +4,13 @@
 
 // ─── Enums (mirrored from Prisma) ────────────────────────────
 
-export type TrendSourceStatus = 'PENDING' | 'HEALTHY' | 'WARNING' | 'ERROR' | 'PAUSED';
-export type TrendDetectionSource = 'AUTO_SCAN' | 'MANUAL' | 'AI_RESEARCH';
+export type TrendDetectionSource = 'MANUAL' | 'AI_RESEARCH';
 export type TrendScanStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 export type InsightCategory = 'CONSUMER_BEHAVIOR' | 'TECHNOLOGY' | 'MARKET_DYNAMICS' | 'COMPETITIVE' | 'REGULATORY';
 export type InsightScope = 'MICRO' | 'MESO' | 'MACRO';
 export type ImpactLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type InsightTimeframe = 'SHORT_TERM' | 'MEDIUM_TERM' | 'LONG_TERM';
-
-// ─── TrendSource ─────────────────────────────────────────────
-
-export interface TrendSourceWithMeta {
-  id: string;
-  name: string;
-  url: string;
-  checkInterval: number;
-  isActive: boolean;
-  status: TrendSourceStatus;
-  lastCheckedAt: string | null;
-  lastContentHash: string | null;
-  lastError: string | null;
-  nextCheckAt: string | null;
-  category: string | null;
-  createdAt: string;
-  updatedAt: string;
-  workspaceId: string;
-  _count?: {
-    detectedTrends: number;
-  };
-}
-
-export interface CreateSourceBody {
-  name: string;
-  url: string;
-  checkInterval?: number;
-  category?: string;
-}
-
-export interface UpdateSourceBody {
-  name?: string;
-  url?: string;
-  checkInterval?: number;
-  category?: string;
-}
+export type ResearchPhase = 'generating_urls' | 'scraping' | 'analyzing' | 'complete' | 'failed' | 'cancelled';
 
 // ─── DetectedTrend ───────────────────────────────────────────
 
@@ -76,11 +40,10 @@ export interface DetectedTrendWithMeta {
   createdAt: string;
   updatedAt: string;
   workspaceId: string;
-  trendSourceId: string | null;
-  trendSource?: {
+  researchJobId: string | null;
+  researchJob?: {
     id: string;
-    name: string;
-    url: string;
+    query: string;
   } | null;
   activatedBy?: {
     id: string;
@@ -116,32 +79,44 @@ export interface UpdateTrendBody {
   howToUse?: string[];
 }
 
-// ─── TrendScanJob ────────────────────────────────────────────
+// ─── Research Job ────────────────────────────────────────────
 
-export interface TrendScanJobWithMeta {
+export interface StartResearchBody {
+  query: string;
+  useBrandContext?: boolean;
+}
+
+export interface TrendResearchJobResponse {
   id: string;
   status: TrendScanStatus;
-  sourcesTotal: number;
-  sourcesCompleted: number;
-  trendsDetected: number;
-  errors: string[];
-  startedAt: string;
-  completedAt: string | null;
-  trendSourceId: string | null;
+  query: string;
+  useBrandContext: boolean;
   workspaceId: string;
 }
 
-// ─── Scan Progress (in-memory) ───────────────────────────────
+// ─── Research Progress (in-memory) ──────────────────────────
 
-export interface ScanProgressResponse {
+export interface PendingTrendItem {
+  title: string;
+  description: string;
+  category: string;
+  impactLevel: string;
+  relevanceScore: number;
+  sourceUrl: string;
+  tags: string[];
+}
+
+export interface ResearchProgressResponse {
   jobId: string;
-  status: TrendScanStatus;
-  sourcesTotal: number;
-  sourcesCompleted: number;
+  status: TrendScanStatus | 'CANCELLED';
+  phase: ResearchPhase;
+  urlsTotal: number;
+  urlsCompleted: number;
+  currentUrl: string | null;
   trendsDetected: number;
-  currentSourceName: string | null;
+  pendingTrends?: PendingTrendItem[];
   errors: string[];
-  progress?: number;
+  progress: number;
   startedAt?: string;
   completedAt?: string | null;
 }
@@ -152,18 +127,13 @@ export interface TrendRadarStats {
   total: number;
   activated: number;
   newThisWeek: number;
-  sourcesHealthy: number;
+  aiResearched: number;
 }
 
 // ─── API List Response ───────────────────────────────────────
 
 export interface TrendListResponse {
   trends: DetectedTrendWithMeta[];
-  total: number;
-}
-
-export interface SourceListResponse {
-  sources: TrendSourceWithMeta[];
   total: number;
 }
 
@@ -175,10 +145,5 @@ export interface TrendListParams {
   activated?: boolean;
   dismissed?: boolean;
   detectionSource?: TrendDetectionSource;
-  search?: string;
-}
-
-export interface SourceListParams {
-  status?: TrendSourceStatus;
   search?: string;
 }

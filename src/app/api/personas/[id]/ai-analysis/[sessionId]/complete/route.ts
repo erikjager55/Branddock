@@ -94,45 +94,45 @@ export async function POST(
       completedAt: new Date().toISOString(),
 
       // Report fields
-      executiveSummary: `Op basis van de analyse van ${persona.name} blijkt dat deze persona een ${persona.occupation ?? "professional"} is${persona.location ? ` gevestigd in ${persona.location}` : ""}, met een focus op ${goals[0] ?? "professionele groei"}. De unieke waardepositie ligt in de combinatie van hun professionele context met hun persoonlijke drijfveren${coreValues.length > 0 ? ` en kernwaarden (${coreValues.slice(0, 3).join(", ")})` : ""}. Met aandacht voor de geïdentificeerde uitdagingen${frustrations.length > 0 ? ` — waaronder ${frustrations[0]}` : ""} — is er een solide basis voor strategische merkpositionering.`,
+      executiveSummary: `Based on the analysis of ${persona.name}, this persona is a ${persona.occupation ?? "professional"}${persona.location ? ` based in ${persona.location}` : ""}, with a focus on ${goals[0] ?? "professional growth"}. The unique value position lies in the combination of their professional context with their personal drivers${coreValues.length > 0 ? ` and core values (${coreValues.slice(0, 3).join(", ")})` : ""}. With attention to the identified challenges${frustrations.length > 0 ? ` — including ${frustrations[0]}` : ""} — there is a solid foundation for strategic brand positioning.`,
 
       findings: [
         {
-          title: "Demografisch Profiel",
-          description: `${persona.name} is een ${persona.age ?? "professional"} ${persona.gender?.toLowerCase() ?? "persoon"} met als rol ${persona.occupation ?? "niet gespecificeerd"}. ${persona.education ? `Opleidingsniveau: ${persona.education}.` : ""} ${persona.income ? `Inkomensniveau: ${persona.income}.` : ""} ${persona.familyStatus ? `Gezinssituatie: ${persona.familyStatus}.` : ""}`,
+          title: "Demographic Profile",
+          description: `${persona.name} is a ${persona.age ?? "professional"} ${persona.gender?.toLowerCase() ?? "individual"} working as ${persona.occupation ?? "not specified"}. ${persona.education ? `Education level: ${persona.education}.` : ""} ${persona.income ? `Income level: ${persona.income}.` : ""} ${persona.familyStatus ? `Family situation: ${persona.familyStatus}.` : ""}`,
         },
         {
-          title: "Doelen & Motivaties",
+          title: "Goals & Motivations",
           description: goals.length > 0 || motivations.length > 0
-            ? `${goals.length > 0 ? `Doelen: ${goals.join("; ")}. ` : ""}${motivations.length > 0 ? `Motivaties: ${motivations.join("; ")}.` : ""}`
-            : "Geen specifieke doelen of motivaties gedefinieerd.",
+            ? `${goals.length > 0 ? `Goals: ${goals.join("; ")}. ` : ""}${motivations.length > 0 ? `Motivations: ${motivations.join("; ")}.` : ""}`
+            : "No specific goals or motivations defined.",
         },
         {
-          title: "Uitdagingen & Pijnpunten",
+          title: "Challenges & Pain Points",
           description: frustrations.length > 0
-            ? `Belangrijkste frustraties: ${frustrations.join("; ")}. Deze pijnpunten bieden mogelijkheden voor gerichte waardecreatie.`
-            : "Geen specifieke frustraties gedefinieerd.",
+            ? `Key frustrations: ${frustrations.join("; ")}. These pain points offer opportunities for targeted value creation.`
+            : "No specific frustrations defined.",
         },
         {
-          title: "Gedrag & Beslispatronen",
-          description: `${behaviors.length > 0 ? `Gedragspatronen: ${behaviors.join("; ")}. ` : ""}${buyingTriggers.length > 0 ? `Kooptriggers: ${buyingTriggers.join("; ")}. ` : ""}${decisionCriteria.length > 0 ? `Besliscriteria: ${decisionCriteria.join("; ")}.` : ""}` || "Op basis van het profiel kunnen patronen worden geïdentificeerd in besluitvorming.",
+          title: "Behavior & Decision Patterns",
+          description: `${behaviors.length > 0 ? `Behavioral patterns: ${behaviors.join("; ")}. ` : ""}${buyingTriggers.length > 0 ? `Buying triggers: ${buyingTriggers.join("; ")}. ` : ""}${decisionCriteria.length > 0 ? `Decision criteria: ${decisionCriteria.join("; ")}.` : ""}` || "Based on the profile, patterns can be identified in decision-making.",
         },
         {
-          title: "Waardepropositie & Aansluiting",
-          description: `Het aanbod sluit aan bij de kernbehoeften van ${persona.name}. ${coreValues.length > 0 ? `De kernwaarden (${coreValues.join(", ")}) vormen de basis voor merkvoorkeur. ` : ""}${persona.quote ? `In eigen woorden: "${persona.quote}"` : ""}`,
+          title: "Value Proposition & Alignment",
+          description: `The offering aligns with the core needs of ${persona.name}. ${coreValues.length > 0 ? `The core values (${coreValues.join(", ")}) form the basis for brand preference. ` : ""}${persona.quote ? `In their own words: "${persona.quote}"` : ""}`,
         },
       ],
 
       recommendations: [
-        `Integreer het demografisch profiel van ${persona.name} in alle communicatie-uitingen`,
-        "Ontwikkel persona-specifieke customer journeys voor de gedefinieerde doelgroep",
-        "Creëer content die de unieke waarde tastbaar en begrijpelijk maakt",
+        `Integrate the demographic profile of ${persona.name} into all communication assets`,
+        "Develop persona-specific customer journeys for the defined target audience",
+        "Create content that makes the unique value tangible and understandable",
         frustrations.length > 0
-          ? `Bouw thought leadership rond oplossingen voor: ${frustrations[0]}`
-          : "Bouw thought leadership rond oplossingen voor klantuitdagingen",
+          ? `Build thought leadership around solutions for: ${frustrations[0]}`
+          : "Build thought leadership around solutions for customer challenges",
         coreValues.length > 0
-          ? `Vertaal de kernwaarden (${coreValues.slice(0, 3).join(", ")}) naar concrete gedragingen en besliscriteria`
-          : "Vertaal waarden naar concrete gedragingen en besliscriteria",
+          ? `Translate the core values (${coreValues.slice(0, 3).join(", ")}) into concrete behaviors and decision criteria`
+          : "Translate values into concrete behaviors and decision criteria",
       ],
 
       fieldSuggestions: generateFieldSuggestions(persona, {
@@ -225,25 +225,25 @@ function generateFieldSuggestions(persona: any, arrays: {
   // Suggest tagline if missing
   if (!persona.tagline) {
     const role = persona.occupation ?? "professional";
-    const loc = persona.location ? ` uit ${persona.location}` : "";
+    const loc = persona.location ? ` from ${persona.location}` : "";
     add(
       "tagline",
       "Tagline",
       null,
-      `De ${persona.age ?? "ambitieuze"} ${role}${loc} die waarde zoekt in kwaliteit en efficiëntie`,
-      "Een tagline vat de persona bondig samen en maakt het makkelijker te herkennen in je team.",
+      `The ${persona.age ?? "ambitious"} ${role}${loc} who values quality and efficiency`,
+      "A tagline summarizes the persona concisely and makes it easier to recognize within your team.",
     );
   }
 
   // Suggest quote if missing
   if (!persona.quote) {
-    const goal = arrays.goals[0] ?? "groei en innovatie";
+    const goal = arrays.goals[0] ?? "growth and innovation";
     add(
       "quote",
       "Quote",
       null,
-      `"Ik zoek oplossingen die me helpen bij ${goal} — zonder onnodige complexiteit."`,
-      "Een representatieve quote brengt de persona tot leven en maakt communicatie menselijker.",
+      `"I'm looking for solutions that help me with ${goal} — without unnecessary complexity."`,
+      "A representative quote brings the persona to life and makes communication more human.",
     );
   }
 
@@ -251,53 +251,53 @@ function generateFieldSuggestions(persona: any, arrays: {
   if (!persona.bio) {
     const parts: string[] = [];
     if (persona.age && persona.occupation) {
-      parts.push(`${persona.name} is een ${persona.age}-jarige ${persona.occupation}`);
+      parts.push(`${persona.name} is a ${persona.age}-year-old ${persona.occupation}`);
     } else {
-      parts.push(`${persona.name} is een gedreven professional`);
+      parts.push(`${persona.name} is a driven professional`);
     }
-    if (persona.location) parts.push(`gevestigd in ${persona.location}`);
-    if (persona.education) parts.push(`met een achtergrond in ${persona.education}`);
+    if (persona.location) parts.push(`based in ${persona.location}`);
+    if (persona.education) parts.push(`with a background in ${persona.education}`);
     if (arrays.goals.length > 0) {
-      parts.push(`die streeft naar ${arrays.goals[0]}`);
+      parts.push(`who strives for ${arrays.goals[0]}`);
     }
     add(
       "bio",
       "Bio",
       null,
       parts.join(", ") + ".",
-      "Een korte bio geeft context aan de persona en helpt bij content creatie.",
+      "A short bio provides context for the persona and helps with content creation.",
     );
   }
 
   // Suggest buying triggers if empty or sparse
   if (arrays.buyingTriggers.length < 2) {
     const suggested = [
-      "Bewezen ROI en concrete resultaten",
-      "Aanbeveling van een vertrouwde peer",
-      "Tijdsdruk door deadline of marktverandering",
+      "Proven ROI and concrete results",
+      "Recommendation from a trusted peer",
+      "Time pressure due to deadline or market change",
     ];
     add(
       "buyingTriggers",
       "Buying Triggers",
       arrays.buyingTriggers.length > 0 ? arrays.buyingTriggers : null,
       suggested,
-      "Kooptriggers helpen bij het timen van sales- en marketingmomenten.",
+      "Buying triggers help with timing sales and marketing moments.",
     );
   }
 
   // Suggest decision criteria if empty or sparse
   if (arrays.decisionCriteria.length < 2) {
     const suggested = [
-      "Prijs-kwaliteitverhouding",
-      "Schaalbaarheid en toekomstbestendigheid",
-      "Gebruiksgemak en implementatietijd",
+      "Price-quality ratio",
+      "Scalability and future-proofing",
+      "Ease of use and implementation time",
     ];
     add(
       "decisionCriteria",
       "Decision Criteria",
       arrays.decisionCriteria.length > 0 ? arrays.decisionCriteria : null,
       suggested,
-      "Besliscriteria zijn essentieel voor sales enablement en productpositionering.",
+      "Decision criteria are essential for sales enablement and product positioning.",
     );
   }
 
@@ -308,10 +308,10 @@ function generateFieldSuggestions(persona: any, arrays: {
       "Frustrations",
       arrays.frustrations.length > 0 ? arrays.frustrations : null,
       [
-        "Te veel tools die niet goed integreren",
-        "Gebrek aan data-gedreven inzichten voor besluitvorming",
+        "Too many tools that don't integrate well",
+        "Lack of data-driven insights for decision-making",
       ],
-      "Meer pijnpunten helpen bij het scherper formuleren van je waardepropositie.",
+      "More pain points help sharpen the formulation of your value proposition.",
     );
   }
 
@@ -322,11 +322,11 @@ function generateFieldSuggestions(persona: any, arrays: {
       "Behaviors",
       arrays.behaviors.length > 0 ? arrays.behaviors : null,
       [
-        "Doet uitgebreid online onderzoek voor aankopen",
-        "Raadpleegt reviews en vergelijkingssites",
-        "Volgt thought leaders op LinkedIn",
+        "Conducts extensive online research before purchases",
+        "Consults reviews and comparison sites",
+        "Follows thought leaders on LinkedIn",
       ],
-      "Gedragspatronen informeren welke kanalen en contentformats het beste werken.",
+      "Behavioral patterns inform which channels and content formats work best.",
     );
   }
 

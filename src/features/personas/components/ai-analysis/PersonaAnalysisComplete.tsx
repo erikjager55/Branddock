@@ -49,14 +49,14 @@ export function PersonaAnalysisComplete({
     description: d.summary,
   }));
   const recommendations = insightsData.recommendations ?? [
-    `Integreer het profiel van ${personaName} in communicatie-uitingen`,
-    'Ontwikkel persona-specifieke customer journeys',
-    'Creëer content die waarde tastbaar maakt',
-    'Bouw thought leadership rond klantuitdagingen',
-    'Vertaal waarden naar gedragingen en besliscriteria',
+    `Integrate ${personaName}'s profile into communication assets`,
+    'Develop persona-specific customer journeys',
+    'Create content that makes value tangible',
+    'Build thought leadership around customer challenges',
+    'Translate values into behaviors and decision criteria',
   ];
   const executiveSummary = insightsData.executiveSummary
-    ?? `De AI-analyse van ${personaName} heeft ${totalDimensions} strategische dimensies geanalyseerd en biedt inzichten voor merkpositionering en communicatie.`;
+    ?? `The AI analysis of ${personaName} has analyzed ${totalDimensions} strategic dimensions and provides insights for brand positioning and communication.`;
 
   // ─── Field Suggestions State ─────────────────────────────
   const [suggestions, setSuggestions] = useState<FieldSuggestion[]>(
@@ -185,8 +185,8 @@ export function PersonaAnalysisComplete({
           <Bot className="h-4 w-4 text-white" />
         </div>
         <div>
-          <h3 className="text-base font-semibold text-gray-900">AI Gegenereerd Rapport</h3>
-          <p className="text-xs text-gray-500">Op basis van {totalDimensions} beantwoorde vragen</p>
+          <h3 className="text-base font-semibold text-gray-900">AI Generated Report</h3>
+          <p className="text-xs text-gray-500">Based on {totalDimensions} answered questions</p>
         </div>
       </div>
 
@@ -205,7 +205,7 @@ export function PersonaAnalysisComplete({
       <div className="border border-gray-200 bg-white rounded-xl p-6">
         <div className="flex items-center gap-2 mb-6">
           <CheckCircle className="h-5 w-5 text-emerald-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Belangrijkste Bevindingen</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Key Findings</h3>
         </div>
         <div className="space-y-3">
           {findings.map((finding, i) => {
@@ -230,7 +230,7 @@ export function PersonaAnalysisComplete({
       <div className="border border-gray-200 bg-white rounded-xl p-6">
         <div className="flex items-center gap-2 mb-6">
           <TrendingUp className="h-5 w-5 text-teal-500" />
-          <h3 className="text-lg font-semibold text-gray-900">Strategische Aanbevelingen</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Strategic Recommendations</h3>
         </div>
         <div className="space-y-4">
           {recommendations.map((rec, i) => (
@@ -250,7 +250,7 @@ export function PersonaAnalysisComplete({
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Lightbulb className="h-5 w-5 text-amber-500" />
-              <h3 className="text-lg font-semibold text-gray-900">Voorgestelde Updates voor Persona</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Suggested Updates for Persona</h3>
               {pendingCount > 0 && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
                   {pendingCount} pending
@@ -267,8 +267,8 @@ export function PersonaAnalysisComplete({
             )}
           </div>
           <p className="text-sm text-gray-500 mb-4">
-            Op basis van de analyse stellen we de volgende updates voor op het persona profiel.
-            Accepteer, bewerk, of weiger per veld.
+            Based on the analysis, we suggest the following updates to the persona profile.
+            Accept, edit, or reject per field.
           </p>
           <div className="space-y-3">
             {suggestions.map((suggestion) => (

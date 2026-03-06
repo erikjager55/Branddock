@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 // =============================================================
-// POST /api/brandstyle/export-pdf — genereer PDF (stub)
+// POST /api/brandstyle/export-pdf — generate PDF (stub)
 // =============================================================
 export async function POST() {
   return NextResponse.json(

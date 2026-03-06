@@ -1,7 +1,7 @@
 /**
  * COMPONENT: Shareable Brand Report
  * 
- * Printbare en deelbare rapportversie van een brand asset.
+ * Printable and shareable report version of a brand asset.
  */
 
 import React from 'react';
@@ -73,7 +73,7 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
           <div className="flex items-center justify-between">
             <Button variant="ghost" onClick={onBack} className="gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Terug
+              Back
             </Button>
             <div className="flex items-center gap-2">
               <Button
@@ -83,7 +83,7 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
                 onClick={() => alert('Share link: https://platform.example.com/reports/brand/' + asset.id)}
               >
                 <Share2 className="h-4 w-4" />
-                Deel Link
+                Share Link
               </Button>
               <Button
                 variant="outline"
@@ -98,7 +98,7 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
                 variant="default"
                 size="sm"
                 className="gap-2"
-                onClick={() => alert('Download als PDF...')}
+                onClick={() => alert('Downloading as PDF...')}
               >
                 <Download className="h-4 w-4" />
                 Download
@@ -118,9 +118,9 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
           <h1 className="text-4xl font-bold mb-2">Brand Asset Report</h1>
           <p className="text-xl text-muted-foreground">{asset.title}</p>
           <div className="flex items-center justify-center gap-4 mt-4 text-sm text-muted-foreground">
-            <span>Versie {asset.version}</span>
+            <span>Version {asset.version}</span>
             <span>•</span>
-            <span>Gegenereerd: {new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+            <span>Generated: {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
           </div>
         </div>
 
@@ -136,13 +136,13 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
             {/* Basic Info */}
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Categorie</p>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Category</p>
                 <p className="font-medium">{asset.category}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">Laatste Update</p>
+                <p className="text-sm font-medium text-muted-foreground mb-1">Last Updated</p>
                 <p className="font-medium">
-                  {new Date(asset.lastUpdated).toLocaleDateString('nl-NL')}
+                  {new Date(asset.lastUpdated).toLocaleDateString('en-US')}
                 </p>
               </div>
             </div>
@@ -150,14 +150,14 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
             {/* Description */}
             {asset.description && (
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-2">Beschrijving</p>
+                <p className="text-sm font-medium text-muted-foreground mb-2">Description</p>
                 <p className="text-sm leading-relaxed">{asset.description}</p>
               </div>
             )}
 
             {/* Research Methods */}
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-3">Onderzoeksmethoden</p>
+              <p className="text-sm font-medium text-muted-foreground mb-3">Research Methods</p>
               <div className="flex flex-wrap gap-2">
                 {asset.researchMethods && asset.researchMethods.length > 0 ? (
                   asset.researchMethods.map((method) => (
@@ -166,7 +166,7 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
                     </Badge>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground">Geen onderzoeksmethoden gedefinieerd</p>
+                  <p className="text-sm text-muted-foreground">No research methods defined</p>
                 )}
               </div>
             </div>
@@ -220,7 +220,7 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
             {/* Risk */}
             {decisionStatus.risk && (
               <div>
-                <p className="text-sm font-medium text-muted-foreground mb-3">Risico's</p>
+                <p className="text-sm font-medium text-muted-foreground mb-3">Risks</p>
                 <div className="space-y-2">
                   <div className="flex items-start gap-2 text-sm">
                     <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
@@ -246,23 +246,23 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
                 <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-green-900 dark:text-green-100 mb-1">
-                    Asset is Actueel
+                    Asset is Up to Date
                   </p>
                   <p className="text-sm text-green-800 dark:text-green-200">
-                    Er zijn geen significante wijzigingen gedetecteerd sinds de laatste validatie.
-                    De strategische beslissingen gebaseerd op dit asset blijven valide.
+                    No significant changes have been detected since the last validation.
+                    Strategic decisions based on this asset remain valid.
                   </p>
                 </div>
               </div>
             </div>
 
             <div>
-              <p className="text-sm font-medium text-muted-foreground mb-2">Laatste Validatie</p>
+              <p className="text-sm font-medium text-muted-foreground mb-2">Last Validation</p>
               <p className="text-sm">
-                {new Date(asset.lastUpdated).toLocaleDateString('nl-NL', { 
-                  day: 'numeric', 
-                  month: 'long', 
-                  year: 'numeric' 
+                {new Date(asset.lastUpdated).toLocaleDateString('en-US', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
                 })}
               </p>
             </div>
@@ -274,22 +274,22 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Lightbulb className="h-5 w-5" />
-              Aanbevelingen
+              Recommendations
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {decisionStatus.status === 'safe-to-decide' ? (
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-background border">
-                  <p className="font-medium text-sm mb-1">Onderhoud Kwaliteit</p>
+                  <p className="font-medium text-sm mb-1">Maintain Quality</p>
                   <p className="text-sm text-muted-foreground">
-                    Plan periodieke reviews (elk kwartaal) om de validiteit van de onderzoeksdata te waarborgen.
+                    Schedule periodic reviews (quarterly) to ensure the validity of the research data.
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-background border">
-                  <p className="font-medium text-sm mb-1">Uitbreiding Mogelijk</p>
+                  <p className="font-medium text-sm mb-1">Expansion Possible</p>
                   <p className="text-sm text-muted-foreground">
-                    Overweeg aanvullend onderzoek in nieuwe marktsegmenten of channels voor bredere toepasbaarheid.
+                    Consider additional research in new market segments or channels for broader applicability.
                   </p>
                 </div>
               </div>
@@ -297,10 +297,10 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
                   <p className="font-medium text-sm mb-1 text-amber-900 dark:text-amber-100">
-                    Voer Aanvullend Onderzoek Uit
+                    Conduct Additional Research
                   </p>
                   <p className="text-sm text-amber-800 dark:text-amber-200">
-                    Versterk de validatie door minimaal één extra onderzoeksmethode toe te voegen uit de top 2 aanbevolen methoden.
+                    Strengthen the validation by adding at least one additional research method from the top 2 recommended methods.
                   </p>
                 </div>
               </div>
@@ -308,10 +308,10 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
               <div className="space-y-3">
                 <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
                   <p className="font-medium text-sm mb-1 text-red-900 dark:text-red-100">
-                    Start Validatie Onderzoek
+                    Start Validation Research
                   </p>
                   <p className="text-sm text-red-800 dark:text-red-200">
-                    Dit asset heeft onvoldoende onderzoeksvalidatie. Begin met de aanbevolen onderzoeksmethoden voordat je strategische beslissingen neemt.
+                    This asset has insufficient research validation. Begin with the recommended research methods before making strategic decisions.
                   </p>
                 </div>
               </div>
@@ -321,8 +321,8 @@ export function ShareableBrandReport({ asset, onBack }: ShareableBrandReportProp
 
         {/* Report Footer */}
         <div className="pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>Dit rapport is automatisch gegenereerd op {new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-          <p className="mt-1">Gebaseerd op real-time platformdata en onderzoeksvalidatie</p>
+          <p>This report was automatically generated on {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          <p className="mt-1">Based on real-time platform data and research validation</p>
         </div>
       </div>
     </div>

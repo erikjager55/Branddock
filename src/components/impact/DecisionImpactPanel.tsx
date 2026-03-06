@@ -1,8 +1,8 @@
 /**
  * Decision Impact Panel
  * 
- * Toont impact van recente asset wijzigingen op decision status.
- * Onderdeel van het decision cockpit.
+ * Shows impact of recent asset changes on decision status.
+ * Part of the decision cockpit.
  */
 
 import React from 'react';
@@ -18,12 +18,12 @@ interface DecisionImpactPanelProps {
 export function DecisionImpactPanel({ className }: DecisionImpactPanelProps) {
   const { getNotifications, store } = useChangeImpact();
 
-  // Haal relevante impact analyses op (laatste 5)
+  // Get relevant impact analyses (last 5)
   const recentImpacts = store.impactAnalyses
     .filter(ia => ia.decisionImpact.impactLevel !== 'none')
     .slice(0, 5);
 
-  // Haal ongelezen notificaties op
+  // Get unread notifications
   const notifications = getNotifications('decision-status').filter(n => !n.seen);
 
   if (recentImpacts.length === 0 && notifications.length === 0) {
@@ -35,10 +35,10 @@ export function DecisionImpactPanel({ className }: DecisionImpactPanelProps) {
       {/* Header */}
       <div className="flex items-center gap-2">
         <Activity className="w-4 h-4 text-slate-600" />
-        <h3 className="font-medium text-slate-900">Recente wijzigingen</h3>
+        <h3 className="font-medium text-slate-900">Recent changes</h3>
         {notifications.length > 0 && (
           <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
-            {notifications.length} nieuw
+            {notifications.length} new
           </span>
         )}
       </div>
@@ -50,7 +50,7 @@ export function DecisionImpactPanel({ className }: DecisionImpactPanelProps) {
         <div className="flex items-center gap-2 p-4 bg-slate-50 border border-slate-200 rounded-lg">
           <AlertCircle className="w-4 h-4 text-slate-400" />
           <p className="text-sm text-slate-600">
-            Geen recente wijzigingen met impact op beslissingen
+            No recent changes with impact on decisions
           </p>
         </div>
       )}

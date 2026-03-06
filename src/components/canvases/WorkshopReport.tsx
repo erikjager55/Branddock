@@ -41,7 +41,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
   
   // Executive Summary state
   const [executiveSummary, setExecutiveSummary] = useState(
-    'De workshop resulteerde in een helder gedefinieerd Golden Circle framework dat de kern van de organisatie vastlegt. Het team van 8 stakeholders bereikte consensus over het doel (WHY), de aanpak (HOW), en het aanbod (WHAT). De samenwerking leidde tot waardevolle inzichten over mensgerichte technologie als kernonderscheid en empowerment als primaire doelstelling.'
+    'The workshop resulted in a clearly defined Golden Circle framework that captures the core of the organization. The team of 8 stakeholders reached consensus on the purpose (WHY), the approach (HOW), and the offering (WHAT). The collaboration led to valuable insights about human-centered technology as a core differentiator and empowerment as the primary goal.'
   );
   const [editingSummary, setEditingSummary] = useState(false);
   const [tempSummary, setTempSummary] = useState('');
@@ -186,8 +186,8 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                   <FileText className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <CardTitle>AI Gegenereerd Rapport</CardTitle>
-                  <CardDescription>Gebaseerd op workshop uitkomsten en participant input</CardDescription>
+                  <CardTitle>AI Generated Report</CardTitle>
+                  <CardDescription>Based on workshop outcomes and participant input</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -259,7 +259,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                   <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                     <Lightbulb className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <h3 className="font-semibold text-lg">Belangrijkste Bevindingen</h3>
+                  <h3 className="font-semibold text-lg">Key Findings</h3>
                 </div>
                 <div className="grid gap-4">
                   {insights.map((insight, index) => (
@@ -353,7 +353,7 @@ export function WorkshopReport({ isLocked, onLockToggle }: WorkshopReportProps) 
                   <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
                     <TrendingUp className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                   </div>
-                  <h3 className="font-semibold text-lg">Strategische Aanbevelingen</h3>
+                  <h3 className="font-semibold text-lg">Strategic Recommendations</h3>
                 </div>
                 <div className="space-y-3">
                   {nextSteps.map((step, index) => (

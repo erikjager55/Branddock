@@ -13,7 +13,7 @@ export async function GET() {
 
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const [total, activated, newThisWeek, sourcesHealthy] = await Promise.all([
+  const [total, activated, newThisWeek, aiResearched] = await Promise.all([
     prisma.detectedTrend.count({
       where: { workspaceId, isDismissed: false },
     }),
@@ -23,8 +23,8 @@ export async function GET() {
     prisma.detectedTrend.count({
       where: { workspaceId, createdAt: { gte: oneWeekAgo } },
     }),
-    prisma.trendSource.count({
-      where: { workspaceId, status: 'HEALTHY', isActive: true },
+    prisma.detectedTrend.count({
+      where: { workspaceId, detectionSource: 'AI_RESEARCH' },
     }),
   ]);
 
@@ -32,6 +32,6 @@ export async function GET() {
     total,
     activated,
     newThisWeek,
-    sourcesHealthy,
+    aiResearched,
   });
 }

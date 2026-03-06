@@ -25,6 +25,7 @@ const CATEGORY_CONFIG: Record<AssetCategory, CategoryConfig> = {
   NARRATIVE:      { variant: 'info',    label: 'Narrative' },
   FOUNDATION:     { variant: 'default', label: 'Foundation' },
   CULTURE:        { variant: 'warning', label: 'Culture' },
+  ESG:            { variant: 'teal',    label: 'ESG' },
 };
 
 // ─── Props ───────────────────────────────────────────────

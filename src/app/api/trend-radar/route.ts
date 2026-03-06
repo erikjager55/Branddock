@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     prisma.detectedTrend.findMany({
       where: where as never,
       include: {
-        trendSource: { select: { id: true, name: true, url: true } },
+        researchJob: { select: { id: true, query: true } },
         activatedBy: { select: { id: true, name: true } },
       },
       orderBy: { [sortBy]: sortOrder },

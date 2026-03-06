@@ -1,8 +1,8 @@
 /**
  * Campaign Impact Notification
  * 
- * Subtiele melding voor lopende campagnes dat er nieuwere strategische input beschikbaar is.
- * Biedt optie om te herberekenen, maar doet NOOIT automatisch updates.
+ * Subtle notification for active campaigns that newer strategic input is available.
+ * Offers option to recalculate, but NEVER performs automatic updates.
  */
 
 import React, { useState } from 'react';
@@ -35,7 +35,7 @@ export function CampaignImpactNotification({
     onDismiss?.();
   };
 
-  // Groepeer per asset
+  // Group per asset
   const affectedAssets = impactAnalyses.map(ia => ia.change.assetTitle);
   const uniqueAssets = [...new Set(affectedAssets)];
 
@@ -52,7 +52,7 @@ export function CampaignImpactNotification({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-2">
             <h4 className="font-medium text-slate-900">
-              Nieuwere strategische input beschikbaar
+              Newer strategic input available
             </h4>
             <button
               onClick={handleDismiss}
@@ -65,18 +65,18 @@ export function CampaignImpactNotification({
           <p className="text-sm text-slate-700 mb-3">
             {uniqueAssets.length === 1 ? (
               <>
-                Het asset <span className="font-medium">{uniqueAssets[0]}</span> is geüpdatet 
-                met nieuw onderzoek sinds deze campagne is geconfigureerd.
+                The asset <span className="font-medium">{uniqueAssets[0]}</span> has been updated
+                with new research since this campaign was configured.
               </>
             ) : (
               <>
-                Er zijn {uniqueAssets.length} assets geüpdatet met nieuw onderzoek sinds deze 
-                campagne is geconfigureerd.
+                {uniqueAssets.length} assets have been updated with new research since this
+                campaign was configured.
               </>
             )}
           </p>
 
-          {/* Lijst van updates */}
+          {/* List of updates */}
           <div className="space-y-1.5 mb-3">
             {impactAnalyses.slice(0, 3).map((analysis) => (
               <div 
@@ -89,7 +89,7 @@ export function CampaignImpactNotification({
             ))}
             {impactAnalyses.length > 3 && (
               <div className="text-sm text-slate-600 pl-4">
-                +{impactAnalyses.length - 3} meer wijziging(en)
+                +{impactAnalyses.length - 3} more change(s)
               </div>
             )}
           </div>
@@ -101,7 +101,7 @@ export function CampaignImpactNotification({
                 className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
-                Herberekenen met nieuwe input
+                Recalculate with new input
               </button>
             )}
 
@@ -109,7 +109,7 @@ export function CampaignImpactNotification({
               onClick={handleDismiss}
               className="text-sm text-slate-600 hover:text-slate-700"
             >
-              Later bekijken
+              Review later
             </button>
           </div>
         </div>
@@ -119,7 +119,7 @@ export function CampaignImpactNotification({
 }
 
 /**
- * Compacte versie voor in de configure stap
+ * Compact version for the configure step
  */
 interface CompactCampaignImpactProps {
   impactCount: number;
@@ -143,14 +143,14 @@ export function CompactCampaignImpact({
     )}>
       <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
       <p className="text-sm text-slate-700 flex-1">
-        {impactCount} asset{impactCount > 1 ? 's hebben' : ' heeft'} nieuwe strategische input
+        {impactCount} asset{impactCount > 1 ? 's have' : ' has'} new strategic input
       </p>
       {onViewDetails && (
         <button
           onClick={onViewDetails}
           className="text-sm text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap"
         >
-          Bekijk details
+          View details
         </button>
       )}
     </div>

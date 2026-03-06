@@ -1,15 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Edit3, Save, X, ExternalLink } from "lucide-react";
+import { ArrowLeft, Edit3, Save, X, ExternalLink, Download, Trash2 } from "lucide-react";
 import { Button, SkeletonCard, Select } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
 import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
 import { VersionPill } from "@/components/versioning/VersionPill";
 import { useLockState } from "@/hooks/useLockState";
-import { useLockVisibility } from "@/hooks/useLockVisibility";
 import { useQueryClient } from "@tanstack/react-query";
-import { useProductDetail, useUpdateProduct, useUnlinkPersona, useProductPersonas, productKeys } from "../../hooks";
+import { useProductDetail, useUpdateProduct, useDeleteProduct, useUnlinkPersona, useProductPersonas, productKeys } from "../../hooks";
 import {
   SOURCE_BADGES,
   STATUS_BADGES,
@@ -29,16 +28,19 @@ import { AddImageModal } from "./AddImageModal";
 interface ProductDetailPageProps {
   productId: string;
   onBack: () => void;
+  onNavigate?: (section: string) => void;
 }
 
 export function ProductDetailPage({
   productId,
   onBack,
+  onNavigate,
 }: ProductDetailPageProps) {
   const { data: product, isLoading } = useProductDetail(productId);
   const { data: personasData } = useProductPersonas(productId);
   const unlinkPersona = useUnlinkPersona(productId);
   const updateProduct = useUpdateProduct(productId);
+  const deleteProduct = useDeleteProduct(productId);
   const qc = useQueryClient();
   const [isPersonaSelectorOpen, setIsPersonaSelectorOpen] = useState(false);
   const [isAddImageOpen, setIsAddImageOpen] = useState(false);
@@ -53,9 +55,11 @@ export function ProductDetailPage({
       lockedAt: product?.lockedAt ?? null,
       lockedBy: product?.lockedBy ?? null,
     },
+    onLockChange: () => {
+      qc.invalidateQueries({ queryKey: productKeys.detail(productId) });
+      qc.invalidateQueries({ queryKey: productKeys.list() });
+    },
   });
-  const visibility = useLockVisibility(lock.isLocked);
-
   // Edit state
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -109,6 +113,62 @@ export function ProductDetailPage({
     setSaveError(null);
   };
 
+  const handleDownload = () => {
+    if (!product) return;
+    const categoryLabel = CATEGORY_OPTIONS.find((o) => o.value === product.category)?.label ?? product.category;
+    const lines: string[] = [
+      product.name,
+      "=".repeat(product.name.length),
+      "",
+    ];
+    if (categoryLabel) lines.push(`Category: ${categoryLabel}`);
+    if (product.source) lines.push(`Source: ${SOURCE_BADGES[product.source]?.label ?? product.source}`);
+    if (product.status) lines.push(`Status: ${STATUS_BADGES[product.status]?.label ?? product.status}`);
+    if (product.sourceUrl) lines.push(`Source URL: ${product.sourceUrl}`);
+    lines.push("");
+
+    if (product.description) {
+      lines.push("Description", "-".repeat(11), product.description, "");
+    }
+    if (product.pricingModel) {
+      lines.push("Pricing", "-".repeat(7));
+      lines.push(`Model: ${product.pricingModel}`);
+      if (product.pricingDetails) lines.push(`Details: ${product.pricingDetails}`);
+      lines.push("");
+    }
+    if (product.features.length > 0) {
+      lines.push("Features & Specifications", "-".repeat(25));
+      product.features.forEach((f) => lines.push(`- ${f}`));
+      lines.push("");
+    }
+    if (product.benefits.length > 0) {
+      lines.push("Benefits", "-".repeat(8));
+      product.benefits.forEach((b, i) => lines.push(`${i + 1}. ${b}`));
+      lines.push("");
+    }
+    if (product.useCases.length > 0) {
+      lines.push("Use Cases", "-".repeat(9));
+      product.useCases.forEach((u, i) => lines.push(`${i + 1}. ${u}`));
+      lines.push("");
+    }
+
+    const linked = product.linkedPersonas ?? personasData?.personas?.map((p) => ({ id: p.id, name: p.name, avatarUrl: p.avatarUrl })) ?? [];
+    if (linked.length > 0) {
+      lines.push("Target Audience", "-".repeat(15));
+      linked.forEach((p) => lines.push(`- ${p.name}`));
+      lines.push("");
+    }
+
+    const slug = product.slug ?? product.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${slug}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (isLoading) {
     return (
       <PageShell maxWidth="5xl">
@@ -156,6 +216,18 @@ export function ProductDetailPage({
 
   const handleRemovePersona = (personaId: string) => {
     unlinkPersona.mutate(personaId);
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
+    try {
+      await deleteProduct.mutateAsync();
+      // Wipe all product list caches so the list fetches fresh data (no stale entry)
+      qc.removeQueries({ queryKey: productKeys.list() });
+      onBack();
+    } catch {
+      // Stay on page if delete fails
+    }
   };
 
   const canEdit = isEditing && lock.canEdit;
@@ -263,15 +335,34 @@ export function ProductDetailPage({
                 </Button>
               </>
             ) : (
-              <Button
-                data-testid="product-edit-button"
-                variant="secondary"
-                icon={Edit3}
-                onClick={() => setIsEditing(true)}
-                disabled={!lock.canEdit}
-              >
-                Edit
-              </Button>
+              <>
+                <Button
+                  variant="ghost"
+                  icon={Download}
+                  onClick={handleDownload}
+                >
+                  Download
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  icon={Trash2}
+                  onClick={handleDelete}
+                  isLoading={deleteProduct.isPending}
+                  disabled={lock.isLocked}
+                >
+                  Delete
+                </Button>
+                <Button
+                  data-testid="product-edit-button"
+                  variant="secondary"
+                  icon={Edit3}
+                  onClick={() => setIsEditing(true)}
+                  disabled={!lock.canEdit}
+                >
+                  Edit
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -319,7 +410,7 @@ export function ProductDetailPage({
               </div>
             </div>
           </div>
-        ) : (product.description || product.pricingModel) ? (
+        ) : (
           <LockOverlay isLocked={lock.isLocked}>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <DescriptionCard description={product.description} />
@@ -329,42 +420,20 @@ export function ProductDetailPage({
               />
             </div>
           </LockOverlay>
-        ) : visibility.showEmptySections ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <DescriptionCard description={product.description} />
-            <PricingModelCard
-              pricingModel={product.pricingModel}
-              pricingDetails={product.pricingDetails}
-            />
-          </div>
-        ) : null}
-
-        {/* 2. Product Images */}
-        {((product.images ?? []).length > 0 || canEdit || visibility.showEmptySections) && (
-          <LockOverlay isLocked={lock.isLocked}>
-            <ProductImagesSection
-              images={product.images ?? []}
-              productId={productId}
-              isEditing={canEdit}
-              onAddImage={() => setIsAddImageOpen(true)}
-            />
-          </LockOverlay>
         )}
 
-        {/* 3. Features & Specifications */}
+        {/* 2. Features & Specifications */}
         {canEdit ? (
           <FeaturesSpecsSection
             features={editFeatures}
             isEditing
             onChange={setEditFeatures}
           />
-        ) : product.features.length > 0 ? (
+        ) : (
           <LockOverlay isLocked={lock.isLocked}>
             <FeaturesSpecsSection features={product.features} />
           </LockOverlay>
-        ) : visibility.showEmptySections ? (
-          <FeaturesSpecsSection features={product.features} />
-        ) : null}
+        )}
 
         {/* 3. Benefits */}
         {canEdit ? (
@@ -373,22 +442,19 @@ export function ProductDetailPage({
             isEditing
             onChange={setEditBenefits}
           />
-        ) : product.benefits.length > 0 ? (
+        ) : (
           <LockOverlay isLocked={lock.isLocked}>
             <BenefitsSection benefits={product.benefits} />
           </LockOverlay>
-        ) : visibility.showEmptySections ? (
-          <BenefitsSection benefits={product.benefits} />
-        ) : null}
+        )}
 
         {/* 4. Target Audience (personas) */}
-        <LockOverlay isLocked={lock.isLocked}>
-          <TargetAudienceSection
-            personas={personas}
-            onAdd={() => setIsPersonaSelectorOpen(true)}
-            onRemove={handleRemovePersona}
-          />
-        </LockOverlay>
+        <TargetAudienceSection
+          personas={personas}
+          onAdd={() => setIsPersonaSelectorOpen(true)}
+          onRemove={handleRemovePersona}
+          isLocked={lock.isLocked}
+        />
 
         {/* 5. Use Cases */}
         {canEdit ? (
@@ -397,13 +463,20 @@ export function ProductDetailPage({
             isEditing
             onChange={setEditUseCases}
           />
-        ) : product.useCases.length > 0 ? (
+        ) : (
           <LockOverlay isLocked={lock.isLocked}>
             <UseCasesSection useCases={product.useCases} />
           </LockOverlay>
-        ) : visibility.showEmptySections ? (
-          <UseCasesSection useCases={product.useCases} />
-        ) : null}
+        )}
+
+        {/* 6. Product Images */}
+        <ProductImagesSection
+          images={product.images ?? []}
+          productId={productId}
+          isEditing={canEdit}
+          isLocked={lock.isLocked}
+          onAddImage={() => setIsAddImageOpen(true)}
+        />
 
         {/* Add Image Modal */}
         <AddImageModal
@@ -418,6 +491,9 @@ export function ProductDetailPage({
           onClose={() => setIsPersonaSelectorOpen(false)}
           productId={productId}
           linkedPersonaIds={linkedPersonaIds}
+          onNavigateToCreatePersona={
+            onNavigate ? () => onNavigate("persona-create") : undefined
+          }
         />
 
         {/* Lock Confirm Dialog */}

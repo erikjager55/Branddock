@@ -27,10 +27,10 @@ export async function POST(
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
     }
 
-    // Generate unique slug
+    // Generate unique slug within workspace
     let copySlug = `${source.slug}-copy`;
     let counter = 1;
-    while (await prisma.brandAsset.findUnique({ where: { slug: copySlug } })) {
+    while (await prisma.brandAsset.findFirst({ where: { slug: copySlug, workspaceId } })) {
       counter++;
       copySlug = `${source.slug}-copy-${counter}`;
     }

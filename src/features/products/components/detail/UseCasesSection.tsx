@@ -74,7 +74,7 @@ export function UseCasesSection({
             </button>
           </div>
         </div>
-      ) : (
+      ) : useCases.length > 0 ? (
         <div className="space-y-2">
           {useCases.map((useCase, idx) => (
             <p key={idx} className="text-sm text-gray-600">
@@ -82,6 +82,8 @@ export function UseCasesSection({
             </p>
           ))}
         </div>
+      ) : (
+        <p className="text-sm text-gray-400">No use cases added yet</p>
       )}
     </div>
   );

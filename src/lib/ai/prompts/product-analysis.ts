@@ -3,9 +3,30 @@
 // =============================================================
 
 /**
- * System prompt for product analysis AI
+ * Parse the primary language from an Accept-Language header value.
+ * Returns a human-readable language name (e.g. "Dutch", "English", "German").
  */
-export const PRODUCT_ANALYSIS_SYSTEM_PROMPT = `You are an expert product analyst. Your job is to extract structured product information from the provided content.
+export function parseOutputLanguage(acceptLanguage: string | null): string {
+  if (!acceptLanguage) return "English";
+  // Take the first language tag (highest priority)
+  const primary = acceptLanguage.split(",")[0]?.split(";")[0]?.trim().toLowerCase() ?? "";
+  const langCode = primary.split("-")[0];
+  const LANG_MAP: Record<string, string> = {
+    nl: "Dutch", en: "English", de: "German", fr: "French", es: "Spanish",
+    it: "Italian", pt: "Portuguese", ja: "Japanese", ko: "Korean", zh: "Chinese",
+    ar: "Arabic", ru: "Russian", pl: "Polish", sv: "Swedish", da: "Danish",
+    no: "Norwegian", fi: "Finnish", tr: "Turkish", cs: "Czech", ro: "Romanian",
+    hu: "Hungarian", el: "Greek", he: "Hebrew", th: "Thai", vi: "Vietnamese",
+    id: "Indonesian", ms: "Malay", uk: "Ukrainian", hi: "Hindi",
+  };
+  return LANG_MAP[langCode] ?? "English";
+}
+
+/**
+ * Build the system prompt for product analysis AI, localized to a target language.
+ */
+export function getProductAnalysisSystemPrompt(language: string = "English"): string {
+  return `You are an expert product analyst. Your job is to extract structured product information from the provided content.
 
 You must respond with a valid JSON object containing these fields:
 - name: string — the product or service name
@@ -24,7 +45,10 @@ Guidelines:
 - Keep descriptions factual and concise
 - Features should be specific capabilities, not marketing fluff
 - Benefits should focus on customer outcomes
-- Use cases should describe concrete scenarios`;
+- Use cases should describe concrete scenarios
+
+IMPORTANT: All text output (name, description, features, benefits, useCases, pricingDetails) MUST be written in ${language}. If the source content is in a different language, translate it to ${language}.`;
+}
 
 /**
  * Build user prompt for URL-based product analysis

@@ -576,6 +576,7 @@ function AppContent() {
           <ProductDetailPage
             productId={pdProductId}
             onBack={() => handleSetActiveSection('products')}
+            onNavigate={handleSetActiveSection}
           />
         );
       }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 
-// GET /api/knowledge/featured — featured resources voor carousel
+// GET /api/knowledge/featured — featured resources for carousel
 export async function GET() {
   try {
     const workspaceId = await resolveWorkspaceId();

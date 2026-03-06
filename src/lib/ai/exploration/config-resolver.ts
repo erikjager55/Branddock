@@ -205,26 +205,27 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
   if (itemType === 'brand_asset' && itemSubType === 'social-relevancy') {
     return [
       { key: 'purpose_clarity', title: 'Purpose Clarity', icon: 'Compass', question: 'Why does your organization exist beyond making profit?' },
-      { key: 'mens', title: 'Impact op Mens', icon: 'Heart', question: 'How do your products or services contribute to personal growth and well-being?' },
-      { key: 'milieu', title: 'Impact op Milieu', icon: 'Leaf', question: 'What steps has your organization taken toward sustainability?' },
-      { key: 'maatschappij', title: 'Impact op Maatschappij', icon: 'Globe', question: 'How does your brand help improve society?' },
+      { key: 'mens', title: 'Impact on People', icon: 'Heart', question: 'How do your products or services contribute to personal growth and well-being?' },
+      { key: 'milieu', title: 'Impact on Environment', icon: 'Leaf', question: 'What steps has your organization taken toward sustainability?' },
+      { key: 'maatschappij', title: 'Impact on Society', icon: 'Globe', question: 'How does your brand help improve society?' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'purpose-statement') {
     return [
-      { key: 'origin_belief', title: 'Oorsprong & Overtuiging', icon: 'BookOpen', question: 'Tell me the story behind your organization. Why was it founded, and what fundamental problem or belief drove that decision?' },
-      { key: 'impact_exploration', title: 'Impact Verkenning', icon: 'Zap', question: 'Describe a moment when your organization was at its best — what happened, and why was that special?' },
-      { key: 'mechanism', title: 'Mechanisme & Aanpak', icon: 'Cog', question: "We've explored your 'why'. Now the 'how': through what unique mechanism or approach do you deliver this impact? What do you do differently from the rest?" },
+      { key: 'origin_belief', title: 'Origin & Belief', icon: 'BookOpen', question: 'Tell me the story behind your organization. Why was it founded, and what fundamental problem or belief drove that decision?' },
+      { key: 'impact_exploration', title: 'Impact Exploration', icon: 'Zap', question: 'Describe a moment when your organization was at its best — what happened, and why was that special?' },
+      { key: 'mechanism', title: 'Mechanism & Approach', icon: 'Cog', question: "We've explored your 'why'. Now the 'how': through what unique mechanism or approach do you deliver this impact? What do you do differently from the rest?" },
       { key: 'pressure_test', title: 'Pressure Test', icon: 'Shield', question: 'Imagine your organization ceased to exist tomorrow. What would the world lose? What gap would remain that nobody else can fill?' },
-      { key: 'articulation', title: 'Articulatie & Formulering', icon: 'Target', question: "Based on everything we've discussed — how would you summarize your purpose in one powerful sentence? Think: clear, emotional, and actionable." },
+      { key: 'articulation', title: 'Articulation & Formulation', icon: 'Target', question: "Based on everything we've discussed — how would you summarize your purpose in one powerful sentence? Think: clear, emotional, and actionable." },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'golden-circle') {
     return [
-      { key: 'why', title: 'WHY — Core Belief', icon: 'Heart', question: 'Why does your organization exist? What is the fundamental belief that drives everything you do?' },
-      { key: 'how', title: 'HOW — Unique Approach', icon: 'Settings', question: 'How do you bring your WHY to life? What processes, values, or methods make your approach unique?' },
-      { key: 'what', title: 'WHAT — Offering', icon: 'Package', question: 'What exactly do you offer? How do your products or services prove your WHY and HOW?' },
-      { key: 'coherence', title: 'Inside-Out Coherence', icon: 'Target', question: 'How consistently does your organization communicate from WHY → HOW → WHAT? Where are the gaps?' },
+      { key: 'origin_story', title: 'Origin & Drive', icon: 'BookOpen', question: 'Tell me the story of your organization. Not what you do, but what drove you to start. What moment or belief was the spark?' },
+      { key: 'why_deepdive', title: 'WHY — Core Belief', icon: 'Heart', question: 'Based on your story, I hear a deeper belief. Let\'s explore it: if you strip away all products and services, what remains? What do you fundamentally believe?' },
+      { key: 'how_differentiation', title: 'HOW — Differentiating Approach', icon: 'Compass', question: 'Your WHY is clear. Now the HOW: what principles, values, or methods make your approach different from the rest? What are the guiding principles that drive your daily actions?' },
+      { key: 'what_proof', title: 'WHAT — Proof & Offering', icon: 'Package', question: 'Your WHAT are the tangible proofs of your WHY. What products, services, or initiatives demonstrate that you truly live by your belief?' },
+      { key: 'inside_out_test', title: 'Inside-Out Test', icon: 'Target', question: 'The power of the Golden Circle lies in its coherence. If a customer or employee had to guess your WHY based solely on your products — would they arrive at what you just told me?' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'brand-essence') {

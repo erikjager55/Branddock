@@ -51,7 +51,7 @@ export function AIGeneratedReport({
 
   // Generate report content based on answers
   const generateExecutiveSummary = () => {
-    return `Op basis van de opgegeven informatie blijkt dat ${answers.brandPurpose || 'uw organisatie'} zich richt op ${answers.targetAudience || 'een specifieke doelgroep'}. De unieke waardepropositie ligt in ${answers.uniqueValue || 'de differentiërende aanpak'}, wat een duidelijk onderscheid creëert ten opzichte van de competitie. Met een focus op ${answers.brandValues || 'kernwaarden'} en een visie op ${answers.futureVision || 'toekomstige groei'}, is er een solide basis voor strategische merkpositionering.`;
+    return `Based on the provided information, ${answers.brandPurpose || 'your organization'} focuses on ${answers.targetAudience || 'a specific target audience'}. The unique value proposition lies in ${answers.uniqueValue || 'the differentiating approach'}, which creates a clear distinction from the competition. With a focus on ${answers.brandValues || 'core values'} and a vision for ${answers.futureVision || 'future growth'}, there is a solid foundation for strategic brand positioning.`;
   };
 
   const generateKeyFindings = () => {
@@ -60,8 +60,8 @@ export function AIGeneratedReport({
     if (answers.brandPurpose) {
       findings.push({
         icon: Target,
-        title: 'Merkdoelstelling',
-        description: `De kern van het merk ligt in ${answers.brandPurpose}. Dit vormt de basis voor alle communicatie en merkexpressie.`,
+        title: 'Brand Purpose',
+        description: `The core of the brand lies in ${answers.brandPurpose}. This forms the foundation for all communication and brand expression.`,
         color: 'text-blue-600',
         bgColor: 'bg-blue-50'
       });
@@ -70,8 +70,8 @@ export function AIGeneratedReport({
     if (answers.targetAudience) {
       findings.push({
         icon: Users,
-        title: 'Doelgroep Definitie',
-        description: `Primaire focus op ${answers.targetAudience}. Deze doelgroep bepaalt de tone of voice en kanaalstrategie.`,
+        title: 'Target Audience Definition',
+        description: `Primary focus on ${answers.targetAudience}. This target audience determines the tone of voice and channel strategy.`,
         color: 'text-purple-600',
         bgColor: 'bg-purple-50'
       });
@@ -80,8 +80,8 @@ export function AIGeneratedReport({
     if (answers.uniqueValue) {
       findings.push({
         icon: Sparkles,
-        title: 'Unieke Waarde',
-        description: `Onderscheidend vermogen door ${answers.uniqueValue}. Dit is het centrale differentiatiepunt in de markt.`,
+        title: 'Unique Value',
+        description: `Distinctive capability through ${answers.uniqueValue}. This is the central differentiation point in the market.`,
         color: 'text-amber-600',
         bgColor: 'bg-amber-50'
       });
@@ -90,8 +90,8 @@ export function AIGeneratedReport({
     if (answers.customerChallenge) {
       findings.push({
         icon: Lightbulb,
-        title: 'Klantuitdaging',
-        description: `Lost op: ${answers.customerChallenge}. Dit vormt de basis voor relevante oplossingen en messaging.`,
+        title: 'Customer Challenge',
+        description: `Solves: ${answers.customerChallenge}. This forms the foundation for relevant solutions and messaging.`,
         color: 'text-green-600',
         bgColor: 'bg-green-50'
       });
@@ -100,8 +100,8 @@ export function AIGeneratedReport({
     if (answers.competitiveLandscape) {
       findings.push({
         icon: TrendingUp,
-        title: 'Marktpositie',
-        description: `In een landschap waar ${answers.competitiveLandscape}, biedt dit strategische kansen voor differentiatie.`,
+        title: 'Market Position',
+        description: `In a landscape where ${answers.competitiveLandscape}, this offers strategic opportunities for differentiation.`,
         color: 'text-orange-600',
         bgColor: 'bg-orange-50'
       });
@@ -114,19 +114,19 @@ export function AIGeneratedReport({
     const recommendations = [];
 
     if (answers.brandPurpose) {
-      recommendations.push('Integreer de merkdoelstelling in alle touchpoints en communicatie-uitingen');
+      recommendations.push('Integrate the brand purpose into all touchpoints and communication efforts');
     }
     if (answers.targetAudience) {
-      recommendations.push('Ontwikkel persona\'s en customer journeys voor de gedefinieerde doelgroep');
+      recommendations.push('Develop personas and customer journeys for the defined target audience');
     }
     if (answers.uniqueValue) {
-      recommendations.push('Creëer content die de unieke waarde tastbaar en begrijpelijk maakt');
+      recommendations.push('Create content that makes the unique value tangible and understandable');
     }
     if (answers.customerChallenge) {
-      recommendations.push('Bouw thought leadership rond oplossingen voor de klantuitdaging');
+      recommendations.push('Build thought leadership around solutions for the customer challenge');
     }
     if (answers.brandValues) {
-      recommendations.push(`Vertaal de waarden (${answers.brandValues}) naar concrete gedragingen en besliscriteria`);
+      recommendations.push(`Translate the values (${answers.brandValues}) into concrete behaviors and decision criteria`);
     }
 
     return recommendations;
@@ -143,9 +143,9 @@ export function AIGeneratedReport({
           <FileText className="h-5 w-5 text-white" />
         </div>
         <div>
-          <h2 className="text-xl font-semibold text-[#1F2937]">AI Gegenereerd Rapport</h2>
+          <h2 className="text-xl font-semibold text-[#1F2937]">AI Generated Report</h2>
           <p className="text-sm text-muted-foreground">
-            Op basis van {Object.keys(answers).filter(key => answers[key as keyof typeof answers]).length} beantwoorde vragen
+            Based on {Object.keys(answers).filter(key => answers[key as keyof typeof answers]).length} answered questions
           </p>
         </div>
       </div>
@@ -181,7 +181,7 @@ export function AIGeneratedReport({
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-[#1FD1B2]" />
-              Belangrijkste Bevindingen
+              Key Findings
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -220,7 +220,7 @@ export function AIGeneratedReport({
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-[#5252E3]" />
-              Strategische Aanbevelingen
+              Strategic Recommendations
             </CardTitle>
           </CardHeader>
           <CardContent>
