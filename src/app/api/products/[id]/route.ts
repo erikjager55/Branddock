@@ -5,6 +5,8 @@ import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
 import { createVersion } from "@/lib/versioning";
 import { buildProductSnapshot } from "@/lib/snapshot-builders";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 
 // ─── Zod Schema for PATCH ───────────────────────────────────
 
@@ -153,6 +155,10 @@ export async function PATCH(
       console.error('[Product version snapshot failed]', versionError);
     }
 
+    // Invalidate server-side cache so the list reflects the update
+    invalidateCache(cacheKeys.prefixes.products(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error("[PATCH /api/products/:id]", error);
@@ -186,6 +192,10 @@ export async function DELETE(
 
     // ProductPersona records cascade-delete via onDelete: Cascade
     await prisma.product.delete({ where: { id } });
+
+    // Invalidate server-side cache so the next GET returns fresh data
+    invalidateCache(cacheKeys.prefixes.products(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json({ deleted: true });
   } catch (error) {

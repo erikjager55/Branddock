@@ -222,8 +222,9 @@ export function ProductDetailPage({
     if (!window.confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
     try {
       await deleteProduct.mutateAsync();
-      // Wipe all product list caches so the list fetches fresh data (no stale entry)
-      qc.removeQueries({ queryKey: productKeys.list() });
+      // Cancel inflight refetches (triggered by mutation's onSuccess), then wipe all product caches
+      await qc.cancelQueries({ queryKey: productKeys.all });
+      qc.removeQueries({ queryKey: productKeys.all });
       onBack();
     } catch {
       // Stay on page if delete fails

@@ -1,7 +1,7 @@
 # BRANDDOCK — Development Roadmap & TODO
 
 > Geprioriteerde gids voor alle openstaande ontwikkelstappen.
-> Laatst bijgewerkt: 5 maart 2026
+> Laatst bijgewerkt: 6 maart 2026
 
 ---
 
@@ -111,6 +111,32 @@ Geëvalueerd: `useBrandAssets()` heeft 26 consumers. Migratie vereist per-compon
 - [x] ErrorBoundary component beschikbaar via `src/components/shared/` barrel export (re-export van bestaande `src/components/ErrorBoundary.tsx`)
 - [x] Top-level ErrorBoundary in App.tsx wrapt hele applicatie
 - [ ] Per-page ErrorBoundary wrappers voor granulaire crash isolation (nice-to-have)
+
+### 1.11 Vaste Set Brand Assets per Workspace ✅
+
+Elke workspace krijgt automatisch 12 vaste brand assets (Branddock framework). Geen handmatig toevoegen/verwijderen.
+
+- [x] `src/lib/constants/canonical-brand-assets.ts` — single source of truth (12 assets, 4 research methods, weights)
+- [x] `prisma/schema.prisma` — AssetCategory enum (9 waarden incl. ESG), `@@unique([workspaceId, slug])`
+- [x] `src/types/brand-asset.ts` — ESG in AssetCategory union type
+- [x] `src/app/api/workspaces/route.ts` — auto-provisioning 12 assets + 48 research methods in $transaction
+- [x] `src/lib/auth.ts` — provisionNewUser() auto-provisioning bij registratie
+- [x] `prisma/seed.ts` — importeert canonical constant
+- [x] UI: Add Asset button + BrandAssetCreateModal verwijderd
+- [x] UI: Delete action + DeleteAssetDialog verwijderd
+- [x] Zustand stores opgeschoond (geen create/delete modal state)
+
+### 1.12 I18N: Codebase English Translation ✅
+
+Alle Nederlands in `src/` vertaald naar Engels (~80+ bestanden). Buiten scope: CLAUDE.md, TODO.md, PATTERNS.md, `docs/`, `prisma/seed.ts`.
+
+- [x] 5 parallelle vertaalagenten (~80+ bestanden)
+- [x] 3 review-rondes met telkens 2 onafhankelijke review-agenten
+- [x] TypeScript 0 errors na vertaling
+
+### 1.13 TypeScript Errors Opgelost ✅
+
+- [x] 3 pre-existing errors in `src/app/api/trend-radar/research/` en `src/lib/trend-radar/researcher.ts` (Prisma JSON type casting) — mee-opgelost in I18N commit
 
 ---
 
@@ -341,7 +367,7 @@ Go-live infrastructure.
 
 | Fase | Items | Status | Prioriteit |
 |------|-------|--------|------------|
-| 1. Technische Schuld | ~75 items | Niet gestart | Hoog — schoon eerst op |
+| 1. Technische Schuld | ~75 items | Grotendeels ✅ (1.1-1.13 done, 1.2/1.6 deferred) | Hoog — schoon eerst op |
 | 2. Production Infra | ~12 items | Niet gestart | Hoog — blokkeert deployment |
 | 3. AI Features | ~14 items | Niet gestart | Hoog — core waarde |
 | 4. Export | ~6 items | Niet gestart | Medium |

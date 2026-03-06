@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { createVersion } from "@/lib/versioning";
 import { buildProductSnapshot } from "@/lib/snapshot-builders";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 
 // PATCH /api/products/[id]/lock
 export async function PATCH(
@@ -65,6 +67,9 @@ export async function PATCH(
         console.error('[Product lock baseline snapshot failed]', versionError);
       }
     }
+
+    // Invalidate server-side cache so the list reflects lock state
+    invalidateCache(cacheKeys.prefixes.products(workspaceId));
 
     return NextResponse.json({
       isLocked: product.isLocked,

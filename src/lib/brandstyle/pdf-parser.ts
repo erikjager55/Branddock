@@ -1,9 +1,9 @@
 // =============================================================
 // PDF Parser — Extract text and brand data from PDF files
-// Uses pdf-parse v5+ (PDFParse class API)
+// Uses unpdf (server-safe, no worker needed)
 // =============================================================
 
-import { PDFParse } from 'pdf-parse';
+import { extractText, getMeta } from 'unpdf';
 
 export interface ParsedPdfData {
   fileName: string;
@@ -29,47 +29,32 @@ export async function parsePdf(
   buffer: Buffer,
   fileName: string
 ): Promise<ParsedPdfData> {
-  const parser = new PDFParse({ data: buffer });
+  const { text: fullText, totalPages } = await extractText(buffer, { mergePages: true });
 
+  let metadata: ParsedPdfData['metadata'] = { title: null, author: null, creator: null };
   try {
-    // getText() internally calls load() which is private
-    const textResult = await parser.getText();
-    const text = textResult.text || '';
-
-    // Get metadata
-    let metadata: { title: string | null; author: string | null; creator: string | null } = {
-      title: null,
-      author: null,
-      creator: null,
+    const meta = await getMeta(buffer);
+    const info = meta?.info as Record<string, unknown> | undefined;
+    metadata = {
+      title: (info?.Title as string) || null,
+      author: (info?.Author as string) || null,
+      creator: (info?.Creator as string) || null,
     };
-    try {
-      const info = await parser.getInfo();
-      metadata = {
-        title: info.info?.Title || null,
-        author: info.info?.Author || null,
-        creator: info.info?.Creator || null,
-      };
-    } catch {
-      // Metadata extraction can fail on some PDFs — not critical
-    }
-
-    const pageCount = textResult.pages?.length || 0;
-    const hexColors = extractHexFromText(text);
-    const fontMentions = extractFontMentionsFromText(text);
-
-    return {
-      fileName,
-      text: text.slice(0, 8000), // Limit for AI prompt
-      pageCount,
-      hexColors,
-      fontMentions,
-      metadata,
-    };
-  } finally {
-    await parser.destroy().catch(() => {
-      // Ignore cleanup errors
-    });
+  } catch {
+    // Metadata extraction can fail on some PDFs — not critical
   }
+
+  const hexColors = extractHexFromText(fullText);
+  const fontMentions = extractFontMentionsFromText(fullText);
+
+  return {
+    fileName,
+    text: fullText.slice(0, 8000), // Limit for AI prompt
+    pageCount: totalPages,
+    hexColors,
+    fontMentions,
+    metadata,
+  };
 }
 
 /**
@@ -98,13 +83,9 @@ function extractHexFromText(text: string): string[] {
 function extractFontMentionsFromText(text: string): string[] {
   const fontSet = new Set<string>();
 
-  // Common patterns in brand guidelines
   const patterns = [
-    // "Primary font: Inter" or "Font: Helvetica Neue"
     /(?:primary|secondary|heading|body|display)\s*(?:font|typeface|typography)\s*[:=]\s*["']?([A-Za-z][A-Za-z\s]{1,30}?)["']?\s*[\n,.;(]/gi,
-    // "Font family: Inter" or "Font-family: Open Sans"
     /font[-\s]?family\s*[:=]\s*["']?([A-Za-z][A-Za-z\s]{1,30}?)["']?\s*[\n,.;)]/gi,
-    // Well-known font names directly mentioned
     /\b(Inter|Roboto|Open Sans|Montserrat|Lato|Poppins|Raleway|Nunito|Playfair Display|Merriweather|Source Sans|Helvetica Neue|Helvetica|Arial|Futura|Avenir|Proxima Nova|DM Sans|Work Sans|IBM Plex|Manrope|Space Grotesk|Outfit|Sora|Plus Jakarta Sans)\b/gi,
   ];
 

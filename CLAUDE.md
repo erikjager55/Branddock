@@ -236,6 +236,8 @@ Elke gemigreerde module heeft een adapter die DB data mapt naar het bestaande mo
 ### API Conventions
 - All API responses must include loading and error state handling in consuming UI components
 - Use the existing API client helpers, never raw fetch calls in components
+- **Server-side cache invalidation**: Elke mutatie route (POST/PATCH/DELETE) MOET `invalidateCache(cacheKeys.prefixes.MODULE(workspaceId))` aanroepen na DB writes. Indien dashboard stats beïnvloed: ook `invalidateCache(cacheKeys.prefixes.dashboard(workspaceId))`. Cache: `src/lib/api/cache.ts` (in-memory Map, TTL 30s lists/60s details). Keys: `src/lib/api/cache-keys.ts`.
+- **PDF parsing**: Gebruik `unpdf` (server-safe, geen worker). NIET `pdf-parse` (v2 worker crash in Next.js, v1 readFileSync bug). Parser: `src/lib/brandstyle/pdf-parser.ts`.
 
 ## Sidebar Section IDs → Componenten
 Navigatie in de sidebar stuurt `setActiveSection(id)`. Mapping:
@@ -977,6 +979,8 @@ src/
 │   │   ├── campaign-adapter.ts
 │   │   ├── knowledge-adapter.ts
 │   │   ├── trend-adapter.ts
+│   │   ├── cache.ts                  ← In-memory server-side cache (globalThis Map, TTL, invalidateCache prefix wipe)
+│   │   ├── cache-keys.ts             ← Cache key builders per module (products, dashboard, etc.)
 │   │   ├── insights.ts                ← fetchInsights, createInsight, updateInsight, deleteInsight, sources
 │   │   ├── alignment.ts              ← fetchAlignmentOverview, startScan, fetchIssues, dismiss
 │   │   ├── knowledge.ts              ← + fetchFeaturedResources, toggleFavorite/Archive/Featured
@@ -1005,6 +1009,8 @@ src/
 │   │       ├── ai-caller.ts                  ← Generic AI caller (Anthropic + OpenAI + Google, singleton clients)
 │   │       ├── exploration-llm.ts            ← Multi-provider LLM client (Anthropic + Google)
 │   │       └── item-type-registry.ts         ← Registry per item type (persona, brand_asset)
+│   ├── brandstyle/
+│   │   └── pdf-parser.ts               ← PDF text extraction (unpdf, hex colors, font mentions, metadata)
 │   ├── products/
 │   │   └── url-scraper.ts               ← URL scraper (cheerio, SSRF bescherming + redirect check, image extractie)
 │   ├── catalogs/                        ← Product catalogs (statische configuratie)
@@ -1572,10 +1578,12 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 
 82. **TR: Trend Radar — compleet (vervangt Market Insights)** — Volledige vervanging van Market Insights door Trend Radar monitoring dashboard. **Fase 0 (Schema+Seed)**: 3 nieuwe Prisma modellen (TrendSource, DetectedTrend, TrendScanJob), 3 nieuwe enums (TrendSourceStatus, TrendDetectionSource, TrendScanStatus), InsightCategory enum bijgewerkt (CONSUMER_BEHAVIOR/TECHNOLOGY/MARKET_DYNAMICS/COMPETITIVE/REGULATORY), ImpactLevel +CRITICAL. Seed: 4 sources, 8 trends, 1 scan job. **Fase 1 (Backend)**: 14 API endpoints in 10 route files (`/api/trend-radar/` trends CRUD + activate/dismiss + sources CRUD + pause + scan start/progress/cancel + stats + manual), `src/lib/trend-radar/` (scanner.ts fire-and-forget met in-memory progress, content-differ.ts sha256, trend-analyzer.ts Gemini AI + dedup), `src/lib/ai/prompts/trend-analysis.ts`, cron route `/api/cron/trend-scan`. **Fase 2 (State)**: `trend-radar.types.ts` (8 interfaces), `trend-radar.api.ts` (18 fetch functies), 16 TanStack Query hooks + trendRadarKeys, useTrendRadarStore Zustand (tabs, filters, modals, scanJobId), `trend-radar-constants.ts`. **Fase 3 (Frontend)**: 20+ componenten: TrendRadarPage (4-tab dashboard), TrendRadarStats (4 StatCards), sources panel (SourcesPanel, SourceCard, AddSourceModal, EditSourceModal), feed panel (TrendFeedPanel, TrendFeedCard, TrendFilterBar), alerts panel (AlertsPanel, AlertCard), activation panel (ActivationPanel, ActivatedTrendCard), detail page (TrendDetailPage, TrendRelevanceCard, TrendSourceInfoCard, TrendActivationCard), scan modal (ScanProgressModal met polling), AddManualTrendModal. **Fase 4 (Integratie+Cleanup)**: ~40 oude Market Insights bestanden verwijderd (features/market-insights/, contexts/MarketInsightsContext, stores/useMarketInsightsStore, types/market-insight, lib/api/insights, lib/ai/prompts/market-research, app/api/insights/), cross-module updates (brand-context.ts, registry.ts, knowledge-context-fetcher.ts, dashboard, search, studio, campaigns, settings), routing (trends→TrendRadarPage, trend-detail→TrendDetailPage), design tokens (trend-radar module key), middleware cache rules bijgewerkt. **Review fixes**: 5 CRITICAL (Prisma enums sync, scan POST response unwrap, field naming, manual/sources POST unwrap), 7 WARNING (try-catch, filter logic, source filters+total, edit modal UX), ~7 MINOR (middleware, cache invalidation, relevance color thresholds, dashboard field rename, unused imports, type optionals). 2 review rondes, 0 openstaande issues. TypeScript 0 nieuwe errors.
 
+83. **FIX: Product Delete Instant + PDF Parser + Cache Invalidation** — Product delete was niet instant door ontbrekende server-side cache invalidation in `src/lib/api/cache.ts`. Fix: `invalidateCache(cacheKeys.prefixes.products(workspaceId))` + `invalidateCache(cacheKeys.prefixes.dashboard(workspaceId))` toegevoegd aan DELETE en PATCH handlers in `/api/products/[id]/route.ts`. Lock route (`/api/products/[id]/lock/route.ts`) had helemaal geen cache invalidation — toegevoegd. Client-side: `cancelQueries` + `removeQueries` met `productKeys.all` in handleDelete voor instant navigatie. PDF parser: `pdf-parse` vervangen door `unpdf@1.4.0` (pdf-parse v2 crashed door pdfjs-dist worker, v1 heeft readFileSync bug). `@types/pdf-parse` verwijderd. Code review: 2 subagent rondes, 4 WARNING + 2 MINOR gefixt, 0 openstaande issues. TypeScript 0 errors.
+
 ### ⚠️ TECHNISCHE SCHULD
 - **Adapter pattern** — tijdelijk, componenten moeten op termijn direct DB-model gebruiken
 - **mock-to-meta-adapter.ts** — reverse adapter (mock→API format) voor Brand Foundation. Verdwijnt wanneer context direct BrandAssetWithMeta levert.
-- **BrandAssetsViewSimple.tsx** — behouden als backup, niet gerenderd. Verwijderen na S1 stabilisatie.
+- **~~BrandAssetsViewSimple.tsx~~** — ✅ Verwijderd.
 - **`as any` casts** — ✅ Opgeruimd (47 → 0 in src/). Nog 146 `: any` type annotations in 68 bestanden (parameters/variabelen) — toekomstige pass.
 - **~~NEXT_PUBLIC_WORKSPACE_ID~~** — ✅ Volledig verwijderd uit code en .env bestanden.
 - **~~Hardcoded Tailwind colors~~** — ✅ BrandFoundationHeader en BrandAssetCard gemigreerd naar design tokens.
@@ -1583,7 +1591,7 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 - **S1 vs S2 AI systeem overlap** — Twee AI chat systemen voor brand assets (AIBrandAnalysisSession S1 + ExplorationSession S2). S1 kan op termijn deprecated worden wanneer S2 volledige feature parity heeft.
 - **ExplorationConfig hardcoded fallbacks** — System defaults in config-resolver.ts. Op termijn alle configs via DB seed beheren. **13 van 13 configs nu in DB** — fallbacks alleen nog relevant voor nieuwe item types.
 - **AI Exploration re-test na config wijziging** — Om opnieuw te testen na config-wijzigingen, moeten ExplorationSession + ExplorationMessage + BrandAssetResearchMethod (method: 'AI_EXPLORATION', status → 'AVAILABLE') gereset worden voor het betreffende asset. Alleen een nieuwe sessie pakt bijgewerkte config op.
-- **Lock/unlock inconsistentie** — Brand assets lock endpoint is toggle (flipt !isLocked), terwijl alle andere endpoints `{ locked: boolean }` body accepteren. Harmoniseren naar body-based approach.
+- **~~Lock/unlock inconsistentie~~** — ✅ Opgelost, endpoint gebruikt body-based `{ locked: boolean }`.
 
 ### 📋 ROADMAP (herzien 27 feb 2026)
 
@@ -1723,6 +1731,12 @@ Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 - I18N.1: ✅ Vertaling — ~80+ bestanden in `src/` vertaald van Nederlands naar Engels via 5 parallelle agenten. UI-strings (labels, buttons, placeholders, empty states, tooltips), JSDoc/comments, `nl-NL` locale → `en-US`, error/toast messages, API route comments.
 - I18N.2: ✅ Review — 3 review-rondes met telkens 2 onafhankelijke review-agenten. Ronde 1: 12 items gevonden + gefixt. Ronde 2: 3 items gevonden + gefixt. Ronde 3: 0 items — verificatie geslaagd.
 - I18N.scope: Buiten scope (bewust Nederlands): CLAUDE.md, TODO.md, PATTERNS.md, `docs/`, `prisma/seed.ts`
+
+**FBA. Vaste Set Brand Assets per Workspace ✅ VOLLEDIG**
+- FBA.1: ✅ Canonical constant — `src/lib/constants/canonical-brand-assets.ts` (12 assets, 4 research methods, weights)
+- FBA.2: ✅ Schema — AssetCategory enum (9 waarden incl. ESG), `@@unique([workspaceId, slug])` compound unique
+- FBA.3: ✅ Auto-provisioning — workspace creation (`workspaces/route.ts`) + user registratie (`auth.ts`) auto-creëren 12 assets + 48 research methods in $transaction
+- FBA.4: ✅ UI cleanup — Add Asset button/modal + Delete action/dialog verwijderd, stores opgeschoond
 
 **S10-S12. Production Ready**
 - S10: Stripe Billing (checkout, webhooks, plan enforcement, agency model)
