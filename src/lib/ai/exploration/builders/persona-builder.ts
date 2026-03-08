@@ -100,6 +100,7 @@ export const personaItemConfig: ItemTypeConfig = {
     return persona as unknown as Record<string, unknown> | null;
   },
 
+  /** @deprecated Not used by current flow — analyze/route.ts reads dimensions from config-resolver instead. */
   getDimensions(_item?: Record<string, unknown>) {
     return PERSONA_DIMENSIONS;
   },
@@ -108,13 +109,14 @@ export const personaItemConfig: ItemTypeConfig = {
     return buildPersonaContext(item);
   },
 
+  /** @deprecated Not used by current flow — analyze/route.ts builds intro via resolveTemplate() instead. */
   buildIntro(item) {
     const name = item.name as string;
     const tagline = item.tagline as string | null;
     return `Welcome to the AI Persona Analysis for **${name}**${tagline ? ` — ${tagline}` : ''}. I'll guide you through ${PERSONA_DIMENSIONS.length} key dimensions to build a comprehensive understanding of this persona. Let's begin!`;
   },
 
-  async generateInsights(item, session, knowledgeContext) {
+  async generateInsights(item, session, knowledgeContext, fieldSuggestionsConfig) {
     const persona = item;
     const name = persona.name as string;
 
@@ -151,29 +153,69 @@ export const personaItemConfig: ItemTypeConfig = {
 
     console.log('[persona-builder] Built Q&A pairs:', allQA.length);
 
-    // 3. Build current field values
+    // 3. Build current field values + field mapping (merge config hints if available)
+    const fieldMapping: Array<{ field: string; label: string; type: string; extractionHint?: string }> = [
+      ...PERSONA_FIELD_MAPPING,
+    ];
     const currentFieldValues: Record<string, unknown> = {};
     for (const fm of PERSONA_FIELD_MAPPING) {
       currentFieldValues[fm.field] = persona[fm.field] ?? null;
     }
 
+    // Merge fieldSuggestionsConfig if available (adds extractionHints + any config-only fields)
+    if (fieldSuggestionsConfig && fieldSuggestionsConfig.length > 0) {
+      for (const fsc of fieldSuggestionsConfig) {
+        const existingIdx = fieldMapping.findIndex(f => f.field === fsc.field);
+        if (existingIdx !== -1) {
+          fieldMapping[existingIdx] = {
+            ...fieldMapping[existingIdx],
+            label: fsc.label,
+            ...(fsc.extractionHint ? { extractionHint: fsc.extractionHint } : {}),
+          };
+          continue;
+        }
+        fieldMapping.push({
+          field: fsc.field,
+          label: fsc.label,
+          type: fsc.type === 'select' ? 'string' : fsc.type,
+          extractionHint: fsc.extractionHint,
+        });
+        if (!(fsc.field in currentFieldValues)) {
+          currentFieldValues[fsc.field] = persona[fsc.field] ?? null;
+        }
+      }
+    }
+
     // 4. Resolve model config
     const modelConfig = resolveModelConfig(modelId);
 
-    // 5. Generate report via LLM
+    // 5. Use config-driven dimensions from session metadata instead of hardcoded fallback
+    const sessionMeta = (session as { metadata?: { dimensions?: Array<{ key: string; title: string; icon: string; question?: string }> } }).metadata;
+    const reportDimensions = sessionMeta?.dimensions?.length
+      ? sessionMeta.dimensions.map(d => ({
+          key: d.key,
+          title: d.title,
+          icon: d.icon,
+          question: d.question ?? '',
+        }))
+      : PERSONA_DIMENSIONS;
+
+    console.log('[persona-builder] Using dimensions for report:', reportDimensions.map(d => d.key));
+
+    // 7. Generate report via LLM
     const report: GeneratedReport = await generateReport({
       itemType: 'persona',
       itemName: name,
       itemContext: buildPersonaContext(persona),
-      dimensions: PERSONA_DIMENSIONS,
+      dimensions: reportDimensions,
       allQA,
-      fieldMapping: PERSONA_FIELD_MAPPING,
+      fieldMapping,
       currentFieldValues,
       modelConfig,
       knowledgeContext,
     });
 
-    // 6. Transform to ExplorationInsightsData format
+    // 8. Transform to ExplorationInsightsData format
     return {
       dimensions: report.dimensions,
       executiveSummary: report.executiveSummary,

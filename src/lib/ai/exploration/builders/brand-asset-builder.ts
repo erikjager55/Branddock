@@ -121,10 +121,10 @@ function keyToLabel(path: string): string {
  * Always includes `description`, plus all string fields from `frameworkData`.
  */
 function buildDynamicFieldMapping(item: Record<string, unknown>): {
-  fieldMapping: Array<{ field: string; label: string; type: string }>;
+  fieldMapping: Array<{ field: string; label: string; type: string; extractionHint?: string }>;
   currentFieldValues: Record<string, unknown>;
 } {
-  const fieldMapping: Array<{ field: string; label: string; type: string }> = [];
+  const fieldMapping: Array<{ field: string; label: string; type: string; extractionHint?: string }> = [];
   const currentFieldValues: Record<string, unknown> = {};
 
   // Always include description
@@ -212,6 +212,7 @@ export const brandAssetItemConfig: ItemTypeConfig = {
     return asset as unknown as Record<string, unknown> | null;
   },
 
+  /** @deprecated Not used by current flow — analyze/route.ts reads dimensions from config-resolver instead. */
   getDimensions() {
     return BRAND_ASSET_DIMENSIONS;
   },
@@ -220,6 +221,7 @@ export const brandAssetItemConfig: ItemTypeConfig = {
     return buildBrandAssetContext(item);
   },
 
+  /** @deprecated Not used by current flow — analyze/route.ts builds intro via resolveTemplate() instead. */
   buildIntro(item) {
     const name = item.name as string;
     const category = item.category as string | null;
@@ -273,12 +275,21 @@ export const brandAssetItemConfig: ItemTypeConfig = {
     if (fieldSuggestionsConfig && fieldSuggestionsConfig.length > 0) {
       console.log('[brand-asset-builder] Merging fieldSuggestionsConfig into field mapping (dynamic:', fieldMapping.length, ', config:', fieldSuggestionsConfig.length, ')');
       for (const fsc of fieldSuggestionsConfig) {
-        // Skip if exact match already in mapping
-        if (fieldMapping.some(f => f.field === fsc.field)) continue;
+        const existingIdx = fieldMapping.findIndex(f => f.field === fsc.field);
+        if (existingIdx !== -1) {
+          // Field already exists — enrich with extractionHint and prefer config-curated label
+          fieldMapping[existingIdx] = {
+            ...fieldMapping[existingIdx],
+            label: fsc.label,
+            ...(fsc.extractionHint ? { extractionHint: fsc.extractionHint } : {}),
+          };
+          continue;
+        }
         fieldMapping.push({
           field: fsc.field,
           label: fsc.label,
           type: fsc.type === 'select' ? 'string' : fsc.type,
+          extractionHint: fsc.extractionHint,
         });
         if (!(fsc.field in currentFieldValues)) {
           currentFieldValues[fsc.field] = null;
@@ -291,12 +302,27 @@ export const brandAssetItemConfig: ItemTypeConfig = {
     // Resolve model config
     const modelConfig = resolveModelConfig(modelId);
 
+    // Use config-driven dimensions from session metadata (stored at session creation
+    // by analyze/route.ts) instead of the generic BRAND_ASSET_DIMENSIONS fallback.
+    // This ensures the report prompt matches the actual questions asked.
+    const sessionMeta = (session as { metadata?: { dimensions?: Array<{ key: string; title: string; icon: string; question?: string }> } }).metadata;
+    const reportDimensions = sessionMeta?.dimensions?.length
+      ? sessionMeta.dimensions.map(d => ({
+          key: d.key,
+          title: d.title,
+          icon: d.icon,
+          question: d.question ?? '',
+        }))
+      : BRAND_ASSET_DIMENSIONS;
+
+    console.log('[brand-asset-builder] Using dimensions for report:', reportDimensions.map(d => d.key));
+
     // Generate report via LLM
     const report: GeneratedReport = await generateReport({
       itemType: 'brand_asset',
       itemName: name,
       itemContext: buildBrandAssetContext(item),
-      dimensions: BRAND_ASSET_DIMENSIONS,
+      dimensions: reportDimensions,
       allQA,
       fieldMapping,
       currentFieldValues,

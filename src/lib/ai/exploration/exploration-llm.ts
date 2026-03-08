@@ -285,7 +285,7 @@ export async function generateReport(params: {
   itemContext: string;
   dimensions: DimensionDef[];
   allQA: QAPair[];
-  fieldMapping: { field: string; label: string; type: string }[];
+  fieldMapping: { field: string; label: string; type: string; extractionHint?: string }[];
   currentFieldValues: Record<string, unknown>;
   modelConfig?: ExplorationModelConfig;
   knowledgeContext?: string;
@@ -309,7 +309,8 @@ export async function generateReport(params: {
     .map((f) => {
       const currentVal = currentFieldValues[f.field];
       const display = Array.isArray(currentVal) ? currentVal.join(', ') : (currentVal as string) ?? '(empty)';
-      return `- ${f.label} (field: ${f.field}, type: ${f.type}): current value = "${display}"`;
+      const hint = f.extractionHint ? ` [hint: ${f.extractionHint}]` : '';
+      return `- ${f.label} (field: ${f.field}, type: ${f.type}): current value = "${display}"${hint}`;
     })
     .join('\n');
 

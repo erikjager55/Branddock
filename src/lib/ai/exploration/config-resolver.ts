@@ -261,7 +261,7 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
   }
   if (itemType === 'brand_asset' && itemSubType === 'brand-archetype') {
     return [
-      { key: 'archetype_discovery', title: 'Archetype Discovery', icon: 'Crown', question: 'If your brand were a character in a story, what role would it play? The hero who overcomes challenges? The wise guide who mentors? The rebel who challenges the status quo? Think about what role feels most natural — and which archetype(s) you recognize in your brand.' },
+      { key: 'archetype_discovery', title: 'Archetype Discovery', icon: 'Crown', question: 'If your brand were a character in a story, what role would it play? The hero who overcomes challenges? The wise guide who mentors? The rebel who challenges the status quo? Think about which single archetype feels most natural for your brand.' },
       { key: 'core_psychology', title: 'Core Psychology', icon: 'Heart', question: 'What is the deepest desire your brand fulfills for customers — and what fear does it help them overcome? What unique gift, talent, or strategy does your brand bring to the world that others can\'t easily replicate?' },
       { key: 'shadow_risks', title: 'Shadow & Risks', icon: 'Moon', question: 'Every archetype has a shadow side — when taken too far, its strengths become weaknesses. What does that look like for your brand? How do you guard against these patterns?' },
       { key: 'voice_messaging', title: 'Voice & Messaging', icon: 'MessageCircle', question: 'How does your archetype translate into the way your brand communicates? Describe your brand\'s voice in 3-5 adjectives. What words does your brand use — and what would it never say?' },
@@ -345,16 +345,21 @@ function getDefaultFieldSuggestionsConfig(
   if (itemType === 'brand_asset' && itemSubType === 'brand-archetype') {
     return [
       { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the brand archetype positioning' },
-      { field: 'frameworkData.primaryArchetype', label: 'Primary Archetype', type: 'text' as const, extractionHint: 'Identify the dominant Jungian archetype' },
+      { field: 'frameworkData.primaryArchetype', label: 'Brand Archetype', type: 'select' as const, extractionHint: 'Identify the single best-fitting Jungian archetype for this brand. MUST be exactly one of these lowercase IDs: innocent, everyman, hero, outlaw, explorer, creator, ruler, magician, lover, caregiver, jester, sage' },
       { field: 'frameworkData.coreDesire', label: 'Core Desire', type: 'text' as const, extractionHint: 'Extract the core desire driving the brand' },
       { field: 'frameworkData.coreFear', label: 'Core Fear', type: 'text' as const, extractionHint: 'Extract the core fear the brand helps overcome' },
+      { field: 'frameworkData.brandGoal', label: 'Brand Goal', type: 'text' as const, extractionHint: 'Extract the overarching goal driven by the archetype' },
       { field: 'frameworkData.strategy', label: 'Strategy', type: 'text' as const, extractionHint: 'Extract the archetype strategy' },
+      { field: 'frameworkData.giftTalent', label: 'Gift / Talent', type: 'text' as const, extractionHint: 'Extract the unique gift or talent the brand brings' },
       { field: 'frameworkData.shadowWeakness', label: 'Shadow / Weakness', type: 'text' as const, extractionHint: 'Identify the shadow side of the archetype' },
       { field: 'frameworkData.brandVoiceDescription', label: 'Brand Voice', type: 'text' as const, extractionHint: 'Describe the brand voice in 2-3 sentences' },
       { field: 'frameworkData.voiceAdjectives', label: 'Voice Adjectives', type: 'text' as const, extractionHint: 'Extract 3-5 adjectives that describe the brand voice' },
       { field: 'frameworkData.colorDirection', label: 'Color Direction', type: 'text' as const, extractionHint: 'Describe the color direction for the archetype' },
+      { field: 'frameworkData.typographyDirection', label: 'Typography Direction', type: 'text' as const, extractionHint: 'Suggest the typography style based on the archetype' },
       { field: 'frameworkData.imageryStyle', label: 'Imagery Style', type: 'text' as const, extractionHint: 'Describe the imagery style for the archetype' },
-      { field: 'frameworkData.marketingExpression', label: 'Marketing Expression', type: 'text' as const, extractionHint: 'Describe how the archetype expresses in marketing' },
+      { field: 'frameworkData.brandExamples', label: 'Brand Examples', type: 'text' as const, extractionHint: 'List 3-5 reference brands that share this archetype' },
+      { field: 'frameworkData.archetypeInAction', label: 'Archetype in Action', type: 'text' as const, extractionHint: 'Describe how the archetype manifests across the brand experience' },
+      { field: 'frameworkData.competitiveLandscape', label: 'Competitive Landscape', type: 'text' as const, extractionHint: 'Analyze the competitive landscape from an archetype perspective' },
       { field: 'frameworkData.contentStrategy', label: 'Content Strategy', type: 'text' as const, extractionHint: 'Describe the content strategy for the archetype' },
     ];
   }
@@ -390,6 +395,7 @@ function getDefaultFieldSuggestionsConfig(
       { field: 'frameworkData.successIndicators', label: 'Success Indicators', type: 'text' as const, extractionHint: 'Extract 3-5 concrete measurable indicators of vision progress' },
       { field: 'frameworkData.stakeholderBenefit', label: 'Stakeholder Benefit', type: 'text' as const, extractionHint: 'Describe who benefits from the vision and how' },
       { field: 'frameworkData.valuesAlignment', label: 'Values Alignment', type: 'text' as const, extractionHint: 'Describe how mission/vision reinforce core values' },
+      { field: 'frameworkData.missionVisionTension', label: 'Mission-Vision Tension', type: 'text' as const, extractionHint: 'Extract the creative tension between present mission and future vision, including key milestones' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'transformative-goals') {
