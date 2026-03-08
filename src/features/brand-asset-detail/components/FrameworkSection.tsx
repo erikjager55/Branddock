@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronRight, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Card } from "@/components/shared";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
 import { FrameworkRenderer } from "./FrameworkRenderer";
@@ -10,13 +10,11 @@ import type { FrameworkType } from "../types/framework.types";
 interface FrameworkSectionProps {
   frameworkType: FrameworkType;
   frameworkData: unknown;
-  onNavigateToGoldenCircle?: () => void;
 }
 
 export function FrameworkSection({
   frameworkType,
   frameworkData,
-  onNavigateToGoldenCircle,
 }: FrameworkSectionProps) {
   const isCollapsed = useBrandAssetDetailStore((s) => s.isFrameworkCollapsed);
   const toggleCollapsed = useBrandAssetDetailStore(
@@ -42,15 +40,6 @@ export function FrameworkSection({
             <ChevronDown className="w-5 h-5 text-gray-400 flex-shrink-0" />
           )}
         </button>
-        {onNavigateToGoldenCircle && (
-          <button
-            onClick={onNavigateToGoldenCircle}
-            className="flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 transition-colors ml-4 flex-shrink-0"
-          >
-            Open in Editor
-            <ExternalLink className="w-3.5 h-3.5" />
-          </button>
-        )}
       </div>
 
       {!isCollapsed && (

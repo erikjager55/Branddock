@@ -265,20 +265,24 @@ export const brandAssetItemConfig: ItemTypeConfig = {
     // ── Dynamic field mapping from actual frameworkData ──
     const { fieldMapping, currentFieldValues } = buildDynamicFieldMapping(item);
 
-    // When frameworkData is empty/sparse, use fieldSuggestionsConfig from DB exploration config
-    // to tell the LLM about ALL fields that should be populated.
-    // This ensures fields are discovered even when the asset hasn't been filled in yet.
-    if (fieldSuggestionsConfig && fieldSuggestionsConfig.length > 0 && fieldSuggestionsConfig.length > fieldMapping.length) {
-      console.log('[brand-asset-builder] Augmenting field mapping from fieldSuggestionsConfig (dynamic:', fieldMapping.length, ', config:', fieldSuggestionsConfig.length, ')');
+    // Merge fieldSuggestionsConfig from DB exploration config into the dynamic field mapping.
+    // The dynamic mapping (flattenToFieldMapping) may miss numeric fields, complex arrays,
+    // or produce deeply nested paths (e.g. frameworkData.dimensionScores.sincerity)
+    // while the config uses parent-level fields (e.g. frameworkData.dimensionScores).
+    // Always merge config fields so the LLM knows about ALL updatable fields.
+    if (fieldSuggestionsConfig && fieldSuggestionsConfig.length > 0) {
+      console.log('[brand-asset-builder] Merging fieldSuggestionsConfig into field mapping (dynamic:', fieldMapping.length, ', config:', fieldSuggestionsConfig.length, ')');
       for (const fsc of fieldSuggestionsConfig) {
-        // Skip if already in mapping (e.g., description or existing frameworkData fields)
+        // Skip if exact match already in mapping
         if (fieldMapping.some(f => f.field === fsc.field)) continue;
         fieldMapping.push({
           field: fsc.field,
           label: fsc.label,
           type: fsc.type === 'select' ? 'string' : fsc.type,
         });
-        currentFieldValues[fsc.field] = null;
+        if (!(fsc.field in currentFieldValues)) {
+          currentFieldValues[fsc.field] = null;
+        }
       }
     }
 

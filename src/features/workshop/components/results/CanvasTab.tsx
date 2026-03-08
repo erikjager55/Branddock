@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@/components/shared';
-import { Lock, Unlock, Pencil, ExternalLink } from 'lucide-react';
+import { Lock, Unlock, Pencil } from 'lucide-react';
 import { CanvasFrameworkRenderer } from './CanvasFrameworkRenderer';
 
 interface CanvasTabProps {
@@ -10,7 +10,6 @@ interface CanvasTabProps {
   isEditing: boolean;
   onToggleLock: () => void;
   onToggleEdit: () => void;
-  onOpenInGoldenCircle?: () => void;
 }
 
 export function CanvasTab({
@@ -19,7 +18,6 @@ export function CanvasTab({
   isEditing,
   onToggleLock,
   onToggleEdit,
-  onOpenInGoldenCircle,
 }: CanvasTabProps) {
   return (
     <div>
@@ -28,15 +26,6 @@ export function CanvasTab({
           Golden Circle Framework
         </h3>
         <div className="flex items-center gap-2">
-          {onOpenInGoldenCircle && (
-            <button
-              onClick={onOpenInGoldenCircle}
-              className="flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 transition-colors"
-            >
-              Open in Golden Circle
-              <ExternalLink className="w-3.5 h-3.5" />
-            </button>
-          )}
           <Button
             variant="secondary"
             size="sm"

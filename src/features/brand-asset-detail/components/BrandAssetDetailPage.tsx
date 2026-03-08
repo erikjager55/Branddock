@@ -11,8 +11,11 @@ import { BrandEssenceSection } from "./BrandEssenceSection";
 import { BrandPromiseSection } from "./BrandPromiseSection";
 import { TransformativeGoalsSection } from "./TransformativeGoalsSection";
 import { BrandArchetypeSection } from "./BrandArchetypeSection";
+import { BrandPersonalitySection } from "./BrandPersonalitySection";
+import { GoldenCircleSection } from "./GoldenCircleSection";
+import { MissionVisionSection } from "./MissionVisionSection";
 import { FrameworkSection } from "./FrameworkSection";
-import type { PurposeWheelFrameworkData, BrandEssenceFrameworkData, BrandPromiseFrameworkData, TransformativeGoalsFrameworkData, BrandArchetypeFrameworkData } from "../types/framework.types";
+import type { PurposeWheelFrameworkData, BrandEssenceFrameworkData, BrandPromiseFrameworkData, TransformativeGoalsFrameworkData, BrandArchetypeFrameworkData, BrandPersonalityFrameworkData, GoldenCircleFrameworkData, MissionVisionFrameworkData } from "../types/framework.types";
 import { AssetQuickActionsCard } from "./sidebar/AssetQuickActionsCard";
 import { AssetCompletenessCard } from "./sidebar/AssetCompletenessCard";
 import { AssetResearchSidebarCard } from "./sidebar/AssetResearchSidebarCard";
@@ -29,7 +32,6 @@ interface BrandAssetDetailPageProps {
   onNavigateToAnalysis?: (assetId: string) => void;
   onNavigateToInterviews?: (assetId: string) => void;
   onNavigateToWorkshop?: (assetId: string) => void;
-  onNavigateToGoldenCircle?: (assetId: string) => void;
 }
 
 export function BrandAssetDetailPage({
@@ -38,7 +40,6 @@ export function BrandAssetDetailPage({
   onNavigateToAnalysis,
   onNavigateToInterviews,
   onNavigateToWorkshop,
-  onNavigateToGoldenCircle,
 }: BrandAssetDetailPageProps) {
   const { data: asset, isLoading, error } = useAssetDetail(assetId);
   const isEditing = useBrandAssetDetailStore((s) => s.isEditing);
@@ -69,10 +70,13 @@ export function BrandAssetDetailPage({
   const updateFramework = useUpdateFramework(assetId ?? '');
 
   const isPurposeWheel = asset?.frameworkType === 'PURPOSE_WHEEL';
+  const isGoldenCircle = asset?.frameworkType === 'GOLDEN_CIRCLE';
   const isBrandEssence = asset?.frameworkType === 'BRAND_ESSENCE';
   const isBrandPromise = asset?.frameworkType === 'BRAND_PROMISE';
   const isTransformativeGoals = asset?.frameworkType === 'TRANSFORMATIVE_GOALS';
   const isBrandArchetype = asset?.frameworkType === 'BRAND_ARCHETYPE';
+  const isBrandPersonality = asset?.frameworkType === 'BRAND_PERSONALITY';
+  const isMissionVision = asset?.frameworkType === 'MISSION_STATEMENT';
 
   // Force editing off when locked
   useEffect(() => {
@@ -168,6 +172,17 @@ export function BrandAssetDetailPage({
               </LockOverlay>
             )}
 
+            {/* Golden Circle — inline SVG circles */}
+            {isGoldenCircle && (
+              <LockOverlay isLocked={lockState.isLocked}>
+                <GoldenCircleSection
+                  data={asset.frameworkData as GoldenCircleFrameworkData | null}
+                  isEditing={isEditing && !lockState.isLocked}
+                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
+                />
+              </LockOverlay>
+            )}
+
             {/* Brand Essence Wheel — 6-card canvas */}
             {isBrandEssence && (
               <LockOverlay isLocked={lockState.isLocked}>
@@ -212,17 +227,34 @@ export function BrandAssetDetailPage({
               </LockOverlay>
             )}
 
+            {/* Brand Personality — 6-section canvas */}
+            {isBrandPersonality && (
+              <LockOverlay isLocked={lockState.isLocked}>
+                <BrandPersonalitySection
+                  data={asset.frameworkData as BrandPersonalityFrameworkData | null}
+                  isEditing={isEditing && !lockState.isLocked}
+                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
+                />
+              </LockOverlay>
+            )}
+
+            {/* Mission & Vision — 5-card canvas */}
+            {isMissionVision && (
+              <LockOverlay isLocked={lockState.isLocked}>
+                <MissionVisionSection
+                  data={asset.frameworkData as MissionVisionFrameworkData | null}
+                  isEditing={isEditing && !lockState.isLocked}
+                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
+                />
+              </LockOverlay>
+            )}
+
             {/* Framework Section (for other framework types) */}
-            {asset.frameworkType && !isPurposeWheel && !isBrandEssence && !isBrandPromise && !isTransformativeGoals && !isBrandArchetype && (
+            {asset.frameworkType && !isPurposeWheel && !isGoldenCircle && !isBrandEssence && !isBrandPromise && !isTransformativeGoals && !isBrandArchetype && !isBrandPersonality && !isMissionVision && (
               <LockOverlay isLocked={lockState.isLocked}>
                 <FrameworkSection
                   frameworkType={asset.frameworkType}
                   frameworkData={asset.frameworkData}
-                  onNavigateToGoldenCircle={
-                    asset.frameworkType === "GOLDEN_CIRCLE"
-                      ? () => onNavigateToGoldenCircle?.(asset.id)
-                      : undefined
-                  }
                 />
               </LockOverlay>
             )}

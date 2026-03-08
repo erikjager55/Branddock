@@ -142,7 +142,7 @@ function getSystemDefault(itemType: string, itemSubType?: string | null): Explor
     dimensions: getDefaultDimensions(itemType, itemSubType),
     feedbackPrompt: DEFAULT_FEEDBACK_PROMPT,
     reportPrompt: DEFAULT_REPORT_PROMPT,
-    fieldSuggestionsConfig: null,
+    fieldSuggestionsConfig: getDefaultFieldSuggestionsConfig(itemType, itemSubType),
     contextSources: ['brand_asset', 'product'],
     isActive: true,
     customKnowledge: '',
@@ -249,18 +249,14 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
   }
   if (itemType === 'brand_asset' && itemSubType === 'mission-statement') {
     return [
-      { key: 'purpose', title: 'Purpose & Direction', icon: 'Compass', question: 'What is your organization trying to achieve right now? What is the primary mission?' },
-      { key: 'audience', title: 'Who You Serve', icon: 'Users', question: 'Who are the primary beneficiaries of your mission? How does it improve their lives?' },
-      { key: 'approach', title: 'How You Deliver', icon: 'Rocket', question: 'What is your unique approach to fulfilling this mission? What sets your method apart?' },
-      { key: 'measurement', title: 'Impact & Measurement', icon: 'BarChart2', question: 'How do you know if your mission is succeeding? What does progress look like?' },
-    ];
-  }
-  if (itemType === 'brand_asset' && itemSubType === 'vision-statement') {
-    return [
-      { key: 'future_state', title: 'Future State', icon: 'Eye', question: 'What does the world look like when your organization has fully succeeded? Paint the picture.' },
-      { key: 'ambition', title: 'Scale of Ambition', icon: 'Mountain', question: 'How ambitious is your vision? Does it inspire people to go beyond what seems possible today?' },
-      { key: 'relevance', title: 'Stakeholder Relevance', icon: 'Users', question: 'How does this vision connect to what your employees, customers, and partners care about?' },
-      { key: 'pathway', title: 'Vision to Action', icon: 'Map', question: 'What are the key milestones between today and your vision? What needs to happen first?' },
+      { key: 'mission_core', title: 'Mission Core', icon: 'Compass', question: 'What is the fundamental reason your organization exists — beyond making money? If you had to explain your mission to a child in one sentence, what would you say?' },
+      { key: 'audience_impact', title: 'Audience & Impact', icon: 'Users', question: 'Who are the people your organization serves, and what specific change do you create in their lives? Describe both the primary audience and the tangible outcome they experience.' },
+      { key: 'unique_approach', title: 'Unique Approach', icon: 'Rocket', question: 'What makes your approach fundamentally different from others trying to achieve a similar mission? Describe your method, philosophy, or "secret ingredient" that competitors cannot easily replicate.' },
+      { key: 'mission_authenticity', title: 'Mission Authenticity', icon: 'Shield', question: 'How does your current daily work reflect your stated mission? Where is the alignment strongest, and where are the biggest gaps between what you say and what you do?' },
+      { key: 'future_vision', title: 'Future Vision', icon: 'Eye', question: 'Close your eyes and imagine your organization has fully succeeded — 10 years from now. What does the world look like? Paint a vivid, concrete picture of this future state.' },
+      { key: 'bold_aspiration', title: 'Scale of Ambition', icon: 'Mountain', question: 'What is the boldest, most audacious goal your organization could set — one that makes you slightly uncomfortable because of its scale? What would you attempt if you knew you could not fail?' },
+      { key: 'success_signals', title: 'Success Signals', icon: 'BarChart2', question: 'How would you know your vision is becoming reality? What are the 3-5 concrete, measurable indicators you would track? Think about impact on customers, employees, industry, and society.' },
+      { key: 'mission_vision_bridge', title: 'Mission-Vision Bridge', icon: 'Map', question: 'Your mission describes what you do today; your vision describes where you are going. What is the creative tension between these two? What key milestones or transformations need to happen to bridge the gap?' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'brand-archetype') {
@@ -287,10 +283,13 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
   }
   if (itemType === 'brand_asset' && itemSubType === 'brand-personality') {
     return [
-      { key: 'traits', title: 'Core Traits', icon: 'User', question: 'If your brand were a person at a dinner party, how would other guests describe them? Name 3-5 key personality traits.' },
-      { key: 'voice', title: 'Voice & Tone', icon: 'MessageCircle', question: 'How does your brand speak? What words would it use — and never use? What\u2019s the tone in different situations?' },
-      { key: 'relationships', title: 'Relationship Style', icon: 'Heart', question: 'What kind of relationship does your brand build with people? A trusted advisor? A fun friend? A wise mentor?' },
-      { key: 'boundaries', title: 'Personality Boundaries', icon: 'AlertCircle', question: 'What is your brand personality NOT? What traits would feel inauthentic or off-brand?' },
+      { key: 'dimension_mapping', title: 'Personality Dimensions', icon: 'User', question: 'If your brand walked into a room, what impression would it make? Describe its character in terms of sincerity (honest, warm), excitement (daring, spirited), competence (reliable, intelligent), sophistication (elegant, charming), and ruggedness (tough, outdoorsy). Which 1-2 dimensions feel most dominant?' },
+      { key: 'core_traits', title: 'Core Traits', icon: 'Fingerprint', question: 'Name 3-5 defining personality traits for your brand. For each trait, give a concrete example of what it looks like in action ("We Are This") and what the "too far" version would be that your brand should never become ("But Never That").' },
+      { key: 'spectrum_positioning', title: 'Personality Spectrum', icon: 'Sliders', question: 'Position your brand on these spectrums: friendly vs. formal, energetic vs. thoughtful, modern vs. traditional, innovative vs. proven, playful vs. serious, inclusive vs. exclusive, bold vs. reserved. Where do you sit, and why?' },
+      { key: 'voice_tone', title: 'Voice & Tone', icon: 'MessageCircle', question: 'Describe how your brand sounds in writing and speech. Is it formal or casual? Serious or humorous? Respectful or irreverent? Matter-of-fact or enthusiastic? What specific words or phrases does your brand love to use — and which would it never use?' },
+      { key: 'writing_sample', title: 'Voice in Action', icon: 'Award', question: 'Write a short paragraph (3-4 sentences) in your brand\u2019s authentic voice. This could be a product description, email opening, or social media post. Show us how the personality comes alive in real communication.' },
+      { key: 'channel_adaptation', title: 'Channel Adaptation', icon: 'MessageCircle', question: 'How does your brand\u2019s tone shift across different channels \u2014 website, social media, customer support, email marketing, and crisis communication? The voice stays the same, but the tone adapts. Describe the differences.' },
+      { key: 'visual_expression', title: 'Visual Personality', icon: 'Palette', question: 'How should your brand personality translate into visual design? Think about what colors feel right for your personality, what typography style matches your character, and what kind of imagery represents your brand.' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'brand-story') {
@@ -315,4 +314,92 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
     { key: 'differentiation', title: 'Differentiation', icon: 'Zap', question: 'How does this set you apart from competitors?' },
     { key: 'activation', title: 'Activation & Application', icon: 'Rocket', question: 'How is this activated across your organization?' },
   ];
+}
+
+/**
+ * Return fallback field suggestions config for known item types.
+ * These ensure the LLM knows about ALL updatable fields even without a DB config.
+ */
+function getDefaultFieldSuggestionsConfig(
+  itemType: string,
+  itemSubType?: string | null,
+): StoredFieldSuggestionConfig[] | null {
+  if (itemType === 'brand_asset' && itemSubType === 'brand-personality') {
+    return [
+      { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the brand personality in one compelling paragraph' },
+      { field: 'frameworkData.primaryDimension', label: 'Primary Dimension', type: 'text' as const, extractionHint: 'Identify the dominant Aaker dimension (sincerity, excitement, competence, sophistication, or ruggedness)' },
+      { field: 'frameworkData.dimensionScores', label: 'Dimension Scores', type: 'text' as const, extractionHint: 'Score each Aaker dimension 1-5 based on the exploration answers' },
+      { field: 'frameworkData.personalityTraits', label: 'Personality Traits', type: 'text' as const, extractionHint: 'Extract 3-5 personality traits with name, description, weAreThis, and butNeverThat for each' },
+      { field: 'frameworkData.spectrumSliders', label: 'Spectrum Sliders', type: 'text' as const, extractionHint: 'Position the brand on each spectrum (1-7 scale) based on the exploration answers' },
+      { field: 'frameworkData.toneDimensions', label: 'Tone Dimensions', type: 'text' as const, extractionHint: 'Position the brand on each NN/g tone dimension (1-7 scale)' },
+      { field: 'frameworkData.brandVoiceDescription', label: 'Brand Voice', type: 'text' as const, extractionHint: 'Describe the overall brand voice in 2-3 sentences' },
+      { field: 'frameworkData.wordsWeUse', label: 'Words We Use', type: 'text' as const, extractionHint: 'Extract 5-10 words or phrases the brand should use' },
+      { field: 'frameworkData.wordsWeAvoid', label: 'Words We Avoid', type: 'text' as const, extractionHint: 'Extract 5-10 words or phrases the brand should avoid' },
+      { field: 'frameworkData.writingSample', label: 'Writing Sample', type: 'text' as const, extractionHint: 'Create a writing sample that demonstrates the brand voice' },
+      { field: 'frameworkData.channelTones', label: 'Channel Tones', type: 'text' as const, extractionHint: 'Describe the appropriate tone for each communication channel' },
+      { field: 'frameworkData.colorDirection', label: 'Color Direction', type: 'text' as const, extractionHint: 'Describe the color direction that matches the brand personality' },
+      { field: 'frameworkData.typographyDirection', label: 'Typography Direction', type: 'text' as const, extractionHint: 'Describe the typography style that matches the brand personality' },
+      { field: 'frameworkData.imageryDirection', label: 'Imagery Direction', type: 'text' as const, extractionHint: 'Describe the imagery style that represents the brand personality' },
+    ];
+  }
+  if (itemType === 'brand_asset' && itemSubType === 'brand-archetype') {
+    return [
+      { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the brand archetype positioning' },
+      { field: 'frameworkData.primaryArchetype', label: 'Primary Archetype', type: 'text' as const, extractionHint: 'Identify the dominant Jungian archetype' },
+      { field: 'frameworkData.coreDesire', label: 'Core Desire', type: 'text' as const, extractionHint: 'Extract the core desire driving the brand' },
+      { field: 'frameworkData.coreFear', label: 'Core Fear', type: 'text' as const, extractionHint: 'Extract the core fear the brand helps overcome' },
+      { field: 'frameworkData.strategy', label: 'Strategy', type: 'text' as const, extractionHint: 'Extract the archetype strategy' },
+      { field: 'frameworkData.shadowWeakness', label: 'Shadow / Weakness', type: 'text' as const, extractionHint: 'Identify the shadow side of the archetype' },
+      { field: 'frameworkData.brandVoiceDescription', label: 'Brand Voice', type: 'text' as const, extractionHint: 'Describe the brand voice in 2-3 sentences' },
+      { field: 'frameworkData.voiceAdjectives', label: 'Voice Adjectives', type: 'text' as const, extractionHint: 'Extract 3-5 adjectives that describe the brand voice' },
+      { field: 'frameworkData.colorDirection', label: 'Color Direction', type: 'text' as const, extractionHint: 'Describe the color direction for the archetype' },
+      { field: 'frameworkData.imageryStyle', label: 'Imagery Style', type: 'text' as const, extractionHint: 'Describe the imagery style for the archetype' },
+      { field: 'frameworkData.marketingExpression', label: 'Marketing Expression', type: 'text' as const, extractionHint: 'Describe how the archetype expresses in marketing' },
+      { field: 'frameworkData.contentStrategy', label: 'Content Strategy', type: 'text' as const, extractionHint: 'Describe the content strategy for the archetype' },
+    ];
+  }
+  if (itemType === 'brand_asset' && itemSubType === 'brand-promise') {
+    return [
+      { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the brand promise' },
+      { field: 'frameworkData.promiseStatement', label: 'Promise Statement', type: 'text' as const, extractionHint: 'Craft the core brand promise' },
+      { field: 'frameworkData.promiseOneLiner', label: 'One-Liner', type: 'text' as const, extractionHint: 'Distill the promise into one sentence' },
+      { field: 'frameworkData.functionalValue', label: 'Functional Value', type: 'text' as const, extractionHint: 'Extract the tangible functional benefit' },
+      { field: 'frameworkData.emotionalValue', label: 'Emotional Value', type: 'text' as const, extractionHint: 'Extract the emotional benefit' },
+      { field: 'frameworkData.selfExpressiveValue', label: 'Self-Expressive Value', type: 'text' as const, extractionHint: 'Extract how the brand helps self-expression' },
+      { field: 'frameworkData.targetAudience', label: 'Target Audience', type: 'text' as const, extractionHint: 'Identify the target audience' },
+      { field: 'frameworkData.coreCustomerNeed', label: 'Core Need', type: 'text' as const, extractionHint: 'Extract the core customer need' },
+      { field: 'frameworkData.differentiator', label: 'Differentiator', type: 'text' as const, extractionHint: 'Extract what makes the promise unique' },
+      { field: 'frameworkData.onlynessStatement', label: 'Onlyness Statement', type: 'text' as const, extractionHint: 'Craft the "Only [brand] can..." statement' },
+      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'text' as const, extractionHint: 'Extract 3-5 concrete proof points' },
+      { field: 'frameworkData.measurableOutcomes', label: 'Measurable Outcomes', type: 'text' as const, extractionHint: 'Extract 3-5 measurable outcomes that prove the promise is kept' },
+    ];
+  }
+  if (itemType === 'brand_asset' && itemSubType === 'mission-statement') {
+    return [
+      { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the mission and vision in one compelling paragraph' },
+      { field: 'frameworkData.missionStatement', label: 'Mission Statement', type: 'text' as const, extractionHint: 'Craft the core mission as a clear 1-3 sentence statement' },
+      { field: 'frameworkData.missionOneLiner', label: 'Mission One-Liner', type: 'text' as const, extractionHint: 'Distill the mission into a single T-shirt-worthy sentence' },
+      { field: 'frameworkData.forWhom', label: 'For Whom', type: 'text' as const, extractionHint: 'Identify the primary audience the mission serves' },
+      { field: 'frameworkData.whatWeDo', label: 'What We Do', type: 'text' as const, extractionHint: 'Extract the core activity or service' },
+      { field: 'frameworkData.howWeDoIt', label: 'How We Do It', type: 'text' as const, extractionHint: 'Extract the unique approach or methodology' },
+      { field: 'frameworkData.impactGoal', label: 'Impact Goal', type: 'text' as const, extractionHint: 'Extract the measurable impact goal' },
+      { field: 'frameworkData.visionStatement', label: 'Vision Statement', type: 'text' as const, extractionHint: 'Craft the aspirational future state (1-3 sentences)' },
+      { field: 'frameworkData.timeHorizon', label: 'Time Horizon', type: 'text' as const, extractionHint: 'Suggest the appropriate time horizon (3/5/10/15+ years or Aspirational)' },
+      { field: 'frameworkData.boldAspiration', label: 'Bold Aspiration (BHAG)', type: 'text' as const, extractionHint: 'Craft a Big Hairy Audacious Goal that stretches beyond current capability' },
+      { field: 'frameworkData.desiredFutureState', label: 'Desired Future State', type: 'text' as const, extractionHint: 'Paint a vivid description of what success looks like' },
+      { field: 'frameworkData.successIndicators', label: 'Success Indicators', type: 'text' as const, extractionHint: 'Extract 3-5 concrete measurable indicators of vision progress' },
+      { field: 'frameworkData.stakeholderBenefit', label: 'Stakeholder Benefit', type: 'text' as const, extractionHint: 'Describe who benefits from the vision and how' },
+      { field: 'frameworkData.valuesAlignment', label: 'Values Alignment', type: 'text' as const, extractionHint: 'Describe how mission/vision reinforce core values' },
+    ];
+  }
+  if (itemType === 'brand_asset' && itemSubType === 'transformative-goals') {
+    return [
+      { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the transformative goals' },
+      { field: 'frameworkData.massiveTransformativePurpose', label: 'Massive Transformative Purpose', type: 'text' as const, extractionHint: 'Craft the MTP statement' },
+      { field: 'frameworkData.mtpNarrative', label: 'MTP Narrative', type: 'text' as const, extractionHint: 'Write the MTP narrative' },
+      { field: 'frameworkData.goals', label: 'Transformative Goals', type: 'text' as const, extractionHint: 'Extract 1-5 transformative goals with title, description, domain, timeframe' },
+    ];
+  }
+  // Other asset types: return null (dynamic field mapping is sufficient for simple string fields)
+  return null;
 }

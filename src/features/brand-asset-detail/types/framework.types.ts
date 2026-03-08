@@ -1,5 +1,5 @@
 // =============================================================
-// Framework type definitions for the 11 core brand assets
+// Framework type definitions for the 11 core brand assets (Mission & Vision merged)
 // =============================================================
 
 // ─── Legacy types (kept for backward compat with existing renderers) ───
@@ -104,25 +104,36 @@ export interface BrandPromiseFrameworkData {
   measurableOutcomes: string[];       // Concrete measurable outcomes of the promise
 }
 
-// ─── 5. Mission Statement ───────────────────────────────────
+// ─── 5. Mission & Vision (merged) ────────────────────────────
 
-export interface MissionStatementFrameworkData {
+export interface MissionVisionFrameworkData {
+  // Card 1: Mission Statement
   missionStatement: string;
-  whatWeDo: string;
+  missionOneLiner: string;
+
+  // Card 2: Mission Components
   forWhom: string;
+  whatWeDo: string;
   howWeDoIt: string;
-  impactGoal: string;
-}
 
-// ─── 6. Vision Statement (Collins & Porras) ─────────────────
-
-export interface VisionStatementFrameworkData {
+  // Card 3: Vision Statement
   visionStatement: string;
-  timeHorizon: string; // 3 years / 5 years / 10 years / 15+ years
-  desiredFutureState: string;
+  timeHorizon: string; // 3 years / 5 years / 10 years / 15+ years / Aspirational
   boldAspiration: string;
-  successIndicators: string;
+
+  // Card 4: Envisioned Future (Collins & Porras)
+  desiredFutureState: string;
+  successIndicators: string[];
+  stakeholderBenefit: string;
+
+  // Card 5: Impact & Alignment
+  impactGoal: string;
+  valuesAlignment: string;
+  missionVisionTension: string;
 }
+
+/** @deprecated Use MissionVisionFrameworkData instead */
+export type MissionStatementFrameworkData = MissionVisionFrameworkData;
 
 // ─── 7. Brand Archetype (Jung / Mark & Pearson) ─────────────
 
@@ -231,12 +242,72 @@ export interface TransformativeGoalsFrameworkData {
 
 // ─── 9. Brand Personality (Aaker 5 Dimensions) ─────────────
 
+export interface PersonalityTrait {
+  name: string;           // Multi-word phrase, e.g. "Quietly Confident"
+  description: string;    // 1-2 sentence description
+  weAreThis: string;      // Concrete examples of the trait in action
+  butNeverThat: string;   // Guard rails / boundaries
+}
+
+export interface AakerDimensionScores {
+  sincerity: number;       // 1-5
+  excitement: number;      // 1-5
+  competence: number;      // 1-5
+  sophistication: number;  // 1-5
+  ruggedness: number;      // 1-5
+}
+
+export interface PersonalitySpectrumValues {
+  friendlyFormal: number;        // 1-7 (1=Friendly/Approachable, 7=Corporate/Formal)
+  energeticThoughtful: number;   // 1-7
+  modernTraditional: number;     // 1-7
+  innovativeProven: number;      // 1-7
+  playfulSerious: number;        // 1-7
+  inclusiveExclusive: number;    // 1-7
+  boldReserved: number;          // 1-7
+}
+
+export interface ToneDimensions {
+  formalCasual: number;               // 1-7 (1=Formal, 7=Casual)
+  seriousFunny: number;               // 1-7
+  respectfulIrreverent: number;       // 1-7
+  matterOfFactEnthusiastic: number;   // 1-7
+}
+
+export interface ChannelTones {
+  website: string;
+  socialMedia: string;
+  customerSupport: string;
+  email: string;
+  crisis: string;
+}
+
 export interface BrandPersonalityFrameworkData {
-  primaryDimension: string; // Sincerity / Excitement / Competence / Sophistication / Ruggedness
+  // Section 1: Aaker Dimension Scores
+  dimensionScores: AakerDimensionScores;
+  primaryDimension: string;     // Dominant dimension name
   secondaryDimension?: string;
-  personalityTraits: string[];
-  toneOfVoice: string;
-  personalityInPractice: string;
+
+  // Section 2: Core Personality Traits (3-5)
+  personalityTraits: PersonalityTrait[];
+
+  // Section 3: Personality Spectrum (7 sliders)
+  spectrumSliders: PersonalitySpectrumValues;
+
+  // Section 4: Voice & Tone
+  toneDimensions: ToneDimensions;
+  brandVoiceDescription: string;
+  wordsWeUse: string[];
+  wordsWeAvoid: string[];
+  writingSample: string;
+
+  // Section 5: Communication Style
+  channelTones: ChannelTones;
+
+  // Section 6: Visual Personality Expression
+  colorDirection: string;
+  typographyDirection: string;
+  imageryDirection: string;
 }
 
 // ─── 10. Brand Story / Elevator Pitch (StoryBrand) ──────────
@@ -273,7 +344,6 @@ export type FrameworkType =
   | "BRAND_ESSENCE"
   | "BRAND_PROMISE"
   | "MISSION_STATEMENT"
-  | "VISION_STATEMENT"
   | "BRAND_ARCHETYPE"
   | "TRANSFORMATIVE_GOALS"
   | "BRAND_PERSONALITY"
@@ -289,8 +359,7 @@ export type FrameworkData =
   | GoldenCircleFrameworkData
   | BrandEssenceFrameworkData
   | BrandPromiseFrameworkData
-  | MissionStatementFrameworkData
-  | VisionStatementFrameworkData
+  | MissionVisionFrameworkData
   | BrandArchetypeFrameworkData
   | TransformativeGoalsFrameworkData
   | BrandPersonalityFrameworkData

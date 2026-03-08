@@ -38,7 +38,6 @@ import {
   WorkshopSessionPage,
   WorkshopCompletePage,
   InterviewsPage,
-  GoldenCirclePage,
   BusinessStrategyPage,
   StrategyDetailPage,
   PersonasPage,
@@ -194,7 +193,7 @@ function AppContent() {
       || section === 'ai-exploration-brand-asset'
       || section === 'interviews'
       || section === 'workshop-purchase'
-      || section === 'golden-circle';
+;
     if (!isAssetRelated) {
       resetAssetStates();
     }
@@ -362,10 +361,6 @@ function AppContent() {
             setSelectedAssetId(assetId);
             handleSetActiveSection('workshop-purchase');
           }}
-          onNavigateToGoldenCircle={(assetId) => {
-            setSelectedAssetId(assetId);
-            handleSetActiveSection('golden-circle');
-          }}
         />
       );
     }
@@ -443,10 +438,6 @@ function AppContent() {
             setSelectedAssetId(assetId);
             handleSetActiveSection('workshop-purchase');
           }}
-          onNavigateToGoldenCircle={(assetId) => {
-            setSelectedAssetId(assetId);
-            handleSetActiveSection('golden-circle');
-          }}
         />
       );
     }
@@ -485,13 +476,9 @@ function AppContent() {
               setSelectedAssetId(assetId);
               handleSetActiveSection('workshop-purchase');
             }}
-            onNavigateToGoldenCircle={(assetId) => {
-              setSelectedAssetId(assetId);
-              handleSetActiveSection('golden-circle');
-            }}
           />
         );
-      
+
       // 🎨 Brandstyle Analyzer + Styleguide
       case 'brandstyle':
         return (
@@ -851,29 +838,12 @@ function AppContent() {
                 handleSetActiveSection('brand');
               }
             }}
-            onOpenInGoldenCircle={selectedAssetId ? () => {
-              handleSetActiveSection('golden-circle');
-            } : undefined}
           />
         );
 
       case 'interviews':
         return (
           <InterviewsPage
-            assetId={selectedAssetId ?? ''}
-            onBack={() => {
-              if (selectedAssetId) {
-                handleNavigateAssetDetail(selectedAssetId);
-              } else {
-                handleSetActiveSection('brand');
-              }
-            }}
-          />
-        );
-
-      case 'golden-circle':
-        return (
-          <GoldenCirclePage
             assetId={selectedAssetId ?? ''}
             onBack={() => {
               if (selectedAssetId) {

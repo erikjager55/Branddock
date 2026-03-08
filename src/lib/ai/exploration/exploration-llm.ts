@@ -236,8 +236,7 @@ export async function generateFeedback(params: {
       systemPrompt,
       messages: [
         { role: 'assistant', content: question },
-        { role: 'user', content: answer },
-        { role: 'user', content: 'Give brief feedback on my answer above.' },
+        { role: 'user', content: `${answer}\n\nGive brief feedback on my answer above.` },
       ],
       temperature: 0.7,
       maxTokens: 200,
@@ -336,9 +335,10 @@ ${fieldList}
 - Dimension summaries: 1-2 sentences each, highlighting the most important insight from that dimension
 - Findings: 5 key findings with title + description (1-2 sentences each)
 - Recommendations: 5 strategic recommendations (1 sentence each)
-- Field suggestions: suggest updates ONLY for fields that are empty or could be meaningfully improved based on the conversation. Include the field key, label, suggested value, and a brief reason.
+- Field suggestions: suggest a value for EVERY field listed in "Updatable Fields" above. For fields that are empty, provide a value based on the conversation. For fields that already have a value, suggest an improved or refined version if the conversation reveals better content. Include the field key, label, suggested value, and a brief reason for each.
 - For string[] fields, provide an array of strings as suggestedValue
 - For string fields, provide a single string as suggestedValue
+- For object fields (like scores or slider positions), provide a JSON object as suggestedValue
 - Respond ONLY with valid JSON, no markdown code blocks, no extra text`;
 
   const userMessage = `Here is the full exploration conversation:\n\n${qaText}\n\nGenerate a comprehensive analysis report as JSON with this exact structure:
@@ -378,6 +378,28 @@ ${fieldList}
 }
 
 // ─── Report JSON Parser ─────────────────────────────────────
+
+/**
+ * Serialize a suggestedValue from the LLM into a string or string[].
+ * - Arrays of strings → string[] (pass through)
+ * - Arrays of objects → JSON string (e.g. personality traits)
+ * - Plain objects → JSON string (e.g. dimension scores, slider positions)
+ * - Primitives → String()
+ */
+function serializeSuggestedValue(value: unknown): string | string[] {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) {
+    // Array of simple strings → keep as string[]
+    if (value.every((v) => typeof v === 'string')) return value as string[];
+    // Array of objects (e.g. personalityTraits) → serialize to JSON
+    return JSON.stringify(value);
+  }
+  // Object (e.g. dimensionScores, spectrumSliders) → serialize to JSON
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value);
+}
 
 function parseReportJSON(raw: string, dimensions: DimensionDef[]): GeneratedReport {
   let cleaned = raw.trim();
@@ -428,7 +450,7 @@ function parseReportJSON(raw: string, dimensions: DimensionDef[]): GeneratedRepo
       ? parsed.fieldSuggestions.map((s: Record<string, unknown>) => ({
           field: String(s.field || ''),
           label: String(s.label || ''),
-          suggestedValue: (Array.isArray(s.suggestedValue) ? s.suggestedValue.map(String) : String(s.suggestedValue ?? '')),
+          suggestedValue: serializeSuggestedValue(s.suggestedValue),
           reason: String(s.reason || ''),
         }))
       : [],

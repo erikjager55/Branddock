@@ -8,8 +8,7 @@ import type {
   PurposeWheelFrameworkData,
   BrandEssenceFrameworkData,
   BrandPromiseFrameworkData,
-  MissionStatementFrameworkData,
-  VisionStatementFrameworkData,
+  MissionVisionFrameworkData,
   BrandArchetypeFrameworkData,
   TransformativeGoalsFrameworkData,
   BrandPersonalityFrameworkData,
@@ -103,24 +102,27 @@ export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck
       break;
     }
     case 'MISSION_STATEMENT': {
-      const ms = data as MissionStatementFrameworkData;
+      const mv = data as MissionVisionFrameworkData;
       fields.push(
-        { label: 'Mission Statement', filled: !!ms?.missionStatement },
-        { label: 'What We Do', filled: !!ms?.whatWeDo },
-        { label: 'For Whom', filled: !!ms?.forWhom },
-        { label: 'How We Do It', filled: !!ms?.howWeDoIt },
-        { label: 'Impact Goal', filled: !!ms?.impactGoal },
-      );
-      break;
-    }
-    case 'VISION_STATEMENT': {
-      const vs = data as VisionStatementFrameworkData;
-      fields.push(
-        { label: 'Vision Statement', filled: !!vs?.visionStatement },
-        { label: 'Time Horizon', filled: !!vs?.timeHorizon },
-        { label: 'Desired Future State', filled: !!vs?.desiredFutureState },
-        { label: 'Bold Aspiration', filled: !!vs?.boldAspiration },
-        { label: 'Success Indicators', filled: !!vs?.successIndicators },
+        // Card 1: Mission Statement
+        { label: 'Mission Statement', filled: !!mv?.missionStatement },
+        { label: 'Mission One-Liner', filled: !!mv?.missionOneLiner },
+        // Card 2: Mission Components
+        { label: 'For Whom', filled: !!mv?.forWhom },
+        { label: 'What We Do', filled: !!mv?.whatWeDo },
+        { label: 'How We Do It', filled: !!mv?.howWeDoIt },
+        // Card 3: Vision Statement
+        { label: 'Vision Statement', filled: !!mv?.visionStatement },
+        { label: 'Time Horizon', filled: !!mv?.timeHorizon },
+        { label: 'Bold Aspiration', filled: !!mv?.boldAspiration },
+        // Card 4: Envisioned Future
+        { label: 'Desired Future State', filled: !!mv?.desiredFutureState },
+        { label: 'Success Indicators', filled: Array.isArray(mv?.successIndicators) ? mv.successIndicators.filter(Boolean).length > 0 : !!mv?.successIndicators },
+        { label: 'Stakeholder Benefit', filled: !!mv?.stakeholderBenefit },
+        // Card 5: Impact & Alignment
+        { label: 'Impact Goal', filled: !!mv?.impactGoal },
+        { label: 'Values Alignment', filled: !!mv?.valuesAlignment },
+        { label: 'Mission-Vision Tension', filled: !!mv?.missionVisionTension },
       );
       break;
     }
@@ -163,11 +165,21 @@ export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck
     }
     case 'BRAND_PERSONALITY': {
       const bpe = data as BrandPersonalityFrameworkData;
+      const scores = bpe?.dimensionScores;
+      const hasScores = scores && Object.values(scores).some(v => v > 0);
       fields.push(
+        { label: 'Dimension Scores', filled: !!hasScores },
         { label: 'Primary Dimension', filled: !!bpe?.primaryDimension },
         { label: 'Personality Traits', filled: (bpe?.personalityTraits?.length ?? 0) >= 3 },
-        { label: 'Tone of Voice', filled: !!bpe?.toneOfVoice },
-        { label: 'Personality in Practice', filled: !!bpe?.personalityInPractice },
+        { label: 'Spectrum Sliders', filled: !!(bpe?.spectrumSliders && Object.values(bpe.spectrumSliders).some(v => v !== 4)) },
+        { label: 'Tone Dimensions', filled: !!(bpe?.toneDimensions && Object.values(bpe.toneDimensions).some(v => v !== 4)) },
+        { label: 'Brand Voice', filled: !!bpe?.brandVoiceDescription },
+        { label: 'Words We Use', filled: Array.isArray(bpe?.wordsWeUse) && bpe.wordsWeUse.length > 0 },
+        { label: 'Words We Avoid', filled: Array.isArray(bpe?.wordsWeAvoid) && bpe.wordsWeAvoid.length > 0 },
+        { label: 'Writing Sample', filled: !!bpe?.writingSample },
+        { label: 'Channel Tones', filled: !!(bpe?.channelTones && Object.values(bpe.channelTones).some(v => !!v)) },
+        { label: 'Color Direction', filled: !!bpe?.colorDirection },
+        { label: 'Typography Direction', filled: !!bpe?.typographyDirection },
       );
       break;
     }

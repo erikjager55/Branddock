@@ -28,6 +28,29 @@ function deepSet(obj: Record<string, unknown>, path: string, value: unknown): vo
   current[keys[keys.length - 1]] = value;
 }
 
+/**
+ * Try to parse a string value as JSON (for objects/arrays that were serialized).
+ * Falls back to the original value if not valid JSON or if it's a plain string.
+ */
+function maybeParseJSON(value: unknown): unknown {
+  if (typeof value !== 'string') return value;
+  const trimmed = value.trim();
+  // Parse JSON objects and arrays
+  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return value;
+    }
+  }
+  // Restore bare numbers (e.g. scores serialized as "42" or "3.5")
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+    return Number(trimmed);
+  }
+  return value;
+}
+
 // ─── Component ─────────────────────────────────────────────
 
 interface AIBrandAssetExplorationPageProps {
@@ -96,7 +119,8 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
             const merged = JSON.parse(JSON.stringify(existing));
 
             for (const [key, value] of Object.entries(frameworkUpdates)) {
-              deepSet(merged, key, value);
+              // Parse JSON strings back to objects/arrays (e.g. dimensionScores, personalityTraits)
+              deepSet(merged, key, maybeParseJSON(value));
             }
 
             console.log('[onApplyChanges] Sending to /framework:', JSON.stringify(merged).slice(0, 200));

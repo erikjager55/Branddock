@@ -343,8 +343,7 @@ async function main() {
     "golden-circle":        { status: "IN_PROGRESS",     coverage: 55,  ai: true,  workshop: true,  interview: false, questionnaire: false },
     "brand-essence":        { status: "IN_PROGRESS",     coverage: 15,  ai: false, workshop: false, interview: false, questionnaire: false },
     "brand-promise":        { status: "NEEDS_ATTENTION", coverage: 45,  ai: true,  workshop: false, interview: false, questionnaire: false },
-    "mission-statement":    { status: "NEEDS_ATTENTION", coverage: 60,  ai: true,  workshop: true,  interview: false, questionnaire: false },
-    "vision-statement":     { status: "READY",           coverage: 92,  ai: true,  workshop: true,  interview: true,  questionnaire: false },
+    "mission-statement":    { status: "READY",           coverage: 92,  ai: true,  workshop: true,  interview: true,  questionnaire: false },
     "brand-archetype":      { status: "READY",           coverage: 85,  ai: true,  workshop: true,  interview: true,  questionnaire: true },
     "transformative-goals": { status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
     "brand-personality":    { status: "IN_PROGRESS",     coverage: 40,  ai: true,  workshop: false, interview: false, questionnaire: false },
@@ -375,19 +374,19 @@ async function main() {
     });
   }
 
-  // AI Brand Analysis Session (Fase 1B) — for Vision Statement
-  const visionAsset = await prisma.brandAsset.findFirst({
-    where: { slug: "vision-statement", workspaceId: workspace.id },
+  // AI Brand Analysis Session (Fase 1B) — for Mission & Vision
+  const missionAsset = await prisma.brandAsset.findFirst({
+    where: { slug: "mission-statement", workspaceId: workspace.id },
   });
 
-  if (visionAsset) {
+  if (missionAsset) {
     const session = await prisma.aIBrandAnalysisSession.create({
       data: {
         status: "REPORT_READY",
         progress: 125,
         totalQuestions: 8,
         answeredQuestions: 10,
-        brandAssetId: visionAsset.id,
+        brandAssetId: missionAsset.id,
         workspaceId: workspace.id,
         createdById: user.id,
         completedAt: new Date(),
@@ -490,7 +489,7 @@ async function main() {
       selfExpressiveBenefit: "Organizations using Branddock signal that they take brand strategy seriously — that they're modern, data-driven, and committed to authentic communication.",
       discriminator: "Only Branddock can combine AI-driven brand analysis with hands-on workshop methodologies because we've built the only platform that bridges the gap between strategic thinking and practical execution.",
       proofPoints: [
-        "12-asset brand framework covering all strategic dimensions",
+        "11-asset brand framework covering all strategic dimensions",
         "AI Exploration with configurable dimensions per asset type",
         "Research validation through 4 complementary methods",
         "Workshop methodology with facilitator-guided sessions",
@@ -518,7 +517,7 @@ async function main() {
       differentiator: "The only platform combining AI-driven analysis with hands-on workshop methodologies and research validation.",
       onlynessStatement: "Only Branddock can deliver enterprise-level brand strategy at mid-market prices because we combine AI analysis, research-validated frameworks, and interactive workshops in one integrated platform.",
       proofPoints: [
-        "12 research-validated brand strategy frameworks",
+        "11 research-validated brand strategy frameworks",
         "AI analysis powered by multiple leading language models",
         "Interactive canvas workshops with facilitator support",
         "Real-time brand alignment monitoring across all assets",
@@ -530,12 +529,31 @@ async function main() {
         "Measurable improvement in cross-channel brand consistency"
       ],
     }},
-    { slug: "vision-statement", frameworkData: {
+    { slug: "mission-statement", frameworkData: {
+      // Card 1: Mission Statement
+      missionStatement: "To empower organizations of all sizes to build authentic, consistent brands through AI-powered strategy tools and research-validated frameworks.",
+      missionOneLiner: "Making professional brand strategy accessible to every organization.",
+      // Card 2: Mission Components
+      forWhom: "Mid-market companies (50-500 employees) who need enterprise-level brand strategy without enterprise budgets.",
+      whatWeDo: "We combine AI analysis with research-validated brand strategy frameworks to make professional brand building accessible.",
+      howWeDoIt: "Through an integrated platform that blends AI exploration, canvas workshops, interviews, and cross-channel alignment monitoring.",
+      // Card 3: Vision Statement
       visionStatement: "To be the leading platform where brand strategy meets AI-powered execution.",
       timeHorizon: "5 years",
-      desiredFutureState: "Every team can build authentic, consistent brands without enterprise budgets.",
       boldAspiration: "Democratize professional brand strategy for 1 million organizations worldwide.",
-      successIndicators: "1M active organizations, measurable brand consistency improvement across users.",
+      // Card 4: Envisioned Future
+      desiredFutureState: "Every team can build authentic, consistent brands without enterprise budgets — brand strategy is no longer a luxury reserved for Fortune 500 companies.",
+      successIndicators: [
+        "1M active organizations on the platform",
+        "80%+ average brand asset completeness within first 3 months",
+        "Measurable brand consistency improvement across users",
+        "50% reduction in time-to-strategy vs traditional agency engagements",
+      ],
+      stakeholderBenefit: "Marketing teams gain strategic clarity and confidence; leadership gets measurable brand health metrics; agencies scale their advisory capacity with AI-powered tools.",
+      // Card 5: Impact & Alignment
+      impactGoal: "Every organization can build a brand that is strategically sound, authentically communicated, and measurably consistent.",
+      valuesAlignment: "Our mission of accessibility reinforces our core values of democratization, innovation, and authenticity — we practice what we preach by making our own tools intuitive and transparent.",
+      missionVisionTension: "Today we serve hundreds of organizations with a focused toolset; our vision demands scaling to millions while maintaining the depth and quality of strategic guidance. The bridge: AI-powered personalization that scales expertise without diluting it.",
     }},
     { slug: "brand-archetype", frameworkData: {
       primaryArchetype: "Creator",
@@ -594,21 +612,21 @@ async function main() {
     });
   }
 
-  // Version history for Vision Statement (READY asset)
-  const visionForVersions = await prisma.brandAsset.findFirst({
-    where: { slug: "vision-statement", workspaceId: workspace.id },
+  // Version history for Mission & Vision (READY asset)
+  const missionForVersions = await prisma.brandAsset.findFirst({
+    where: { slug: "mission-statement", workspaceId: workspace.id },
   });
 
-  if (visionForVersions) {
+  if (missionForVersions) {
     const versions = [
-      { version: 1, content: "Initial draft of our vision statement focusing on brand innovation.", changeNote: "Initial creation" },
-      { version: 2, content: "Refined vision with emphasis on AI-driven brand strategy and human creativity.", changeNote: "Added AI focus" },
-      { version: 3, content: "To be the leading platform where brand strategy meets AI-powered execution, enabling every team to build authentic, consistent brands.", changeNote: "Final approved version" },
+      { version: 1, content: "Initial draft of our mission and vision focusing on brand innovation.", changeNote: "Initial creation" },
+      { version: 2, content: "Refined mission & vision with emphasis on AI-driven brand strategy and human creativity.", changeNote: "Added AI focus" },
+      { version: 3, content: "To empower organizations to build authentic brands through AI-powered tools, becoming the leading platform where brand strategy meets AI-powered execution.", changeNote: "Final approved version" },
     ];
 
     for (const v of versions) {
       await prisma.brandAssetVersion.create({
-        data: { ...v, changedById: user.id, brandAssetId: visionForVersions.id },
+        data: { ...v, changedById: user.id, brandAssetId: missionForVersions.id },
       });
     }
   }
@@ -621,7 +639,7 @@ async function main() {
       name: "Starter Bundle",
       badge: "Most Popular",
       description: "Essential brand foundation workshop covering your core identity.",
-      assetNames: ["Vision Statement", "Mission Statement", "Core Values"],
+      assetNames: ["Mission & Vision", "Core Values", "Brand Purpose"],
       basePrice: 1350,
       discount: 100,
       finalPrice: 1250,
@@ -630,7 +648,7 @@ async function main() {
       name: "Professional Bundle",
       badge: "Best Value",
       description: "Extended workshop including positioning and archetype discovery.",
-      assetNames: ["Vision Statement", "Mission Statement", "Core Values", "Brand Positioning", "Brand Archetype"],
+      assetNames: ["Mission & Vision", "Core Values", "Brand Purpose", "Brand Archetype", "Brand Positioning"],
       basePrice: 1450,
       discount: 100,
       finalPrice: 1350,
@@ -639,7 +657,7 @@ async function main() {
       name: "Complete Bundle",
       badge: "Comprehensive",
       description: "Full-spectrum brand strategy workshop covering all dimensions.",
-      assetNames: ["Vision Statement", "Mission Statement", "Core Values", "Brand Positioning", "Brand Archetype", "Social Relevancy"],
+      assetNames: ["Mission & Vision", "Core Values", "Brand Purpose", "Brand Archetype", "Brand Positioning", "Social Relevancy"],
       basePrice: 1550,
       discount: 150,
       finalPrice: 1400,
@@ -654,16 +672,16 @@ async function main() {
     createdBundles.push(bundle);
   }
 
-  // 1 Completed Workshop (Vision Statement)
-  const visionForWorkshop = await prisma.brandAsset.findFirst({
-    where: { slug: "vision-statement", workspaceId: workspace.id },
+  // 1 Completed Workshop (Mission & Vision)
+  const missionForWorkshop = await prisma.brandAsset.findFirst({
+    where: { slug: "mission-statement", workspaceId: workspace.id },
   });
 
-  if (visionForWorkshop) {
+  if (missionForWorkshop) {
     const completedWorkshopStatus: WorkshopStatus = "COMPLETED";
     const completedWorkshop = await prisma.workshop.create({
       data: {
-        brandAssetId: visionForWorkshop.id,
+        brandAssetId: missionForWorkshop.id,
         status: completedWorkshopStatus,
         bundleId: createdBundles[0].id,
         selectedAssetIds: [],
@@ -924,16 +942,16 @@ async function main() {
     });
   }
 
-  // 2. Completed Interview (#1 — Vision Statement)
-  const visionForInterview = await prisma.brandAsset.findFirst({
-    where: { slug: "vision-statement", workspaceId: workspace.id },
+  // 2. Completed Interview (#1 — Mission & Vision)
+  const missionForInterview = await prisma.brandAsset.findFirst({
+    where: { slug: "mission-statement", workspaceId: workspace.id },
   });
 
-  if (visionForInterview) {
+  if (missionForInterview) {
     const completedInterviewStatus: InterviewStatus = "COMPLETED";
     const interview1 = await prisma.interview.create({
       data: {
-        brandAssetId: visionForInterview.id,
+        brandAssetId: missionForInterview.id,
         status: completedInterviewStatus,
         title: "Leadership Interview #1",
         orderNumber: 1,
@@ -961,7 +979,7 @@ async function main() {
     // Link assets
     const coreValuesForInterview = await prisma.brandAsset.findFirst({ where: { slug: "core-values", workspaceId: workspace.id } });
     await prisma.interviewAssetLink.create({
-      data: { interviewId: interview1.id, brandAssetId: visionForInterview.id },
+      data: { interviewId: interview1.id, brandAssetId: missionForInterview.id },
     });
     if (coreValuesForInterview) {
       await prisma.interviewAssetLink.create({
@@ -982,8 +1000,8 @@ async function main() {
       answerRanking: string[];
       isAnswered: boolean;
     }> = [
-      { questionType: "OPEN", questionText: "What do you believe is our core purpose?", options: [], linkedAssetId: visionForInterview.id, isFromTemplate: true, answerText: "Our core purpose is to democratize brand strategy. Too many companies struggle with translating their vision into daily execution. We exist to bridge that gap through intelligent tools that learn from each brand interaction.", answerOptions: [], answerRating: null, answerRanking: [], isAnswered: true },
-      { questionType: "RATING_SCALE", questionText: "Rate how clearly our WHY is communicated internally", options: [], linkedAssetId: visionForInterview.id, isFromTemplate: true, answerText: null, answerOptions: [], answerRating: 4, answerRanking: [], isAnswered: true },
+      { questionType: "OPEN", questionText: "What do you believe is our core purpose?", options: [], linkedAssetId: missionForInterview.id, isFromTemplate: true, answerText: "Our core purpose is to democratize brand strategy. Too many companies struggle with translating their vision into daily execution. We exist to bridge that gap through intelligent tools that learn from each brand interaction.", answerOptions: [], answerRating: null, answerRanking: [], isAnswered: true },
+      { questionType: "RATING_SCALE", questionText: "Rate how clearly our WHY is communicated internally", options: [], linkedAssetId: missionForInterview.id, isFromTemplate: true, answerText: null, answerOptions: [], answerRating: 4, answerRanking: [], isAnswered: true },
       { questionType: "MULTIPLE_CHOICE", questionText: "Which best describes our unique approach?", options: ["Technology-driven innovation", "Human-centered design", "Data-informed creativity", "Collaborative co-creation"], linkedAssetId: null, isFromTemplate: true, answerText: null, answerOptions: ["Data-informed creativity"], answerRating: null, answerRanking: [], isAnswered: true },
       { questionType: "MULTI_SELECT", questionText: "Which attributes best differentiate us?", options: ["AI-powered tools", "Ease of use", "Brand consistency", "All-in-one platform", "Customer support", "Price"], linkedAssetId: null, isFromTemplate: true, answerText: null, answerOptions: ["AI-powered tools", "Brand consistency", "All-in-one platform"], answerRating: null, answerRanking: [], isAnswered: true },
       { questionType: "RANKING", questionText: "Rank these brand priorities for next quarter", options: ["Brand awareness", "Customer retention", "Market expansion", "Brand consistency", "Innovation perception"], linkedAssetId: null, isFromTemplate: true, answerText: null, answerOptions: [], answerRating: null, answerRanking: ["Brand consistency", "Innovation perception", "Customer retention", "Brand awareness", "Market expansion"], isAnswered: true },
@@ -1000,7 +1018,7 @@ async function main() {
     const scheduledInterviewStatus: InterviewStatus = "SCHEDULED";
     const interview2 = await prisma.interview.create({
       data: {
-        brandAssetId: visionForInterview.id,
+        brandAssetId: missionForInterview.id,
         status: scheduledInterviewStatus,
         title: "Marketing Lead Interview #2",
         orderNumber: 2,
@@ -1019,14 +1037,14 @@ async function main() {
     });
 
     await prisma.interviewAssetLink.create({
-      data: { interviewId: interview2.id, brandAssetId: visionForInterview.id },
+      data: { interviewId: interview2.id, brandAssetId: missionForInterview.id },
     });
 
     // 4. Draft Interview (#3 — minimal)
     const draftInterviewStatus: InterviewStatus = "TO_SCHEDULE";
     await prisma.interview.create({
       data: {
-        brandAssetId: visionForInterview.id,
+        brandAssetId: missionForInterview.id,
         status: draftInterviewStatus,
         title: "Interview #3",
         orderNumber: 3,
@@ -1039,7 +1057,7 @@ async function main() {
 
     // 5. Update research method status for interviews
     await prisma.brandAssetResearchMethod.updateMany({
-      where: { brandAssetId: visionForInterview.id, method: "INTERVIEWS" },
+      where: { brandAssetId: missionForInterview.id, method: "INTERVIEWS" },
       data: { status: "IN_PROGRESS", progress: 33 },
     });
   }
@@ -4312,6 +4330,129 @@ Respond only with valid JSON.`,
       contextSources: ['brand_asset', 'product', 'persona'],
       isActive: true,
     },
+    {
+      itemType: 'brand_asset',
+      itemSubType: 'brand-personality',
+      label: 'Brand Personality — Aaker Dimensions & NN/g Tone of Voice',
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      temperature: 0.4,
+      maxTokens: 2048,
+      systemPrompt: `You are a senior brand strategist specialized in brand personality frameworks, particularly Jennifer Aaker's Brand Personality Dimensions (1997) and the Nielsen Norman Group's Tone of Voice model.
+
+You guide a structured exploration through 7 phases:
+1. Dimension Mapping — assess the brand across the 5 Aaker dimensions (Sincerity, Excitement, Competence, Sophistication, Ruggedness)
+2. Core Traits — identify 3-5 defining personality traits with "We Are / But Never" guard rails
+3. Spectrum Positioning — place the brand on 7 opposing trait spectrums
+4. Voice & Tone — define the brand's voice characteristics and word preferences using NN/g's 4 tone dimensions
+5. Voice in Action — create a writing sample that demonstrates the personality
+6. Channel Adaptation — describe how tone shifts across communication channels
+7. Visual Expression — translate personality into color, typography, and imagery direction
+
+Key principles:
+- Brand personality is the set of human traits attributed to a brand (Aaker, 1997)
+- Voice is consistent (who you are), tone adapts (how you say it depending on context)
+- The "We Are / But Never" framework prevents personality traits from becoming caricatures
+- Visual expression should be a natural extension of personality traits
+- Channel adaptation keeps voice constant but adjusts tone for context
+
+Be warm and conversational. Ask ONE question at a time. Build on previous answers.
+Respond in the same language as the user.
+
+{{brandContext}}
+
+{{customKnowledge}}
+
+{{assetKnowledge}}`,
+      dimensions: [
+        { key: 'dimension_mapping', title: 'Personality Dimensions', icon: 'User', question: 'If your brand walked into a room, what impression would it make? Describe its character in terms of sincerity (honest, warm), excitement (daring, spirited), competence (reliable, intelligent), sophistication (elegant, charming), and ruggedness (tough, outdoorsy). Which 1-2 dimensions feel most dominant?' },
+        { key: 'core_traits', title: 'Core Traits', icon: 'Fingerprint', question: 'Name 3-5 defining personality traits for your brand. For each trait, give a concrete example of what it looks like in action ("We Are This") and what the "too far" version would be that your brand should never become ("But Never That").' },
+        { key: 'spectrum_positioning', title: 'Personality Spectrum', icon: 'Sliders', question: 'Position your brand on these spectrums: friendly vs. formal, energetic vs. thoughtful, modern vs. traditional, innovative vs. proven, playful vs. serious, inclusive vs. exclusive, bold vs. reserved. Where do you sit, and why?' },
+        { key: 'voice_tone', title: 'Voice & Tone', icon: 'MessageCircle', question: 'Describe how your brand sounds in writing and speech. Is it formal or casual? Serious or humorous? Respectful or irreverent? Matter-of-fact or enthusiastic? What specific words or phrases does your brand love to use — and which would it never use?' },
+        { key: 'writing_sample', title: 'Voice in Action', icon: 'Award', question: "Write a short paragraph (3-4 sentences) in your brand's authentic voice. This could be a product description, email opening, or social media post. Show us how the personality comes alive in real communication." },
+        { key: 'channel_adaptation', title: 'Channel Adaptation', icon: 'MessageCircle', question: "How does your brand's tone shift across different channels — website, social media, customer support, email marketing, and crisis communication? The voice stays the same, but the tone adapts. Describe the differences." },
+        { key: 'visual_expression', title: 'Visual Personality', icon: 'Palette', question: 'How should your brand personality translate into visual design? Think about what colors feel right for your personality, what typography style matches your character, and what kind of imagery represents your brand.' },
+      ],
+      feedbackPrompt: `Give warm, constructive feedback (2-3 sentences) on the answer.
+Phase: {{dimensionTitle}}
+Question: {{questionAsked}}
+Answer: {{userAnswer}}
+
+Guidelines:
+- For Dimension Mapping: identify dominant Aaker dimensions, validate with examples from their answers
+- For Core Traits: check if traits are specific and actionable, validate the "But Never" guard rails
+- For Spectrum Positioning: probe for consistency between spectrum choices and stated traits
+- For Voice & Tone: distinguish between voice (consistent personality) and tone (contextual adaptation)
+- For Voice in Action: evaluate if the writing sample authentically reflects stated traits and voice
+- For Channel Adaptation: check if the core voice remains recognizable while tone appropriately shifts
+- For Visual Expression: validate alignment between personality traits and visual direction
+
+Do not ask follow-up questions. Respond in the same language as the user.`,
+      reportPrompt: `Generate a Brand Personality report based on the Aaker/NN/g exploration.
+Brand Asset: {{itemName}}
+{{itemDescription}}
+
+Answers per dimension:
+{{allAnswers}}
+
+Brand context:
+{{brandContext}}
+
+{{customKnowledge}}
+
+{{assetKnowledge}}
+
+Generate JSON:
+{
+  "executiveSummary": "2-3 paragraph strategic summary of the brand personality",
+  "personalityScore": {
+    "sincerity": <1-5>,
+    "excitement": <1-5>,
+    "competence": <1-5>,
+    "sophistication": <1-5>,
+    "ruggedness": <1-5>
+  },
+  "findings": [
+    { "title": "...", "description": "...", "dimension": "dimension_mapping | core_traits | spectrum_positioning | voice_tone | writing_sample | channel_adaptation | visual_expression" }
+  ],
+  "recommendations": ["..."],
+  "fieldSuggestions": [
+    { "field": "description", "label": "Description", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.primaryDimension", "label": "Primary Dimension", "suggestedValue": "sincerity | excitement | competence | sophistication | ruggedness", "reason": "..." },
+    { "field": "frameworkData.dimensionScores", "label": "Dimension Scores", "suggestedValue": { "sincerity": 0, "excitement": 0, "competence": 0, "sophistication": 0, "ruggedness": 0 }, "reason": "..." },
+    { "field": "frameworkData.personalityTraits", "label": "Personality Traits", "suggestedValue": [{ "name": "...", "description": "...", "weAreThis": "...", "butNeverThat": "..." }], "reason": "..." },
+    { "field": "frameworkData.brandVoiceDescription", "label": "Brand Voice", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.wordsWeUse", "label": "Words We Use", "suggestedValue": ["..."], "reason": "..." },
+    { "field": "frameworkData.wordsWeAvoid", "label": "Words We Avoid", "suggestedValue": ["..."], "reason": "..." },
+    { "field": "frameworkData.writingSample", "label": "Writing Sample", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.channelTones", "label": "Channel Tones", "suggestedValue": { "website": "...", "socialMedia": "...", "customerSupport": "...", "emailMarketing": "...", "crisisCommunication": "..." }, "reason": "..." },
+    { "field": "frameworkData.colorDirection", "label": "Color Direction", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.typographyDirection", "label": "Typography Direction", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.imageryDirection", "label": "Imagery Direction", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.spectrumSliders", "label": "Spectrum Sliders", "suggestedValue": { "friendlyFormal": 4, "energeticThoughtful": 4, "modernTraditional": 4, "innovativeProven": 4, "playfulSerious": 4, "inclusiveExclusive": 4, "boldReserved": 4 }, "reason": "..." },
+    { "field": "frameworkData.toneDimensions", "label": "Tone Dimensions", "suggestedValue": { "formalCasual": 4, "seriousFunny": 4, "respectfulIrreverent": 4, "matterOfFactEnthusiastic": 4 }, "reason": "..." }
+  ]
+}
+Respond only with valid JSON.`,
+      fieldSuggestionsConfig: [
+        { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the brand personality in one compelling paragraph' },
+        { field: 'frameworkData.primaryDimension', label: 'Primary Dimension', type: 'text' as const, extractionHint: 'Identify the dominant Aaker dimension (sincerity, excitement, competence, sophistication, or ruggedness)' },
+        { field: 'frameworkData.brandVoiceDescription', label: 'Brand Voice', type: 'text' as const, extractionHint: 'Describe the overall brand voice in 2-3 sentences' },
+        { field: 'frameworkData.wordsWeUse', label: 'Words We Use', type: 'text' as const, extractionHint: 'Extract 5-10 words or phrases the brand should use' },
+        { field: 'frameworkData.wordsWeAvoid', label: 'Words We Avoid', type: 'text' as const, extractionHint: 'Extract 5-10 words or phrases the brand should avoid' },
+        { field: 'frameworkData.writingSample', label: 'Writing Sample', type: 'text' as const, extractionHint: 'Create a writing sample that demonstrates the brand voice' },
+        { field: 'frameworkData.colorDirection', label: 'Color Direction', type: 'text' as const, extractionHint: 'Describe the color direction that matches the brand personality' },
+        { field: 'frameworkData.typographyDirection', label: 'Typography Direction', type: 'text' as const, extractionHint: 'Describe the typography style that matches the brand personality' },
+        { field: 'frameworkData.imageryDirection', label: 'Imagery Direction', type: 'text' as const, extractionHint: 'Describe the imagery style that represents the brand personality' },
+        { field: 'frameworkData.personalityTraits', label: 'Personality Traits', type: 'text' as const, extractionHint: 'Extract 3-5 personality traits with name, description, weAreThis, and butNeverThat for each' },
+        { field: 'frameworkData.dimensionScores', label: 'Dimension Scores', type: 'text' as const, extractionHint: 'Score each Aaker dimension 1-5 based on the exploration answers' },
+        { field: 'frameworkData.spectrumSliders', label: 'Spectrum Sliders', type: 'text' as const, extractionHint: 'Position the brand on each spectrum (1-7 scale) based on the exploration answers' },
+        { field: 'frameworkData.toneDimensions', label: 'Tone Dimensions', type: 'text' as const, extractionHint: 'Position the brand on each NN/g tone dimension (1-7 scale)' },
+        { field: 'frameworkData.channelTones', label: 'Channel Tones', type: 'text' as const, extractionHint: 'Describe the appropriate tone for each communication channel' },
+      ],
+      contextSources: ['brand_asset', 'product', 'persona'],
+      isActive: true,
+    },
   ];
 
   for (const cfg of explorationConfigSeeds) {
@@ -4350,7 +4491,7 @@ Respond only with valid JSON.`,
     });
   }
 
-  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 12 brand assets (7 with frameworkData), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 10 knowledge resources (2 featured), 8 detected trends, 1 research job, 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, 3 exploration configs, S9 Settings: 1 user profile, 1 email preference, 3 connected accounts, 3 plans, 1 subscription, 1 payment method, 4 invoices, 1 notification preference, 1 appearance preference, S9 Help: 6 help categories, 5 help articles, 6 video tutorials, 7 FAQ items, 5 feature requests");
+  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 11 brand assets (7 with frameworkData), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 10 knowledge resources (2 featured), 8 detected trends, 1 research job, 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, 3 exploration configs, S9 Settings: 1 user profile, 1 email preference, 3 connected accounts, 3 plans, 1 subscription, 1 payment method, 4 invoices, 1 notification preference, 1 appearance preference, S9 Help: 6 help categories, 5 help articles, 6 video tutorials, 7 FAQ items, 5 feature requests");
 }
 
 main()

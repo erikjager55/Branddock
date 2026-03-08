@@ -11,6 +11,51 @@ import {
 } from 'lucide-react';
 import type { ExplorationConfig, ExplorationInsightsData, FieldSuggestion } from './types';
 
+// ─── Display Helpers ──────────────────────────────────────
+
+/**
+ * Format a field value for display. Handles JSON-stringified objects/arrays
+ * by rendering them as readable key: value pairs or bullet lists.
+ */
+function formatDisplayValue(value: string | string[] | null): string {
+  if (value === null || value === undefined) return '—';
+  if (Array.isArray(value)) return value.join(', ');
+  if (typeof value !== 'string' || value.length === 0) return '—';
+
+  // Try to parse as JSON for structured display
+  const trimmed = value.trim();
+  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      return formatParsedValue(parsed);
+    } catch {
+      // Not valid JSON, return as-is
+    }
+  }
+
+  return value;
+}
+
+/** Recursively format a parsed JSON value for display. */
+function formatParsedValue(val: unknown): string {
+  if (val === null || val === undefined) return '—';
+  if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') return String(val);
+  if (Array.isArray(val)) {
+    return val.map((item) => formatParsedValue(item)).join(' | ');
+  }
+  if (typeof val === 'object') {
+    return Object.entries(val as Record<string, unknown>)
+      .map(([k, v]) => {
+        const formatted = typeof v === 'object' && v !== null ? formatParsedValue(v) : String(v);
+        return `${k}: ${formatted}`;
+      })
+      .join(', ');
+  }
+  return String(val);
+}
+
+
 interface AIExplorationSuggestionsProps {
   config: ExplorationConfig;
   insightsData: ExplorationInsightsData;
@@ -29,7 +74,7 @@ export function AIExplorationSuggestions({
     () => Object.fromEntries(suggestions.map((s) => [s.field, 'pending']))
   );
   const [editValues, setEditValues] = useState<Record<string, string>>(
-    () => Object.fromEntries(suggestions.map((s) => [s.field, Array.isArray(s.suggestedValue) ? s.suggestedValue.join(', ') : s.suggestedValue]))
+    () => Object.fromEntries(suggestions.map((s) => [s.field, Array.isArray(s.suggestedValue) ? s.suggestedValue.join(', ') : String(s.suggestedValue ?? '')]))
   );
   const [isApplying, setIsApplying] = useState(false);
 
@@ -37,7 +82,10 @@ export function AIExplorationSuggestions({
 
   const handleAcceptAll = () => {
     const updated: Record<string, SuggestionAction> = {};
-    suggestions.forEach((s) => { updated[s.field] = 'accepted'; });
+    suggestions.forEach((s) => {
+      // Preserve items the user has already edited
+      updated[s.field] = actions[s.field] === 'edited' ? 'edited' : 'accepted';
+    });
     setActions(updated);
   };
 
@@ -51,11 +99,13 @@ export function AIExplorationSuggestions({
         const action = actions[s.field];
         if (action === 'accepted') updates[s.field] = s.suggestedValue;
         if (action === 'edited') {
-          // Parse comma-separated values back to array if the original was an array
           const editVal = editValues[s.field];
-          updates[s.field] = Array.isArray(s.suggestedValue)
-            ? editVal.split(',').map((v) => v.trim()).filter(Boolean)
-            : editVal;
+          // If the original was an array, parse comma-separated values back
+          if (Array.isArray(s.suggestedValue)) {
+            updates[s.field] = editVal.split(',').map((v) => v.trim()).filter(Boolean);
+          } else {
+            updates[s.field] = editVal;
+          }
         }
       });
       if (config.onApplyChanges && Object.keys(updates).length > 0) {
@@ -284,7 +334,7 @@ function SuggestionCard({
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#9ca3af', marginBottom: '4px' }}>Current</div>
           <p className="text-sm" style={{ color: suggestion.currentValue ? '#374151' : '#d1d5db' }}>
-            {Array.isArray(suggestion.currentValue) ? suggestion.currentValue.join(', ') : suggestion.currentValue || '—'}
+            {formatDisplayValue(suggestion.currentValue)}
           </p>
         </div>
         <div>
@@ -307,7 +357,7 @@ function SuggestionCard({
               </button>
             </div>
           ) : (
-            <p className="text-sm" style={{ color: '#374151' }}>{Array.isArray(suggestion.suggestedValue) ? suggestion.suggestedValue.join(', ') : suggestion.suggestedValue}</p>
+            <p className="text-sm" style={{ color: '#374151' }}>{formatDisplayValue(suggestion.suggestedValue)}</p>
           )}
         </div>
       </div>

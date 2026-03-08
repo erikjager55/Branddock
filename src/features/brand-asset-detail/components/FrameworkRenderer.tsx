@@ -1,7 +1,6 @@
 "use client";
 
 import { ESGFramework } from "./frameworks/ESGFramework";
-import { GoldenCircleFramework } from "./frameworks/GoldenCircleFramework";
 import { SWOTFramework } from "./frameworks/SWOTFramework";
 import { PurposeKompasFramework } from "./frameworks/PurposeKompasFramework";
 import type { FrameworkType, PurposeKompasFrameworkData } from "../types/framework.types";
@@ -19,12 +18,12 @@ export function FrameworkRenderer({ type, data }: FrameworkRendererProps) {
   switch (type) {
     case "ESG":
       return <ESGFramework data={parsed} />;
-    case "GOLDEN_CIRCLE":
-      return <GoldenCircleFramework data={parsed} />;
     case "SWOT":
       return <SWOTFramework data={parsed} />;
     case "PURPOSE_KOMPAS":
       return <PurposeKompasFramework data={parsed as PurposeKompasFrameworkData} />;
+    case "GOLDEN_CIRCLE":
+      return null; // Rendered by GoldenCircleSection instead
     case "PURPOSE_WHEEL":
       return null; // Rendered by PurposeWheelSection instead
     case "BRAND_ESSENCE":
@@ -35,6 +34,8 @@ export function FrameworkRenderer({ type, data }: FrameworkRendererProps) {
       return null; // Rendered by TransformativeGoalsSection instead
     case "BRAND_ARCHETYPE":
       return null; // Rendered by BrandArchetypeSection instead
+    case "BRAND_PERSONALITY":
+      return null; // Rendered by BrandPersonalitySection instead
     default:
       return null; // New framework types are handled by their own sections
   }

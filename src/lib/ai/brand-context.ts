@@ -6,7 +6,7 @@
 // repeated DB reads within the same session.
 //
 // Models aggregated:
-//  - BrandAsset (all 12 canonical assets with content + framework data)
+//  - BrandAsset (all 11 canonical assets with content + framework data)
 //  - Persona (primary target audience description)
 //  - Product (products overview)
 //  - DetectedTrend (competitive landscape summary, activated trends only)
@@ -90,6 +90,56 @@ interface BrandPromiseData {
   onlynessStatement?: string;
   proofPoints?: string[];
   measurableOutcomes?: string[];
+}
+
+interface MissionVisionData {
+  missionStatement?: string;
+  missionOneLiner?: string;
+  forWhom?: string;
+  whatWeDo?: string;
+  howWeDoIt?: string;
+  visionStatement?: string;
+  timeHorizon?: string;
+  boldAspiration?: string;
+  desiredFutureState?: string;
+  successIndicators?: string | string[];
+  stakeholderBenefit?: string;
+  impactGoal?: string;
+  valuesAlignment?: string;
+  missionVisionTension?: string;
+}
+
+/** Format Mission & Vision frameworkData into a readable string for AI context */
+function formatMissionVision(data: MissionVisionData): string {
+  const parts: string[] = [];
+
+  // Mission core
+  if (data.missionOneLiner) parts.push(`Mission (one-liner): ${data.missionOneLiner}`);
+  if (data.missionStatement) parts.push(`Mission: ${data.missionStatement}`);
+  if (data.forWhom) parts.push(`For whom: ${data.forWhom}`);
+  if (data.whatWeDo) parts.push(`What we do: ${data.whatWeDo}`);
+  if (data.howWeDoIt) parts.push(`How we do it: ${data.howWeDoIt}`);
+  if (data.impactGoal) parts.push(`Impact goal: ${data.impactGoal}`);
+
+  // Vision
+  if (data.visionStatement) parts.push(`Vision: ${data.visionStatement}`);
+  if (data.timeHorizon) parts.push(`Time horizon: ${data.timeHorizon}`);
+  if (data.boldAspiration) parts.push(`Bold aspiration (BHAG): ${data.boldAspiration}`);
+  if (data.desiredFutureState) parts.push(`Desired future state: ${data.desiredFutureState}`);
+
+  // Success indicators (handle both string and string[])
+  const indicators = Array.isArray(data.successIndicators)
+    ? data.successIndicators.filter(Boolean)
+    : data.successIndicators ? [data.successIndicators] : [];
+  if (indicators.length > 0) {
+    parts.push(`Success indicators: ${indicators.join('; ')}`);
+  }
+
+  if (data.stakeholderBenefit) parts.push(`Stakeholder benefit: ${data.stakeholderBenefit}`);
+  if (data.valuesAlignment) parts.push(`Values alignment: ${data.valuesAlignment}`);
+  if (data.missionVisionTension) parts.push(`Mission-vision tension: ${data.missionVisionTension}`);
+
+  return parts.join('. ');
 }
 
 interface TransformativeGoalData {
@@ -274,6 +324,144 @@ function formatBrandArchetype(data: BrandArchetypeData): string {
   return parts.join('. ');
 }
 
+interface BrandPersonalityData {
+  dimensionScores?: Record<string, number>;
+  primaryDimension?: string;
+  secondaryDimension?: string;
+  personalityTraits?: { name?: string; description?: string; weAreThis?: string; butNeverThat?: string }[];
+  spectrumSliders?: Record<string, number>;
+  toneDimensions?: Record<string, number>;
+  brandVoiceDescription?: string;
+  wordsWeUse?: string[];
+  wordsWeAvoid?: string[];
+  writingSample?: string;
+  channelTones?: Record<string, string>;
+  colorDirection?: string;
+  typographyDirection?: string;
+  imageryDirection?: string;
+}
+
+const DIMENSION_LABELS: Record<string, string> = {
+  sincerity: 'Sincerity',
+  excitement: 'Excitement',
+  competence: 'Competence',
+  sophistication: 'Sophistication',
+  ruggedness: 'Ruggedness',
+};
+
+const SPECTRUM_LABELS: Record<string, [string, string]> = {
+  friendlyFormal: ['Friendly', 'Formal'],
+  energeticThoughtful: ['Energetic', 'Thoughtful'],
+  modernTraditional: ['Modern', 'Traditional'],
+  innovativeProven: ['Innovative', 'Proven'],
+  playfulSerious: ['Playful', 'Serious'],
+  inclusiveExclusive: ['Inclusive', 'Exclusive'],
+  boldReserved: ['Bold', 'Reserved'],
+};
+
+const TONE_LABELS: Record<string, [string, string]> = {
+  formalCasual: ['Formal', 'Casual'],
+  seriousFunny: ['Serious', 'Funny'],
+  respectfulIrreverent: ['Respectful', 'Irreverent'],
+  matterOfFactEnthusiastic: ['Matter-of-fact', 'Enthusiastic'],
+};
+
+/** Format Brand Personality frameworkData into a readable string for AI context */
+function formatBrandPersonality(data: BrandPersonalityData): string {
+  const parts: string[] = [];
+
+  // Primary/secondary dimension
+  if (data.primaryDimension) {
+    let identity = `Primary dimension: ${DIMENSION_LABELS[data.primaryDimension] || data.primaryDimension}`;
+    if (data.secondaryDimension) {
+      identity += `, Secondary: ${DIMENSION_LABELS[data.secondaryDimension] || data.secondaryDimension}`;
+    }
+    parts.push(identity);
+  }
+
+  // Dimension scores
+  if (data.dimensionScores) {
+    const scored = Object.entries(data.dimensionScores)
+      .filter(([, v]) => v > 0)
+      .sort(([, a], [, b]) => b - a)
+      .map(([k, v]) => `${DIMENSION_LABELS[k] || k}: ${v}/5`);
+    if (scored.length > 0) parts.push(`Personality scores: ${scored.join(', ')}`);
+  }
+
+  // Personality traits
+  if (Array.isArray(data.personalityTraits) && data.personalityTraits.length > 0) {
+    const traits = data.personalityTraits
+      .filter((t) => t.name)
+      .map((t) => {
+        let s = t.name;
+        if (t.description) s += ` (${t.description})`;
+        if (t.weAreThis) s += ` — We are: ${t.weAreThis}`;
+        if (t.butNeverThat) s += ` — But never: ${t.butNeverThat}`;
+        return s;
+      });
+    if (traits.length > 0) parts.push(`Core traits: ${traits.join('; ')}`);
+  }
+
+  // Spectrum sliders
+  if (data.spectrumSliders) {
+    const positions = Object.entries(data.spectrumSliders)
+      .filter(([, v]) => v !== 4) // 4 = neutral
+      .map(([k, v]) => {
+        const labels = SPECTRUM_LABELS[k];
+        if (!labels) return null;
+        const position = v < 4 ? labels[0] : labels[1];
+        const strength = Math.abs(v - 4);
+        const intensity = strength >= 2 ? 'strongly' : 'slightly';
+        return `${intensity} ${position}`;
+      })
+      .filter(Boolean);
+    if (positions.length > 0) parts.push(`Personality positioning: ${positions.join(', ')}`);
+  }
+
+  // Tone dimensions
+  if (data.toneDimensions) {
+    const tones = Object.entries(data.toneDimensions)
+      .filter(([, v]) => v !== 4)
+      .map(([k, v]) => {
+        const labels = TONE_LABELS[k];
+        if (!labels) return null;
+        const position = v < 4 ? labels[0] : labels[1];
+        return position;
+      })
+      .filter(Boolean);
+    if (tones.length > 0) parts.push(`Tone of voice: ${tones.join(', ')}`);
+  }
+
+  // Voice description
+  if (data.brandVoiceDescription) parts.push(`Brand voice: ${data.brandVoiceDescription}`);
+
+  // Word preferences
+  if (Array.isArray(data.wordsWeUse) && data.wordsWeUse.length > 0) {
+    parts.push(`Words we use: ${data.wordsWeUse.filter(Boolean).join(', ')}`);
+  }
+  if (Array.isArray(data.wordsWeAvoid) && data.wordsWeAvoid.length > 0) {
+    parts.push(`Words we avoid: ${data.wordsWeAvoid.filter(Boolean).join(', ')}`);
+  }
+
+  // Writing sample
+  if (data.writingSample) parts.push(`Writing sample: "${data.writingSample}"`);
+
+  // Channel tones
+  if (data.channelTones) {
+    const channels = Object.entries(data.channelTones)
+      .filter(([, v]) => !!v)
+      .map(([k, v]) => `${k}: ${v}`);
+    if (channels.length > 0) parts.push(`Channel-specific tone: ${channels.join('; ')}`);
+  }
+
+  // Visual expression
+  if (data.colorDirection) parts.push(`Color direction: ${data.colorDirection}`);
+  if (data.typographyDirection) parts.push(`Typography direction: ${data.typographyDirection}`);
+  if (data.imageryDirection) parts.push(`Imagery direction: ${data.imageryDirection}`);
+
+  return parts.join('. ');
+}
+
 /** Extract a text summary from content JSON (typically has a "text" or "body" field) */
 function extractContentText(content: unknown): string | null {
   if (!content) return null;
@@ -447,16 +635,23 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
     }
   }
 
-  // Mission Statement
+  // Mission & Vision (merged asset, frameworkType MISSION_STATEMENT)
   const mission = assetBySlug.get('mission-statement');
   if (mission) {
-    ctx.brandMission = extractContentText(mission.content) || mission.description || undefined;
-  }
-
-  // Vision Statement
-  const vision = assetBySlug.get('vision-statement');
-  if (vision) {
-    ctx.brandVision = extractContentText(vision.content) || vision.description || undefined;
+    const fwData = mission.frameworkData as MissionVisionData | null;
+    if (fwData?.missionStatement) {
+      const formatted = formatMissionVision(fwData);
+      if (formatted) ctx.brandMission = formatted;
+      // Also extract vision separately for brandVision field
+      if (fwData.visionStatement) ctx.brandVision = fwData.visionStatement;
+    } else {
+      ctx.brandMission = extractContentText(mission.content) || mission.description || undefined;
+      // Legacy: extract vision from frameworkData if available
+      const missionFw = mission.frameworkData as Record<string, unknown> | null;
+      if (missionFw?.visionStatement && typeof missionFw.visionStatement === 'string') {
+        ctx.brandVision = missionFw.visionStatement as string;
+      }
+    }
   }
 
   // Brand Archetype (rich formatting from frameworkData)
@@ -471,10 +666,16 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
     }
   }
 
-  // Brand Personality
+  // Brand Personality (rich formatting from frameworkData)
   const personality = assetBySlug.get('brand-personality');
   if (personality) {
-    ctx.brandPersonality = extractContentText(personality.content) || personality.description || undefined;
+    const fwData = personality.frameworkData as BrandPersonalityData | null;
+    if (fwData?.primaryDimension || (fwData?.personalityTraits && fwData.personalityTraits.length > 0)) {
+      const formatted = formatBrandPersonality(fwData);
+      if (formatted) ctx.brandPersonality = formatted;
+    } else {
+      ctx.brandPersonality = extractContentText(personality.content) || personality.description || undefined;
+    }
   }
 
   // Brand Story

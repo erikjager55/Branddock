@@ -8,7 +8,7 @@ import {
   Compass, Heart, Leaf, Globe, Rocket, Target, FileText, BarChart2, Zap, Cog,
   Package, Fingerprint, Sparkles, Shield, ShieldCheck, CheckCircle, AlertTriangle, TrendingUp, Users, Eye,
   Mountain, Map, Crown, Activity, Moon, BookOpen, Award, User, MessageCircle, AlertCircle, Star,
-  ArrowRight, Scale, Building, Palette,
+  ArrowRight, Scale, Building, Palette, Sliders,
 } from 'lucide-react';
 import type { DimensionConfig, FieldMapping } from '@/components/ai-exploration/types';
 
@@ -311,85 +311,104 @@ const BRAND_PROMISE_DIMENSIONS: DimensionConfig[] = [
   },
 ];
 
-// ─── Mission Statement Dimensions ────────────────────────
+// ─── Mission & Vision Dimensions (Collins & Porras / Drucker — 8 phases) ────
 
-const MISSION_STATEMENT_DIMENSIONS: DimensionConfig[] = [
+const MISSION_VISION_DIMENSIONS: DimensionConfig[] = [
   {
-    key: 'purpose',
-    label: 'Purpose & Direction',
+    key: 'mission_core',
+    label: 'Mission Core',
     icon: Compass,
     color: 'teal',
     bgClass: 'bg-teal-100',
     textClass: 'text-teal-600',
-    defaultQuestions: ['What is your organization trying to achieve right now?', 'What is the primary mission?'],
+    defaultQuestions: [
+      'What is the fundamental reason your organization exists — beyond making money?',
+      'If you had to explain your mission to a child in one sentence, what would you say?',
+    ],
   },
   {
-    key: 'audience',
-    label: 'Who You Serve',
+    key: 'audience_impact',
+    label: 'Audience & Impact',
     icon: Users,
     color: 'blue',
     bgClass: 'bg-blue-100',
     textClass: 'text-blue-600',
-    defaultQuestions: ['Who are the primary beneficiaries of your mission?', 'How does it improve their lives?'],
+    defaultQuestions: [
+      'Who are the people your organization serves, and what specific change do you create in their lives?',
+      'Describe both the primary audience and the tangible outcome they experience.',
+    ],
   },
   {
-    key: 'approach',
-    label: 'How You Deliver',
+    key: 'unique_approach',
+    label: 'Unique Approach',
     icon: Rocket,
     color: 'emerald',
     bgClass: 'bg-emerald-100',
     textClass: 'text-emerald-600',
-    defaultQuestions: ['What is your unique approach to fulfilling this mission?', 'What sets your method apart?'],
+    defaultQuestions: [
+      'What makes your approach fundamentally different from others trying to achieve a similar mission?',
+      'Describe your method, philosophy, or "secret ingredient" that competitors cannot easily replicate.',
+    ],
   },
   {
-    key: 'measurement',
-    label: 'Impact & Measurement',
-    icon: BarChart2,
-    color: 'purple',
-    bgClass: 'bg-purple-100',
-    textClass: 'text-purple-600',
-    defaultQuestions: ['How do you know if your mission is succeeding?', 'What does progress look like?'],
+    key: 'mission_authenticity',
+    label: 'Mission Authenticity',
+    icon: Shield,
+    color: 'rose',
+    bgClass: 'bg-rose-100',
+    textClass: 'text-rose-600',
+    defaultQuestions: [
+      'How does your current daily work reflect your stated mission?',
+      'Where is the alignment strongest, and where are the biggest gaps between what you say and what you do?',
+    ],
   },
-];
-
-// ─── Vision Statement Dimensions ─────────────────────────
-
-const VISION_STATEMENT_DIMENSIONS: DimensionConfig[] = [
   {
-    key: 'future_state',
-    label: 'Future State',
+    key: 'future_vision',
+    label: 'Future Vision',
     icon: Eye,
-    color: 'teal',
-    bgClass: 'bg-teal-100',
-    textClass: 'text-teal-600',
-    defaultQuestions: ['What does the world look like when your organization has fully succeeded?'],
+    color: 'violet',
+    bgClass: 'bg-violet-100',
+    textClass: 'text-violet-600',
+    defaultQuestions: [
+      'Close your eyes and imagine your organization has fully succeeded — 10 years from now. What does the world look like?',
+      'Paint a vivid, concrete picture of this future state.',
+    ],
   },
   {
-    key: 'ambition',
+    key: 'bold_aspiration',
     label: 'Scale of Ambition',
     icon: Mountain,
     color: 'amber',
     bgClass: 'bg-amber-100',
     textClass: 'text-amber-600',
-    defaultQuestions: ['How ambitious is your vision?', 'Does it inspire people to go beyond what seems possible today?'],
+    defaultQuestions: [
+      'What is the boldest, most audacious goal your organization could set — one that makes you slightly uncomfortable because of its scale?',
+      'What would you attempt if you knew you could not fail?',
+    ],
   },
   {
-    key: 'relevance',
-    label: 'Stakeholder Relevance',
-    icon: Users,
-    color: 'blue',
-    bgClass: 'bg-blue-100',
-    textClass: 'text-blue-600',
-    defaultQuestions: ['How does this vision connect to what your employees, customers, and partners care about?'],
-  },
-  {
-    key: 'pathway',
-    label: 'Vision to Action',
-    icon: Map,
+    key: 'success_signals',
+    label: 'Success Signals',
+    icon: BarChart2,
     color: 'purple',
     bgClass: 'bg-purple-100',
     textClass: 'text-purple-600',
-    defaultQuestions: ['What are the key milestones between today and your vision?', 'What needs to happen first?'],
+    defaultQuestions: [
+      'How would you know your vision is becoming reality?',
+      'What are the 3-5 concrete, measurable indicators you would track?',
+    ],
+  },
+  {
+    key: 'mission_vision_bridge',
+    label: 'Mission-Vision Bridge',
+    icon: Map,
+    color: 'indigo',
+    bgClass: 'bg-indigo-100',
+    textClass: 'text-indigo-600',
+    defaultQuestions: [
+      'Your mission describes what you do today; your vision describes where you are going. What is the creative tension between these two?',
+      'What key milestones or transformations need to happen to bridge the gap?',
+    ],
   },
 ];
 
@@ -554,40 +573,84 @@ const TRANSFORMATIVE_GOALS_DIMENSIONS: DimensionConfig[] = [
 
 const BRAND_PERSONALITY_DIMENSIONS: DimensionConfig[] = [
   {
-    key: 'traits',
-    label: 'Core Traits',
+    key: 'dimension_mapping',
+    label: 'Personality Dimensions',
     icon: User,
     color: 'teal',
     bgClass: 'bg-teal-100',
     textClass: 'text-teal-600',
-    defaultQuestions: ['If your brand were a person, how would others describe them?', 'Name 3-5 key personality traits.'],
+    defaultQuestions: [
+      'If your brand walked into a room, what impression would it make? Describe its character in terms of: sincerity, excitement, competence, sophistication, and ruggedness.',
+      'Which 1-2 of these dimensions feel most dominant for your brand?',
+    ],
   },
   {
-    key: 'voice',
+    key: 'core_traits',
+    label: 'Core Traits',
+    icon: Fingerprint,
+    color: 'rose',
+    bgClass: 'bg-rose-100',
+    textClass: 'text-rose-600',
+    defaultQuestions: [
+      'Name 3-5 defining personality traits for your brand. For each, give a concrete example of what the trait looks like in action.',
+      'For each trait, what would be the "too far" version that your brand should never become?',
+    ],
+  },
+  {
+    key: 'spectrum_positioning',
+    label: 'Personality Spectrum',
+    icon: Sliders,
+    color: 'indigo',
+    bgClass: 'bg-indigo-100',
+    textClass: 'text-indigo-600',
+    defaultQuestions: [
+      'Where does your brand sit on these spectrums: friendly vs. formal, energetic vs. thoughtful, modern vs. traditional, playful vs. serious, inclusive vs. exclusive, bold vs. reserved?',
+    ],
+  },
+  {
+    key: 'voice_tone',
     label: 'Voice & Tone',
     icon: MessageCircle,
     color: 'blue',
     bgClass: 'bg-blue-100',
     textClass: 'text-blue-600',
-    defaultQuestions: ['How does your brand speak?', 'What words would it use — and never use?'],
+    defaultQuestions: [
+      'Describe how your brand sounds in writing and speech. Is it formal or casual? Serious or humorous? Respectful or irreverent? Matter-of-fact or enthusiastic?',
+      'What specific words or phrases does your brand love to use — and which would it never use?',
+    ],
   },
   {
-    key: 'relationships',
-    label: 'Relationship Style',
-    icon: Heart,
-    color: 'rose',
-    bgClass: 'bg-rose-100',
-    textClass: 'text-rose-600',
-    defaultQuestions: ['What kind of relationship does your brand build with people?', 'A trusted advisor? A fun friend?'],
-  },
-  {
-    key: 'boundaries',
-    label: 'Personality Boundaries',
-    icon: AlertCircle,
+    key: 'writing_sample',
+    label: 'Voice in Action',
+    icon: Award,
     color: 'amber',
     bgClass: 'bg-amber-100',
     textClass: 'text-amber-600',
-    defaultQuestions: ['What is your brand personality NOT?', 'What traits would feel inauthentic?'],
+    defaultQuestions: [
+      'Write a short paragraph (3-4 sentences) in your brand\'s voice. This could be a product description, email opening, or social media post.',
+    ],
+  },
+  {
+    key: 'channel_adaptation',
+    label: 'Channel Adaptation',
+    icon: MessageCircle,
+    color: 'emerald',
+    bgClass: 'bg-emerald-100',
+    textClass: 'text-emerald-600',
+    defaultQuestions: [
+      'How does your brand\'s tone shift across different channels — website, social media, customer support, email marketing, and crisis communication? The voice stays the same, but the tone adapts.',
+    ],
+  },
+  {
+    key: 'visual_expression',
+    label: 'Visual Personality',
+    icon: Palette,
+    color: 'violet',
+    bgClass: 'bg-violet-100',
+    textClass: 'text-violet-600',
+    defaultQuestions: [
+      'How should your brand personality translate into visual design? Think about color feeling, typography style, and imagery direction.',
+    ],
   },
 ];
 
@@ -736,8 +799,7 @@ export function getDimensionsForSlug(slug: string, frameworkType?: string): Dime
       case 'GOLDEN_CIRCLE': return GOLDEN_CIRCLE_DIMENSIONS;
       case 'BRAND_ESSENCE': return BRAND_ESSENCE_DIMENSIONS;
       case 'BRAND_PROMISE': return BRAND_PROMISE_DIMENSIONS;
-      case 'MISSION_STATEMENT': return MISSION_STATEMENT_DIMENSIONS;
-      case 'VISION_STATEMENT': return VISION_STATEMENT_DIMENSIONS;
+      case 'MISSION_STATEMENT': return MISSION_VISION_DIMENSIONS;
       case 'BRAND_ARCHETYPE': return BRAND_ARCHETYPE_DIMENSIONS;
       case 'TRANSFORMATIVE_GOALS': return TRANSFORMATIVE_GOALS_DIMENSIONS;
       case 'BRAND_PERSONALITY': return BRAND_PERSONALITY_DIMENSIONS;
