@@ -233,8 +233,6 @@ function formatTransformativeGoals(data: TransformativeGoalsData): string {
 
 interface BrandArchetypeData {
   primaryArchetype?: string;
-  secondaryArchetype?: string;
-  blendRatio?: string;
   subArchetype?: string;
   coreDesire?: string;
   coreFear?: string;
@@ -268,9 +266,7 @@ function formatBrandArchetype(data: BrandArchetypeData): string {
 
   // Archetype identity
   if (data.primaryArchetype) {
-    let identity = `Primary Archetype: ${data.primaryArchetype}`;
-    if (data.secondaryArchetype) identity += ` / Secondary: ${data.secondaryArchetype}`;
-    if (data.blendRatio) identity += ` (${data.blendRatio})`;
+    let identity = `Archetype: ${data.primaryArchetype}`;
     if (data.subArchetype) identity += ` — Sub-archetype: ${data.subArchetype}`;
     parts.push(identity);
   }

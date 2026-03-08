@@ -556,8 +556,7 @@ async function main() {
       missionVisionTension: "Today we serve hundreds of organizations with a focused toolset; our vision demands scaling to millions while maintaining the depth and quality of strategic guidance. The bridge: AI-powered personalization that scales expertise without diluting it.",
     }},
     { slug: "brand-archetype", frameworkData: {
-      primaryArchetype: "Creator",
-      secondaryArchetype: "Sage",
+      primaryArchetype: "creator",
       coreDesire: "To create something of enduring value through innovation and vision.",
       brandVoiceDescription: "Inspiring, knowledgeable, and forward-thinking. We speak with authority but remain approachable.",
       archetypeInAction: "We empower teams to build brands that matter — blending creativity with data-driven strategy.",

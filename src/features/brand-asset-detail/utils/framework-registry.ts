@@ -30,13 +30,8 @@ export const FRAMEWORK_REGISTRY: Record<FrameworkType, FrameworkMeta> = {
   },
   MISSION_STATEMENT: {
     type: "MISSION_STATEMENT",
-    label: "Mission Statement",
-    description: "What we do, for whom, how & impact goal",
-  },
-  VISION_STATEMENT: {
-    type: "VISION_STATEMENT",
-    label: "Vision Statement",
-    description: "Collins & Porras — future state, aspiration & indicators",
+    label: "Mission & Vision",
+    description: "What we do today & where we're headed — mission, vision & impact",
   },
   BRAND_ARCHETYPE: {
     type: "BRAND_ARCHETYPE",

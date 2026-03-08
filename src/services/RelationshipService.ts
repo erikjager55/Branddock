@@ -427,22 +427,22 @@ export class RelationshipService {
     
     // Simple keyword check (in production, use NLP)
     const goldenCircle = RelationshipService.brandAssets.find(a => a.type === 'Golden Circle');
-    const vision = RelationshipService.brandAssets.find(a => a.type === 'Vision Statement');
-    
-    if (goldenCircle && vision) {
+    const missionVision = RelationshipService.brandAssets.find(a => a.type === 'Mission & Vision');
+
+    if (goldenCircle && missionVision) {
       // This is a simplified check - in production, use proper NLP
       const gcKeywords = this.extractKeywords(goldenCircle.content || '');
-      const visionKeywords = this.extractKeywords(vision.content || '');
-      
-      const missingInVision = gcKeywords.filter(kw => !visionKeywords.includes(kw));
-      
-      if (missingInVision.length > 2) {
+      const mvKeywords = this.extractKeywords(missionVision.content || '');
+
+      const missingInMV = gcKeywords.filter(kw => !mvKeywords.includes(kw));
+
+      if (missingInMV.length > 2) {
         issues.push({
-          id: 'keyword-gap-vision',
+          id: 'keyword-gap-mission-vision',
           severity: 'warning',
           type: 'keyword-gap',
-          title: 'Key concepts from Golden Circle missing in Vision',
-          description: `Keywords "${missingInVision.slice(0, 3).join(', ')}" from Golden Circle are not reflected in Vision Statement`,
+          title: 'Key concepts from Golden Circle missing in Mission & Vision',
+          description: `Keywords "${missingInMV.slice(0, 3).join(', ')}" from Golden Circle are not reflected in Mission & Vision`,
           affectedEntities: [
             {
               id: goldenCircle.id,
@@ -452,15 +452,15 @@ export class RelationshipService {
               strength: 'strong'
             },
             {
-              id: vision.id,
+              id: missionVision.id,
               type: 'brand-asset',
-              name: vision.title,
+              name: missionVision.title,
               relationshipType: 'supports',
               strength: 'strong'
             }
           ],
           detectedAt: new Date().toISOString(),
-          suggestedAction: 'Review Vision Statement to ensure alignment with Golden Circle core concepts',
+          suggestedAction: 'Review Mission & Vision to ensure alignment with Golden Circle core concepts',
           autoFixable: false,
           priority: 6
         });

@@ -9,7 +9,6 @@ export const FRAMEWORK_TO_SUBTYPE: Record<string, string> = {
   BRAND_ESSENCE: 'brand-essence',
   BRAND_PROMISE: 'brand-promise',
   MISSION_STATEMENT: 'mission-statement',
-  VISION_STATEMENT: 'vision-statement',
   BRAND_ARCHETYPE: 'brand-archetype',
   TRANSFORMATIVE_GOALS: 'transformative-goals',
   BRAND_PERSONALITY: 'brand-personality',

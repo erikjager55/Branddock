@@ -42,21 +42,32 @@ export function buildQueryGenerationPrompt(
   brandContext?: BrandContextBlock,
 ): string {
   const ctx = buildBrandContextBlock(brandContext);
+  const currentYear = new Date().getFullYear();
 
-  return `Generate 6 diverse web search queries to research this topic from multiple angles: "${baseQuery}"
+  return `Generate 7 diverse web search queries to research this topic from multiple angles: "${baseQuery}"
 
-Each query should approach the topic from a DIFFERENT perspective to maximize source diversity:
+Today's date: ${new Date().toISOString().slice(0, 10)}
+
+Each query should approach the topic from a DIFFERENT perspective to maximize source diversity. Use a MIX of source types — do NOT let any single type dominate:
 
 1. **Growth signals**: market size, adoption rates, growth percentages, statistics
 2. **Investment/startup**: funding rounds, venture capital, new companies, M&A activity
 3. **Problem-oriented**: challenges, pain points, regulations, barriers, criticism
 4. **Expert analysis**: forecasts, predictions, analyst opinions, research reports
 5. **Cross-domain**: intersection with consumer behavior, technology, or adjacent industries
-6. **Contrarian/critical**: limitations, backlash, alternatives, skepticism${ctx}
+6. **Contrarian/critical**: limitations, backlash, alternatives, skepticism
+7. **Niche sub-topic**: drill into a specific sub-niche or micro-segment within the topic${ctx}
 
-Return ONLY a JSON array of query strings. Each query should be 5-15 words, optimized for Google Search. Include the year 2025 or 2026 in at least 3 queries.
+## Query Guidelines
+- Each query: 5-15 words, optimized for Google Search
+- Add the year (${currentYear}) only when recency is critical for that angle (e.g. statistics, funding rounds, new regulations). Do NOT add a year to every query.
+- At least 2 queries should NOT contain any year — to capture evergreen analysis and cross-domain perspectives
+- Be specific — avoid overly broad queries that return only generic results
+- Vary the source types you target: industry reports, academic, news, trade publications, government data
 
-Example: ["sustainable packaging market growth statistics 2026", "sustainable packaging startup funding 2025 2026", ...]`;
+Return ONLY a JSON array of 7 query strings.
+
+Example: ["sustainable packaging market growth statistics ${currentYear}", "sustainable packaging startup funding rounds", "bioplastics adoption challenges food industry", ...]`;
 }
 
 // ─── Phase 2: Signal Extraction ─────────────────────────────
@@ -91,7 +102,8 @@ Focus on extracting:
 - Technology developments, innovation milestones
 
 Do NOT interpret or theorize — only extract structured facts with their evidence.
-Do NOT include press releases, product advertisements, or company PR claims without data.
+Dismiss promotional content, product announcements, and PR claims unless backed by independent third-party data.
+Extract the publication or last-updated date if visible in the content.
 
 ## Output Format
 Return valid JSON only:
@@ -102,7 +114,9 @@ Return valid JSON only:
       "evidence": "The specific quote, statistic, or data point that supports this claim",
       "dataPoints": ["24% YoY growth", "€2.4B market size"],
       "entities": ["European Bioplastics Association", "TotalEnergies"],
-      "sourceType": "news" | "research" | "industry_report" | "blog" | "analysis" | "government" | "other"
+      "sourceType": "news" | "research" | "industry_report" | "blog" | "analysis" | "government" | "other",
+      "publicationDate": "2026-01-15" or "unknown",
+      "sourceAuthority": "major_publication" | "industry_specialist" | "company_blog" | "general" | "unknown"
     }
   ]
 }
@@ -117,6 +131,7 @@ const SYNTHESIS_JSON_SCHEMA = `{
     {
       "title": "Specific, insight-driven trend title (max 100 chars)",
       "description": "3-4 sentences with embedded data points, cross-referenced across sources. Cite specific evidence.",
+      "whyNow": "1-2 sentences explaining what changed that makes this relevant RIGHT NOW — the catalyst or inflection point",
       "category": "CONSUMER_BEHAVIOR" | "TECHNOLOGY" | "MARKET_DYNAMICS" | "COMPETITIVE" | "REGULATORY",
       "scope": "MICRO" | "MESO" | "MACRO",
       "impactLevel": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
@@ -132,7 +147,7 @@ const SYNTHESIS_JSON_SCHEMA = `{
       "industries": ["industry1", "industry2"],
       "tags": ["tag1", "tag2", "tag3"],
       "howToUse": [
-        "Specific, actionable step with concrete deliverable",
+        "Specific, actionable step with concrete deliverable, timeline, and measurable outcome",
         "Another concrete recommendation"
       ]
     }
@@ -151,17 +166,39 @@ export function buildSynthesisSystemPrompt(brandContext?: BrandContextBlock): st
 Your task: synthesize pre-extracted research signals from multiple web sources into emerging trends. The signals have already been fact-extracted — your job is to find patterns, cross-reference, and identify what matters.${ctx}
 
 ## Quality Standards
+
+### Specificity is EVERYTHING
+Each trend title must name a SPECIFIC shift — not a broad category. Test: could a senior strategist read only the title and immediately understand what changed?
+
+BAD TREND: "Companies are adopting AI" — too generic, everyone knows this
+GOOD TREND: "Mid-market B2B SaaS companies replacing traditional onboarding with AI-guided setup wizards, reducing time-to-value by 40-60%" — specific shift, specific audience, specific metric
+
+If a trend could apply to ANY industry without modification, it is too generic — reject it.
+
+### Evidence & Clustering
 - Each trend must represent a GENUINE shift — not common knowledge or obvious statements
 - Cluster related signals from different sources into single, comprehensive trends
 - A trend backed by 3+ independent sources is STRONG — assign confidence 80-100
-- A trend from 1 source only is WEAK — only include if evidence is exceptional (confidence 50-70)
+- A trend backed by 2 sources is MODERATE — confidence 65-80
+- A trend from 1 source only is WEAK — only include if evidence is exceptional from a major publication (confidence 50-65)
+- PREFER trends corroborated by multiple independent sources over single-source trends
+- Weight signals from authoritative sources (major_publication, industry_specialist) more heavily
 - Each trend description MUST include at least one concrete data point from the signals
+- Include ALL source URLs that contributed to the trend in the "sourceUrls" array — this is critical for evidence tracking
+
+### "Why Now?" Requirement
+Every trend MUST answer: what has CHANGED that makes this relevant RIGHT NOW? Include a "whyNow" field (1-2 sentences) explaining the catalyst or inflection point.
+
+### Actionable Recommendations
 - Each trend MUST include at least 1 specific, actionable "howToUse" recommendation
+- Each recommendation MUST contain a concrete deliverable, a timeline, and a measurable outcome
 - "howToUse" MUST be specific — NOT "stay informed", "monitor developments", or "keep an eye on"
-- Good howToUse example: "Develop a bio-based packaging pilot for top 3 SKUs by Q3 2026"
+- Good howToUse example: "Develop a bio-based packaging pilot for top 3 SKUs by Q3 2026, targeting 15% cost reduction"
 - Bad howToUse example: "Consider exploring sustainable packaging options"
+
+### Volume
 - Fewer, deeper trends are always better than many shallow observations
-- Maximum 10 trends — aim for 5-8 high-quality ones
+- Maximum 8 trends — aim for 4-6 high-quality ones
 
 ## Scope & Impact Guidelines
 - Scope: MICRO = company/product level, MESO = industry level, MACRO = market/societal level
@@ -188,19 +225,29 @@ export function buildSynthesisUserPrompt(params: {
     sourceUrl: string;
     sourceName: string;
     sourceType: string;
+    sourceAuthority?: string;
+    publicationDate?: string | null;
   }>;
   sourceCount: number;
 }): string {
   const parts: string[] = [
     `Research Query: "${params.query}"`,
+    `Today's date: ${new Date().toISOString().slice(0, 10)}`,
     '',
     `The following ${params.signals.length} signals were extracted from ${params.sourceCount} diverse web sources.`,
     'Identify emerging trends by clustering related signals across sources.',
+    'Weight signals from authoritative sources (major_publication, industry_specialist) more heavily than company blogs or general sources.',
     '',
   ];
 
   for (const signal of params.signals) {
-    parts.push(`── Signal #${signal.index} (${signal.sourceName} [${signal.sourceType}]) ──`);
+    const authorityTag = signal.sourceAuthority && signal.sourceAuthority !== 'unknown'
+      ? ` | authority: ${signal.sourceAuthority}`
+      : '';
+    const dateTag = signal.publicationDate && signal.publicationDate !== 'unknown'
+      ? ` | published: ${signal.publicationDate}`
+      : '';
+    parts.push(`── Signal #${signal.index} (${signal.sourceName} [${signal.sourceType}${authorityTag}${dateTag}]) ──`);
     parts.push(`Claim: ${signal.claim}`);
     if (signal.evidence) parts.push(`Evidence: ${signal.evidence}`);
     if (signal.dataPoints.length > 0) parts.push(`Data: ${signal.dataPoints.join(' | ')}`);
@@ -209,7 +256,7 @@ export function buildSynthesisUserPrompt(params: {
     parts.push('');
   }
 
-  parts.push('Synthesize these signals into emerging trends. For each trend, reference which signal numbers support it via "supportingSignalIndices". Return JSON only.');
+  parts.push('Synthesize these signals into emerging trends. For each trend, reference which signal numbers support it via "supportingSignalIndices". Trends supported by 2+ independent sources should receive higher confidence. Return JSON only.');
 
   return parts.join('\n');
 }
@@ -223,7 +270,7 @@ export function buildSynthesisUserPrompt(params: {
 export function buildJudgeSystemPrompt(brandContext?: BrandContextBlock): string {
   const ctx = buildBrandContextBlock(brandContext);
 
-  return `You are a critical senior analyst reviewing trend intelligence produced by a junior analyst. Your job is strict quality control — only boardroom-ready trends should pass.${ctx}
+  return `You are a critical senior analyst reviewing trend intelligence produced by a junior analyst. Your job is strict quality control — only boardroom-ready trends should pass. Default to REJECT if uncertain. Only APPROVE trends that would genuinely surprise a competent industry professional.${ctx}
 
 For EACH candidate trend, evaluate:
 
@@ -249,10 +296,17 @@ For EACH candidate trend, evaluate:
    - Score 50-80: relevant to adjacent areas
    - Score <50: tangential, REJECT
 
-4. VERDICT:
+4. SPECIFICITY (score 0-100):
+   - Score 80+: names specific companies, technologies, or behaviors
+   - Score 50-80: describes a specific shift but lacks named examples
+   - Score <50: could apply to any industry — REJECT
+
+5. VERDICT:
    - "APPROVE": meets all quality bars (no score below 45)
-   - "IMPROVE": good insight but description or howToUse need improvement
+   - "IMPROVE": good insight but description, howToUse, or title need improvement
    - "REJECT": too generic, too obvious, or insufficient evidence
+
+Flag any data points that appear fabricated or cannot be verified from the provided evidence.
 
 ## Output Format
 Return valid JSON only:
@@ -263,10 +317,12 @@ Return valid JSON only:
       "novelty": 75,
       "growthSignal": 80,
       "strategicRelevance": 65,
+      "specificity": 70,
       "verdict": "APPROVE" | "IMPROVE" | "REJECT",
       "reasoning": "1 sentence explaining the verdict",
       "improvedDescription": "Only if verdict is IMPROVE — rewritten description with stronger evidence",
-      "improvedHowToUse": ["Only if verdict is IMPROVE — more specific, actionable recommendations"]
+      "improvedHowToUse": ["Only if verdict is IMPROVE — more specific, actionable recommendations"],
+      "improvedTitle": "Only if verdict is IMPROVE and title is too vague — more specific title"
     }
   ]
 }`;

@@ -5,7 +5,7 @@ import { Badge } from './ui/badge';
 import {
   ArrowLeft,
   Target,
-  Eye,
+  Zap,
   Heart,
   Mic,
   ClipboardList,
@@ -39,7 +39,7 @@ export function BundleDetailsPage({ bundle, onBack, onStartPlan }: BundleDetails
   const getAssetIcon = (assetId: string) => {
     const icons: Record<string, any> = {
       '1': Target,
-      '2': Eye,
+      '2': Zap,
       '5': Heart,
     };
     return icons[assetId] || Target;
@@ -48,7 +48,7 @@ export function BundleDetailsPage({ bundle, onBack, onStartPlan }: BundleDetails
   const getAssetName = (assetId: string) => {
     const names: Record<string, string> = {
       '1': 'Golden Circle',
-      '2': 'Vision Statement',
+      '2': 'Mission & Vision',
       '5': 'Core Values',
     };
     return names[assetId] || '';
@@ -57,7 +57,7 @@ export function BundleDetailsPage({ bundle, onBack, onStartPlan }: BundleDetails
   const getAssetDesc = (assetId: string) => {
     const descs: Record<string, string> = {
       '1': 'Your core purpose',
-      '2': 'Future direction',
+      '2': 'Purpose and direction',
       '5': 'Guiding principles',
     };
     return descs[assetId] || '';

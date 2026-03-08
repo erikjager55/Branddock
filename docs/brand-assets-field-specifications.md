@@ -105,11 +105,11 @@ Dit document bevat de exacte veldspecificaties voor de 11 kern brand assets in B
 
 ---
 
-## 5. Mission Statement
+## 5. Mission & Vision
 
-**Gebaseerd op:** Klassiek strategisch model — "Wat doen we, voor wie, en hoe?"
+**Gebaseerd op:** Klassiek strategisch model ("Wat doen we, voor wie, en hoe?") + Collins & Porras "Built to Last" vision framework
 
-**Concept:** Een Mission Statement beschrijft het huidige bestaansrecht: wat het merk nu doet, voor wie, en via welke aanpak. Het is concreet en actiegericht (vs. Vision die aspirationeel is).
+**Concept:** Mission & Vision combineert het huidige bestaansrecht (missie: concreet en actiegericht) met een ambitieus toekomstbeeld (visie: aspirationeel en tijdsgebonden). Missie beschrijft wat het merk nu doet; visie beschrijft waar het merk over 5-15 jaar wil staan.
 
 **Framework type:** `MISSION_STATEMENT`
 
@@ -120,26 +120,6 @@ Dit document bevat de exacte veldspecificaties voor de 11 kern brand assets in B
 | `forWhom` | text | Doelgroep — voor wie het merk het doet |
 | `howWeDoIt` | text | Aanpak — hoe het merk het anders doet dan anderen |
 | `impactGoal` | text | Beoogde impact — welk verschil het merk maakt |
-
-**Completeness checks:**
-- ✅ Mission Statement
-- ✅ What We Do
-- ✅ For Whom
-- ✅ How We Do It
-- ✅ Impact Goal
-
----
-
-## 6. Vision Statement
-
-**Gebaseerd op:** Collins & Porras "Built to Last" vision framework
-
-**Concept:** Vision beschrijft een ambitieus toekomstbeeld — waar het merk over 5-15 jaar wil staan. Het is aspirationeel, inspirerend en tijdsgebonden (in tegenstelling tot Purpose dat tijdloos is).
-
-**Framework type:** `VISION_STATEMENT`
-
-| Veld | Type | Omschrijving |
-|------|------|-------------|
 | `visionStatement` | text | Het volledige vision statement. Bijv. "A world where every brand communicates with authenticity" |
 | `timeHorizon` | select | Termijn: `3 years` / `5 years` / `10 years` / `15+ years` |
 | `desiredFutureState` | text | Concreet toekomstbeeld — hoe ziet de wereld eruit als de visie gerealiseerd is? |
@@ -147,6 +127,11 @@ Dit document bevat de exacte veldspecificaties voor de 11 kern brand assets in B
 | `successIndicators` | text | Meetbare indicatoren — waaraan herken je dat je de visie nadert? |
 
 **Completeness checks:**
+- ✅ Mission Statement
+- ✅ What We Do
+- ✅ For Whom
+- ✅ How We Do It
+- ✅ Impact Goal
 - ✅ Vision Statement
 - ✅ Time Horizon
 - ✅ Desired Future State
@@ -155,7 +140,7 @@ Dit document bevat de exacte veldspecificaties voor de 11 kern brand assets in B
 
 ---
 
-## 7. Brand Archetype
+## 6. Brand Archetype
 
 **Gebaseerd op:** Carl Jung's archetypen, gestructureerd door Margaret Mark & Carol Pearson ("The Hero and the Outlaw", 2001)
 
@@ -181,7 +166,7 @@ Dit document bevat de exacte veldspecificaties voor de 11 kern brand assets in B
 
 ---
 
-## 8. Transformative Goals
+## 7. Transformative Goals
 
 **Gebaseerd op:** Massive Transformative Purpose (MTP) framework uit Exponential Organizations (Salim Ismail)
 
@@ -208,7 +193,7 @@ Dit document bevat de exacte veldspecificaties voor de 11 kern brand assets in B
 
 ---
 
-## 9. Brand Personality
+## 8. Brand Personality
 
 **Gebaseerd op:** Jennifer Aaker's 5 Dimensions of Brand Personality (1997, Journal of Marketing Research)
 
@@ -234,7 +219,7 @@ Dit document bevat de exacte veldspecificaties voor de 11 kern brand assets in B
 
 ---
 
-## 10. Brand Story / Elevator Pitch
+## 9. Brand Story / Elevator Pitch
 
 **Gebaseerd op:** StoryBrand framework (Donald Miller) + klassieke elevator pitch structuur
 
@@ -259,7 +244,7 @@ Dit document bevat de exacte veldspecificaties voor de 11 kern brand assets in B
 
 ---
 
-## 11. Core Values (BrandHouse© Model)
+## 10. Core Values (BrandHouse© Model)
 
 **Gebaseerd op:** BrandHouse© model van Marc van Eck, Ellen Leenhouts & Linda Rutten
 
@@ -296,7 +281,7 @@ Dit document bevat de exacte veldspecificaties voor de 11 kern brand assets in B
 
 ---
 
-## 12. Social Relevancy
+## 11. Social Relevancy
 
 **Gebaseerd op:** ESG Framework (Environmental, Social & Governance)
 
@@ -327,7 +312,7 @@ Dit document bevat de exacte veldspecificaties voor de 11 kern brand assets in B
 
 ## Samenvatting: Assets die verwijderd mogen worden
 
-Alle assets die NIET in bovenstaande lijst staan, mogen uit de database verwijderd worden. De 12 assets hierboven vormen een compleet en samenhangend brand strategy framework:
+Alle assets die NIET in bovenstaande lijst staan, mogen uit de database verwijderd worden. De 11 assets hierboven vormen een compleet en samenhangend brand strategy framework:
 
 | # | Asset | Beantwoordt | Framework |
 |---|-------|-------------|-----------|
@@ -335,14 +320,13 @@ Alle assets die NIET in bovenstaande lijst staan, mogen uit de database verwijde
 | 2 | Golden Circle | WHY → HOW → WHAT | Simon Sinek |
 | 3 | Brand Essence | WAT is onze kern-DNA? (2-5 woorden) | Aaker Brand Identity Model |
 | 4 | Brand Promise | WAT beloven we emotioneel? | BrandHouse© (Van Eck) |
-| 5 | Mission Statement | WAT doen we nu, voor wie, hoe? | Klassiek strategisch |
-| 6 | Vision Statement | WAAR willen we naartoe? | Collins & Porras |
-| 7 | Brand Archetype | WIE zijn we als karakter? | Jung / Mark & Pearson |
-| 8 | Transformative Goals | WAT willen we veranderen? | MTP / Exponential Orgs |
-| 9 | Brand Personality | HOE gedragen we ons? | Aaker 5 Dimensions |
-| 10 | Brand Story | HOE vertellen we het? | StoryBrand / Elevator Pitch |
-| 11 | Core Values | HOE doen we dingen? (kompas) | BrandHouse© (Van Eck) |
-| 12 | Social Relevancy | HOE dragen we bij aan de maatschappij? | ESG Framework |
+| 5 | Mission & Vision | WAT doen we nu + WAAR willen we naartoe? | Klassiek strategisch + Collins & Porras |
+| 6 | Brand Archetype | WIE zijn we als karakter? | Jung / Mark & Pearson |
+| 7 | Transformative Goals | WAT willen we veranderen? | MTP / Exponential Orgs |
+| 8 | Brand Personality | HOE gedragen we ons? | Aaker 5 Dimensions |
+| 9 | Brand Story | HOE vertellen we het? | StoryBrand / Elevator Pitch |
+| 10 | Core Values | HOE doen we dingen? (kompas) | BrandHouse© (Van Eck) |
+| 11 | Social Relevancy | HOE dragen we bij aan de maatschappij? | ESG Framework |
 
 ---
 
@@ -351,7 +335,7 @@ Alle assets die NIET in bovenstaande lijst staan, mogen uit de database verwijde
 ### Framework data structuur (Prisma/JSON)
 
 Elk asset wordt opgeslagen met:
-- `frameworkType` (enum): `PURPOSE_WHEEL`, `GOLDEN_CIRCLE`, `BRAND_ESSENCE`, `BRAND_PROMISE`, `MISSION_STATEMENT`, `VISION_STATEMENT`, `BRAND_ARCHETYPE`, `TRANSFORMATIVE_GOALS`, `BRAND_PERSONALITY`, `BRAND_STORY`, `BRANDHOUSE_VALUES`, `ESG`
+- `frameworkType` (enum): `PURPOSE_WHEEL`, `GOLDEN_CIRCLE`, `BRAND_ESSENCE`, `BRAND_PROMISE`, `MISSION_STATEMENT`, `BRAND_ARCHETYPE`, `TRANSFORMATIVE_GOALS`, `BRAND_PERSONALITY`, `BRAND_STORY`, `BRANDHOUSE_VALUES`, `ESG`
 - `frameworkData` (JSON): Bevat de velden zoals hierboven gespecificeerd
 
 ### Completeness berekening
@@ -362,4 +346,4 @@ De `getAssetCompletenessFields()` helper moet per `frameworkType` de juiste chec
 
 ### Seed data
 
-De seed moet 12 assets aanmaken, elk met het juiste `frameworkType` en initiële `frameworkData`. De bestaande assets die niet in deze lijst staan worden verwijderd uit de seed.
+De seed moet 11 assets aanmaken, elk met het juiste `frameworkType` en initiële `frameworkData`. De bestaande assets die niet in deze lijst staan worden verwijderd uit de seed.

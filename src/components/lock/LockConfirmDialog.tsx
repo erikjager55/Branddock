@@ -1,10 +1,10 @@
 'use client';
 
-import { ShieldAlert, ShieldCheck, Pencil, Trash2, Sparkles, MessageCircle, Eye, EyeOff, Copy, Download } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Pencil, Trash2, Sparkles, MessageCircle, Eye, EyeOff, Copy, Download, Zap } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useCallback } from 'react';
 
-type LockEntityType = 'persona' | 'brand-asset';
+type LockEntityType = 'persona' | 'brand-asset' | 'trend-radar';
 
 interface LockConfirmDialogProps {
   isOpen: boolean;
@@ -16,6 +16,14 @@ interface LockConfirmDialogProps {
 }
 
 function getLockBlockedItems(entityType: LockEntityType) {
+  if (entityType === 'trend-radar') {
+    return [
+      { icon: Pencil, label: 'Edit content' },
+      { icon: Trash2, label: 'Delete trend' },
+      { icon: Zap, label: 'Activate or dismiss trend' },
+    ];
+  }
+
   const items = [
     { icon: Pencil, label: 'Edit content' },
   ];

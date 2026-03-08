@@ -61,7 +61,6 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { GoldenCircleCanvas } from './canvases/GoldenCircleCanvas';
-import { VisionStatementCanvas } from './canvases/VisionStatementCanvas';
 import { DecisionAnalysisMain } from './decision-analysis/DecisionAnalysisMain';
 import { AIGeneratedReport } from './AIGeneratedReport';
 import { MissionStatementCanvas } from './canvases/MissionStatementCanvas';
@@ -442,8 +441,7 @@ export function ResearchDashboard({
   const shouldShowCanvas = (assetId: string, optionId: string) => {
     const canvasMapping: Record<string, Record<string, string>> = {
       // '1': { 'canvas-workshop': 'golden-circle' }, // REMOVED: Canvas Workshop is now handled by CanvasWorkshopManager
-      '2': { 'future-visioning': 'vision' }, // Brand Vision  
-      '3': { 'mission-workshop': 'mission' }, // Mission Statement
+      '3': { 'mission-workshop': 'mission' }, // Mission & Vision
       '4': { 'archetype-assessment': 'archetype' }, // Brand Archetype
       '5': { 'values-workshop': 'values' } // Core Values
     };
@@ -510,15 +508,7 @@ export function ResearchDashboard({
                 sessionData={result}
               />
             )}
-            {canvasType === 'vision' && (
-              <VisionStatementCanvas
-                onRerender={() => {}}
-                onEdit={() => {}}
-                isLocked={true}
-                sessionData={result}
-              />
-            )}
-            {canvasType === 'mission' && (
+{canvasType === 'mission' && (
               <MissionStatementCanvas
                 onRerender={() => {}}
                 onEdit={() => {}}

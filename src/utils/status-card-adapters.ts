@@ -4,7 +4,7 @@
  */
 
 import { 
-  Target, Eye, Zap, Users, Heart, Globe, Mic, MessageSquare, Book, Circle 
+  Target, Zap, Users, Heart, Globe, Mic, MessageSquare, Book, Circle
 } from 'lucide-react';
 import { BrandAsset, ResearchMethod } from '../types/brand-asset';
 import { StatusCardData } from '../components/unified/types';
@@ -17,8 +17,7 @@ import { CardStatus } from '../components/unified/design-system';
 function getAssetIcon(type: string) {
   const iconMap: Record<string, any> = {
     'Golden Circle': Target,
-    'Vision Statement': Eye,
-    'Mission Statement': Zap,
+    'Mission & Vision': Zap,
     'Brand Archetype': Users,
     'Core Values': Heart,
     'Transformative Goals': Target,

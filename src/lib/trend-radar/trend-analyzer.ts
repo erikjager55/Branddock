@@ -48,6 +48,7 @@ export type SanitizedTrend = {
   dataPoints: string[];
   evidenceCount: number;
   sourceUrls: string[];
+  whyNow: string | null;
 };
 
 // ─── Enum Validation ────────────────────────────────────────
@@ -98,6 +99,7 @@ async function generateUniqueSlug(title: string, existingSlugs: Set<string>): Pr
 interface SynthesizedTrendRaw {
   title: string;
   description: string;
+  whyNow?: string;
   category: string;
   scope: string;
   impactLevel: string;
@@ -140,7 +142,7 @@ export async function synthesizeTrends(params: {
       return { trends: [] };
     }
 
-    // Build numbered signal list for cross-referencing
+    // Build numbered signal list for cross-referencing (include authority metadata)
     const numberedSignals = params.signals.map((s, i) => ({
       index: i,
       claim: s.claim,
@@ -150,6 +152,8 @@ export async function synthesizeTrends(params: {
       sourceUrl: s.sourceUrl,
       sourceName: s.sourceName,
       sourceType: s.sourceType,
+      sourceAuthority: s.sourceAuthority,
+      publicationDate: s.publicationDate,
     }));
 
     const systemPrompt = buildSynthesisSystemPrompt(params.brandContext);
@@ -233,6 +237,7 @@ export async function synthesizeTrends(params: {
         dataPoints: Array.isArray(raw.dataPoints) ? raw.dataPoints.slice(0, 10) : [],
         evidenceCount,
         sourceUrls: resolvedSourceUrls,
+        whyNow: raw.whyNow?.slice(0, 500) ?? null,
       });
     }
 
@@ -341,6 +346,7 @@ export async function analyzeTrends(params: {
         dataPoints: [],
         evidenceCount: 1,
         sourceUrls: [params.sourceUrl],
+        whyNow: null,
       });
     }
 
@@ -435,6 +441,7 @@ export async function analyzeMultipleSources(params: {
         dataPoints: [],
         evidenceCount: 1,
         sourceUrls: [trendSourceUrl],
+        whyNow: null,
       });
     }
 

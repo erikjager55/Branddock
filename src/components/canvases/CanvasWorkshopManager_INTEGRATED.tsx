@@ -38,6 +38,7 @@ import {
   Plus,
   Eye,
   Target,
+  Zap,
   Heart,
   Globe,
   TrendingUp,
@@ -121,7 +122,7 @@ export function CanvasWorkshopManager({ onBack }: CanvasWorkshopManagerProps) {
   
   // Available brand assets with current status
   const availableAssets = [
-    { id: 'vision-mission', name: 'Vision & Mission Statement', icon: Eye, type: 'Strategy', currentStatus: 'approved' as const },
+    { id: 'mission-vision', name: 'Mission & Vision', icon: Zap, type: 'Strategy', currentStatus: 'approved' as const },
     { id: 'core-values', name: 'Core Values', icon: Heart, type: 'Culture', currentStatus: 'approved' as const },
     { id: 'brand-positioning', name: 'Brand Positioning', icon: Target, type: 'Strategy', currentStatus: 'draft' as const },
     { id: 'golden-circle', name: 'Golden Circle Framework', icon: Target, type: 'Foundation', currentStatus: 'approved' as const },

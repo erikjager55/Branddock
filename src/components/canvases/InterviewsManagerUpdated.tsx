@@ -28,6 +28,7 @@ import {
   Clock,
   Plus,
   Eye,
+  Zap,
   Target,
   Heart,
   Globe,
@@ -271,7 +272,7 @@ export function InterviewsManager({ assetId, onRerender, onEdit, initialConfig, 
 
   // Available brand assets
   const availableAssets = [
-    { id: 'vision-mission', name: 'Vision & Mission Statement', icon: Eye, type: 'Strategy' },
+    { id: 'mission-vision', name: 'Mission & Vision', icon: Zap, type: 'Strategy' },
     { id: 'core-values', name: 'Core Values', icon: Heart, type: 'Culture' },
     { id: 'brand-positioning', name: 'Brand Positioning', icon: Target, type: 'Strategy' },
     { id: 'golden-circle', name: 'Golden Circle Framework', icon: Target, type: 'Foundation' },

@@ -95,48 +95,7 @@ export const assetDashboardConfigs: Record<string, AssetDashboardConfig> = {
     },
   },
 
-  // 2. Vision Statement
-  '2': {
-    contentType: 'simple-text',
-    contentEditable: true,
-    showRegenerateButton: true,
-    enableLocking: true,
-    enableVersionHistory: false,
-    showDecisionQuality: true,
-    gradientColors: {
-      from: '#667EEA',
-      to: '#764BA2',
-    },
-    frameworkInfo: {
-      title: 'Vision Statement Framework',
-      description: 'Your vision describes the future state you aspire to create and the long-term impact you aim to have',
-      examples: [
-        {
-          category: 'Aspirational',
-          commitment: 'Paint a compelling picture of your desired future',
-          impact: 'high',
-          initiatives: 'Long-term direction',
-        },
-        {
-          category: 'Inspirational',
-          commitment: 'Motivate stakeholders with a bold ambition',
-          impact: 'high',
-          initiatives: 'Stakeholder alignment',
-        },
-        {
-          category: 'Directional',
-          commitment: 'Guide strategic decisions and priorities',
-          impact: 'medium',
-          initiatives: 'Strategic roadmap',
-        },
-      ],
-    },
-    defaultContent: {
-      simpleText: 'To become the most trusted and innovative leader in our industry, transforming how businesses operate and creating lasting value for all stakeholders.',
-    },
-  },
-
-  // 3. Mission Statement
+  // 2. Mission & Vision (was Mission Statement)
   '3': {
     contentType: 'simple-text',
     contentEditable: true,

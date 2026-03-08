@@ -75,7 +75,7 @@ async function provisionNewUser(userId: string, userName: string) {
     const workspace = org.workspaces[0];
     if (!workspace) return;
 
-    // Create 12 canonical brand assets with 4 research methods each
+    // Create 11 canonical brand assets with 4 research methods each
     for (const asset of CANONICAL_BRAND_ASSETS) {
       await tx.brandAsset.create({
         data: {
@@ -97,7 +97,7 @@ async function provisionNewUser(userId: string, userName: string) {
       });
     }
 
-    console.log(`[auth] Provisioned org ${org.id} + workspace + 12 brand assets for user ${userId}`);
+    console.log(`[auth] Provisioned org ${org.id} + workspace + 11 brand assets for user ${userId}`);
   });
 }
 

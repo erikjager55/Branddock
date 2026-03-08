@@ -7,13 +7,13 @@ import {
   Pencil,
   Save,
   X,
-  Lock,
-  Unlock,
   Plus,
-  Shield,
-  ShieldCheck,
   EyeOff,
   Eye,
+  Zap,
+  ExternalLink,
+  BarChart3,
+  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Badge, Card, Select } from '@/components/shared';
@@ -21,6 +21,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTrendDetail, useUpdateTrend, useDeleteTrend, useActivateTrend, useDismissTrend, trendRadarKeys } from '../../hooks';
 import { useTrendRadarStore } from '../../stores/useTrendRadarStore';
 import { useLockState } from '@/hooks/useLockState';
+import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from '@/components/lock';
+import { DeleteTrendConfirmDialog } from './DeleteTrendConfirmDialog';
 import { TrendRelevanceCard } from './TrendRelevanceCard';
 import { TrendActivationCard } from './TrendActivationCard';
 import {
@@ -87,6 +89,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
   const [newIndustry, setNewIndustry] = useState('');
   const [newTag, setNewTag] = useState('');
   const [newHowToUse, setNewHowToUse] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const prevTrendId = useRef<string | null>(null);
 
@@ -122,6 +125,13 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
       setIsEditing(false);
     };
   }, [setIsEditing]);
+
+  // Force-exit edit mode when locked
+  useEffect(() => {
+    if (lockState.isLocked && isEditing) {
+      setIsEditing(false);
+    }
+  }, [lockState.isLocked, isEditing, setIsEditing]);
 
   // Sync edit state when entering edit mode
   const startEditing = useCallback(() => {
@@ -168,9 +178,9 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
 
   const handleDelete = async () => {
     if (!trend) return;
-    if (!confirm('Delete this trend? This action cannot be undone.')) return;
     try {
       await deleteMutation.mutateAsync(trend.id);
+      setShowDeleteConfirm(false);
       onNavigate('trends');
     } catch {
       toast.error('Failed to delete trend');
@@ -254,16 +264,23 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
 
           {/* Title + meta */}
           <div className="flex-1 min-w-0">
-            {isEditing ? (
-              <input
-                type="text"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                className="text-xl font-bold text-gray-900 border border-gray-300 rounded-lg px-3 py-1.5 w-full focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            <div className="flex items-center gap-2">
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="text-xl font-bold text-gray-900 border border-gray-300 rounded-lg px-3 py-1.5 w-full focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                />
+              ) : (
+                <h1 className="text-xl font-bold text-gray-900">{trend.title}</h1>
+              )}
+              <LockStatusPill
+                isLocked={lockState.isLocked}
+                lockedBy={lockState.lockedBy}
+                lockedAt={lockState.lockedAt}
               />
-            ) : (
-              <h1 className="text-xl font-bold text-gray-900">{trend.title}</h1>
-            )}
+            </div>
 
             {/* Badges */}
             <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -332,12 +349,21 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
           <div className="flex items-center gap-2 flex-shrink-0">
             {isEditing ? (
               <>
-                <Button variant="primary" size="sm" icon={Save} onClick={saveEdits} isLoading={updateMutation.isPending}>
-                  Save
-                </Button>
-                <Button variant="ghost" size="sm" icon={X} onClick={cancelEditing}>
+                <button
+                  onClick={saveEdits}
+                  disabled={updateMutation.isPending}
+                  style={{ backgroundColor: '#0d9488', color: '#ffffff' }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {updateMutation.isPending ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                  onClick={cancelEditing}
+                  className="text-sm text-gray-500 hover:text-gray-700 transition-colors px-2 py-1.5"
+                >
                   Cancel
-                </Button>
+                </button>
               </>
             ) : (
               <>
@@ -350,18 +376,11 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
                 >
                   Edit
                 </Button>
-                <button
+                <LockShield
+                  isLocked={lockState.isLocked}
+                  isToggling={lockState.isToggling}
                   onClick={lockState.requestToggle}
-                  disabled={lockState.isToggling}
-                  className="flex items-center justify-center w-9 h-9 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                  title={lockState.isLocked ? 'Unlock trend' : 'Lock trend'}
-                >
-                  {lockState.isLocked ? (
-                    <ShieldCheck className="w-4 h-4 text-amber-600" />
-                  ) : (
-                    <Shield className="w-4 h-4 text-gray-400" />
-                  )}
-                </button>
+                />
               </>
             )}
           </div>
@@ -369,168 +388,238 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
       </div>
 
       {/* Lock banner */}
-      {lockState.isLocked && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex items-center gap-3">
-          <Lock className="w-4 h-4 text-amber-600 flex-shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-amber-800">This trend is locked</p>
-            <p className="text-xs text-amber-600">
-              {lockState.lockedBy ? `Locked by ${lockState.lockedBy.name}` : 'Locked'}
-              {lockState.lockedAt && ` on ${new Date(lockState.lockedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })}`}
-            </p>
-          </div>
-          <Button variant="ghost" size="sm" icon={Unlock} onClick={lockState.requestToggle}>
-            Unlock
-          </Button>
-        </div>
-      )}
+      <LockBanner
+        isLocked={lockState.isLocked}
+        onUnlock={lockState.requestToggle}
+        lockedBy={lockState.lockedBy}
+      />
 
       {/* Lock confirm dialog */}
-      {lockState.showConfirm && (
-        <div className="rounded-xl bg-white border border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm">
-          <p className="text-sm text-gray-700">
-            {lockState.isLocked
-              ? 'Unlock this trend to allow editing?'
-              : 'Lock this trend to protect it from changes?'}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={lockState.cancelToggle}>Cancel</Button>
-            <Button variant="primary" size="sm" onClick={lockState.confirmToggle} isLoading={lockState.isToggling}>
-              {lockState.isLocked ? 'Unlock' : 'Lock'}
-            </Button>
-          </div>
-        </div>
-      )}
+      <LockConfirmDialog
+        isOpen={lockState.showConfirm}
+        isLocking={!lockState.isLocked}
+        entityName={trend.title}
+        entityType="trend-radar"
+        onConfirm={lockState.confirmToggle}
+        onCancel={lockState.cancelToggle}
+      />
 
       {/* 2-column layout */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Main content — 2 cols */}
         <div className="md:col-span-2 space-y-6">
+          {/* Why Now? */}
+          {!isEditing && trend.whyNow && (
+            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+              <Zap className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-1">Why Now?</p>
+                <p className="text-sm text-amber-900">{trend.whyNow}</p>
+              </div>
+            </div>
+          )}
+
           {/* Description */}
-          <Card>
-            <h3 className="text-sm font-semibold text-gray-800 mb-2">Description</h3>
-            {isEditing ? (
-              <textarea
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                rows={4}
-                className="w-full text-sm text-gray-600 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
-                placeholder="Describe this trend..."
-              />
-            ) : (
-              <p className="text-sm text-gray-600 whitespace-pre-wrap">
-                {trend.description || 'No description yet.'}
-              </p>
-            )}
-          </Card>
+          <LockOverlay isLocked={lockState.isLocked}>
+            <Card>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Description</h3>
+              {isEditing ? (
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  rows={4}
+                  className="w-full text-sm text-gray-600 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                  placeholder="Describe this trend..."
+                />
+              ) : (
+                <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                  {trend.description || 'No description yet.'}
+                </p>
+              )}
+            </Card>
+          </LockOverlay>
 
           {/* Industries */}
-          <Card>
-            <h3 className="text-sm font-semibold text-gray-800 mb-2">Industries</h3>
-            <div className="flex flex-wrap gap-1.5">
-              {(isEditing ? editIndustries : trend.industries).map((ind, i) => (
-                <span key={ind} className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 flex items-center gap-1">
-                  {ind}
-                  {isEditing && (
-                    <button onClick={() => removeIndustry(i)} className="text-gray-400 hover:text-red-500">
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                </span>
-              ))}
-              {!isEditing && trend.industries.length === 0 && (
-                <span className="text-xs text-gray-400">No industries specified</span>
-              )}
-            </div>
-            {isEditing && (
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  type="text"
-                  value={newIndustry}
-                  onChange={(e) => setNewIndustry(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addIndustry(); } }}
-                  placeholder="Add industry..."
-                  className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-                <Button variant="ghost" size="sm" icon={Plus} onClick={addIndustry}>Add</Button>
+          <LockOverlay isLocked={lockState.isLocked}>
+            <Card>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Industries</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {(isEditing ? editIndustries : trend.industries).map((ind, i) => (
+                  <span key={ind} className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 flex items-center gap-1">
+                    {ind}
+                    {isEditing && (
+                      <button onClick={() => removeIndustry(i)} className="text-gray-400 hover:text-red-500">
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </span>
+                ))}
+                {!isEditing && trend.industries.length === 0 && (
+                  <span className="text-xs text-gray-400">No industries specified</span>
+                )}
               </div>
-            )}
-          </Card>
+              {isEditing && (
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="text"
+                    value={newIndustry}
+                    onChange={(e) => setNewIndustry(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addIndustry(); } }}
+                    placeholder="Add industry..."
+                    className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                  <Button variant="ghost" size="sm" icon={Plus} onClick={addIndustry}>Add</Button>
+                </div>
+              )}
+            </Card>
+          </LockOverlay>
 
           {/* Tags */}
-          <Card>
-            <h3 className="text-sm font-semibold text-gray-800 mb-2">Tags</h3>
-            <div className="flex flex-wrap gap-1.5">
-              {(isEditing ? editTags : trend.tags).map((tag, i) => (
-                <span key={tag} className="text-xs px-2 py-0.5 rounded-full border border-gray-200 text-gray-600 flex items-center gap-1">
-                  {tag}
-                  {isEditing && (
-                    <button onClick={() => removeTag(i)} className="text-gray-400 hover:text-red-500">
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                </span>
-              ))}
-              {!isEditing && trend.tags.length === 0 && (
-                <span className="text-xs text-gray-400">No tags</span>
-              )}
-            </div>
-            {isEditing && (
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
-                  placeholder="Add tag..."
-                  className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-                <Button variant="ghost" size="sm" icon={Plus} onClick={addTag}>Add</Button>
+          <LockOverlay isLocked={lockState.isLocked}>
+            <Card>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">Tags</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {(isEditing ? editTags : trend.tags).map((tag, i) => (
+                  <span key={tag} className="text-xs px-2 py-0.5 rounded-full border border-gray-200 text-gray-600 flex items-center gap-1">
+                    {tag}
+                    {isEditing && (
+                      <button onClick={() => removeTag(i)} className="text-gray-400 hover:text-red-500">
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </span>
+                ))}
+                {!isEditing && trend.tags.length === 0 && (
+                  <span className="text-xs text-gray-400">No tags</span>
+                )}
               </div>
-            )}
-          </Card>
+              {isEditing && (
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="text"
+                    value={newTag}
+                    onChange={(e) => setNewTag(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
+                    placeholder="Add tag..."
+                    className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                  <Button variant="ghost" size="sm" icon={Plus} onClick={addTag}>Add</Button>
+                </div>
+              )}
+            </Card>
+          </LockOverlay>
 
           {/* How to Use */}
-          <Card>
-            <h3 className="text-sm font-semibold text-gray-800 mb-2">How to Use This Trend</h3>
-            <ul className="space-y-1.5">
-              {(isEditing ? editHowToUse : trend.howToUse).map((tip, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                  <span className="flex items-center justify-center w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-[10px] font-bold flex-shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <span className="flex-1">{tip}</span>
-                  {isEditing && (
-                    <button onClick={() => removeHowToUse(i)} className="text-gray-400 hover:text-red-500 flex-shrink-0">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </li>
-              ))}
-              {!isEditing && trend.howToUse.length === 0 && (
-                <li className="text-xs text-gray-400">No usage tips yet</li>
+          <LockOverlay isLocked={lockState.isLocked}>
+            <Card>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2">How to Use This Trend</h3>
+              <ul className="space-y-1.5">
+                {(isEditing ? editHowToUse : trend.howToUse).map((tip, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-[10px] font-bold flex-shrink-0 mt-0.5">
+                      {i + 1}
+                    </span>
+                    <span className="flex-1">{tip}</span>
+                    {isEditing && (
+                      <button onClick={() => removeHowToUse(i)} className="text-gray-400 hover:text-red-500 flex-shrink-0">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </li>
+                ))}
+                {!isEditing && trend.howToUse.length === 0 && (
+                  <li className="text-xs text-gray-400">No usage tips yet</li>
+                )}
+              </ul>
+              {isEditing && (
+                <div className="flex items-center gap-2 mt-2">
+                  <input
+                    type="text"
+                    value={newHowToUse}
+                    onChange={(e) => setNewHowToUse(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addHowToUse(); } }}
+                    placeholder="Add usage tip..."
+                    className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                  <Button variant="ghost" size="sm" icon={Plus} onClick={addHowToUse}>Add</Button>
+                </div>
               )}
-            </ul>
-            {isEditing && (
-              <div className="flex items-center gap-2 mt-2">
-                <input
-                  type="text"
-                  value={newHowToUse}
-                  onChange={(e) => setNewHowToUse(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addHowToUse(); } }}
-                  placeholder="Add usage tip..."
-                  className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-                <Button variant="ghost" size="sm" icon={Plus} onClick={addHowToUse}>Add</Button>
-              </div>
-            )}
-          </Card>
+            </Card>
+          </LockOverlay>
 
           {/* AI Analysis (read-only) */}
           {trend.aiAnalysis && (
             <Card>
               <h3 className="text-sm font-semibold text-gray-800 mb-2">AI Analysis</h3>
               <p className="text-sm text-gray-600 whitespace-pre-wrap">{trend.aiAnalysis}</p>
+            </Card>
+          )}
+
+          {/* Data Points (read-only) */}
+          {trend.dataPoints && trend.dataPoints.length > 0 && (
+            <Card>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
+                <BarChart3 className="w-4 h-4 text-teal-600" />
+                Key Data Points
+              </h3>
+              <ul className="space-y-1.5">
+                {trend.dataPoints.map((dp, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
+                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400 mt-1.5 flex-shrink-0" />
+                    {dp}
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
+
+          {/* Sources (read-only) */}
+          {trend.sourceUrls && trend.sourceUrls.length > 0 && (
+            <Card>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-blue-600" />
+                Sources ({trend.sourceUrls.length})
+              </h3>
+              <ul className="space-y-2">
+                {trend.sourceUrls.map((url, i) => {
+                  let displayUrl = url;
+                  try {
+                    displayUrl = new URL(url).hostname.replace(/^www\./, '');
+                  } catch { /* keep raw url */ }
+                  return (
+                    <li key={i}>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span className="truncate">{displayUrl}</span>
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          )}
+
+          {/* Fallback: single sourceUrl when sourceUrls is empty */}
+          {(!trend.sourceUrls || trend.sourceUrls.length === 0) && trend.sourceUrl && (
+            <Card>
+              <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
+                <FileText className="w-4 h-4 text-blue-600" />
+                Source
+              </h3>
+              <a
+                href={trend.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+              >
+                <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="truncate">{trend.sourceUrl}</span>
+              </a>
             </Card>
           )}
 
@@ -549,6 +638,40 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
         <div className="space-y-4">
           <TrendRelevanceCard score={trend.relevanceScore} confidence={trend.confidence} />
 
+          {/* Quality Scores */}
+          {trend.scores && (
+            <Card padding="none">
+              <div className="p-4 space-y-3">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Quality Scores</h3>
+                <div className="space-y-2">
+                  {[
+                    { label: 'Novelty', value: trend.scores.novelty },
+                    { label: 'Evidence', value: trend.scores.evidenceStrength },
+                    { label: 'Growth Signal', value: trend.scores.growthSignal },
+                    { label: 'Actionability', value: trend.scores.actionability },
+                    { label: 'Strategic Relevance', value: trend.scores.strategicRelevance },
+                    { label: 'Specificity', value: trend.scores.specificity },
+                  ].map((item) => (
+                    <div key={item.label}>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs text-gray-500">{item.label}</span>
+                        <span className="text-xs font-medium text-gray-700">{item.value}</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            item.value >= 70 ? 'bg-teal-500' : item.value >= 50 ? 'bg-amber-400' : 'bg-red-400'
+                          }`}
+                          style={{ width: `${item.value}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* Detection Info */}
           <Card padding="none">
             <div className="p-4 space-y-3">
@@ -560,6 +683,12 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
                     {sourceConfig.label}
                   </span>
                 </div>
+                {trend.evidenceCount > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Evidence Sources</span>
+                    <span className="text-xs font-medium text-gray-700">{trend.evidenceCount}</span>
+                  </div>
+                )}
                 {trend.researchJob && (
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-gray-500">Research</span>
@@ -585,37 +714,49 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
           <TrendActivationCard trend={trend} onToggle={() => activateMutation.mutate(trend.id)} disabled={lockState.isLocked} />
 
           {/* Dismiss action */}
-          {!lockState.isLocked && (
-            <button
-              onClick={() => dismissMutation.mutate(trend.id)}
-              disabled={dismissMutation.isPending}
-              className={`flex items-center gap-2 w-full justify-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
-                trend.isDismissed
+          <button
+            onClick={() => dismissMutation.mutate(trend.id)}
+            disabled={dismissMutation.isPending || lockState.isLocked}
+            className={`flex items-center gap-2 w-full justify-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+              lockState.isLocked
+                ? 'text-gray-300 cursor-not-allowed'
+                : trend.isDismissed
                   ? 'text-teal-600 hover:bg-teal-50'
                   : 'text-gray-500 hover:bg-gray-50'
-              }`}
-            >
-              {trend.isDismissed ? (
-                <><Eye className="w-3.5 h-3.5" /> Restore Trend</>
-              ) : (
-                <><EyeOff className="w-3.5 h-3.5" /> Dismiss Trend</>
-              )}
-            </button>
-          )}
+            }`}
+          >
+            {trend.isDismissed ? (
+              <><Eye className="w-3.5 h-3.5" /> Restore Trend</>
+            ) : (
+              <><EyeOff className="w-3.5 h-3.5" /> Dismiss Trend</>
+            )}
+          </button>
 
           {/* Delete action */}
-          {!lockState.isLocked && (
-            <button
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="flex items-center gap-2 w-full justify-center px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete Trend'}
-            </button>
-          )}
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={deleteMutation.isPending || lockState.isLocked}
+            className={`flex items-center gap-2 w-full justify-center px-3 py-2 text-xs font-medium rounded-lg transition-colors ${
+              lockState.isLocked
+                ? 'text-gray-300 cursor-not-allowed'
+                : 'text-red-600 hover:bg-red-50'
+            }`}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete Trend
+          </button>
         </div>
       </div>
+
+      {/* Delete confirm dialog */}
+      {showDeleteConfirm && (
+        <DeleteTrendConfirmDialog
+          trendTitle={trend.title}
+          isDeleting={deleteMutation.isPending}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </div>
   );
 }

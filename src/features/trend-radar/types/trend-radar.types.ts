@@ -28,6 +28,7 @@ export interface TrendScores {
   growthSignal: number;
   actionability: number;
   strategicRelevance: number;
+  specificity: number;
   compositeScore: number;
 }
 
@@ -47,11 +48,16 @@ export interface DetectedTrendWithMeta {
   confidence: number | null;
   rawExcerpt: string | null;
   aiAnalysis: string | null;
+  whyNow?: string | null;
   industries: string[];
   tags: string[];
   howToUse: string[];
   detectionSource: TrendDetectionSource;
   sourceUrl: string | null;
+  sourceUrls: string[];
+  dataPoints: string[];
+  evidenceCount: number;
+  scores?: TrendScores | null;
   isLocked: boolean;
   lockedAt: string | null;
   lockedBy?: { id: string; name: string } | null;
@@ -129,6 +135,7 @@ export interface PendingTrendItem {
   dataPoints?: string[];
   evidenceCount?: number;
   sourceUrls?: string[];
+  whyNow?: string;
   scores?: TrendScores;
 }
 

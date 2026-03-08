@@ -324,9 +324,236 @@ export const ARCHETYPES: ArchetypeDefinition[] = [
   },
 ];
 
+// ─── Extended reference data (voice, action, visual motifs) ──
+// Kept separate from ArchetypeDefinition to avoid inflating the base entries.
+// These fields are merged into auto-fill when an archetype is selected.
+
+interface ArchetypeExtendedData {
+  languagePatterns: string;
+  toneVariations: string;
+  weSayNotThat: { weSay: string; notThat: string }[];
+  blacklistedPhrases: string[];
+  visualMotifs: string;
+  marketingExpression: string;
+  customerExperience: string;
+  storytellingApproach: string;
+}
+
+export const ARCHETYPE_EXTENDED_DATA: Record<string, ArchetypeExtendedData> = {
+  innocent: {
+    languagePatterns: 'Simple, accessible vocabulary. Short sentences. Positive framing ("we believe" over "we don\'t"). Warm personal pronouns. Avoid jargon.',
+    toneVariations: 'Social: lighthearted, encouraging. Email: warm, personal. Advertising: uplifting, aspirational simplicity. Support: genuinely helpful, patient.',
+    weSayNotThat: [
+      { weSay: 'Pure and simple', notThat: 'Basic and minimal' },
+      { weSay: 'Naturally good', notThat: 'All-natural certified' },
+      { weSay: 'Happiness starts here', notThat: 'Buy your happiness' },
+    ],
+    blacklistedPhrases: ['Disrupt', 'Dominate', 'Aggressive', 'Crushing it', 'Hack'],
+    visualMotifs: 'Doves, sunrises, clean horizons, water droplets, green leaves, natural textures, white space',
+    marketingExpression: 'Feel-good campaigns centered on simple joys and universal human goodness. Warm testimonials and nostalgic moments.',
+    customerExperience: 'Effortlessly easy and transparent. No hidden complexity. Every touchpoint feels safe, welcoming, and honest.',
+    storytellingApproach: 'The journey from complication back to simplicity. Protagonists find happiness by returning to what\'s genuine and true.',
+  },
+  sage: {
+    languagePatterns: 'Precise, well-structured vocabulary. Evidence-based statements. Balanced sentence length. Data references and citations welcomed.',
+    toneVariations: 'Social: thought-provoking, share-worthy. Email: informative, structured. Advertising: authoritative, credibility-focused. Support: thorough, educational.',
+    weSayNotThat: [
+      { weSay: 'Our research shows', notThat: 'We think' },
+      { weSay: 'Evidence suggests', notThat: 'Everyone knows' },
+      { weSay: 'Let\'s explore this together', notThat: 'Just trust us' },
+    ],
+    blacklistedPhrases: ['Game-changer', 'Crush it', 'Epic', 'No-brainer', 'YOLO'],
+    visualMotifs: 'Books, lightbulbs, compass roses, magnifying glasses, interconnected networks, mind maps',
+    marketingExpression: 'Thought leadership campaigns, data-driven insights, expert interviews, and educational series that establish authority.',
+    customerExperience: 'Knowledge-first interactions. Rich self-service resources, detailed FAQs, and transparent reasoning behind every recommendation.',
+    storytellingApproach: 'The quest for understanding. A complex problem is methodically unraveled through research and insight.',
+  },
+  explorer: {
+    languagePatterns: 'Vivid, sensory language. Active verbs of movement. Rhetorical questions. Conversational and authentic. Geographic references.',
+    toneVariations: 'Social: inspiring, adventure-focused. Email: personal dispatches, journey updates. Advertising: cinematic, aspirational. Support: encouraging, solution-oriented.',
+    weSayNotThat: [
+      { weSay: 'Discover', notThat: 'Buy' },
+      { weSay: 'Forge your own path', notThat: 'Follow the trend' },
+      { weSay: 'Uncharted territory', notThat: 'New product line' },
+    ],
+    blacklistedPhrases: ['Mainstream', 'Conventional', 'Standard', 'Normal', 'Settle for'],
+    visualMotifs: 'Compasses, maps, mountain peaks, trails, horizons, campfires, backpacks, open roads',
+    marketingExpression: 'Discovery-driven campaigns featuring real journeys, user adventures, and unscripted moments in extraordinary settings.',
+    customerExperience: 'Empowering autonomy and choice. Self-guided exploration, customizable options, and rewards for curiosity.',
+    storytellingApproach: 'The hero\'s journey outward. A protagonist leaves comfort behind to discover something meaningful in the unknown.',
+  },
+  outlaw: {
+    languagePatterns: 'Direct, punchy sentences. Slang and colloquialisms welcomed. Bold manifestos. Confrontational questions. Short paragraphs.',
+    toneVariations: 'Social: provocative, debate-sparking. Email: exclusive insider tone. Advertising: manifesto-style, counter-cultural. Support: straight-talking, no corporate speak.',
+    weSayNotThat: [
+      { weSay: 'Break the rules', notThat: 'Think outside the box' },
+      { weSay: 'Question everything', notThat: 'Consider alternatives' },
+      { weSay: 'Revolution', notThat: 'Innovation' },
+    ],
+    blacklistedPhrases: ['Best practices', 'Industry standard', 'Compliance', 'Traditional', 'Conventional wisdom'],
+    visualMotifs: 'Lightning bolts, broken chains, fire, spray paint, leather textures, distressed surfaces',
+    marketingExpression: 'Provocative campaigns that challenge industry norms, call out the status quo, and position the brand as anti-establishment.',
+    customerExperience: 'Raw and authentic. No corporate polish. Direct access, honest feedback, and a feeling of belonging to a movement.',
+    storytellingApproach: 'David vs Goliath. An underdog challenges a broken system and wins through courage and authenticity.',
+  },
+  magician: {
+    languagePatterns: 'Aspirational, transformative language. Before/after framing. Words like "imagine", "transform", "unlock". Visionary statements. Poetic rhythm.',
+    toneVariations: 'Social: awe-inspiring, shareable magic. Email: exclusive previews, "behind the curtain". Advertising: cinematic, transformative. Support: reassuring, solution-focused.',
+    weSayNotThat: [
+      { weSay: 'Transform your world', notThat: 'Improve your situation' },
+      { weSay: 'Unlock possibilities', notThat: 'Access features' },
+      { weSay: 'Magical experience', notThat: 'Good user experience' },
+    ],
+    blacklistedPhrases: ['Ordinary', 'Standard', 'Basic plan', 'Nothing special', 'It just works'],
+    visualMotifs: 'Wands, portals, light beams, metamorphosis sequences, crystals, stars, aurora borealis',
+    marketingExpression: 'Transformative reveal campaigns, before/after demonstrations, and product experiences that feel like magic.',
+    customerExperience: 'Delightful surprises at every turn. Seamless experiences that feel effortless, with moments of unexpected wow.',
+    storytellingApproach: 'The transformation journey. An ordinary situation becomes extraordinary through a catalyst moment of vision and possibility.',
+  },
+  hero: {
+    languagePatterns: 'Action-oriented verbs. Imperative sentences. Challenge language ("rise", "conquer", "achieve"). Motivational cadence. Strong declarations.',
+    toneVariations: 'Social: rallying, challenge-based. Email: mission briefings, achievement updates. Advertising: epic, aspirational. Support: empowering, solution-focused.',
+    weSayNotThat: [
+      { weSay: 'Rise to the challenge', notThat: 'Try your best' },
+      { weSay: 'Achieve greatness', notThat: 'Do a good job' },
+      { weSay: 'Unleash your potential', notThat: 'Improve yourself' },
+    ],
+    blacklistedPhrases: ['Easy', 'Effortless', 'Relax', 'Take it easy', 'No commitment needed'],
+    visualMotifs: 'Shields, arrows, mountain summits, trophies, strong geometric shapes, upward motion',
+    marketingExpression: 'Challenge-based campaigns, athlete partnerships, achievement testimonials, and empowerment narratives.',
+    customerExperience: 'Empowering and performance-driven. Tools and support that help customers become their best selves.',
+    storytellingApproach: 'The triumph narrative. A protagonist faces a formidable challenge, perseveres through effort, and achieves victory.',
+  },
+  lover: {
+    languagePatterns: 'Sensory, emotive language. Metaphors of touch, taste, feeling. Intimate second person ("you deserve"). Flowing, rhythmic sentences.',
+    toneVariations: 'Social: aspirational, visually rich. Email: intimate, exclusive invitations. Advertising: sensual, emotionally charged. Support: empathetic, personal.',
+    weSayNotThat: [
+      { weSay: 'Indulge yourself', notThat: 'Treat yourself' },
+      { weSay: 'An intimate experience', notThat: 'A good experience' },
+      { weSay: 'Irresistible', notThat: 'Attractive' },
+    ],
+    blacklistedPhrases: ['Cheap', 'Budget', 'Practical', 'Functional', 'No-frills'],
+    visualMotifs: 'Roses, silk textures, hearts, pearls, candlelight, close-up details, soft bokeh',
+    marketingExpression: 'Desire-driven campaigns with rich sensory storytelling, intimate portraits, and aspirational lifestyle imagery.',
+    customerExperience: 'Luxurious, personalized, and emotionally resonant. Every touchpoint feels like a special occasion.',
+    storytellingApproach: 'The romance narrative. Brand and customer drawn together by desire, connection, and mutual appreciation.',
+  },
+  jester: {
+    languagePatterns: 'Puns, wordplay, and witty observations. Informal, conversational tone. Pop culture references. Unexpected twists. Exclamation marks sparingly.',
+    toneVariations: 'Social: meme-worthy, engagement-focused. Email: fun subject lines, easter eggs. Advertising: entertainment-first, memorable. Support: lighthearted but helpful.',
+    weSayNotThat: [
+      { weSay: 'Let\'s have fun', notThat: 'Let\'s engage' },
+      { weSay: 'Life\'s too short to be boring', notThat: 'We offer an exciting experience' },
+      { weSay: 'Plot twist!', notThat: 'Additionally' },
+    ],
+    blacklistedPhrases: ['Synergy', 'Leverage', 'Circle back', 'Moving forward', 'Per my last email'],
+    visualMotifs: 'Confetti, party elements, masks, speech bubbles, bold patterns, winking faces, surprise elements',
+    marketingExpression: 'Entertainment-first campaigns: viral videos, memes, roasts, unexpected stunts, and humor that makes the brand shareable.',
+    customerExperience: 'Surprisingly fun at every touchpoint. Witty microcopy, playful error pages, and joy sprinkled throughout interactions.',
+    storytellingApproach: 'Comedy and satire. A protagonist navigates life\'s absurdities with humor and finds laughter is the best solution.',
+  },
+  everyman: {
+    languagePatterns: 'Plain, everyday language. No jargon. Inclusive pronouns ("we", "us", "together"). Conversational, like chatting with a friend. Relatable examples.',
+    toneVariations: 'Social: community-driven, relatable. Email: neighborly, personal updates. Advertising: authentic, slice-of-life. Support: patient, understanding, no judgment.',
+    weSayNotThat: [
+      { weSay: 'For everyone', notThat: 'For the elite' },
+      { weSay: 'Real people, real results', notThat: 'Expert-verified' },
+      { weSay: 'We get it', notThat: 'We understand your challenges' },
+    ],
+    blacklistedPhrases: ['Exclusive', 'Premium', 'Elite', 'Luxury', 'VIP'],
+    visualMotifs: 'Handshakes, community circles, dinner tables, front porches, everyday objects, neighborhood scenes',
+    marketingExpression: 'Community-centered campaigns with real customers, everyday situations, and honest product demonstrations.',
+    customerExperience: 'Comfortable, unpretentious, and accessible. Fair pricing, clear communication, and a genuine welcome for everyone.',
+    storytellingApproach: 'The community story. Ordinary people come together, support each other, and prove that belonging matters most.',
+  },
+  caregiver: {
+    languagePatterns: 'Nurturing, supportive language. Reassuring tone. "We\'re here for you" patterns. Gentle imperatives. Questions that show genuine care.',
+    toneVariations: 'Social: supportive, resource-sharing. Email: checking-in, warm updates. Advertising: emotional, family-focused. Support: patient, thorough, reassuring.',
+    weSayNotThat: [
+      { weSay: 'We\'re here for you', notThat: 'Contact support' },
+      { weSay: 'Your wellbeing matters', notThat: 'Customer satisfaction guaranteed' },
+      { weSay: 'Safe and sound', notThat: 'Risk-free' },
+    ],
+    blacklistedPhrases: ['Aggressive growth', 'Dominate the market', 'Crush the competition', 'Disrupt', 'Move fast and break things'],
+    visualMotifs: 'Hands holding, shields, hearts, warm embraces, nests, soft blankets, growing plants',
+    marketingExpression: 'Care-centered campaigns highlighting protection, support, and genuine human kindness.',
+    customerExperience: 'Attentive, anticipatory, and deeply supportive. Proactive outreach, gentle reminders, and always-available assistance.',
+    storytellingApproach: 'The nurture narrative. Someone in need receives care and support, and through that care finds strength to thrive.',
+  },
+  ruler: {
+    languagePatterns: 'Authoritative, polished language. Strategic vocabulary. Confident declarations, not suggestions. Formal but not stiff. Status-signaling words.',
+    toneVariations: 'Social: curated, prestige-focused. Email: executive briefings, VIP treatment. Advertising: aspirational luxury. Support: concierge-level, premium service.',
+    weSayNotThat: [
+      { weSay: 'The standard of excellence', notThat: 'Pretty good quality' },
+      { weSay: 'Commanding presence', notThat: 'Noticeable' },
+      { weSay: 'The definitive choice', notThat: 'A good option' },
+    ],
+    blacklistedPhrases: ['Cheap', 'Bargain', 'Budget-friendly', 'DIY', 'Hack'],
+    visualMotifs: 'Crowns, columns, geometric precision, gold accents, architectural symmetry, luxury materials',
+    marketingExpression: 'Premium positioning campaigns, exclusive events, CEO endorsements, and curated luxury experiences.',
+    customerExperience: 'White-glove service, exclusive access, and VIP treatment. Every interaction reinforces status and belonging to an elite circle.',
+    storytellingApproach: 'The legacy narrative. A leader builds something enduring that commands respect and sets the standard for generations.',
+  },
+  creator: {
+    languagePatterns: 'Imaginative, expressive vocabulary. "What if" framing. Process-oriented language. Metaphors of building and crafting. Invitations to co-create.',
+    toneVariations: 'Social: behind-the-scenes, process-sharing. Email: creative inspiration, project updates. Advertising: visionary, possibility-driven. Support: collaborative, solution-building.',
+    weSayNotThat: [
+      { weSay: 'Bring your vision to life', notThat: 'Use our product' },
+      { weSay: 'Craft your masterpiece', notThat: 'Make something' },
+      { weSay: 'Limitless possibilities', notThat: 'Many features' },
+    ],
+    blacklistedPhrases: ['One-size-fits-all', 'Standard template', 'Cookie-cutter', 'Off-the-shelf', 'Generic'],
+    visualMotifs: 'Paintbrushes, sketches, blueprints, color palettes, building blocks, workspaces, tools of creation',
+    marketingExpression: 'Showcase campaigns featuring the creative process, user-generated masterpieces, and the journey from idea to reality.',
+    customerExperience: 'Empowering creative freedom. Customizable tools, templates as starting points not endpoints, celebration of user creations.',
+    storytellingApproach: 'The creation journey. An artist faces the blank canvas, struggles through creative blocks, and produces something of lasting beauty.',
+  },
+};
+
 /** Lookup an archetype definition by its ID */
 export function getArchetypeById(id: string): ArchetypeDefinition | undefined {
   return ARCHETYPES.find((a) => a.id === id.toLowerCase());
+}
+
+/**
+ * Build auto-fill data from a single archetype's reference data.
+ * Maps ArchetypeDefinition fields → BrandArchetypeFrameworkData fields.
+ * Only covers fields that have reference data; custom fields (languagePatterns,
+ * weSayNotThat, toneVariations, etc.) are left untouched.
+ */
+export function buildAutoFillData(archetypeId: string): Record<string, unknown> {
+  const def = getArchetypeById(archetypeId);
+  if (!def) return {};
+  const ext = ARCHETYPE_EXTENDED_DATA[def.id];
+  return {
+    // Core psychology
+    coreDesire: def.coreDesire,
+    coreFear: def.coreFear,
+    brandGoal: def.goal,
+    strategy: def.strategy,
+    giftTalent: def.giftTalent,
+    shadowWeakness: def.shadow,
+    // Voice & messaging
+    brandVoiceDescription: def.voiceStyle,
+    voiceAdjectives: [...def.voiceAdjectives],
+    languagePatterns: ext?.languagePatterns ?? '',
+    toneVariations: ext?.toneVariations ?? '',
+    weSayNotThat: ext?.weSayNotThat ? ext.weSayNotThat.map((p) => ({ ...p })) : [],
+    blacklistedPhrases: ext?.blacklistedPhrases ? [...ext.blacklistedPhrases] : [],
+    // Visual
+    colorDirection: def.colorDirection,
+    typographyDirection: def.typographyDirection,
+    imageryStyle: def.imageryStyle,
+    visualMotifs: ext?.visualMotifs ?? '',
+    // Action
+    marketingExpression: ext?.marketingExpression ?? '',
+    customerExperience: ext?.customerExperience ?? '',
+    contentStrategy: def.contentApproach,
+    storytellingApproach: ext?.storytellingApproach ?? '',
+    // Positioning
+    brandExamples: [...def.brandExamples],
+    positioningApproach: def.positioningApproach,
+  };
 }
 
 /** Get sub-archetypes for a given archetype ID */

@@ -3,20 +3,21 @@
 import { useState, useEffect } from 'react';
 import {
   Crown, Heart, MessageCircle, Palette, Megaphone, Globe,
-  Plus, X, Info,
+  Plus, X, Info, Check,
 } from 'lucide-react';
 import type { BrandArchetypeFrameworkData, WeSayNotThatPair } from '../types/framework.types';
 import {
-  ARCHETYPE_OPTIONS, POSITIONING_OPTIONS,
+  ARCHETYPES, POSITIONING_OPTIONS,
   getArchetypeById, getSubArchetypes,
+  buildAutoFillData,
+  ARCHETYPE_EXTENDED_DATA,
 } from '../constants/archetype-constants';
+import { Modal } from '../../../components/shared';
 
 // ─── Empty defaults ──────────────────────────────────────────
 
 const EMPTY_DATA: BrandArchetypeFrameworkData = {
   primaryArchetype: '',
-  secondaryArchetype: '',
-  blendRatio: '70/30',
   subArchetype: '',
   coreDesire: '',
   coreFear: '',
@@ -66,9 +67,30 @@ interface BrandArchetypeSectionProps {
 
 // ─── Component ──────────────────────────────────────────────
 
+/** Fields that are auto-filled from archetype reference data */
+const AUTO_FILL_FIELDS: (keyof BrandArchetypeFrameworkData)[] = [
+  'coreDesire', 'coreFear', 'brandGoal', 'strategy', 'giftTalent', 'shadowWeakness',
+  'brandVoiceDescription', 'voiceAdjectives', 'languagePatterns', 'toneVariations',
+  'weSayNotThat', 'blacklistedPhrases',
+  'colorDirection', 'typographyDirection', 'imageryStyle', 'visualMotifs',
+  'marketingExpression', 'customerExperience', 'contentStrategy', 'storytellingApproach',
+  'brandExamples', 'positioningApproach',
+];
+
+/** Check whether any auto-fillable field currently has content */
+function hasAutoFillContent(d: BrandArchetypeFrameworkData): boolean {
+  return AUTO_FILL_FIELDS.some((key) => {
+    const val = d[key];
+    if (Array.isArray(val)) return val.length > 0;
+    return typeof val === 'string' && val.length > 0;
+  });
+}
+
 export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchetypeSectionProps) {
   const [draft, setDraft] = useState<BrandArchetypeFrameworkData>(() => normalize(data));
   const [showArchetypeInfo, setShowArchetypeInfo] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingArchetypeId, setPendingArchetypeId] = useState<string | null>(null);
 
   useEffect(() => {
     setDraft(normalize(data));
@@ -80,38 +102,52 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
     onUpdate(next);
   };
 
-  /** When primary archetype changes, pre-populate core psychology fields from reference data */
-  const handlePrimaryArchetypeChange = (archetypeId: string) => {
-    const def = getArchetypeById(archetypeId);
-    const next: BrandArchetypeFrameworkData = {
-      ...draft,
-      primaryArchetype: archetypeId,
-      subArchetype: '', // Reset sub-archetype when primary changes
-    };
-    // Pre-populate from reference data if fields are empty
-    if (def) {
-      if (!draft.coreDesire) next.coreDesire = def.coreDesire;
-      if (!draft.coreFear) next.coreFear = def.coreFear;
-      if (!draft.brandGoal) next.brandGoal = def.goal;
-      if (!draft.strategy) next.strategy = def.strategy;
-      if (!draft.giftTalent) next.giftTalent = def.giftTalent;
-      if (!draft.shadowWeakness) next.shadowWeakness = def.shadow;
-      if (!draft.brandVoiceDescription) next.brandVoiceDescription = def.voiceStyle;
-      if (draft.voiceAdjectives.length === 0) next.voiceAdjectives = [...def.voiceAdjectives];
-      if (!draft.colorDirection) next.colorDirection = def.colorDirection;
-      if (!draft.typographyDirection) next.typographyDirection = def.typographyDirection;
-      if (!draft.imageryStyle) next.imageryStyle = def.imageryStyle;
-      if (draft.brandExamples.length === 0) next.brandExamples = [...def.brandExamples];
-      if (!draft.contentStrategy) next.contentStrategy = def.contentApproach;
-      if (!draft.positioningApproach) next.positioningApproach = def.positioningApproach;
+  /** Apply auto-fill data from the selected archetype onto the draft */
+  const applyAutoFill = (
+    baseDraft: BrandArchetypeFrameworkData,
+    archetypeId: string,
+  ): BrandArchetypeFrameworkData => {
+    const fillData = buildAutoFillData(archetypeId);
+    return { ...baseDraft, ...fillData } as BrandArchetypeFrameworkData;
+  };
+
+  /** When archetype changes, overwrite all auto-fillable fields */
+  const handleArchetypeChange = (archetypeId: string) => {
+    // If clearing the selection, just reset
+    if (!archetypeId) {
+      handleChange('primaryArchetype', '');
+      return;
     }
+    // If fields already have content, show confirmation
+    if (draft.primaryArchetype && hasAutoFillContent(draft)) {
+      setPendingArchetypeId(archetypeId);
+      setShowConfirmDialog(true);
+      return;
+    }
+    // Apply immediately
+    const next = applyAutoFill(
+      { ...draft, primaryArchetype: archetypeId, subArchetype: '' },
+      archetypeId,
+    );
     setDraft(next);
     onUpdate(next);
   };
 
+  /** Confirm the pending archetype switch */
+  const confirmArchetypeChange = () => {
+    if (!pendingArchetypeId) return;
+    const next = applyAutoFill(
+      { ...draft, primaryArchetype: pendingArchetypeId, subArchetype: '' },
+      pendingArchetypeId,
+    );
+    setDraft(next);
+    onUpdate(next);
+    setShowConfirmDialog(false);
+    setPendingArchetypeId(null);
+  };
+
   const d = normalize(data);
   const primaryDef = getArchetypeById(isEditing ? draft.primaryArchetype : d.primaryArchetype);
-  const secondaryDef = getArchetypeById(isEditing ? draft.secondaryArchetype ?? '' : d.secondaryArchetype ?? '');
   const subOptions = getSubArchetypes(isEditing ? draft.primaryArchetype : d.primaryArchetype);
 
   return (
@@ -145,104 +181,66 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
               archetype grow <strong>97% more in value</strong> over six years.
             </p>
             <p>
-              Choose a <strong>primary archetype</strong> (60-70% of your brand expression) and optionally a
-              <strong> secondary</strong> (20-30%) for nuance and differentiation.
+              Select the <strong>single archetype</strong> that best represents your brand&apos;s personality and narrative identity.
             </p>
           </div>
         )}
 
-        {isEditing ? (
-          <div className="space-y-4">
-            {/* Primary Archetype */}
-            <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Primary Archetype</label>
-              <select
-                value={draft.primaryArchetype}
-                onChange={(e) => handlePrimaryArchetypeChange(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
-              >
-                <option value="">Select an archetype...</option>
-                {ARCHETYPE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
+        {/* Archetype grid selector — always visible */}
+        <ArchetypeGridSelector
+          selectedId={isEditing ? draft.primaryArchetype : d.primaryArchetype}
+          isEditing={isEditing}
+          onSelectArchetype={(archetypeId) => {
+            // Clicking the selected archetype → deselect it
+            if (archetypeId === draft.primaryArchetype) {
+              handleChange('primaryArchetype', '');
+              return;
+            }
+            // Select or switch archetype
+            handleArchetypeChange(archetypeId);
+          }}
+        />
 
-            <div className="grid grid-cols-2 gap-4">
-              {/* Secondary Archetype */}
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Secondary Archetype</label>
-                <select
-                  value={draft.secondaryArchetype ?? ''}
-                  onChange={(e) => handleChange('secondaryArchetype', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
-                >
-                  <option value="">None</option>
-                  {ARCHETYPE_OPTIONS.filter((o) => o.value !== draft.primaryArchetype).map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Blend Ratio */}
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Blend Ratio</label>
-                <input
-                  type="text"
-                  value={draft.blendRatio ?? '70/30'}
-                  onChange={(e) => handleChange('blendRatio', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
-                  placeholder="70/30"
-                />
-              </div>
-            </div>
-
-            {/* Sub-archetype */}
-            {subOptions.length > 0 && (
-              <div>
-                <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Sub-archetype Variant</label>
-                <select
-                  value={draft.subArchetype ?? ''}
-                  onChange={(e) => handleChange('subArchetype', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
-                >
-                  <option value="">Select variant...</option>
-                  {subOptions.map((sub) => (
-                    <option key={sub} value={sub}>{sub}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+        {/* Inline Archetype Reference — visible when primary is selected */}
+        {(isEditing ? draft.primaryArchetype : d.primaryArchetype) && (
+          <div className="mt-5 bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
+            <ArchetypeReferencePanel
+              archetypeId={isEditing ? draft.primaryArchetype : d.primaryArchetype}
+            />
           </div>
-        ) : (
-          <div className="space-y-3">
-            {/* Display selected archetypes */}
-            {d.primaryArchetype ? (
-              <div className="flex flex-wrap gap-3">
-                <ArchetypeBadge def={primaryDef} label="Primary" variant="primary" />
-                {secondaryDef && <ArchetypeBadge def={secondaryDef} label="Secondary" variant="secondary" />}
-                {d.blendRatio && (
-                  <span className="inline-flex items-center text-xs text-gray-400 self-center">
-                    Blend: {d.blendRatio}
-                  </span>
-                )}
-                {d.subArchetype && (
-                  <span className="inline-flex items-center text-xs bg-gray-100 text-gray-600 rounded-full px-3 py-1 self-center">
-                    Variant: {d.subArchetype}
-                  </span>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm italic text-gray-400">Select your brand archetype...</p>
-            )}
+        )}
 
-            {/* Motto display */}
-            {primaryDef && (
-              <div className="bg-amber-50/50 border border-amber-100 rounded-xl px-4 py-3">
-                <p className="text-sm text-amber-700 italic">&ldquo;{primaryDef.motto}&rdquo;</p>
-                <p className="text-xs text-amber-500 mt-1">{primaryDef.quadrantLabel}</p>
-              </div>
-            )}
+        {/* Sub-archetype selector (only in edit mode with primary selected) */}
+        {isEditing && subOptions.length > 0 && (
+          <div className="mt-4">
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Sub-archetype Variant</label>
+            <select
+              value={draft.subArchetype ?? ''}
+              onChange={(e) => handleChange('subArchetype', e.target.value)}
+              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+            >
+              <option value="">Select variant...</option>
+              {subOptions.map((sub) => (
+                <option key={sub} value={sub}>{sub}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Sub-archetype display (view mode) */}
+        {!isEditing && d.subArchetype && (
+          <div className="mt-3">
+            <span className="inline-flex items-center text-xs bg-gray-100 text-gray-600 rounded-full px-3 py-1">
+              Variant: {d.subArchetype}
+            </span>
+          </div>
+        )}
+
+        {/* Motto display */}
+        {primaryDef && (
+          <div className="mt-4 bg-amber-50/50 border border-amber-100 rounded-xl px-4 py-3">
+            <p className="text-sm text-amber-700 italic">&ldquo;{primaryDef.motto}&rdquo;</p>
+            <p className="text-xs text-amber-500 mt-1">{primaryDef.quadrantLabel}</p>
           </div>
         )}
       </div>
@@ -585,6 +583,47 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
           />
         </div>
       </div>
+
+      {/* Confirmation Dialog for Archetype Switch */}
+      <Modal
+        isOpen={showConfirmDialog}
+        onClose={() => {
+          setShowConfirmDialog(false);
+          setPendingArchetypeId(null);
+        }}
+        title="Switch Archetype?"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">
+            Changing archetype will update all fields with new reference data.
+            Any custom edits will be overwritten.
+          </p>
+          <p className="text-sm text-gray-500">
+            The Archetype in Action field and Competitive Landscape will be preserved as they are brand-specific.
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowConfirmDialog(false);
+                setPendingArchetypeId(null);
+              }}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={confirmArchetypeChange}
+              className="px-4 py-2 text-sm font-medium text-white bg-primary rounded-lg hover:opacity-90 transition-colors"
+            >
+              Switch & Update Fields
+            </button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 }
@@ -627,25 +666,63 @@ function TextCard({ label, description, value, isEditing, onChange, placeholder,
   );
 }
 
-interface ArchetypeBadgeProps {
-  def: ReturnType<typeof getArchetypeById>;
-  label: string;
-  variant: 'primary' | 'secondary';
+/** Quadrant color mapping for archetype cards */
+const QUADRANT_COLORS: Record<string, { dot: string; selectedBg: string; selectedBorder: string }> = {
+  stability: { dot: 'bg-blue-400', selectedBg: 'bg-blue-50', selectedBorder: 'border-blue-300' },
+  mastery: { dot: 'bg-red-400', selectedBg: 'bg-red-50', selectedBorder: 'border-red-300' },
+  freedom: { dot: 'bg-emerald-400', selectedBg: 'bg-emerald-50', selectedBorder: 'border-emerald-300' },
+  belonging: { dot: 'bg-amber-400', selectedBg: 'bg-amber-50', selectedBorder: 'border-amber-300' },
+};
+
+interface ArchetypeGridSelectorProps {
+  selectedId: string;
+  isEditing: boolean;
+  onSelectArchetype: (id: string) => void;
 }
 
-function ArchetypeBadge({ def, label, variant }: ArchetypeBadgeProps) {
-  if (!def) return null;
-  const bgClass = variant === 'primary' ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200';
-  const textClass = variant === 'primary' ? 'text-amber-700' : 'text-gray-600';
-
+function ArchetypeGridSelector({ selectedId, isEditing, onSelectArchetype }: ArchetypeGridSelectorProps) {
   return (
-    <span className={`inline-flex items-center gap-2 ${bgClass} border rounded-xl px-4 py-2`}>
-      <Crown className={`h-4 w-4 ${textClass}`} />
-      <div>
-        <p className={`text-sm font-semibold ${textClass}`}>{def.name}</p>
-        <p className="text-xs text-gray-400">{label}</p>
-      </div>
-    </span>
+    <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+      {ARCHETYPES.map((arch) => {
+        const selected = arch.id === selectedId;
+        const colors = QUADRANT_COLORS[arch.quadrant] ?? QUADRANT_COLORS.stability;
+
+        return (
+          <button
+            key={arch.id}
+            type="button"
+            disabled={!isEditing}
+            onClick={() => onSelectArchetype(arch.id)}
+            className={`
+              text-left rounded-xl border-2 p-3 transition-all
+              ${selected
+                ? `${colors.selectedBg} ${colors.selectedBorder} shadow-sm`
+                : 'bg-white border-gray-100 hover:border-gray-300'
+              }
+              ${isEditing ? 'cursor-pointer' : 'cursor-default'}
+              ${!isEditing && !selected ? 'opacity-50' : ''}
+            `}
+          >
+            <div className="flex items-center gap-1.5 mb-1">
+              {selected ? (
+                <div className="h-4 w-4 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-500">
+                  <Check className="h-2.5 w-2.5 text-white" />
+                </div>
+              ) : (
+                <div className={`h-2.5 w-2.5 rounded-full ${colors.dot} flex-shrink-0`} />
+              )}
+              <span className={`text-xs font-semibold truncate flex-1 ${selected ? 'text-gray-900' : 'text-gray-600'}`}>
+                {arch.name.replace('The ', '')}
+              </span>
+            </div>
+
+            <p className="text-[10px] text-gray-400 leading-tight line-clamp-2 pl-0.5">
+              {arch.motto}
+            </p>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -723,6 +800,107 @@ function TagEditor({ items, isEditing, onAdd, onRemove, placeholder, emptyText, 
           <Plus className="h-4 w-4" />
         </button>
       </div>
+    </div>
+  );
+}
+
+// ─── Inline Reference Panels ─────────────────────────────────
+
+const QUADRANT_BADGE_COLORS: Record<string, string> = {
+  stability: 'bg-blue-100 text-blue-700',
+  mastery: 'bg-red-100 text-red-700',
+  freedom: 'bg-emerald-100 text-emerald-700',
+  belonging: 'bg-amber-100 text-amber-700',
+};
+
+/** Inline reference panel showing key archetype data */
+function ArchetypeReferencePanel({ archetypeId }: { archetypeId: string }) {
+  const def = getArchetypeById(archetypeId);
+  if (!def) return null;
+  const badgeColor = QUADRANT_BADGE_COLORS[def.quadrant] ?? QUADRANT_BADGE_COLORS.stability;
+
+  return (
+    <div className="p-4 space-y-4">
+      {/* Motto + quadrant badge */}
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm text-gray-500 italic">&ldquo;{def.motto}&rdquo;</p>
+        <span className={`text-[11px] font-medium rounded-full px-2.5 py-1 flex-shrink-0 ${badgeColor}`}>
+          {def.quadrantLabel}
+        </span>
+      </div>
+
+      {/* Core Psychology */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-2">
+          <Heart className="h-3.5 w-3.5 text-rose-500" />
+          <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Core Psychology</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <RefField label="Core Desire" value={def.coreDesire} />
+          <RefField label="Core Fear" value={def.coreFear} />
+          <RefField label="Goal" value={def.goal} />
+          <RefField label="Strategy" value={def.strategy} />
+          <RefField label="Gift / Talent" value={def.giftTalent} />
+          <RefField label="Shadow" value={def.shadow} />
+        </div>
+      </div>
+
+      {/* Voice */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-2">
+          <MessageCircle className="h-3.5 w-3.5 text-blue-500" />
+          <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Voice</span>
+        </div>
+        <p className="text-sm text-gray-700 mb-2">{def.voiceStyle}</p>
+        <div className="flex flex-wrap gap-1.5">
+          {def.voiceAdjectives.map((adj) => (
+            <span key={adj} className="text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2.5 py-0.5">{adj}</span>
+          ))}
+        </div>
+      </div>
+
+      {/* Visual Direction */}
+      <div>
+        <div className="flex items-center gap-1.5 mb-2">
+          <Palette className="h-3.5 w-3.5 text-violet-500" />
+          <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">Visual Direction</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          <RefField label="Color" value={def.colorDirection} />
+          <RefField label="Typography" value={def.typographyDirection} />
+          <RefField label="Imagery" value={def.imageryStyle} />
+        </div>
+      </div>
+
+      {/* Brand Examples + Sub-archetypes */}
+      <div className="flex flex-wrap gap-4">
+        <div className="flex-1 min-w-0">
+          <span className="text-xs font-medium text-gray-500">Brand Examples</span>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {def.brandExamples.map((ex) => (
+              <span key={ex} className="text-xs bg-gray-100 text-gray-700 border border-gray-200 rounded-full px-2.5 py-0.5">{ex}</span>
+            ))}
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <span className="text-xs font-medium text-gray-500">Sub-archetypes</span>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {def.subArchetypes.map((sub) => (
+              <span key={sub} className="text-xs bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2.5 py-0.5">{sub}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Compact label/value field for the reference panel */
+function RefField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-white border border-gray-100 rounded-lg p-2.5">
+      <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">{label}</span>
+      <p className="text-xs text-gray-700 mt-0.5 leading-relaxed">{value}</p>
     </div>
   );
 }

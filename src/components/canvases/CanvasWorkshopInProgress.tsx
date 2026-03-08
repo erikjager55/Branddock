@@ -236,8 +236,7 @@ export function CanvasWorkshopInProgress({
 
   // Canvas blocks for the workspace (used in Facilitator mode)
   const [canvasBlocks, setCanvasBlocks] = useState([
-    { id: 'vision', title: 'Vision Statement', content: '', icon: 'eye' },
-    { id: 'mission', title: 'Mission Statement', content: '', icon: 'target' },
+    { id: 'mission-vision', title: 'Mission & Vision', content: '', icon: 'target' },
     { id: 'values', title: 'Core Values', content: '', icon: 'heart' },
     { id: 'purpose', title: 'Purpose', content: '', icon: 'users' }
   ]);

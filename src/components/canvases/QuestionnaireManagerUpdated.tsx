@@ -20,6 +20,7 @@ import {
   Clock,
   Plus,
   Eye,
+  Zap,
   Target,
   Heart,
   Globe,
@@ -125,7 +126,7 @@ export function QuestionnaireManager({
   
   // Available brand assets
   const availableAssets = [
-    { id: 'vision-mission', name: 'Vision & Mission', icon: Target, type: 'Vision Statement' },
+    { id: 'mission-vision', name: 'Mission & Vision', icon: Zap, type: 'Mission & Vision' },
     { id: 'core-values', name: 'Core Values', icon: Heart, type: 'Core Values' },
     { id: 'brand-positioning', name: 'Brand Positioning', icon: TrendingUp, type: 'Brand Positioning' },
     { id: 'golden-circle', name: 'Golden Circle', icon: Target, type: 'Golden Circle' },

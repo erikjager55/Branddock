@@ -9,9 +9,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import { AIExplorationPage } from '@/components/ai-exploration';
 import { useAssetDetail } from '../../hooks/useBrandAssetDetail';
 import { getDimensionsForSlug } from '../../constants/brand-asset-exploration-config';
+import { buildAutoFillData, ARCHETYPES } from '../../constants/archetype-constants';
 import { SkeletonCard } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
 import * as explorationApi from '@/lib/api/exploration.api';
+
+/** Valid archetype IDs for validation */
+const VALID_ARCHETYPE_IDS = new Set(ARCHETYPES.map(a => a.id));
 
 // ─── Deep Set Helper ───────────────────────────────────────
 
@@ -106,6 +110,43 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
               // This handles the case where the LLM returns 'statement' instead of 'frameworkData.statement'
               console.log(`[onApplyChanges] Treating "${key}" as frameworkData field`);
               frameworkUpdates[key] = value;
+            }
+          }
+
+          // ─── Brand Archetype Auto-Fill Cascade ─────────────────
+          // When the AI suggests a primaryArchetype, first apply all
+          // reference data from the archetype constants, then let
+          // individual AI field suggestions override on top.
+          const isBrandArchetype = asset.frameworkType === 'BRAND_ARCHETYPE';
+          if (isBrandArchetype) {
+            const newPrimary = frameworkUpdates.primaryArchetype as string | undefined;
+
+            // Normalize: LLM might return "Hero" instead of "hero"
+            if (newPrimary) {
+              const normalized = newPrimary.toLowerCase();
+              if (VALID_ARCHETYPE_IDS.has(normalized)) {
+                frameworkUpdates.primaryArchetype = normalized;
+              }
+            }
+
+            const effectivePrimary = (frameworkUpdates.primaryArchetype as string) ??
+              ((asset.frameworkData as Record<string, unknown> | null)?.primaryArchetype as string);
+
+            // Only cascade if we have a valid primary archetype (new or existing)
+            if (effectivePrimary && VALID_ARCHETYPE_IDS.has(effectivePrimary)) {
+              const autoFillData = buildAutoFillData(effectivePrimary);
+
+              console.log('[onApplyChanges] Archetype auto-fill cascade:', effectivePrimary);
+
+              // Apply auto-fill FIRST, then let AI suggestions override on top.
+              const aiOverrides = { ...frameworkUpdates };
+              for (const [key, value] of Object.entries(autoFillData)) {
+                if (!(key in frameworkUpdates) || key === 'primaryArchetype') {
+                  frameworkUpdates[key] = value;
+                }
+              }
+              // Re-apply AI overrides on top (they take priority)
+              Object.assign(frameworkUpdates, aiOverrides);
             }
           }
 

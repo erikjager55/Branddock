@@ -15,7 +15,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Modal, Button, ProgressBar, Badge } from '@/components/shared';
+import { Modal, Button, ProgressBar } from '@/components/shared';
 import {
   useResearchProgress,
   useCancelResearch,
@@ -23,7 +23,7 @@ import {
   trendRadarKeys,
 } from '../../hooks';
 import { useTrendRadarStore } from '../../stores/useTrendRadarStore';
-import { CATEGORY_COLORS, IMPACT_COLORS, getRelevanceBg } from '../../constants/trend-radar-constants';
+import { CATEGORY_COLORS, IMPACT_COLORS } from '../../constants/trend-radar-constants';
 import type { InsightCategory, ImpactLevel, ResearchPhase } from '../../types/trend-radar.types';
 
 const PHASE_CONFIG: Record<string, {
@@ -317,7 +317,7 @@ export function ResearchProgressModal() {
             </div>
 
             {/* Trend list */}
-            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+            <div className="space-y-1.5 max-h-80 overflow-y-auto pr-1">
               {pendingTrends.map((trend, idx) => {
                 const isSelected = selectedIndices.has(idx);
                 const catConfig = CATEGORY_COLORS[trend.category as InsightCategory];
@@ -328,75 +328,65 @@ export function ResearchProgressModal() {
                     key={idx}
                     type="button"
                     onClick={() => toggleIndex(idx)}
-                    className={`w-full text-left rounded-xl border-2 p-3.5 transition-all ${
+                    className={`w-full text-left rounded-lg border p-3 transition-colors ${
                       isSelected
-                        ? 'border-primary bg-emerald-50 shadow-sm'
-                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                        ? 'border-teal-300 bg-teal-50/40'
+                        : 'border-gray-200 bg-white hover:bg-gray-50'
                     }`}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2.5">
                       {/* Checkbox */}
                       <div
-                        className="mt-0.5 flex-shrink-0 w-5 h-5 rounded flex items-center justify-center transition-colors"
+                        className="mt-0.5 flex-shrink-0 w-4 h-4 rounded flex items-center justify-center transition-colors"
                         style={isSelected
-                          ? { backgroundColor: 'var(--primary)', borderColor: 'var(--primary)', border: '2px solid var(--primary)' }
-                          : { backgroundColor: '#fff', border: '2px solid #d1d5db' }
+                          ? { backgroundColor: 'var(--primary)', border: '1.5px solid var(--primary)' }
+                          : { backgroundColor: '#fff', border: '1.5px solid #d1d5db' }
                         }
                       >
-                        {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                        {isSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
                       </div>
 
                       {/* Content */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm font-medium text-gray-900 truncate">
-                            {trend.title}
-                          </p>
-                        </div>
+                        <p className="text-sm font-medium text-gray-900 leading-snug">
+                          {trend.title}
+                        </p>
 
                         {trend.description && (
-                          <p className="text-xs text-gray-500 line-clamp-2 mb-2">
+                          <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">
                             {trend.description}
                           </p>
                         )}
 
-                        <div className="flex items-center gap-2 flex-wrap">
+                        {trend.whyNow && (
+                          <p className="text-xs text-gray-500 italic line-clamp-1 mt-0.5">
+                            Why now: {trend.whyNow}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-400">
                           {/* Relevance score */}
-                          <div className="flex items-center gap-1.5">
-                            <div className="w-12 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${getRelevanceBg(trend.relevanceScore)}`}
-                                style={{ width: `${trend.relevanceScore}%` }}
-                              />
-                            </div>
-                            <span className="text-xs font-medium text-gray-600">
-                              {trend.relevanceScore}%
-                            </span>
-                          </div>
+                          <span className="font-medium text-gray-500">{trend.relevanceScore}%</span>
 
                           {/* Evidence count */}
                           {trend.evidenceCount && trend.evidenceCount > 1 && (
-                            <Badge variant="info">
-                              {trend.evidenceCount} sources
-                            </Badge>
+                            <span>{trend.evidenceCount} sources</span>
                           )}
 
-                          {/* Category badge */}
+                          {/* Category */}
                           {catConfig && (
-                            <Badge variant="default">
-                              <span className={catConfig.text}>{catConfig.label}</span>
-                            </Badge>
+                            <span>{catConfig.label}</span>
                           )}
 
-                          {/* Impact badge */}
+                          {/* Impact */}
                           {impactConfig && (
-                            <Badge variant={
-                              trend.impactLevel === 'CRITICAL' ? 'danger'
-                                : trend.impactLevel === 'HIGH' ? 'warning'
-                                : 'default'
+                            <span className={
+                              trend.impactLevel === 'CRITICAL' ? 'text-red-500 font-medium'
+                                : trend.impactLevel === 'HIGH' ? 'text-amber-500 font-medium'
+                                : ''
                             }>
                               {impactConfig.label}
-                            </Badge>
+                            </span>
                           )}
 
                           {/* Source URL */}
@@ -406,7 +396,7 @@ export function ResearchProgressModal() {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="text-xs text-gray-400 hover:text-teal-600 flex items-center gap-0.5"
+                              className="hover:text-teal-600 flex items-center gap-0.5"
                             >
                               <ExternalLink className="w-3 h-3" />
                               Source

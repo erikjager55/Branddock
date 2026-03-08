@@ -47,10 +47,6 @@ export const WorkshopCompletePage = lazy(() =>
 export const InterviewsPage = lazy(() =>
   import('@/features/interviews/components/InterviewsPage').then(m => ({ default: m.InterviewsPage }))
 );
-export const GoldenCirclePage = lazy(() =>
-  import('@/features/golden-circle/components/GoldenCirclePage').then(m => ({ default: m.GoldenCirclePage }))
-);
-
 // ─── Business Strategy ─────────────────────────────────────
 export const BusinessStrategyPage = lazy(() =>
   import('@/features/business-strategy/components/BusinessStrategyPage').then(m => ({ default: m.BusinessStrategyPage }))

@@ -32,10 +32,12 @@ interface JudgementRaw {
   novelty: number;
   growthSignal: number;
   strategicRelevance: number;
+  specificity: number;
   verdict: string;
   reasoning?: string;
   improvedDescription?: string;
   improvedHowToUse?: string[];
+  improvedTitle?: string;
 }
 
 interface JudgeResult {
@@ -132,6 +134,9 @@ export async function judgeTrends(
       if (verdict === 'IMPROVE') {
         finalTrend = {
           ...trend,
+          title: judgement.improvedTitle && judgement.improvedTitle.length > 10
+            ? judgement.improvedTitle.slice(0, 200)
+            : trend.title,
           description: judgement.improvedDescription && judgement.improvedDescription.length > 20
             ? judgement.improvedDescription
             : trend.description,
@@ -145,6 +150,7 @@ export async function judgeTrends(
       const novelty = clampScore(judgement.novelty);
       const growthSignal = clampScore(judgement.growthSignal);
       const strategicRelevance = clampScore(judgement.strategicRelevance);
+      const specificity = clampScore(judgement.specificity);
       const evidenceStrength = calculateEvidenceStrength(finalTrend);
       const actionability = calculateActionability(finalTrend);
 
@@ -154,6 +160,7 @@ export async function judgeTrends(
         growthSignal,
         actionability,
         strategicRelevance,
+        specificity,
       });
 
       // Update relevanceScore with the composite score
@@ -170,6 +177,7 @@ export async function judgeTrends(
           growthSignal,
           actionability,
           strategicRelevance,
+          specificity,
           compositeScore,
         },
       });
@@ -197,7 +205,7 @@ function normalizeVerdict(verdict: string): JudgeVerdict {
   if (upper === 'APPROVE') return 'APPROVE';
   if (upper === 'IMPROVE') return 'IMPROVE';
   if (upper === 'REJECT') return 'REJECT';
-  return 'APPROVE'; // default to approve if unclear
+  return 'IMPROVE'; // default to improve if unclear — preserve the trend but attempt improvements
 }
 
 function clampScore(value: unknown): number {
@@ -211,6 +219,7 @@ function buildFallbackScores(trend: SanitizedTrend): TrendScores {
   const novelty = 50;
   const growthSignal = 50;
   const strategicRelevance = 50;
+  const specificity = 50;
 
   return {
     novelty,
@@ -218,12 +227,14 @@ function buildFallbackScores(trend: SanitizedTrend): TrendScores {
     growthSignal,
     actionability,
     strategicRelevance,
+    specificity,
     compositeScore: calculateCompositeScore({
       novelty,
       evidenceStrength,
       growthSignal,
       actionability,
       strategicRelevance,
+      specificity,
     }),
   };
 }

@@ -9,9 +9,8 @@ import { VALIDATION_METHODS } from '../../config/validation-methods';
 import { ResearchMethodCard, MethodStatus, UnlockStatus } from '../research/ResearchMethodCard';
 import { standardizeMethodData } from '../../utils/research-method-utils';
 import { 
-  Target, 
-  Eye, 
-  Zap, 
+  Target,
+  Zap,
   Users, 
   Heart, 
   Globe, 
@@ -65,8 +64,7 @@ export function EnhancedAssetCard({ asset, onClick, onMethodClick, lockedToolIds
   const getIcon = (type: string) => {
     switch (type) {
       case 'Golden Circle': return Target;
-      case 'Vision Statement': return Eye;
-      case 'Mission Statement': return Zap;
+      case 'Mission & Vision': return Zap;
       case 'Brand Archetype': return Users;
       case 'Core Values': return Heart;
       case 'Transformative Goals': return Target;

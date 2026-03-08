@@ -4,7 +4,7 @@
  */
 
 import { 
-  Target, Eye, Zap, Users, Heart, Globe, Mic, MessageSquare, Book, Circle,
+  Target, Zap, Users, Heart, Globe, Mic, MessageSquare, Book, Circle,
   Tag, CheckCircle2, FileText, Calendar, MapPin, Briefcase, GraduationCap, 
   DollarSign, Users as FamilyIcon
 } from 'lucide-react';
@@ -20,8 +20,7 @@ import { VALIDATION_METHODS } from '../config/validation-methods';
 function getAssetIcon(type: string) {
   const iconMap: Record<string, any> = {
     'Golden Circle': Target,
-    'Vision Statement': Eye,
-    'Mission Statement': Zap,
+    'Mission & Vision': Zap,
     'Brand Archetype': Users,
     'Core Values': Heart,
     'Transformative Goals': Target,

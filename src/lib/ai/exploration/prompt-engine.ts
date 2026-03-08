@@ -31,7 +31,7 @@ export function resolveTemplate(template: string, vars: TemplateVars): string {
 
 /**
  * Build brand context string for prompts.
- * Delegates to formatBrandContext() so all 12 brand assets are included.
+ * Delegates to formatBrandContext() so all 11 brand assets are included.
  */
 export async function buildBrandContextString(workspaceId: string): Promise<string> {
   try {

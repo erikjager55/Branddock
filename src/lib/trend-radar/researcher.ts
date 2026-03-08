@@ -56,6 +56,7 @@ export interface PendingTrend {
   dataPoints: string[];
   evidenceCount: number;
   sourceUrls: string[];
+  whyNow: string | null;
   scores?: TrendScores;
 }
 
@@ -101,7 +102,7 @@ export function cancelResearch(jobId: string): boolean {
 const MAX_URLS_PER_QUERY = 4;
 const MAX_TOTAL_URLS = 20;
 const MAX_DOMAIN_DUPLICATES = 2;
-const MAX_TRENDS_TOTAL = 10;
+const MAX_TRENDS_TOTAL = 8;
 
 // ─── Main Pipeline ──────────────────────────────────────────
 
@@ -291,7 +292,28 @@ export async function runTrendResearch(
     state.signalsExtracted = signals.length;
 
     if (signals.length === 0) {
-      throw new Error('No signals could be extracted from any source');
+      // No structured signals extracted — try to synthesize directly from scraped content
+      const fallbackSignals: Signal[] = scrapedSources.slice(0, 5).map((src) => ({
+        claim: src.content.slice(0, 300),
+        evidence: src.content.slice(0, 500),
+        dataPoints: [],
+        entities: [],
+        sourceUrl: src.url,
+        sourceName: src.name,
+        sourceType: 'other' as const,
+        publicationDate: null,
+        sourceAuthority: 'unknown' as const,
+      }));
+
+      if (fallbackSignals.length === 0) {
+        throw new Error('No signals could be extracted from any source');
+      }
+
+      signals.push(...fallbackSignals);
+      const fallbackMsg = `Signal extraction returned 0 results, using ${fallbackSignals.length} raw content fallbacks`;
+      allErrors.push(fallbackMsg);
+      state.errors.push(fallbackMsg);
+      state.signalsExtracted = signals.length;
     }
 
     if (state.cancelled) return await finalizeCancelled(jobId);
@@ -328,10 +350,10 @@ export async function runTrendResearch(
     // PHASE 4: EVALUATE — Deterministic scoring
     // ════════════════════════════════════════════════════════
 
-    // Calculate evidence + actionability scores
+    // Calculate evidence + actionability scores (pass signals for authority weighting)
     const scoredTrends = synthesis.trends.map((trend) => ({
       ...trend,
-      scores: calculatePartialScores(trend),
+      scores: calculatePartialScores(trend, signals),
     }));
 
     // ════════════════════════════════════════════════════════
@@ -353,8 +375,21 @@ export async function runTrendResearch(
     // Filter by quality threshold
     const qualityFiltered = filterByQuality(judgeResult.approved);
 
+    // If quality filter removes everything, fall back to top trends by score
+    const finalTrends = qualityFiltered.length > 0
+      ? qualityFiltered
+      : judgeResult.approved
+          .sort((a, b) => b.scores.compositeScore - a.scores.compositeScore)
+          .slice(0, Math.min(3, judgeResult.approved.length));
+
+    if (finalTrends.length < qualityFiltered.length || (qualityFiltered.length === 0 && judgeResult.approved.length > 0)) {
+      const msg = `Quality filter: ${judgeResult.approved.length} trends evaluated, ${qualityFiltered.length} passed threshold (${QUALITY_THRESHOLD}), using ${finalTrends.length} best`;
+      allErrors.push(msg);
+      state.errors.push(msg);
+    }
+
     // Convert to PendingTrend format
-    const pendingTrends: PendingTrend[] = qualityFiltered.map((t) => ({
+    const pendingTrends: PendingTrend[] = finalTrends.map((t) => ({
       title: t.title,
       slug: t.slug,
       description: t.description,
@@ -377,6 +412,7 @@ export async function runTrendResearch(
       dataPoints: t.dataPoints,
       evidenceCount: t.evidenceCount,
       sourceUrls: t.sourceUrls,
+      whyNow: t.whyNow,
       scores: t.scores,
     }));
 
@@ -390,7 +426,7 @@ export async function runTrendResearch(
     await prisma.trendResearchJob.update({
       where: { id: jobId },
       data: {
-        status: allErrors.length > 0 && state.trendsDetected === 0 ? 'FAILED' : 'COMPLETED',
+        status: 'COMPLETED',
         urlsCompleted: allUrls.length,
         trendsDetected: state.trendsDetected,
         pendingTrends: JSON.parse(JSON.stringify(pendingTrends)),

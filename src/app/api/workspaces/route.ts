@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create workspace + 12 canonical brand assets + research methods atomically
+    // Create workspace + 11 canonical brand assets + research methods atomically
     const workspace = await prisma.$transaction(async (tx) => {
       const ws = await tx.workspace.create({
         data: {
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Create 12 canonical brand assets with 4 research methods each
+      // Create 11 canonical brand assets with 4 research methods each
       for (const asset of CANONICAL_BRAND_ASSETS) {
         await tx.brandAsset.create({
           data: {

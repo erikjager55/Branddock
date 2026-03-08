@@ -52,18 +52,38 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'No valid trends selected' }, { status: 400 });
   }
 
-  // Save to DB — strip fields that don't exist in the Prisma model
+  // Save to DB — explicitly map PendingTrend fields to DetectedTrend schema
   await prisma.$transaction(
-    selected.map((trend) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { dataPoints, evidenceCount, sourceUrls, scores, ...dbFields } = trend as PendingTrend & {
-        dataPoints?: string[];
-        evidenceCount?: number;
-        sourceUrls?: string[];
-        scores?: Record<string, number>;
-      };
-      return prisma.detectedTrend.create({ data: dbFields as never });
-    }),
+    selected.map((trend) =>
+      prisma.detectedTrend.create({
+        data: {
+          title: trend.title,
+          slug: trend.slug,
+          description: trend.description,
+          category: trend.category as never,
+          scope: trend.scope as never,
+          impactLevel: trend.impactLevel as never,
+          timeframe: trend.timeframe as never,
+          relevanceScore: trend.relevanceScore,
+          direction: trend.direction,
+          confidence: trend.confidence,
+          rawExcerpt: trend.rawExcerpt,
+          aiAnalysis: trend.aiAnalysis,
+          industries: trend.industries,
+          tags: trend.tags,
+          howToUse: trend.howToUse,
+          sourceUrl: trend.sourceUrl ?? trend.sourceUrls?.[0] ?? null,
+          sourceUrls: trend.sourceUrls ?? [],
+          dataPoints: trend.dataPoints ?? [],
+          evidenceCount: trend.evidenceCount ?? 0,
+          whyNow: trend.whyNow ?? null,
+          scores: trend.scores ? JSON.parse(JSON.stringify(trend.scores)) : null,
+          detectionSource: 'AI_RESEARCH',
+          workspaceId,
+          researchJobId: jobId,
+        },
+      }),
+    ),
   );
 
   // Clear pending trends and update count

@@ -14,7 +14,6 @@ const FrameworkUpdateSchema = z.object({
     "BRAND_ESSENCE",
     "BRAND_PROMISE",
     "MISSION_STATEMENT",
-    "VISION_STATEMENT",
     "BRAND_ARCHETYPE",
     "TRANSFORMATIVE_GOALS",
     "BRAND_PERSONALITY",

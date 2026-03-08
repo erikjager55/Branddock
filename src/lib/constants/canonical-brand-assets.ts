@@ -1,5 +1,5 @@
 /**
- * Canonical Brand Assets — single source of truth for the 12 fixed brand assets
+ * Canonical Brand Assets — single source of truth for the 11 fixed brand assets
  * every workspace gets automatically.
  *
  * Imported by: seed, workspace creation (API + auth provisioning).
@@ -18,8 +18,7 @@ export const CANONICAL_BRAND_ASSETS: CanonicalBrandAsset[] = [
   { name: "Golden Circle",        slug: "golden-circle",        category: "FOUNDATION",  description: "Simon Sinek's WHY → HOW → WHAT framework",           frameworkType: "GOLDEN_CIRCLE" },
   { name: "Brand Essence",        slug: "brand-essence",        category: "CORE",        description: "The heart and soul of your brand",                    frameworkType: "BRAND_ESSENCE" },
   { name: "Brand Promise",        slug: "brand-promise",        category: "STRATEGY",    description: "Core commitment to your customers",                  frameworkType: "BRAND_PROMISE" },
-  { name: "Mission Statement",    slug: "mission-statement",    category: "STRATEGY",    description: "What you do, how, and for whom",                      frameworkType: "MISSION_STATEMENT" },
-  { name: "Vision Statement",     slug: "vision-statement",     category: "STRATEGY",    description: "Forward-looking declaration of intent",               frameworkType: "VISION_STATEMENT" },
+  { name: "Mission & Vision",      slug: "mission-statement",    category: "STRATEGY",    description: "What you do today and where you're headed",           frameworkType: "MISSION_STATEMENT" },
   { name: "Brand Archetype",      slug: "brand-archetype",      category: "PERSONALITY", description: "Universal behavior patterns",                         frameworkType: "BRAND_ARCHETYPE" },
   { name: "Transformative Goals", slug: "transformative-goals", category: "STRATEGY",    description: "Ambitious goals for lasting impact",                  frameworkType: "TRANSFORMATIVE_GOALS" },
   { name: "Brand Personality",    slug: "brand-personality",    category: "PERSONALITY", description: "Human characteristics of your brand",                 frameworkType: "BRAND_PERSONALITY" },

@@ -21,7 +21,6 @@ import {
   Crown,
   BarChart3,
   Target,
-  Eye,
   Zap,
   Users,
   Heart,
@@ -201,8 +200,7 @@ export function UniversalAssetDashboard({ assetId, onBack, onStartResearch }: Un
   const getAssetIcon = (type: string) => {
     const iconMap: Record<string, any> = {
       'Golden Circle': Target,
-      'Vision Statement': Eye,
-      'Mission Statement': Zap,
+      'Mission & Vision': Zap,
       'Brand Archetype': Users,
       'Core Values': Heart,
       'Transformative Goals': Sparkles,

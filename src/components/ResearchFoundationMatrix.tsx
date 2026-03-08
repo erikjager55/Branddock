@@ -141,23 +141,9 @@ export const foundationMatrix: Foundation[] = [
         status: 'in-progress',
         assets: [
           {
-            id: 'vision-statement',
-            name: 'Vision Statement',
-            description: 'Future aspirational state',
-            isCritical: true,
-            overallStatus: 'completed',
-            completionPercentage: 100,
-            methods: [
-              { id: 'workshop', name: 'Workshop', icon: Briefcase, status: 'completed', isRecommended: true, completedAt: '2025-01-20' },
-              { id: 'interviews', name: 'Interviews', icon: MessageSquare, status: 'completed', completedAt: '2025-01-22' },
-              { id: 'questionnaire', name: 'Survey', icon: ClipboardList, status: 'completed', completedAt: '2025-01-24' },
-              { id: 'ai-agent', name: 'AI Analysis', icon: Bot, status: 'completed', completedAt: '2025-01-18' },
-            ]
-          },
-          {
             id: 'mission-statement',
-            name: 'Mission Statement',
-            description: 'Current operational purpose',
+            name: 'Mission & Vision',
+            description: 'What you do today and where you\'re headed',
             isCritical: true,
             overallStatus: 'in-progress',
             completionPercentage: 50,

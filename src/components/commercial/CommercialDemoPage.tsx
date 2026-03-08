@@ -391,8 +391,7 @@ export function CommercialDemoPage() {
                     {(() => {
                       const allAssets = [
                         { id: '1', name: 'Golden Circle' },
-                        { id: '2', name: 'Vision Statement' },
-                        { id: '3', name: 'Mission Statement' },
+                        { id: '3', name: 'Mission & Vision' },
                         { id: '4', name: 'Brand Archetype' },
                         { id: '5', name: 'Core Values' },
                         { id: '6', name: 'Transformative Goals' },

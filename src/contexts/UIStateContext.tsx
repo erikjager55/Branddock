@@ -57,8 +57,7 @@ export function UIStateProvider({ children }: { children: ReactNode }) {
       || section === 'brand'
       || section === 'ai-exploration-brand-asset'
       || section === 'interviews'
-      || section === 'workshop-purchase'
-      || section === 'golden-circle';
+      || section === 'workshop-purchase';
     if (!isAssetRelated) {
       resetAssetStates();
     }

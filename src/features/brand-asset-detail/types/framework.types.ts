@@ -143,10 +143,8 @@ export interface WeSayNotThatPair {
 }
 
 export interface BrandArchetypeFrameworkData {
-  // Section 1: Archetype Selection
+  // Section 1: Archetype Selection (single archetype only)
   primaryArchetype: string; // Innocent / Everyman / Hero / Outlaw / Explorer / Creator / Ruler / Magician / Lover / Caregiver / Jester / Sage
-  secondaryArchetype?: string;
-  blendRatio?: string; // e.g. "70/30"
   subArchetype?: string; // Specific variant within primary (e.g. "Rescuer" for Hero)
 
   // Section 2: Core Psychology

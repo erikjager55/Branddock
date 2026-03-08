@@ -12,6 +12,7 @@ import { buildSignalExtractionPrompt } from '@/lib/ai/prompts/trend-analysis';
 const FLASH_MODEL = 'gemini-2.5-flash';
 
 export type SourceType = 'news' | 'research' | 'industry_report' | 'blog' | 'analysis' | 'government' | 'other';
+export type SourceAuthority = 'major_publication' | 'industry_specialist' | 'company_blog' | 'general' | 'unknown';
 
 export interface Signal {
   claim: string;
@@ -21,6 +22,8 @@ export interface Signal {
   sourceUrl: string;
   sourceName: string;
   sourceType: SourceType;
+  publicationDate: string | null;
+  sourceAuthority: SourceAuthority;
 }
 
 interface ExtractionResult {
@@ -30,11 +33,17 @@ interface ExtractionResult {
     dataPoints?: string[];
     entities?: string[];
     sourceType?: string;
+    publicationDate?: string;
+    sourceAuthority?: string;
   }>;
 }
 
 const VALID_SOURCE_TYPES: Set<string> = new Set([
   'news', 'research', 'industry_report', 'blog', 'analysis', 'government', 'other',
+]);
+
+const VALID_SOURCE_AUTHORITIES: Set<string> = new Set([
+  'major_publication', 'industry_specialist', 'company_blog', 'general', 'unknown',
 ]);
 
 /**
@@ -68,6 +77,8 @@ export async function extractSignals(
         sourceUrl,
         sourceName,
         sourceType: VALID_SOURCE_TYPES.has(s.sourceType ?? '') ? s.sourceType as SourceType : 'other',
+        publicationDate: s.publicationDate && s.publicationDate !== 'unknown' ? s.publicationDate.slice(0, 10) : null,
+        sourceAuthority: VALID_SOURCE_AUTHORITIES.has(s.sourceAuthority ?? '') ? s.sourceAuthority as SourceAuthority : 'unknown',
       }));
   } catch (error) {
     console.warn(`[SignalExtractor] Failed for ${sourceName}:`, error instanceof Error ? error.message : error);

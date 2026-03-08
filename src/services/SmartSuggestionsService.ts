@@ -71,22 +71,21 @@ export class SmartSuggestionsService {
       });
     }
 
-    // Pattern: Vision → Mission
-    const vision = SmartSuggestionsService.brandAssets.find(a => a.type === 'Vision Statement');
-    const mission = SmartSuggestionsService.brandAssets.find(a => a.type === 'Mission Statement');
-    
-    if (vision?.status === 'validated' && (!mission || mission.status === 'not-started')) {
+    // Pattern: Mission & Vision suggestion
+    const missionVision = SmartSuggestionsService.brandAssets.find(a => a.type === 'Mission & Vision');
+
+    if (!missionVision || missionVision.status === 'not-started') {
       suggestions.push({
-        id: 'suggest-mission',
+        id: 'suggest-mission-vision',
         type: 'next-asset',
         priority: 'high',
-        title: 'Create Your Mission Statement',
-        description: 'Your Vision is clear - now define how you\'ll achieve it with a Mission Statement.',
-        action: 'Create Mission',
-        actionUrl: '/brand/create/mission',
-        reasoning: 'Mission provides tactical direction to your strategic Vision',
+        title: 'Define Your Mission & Vision',
+        description: 'Define what you do today and where you\'re headed — your mission and vision combined.',
+        action: 'Start Mission & Vision',
+        actionUrl: '/brand/create/mission-vision',
+        reasoning: 'Mission & Vision provides both tactical direction and aspirational goals',
         icon: 'Target',
-        estimatedTime: '20 minutes',
+        estimatedTime: '25 minutes',
         estimatedImpact: 'high'
       });
     }

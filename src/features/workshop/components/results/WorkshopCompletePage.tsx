@@ -21,13 +21,11 @@ import { GalleryTab } from './GalleryTab';
 interface WorkshopCompletePageProps {
   workshopId: string;
   onBack: () => void;
-  onOpenInGoldenCircle?: () => void;
 }
 
 export function WorkshopCompletePage({
   workshopId,
   onBack,
-  onOpenInGoldenCircle,
 }: WorkshopCompletePageProps) {
   const { data, isLoading } = useWorkshopDetail(workshopId);
   const reportQuery = useWorkshopReport(workshopId, true);
@@ -115,7 +113,6 @@ export function WorkshopCompletePage({
           isEditing={canvasEditing}
           onToggleLock={handleToggleCanvasLock}
           onToggleEdit={() => setCanvasEditing(!canvasEditing)}
-          onOpenInGoldenCircle={onOpenInGoldenCircle}
         />
       )}
 

@@ -2989,6 +2989,13 @@ model DetectedTrend {
   howToUse         String[]
   sourceUrl        String?
 
+  // Multi-source evidence (from AI research pipeline)
+  sourceUrls       String[]
+  dataPoints       String[]
+  evidenceCount    Int                 @default(0)
+  whyNow           String?             @db.Text
+  scores           Json?               // TrendScores object
+
   // Lock
   isLocked         Boolean             @default(false)
   lockedAt         DateTime?

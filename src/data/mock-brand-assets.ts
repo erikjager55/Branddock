@@ -45,49 +45,9 @@ export const mockBrandAssets: BrandAsset[] = [
     artifactsValidated: 0
   },
   {
-    id: '2',
-    type: 'Vision Statement',
-    title: 'Brand Vision',
-    content: 'To be the leading innovation partner that empowers businesses to transform their digital presence and create meaningful connections with their audiences.',
-    category: 'Strategy',
-    lastUpdated: '2025-01-18',
-    status: 'validated',
-    description: 'Your vision statement is a forward-looking declaration of your organizations core purpose and focus.',
-    isCritical: true,
-    researchMethods: [
-      {
-        type: 'ai-exploration',
-        status: 'completed',
-        completedAt: '2025-01-13',
-        metadata: {}
-      },
-      {
-        type: 'canvas-workshop',
-        status: 'completed',
-        completedAt: '2025-01-15',
-        metadata: { participants: 12 }
-      },
-      {
-        type: 'interviews',
-        status: 'completed',
-        completedAt: '2025-01-16',
-        metadata: { sessions: 5 }
-      },
-      {
-        type: 'questionnaire',
-        status: 'available'
-      }
-    ],
-    researchCoverage: 100,
-    artifactsGenerated: 1,
-    artifactsValidated: 1,
-    validatedAt: '2025-01-18',
-    validatedBy: 'User'
-  },
-  {
     id: '3',
-    type: 'Mission Statement',
-    title: 'Mission Statement',
+    type: 'Mission & Vision',
+    title: 'Mission & Vision',
     content: 'We deliver cutting-edge digital solutions that combine creativity, technology, and strategic thinking to help our clients achieve sustainable growth.',
     category: 'Strategy',
     lastUpdated: '2025-01-17',

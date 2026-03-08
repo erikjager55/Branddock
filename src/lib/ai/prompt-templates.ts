@@ -16,7 +16,7 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat/completio
 
 export interface BrandContextBlock {
   brandName?: string;
-  // Brand strategy assets (from 12 canonical brand assets)
+  // Brand strategy assets (from 11 canonical brand assets)
   brandPurpose?: string;
   goldenCircle?: string;
   brandEssence?: string;
