@@ -9,29 +9,29 @@ import type {
   TrendDetectionSource,
 } from '../types/trend-radar.types';
 
-type ActiveTab = 'feed' | 'alerts' | 'activate';
-
 interface TrendRadarState {
-  // Tab
-  activeTab: ActiveTab;
-  setActiveTab: (tab: ActiveTab) => void;
-
-  // Filters (feed)
+  // Filters
   searchQuery: string;
   categoryFilter: InsightCategory | undefined;
   impactFilter: ImpactLevel | undefined;
   detectionSourceFilter: TrendDetectionSource | undefined;
   showDismissed: boolean;
+  showActivated: boolean;
   setSearchQuery: (q: string) => void;
   setCategoryFilter: (c: InsightCategory | undefined) => void;
   setImpactFilter: (i: ImpactLevel | undefined) => void;
   setDetectionSourceFilter: (d: TrendDetectionSource | undefined) => void;
   setShowDismissed: (v: boolean) => void;
+  setShowActivated: (v: boolean) => void;
   resetFilters: () => void;
 
   // Selected items
   selectedTrendId: string | null;
   setSelectedTrendId: (id: string | null) => void;
+
+  // Edit mode (detail page)
+  isEditing: boolean;
+  setIsEditing: (v: boolean) => void;
 
   // Modals
   isAddManualTrendModalOpen: boolean;
@@ -50,21 +50,19 @@ interface TrendRadarState {
 }
 
 export const useTrendRadarStore = create<TrendRadarState>((set) => ({
-  // Tab
-  activeTab: 'feed',
-  setActiveTab: (tab) => set({ activeTab: tab }),
-
   // Filters
   searchQuery: '',
   categoryFilter: undefined,
   impactFilter: undefined,
   detectionSourceFilter: undefined,
   showDismissed: false,
+  showActivated: false,
   setSearchQuery: (q) => set({ searchQuery: q }),
   setCategoryFilter: (c) => set({ categoryFilter: c }),
   setImpactFilter: (i) => set({ impactFilter: i }),
   setDetectionSourceFilter: (d) => set({ detectionSourceFilter: d }),
   setShowDismissed: (v) => set({ showDismissed: v }),
+  setShowActivated: (v) => set({ showActivated: v }),
   resetFilters: () =>
     set({
       searchQuery: '',
@@ -72,11 +70,16 @@ export const useTrendRadarStore = create<TrendRadarState>((set) => ({
       impactFilter: undefined,
       detectionSourceFilter: undefined,
       showDismissed: false,
+      showActivated: false,
     }),
 
   // Selected items
   selectedTrendId: null,
   setSelectedTrendId: (id) => set({ selectedTrendId: id }),
+
+  // Edit mode
+  isEditing: false,
+  setIsEditing: (v) => set({ isEditing: v }),
 
   // Modals
   isAddManualTrendModalOpen: false,

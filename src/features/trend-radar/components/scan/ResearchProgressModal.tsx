@@ -11,6 +11,8 @@ import {
   Brain,
   Check,
   ExternalLink,
+  FileSearch,
+  ShieldCheck,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Modal, Button, ProgressBar, Badge } from '@/components/shared';
@@ -22,16 +24,62 @@ import {
 } from '../../hooks';
 import { useTrendRadarStore } from '../../stores/useTrendRadarStore';
 import { CATEGORY_COLORS, IMPACT_COLORS, getRelevanceBg } from '../../constants/trend-radar-constants';
-import type { InsightCategory, ImpactLevel } from '../../types/trend-radar.types';
+import type { InsightCategory, ImpactLevel, ResearchPhase } from '../../types/trend-radar.types';
 
-const PHASE_LABELS: Record<string, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
-  generating_urls: { label: 'Finding relevant sources...', icon: Search },
-  scraping: { label: 'Scraping web content...', icon: Globe },
-  analyzing: { label: 'Analyzing for trends...', icon: Brain },
-  complete: { label: 'Research complete!', icon: CheckCircle2 },
-  failed: { label: 'Research failed', icon: AlertCircle },
-  cancelled: { label: 'Research cancelled', icon: X },
+const PHASE_CONFIG: Record<string, {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  description: string;
+}> = {
+  generating_queries: {
+    label: 'Generating research strategy...',
+    icon: Brain,
+    description: 'Creating diverse search queries from multiple angles',
+  },
+  discovering_sources: {
+    label: 'Searching diverse sources...',
+    icon: Search,
+    description: 'Finding articles from news, research, reports, and blogs',
+  },
+  extracting_signals: {
+    label: 'Extracting data signals...',
+    icon: FileSearch,
+    description: 'Pulling structured facts, statistics, and evidence from sources',
+  },
+  synthesizing: {
+    label: 'Cross-referencing signals...',
+    icon: Sparkles,
+    description: 'Clustering related signals into emerging trends',
+  },
+  validating: {
+    label: 'Validating trend quality...',
+    icon: ShieldCheck,
+    description: 'Scoring novelty, evidence strength, and strategic relevance',
+  },
+  complete: {
+    label: 'Research complete!',
+    icon: CheckCircle2,
+    description: '',
+  },
+  failed: {
+    label: 'Research failed',
+    icon: AlertCircle,
+    description: '',
+  },
+  cancelled: {
+    label: 'Research cancelled',
+    icon: X,
+    description: '',
+  },
 };
+
+const PHASE_ORDER: ResearchPhase[] = [
+  'generating_queries',
+  'discovering_sources',
+  'extracting_signals',
+  'synthesizing',
+  'validating',
+];
 
 export function ResearchProgressModal() {
   const { isResearchProgressModalOpen, closeResearchProgressModal, researchJobId } = useTrendRadarStore();
@@ -69,7 +117,7 @@ export function ResearchProgressModal() {
   const noPendingTrends = isComplete && pendingTrends.length === 0;
 
   const pct = progress?.progress ?? 0;
-  const phaseInfo = progress?.phase ? PHASE_LABELS[progress.phase] : null;
+  const phaseInfo = progress?.phase ? PHASE_CONFIG[progress.phase] : null;
   const PhaseIcon = phaseInfo?.icon ?? Sparkles;
 
   const allSelected = useMemo(
@@ -111,6 +159,11 @@ export function ResearchProgressModal() {
     closeResearchProgressModal();
   };
 
+  // Get current phase index for the step indicator
+  const currentPhaseIndex = progress?.phase
+    ? PHASE_ORDER.indexOf(progress.phase as ResearchPhase)
+    : -1;
+
   return (
     <Modal
       isOpen={isResearchProgressModalOpen}
@@ -122,19 +175,51 @@ export function ResearchProgressModal() {
         {/* ── Running State ──────────────────────────────── */}
         {isRunning && (
           <>
-            <div className="flex justify-center">
-              <Sparkles className="w-12 h-12 text-purple-600 animate-pulse" />
+            {/* Phase steps indicator */}
+            <div className="flex items-center justify-between px-2">
+              {PHASE_ORDER.map((phase, idx) => {
+                const config = PHASE_CONFIG[phase];
+                const Icon = config.icon;
+                const isActive = idx === currentPhaseIndex;
+                const isDone = idx < currentPhaseIndex;
+
+                return (
+                  <div key={phase} className="flex items-center">
+                    <div className={`flex items-center gap-1.5 ${
+                      isActive ? 'text-purple-600' : isDone ? 'text-emerald-500' : 'text-gray-300'
+                    }`}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center ${
+                        isActive ? 'bg-purple-100' : isDone ? 'bg-emerald-50' : 'bg-gray-50'
+                      }`}>
+                        {isDone
+                          ? <Check className="w-3.5 h-3.5" />
+                          : <Icon className={`w-3.5 h-3.5 ${isActive ? 'animate-pulse' : ''}`} />
+                        }
+                      </div>
+                    </div>
+                    {idx < PHASE_ORDER.length - 1 && (
+                      <div className={`w-8 h-0.5 mx-1 ${
+                        idx < currentPhaseIndex ? 'bg-emerald-300' : 'bg-gray-200'
+                      }`} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
+            {/* Current phase label */}
             <div className="text-center">
               {phaseInfo && (
                 <>
-                  <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <div className="flex items-center justify-center gap-1.5 mb-0.5">
                     <PhaseIcon className="w-4 h-4 text-purple-600" />
                     <p className="text-sm font-medium text-gray-900">{phaseInfo.label}</p>
                   </div>
+                  {phaseInfo.description && (
+                    <p className="text-xs text-gray-500">{phaseInfo.description}</p>
+                  )}
                   {progress?.currentUrl && (
-                    <p className="text-xs text-gray-500 truncate max-w-sm mx-auto">
+                    <p className="text-xs text-gray-400 truncate max-w-sm mx-auto mt-0.5">
                       {progress.currentUrl}
                     </p>
                   )}
@@ -142,11 +227,12 @@ export function ResearchProgressModal() {
               )}
             </div>
 
+            {/* Progress bar */}
             {progress && (
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-gray-500">
-                    {progress.urlsCompleted}/{progress.urlsTotal} URLs processed
+                    {getProgressLabel(progress.phase as ResearchPhase, progress)}
                   </span>
                   <span className="text-xs font-medium text-gray-600">{pct}%</span>
                 </div>
@@ -158,15 +244,28 @@ export function ResearchProgressModal() {
               </div>
             )}
 
+            {/* Stats counters */}
             {progress && (
               <div className="flex items-center justify-center gap-6 text-sm">
-                <div className="text-center">
-                  <span className="block text-lg font-bold text-gray-900">{progress.trendsDetected}</span>
-                  <span className="text-xs text-gray-500">Trends found</span>
-                </div>
+                {progress.queriesGenerated > 0 && (
+                  <div className="text-center">
+                    <span className="block text-lg font-bold text-gray-900">{progress.queriesGenerated}</span>
+                    <span className="text-xs text-gray-500">Queries</span>
+                  </div>
+                )}
                 <div className="text-center">
                   <span className="block text-lg font-bold text-gray-900">{progress.urlsCompleted}</span>
                   <span className="text-xs text-gray-500">URLs scraped</span>
+                </div>
+                {progress.signalsExtracted > 0 && (
+                  <div className="text-center">
+                    <span className="block text-lg font-bold text-gray-900">{progress.signalsExtracted}</span>
+                    <span className="text-xs text-gray-500">Signals</span>
+                  </div>
+                )}
+                <div className="text-center">
+                  <span className="block text-lg font-bold text-gray-900">{progress.trendsDetected}</span>
+                  <span className="text-xs text-gray-500">Trends</span>
                 </div>
               </div>
             )}
@@ -191,9 +290,13 @@ export function ResearchProgressModal() {
               <CheckCircle2 className="w-6 h-6 text-emerald-500 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-gray-900">
-                  Research complete — {pendingTrends.length} trend{pendingTrends.length !== 1 ? 's' : ''} found
+                  Research complete — {pendingTrends.length} trend{pendingTrends.length !== 1 ? 's' : ''} passed quality review
                 </p>
                 <p className="text-xs text-gray-500">
+                  {progress?.trendsRejected
+                    ? `${progress.trendsRejected} trend${progress.trendsRejected !== 1 ? 's' : ''} filtered out for low quality. `
+                    : ''
+                  }
                   Select which trends to add to your Trend Radar.
                 </p>
               </div>
@@ -225,22 +328,22 @@ export function ResearchProgressModal() {
                     key={idx}
                     type="button"
                     onClick={() => toggleIndex(idx)}
-                    className={`w-full text-left rounded-lg border p-3 transition-colors ${
+                    className={`w-full text-left rounded-xl border-2 p-3.5 transition-all ${
                       isSelected
-                        ? 'border-teal-300 bg-teal-50/50'
-                        : 'border-gray-200 bg-white hover:border-gray-300'
+                        ? 'border-primary bg-emerald-50 shadow-sm'
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       {/* Checkbox */}
                       <div
-                        className={`mt-0.5 flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                          isSelected
-                            ? 'bg-teal-600 border-teal-600'
-                            : 'border-gray-300 bg-white'
-                        }`}
+                        className="mt-0.5 flex-shrink-0 w-5 h-5 rounded flex items-center justify-center transition-colors"
+                        style={isSelected
+                          ? { backgroundColor: 'var(--primary)', borderColor: 'var(--primary)', border: '2px solid var(--primary)' }
+                          : { backgroundColor: '#fff', border: '2px solid #d1d5db' }
+                        }
                       >
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                        {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
                       </div>
 
                       {/* Content */}
@@ -270,6 +373,13 @@ export function ResearchProgressModal() {
                               {trend.relevanceScore}%
                             </span>
                           </div>
+
+                          {/* Evidence count */}
+                          {trend.evidenceCount && trend.evidenceCount > 1 && (
+                            <Badge variant="info">
+                              {trend.evidenceCount} sources
+                            </Badge>
+                          )}
 
                           {/* Category badge */}
                           {catConfig && (
@@ -335,7 +445,7 @@ export function ResearchProgressModal() {
               <AlertCircle className="w-12 h-12 text-amber-500" />
             </div>
             <p className="text-sm font-medium text-gray-600 text-center">
-              Research complete, but no relevant trends were detected. Try a different search query.
+              Research complete, but no trends passed quality review. Try a different or more specific search query.
             </p>
             <div className="flex justify-center">
               <Button variant="primary" size="sm" onClick={closeResearchProgressModal}>
@@ -393,4 +503,27 @@ export function ResearchProgressModal() {
       </div>
     </Modal>
   );
+}
+
+/** Get a descriptive progress label for the current phase. */
+function getProgressLabel(
+  phase: ResearchPhase,
+  progress: { urlsCompleted: number; urlsTotal: number; sourcesProcessed: number; sourcesTotal: number; queriesGenerated: number },
+): string {
+  switch (phase) {
+    case 'generating_queries':
+      return 'Generating search queries...';
+    case 'discovering_sources':
+      return `${progress.urlsCompleted}/${progress.urlsTotal} URLs found`;
+    case 'extracting_signals':
+      return progress.sourcesTotal > 0
+        ? `${progress.sourcesProcessed}/${progress.sourcesTotal} sources analyzed`
+        : 'Extracting data...';
+    case 'synthesizing':
+      return 'Synthesizing trends...';
+    case 'validating':
+      return 'Quality validation...';
+    default:
+      return '';
+  }
 }

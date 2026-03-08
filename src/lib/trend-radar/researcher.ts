@@ -1,20 +1,36 @@
 // =============================================================
-// Trend Researcher — On-demand AI research for trend detection
+// Trend Researcher — 5-Phase AI Research Pipeline
 //
-// Flow: query → Gemini generates URLs → scrape each URL →
-// Gemini analyzes content → save trends to DB.
+// Phase 1: DISCOVER  — Generate diverse queries, search for URLs
+// Phase 2: EXTRACT   — Scrape URLs, extract structured signals
+// Phase 3: SYNTHESIZE — Cross-reference signals into trends
+// Phase 4: EVALUATE  — Score trends on 5 dimensions
+// Phase 5: VALIDATE  — LLM-as-Judge quality control
+//
 // Fire-and-forget with in-memory progress tracking.
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
 import { scrapeProductUrl } from '@/lib/products/url-scraper';
-import { analyzeTrends } from './trend-analyzer';
 import { findUrlsViaGoogleSearch } from '@/lib/ai/gemini-client';
 import { getBrandContext } from '@/lib/ai/brand-context';
+import { generateDiverseQueries } from './query-generator';
+import { extractSignalsFromSources, type Signal } from './signal-extractor';
+import { synthesizeTrends, type SanitizedTrend } from './trend-analyzer';
+import { calculatePartialScores, filterByQuality, QUALITY_THRESHOLD, type TrendScores } from './trend-scorer';
+import { judgeTrends } from './trend-judge';
 
 // ─── In-memory progress tracking ──────────────────────────────
 
-export type ResearchPhase = 'generating_urls' | 'scraping' | 'analyzing' | 'complete' | 'failed' | 'cancelled';
+export type ResearchPhase =
+  | 'generating_queries'
+  | 'discovering_sources'
+  | 'extracting_signals'
+  | 'synthesizing'
+  | 'validating'
+  | 'complete'
+  | 'failed'
+  | 'cancelled';
 
 export interface PendingTrend {
   title: string;
@@ -36,14 +52,27 @@ export interface PendingTrend {
   detectionSource: string;
   researchJobId: string | undefined;
   workspaceId: string;
+  // Extended fields
+  dataPoints: string[];
+  evidenceCount: number;
+  sourceUrls: string[];
+  scores?: TrendScores;
 }
 
 interface ResearchProgress {
   phase: ResearchPhase;
+  // Phase 1: discovery
+  queriesGenerated: number;
   urlsTotal: number;
   urlsCompleted: number;
   currentUrl: string | null;
+  // Phase 2: extraction
+  signalsExtracted: number;
+  sourcesProcessed: number;
+  sourcesTotal: number;
+  // Phase 3-5: synthesis + scoring + validation
   trendsDetected: number;
+  trendsRejected: number;
   pendingTrends: PendingTrend[];
   errors: string[];
   cancelled: boolean;
@@ -67,13 +96,23 @@ export function cancelResearch(jobId: string): boolean {
   return false;
 }
 
-const MAX_URLS = 8;
-const MAX_TRENDS_PER_URL = 5;
-const MAX_TRENDS_TOTAL = 15;
+// ─── Configuration ──────────────────────────────────────────
+
+const MAX_URLS_PER_QUERY = 4;
+const MAX_TOTAL_URLS = 20;
+const MAX_DOMAIN_DUPLICATES = 2;
+const MAX_TRENDS_TOTAL = 10;
+
+// ─── Main Pipeline ──────────────────────────────────────────
 
 /**
- * Run a trend research job. Generates URLs from query, scrapes each,
- * analyzes for trends via AI, and writes results to DB.
+ * Run a trend research job using the 5-phase pipeline.
+ *
+ * Phase 1: DISCOVER  — Generate 5-7 diverse queries, find 15-25 URLs
+ * Phase 2: EXTRACT   — Scrape all URLs, extract structured signals
+ * Phase 3: SYNTHESIZE — Cross-reference signals into candidate trends
+ * Phase 4: EVALUATE  — Score trends on evidence + actionability
+ * Phase 5: VALIDATE  — Judge loop for novelty + relevance + growth
  */
 export async function runTrendResearch(
   jobId: string,
@@ -83,84 +122,123 @@ export async function runTrendResearch(
 ) {
   // Initialize progress
   researchProgress.set(jobId, {
-    phase: 'generating_urls',
+    phase: 'generating_queries',
+    queriesGenerated: 0,
     urlsTotal: 0,
     urlsCompleted: 0,
     currentUrl: null,
+    signalsExtracted: 0,
+    sourcesProcessed: 0,
+    sourcesTotal: 0,
     trendsDetected: 0,
+    trendsRejected: 0,
     pendingTrends: [],
     errors: [],
     cancelled: false,
   });
 
-  // Update job status
   await prisma.trendResearchJob.update({
     where: { id: jobId },
     data: { status: 'RUNNING' },
   });
 
-  let totalTrendsDetected = 0;
   const allErrors: string[] = [];
 
   try {
-    // 1. Get brand context if requested
+    const state = researchProgress.get(jobId)!;
+
+    // Get brand context if requested
     const brandContext = useBrandContext ? await getBrandContext(workspaceId) : undefined;
 
-    // 2. Find real URLs via Gemini Google Search grounding
+    // ════════════════════════════════════════════════════════
+    // PHASE 1: DISCOVER — Diverse queries + URL collection
+    // ════════════════════════════════════════════════════════
+
+    state.phase = 'generating_queries';
+
+    // Generate diverse search queries
     const searchQuery = brandContext
-      ? `${query} (industry context: ${brandContext.brandName ?? ''} ${brandContext.industry ?? ''})`
+      ? `${query} (industry: ${brandContext.brandName ?? ''} ${brandContext.productsOverview ?? ''})`
       : query;
 
-    const searchResults = await findUrlsViaGoogleSearch(searchQuery, MAX_URLS);
+    const diverseQueries = await generateDiverseQueries(searchQuery, brandContext);
+    state.queriesGenerated = diverseQueries.length;
 
-    if (searchResults.length === 0) {
-      throw new Error('Google Search found no relevant URLs for this query');
+    if (state.cancelled) return await finalizeCancelled(jobId);
+
+    // Search for URLs per query
+    state.phase = 'discovering_sources';
+
+    const allUrls: Array<{ url: string; title: string; query: string }> = [];
+    const seenDomains = new Map<string, number>(); // domain → count
+
+    for (const q of diverseQueries) {
+      if (state.cancelled) break;
+      state.currentUrl = `Searching: ${q.slice(0, 60)}...`;
+
+      try {
+        const results = await findUrlsViaGoogleSearch(q, MAX_URLS_PER_QUERY);
+        for (const r of results) {
+          // Domain dedup: max N per domain
+          let domain = 'unknown';
+          try {
+            domain = new URL(r.url).hostname.replace(/^www\./, '');
+          } catch { /* keep unknown */ }
+
+          const domainCount = seenDomains.get(domain) ?? 0;
+          if (domainCount >= MAX_DOMAIN_DUPLICATES) continue;
+          if (allUrls.some((u) => u.url === r.url)) continue;
+
+          seenDomains.set(domain, domainCount + 1);
+          allUrls.push({ url: r.url, title: r.title, query: q });
+
+          if (allUrls.length >= MAX_TOTAL_URLS) break;
+        }
+      } catch (error) {
+        const msg = `Search failed for "${q.slice(0, 40)}": ${error instanceof Error ? error.message : 'Unknown'}`;
+        allErrors.push(msg);
+        state.errors.push(msg);
+      }
+
+      if (allUrls.length >= MAX_TOTAL_URLS) break;
     }
 
-    const generatedUrls = searchResults.map((r) => ({ url: r.url, reason: r.title }));
-    const urlStrings = generatedUrls.map((u) => u.url);
+    if (allUrls.length === 0) {
+      throw new Error('No URLs found across all search queries');
+    }
 
-    // Update job with generated URLs
+    state.urlsTotal = allUrls.length;
+
+    // Update job with discovered URLs
     await prisma.trendResearchJob.update({
       where: { id: jobId },
       data: {
-        urlsGenerated: urlStrings,
-        urlsTotal: urlStrings.length,
+        urlsGenerated: allUrls.map((u) => u.url),
+        urlsTotal: allUrls.length,
       },
     });
 
-    const state = researchProgress.get(jobId)!;
-    state.urlsTotal = urlStrings.length;
-    state.phase = 'scraping';
+    if (state.cancelled) return await finalizeCancelled(jobId);
 
-    // (Notifications are created when user approves trends via /approve endpoint)
+    // ════════════════════════════════════════════════════════
+    // PHASE 2: EXTRACT — Scrape + structured signal extraction
+    // ════════════════════════════════════════════════════════
 
-    // 3. Scrape each URL and analyze
-    for (const urlEntry of generatedUrls) {
+    state.phase = 'extracting_signals';
+    state.currentUrl = 'Scraping sources...';
+
+    // Scrape all URLs
+    const scrapedSources: Array<{ name: string; url: string; content: string }> = [];
+
+    for (const urlEntry of allUrls) {
       if (state.cancelled) break;
-      if (totalTrendsDetected >= MAX_TRENDS_TOTAL) break;
 
-      // Show a readable label (strip Google redirect prefix)
-      const displayUrl = urlEntry.reason || urlEntry.url.replace(/^https:\/\/vertexaisearch\.cloud\.google\.com\/[^/]+\//, '').slice(0, 80);
+      const displayUrl = urlEntry.title || urlEntry.url.replace(/^https:\/\/[^/]+\//, '').slice(0, 60);
       state.currentUrl = displayUrl;
-      state.phase = 'scraping';
-
-      // Sync progress to DB so polling always has fresh data
-      await prisma.trendResearchJob.update({
-        where: { id: jobId },
-        data: {
-          urlsCompleted: state.urlsCompleted,
-          trendsDetected: totalTrendsDetected,
-        },
-      }).catch(() => {/* ignore update errors */});
 
       try {
-        // Scrape
         const scraped = await scrapeProductUrl(urlEntry.url);
 
-        if (state.cancelled) break;
-
-        // Skip pages with insufficient content
         if (!scraped.bodyText || scraped.bodyText.trim().length < 100) {
           const skipMsg = `${displayUrl}: Insufficient content`;
           allErrors.push(skipMsg);
@@ -169,37 +247,11 @@ export async function runTrendResearch(
           continue;
         }
 
-        state.phase = 'analyzing';
-
-        // Truncate content to prevent Gemini JSON truncation (max ~15k chars)
-        const truncatedContent = scraped.bodyText.length > 15000
-          ? scraped.bodyText.slice(0, 15000) + '\n\n[Content truncated]'
-          : scraped.bodyText;
-
-        // Analyze for trends
-        const remainingSlots = MAX_TRENDS_TOTAL - totalTrendsDetected;
-        const analysis = await analyzeTrends({
-          sourceName: urlEntry.reason || urlEntry.url,
-          sourceUrl: urlEntry.url,
-          content: truncatedContent,
-          workspaceId,
-          researchJobId: jobId,
-          brandContext,
-          maxTrends: Math.min(MAX_TRENDS_PER_URL, remainingSlots),
-          detectionSource: 'AI_RESEARCH',
+        scrapedSources.push({
+          name: urlEntry.title || urlEntry.url,
+          url: urlEntry.url,
+          content: scraped.bodyText,
         });
-
-        // Store trends as pending (user will curate before saving)
-        if (analysis.trends.length > 0) {
-          state.pendingTrends.push(...(analysis.trends as PendingTrend[]));
-          totalTrendsDetected += analysis.trends.length;
-          state.trendsDetected += analysis.trends.length;
-        }
-
-        if (analysis.error) {
-          allErrors.push(`${displayUrl}: ${analysis.error}`);
-          state.errors.push(`${displayUrl}: ${analysis.error}`);
-        }
       } catch (error) {
         const msg = error instanceof Error ? error.message : 'Unknown error';
         const errorMsg = `${displayUrl}: ${msg}`;
@@ -208,32 +260,146 @@ export async function runTrendResearch(
       }
 
       state.urlsCompleted++;
-    }
 
-    // 4. Finalize job — store pending trends in DB for curation
-    const finalState = researchProgress.get(jobId);
-    if (finalState?.cancelled) {
-      await prisma.trendResearchJob.update({
-        where: { id: jobId },
-        data: { status: 'CANCELLED', completedAt: new Date() },
-      });
-    } else {
-      await prisma.trendResearchJob.update({
-        where: { id: jobId },
-        data: {
-          status: allErrors.length > 0 && totalTrendsDetected === 0 ? 'FAILED' : 'COMPLETED',
-          urlsCompleted: generatedUrls.length,
-          trendsDetected: totalTrendsDetected,
-          pendingTrends: JSON.parse(JSON.stringify(finalState?.pendingTrends ?? [])),
-          errors: allErrors,
-          completedAt: new Date(),
-        },
-      });
-
-      if (finalState) {
-        finalState.phase = 'complete';
+      // Sync progress to DB periodically
+      if (state.urlsCompleted % 5 === 0 || state.urlsCompleted === allUrls.length) {
+        await prisma.trendResearchJob.update({
+          where: { id: jobId },
+          data: { urlsCompleted: state.urlsCompleted },
+        }).catch(() => {});
       }
     }
+
+    if (state.cancelled) return await finalizeCancelled(jobId);
+
+    if (scrapedSources.length === 0) {
+      throw new Error('No sources could be scraped successfully');
+    }
+
+    // Extract structured signals from all sources in parallel
+    state.sourcesTotal = scrapedSources.length;
+    state.currentUrl = `Extracting data from ${scrapedSources.length} sources...`;
+
+    const signals = await extractSignalsFromSources(
+      scrapedSources,
+      (completed, total) => {
+        state.sourcesProcessed = completed;
+        state.signalsExtracted = 0; // will be set after
+      },
+    );
+
+    state.signalsExtracted = signals.length;
+
+    if (signals.length === 0) {
+      throw new Error('No signals could be extracted from any source');
+    }
+
+    if (state.cancelled) return await finalizeCancelled(jobId);
+
+    // ════════════════════════════════════════════════════════
+    // PHASE 3: SYNTHESIZE — Cross-reference signals into trends
+    // ════════════════════════════════════════════════════════
+
+    state.phase = 'synthesizing';
+    state.currentUrl = `Cross-referencing ${signals.length} signals...`;
+
+    const synthesis = await synthesizeTrends({
+      query,
+      signals,
+      sourceCount: scrapedSources.length,
+      workspaceId,
+      researchJobId: jobId,
+      brandContext,
+      maxTrends: MAX_TRENDS_TOTAL,
+    });
+
+    if (synthesis.error) {
+      allErrors.push(synthesis.error);
+      state.errors.push(synthesis.error);
+    }
+
+    if (synthesis.trends.length === 0) {
+      throw new Error('No trends could be synthesized from the extracted signals');
+    }
+
+    if (state.cancelled) return await finalizeCancelled(jobId);
+
+    // ════════════════════════════════════════════════════════
+    // PHASE 4: EVALUATE — Deterministic scoring
+    // ════════════════════════════════════════════════════════
+
+    // Calculate evidence + actionability scores
+    const scoredTrends = synthesis.trends.map((trend) => ({
+      ...trend,
+      scores: calculatePartialScores(trend),
+    }));
+
+    // ════════════════════════════════════════════════════════
+    // PHASE 5: VALIDATE — LLM-as-Judge
+    // ════════════════════════════════════════════════════════
+
+    state.phase = 'validating';
+    state.currentUrl = 'Validating trend quality...';
+
+    const judgeResult = await judgeTrends(synthesis.trends, brandContext);
+
+    if (judgeResult.error) {
+      allErrors.push(`Judge: ${judgeResult.error}`);
+      state.errors.push(`Judge: ${judgeResult.error}`);
+    }
+
+    state.trendsRejected = judgeResult.rejected.length;
+
+    // Filter by quality threshold
+    const qualityFiltered = filterByQuality(judgeResult.approved);
+
+    // Convert to PendingTrend format
+    const pendingTrends: PendingTrend[] = qualityFiltered.map((t) => ({
+      title: t.title,
+      slug: t.slug,
+      description: t.description,
+      category: t.category,
+      scope: t.scope,
+      impactLevel: t.impactLevel,
+      timeframe: t.timeframe,
+      relevanceScore: t.relevanceScore,
+      direction: t.direction,
+      confidence: t.confidence,
+      rawExcerpt: t.rawExcerpt,
+      aiAnalysis: t.aiAnalysis,
+      industries: t.industries,
+      tags: t.tags,
+      howToUse: t.howToUse,
+      sourceUrl: t.sourceUrl,
+      detectionSource: t.detectionSource,
+      researchJobId: t.researchJobId,
+      workspaceId: t.workspaceId,
+      dataPoints: t.dataPoints,
+      evidenceCount: t.evidenceCount,
+      sourceUrls: t.sourceUrls,
+      scores: t.scores,
+    }));
+
+    state.pendingTrends = pendingTrends;
+    state.trendsDetected = pendingTrends.length;
+
+    // ════════════════════════════════════════════════════════
+    // FINALIZE
+    // ════════════════════════════════════════════════════════
+
+    await prisma.trendResearchJob.update({
+      where: { id: jobId },
+      data: {
+        status: allErrors.length > 0 && state.trendsDetected === 0 ? 'FAILED' : 'COMPLETED',
+        urlsCompleted: allUrls.length,
+        trendsDetected: state.trendsDetected,
+        pendingTrends: JSON.parse(JSON.stringify(pendingTrends)),
+        errors: allErrors,
+        completedAt: new Date(),
+      },
+    });
+
+    state.phase = 'complete';
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
     allErrors.push(msg);
@@ -254,6 +420,13 @@ export async function runTrendResearch(
     }
   }
 
-  // Cleanup in-memory state after 5 minutes (jobs can take 3+ min for 8 URLs)
+  // Cleanup in-memory state after 5 minutes
   setTimeout(() => researchProgress.delete(jobId), 300_000);
+}
+
+async function finalizeCancelled(jobId: string): Promise<void> {
+  await prisma.trendResearchJob.update({
+    where: { id: jobId },
+    data: { status: 'CANCELLED', completedAt: new Date() },
+  });
 }

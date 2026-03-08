@@ -341,7 +341,7 @@ async function main() {
   const demoOverrides: Record<string, { status: AssetStatus; coverage: number; ai: boolean; workshop: boolean; interview: boolean; questionnaire: boolean }> = {
     "purpose-statement":    { status: "IN_PROGRESS",     coverage: 30,  ai: true,  workshop: false, interview: false, questionnaire: false },
     "golden-circle":        { status: "IN_PROGRESS",     coverage: 55,  ai: true,  workshop: true,  interview: false, questionnaire: false },
-    "brand-essence":        { status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
+    "brand-essence":        { status: "IN_PROGRESS",     coverage: 15,  ai: false, workshop: false, interview: false, questionnaire: false },
     "brand-promise":        { status: "NEEDS_ATTENTION", coverage: 45,  ai: true,  workshop: false, interview: false, questionnaire: false },
     "mission-statement":    { status: "NEEDS_ATTENTION", coverage: 60,  ai: true,  workshop: true,  interview: false, questionnaire: false },
     "vision-statement":     { status: "READY",           coverage: 92,  ai: true,  workshop: true,  interview: true,  questionnaire: false },
@@ -482,17 +482,53 @@ async function main() {
       mechanism: "Through AI-powered brand strategy tools that combine research validation with content generation, making professional brand strategy accessible for everyone.",
       pressureTest: "If this purpose were true, employees would feel empowered to innovate beyond traditional brand tooling.\nEvery product decision would be evaluated against whether it makes brand strategy more accessible.\nPartnerships would prioritize reach over revenue.",
     }},
+    { slug: "brand-essence", frameworkData: {
+      essenceStatement: "Empowering Brand Clarity",
+      essenceNarrative: "Branddock distills complex brand strategy into clear, actionable frameworks. We combine AI intelligence with human creativity to make professional brand strategy accessible to every organization.",
+      functionalBenefit: "AI-powered brand strategy tools that turn weeks of consulting into hours of guided exploration — research-validated frameworks, instant content generation, and measurable brand consistency.",
+      emotionalBenefit: "The confidence that comes from knowing your brand stands for something real and meaningful, backed by data and validated through structured methodology.",
+      selfExpressiveBenefit: "Organizations using Branddock signal that they take brand strategy seriously — that they're modern, data-driven, and committed to authentic communication.",
+      discriminator: "Only Branddock can combine AI-driven brand analysis with hands-on workshop methodologies because we've built the only platform that bridges the gap between strategic thinking and practical execution.",
+      proofPoints: [
+        "12-asset brand framework covering all strategic dimensions",
+        "AI Exploration with configurable dimensions per asset type",
+        "Research validation through 4 complementary methods",
+        "Workshop methodology with facilitator-guided sessions",
+        "Real-time brand alignment scanning across all assets",
+      ],
+      attributes: [
+        "Accessible", "Research-validated", "AI-powered", "Comprehensive", "Collaborative",
+      ],
+      audienceInsight: "Mid-market brand leaders know they need professional brand strategy but feel stuck between expensive agencies and DIY approaches that lack rigor. They want the confidence of enterprise-level strategy without the enterprise-level investment.",
+      validationScores: { unique: 4, intangible: 3, meaningful: 4, authentic: 5, enduring: 4, scalable: 3 },
+    }},
     { slug: "golden-circle", frameworkData: {
       why: { statement: "To empower brands to communicate authentically", details: "We believe every brand has a unique story that deserves to be told consistently and compellingly." },
       how: { statement: "Through AI-powered brand strategy tools", details: "By combining human creativity with AI analysis to bridge the gap between strategy and execution." },
       what: { statement: "A platform for brand strategy and content generation", details: "Branddock helps teams define, validate, and activate their brand across all channels." },
     }},
     { slug: "brand-promise", frameworkData: {
-      promiseStatement: "We make professional brand strategy accessible to every organization.",
+      promiseStatement: "We make professional brand strategy accessible to every organization by combining AI-powered analysis with research-validated frameworks, so every team can build authentic brands without enterprise budgets.",
+      promiseOneLiner: "Professional brand strategy, powered by AI, accessible to all.",
       functionalValue: "AI-powered insights and research-validated frameworks at a fraction of enterprise cost.",
-      emotionalValue: "Confidence that your brand stands for something meaningful.",
-      targetAudience: "Mid-market companies (50-500 employees) seeking to professionalize their brand strategy.",
-      differentiator: "The only platform combining AI-driven analysis with hands-on workshop methodologies.",
+      emotionalValue: "Confidence that your brand stands for something meaningful and is communicated consistently.",
+      selfExpressiveValue: "Being seen as a forward-thinking organization that takes brand strategy seriously without overspending.",
+      targetAudience: "Mid-market companies (50-500 employees) seeking to professionalize their brand strategy without hiring an agency.",
+      coreCustomerNeed: "The need to bridge the gap between knowing brand matters and having the tools and expertise to actually build one strategically.",
+      differentiator: "The only platform combining AI-driven analysis with hands-on workshop methodologies and research validation.",
+      onlynessStatement: "Only Branddock can deliver enterprise-level brand strategy at mid-market prices because we combine AI analysis, research-validated frameworks, and interactive workshops in one integrated platform.",
+      proofPoints: [
+        "12 research-validated brand strategy frameworks",
+        "AI analysis powered by multiple leading language models",
+        "Interactive canvas workshops with facilitator support",
+        "Real-time brand alignment monitoring across all assets",
+        "Used by organizations to build consistent, authentic brands"
+      ],
+      measurableOutcomes: [
+        "80%+ brand asset completeness within first 3 months",
+        "50% reduction in time-to-strategy compared to traditional agency engagements",
+        "Measurable improvement in cross-channel brand consistency"
+      ],
     }},
     { slug: "vision-statement", frameworkData: {
       visionStatement: "To be the leading platform where brand strategy meets AI-powered execution.",
@@ -4063,6 +4099,110 @@ Respond only with valid JSON.`,
         { field: 'frameworkData.impactDescription', label: 'Impact Description', type: 'text' as const, extractionHint: 'Describe how this impact looks for the organization in practice' },
         { field: 'frameworkData.mechanism', label: 'Mechanism', type: 'text' as const, extractionHint: 'Extract the unique mechanism through which the brand delivers its impact' },
         { field: 'frameworkData.pressureTest', label: 'Pressure Test', type: 'text' as const, extractionHint: 'Extract what the world would lose if this organization ceased to exist' },
+      ],
+      contextSources: ['brand_asset', 'product', 'persona'],
+      isActive: true,
+    },
+    {
+      itemType: 'brand_asset',
+      itemSubType: 'brand-essence',
+      label: 'Brand Essence Wheel — Bates/Aaker Model',
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      temperature: 0.4,
+      maxTokens: 2048,
+      systemPrompt: `You are a senior brand strategist specialized in the Brand Essence Wheel (Bates/Aaker model).
+
+You guide a structured exploration through 6 phases:
+1. Brand DNA — discover the single most defining characteristic
+2. Value Landscape — map functional, emotional, and self-expressive benefits
+3. Audience Truth — uncover the deep human insight the brand addresses
+4. Evidence & Heritage — gather proof points that the essence is real
+5. Differentiation — articulate the compelling reason to choose this brand
+6. Essence Distillation — distill the brand into 1-3 words (adjective, adjective, noun)
+
+Key principles:
+- The essence is TIMELESS — it doesn't change with campaigns or trends
+- It must be INTANGIBLE — not a product feature but a deeper truth
+- It must be UNIQUE — only this brand can own it
+- Think of iconic examples: Nike = "Authentic Athletic Performance", Disney = "Magical Family Entertainment"
+
+Be warm and conversational. Ask ONE question at a time. Build on previous answers.
+Respond in the same language as the user.
+
+{{brandContext}}
+
+{{customKnowledge}}
+
+{{assetKnowledge}}`,
+      dimensions: [
+        { key: 'brand_dna', title: 'Brand DNA', icon: 'Fingerprint', question: 'If your brand were a person in a room full of competitors, what would make people gravitate toward them? What is the single most defining characteristic?' },
+        { key: 'value_landscape', title: 'Value Landscape', icon: 'Heart', question: 'Describe the best experience a customer has with your brand. What tangible result do they get, what feeling does it create, and how does it let them express who they are?' },
+        { key: 'audience_truth', title: 'Audience Truth', icon: 'Users', question: 'What is the underlying tension, frustration, or deep desire your audience carries — the thing they might not say out loud but your brand uniquely addresses?' },
+        { key: 'evidence_heritage', title: 'Evidence & Heritage', icon: 'ShieldCheck', question: "What concrete facts, achievements, or moments from your brand's history prove that your essence is real — not aspirational, but lived?" },
+        { key: 'differentiation', title: 'Differentiation', icon: 'Target', question: 'Complete this sentence: "Only [your brand] can _____ because _____." What is the single most compelling reason to choose your brand?' },
+        { key: 'essence_distillation', title: 'Essence Distillation', icon: 'Diamond', question: 'Based on everything we discussed, distill your brand into 3 words: adjective, adjective, noun. What would that be, and why those words?' },
+      ],
+      feedbackPrompt: `Give warm, constructive feedback (2-3 sentences) on the answer.
+Phase: {{dimensionTitle}}
+Question: {{questionAsked}}
+Answer: {{userAnswer}}
+
+Guidelines:
+- For Brand DNA: identify the core trait, probe for what makes it uniquely theirs
+- For Value Landscape: distinguish functional vs emotional vs self-expressive benefits
+- For Audience Truth: validate the depth of insight, push beyond demographics
+- For Evidence & Heritage: check if proof points are concrete and verifiable
+- For Differentiation: evaluate if it's truly unique and ownable
+- For Essence Distillation: test against the criteria (timeless, intangible, unique, meaningful)
+
+Do not ask follow-up questions. Respond in the same language as the user.`,
+      reportPrompt: `Generate a Brand Essence analysis report based on the Bates/Aaker Brand Essence Wheel exploration.
+Brand Asset: {{itemName}}
+{{itemDescription}}
+
+Answers per dimension:
+{{allAnswers}}
+
+Brand context:
+{{brandContext}}
+
+{{customKnowledge}}
+
+{{assetKnowledge}}
+
+Generate JSON:
+{
+  "executiveSummary": "2-3 paragraph strategic summary of the brand essence",
+  "findings": [
+    { "title": "...", "description": "...", "dimension": "brand_dna | value_landscape | audience_truth | evidence_heritage | differentiation | essence_distillation" }
+  ],
+  "recommendations": ["..."],
+  "fieldSuggestions": [
+    { "field": "description", "label": "Description", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.essenceStatement", "label": "Essence Statement", "suggestedValue": "1-3 words: adjective adjective noun", "reason": "..." },
+    { "field": "frameworkData.essenceNarrative", "label": "Essence Narrative", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.functionalBenefit", "label": "Functional Benefit", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.emotionalBenefit", "label": "Emotional Benefit", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.selfExpressiveBenefit", "label": "Self-Expressive Benefit", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.discriminator", "label": "Discriminator", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.audienceInsight", "label": "Audience Insight", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.proofPoints", "label": "Proof Points", "suggestedValue": ["...", "...", "..."], "reason": "..." },
+    { "field": "frameworkData.attributes", "label": "Attributes", "suggestedValue": ["...", "...", "..."], "reason": "..." }
+  ]
+}
+Respond only with valid JSON.`,
+      fieldSuggestionsConfig: [
+        { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Extract a summary of the brand essence' },
+        { field: 'frameworkData.essenceStatement', label: 'Essence Statement', type: 'text' as const, extractionHint: 'Distill the brand into 1-3 words (adjective, adjective, noun format)' },
+        { field: 'frameworkData.essenceNarrative', label: 'Essence Narrative', type: 'text' as const, extractionHint: 'Write a 2-3 sentence narrative explaining what the essence means' },
+        { field: 'frameworkData.functionalBenefit', label: 'Functional Benefit', type: 'text' as const, extractionHint: 'Extract the tangible, practical benefit the brand delivers' },
+        { field: 'frameworkData.emotionalBenefit', label: 'Emotional Benefit', type: 'text' as const, extractionHint: 'Extract the feeling or emotion the brand creates' },
+        { field: 'frameworkData.selfExpressiveBenefit', label: 'Self-Expressive Benefit', type: 'text' as const, extractionHint: 'Extract how the brand helps customers express who they are' },
+        { field: 'frameworkData.discriminator', label: 'Discriminator', type: 'text' as const, extractionHint: 'Extract the single most compelling reason to choose this brand' },
+        { field: 'frameworkData.audienceInsight', label: 'Audience Insight', type: 'text' as const, extractionHint: 'Extract the deep human truth that the brand uniquely addresses' },
+        { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'text' as const, extractionHint: 'Extract 3-5 concrete facts or evidence that prove the brand essence' },
+        { field: 'frameworkData.attributes', label: 'Attributes', type: 'text' as const, extractionHint: 'Extract 3-5 tangible brand characteristics or qualities' },
       ],
       contextSources: ['brand_asset', 'product', 'persona'],
       isActive: true,

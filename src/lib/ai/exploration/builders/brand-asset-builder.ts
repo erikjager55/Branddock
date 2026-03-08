@@ -229,7 +229,7 @@ export const brandAssetItemConfig: ItemTypeConfig = {
     return `Welcome to the AI Exploration for **${name}** (${categoryLabel} asset). I'll guide you through ${BRAND_ASSET_DIMENSIONS.length} key dimensions to validate and strengthen this brand asset. Let's begin!`;
   },
 
-  async generateInsights(item, session, knowledgeContext) {
+  async generateInsights(item, session, knowledgeContext, fieldSuggestionsConfig) {
     const name = item.name as string;
     const sessionId = (session as { id: string }).id;
     const modelId = (session as { modelId?: string }).modelId;
@@ -264,7 +264,25 @@ export const brandAssetItemConfig: ItemTypeConfig = {
 
     // ── Dynamic field mapping from actual frameworkData ──
     const { fieldMapping, currentFieldValues } = buildDynamicFieldMapping(item);
-    console.log('[brand-asset-builder] Dynamic field mapping:', fieldMapping.map(f => f.field));
+
+    // When frameworkData is empty/sparse, use fieldSuggestionsConfig from DB exploration config
+    // to tell the LLM about ALL fields that should be populated.
+    // This ensures fields are discovered even when the asset hasn't been filled in yet.
+    if (fieldSuggestionsConfig && fieldSuggestionsConfig.length > 0 && fieldSuggestionsConfig.length > fieldMapping.length) {
+      console.log('[brand-asset-builder] Augmenting field mapping from fieldSuggestionsConfig (dynamic:', fieldMapping.length, ', config:', fieldSuggestionsConfig.length, ')');
+      for (const fsc of fieldSuggestionsConfig) {
+        // Skip if already in mapping (e.g., description or existing frameworkData fields)
+        if (fieldMapping.some(f => f.field === fsc.field)) continue;
+        fieldMapping.push({
+          field: fsc.field,
+          label: fsc.label,
+          type: fsc.type === 'select' ? 'string' : fsc.type,
+        });
+        currentFieldValues[fsc.field] = null;
+      }
+    }
+
+    console.log('[brand-asset-builder] Final field mapping:', fieldMapping.map(f => f.field));
 
     // Resolve model config
     const modelConfig = resolveModelConfig(modelId);

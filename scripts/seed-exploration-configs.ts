@@ -23,7 +23,9 @@ Reference specific details from previous answers.
 
 {{brandContext}}
 
-{{customKnowledge}}`;
+{{customKnowledge}}
+
+{{assetKnowledge}}`;
 
 const FEEDBACK_PROMPT = `Provide brief, constructive feedback (2-3 sentences) on the user's answer.
 Dimension: {{dimensionTitle}}
@@ -45,6 +47,8 @@ Brand Context:
 
 {{customKnowledge}}
 
+{{assetKnowledge}}
+
 Generate JSON:
 {
   "executiveSummary": "2-3 paragraph strategic summary",
@@ -63,10 +67,18 @@ interface Dimension {
   question: string;
 }
 
+interface FieldSuggestionConfig {
+  field: string;
+  label: string;
+  type: 'text' | 'select';
+  extractionHint: string;
+}
+
 interface AssetTypeConfig {
   subType: string;
   label: string;
   dimensions: Dimension[];
+  fieldSuggestionsConfig?: FieldSuggestionConfig[];
 }
 
 const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
@@ -102,22 +114,50 @@ const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
   },
   {
     subType: 'brand-essence',
-    label: 'Brand Essence \u2014 Core Identity',
+    label: 'Brand Essence Wheel \u2014 Bates/Aaker Model',
     dimensions: [
-      { key: 'core_identity', title: 'Core Identity', icon: 'Fingerprint', question: 'If your brand were a person, how would you describe their essential character in one sentence?' },
-      { key: 'emotional_connection', title: 'Emotional Connection', icon: 'Heart', question: 'What emotion should people feel every time they interact with your brand?' },
-      { key: 'differentiation', title: 'Unique DNA', icon: 'Sparkles', question: 'What makes your brand fundamentally different from everything else in your category?' },
-      { key: 'consistency', title: 'Essence in Action', icon: 'Layers', question: 'Where does your brand essence show up most clearly \u2014 and where does it get lost?' },
+      { key: 'brand_dna', title: 'Brand DNA', icon: 'Fingerprint', question: 'If your brand were a person in a room full of competitors, what would make people gravitate toward them? What is the single most defining characteristic?' },
+      { key: 'value_landscape', title: 'Value Landscape', icon: 'Heart', question: 'Describe the best experience a customer has with your brand. What tangible result do they get, what feeling does it create, and how does it let them express who they are?' },
+      { key: 'audience_truth', title: 'Audience Truth', icon: 'Users', question: 'What is the underlying tension, frustration, or deep desire your audience carries \u2014 the thing they might not say out loud but your brand uniquely addresses?' },
+      { key: 'evidence_heritage', title: 'Evidence & Heritage', icon: 'ShieldCheck', question: "What concrete facts, achievements, or moments from your brand's history prove that your essence is real \u2014 not aspirational, but lived?" },
+      { key: 'differentiation', title: 'Differentiation', icon: 'Target', question: 'Complete this sentence: "Only [your brand] can _____ because _____." What is the single most compelling reason to choose your brand?' },
+      { key: 'essence_distillation', title: 'Essence Distillation', icon: 'Diamond', question: 'Based on everything we discussed, distill your brand into 3 words: adjective, adjective, noun. What would that be, and why those words?' },
+    ],
+    fieldSuggestionsConfig: [
+      { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Extract a summary of the brand essence' },
+      { field: 'frameworkData.essenceStatement', label: 'Essence Statement', type: 'text' as const, extractionHint: 'Distill the brand into 1-3 words (adjective, adjective, noun format)' },
+      { field: 'frameworkData.essenceNarrative', label: 'Essence Narrative', type: 'text' as const, extractionHint: 'Write a 2-3 sentence narrative explaining what the essence means and why it matters' },
+      { field: 'frameworkData.functionalBenefit', label: 'Functional Benefit', type: 'text' as const, extractionHint: 'Extract the tangible, practical benefit the brand delivers' },
+      { field: 'frameworkData.emotionalBenefit', label: 'Emotional Benefit', type: 'text' as const, extractionHint: 'Extract the feeling or emotion the brand creates for customers' },
+      { field: 'frameworkData.selfExpressiveBenefit', label: 'Self-Expressive Benefit', type: 'text' as const, extractionHint: 'Extract how the brand helps customers express who they are or want to be' },
+      { field: 'frameworkData.discriminator', label: 'Discriminator', type: 'text' as const, extractionHint: 'Extract the single most compelling reason to choose this brand over competitors' },
+      { field: 'frameworkData.audienceInsight', label: 'Audience Insight', type: 'text' as const, extractionHint: 'Extract the deep human truth or tension that the brand uniquely addresses' },
+      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'text' as const, extractionHint: 'Extract 3-5 concrete facts, achievements, or evidence that prove the brand essence is real' },
+      { field: 'frameworkData.attributes', label: 'Attributes', type: 'text' as const, extractionHint: 'Extract 3-5 tangible brand characteristics or qualities' },
     ],
   },
   {
     subType: 'brand-promise',
-    label: 'Brand Promise \u2014 Core Commitment',
+    label: 'Brand Promise \u2014 Keller/Aaker Value Model',
     dimensions: [
-      { key: 'commitment', title: 'Core Commitment', icon: 'Shield', question: 'What is the one promise your brand makes to every customer, every time?' },
-      { key: 'proof', title: 'Proof & Delivery', icon: 'CheckCircle', question: 'How do you consistently deliver on this promise? What evidence can customers point to?' },
-      { key: 'gap_analysis', title: 'Promise Gap', icon: 'AlertTriangle', question: 'Where is the biggest gap between what you promise and what customers actually experience?' },
-      { key: 'evolution', title: 'Future Promise', icon: 'TrendingUp', question: 'How should your brand promise evolve as your market and customers change?' },
+      { key: 'promise_core', title: 'Promise Core', icon: 'Shield', question: 'What is the one promise your brand makes to every customer, every time — the commitment they can always count on? Can you distill that into a single sentence that could serve as a tagline?' },
+      { key: 'value_layers', title: 'Value Layers', icon: 'Heart', question: 'Describe the best experience a customer has when you deliver on your promise. What tangible result do they get, what feeling does it create, and how does it let them express who they are?' },
+      { key: 'audience_need', title: 'Audience & Need', icon: 'Users', question: 'Who is your promise for, and what deeper need does it address — the thing your audience might not say out loud but your brand uniquely solves?' },
+      { key: 'onlyness', title: 'Onlyness & Differentiation', icon: 'Target', question: 'Complete this sentence: "Only [your brand] can _____ because _____." What makes your promise impossible to replicate?' },
+      { key: 'evidence', title: 'Evidence & Outcomes', icon: 'ShieldCheck', question: 'What concrete proof exists that you deliver on your promise? Name 3-5 specific facts, metrics, or customer outcomes that demonstrate it.' },
+    ],
+    fieldSuggestionsConfig: [
+      { field: 'frameworkData.promiseStatement', label: 'Promise Statement', type: 'text' as const, extractionHint: 'Extract the core brand promise as a clear 1-2 sentence commitment' },
+      { field: 'frameworkData.promiseOneLiner', label: 'One-Liner', type: 'text' as const, extractionHint: 'Distill the promise into a single tagline-length sentence' },
+      { field: 'frameworkData.functionalValue', label: 'Functional Value', type: 'text' as const, extractionHint: 'Extract the tangible, measurable benefit the promise delivers' },
+      { field: 'frameworkData.emotionalValue', label: 'Emotional Value', type: 'text' as const, extractionHint: 'Extract the emotional feeling the promise creates for customers' },
+      { field: 'frameworkData.selfExpressiveValue', label: 'Self-Expressive Value', type: 'text' as const, extractionHint: 'Extract how customers express their identity through the brand' },
+      { field: 'frameworkData.targetAudience', label: 'Target Audience', type: 'text' as const, extractionHint: 'Extract who the promise is specifically for' },
+      { field: 'frameworkData.coreCustomerNeed', label: 'Core Customer Need', type: 'text' as const, extractionHint: 'Extract the deep underlying need the promise addresses' },
+      { field: 'frameworkData.differentiator', label: 'Differentiator', type: 'text' as const, extractionHint: 'Extract what makes this promise unique vs competitors' },
+      { field: 'frameworkData.onlynessStatement', label: 'Onlyness Statement', type: 'text' as const, extractionHint: 'Format as "Only [brand] can ___ because ___"' },
+      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'text' as const, extractionHint: 'Extract 3-5 concrete facts or evidence that the promise is real' },
+      { field: 'frameworkData.measurableOutcomes', label: 'Measurable Outcomes', type: 'text' as const, extractionHint: 'Extract specific, quantifiable results that demonstrate promise delivery' },
     ],
   },
   {
@@ -142,22 +182,59 @@ const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
   },
   {
     subType: 'brand-archetype',
-    label: 'Brand Archetype \u2014 Narrative Identity',
+    label: 'Brand Archetype — Jung / Mark & Pearson',
     dimensions: [
-      { key: 'archetype_fit', title: 'Archetype Identity', icon: 'Crown', question: 'Which archetype best represents your brand \u2014 and why? What traits does your brand naturally embody?' },
-      { key: 'behavior', title: 'Archetypal Behavior', icon: 'Activity', question: 'How does this archetype show up in your brand\u2019s communication, products, and customer interactions?' },
-      { key: 'shadow', title: 'Shadow Side', icon: 'Moon', question: 'What is the shadow side of your archetype? How do you avoid falling into those negative patterns?' },
-      { key: 'storytelling', title: 'Narrative Power', icon: 'BookOpen', question: 'How does your archetype shape the stories you tell? What recurring narrative themes define your brand?' },
+      { key: 'archetype_discovery', title: 'Archetype Discovery', icon: 'Crown', question: 'If your brand were a character in a story, what role would it play? The hero who overcomes challenges? The wise guide who mentors? The rebel who challenges the status quo? Think about what role feels most natural — and which archetype(s) you recognize in your brand.' },
+      { key: 'core_psychology', title: 'Core Psychology', icon: 'Heart', question: 'What is the deepest desire your brand fulfills for customers — and what fear does it help them overcome? What unique gift, talent, or strategy does your brand bring to the world that others can\'t easily replicate?' },
+      { key: 'shadow_risks', title: 'Shadow & Risks', icon: 'Moon', question: 'Every archetype has a shadow side — when taken too far, its strengths become weaknesses. What does that look like for your brand? For example, a Caregiver can become a martyr, a Hero can become arrogant. How do you guard against these patterns?' },
+      { key: 'voice_messaging', title: 'Voice & Messaging', icon: 'MessageCircle', question: 'How does your archetype translate into the way your brand communicates? Describe your brand\'s voice in 3-5 adjectives. What words and phrases does your brand use — and what would it never say? Give me a "We say / Not that" example.' },
+      { key: 'visual_expression', title: 'Visual Expression', icon: 'Palette', question: 'If you were to express your archetype visually — through colors, typography, imagery, and motifs — what direction feels right? Think about what visual language would make your archetype immediately recognizable.' },
+      { key: 'archetype_in_action', title: 'Archetype in Action', icon: 'Activity', question: 'How does your archetype come alive in practice? Describe how it manifests in your marketing campaigns, customer experience, content strategy, and storytelling approach. Give me a specific example where your archetype was clearly visible.' },
+      { key: 'competitive_positioning', title: 'Competitive Positioning', icon: 'Target', question: 'Which brands in your industry share a similar archetype? How do you differentiate within that archetype territory? What positioning approach works best for your brand — similarity, aspiration, guidance, or inspiration?' },
+    ],
+    fieldSuggestionsConfig: [
+      { field: 'frameworkData.primaryArchetype', label: 'Primary Archetype', type: 'select' as const, extractionHint: 'Identify the primary Jungian archetype (Innocent, Everyman, Hero, Outlaw, Explorer, Creator, Ruler, Magician, Lover, Caregiver, Jester, Sage)' },
+      { field: 'frameworkData.secondaryArchetype', label: 'Secondary Archetype', type: 'select' as const, extractionHint: 'Identify the secondary archetype if the brand shows a clear blend' },
+      { field: 'frameworkData.blendRatio', label: 'Blend Ratio', type: 'text' as const, extractionHint: 'Suggest the primary/secondary blend ratio (e.g., "70/30")' },
+      { field: 'frameworkData.subArchetype', label: 'Sub-Archetype', type: 'text' as const, extractionHint: 'Identify the specific variant within the primary archetype (e.g., "Rescuer" for Hero)' },
+      { field: 'frameworkData.coreDesire', label: 'Core Desire', type: 'text' as const, extractionHint: 'Extract the core desire this brand fulfills for customers' },
+      { field: 'frameworkData.coreFear', label: 'Core Fear', type: 'text' as const, extractionHint: 'Extract the core fear this brand helps customers overcome' },
+      { field: 'frameworkData.brandGoal', label: 'Brand Goal', type: 'text' as const, extractionHint: 'Extract the overarching goal driven by the archetype' },
+      { field: 'frameworkData.strategy', label: 'Strategy', type: 'text' as const, extractionHint: 'Extract how the archetype drives the brand strategy' },
+      { field: 'frameworkData.giftTalent', label: 'Gift / Talent', type: 'text' as const, extractionHint: 'Extract the unique gift or talent the brand brings' },
+      { field: 'frameworkData.shadowWeakness', label: 'Shadow Weakness', type: 'text' as const, extractionHint: 'Extract the shadow side and potential weakness of the archetype as applied to this brand' },
+      { field: 'frameworkData.brandVoiceDescription', label: 'Brand Voice Description', type: 'text' as const, extractionHint: 'Write a 2-3 sentence description of how this archetype defines the brand voice' },
+      { field: 'frameworkData.voiceAdjectives', label: 'Voice Adjectives', type: 'text' as const, extractionHint: 'Extract 3-5 adjectives that define the brand voice' },
+      { field: 'frameworkData.colorDirection', label: 'Color Direction', type: 'text' as const, extractionHint: 'Suggest the color palette direction based on the archetype' },
+      { field: 'frameworkData.typographyDirection', label: 'Typography Direction', type: 'text' as const, extractionHint: 'Suggest the typography style based on the archetype' },
+      { field: 'frameworkData.imageryStyle', label: 'Imagery Style', type: 'text' as const, extractionHint: 'Describe the imagery and photography style fitting the archetype' },
+      { field: 'frameworkData.archetypeInAction', label: 'Archetype in Action', type: 'text' as const, extractionHint: 'Describe how the archetype manifests across the brand experience' },
+      { field: 'frameworkData.competitiveLandscape', label: 'Competitive Landscape', type: 'text' as const, extractionHint: 'Analyze the competitive landscape from an archetype perspective' },
+      { field: 'frameworkData.brandExamples', label: 'Brand Examples', type: 'text' as const, extractionHint: 'List 3-5 reference brands that share this archetype' },
     ],
   },
   {
     subType: 'transformative-goals',
-    label: 'Transformative Goals \u2014 Change & Impact',
+    label: 'Transformative Goals \u2014 MTP / BHAG / Moonshot',
     dimensions: [
-      { key: 'transformation', title: 'Desired Transformation', icon: 'Sparkles', question: 'What fundamental change does your brand want to create in people\u2019s lives or in the world?' },
-      { key: 'barriers', title: 'Barriers to Change', icon: 'Shield', question: 'What stands in the way of this transformation? What obstacles do your customers face?' },
-      { key: 'enablers', title: 'How You Enable', icon: 'Zap', question: 'How does your brand specifically help people overcome these barriers and achieve transformation?' },
-      { key: 'evidence', title: 'Transformation Evidence', icon: 'Award', question: 'What evidence exists that your brand has already created this transformation? Share concrete examples.' },
+      { key: 'origin_belief', title: 'MTP Foundation', icon: 'Sparkles', question: 'What massive, audacious change does your brand want to see in the world? Think beyond products \u2014 what is your Massive Transformative Purpose (MTP) that would make the world fundamentally better?' },
+      { key: 'future_vision', title: 'Future Vision', icon: 'Eye', question: 'If your brand\u2019s mission succeeds completely, what does the world look like in 10-15 years? Paint a vivid picture of the future state you\u2019re working toward.' },
+      { key: 'impact_scope', title: 'Impact Scope', icon: 'Globe', question: 'Which impact domains are most relevant for your brand? Consider People (health, education, inclusion), Planet (environment, sustainability, biodiversity), and Prosperity (economic empowerment, innovation, fair systems). Where can you make the biggest difference?' },
+      { key: 'measurable_commitment', title: 'Measurable Commitments', icon: 'Target', question: 'What concrete, time-bound commitments can you make? Think of specific goals with deadlines and measurable targets \u2014 for example: "Reduce carbon footprint by 50% by 2030" or "Train 100,000 people in digital skills by 2028".' },
+      { key: 'theory_of_change', title: 'Theory of Change', icon: 'Map', question: 'How does your brand\u2019s daily activity lead to the transformative impact you described? Walk me through the chain: what you do \u2192 immediate effect \u2192 medium-term change \u2192 long-term transformation.' },
+      { key: 'authenticity_alignment', title: 'Authenticity Alignment', icon: 'Shield', question: 'How authentic are these goals given your current brand DNA, operations, and history? Where is there strong alignment, and where might stakeholders see a gap between ambition and reality?' },
+      { key: 'activation_strategy', title: 'Activation Strategy', icon: 'Rocket', question: 'How will these transformative goals be integrated into your brand strategy, communication themes, campaigns, and internal culture? Who are the key stakeholders, and what role does each play?' },
+    ],
+    fieldSuggestionsConfig: [
+      { field: 'frameworkData.massiveTransformativePurpose', label: 'Massive Transformative Purpose', type: 'text' as const, extractionHint: 'Extract the bold MTP statement \u2014 a single sentence describing the massive change the brand wants to create' },
+      { field: 'frameworkData.mtpNarrative', label: 'MTP Narrative', type: 'text' as const, extractionHint: 'Write a 2-3 sentence narrative expanding on the MTP: why it matters, what drives it, and why this brand is uniquely positioned' },
+      { field: 'frameworkData.goals[0].title', label: 'Goal 1 Title', type: 'text' as const, extractionHint: 'Extract the first transformative goal title (short, action-oriented)' },
+      { field: 'frameworkData.goals[0].description', label: 'Goal 1 Description', type: 'text' as const, extractionHint: 'Describe the first goal in 1-2 sentences with specific impact and timeframe' },
+      { field: 'frameworkData.goals[0].measurableCommitment', label: 'Goal 1 Measurable Target', type: 'text' as const, extractionHint: 'Extract a concrete, measurable commitment for goal 1 (e.g., "Reduce X by Y% by 2030")' },
+      { field: 'frameworkData.goals[0].theoryOfChange', label: 'Goal 1 Theory of Change', type: 'text' as const, extractionHint: 'Describe how daily brand activities lead to this goal\u2019s impact (cause \u2192 effect chain)' },
+      { field: 'frameworkData.brandIntegration.positioningLink', label: 'Brand Positioning Link', type: 'text' as const, extractionHint: 'Describe how these goals connect to the brand\u2019s market positioning and competitive differentiation' },
+      { field: 'frameworkData.brandIntegration.communicationThemes', label: 'Communication Themes', type: 'text' as const, extractionHint: 'Extract 3-5 communication themes that can be used in campaigns based on these goals' },
+      { field: 'frameworkData.brandIntegration.internalActivation', label: 'Internal Activation', type: 'text' as const, extractionHint: 'Describe how these goals should be activated internally (culture, operations, employee engagement)' },
     ],
   },
   {
@@ -236,7 +313,9 @@ async function main() {
       feedbackPrompt: FEEDBACK_PROMPT,
       reportPrompt: REPORT_PROMPT,
       dimensions: cfg.dimensions as unknown as Prisma.InputJsonValue,
-      fieldSuggestionsConfig: undefined,
+      fieldSuggestionsConfig: cfg.fieldSuggestionsConfig
+        ? (cfg.fieldSuggestionsConfig as unknown as Prisma.InputJsonValue)
+        : undefined,
       contextSources: ['brand_asset', 'product'],
     };
 

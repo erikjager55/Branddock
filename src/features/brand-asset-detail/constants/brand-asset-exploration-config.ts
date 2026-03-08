@@ -6,9 +6,9 @@
 
 import {
   Compass, Heart, Leaf, Globe, Rocket, Target, FileText, BarChart2, Zap, Cog,
-  Package, Fingerprint, Sparkles, Layers, Shield, CheckCircle, AlertTriangle, TrendingUp, Users, Eye,
+  Package, Fingerprint, Sparkles, Shield, ShieldCheck, CheckCircle, AlertTriangle, TrendingUp, Users, Eye,
   Mountain, Map, Crown, Activity, Moon, BookOpen, Award, User, MessageCircle, AlertCircle, Star,
-  ArrowRight, Scale, Building,
+  ArrowRight, Scale, Building, Palette,
 } from 'lucide-react';
 import type { DimensionConfig, FieldMapping } from '@/components/ai-exploration/types';
 
@@ -191,85 +191,123 @@ const GOLDEN_CIRCLE_DIMENSIONS: DimensionConfig[] = [
   },
 ];
 
-// ─── Brand Essence Dimensions ────────────────────────────
+// ─── Brand Essence Dimensions (Brand Essence Wheel — 6 phases) ──
 
 const BRAND_ESSENCE_DIMENSIONS: DimensionConfig[] = [
   {
-    key: 'core_identity',
-    label: 'Core Identity',
+    key: 'brand_dna',
+    label: 'Brand DNA',
     icon: Fingerprint,
     color: 'teal',
     bgClass: 'bg-teal-100',
     textClass: 'text-teal-600',
-    defaultQuestions: ['If your brand were a person, how would you describe their essential character?'],
+    defaultQuestions: ['If your brand were a person in a room full of competitors, what would make people gravitate toward them? What is the single most defining characteristic?'],
   },
   {
-    key: 'emotional_connection',
-    label: 'Emotional Connection',
+    key: 'value_landscape',
+    label: 'Value Landscape',
     icon: Heart,
     color: 'rose',
     bgClass: 'bg-rose-100',
     textClass: 'text-rose-600',
-    defaultQuestions: ['What emotion should people feel every time they interact with your brand?'],
+    defaultQuestions: ['Describe the best experience a customer has with your brand. What tangible result do they get, what feeling does it create, and how does it let them express who they are?'],
   },
   {
-    key: 'differentiation',
-    label: 'Unique DNA',
-    icon: Sparkles,
-    color: 'amber',
-    bgClass: 'bg-amber-100',
-    textClass: 'text-amber-600',
-    defaultQuestions: ['What makes your brand fundamentally different from everything else in your category?'],
-  },
-  {
-    key: 'consistency',
-    label: 'Essence in Action',
-    icon: Layers,
+    key: 'audience_truth',
+    label: 'Audience Truth',
+    icon: Users,
     color: 'blue',
     bgClass: 'bg-blue-100',
     textClass: 'text-blue-600',
-    defaultQuestions: ['Where does your brand essence show up most clearly?', 'Where does it get lost?'],
+    defaultQuestions: ['What is the underlying tension, frustration, or deep desire your audience carries — the thing they might not say out loud but your brand uniquely addresses?'],
+  },
+  {
+    key: 'evidence_heritage',
+    label: 'Evidence & Heritage',
+    icon: Shield,
+    color: 'amber',
+    bgClass: 'bg-amber-100',
+    textClass: 'text-amber-600',
+    defaultQuestions: ['What concrete facts, achievements, or moments from your brand\'s history prove that your essence is real — not aspirational, but lived?'],
+  },
+  {
+    key: 'differentiation',
+    label: 'Differentiation',
+    icon: Target,
+    color: 'violet',
+    bgClass: 'bg-violet-100',
+    textClass: 'text-violet-600',
+    defaultQuestions: ['Complete this sentence: "Only [your brand] can _____ because _____." What is the single most compelling reason to choose your brand?'],
+  },
+  {
+    key: 'essence_distillation',
+    label: 'Essence Distillation',
+    icon: Sparkles,
+    color: 'emerald',
+    bgClass: 'bg-emerald-100',
+    textClass: 'text-emerald-600',
+    defaultQuestions: ['Based on everything we discussed, distill your brand into 3 words: adjective, adjective, noun. What would that be, and why those words?'],
   },
 ];
 
-// ─── Brand Promise Dimensions ────────────────────────────
+// ─── Brand Promise Dimensions (Keller/Aaker/Neumeier — 5 phases) ──
 
 const BRAND_PROMISE_DIMENSIONS: DimensionConfig[] = [
   {
-    key: 'commitment',
-    label: 'Core Commitment',
+    key: 'promise_core',
+    label: 'Promise Core',
     icon: Shield,
     color: 'teal',
     bgClass: 'bg-teal-100',
     textClass: 'text-teal-600',
-    defaultQuestions: ['What is the one promise your brand makes to every customer, every time?'],
+    defaultQuestions: [
+      'What is the one promise your brand makes to every customer, every time — the commitment they can always count on?',
+      'Can you distill that into a single sentence that could serve as a tagline?',
+    ],
   },
   {
-    key: 'proof',
-    label: 'Proof & Delivery',
-    icon: CheckCircle,
+    key: 'value_layers',
+    label: 'Value Layers',
+    icon: Heart,
+    color: 'rose',
+    bgClass: 'bg-rose-100',
+    textClass: 'text-rose-600',
+    defaultQuestions: [
+      'Describe the best experience a customer has when you deliver on your promise. What tangible result do they get, what feeling does it create, and how does it let them express who they are?',
+    ],
+  },
+  {
+    key: 'audience_need',
+    label: 'Audience & Need',
+    icon: Users,
+    color: 'blue',
+    bgClass: 'bg-blue-100',
+    textClass: 'text-blue-600',
+    defaultQuestions: [
+      'Who is your promise for, and what deeper need does it address — the thing your audience might not say out loud but your brand uniquely solves?',
+    ],
+  },
+  {
+    key: 'onlyness',
+    label: 'Onlyness & Differentiation',
+    icon: Target,
+    color: 'violet',
+    bgClass: 'bg-violet-100',
+    textClass: 'text-violet-600',
+    defaultQuestions: [
+      'Complete this sentence: "Only [your brand] can _____ because _____." What makes your promise impossible to replicate?',
+    ],
+  },
+  {
+    key: 'evidence',
+    label: 'Evidence & Outcomes',
+    icon: ShieldCheck,
     color: 'emerald',
     bgClass: 'bg-emerald-100',
     textClass: 'text-emerald-600',
-    defaultQuestions: ['How do you consistently deliver on this promise?', 'What evidence can customers point to?'],
-  },
-  {
-    key: 'gap_analysis',
-    label: 'Promise Gap',
-    icon: AlertTriangle,
-    color: 'amber',
-    bgClass: 'bg-amber-100',
-    textClass: 'text-amber-600',
-    defaultQuestions: ['Where is the biggest gap between what you promise and what customers actually experience?'],
-  },
-  {
-    key: 'evolution',
-    label: 'Future Promise',
-    icon: TrendingUp,
-    color: 'purple',
-    bgClass: 'bg-purple-100',
-    textClass: 'text-purple-600',
-    defaultQuestions: ['How should your brand promise evolve as your market and customers change?'],
+    defaultQuestions: [
+      'What concrete proof exists that you deliver on your promise? Name 3-5 specific facts, metrics, or customer outcomes that demonstrate it.',
+    ],
   },
 ];
 
@@ -355,85 +393,160 @@ const VISION_STATEMENT_DIMENSIONS: DimensionConfig[] = [
   },
 ];
 
-// ─── Brand Archetype Dimensions ──────────────────────────
+// ─── Brand Archetype Dimensions (Jung / Mark & Pearson — 7 phases) ──
 
 const BRAND_ARCHETYPE_DIMENSIONS: DimensionConfig[] = [
   {
-    key: 'archetype_fit',
-    label: 'Archetype Identity',
+    key: 'archetype_discovery',
+    label: 'Archetype Discovery',
     icon: Crown,
     color: 'amber',
     bgClass: 'bg-amber-100',
     textClass: 'text-amber-600',
-    defaultQuestions: ['Which archetype best represents your brand?', 'What traits does your brand naturally embody?'],
+    defaultQuestions: [
+      'If your brand were a character in a story, what role would it play? The hero who overcomes? The wise guide? The rebel who challenges the status quo?',
+      'Think about the brands you admire most — what archetype do they embody, and how does yours differ?',
+    ],
   },
   {
-    key: 'behavior',
-    label: 'Archetypal Behavior',
-    icon: Activity,
-    color: 'blue',
-    bgClass: 'bg-blue-100',
-    textClass: 'text-blue-600',
-    defaultQuestions: ['How does this archetype show up in your communication, products, and interactions?'],
+    key: 'core_psychology',
+    label: 'Core Psychology',
+    icon: Heart,
+    color: 'rose',
+    bgClass: 'bg-rose-100',
+    textClass: 'text-rose-600',
+    defaultQuestions: [
+      'What is the deepest desire your brand fulfills for customers — and what fear does it help them overcome?',
+      'What unique gift or talent does your brand bring to the world?',
+    ],
   },
   {
-    key: 'shadow',
-    label: 'Shadow Side',
+    key: 'shadow_risks',
+    label: 'Shadow & Risks',
     icon: Moon,
     color: 'purple',
     bgClass: 'bg-purple-100',
     textClass: 'text-purple-600',
-    defaultQuestions: ['What is the shadow side of your archetype?', 'How do you avoid falling into those patterns?'],
+    defaultQuestions: [
+      'Every archetype has a shadow side — when taken too far, its strengths become weaknesses. What does that look like for your brand?',
+      'How do you guard against falling into those negative patterns?',
+    ],
   },
   {
-    key: 'storytelling',
-    label: 'Narrative Power',
-    icon: BookOpen,
+    key: 'voice_messaging',
+    label: 'Voice & Messaging',
+    icon: MessageCircle,
+    color: 'blue',
+    bgClass: 'bg-blue-100',
+    textClass: 'text-blue-600',
+    defaultQuestions: [
+      'How does your archetype translate into the way your brand communicates? What words do you use — and what words would never fit?',
+      'Give me a "We say / Not that" example for your brand.',
+    ],
+  },
+  {
+    key: 'visual_expression',
+    label: 'Visual Expression',
+    icon: Palette,
+    color: 'teal',
+    bgClass: 'bg-teal-100',
+    textClass: 'text-teal-600',
+    defaultQuestions: [
+      'If you were to express your archetype visually — colors, typography, imagery — what direction feels right?',
+      'What visual motifs or symbols resonate with your archetype?',
+    ],
+  },
+  {
+    key: 'archetype_in_action',
+    label: 'Archetype in Action',
+    icon: Activity,
     color: 'emerald',
     bgClass: 'bg-emerald-100',
     textClass: 'text-emerald-600',
-    defaultQuestions: ['How does your archetype shape the stories you tell?', 'What recurring themes define your brand?'],
+    defaultQuestions: [
+      'How does your archetype come alive in marketing campaigns, customer experience, and content strategy?',
+      'Describe a specific moment where your archetype was clearly visible to customers.',
+    ],
+  },
+  {
+    key: 'competitive_positioning',
+    label: 'Competitive Positioning',
+    icon: Target,
+    color: 'violet',
+    bgClass: 'bg-violet-100',
+    textClass: 'text-violet-600',
+    defaultQuestions: [
+      'Which brands in your industry share a similar archetype? How do you differentiate within that archetype territory?',
+      'What positioning approach works best — similarity, aspiration, guidance, or inspiration?',
+    ],
   },
 ];
 
-// ─── Transformative Goals Dimensions ─────────────────────
+// ─── Transformative Goals Dimensions (MTP / BHAG / Moonshot — 7 phases) ──
 
 const TRANSFORMATIVE_GOALS_DIMENSIONS: DimensionConfig[] = [
   {
-    key: 'transformation',
-    label: 'Desired Transformation',
+    key: 'origin_belief',
+    label: 'MTP Foundation',
     icon: Sparkles,
     color: 'amber',
     bgClass: 'bg-amber-100',
     textClass: 'text-amber-600',
-    defaultQuestions: ['What fundamental change does your brand want to create in the world?'],
+    defaultQuestions: ['What massive, audacious change does your brand want to see in the world?'],
   },
   {
-    key: 'barriers',
-    label: 'Barriers to Change',
-    icon: Shield,
-    color: 'rose',
-    bgClass: 'bg-rose-100',
-    textClass: 'text-rose-600',
-    defaultQuestions: ['What stands in the way of this transformation?', 'What obstacles do your customers face?'],
+    key: 'future_vision',
+    label: 'Future Vision',
+    icon: Eye,
+    color: 'teal',
+    bgClass: 'bg-teal-100',
+    textClass: 'text-teal-600',
+    defaultQuestions: ['If your brand\u2019s mission succeeds completely, what does the world look like in 10-15 years?'],
   },
   {
-    key: 'enablers',
-    label: 'How You Enable',
-    icon: Zap,
+    key: 'impact_scope',
+    label: 'Impact Scope',
+    icon: Globe,
+    color: 'blue',
+    bgClass: 'bg-blue-100',
+    textClass: 'text-blue-600',
+    defaultQuestions: ['Which impact domains are most relevant? People, Planet, or Prosperity?'],
+  },
+  {
+    key: 'measurable_commitment',
+    label: 'Measurable Commitments',
+    icon: Target,
     color: 'emerald',
     bgClass: 'bg-emerald-100',
     textClass: 'text-emerald-600',
-    defaultQuestions: ['How does your brand help people overcome barriers and achieve transformation?'],
+    defaultQuestions: ['What concrete, time-bound commitments can you make?'],
   },
   {
-    key: 'evidence',
-    label: 'Transformation Evidence',
-    icon: Award,
+    key: 'theory_of_change',
+    label: 'Theory of Change',
+    icon: Map,
+    color: 'rose',
+    bgClass: 'bg-rose-100',
+    textClass: 'text-rose-600',
+    defaultQuestions: ['How does your daily activity lead to the transformative impact you described?'],
+  },
+  {
+    key: 'authenticity_alignment',
+    label: 'Authenticity Alignment',
+    icon: Shield,
+    color: 'violet',
+    bgClass: 'bg-violet-100',
+    textClass: 'text-violet-600',
+    defaultQuestions: ['How authentic are these goals given your current operations and history?'],
+  },
+  {
+    key: 'activation_strategy',
+    label: 'Activation Strategy',
+    icon: Rocket,
     color: 'purple',
     bgClass: 'bg-purple-100',
     textClass: 'text-purple-600',
-    defaultQuestions: ['What evidence exists that your brand has already created this transformation?'],
+    defaultQuestions: ['How will these goals be integrated into strategy, communication, and culture?'],
   },
 ];
 

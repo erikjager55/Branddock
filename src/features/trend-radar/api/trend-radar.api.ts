@@ -69,6 +69,14 @@ export function createManualTrend(body: CreateManualTrendBody): Promise<Detected
   });
 }
 
+export function lockTrend(id: string, locked: boolean): Promise<{ isLocked: boolean; lockedAt: string | null; lockedBy: { id: string; name: string } | null }> {
+  return json(`${BASE}/${id}/lock`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ locked }),
+  });
+}
+
 // ─── Stats ───────────────────────────────────────────────────
 
 export function fetchTrendStats(): Promise<TrendRadarStats> {

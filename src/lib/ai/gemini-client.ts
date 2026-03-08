@@ -71,7 +71,7 @@ export async function findUrlsViaGoogleSearch(
     contents: [
       {
         role: 'user' as const,
-        parts: [{ text: `Find ${maxResults} recent, high-quality web articles about: ${query}. List the URLs you find.` }],
+        parts: [{ text: `Find ${maxResults} recent, high-quality web articles from DIVERSE sources about: ${query}. Prefer articles from different websites/publications — industry reports, news outlets, research blogs, and analyst publications. Avoid multiple articles from the same domain.` }],
       },
     ],
     config: {
@@ -126,7 +126,35 @@ export async function findUrlsViaGoogleSearch(
     console.error('[Gemini Search] Text preview:', (response.text ?? '').slice(0, 500));
   }
 
-  return urls;
+  // Deduplicate by domain — prefer diverse sources
+  const seenDomains = new Set<string>();
+  const diverseUrls: SearchGroundedUrl[] = [];
+  const duplicates: SearchGroundedUrl[] = [];
+
+  for (const u of urls) {
+    try {
+      const domain = new URL(u.url).hostname.replace(/^www\./, '');
+      if (seenDomains.has(domain)) {
+        duplicates.push(u);
+      } else {
+        seenDomains.add(domain);
+        diverseUrls.push(u);
+      }
+    } catch {
+      diverseUrls.push(u);
+    }
+  }
+
+  // Fill remaining slots with duplicates if needed
+  const finalUrls = diverseUrls.slice(0, maxResults);
+  if (finalUrls.length < maxResults) {
+    for (const dup of duplicates) {
+      if (finalUrls.length >= maxResults) break;
+      finalUrls.push(dup);
+    }
+  }
+
+  return finalUrls;
 }
 
 

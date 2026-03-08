@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -27,6 +29,10 @@ export async function PATCH(_req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Trend not found' }, { status: 404 });
   }
 
+  if (existing.isLocked) {
+    return NextResponse.json({ error: 'Trend is locked' }, { status: 423 });
+  }
+
   const isActivated = !existing.isActivated;
 
   const trend = await prisma.detectedTrend.update({
@@ -44,6 +50,8 @@ export async function PATCH(_req: NextRequest, { params }: RouteParams) {
       activatedBy: { select: { id: true, name: true } },
     },
   });
+
+  invalidateCache(cacheKeys.prefixes.trendRadar(workspaceId));
 
   return NextResponse.json(trend);
 }

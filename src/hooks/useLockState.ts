@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import { LockError } from '@/lib/api/client';
 
-type EntityType = 'personas' | 'brand-assets' | 'products' | 'campaigns' | 'strategies' | 'interviews' | 'brandstyle';
+type EntityType = 'personas' | 'brand-assets' | 'products' | 'campaigns' | 'strategies' | 'interviews' | 'brandstyle' | 'trend-radar';
 
 interface LockInitialState {
   isLocked: boolean;

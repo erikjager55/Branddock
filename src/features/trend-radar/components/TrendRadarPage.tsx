@@ -1,27 +1,24 @@
 'use client';
 
 import { Radar, PenLine, Sparkles } from 'lucide-react';
-import { Button } from '@/components/shared';
+import { Button, Badge } from '@/components/shared';
 import { useTrendRadarStore } from '../stores/useTrendRadarStore';
-import { TrendRadarStats } from './TrendRadarStats';
-import { TrendRadarTabs } from './TrendRadarTabs';
-import { TrendFeedPanel } from './feed/TrendFeedPanel';
-import { AlertsPanel } from './alerts/AlertsPanel';
-import { ActivationPanel } from './activation/ActivationPanel';
+import { useTrends } from '../hooks';
+import { TrendFilterBar } from './feed/TrendFilterBar';
+import { TrendCardGrid } from './TrendCardGrid';
+import { AddManualTrendModal } from './AddManualTrendModal';
 import { AIResearchModal } from './research/AIResearchModal';
 import { ResearchProgressModal } from './scan/ResearchProgressModal';
-import { AddManualTrendModal } from './AddManualTrendModal';
 
 interface TrendRadarPageProps {
   onNavigate: (section: string) => void;
 }
 
+/** Trend Radar overview — header + filters + card grid */
 export function TrendRadarPage({ onNavigate }: TrendRadarPageProps) {
-  const {
-    activeTab,
-    openAddManualTrendModal,
-    openResearchModal,
-  } = useTrendRadarStore();
+  const { openAddManualTrendModal, openResearchModal } = useTrendRadarStore();
+  const { data } = useTrends();
+  const totalCount = data?.total ?? 0;
 
   const handleTrendClick = (id: string) => {
     useTrendRadarStore.getState().setSelectedTrendId(id);
@@ -29,43 +26,40 @@ export function TrendRadarPage({ onNavigate }: TrendRadarPageProps) {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-600">
-            <Radar className="w-5 h-5 text-white" />
+        <div className="flex items-center gap-4">
+          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-400 to-indigo-600 shadow-lg shadow-purple-200/50">
+            <Radar className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Trend Radar</h1>
-            <p className="text-sm text-gray-500">Discover market trends with AI research</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-gray-900">Trend Radar</h1>
+              {totalCount > 0 && (
+                <Badge variant="default">{totalCount}</Badge>
+              )}
+            </div>
+            <p className="text-sm text-gray-500">
+              Discover and track market trends with AI research
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="secondary" size="sm" icon={PenLine} onClick={openAddManualTrendModal}>
             Add Trend
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            icon={Sparkles}
-            onClick={openResearchModal}
-          >
+          <Button variant="primary" size="sm" icon={Sparkles} onClick={openResearchModal}>
             AI Research
           </Button>
         </div>
       </div>
 
-      {/* Stats */}
-      <TrendRadarStats />
+      {/* Filters */}
+      <TrendFilterBar />
 
-      {/* Tabs */}
-      <TrendRadarTabs />
-
-      {/* Tab content */}
-      {activeTab === 'feed' && <TrendFeedPanel onTrendClick={handleTrendClick} />}
-      {activeTab === 'alerts' && <AlertsPanel onTrendClick={handleTrendClick} />}
-      {activeTab === 'activate' && <ActivationPanel onTrendClick={handleTrendClick} />}
+      {/* Card Grid */}
+      <TrendCardGrid onTrendClick={handleTrendClick} />
 
       {/* Modals */}
       <AddManualTrendModal />

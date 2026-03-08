@@ -7,8 +7,12 @@ import { useAssetDetail, useUpdateContent, useUpdateFramework } from "../hooks/u
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
 import { AssetDetailHeader } from "./AssetDetailHeader";
 import { PurposeWheelSection } from "./PurposeWheelSection";
+import { BrandEssenceSection } from "./BrandEssenceSection";
+import { BrandPromiseSection } from "./BrandPromiseSection";
+import { TransformativeGoalsSection } from "./TransformativeGoalsSection";
+import { BrandArchetypeSection } from "./BrandArchetypeSection";
 import { FrameworkSection } from "./FrameworkSection";
-import type { PurposeWheelFrameworkData } from "../types/framework.types";
+import type { PurposeWheelFrameworkData, BrandEssenceFrameworkData, BrandPromiseFrameworkData, TransformativeGoalsFrameworkData, BrandArchetypeFrameworkData } from "../types/framework.types";
 import { AssetQuickActionsCard } from "./sidebar/AssetQuickActionsCard";
 import { AssetCompletenessCard } from "./sidebar/AssetCompletenessCard";
 import { AssetResearchSidebarCard } from "./sidebar/AssetResearchSidebarCard";
@@ -65,6 +69,10 @@ export function BrandAssetDetailPage({
   const updateFramework = useUpdateFramework(assetId ?? '');
 
   const isPurposeWheel = asset?.frameworkType === 'PURPOSE_WHEEL';
+  const isBrandEssence = asset?.frameworkType === 'BRAND_ESSENCE';
+  const isBrandPromise = asset?.frameworkType === 'BRAND_PROMISE';
+  const isTransformativeGoals = asset?.frameworkType === 'TRANSFORMATIVE_GOALS';
+  const isBrandArchetype = asset?.frameworkType === 'BRAND_ARCHETYPE';
 
   // Force editing off when locked
   useEffect(() => {
@@ -160,8 +168,52 @@ export function BrandAssetDetailPage({
               </LockOverlay>
             )}
 
+            {/* Brand Essence Wheel — 6-card canvas */}
+            {isBrandEssence && (
+              <LockOverlay isLocked={lockState.isLocked}>
+                <BrandEssenceSection
+                  data={asset.frameworkData as BrandEssenceFrameworkData | null}
+                  isEditing={isEditing && !lockState.isLocked}
+                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
+                />
+              </LockOverlay>
+            )}
+
+            {/* Brand Promise — 5-card canvas */}
+            {isBrandPromise && (
+              <LockOverlay isLocked={lockState.isLocked}>
+                <BrandPromiseSection
+                  data={asset.frameworkData as BrandPromiseFrameworkData | null}
+                  isEditing={isEditing && !lockState.isLocked}
+                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
+                />
+              </LockOverlay>
+            )}
+
+            {/* Transformative Goals — MTP + Goals + Authenticity + Stakeholders + Integration */}
+            {isTransformativeGoals && (
+              <LockOverlay isLocked={lockState.isLocked}>
+                <TransformativeGoalsSection
+                  data={asset.frameworkData as TransformativeGoalsFrameworkData | null}
+                  isEditing={isEditing && !lockState.isLocked}
+                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
+                />
+              </LockOverlay>
+            )}
+
+            {/* Brand Archetype — 6-section canvas */}
+            {isBrandArchetype && (
+              <LockOverlay isLocked={lockState.isLocked}>
+                <BrandArchetypeSection
+                  data={asset.frameworkData as BrandArchetypeFrameworkData | null}
+                  isEditing={isEditing && !lockState.isLocked}
+                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
+                />
+              </LockOverlay>
+            )}
+
             {/* Framework Section (for other framework types) */}
-            {asset.frameworkType && !isPurposeWheel && (
+            {asset.frameworkType && !isPurposeWheel && !isBrandEssence && !isBrandPromise && !isTransformativeGoals && !isBrandArchetype && (
               <LockOverlay isLocked={lockState.isLocked}>
                 <FrameworkSection
                   frameworkType={asset.frameworkType}

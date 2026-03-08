@@ -230,18 +230,21 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
   }
   if (itemType === 'brand_asset' && itemSubType === 'brand-essence') {
     return [
-      { key: 'core_identity', title: 'Core Identity', icon: 'Fingerprint', question: 'If your brand were a person, how would you describe their essential character in one sentence?' },
-      { key: 'emotional_connection', title: 'Emotional Connection', icon: 'Heart', question: 'What emotion should people feel every time they interact with your brand?' },
-      { key: 'differentiation', title: 'Unique DNA', icon: 'Sparkles', question: 'What makes your brand fundamentally different from everything else in your category?' },
-      { key: 'consistency', title: 'Essence in Action', icon: 'Layers', question: 'Where does your brand essence show up most clearly — and where does it get lost?' },
+      { key: 'brand_dna', title: 'Brand DNA', icon: 'Fingerprint', question: 'If your brand were a person in a room full of competitors, what would make people gravitate toward them? What is the single most defining characteristic?' },
+      { key: 'value_landscape', title: 'Value Landscape', icon: 'Heart', question: 'Describe the best experience a customer has with your brand. What tangible result do they get, what feeling does it create, and how does it let them express who they are?' },
+      { key: 'audience_truth', title: 'Audience Truth', icon: 'Users', question: 'What is the underlying tension, frustration, or deep desire your audience carries — the thing they might not say out loud but your brand uniquely addresses?' },
+      { key: 'evidence_heritage', title: 'Evidence & Heritage', icon: 'ShieldCheck', question: "What concrete facts, achievements, or moments from your brand's history prove that your essence is real — not aspirational, but lived?" },
+      { key: 'differentiation', title: 'Differentiation', icon: 'Target', question: 'Complete this sentence: "Only [your brand] can _____ because _____." What is the single most compelling reason to choose your brand?' },
+      { key: 'essence_distillation', title: 'Essence Distillation', icon: 'Diamond', question: 'Based on everything we discussed, distill your brand into 3 words: adjective, adjective, noun. What would that be, and why those words?' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'brand-promise') {
     return [
-      { key: 'commitment', title: 'Core Commitment', icon: 'Shield', question: 'What is the one promise your brand makes to every customer, every time?' },
-      { key: 'proof', title: 'Proof & Delivery', icon: 'CheckCircle', question: 'How do you consistently deliver on this promise? What evidence can customers point to?' },
-      { key: 'gap_analysis', title: 'Promise Gap', icon: 'AlertTriangle', question: 'Where is the biggest gap between what you promise and what customers actually experience?' },
-      { key: 'evolution', title: 'Future Promise', icon: 'TrendingUp', question: 'How should your brand promise evolve as your market and customers change?' },
+      { key: 'promise_core', title: 'Promise Core', icon: 'Shield', question: 'What is the one promise your brand makes to every customer, every time — the commitment they can always count on? Can you distill that into a single sentence that could serve as a tagline?' },
+      { key: 'value_layers', title: 'Value Layers', icon: 'Heart', question: 'Describe the best experience a customer has when you deliver on your promise. What tangible result do they get, what feeling does it create, and how does it let them express who they are?' },
+      { key: 'audience_need', title: 'Audience & Need', icon: 'Users', question: 'Who is your promise for, and what deeper need does it address — the thing your audience might not say out loud but your brand uniquely solves?' },
+      { key: 'onlyness', title: 'Onlyness & Differentiation', icon: 'Target', question: 'Complete this sentence: "Only [your brand] can _____ because _____." What makes your promise impossible to replicate?' },
+      { key: 'evidence', title: 'Evidence & Outcomes', icon: 'ShieldCheck', question: 'What concrete proof exists that you deliver on your promise? Name 3-5 specific facts, metrics, or customer outcomes that demonstrate it.' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'mission-statement') {
@@ -262,18 +265,24 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
   }
   if (itemType === 'brand_asset' && itemSubType === 'brand-archetype') {
     return [
-      { key: 'archetype_fit', title: 'Archetype Identity', icon: 'Crown', question: 'Which archetype best represents your brand — and why? What traits does your brand naturally embody?' },
-      { key: 'behavior', title: 'Archetypal Behavior', icon: 'Activity', question: 'How does this archetype show up in your brand\u2019s communication, products, and customer interactions?' },
-      { key: 'shadow', title: 'Shadow Side', icon: 'Moon', question: 'What is the shadow side of your archetype? How do you avoid falling into those negative patterns?' },
-      { key: 'storytelling', title: 'Narrative Power', icon: 'BookOpen', question: 'How does your archetype shape the stories you tell? What recurring narrative themes define your brand?' },
+      { key: 'archetype_discovery', title: 'Archetype Discovery', icon: 'Crown', question: 'If your brand were a character in a story, what role would it play? The hero who overcomes challenges? The wise guide who mentors? The rebel who challenges the status quo? Think about what role feels most natural — and which archetype(s) you recognize in your brand.' },
+      { key: 'core_psychology', title: 'Core Psychology', icon: 'Heart', question: 'What is the deepest desire your brand fulfills for customers — and what fear does it help them overcome? What unique gift, talent, or strategy does your brand bring to the world that others can\'t easily replicate?' },
+      { key: 'shadow_risks', title: 'Shadow & Risks', icon: 'Moon', question: 'Every archetype has a shadow side — when taken too far, its strengths become weaknesses. What does that look like for your brand? How do you guard against these patterns?' },
+      { key: 'voice_messaging', title: 'Voice & Messaging', icon: 'MessageCircle', question: 'How does your archetype translate into the way your brand communicates? Describe your brand\'s voice in 3-5 adjectives. What words does your brand use — and what would it never say?' },
+      { key: 'visual_expression', title: 'Visual Expression', icon: 'Palette', question: 'If you were to express your archetype visually — through colors, typography, imagery, and motifs — what direction feels right?' },
+      { key: 'archetype_in_action', title: 'Archetype in Action', icon: 'Activity', question: 'How does your archetype come alive in marketing campaigns, customer experience, content strategy, and storytelling? Give a specific example.' },
+      { key: 'competitive_positioning', title: 'Competitive Positioning', icon: 'Target', question: 'Which brands in your industry share a similar archetype? How do you differentiate within that territory? What positioning approach works best — similarity, aspiration, guidance, or inspiration?' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'transformative-goals') {
     return [
-      { key: 'transformation', title: 'Desired Transformation', icon: 'Sparkles', question: 'What fundamental change does your brand want to create in people\u2019s lives or in the world?' },
-      { key: 'barriers', title: 'Barriers to Change', icon: 'Shield', question: 'What stands in the way of this transformation? What obstacles do your customers face?' },
-      { key: 'enablers', title: 'How You Enable', icon: 'Zap', question: 'How does your brand specifically help people overcome these barriers and achieve transformation?' },
-      { key: 'evidence', title: 'Transformation Evidence', icon: 'Award', question: 'What evidence exists that your brand has already created this transformation? Share concrete examples.' },
+      { key: 'origin_belief', title: 'MTP Foundation', icon: 'Sparkles', question: 'What massive, audacious change does your brand want to see in the world? Think beyond products \u2014 what is your Massive Transformative Purpose (MTP) that would make the world fundamentally better?' },
+      { key: 'future_vision', title: 'Future Vision', icon: 'Eye', question: 'If your brand\u2019s mission succeeds completely, what does the world look like in 10-15 years? Paint a vivid picture of the future state you\u2019re working toward.' },
+      { key: 'impact_scope', title: 'Impact Scope', icon: 'Globe', question: 'Which impact domains are most relevant for your brand? Consider People (health, education, inclusion), Planet (environment, sustainability, biodiversity), and Prosperity (economic empowerment, innovation, fair systems). Where can you make the biggest difference?' },
+      { key: 'measurable_commitment', title: 'Measurable Commitments', icon: 'Target', question: 'What concrete, time-bound commitments can you make? Think of specific goals with deadlines and measurable targets.' },
+      { key: 'theory_of_change', title: 'Theory of Change', icon: 'Map', question: 'How does your brand\u2019s daily activity lead to the transformative impact you described? Walk me through the chain: what you do \u2192 immediate effect \u2192 medium-term change \u2192 long-term transformation.' },
+      { key: 'authenticity_alignment', title: 'Authenticity Alignment', icon: 'Shield', question: 'How authentic are these goals given your current brand DNA, operations, and history? Where is there strong alignment, and where might stakeholders see a gap between ambition and reality?' },
+      { key: 'activation_strategy', title: 'Activation Strategy', icon: 'Rocket', question: 'How will these transformative goals be integrated into your brand strategy, communication themes, campaigns, and internal culture? Who are the key stakeholders, and what role does each play?' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'brand-personality') {

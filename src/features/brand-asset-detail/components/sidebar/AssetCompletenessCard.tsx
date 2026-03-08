@@ -77,8 +77,11 @@ export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck
         { label: 'Essence Statement', filled: !!be?.essenceStatement },
         { label: 'Emotional Benefit', filled: !!be?.emotionalBenefit },
         { label: 'Functional Benefit', filled: !!be?.functionalBenefit },
-        { label: 'Personality Traits', filled: !!be?.brandPersonalityTraits },
-        { label: 'Proof Points', filled: !!be?.proofPoints },
+        { label: 'Self-Expressive Benefit', filled: !!be?.selfExpressiveBenefit },
+        { label: 'Discriminator', filled: !!be?.discriminator },
+        { label: 'Audience Insight', filled: !!be?.audienceInsight },
+        { label: 'Proof Points', filled: Array.isArray(be?.proofPoints) && be.proofPoints.length > 0 },
+        { label: 'Attributes', filled: Array.isArray(be?.attributes) && be.attributes.length > 0 },
       );
       break;
     }
@@ -86,10 +89,16 @@ export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck
       const bp = data as BrandPromiseFrameworkData;
       fields.push(
         { label: 'Promise Statement', filled: !!bp?.promiseStatement },
+        { label: 'One-Liner', filled: !!bp?.promiseOneLiner },
         { label: 'Functional Value', filled: !!bp?.functionalValue },
         { label: 'Emotional Value', filled: !!bp?.emotionalValue },
+        { label: 'Self-Expressive Value', filled: !!bp?.selfExpressiveValue },
         { label: 'Target Audience', filled: !!bp?.targetAudience },
+        { label: 'Core Need', filled: !!bp?.coreCustomerNeed },
         { label: 'Differentiator', filled: !!bp?.differentiator },
+        { label: 'Onlyness Statement', filled: !!bp?.onlynessStatement },
+        { label: 'Proof Points', filled: Array.isArray(bp?.proofPoints) && bp.proofPoints.length > 0 },
+        { label: 'Measurable Outcomes', filled: Array.isArray(bp?.measurableOutcomes) && bp.measurableOutcomes.length > 0 },
       );
       break;
     }
@@ -120,8 +129,16 @@ export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck
       fields.push(
         { label: 'Primary Archetype', filled: !!ba?.primaryArchetype },
         { label: 'Core Desire', filled: !!ba?.coreDesire },
-        { label: 'Brand Voice Description', filled: !!ba?.brandVoiceDescription },
-        { label: 'Archetype in Action', filled: !!ba?.archetypeInAction },
+        { label: 'Core Fear', filled: !!ba?.coreFear },
+        { label: 'Strategy', filled: !!ba?.strategy },
+        { label: 'Shadow / Weakness', filled: !!ba?.shadowWeakness },
+        { label: 'Brand Voice', filled: !!ba?.brandVoiceDescription },
+        { label: 'Voice Adjectives', filled: Array.isArray(ba?.voiceAdjectives) && ba.voiceAdjectives.length > 0 },
+        { label: 'Color Direction', filled: !!ba?.colorDirection },
+        { label: 'Imagery Style', filled: !!ba?.imageryStyle },
+        { label: 'Marketing Expression', filled: !!ba?.marketingExpression },
+        { label: 'Content Strategy', filled: !!ba?.contentStrategy },
+        { label: 'Competitive Landscape', filled: !!ba?.competitiveLandscape },
       );
       break;
     }
@@ -130,9 +147,17 @@ export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck
       const goals = tg?.goals ?? [];
       fields.push(
         { label: 'Massive Transformative Purpose', filled: !!tg?.massiveTransformativePurpose },
-        { label: 'Goal 1', filled: !!(goals[0]?.title && goals[0]?.description) },
-        { label: 'Goal 2', filled: !!(goals[1]?.title && goals[1]?.description) },
-        { label: 'Goal 3', filled: !!(goals[2]?.title && goals[2]?.description) },
+        { label: 'MTP Narrative', filled: !!tg?.mtpNarrative },
+      );
+      // Dynamically add goal checks based on actual goals count (1-5)
+      const goalCount = Math.max(goals.length, 1);
+      for (let i = 0; i < goalCount; i++) {
+        fields.push({ label: `Goal ${i + 1}`, filled: !!(goals[i]?.title && goals[i]?.description) });
+      }
+      fields.push(
+        { label: 'Authenticity Assessment', filled: !!(tg?.authenticityScores && Object.values(tg.authenticityScores).some(v => v > 0)) },
+        { label: 'Stakeholder Impact', filled: Array.isArray(tg?.stakeholderImpact) && tg.stakeholderImpact.some(s => !!s.role || !!s.expectedImpact) },
+        { label: 'Brand Integration', filled: !!tg?.brandIntegration?.positioningLink },
       );
       break;
     }

@@ -27,6 +27,14 @@ export function FrameworkRenderer({ type, data }: FrameworkRendererProps) {
       return <PurposeKompasFramework data={parsed as PurposeKompasFrameworkData} />;
     case "PURPOSE_WHEEL":
       return null; // Rendered by PurposeWheelSection instead
+    case "BRAND_ESSENCE":
+      return null; // Rendered by BrandEssenceSection instead
+    case "BRAND_PROMISE":
+      return null; // Rendered by BrandPromiseSection instead
+    case "TRANSFORMATIVE_GOALS":
+      return null; // Rendered by TransformativeGoalsSection instead
+    case "BRAND_ARCHETYPE":
+      return null; // Rendered by BrandArchetypeSection instead
     default:
       return null; // New framework types are handled by their own sections
   }

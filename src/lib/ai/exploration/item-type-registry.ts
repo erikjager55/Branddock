@@ -43,6 +43,7 @@ export interface ItemTypeConfig {
     item: Record<string, unknown>,
     session: Record<string, unknown>,
     knowledgeContext?: string,
+    fieldSuggestionsConfig?: Array<{ field: string; label: string; type: string; extractionHint: string }> | null,
   ) => Promise<Record<string, unknown>>;
 
   /** Optional: update research method status after completion */

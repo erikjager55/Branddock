@@ -23,7 +23,7 @@ export function TrendRelevanceCard({ score, confidence }: TrendRelevanceCardProp
         {confidence !== null && confidence !== undefined && (
           <div className="flex items-center justify-between text-xs text-gray-500 pt-1">
             <span>AI Confidence</span>
-            <span className="font-medium">{Math.round(confidence * 100)}%</span>
+            <span className="font-medium">{Math.round(confidence)}%</span>
           </div>
         )}
       </div>

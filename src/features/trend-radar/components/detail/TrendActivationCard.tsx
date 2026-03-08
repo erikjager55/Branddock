@@ -7,9 +7,10 @@ import type { DetectedTrendWithMeta } from '../../types/trend-radar.types';
 interface TrendActivationCardProps {
   trend: DetectedTrendWithMeta;
   onToggle: () => void;
+  disabled?: boolean;
 }
 
-export function TrendActivationCard({ trend, onToggle }: TrendActivationCardProps) {
+export function TrendActivationCard({ trend, onToggle, disabled }: TrendActivationCardProps) {
   const activatedDate = trend.activatedAt
     ? new Date(trend.activatedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' })
     : null;
@@ -36,7 +37,12 @@ export function TrendActivationCard({ trend, onToggle }: TrendActivationCardProp
             </p>
             <button
               onClick={onToggle}
-              className="flex items-center gap-1.5 w-full justify-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              disabled={disabled}
+              className={`flex items-center gap-1.5 w-full justify-center px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                disabled
+                  ? 'text-gray-400 bg-gray-50 cursor-not-allowed'
+                  : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
+              }`}
             >
               <ZapOff className="w-3.5 h-3.5" /> Deactivate
             </button>
@@ -52,7 +58,12 @@ export function TrendActivationCard({ trend, onToggle }: TrendActivationCardProp
             </p>
             <button
               onClick={onToggle}
-              className="flex items-center gap-1.5 w-full justify-center px-3 py-1.5 text-xs font-medium text-white bg-teal-600 rounded-lg hover:bg-teal-700 transition-colors"
+              disabled={disabled}
+              className={`flex items-center gap-1.5 w-full justify-center px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                disabled
+                  ? 'text-gray-400 bg-gray-200 cursor-not-allowed'
+                  : 'text-white bg-teal-600 hover:bg-teal-700'
+              }`}
             >
               <Zap className="w-3.5 h-3.5" /> Activate Trend
             </button>

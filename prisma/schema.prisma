@@ -252,6 +252,7 @@ model User {
   resourceVersions       ResourceVersion[]
 
   // Trend Radar
+  lockedTrends           DetectedTrend[]    @relation("TrendLocker")
   activatedTrends        DetectedTrend[]    @relation("TrendActivator")
 
   @@index([workspaceId])
@@ -2987,6 +2988,12 @@ model DetectedTrend {
   tags             String[]
   howToUse         String[]
   sourceUrl        String?
+
+  // Lock
+  isLocked         Boolean             @default(false)
+  lockedAt         DateTime?
+  lockedById       String?
+  lockedBy         User?               @relation("TrendLocker", fields: [lockedById], references: [id])
 
   // Activation
   isActivated      Boolean             @default(false)

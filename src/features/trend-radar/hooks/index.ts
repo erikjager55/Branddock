@@ -16,6 +16,7 @@ import {
   activateTrend,
   dismissTrend,
   createManualTrend,
+  lockTrend,
   fetchTrendStats,
   startResearch,
   fetchResearchProgress,
@@ -128,6 +129,17 @@ export function useCreateManualTrend() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: trendRadarKeys.trends() });
       qc.invalidateQueries({ queryKey: trendRadarKeys.stats() });
+    },
+  });
+}
+
+export function useLockTrend() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, locked }: { id: string; locked: boolean }) => lockTrend(id, locked),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: trendRadarKeys.trends() });
+      qc.invalidateQueries({ queryKey: trendRadarKeys.trendDetail(vars.id) });
     },
   });
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import { SearchInput, Select } from '@/components/shared';
+import { RotateCcw, Eye, EyeOff, Zap } from 'lucide-react';
+import { SearchInput, Select, Button } from '@/components/shared';
 import { useTrendRadarStore } from '../../stores/useTrendRadarStore';
 import type { InsightCategory, ImpactLevel, TrendDetectionSource } from '../../types/trend-radar.types';
 
@@ -24,20 +25,28 @@ const SOURCE_OPTIONS = [
   { value: 'AI_RESEARCH', label: 'AI Research' },
 ];
 
+/** Filter bar with search, selects, dismissed toggle, and reset */
 export function TrendFilterBar() {
   const {
     searchQuery,
     categoryFilter,
     impactFilter,
     detectionSourceFilter,
+    showDismissed,
+    showActivated,
     setSearchQuery,
     setCategoryFilter,
     setImpactFilter,
     setDetectionSourceFilter,
+    setShowDismissed,
+    setShowActivated,
+    resetFilters,
   } = useTrendRadarStore();
 
+  const hasFilters = !!(searchQuery || categoryFilter || impactFilter || detectionSourceFilter || showDismissed || showActivated);
+
   return (
-    <div className="flex items-center gap-3 flex-wrap">
+    <div className="flex flex-wrap items-center gap-3">
       <div className="flex-1 min-w-[200px]">
         <SearchInput
           value={searchQuery}
@@ -66,6 +75,37 @@ export function TrendFilterBar() {
         placeholder="Source"
         allowClear
       />
+      <button
+        type="button"
+        onClick={() => setShowActivated(!showActivated)}
+        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+          showActivated
+            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+        }`}
+        title={showActivated ? 'Show all trends' : 'Show only activated trends'}
+      >
+        <Zap className="w-3.5 h-3.5" />
+        Activated
+      </button>
+      <button
+        type="button"
+        onClick={() => setShowDismissed(!showDismissed)}
+        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
+          showDismissed
+            ? 'border-teal-300 bg-teal-50 text-teal-700'
+            : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+        }`}
+        title={showDismissed ? 'Hide dismissed trends' : 'Show dismissed trends'}
+      >
+        {showDismissed ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+        Dismissed
+      </button>
+      {hasFilters && (
+        <Button variant="ghost" size="sm" icon={RotateCcw} onClick={resetFilters}>
+          Reset
+        </Button>
+      )}
     </div>
   );
 }

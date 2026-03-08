@@ -52,11 +52,18 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'No valid trends selected' }, { status: 400 });
   }
 
-  // Save to DB
+  // Save to DB — strip fields that don't exist in the Prisma model
   await prisma.$transaction(
-    selected.map((trend) =>
-      prisma.detectedTrend.create({ data: trend as never }),
-    ),
+    selected.map((trend) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { dataPoints, evidenceCount, sourceUrls, scores, ...dbFields } = trend as PendingTrend & {
+        dataPoints?: string[];
+        evidenceCount?: number;
+        sourceUrls?: string[];
+        scores?: Record<string, number>;
+      };
+      return prisma.detectedTrend.create({ data: dbFields as never });
+    }),
   );
 
   // Clear pending trends and update count

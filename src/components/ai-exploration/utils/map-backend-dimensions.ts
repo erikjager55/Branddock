@@ -6,9 +6,10 @@
 import {
   Heart, Settings, Package, Target, Compass, Leaf, Globe, Lightbulb,
   Rocket, FileText, BarChart2, Zap, Cog, FlaskConical, Fingerprint,
-  Sparkles, Layers, Shield, CheckCircle, AlertTriangle, TrendingUp,
+  Sparkles, Layers, Shield, ShieldCheck, CheckCircle, AlertTriangle, TrendingUp,
   Users, Eye, Mountain, Map, Crown, Activity, Moon, BookOpen, Award,
   User, MessageCircle, AlertCircle, Star, ArrowRight, Scale, Building,
+  Palette, Diamond,
   type LucideIcon,
 } from 'lucide-react';
 import type { BackendDimension, DimensionConfig } from '../types';
@@ -18,9 +19,10 @@ import type { BackendDimension, DimensionConfig } from '../types';
 const ICON_MAP: Record<string, LucideIcon> = {
   Heart, Settings, Package, Target, Compass, Leaf, Globe, Lightbulb,
   Rocket, FileText, BarChart2, Zap, Cog, FlaskConical, Fingerprint,
-  Sparkles, Layers, Shield, CheckCircle, AlertTriangle, TrendingUp,
+  Sparkles, Layers, Shield, ShieldCheck, CheckCircle, AlertTriangle, TrendingUp,
   Users, Eye, Mountain, Map, Crown, Activity, Moon, BookOpen, Award,
   User, MessageCircle, AlertCircle, Star, ArrowRight, Scale, Building,
+  Palette, Diamond,
 };
 
 // ─── Color Palette (static lookup, Tailwind-safe) ───────────

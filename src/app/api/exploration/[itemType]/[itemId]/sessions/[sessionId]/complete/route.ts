@@ -67,9 +67,11 @@ export async function POST(
 
     // Generate report via the item type builder — this ensures fieldSuggestions
     // include id, currentValue, and status fields that the frontend needs.
+    // Pass fieldSuggestionsConfig so the builder can discover fields even when frameworkData is empty.
+    const fieldSuggestionsConfig = explorationConfig.fieldSuggestionsConfig as Array<{ field: string; label: string; type: string; extractionHint: string }> | null;
     let insightsData: Record<string, unknown>;
     try {
-      insightsData = await config.generateInsights(item, analysisSession, knowledgeContext);
+      insightsData = await config.generateInsights(item, analysisSession, knowledgeContext, fieldSuggestionsConfig);
     } catch (err) {
       console.error('[exploration-complete] generateInsights failed:', err);
       throw err;

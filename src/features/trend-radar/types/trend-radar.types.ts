@@ -10,7 +10,26 @@ export type InsightCategory = 'CONSUMER_BEHAVIOR' | 'TECHNOLOGY' | 'MARKET_DYNAM
 export type InsightScope = 'MICRO' | 'MESO' | 'MACRO';
 export type ImpactLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type InsightTimeframe = 'SHORT_TERM' | 'MEDIUM_TERM' | 'LONG_TERM';
-export type ResearchPhase = 'generating_urls' | 'scraping' | 'analyzing' | 'complete' | 'failed' | 'cancelled';
+export type ResearchPhase =
+  | 'generating_queries'
+  | 'discovering_sources'
+  | 'extracting_signals'
+  | 'synthesizing'
+  | 'validating'
+  | 'complete'
+  | 'failed'
+  | 'cancelled';
+
+// ─── Trend Quality Scores ───────────────────────────────────
+
+export interface TrendScores {
+  novelty: number;
+  evidenceStrength: number;
+  growthSignal: number;
+  actionability: number;
+  strategicRelevance: number;
+  compositeScore: number;
+}
 
 // ─── DetectedTrend ───────────────────────────────────────────
 
@@ -33,6 +52,9 @@ export interface DetectedTrendWithMeta {
   howToUse: string[];
   detectionSource: TrendDetectionSource;
   sourceUrl: string | null;
+  isLocked: boolean;
+  lockedAt: string | null;
+  lockedBy?: { id: string; name: string } | null;
   isActivated: boolean;
   activatedAt: string | null;
   isDismissed: boolean;
@@ -104,6 +126,10 @@ export interface PendingTrendItem {
   relevanceScore: number;
   sourceUrl: string;
   tags: string[];
+  dataPoints?: string[];
+  evidenceCount?: number;
+  sourceUrls?: string[];
+  scores?: TrendScores;
 }
 
 export interface ResearchProgressResponse {
@@ -114,6 +140,11 @@ export interface ResearchProgressResponse {
   urlsCompleted: number;
   currentUrl: string | null;
   trendsDetected: number;
+  trendsRejected: number;
+  queriesGenerated: number;
+  signalsExtracted: number;
+  sourcesProcessed: number;
+  sourcesTotal: number;
   pendingTrends?: PendingTrendItem[];
   errors: string[];
   progress: number;

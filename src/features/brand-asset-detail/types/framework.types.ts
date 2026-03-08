@@ -64,24 +64,44 @@ export interface GoldenCircleFrameworkData {
   what: GoldenCircleSection;
 }
 
-// ─── 3. Brand Essence (Aaker) ───────────────────────────────
+// ─── 3. Brand Essence Wheel (Bates/Aaker) ───────────────────
 
-export interface BrandEssenceFrameworkData {
-  essenceStatement: string;
-  emotionalBenefit: string;
-  functionalBenefit: string;
-  brandPersonalityTraits: string;
-  proofPoints: string;
+export interface BrandEssenceValidationScores {
+  unique: number;       // 0-5: Is it ownable and distinctive?
+  intangible: number;   // 0-5: Is it beyond a product feature?
+  meaningful: number;   // 0-5: Does it resonate deeply?
+  authentic: number;    // 0-5: Does it reflect reality?
+  enduring: number;     // 0-5: Will it last 10+ years?
+  scalable: number;     // 0-5: Does it work across markets?
 }
 
-// ─── 4. Brand Promise (BrandHouse©) ─────────────────────────
+export interface BrandEssenceFrameworkData {
+  essenceStatement: string;          // 1-3 word core (e.g. "Authentic Athletic Performance")
+  essenceNarrative: string;          // 2-3 sentence explanation
+  functionalBenefit: string;         // Tangible delivery
+  emotionalBenefit: string;          // Feeling it evokes
+  selfExpressiveBenefit: string;     // How customers express themselves
+  discriminator: string;             // Compelling difference vs competitors
+  proofPoints: string[];             // 3-5 evidence items
+  attributes: string[];              // Tangible brand characteristics
+  audienceInsight: string;           // Deep human truth
+  validationScores: BrandEssenceValidationScores;
+}
+
+// ─── 4. Brand Promise (Keller/Aaker Value Model) ────────────
 
 export interface BrandPromiseFrameworkData {
-  promiseStatement: string;
-  functionalValue: string;
-  emotionalValue: string;
-  targetAudience: string;
-  differentiator: string;
+  promiseStatement: string;           // The core promise (1-2 sentences)
+  promiseOneLiner: string;            // Distilled to a single tagline-length sentence
+  functionalValue: string;            // Tangible benefit delivered
+  emotionalValue: string;             // Feeling it creates
+  selfExpressiveValue: string;        // How customers express themselves through the brand
+  targetAudience: string;             // Who the promise is for
+  coreCustomerNeed: string;           // The deep underlying need being addressed
+  differentiator: string;             // What sets the promise apart
+  onlynessStatement: string;          // "Only [brand] can ___ because ___"
+  proofPoints: string[];              // 3-5 evidence items that the promise is real
+  measurableOutcomes: string[];       // Concrete measurable outcomes of the promise
 }
 
 // ─── 5. Mission Statement ───────────────────────────────────
@@ -106,26 +126,107 @@ export interface VisionStatementFrameworkData {
 
 // ─── 7. Brand Archetype (Jung / Mark & Pearson) ─────────────
 
-export interface BrandArchetypeFrameworkData {
-  primaryArchetype: string; // Innocent / Everyman / Hero / Outlaw / Explorer / Creator / Ruler / Magician / Lover / Caregiver / Jester / Sage
-  secondaryArchetype?: string;
-  coreDesire: string;
-  brandVoiceDescription: string;
-  archetypeInAction: string;
+export interface WeSayNotThatPair {
+  weSay: string;
+  notThat: string;
 }
 
-// ─── 8. Transformative Goals (MTP / Exponential Orgs) ───────
+export interface BrandArchetypeFrameworkData {
+  // Section 1: Archetype Selection
+  primaryArchetype: string; // Innocent / Everyman / Hero / Outlaw / Explorer / Creator / Ruler / Magician / Lover / Caregiver / Jester / Sage
+  secondaryArchetype?: string;
+  blendRatio?: string; // e.g. "70/30"
+  subArchetype?: string; // Specific variant within primary (e.g. "Rescuer" for Hero)
+
+  // Section 2: Core Psychology
+  coreDesire: string;
+  coreFear: string;
+  brandGoal: string;
+  strategy: string;
+  giftTalent: string;
+  shadowWeakness: string;
+
+  // Section 3: Voice & Messaging
+  brandVoiceDescription: string;
+  voiceAdjectives: string[]; // 3-5 adjectives
+  languagePatterns: string;
+  weSayNotThat: WeSayNotThatPair[];
+  toneVariations: string;
+  blacklistedPhrases: string[];
+
+  // Section 4: Visual Expression
+  colorDirection: string;
+  typographyDirection: string;
+  imageryStyle: string;
+  visualMotifs: string;
+
+  // Section 5: Archetype in Action
+  archetypeInAction: string;
+  marketingExpression: string;
+  customerExperience: string;
+  contentStrategy: string;
+  storytellingApproach: string;
+
+  // Section 6: Reference & Positioning
+  brandExamples: string[];
+  positioningApproach?: string; // Similarity / Aspiration / Guidance / Inspiration
+  competitiveLandscape: string;
+}
+
+// ─── 8. Transformative Goals (MTP / BHAG / Moonshot) ────────
+
+export type ImpactDomain = 'PEOPLE' | 'PLANET' | 'PROSPERITY';
+
+export type TimeframeHorizon = 'SHORT' | 'MEDIUM' | 'LONG' | 'ASPIRATIONAL';
+
+export interface GoalMilestone {
+  year: number;
+  target: string;
+  achieved?: boolean;
+}
 
 export interface TransformativeGoal {
   title: string;
   description: string;
-  timeframe: string;
-  measurableOutcome: string;
+  impactDomain: ImpactDomain;
+  timeframe: string;             // e.g. "2030"
+  timeframeHorizon: TimeframeHorizon;
+  measurableCommitment: string;  // Concrete measurable target
+  theoryOfChange: string;        // How brand activity leads to impact
+  currentProgress: number;       // 0-100
+  milestones: GoalMilestone[];
+  sdgAlignment: number[];        // UN SDG numbers (1-17)
+}
+
+export interface AuthenticityScore {
+  ambition: number;       // 1-5: Is it bold enough to inspire?
+  authenticity: number;   // 1-5: Does it match brand DNA?
+  clarity: number;        // 1-5: Can anyone understand it?
+  measurability: number;  // 1-5: Can progress be tracked?
+  integration: number;    // 1-5: Does it drive strategy?
+  longevity: number;      // 1-5: Will it endure 10+ years?
+}
+
+export interface StakeholderImpact {
+  stakeholder: string;    // e.g. "Employees", "Customers"
+  role: string;           // e.g. "Ambassadors & executors"
+  expectedImpact: string; // e.g. "Culture, motivation, retention"
+}
+
+export interface BrandIntegration {
+  positioningLink: string;
+  communicationThemes: string[];
+  campaignDirections: string[];
+  internalActivation: string;
 }
 
 export interface TransformativeGoalsFrameworkData {
   massiveTransformativePurpose: string;
+  mtpNarrative: string;
   goals: TransformativeGoal[];
+  authenticityScores: AuthenticityScore;
+  stakeholderImpact: StakeholderImpact[];
+  brandIntegration: BrandIntegration;
 }
 
 // ─── 9. Brand Personality (Aaker 5 Dimensions) ─────────────
