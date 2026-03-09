@@ -11,7 +11,7 @@
 // Runs once (no recursion) to control costs.
 // =============================================================
 
-import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
+import { createClaudeStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import {
   buildJudgeSystemPrompt,
   buildJudgeUserPrompt,
@@ -80,10 +80,11 @@ export async function judgeTrends(
 
     const userPrompt = buildJudgeUserPrompt(trendInputs);
 
-    const result = await createGeminiStructuredCompletion<JudgeResult>(
+    // Use Claude Sonnet 4.5 for most rigorous quality validation
+    const result = await createClaudeStructuredCompletion<JudgeResult>(
       systemPrompt,
       userPrompt,
-      { temperature: 0.2, maxOutputTokens: 6000 },
+      { temperature: 0.2, maxTokens: 6000 },
     );
 
     if (!result?.judgements?.length) {

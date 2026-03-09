@@ -27,6 +27,42 @@ Reference specific details from previous answers.
 
 {{assetKnowledge}}`;
 
+const BRAND_ARCHETYPE_SYSTEM_PROMPT = `You are a senior brand strategist specializing in Jungian archetype analysis, conducting a two-phase exploration.
+
+CRITICAL RULE: Always recommend exactly ONE archetype. NEVER suggest a blend, hybrid, dual archetype, or combination of two archetypes. Every brand must commit to a single primary archetype for maximum clarity and consistency.
+
+PHASE 1 — ARCHETYPE DISCOVERY (dimensions 1-2):
+Your goal is to help the user discover which single archetype from the 12 Jungian archetypes fits their brand best. Listen carefully to their descriptions of brand personality, emotions, and customer relationships. After the user answers dimension 2 (Core Psychology), you MUST recommend exactly ONE archetype in your feedback — name it (e.g., "Hero", "Sage", "Explorer") and explain WHY it is the best fit based on their answers. If multiple archetypes seem relevant, pick the strongest one and explain why it wins over the alternatives.
+
+The 12 archetypes are: Innocent, Sage, Explorer, Outlaw, Magician, Hero, Lover, Jester, Everyman, Caregiver, Ruler, Creator.
+
+PHASE 2 — FIELD CUSTOMIZATION (dimensions 3-7):
+Once the single archetype is identified, your goal shifts to helping the user customize the pre-filled reference data for their specific brand context. Each archetype comes with default psychology, voice, visual, and positioning data. Help the user adapt these to their unique situation. Suggest specific modifications to fields like voice adjectives, color direction, messaging patterns, etc.
+
+Be warm but professional — like a trusted advisor.
+Ask ONE question at a time. Keep questions concise.
+Reference specific details from previous answers.
+
+{{brandContext}}
+
+{{customKnowledge}}
+
+{{assetKnowledge}}`;
+
+const BRAND_ARCHETYPE_FEEDBACK_PROMPT = `Provide brief, constructive feedback (2-3 sentences) on the user's answer.
+Dimension: {{dimensionTitle}}
+Question asked: {{questionAsked}}
+User's answer: {{userAnswer}}
+
+IMPORTANT RULES:
+- ALWAYS recommend exactly ONE archetype. NEVER suggest a blend, hybrid, or combination of two archetypes.
+- For "Archetype Discovery" or "Core Psychology" dimensions: You MUST name exactly one archetype with reasoning (e.g., "Based on what you've shared, the Hero archetype is the best fit because..."). If multiple seem relevant, choose the strongest one and briefly explain why it wins.
+- For later dimensions (Shadow, Voice, Visual, Action, Positioning): Focus on suggesting specific field customizations for the single chosen archetype. For example: "Your voice adjectives could be: bold, determined, authentic" or "Consider a color direction of deep navy and gold to reflect authority."
+
+Acknowledge what's strong. If something could be explored further, note it gently.
+Reference their specific words. Never ask a follow-up question.
+Respond in the same language as the user.`;
+
 const FEEDBACK_PROMPT = `Provide brief, constructive feedback (2-3 sentences) on the user's answer.
 Dimension: {{dimensionTitle}}
 Question asked: {{questionAsked}}
@@ -194,16 +230,16 @@ const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
     subType: 'brand-archetype',
     label: 'Brand Archetype — Jung / Mark & Pearson',
     dimensions: [
-      { key: 'archetype_discovery', title: 'Archetype Discovery', icon: 'Crown', question: 'If your brand were a character in a story, what role would it play? The hero who overcomes challenges? The wise guide who mentors? The rebel who challenges the status quo? Think about which single archetype feels most natural for your brand.' },
-      { key: 'core_psychology', title: 'Core Psychology', icon: 'Heart', question: 'What is the deepest desire your brand fulfills for customers — and what fear does it help them overcome? What unique gift, talent, or strategy does your brand bring to the world that others can\'t easily replicate?' },
-      { key: 'shadow_risks', title: 'Shadow & Risks', icon: 'Moon', question: 'Every archetype has a shadow side — when taken too far, its strengths become weaknesses. What does that look like for your brand? For example, a Caregiver can become a martyr, a Hero can become arrogant. How do you guard against these patterns?' },
+      { key: 'archetype_discovery', title: 'Archetype Discovery', icon: 'Crown', question: 'Tell me about your brand\'s personality. What emotions do you want to evoke in your customers? If your brand were a character in a story, what role would it play — the hero, the wise guide, the rebel, the caregiver, the explorer? What personality feels most natural?' },
+      { key: 'core_psychology', title: 'Core Psychology', icon: 'Heart', question: 'What deep desire does your brand fulfill for customers? What fear or problem does it help them overcome? Think about the fundamental human need your brand addresses — and what unique gift or talent it brings to do so.' },
+      { key: 'shadow_risks', title: 'Shadow & Guardrails', icon: 'Moon', question: 'Every archetype has a shadow side — when taken too far, its strengths become weaknesses. What does that look like for your brand? For example, a Caregiver can become a martyr, a Hero can become arrogant. How do you guard against these patterns?' },
       { key: 'voice_messaging', title: 'Voice & Messaging', icon: 'MessageCircle', question: 'How does your archetype translate into the way your brand communicates? Describe your brand\'s voice in 3-5 adjectives. What words and phrases does your brand use — and what would it never say? Give me a "We say / Not that" example.' },
       { key: 'visual_expression', title: 'Visual Expression', icon: 'Palette', question: 'If you were to express your archetype visually — through colors, typography, imagery, and motifs — what direction feels right? Think about what visual language would make your archetype immediately recognizable.' },
       { key: 'archetype_in_action', title: 'Archetype in Action', icon: 'Activity', question: 'How does your archetype come alive in practice? Describe how it manifests in your marketing campaigns, customer experience, content strategy, and storytelling approach. Give me a specific example where your archetype was clearly visible.' },
       { key: 'competitive_positioning', title: 'Competitive Positioning', icon: 'Target', question: 'Which brands in your industry share a similar archetype? How do you differentiate within that archetype territory? What positioning approach works best for your brand — similarity, aspiration, guidance, or inspiration?' },
     ],
     fieldSuggestionsConfig: [
-      { field: 'frameworkData.primaryArchetype', label: 'Brand Archetype', type: 'select' as const, extractionHint: 'Identify the single best-fitting Jungian archetype for this brand. MUST be exactly one of these lowercase IDs: innocent, everyman, hero, outlaw, explorer, creator, ruler, magician, lover, caregiver, jester, sage. Choose the ONE archetype that best represents the brand.' },
+      { field: 'frameworkData.primaryArchetype', label: 'Brand Archetype', type: 'select' as const, extractionHint: 'Identify the single best-fitting Jungian archetype for this brand. MUST be exactly one of these lowercase IDs: innocent, everyman, hero, outlaw, explorer, creator, ruler, magician, lover, caregiver, jester, sage. Choose exactly ONE archetype. NEVER suggest a blend, hybrid, or combination of two archetypes.' },
       { field: 'frameworkData.subArchetype', label: 'Sub-Archetype', type: 'text' as const, extractionHint: 'Identify the specific variant within the primary archetype (e.g., "Rescuer" for Hero)' },
       { field: 'frameworkData.coreDesire', label: 'Core Desire', type: 'text' as const, extractionHint: 'Extract the core desire this brand fulfills for customers' },
       { field: 'frameworkData.coreFear', label: 'Core Fear', type: 'text' as const, extractionHint: 'Extract the core fear this brand helps customers overcome' },
@@ -308,6 +344,7 @@ async function main() {
       },
     });
 
+    const isArchetype = cfg.subType === 'brand-archetype';
     const data = {
       itemType: 'brand_asset',
       itemSubType: cfg.subType,
@@ -317,8 +354,8 @@ async function main() {
       temperature: 0.4,
       maxTokens: 2048,
       isActive: true,
-      systemPrompt: SYSTEM_PROMPT,
-      feedbackPrompt: FEEDBACK_PROMPT,
+      systemPrompt: isArchetype ? BRAND_ARCHETYPE_SYSTEM_PROMPT : SYSTEM_PROMPT,
+      feedbackPrompt: isArchetype ? BRAND_ARCHETYPE_FEEDBACK_PROMPT : FEEDBACK_PROMPT,
       reportPrompt: REPORT_PROMPT,
       dimensions: cfg.dimensions as unknown as Prisma.InputJsonValue,
       fieldSuggestionsConfig: cfg.fieldSuggestionsConfig

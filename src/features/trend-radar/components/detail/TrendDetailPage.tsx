@@ -241,6 +241,8 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
   const impactConfig = IMPACT_COLORS[trend.impactLevel];
   const directionConfig = trend.direction ? DIRECTION_CONFIG[trend.direction] : null;
   const sourceConfig = DETECTION_SOURCE_CONFIG[trend.detectionSource];
+  const realSourceUrls = (trend.sourceUrls ?? []).filter((u: string) => !u.startsWith('search:'));
+  const realSourceUrl = trend.sourceUrl && !trend.sourceUrl.startsWith('search:') ? trend.sourceUrl : null;
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
@@ -574,25 +576,25 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
           )}
 
           {/* Sources (read-only) */}
-          {trend.sourceUrls && trend.sourceUrls.length > 0 && (
+          {realSourceUrls.length > 0 && (
             <Card>
               <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-blue-600" />
-                Sources ({trend.sourceUrls.length})
+                <FileText className="w-4 h-4 text-primary" />
+                Sources ({realSourceUrls.length})
               </h3>
               <ul className="space-y-2">
-                {trend.sourceUrls.map((url, i) => {
+                {realSourceUrls.map((url, i) => {
                   let displayUrl = url;
                   try {
                     displayUrl = new URL(url).hostname.replace(/^www\./, '');
                   } catch { /* keep raw url */ }
                   return (
-                    <li key={i}>
+                    <li key={url}>
                       <a
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                        className="flex items-center gap-2 text-sm text-primary hover:underline transition-colors"
                       >
                         <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
                         <span className="truncate">{displayUrl}</span>
@@ -605,20 +607,20 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
           )}
 
           {/* Fallback: single sourceUrl when sourceUrls is empty */}
-          {(!trend.sourceUrls || trend.sourceUrls.length === 0) && trend.sourceUrl && (
+          {realSourceUrls.length === 0 && realSourceUrl && (
             <Card>
               <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
-                <FileText className="w-4 h-4 text-blue-600" />
+                <FileText className="w-4 h-4 text-primary" />
                 Source
               </h3>
               <a
-                href={trend.sourceUrl}
+                href={realSourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                className="flex items-center gap-2 text-sm text-primary hover:underline transition-colors"
               >
                 <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="truncate">{trend.sourceUrl}</span>
+                <span className="truncate">{realSourceUrl}</span>
               </a>
             </Card>
           )}

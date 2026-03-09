@@ -48,6 +48,12 @@ export interface SearchGroundedUrl {
   title: string;
 }
 
+export interface SearchGroundedResult {
+  urls: SearchGroundedUrl[];
+  /** The AI-generated text response summarizing search findings */
+  responseText: string;
+}
+
 // ─── Public API ────────────────────────────────────────────
 
 /**
@@ -157,6 +163,78 @@ export async function findUrlsViaGoogleSearch(
   return finalUrls;
 }
 
+/**
+ * Search via Gemini Google Search grounding and return both URLs and the AI response text.
+ * The response text contains a summary of findings — useful as a fallback when URL scraping fails.
+ */
+export async function searchWithGrounding(
+  query: string,
+  maxResults = 8,
+): Promise<SearchGroundedResult> {
+  const client = getClient();
+  const SEARCH_MODEL = 'gemini-2.5-flash';
+
+  const response = await client.models.generateContent({
+    model: SEARCH_MODEL,
+    contents: [
+      {
+        role: 'user' as const,
+        parts: [{ text: `Find ${maxResults} recent, high-quality web articles from DIVERSE sources about: ${query}. Summarize the key findings, data points, and trends from each source. Prefer articles from different websites/publications — industry reports, news outlets, research blogs, and analyst publications.` }],
+      },
+    ],
+    config: {
+      tools: [{ googleSearch: {} }],
+      temperature: 0.2,
+      maxOutputTokens: 4000,
+      abortSignal: AbortSignal.timeout(60_000),
+    },
+  });
+
+  const responseText = response.text?.trim() ?? '';
+
+  // Extract URLs from grounding metadata
+  const resp = response as unknown as Record<string, unknown>;
+  const candidate = (resp.candidates as Array<Record<string, unknown>> | undefined)?.[0];
+  const groundingMeta = candidate?.groundingMetadata as Record<string, unknown> | undefined;
+  const groundingChunks = (groundingMeta?.groundingChunks ?? []) as Array<{ web?: { uri?: string; title?: string } }>;
+
+  let urls: SearchGroundedUrl[] = groundingChunks
+    .filter((c) => c.web?.uri)
+    .map((c) => ({ url: c.web!.uri!, title: c.web?.title ?? '' }))
+    .slice(0, maxResults);
+
+  // Fallback: extract URLs from the text itself
+  if (urls.length === 0) {
+    const urlRegex = /https?:\/\/[^\s"'<>\])+,]+/g;
+    const foundUrls = responseText.match(urlRegex) ?? [];
+    if (foundUrls.length > 0) {
+      urls = [...new Set(foundUrls)]
+        .filter((u) => !u.includes('google.com/search'))
+        .slice(0, maxResults)
+        .map((u) => ({ url: u, title: '' }));
+    }
+  }
+
+  // Deduplicate by domain
+  const seenDomains = new Set<string>();
+  const diverseUrls: SearchGroundedUrl[] = [];
+  for (const u of urls) {
+    try {
+      const domain = new URL(u.url).hostname.replace(/^www\./, '');
+      if (!seenDomains.has(domain)) {
+        seenDomains.add(domain);
+        diverseUrls.push(u);
+      }
+    } catch {
+      diverseUrls.push(u);
+    }
+  }
+
+  return {
+    urls: diverseUrls.slice(0, maxResults),
+    responseText,
+  };
+}
 
 /**
  * Generate a structured JSON completion via Gemini.

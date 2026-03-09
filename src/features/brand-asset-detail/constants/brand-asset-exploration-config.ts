@@ -423,8 +423,8 @@ const BRAND_ARCHETYPE_DIMENSIONS: DimensionConfig[] = [
     bgClass: 'bg-amber-100',
     textClass: 'text-amber-600',
     defaultQuestions: [
-      'If your brand were a character in a story, what role would it play? The hero who overcomes? The wise guide? The rebel who challenges the status quo?',
-      'Think about the brands you admire most — what archetype do they embody, and how does yours differ?',
+      'Tell me about your brand\'s personality. What emotions do you want to evoke? What role does your brand play in customers\' lives?',
+      'If your brand were a character in a story — the hero, the wise guide, the rebel, the caregiver — what feels most natural?',
     ],
   },
   {
@@ -435,13 +435,13 @@ const BRAND_ARCHETYPE_DIMENSIONS: DimensionConfig[] = [
     bgClass: 'bg-rose-100',
     textClass: 'text-rose-600',
     defaultQuestions: [
-      'What is the deepest desire your brand fulfills for customers — and what fear does it help them overcome?',
+      'What deep desire does your brand fulfill for customers? What fear or problem does it help them overcome?',
       'What unique gift or talent does your brand bring to the world?',
     ],
   },
   {
     key: 'shadow_risks',
-    label: 'Shadow & Risks',
+    label: 'Shadow & Guardrails',
     icon: Moon,
     color: 'purple',
     bgClass: 'bg-purple-100',

@@ -97,3 +97,65 @@ export async function generateAIResponse(
   });
   return response.choices[0]?.message?.content ?? '';
 }
+
+// ─── Claude Structured JSON Completion ──────────────────────
+
+const CLAUDE_SONNET = 'claude-sonnet-4-5-20250929';
+
+interface ClaudeCompletionOptions {
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+}
+
+/**
+ * Call Claude for structured JSON output.
+ * Claude excels at analytical reasoning and structured data extraction.
+ * Parses the JSON from the text response automatically.
+ */
+export async function createClaudeStructuredCompletion<T>(
+  systemPrompt: string,
+  userPrompt: string,
+  options?: ClaudeCompletionOptions,
+): Promise<T> {
+  const client = getAnthropicClient();
+  const model = options?.model ?? CLAUDE_SONNET;
+  const temperature = options?.temperature ?? 0.3;
+  const maxTokens = options?.maxTokens ?? 8000;
+
+  const response = await client.messages.create(
+    {
+      model,
+      system: `${systemPrompt}\n\nIMPORTANT: Respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.`,
+      messages: [{ role: 'user', content: userPrompt }],
+      temperature,
+      max_tokens: maxTokens,
+    },
+    { signal: AbortSignal.timeout(90_000) },
+  );
+
+  const text = response.content[0]?.type === 'text' ? response.content[0].text.trim() : '';
+
+  if (!text) {
+    throw new Error('Empty response from Claude (structured completion)');
+  }
+
+  // Parse JSON — handle markdown code blocks that the model sometimes wraps
+  let cleaned = text;
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?\s*```\s*$/, '');
+  }
+
+  const jsonStart = cleaned.indexOf('{');
+  const jsonEnd = cleaned.lastIndexOf('}');
+  if (jsonStart !== -1 && jsonEnd !== -1 && jsonStart < jsonEnd) {
+    cleaned = cleaned.slice(jsonStart, jsonEnd + 1);
+  }
+
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch (parseError) {
+    const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+    throw new Error(`Failed to parse Claude response as JSON: ${msg}. Response starts with: "${cleaned.slice(0, 200)}"`);
+  }
+}

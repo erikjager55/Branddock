@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import type { PendingTrend } from '@/lib/trend-radar/researcher';
@@ -72,7 +73,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
           industries: trend.industries,
           tags: trend.tags,
           howToUse: trend.howToUse,
-          sourceUrl: trend.sourceUrl ?? trend.sourceUrls?.[0] ?? null,
+          sourceUrl: trend.sourceUrl || trend.sourceUrls?.[0] || null,
           sourceUrls: trend.sourceUrls ?? [],
           dataPoints: trend.dataPoints ?? [],
           evidenceCount: trend.evidenceCount ?? 0,
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   await prisma.trendResearchJob.update({
     where: { id: jobId },
     data: {
-      pendingTrends: undefined,
+      pendingTrends: Prisma.JsonNull,
       trendsDetected: selected.length,
     },
   });

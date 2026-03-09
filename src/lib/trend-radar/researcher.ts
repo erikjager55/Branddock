@@ -12,7 +12,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { scrapeProductUrl } from '@/lib/products/url-scraper';
-import { findUrlsViaGoogleSearch } from '@/lib/ai/gemini-client';
+import { searchWithGrounding } from '@/lib/ai/gemini-client';
 import { getBrandContext } from '@/lib/ai/brand-context';
 import { generateDiverseQueries } from './query-generator';
 import { extractSignalsFromSources, type Signal } from './signal-extractor';
@@ -167,19 +167,26 @@ export async function runTrendResearch(
 
     if (state.cancelled) return await finalizeCancelled(jobId);
 
-    // Search for URLs per query
+    // Search for URLs per query — also capture Gemini's search response text
     state.phase = 'discovering_sources';
 
     const allUrls: Array<{ url: string; title: string; query: string }> = [];
     const seenDomains = new Map<string, number>(); // domain → count
+    const searchResponseTexts: Array<{ query: string; text: string }> = [];
 
     for (const q of diverseQueries) {
       if (state.cancelled) break;
       state.currentUrl = `Searching: ${q.slice(0, 60)}...`;
 
       try {
-        const results = await findUrlsViaGoogleSearch(q, MAX_URLS_PER_QUERY);
-        for (const r of results) {
+        const searchResult = await searchWithGrounding(q, MAX_URLS_PER_QUERY);
+
+        // Capture the AI search response text (contains grounded summaries)
+        if (searchResult.responseText.length > 50) {
+          searchResponseTexts.push({ query: q, text: searchResult.responseText });
+        }
+
+        for (const r of searchResult.urls) {
           // Domain dedup: max N per domain
           let domain = 'unknown';
           try {
@@ -204,7 +211,7 @@ export async function runTrendResearch(
       if (allUrls.length >= MAX_TOTAL_URLS) break;
     }
 
-    if (allUrls.length === 0) {
+    if (allUrls.length === 0 && searchResponseTexts.length === 0) {
       throw new Error('No URLs found across all search queries');
     }
 
@@ -273,6 +280,17 @@ export async function runTrendResearch(
 
     if (state.cancelled) return await finalizeCancelled(jobId);
 
+    // Add Gemini search response texts as grounded sources
+    // These are AI-summarized search results and are always available,
+    // even when URL scraping fails (JS-heavy sites, 403s, etc.)
+    for (const sr of searchResponseTexts) {
+      scrapedSources.push({
+        name: `Google Search: ${sr.query.slice(0, 60)}`,
+        url: `search:${sr.query.slice(0, 100)}`,
+        content: sr.text,
+      });
+    }
+
     if (scrapedSources.length === 0) {
       throw new Error('No sources could be scraped successfully');
     }
@@ -292,10 +310,11 @@ export async function runTrendResearch(
     state.signalsExtracted = signals.length;
 
     if (signals.length === 0) {
-      // No structured signals extracted — try to synthesize directly from scraped content
-      const fallbackSignals: Signal[] = scrapedSources.slice(0, 5).map((src) => ({
-        claim: src.content.slice(0, 300),
-        evidence: src.content.slice(0, 500),
+      // No structured signals extracted — create fallback signals from raw scraped content.
+      // Use more content per source so synthesis has enough material to work with.
+      const fallbackSignals: Signal[] = scrapedSources.slice(0, 8).map((src) => ({
+        claim: src.content.slice(0, 2000),
+        evidence: src.content.slice(0, 3000),
         dataPoints: [],
         entities: [],
         sourceUrl: src.url,
@@ -347,16 +366,6 @@ export async function runTrendResearch(
     if (state.cancelled) return await finalizeCancelled(jobId);
 
     // ════════════════════════════════════════════════════════
-    // PHASE 4: EVALUATE — Deterministic scoring
-    // ════════════════════════════════════════════════════════
-
-    // Calculate evidence + actionability scores (pass signals for authority weighting)
-    const scoredTrends = synthesis.trends.map((trend) => ({
-      ...trend,
-      scores: calculatePartialScores(trend, signals),
-    }));
-
-    // ════════════════════════════════════════════════════════
     // PHASE 5: VALIDATE — LLM-as-Judge
     // ════════════════════════════════════════════════════════
 
@@ -372,6 +381,20 @@ export async function runTrendResearch(
 
     state.trendsRejected = judgeResult.rejected.length;
 
+    // If judge rejected ALL trends, override: keep all with fallback scores
+    // The judge should not be a hard gate that kills the entire pipeline
+    if (judgeResult.approved.length === 0 && synthesis.trends.length > 0) {
+      const rescued = synthesis.trends.map((t) => ({
+        ...t,
+        scores: calculatePartialScores(t, signals),
+      }));
+      judgeResult.approved.push(...rescued);
+      const msg = `Judge rejected all ${synthesis.trends.length} trends, rescued with fallback scores`;
+      allErrors.push(msg);
+      state.errors.push(msg);
+      state.trendsRejected = 0;
+    }
+
     // Filter by quality threshold
     const qualityFiltered = filterByQuality(judgeResult.approved);
 
@@ -382,39 +405,46 @@ export async function runTrendResearch(
           .sort((a, b) => b.scores.compositeScore - a.scores.compositeScore)
           .slice(0, Math.min(3, judgeResult.approved.length));
 
-    if (finalTrends.length < qualityFiltered.length || (qualityFiltered.length === 0 && judgeResult.approved.length > 0)) {
+    if (qualityFiltered.length === 0 && judgeResult.approved.length > 0) {
       const msg = `Quality filter: ${judgeResult.approved.length} trends evaluated, ${qualityFiltered.length} passed threshold (${QUALITY_THRESHOLD}), using ${finalTrends.length} best`;
       allErrors.push(msg);
       state.errors.push(msg);
     }
 
-    // Convert to PendingTrend format
-    const pendingTrends: PendingTrend[] = finalTrends.map((t) => ({
-      title: t.title,
-      slug: t.slug,
-      description: t.description,
-      category: t.category,
-      scope: t.scope,
-      impactLevel: t.impactLevel,
-      timeframe: t.timeframe,
-      relevanceScore: t.relevanceScore,
-      direction: t.direction,
-      confidence: t.confidence,
-      rawExcerpt: t.rawExcerpt,
-      aiAnalysis: t.aiAnalysis,
-      industries: t.industries,
-      tags: t.tags,
-      howToUse: t.howToUse,
-      sourceUrl: t.sourceUrl,
-      detectionSource: t.detectionSource,
-      researchJobId: t.researchJobId,
-      workspaceId: t.workspaceId,
-      dataPoints: t.dataPoints,
-      evidenceCount: t.evidenceCount,
-      sourceUrls: t.sourceUrls,
-      whyNow: t.whyNow,
-      scores: t.scores,
-    }));
+    // Convert to PendingTrend format — filter out search: pseudo-URLs
+    const pendingTrends: PendingTrend[] = finalTrends.map((t) => {
+      const realSourceUrls = t.sourceUrls.filter((u) => !u.startsWith('search:'));
+      const realSourceUrl = t.sourceUrl.startsWith('search:')
+        ? realSourceUrls[0] ?? null
+        : t.sourceUrl;
+
+      return {
+        title: t.title,
+        slug: t.slug,
+        description: t.description,
+        category: t.category,
+        scope: t.scope,
+        impactLevel: t.impactLevel,
+        timeframe: t.timeframe,
+        relevanceScore: t.relevanceScore,
+        direction: t.direction,
+        confidence: t.confidence,
+        rawExcerpt: t.rawExcerpt,
+        aiAnalysis: t.aiAnalysis,
+        industries: t.industries,
+        tags: t.tags,
+        howToUse: t.howToUse,
+        sourceUrl: realSourceUrl ?? '',
+        detectionSource: t.detectionSource,
+        researchJobId: t.researchJobId,
+        workspaceId: t.workspaceId,
+        dataPoints: t.dataPoints,
+        evidenceCount: t.evidenceCount,
+        sourceUrls: realSourceUrls,
+        whyNow: t.whyNow,
+        scores: t.scores,
+      };
+    });
 
     state.pendingTrends = pendingTrends;
     state.trendsDetected = pendingTrends.length;

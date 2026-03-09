@@ -49,12 +49,13 @@ export function calculateEvidenceStrength(trend: SanitizedTrend, signals?: Signa
   const sourceCount = Math.min(trend.evidenceCount, 3);
   score += sourceCount * 15;
 
-  // +5 per unique source type from URLs (max 3 × 5 = 15)
+  // +5 per unique source domain from real URLs (max 3 × 5 = 15)
   const uniqueDomains = new Set<string>();
   for (const url of trend.sourceUrls) {
+    if (url.startsWith('search:')) continue; // skip pseudo-URLs
     try {
       const domain = new URL(url).hostname.replace(/^www\./, '');
-      uniqueDomains.add(domain);
+      if (domain) uniqueDomains.add(domain);
     } catch {
       // skip invalid URLs
     }

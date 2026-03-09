@@ -293,18 +293,25 @@ export async function scrapeProductUrl(url: string): Promise<ScrapedProductData>
   // Extract images BEFORE removing elements
   const images = findProductImages($, url);
 
-  // Extract body text from headings and paragraphs
-  $('script, style, nav, footer, noscript, iframe').remove();
+  // Extract body text — remove non-content elements first
+  $('script, style, nav, footer, noscript, iframe, header, .cookie-banner, .gdpr, #cookie-consent, .nav, .footer, .sidebar, .ad, .advertisement').remove();
+
+  // Try article/main content first for cleaner extraction
+  const articleEl = $('article, main, [role="main"], .post-content, .article-content, .entry-content').first();
+  const contentRoot = articleEl.length > 0 ? articleEl : $('body');
 
   const parts: string[] = [];
-  $('h1, h2, h3, h4, p, li, blockquote, figcaption, td, th, dt, dd').each((_, el) => {
-    const text = $(el).text().trim();
-    if (text && text.length > 5) {
+  contentRoot.find('h1, h2, h3, h4, h5, p, li, blockquote, figcaption, td, th, dt, dd, span, div').each((_, el) => {
+    const $el = $(el);
+    // Skip if this element has child block elements (avoid double-counting)
+    if ($el.children('h1, h2, h3, h4, h5, p, div, blockquote, ul, ol, table').length > 0) return;
+    const text = $el.text().trim();
+    if (text && text.length > 10) {
       parts.push(text);
     }
   });
 
-  const bodyText = parts.join('\n').slice(0, 5000);
+  const bodyText = parts.join('\n').slice(0, 8000);
 
   return {
     url,

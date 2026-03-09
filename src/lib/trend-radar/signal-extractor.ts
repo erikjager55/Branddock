@@ -9,7 +9,8 @@
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
 import { buildSignalExtractionPrompt } from '@/lib/ai/prompts/trend-analysis';
 
-const FLASH_MODEL = 'gemini-2.5-flash';
+// Use Gemini Pro for higher quality signal extraction (Flash was too unreliable)
+const EXTRACTION_MODEL = 'gemini-3.1-pro-preview';
 
 export type SourceType = 'news' | 'research' | 'industry_report' | 'blog' | 'analysis' | 'government' | 'other';
 export type SourceAuthority = 'major_publication' | 'industry_specialist' | 'company_blog' | 'general' | 'unknown';
@@ -48,7 +49,7 @@ const VALID_SOURCE_AUTHORITIES: Set<string> = new Set([
 
 /**
  * Extract structured signals from a single scraped source.
- * Uses Gemini Flash for speed (~1-2s per source, ~$0.001 per call).
+ * Uses Gemini Pro for higher quality extraction (~2-4s per source).
  */
 export async function extractSignals(
   content: string,
@@ -61,17 +62,20 @@ export async function extractSignals(
     const result = await createGeminiStructuredCompletion<ExtractionResult>(
       'You are a research data extraction specialist. Extract structured facts only. Return valid JSON.',
       prompt,
-      { model: FLASH_MODEL, temperature: 0.1, maxOutputTokens: 3000 },
+      { model: EXTRACTION_MODEL, temperature: 0.1, maxOutputTokens: 3000 },
     );
 
-    if (!result?.signals?.length) return [];
+    if (!result?.signals?.length) {
+      console.warn(`[SignalExtractor] No signals in response for ${sourceName}. Result keys:`, result ? Object.keys(result) : 'null');
+      return [];
+    }
 
-    return result.signals
-      .filter((s) => s.claim && s.claim.trim().length > 10)
+    const filtered = result.signals
+      .filter((s) => s.claim && s.claim.trim().length > 5)
       .slice(0, 8)
       .map((s) => ({
         claim: s.claim!.slice(0, 500),
-        evidence: (s.evidence ?? '').slice(0, 500),
+        evidence: (s.evidence ?? s.claim ?? '').slice(0, 500),
         dataPoints: Array.isArray(s.dataPoints) ? s.dataPoints.filter(Boolean).slice(0, 5) : [],
         entities: Array.isArray(s.entities) ? s.entities.filter(Boolean).slice(0, 5) : [],
         sourceUrl,
@@ -80,6 +84,9 @@ export async function extractSignals(
         publicationDate: s.publicationDate && s.publicationDate !== 'unknown' ? s.publicationDate.slice(0, 10) : null,
         sourceAuthority: VALID_SOURCE_AUTHORITIES.has(s.sourceAuthority ?? '') ? s.sourceAuthority as SourceAuthority : 'unknown',
       }));
+
+    console.log(`[SignalExtractor] ${sourceName}: ${filtered.length} signals extracted`);
+    return filtered;
   } catch (error) {
     console.warn(`[SignalExtractor] Failed for ${sourceName}:`, error instanceof Error ? error.message : error);
     return [];

@@ -365,7 +365,7 @@ ${fieldList}
       systemPrompt,
       messages: [{ role: 'user', content: userMessage }],
       temperature: 0.4,
-      maxTokens: 4000,
+      maxTokens: 16000,
     });
 
     console.log('[exploration-llm] generateReport raw response length:', text.length);

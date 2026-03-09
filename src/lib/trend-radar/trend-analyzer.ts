@@ -10,6 +10,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
+import { createClaudeStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import {
   buildTrendAnalysisSystemPrompt,
   buildTrendAnalysisUserPrompt,
@@ -163,10 +164,11 @@ export async function synthesizeTrends(params: {
       sourceCount: params.sourceCount,
     });
 
-    const result = await createGeminiStructuredCompletion<SynthesisResult>(
+    // Use Claude Sonnet 4.5 for highest quality analytical synthesis
+    const result = await createClaudeStructuredCompletion<SynthesisResult>(
       systemPrompt,
       userPrompt,
-      { temperature: 0.4, maxOutputTokens: 10000 },
+      { temperature: 0.4, maxTokens: 10000 },
     );
 
     if (!result?.trends?.length) {
