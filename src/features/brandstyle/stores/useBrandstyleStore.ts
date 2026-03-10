@@ -10,12 +10,16 @@ interface BrandstyleState {
   // Styleguide tabs
   activeTab: StyleguideTab;
 
+  // Edit mode (global, matches Brand Asset Detail pattern)
+  isEditing: boolean;
+
   // Color modal
   selectedColorId: string | null;
   isColorModalOpen: boolean;
 
   // Actions
   setActiveTab: (tab: StyleguideTab) => void;
+  setIsEditing: (editing: boolean) => void;
   openColorModal: (colorId: string) => void;
   closeColorModal: () => void;
   startAnalysis: (jobId: string) => void;
@@ -31,10 +35,14 @@ export const useBrandstyleStore = create<BrandstyleState>((set) => ({
 
   activeTab: "logo",
 
+  isEditing: false,
+
   selectedColorId: null,
   isColorModalOpen: false,
 
   setActiveTab: (tab) => set({ activeTab: tab }),
+
+  setIsEditing: (editing) => set({ isEditing: editing }),
 
   openColorModal: (colorId) =>
     set({ selectedColorId: colorId, isColorModalOpen: true }),
@@ -57,6 +65,7 @@ export const useBrandstyleStore = create<BrandstyleState>((set) => ({
       analysisStatus: null,
       isAnalyzing: false,
       activeTab: "logo",
+      isEditing: false,
       selectedColorId: null,
       isColorModalOpen: false,
     }),

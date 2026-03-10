@@ -106,7 +106,7 @@ interface Dimension {
 interface FieldSuggestionConfig {
   field: string;
   label: string;
-  type: 'text' | 'select';
+  type: 'text' | 'select' | 'array';
   extractionHint: string;
 }
 
@@ -168,8 +168,8 @@ const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
       { field: 'frameworkData.selfExpressiveBenefit', label: 'Self-Expressive Benefit', type: 'text' as const, extractionHint: 'Extract how the brand helps customers express who they are or want to be' },
       { field: 'frameworkData.discriminator', label: 'Discriminator', type: 'text' as const, extractionHint: 'Extract the single most compelling reason to choose this brand over competitors' },
       { field: 'frameworkData.audienceInsight', label: 'Audience Insight', type: 'text' as const, extractionHint: 'Extract the deep human truth or tension that the brand uniquely addresses' },
-      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'text' as const, extractionHint: 'Extract 3-5 concrete facts, achievements, or evidence that prove the brand essence is real' },
-      { field: 'frameworkData.attributes', label: 'Attributes', type: 'text' as const, extractionHint: 'Extract 3-5 tangible brand characteristics or qualities' },
+      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'array' as const, extractionHint: 'Extract 3-5 concrete facts, achievements, or evidence that prove the brand essence is real as a JSON array of strings' },
+      { field: 'frameworkData.attributes', label: 'Attributes', type: 'array' as const, extractionHint: 'Extract 3-5 tangible brand characteristics or qualities as a JSON array of strings' },
     ],
   },
   {
@@ -192,8 +192,8 @@ const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
       { field: 'frameworkData.coreCustomerNeed', label: 'Core Customer Need', type: 'text' as const, extractionHint: 'Extract the deep underlying need the promise addresses' },
       { field: 'frameworkData.differentiator', label: 'Differentiator', type: 'text' as const, extractionHint: 'Extract what makes this promise unique vs competitors' },
       { field: 'frameworkData.onlynessStatement', label: 'Onlyness Statement', type: 'text' as const, extractionHint: 'Format as "Only [brand] can ___ because ___"' },
-      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'text' as const, extractionHint: 'Extract 3-5 concrete facts or evidence that the promise is real' },
-      { field: 'frameworkData.measurableOutcomes', label: 'Measurable Outcomes', type: 'text' as const, extractionHint: 'Extract specific, quantifiable results that demonstrate promise delivery' },
+      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'array' as const, extractionHint: 'Extract 3-5 concrete facts or evidence that the promise is real as a JSON array of strings' },
+      { field: 'frameworkData.measurableOutcomes', label: 'Measurable Outcomes', type: 'array' as const, extractionHint: 'Extract specific, quantifiable results that demonstrate promise delivery as a JSON array of strings' },
     ],
   },
   {
@@ -219,7 +219,7 @@ const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
       { field: 'frameworkData.timeHorizon', label: 'Time Horizon', type: 'text' as const, extractionHint: 'Extract the timeframe for the vision (e.g., 3 years, 5 years, 10 years, 15+ years, Aspirational)' },
       { field: 'frameworkData.boldAspiration', label: 'Bold Aspiration (BHAG)', type: 'text' as const, extractionHint: 'Extract the Big Hairy Audacious Goal (Collins & Porras) that stretches beyond current capability' },
       { field: 'frameworkData.desiredFutureState', label: 'Desired Future State', type: 'text' as const, extractionHint: 'Extract the vivid description of success when the vision is fully achieved' },
-      { field: 'frameworkData.successIndicators', label: 'Success Indicators', type: 'text' as const, extractionHint: 'Extract 3-5 concrete, measurable indicators that signal the vision is becoming reality' },
+      { field: 'frameworkData.successIndicators', label: 'Success Indicators', type: 'array' as const, extractionHint: 'Extract 3-5 concrete, measurable indicators that signal the vision is becoming reality as a JSON array of strings' },
       { field: 'frameworkData.stakeholderBenefit', label: 'Stakeholder Benefit', type: 'text' as const, extractionHint: 'Extract who benefits from the vision and how (employees, customers, partners, society)' },
       { field: 'frameworkData.impactGoal', label: 'Impact Goal', type: 'text' as const, extractionHint: 'Extract the measurable impact the mission aims to achieve today' },
       { field: 'frameworkData.valuesAlignment', label: 'Values Alignment', type: 'text' as const, extractionHint: 'Extract how the mission and vision reinforce the organization\u2019s core values' },
@@ -248,13 +248,13 @@ const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
       { field: 'frameworkData.giftTalent', label: 'Gift / Talent', type: 'text' as const, extractionHint: 'Extract the unique gift or talent the brand brings' },
       { field: 'frameworkData.shadowWeakness', label: 'Shadow Weakness', type: 'text' as const, extractionHint: 'Extract the shadow side and potential weakness of the archetype as applied to this brand' },
       { field: 'frameworkData.brandVoiceDescription', label: 'Brand Voice Description', type: 'text' as const, extractionHint: 'Write a 2-3 sentence description of how this archetype defines the brand voice' },
-      { field: 'frameworkData.voiceAdjectives', label: 'Voice Adjectives', type: 'text' as const, extractionHint: 'Extract 3-5 adjectives that define the brand voice' },
+      { field: 'frameworkData.voiceAdjectives', label: 'Voice Adjectives', type: 'array' as const, extractionHint: 'Extract 3-5 adjectives that define the brand voice as a JSON array of strings' },
       { field: 'frameworkData.colorDirection', label: 'Color Direction', type: 'text' as const, extractionHint: 'Suggest the color palette direction based on the archetype' },
       { field: 'frameworkData.typographyDirection', label: 'Typography Direction', type: 'text' as const, extractionHint: 'Suggest the typography style based on the archetype' },
       { field: 'frameworkData.imageryStyle', label: 'Imagery Style', type: 'text' as const, extractionHint: 'Describe the imagery and photography style fitting the archetype' },
       { field: 'frameworkData.archetypeInAction', label: 'Archetype in Action', type: 'text' as const, extractionHint: 'Describe how the archetype manifests across the brand experience' },
       { field: 'frameworkData.competitiveLandscape', label: 'Competitive Landscape', type: 'text' as const, extractionHint: 'Analyze the competitive landscape from an archetype perspective' },
-      { field: 'frameworkData.brandExamples', label: 'Brand Examples', type: 'text' as const, extractionHint: 'List 3-5 reference brands that share this archetype' },
+      { field: 'frameworkData.brandExamples', label: 'Brand Examples', type: 'array' as const, extractionHint: 'List 3-5 reference brands that share this archetype as a JSON array of strings' },
     ],
   },
   {
@@ -277,7 +277,7 @@ const ASSET_TYPE_CONFIGS: AssetTypeConfig[] = [
       { field: 'frameworkData.goals[0].measurableCommitment', label: 'Goal 1 Measurable Target', type: 'text' as const, extractionHint: 'Extract a concrete, measurable commitment for goal 1 (e.g., "Reduce X by Y% by 2030")' },
       { field: 'frameworkData.goals[0].theoryOfChange', label: 'Goal 1 Theory of Change', type: 'text' as const, extractionHint: 'Describe how daily brand activities lead to this goal\u2019s impact (cause \u2192 effect chain)' },
       { field: 'frameworkData.brandIntegration.positioningLink', label: 'Brand Positioning Link', type: 'text' as const, extractionHint: 'Describe how these goals connect to the brand\u2019s market positioning and competitive differentiation' },
-      { field: 'frameworkData.brandIntegration.communicationThemes', label: 'Communication Themes', type: 'text' as const, extractionHint: 'Extract 3-5 communication themes that can be used in campaigns based on these goals' },
+      { field: 'frameworkData.brandIntegration.communicationThemes', label: 'Communication Themes', type: 'array' as const, extractionHint: 'Extract 3-5 communication themes that can be used in campaigns based on these goals as a JSON array of strings' },
       { field: 'frameworkData.brandIntegration.internalActivation', label: 'Internal Activation', type: 'text' as const, extractionHint: 'Describe how these goals should be activated internally (culture, operations, employee engagement)' },
     ],
   },

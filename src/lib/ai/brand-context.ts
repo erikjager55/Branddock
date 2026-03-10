@@ -1,7 +1,7 @@
 // =============================================================
 // Brand Context Aggregator (R0.8)
 //
-// Collects brand data from 5 Prisma models into a single context
+// Collects brand data from 6 Prisma models into a single context
 // block for AI prompts. Uses a 5-minute in-memory cache to avoid
 // repeated DB reads within the same session.
 //
@@ -10,6 +10,7 @@
 //  - Persona (primary target audience description)
 //  - Product (products overview)
 //  - DetectedTrend (competitive landscape summary, activated trends only)
+//  - BrandStyleguide (colors, typography, tone of voice, imagery)
 //  - Workspace (brand name, industry)
 // =============================================================
 
@@ -61,7 +62,9 @@ interface GoldenCircleData {
 }
 
 interface PurposeWheelData {
+  statement?: string;
   impactType?: string;
+  impactDescription?: string;
   mechanism?: string;
   mechanismCategory?: string;
   pressureTest?: string;
@@ -76,6 +79,7 @@ interface BrandEssenceData {
   discriminator?: string;
   audienceInsight?: string;
   proofPoints?: string[];
+  attributes?: string[];
 }
 
 interface BrandPromiseData {
@@ -147,8 +151,12 @@ interface TransformativeGoalData {
   description?: string;
   impactDomain?: string;
   timeframe?: string;
+  timeframeHorizon?: string;
   measurableCommitment?: string;
   theoryOfChange?: string;
+  currentProgress?: number;
+  milestones?: { title?: string; achieved?: boolean }[];
+  sdgAlignment?: number[];
 }
 
 interface TransformativeGoalsData {
@@ -168,16 +176,30 @@ interface TransformativeGoalsData {
 /** Format Golden Circle frameworkData into a readable string */
 function formatGoldenCircle(data: GoldenCircleData): string {
   const parts: string[] = [];
-  if (data.why?.statement) parts.push(`  - WHY: ${data.why.statement}`);
-  if (data.how?.statement) parts.push(`  - HOW: ${data.how.statement}`);
-  if (data.what?.statement) parts.push(`  - WHAT: ${data.what.statement}`);
+  if (data.why?.statement) {
+    let line = `  - WHY: ${data.why.statement}`;
+    if (data.why.details) line += ` — ${data.why.details}`;
+    parts.push(line);
+  }
+  if (data.how?.statement) {
+    let line = `  - HOW: ${data.how.statement}`;
+    if (data.how.details) line += ` — ${data.how.details}`;
+    parts.push(line);
+  }
+  if (data.what?.statement) {
+    let line = `  - WHAT: ${data.what.statement}`;
+    if (data.what.details) line += ` — ${data.what.details}`;
+    parts.push(line);
+  }
   return parts.join('\n');
 }
 
 /** Format Purpose Wheel frameworkData into a readable string */
 function formatPurposeWheel(data: PurposeWheelData): string {
   const parts: string[] = [];
+  if (data.statement) parts.push(`Purpose: ${data.statement}`);
   if (data.impactType) parts.push(`Impact Type: ${data.impactType}`);
+  if (data.impactDescription) parts.push(`Impact: ${data.impactDescription}`);
   if (data.mechanismCategory) parts.push(`Mechanism: ${data.mechanismCategory}`);
   if (data.mechanism) parts.push(`How: ${data.mechanism}`);
   if (data.pressureTest) parts.push(`Pressure Test: ${data.pressureTest}`);
@@ -195,8 +217,24 @@ function formatTransformativeGoals(data: TransformativeGoalsData): string {
       .map((g) => {
         const gParts = [g.title];
         if (g.impactDomain) gParts.push(`[${g.impactDomain}]`);
+        if (g.description) gParts.push(`— ${g.description}`);
         if (g.measurableCommitment) gParts.push(`Target: ${g.measurableCommitment}`);
-        if (g.timeframe) gParts.push(`by ${g.timeframe}`);
+        if (g.timeframe) {
+          let tf = `by ${g.timeframe}`;
+          if (g.timeframeHorizon) tf += ` (${g.timeframeHorizon})`;
+          gParts.push(tf);
+        }
+        if (g.theoryOfChange) gParts.push(`Theory of change: ${g.theoryOfChange}`);
+        if (typeof g.currentProgress === 'number' && g.currentProgress > 0) {
+          gParts.push(`Progress: ${g.currentProgress}%`);
+        }
+        if (Array.isArray(g.milestones) && g.milestones.length > 0) {
+          const achieved = g.milestones.filter((m) => m.achieved).length;
+          gParts.push(`Milestones: ${achieved}/${g.milestones.length} achieved`);
+        }
+        if (Array.isArray(g.sdgAlignment) && g.sdgAlignment.length > 0) {
+          gParts.push(`SDGs: ${g.sdgAlignment.join(', ')}`);
+        }
         return gParts.join(' ');
       });
     if (goalSummaries.length > 0) parts.push(`Goals: ${goalSummaries.join('; ')}`);
@@ -458,6 +496,45 @@ function formatBrandPersonality(data: BrandPersonalityData): string {
   return parts.join('. ');
 }
 
+// ─── Social Relevancy (ESG / Purpose Kompas) ──────────────
+
+/** Format Social Relevancy / ESG / Purpose Kompas frameworkData into a readable string */
+function formatSocialRelevancy(data: Record<string, unknown>): string | null {
+  const parts: string[] = [];
+
+  // Purpose Kompas shape: { pillars: { mens: {...}, milieu: {...}, maatschappij: {...} } }
+  const pillars = data.pillars as Record<string, { impact?: string; description?: string }> | undefined;
+  if (pillars && typeof pillars === 'object') {
+    const pillarNames: Record<string, string> = {
+      mens: 'People',
+      milieu: 'Planet',
+      maatschappij: 'Society',
+      environmental: 'Environmental',
+      social: 'Social',
+      governance: 'Governance',
+    };
+    for (const [key, pillar] of Object.entries(pillars)) {
+      if (pillar && typeof pillar === 'object') {
+        const label = pillarNames[key] || key;
+        const pParts: string[] = [label];
+        if (pillar.impact) pParts.push(`(${pillar.impact} impact)`);
+        if (pillar.description) pParts.push(`— ${pillar.description}`);
+        parts.push(pParts.join(' '));
+      }
+    }
+  }
+
+  // Any top-level string fields (e.g. summary, statement)
+  for (const [key, value] of Object.entries(data)) {
+    if (key === 'pillars') continue;
+    if (typeof value === 'string' && value.length > 0) {
+      parts.push(`${key}: ${value}`);
+    }
+  }
+
+  return parts.length > 0 ? parts.join('. ') : null;
+}
+
 // ─── Brand Story ───────────────────────────────────────────
 
 interface BrandStoryData {
@@ -565,22 +642,47 @@ function extractContentText(content: unknown): string | null {
   return null;
 }
 
-/** Extract Core Values from frameworkData (BRANDHOUSE_VALUES) */
-function extractCoreValues(data: unknown): string[] | null {
+/** Format BrandHouse Values frameworkData into a readable string for AI context */
+function formatBrandHouseValues(data: unknown): string | null {
   if (!data || typeof data !== 'object') return null;
   const obj = data as Record<string, unknown>;
-  // Shape: { values: [{ name: "...", description: "..." }] } or { values: ["..."] }
-  if (Array.isArray(obj.values) && obj.values.length > 0) {
-    return obj.values.map((v: unknown) => {
+  const parts: string[] = [];
+
+  // BrandHouse model: anchorValue1/2, aspirationValue1/2, ownValue, valueTension
+  const valueFields = [
+    { key: 'anchorValue1', label: 'Anchor Value 1' },
+    { key: 'anchorValue2', label: 'Anchor Value 2' },
+    { key: 'aspirationValue1', label: 'Aspiration Value 1' },
+    { key: 'aspirationValue2', label: 'Aspiration Value 2' },
+    { key: 'ownValue', label: 'Own Value' },
+  ];
+
+  for (const { key, label } of valueFields) {
+    const val = obj[key] as { name?: string; description?: string } | undefined;
+    if (val?.name) {
+      let entry = `${label}: ${val.name}`;
+      if (val.description) entry += ` — ${val.description}`;
+      parts.push(entry);
+    }
+  }
+
+  if (typeof obj.valueTension === 'string' && obj.valueTension) {
+    parts.push(`Value tension: ${obj.valueTension}`);
+  }
+
+  // Fallback: legacy { values: [...] } shape
+  if (parts.length === 0 && Array.isArray(obj.values) && obj.values.length > 0) {
+    return (obj.values as unknown[]).map((v: unknown) => {
       if (typeof v === 'string') return v;
       if (typeof v === 'object' && v !== null) {
         const val = v as Record<string, unknown>;
         return typeof val.name === 'string' ? val.name : String(v);
       }
       return String(v);
-    });
+    }).join(', ');
   }
-  return null;
+
+  return parts.length > 0 ? parts.join('. ') : null;
 }
 
 // ─── Aggregator ────────────────────────────────────────────
@@ -597,7 +699,7 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
   if (cached) return cached;
 
   // Fetch all sources in parallel
-  const [workspace, brandAssets, personas, products, activatedTrends] = await Promise.all([
+  const [workspace, brandAssets, personas, products, activatedTrends, styleguide] = await Promise.all([
     prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { name: true },
@@ -651,6 +753,23 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       orderBy: { relevanceScore: 'desc' },
       take: 5,
     }),
+
+    prisma.brandStyleguide.findFirst({
+      where: { workspaceId },
+      select: {
+        colors: { select: { name: true, hex: true, category: true } },
+        primaryFontName: true,
+        typeScale: true,
+        contentGuidelines: true,
+        writingGuidelines: true,
+        photographyStyle: true,
+        photographyGuidelines: true,
+        colorsSavedForAi: true,
+        typographySavedForAi: true,
+        toneSavedForAi: true,
+        imagerySavedForAi: true,
+      },
+    }),
   ]);
 
   // Build asset lookup by slug for reliable mapping
@@ -702,6 +821,9 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       if (fwData.audienceInsight) parts.push(`Audience insight: ${fwData.audienceInsight}`);
       if (Array.isArray(fwData.proofPoints) && fwData.proofPoints.length > 0) {
         parts.push(`Proof points: ${fwData.proofPoints.filter(Boolean).join('; ')}`);
+      }
+      if (Array.isArray(fwData.attributes) && fwData.attributes.length > 0) {
+        parts.push(`Attributes: ${fwData.attributes.filter(Boolean).join(', ')}`);
       }
       ctx.brandEssence = parts.join('. ');
     } else {
@@ -795,9 +917,9 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
   // Core Values (BRANDHOUSE_VALUES)
   const values = assetBySlug.get('core-values');
   if (values) {
-    const extracted = extractCoreValues(values.frameworkData);
-    if (extracted?.length) {
-      ctx.brandValues = extracted;
+    const formatted = formatBrandHouseValues(values.frameworkData);
+    if (formatted) {
+      ctx.brandValues = [formatted];
     } else {
       const contentText = extractContentText(values.content);
       if (contentText) ctx.brandValues = [contentText];
@@ -816,10 +938,16 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
     }
   }
 
-  // Social Relevancy (ESG)
+  // Social Relevancy (ESG / Purpose Kompas)
   const social = assetBySlug.get('social-relevancy');
   if (social) {
-    ctx.socialRelevancy = extractContentText(social.content) || social.description || undefined;
+    const fwData = social.frameworkData as Record<string, unknown> | null;
+    const formatted = fwData ? formatSocialRelevancy(fwData) : null;
+    if (formatted) {
+      ctx.socialRelevancy = formatted;
+    } else {
+      ctx.socialRelevancy = extractContentText(social.content) || social.description || undefined;
+    }
   }
 
   // Target audience from personas
@@ -840,6 +968,64 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       return parts.join(' ');
     });
     ctx.productsOverview = summaries.join(', ');
+  }
+
+  // Visual identity from brandstyle (only sections marked as saved for AI)
+  if (styleguide) {
+    // Colors
+    if (styleguide.colorsSavedForAi && styleguide.colors.length > 0) {
+      const colorsByCategory = new Map<string, typeof styleguide.colors>();
+      for (const c of styleguide.colors) {
+        const arr = colorsByCategory.get(c.category) ?? [];
+        arr.push(c);
+        colorsByCategory.set(c.category, arr);
+      }
+      const colorParts: string[] = [];
+      for (const [cat, colors] of colorsByCategory) {
+        const items = colors.map((c) => `${c.name} ${c.hex}`).join(', ');
+        colorParts.push(`${cat}: ${items}`);
+      }
+      ctx.brandColors = colorParts.join('; ');
+    }
+
+    // Typography
+    if (styleguide.typographySavedForAi) {
+      const typoParts: string[] = [];
+      if (styleguide.primaryFontName) typoParts.push(`Primary font: ${styleguide.primaryFontName}`);
+      if (Array.isArray(styleguide.typeScale) && styleguide.typeScale.length > 0) {
+        const scaleItems = (styleguide.typeScale as { level?: string; size?: string; weight?: string }[])
+          .filter((s) => s.level && s.size)
+          .map((s) => `${s.level} ${s.size}/${s.weight ?? 'regular'}`)
+          .join(', ');
+        if (scaleItems) typoParts.push(`Type scale: ${scaleItems}`);
+      }
+      if (typoParts.length > 0) ctx.brandTypography = typoParts.join('. ');
+    }
+
+    // Tone of Voice
+    if (styleguide.toneSavedForAi) {
+      const toneParts: string[] = [];
+      if (styleguide.contentGuidelines.length > 0) {
+        toneParts.push(`Content guidelines: ${styleguide.contentGuidelines.join('; ')}`);
+      }
+      if (styleguide.writingGuidelines.length > 0) {
+        toneParts.push(`Writing style: ${styleguide.writingGuidelines.join('; ')}`);
+      }
+      if (toneParts.length > 0) ctx.brandToneOfVoice = toneParts.join('. ');
+    }
+
+    // Imagery
+    if (styleguide.imagerySavedForAi) {
+      const imgParts: string[] = [];
+      const photoStyle = styleguide.photographyStyle as { mood?: string; subjects?: string; composition?: string } | null;
+      if (photoStyle?.mood) imgParts.push(`Photography mood: ${photoStyle.mood}`);
+      if (photoStyle?.subjects) imgParts.push(`Subjects: ${photoStyle.subjects}`);
+      if (photoStyle?.composition) imgParts.push(`Composition: ${photoStyle.composition}`);
+      if (styleguide.photographyGuidelines.length > 0) {
+        imgParts.push(`Guidelines: ${styleguide.photographyGuidelines.join('; ')}`);
+      }
+      if (imgParts.length > 0) ctx.brandImageryStyle = imgParts.join('. ');
+    }
   }
 
   // Competitive landscape from activated trends

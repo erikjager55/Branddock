@@ -347,7 +347,7 @@ async function main() {
     "brand-archetype":      { status: "READY",           coverage: 85,  ai: true,  workshop: true,  interview: true,  questionnaire: true },
     "transformative-goals": { status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
     "brand-personality":    { status: "IN_PROGRESS",     coverage: 40,  ai: true,  workshop: false, interview: false, questionnaire: false },
-    "brand-story":          { status: "IN_PROGRESS",     coverage: 50,  ai: true,  workshop: true,  interview: false, questionnaire: false },
+    "brand-story":          { status: "DRAFT",            coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
     "core-values":          { status: "NEEDS_ATTENTION", coverage: 70,  ai: true,  workshop: true,  interview: true,  questionnaire: false },
     "social-relevancy":     { status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
   };
@@ -561,13 +561,7 @@ async function main() {
       brandVoiceDescription: "Inspiring, knowledgeable, and forward-thinking. We speak with authority but remain approachable.",
       archetypeInAction: "We empower teams to build brands that matter — blending creativity with data-driven strategy.",
     }},
-    { slug: "brand-story", frameworkData: {
-      elevatorPitch: "Branddock makes professional brand strategy accessible to every organization through AI-powered tools and research-validated frameworks.",
-      theChallenge: "Mid-market companies lack access to enterprise-level brand strategy tools and expertise.",
-      theSolution: "An AI-powered platform that combines human creativity with data-driven analysis.",
-      theOutcome: "Organizations build authentic, consistent brands that drive meaningful impact.",
-      originStory: "Born from the frustration of seeing great brands held back by limited access to strategic tools.",
-    }},
+    { slug: "brand-story", frameworkData: {} },
     { slug: "core-values", frameworkData: {
       anchorValue1: { name: "Transparency", description: "We operate with radical openness in our processes, pricing, and communication." },
       anchorValue2: { name: "Innovation", description: "We continuously push the boundaries of what's possible in brand strategy." },
@@ -4218,8 +4212,8 @@ Respond only with valid JSON.`,
         { field: 'frameworkData.selfExpressiveBenefit', label: 'Self-Expressive Benefit', type: 'text' as const, extractionHint: 'Extract how the brand helps customers express who they are' },
         { field: 'frameworkData.discriminator', label: 'Discriminator', type: 'text' as const, extractionHint: 'Extract the single most compelling reason to choose this brand' },
         { field: 'frameworkData.audienceInsight', label: 'Audience Insight', type: 'text' as const, extractionHint: 'Extract the deep human truth that the brand uniquely addresses' },
-        { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'text' as const, extractionHint: 'Extract 3-5 concrete facts or evidence that prove the brand essence' },
-        { field: 'frameworkData.attributes', label: 'Attributes', type: 'text' as const, extractionHint: 'Extract 3-5 tangible brand characteristics or qualities' },
+        { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'array' as const, extractionHint: 'Extract 3-5 concrete facts or evidence that prove the brand essence as a JSON array of strings' },
+        { field: 'frameworkData.attributes', label: 'Attributes', type: 'array' as const, extractionHint: 'Extract 3-5 tangible brand characteristics or qualities as a JSON array of strings' },
       ],
       contextSources: ['brand_asset', 'product', 'persona'],
       isActive: true,
@@ -4437,8 +4431,8 @@ Respond only with valid JSON.`,
         { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the brand personality in one compelling paragraph' },
         { field: 'frameworkData.primaryDimension', label: 'Primary Dimension', type: 'text' as const, extractionHint: 'Identify the dominant Aaker dimension (sincerity, excitement, competence, sophistication, or ruggedness)' },
         { field: 'frameworkData.brandVoiceDescription', label: 'Brand Voice', type: 'text' as const, extractionHint: 'Describe the overall brand voice in 2-3 sentences' },
-        { field: 'frameworkData.wordsWeUse', label: 'Words We Use', type: 'text' as const, extractionHint: 'Extract 5-10 words or phrases the brand should use' },
-        { field: 'frameworkData.wordsWeAvoid', label: 'Words We Avoid', type: 'text' as const, extractionHint: 'Extract 5-10 words or phrases the brand should avoid' },
+        { field: 'frameworkData.wordsWeUse', label: 'Words We Use', type: 'array' as const, extractionHint: 'Extract 5-10 words or phrases the brand should use as a JSON array of strings' },
+        { field: 'frameworkData.wordsWeAvoid', label: 'Words We Avoid', type: 'array' as const, extractionHint: 'Extract 5-10 words or phrases the brand should avoid as a JSON array of strings' },
         { field: 'frameworkData.writingSample', label: 'Writing Sample', type: 'text' as const, extractionHint: 'Create a writing sample that demonstrates the brand voice' },
         { field: 'frameworkData.colorDirection', label: 'Color Direction', type: 'text' as const, extractionHint: 'Describe the color direction that matches the brand personality' },
         { field: 'frameworkData.typographyDirection', label: 'Typography Direction', type: 'text' as const, extractionHint: 'Describe the typography style that matches the brand personality' },
@@ -4448,6 +4442,150 @@ Respond only with valid JSON.`,
         { field: 'frameworkData.spectrumSliders', label: 'Spectrum Sliders', type: 'text' as const, extractionHint: 'Position the brand on each spectrum (1-7 scale) based on the exploration answers' },
         { field: 'frameworkData.toneDimensions', label: 'Tone Dimensions', type: 'text' as const, extractionHint: 'Position the brand on each NN/g tone dimension (1-7 scale)' },
         { field: 'frameworkData.channelTones', label: 'Channel Tones', type: 'text' as const, extractionHint: 'Describe the appropriate tone for each communication channel' },
+      ],
+      contextSources: ['brand_asset', 'product', 'persona'],
+      isActive: true,
+    },
+    {
+      itemType: 'brand_asset',
+      itemSubType: 'brand-story',
+      label: 'Brand Story — StoryBrand / Hero\'s Journey / ABT',
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      temperature: 0.4,
+      maxTokens: 2048,
+      systemPrompt: `You are a senior brand strategist specialized in brand storytelling, drawing on Donald Miller's StoryBrand SB7 framework, Joseph Campbell's Hero's Journey, Park Howell's ABT Framework, Nancy Duarte's Sparkline, and Jonah Sachs' empowerment marketing principles.
+
+You guide a structured exploration through 7 phases:
+1. Origin & Belief — uncover the founding narrative and core conviction
+2. World & Problem — map the three-layer problem (external, internal, philosophical) and stakes
+3. Brand as Guide — position the brand as guide with empathy and authority (never the hero)
+4. Transformation — paint the vivid before-and-after customer transformation
+5. Narrative Craft — build the ABT statement, identify themes and emotional territories
+6. Evidence & Proof — gather concrete proof points, values-in-action stories, and milestones
+7. Story Expressions — craft the elevator pitch and brand manifesto
+
+CRITICAL PRINCIPLES:
+- The customer is ALWAYS the hero. The brand is the guide/mentor.
+- Every story needs tension — without a clear problem, there is no narrative power.
+- The three-layer problem (StoryBrand) addresses rational, emotional, and moral dimensions.
+- Authenticity survives scrutiny (Godin) — every claim needs evidence.
+- The ABT (And/But/Therefore) is the simplest complete story structure.
+
+Be warm and conversational. Ask ONE question at a time. Build on previous answers.
+Respond in the same language as the user.
+
+{{brandContext}}
+
+{{customKnowledge}}
+
+{{assetKnowledge}}`,
+      dimensions: [
+        { key: 'origin_belief', title: 'Origin & Belief', icon: 'BookOpen', question: 'How did your brand come into being? Tell me about the founding moment — the personal conviction, the problem you witnessed, or the "aha moment" that made you say: this has to exist.' },
+        { key: 'world_problem', title: 'World & Problem', icon: 'Eye', question: 'What is the problem your brand exists to solve? Describe it on three levels: the visible/practical problem your customers face, how that problem makes them feel emotionally, and why solving it matters at a broader human or societal level.' },
+        { key: 'brand_as_guide', title: 'Brand as Guide', icon: 'Compass', question: 'How does your brand show up in the customer\'s story? Not as the hero, but as the guide — think Yoda to Luke Skywalker. How do you demonstrate that you understand their struggle (empathy) and that you have what it takes to help (authority)?' },
+        { key: 'transformation', title: 'Transformation', icon: 'Sparkles', question: 'What transformation does your customer experience through your brand? Paint a vivid picture: what does their life look like before engaging with you, and what does it look like after? Be specific and sensory.' },
+        { key: 'narrative_craft', title: 'Narrative Craft', icon: 'MessageCircle', question: 'If you had to distill your brand story into one paragraph using the format "We live in a world where [context]. But [problem/tension]. Therefore [your brand\'s role and impact]" — what would it be? Also: what 2-4 thematic territories does your brand own in people\'s minds?' },
+        { key: 'evidence_proof', title: 'Evidence & Proof', icon: 'Award', question: 'What concrete evidence makes your story credible and authentic? Think about: customer success stories, measurable outcomes, awards or recognition, key milestones in your brand\'s journey, and specific moments where your values were tested and proven through action.' },
+        { key: 'story_expression', title: 'Story Expressions', icon: 'FileText', question: 'How should your brand story be expressed across different contexts? Draft your 30-second elevator pitch — the version you\'d use at a networking event. Then describe your brand\'s emotional manifesto — the long-form, passionate version that could inspire employees and customers alike.' },
+      ],
+      feedbackPrompt: `Give warm, constructive feedback (2-3 sentences) on the answer.
+Phase: {{dimensionTitle}}
+Question: {{questionAsked}}
+Answer: {{userAnswer}}
+
+Guidelines:
+- For Origin & Belief: validate authenticity and emotional resonance of the founding narrative
+- For World & Problem: check all three StoryBrand layers (external/internal/philosophical) are addressed
+- For Brand as Guide: ensure the brand is positioned as guide (not hero), with both empathy and authority
+- For Transformation: evaluate specificity and sensory detail of the before/after picture
+- For Narrative Craft: check ABT structure (And/But/Therefore) and clarity of thematic territories
+- For Evidence & Proof: assess credibility and specificity of proof points and values-in-action stories
+- For Story Expressions: evaluate elevator pitch clarity and manifesto emotional impact
+
+Do not ask follow-up questions. Respond in the same language as the user.`,
+      reportPrompt: `Generate a Brand Story report based on the StoryBrand/Hero's Journey exploration.
+Brand Asset: {{itemName}}
+{{itemDescription}}
+
+Answers per dimension:
+{{allAnswers}}
+
+Brand context:
+{{brandContext}}
+
+{{customKnowledge}}
+
+{{assetKnowledge}}
+
+Generate JSON:
+{
+  "executiveSummary": "2-3 paragraph strategic summary of the brand story",
+  "findings": [
+    { "title": "...", "description": "...", "dimension": "origin_belief | world_problem | brand_as_guide | transformation | narrative_craft | evidence_proof | story_expression" }
+  ],
+  "recommendations": ["..."],
+  "fieldSuggestions": [
+    { "field": "description", "label": "Description", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.originStory", "label": "Origin Story", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.founderMotivation", "label": "Founder Motivation", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.coreBeliefStatement", "label": "Core Belief", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.worldContext", "label": "World Context", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.customerExternalProblem", "label": "External Problem", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.customerInternalProblem", "label": "Internal Problem", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.philosophicalProblem", "label": "Philosophical Problem", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.stakesCostOfInaction", "label": "Stakes", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.brandRole", "label": "Brand Role", "suggestedValue": "Guide | Mentor | Enabler | Partner", "reason": "..." },
+    { "field": "frameworkData.empathyStatement", "label": "Empathy Statement", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.authorityCredentials", "label": "Authority Credentials", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.transformationPromise", "label": "Transformation Promise", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.customerSuccessVision", "label": "Customer Success Vision", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.abtStatement", "label": "ABT Statement", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.brandThemes", "label": "Brand Themes", "suggestedValue": ["..."], "reason": "..." },
+    { "field": "frameworkData.emotionalTerritory", "label": "Emotional Territory", "suggestedValue": ["..."], "reason": "..." },
+    { "field": "frameworkData.keyNarrativeMessages", "label": "Key Messages", "suggestedValue": ["..."], "reason": "..." },
+    { "field": "frameworkData.narrativeArc", "label": "Narrative Arc", "suggestedValue": "Hero's Journey | Sparkline | Rags to Riches | Overcoming the Monster | Quest", "reason": "..." },
+    { "field": "frameworkData.proofPoints", "label": "Proof Points", "suggestedValue": ["..."], "reason": "..." },
+    { "field": "frameworkData.valuesInAction", "label": "Values in Action", "suggestedValue": ["..."], "reason": "..." },
+    { "field": "frameworkData.brandMilestones", "label": "Brand Milestones", "suggestedValue": ["..."], "reason": "..." },
+    { "field": "frameworkData.elevatorPitch", "label": "Elevator Pitch", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.manifestoText", "label": "Brand Manifesto", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.audienceAdaptations.customers", "label": "Audience: Customers", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.audienceAdaptations.investors", "label": "Audience: Investors", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.audienceAdaptations.employees", "label": "Audience: Employees", "suggestedValue": "...", "reason": "..." },
+    { "field": "frameworkData.audienceAdaptations.partners", "label": "Audience: Partners", "suggestedValue": "...", "reason": "..." }
+  ]
+}
+Respond only with valid JSON.`,
+      fieldSuggestionsConfig: [
+        { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the brand story in one compelling paragraph' },
+        { field: 'frameworkData.originStory', label: 'Origin Story', type: 'text' as const, extractionHint: 'Extract the founding narrative' },
+        { field: 'frameworkData.founderMotivation', label: 'Founder Motivation', type: 'text' as const, extractionHint: 'Extract the personal drive behind the founder(s)' },
+        { field: 'frameworkData.coreBeliefStatement', label: 'Core Belief', type: 'text' as const, extractionHint: 'Distill the fundamental belief into one sentence' },
+        { field: 'frameworkData.worldContext', label: 'World Context', type: 'text' as const, extractionHint: 'Describe external forces making the brand relevant' },
+        { field: 'frameworkData.customerExternalProblem', label: 'External Problem', type: 'text' as const, extractionHint: 'Extract the visible customer problem' },
+        { field: 'frameworkData.customerInternalProblem', label: 'Internal Problem', type: 'text' as const, extractionHint: 'Extract the emotional customer experience' },
+        { field: 'frameworkData.philosophicalProblem', label: 'Philosophical Problem', type: 'text' as const, extractionHint: 'Extract why this matters on a human level' },
+        { field: 'frameworkData.stakesCostOfInaction', label: 'Stakes', type: 'text' as const, extractionHint: 'Describe consequences of inaction' },
+        { field: 'frameworkData.brandRole', label: 'Brand Role', type: 'text' as const, extractionHint: 'Identify the brand role: Guide, Mentor, Enabler, or Partner' },
+        { field: 'frameworkData.empathyStatement', label: 'Empathy Statement', type: 'text' as const, extractionHint: 'Craft a statement showing the brand understands the struggle' },
+        { field: 'frameworkData.authorityCredentials', label: 'Authority', type: 'text' as const, extractionHint: 'Extract what gives the brand credibility' },
+        { field: 'frameworkData.transformationPromise', label: 'Transformation Promise', type: 'text' as const, extractionHint: 'Describe the before vs. after change' },
+        { field: 'frameworkData.customerSuccessVision', label: 'Success Vision', type: 'text' as const, extractionHint: 'Paint a vivid picture of life after transformation' },
+        { field: 'frameworkData.abtStatement', label: 'ABT Statement', type: 'text' as const, extractionHint: 'Craft the And/But/Therefore summary' },
+        { field: 'frameworkData.brandThemes', label: 'Brand Themes', type: 'array' as const, extractionHint: 'Extract 2-4 thematic territories as a JSON array of strings' },
+        { field: 'frameworkData.emotionalTerritory', label: 'Emotional Territory', type: 'array' as const, extractionHint: 'Extract the emotions the story evokes as a JSON array of strings' },
+        { field: 'frameworkData.keyNarrativeMessages', label: 'Key Messages', type: 'array' as const, extractionHint: 'Extract 3-5 recurring narrative messages as a JSON array of strings' },
+        { field: 'frameworkData.narrativeArc', label: 'Narrative Arc', type: 'text' as const, extractionHint: 'Identify the narrative structure type' },
+        { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'array' as const, extractionHint: 'Extract 3-5 concrete proof points as a JSON array of strings' },
+        { field: 'frameworkData.valuesInAction', label: 'Values in Action', type: 'array' as const, extractionHint: 'Extract stories where values were proven through action as a JSON array of strings' },
+        { field: 'frameworkData.brandMilestones', label: 'Brand Milestones', type: 'array' as const, extractionHint: 'Extract key moments in the brand journey as a JSON array of strings' },
+        { field: 'frameworkData.elevatorPitch', label: 'Elevator Pitch', type: 'text' as const, extractionHint: 'Craft a compelling 30-second elevator pitch' },
+        { field: 'frameworkData.manifestoText', label: 'Brand Manifesto', type: 'text' as const, extractionHint: 'Write an emotionally charged brand manifesto' },
+        { field: 'frameworkData.audienceAdaptations.customers', label: 'Audience: Customers', type: 'text' as const, extractionHint: 'How the story adapts for customers — focus on empowerment and transformation' },
+        { field: 'frameworkData.audienceAdaptations.investors', label: 'Audience: Investors', type: 'text' as const, extractionHint: 'How the story adapts for investors — focus on market opportunity and traction' },
+        { field: 'frameworkData.audienceAdaptations.employees', label: 'Audience: Employees', type: 'text' as const, extractionHint: 'How the story adapts for employees — focus on purpose and impact' },
+        { field: 'frameworkData.audienceAdaptations.partners', label: 'Audience: Partners', type: 'text' as const, extractionHint: 'How the story adapts for partners — focus on methodology and integration' },
       ],
       contextSources: ['brand_asset', 'product', 'persona'],
       isActive: true,

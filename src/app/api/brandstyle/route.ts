@@ -51,6 +51,7 @@ const updateSchema = z.object({
   photographyGuidelines: z.array(z.string()).optional(),
   illustrationGuidelines: z.array(z.string()).optional(),
   imageryDonts: z.array(z.string()).optional(),
+  brandImages: z.any().optional(),
 });
 
 export async function PATCH(request: NextRequest) {

@@ -331,10 +331,13 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
   }
   if (itemType === 'brand_asset' && itemSubType === 'brand-story') {
     return [
-      { key: 'origin', title: 'Origin Story', icon: 'BookOpen', question: 'How did your brand begin? What problem or moment sparked its creation?' },
-      { key: 'struggle', title: 'Challenge & Struggle', icon: 'Mountain', question: 'What challenges has your brand overcome? What makes the journey compelling?' },
-      { key: 'turning_point', title: 'Turning Point', icon: 'Star', question: 'What was the defining moment that shaped who your brand is today?' },
-      { key: 'future_chapter', title: 'The Next Chapter', icon: 'ArrowRight', question: 'What is the next chapter of your brand story? Where is the narrative heading?' },
+      { key: 'origin_belief', title: 'Origin & Belief', icon: 'BookOpen', question: 'How did your brand come into being? Tell me about the founding moment — the personal conviction, the problem you witnessed, or the "aha moment" that made you say: this has to exist.' },
+      { key: 'world_problem', title: 'World & Problem', icon: 'Eye', question: 'What is the problem your brand exists to solve? Describe it on three levels: the visible/practical problem your customers face, how that problem makes them feel emotionally, and why solving it matters at a broader human or societal level.' },
+      { key: 'brand_as_guide', title: 'Brand as Guide', icon: 'Compass', question: 'How does your brand show up in the customer\'s story? Not as the hero, but as the guide — think Yoda to Luke Skywalker. How do you demonstrate that you understand their struggle (empathy) and that you have what it takes to help (authority)?' },
+      { key: 'transformation', title: 'Transformation', icon: 'Sparkles', question: 'What transformation does your customer experience through your brand? Paint a vivid picture: what does their life look like before engaging with you, and what does it look like after? Be specific and sensory.' },
+      { key: 'narrative_craft', title: 'Narrative Craft', icon: 'MessageCircle', question: 'If you had to distill your brand story into one paragraph using the format "We live in a world where [context]. But [problem/tension]. Therefore [your brand\'s role and impact]" — what would it be? Also: what 2-4 thematic territories does your brand own in people\'s minds?' },
+      { key: 'evidence_proof', title: 'Evidence & Proof', icon: 'Award', question: 'What concrete evidence makes your story credible and authentic? Think about: customer success stories, measurable outcomes, awards or recognition, key milestones in your brand\'s journey, and specific moments where your values were tested and proven through action.' },
+      { key: 'story_expression', title: 'Story Expressions', icon: 'FileText', question: 'How should your brand story be expressed across different contexts? Draft your 30-second elevator pitch — the version you\'d use at a networking event. Then describe your brand\'s emotional manifesto — the long-form, passionate version that could inspire employees and customers alike.' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'brandhouse-values') {
@@ -370,8 +373,8 @@ function getDefaultFieldSuggestionsConfig(
       { field: 'frameworkData.spectrumSliders', label: 'Spectrum Sliders', type: 'text' as const, extractionHint: 'Position the brand on each spectrum (1-7 scale) based on the exploration answers' },
       { field: 'frameworkData.toneDimensions', label: 'Tone Dimensions', type: 'text' as const, extractionHint: 'Position the brand on each NN/g tone dimension (1-7 scale)' },
       { field: 'frameworkData.brandVoiceDescription', label: 'Brand Voice', type: 'text' as const, extractionHint: 'Describe the overall brand voice in 2-3 sentences' },
-      { field: 'frameworkData.wordsWeUse', label: 'Words We Use', type: 'text' as const, extractionHint: 'Extract 5-10 words or phrases the brand should use' },
-      { field: 'frameworkData.wordsWeAvoid', label: 'Words We Avoid', type: 'text' as const, extractionHint: 'Extract 5-10 words or phrases the brand should avoid' },
+      { field: 'frameworkData.wordsWeUse', label: 'Words We Use', type: 'array' as const, extractionHint: 'Extract 5-10 words or phrases the brand should use as a JSON array of strings' },
+      { field: 'frameworkData.wordsWeAvoid', label: 'Words We Avoid', type: 'array' as const, extractionHint: 'Extract 5-10 words or phrases the brand should avoid as a JSON array of strings' },
       { field: 'frameworkData.writingSample', label: 'Writing Sample', type: 'text' as const, extractionHint: 'Create a writing sample that demonstrates the brand voice' },
       { field: 'frameworkData.channelTones', label: 'Channel Tones', type: 'text' as const, extractionHint: 'Describe the appropriate tone for each communication channel' },
       { field: 'frameworkData.colorDirection', label: 'Color Direction', type: 'text' as const, extractionHint: 'Describe the color direction that matches the brand personality' },
@@ -390,11 +393,11 @@ function getDefaultFieldSuggestionsConfig(
       { field: 'frameworkData.giftTalent', label: 'Gift / Talent', type: 'text' as const, extractionHint: 'Extract the unique gift or talent the brand brings' },
       { field: 'frameworkData.shadowWeakness', label: 'Shadow / Weakness', type: 'text' as const, extractionHint: 'Identify the shadow side of the archetype' },
       { field: 'frameworkData.brandVoiceDescription', label: 'Brand Voice', type: 'text' as const, extractionHint: 'Describe the brand voice in 2-3 sentences' },
-      { field: 'frameworkData.voiceAdjectives', label: 'Voice Adjectives', type: 'text' as const, extractionHint: 'Extract 3-5 adjectives that describe the brand voice' },
+      { field: 'frameworkData.voiceAdjectives', label: 'Voice Adjectives', type: 'array' as const, extractionHint: 'Extract 3-5 adjectives that describe the brand voice as a JSON array of strings' },
       { field: 'frameworkData.colorDirection', label: 'Color Direction', type: 'text' as const, extractionHint: 'Describe the color direction for the archetype' },
       { field: 'frameworkData.typographyDirection', label: 'Typography Direction', type: 'text' as const, extractionHint: 'Suggest the typography style based on the archetype' },
       { field: 'frameworkData.imageryStyle', label: 'Imagery Style', type: 'text' as const, extractionHint: 'Describe the imagery style for the archetype' },
-      { field: 'frameworkData.brandExamples', label: 'Brand Examples', type: 'text' as const, extractionHint: 'List 3-5 reference brands that share this archetype' },
+      { field: 'frameworkData.brandExamples', label: 'Brand Examples', type: 'array' as const, extractionHint: 'List 3-5 reference brands that share this archetype as a JSON array of strings' },
       { field: 'frameworkData.archetypeInAction', label: 'Archetype in Action', type: 'text' as const, extractionHint: 'Describe how the archetype manifests across the brand experience' },
       { field: 'frameworkData.competitiveLandscape', label: 'Competitive Landscape', type: 'text' as const, extractionHint: 'Analyze the competitive landscape from an archetype perspective' },
       { field: 'frameworkData.contentStrategy', label: 'Content Strategy', type: 'text' as const, extractionHint: 'Describe the content strategy for the archetype' },
@@ -412,8 +415,8 @@ function getDefaultFieldSuggestionsConfig(
       { field: 'frameworkData.coreCustomerNeed', label: 'Core Need', type: 'text' as const, extractionHint: 'Extract the core customer need' },
       { field: 'frameworkData.differentiator', label: 'Differentiator', type: 'text' as const, extractionHint: 'Extract what makes the promise unique' },
       { field: 'frameworkData.onlynessStatement', label: 'Onlyness Statement', type: 'text' as const, extractionHint: 'Craft the "Only [brand] can..." statement' },
-      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'text' as const, extractionHint: 'Extract 3-5 concrete proof points' },
-      { field: 'frameworkData.measurableOutcomes', label: 'Measurable Outcomes', type: 'text' as const, extractionHint: 'Extract 3-5 measurable outcomes that prove the promise is kept' },
+      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'array' as const, extractionHint: 'Extract 3-5 concrete proof points as a JSON array of strings' },
+      { field: 'frameworkData.measurableOutcomes', label: 'Measurable Outcomes', type: 'array' as const, extractionHint: 'Extract 3-5 measurable outcomes that prove the promise is kept as a JSON array of strings' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'mission-statement') {
@@ -429,7 +432,7 @@ function getDefaultFieldSuggestionsConfig(
       { field: 'frameworkData.timeHorizon', label: 'Time Horizon', type: 'text' as const, extractionHint: 'Suggest the appropriate time horizon (3/5/10/15+ years or Aspirational)' },
       { field: 'frameworkData.boldAspiration', label: 'Bold Aspiration (BHAG)', type: 'text' as const, extractionHint: 'Craft a Big Hairy Audacious Goal that stretches beyond current capability' },
       { field: 'frameworkData.desiredFutureState', label: 'Desired Future State', type: 'text' as const, extractionHint: 'Paint a vivid description of what success looks like' },
-      { field: 'frameworkData.successIndicators', label: 'Success Indicators', type: 'text' as const, extractionHint: 'Extract 3-5 concrete measurable indicators of vision progress' },
+      { field: 'frameworkData.successIndicators', label: 'Success Indicators', type: 'array' as const, extractionHint: 'Extract 3-5 concrete measurable indicators of vision progress as a JSON array of strings' },
       { field: 'frameworkData.stakeholderBenefit', label: 'Stakeholder Benefit', type: 'text' as const, extractionHint: 'Describe who benefits from the vision and how' },
       { field: 'frameworkData.valuesAlignment', label: 'Values Alignment', type: 'text' as const, extractionHint: 'Describe how mission/vision reinforce core values' },
       { field: 'frameworkData.missionVisionTension', label: 'Mission-Vision Tension', type: 'text' as const, extractionHint: 'Extract the creative tension between present mission and future vision, including key milestones' },
@@ -441,6 +444,46 @@ function getDefaultFieldSuggestionsConfig(
       { field: 'frameworkData.massiveTransformativePurpose', label: 'Massive Transformative Purpose', type: 'text' as const, extractionHint: 'Craft the MTP statement' },
       { field: 'frameworkData.mtpNarrative', label: 'MTP Narrative', type: 'text' as const, extractionHint: 'Write the MTP narrative' },
       { field: 'frameworkData.goals', label: 'Transformative Goals', type: 'text' as const, extractionHint: 'Extract 1-5 transformative goals with title, description, domain, timeframe' },
+    ];
+  }
+  if (itemType === 'brand_asset' && itemSubType === 'brand-story') {
+    return [
+      { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the brand story in one compelling paragraph' },
+      // Card 1: Origin & Belief
+      { field: 'frameworkData.originStory', label: 'Origin Story', type: 'text' as const, extractionHint: 'Extract the founding narrative — what moment or conviction started the brand' },
+      { field: 'frameworkData.founderMotivation', label: 'Founder Motivation', type: 'text' as const, extractionHint: 'Extract the personal drive behind the founder(s)' },
+      { field: 'frameworkData.coreBeliefStatement', label: 'Core Belief', type: 'text' as const, extractionHint: 'Distill the fundamental belief the brand is built on into one sentence' },
+      // Card 2: Problem
+      { field: 'frameworkData.worldContext', label: 'World Context', type: 'text' as const, extractionHint: 'Describe the external forces making the brand relevant now' },
+      { field: 'frameworkData.customerExternalProblem', label: 'External Problem', type: 'text' as const, extractionHint: 'Extract the visible, tangible customer problem' },
+      { field: 'frameworkData.customerInternalProblem', label: 'Internal Problem', type: 'text' as const, extractionHint: 'Extract the emotional experience of the customer' },
+      { field: 'frameworkData.philosophicalProblem', label: 'Philosophical Problem', type: 'text' as const, extractionHint: 'Extract why this problem matters on a human or societal level' },
+      { field: 'frameworkData.stakesCostOfInaction', label: 'Stakes', type: 'text' as const, extractionHint: 'Describe the consequences if the problem is not solved' },
+      // Card 3: Brand as Guide
+      { field: 'frameworkData.brandRole', label: 'Brand Role', type: 'text' as const, extractionHint: 'Identify the brand role: Guide, Mentor, Enabler, or Partner' },
+      { field: 'frameworkData.empathyStatement', label: 'Empathy Statement', type: 'text' as const, extractionHint: 'Craft a statement showing the brand understands the customer struggle' },
+      { field: 'frameworkData.authorityCredentials', label: 'Authority Credentials', type: 'text' as const, extractionHint: 'Extract what gives the brand credibility to help' },
+      // Card 4: Transformation
+      { field: 'frameworkData.transformationPromise', label: 'Transformation Promise', type: 'text' as const, extractionHint: 'Describe the specific before vs. after change customers experience' },
+      { field: 'frameworkData.customerSuccessVision', label: 'Customer Success Vision', type: 'text' as const, extractionHint: 'Paint a vivid picture of life after transformation' },
+      // Card 5: Narrative Toolkit
+      { field: 'frameworkData.abtStatement', label: 'ABT Statement', type: 'text' as const, extractionHint: 'Craft the And/But/Therefore summary paragraph' },
+      { field: 'frameworkData.brandThemes', label: 'Brand Themes', type: 'array' as const, extractionHint: 'Extract 2-4 thematic territories the brand owns as a JSON array of strings' },
+      { field: 'frameworkData.emotionalTerritory', label: 'Emotional Territory', type: 'array' as const, extractionHint: 'Extract the specific emotions the brand story evokes as a JSON array of strings' },
+      { field: 'frameworkData.keyNarrativeMessages', label: 'Key Messages', type: 'array' as const, extractionHint: 'Extract 3-5 recurring narrative messages as a JSON array of strings' },
+      { field: 'frameworkData.narrativeArc', label: 'Narrative Arc', type: 'text' as const, extractionHint: 'Identify the narrative structure: Hero\'s Journey, Sparkline, Rags to Riches, Overcoming the Monster, or Quest' },
+      // Card 6: Evidence
+      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'array' as const, extractionHint: 'Extract 3-5 concrete proof points as a JSON array of strings' },
+      { field: 'frameworkData.valuesInAction', label: 'Values in Action', type: 'array' as const, extractionHint: 'Extract stories where values were proven through action as a JSON array of strings' },
+      { field: 'frameworkData.brandMilestones', label: 'Brand Milestones', type: 'array' as const, extractionHint: 'Extract key moments in the brand journey as a JSON array of strings' },
+      // Card 7: Expressions
+      { field: 'frameworkData.elevatorPitch', label: 'Elevator Pitch', type: 'text' as const, extractionHint: 'Craft a compelling 30-second elevator pitch' },
+      { field: 'frameworkData.manifestoText', label: 'Brand Manifesto', type: 'text' as const, extractionHint: 'Write an emotionally charged brand manifesto (3-5 paragraphs)' },
+      // Card 7: Audience Adaptations
+      { field: 'frameworkData.audienceAdaptations.customers', label: 'Audience: Customers', type: 'text' as const, extractionHint: 'How the story adapts for customers — focus on empowerment and transformation' },
+      { field: 'frameworkData.audienceAdaptations.investors', label: 'Audience: Investors', type: 'text' as const, extractionHint: 'How the story adapts for investors — focus on market opportunity and traction' },
+      { field: 'frameworkData.audienceAdaptations.employees', label: 'Audience: Employees', type: 'text' as const, extractionHint: 'How the story adapts for employees — focus on purpose and impact' },
+      { field: 'frameworkData.audienceAdaptations.partners', label: 'Audience: Partners', type: 'text' as const, extractionHint: 'How the story adapts for partners — focus on methodology and integration' },
     ];
   }
   // Other asset types: return null (dynamic field mapping is sufficient for simple string fields)

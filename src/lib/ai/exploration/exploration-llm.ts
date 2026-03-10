@@ -337,8 +337,8 @@ ${fieldList}
 - Findings: 5 key findings with title + description (1-2 sentences each)
 - Recommendations: 5 strategic recommendations (1 sentence each)
 - Field suggestions: suggest a value for EVERY field listed in "Updatable Fields" above. For fields that are empty, provide a value based on the conversation. For fields that already have a value, suggest an improved or refined version if the conversation reveals better content. Include the field key, label, suggested value, and a brief reason for each.
-- For string[] fields, provide an array of strings as suggestedValue
-- For string fields, provide a single string as suggestedValue
+- CRITICAL: For fields with type "array", you MUST provide suggestedValue as a JSON array of strings, e.g. ["item1", "item2", "item3"]. NEVER return a comma-separated string for array fields.
+- For fields with type "text" or "string", provide a single string as suggestedValue
 - For object fields (like scores or slider positions), provide a JSON object as suggestedValue
 - Respond ONLY with valid JSON, no markdown code blocks, no extra text`;
 

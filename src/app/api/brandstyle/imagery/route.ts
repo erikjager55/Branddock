@@ -21,6 +21,7 @@ export async function GET() {
         illustrationGuidelines: true,
         imageryDonts: true,
         imagerySavedForAi: true,
+        brandImages: true,
       },
     });
 
@@ -43,6 +44,7 @@ const updateImagerySchema = z.object({
   photographyGuidelines: z.array(z.string()).optional(),
   illustrationGuidelines: z.array(z.string()).optional(),
   imageryDonts: z.array(z.string()).optional(),
+  brandImages: z.any().optional(),
 });
 
 export async function PATCH(request: NextRequest) {
@@ -67,6 +69,7 @@ export async function PATCH(request: NextRequest) {
         illustrationGuidelines: true,
         imageryDonts: true,
         imagerySavedForAi: true,
+        brandImages: true,
       },
     });
 

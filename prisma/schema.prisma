@@ -1275,6 +1275,7 @@ model BrandStyleguide {
   sourceFileName        String?
   analysisJobId         String?
   analysisStatus        AnalysisStatus    @default(PENDING)
+  errorMessage          String?           @db.Text
 
   // Logo
   logoVariations        Json?
@@ -1305,6 +1306,7 @@ model BrandStyleguide {
   illustrationGuidelines String[]
   imageryDonts          String[]
   imagerySavedForAi     Boolean           @default(false)
+  brandImages           Json?             // Array<{ url, alt, context }>
 
   isLocked              Boolean           @default(false)
   lockedAt              DateTime?

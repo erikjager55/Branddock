@@ -2,6 +2,18 @@
 // Color conversion utilities
 // =============================================================
 
+/** Normalize a hex color to 6-digit uppercase format */
+export function normalizeHex(hex: string): string | null {
+  const clean = hex.replace('#', '').trim();
+  if (clean.length === 3) {
+    return `#${clean[0]}${clean[0]}${clean[1]}${clean[1]}${clean[2]}${clean[2]}`.toUpperCase();
+  }
+  if (clean.length === 6) {
+    return `#${clean}`.toUpperCase();
+  }
+  return null;
+}
+
 export function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
   const match = hex.replace("#", "").match(/^([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})([0-9A-Fa-f]{2})$/);
   if (!match) return null;

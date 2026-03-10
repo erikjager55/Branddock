@@ -29,6 +29,7 @@ export interface TypeScaleLevel {
   size: string;
   lineHeight: string;
   weight: string;
+  color?: string;
   letterSpacing?: string;
   usage?: string;
 }
@@ -43,6 +44,12 @@ export interface PhotographyStyle {
   subjects?: string;
   composition?: string;
   style?: string;
+}
+
+export interface BrandImage {
+  url: string;
+  alt: string | null;
+  context: 'hero' | 'lifestyle' | 'product' | 'team' | 'general';
 }
 
 export interface BrandStyleguide {
@@ -83,6 +90,7 @@ export interface BrandStyleguide {
   illustrationGuidelines: string[];
   imageryDonts: string[];
   imagerySavedForAi: boolean;
+  brandImages: BrandImage[] | null;
 
   // Lock
   isLocked: boolean;
@@ -143,6 +151,7 @@ export interface ImagerySection {
   illustrationGuidelines: string[];
   imageryDonts: string[];
   imagerySavedForAi: boolean;
+  brandImages: BrandImage[] | null;
 }
 
 export interface AiContextResponse {

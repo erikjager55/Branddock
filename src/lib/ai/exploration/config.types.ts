@@ -11,7 +11,7 @@ export interface StoredDimension {
 export interface StoredFieldSuggestionConfig {
   field: string;             // "content.why" | "frameworkData.pillars.mens.description"
   label: string;             // UI label
-  type: 'text' | 'select';  // Input type
+  type: 'text' | 'select' | 'array';  // Input type ('array' = string[])
   options?: string[];        // For select: ["high", "medium", "low"]
   extractionHint: string;    // Instruction for AI: "Extract the user's stated purpose..."
 }

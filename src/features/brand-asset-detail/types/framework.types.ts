@@ -308,14 +308,61 @@ export interface BrandPersonalityFrameworkData {
   imageryDirection: string;
 }
 
-// ─── 10. Brand Story / Elevator Pitch (StoryBrand) ──────────
+// ─── 10. Brand Story (StoryBrand / Hero's Journey / ABT) ────
+
+export interface AudienceAdaptations {
+  customers: string;
+  investors: string;
+  employees: string;
+  partners: string;
+}
 
 export interface BrandStoryFrameworkData {
-  elevatorPitch: string;
-  theChallenge: string;
-  theSolution: string;
-  theOutcome: string;
-  originStory: string;
+  // Card 1: Origin & Belief
+  originStory: string;             // Founding narrative
+  founderMotivation: string;       // Personal driver of the founder(s)
+  coreBeliefStatement: string;     // The fundamental belief the brand is built on
+
+  // Card 2: The World We See — Context & Problem
+  worldContext: string;            // External forces making the brand relevant now
+  customerExternalProblem: string; // Visible, tangible customer problem
+  customerInternalProblem: string; // Emotional experience — frustration, doubt, fear
+  philosophicalProblem: string;    // Why it matters on a human/societal level
+  stakesCostOfInaction: string;    // What's at stake if the problem isn't solved
+
+  // Card 3: The Brand as Guide
+  brandRole: string;               // Guide / Mentor / Enabler / Partner
+  empathyStatement: string;        // How the brand shows understanding
+  authorityCredentials: string;    // What gives the brand credibility
+
+  // Card 4: Transformation & Resolution
+  transformationPromise: string;   // The specific before → after change
+  customerSuccessVision: string;   // Vivid description of life after transformation
+
+  // Card 5: Narrative Toolkit
+  abtStatement: string;            // And/But/Therefore summary (Park Howell)
+  brandThemes: string[];           // 2-4 thematic territories the brand "owns"
+  emotionalTerritory: string[];    // Specific emotions the story evokes
+  keyNarrativeMessages: string[];  // 3-5 recurring key messages
+  narrativeArc: string;            // Hero's Journey / Sparkline / Rags to Riches / Overcoming the Monster / Quest
+
+  // Card 6: Evidence & Milestones
+  proofPoints: string[];           // Concrete evidence supporting the story
+  valuesInAction: string[];        // Stories where values were demonstrated through action
+  brandMilestones: string[];       // Key moments in the brand's journey
+
+  // Card 7: Story Expressions
+  elevatorPitch: string;           // 30-second version
+  manifestoText: string;           // Long-form emotional brand manifesto
+  audienceAdaptations: AudienceAdaptations; // Per-audience story notes
+
+  // Legacy fields (mapped for backward compatibility)
+  /** @deprecated Use customerExternalProblem instead */
+  theChallenge?: string;
+  /** @deprecated Use brandRole + empathyStatement instead */
+  theSolution?: string;
+  /** @deprecated Use transformationPromise instead */
+  theOutcome?: string;
 }
 
 // ─── 11. Core Values (BrandHouse© Model) ────────────────────

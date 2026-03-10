@@ -143,6 +143,9 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                   <th className="text-left py-2 pr-4 text-xs font-medium text-gray-500 uppercase">
                     Line Height
                   </th>
+                  <th className="text-left py-2 pr-4 text-xs font-medium text-gray-500 uppercase">
+                    Color
+                  </th>
                   <th className="text-left py-2 text-xs font-medium text-gray-500 uppercase">
                     Usage
                   </th>
@@ -174,6 +177,21 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                     </td>
                     <td className="py-3 pr-4 font-mono text-xs text-gray-600">
                       {level.lineHeight}
+                    </td>
+                    <td className="py-3 pr-4">
+                      {level.color ? (
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="w-4 h-4 rounded border border-gray-200 flex-shrink-0"
+                            style={{ backgroundColor: level.color }}
+                          />
+                          <span className="font-mono text-xs text-gray-600">
+                            {level.color}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
                     </td>
                     <td className="py-3 text-xs text-gray-500">
                       {level.usage ?? "—"}

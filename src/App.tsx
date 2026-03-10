@@ -481,15 +481,16 @@ function AppContent() {
 
       // 🎨 Brandstyle Analyzer + Styleguide
       case 'brandstyle':
-        return (
-          <BrandstyleAnalyzerPage
-            onNavigateToGuide={() => handleSetActiveSection('brandstyle-guide')}
-          />
-        );
       case 'brandstyle-guide':
         return (
           <BrandStyleguidePage
-            onNavigateToAnalyzer={() => handleSetActiveSection('brandstyle')}
+            onNavigateToAnalyzer={() => handleSetActiveSection('brandstyle-analyze')}
+          />
+        );
+      case 'brandstyle-analyze':
+        return (
+          <BrandstyleAnalyzerPage
+            onNavigateToGuide={() => handleSetActiveSection('brandstyle')}
           />
         );
       

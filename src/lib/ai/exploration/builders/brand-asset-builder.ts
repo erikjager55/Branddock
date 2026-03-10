@@ -277,10 +277,11 @@ export const brandAssetItemConfig: ItemTypeConfig = {
       for (const fsc of fieldSuggestionsConfig) {
         const existingIdx = fieldMapping.findIndex(f => f.field === fsc.field);
         if (existingIdx !== -1) {
-          // Field already exists — enrich with extractionHint and prefer config-curated label
+          // Field already exists — enrich with extractionHint, prefer config-curated label and type
           fieldMapping[existingIdx] = {
             ...fieldMapping[existingIdx],
             label: fsc.label,
+            type: fsc.type === 'select' ? 'string' : fsc.type,
             ...(fsc.extractionHint ? { extractionHint: fsc.extractionHint } : {}),
           };
           continue;

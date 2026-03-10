@@ -2,6 +2,47 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 
+/** Sanitize error messages to avoid leaking internal details to the frontend. */
+function sanitizeErrorMessage(raw: string | null): string {
+  if (!raw) return "Analysis failed. Please try again.";
+
+  // Scrape/parse errors — the suffix after the prefix may contain useful user context
+  // (e.g., "Failed to fetch URL: Server returned 403") but could also leak internal details.
+  // Safe approach: return the prefix only, with a generic suffix.
+  const scrapePrefixes: Array<{ prefix: string; userMessage: string }> = [
+    { prefix: "Failed to fetch URL", userMessage: "Failed to fetch URL. The website may be unavailable or blocking automated access." },
+    { prefix: "Failed to parse PDF", userMessage: "Failed to parse the PDF. The file may be corrupted or password-protected." },
+  ];
+
+  for (const { prefix, userMessage } of scrapePrefixes) {
+    if (raw.startsWith(prefix)) return userMessage;
+  }
+
+  // Messages that are fully user-safe as-is (no appended err.message)
+  const safePrefixes = [
+    "PDF contains too little text",
+    "AI response missing colors",
+  ];
+
+  for (const prefix of safePrefixes) {
+    if (raw.startsWith(prefix)) return raw;
+  }
+
+  // AI analysis errors — strip internal details (could contain API keys, org IDs, rate limit info)
+  const aiPrefixes = [
+    "Visual identity analysis failed",
+    "Voice & imagery analysis failed",
+    "AI analysis failed",
+  ];
+
+  for (const prefix of aiPrefixes) {
+    if (raw.startsWith(prefix)) return "AI analysis encountered an error. Please try again.";
+  }
+
+  // Generic unexpected errors — don't leak internals
+  return "Analysis failed. Please try again.";
+}
+
 const ANALYSIS_STEPS = [
   "Scanning website structure",
   "Extracting color palette",
@@ -38,7 +79,7 @@ export async function GET(
 
     const styleguide = await prisma.brandStyleguide.findFirst({
       where: { analysisJobId: jobId, workspaceId },
-      select: { id: true, analysisStatus: true, status: true },
+      select: { id: true, analysisStatus: true, status: true, errorMessage: true },
     });
 
     if (!styleguide) {
@@ -67,7 +108,7 @@ export async function GET(
       currentStep: currentStepIndex,
       totalSteps: 5,
       steps,
-      ...(isError && { error: "Analysis failed. Please try again." }),
+      ...(isError && { error: sanitizeErrorMessage(styleguide.errorMessage) }),
     });
   } catch (error) {
     console.error("[GET /api/brandstyle/analyze/status]", error);

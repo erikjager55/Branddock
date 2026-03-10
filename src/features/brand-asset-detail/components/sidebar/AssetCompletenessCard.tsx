@@ -186,11 +186,31 @@ export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck
     case 'BRAND_STORY': {
       const bs = data as BrandStoryFrameworkData;
       fields.push(
-        { label: 'Elevator Pitch', filled: !!bs?.elevatorPitch },
-        { label: 'The Challenge', filled: !!bs?.theChallenge },
-        { label: 'The Solution', filled: !!bs?.theSolution },
-        { label: 'The Outcome', filled: !!bs?.theOutcome },
+        // Card 1: Origin & Belief
         { label: 'Origin Story', filled: !!bs?.originStory },
+        { label: 'Core Belief', filled: !!bs?.coreBeliefStatement },
+        // Card 2: The World We See
+        { label: 'External Problem', filled: !!bs?.customerExternalProblem },
+        { label: 'Internal Problem', filled: !!bs?.customerInternalProblem },
+        { label: 'Philosophical Problem', filled: !!bs?.philosophicalProblem },
+        // Card 3: Brand as Guide
+        { label: 'Brand Role', filled: !!bs?.brandRole },
+        { label: 'Empathy Statement', filled: !!bs?.empathyStatement },
+        { label: 'Authority', filled: !!bs?.authorityCredentials },
+        // Card 4: Transformation
+        { label: 'Transformation Promise', filled: !!bs?.transformationPromise },
+        { label: 'Success Vision', filled: !!bs?.customerSuccessVision },
+        // Card 5: Narrative Toolkit
+        { label: 'ABT Statement', filled: !!bs?.abtStatement },
+        { label: 'Narrative Arc', filled: !!bs?.narrativeArc },
+        { label: 'Brand Themes', filled: Array.isArray(bs?.brandThemes) && bs.brandThemes.length > 0 },
+        { label: 'Key Messages', filled: Array.isArray(bs?.keyNarrativeMessages) && bs.keyNarrativeMessages.length > 0 },
+        // Card 6: Evidence
+        { label: 'Proof Points', filled: Array.isArray(bs?.proofPoints) && bs.proofPoints.length > 0 },
+        { label: 'Brand Milestones', filled: Array.isArray(bs?.brandMilestones) && bs.brandMilestones.length > 0 },
+        // Card 7: Expressions
+        { label: 'Elevator Pitch', filled: !!bs?.elevatorPitch },
+        { label: 'Manifesto', filled: !!bs?.manifestoText },
       );
       break;
     }
