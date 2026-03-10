@@ -97,6 +97,130 @@ function TagDisplay({ items }: { items: string[] }) {
   );
 }
 
+/** Parse a numeric value from a CSS-like string (e.g. "1.5px" → 1.5) */
+function parseNumericValue(value: string | undefined, fallback: number): number {
+  if (!value) return fallback;
+  const match = value.match(/([\d.]+)/);
+  return match ? parseFloat(match[1]) : fallback;
+}
+
+/** Visual preview of iconography spec with 4 geometric SVG shapes */
+function IconSpecPreview({
+  style,
+  strokeWeight,
+  cornerRadius,
+  sizing,
+}: {
+  style?: string;
+  strokeWeight?: string;
+  cornerRadius?: string;
+  sizing?: string;
+}) {
+  if (!style && !strokeWeight) return null;
+
+  const sw = parseNumericValue(strokeWeight, 1.5);
+  const cr = parseNumericValue(cornerRadius, 0);
+  const isFilled = style === "fill";
+  const isDuoTone = style === "duo-tone";
+
+  const strokeColor = "#6b7280"; // gray-500
+  const fillColor = "#14b8a6"; // teal-500
+
+  const sharedStroke = {
+    stroke: isFilled ? "none" : strokeColor,
+    strokeWidth: isFilled ? 0 : sw,
+    fill: isFilled ? fillColor : isDuoTone ? `${fillColor}33` : "none",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  // Parse sizing string for size indicators (e.g. "16/20/24/32px" or "16-32px")
+  const sizeNumbers: number[] = [];
+  if (sizing) {
+    const matches = sizing.match(/\d+/g);
+    if (matches) {
+      for (const m of matches) {
+        const n = parseInt(m, 10);
+        if (n > 0 && n <= 128) sizeNumbers.push(n);
+      }
+    }
+  }
+  const displaySizes = sizeNumbers.length >= 2
+    ? sizeNumbers.slice(0, 4)
+    : [16, 20, 24, 32];
+
+  return (
+    <div className="bg-gray-50 rounded-lg p-4 mb-3">
+      <div className="flex items-end justify-center gap-6">
+        {/* Circle */}
+        <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+          <circle cx="20" cy="20" r={16 - sw / 2} {...sharedStroke} />
+        </svg>
+        {/* Rounded square */}
+        <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+          <rect
+            x={4 + sw / 2}
+            y={4 + sw / 2}
+            width={32 - sw}
+            height={32 - sw}
+            rx={Math.min(cr, 12)}
+            ry={Math.min(cr, 12)}
+            {...sharedStroke}
+          />
+        </svg>
+        {/* Triangle */}
+        <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+          <polygon points="20,4 36,36 4,36" {...sharedStroke} />
+        </svg>
+        {/* Star (5-point) */}
+        <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true">
+          <polygon
+            points="20,3 24.5,15 37,15 27,23 30.5,36 20,28 9.5,36 13,23 3,15 15.5,15"
+            {...sharedStroke}
+          />
+        </svg>
+      </div>
+      {/* Sizing indicators */}
+      <div className="flex items-end justify-center gap-3 mt-3">
+        {displaySizes.map((size, i) => {
+          const dotSize = 4 + i * 3;
+          return (
+            <div key={size} className="flex flex-col items-center gap-1">
+              <div
+                className="rounded-full bg-gray-300"
+                style={{ width: dotSize, height: dotSize }}
+              />
+              <span className="text-[10px] text-gray-400">{size}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Visual preview of the grid column system */
+function GridPreview({ gridSystem }: { gridSystem?: string }) {
+  if (!gridSystem) return null;
+
+  const colMatch = gridSystem.match(/(\d+)\s*-?\s*col/i);
+  const columns = colMatch ? parseInt(colMatch[1], 10) : 12;
+  const safeColumns = Math.max(1, Math.min(columns, 24));
+
+  return (
+    <div className="bg-gray-50 rounded-lg p-3 mb-3">
+      <div className="flex gap-1 h-12">
+        {Array.from({ length: safeColumns }, (_, i) => (
+          <div key={i} className="flex-1 bg-teal-100 rounded-sm" />
+        ))}
+      </div>
+      <p className="text-[10px] text-gray-400 text-right mt-1.5">
+        {safeColumns} columns
+      </p>
+    </div>
+  );
+}
+
 const ICON_STYLES = [
   { value: "line", label: "Line" },
   { value: "fill", label: "Fill" },
@@ -478,6 +602,12 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
           </div>
         ) : (
           <div className="space-y-3">
+            <IconSpecPreview
+              style={iconData.style}
+              strokeWeight={iconData.strokeWeight}
+              cornerRadius={iconData.cornerRadius}
+              sizing={iconData.sizing}
+            />
             {iconData.style && (
               <div className="flex items-center gap-2">
                 <Badge variant="info">{ICON_STYLES.find((s) => s.value === iconData.style)?.label ?? iconData.style}</Badge>
@@ -729,6 +859,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
           </div>
         ) : (
           <div className="space-y-3">
+            <GridPreview gridSystem={layoutData.gridSystem} />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {layoutData.gridSystem && (
                 <div>

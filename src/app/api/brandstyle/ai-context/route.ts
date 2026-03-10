@@ -68,14 +68,46 @@ export async function GET() {
     }
 
     if (styleguide.designLanguageSavedForAi) {
+      // Type helpers for JSON fields
+      const iconography = styleguide.iconographyStyle as {
+        style?: string; strokeWeight?: string; cornerRadius?: string;
+        sizing?: string; colorUsage?: string; usageNotes?: string;
+      } | null;
+
+      const layout = styleguide.layoutPrinciples as {
+        gridSystem?: string; spacingScale?: string; whitespacePhilosophy?: string;
+        compositionRules?: string[]; usageNotes?: string;
+      } | null;
+
       sections.designLanguage = {
         graphicElements: styleguide.graphicElements,
         graphicElementsDonts: styleguide.graphicElementsDonts,
         patternsTextures: styleguide.patternsTextures,
-        iconographyStyle: styleguide.iconographyStyle,
+        iconography: {
+          ...(iconography ?? {}),
+          // Flatten for easier AI consumption
+          summary: iconography
+            ? [
+                iconography.style && `Style: ${iconography.style}`,
+                iconography.strokeWeight && `Stroke: ${iconography.strokeWeight}`,
+                iconography.cornerRadius && `Corner radius: ${iconography.cornerRadius}`,
+                iconography.sizing && `Sizes: ${iconography.sizing}`,
+                iconography.colorUsage && `Color usage: ${iconography.colorUsage}`,
+              ].filter(Boolean).join('. ') || null
+            : null,
+        },
         iconographyDonts: styleguide.iconographyDonts,
         gradientsEffects: styleguide.gradientsEffects,
-        layoutPrinciples: styleguide.layoutPrinciples,
+        layout: {
+          ...(layout ?? {}),
+          summary: layout
+            ? [
+                layout.gridSystem && `Grid: ${layout.gridSystem}`,
+                layout.spacingScale && `Spacing: ${layout.spacingScale}`,
+                layout.whitespacePhilosophy && `Whitespace: ${layout.whitespacePhilosophy}`,
+              ].filter(Boolean).join('. ') || null
+            : null,
+        },
       };
     }
 

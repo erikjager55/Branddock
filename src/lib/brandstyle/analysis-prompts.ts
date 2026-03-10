@@ -312,8 +312,8 @@ Return a JSON object with this exact structure:
   "iconographyStyle": {
     "style": "line|fill|duo-tone|custom",
     "strokeWeight": "1.5px",
-    "cornerRadius": "Rounded",
-    "sizing": "16px inline, 24px standalone",
+    "cornerRadius": "2px",
+    "sizing": "16/20/24/32px",
     "colorUsage": "Primary for active, gray for inactive",
     "usageNotes": "Icon approach"
   },
@@ -338,6 +338,8 @@ IMPORTANT:
 - For tone-of-voice: Analyze the document's own writing style. Prefix guidelines with "OBSERVED:" or "RECOMMENDED:" to distinguish facts from suggestions.
 - For photography: If the document describes photography guidelines, extract them faithfully. Otherwise mark as RECOMMENDED.
 - For design language: If the document describes graphic elements, iconography, gradients, or layout rules, extract them. Otherwise provide recommendations based on the brand's visual identity.
+- For iconographyStyle: strokeWeight and cornerRadius MUST be numeric CSS values (e.g., "1.5px", "2px"). sizing MUST list numeric sizes like "16/20/24/32px". Never use descriptive words like "Rounded".
+- For layoutPrinciples.gridSystem: MUST include the column count with "column", e.g. "12-column grid with 24px gutters".
 - Maximum 12 colors total. Maximum 4 gradients.
 - Be specific to this brand, not generic.`;
 }
@@ -410,8 +412,8 @@ Return a JSON object with this exact structure:
   "iconographyStyle": {
     "style": "line|fill|duo-tone|custom",
     "strokeWeight": "e.g., 1.5px",
-    "cornerRadius": "e.g., Rounded",
-    "sizing": "e.g., 16px inline, 24px standalone, 48px feature",
+    "cornerRadius": "e.g., 2px",
+    "sizing": "e.g., 16/20/24/32px",
     "colorUsage": "e.g., Primary brand color for active, gray-500 for inactive",
     "usageNotes": "Brief description of icon approach"
   },
@@ -441,7 +443,11 @@ Return a JSON object with this exact structure:
 
 IMPORTANT:
 - For graphicElements: identify 2-4 items per sub-array. Focus on distinctive, recurring elements.
-- For iconographyStyle.style: choose from "line", "fill", "duo-tone", or "custom". If a known icon library is detected (Lucide, Heroicons, FontAwesome, Material Icons), mention it.
+- For iconographyStyle.style: choose from "line", "fill", "duo-tone", or "custom". If a known icon library is detected (Lucide, Heroicons, FontAwesome, Material Icons), mention it in usageNotes.
+- For iconographyStyle.strokeWeight: MUST be a numeric CSS value like "1.5px" or "2px". Never descriptive words.
+- For iconographyStyle.cornerRadius: MUST be a numeric CSS value like "0px" (sharp), "2px" (slightly rounded), or "4px" (rounded). Never descriptive words like "Rounded".
+- For iconographyStyle.sizing: MUST list numeric sizes separated by "/" like "16/20/24/32px". These are the icon size steps used in the design system.
+- For layoutPrinciples.gridSystem: MUST include the column count with the word "column", e.g. "12-column grid with 24px gutters" or "8-column responsive grid". This is used for visual grid previews.
 - For gradientsEffects: extract ACTUAL gradients from CSS if found. If no gradients detected, provide 1-2 recommendations based on the brand colors. Maximum 4 gradients.
 - For layoutPrinciples: extract actual spacing/grid values from CSS variables if available. If not, analyze the visual rhythm.
 - Prefix recommendations with "RECOMMENDED:" to distinguish from observed patterns.
