@@ -158,9 +158,14 @@ export interface ImproveSuggestionsResponse {
 export interface AvailableInsight {
   id: string;
   title: string;
+  description: string | null;
   source: string | null;
   category: string;
+  impactLevel: string;
+  scope: string;
+  timeframe: string;
   relevanceScore: number;
+  whyNow: string | null;
 }
 
 export type InsertFormatType = 'INLINE' | 'QUOTE' | 'DATA_VIZ' | 'AI_ADAPTED';

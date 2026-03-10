@@ -132,7 +132,8 @@ export async function bulkApplySuggestions(deliverableId: string): Promise<void>
 export async function fetchResearchInsights(deliverableId: string): Promise<AvailableInsight[]> {
   const res = await fetch(`/api/studio/${deliverableId}/insights`);
   if (!res.ok) throw new Error('Failed to fetch research insights');
-  return res.json();
+  const data = await res.json();
+  return data?.insights ?? [];
 }
 
 export async function insertInsight(deliverableId: string, body: InsertInsightBody): Promise<void> {

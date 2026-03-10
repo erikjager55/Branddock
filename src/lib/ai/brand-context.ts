@@ -458,6 +458,99 @@ function formatBrandPersonality(data: BrandPersonalityData): string {
   return parts.join('. ');
 }
 
+// ─── Brand Story ───────────────────────────────────────────
+
+interface BrandStoryData {
+  originStory?: string;
+  founderMotivation?: string;
+  coreBeliefStatement?: string;
+  worldContext?: string;
+  customerExternalProblem?: string;
+  customerInternalProblem?: string;
+  philosophicalProblem?: string;
+  stakesCostOfInaction?: string;
+  brandRole?: string;
+  empathyStatement?: string;
+  authorityCredentials?: string;
+  transformationPromise?: string;
+  customerSuccessVision?: string;
+  abtStatement?: string;
+  brandThemes?: string[];
+  emotionalTerritory?: string[];
+  keyNarrativeMessages?: string[];
+  narrativeArc?: string;
+  proofPoints?: string[];
+  valuesInAction?: string[];
+  brandMilestones?: string[];
+  elevatorPitch?: string;
+  manifestoText?: string;
+  audienceAdaptations?: { customers?: string; investors?: string; employees?: string; partners?: string };
+}
+
+/** Format Brand Story frameworkData into a readable string for AI context */
+function formatBrandStory(data: BrandStoryData): string {
+  const parts: string[] = [];
+
+  // Origin & Belief
+  if (data.originStory) parts.push(`Origin: ${data.originStory}`);
+  if (data.founderMotivation) parts.push(`Founder motivation: ${data.founderMotivation}`);
+  if (data.coreBeliefStatement) parts.push(`Core belief: ${data.coreBeliefStatement}`);
+
+  // Problem landscape
+  if (data.worldContext) parts.push(`World context: ${data.worldContext}`);
+  const problems: string[] = [];
+  if (data.customerExternalProblem) problems.push(`External: ${data.customerExternalProblem}`);
+  if (data.customerInternalProblem) problems.push(`Internal: ${data.customerInternalProblem}`);
+  if (data.philosophicalProblem) problems.push(`Philosophical: ${data.philosophicalProblem}`);
+  if (problems.length > 0) parts.push(`Customer problem: ${problems.join(' | ')}`);
+  if (data.stakesCostOfInaction) parts.push(`Stakes: ${data.stakesCostOfInaction}`);
+
+  // Brand as Guide
+  if (data.brandRole) parts.push(`Brand role: ${data.brandRole}`);
+  if (data.empathyStatement) parts.push(`Empathy: ${data.empathyStatement}`);
+  if (data.authorityCredentials) parts.push(`Authority: ${data.authorityCredentials}`);
+
+  // Transformation
+  if (data.transformationPromise) parts.push(`Transformation: ${data.transformationPromise}`);
+  if (data.customerSuccessVision) parts.push(`Customer success vision: ${data.customerSuccessVision}`);
+
+  // Narrative toolkit
+  if (data.abtStatement) parts.push(`ABT: ${data.abtStatement}`);
+  if (data.narrativeArc) parts.push(`Narrative arc: ${data.narrativeArc}`);
+  if (Array.isArray(data.brandThemes) && data.brandThemes.length > 0) {
+    parts.push(`Themes: ${data.brandThemes.filter(Boolean).join(', ')}`);
+  }
+  if (Array.isArray(data.emotionalTerritory) && data.emotionalTerritory.length > 0) {
+    parts.push(`Emotional territory: ${data.emotionalTerritory.filter(Boolean).join(', ')}`);
+  }
+  if (Array.isArray(data.keyNarrativeMessages) && data.keyNarrativeMessages.length > 0) {
+    parts.push(`Key messages: ${data.keyNarrativeMessages.filter(Boolean).join('; ')}`);
+  }
+
+  // Evidence
+  if (Array.isArray(data.proofPoints) && data.proofPoints.length > 0) {
+    parts.push(`Proof points: ${data.proofPoints.filter(Boolean).join('; ')}`);
+  }
+  if (Array.isArray(data.valuesInAction) && data.valuesInAction.length > 0) {
+    parts.push(`Values in action: ${data.valuesInAction.filter(Boolean).join('; ')}`);
+  }
+  if (Array.isArray(data.brandMilestones) && data.brandMilestones.length > 0) {
+    parts.push(`Milestones: ${data.brandMilestones.filter(Boolean).join('; ')}`);
+  }
+
+  // Expressions
+  if (data.elevatorPitch) parts.push(`Elevator pitch: ${data.elevatorPitch}`);
+  if (data.manifestoText) parts.push(`Manifesto: ${data.manifestoText}`);
+  const adaptations: string[] = [];
+  if (data.audienceAdaptations?.customers) adaptations.push(`Customers: ${data.audienceAdaptations.customers}`);
+  if (data.audienceAdaptations?.investors) adaptations.push(`Investors: ${data.audienceAdaptations.investors}`);
+  if (data.audienceAdaptations?.employees) adaptations.push(`Employees: ${data.audienceAdaptations.employees}`);
+  if (data.audienceAdaptations?.partners) adaptations.push(`Partners: ${data.audienceAdaptations.partners}`);
+  if (adaptations.length > 0) parts.push(`Audience adaptations: ${adaptations.join(' | ')}`);
+
+  return parts.join('. ');
+}
+
 /** Extract a text summary from content JSON (typically has a "text" or "body" field) */
 function extractContentText(content: unknown): string | null {
   if (!content) return null;
@@ -541,7 +634,20 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
 
     prisma.detectedTrend.findMany({
       where: { workspaceId, isActivated: true },
-      select: { title: true, category: true, impactLevel: true },
+      select: {
+        title: true,
+        description: true,
+        category: true,
+        impactLevel: true,
+        scope: true,
+        timeframe: true,
+        relevanceScore: true,
+        direction: true,
+        confidence: true,
+        whyNow: true,
+        dataPoints: true,
+        aiAnalysis: true,
+      },
       orderBy: { relevanceScore: 'desc' },
       take: 5,
     }),
@@ -674,10 +780,16 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
     }
   }
 
-  // Brand Story
+  // Brand Story (rich formatting from frameworkData)
   const story = assetBySlug.get('brand-story');
   if (story) {
-    ctx.brandStory = extractContentText(story.content) || story.description || undefined;
+    const fwData = story.frameworkData as BrandStoryData | null;
+    if (fwData?.originStory || fwData?.elevatorPitch || fwData?.transformationPromise) {
+      const formatted = formatBrandStory(fwData);
+      if (formatted) ctx.brandStory = formatted;
+    } else {
+      ctx.brandStory = extractContentText(story.content) || story.description || undefined;
+    }
   }
 
   // Core Values (BRANDHOUSE_VALUES)
@@ -732,9 +844,28 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
 
   // Competitive landscape from activated trends
   if (activatedTrends.length > 0) {
-    const highImpact = activatedTrends.filter((t) => t.impactLevel === 'HIGH');
+    const highImpact = activatedTrends.filter(
+      (t) => t.impactLevel === 'HIGH' || t.impactLevel === 'CRITICAL',
+    );
     const relevant = highImpact.length > 0 ? highImpact : activatedTrends.slice(0, 3);
-    ctx.competitiveLandscape = relevant.map((t) => `${t.title} (${t.category})`).join('; ');
+    ctx.competitiveLandscape = relevant
+      .map((t) => {
+        const parts = [`- ${t.title} [${t.category}, ${t.impactLevel} impact`];
+        if (t.direction) parts[0] += `, ${t.direction}`;
+        if (t.scope) parts[0] += `, ${t.scope}`;
+        parts[0] += ']';
+        if (t.description) parts.push(`  ${t.description}`);
+        if (t.whyNow) parts.push(`  Why now: ${t.whyNow}`);
+        if (t.aiAnalysis) parts.push(`  Analysis: ${t.aiAnalysis}`);
+        if (Array.isArray(t.dataPoints)) {
+          const filtered = t.dataPoints.filter(Boolean);
+          if (filtered.length > 0) {
+            parts.push(`  Data: ${filtered.join('; ')}`);
+          }
+        }
+        return parts.join('\n');
+      })
+      .join('\n');
   }
 
   // Cache and return

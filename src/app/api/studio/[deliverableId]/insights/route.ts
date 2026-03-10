@@ -32,9 +32,14 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       select: {
         id: true,
         title: true,
+        description: true,
         detectionSource: true,
         category: true,
+        impactLevel: true,
+        scope: true,
+        timeframe: true,
         relevanceScore: true,
+        whyNow: true,
       },
       orderBy: { relevanceScore: 'desc' },
     });
@@ -43,9 +48,14 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       insights: trends.map((trend) => ({
         id: trend.id,
         title: trend.title,
+        description: trend.description,
         source: trend.detectionSource,
         category: trend.category,
+        impactLevel: trend.impactLevel,
+        scope: trend.scope,
+        timeframe: trend.timeframe,
         relevanceScore: trend.relevanceScore,
+        whyNow: trend.whyNow,
       })),
     });
   } catch (error) {
