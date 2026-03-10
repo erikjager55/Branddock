@@ -496,43 +496,101 @@ function formatBrandPersonality(data: BrandPersonalityData): string {
   return parts.join('. ');
 }
 
-// ─── Social Relevancy (ESG / Purpose Kompas) ──────────────
+// ─── Social Relevancy (ESG) ─────────────────────────────────
 
-/** Format Social Relevancy / ESG / Purpose Kompas frameworkData into a readable string */
-function formatSocialRelevancy(data: Record<string, unknown>): string | null {
+interface SocialRelevancyExportData {
+  impactStatement?: string;
+  impactNarrative?: string;
+  activismLevel?: string;
+  milieu?: {
+    statements?: Array<{ text?: string; score?: number; evidence?: string; target?: string; timeline?: string }>;
+    pillarReflection?: string;
+  };
+  mens?: {
+    statements?: Array<{ text?: string; score?: number; evidence?: string; target?: string; timeline?: string }>;
+    pillarReflection?: string;
+  };
+  maatschappij?: {
+    statements?: Array<{ text?: string; score?: number; evidence?: string; target?: string; timeline?: string }>;
+    pillarReflection?: string;
+  };
+  authenticityScores?: Record<string, number>;
+  proofPoints?: string[];
+  certifications?: string[];
+  antiGreenwashingStatement?: string;
+  sdgAlignment?: number[];
+  communicationPrinciples?: string[];
+  keyStakeholders?: string[];
+  activationChannels?: string[];
+  annualCommitment?: string;
+}
+
+/** Format Social Relevancy frameworkData into a readable string for AI context */
+function formatSocialRelevancy(sr: SocialRelevancyExportData): string | null {
   const parts: string[] = [];
 
-  // Purpose Kompas shape: { pillars: { mens: {...}, milieu: {...}, maatschappij: {...} } }
-  const pillars = data.pillars as Record<string, { impact?: string; description?: string }> | undefined;
-  if (pillars && typeof pillars === 'object') {
-    const pillarNames: Record<string, string> = {
-      mens: 'People',
-      milieu: 'Planet',
-      maatschappij: 'Society',
-      environmental: 'Environmental',
-      social: 'Social',
-      governance: 'Governance',
-    };
-    for (const [key, pillar] of Object.entries(pillars)) {
-      if (pillar && typeof pillar === 'object') {
-        const label = pillarNames[key] || key;
-        const pParts: string[] = [label];
-        if (pillar.impact) pParts.push(`(${pillar.impact} impact)`);
-        if (pillar.description) pParts.push(`— ${pillar.description}`);
-        parts.push(pParts.join(' '));
-      }
+  // Foundation
+  if (sr.impactStatement) parts.push(`Impact Statement: ${sr.impactStatement}`);
+  if (sr.impactNarrative) parts.push(`Impact Narrative: ${sr.impactNarrative}`);
+  if (sr.activismLevel) parts.push(`Activism Level: ${sr.activismLevel}`);
+
+  // Pillar formatter
+  const formatPillar = (label: string, pillar?: SocialRelevancyExportData['milieu']) => {
+    if (!pillar?.statements) return;
+    const stmts = pillar.statements.filter(s => s.score && s.score > 0);
+    if (stmts.length === 0 && !pillar.pillarReflection) return;
+    const total = stmts.reduce((sum, s) => sum + (s.score ?? 0), 0);
+    const lines = [`${label} (Score: ${total}/15)`];
+    for (const s of stmts) {
+      lines.push(`  - ${s.text} [${s.score}/5]`);
+      if (s.evidence) lines.push(`    Evidence: ${s.evidence}`);
+      if (s.target) lines.push(`    Target: ${s.target}${s.timeline ? ` (${s.timeline})` : ''}`);
+    }
+    if (pillar.pillarReflection) lines.push(`  Reflection: ${pillar.pillarReflection}`);
+    parts.push(lines.join('\n'));
+  };
+
+  formatPillar('Environment (Milieu)', sr.milieu);
+  formatPillar('People (Mens)', sr.mens);
+  formatPillar('Society (Maatschappij)', sr.maatschappij);
+
+  // Grand total
+  const milieuScore = sr.milieu?.statements?.reduce((s, st) => s + (st.score ?? 0), 0) ?? 0;
+  const mensScore = sr.mens?.statements?.reduce((s, st) => s + (st.score ?? 0), 0) ?? 0;
+  const maatScore = sr.maatschappij?.statements?.reduce((s, st) => s + (st.score ?? 0), 0) ?? 0;
+  const grandTotal = milieuScore + mensScore + maatScore;
+  if (grandTotal > 0) parts.push(`Grand Total: ${grandTotal}/45`);
+
+  // Authenticity
+  if (sr.authenticityScores) {
+    const entries = Object.entries(sr.authenticityScores).filter(([, v]) => typeof v === 'number' && v > 0);
+    if (entries.length > 0) {
+      const avg = Math.round((entries.reduce((s, [, v]) => s + v, 0) / entries.length) * 20);
+      const labels: Record<string, string> = {
+        walkTheTalk: 'Walk-the-Talk',
+        transparency: 'Transparency',
+        consistency: 'Consistency',
+        stakeholderTrust: 'Stakeholder Trust',
+        measurability: 'Measurability',
+        longTermCommitment: 'Long-term Commitment',
+      };
+      parts.push(`Authenticity Score: ${avg}% — ${entries.map(([k, v]) => `${labels[k] ?? k}: ${v}/5`).join(', ')}`);
     }
   }
 
-  // Any top-level string fields (e.g. summary, statement)
-  for (const [key, value] of Object.entries(data)) {
-    if (key === 'pillars') continue;
-    if (typeof value === 'string' && value.length > 0) {
-      parts.push(`${key}: ${value}`);
-    }
-  }
+  // Evidence
+  if (sr.proofPoints && sr.proofPoints.length > 0) parts.push(`Proof Points: ${sr.proofPoints.join('; ')}`);
+  if (sr.certifications && sr.certifications.length > 0) parts.push(`Certifications: ${sr.certifications.join(', ')}`);
+  if (sr.antiGreenwashingStatement) parts.push(`Anti-Greenwashing: ${sr.antiGreenwashingStatement}`);
 
-  return parts.length > 0 ? parts.join('. ') : null;
+  // Activation
+  if (sr.sdgAlignment && sr.sdgAlignment.length > 0) parts.push(`UN SDG Alignment: ${sr.sdgAlignment.map(n => `SDG ${n}`).join(', ')}`);
+  if (sr.communicationPrinciples && sr.communicationPrinciples.length > 0) parts.push(`Communication Principles: ${sr.communicationPrinciples.join('; ')}`);
+  if (sr.keyStakeholders && sr.keyStakeholders.length > 0) parts.push(`Key Stakeholders: ${sr.keyStakeholders.join(', ')}`);
+  if (sr.activationChannels && sr.activationChannels.length > 0) parts.push(`Activation Channels: ${sr.activationChannels.join(', ')}`);
+  if (sr.annualCommitment) parts.push(`Annual Commitment: ${sr.annualCommitment}`);
+
+  return parts.length > 0 ? parts.join('\n') : null;
 }
 
 // ─── Brand Story ───────────────────────────────────────────
@@ -768,6 +826,14 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         typographySavedForAi: true,
         toneSavedForAi: true,
         imagerySavedForAi: true,
+        graphicElements: true,
+        graphicElementsDonts: true,
+        patternsTextures: true,
+        iconographyStyle: true,
+        iconographyDonts: true,
+        gradientsEffects: true,
+        layoutPrinciples: true,
+        designLanguageSavedForAi: true,
       },
     }),
   ]);
@@ -941,7 +1007,7 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
   // Social Relevancy (ESG / Purpose Kompas)
   const social = assetBySlug.get('social-relevancy');
   if (social) {
-    const fwData = social.frameworkData as Record<string, unknown> | null;
+    const fwData = social.frameworkData as SocialRelevancyExportData | null;
     const formatted = fwData ? formatSocialRelevancy(fwData) : null;
     if (formatted) {
       ctx.socialRelevancy = formatted;
@@ -1025,6 +1091,59 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         imgParts.push(`Guidelines: ${styleguide.photographyGuidelines.join('; ')}`);
       }
       if (imgParts.length > 0) ctx.brandImageryStyle = imgParts.join('. ');
+    }
+
+    // Design Language
+    if (styleguide.designLanguageSavedForAi) {
+      const dlParts: string[] = [];
+      const graphicEl = styleguide.graphicElements as { brandShapes?: string[]; decorativeElements?: string[]; visualDevices?: string[]; usageNotes?: string } | null;
+      if (graphicEl) {
+        const shapes = [...(graphicEl.brandShapes ?? []), ...(graphicEl.decorativeElements ?? []), ...(graphicEl.visualDevices ?? [])].filter(Boolean);
+        if (shapes.length > 0) dlParts.push(`Graphic elements: ${shapes.join(', ')}`);
+        if (graphicEl.usageNotes) dlParts.push(`Graphic usage: ${graphicEl.usageNotes}`);
+      }
+      if (styleguide.graphicElementsDonts.length > 0) {
+        dlParts.push(`Graphic don'ts: ${styleguide.graphicElementsDonts.join('; ')}`);
+      }
+      const patternsEl = styleguide.patternsTextures as { patterns?: string[]; textures?: string[]; backgrounds?: string[]; usageNotes?: string } | null;
+      if (patternsEl) {
+        const items = [...(patternsEl.patterns ?? []), ...(patternsEl.textures ?? []), ...(patternsEl.backgrounds ?? [])].filter(Boolean);
+        if (items.length > 0) dlParts.push(`Patterns & textures: ${items.join(', ')}`);
+        if (patternsEl.usageNotes) dlParts.push(`Pattern usage: ${patternsEl.usageNotes}`);
+      }
+      const iconStyle = styleguide.iconographyStyle as { style?: string; sizing?: string; strokeWeight?: string; cornerRadius?: string; colorUsage?: string; usageNotes?: string } | null;
+      if (iconStyle?.style) {
+        let iconStr = `Icon style: ${iconStyle.style}`;
+        if (iconStyle.sizing) iconStr += `, sizing ${iconStyle.sizing}`;
+        if (iconStyle.strokeWeight) iconStr += `, stroke ${iconStyle.strokeWeight}`;
+        if (iconStyle.cornerRadius) iconStr += `, corner radius ${iconStyle.cornerRadius}`;
+        if (iconStyle.colorUsage) iconStr += `, color usage ${iconStyle.colorUsage}`;
+        dlParts.push(iconStr);
+        if (iconStyle.usageNotes) dlParts.push(`Icon usage: ${iconStyle.usageNotes}`);
+      }
+      if (styleguide.iconographyDonts.length > 0) {
+        dlParts.push(`Iconography don'ts: ${styleguide.iconographyDonts.join('; ')}`);
+      }
+      const grads = styleguide.gradientsEffects as { name?: string; type?: string; colors?: string[]; angle?: string; usage?: string }[] | null;
+      if (Array.isArray(grads) && grads.length > 0) {
+        const gradStrs = grads.filter((g) => g.name).map((g) => {
+          let str = `${g.name} (${g.type}, ${(g.colors ?? []).join(' → ')}`;
+          if (g.angle) str += `, ${g.angle}`;
+          str += ')';
+          if (g.usage) str += ` — ${g.usage}`;
+          return str;
+        });
+        if (gradStrs.length > 0) dlParts.push(`Gradients: ${gradStrs.join('; ')}`);
+      }
+      const layout = styleguide.layoutPrinciples as { gridSystem?: string; spacingScale?: string; whitespacePhilosophy?: string; compositionRules?: string[]; usageNotes?: string } | null;
+      if (layout) {
+        if (layout.gridSystem) dlParts.push(`Grid: ${layout.gridSystem}`);
+        if (layout.spacingScale) dlParts.push(`Spacing: ${layout.spacingScale}`);
+        if (layout.whitespacePhilosophy) dlParts.push(`Whitespace: ${layout.whitespacePhilosophy}`);
+        if (layout.compositionRules && layout.compositionRules.length > 0) dlParts.push(`Composition rules: ${layout.compositionRules.join('; ')}`);
+        if (layout.usageNotes) dlParts.push(`Layout usage: ${layout.usageNotes}`);
+      }
+      if (dlParts.length > 0) ctx.brandDesignLanguage = dlParts.join('. ');
     }
   }
 

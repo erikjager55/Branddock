@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 import type { PendingTrend } from '@/lib/trend-radar/researcher';
 
 type RouteParams = { params: Promise<{ jobId: string }> };
@@ -78,6 +80,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
           dataPoints: trend.dataPoints ?? [],
           evidenceCount: trend.evidenceCount ?? 0,
           whyNow: trend.whyNow ?? null,
+          imageUrl: trend.imageUrl ?? null,
           scores: trend.scores ? JSON.parse(JSON.stringify(trend.scores)) : null,
           detectionSource: 'AI_RESEARCH',
           workspaceId,
@@ -118,6 +121,10 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       });
     }
   }
+
+  // Invalidate trend radar cache so GET /api/trend-radar returns fresh data
+  invalidateCache(cacheKeys.prefixes.trendRadar(workspaceId));
+  invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
   return NextResponse.json({
     approved: selected.length,

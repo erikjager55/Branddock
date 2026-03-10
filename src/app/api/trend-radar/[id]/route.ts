@@ -69,7 +69,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     const allowedFields = [
       'title', 'description', 'category', 'scope', 'impactLevel',
       'timeframe', 'relevanceScore', 'direction', 'industries',
-      'tags', 'howToUse', 'sourceUrl',
+      'tags', 'howToUse', 'sourceUrl', 'imageUrl',
     ];
 
     const data: Record<string, unknown> = {};

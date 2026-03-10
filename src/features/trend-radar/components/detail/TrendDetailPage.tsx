@@ -11,9 +11,11 @@ import {
   EyeOff,
   Eye,
   Zap,
+  ZapOff,
   ExternalLink,
   BarChart3,
   FileText,
+  ImageIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, Badge, Card, Select } from '@/components/shared';
@@ -89,6 +91,8 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
   const [newIndustry, setNewIndustry] = useState('');
   const [newTag, setNewTag] = useState('');
   const [newHowToUse, setNewHowToUse] = useState('');
+  const [editImageUrl, setEditImageUrl] = useState('');
+  const [heroImageError, setHeroImageError] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const prevTrendId = useRef<string | null>(null);
@@ -111,11 +115,12 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
     },
   });
 
-  // Reset edit mode when navigating to a different trend
+  // Reset edit mode and image error when navigating to a different trend
   useEffect(() => {
     if (trend?.id && trend.id !== prevTrendId.current) {
       prevTrendId.current = trend.id;
       setIsEditing(false);
+      setHeroImageError(false);
     }
   }, [trend?.id, setIsEditing]);
 
@@ -145,6 +150,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
     setEditIndustries([...trend.industries]);
     setEditTags([...trend.tags]);
     setEditHowToUse([...trend.howToUse]);
+    setEditImageUrl(trend.imageUrl ?? '');
     setIsEditing(true);
   }, [trend, setIsEditing]);
 
@@ -167,14 +173,16 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
           industries: editIndustries,
           tags: editTags,
           howToUse: editHowToUse,
+          imageUrl: editImageUrl.trim() || null,
         },
       });
+      setHeroImageError(false);
       setIsEditing(false);
       toast.success('Trend updated');
     } catch {
       toast.error('Failed to save changes');
     }
-  }, [trend, editTitle, editDescription, editCategory, editImpactLevel, editScope, editTimeframe, editIndustries, editTags, editHowToUse, updateMutation, setIsEditing]);
+  }, [trend, editTitle, editDescription, editCategory, editImpactLevel, editScope, editTimeframe, editIndustries, editTags, editHowToUse, editImageUrl, updateMutation, setIsEditing]);
 
   const handleDelete = async () => {
     if (!trend) return;
@@ -257,12 +265,21 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
       {/* Hero header */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6">
         <div className="flex items-start gap-4">
-          {/* Category icon */}
-          <div className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center ${categoryConfig.bg}`}>
-            <span className={`text-2xl md:text-3xl font-bold ${categoryConfig.text}`}>
-              {categoryConfig.label.charAt(0)}
-            </span>
-          </div>
+          {/* Category icon or image */}
+          {trend.imageUrl && !heroImageError ? (
+            <img
+              src={trend.imageUrl}
+              alt=""
+              className="flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-2xl object-cover"
+              onError={() => setHeroImageError(true)}
+            />
+          ) : (
+            <div className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center ${categoryConfig.bg}`}>
+              <span className={`text-2xl md:text-3xl font-bold ${categoryConfig.text}`}>
+                {categoryConfig.label.charAt(0)}
+              </span>
+            </div>
+          )}
 
           {/* Title + meta */}
           <div className="flex-1 min-w-0">
@@ -352,6 +369,21 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
             {isEditing ? (
               <>
                 <button
+                  onClick={() => activateMutation.mutate(trend.id)}
+                  disabled={activateMutation.isPending}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    trend.isActivated
+                      ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
+                      : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                  } disabled:opacity-50`}
+                >
+                  {trend.isActivated ? (
+                    <><ZapOff className="w-4 h-4" /> Deactivate</>
+                  ) : (
+                    <><Zap className="w-4 h-4" /> Activate</>
+                  )}
+                </button>
+                <button
                   onClick={saveEdits}
                   disabled={updateMutation.isPending}
                   style={{ backgroundColor: '#0d9488', color: '#ffffff' }}
@@ -419,6 +451,60 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
                 <p className="text-sm text-amber-900">{trend.whyNow}</p>
               </div>
             </div>
+          )}
+
+          {/* Image — view mode */}
+          {!isEditing && trend.imageUrl && !heroImageError && (
+            <Card padding="none">
+              <img
+                src={trend.imageUrl}
+                alt={trend.title}
+                className="w-full max-h-64 object-cover rounded-xl"
+                onError={() => setHeroImageError(true)}
+              />
+            </Card>
+          )}
+
+          {/* Image — edit mode */}
+          {isEditing && (
+            <LockOverlay isLocked={lockState.isLocked}>
+              <Card>
+                <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
+                  <ImageIcon className="w-4 h-4 text-gray-500" />
+                  Trend Image
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="url"
+                      value={editImageUrl}
+                      onChange={(e) => setEditImageUrl(e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                      className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    />
+                    {editImageUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setEditImageUrl('')}
+                        className="text-gray-400 hover:text-red-500 transition-colors"
+                        title="Remove image"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                  {editImageUrl && (
+                    <img
+                      src={editImageUrl}
+                      alt="Preview"
+                      className="w-full max-h-48 object-cover rounded-lg border border-gray-200"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      onLoad={(e) => { (e.target as HTMLImageElement).style.display = 'block'; }}
+                    />
+                  )}
+                </div>
+              </Card>
+            </LockOverlay>
           )}
 
           {/* Description */}

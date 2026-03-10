@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 
 /**
  * POST /api/trend-radar/manual — Add a trend manually
@@ -30,6 +32,7 @@ export async function POST(req: NextRequest) {
     tags = [],
     howToUse = [],
     sourceUrl,
+    imageUrl,
   } = body;
 
   if (!title) {
@@ -66,6 +69,7 @@ export async function POST(req: NextRequest) {
       tags,
       howToUse,
       sourceUrl: sourceUrl || null,
+      imageUrl: imageUrl || null,
       detectionSource: 'MANUAL',
       workspaceId,
     },
@@ -73,6 +77,10 @@ export async function POST(req: NextRequest) {
       researchJob: { select: { id: true, query: true } },
     },
   });
+
+  // Invalidate trend radar cache so GET /api/trend-radar returns fresh data
+  invalidateCache(cacheKeys.prefixes.trendRadar(workspaceId));
+  invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
   return NextResponse.json(trend, { status: 201 });
 }

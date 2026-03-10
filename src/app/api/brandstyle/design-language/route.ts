@@ -3,8 +3,19 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 
+const DESIGN_LANGUAGE_SELECT = {
+  graphicElements: true,
+  graphicElementsDonts: true,
+  patternsTextures: true,
+  iconographyStyle: true,
+  iconographyDonts: true,
+  gradientsEffects: true,
+  layoutPrinciples: true,
+  designLanguageSavedForAi: true,
+} as const;
+
 // =============================================================
-// GET /api/brandstyle — fetch styleguide (max 1 per workspace)
+// GET /api/brandstyle/design-language — design language section
 // =============================================================
 export async function GET() {
   try {
@@ -15,43 +26,24 @@ export async function GET() {
 
     const styleguide = await prisma.brandStyleguide.findUnique({
       where: { workspaceId },
-      include: {
-        colors: { orderBy: { sortOrder: "asc" } },
-        createdBy: { select: { id: true, name: true, avatarUrl: true } },
-        lockedBy: { select: { id: true, name: true } },
-      },
+      select: DESIGN_LANGUAGE_SELECT,
     });
 
     if (!styleguide) {
-      return NextResponse.json({ styleguide: null });
+      return NextResponse.json({ error: "No styleguide found" }, { status: 404 });
     }
 
-    return NextResponse.json({ styleguide });
+    return NextResponse.json({ designLanguage: styleguide });
   } catch (error) {
-    console.error("[GET /api/brandstyle]", error);
+    console.error("[GET /api/brandstyle/design-language]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 // =============================================================
-// PATCH /api/brandstyle — update hele styleguide
+// PATCH /api/brandstyle/design-language — update design language
 // =============================================================
-const updateSchema = z.object({
-  logoVariations: z.any().optional(),
-  logoGuidelines: z.array(z.string()).optional(),
-  logoDonts: z.array(z.string()).optional(),
-  colorDonts: z.array(z.string()).optional(),
-  primaryFontName: z.string().optional(),
-  primaryFontUrl: z.string().optional(),
-  typeScale: z.any().optional(),
-  contentGuidelines: z.array(z.string()).optional(),
-  writingGuidelines: z.array(z.string()).optional(),
-  examplePhrases: z.any().optional(),
-  photographyStyle: z.any().optional(),
-  photographyGuidelines: z.array(z.string()).optional(),
-  illustrationGuidelines: z.array(z.string()).optional(),
-  imageryDonts: z.array(z.string()).optional(),
-  brandImages: z.any().optional(),
+const updateDesignLanguageSchema = z.object({
   graphicElements: z.any().optional(),
   graphicElementsDonts: z.array(z.string()).optional(),
   patternsTextures: z.any().optional(),
@@ -69,7 +61,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const parsed = updateSchema.safeParse(body);
+    const parsed = updateDesignLanguageSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
@@ -77,16 +69,12 @@ export async function PATCH(request: NextRequest) {
     const styleguide = await prisma.brandStyleguide.update({
       where: { workspaceId },
       data: parsed.data,
-      include: {
-        colors: { orderBy: { sortOrder: "asc" } },
-        createdBy: { select: { id: true, name: true, avatarUrl: true } },
-        lockedBy: { select: { id: true, name: true } },
-      },
+      select: DESIGN_LANGUAGE_SELECT,
     });
 
-    return NextResponse.json({ styleguide });
+    return NextResponse.json({ designLanguage: styleguide });
   } catch (error) {
-    console.error("[PATCH /api/brandstyle]", error);
+    console.error("[PATCH /api/brandstyle/design-language]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

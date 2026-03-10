@@ -1308,6 +1308,16 @@ model BrandStyleguide {
   imagerySavedForAi     Boolean           @default(false)
   brandImages           Json?             // Array<{ url, alt, context }>
 
+  // Design Language
+  graphicElements       Json?
+  graphicElementsDonts  String[]
+  patternsTextures      Json?
+  iconographyStyle      Json?
+  iconographyDonts      String[]
+  gradientsEffects      Json?
+  layoutPrinciples      Json?
+  designLanguageSavedForAi Boolean        @default(false)
+
   isLocked              Boolean           @default(false)
   lockedAt              DateTime?
   lockedById            String?
@@ -2990,6 +3000,7 @@ model DetectedTrend {
   tags             String[]
   howToUse         String[]
   sourceUrl        String?
+  imageUrl         String?
 
   // Multi-source evidence (from AI research pipeline)
   sourceUrls       String[]

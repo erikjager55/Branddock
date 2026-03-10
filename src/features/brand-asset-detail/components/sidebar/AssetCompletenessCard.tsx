@@ -14,7 +14,7 @@ import type {
   BrandPersonalityFrameworkData,
   BrandStoryFrameworkData,
   BrandHouseValuesFrameworkData,
-  ESGFrameworkData,
+  SocialRelevancyFrameworkData,
   SWOTFrameworkData,
   PurposeKompasFrameworkData,
 } from '../../types/framework.types';
@@ -44,11 +44,13 @@ export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck
     fields.push({ label: 'Description', filled: !!(asset.description && asset.description.length > 0) });
   }
 
-  if (!asset.frameworkType || !asset.frameworkData) return fields;
+  if (!asset.frameworkType) return fields;
 
-  const data = typeof asset.frameworkData === 'string'
-    ? JSON.parse(asset.frameworkData as string)
-    : asset.frameworkData;
+  const data = !asset.frameworkData
+    ? null
+    : typeof asset.frameworkData === 'string'
+      ? JSON.parse(asset.frameworkData as string)
+      : asset.frameworkData;
 
   switch (asset.frameworkType) {
     case 'PURPOSE_WHEEL': {
@@ -226,13 +228,32 @@ export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck
       );
       break;
     }
-    // Legacy framework types
     case 'ESG': {
-      const pillars = (data as ESGFrameworkData)?.pillars;
+      const sr = data as SocialRelevancyFrameworkData;
+      const milieuScore = sr?.milieu?.statements?.reduce((s, st) => s + (st.score || 0), 0) ?? 0;
+      const mensScore = sr?.mens?.statements?.reduce((s, st) => s + (st.score || 0), 0) ?? 0;
+      const maatschappijScore = sr?.maatschappij?.statements?.reduce((s, st) => s + (st.score || 0), 0) ?? 0;
+      const authScores = sr?.authenticityScores;
+      const hasAuth = authScores && Object.values(authScores).some(v => typeof v === 'number' && v > 0);
       fields.push(
-        { label: 'Environmental', filled: !!pillars?.environmental?.description },
-        { label: 'Social', filled: !!pillars?.social?.description },
-        { label: 'Governance', filled: !!pillars?.governance?.description },
+        { label: 'Impact Statement', filled: !!sr?.impactStatement },
+        { label: 'Impact Narrative', filled: !!sr?.impactNarrative },
+        { label: 'Activism Level', filled: !!sr?.activismLevel },
+        { label: 'Environment Scores', filled: milieuScore > 0 },
+        { label: 'Environment Evidence', filled: !!sr?.milieu?.statements?.some(st => !!st.evidence) },
+        { label: 'People Scores', filled: mensScore > 0 },
+        { label: 'People Evidence', filled: !!sr?.mens?.statements?.some(st => !!st.evidence) },
+        { label: 'Society Scores', filled: maatschappijScore > 0 },
+        { label: 'Society Evidence', filled: !!sr?.maatschappij?.statements?.some(st => !!st.evidence) },
+        { label: 'Authenticity Assessment', filled: !!hasAuth },
+        { label: 'Proof Points', filled: Array.isArray(sr?.proofPoints) && sr.proofPoints.length > 0 },
+        { label: 'Certifications', filled: Array.isArray(sr?.certifications) && sr.certifications.length > 0 },
+        { label: 'Anti-Greenwashing', filled: !!sr?.antiGreenwashingStatement },
+        { label: 'SDG Alignment', filled: Array.isArray(sr?.sdgAlignment) && sr.sdgAlignment.length > 0 },
+        { label: 'Communication Principles', filled: Array.isArray(sr?.communicationPrinciples) && sr.communicationPrinciples.length > 0 },
+        { label: 'Key Stakeholders', filled: Array.isArray(sr?.keyStakeholders) && sr.keyStakeholders.length > 0 },
+        { label: 'Activation Channels', filled: Array.isArray(sr?.activationChannels) && sr.activationChannels.length > 0 },
+        { label: 'Annual Commitment', filled: !!sr?.annualCommitment },
       );
       break;
     }

@@ -95,7 +95,8 @@ export async function resolveExplorationConfig(
       dimensions: config.dimensions as unknown as StoredDimension[],
       feedbackPrompt: config.feedbackPrompt,
       reportPrompt: config.reportPrompt,
-      fieldSuggestionsConfig: config.fieldSuggestionsConfig as unknown as StoredFieldSuggestionConfig[] | null,
+      fieldSuggestionsConfig: (config.fieldSuggestionsConfig as unknown as StoredFieldSuggestionConfig[] | null)
+        ?? getDefaultFieldSuggestionsConfig(itemType, itemSubType),
       contextSources: config.contextSources,
       isActive: config.isActive,
       customKnowledge,
@@ -241,10 +242,13 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
   }
   if (itemType === 'brand_asset' && itemSubType === 'social-relevancy') {
     return [
-      { key: 'purpose_clarity', title: 'Purpose Clarity', icon: 'Compass', question: 'Why does your organization exist beyond making profit?' },
-      { key: 'mens', title: 'Impact on People', icon: 'Heart', question: 'How do your products or services contribute to personal growth and well-being?' },
-      { key: 'milieu', title: 'Impact on Environment', icon: 'Leaf', question: 'What steps has your organization taken toward sustainability?' },
-      { key: 'maatschappij', title: 'Impact on Society', icon: 'Globe', question: 'How does your brand help improve society?' },
+      { key: 'impact_foundation', title: 'Impact Foundation', icon: 'Sparkles', question: 'Why does your brand care about social impact? Tell me the story behind your commitment — was there a triggering moment, a founding belief, or an evolving realization?' },
+      { key: 'milieu_assessment', title: 'Environmental Impact', icon: 'Leaf', question: "Let's explore your environmental impact. How are sustainability criteria embedded in your procurement? How do you invest revenue in environmental improvement? How do you stimulate environment-improving activities? Be specific about evidence and outcomes." },
+      { key: 'mens_assessment', title: 'Impact on People', icon: 'Heart', question: 'How do your products and services contribute to personal wellbeing and a positive lifestyle? Think about both your customers and your employees separately. Where is your impact strongest, and where do you see room for improvement?' },
+      { key: 'maatschappij_assessment', title: 'Impact on Society', icon: 'Globe', question: 'How does your brand contribute to positive societal interaction, social harmony, and cohesion? Consider the impact through your products on society, and the impact within your organization on employees.' },
+      { key: 'authenticity_test', title: 'Authenticity Test', icon: 'ShieldCheck', question: 'Every brand talks about impact — do you walk the talk? Where is alignment between words and actions strongest? Where are the gaps? What would a critical journalist or skeptical consumer say about your claims?' },
+      { key: 'evidence_proof', title: 'Evidence & Proof', icon: 'Award', question: 'What concrete evidence makes your social impact credible? Think about certifications, measurable outcomes, independent validations, and specific initiatives where your values were proven through action.' },
+      { key: 'activation_communication', title: 'Activation & Communication', icon: 'TrendingUp', question: 'How do you communicate your social impact without greenwashing? Which UN SDGs align most closely (pick max 3)? What is your concrete annual commitment? Who benefits most from your impact?' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'purpose-statement') {
@@ -436,6 +440,25 @@ function getDefaultFieldSuggestionsConfig(
       { field: 'frameworkData.stakeholderBenefit', label: 'Stakeholder Benefit', type: 'text' as const, extractionHint: 'Describe who benefits from the vision and how' },
       { field: 'frameworkData.valuesAlignment', label: 'Values Alignment', type: 'text' as const, extractionHint: 'Describe how mission/vision reinforce core values' },
       { field: 'frameworkData.missionVisionTension', label: 'Mission-Vision Tension', type: 'text' as const, extractionHint: 'Extract the creative tension between present mission and future vision, including key milestones' },
+    ];
+  }
+  if (itemType === 'brand_asset' && itemSubType === 'social-relevancy') {
+    return [
+      { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the social relevancy positioning in one compelling paragraph' },
+      { field: 'frameworkData.impactStatement', label: 'Impact Statement', type: 'text' as const, extractionHint: 'Craft a clear, powerful one-sentence impact statement' },
+      { field: 'frameworkData.impactNarrative', label: 'Impact Narrative', type: 'text' as const, extractionHint: 'Write the story behind the commitment to social impact' },
+      { field: 'frameworkData.activismLevel', label: 'Activism Level', type: 'text' as const, extractionHint: 'Identify the brand activism level: Silent, Vocal, Leader, or Activist' },
+      { field: 'frameworkData.milieu.pillarReflection', label: 'Environment Reflection', type: 'text' as const, extractionHint: 'Reflect on the environmental pillar as a whole' },
+      { field: 'frameworkData.mens.pillarReflection', label: 'People Reflection', type: 'text' as const, extractionHint: 'Reflect on the people pillar as a whole' },
+      { field: 'frameworkData.maatschappij.pillarReflection', label: 'Society Reflection', type: 'text' as const, extractionHint: 'Reflect on the society pillar as a whole' },
+      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'array' as const, extractionHint: 'Extract 3-7 concrete proof points as a JSON array of strings' },
+      { field: 'frameworkData.certifications', label: 'Certifications', type: 'array' as const, extractionHint: 'Extract relevant certifications (B Corp, ISO 14001, Fair Trade, etc.) as a JSON array of strings' },
+      { field: 'frameworkData.antiGreenwashingStatement', label: 'Anti-Greenwashing Statement', type: 'text' as const, extractionHint: 'Write an honest acknowledgment of where the brand falls short' },
+      { field: 'frameworkData.sdgAlignment', label: 'SDG Alignment', type: 'array' as const, extractionHint: 'Identify 1-3 most relevant UN SDG numbers (1-17) as a JSON array of numbers' },
+      { field: 'frameworkData.communicationPrinciples', label: 'Communication Principles', type: 'array' as const, extractionHint: 'Extract 3-5 principles for impact communication as a JSON array of strings' },
+      { field: 'frameworkData.keyStakeholders', label: 'Key Stakeholders', type: 'array' as const, extractionHint: 'Identify the key stakeholder groups who benefit most from the social impact as a JSON array of strings' },
+      { field: 'frameworkData.activationChannels', label: 'Activation Channels', type: 'array' as const, extractionHint: 'Suggest 3-5 channels for communicating social impact as a JSON array of strings' },
+      { field: 'frameworkData.annualCommitment', label: 'Annual Commitment', type: 'text' as const, extractionHint: 'Craft a concrete, measurable annual commitment' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'transformative-goals') {

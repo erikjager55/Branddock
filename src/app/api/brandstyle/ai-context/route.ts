@@ -67,6 +67,18 @@ export async function GET() {
       };
     }
 
+    if (styleguide.designLanguageSavedForAi) {
+      sections.designLanguage = {
+        graphicElements: styleguide.graphicElements,
+        graphicElementsDonts: styleguide.graphicElementsDonts,
+        patternsTextures: styleguide.patternsTextures,
+        iconographyStyle: styleguide.iconographyStyle,
+        iconographyDonts: styleguide.iconographyDonts,
+        gradientsEffects: styleguide.gradientsEffects,
+        layoutPrinciples: styleguide.layoutPrinciples,
+      };
+    }
+
     return NextResponse.json({ context: sections });
   } catch (error) {
     console.error("[GET /api/brandstyle/ai-context]", error);

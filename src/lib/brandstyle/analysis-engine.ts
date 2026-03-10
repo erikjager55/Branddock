@@ -2,13 +2,14 @@
 // Brandstyle Analysis Engine
 //
 // Orchestrates URL scraping / PDF parsing → preprocessing →
-// two-phase AI analysis → DB write.
+// three-phase AI analysis → DB write.
 // Runs as a fire-and-forget background task, updating analysis
 // status in the database progressively so the frontend can poll.
 //
 // AI: Claude Sonnet 4.5 via createClaudeStructuredCompletion
 // Phase 1: Visual Identity (colors + typography + logo)
 // Phase 2: Voice & Imagery (tone + photography + illustration)
+// Phase 3: Design Language (graphic elements + patterns + iconography + gradients + layout)
 // =============================================================
 
 import { Prisma } from '@prisma/client';
@@ -25,9 +26,11 @@ import { parsePdf, type ParsedPdfData } from './pdf-parser';
 import {
   buildVisualIdentityPrompt,
   buildVoiceImageryPrompt,
+  buildDesignLanguagePrompt,
   buildPdfAnalysisPrompt,
   VISUAL_IDENTITY_SYSTEM,
   VOICE_IMAGERY_SYSTEM,
+  DESIGN_LANGUAGE_SYSTEM,
   PDF_ANALYSIS_SYSTEM_PROMPT,
   type ProcessedData,
   type ProcessedColorGroup,
@@ -81,7 +84,46 @@ interface VoiceImageryResult {
   imageryDonts: string[];
 }
 
-interface CombinedResult extends VisualIdentityResult, VoiceImageryResult {}
+interface DesignLanguageResult {
+  graphicElements: {
+    brandShapes?: string[];
+    decorativeElements?: string[];
+    visualDevices?: string[];
+    usageNotes?: string;
+  } | null;
+  graphicElementsDonts: string[];
+  patternsTextures: {
+    patterns?: string[];
+    textures?: string[];
+    backgrounds?: string[];
+    usageNotes?: string;
+  } | null;
+  iconographyStyle: {
+    style?: string;
+    strokeWeight?: string;
+    cornerRadius?: string;
+    sizing?: string;
+    colorUsage?: string;
+    usageNotes?: string;
+  } | null;
+  iconographyDonts: string[];
+  gradientsEffects: Array<{
+    name: string;
+    type: string;
+    colors: string[];
+    angle?: string;
+    usage?: string;
+  }>;
+  layoutPrinciples: {
+    gridSystem?: string;
+    spacingScale?: string;
+    whitespacePhilosophy?: string;
+    compositionRules?: string[];
+    usageNotes?: string;
+  } | null;
+}
+
+interface CombinedResult extends VisualIdentityResult, VoiceImageryResult, Partial<DesignLanguageResult> {}
 
 // ─── Status updater ───────────────────────────────────
 
@@ -184,9 +226,23 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       return;
     }
 
-    // Step 5: Write to DB
+    // Step 5: AI Call 3 — Design Language
+    let designResult: DesignLanguageResult | null = null;
+    try {
+      const dlPrompt = buildDesignLanguagePrompt(processed);
+      designResult = await createClaudeStructuredCompletion<DesignLanguageResult>(
+        DESIGN_LANGUAGE_SYSTEM,
+        dlPrompt,
+        { temperature: 0.3, maxTokens: 4096 },
+      );
+    } catch (err) {
+      // Design language is non-critical — log and continue
+      console.warn(`[brandstyle-analysis] Design language phase failed (non-critical): ${err instanceof Error ? err.message : String(err)}`);
+    }
+
+    // Step 6: Write to DB
     await updateStatus(styleguideId, 'GENERATING_STYLEGUIDE');
-    const combined: CombinedResult = { ...visualResult, ...voiceResult };
+    const combined: CombinedResult = { ...visualResult, ...voiceResult, ...(designResult ?? {}) };
     await writeResultToDb(styleguideId, combined, processed.logoUrls, processed.brandImages);
 
     // Done — clear any stale errorMessage from previous failed runs
@@ -517,6 +573,25 @@ async function writeResultToDb(
       // Brand images from scraping
       brandImages: brandImages && brandImages.length > 0
         ? (brandImages as unknown as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
+
+      // Design Language
+      graphicElements: isNonEmptyObject(result.graphicElements)
+        ? (result.graphicElements as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
+      graphicElementsDonts: result.graphicElementsDonts || [],
+      patternsTextures: isNonEmptyObject(result.patternsTextures)
+        ? (result.patternsTextures as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
+      iconographyStyle: isNonEmptyObject(result.iconographyStyle)
+        ? (result.iconographyStyle as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
+      iconographyDonts: result.iconographyDonts || [],
+      gradientsEffects: Array.isArray(result.gradientsEffects) && result.gradientsEffects.length > 0
+        ? (result.gradientsEffects as unknown as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
+      layoutPrinciples: isNonEmptyObject(result.layoutPrinciples)
+        ? (result.layoutPrinciples as Prisma.InputJsonValue)
         : Prisma.JsonNull,
     },
   });

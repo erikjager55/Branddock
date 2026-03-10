@@ -57,6 +57,7 @@ export interface PendingTrend {
   evidenceCount: number;
   sourceUrls: string[];
   whyNow: string | null;
+  imageUrl: string | null;
   scores?: TrendScores;
 }
 
@@ -237,6 +238,7 @@ export async function runTrendResearch(
 
     // Scrape all URLs
     const scrapedSources: Array<{ name: string; url: string; content: string }> = [];
+    const sourceImages = new Map<string, string>();
 
     for (const urlEntry of allUrls) {
       if (state.cancelled) break;
@@ -246,6 +248,17 @@ export async function runTrendResearch(
 
       try {
         const scraped = await scrapeProductUrl(urlEntry.url);
+
+        // Pick best image: og-image > product > general
+        if (scraped.images.length > 0) {
+          const best =
+            scraped.images.find((img) => img.context === 'og-image') ??
+            scraped.images.find((img) => img.context === 'product') ??
+            scraped.images[0];
+          if (best) {
+            sourceImages.set(urlEntry.url, best.url);
+          }
+        }
 
         if (!scraped.bodyText || scraped.bodyText.trim().length < 100) {
           const skipMsg = `${displayUrl}: Insufficient content`;
@@ -453,6 +466,17 @@ export async function runTrendResearch(
         ? realSourceUrls[0] ?? null
         : t.sourceUrl;
 
+      // Resolve best image from scraped sources — check primary sourceUrl first, then all sourceUrls
+      const candidateUrls = [realSourceUrl, ...realSourceUrls].filter(Boolean) as string[];
+      let resolvedImageUrl: string | null = null;
+      for (const url of candidateUrls) {
+        const img = sourceImages.get(url);
+        if (img) {
+          resolvedImageUrl = img;
+          break;
+        }
+      }
+
       return {
         title: t.title,
         slug: t.slug,
@@ -477,6 +501,7 @@ export async function runTrendResearch(
         evidenceCount: t.evidenceCount,
         sourceUrls: realSourceUrls,
         whyNow: t.whyNow,
+        imageUrl: resolvedImageUrl,
         scores: t.scores,
       };
     });

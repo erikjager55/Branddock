@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Lock, TrendingUp, TrendingDown, Minus, Zap } from 'lucide-react';
 import { Card, Badge, ProgressBar } from '@/components/shared';
 import {
@@ -23,6 +24,7 @@ const DIRECTION_ICONS: Record<string, React.ComponentType<{ className?: string }
 
 /** Trend card following BrandAssetCard / PersonaCard pattern */
 export function TrendCard({ trend, onClick }: TrendCardProps) {
+  const [imageError, setImageError] = useState(false);
   const categoryConfig = CATEGORY_COLORS[trend.category];
   const impactConfig = IMPACT_COLORS[trend.impactLevel];
   const sourceConfig = DETECTION_SOURCE_CONFIG[trend.detectionSource];
@@ -52,11 +54,20 @@ export function TrendCard({ trend, onClick }: TrendCardProps) {
       {/* Header */}
       <div className="p-5">
         <div className="flex items-start gap-3">
-          <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${categoryConfig.bg}`}>
-            <span className={`text-base font-bold ${categoryConfig.text}`}>
-              {categoryConfig.label.charAt(0)}
-            </span>
-          </div>
+          {trend.imageUrl && !imageError ? (
+            <img
+              src={trend.imageUrl}
+              alt=""
+              className="flex-shrink-0 w-10 h-10 rounded-xl object-cover"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${categoryConfig.bg}`}>
+              <span className={`text-base font-bold ${categoryConfig.text}`}>
+                {categoryConfig.label.charAt(0)}
+              </span>
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-gray-900 line-clamp-1">{trend.title}</h3>
             {trend.description && (

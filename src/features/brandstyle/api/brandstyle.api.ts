@@ -6,6 +6,7 @@ import type {
   TypographySection,
   ToneOfVoiceSection,
   ImagerySection,
+  DesignLanguageSection,
   StyleguideColor,
   AiContextResponse,
   SaveForAiSection,
@@ -165,6 +166,22 @@ export async function updateImagerySection(data: Partial<ImagerySection>): Promi
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error("Failed to update imagery section");
+  return res.json();
+}
+
+export async function fetchDesignLanguageSection(): Promise<{ designLanguage: DesignLanguageSection }> {
+  const res = await fetch(`${BASE}/design-language`);
+  if (!res.ok) throw new Error("Failed to fetch design language section");
+  return res.json();
+}
+
+export async function updateDesignLanguageSection(data: Partial<DesignLanguageSection>): Promise<{ designLanguage: DesignLanguageSection }> {
+  const res = await fetch(`${BASE}/design-language`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update design language section");
   return res.json();
 }
 

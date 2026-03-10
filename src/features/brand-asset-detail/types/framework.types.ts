@@ -365,7 +365,56 @@ export interface BrandStoryFrameworkData {
   theOutcome?: string;
 }
 
-// ─── 11. Core Values (BrandHouse© Model) ────────────────────
+// ─── 11. Social Relevancy (Triple Bottom Line / B Corp / Brand Activism) ──
+
+export interface SocialRelevancyStatement {
+  text: string;        // Fixed statement text (readonly, from constants)
+  score: number;       // 1-5 self-assessment score
+  evidence: string;    // Concrete evidence supporting the score
+  target: string;      // Specific improvement goal
+  timeline: string;    // When (e.g. "Q4 2026", "2030")
+}
+
+export interface SocialRelevancyPillar {
+  statements: SocialRelevancyStatement[];
+  pillarReflection: string; // Free reflection on the pillar as a whole
+}
+
+export interface SocialRelevancyAuthenticityScores {
+  walkTheTalk: number;        // 1-5: Do we do what we say?
+  transparency: number;       // 1-5: Are we open about progress and failures?
+  consistency: number;        // 1-5: Is this integrated in all touchpoints?
+  stakeholderTrust: number;   // 1-5: Do stakeholders believe our claims?
+  measurability: number;      // 1-5: Can claims be independently verified?
+  longTermCommitment: number; // 1-5: Is this core strategy or a campaign?
+}
+
+export interface SocialRelevancyFrameworkData {
+  // Card 1: Social Impact Foundation
+  impactStatement: string;      // Why does this brand care about social impact?
+  impactNarrative: string;      // Backstory — trigger, founding moment, evolution
+  activismLevel: string;        // "Silent" | "Vocal" | "Leader" | "Activist"
+
+  // Cards 2-4: Three Pillars (Milieu / Mens / Maatschappij)
+  milieu: SocialRelevancyPillar;      // Environment
+  mens: SocialRelevancyPillar;        // People
+  maatschappij: SocialRelevancyPillar; // Society
+
+  // Card 5: Authenticity & Evidence
+  authenticityScores: SocialRelevancyAuthenticityScores;
+  proofPoints: string[];               // 3-7 concrete evidence items
+  certifications: string[];            // B Corp, ISO 14001, Fair Trade, etc.
+  antiGreenwashingStatement: string;   // Honest acknowledgment of shortcomings
+
+  // Card 6: Activation & Communication
+  sdgAlignment: number[];              // UN SDGs (1-17), max 3 recommended
+  communicationPrinciples: string[];   // 3-5 principles for impact communication
+  keyStakeholders: string[];           // Who benefits most?
+  activationChannels: string[];        // Via which channels?
+  annualCommitment: string;            // Concrete, measurable annual commitment
+}
+
+// ─── 12. Core Values (BrandHouse© Model) ────────────────────
 
 export interface BrandHouseValue {
   name: string;
@@ -410,6 +459,7 @@ export type FrameworkData =
   | BrandPersonalityFrameworkData
   | BrandStoryFrameworkData
   | BrandHouseValuesFrameworkData
+  | SocialRelevancyFrameworkData
   | ESGFrameworkData
   | SWOTFrameworkData
   | PurposeKompasFrameworkData;

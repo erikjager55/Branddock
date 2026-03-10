@@ -54,6 +54,7 @@ export interface DetectedTrendWithMeta {
   howToUse: string[];
   detectionSource: TrendDetectionSource;
   sourceUrl: string | null;
+  imageUrl: string | null;
   sourceUrls: string[];
   dataPoints: string[];
   evidenceCount: number;
@@ -91,6 +92,7 @@ export interface CreateManualTrendBody {
   tags?: string[];
   howToUse?: string[];
   sourceUrl?: string;
+  imageUrl?: string;
 }
 
 export interface UpdateTrendBody {
@@ -105,6 +107,7 @@ export interface UpdateTrendBody {
   industries?: string[];
   tags?: string[];
   howToUse?: string[];
+  imageUrl?: string | null;
 }
 
 // ─── Research Job ────────────────────────────────────────────
@@ -136,6 +139,7 @@ export interface PendingTrendItem {
   evidenceCount?: number;
   sourceUrls?: string[];
   whyNow?: string;
+  imageUrl?: string | null;
   scores?: TrendScores;
 }
 

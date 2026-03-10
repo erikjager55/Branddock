@@ -9,6 +9,7 @@ import {
   updateTypographySection,
   updateToneOfVoiceSection,
   updateImagerySection,
+  updateDesignLanguageSection,
   saveForAi,
   addColor,
   deleteColor,
@@ -87,6 +88,7 @@ export function useUpdateSection(section: string) {
     typography: updateTypographySection,
     "tone-of-voice": updateToneOfVoiceSection,
     imagery: updateImagerySection,
+    "design-language": updateDesignLanguageSection,
   };
 
   return useMutation({

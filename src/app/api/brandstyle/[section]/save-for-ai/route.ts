@@ -8,6 +8,7 @@ const SECTION_FIELD_MAP: Record<string, string> = {
   typography: "typographySavedForAi",
   "tone-of-voice": "toneSavedForAi",
   imagery: "imagerySavedForAi",
+  "design-language": "designLanguageSavedForAi",
 };
 
 // =============================================================

@@ -52,6 +52,57 @@ export interface BrandImage {
   context: 'hero' | 'lifestyle' | 'product' | 'team' | 'general';
 }
 
+// Design Language
+export interface GraphicElementsData {
+  brandShapes?: string[];
+  decorativeElements?: string[];
+  visualDevices?: string[];
+  usageNotes?: string;
+}
+
+export interface PatternsTexturesData {
+  patterns?: string[];
+  textures?: string[];
+  backgrounds?: string[];
+  usageNotes?: string;
+}
+
+export interface IconographyStyleData {
+  style?: string;           // "line" | "fill" | "duo-tone" | "custom"
+  strokeWeight?: string;
+  cornerRadius?: string;
+  sizing?: string;
+  colorUsage?: string;
+  usageNotes?: string;
+}
+
+export interface GradientDefinition {
+  name: string;
+  type: string;             // "linear" | "radial" | "conic"
+  colors: string[];
+  angle?: string;
+  usage?: string;
+}
+
+export interface LayoutPrinciplesData {
+  gridSystem?: string;
+  spacingScale?: string;
+  whitespacePhilosophy?: string;
+  compositionRules?: string[];
+  usageNotes?: string;
+}
+
+export interface DesignLanguageSection {
+  graphicElements: GraphicElementsData | null;
+  graphicElementsDonts: string[];
+  patternsTextures: PatternsTexturesData | null;
+  iconographyStyle: IconographyStyleData | null;
+  iconographyDonts: string[];
+  gradientsEffects: GradientDefinition[] | null;
+  layoutPrinciples: LayoutPrinciplesData | null;
+  designLanguageSavedForAi: boolean;
+}
+
 export interface BrandStyleguide {
   id: string;
   status: "DRAFT" | "ANALYZING" | "COMPLETE" | "ERROR";
@@ -91,6 +142,16 @@ export interface BrandStyleguide {
   imageryDonts: string[];
   imagerySavedForAi: boolean;
   brandImages: BrandImage[] | null;
+
+  // Design Language
+  graphicElements: GraphicElementsData | null;
+  graphicElementsDonts: string[];
+  patternsTextures: PatternsTexturesData | null;
+  iconographyStyle: IconographyStyleData | null;
+  iconographyDonts: string[];
+  gradientsEffects: GradientDefinition[] | null;
+  layoutPrinciples: LayoutPrinciplesData | null;
+  designLanguageSavedForAi: boolean;
 
   // Lock
   isLocked: boolean;
@@ -158,6 +219,6 @@ export interface AiContextResponse {
   context: Record<string, unknown> | null;
 }
 
-export type StyleguideTab = "logo" | "colors" | "typography" | "tone_of_voice" | "imagery";
+export type StyleguideTab = "logo" | "colors" | "typography" | "tone_of_voice" | "imagery" | "design_language";
 
-export type SaveForAiSection = "logo" | "colors" | "typography" | "tone-of-voice" | "imagery";
+export type SaveForAiSection = "logo" | "colors" | "typography" | "tone-of-voice" | "imagery" | "design-language";

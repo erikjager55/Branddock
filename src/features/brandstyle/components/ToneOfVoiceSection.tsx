@@ -1,7 +1,8 @@
 "use client";
 
-import { CheckCircle, X, Eye, Lightbulb } from "lucide-react";
-import { Card } from "@/components/shared";
+import { useState, useCallback } from "react";
+import { CheckCircle, X, Eye, Lightbulb, Pencil, Plus, Trash2 } from "lucide-react";
+import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
 import { EditableStringList } from "./EditableStringList";
 import { useUpdateSection } from "../hooks/useBrandstyleHooks";
@@ -43,6 +44,47 @@ export function ToneOfVoiceSection({ styleguide, canEdit }: ToneOfVoiceSectionPr
   const doExamples = examples.filter((e) => e.type === "do");
   const dontExamples = examples.filter((e) => e.type === "dont");
   const updateTone = useUpdateSection("tone-of-voice");
+
+  // Example phrases editing state
+  const [isEditingExamples, setIsEditingExamples] = useState(false);
+  const [editExamples, setEditExamples] = useState<ExamplePhrase[]>([]);
+
+  const startEditExamples = useCallback(() => {
+    setEditExamples(examples.map((e) => ({ ...e })));
+    setIsEditingExamples(true);
+  }, [examples]);
+
+  const cancelEditExamples = () => {
+    setIsEditingExamples(false);
+  };
+
+  const saveExamples = () => {
+    const cleaned = editExamples.filter((e) => e.text.trim());
+    updateTone.mutate(
+      { examplePhrases: cleaned.length > 0 ? cleaned : null },
+      { onSuccess: () => setIsEditingExamples(false) },
+    );
+  };
+
+  const updateExample = (index: number, text: string) => {
+    setEditExamples((prev) => prev.map((e, i) => (i === index ? { ...e, text } : e)));
+  };
+
+  const removeExample = (index: number) => {
+    setEditExamples((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const addExample = (type: "do" | "dont") => {
+    setEditExamples((prev) => [...prev, { text: "", type }]);
+  };
+
+  // Split edit examples by type for rendering
+  const editDoExamples = editExamples
+    .map((e, i) => ({ ...e, originalIndex: i }))
+    .filter((e) => e.type === "do");
+  const editDontExamples = editExamples
+    .map((e, i) => ({ ...e, originalIndex: i }))
+    .filter((e) => e.type === "dont");
 
   return (
     <div data-testid="tone-of-voice-section" className="space-y-6">
@@ -115,39 +157,157 @@ export function ToneOfVoiceSection({ styleguide, canEdit }: ToneOfVoiceSectionPr
       </Card>
 
       {/* Do / Don't Examples */}
-      {examples.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {doExamples.length > 0 && (
-            <Card>
-              <h3 className="text-sm font-semibold text-emerald-700 mb-3">
-                Do
-              </h3>
+      {isEditingExamples ? (
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-900">Do / Don&apos;t Examples</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Do column */}
+            <div>
+              <h4 className="text-sm font-semibold text-emerald-700 mb-3">Do</h4>
               <div className="space-y-2">
-                {doExamples.map((e, i) => (
-                  <div key={i} className="flex items-start gap-2 text-sm text-gray-600 p-2 bg-emerald-50 rounded-md">
-                    <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
-                    <span className="italic">&ldquo;{e.text}&rdquo;</span>
+                {editDoExamples.map((e) => (
+                  <div key={e.originalIndex} className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <input
+                      value={e.text}
+                      onChange={(ev) => updateExample(e.originalIndex, ev.target.value)}
+                      placeholder="e.g. We're here to help you succeed."
+                      className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 italic"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExample(e.originalIndex)}
+                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      title="Remove"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => addExample("do")}
+                  className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 transition-colors mt-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add &ldquo;do&rdquo;
+                </button>
               </div>
-            </Card>
-          )}
-          {dontExamples.length > 0 && (
-            <Card>
-              <h3 className="text-sm font-semibold text-red-700 mb-3">
-                Don&apos;t
-              </h3>
+            </div>
+
+            {/* Don't column */}
+            <div>
+              <h4 className="text-sm font-semibold text-red-700 mb-3">Don&apos;t</h4>
               <div className="space-y-2">
-                {dontExamples.map((e, i) => (
-                  <div key={i} className="flex items-start gap-2 text-sm text-gray-600 p-2 bg-red-50 rounded-md">
-                    <X className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-                    <span className="italic">&ldquo;{e.text}&rdquo;</span>
+                {editDontExamples.map((e) => (
+                  <div key={e.originalIndex} className="flex items-center gap-2">
+                    <X className="w-4 h-4 text-red-500 flex-shrink-0" />
+                    <input
+                      value={e.text}
+                      onChange={(ev) => updateExample(e.originalIndex, ev.target.value)}
+                      placeholder="e.g. Dear valued customer..."
+                      className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 italic"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExample(e.originalIndex)}
+                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      title="Remove"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => addExample("dont")}
+                  className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 transition-colors mt-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add &ldquo;don&apos;t&rdquo;
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-4">
+            <Button variant="primary" size="sm" onClick={saveExamples} isLoading={updateTone.isPending}>
+              Save
+            </Button>
+            <Button variant="secondary" size="sm" onClick={cancelEditExamples}>
+              Cancel
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <>
+          {examples.length > 0 ? (
+            <div className="relative">
+              {canEdit && (
+                <div className="absolute top-3 right-3 z-10">
+                  <button
+                    onClick={startEditExamples}
+                    className="p-1 text-gray-400 hover:text-teal-600 transition-colors bg-white rounded"
+                    title="Edit examples"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {doExamples.length > 0 && (
+                  <Card>
+                    <h3 className="text-sm font-semibold text-emerald-700 mb-3">Do</h3>
+                    <div className="space-y-2">
+                      {doExamples.map((e, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm text-gray-600 p-2 bg-emerald-50 rounded-md">
+                          <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                          <span className="italic">&ldquo;{e.text}&rdquo;</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+                {dontExamples.length > 0 && (
+                  <Card>
+                    <h3 className="text-sm font-semibold text-red-700 mb-3">Don&apos;t</h3>
+                    <div className="space-y-2">
+                      {dontExamples.map((e, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm text-gray-600 p-2 bg-red-50 rounded-md">
+                          <X className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+                          <span className="italic">&ldquo;{e.text}&rdquo;</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+              </div>
+            </div>
+          ) : canEdit ? (
+            <Card>
+              <div className="py-4 text-center text-sm text-gray-400">
+                <p>No do/don&apos;t examples yet.</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditExamples([
+                      { text: "", type: "do" },
+                      { text: "", type: "dont" },
+                    ]);
+                    setIsEditingExamples(true);
+                  }}
+                  className="mt-2 inline-flex items-center gap-1.5 text-teal-600 hover:text-teal-700 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add examples
+                </button>
               </div>
             </Card>
-          )}
-        </div>
+          ) : null}
+        </>
       )}
 
       <AiContentBanner section="tone-of-voice" savedForAi={styleguide.toneSavedForAi} />

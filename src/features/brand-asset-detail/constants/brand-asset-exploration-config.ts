@@ -16,55 +16,80 @@ import type { DimensionConfig, FieldMapping } from '@/components/ai-exploration/
 
 const SOCIAL_RELEVANCY_DIMENSIONS: DimensionConfig[] = [
   {
-    key: 'purpose_clarity',
-    label: 'Purpose Clarity',
-    icon: Compass,
+    key: 'impact_foundation',
+    label: 'Impact Foundation',
+    icon: Sparkles,
     color: 'teal',
     bgClass: 'bg-teal-100',
     textClass: 'text-teal-600',
     defaultQuestions: [
-      'Why does your organization exist beyond making profit?',
-      'What change do you want to see in the world?',
-      'How does your brand contribute to that change?',
+      'Why does your brand care about social impact? Tell me the story behind your commitment — was there a triggering moment, a founding belief, or an evolving realization?',
     ],
   },
   {
-    key: 'mens',
+    key: 'milieu_assessment',
+    label: 'Environmental Impact',
+    icon: Leaf,
+    color: 'emerald',
+    bgClass: 'bg-emerald-100',
+    textClass: 'text-emerald-600',
+    defaultQuestions: [
+      'How are sustainability criteria embedded in your procurement? How do you invest revenue in environmental improvement? How do you stimulate environment-improving activities? Be specific about evidence and outcomes.',
+    ],
+  },
+  {
+    key: 'mens_assessment',
     label: 'Impact on People',
     icon: Heart,
     color: 'rose',
     bgClass: 'bg-rose-100',
     textClass: 'text-rose-600',
     defaultQuestions: [
-      'How do your products contribute to personal growth?',
-      'What impact do you have on employee well-being?',
-      'How do you support a healthier lifestyle?',
+      'How do your products and services contribute to personal wellbeing and a positive lifestyle? Think about both your customers and your employees separately. Where is your impact strongest, and where do you see room for improvement?',
     ],
   },
   {
-    key: 'milieu',
-    label: 'Impact on Environment',
-    icon: Leaf,
-    color: 'emerald',
-    bgClass: 'bg-emerald-100',
-    textClass: 'text-emerald-600',
-    defaultQuestions: [
-      'What steps have you taken toward sustainability?',
-      'How does your production minimize environmental impact?',
-      'What sustainable innovations are you pursuing?',
-    ],
-  },
-  {
-    key: 'maatschappij',
+    key: 'maatschappij_assessment',
     label: 'Impact on Society',
     icon: Globe,
     color: 'blue',
     bgClass: 'bg-blue-100',
     textClass: 'text-blue-600',
     defaultQuestions: [
-      'How does your brand improve society?',
-      'Do you fight inequality or promote education?',
-      'How do you make tools accessible to a wider audience?',
+      'How does your brand contribute to positive societal interaction, social harmony, and cohesion? Consider the impact through your products on society, and the impact within your organization on employees.',
+    ],
+  },
+  {
+    key: 'authenticity_test',
+    label: 'Authenticity Test',
+    icon: ShieldCheck,
+    color: 'amber',
+    bgClass: 'bg-amber-100',
+    textClass: 'text-amber-600',
+    defaultQuestions: [
+      'Every brand talks about impact — do you walk the talk? Where is alignment between words and actions strongest? Where are the gaps? What would a critical journalist or skeptical consumer say about your claims?',
+    ],
+  },
+  {
+    key: 'evidence_proof',
+    label: 'Evidence & Proof',
+    icon: Award,
+    color: 'indigo',
+    bgClass: 'bg-indigo-100',
+    textClass: 'text-indigo-600',
+    defaultQuestions: [
+      'What concrete evidence makes your social impact credible? Think about certifications, measurable outcomes, independent validations, and specific initiatives where your values were proven through action.',
+    ],
+  },
+  {
+    key: 'activation_communication',
+    label: 'Activation & Communication',
+    icon: TrendingUp,
+    color: 'violet',
+    bgClass: 'bg-violet-100',
+    textClass: 'text-violet-600',
+    defaultQuestions: [
+      'How do you communicate your social impact without greenwashing? Which UN SDGs align most closely (pick max 3)? What is your concrete annual commitment? Who benefits most from your impact?',
     ],
   },
 ];
@@ -832,6 +857,7 @@ export function getDimensionsForSlug(slug: string, frameworkType?: string): Dime
       case 'BRAND_PERSONALITY': return BRAND_PERSONALITY_DIMENSIONS;
       case 'BRAND_STORY': return BRAND_STORY_DIMENSIONS;
       case 'BRANDHOUSE_VALUES': return BRANDHOUSE_VALUES_DIMENSIONS;
+      case 'ESG': return SOCIAL_RELEVANCY_DIMENSIONS;
     }
   }
 

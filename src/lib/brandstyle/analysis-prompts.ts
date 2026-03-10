@@ -295,7 +295,39 @@ Return a JSON object with this exact structure:
   "photographyGuidelines": ["guideline 1", "guideline 2"],
   "illustrationGuidelines": ["guideline 1", "guideline 2"],
   "imageryDonts": ["don't 1", "don't 2"],
-  "colorDonts": ["don't 1", "don't 2"]
+  "colorDonts": ["don't 1", "don't 2"],
+  "graphicElements": {
+    "brandShapes": ["shape 1"],
+    "decorativeElements": ["element 1"],
+    "visualDevices": ["device 1"],
+    "usageNotes": "How graphic elements are used"
+  },
+  "graphicElementsDonts": ["don't 1"],
+  "patternsTextures": {
+    "patterns": ["pattern 1"],
+    "textures": ["texture 1"],
+    "backgrounds": ["background 1"],
+    "usageNotes": "How patterns/textures are used"
+  },
+  "iconographyStyle": {
+    "style": "line|fill|duo-tone|custom",
+    "strokeWeight": "1.5px",
+    "cornerRadius": "Rounded",
+    "sizing": "16px inline, 24px standalone",
+    "colorUsage": "Primary for active, gray for inactive",
+    "usageNotes": "Icon approach"
+  },
+  "iconographyDonts": ["don't 1"],
+  "gradientsEffects": [
+    { "name": "Gradient Name", "type": "linear", "colors": ["#hex1", "#hex2"], "angle": "135deg", "usage": "Where used" }
+  ],
+  "layoutPrinciples": {
+    "gridSystem": "Grid description",
+    "spacingScale": "Spacing values",
+    "whitespacePhilosophy": "Whitespace approach",
+    "compositionRules": ["rule 1"],
+    "usageNotes": "Layout approach"
+  }
 }
 
 IMPORTANT:
@@ -305,13 +337,121 @@ IMPORTANT:
 - For typeScale: ONLY include font sizes that are explicitly mentioned in the document text (e.g., "H1: 36px"). If no sizes are mentioned, return an EMPTY array [].
 - For tone-of-voice: Analyze the document's own writing style. Prefix guidelines with "OBSERVED:" or "RECOMMENDED:" to distinguish facts from suggestions.
 - For photography: If the document describes photography guidelines, extract them faithfully. Otherwise mark as RECOMMENDED.
-- Maximum 12 colors total.
+- For design language: If the document describes graphic elements, iconography, gradients, or layout rules, extract them. Otherwise provide recommendations based on the brand's visual identity.
+- Maximum 12 colors total. Maximum 4 gradients.
 - Be specific to this brand, not generic.`;
+}
+
+// ─── Design Language Prompt (Call 3) ─────────────────
+
+const DESIGN_LANGUAGE_SYSTEM_PROMPT = `You are an expert brand designer specializing in design systems and visual design language. Analyze the extracted website/document data and produce structured design language guidelines covering graphic elements, patterns, iconography, gradients, and layout principles.
+
+CRITICAL RULES:
+1. Base analysis on the ACTUAL CSS, HTML structure, and visual patterns found in the data.
+2. For GRADIENTS: Extract real CSS gradients if found. Include the exact colors and angles.
+3. For ICONOGRAPHY: Determine icon style from icon libraries detected (e.g., Lucide, FontAwesome, Material Icons, Heroicons) or SVG patterns.
+4. For LAYOUT: Extract actual spacing values, grid patterns, and border-radius values from CSS.
+5. For GRAPHIC ELEMENTS: Identify decorative shapes, dividers, overlays, or recurring visual motifs.
+6. For PATTERNS: Identify background patterns, textures, or surface treatments.
+7. If something is NOT detected, you may RECOMMEND based on the brand's existing visual identity (colors, typography, tone). Prefix with "RECOMMENDED:".
+8. Return ONLY valid JSON. No markdown, no explanation.`;
+
+/**
+ * Build the Design Language prompt (graphic elements + patterns + iconography + gradients + layout).
+ * Input: CSS data, body text, site metadata.
+ */
+export function buildDesignLanguagePrompt(data: ProcessedData): string {
+  const source = data.isPdf
+    ? `File: ${data.pdfFileName || 'Unknown'}\nTitle: ${data.pdfMetadata?.title || 'Unknown'}`
+    : `URL: ${data.url || 'Unknown'}\nTitle: ${data.title || 'Unknown'}\nDescription: ${data.description || 'No description'}`;
+
+  // CSS variables that might indicate spacing, radius, gradients
+  const designVars = (data.cssVariables ?? [])
+    .filter((v) => /radius|spacing|gap|gradient|shadow|border|grid|icon/i.test(v.name))
+    .map((v) => `  ${v.name}: ${v.value}`)
+    .join('\n') || 'None found';
+
+  // Font info for consistency reference
+  const fontsSection = data.fonts.length > 0 ? data.fonts.join(', ') : 'No fonts detected';
+
+  return `Analyze this data and generate Design Language guidelines.
+
+## Source
+${source}
+
+## CSS Design Variables (spacing, radius, grid, shadow, gradient)
+${designVars}
+
+## Detected Fonts (for icon style consistency)
+${fontsSection}
+
+## Number of Brand Colors Available
+${data.colorGroups?.fromVariables?.length ?? 0} from CSS variables, ${data.colorGroups?.byFrequency?.length ?? 0} by frequency
+
+---
+
+Return a JSON object with this exact structure:
+{
+  "graphicElements": {
+    "brandShapes": ["e.g., Rounded rectangles", "Circular badges"],
+    "decorativeElements": ["e.g., Gradient overlays", "Subtle line dividers"],
+    "visualDevices": ["e.g., Card-based layouts", "Icon+text pairings"],
+    "usageNotes": "Brief description of how graphic elements are used"
+  },
+  "graphicElementsDonts": [
+    "e.g., Avoid sharp geometric shapes that clash with the rounded brand style"
+  ],
+  "patternsTextures": {
+    "patterns": ["e.g., Subtle dot grid for backgrounds"],
+    "textures": ["e.g., Smooth gradients, no heavy textures"],
+    "backgrounds": ["e.g., Light neutral backgrounds with white cards"],
+    "usageNotes": "Brief description of pattern/texture approach"
+  },
+  "iconographyStyle": {
+    "style": "line|fill|duo-tone|custom",
+    "strokeWeight": "e.g., 1.5px",
+    "cornerRadius": "e.g., Rounded",
+    "sizing": "e.g., 16px inline, 24px standalone, 48px feature",
+    "colorUsage": "e.g., Primary brand color for active, gray-500 for inactive",
+    "usageNotes": "Brief description of icon approach"
+  },
+  "iconographyDonts": [
+    "e.g., Don't mix filled and outlined icons in the same context"
+  ],
+  "gradientsEffects": [
+    {
+      "name": "Primary Gradient",
+      "type": "linear",
+      "colors": ["#hex1", "#hex2"],
+      "angle": "135deg",
+      "usage": "Hero sections, CTA buttons"
+    }
+  ],
+  "layoutPrinciples": {
+    "gridSystem": "e.g., 12-column grid with max-width 1280px",
+    "spacingScale": "e.g., 4px base unit (4, 8, 12, 16, 24, 32, 48, 64)",
+    "whitespacePhilosophy": "e.g., Generous whitespace for a premium, clean feel",
+    "compositionRules": [
+      "e.g., Content sections use consistent 64px vertical spacing",
+      "Cards use 24px internal padding with 16px gap between items"
+    ],
+    "usageNotes": "Brief description of layout approach"
+  }
+}
+
+IMPORTANT:
+- For graphicElements: identify 2-4 items per sub-array. Focus on distinctive, recurring elements.
+- For iconographyStyle.style: choose from "line", "fill", "duo-tone", or "custom". If a known icon library is detected (Lucide, Heroicons, FontAwesome, Material Icons), mention it.
+- For gradientsEffects: extract ACTUAL gradients from CSS if found. If no gradients detected, provide 1-2 recommendations based on the brand colors. Maximum 4 gradients.
+- For layoutPrinciples: extract actual spacing/grid values from CSS variables if available. If not, analyze the visual rhythm.
+- Prefix recommendations with "RECOMMENDED:" to distinguish from observed patterns.
+- Be specific to THIS brand. Generic advice like "use consistent spacing" is not helpful.`;
 }
 
 // Re-export the system prompts for the analysis engine
 export const VISUAL_IDENTITY_SYSTEM = VISUAL_IDENTITY_SYSTEM_PROMPT;
 export const VOICE_IMAGERY_SYSTEM = VOICE_IMAGERY_SYSTEM_PROMPT;
+export const DESIGN_LANGUAGE_SYSTEM = DESIGN_LANGUAGE_SYSTEM_PROMPT;
 
 // Legacy combined prompt for PDF (simpler than two-phase since PDFs have less structured data)
 export const PDF_ANALYSIS_SYSTEM_PROMPT = `You are an expert brand designer and visual identity analyst. Analyze the extracted PDF document data and produce a comprehensive brand styleguide.

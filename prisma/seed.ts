@@ -349,7 +349,7 @@ async function main() {
     "brand-personality":    { status: "IN_PROGRESS",     coverage: 40,  ai: true,  workshop: false, interview: false, questionnaire: false },
     "brand-story":          { status: "DRAFT",            coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
     "core-values":          { status: "NEEDS_ATTENTION", coverage: 70,  ai: true,  workshop: true,  interview: true,  questionnaire: false },
-    "social-relevancy":     { status: "DRAFT",           coverage: 0,   ai: false, workshop: false, interview: false, questionnaire: false },
+    "social-relevancy":     { status: "IN_PROGRESS",     coverage: 35,  ai: false, workshop: false, interview: false, questionnaire: false },
   };
 
   for (const asset of CANONICAL_BRAND_ASSETS) {
@@ -560,6 +560,61 @@ async function main() {
       coreDesire: "To create something of enduring value through innovation and vision.",
       brandVoiceDescription: "Inspiring, knowledgeable, and forward-thinking. We speak with authority but remain approachable.",
       archetypeInAction: "We empower teams to build brands that matter — blending creativity with data-driven strategy.",
+    }},
+    { slug: "social-relevancy", frameworkData: {
+      impactStatement: "We democratize professional brand strategy so every organization can build brands that create positive change.",
+      impactNarrative: "Branddock was born from the belief that strategic brand building shouldn't be reserved for Fortune 500 companies. By making AI-powered brand tools accessible, we enable organizations of all sizes to articulate their purpose and impact — creating a ripple effect of more meaningful brands in the world.",
+      activismLevel: "Vocal",
+      milieu: {
+        statements: [
+          { text: "We have implemented clear and verifiable environmental criteria in our procurement policy.", score: 3, evidence: "Cloud infrastructure runs on renewable energy providers. Hardware procurement prioritizes refurbished devices.", target: "100% renewable energy across all operations", timeline: "2027" },
+          { text: "We actively use our revenue to make a positive contribution to environmental improvement.", score: 2, evidence: "1% of revenue allocated to digital sustainability initiatives.", target: "Increase to 2% with measurable carbon offset", timeline: "2026" },
+          { text: "We actively stimulate all forms of environment-improving activities within our organization (internally and externally).", score: 3, evidence: "Remote-first policy reduces commute emissions. Digital-only deliverables eliminate print waste.", target: "Achieve carbon neutral operations", timeline: "2028" },
+        ],
+        pillarReflection: "As a digital platform, our direct environmental footprint is relatively small, but we recognize our responsibility in choosing sustainable infrastructure and encouraging sustainable practices among our users.",
+      },
+      mens: {
+        statements: [
+          { text: "We stimulate a positive lifestyle through the use of our products and services.", score: 4, evidence: "Platform helps brands articulate purpose, leading to more meaningful work for brand teams.", target: "Measure user satisfaction and purpose alignment", timeline: "Q4 2026" },
+          { text: "We stimulate personal wellbeing through the use of our products and services.", score: 3, evidence: "AI-assisted workflows reduce strategic uncertainty and decision fatigue for brand managers.", target: "Add wellbeing metrics to user surveys", timeline: "Q2 2027" },
+          { text: "We stimulate a positive lifestyle and wellbeing for our employees.", score: 4, evidence: "Remote-first, flexible hours, learning budget, mental health support.", target: "Formalize 4-day work week pilot", timeline: "Q1 2027" },
+        ],
+        pillarReflection: "Our strongest impact is on the people who use our platform — we help them do more meaningful work with less stress. Internally, we practice what we preach with progressive work policies.",
+      },
+      maatschappij: {
+        statements: [
+          { text: "We stimulate positive interaction in society through the use of our products and services.", score: 4, evidence: "Brands built on Branddock are more purposeful, contributing to a marketplace of more authentic brand communication.", target: "Track purpose-driven brand outcomes", timeline: "2027" },
+          { text: "We stimulate social harmony and cohesion through the use of our products and services.", score: 3, evidence: "Platform encourages brands to define social relevancy and stakeholder impact.", target: "Launch community impact reporting", timeline: "2027" },
+          { text: "We stimulate positive interaction, social harmony and cohesion among employees within the organization.", score: 4, evidence: "Diverse, international team. Open communication culture. Quarterly team retreats.", target: "Establish DEI metrics and reporting", timeline: "Q3 2026" },
+        ],
+        pillarReflection: "By helping brands become more purposeful, we indirectly contribute to a more authentic and values-driven marketplace.",
+      },
+      authenticityScores: {
+        walkTheTalk: 4,
+        transparency: 4,
+        consistency: 3,
+        stakeholderTrust: 3,
+        measurability: 2,
+        longTermCommitment: 4,
+      },
+      proofPoints: [
+        "100% remote-first since founding — zero office emissions",
+        "AI-powered brand strategy accessible from €49/month",
+        "1% revenue pledge to digital sustainability",
+        "Open roadmap and transparent pricing",
+      ],
+      certifications: [],
+      antiGreenwashingStatement: "We acknowledge that as a growing startup, our impact measurement is still maturing. We do not yet have third-party certifications, and our sustainability claims need more rigorous data backing. We commit to transparent progress reporting.",
+      sdgAlignment: [8, 9, 12],
+      communicationPrinciples: [
+        "Lead with evidence, not aspiration",
+        "Acknowledge gaps before celebrating wins",
+        "Use specific numbers, not vague claims",
+        "Make impact reporting publicly accessible",
+      ],
+      keyStakeholders: ["Brand managers", "Startup founders", "Agency teams", "Employees"],
+      activationChannels: ["Platform", "Blog", "Social media", "Customer success"],
+      annualCommitment: "By December 2026, publish our first public impact report covering environmental footprint, employee wellbeing metrics, and platform-enabled purpose-driven brand count.",
     }},
     { slug: "brand-story", frameworkData: {} },
     { slug: "core-values", frameworkData: {

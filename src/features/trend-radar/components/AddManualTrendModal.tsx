@@ -19,6 +19,7 @@ export function AddManualTrendModal() {
   const [timeframe, setTimeframe] = useState<InsightTimeframe>('MEDIUM_TERM');
   const [relevanceScore, setRelevanceScore] = useState(50);
   const [sourceUrl, setSourceUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
 
   const resetForm = () => {
     setTitle('');
@@ -29,6 +30,7 @@ export function AddManualTrendModal() {
     setTimeframe('MEDIUM_TERM');
     setRelevanceScore(50);
     setSourceUrl('');
+    setImageUrl('');
   };
 
   const handleClose = () => {
@@ -50,6 +52,7 @@ export function AddManualTrendModal() {
         timeframe,
         relevanceScore,
         sourceUrl: sourceUrl.trim() || undefined,
+        imageUrl: imageUrl.trim() || undefined,
       });
       handleClose();
     } catch {
@@ -157,6 +160,24 @@ export function AddManualTrendModal() {
           onChange={(e) => setSourceUrl(e.target.value)}
           placeholder="https://example.com/article"
         />
+
+        <div>
+          <Input
+            label="Image URL (optional)"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="https://example.com/image.jpg"
+          />
+          {imageUrl.trim() && (
+            <img
+              src={imageUrl.trim()}
+              alt="Preview"
+              className="mt-2 w-full max-h-32 object-cover rounded-lg border border-gray-200"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              onLoad={(e) => { (e.target as HTMLImageElement).style.display = 'block'; }}
+            />
+          )}
+        </div>
 
         <div className="flex items-center justify-end gap-2 pt-2">
           <Button variant="secondary" size="sm" onClick={handleClose} type="button">

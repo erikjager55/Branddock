@@ -15,8 +15,9 @@ import { BrandPersonalitySection } from "./BrandPersonalitySection";
 import { BrandStorySection } from "./BrandStorySection";
 import { GoldenCircleSection } from "./GoldenCircleSection";
 import { MissionVisionSection } from "./MissionVisionSection";
+import { SocialRelevancySection } from "./SocialRelevancySection";
 import { FrameworkSection } from "./FrameworkSection";
-import type { PurposeWheelFrameworkData, BrandEssenceFrameworkData, BrandPromiseFrameworkData, TransformativeGoalsFrameworkData, BrandArchetypeFrameworkData, BrandPersonalityFrameworkData, BrandStoryFrameworkData, GoldenCircleFrameworkData, MissionVisionFrameworkData } from "../types/framework.types";
+import type { PurposeWheelFrameworkData, BrandEssenceFrameworkData, BrandPromiseFrameworkData, TransformativeGoalsFrameworkData, BrandArchetypeFrameworkData, BrandPersonalityFrameworkData, BrandStoryFrameworkData, GoldenCircleFrameworkData, MissionVisionFrameworkData, SocialRelevancyFrameworkData } from "../types/framework.types";
 import { AssetQuickActionsCard } from "./sidebar/AssetQuickActionsCard";
 import { AssetCompletenessCard } from "./sidebar/AssetCompletenessCard";
 import { AssetResearchSidebarCard } from "./sidebar/AssetResearchSidebarCard";
@@ -79,6 +80,7 @@ export function BrandAssetDetailPage({
   const isBrandPersonality = asset?.frameworkType === 'BRAND_PERSONALITY';
   const isBrandStory = asset?.frameworkType === 'BRAND_STORY';
   const isMissionVision = asset?.frameworkType === 'MISSION_STATEMENT';
+  const isSocialRelevancy = asset?.frameworkType === 'ESG';
 
   // Force editing off when locked
   useEffect(() => {
@@ -262,8 +264,19 @@ export function BrandAssetDetailPage({
               </LockOverlay>
             )}
 
+            {/* Social Relevancy — 6-card canvas */}
+            {isSocialRelevancy && (
+              <LockOverlay isLocked={lockState.isLocked}>
+                <SocialRelevancySection
+                  data={asset.frameworkData as SocialRelevancyFrameworkData | null}
+                  isEditing={isEditing && !lockState.isLocked}
+                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
+                />
+              </LockOverlay>
+            )}
+
             {/* Framework Section (for other framework types) */}
-            {asset.frameworkType && !isPurposeWheel && !isGoldenCircle && !isBrandEssence && !isBrandPromise && !isTransformativeGoals && !isBrandArchetype && !isBrandPersonality && !isBrandStory && !isMissionVision && (
+            {asset.frameworkType && !isPurposeWheel && !isGoldenCircle && !isBrandEssence && !isBrandPromise && !isTransformativeGoals && !isBrandArchetype && !isBrandPersonality && !isBrandStory && !isMissionVision && !isSocialRelevancy && (
               <LockOverlay isLocked={lockState.isLocked}>
                 <FrameworkSection
                   frameworkType={asset.frameworkType}
