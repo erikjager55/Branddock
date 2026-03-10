@@ -84,7 +84,7 @@ export async function judgeTrends(
     const result = await createClaudeStructuredCompletion<JudgeResult>(
       systemPrompt,
       userPrompt,
-      { temperature: 0.2, maxTokens: 6000 },
+      { temperature: 0.2, maxTokens: 6000, timeoutMs: 180_000 },
     );
 
     if (!result?.judgements?.length) {

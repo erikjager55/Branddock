@@ -106,6 +106,7 @@ interface ClaudeCompletionOptions {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  timeoutMs?: number;
 }
 
 /**
@@ -131,7 +132,7 @@ export async function createClaudeStructuredCompletion<T>(
       temperature,
       max_tokens: maxTokens,
     },
-    { signal: AbortSignal.timeout(90_000) },
+    { signal: AbortSignal.timeout(options?.timeoutMs ?? 90_000) },
   );
 
   const text = response.content[0]?.type === 'text' ? response.content[0].text.trim() : '';

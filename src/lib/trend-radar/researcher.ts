@@ -16,7 +16,7 @@ import { searchWithGrounding } from '@/lib/ai/gemini-client';
 import { getBrandContext } from '@/lib/ai/brand-context';
 import { generateDiverseQueries } from './query-generator';
 import { extractSignalsFromSources, type Signal } from './signal-extractor';
-import { synthesizeTrends, type SanitizedTrend } from './trend-analyzer';
+import { synthesizeTrends, analyzeMultipleSources, type SanitizedTrend } from './trend-analyzer';
 import { calculatePartialScores, filterByQuality, QUALITY_THRESHOLD, type TrendScores } from './trend-scorer';
 import { judgeTrends } from './trend-judge';
 
@@ -309,9 +309,10 @@ export async function runTrendResearch(
 
     state.signalsExtracted = signals.length;
 
-    if (signals.length === 0) {
-      // No structured signals extracted — create fallback signals from raw scraped content.
-      // Use more content per source so synthesis has enough material to work with.
+    // Minimum signal threshold: if too few structured signals, augment with raw content
+    const MIN_SIGNALS_FOR_SYNTHESIS = 3;
+
+    if (signals.length < MIN_SIGNALS_FOR_SYNTHESIS) {
       const fallbackSignals: Signal[] = scrapedSources.slice(0, 8).map((src) => ({
         claim: src.content.slice(0, 2000),
         evidence: src.content.slice(0, 3000),
@@ -324,15 +325,17 @@ export async function runTrendResearch(
         sourceAuthority: 'unknown' as const,
       }));
 
-      if (fallbackSignals.length === 0) {
+      if (fallbackSignals.length === 0 && signals.length === 0) {
         throw new Error('No signals could be extracted from any source');
       }
 
-      signals.push(...fallbackSignals);
-      const fallbackMsg = `Signal extraction returned 0 results, using ${fallbackSignals.length} raw content fallbacks`;
-      allErrors.push(fallbackMsg);
-      state.errors.push(fallbackMsg);
-      state.signalsExtracted = signals.length;
+      if (fallbackSignals.length > 0) {
+        signals.push(...fallbackSignals);
+        const fallbackMsg = `Signal extraction returned ${signals.length - fallbackSignals.length} results (below threshold ${MIN_SIGNALS_FOR_SYNTHESIS}), augmented with ${fallbackSignals.length} raw content fallbacks`;
+        allErrors.push(fallbackMsg);
+        state.errors.push(fallbackMsg);
+        state.signalsExtracted = signals.length;
+      }
     }
 
     if (state.cancelled) return await finalizeCancelled(jobId);
@@ -357,6 +360,38 @@ export async function runTrendResearch(
     if (synthesis.error) {
       allErrors.push(synthesis.error);
       state.errors.push(synthesis.error);
+    }
+
+    // If Claude synthesis failed or returned 0 trends, fall back to Gemini multi-source
+    // TODO: analyzeMultipleSources is @deprecated — replace with non-deprecated alternative when available
+    if (synthesis.trends.length === 0 && scrapedSources.length > 0) {
+      const fallbackMsg = 'Claude synthesis returned 0 trends, falling back to Gemini multi-source analysis';
+      allErrors.push(fallbackMsg);
+      state.errors.push(fallbackMsg);
+
+      try {
+        // Gemini fallback only runs when Claude produced 0 trends,
+        // so no slug/title collision between the two sets is possible.
+        const geminiSynthesis = await analyzeMultipleSources({
+          query,
+          sources: scrapedSources.filter((s) => !s.url.startsWith('search:')).slice(0, 10),
+          workspaceId,
+          researchJobId: jobId,
+          brandContext,
+          maxTrends: MAX_TRENDS_TOTAL,
+        });
+
+        if (geminiSynthesis.error) {
+          allErrors.push(`Gemini fallback: ${geminiSynthesis.error}`);
+          state.errors.push(`Gemini fallback: ${geminiSynthesis.error}`);
+        }
+
+        synthesis.trends.push(...geminiSynthesis.trends);
+      } catch (fallbackError) {
+        const msg = `Gemini fallback crashed: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`;
+        allErrors.push(msg);
+        state.errors.push(msg);
+      }
     }
 
     if (synthesis.trends.length === 0) {

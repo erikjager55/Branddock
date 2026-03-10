@@ -168,7 +168,7 @@ export async function synthesizeTrends(params: {
     const result = await createClaudeStructuredCompletion<SynthesisResult>(
       systemPrompt,
       userPrompt,
-      { temperature: 0.4, maxTokens: 10000 },
+      { temperature: 0.4, maxTokens: 10000, timeoutMs: 180_000 },
     );
 
     if (!result?.trends?.length) {
