@@ -92,7 +92,7 @@ export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }
                         className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Plus className="h-3 w-3" />
-                        Start
+                        {config.startLabel}
                       </button>
                     )}
                     {isCompleted && (
@@ -101,7 +101,7 @@ export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }
                         className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-emerald-700 border border-emerald-200 rounded-md bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0"
                       >
                         <Eye className="h-3 w-3" />
-                        View Results
+                        {config.completedLabel}
                       </button>
                     )}
                     {isInProgress && (
@@ -111,7 +111,7 @@ export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }
                         className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-blue-700 border border-blue-200 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Play className="h-3 w-3" />
-                        Continue
+                        {config.continueLabel}
                       </button>
                     )}
                   </div>

@@ -12,10 +12,10 @@ interface AssetResearchSidebarCardProps {
 }
 
 const METHODS = [
-  { method: 'AI_EXPLORATION' as const, label: 'AI Exploration', description: 'AI-assisted analysis and ideation for brand strategy and positioning', icon: Bot, isFree: true },
-  { method: 'INTERVIEWS' as const, label: 'Interviews', description: 'One-on-one deep-dive interviews with key stakeholders and customers', icon: MessageCircle, isFree: false },
-  { method: 'WORKSHOP' as const, label: 'Canvas Workshop', description: 'Collaborative workshop sessions using strategic frameworks', icon: Wrench, isFree: false, priceLabel: 'From $1,200' },
-  { method: 'QUESTIONNAIRE' as const, label: 'Questionnaire', description: 'Comprehensive surveys for quantitative validation insights', icon: ClipboardList, isFree: false, priceLabel: 'From $500' },
+  { method: 'AI_EXPLORATION' as const, label: 'AI Exploration', description: 'AI-assisted analysis and ideation for brand strategy and positioning', icon: Bot, isFree: true, startLabel: 'Start Exploration', continueLabel: 'Continue', completedLabel: 'View Report' },
+  { method: 'INTERVIEWS' as const, label: 'Interviews', description: 'One-on-one deep-dive interviews with key stakeholders and customers', icon: MessageCircle, isFree: false, startLabel: 'Start', continueLabel: 'Continue', completedLabel: 'View Results' },
+  { method: 'WORKSHOP' as const, label: 'Canvas Workshop', description: 'Collaborative workshop sessions using strategic frameworks', icon: Wrench, isFree: false, priceLabel: 'From $1,200', startLabel: 'Start', continueLabel: 'Continue', completedLabel: 'View Results' },
+  { method: 'QUESTIONNAIRE' as const, label: 'Questionnaire', description: 'Comprehensive surveys for quantitative validation insights', icon: ClipboardList, isFree: false, priceLabel: 'From $500', startLabel: 'Start', continueLabel: 'Continue', completedLabel: 'View Results' },
 ];
 
 export function AssetResearchSidebarCard({ asset, onStartAnalysis, onStartInterviews, onStartWorkshop, isLocked = false }: AssetResearchSidebarCardProps) {
@@ -96,7 +96,7 @@ export function AssetResearchSidebarCard({ asset, onStartAnalysis, onStartInterv
                         className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-gray-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Plus className="h-3 w-3" />
-                        Start
+                        {config.startLabel}
                       </button>
                     )}
                     {isCompleted && (
@@ -106,7 +106,7 @@ export function AssetResearchSidebarCard({ asset, onStartAnalysis, onStartInterv
                         className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-emerald-700 border border-emerald-200 rounded-md bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Eye className="h-3 w-3" />
-                        View Results
+                        {config.completedLabel}
                       </button>
                     )}
                     {isInProgress && (
@@ -116,7 +116,7 @@ export function AssetResearchSidebarCard({ asset, onStartAnalysis, onStartInterv
                         className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-blue-700 border border-blue-200 rounded-md bg-blue-50 hover:bg-blue-100 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Play className="h-3 w-3" />
-                        Continue
+                        {config.continueLabel}
                       </button>
                     )}
                   </div>

@@ -238,13 +238,13 @@ Integrale kwaliteitsslag op de Brand Foundation module: overzichtspagina, asset 
 - [x] Valideer per framework type of de juiste velden geteld worden — alle 11 canonical + 2 legacy types gedekt, veldchecks matchen type definities
 - [x] Edge case: NaN voorkomen bij 0 velden — `fields.length > 0` guard in BrandAssetCard + AssetCompletenessCard
 
-### 4.3 AI Exploration Interactie Fixen (KRITIEK) — Grotendeels ✅
+### 4.3 AI Exploration Interactie Fixen (KRITIEK) ✅
 
 - [x] **Sessie ophalen i.p.v. altijd nieuw** — `GET /api/exploration/[itemType]/[itemId]/latest` endpoint + `fetchLatestExplorationSession()` client
 - [x] **"Continue" moet hervatten** — `resumeSession` prop op AIExplorationPage, store pre-populated met bestaande berichten + progress
 - [x] **"View Results" moet rapport tonen** — COMPLETED sessie met insightsData → direct rapport view, edge case COMPLETED+null insightsData → nieuwe sessie
 - [x] **API endpoint toevoegen**: `GET /api/exploration/[itemType]/[itemId]/latest` — meest recente sessie voor een asset (incl. berichten + metadata)
-- [ ] **Pill tekst afstemmen op status**: AVAILABLE→"Start AI Exploration", IN_PROGRESS→"Continue Exploration", COMPLETED→"View Report"
+- [x] **Pill tekst afstemmen op status**: AVAILABLE→"Start Exploration", IN_PROGRESS→"Continue", COMPLETED→"View Report" — configureerbaar per method via `startLabel`/`continueLabel`/`completedLabel` in beide sidebar cards
 - [x] **Store reset verwijderen** bij mount — `resumeAppliedRef` guard, reset alleen bij expliciet `startNewSession()`
 - [x] **Sessie persistentie** — wrapper components fetchen latest sessie via `useQuery` met `staleTime: 0`, cache invalidatie bij apply changes
 
