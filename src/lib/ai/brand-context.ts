@@ -286,27 +286,20 @@ function formatTransformativeGoals(data: TransformativeGoalsData): string {
 interface BrandArchetypeData {
   primaryArchetype?: string;
   subArchetype?: string;
+  // Core psychology
   coreDesire?: string;
   coreFear?: string;
   brandGoal?: string;
   strategy?: string;
   giftTalent?: string;
   shadowWeakness?: string;
-  brandVoiceDescription?: string;
-  voiceAdjectives?: string[];
-  languagePatterns?: string;
-  weSayNotThat?: { weSay?: string; notThat?: string }[];
-  toneVariations?: string;
-  blacklistedPhrases?: string[];
-  colorDirection?: string;
-  typographyDirection?: string;
-  imageryStyle?: string;
-  visualMotifs?: string;
+  // Archetype in action
   archetypeInAction?: string;
   marketingExpression?: string;
   customerExperience?: string;
   contentStrategy?: string;
   storytellingApproach?: string;
+  // Reference & positioning
   brandExamples?: string[];
   positioningApproach?: string;
   competitiveLandscape?: string;
@@ -330,30 +323,6 @@ function formatBrandArchetype(data: BrandArchetypeData): string {
   if (data.strategy) parts.push(`Strategy: ${data.strategy}`);
   if (data.giftTalent) parts.push(`Gift/Talent: ${data.giftTalent}`);
   if (data.shadowWeakness) parts.push(`Shadow/Weakness: ${data.shadowWeakness}`);
-
-  // Voice & messaging
-  if (data.brandVoiceDescription) parts.push(`Voice: ${data.brandVoiceDescription}`);
-  if (Array.isArray(data.voiceAdjectives) && data.voiceAdjectives.length > 0) {
-    parts.push(`Voice adjectives: ${data.voiceAdjectives.filter(Boolean).join(', ')}`);
-  }
-  if (data.languagePatterns) parts.push(`Language patterns: ${data.languagePatterns}`);
-  if (Array.isArray(data.weSayNotThat) && data.weSayNotThat.length > 0) {
-    const pairs = data.weSayNotThat
-      .filter((p) => p.weSay)
-      .map((p) => `"${p.weSay}" (not "${p.notThat ?? '...'}")`)
-      .join('; ');
-    if (pairs) parts.push(`We say/Not that: ${pairs}`);
-  }
-  if (data.toneVariations) parts.push(`Tone variations: ${data.toneVariations}`);
-  if (Array.isArray(data.blacklistedPhrases) && data.blacklistedPhrases.length > 0) {
-    parts.push(`Blacklisted phrases: ${data.blacklistedPhrases.filter(Boolean).join(', ')}`);
-  }
-
-  // Visual expression
-  if (data.colorDirection) parts.push(`Color direction: ${data.colorDirection}`);
-  if (data.typographyDirection) parts.push(`Typography: ${data.typographyDirection}`);
-  if (data.imageryStyle) parts.push(`Imagery style: ${data.imageryStyle}`);
-  if (data.visualMotifs) parts.push(`Visual motifs: ${data.visualMotifs}`);
 
   // Archetype in action
   if (data.archetypeInAction) parts.push(`In action: ${data.archetypeInAction}`);
@@ -593,7 +562,7 @@ function formatSocialRelevancy(sr: SocialRelevancyExportData): string | null {
   }
 
   // Evidence
-  if (sr.proofPoints && sr.proofPoints.length > 0) parts.push(`Proof Points: ${sr.proofPoints.join('; ')}`);
+  if (sr.proofPoints && sr.proofPoints.length > 0) parts.push(`Evidence (Social Relevancy): ${sr.proofPoints.join('; ')}`);
   if (sr.certifications && sr.certifications.length > 0) parts.push(`Certifications: ${sr.certifications.join(', ')}`);
   if (sr.antiGreenwashingStatement) parts.push(`Anti-Greenwashing: ${sr.antiGreenwashingStatement}`);
 
@@ -678,7 +647,7 @@ function formatBrandStory(data: BrandStoryData): string {
 
   // Evidence
   if (Array.isArray(data.proofPoints) && data.proofPoints.length > 0) {
-    parts.push(`Proof points: ${data.proofPoints.filter(Boolean).join('; ')}`);
+    parts.push(`Evidence (Brand Story): ${data.proofPoints.filter(Boolean).join('; ')}`);
   }
   if (Array.isArray(data.valuesInAction) && data.valuesInAction.length > 0) {
     parts.push(`Values in action: ${data.valuesInAction.filter(Boolean).join('; ')}`);
@@ -926,13 +895,13 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       const parts: string[] = [];
       parts.push(`Essence: ${fwData.essenceStatement}`);
       if (fwData.essenceNarrative) parts.push(fwData.essenceNarrative);
-      if (fwData.functionalBenefit) parts.push(`Functional benefit: ${fwData.functionalBenefit}`);
-      if (fwData.emotionalBenefit) parts.push(`Emotional benefit: ${fwData.emotionalBenefit}`);
-      if (fwData.selfExpressiveBenefit) parts.push(`Self-expressive benefit: ${fwData.selfExpressiveBenefit}`);
+      if (fwData.functionalBenefit) parts.push(`Functional benefit (Identity): ${fwData.functionalBenefit}`);
+      if (fwData.emotionalBenefit) parts.push(`Emotional benefit (Identity): ${fwData.emotionalBenefit}`);
+      if (fwData.selfExpressiveBenefit) parts.push(`Self-expressive benefit (Identity): ${fwData.selfExpressiveBenefit}`);
       if (fwData.discriminator) parts.push(`Discriminator: ${fwData.discriminator}`);
       if (fwData.audienceInsight) parts.push(`Audience insight: ${fwData.audienceInsight}`);
       if (Array.isArray(fwData.proofPoints) && fwData.proofPoints.length > 0) {
-        parts.push(`Proof points: ${fwData.proofPoints.filter(Boolean).join('; ')}`);
+        parts.push(`Identity evidence: ${fwData.proofPoints.filter(Boolean).join('; ')}`);
       }
       if (Array.isArray(fwData.attributes) && fwData.attributes.length > 0) {
         parts.push(`Attributes: ${fwData.attributes.filter(Boolean).join(', ')}`);
@@ -952,15 +921,15 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       if (fwData.promiseOneLiner) parts.push(`Promise: ${fwData.promiseOneLiner}`);
       else parts.push(`Promise: ${fwData.promiseStatement}`);
       if (fwData.promiseOneLiner && fwData.promiseStatement) parts.push(fwData.promiseStatement);
-      if (fwData.functionalValue) parts.push(`Functional value: ${fwData.functionalValue}`);
-      if (fwData.emotionalValue) parts.push(`Emotional value: ${fwData.emotionalValue}`);
-      if (fwData.selfExpressiveValue) parts.push(`Self-expressive value: ${fwData.selfExpressiveValue}`);
+      if (fwData.functionalValue) parts.push(`Functional value (Commitment): ${fwData.functionalValue}`);
+      if (fwData.emotionalValue) parts.push(`Emotional value (Commitment): ${fwData.emotionalValue}`);
+      if (fwData.selfExpressiveValue) parts.push(`Self-expressive value (Commitment): ${fwData.selfExpressiveValue}`);
       if (fwData.targetAudience) parts.push(`Target audience: ${fwData.targetAudience}`);
       if (fwData.coreCustomerNeed) parts.push(`Core customer need: ${fwData.coreCustomerNeed}`);
       if (fwData.differentiator) parts.push(`Differentiator: ${fwData.differentiator}`);
       if (fwData.onlynessStatement) parts.push(`Onlyness: ${fwData.onlynessStatement}`);
       if (Array.isArray(fwData.proofPoints) && fwData.proofPoints.length > 0) {
-        parts.push(`Proof points: ${fwData.proofPoints.filter(Boolean).join('; ')}`);
+        parts.push(`Delivery evidence: ${fwData.proofPoints.filter(Boolean).join('; ')}`);
       }
       if (Array.isArray(fwData.measurableOutcomes) && fwData.measurableOutcomes.length > 0) {
         parts.push(`Measurable outcomes: ${fwData.measurableOutcomes.filter(Boolean).join('; ')}`);

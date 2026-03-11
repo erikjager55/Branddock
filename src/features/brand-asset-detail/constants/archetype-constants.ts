@@ -518,8 +518,8 @@ export function getArchetypeById(id: string): ArchetypeDefinition | undefined {
 /**
  * Build auto-fill data from a single archetype's reference data.
  * Maps ArchetypeDefinition fields → BrandArchetypeFrameworkData fields.
- * Only covers fields that have reference data; custom fields (languagePatterns,
- * weSayNotThat, toneVariations, etc.) are left untouched.
+ * Only covers non-deprecated fields with reference data.
+ * Deprecated voice/visual fields (managed in Brand Personality) are excluded.
  */
 export function buildAutoFillData(archetypeId: string): Record<string, unknown> {
   const def = getArchetypeById(archetypeId);
@@ -533,19 +533,7 @@ export function buildAutoFillData(archetypeId: string): Record<string, unknown> 
     strategy: def.strategy,
     giftTalent: def.giftTalent,
     shadowWeakness: def.shadow,
-    // Voice & messaging
-    brandVoiceDescription: def.voiceStyle,
-    voiceAdjectives: [...def.voiceAdjectives],
-    languagePatterns: ext?.languagePatterns ?? '',
-    toneVariations: ext?.toneVariations ?? '',
-    weSayNotThat: ext?.weSayNotThat ? ext.weSayNotThat.map((p) => ({ ...p })) : [],
-    blacklistedPhrases: ext?.blacklistedPhrases ? [...ext.blacklistedPhrases] : [],
-    // Visual
-    colorDirection: def.colorDirection,
-    typographyDirection: def.typographyDirection,
-    imageryStyle: def.imageryStyle,
-    visualMotifs: ext?.visualMotifs ?? '',
-    // Action
+    // Action (voice/visual fields are deprecated — managed in Brand Personality)
     marketingExpression: ext?.marketingExpression ?? '',
     customerExperience: ext?.customerExperience ?? '',
     contentStrategy: def.contentApproach,

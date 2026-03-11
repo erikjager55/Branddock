@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Diamond, Heart, Package, Sparkles, Target, Users, ShieldCheck, CheckCircle, Plus, X,
+  Diamond, Heart, Package, Sparkles, Target, Users, ShieldCheck, CheckCircle, Plus, X, Info,
 } from 'lucide-react';
 import type { BrandEssenceFrameworkData, BrandEssenceValidationScores } from '../types/framework.types';
 
@@ -188,6 +188,13 @@ export function BrandEssenceSection({ data, isEditing, onUpdate }: BrandEssenceS
           </div>
         </div>
 
+        <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg mb-4">
+          <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-blue-700">
+            These describe who your brand <strong>IS</strong> at its core. For customer-facing commitments, see Brand Promise.
+          </p>
+        </div>
+
         <div className="space-y-4">
           {/* Functional Benefit */}
           <BenefitField
@@ -195,7 +202,7 @@ export function BrandEssenceSection({ data, isEditing, onUpdate }: BrandEssenceS
             iconBg="bg-emerald-50"
             iconColor="text-emerald-600"
             label="Functional Benefit"
-            description="What does your brand tangibly deliver?"
+            description="What tangible quality is inseparable from your brand identity?"
             value={isEditing ? draft.functionalBenefit : d.functionalBenefit}
             isEditing={isEditing}
             onChange={(v) => handleChange('functionalBenefit', v)}
@@ -208,7 +215,7 @@ export function BrandEssenceSection({ data, isEditing, onUpdate }: BrandEssenceS
             iconBg="bg-rose-50"
             iconColor="text-rose-600"
             label="Emotional Benefit"
-            description="How does your brand make people feel?"
+            description="What feeling is intrinsically part of who you are?"
             value={isEditing ? draft.emotionalBenefit : d.emotionalBenefit}
             isEditing={isEditing}
             onChange={(v) => handleChange('emotionalBenefit', v)}
@@ -221,7 +228,7 @@ export function BrandEssenceSection({ data, isEditing, onUpdate }: BrandEssenceS
             iconBg="bg-amber-50"
             iconColor="text-amber-600"
             label="Self-Expressive Benefit"
-            description="How do customers express themselves through your brand?"
+            description="What does your brand enable people to express about themselves?"
             value={isEditing ? draft.selfExpressiveBenefit : d.selfExpressiveBenefit}
             isEditing={isEditing}
             onChange={(v) => handleChange('selfExpressiveBenefit', v)}

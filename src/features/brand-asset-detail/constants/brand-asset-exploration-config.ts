@@ -437,7 +437,7 @@ const MISSION_VISION_DIMENSIONS: DimensionConfig[] = [
   },
 ];
 
-// ─── Brand Archetype Dimensions (Jung / Mark & Pearson — 7 phases) ──
+// ─── Brand Archetype Dimensions (Jung / Mark & Pearson — 5 phases) ──
 
 const BRAND_ARCHETYPE_DIMENSIONS: DimensionConfig[] = [
   {
@@ -474,30 +474,6 @@ const BRAND_ARCHETYPE_DIMENSIONS: DimensionConfig[] = [
     defaultQuestions: [
       'Every archetype has a shadow side — when taken too far, its strengths become weaknesses. What does that look like for your brand?',
       'How do you guard against falling into those negative patterns?',
-    ],
-  },
-  {
-    key: 'voice_messaging',
-    label: 'Voice & Messaging',
-    icon: MessageCircle,
-    color: 'blue',
-    bgClass: 'bg-blue-100',
-    textClass: 'text-blue-600',
-    defaultQuestions: [
-      'How does your archetype translate into the way your brand communicates? What words do you use — and what words would never fit?',
-      'Give me a "We say / Not that" example for your brand.',
-    ],
-  },
-  {
-    key: 'visual_expression',
-    label: 'Visual Expression',
-    icon: Palette,
-    color: 'teal',
-    bgClass: 'bg-teal-100',
-    textClass: 'text-teal-600',
-    defaultQuestions: [
-      'If you were to express your archetype visually — colors, typography, imagery — what direction feels right?',
-      'What visual motifs or symbols resonate with your archetype?',
     ],
   },
   {

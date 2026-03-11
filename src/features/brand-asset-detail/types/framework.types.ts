@@ -42,6 +42,7 @@ export interface PurposeKompasFrameworkData {
 
 // ─── 1. Purpose Statement (IDEO Purpose Wheel) ──────────────
 
+/** Defines the brand's reason for being beyond profit, using the IDEO Purpose Wheel framework. */
 export interface PurposeWheelFrameworkData {
   statement: string;
   impactType: string; // Enable Potential / Reduce Friction / Foster Prosperity / Encourage Exploration / Kindle Happiness
@@ -58,6 +59,7 @@ export interface GoldenCircleSection {
   details: string;
 }
 
+/** Structures the brand's WHY, HOW, and WHAT using Simon Sinek's Golden Circle model. */
 export interface GoldenCircleFrameworkData {
   why: GoldenCircleSection;
   how: GoldenCircleSection;
@@ -75,6 +77,7 @@ export interface BrandEssenceValidationScores {
   scalable: number;     // 0-5: Does it work across markets?
 }
 
+/** Captures the brand's core identity — who the brand IS at its deepest level (Bates/Aaker Essence Wheel). */
 export interface BrandEssenceFrameworkData {
   essenceStatement: string;          // 1-3 word core (e.g. "Authentic Athletic Performance")
   essenceNarrative: string;          // 2-3 sentence explanation
@@ -90,6 +93,7 @@ export interface BrandEssenceFrameworkData {
 
 // ─── 4. Brand Promise (Keller/Aaker Value Model) ────────────
 
+/** Articulates what the brand commits to deliver to customers (Keller's CBBE + Aaker's three-layer value model). */
 export interface BrandPromiseFrameworkData {
   promiseStatement: string;           // The core promise (1-2 sentences)
   promiseOneLiner: string;            // Distilled to a single tagline-length sentence
@@ -106,6 +110,7 @@ export interface BrandPromiseFrameworkData {
 
 // ─── 5. Mission & Vision (merged) ────────────────────────────
 
+/** Defines the brand's actionable mission (what we do today) and aspirational vision (where we're headed). */
 export interface MissionVisionFrameworkData {
   // Card 1: Mission Statement
   missionStatement: string;
@@ -142,6 +147,11 @@ export interface WeSayNotThatPair {
   notThat: string;
 }
 
+/**
+ * Defines the brand's psychological identity using Jungian archetypes (Mark & Pearson).
+ * Covers archetype selection, core psychology, action, and positioning.
+ * Voice, tone, and visual expression are managed in Brand Personality.
+ */
 export interface BrandArchetypeFrameworkData {
   // Section 1: Archetype Selection (single archetype only)
   primaryArchetype: string; // Innocent / Everyman / Hero / Outlaw / Explorer / Creator / Ruler / Magician / Lover / Caregiver / Jester / Sage
@@ -221,6 +231,11 @@ export interface TransformativeGoal {
   sdgAlignment: number[];        // UN SDG numbers (1-17)
 }
 
+/**
+ * Authenticity assessment for Transformative Goals — validates whether goals are ambitious,
+ * authentic, clear, measurable, integrated, and enduring. Distinct from SocialRelevancyAuthenticityScores
+ * which focuses on greenwashing prevention (walk-the-talk, transparency, stakeholder trust).
+ */
 export interface AuthenticityScore {
   ambition: number;       // 1-5: Is it bold enough to inspire?
   authenticity: number;   // 1-5: Does it match brand DNA?
@@ -243,6 +258,7 @@ export interface BrandIntegration {
   internalActivation: string;
 }
 
+/** Captures audacious brand goals for societal impact (BHAG, MTP, Moonshot Thinking). */
 export interface TransformativeGoalsFrameworkData {
   massiveTransformativePurpose: string;
   mtpNarrative: string;
@@ -294,6 +310,11 @@ export interface ChannelTones {
   crisis: string;
 }
 
+/**
+ * Defines the brand's voice, tone, and visual expression using Aaker's 5 Dimensions
+ * and NN/g's 4-dimension Tone of Voice model. This is the authoritative source for
+ * all voice/tone/visual personality guidance — Brand Archetype defers to this asset.
+ */
 export interface BrandPersonalityFrameworkData {
   // Section 1: Aaker Dimension Scores
   dimensionScores: AakerDimensionScores;
@@ -331,6 +352,7 @@ export interface AudienceAdaptations {
   partners: string;
 }
 
+/** Structures the brand's narrative using StoryBrand (Donald Miller), Hero's Journey, and ABT frameworks. */
 export interface BrandStoryFrameworkData {
   // Card 1: Origin & Belief
   originStory: string;             // Founding narrative
@@ -394,6 +416,11 @@ export interface SocialRelevancyPillar {
   pillarReflection: string; // Free reflection on the pillar as a whole
 }
 
+/**
+ * Authenticity assessment for Social Relevancy — focused on greenwashing prevention and
+ * stakeholder credibility. Distinct from AuthenticityScore (Transformative Goals) which
+ * validates goal ambition, clarity, and strategic integration.
+ */
 export interface SocialRelevancyAuthenticityScores {
   walkTheTalk: number;        // 1-5: Do we do what we say?
   transparency: number;       // 1-5: Are we open about progress and failures?
@@ -403,6 +430,7 @@ export interface SocialRelevancyAuthenticityScores {
   longTermCommitment: number; // 1-5: Is this core strategy or a campaign?
 }
 
+/** Measures the brand's social impact across Environment/People/Society (Triple Bottom Line, B Corp, Brand Activism). */
 export interface SocialRelevancyFrameworkData {
   // Card 1: Social Impact Foundation
   impactStatement: string;      // Why does this brand care about social impact?
@@ -435,6 +463,7 @@ export interface BrandHouseValue {
   description: string;
 }
 
+/** Defines the brand's core values using the BrandHouse© model: Roots (anchor), Wings (aspiration), Fire (own). */
 export interface BrandHouseValuesFrameworkData {
   anchorValue1: BrandHouseValue;
   anchorValue2: BrandHouseValue;

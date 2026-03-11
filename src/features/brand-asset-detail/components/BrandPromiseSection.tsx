@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Shield, Heart, Package, Sparkles, Users, Target, ShieldCheck, CheckCircle, Plus, X,
+  Shield, Heart, Package, Sparkles, Users, Target, ShieldCheck, CheckCircle, Plus, X, Info,
 } from 'lucide-react';
 import type { BrandPromiseFrameworkData } from '../types/framework.types';
 
@@ -166,13 +166,20 @@ export function BrandPromiseSection({ data, isEditing, onUpdate }: BrandPromiseS
           </div>
         </div>
 
+        <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg mb-4">
+          <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-blue-700">
+            These articulate what you <strong>deliver</strong> to customers. For your core brand identity, see Brand Essence.
+          </p>
+        </div>
+
         <div className="space-y-4">
           <BenefitField
             icon={Package}
             iconBg="bg-emerald-50"
             iconColor="text-emerald-600"
             label="Functional Value"
-            description="What tangible benefit do you deliver?"
+            description="What tangible value do you guarantee to deliver?"
             value={isEditing ? draft.functionalValue : d.functionalValue}
             isEditing={isEditing}
             onChange={(v) => handleChange('functionalValue', v)}
@@ -184,7 +191,7 @@ export function BrandPromiseSection({ data, isEditing, onUpdate }: BrandPromiseS
             iconBg="bg-rose-50"
             iconColor="text-rose-600"
             label="Emotional Value"
-            description="What feeling does it create?"
+            description="What feeling do you commit to creating for customers?"
             value={isEditing ? draft.emotionalValue : d.emotionalValue}
             isEditing={isEditing}
             onChange={(v) => handleChange('emotionalValue', v)}
@@ -196,7 +203,7 @@ export function BrandPromiseSection({ data, isEditing, onUpdate }: BrandPromiseS
             iconBg="bg-amber-50"
             iconColor="text-amber-600"
             label="Self-Expressive Value"
-            description="How do customers express themselves through your brand?"
+            description="How do you help customers express their desired identity?"
             value={isEditing ? draft.selfExpressiveValue : d.selfExpressiveValue}
             isEditing={isEditing}
             onChange={(v) => handleChange('selfExpressiveValue', v)}

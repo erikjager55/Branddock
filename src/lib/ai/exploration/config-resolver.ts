@@ -204,8 +204,8 @@ Your goal is to help the user discover which single archetype from the 12 Jungia
 
 The 12 archetypes are: Innocent, Sage, Explorer, Outlaw, Magician, Hero, Lover, Jester, Everyman, Caregiver, Ruler, Creator.
 
-PHASE 2 — FIELD CUSTOMIZATION (dimensions 3-7):
-Once the single archetype is identified, your goal shifts to helping the user customize the pre-filled reference data for their specific brand context. Each archetype comes with default psychology, voice, visual, and positioning data. Help the user adapt these to their unique situation. Suggest specific modifications to fields like voice adjectives, color direction, messaging patterns, etc.
+PHASE 2 — FIELD CUSTOMIZATION (dimensions 3-5):
+Once the single archetype is identified, your goal shifts to helping the user customize the psychology, in-action expression, and positioning data for their specific brand context. Voice, tone, and visual expression are managed exclusively in the Brand Personality asset — do NOT suggest voice adjectives, color direction, or visual motifs here.
 
 Be warm but professional — like a trusted advisor.
 Ask ONE question at a time. Keep questions concise.
@@ -225,7 +225,7 @@ User's answer: {{userAnswer}}
 IMPORTANT RULES:
 - ALWAYS recommend exactly ONE archetype. NEVER suggest a blend, hybrid, or combination of two archetypes.
 - For "Archetype Discovery" or "Core Psychology" dimensions: You MUST name exactly one archetype with reasoning (e.g., "Based on what you've shared, the Hero archetype is the best fit because..."). If multiple seem relevant, choose the strongest one and briefly explain why it wins.
-- For later dimensions (Shadow, Voice, Visual, Action, Positioning): Focus on suggesting specific field customizations for the single chosen archetype. For example: "Your voice adjectives could be: bold, determined, authentic" or "Consider a color direction of deep navy and gold to reflect authority."
+- For later dimensions (Shadow, Action, Positioning): Focus on suggesting specific field customizations for the single chosen archetype — psychology, marketing expression, storytelling approach, and competitive positioning. Do NOT suggest voice adjectives, color direction, or visual motifs (those are managed in Brand Personality).
 
 Acknowledge what's strong. If something could be explored further, note it gently.
 Reference their specific words. Never ask a follow-up question.
@@ -305,8 +305,6 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
       { key: 'archetype_discovery', title: 'Archetype Discovery', icon: 'Crown', question: 'Tell me about your brand\'s personality. What emotions do you want to evoke in your customers? If your brand were a character in a story, what role would it play — the hero, the wise guide, the rebel, the caregiver, the explorer? What personality feels most natural?' },
       { key: 'core_psychology', title: 'Core Psychology', icon: 'Heart', question: 'What deep desire does your brand fulfill for customers? What fear or problem does it help them overcome? Think about the fundamental human need your brand addresses — and what unique gift or talent it brings to do so.' },
       { key: 'shadow_risks', title: 'Shadow & Guardrails', icon: 'Moon', question: 'Every archetype has a shadow side — when taken too far, its strengths become weaknesses. What does that look like for your brand? How do you guard against these patterns?' },
-      { key: 'voice_messaging', title: 'Voice & Messaging', icon: 'MessageCircle', question: 'How does your archetype translate into the way your brand communicates? Describe your brand\'s voice in 3-5 adjectives. What words does your brand use — and what would it never say?' },
-      { key: 'visual_expression', title: 'Visual Expression', icon: 'Palette', question: 'If you were to express your archetype visually — through colors, typography, imagery, and motifs — what direction feels right?' },
       { key: 'archetype_in_action', title: 'Archetype in Action', icon: 'Activity', question: 'How does your archetype come alive in marketing campaigns, customer experience, content strategy, and storytelling? Give a specific example.' },
       { key: 'competitive_positioning', title: 'Competitive Positioning', icon: 'Target', question: 'Which brands in your industry share a similar archetype? How do you differentiate within that territory? What positioning approach works best — similarity, aspiration, guidance, or inspiration?' },
     ];
@@ -414,15 +412,10 @@ function getDefaultFieldSuggestionsConfig(
       { field: 'frameworkData.strategy', label: 'Strategy', type: 'text' as const, extractionHint: 'Extract the archetype strategy' },
       { field: 'frameworkData.giftTalent', label: 'Gift / Talent', type: 'text' as const, extractionHint: 'Extract the unique gift or talent the brand brings' },
       { field: 'frameworkData.shadowWeakness', label: 'Shadow / Weakness', type: 'text' as const, extractionHint: 'Identify the shadow side of the archetype' },
-      { field: 'frameworkData.brandVoiceDescription', label: 'Brand Voice', type: 'text' as const, extractionHint: 'Describe the brand voice in 2-3 sentences' },
-      { field: 'frameworkData.voiceAdjectives', label: 'Voice Adjectives', type: 'array' as const, extractionHint: 'Extract 3-5 adjectives that describe the brand voice as a JSON array of strings' },
-      { field: 'frameworkData.colorDirection', label: 'Color Direction', type: 'text' as const, extractionHint: 'Describe the color direction for the archetype' },
-      { field: 'frameworkData.typographyDirection', label: 'Typography Direction', type: 'text' as const, extractionHint: 'Suggest the typography style based on the archetype' },
-      { field: 'frameworkData.imageryStyle', label: 'Imagery Style', type: 'text' as const, extractionHint: 'Describe the imagery style for the archetype' },
-      { field: 'frameworkData.brandExamples', label: 'Brand Examples', type: 'array' as const, extractionHint: 'List 3-5 reference brands that share this archetype as a JSON array of strings' },
-      { field: 'frameworkData.archetypeInAction', label: 'Archetype in Action', type: 'text' as const, extractionHint: 'Describe how the archetype manifests across the brand experience' },
-      { field: 'frameworkData.competitiveLandscape', label: 'Competitive Landscape', type: 'text' as const, extractionHint: 'Analyze the competitive landscape from an archetype perspective' },
+      { field: 'frameworkData.marketingExpression', label: 'Marketing Expression', type: 'text' as const, extractionHint: 'Describe how the archetype manifests in marketing campaigns' },
       { field: 'frameworkData.contentStrategy', label: 'Content Strategy', type: 'text' as const, extractionHint: 'Describe the content strategy for the archetype' },
+      { field: 'frameworkData.brandExamples', label: 'Brand Examples', type: 'array' as const, extractionHint: 'List 3-5 reference brands that share this archetype as a JSON array of strings' },
+      { field: 'frameworkData.competitiveLandscape', label: 'Competitive Landscape', type: 'text' as const, extractionHint: 'Analyze the competitive landscape from an archetype perspective' },
     ];
   }
   if (itemType === 'brand_asset' && itemSubType === 'brand-promise') {

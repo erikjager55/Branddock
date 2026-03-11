@@ -244,14 +244,14 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
               <p className="text-sm font-medium text-gray-700">Select an archetype to unlock your brand profile</p>
               <p className="text-sm text-gray-500 mt-1">
                 Choose an archetype above to see your brand profile. Each archetype comes with pre-filled
-                psychology, voice, visual direction, and positioning data that you can customize.
+                psychology and positioning data that you can customize.
               </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Cards 2-6 only appear after an archetype is selected */}
+      {/* Cards 2-4 only appear after an archetype is selected */}
       {hasArchetype && <>
 
       {/* Card 2: Core Psychology */}
@@ -340,199 +340,12 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
         )}
       </div>
 
-      {/* Card 3: Voice & Messaging */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-        <button
-          type="button"
-          onClick={() => setExpandedCard(expandedCard === 3 ? null : 3)}
-          className="w-full flex items-start gap-3 text-left"
-          aria-expanded={expandedCard === 3}
-        >
-          <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-            <MessageCircle className="h-5 w-5 text-blue-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-gray-900">Voice & Messaging</h2>
-            <p className="text-sm text-gray-500">How your archetype communicates — tone, language, and guardrails</p>
-          </div>
-          <ChevronDown className={`h-4 w-4 text-gray-400 mt-1 flex-shrink-0 transition-transform ${expandedCard === 3 ? 'rotate-180' : ''}`} />
-        </button>
-
-        {/* Collapsed summary */}
-        {expandedCard !== 3 && (() => {
-          const src = isEditing ? draft : d;
-          const adjectives = src.voiceAdjectives.filter(Boolean);
-          return adjectives.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-1.5">
-              {adjectives.map((adj, i) => (
-                <span key={i} className="text-xs bg-blue-50 text-blue-600 border border-blue-100 rounded-full px-2.5 py-0.5">{adj}</span>
-              ))}
-            </div>
-          ) : null;
-        })()}
-
-        {expandedCard === 3 && (
-          <div className="mt-5 space-y-4">
-            {/* Voice Description */}
-            <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Voice Description</label>
-              {isEditing ? (
-                <textarea
-                  value={draft.brandVoiceDescription}
-                  onChange={(e) => handleChange('brandVoiceDescription', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
-                  rows={3}
-                  placeholder="Describe how your brand communicates..."
-                />
-              ) : d.brandVoiceDescription ? (
-                <p className="mt-1 text-sm text-gray-700 leading-relaxed">{d.brandVoiceDescription}</p>
-              ) : (
-                <p className="mt-1 text-sm italic text-gray-400">Describe your brand voice...</p>
-              )}
-            </div>
-
-            {/* Voice Adjectives */}
-            <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Voice Adjectives (3-5)</label>
-              <TagEditor
-                items={isEditing ? draft.voiceAdjectives : d.voiceAdjectives}
-                isEditing={isEditing}
-                onAdd={(v) => handleChange('voiceAdjectives', [...draft.voiceAdjectives, v])}
-                onRemove={(i) => handleChange('voiceAdjectives', draft.voiceAdjectives.filter((_, idx) => idx !== i))}
-                placeholder="Add adjective..."
-                emptyText="No voice adjectives defined"
-              />
-            </div>
-
-            {/* Language Patterns */}
-            <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Language Patterns</label>
-              {isEditing ? (
-                <textarea
-                  value={draft.languagePatterns}
-                  onChange={(e) => handleChange('languagePatterns', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
-                  rows={2}
-                  placeholder="Vocabulary, register, and language style..."
-                />
-              ) : d.languagePatterns ? (
-                <p className="mt-1 text-sm text-gray-700 leading-relaxed">{d.languagePatterns}</p>
-              ) : (
-                <p className="mt-1 text-sm italic text-gray-400">Describe language patterns...</p>
-              )}
-            </div>
-
-            {/* We Say / Not That */}
-            <WeSayNotThatEditor
-              items={isEditing ? draft.weSayNotThat : d.weSayNotThat}
-              isEditing={isEditing}
-              onAdd={() => handleChange('weSayNotThat', [...draft.weSayNotThat, { weSay: '', notThat: '' }])}
-              onUpdate={(i, pair) => {
-                const next = [...draft.weSayNotThat];
-                next[i] = pair;
-                handleChange('weSayNotThat', next);
-              }}
-              onRemove={(i) => handleChange('weSayNotThat', draft.weSayNotThat.filter((_, idx) => idx !== i))}
-            />
-
-            {/* Tone Variations */}
-            <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Tone Variations by Context</label>
-              {isEditing ? (
-                <textarea
-                  value={draft.toneVariations}
-                  onChange={(e) => handleChange('toneVariations', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
-                  rows={2}
-                  placeholder="How does tone adapt across email, social, advertising, customer service..."
-                />
-              ) : d.toneVariations ? (
-                <p className="mt-1 text-sm text-gray-700 leading-relaxed">{d.toneVariations}</p>
-              ) : (
-                <p className="mt-1 text-sm italic text-gray-400">Describe tone variations per channel...</p>
-              )}
-            </div>
-
-            {/* Blacklisted Phrases */}
-            <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Blacklisted Phrases</label>
-              <TagEditor
-                items={isEditing ? draft.blacklistedPhrases : d.blacklistedPhrases}
-                isEditing={isEditing}
-                onAdd={(v) => handleChange('blacklistedPhrases', [...draft.blacklistedPhrases, v])}
-                onRemove={(i) => handleChange('blacklistedPhrases', draft.blacklistedPhrases.filter((_, idx) => idx !== i))}
-                placeholder="Add phrase your brand never uses..."
-                emptyText="No blacklisted phrases defined"
-                variant="danger"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Card 4: Visual Expression */}
-      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-        <button
-          type="button"
-          onClick={() => setExpandedCard(expandedCard === 4 ? null : 4)}
-          className="w-full flex items-start gap-3 text-left"
-          aria-expanded={expandedCard === 4}
-        >
-          <div className="h-10 w-10 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0">
-            <Palette className="h-5 w-5 text-violet-600" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-gray-900">Visual Expression</h2>
-            <p className="text-sm text-gray-500">How the archetype translates into visual identity direction</p>
-          </div>
-          <ChevronDown className={`h-4 w-4 text-gray-400 mt-1 flex-shrink-0 transition-transform ${expandedCard === 4 ? 'rotate-180' : ''}`} />
-        </button>
-
-        {/* Collapsed summary */}
-        {expandedCard !== 4 && (() => {
-          const src = isEditing ? draft : d;
-          const preview = src.colorDirection?.slice(0, 80);
-          return preview ? (
-            <p className="mt-3 text-xs text-gray-500 truncate">{preview}{src.colorDirection.length > 80 ? '...' : ''}</p>
-          ) : null;
-        })()}
-
-        {expandedCard === 4 && (
-          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <TextCard
-              label="Color Direction"
-              description="Color palette guidance from archetype psychology"
-              value={isEditing ? draft.colorDirection : d.colorDirection}
-              isEditing={isEditing}
-              onChange={(v) => handleChange('colorDirection', v)}
-              placeholder="Recommended color palette direction..."
-            />
-            <TextCard
-              label="Typography Direction"
-              description="Font style and weight guidance"
-              value={isEditing ? draft.typographyDirection : d.typographyDirection}
-              isEditing={isEditing}
-              onChange={(v) => handleChange('typographyDirection', v)}
-              placeholder="Serif/sans-serif, weight, formality..."
-            />
-            <TextCard
-              label="Imagery Style"
-              description="Photography and illustration direction"
-              value={isEditing ? draft.imageryStyle : d.imageryStyle}
-              isEditing={isEditing}
-              onChange={(v) => handleChange('imageryStyle', v)}
-              placeholder="Photography mood, illustration approach..."
-            />
-            <TextCard
-              label="Visual Motifs"
-              description="Recurring symbols, patterns, and elements"
-              value={isEditing ? draft.visualMotifs : d.visualMotifs}
-              isEditing={isEditing}
-              onChange={(v) => handleChange('visualMotifs', v)}
-              placeholder="Symbols, patterns, recurring visual themes..."
-            />
-          </div>
-        )}
+      {/* Info banner: Voice & Visual are in Brand Personality */}
+      <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+        <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-blue-700">
+          Voice, tone, and visual expression are defined in the <strong>Brand Personality</strong> asset.
+        </p>
       </div>
 
       {/* Card 3: Archetype in Action */}

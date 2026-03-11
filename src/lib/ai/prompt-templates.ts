@@ -76,6 +76,11 @@ export function formatBrandContext(ctx: BrandContextBlock): string {
 
   if (ctx.brandName) lines.push(`**Brand Name:** ${ctx.brandName}`);
 
+  // Deduplication note for AI
+  lines.push('');
+  lines.push('> Brand Archetype defines psychological identity; Brand Personality defines voice, tone, and visual expression. Prioritize Brand Personality for tone/voice guidance.');
+  lines.push('');
+
   // Brand strategy foundation
   if (ctx.brandPurpose) lines.push(`**Purpose:** ${ctx.brandPurpose}`);
   if (ctx.goldenCircle) lines.push(`**Golden Circle:**\n${ctx.goldenCircle}`);
