@@ -535,13 +535,13 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
         )}
       </div>
 
-      {/* Card 5: Archetype in Action */}
+      {/* Card 3: Archetype in Action */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <button
           type="button"
-          onClick={() => setExpandedCard(expandedCard === 5 ? null : 5)}
+          onClick={() => setExpandedCard(expandedCard === 3 ? null : 3)}
           className="w-full flex items-start gap-3 text-left"
-          aria-expanded={expandedCard === 5}
+          aria-expanded={expandedCard === 3}
         >
           <div className="h-10 w-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
             <Megaphone className="h-5 w-5 text-emerald-600" />
@@ -550,11 +550,11 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
             <h2 className="text-lg font-bold text-gray-900">Archetype in Action</h2>
             <p className="text-sm text-gray-500">How the archetype drives marketing, CX, content, and storytelling</p>
           </div>
-          <ChevronDown className={`h-4 w-4 text-gray-400 mt-1 flex-shrink-0 transition-transform ${expandedCard === 5 ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-4 w-4 text-gray-400 mt-1 flex-shrink-0 transition-transform ${expandedCard === 3 ? 'rotate-180' : ''}`} />
         </button>
 
         {/* Collapsed summary */}
-        {expandedCard !== 5 && (() => {
+        {expandedCard !== 3 && (() => {
           const src = isEditing ? draft : d;
           const fields = [src.marketingExpression, src.customerExperience, src.contentStrategy, src.storytellingApproach];
           const defined = fields.filter(Boolean).length;
@@ -563,7 +563,7 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
           );
         })()}
 
-        {expandedCard === 5 && (
+        {expandedCard === 3 && (
           <div className="mt-5 space-y-4">
             <TextCard
               label="Marketing Expression"
@@ -601,13 +601,13 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
         )}
       </div>
 
-      {/* Card 6: Reference & Positioning */}
+      {/* Card 4: Reference & Positioning */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <button
           type="button"
-          onClick={() => setExpandedCard(expandedCard === 6 ? null : 6)}
+          onClick={() => setExpandedCard(expandedCard === 4 ? null : 4)}
           className="w-full flex items-start gap-3 text-left"
-          aria-expanded={expandedCard === 6}
+          aria-expanded={expandedCard === 4}
         >
           <div className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">
             <Globe className="h-5 w-5 text-gray-600" />
@@ -616,11 +616,11 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
             <h2 className="text-lg font-bold text-gray-900">Reference & Positioning</h2>
             <p className="text-sm text-gray-500">Competitive landscape and brand examples sharing your archetype</p>
           </div>
-          <ChevronDown className={`h-4 w-4 text-gray-400 mt-1 flex-shrink-0 transition-transform ${expandedCard === 6 ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-4 w-4 text-gray-400 mt-1 flex-shrink-0 transition-transform ${expandedCard === 4 ? 'rotate-180' : ''}`} />
         </button>
 
         {/* Collapsed summary */}
-        {expandedCard !== 6 && (() => {
+        {expandedCard !== 4 && (() => {
           const src = isEditing ? draft : d;
           const examples = src.brandExamples.filter(Boolean);
           const posOpt = POSITIONING_OPTIONS.find((o) => o.value === src.positioningApproach);
@@ -636,7 +636,7 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
           ) : null;
         })()}
 
-        {expandedCard === 6 && (
+        {expandedCard === 4 && (
           <div className="mt-5 space-y-4">
             {/* Brand Examples */}
             <div>
@@ -917,79 +917,3 @@ function TagEditor({ items, isEditing, onAdd, onRemove, placeholder, emptyText, 
   );
 }
 
-interface WeSayNotThatEditorProps {
-  items: WeSayNotThatPair[];
-  isEditing: boolean;
-  onAdd: () => void;
-  onUpdate: (index: number, pair: WeSayNotThatPair) => void;
-  onRemove: (index: number) => void;
-}
-
-function WeSayNotThatEditor({ items, isEditing, onAdd, onUpdate, onRemove }: WeSayNotThatEditorProps) {
-  return (
-    <div>
-      <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-        We Say / Not That
-      </label>
-
-      {!isEditing ? (
-        items.length > 0 ? (
-          <div className="mt-2 space-y-2">
-            {items.filter((p) => p.weSay || p.notThat).map((pair, i) => (
-              <div key={i} className="grid grid-cols-2 gap-2">
-                <div className="bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
-                  <p className="text-xs text-emerald-500 font-medium mb-0.5">We say</p>
-                  <p className="text-sm text-emerald-700">{pair.weSay}</p>
-                </div>
-                <div className="bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-                  <p className="text-xs text-red-400 font-medium mb-0.5">Not that</p>
-                  <p className="text-sm text-red-600">{pair.notThat}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-1 text-sm italic text-gray-400">No we say / not that pairs defined</p>
-        )
-      ) : (
-        <div className="mt-2 space-y-2">
-          {items.map((pair, i) => (
-            <div key={i} className="flex items-start gap-2">
-              <div className="grid grid-cols-2 gap-2 flex-1">
-                <input
-                  type="text"
-                  value={pair.weSay}
-                  onChange={(e) => onUpdate(i, { ...pair, weSay: e.target.value })}
-                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
-                  placeholder="We say..."
-                />
-                <input
-                  type="text"
-                  value={pair.notThat}
-                  onChange={(e) => onUpdate(i, { ...pair, notThat: e.target.value })}
-                  className="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-red-300 focus:ring-1 focus:ring-red-300"
-                  placeholder="Not that..."
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => onRemove(i)}
-                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors mt-1"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={onAdd}
-            className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium"
-          >
-            <Plus className="h-4 w-4" />
-            Add pair
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
