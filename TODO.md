@@ -179,12 +179,7 @@ Blokkeert deployment; moet eerst opgelost worden.
 
 Core differentiator van Branddock — hoogste gebruikerswaarde.
 
-### 3.1 Content Studio AI Generatie (stubs → echt)
-
-- [ ] Implementeer echte AI content generatie in `src/app/api/studio/[deliverableId]/generate/route.ts`
-- [ ] Implementeer echte AI content regeneratie in `src/app/api/studio/[deliverableId]/regenerate/route.ts`
-- [ ] Implementeer echte quality scoring in `src/app/api/studio/[deliverableId]/quality/route.ts`
-- [ ] Gebruik `openaiClient` met brand context voor content generatie
+### ~~3.1 Content Studio AI Generatie~~ → verplaatst naar Fase 5b (volledige herziening)
 
 ### 3.2 Product Analyzer AI (stubs → echt)
 
@@ -239,10 +234,7 @@ Nodig voor echte gebruikers die data willen exporteren.
 - [ ] Implementeer chat session export `src/app/api/personas/[id]/chat/[sessionId]/export/route.ts` (nu: 501)
 - [ ] Formaat: JSON of PDF met gesprek + insights
 
-### 4.3 Content Studio Export
-
-- [ ] Implementeer echte content export `src/app/api/studio/[deliverableId]/export/route.ts` (nu: stub URL)
-- [ ] Ondersteun meerdere formaten (PDF, DOCX, PNG, MP4)
+### ~~4.3 Content Studio Export~~ → verplaatst naar Fase 5b (volledige herziening)
 
 ---
 
@@ -276,6 +268,30 @@ Voltooit de research flow die nu hardcoded stubs bevat.
 
 - [ ] Echte OAuth connectie in `src/app/api/settings/connected-accounts/[provider]/connect/route.ts` (nu: demo user IDs)
 - [ ] Slack integratie `src/app/api/settings/notifications/channels/[channel]/connect/route.ts` (nu: "coming soon" stub)
+
+---
+
+## Fase 5b: Content Studio Herziening
+
+Volledige herziening van de Content Studio module — UI, AI generatie, export, en kwaliteitsscoring.
+
+### 5b.1 Content Studio Redesign
+
+- [ ] Nieuw UI ontwerp en interactiemodel bepalen
+- [ ] Bestaande Content Studio componenten evalueren (behouden/herschrijven/verwijderen)
+- [ ] Nieuwe componentenstructuur opzetten
+
+### 5b.2 Content Studio AI Generatie
+
+- [ ] Echte AI content generatie (`/api/studio/[deliverableId]/generate`)
+- [ ] Echte AI content regeneratie (`/api/studio/[deliverableId]/regenerate`)
+- [ ] Echte quality scoring (`/api/studio/[deliverableId]/quality`)
+- [ ] Brand context integratie voor content generatie
+
+### 5b.3 Content Studio Export
+
+- [ ] Echte content export (`/api/studio/[deliverableId]/export`)
+- [ ] Meerdere formaten (PDF, DOCX, PNG, MP4)
 
 ---
 
