@@ -181,12 +181,12 @@ Core differentiator van Branddock — hoogste gebruikerswaarde.
 
 ### ~~3.1 Content Studio AI Generatie~~ → verplaatst naar Fase 5b (volledige herziening)
 
-### 3.2 Product Analyzer AI (stubs → echt)
+### 3.2 Product Analyzer AI (stubs → echt) ✅
 
-- [ ] Implementeer echte URL analyse in `src/app/api/products/analyze/url/route.ts` (nu: mock)
-- [ ] Implementeer echte PDF analyse in `src/app/api/products/analyze/pdf/route.ts` (nu: mock)
-- [ ] Implementeer polling endpoints (`/url/[jobId]`, `/pdf/[jobId]`) — nu: altijd 404
-- [ ] Gebruik AI om product data te extraheren uit URL/PDF
+- [x] Implementeer echte URL analyse in `src/app/api/products/analyze/url/route.ts`
+- [x] Implementeer echte PDF analyse in `src/app/api/products/analyze/pdf/route.ts`
+- [x] Implementeer polling endpoints
+- [x] Gebruik AI om product data te extraheren uit URL/PDF
 
 ### 3.3 Brandstyle Analyzer AI (demo → echt) ✅
 
