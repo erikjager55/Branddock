@@ -193,12 +193,12 @@ Core differentiator van Branddock — hoogste gebruikerswaarde.
 - [ ] Implementeer polling endpoints (`/url/[jobId]`, `/pdf/[jobId]`) — nu: altijd 404
 - [ ] Gebruik AI om product data te extraheren uit URL/PDF
 
-### 3.3 Brandstyle Analyzer AI (demo → echt)
+### 3.3 Brandstyle Analyzer AI (demo → echt) ✅
 
-- [ ] Implementeer echte website analyse in `src/app/api/brandstyle/analyze/url/route.ts` (nu: 8s demo)
-- [ ] Implementeer echte PDF analyse in `src/app/api/brandstyle/analyze/pdf/route.ts`
-- [ ] Update polling endpoint `src/app/api/brandstyle/analyze/status/[jobId]/route.ts` (nu: demo mode)
-- [ ] Extraheer echte kleuren, typografie, tone-of-voice uit website/PDF
+- [x] Implementeer echte website analyse in `src/app/api/brandstyle/analyze/url/route.ts`
+- [x] Implementeer echte PDF analyse in `src/app/api/brandstyle/analyze/pdf/route.ts`
+- [x] Update polling endpoint `src/app/api/brandstyle/analyze/status/[jobId]/route.ts`
+- [x] Extraheer echte kleuren, typografie, tone-of-voice uit website/PDF
 
 ### 3.4 Market Insights AI Research (mock → echt)
 
