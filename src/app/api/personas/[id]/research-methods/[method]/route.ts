@@ -3,27 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
-
-// Validation weights for computing validationPercentage
-const VALIDATION_WEIGHTS: Record<string, number> = {
-  AI_EXPLORATION: 0.15,
-  INTERVIEWS: 0.30,
-  QUESTIONNAIRE: 0.30,
-  USER_TESTING: 0.25,
-};
-
-function computeValidationPercentage(
-  researchMethods: { method: string; status: string }[]
-): number {
-  let total = 0;
-  for (const rm of researchMethods) {
-    if (rm.status === "COMPLETED") {
-      const weight = VALIDATION_WEIGHTS[rm.method] ?? 0;
-      total += weight * 100;
-    }
-  }
-  return Math.round(total);
-}
+import { computeValidationPercentage, PERSONA_VALIDATION_WEIGHTS } from "@/lib/validation-percentage";
 
 // PATCH /api/personas/[id]/research-methods/[method]
 export async function PATCH(
@@ -94,7 +74,8 @@ export async function PATCH(
     });
 
     const validationPercentage = computeValidationPercentage(
-      allMethods.map((m) => ({ method: m.method, status: m.status }))
+      allMethods.map((m) => ({ method: m.method, status: m.status })),
+      PERSONA_VALIDATION_WEIGHTS,
     );
 
     invalidateCache(cacheKeys.prefixes.personas(workspaceId));

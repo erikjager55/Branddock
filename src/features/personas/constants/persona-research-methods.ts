@@ -20,19 +20,9 @@ export const PERSONA_RESEARCH_METHODS: {
   { method: 'USER_TESTING', icon: 'Smartphone', label: 'User Testing', description: 'Observe users interacting with product to validate assumptions', type: 'Observational', time: 'Variable', isPaid: false, startLabel: 'Start', continueLabel: 'Continue', completedLabel: 'View Results' },
 ];
 
-export const PERSONA_VALIDATION_WEIGHTS: Record<PersonaResearchMethodType, number> = {
-  AI_EXPLORATION: 0.15,
-  INTERVIEWS: 0.30,
-  QUESTIONNAIRE: 0.30,
-  USER_TESTING: 0.25,
-};
+export { PERSONA_VALIDATION_WEIGHTS } from '@/lib/validation-percentage';
+import { computeValidationPercentage, PERSONA_VALIDATION_WEIGHTS as _PVW } from '@/lib/validation-percentage';
 
 export function calculatePersonaValidation(methods: ResearchMethodSummary[]): number {
-  let total = 0;
-  for (const m of methods) {
-    if (m.status === 'COMPLETED' || m.status === 'VALIDATED') {
-      total += (PERSONA_VALIDATION_WEIGHTS[m.method] ?? 0) * 100;
-    }
-  }
-  return Math.min(100, Math.round(total));
+  return computeValidationPercentage(methods, _PVW);
 }

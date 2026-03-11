@@ -98,7 +98,8 @@ export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }
                     {isCompleted && (
                       <button
                         onClick={() => onStartMethod(config.method)}
-                        className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-emerald-700 border border-emerald-200 rounded-md bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0"
+                        disabled={isLocked}
+                        className="inline-flex items-center gap-1 h-6 px-2 text-[11px] font-medium text-emerald-700 border border-emerald-200 rounded-md bg-emerald-50 hover:bg-emerald-100 transition-colors flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         <Eye className="h-3 w-3" />
                         {config.completedLabel}

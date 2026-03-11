@@ -7,27 +7,7 @@ import { cacheKeys } from "@/lib/api/cache-keys";
 import { requireUnlocked } from "@/lib/lock-guard";
 import { createVersion } from "@/lib/versioning";
 import { buildPersonaSnapshot } from "@/lib/snapshot-builders";
-
-// Validation weights for computing validationPercentage
-const VALIDATION_WEIGHTS: Record<string, number> = {
-  AI_EXPLORATION: 0.15,
-  INTERVIEWS: 0.30,
-  QUESTIONNAIRE: 0.30,
-  USER_TESTING: 0.25,
-};
-
-function computeValidationPercentage(
-  researchMethods: { method: string; status: string }[]
-): number {
-  let total = 0;
-  for (const rm of researchMethods) {
-    if (rm.status === "COMPLETED") {
-      const weight = VALIDATION_WEIGHTS[rm.method] ?? 0;
-      total += weight * 100;
-    }
-  }
-  return Math.round(total);
-}
+import { computeValidationPercentage, PERSONA_VALIDATION_WEIGHTS } from "@/lib/validation-percentage";
 
 const updatePersonaSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -82,7 +62,8 @@ export async function GET(
     }
 
     const validationPercentage = computeValidationPercentage(
-      persona.researchMethods.map((m) => ({ method: m.method, status: m.status }))
+      persona.researchMethods.map((m) => ({ method: m.method, status: m.status })),
+      PERSONA_VALIDATION_WEIGHTS,
     );
 
     return NextResponse.json({

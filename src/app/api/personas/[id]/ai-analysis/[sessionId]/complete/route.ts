@@ -1,26 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
-
-const VALIDATION_WEIGHTS: Record<string, number> = {
-  AI_EXPLORATION: 0.15,
-  INTERVIEWS: 0.30,
-  QUESTIONNAIRE: 0.30,
-  USER_TESTING: 0.25,
-};
-
-function computeValidationPercentage(
-  researchMethods: { method: string; status: string }[]
-): number {
-  let total = 0;
-  for (const rm of researchMethods) {
-    if (rm.status === "COMPLETED") {
-      const weight = VALIDATION_WEIGHTS[rm.method] ?? 0;
-      total += weight * 100;
-    }
-  }
-  return Math.min(100, Math.round(total));
-}
+import { computeValidationPercentage, PERSONA_VALIDATION_WEIGHTS } from "@/lib/validation-percentage";
 
 // POST /api/personas/[id]/ai-analysis/[sessionId]/complete
 export async function POST(
@@ -164,7 +145,8 @@ export async function POST(
     });
 
     const validationPercentage = computeValidationPercentage(
-      methods.map((m) => ({ method: m.method, status: m.status }))
+      methods.map((m) => ({ method: m.method, status: m.status })),
+      PERSONA_VALIDATION_WEIGHTS,
     );
 
     return NextResponse.json({
