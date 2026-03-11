@@ -14,16 +14,6 @@ export interface BrandAssetResearchMethod {
   artifactsCount: number;
 }
 
-export interface BrandAssetVersion {
-  id: string;
-  version: number;
-  content: string | null;
-  frameworkData: Record<string, unknown> | null;
-  changeNote: string | null;
-  changedBy: { id: string; name: string };
-  createdAt: string;
-}
-
 export interface BrandAssetDetail {
   id: string;
   name: string;

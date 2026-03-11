@@ -13,17 +13,6 @@ export interface ResearchMethodDetail {
   updatedAt: string;
 }
 
-export interface VersionDetail {
-  id: string;
-  version: number;
-  content: string | null;
-  frameworkData: unknown;
-  changeNote: string | null;
-  changedBy: { id: string; name: string | null; email: string };
-  brandAssetId: string;
-  createdAt: string;
-}
-
 export interface LockedByUser {
   id: string;
   name: string | null;
@@ -55,17 +44,9 @@ export interface BrandAssetDetail {
   createdAt: string;
   updatedAt: string;
   researchMethods: ResearchMethodDetail[];
-  versions: VersionDetail[];
   validationPercentage: number;
   completedMethods: number;
   totalMethods: number;
-}
-
-export interface VersionsResponse {
-  versions: VersionDetail[];
-  total: number;
-  limit: number;
-  offset: number;
 }
 
 export interface ContentUpdatePayload {

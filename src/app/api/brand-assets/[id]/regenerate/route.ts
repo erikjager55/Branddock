@@ -4,6 +4,8 @@ import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
 import { openaiClient } from "@/lib/ai";
 import { parseAIError, getReadableErrorMessage, getAIErrorStatus } from "@/lib/ai/error-handler";
+import { createVersion } from "@/lib/versioning";
+import { buildBrandAssetSnapshot } from "@/lib/snapshot-builders";
 
 // =============================================================
 // POST /api/brand-assets/[id]/regenerate — AI content regeneration
@@ -31,7 +33,6 @@ export async function POST(
     const asset = await prisma.brandAsset.findFirst({
       where: { id, workspaceId },
       include: {
-        versions: { orderBy: { version: "desc" }, take: 1 },
         workspace: { select: { name: true } },
       },
     });
@@ -57,26 +58,26 @@ export async function POST(
       { useCase: "ANALYSIS" }
     );
 
-    const nextVersion = (asset.versions[0]?.version ?? 0) + 1;
+    const updatedAsset = await prisma.brandAsset.update({
+      where: { id },
+      data: { content: generatedContent },
+    });
 
-    const [updatedAsset, version] = await prisma.$transaction([
-      prisma.brandAsset.update({
-        where: { id },
-        data: { content: generatedContent },
-      }),
-      prisma.brandAssetVersion.create({
-        data: {
-          brandAssetId: id,
-          version: nextVersion,
-          content: generatedContent,
-          frameworkData: asset.frameworkData ?? undefined,
-          changeNote: "AI regenerated content",
-          changedById: session.user.id,
-        },
-      }),
-    ]);
+    try {
+      await createVersion({
+        resourceType: 'BRAND_ASSET',
+        resourceId: id,
+        snapshot: buildBrandAssetSnapshot(updatedAsset),
+        changeType: 'AI_GENERATED',
+        changeNote: 'AI regenerated content',
+        userId: session.user.id,
+        workspaceId,
+      });
+    } catch (versionError) {
+      console.error('[BrandAsset version snapshot failed]', versionError);
+    }
 
-    return NextResponse.json({ asset: updatedAsset, version });
+    return NextResponse.json({ asset: updatedAsset });
   } catch (error) {
     console.error("[POST /api/brand-assets/:id/regenerate]", error);
     const parsed = parseAIError(error);

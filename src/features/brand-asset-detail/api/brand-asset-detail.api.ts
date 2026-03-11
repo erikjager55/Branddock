@@ -1,6 +1,5 @@
 import type {
   BrandAssetDetail,
-  VersionsResponse,
   ContentUpdatePayload,
   StatusUpdatePayload,
   FrameworkUpdatePayload,
@@ -71,19 +70,6 @@ export async function regenerateAssetContent(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ instructions }),
   });
-  return handleResponse(res);
-}
-
-export async function fetchAssetVersions(
-  id: string,
-  limit = 20,
-  offset = 0
-): Promise<VersionsResponse> {
-  const params = new URLSearchParams({
-    limit: String(limit),
-    offset: String(offset),
-  });
-  const res = await fetch(`${BASE}/${id}/versions?${params}`);
   return handleResponse(res);
 }
 

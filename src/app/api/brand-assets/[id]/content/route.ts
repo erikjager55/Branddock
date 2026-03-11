@@ -36,7 +36,6 @@ export async function PATCH(
 
     const asset = await prisma.brandAsset.findFirst({
       where: { id, workspaceId },
-      include: { versions: { orderBy: { version: "desc" }, take: 1 } },
     });
 
     if (!asset) {
@@ -52,26 +51,11 @@ export async function PATCH(
       );
     }
 
-    const nextVersion = (asset.versions[0]?.version ?? 0) + 1;
+    const updatedAsset = await prisma.brandAsset.update({
+      where: { id },
+      data: { content: parsed.data.content },
+    });
 
-    const [updatedAsset, version] = await prisma.$transaction([
-      prisma.brandAsset.update({
-        where: { id },
-        data: { content: parsed.data.content },
-      }),
-      prisma.brandAssetVersion.create({
-        data: {
-          brandAssetId: id,
-          version: nextVersion,
-          content: parsed.data.content,
-          frameworkData: asset.frameworkData ?? undefined,
-          changeNote: parsed.data.changeNote ?? `Version ${nextVersion}`,
-          changedById: session.user.id,
-        },
-      }),
-    ]);
-
-    // Create ResourceVersion snapshot (new versioning system)
     try {
       await createVersion({
         resourceType: 'BRAND_ASSET',
@@ -86,7 +70,7 @@ export async function PATCH(
       console.error('[BrandAsset version snapshot failed]', versionError);
     }
 
-    return NextResponse.json({ asset: updatedAsset, version });
+    return NextResponse.json({ asset: updatedAsset });
   } catch (error) {
     console.error("[PATCH /api/brand-assets/:id/content]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

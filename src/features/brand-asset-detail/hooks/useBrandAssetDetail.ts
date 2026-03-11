@@ -6,7 +6,6 @@ import {
   toggleAssetLock,
   deleteAsset,
   regenerateAssetContent,
-  fetchAssetVersions,
   updateAssetFramework,
 } from "../api/brand-asset-detail.api";
 import type {
@@ -14,11 +13,11 @@ import type {
   StatusUpdatePayload,
   FrameworkUpdatePayload,
 } from "../types/brand-asset-detail.types";
+import { versionKeys } from "@/hooks/useVersionHistory";
 
 const assetDetailKeys = {
   all: ["brand-asset-detail"] as const,
   detail: (id: string) => [...assetDetailKeys.all, id] as const,
-  versions: (id: string) => [...assetDetailKeys.all, id, "versions"] as const,
 };
 
 export function useAssetDetail(id: string | null) {
@@ -31,14 +30,6 @@ export function useAssetDetail(id: string | null) {
   });
 }
 
-export function useAssetVersions(id: string | null, limit = 20, offset = 0) {
-  return useQuery({
-    queryKey: [...assetDetailKeys.versions(id ?? ""), limit, offset],
-    queryFn: () => fetchAssetVersions(id!, limit, offset),
-    enabled: !!id,
-  });
-}
-
 export function useUpdateContent(id: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -46,7 +37,7 @@ export function useUpdateContent(id: string) {
       updateAssetContent(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: assetDetailKeys.detail(id) });
-      qc.invalidateQueries({ queryKey: assetDetailKeys.versions(id) });
+      qc.invalidateQueries({ queryKey: versionKeys.list('BRAND_ASSET', id) });
       qc.invalidateQueries({ queryKey: ["brand-assets"] });
     },
   });
@@ -70,6 +61,7 @@ export function useToggleLock(id: string) {
     mutationFn: () => toggleAssetLock(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: assetDetailKeys.detail(id) });
+      qc.invalidateQueries({ queryKey: versionKeys.list('BRAND_ASSET', id) });
     },
   });
 }
@@ -91,7 +83,7 @@ export function useUpdateFramework(id: string) {
       updateAssetFramework(id, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: assetDetailKeys.detail(id) });
-      qc.invalidateQueries({ queryKey: assetDetailKeys.versions(id) });
+      qc.invalidateQueries({ queryKey: versionKeys.list('BRAND_ASSET', id) });
       qc.invalidateQueries({ queryKey: ["brand-assets"] });
     },
   });
@@ -104,7 +96,7 @@ export function useRegenerateContent(id: string) {
       regenerateAssetContent(id, instructions),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: assetDetailKeys.detail(id) });
-      qc.invalidateQueries({ queryKey: assetDetailKeys.versions(id) });
+      qc.invalidateQueries({ queryKey: versionKeys.list('BRAND_ASSET', id) });
     },
   });
 }

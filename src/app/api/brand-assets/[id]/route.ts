@@ -25,13 +25,6 @@ export async function GET(
         researchMethods: {
           orderBy: { method: "asc" },
         },
-        versions: {
-          orderBy: { version: "desc" },
-          take: 10,
-          include: {
-            changedBy: { select: { id: true, name: true, email: true } },
-          },
-        },
         lockedBy: { select: { id: true, name: true, email: true } },
       },
     });
