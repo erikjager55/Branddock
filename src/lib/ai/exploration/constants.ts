@@ -21,19 +21,23 @@ export const FRAMEWORK_TO_SUBTYPE: Record<string, string> = {
 
 /**
  * Resolve the exploration itemSubType from an item record.
- * For brand assets: uses slug if available, otherwise converts frameworkType to kebab-case.
- * For other types: uses slug directly.
+ * For brand assets: frameworkType takes priority (maps to DB config subtype).
+ * Asset slugs (e.g. 'core-values') don't match config subtypes ('brandhouse-values'),
+ * so we must use the FRAMEWORK_TO_SUBTYPE mapping.
+ * For other item types without frameworkType: falls back to slug.
  */
 export function resolveItemSubType(item: Record<string, unknown> | null): string | null {
   if (!item) return null;
 
-  if (item.slug && typeof item.slug === 'string') {
-    return item.slug;
-  }
-
+  // Brand assets: always resolve via frameworkType → config subtype
   if (item.frameworkType && typeof item.frameworkType === 'string') {
     return FRAMEWORK_TO_SUBTYPE[item.frameworkType]
       ?? (item.frameworkType as string).toLowerCase().replace(/_/g, '-');
+  }
+
+  // Fallback for non-brand-asset items (e.g. personas)
+  if (item.slug && typeof item.slug === 'string') {
+    return item.slug;
   }
 
   return null;
