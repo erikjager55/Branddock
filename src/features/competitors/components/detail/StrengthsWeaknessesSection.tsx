@@ -28,17 +28,17 @@ export function StrengthsWeaknessesSection({
 
   const addStrength = () => {
     const trimmed = newStrength.trim();
-    if (trimmed) { setEditStrengths([...editStrengths, trimmed]); setNewStrength(""); }
+    if (trimmed && !editStrengths.includes(trimmed)) { setEditStrengths([...editStrengths, trimmed]); setNewStrength(""); }
   };
 
   const addWeakness = () => {
     const trimmed = newWeakness.trim();
-    if (trimmed) { setEditWeaknesses([...editWeaknesses, trimmed]); setNewWeakness(""); }
+    if (trimmed && !editWeaknesses.includes(trimmed)) { setEditWeaknesses([...editWeaknesses, trimmed]); setNewWeakness(""); }
   };
 
   if (isEditing) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-5 mb-6">
+      <div className="rounded-lg border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Shield className="h-4 w-4 text-gray-500" />
           Strengths & Weaknesses
@@ -99,7 +99,7 @@ export function StrengthsWeaknessesSection({
   const hasContent = competitor.strengths.length > 0 || competitor.weaknesses.length > 0;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5 mb-6">
+    <div className="rounded-lg border border-gray-200 bg-white p-5">
       <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
         <Shield className="h-4 w-4 text-gray-500" />
         Strengths & Weaknesses

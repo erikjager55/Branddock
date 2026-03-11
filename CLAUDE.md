@@ -1,5 +1,5 @@
 # BRANDDOCK — Claude Code Context
-## Laatst bijgewerkt: 11 maart 2026 (KBF: Knowledge/Brand Foundation Afronden)
+## Laatst bijgewerkt: 11 maart 2026 (COMP: Competitors Analysis Module)
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 
@@ -18,8 +18,8 @@ Voorheen: Brandshift.ai / ULTIEM. Huidige naam: **Branddock**.
 - **Styling**: Tailwind CSS 4
 - **Database**: PostgreSQL 17, Prisma 7.4
 - **Auth**: Better Auth (emailAndPassword, Prisma adapter, organization plugin)
-- **State**: Zustand 5 (17 stores), React Context (12 providers)
-- **Data fetching**: TanStack Query 5 (brand-assets, personas, trend-radar, brand-alignment, knowledge-resources, product-personas, brandstyle, research, campaigns, studio)
+- **State**: Zustand 5 (18 stores), React Context (12 providers)
+- **Data fetching**: TanStack Query 5 (brand-assets, personas, trend-radar, brand-alignment, knowledge-resources, product-personas, brandstyle, research, campaigns, studio, competitors)
 - **Icons**: Lucide React 0.564
 - **Package manager**: npm
 
@@ -103,6 +103,7 @@ Workspace resolution: sessie-based (activeOrganizationId → workspace resolutio
 - Universal Versioning — `/api/versions` GET (polymorphic ResourceVersion). Werkt voor brand assets, personas, en toekomstige modules.
 - Personas (3 personas) — `/api/personas` GET + POST, `/api/personas/:id` GET + PATCH + DELETE, `/api/personas/:id/{duplicate,lock,avatar,generate-image,regenerate,generate-implications,export}`, `/api/personas/:id/research-methods/:method` PATCH, `/api/personas/:id/chat` POST + `/:sessionId/message` POST + `/:sessionId/insights` GET + `/:sessionId/export` GET, `/api/personas/:id/ai-analysis` POST + `/:sessionId` GET + `/answer` POST + `/complete` POST (21+ endpoints). **AI integrations**: Chat via Claude Sonnet 4 (`/api/personas/:id/chat/:sessionId/message`), Strategic Implications AI generatie (`/api/personas/:id/generate-implications`), Photo generatie via Gemini (`/api/personas/:id/generate-image`, fallback DiceBear).
 - Products & Services (3 products) — `/api/products` GET + POST, `/api/products/:id` GET + PATCH, `/api/products/:id/lock` PATCH, `/api/products/analyze/url` POST (Gemini AI), `/api/products/analyze/pdf` POST (Gemini AI), `/api/products/:id/personas` GET + POST + DELETE, `/api/products/:id/images` POST, `/api/products/:id/images/[imageId]` PATCH + DELETE, `/api/products/:id/images/reorder` PATCH (16 endpoints). **AI integrations**: URL + PDF product analysis via Gemini 3.1 Pro (`@google/genai`). **Product Images**: ProductImage model met 13 categorieën, auto-scrape bij URL analyse, max 20 per product.
+- Competitors (3 competitors) — `/api/competitors` GET + POST, `/api/competitors/:id` GET + PATCH + DELETE, `/api/competitors/:id/lock` PATCH, `/api/competitors/:id/refresh` POST, `/api/competitors/:id/products` GET + POST, `/api/competitors/:id/products/:productId` DELETE, `/api/competitors/analyze/url` POST (Gemini AI) (12 endpoints). **AI integrations**: URL competitor analysis via Gemini 3.1 Pro. + feature: `src/features/competitors/` (TanStack Query, competitorKeys, 12 hooks, Zustand store)
 - Research Plans (1 active plan) — `/api/research-plans` GET + POST + PATCH
 - Purchased Bundles — `/api/purchased-bundles` GET + POST
 - Campaigns (6 campaigns) — `/api/campaigns` GET + POST + DELETE, `/api/campaigns/stats` GET, `/api/campaigns/[id]` GET + PATCH + DELETE, `/api/campaigns/[id]/archive` PATCH, `/api/campaigns/quick` POST, `/api/campaigns/quick/prompt-suggestions` GET, `/api/campaigns/quick/[id]/convert` POST, `/api/campaigns/[id]/knowledge` GET + POST, `/api/campaigns/[id]/knowledge/[assetId]` DELETE, `/api/campaigns/[id]/coverage` GET, `/api/campaigns/[id]/deliverables` GET + POST, `/api/campaigns/[id]/deliverables/[did]` PATCH + DELETE, `/api/campaigns/[id]/strategy` GET, `/api/campaigns/[id]/strategy/generate` POST + feature: `src/features/campaigns/` (TanStack Query, campaignKeys, 20+ hooks, Zustand store)
@@ -245,6 +246,8 @@ dashboard→DashboardPage, brand→BrandFoundationPage, brand-asset-detail→Bra
 
 **Campaigns module:** active-campaigns→ActiveCampaignsPage (features/campaigns), campaign-detail→CampaignDetailPage (useCampaignStore.selectedCampaignId), quick-content-detail→QuickContentDetailPage (useCampaignStore.selectedCampaignId), content-studio→ContentStudioPage (useCampaignStore.selectedCampaignId+selectedDeliverableId), content-library→ContentLibraryPage, campaign-wizard→CampaignWizardPage
 
+**Competitors module:** competitors→CompetitorsOverviewPage, competitor-analyzer→CompetitorAnalyzerPage, competitor-detail→CompetitorDetailPage (useCompetitorsStore.selectedCompetitorId)
+
 **Detail pages (via store):** strategy-detail→StrategyDetailPage (useBusinessStrategyStore.selectedStrategyId), persona-detail→PersonaDetailPage (usePersonaDetailStore.selectedPersonaId), persona-create→CreatePersonaPage, persona-ai-analysis→AIPersonaAnalysisPage, product-detail→ProductDetailPage (useProductsStore.selectedProductId), product-analyzer→ProductAnalyzerPage, trend-detail→TrendDetailPage (useTrendRadarStore.selectedTrendId), research-bundle-detail→BundleDetailPage (useResearchStore.selectedBundleId), brand-asset-ai-exploration→AIBrandAssetExplorationPage (via selectedResearchOption='ai-exploration' in App.tsx)
 
 **Default** (onbekende IDs): rendert Dashboard.
@@ -308,6 +311,17 @@ src/
 │       │       ├── notes/route.ts       ← GET + POST (notes)
 │       │       └── generate-report/route.ts ← POST (AI generatie)
 │       ├── personas/route.ts            ← GET + POST (live)
+│       ├── competitors/
+│       │   ├── route.ts                 ← GET + POST (list+create, filters+stats)
+│       │   ├── [id]/
+│       │   │   ├── route.ts             ← GET + PATCH + DELETE (detail+update+delete)
+│       │   │   ├── lock/route.ts        ← PATCH (lock/unlock)
+│       │   │   ├── refresh/route.ts     ← POST (re-scrape + re-analyze)
+│       │   │   └── products/
+│       │   │       ├── route.ts         ← GET + POST (linked products)
+│       │   │       └── [productId]/route.ts ← DELETE (unlink product)
+│       │   └── analyze/
+│       │       └── url/route.ts         ← POST (Gemini AI competitor analysis)
 │       ├── products/
 │       │   ├── route.ts                 ← GET + POST (live, images mee-aanmaken)
 │       │   ├── [id]/
@@ -694,6 +708,32 @@ src/
 │           ├── persona.types.ts               ← PersonaWithMeta, stats, CRUD body types
 │           ├── persona-chat.types.ts          ← ChatSession, ChatMessage, ChatInsight
 │           └── persona-analysis.types.ts      ← AnalysisSession, insights, dimensions
+│   └── competitors/                            ← Competitors Analysis
+│       ├── components/
+│       │   ├── CompetitorsOverviewPage.tsx     ← Overview orchestrator (header+stats+grid)
+│       │   ├── CompetitorCard.tsx              ← Card met logo, tier badge, score, differentiators
+│       │   ├── analyzer/
+│       │   │   ├── CompetitorAnalyzerPage.tsx  ← 2-tab analyzer (URL/Manual)
+│       │   │   ├── UrlAnalyzerTab.tsx          ← URL input + analyze button
+│       │   │   ├── ManualEntryTab.tsx          ← Manual entry form
+│       │   │   └── AnalyzingCompetitorModal.tsx ← 8-step processing met API sync
+│       │   └── detail/
+│       │       ├── CompetitorDetailPage.tsx    ← Orchestrator (2-kolom layout, inline edit)
+│       │       ├── CompanyOverviewSection.tsx  ← Description, founding year, HQ, employees
+│       │       ├── PositioningSection.tsx      ← Value proposition, target audience, differentiators
+│       │       ├── OfferingsSection.tsx        ← Main offerings, pricing model, pricing details
+│       │       ├── StrengthsWeaknessesSection.tsx ← 2-kolom SWOT (add/remove)
+│       │       ├── BrandSignalsSection.tsx     ← Tone of voice, messaging themes, visual style
+│       │       ├── CompetitiveScoreCard.tsx    ← Circular score (0-100, color-coded)
+│       │       ├── QuickActionsCard.tsx        ← Refresh Analysis, Export
+│       │       ├── SourceInfoCard.tsx          ← Website URL, last scraped, source badge
+│       │       ├── LinkedProductsCard.tsx      ← Linked products + link button
+│       │       └── ProductSelectorModal.tsx    ← Multi-select product modal
+│       ├── constants/competitor-constants.ts   ← ANALYZE_STEPS, TIER/STATUS_BADGES, score thresholds
+│       ├── hooks/index.ts                      ← 12 TanStack Query hooks + competitorKeys
+│       ├── stores/useCompetitorsStore.ts       ← Zustand (selectedCompetitorId, processingModal, analyzeResultData)
+│       ├── api/competitors.api.ts              ← 10 fetch functies
+│       └── types/competitor.types.ts           ← CompetitorWithMeta, CompetitorDetail, AnalyzeJobResponse
 │   └── products/                              ← S4: Products & Services
 │       ├── components/
 │       │   ├── ProductsOverviewPage.tsx        ← Overview orchestrator (header+grid)
@@ -975,6 +1015,7 @@ src/
 │   │   ├── prompt-templates.ts            ← SYSTEM_BASE, ANALYSIS, STRUCTURED + message builders
 │   │   ├── prompts/
 │   │   │   ├── brand-analysis.ts          ← AI Brand Analysis prompts (S1)
+│   │   │   ├── competitor-analysis.ts     ← Competitor URL analysis prompts (COMP)
 │   │   │   ├── product-analysis.ts        ← Product URL/PDF analysis prompts (S4)
 │   │   │   └── workshop-report.ts         ← Workshop report generation prompts (S2a)
 │   │   ├── middleware.ts                  ← withAi (auth + rate limit + brand context)
@@ -1257,6 +1298,16 @@ Directe klant (Organization type=DIRECT)
 | `/api/products/:id/personas` | GET | Gekoppelde personas voor product |
 | `/api/products/:id/personas` | POST | Persona koppelen aan product |
 | `/api/products/:id/personas/:personaId` | DELETE | Persona ontkoppelen van product |
+| `/api/competitors` | GET | Lijst met filters (tier, status, search, sort) + stats |
+| `/api/competitors` | POST | Competitor aanmaken (Zod validated, auto-slug) |
+| `/api/competitors/:id` | GET | Detail (linkedProducts, lockedBy) |
+| `/api/competitors/:id` | PATCH | Competitor updaten (nullable fields) |
+| `/api/competitors/:id` | DELETE | Cascade delete |
+| `/api/competitors/:id/lock` | PATCH | Lock/unlock toggle |
+| `/api/competitors/:id/refresh` | POST | Re-scrape websiteUrl + re-analyze via Gemini |
+| `/api/competitors/:id/products` | GET, POST | Linked products ophalen + koppelen |
+| `/api/competitors/:id/products/:productId` | DELETE | Product ontkoppelen |
+| `/api/competitors/analyze/url` | POST | URL scrapen + Gemini AI extractie → CompetitorAnalysisResult |
 | `/api/trend-radar` | GET | Trends lijst (filters: category, impactLevel, activated, dismissed, search) |
 | `/api/trend-radar/:id` | GET, PATCH, DELETE | Trend CRUD |
 | `/api/trend-radar/:id/activate` | PATCH | Toggle isActivated |
@@ -1594,6 +1645,8 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 
 104. **KBF-4.7: Design & Interactie Consistency — compleet** — **Framework type checking gerefactored**: 11 losse boolean variabelen (`isPurposeWheel`, `isGoldenCircle`, etc.) + 11 conditionele JSX-blokken + 292-char fallback conditie vervangen door één `renderFrameworkCanvas()` switch-functie in `BrandAssetDetailPage.tsx`. Unused `visibility` (useLockVisibility), `updateContent` (useUpdateContent) imports verwijderd. Dead `useUpdateContent` hook verwijderd uit `useBrandAssetDetail.ts` (was nergens meer geïmporteerd). **Lock state geëvalueerd**: BrandAssetCard overview cards zijn read-only (geen edit actions), `BrandAssetWithMeta` type heeft geen `isLocked` veld → non-issue. **SWOT + PURPOSE_KOMPAS geëvalueerd**: Legacy types niet in canonical 11 assets, `FrameworkSection` fallback volstaat voor backward compat. **Review**: 2 rondes met telkens 2 onafhankelijke review-agents. Ronde 1: 1 WARNING (dead useUpdateContent hook) — gefixt. Ronde 2: 0 issues. TypeScript 0 errors.
 
+105. **COMP: Competitors Analysis Module — compleet** — Volledige implementatie van de Competitors module in 4 fases. **Fase 0 (Schema+Seed)**: Prisma modellen `Competitor` (30+ velden) + `CompetitorProduct` join table, enums `CompetitorTier` (DIRECT/INDIRECT/ASPIRATIONAL) + `CompetitorStatus` (DRAFT/ANALYZED/ARCHIVED), seed: 3 demo-concurrenten (BrandBuilder Pro/StrategyHive/MarketPulse AI), cache keys. **Sessie A (Backend)**: 7 API route files (12 endpoints: CRUD + lock + refresh + products linking + analyze/url), AI prompt `competitor-analysis.ts` met Gemini 3.1 Pro voor gestructureerde extractie, types (CompetitorWithMeta, CompetitorDetail, AnalyzeJobResponse, CreateCompetitorBody, UpdateCompetitorBody), constants (ANALYZE_STEPS, TIER/STATUS_BADGES), API client (10 fetch functies), 12 TanStack Query hooks + competitorKeys, Zustand useCompetitorsStore. **Sessie B (Frontend)**: ~17 componenten — overview (CompetitorsOverviewPage + CompetitorCard + stats), analyzer (CompetitorAnalyzerPage 2-tab URL/Manual + AnalyzingCompetitorModal 8-stap), detail (CompetitorDetailPage 2-kolom layout + 5 secties: CompanyOverview/Positioning/Offerings/StrengthsWeaknesses/BrandSignals + 4 sidebar: CompetitiveScoreCard/QuickActionsCard/SourceInfoCard/LinkedProductsCard + ProductSelectorModal). **Fase 2 (Integratie)**: Sidebar Swords icon in KNOWLEDGE sectie, 3 routing cases in App.tsx, brand context competitor landscape in AI prompts, dashboard stats + global search. **Review**: 2 rondes met telkens 2 onafhankelijke review-agents. Fixes: nullable fields (Zod `.nullable()` + `|| null`), dedup strengths/weaknesses, createdById op POST, typed store (`AnalyzeJobResponse | null`), double spacing fix (`mb-6` verwijderd uit secties), console.log cleanup. 0 CRITICAL remaining, 0 TypeScript errors.
+
 ### ⚠️ TECHNISCHE SCHULD
 - **Adapter pattern** — tijdelijk, componenten moeten op termijn direct DB-model gebruiken
 - **mock-to-meta-adapter.ts** — reverse adapter (mock→API format) voor Brand Foundation. Verdwijnt wanneer context direct BrandAssetWithMeta levert.
@@ -1761,6 +1814,13 @@ Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 - BA.4: ✅ AI Exploration — 7 dimensies, 18 field suggestions, seed config, frontend+backend sync
 - BA.5: ✅ AI Export — formatBrandArchetype() in brand-context.ts, alle 25+ velden gestructureerd
 - BA.6: ✅ Review — 3 rondes (2 subagents per ronde), 8 issues gefixt, 0 openstaande issues
+
+**COMP. Competitors Analysis ✅ VOLLEDIG**
+- COMP.0: ✅ Schema + Seed — Competitor model (30+ velden) + CompetitorProduct join table, 2 enums, seed: 3 demo-concurrenten, cache keys
+- COMP.A: ✅ Backend — 7 API route files (12 endpoints), AI prompt (Gemini 3.1 Pro), types, constants, API client (10 functies), 12 hooks, Zustand store
+- COMP.B: ✅ Frontend — ~17 componenten (overview+card, analyzer 2-tab+modal, detail 2-kolom+5 secties+4 sidebar+ProductSelectorModal)
+- COMP.2: ✅ Integratie — Sidebar (Swords icon), routing (3 cases), brand context (competitor landscape), dashboard stats, global search
+- COMP.R: ✅ Review — 2 rondes (2 agents per ronde), 7 fixes (nullable fields, dedup, createdById, typed store, spacing, cleanup), 0 CRITICAL remaining
 
 **S10-S12. Production Ready**
 - S10: Stripe Billing (checkout, webhooks, plan enforcement, agency model)

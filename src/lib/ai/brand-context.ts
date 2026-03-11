@@ -1198,7 +1198,7 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
     ctx.competitorAnalysis = competitors
       .map((c) => {
         const parts = [`- ${c.name} [${c.tier}`];
-        if (c.competitiveScore) parts[0] += `, score: ${c.competitiveScore}/100`;
+        if (c.competitiveScore != null) parts[0] += `, score: ${c.competitiveScore}/100`;
         parts[0] += ']';
         if (c.valueProposition) parts.push(`  Value Proposition: ${c.valueProposition}`);
         if (c.targetAudience) parts.push(`  Target Audience: ${c.targetAudience}`);

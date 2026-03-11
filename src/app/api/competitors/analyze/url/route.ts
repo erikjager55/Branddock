@@ -35,13 +35,11 @@ export async function POST(request: NextRequest) {
     }
 
     const { url } = parsed.data;
-    console.log("[competitors/analyze/url] Starting analysis for:", url);
 
     // 1. Scrape the URL
     let scraped;
     try {
       scraped = await scrapeProductUrl(url);
-      console.log("[competitors/analyze/url] Scraped OK, body length:", scraped.bodyText.length);
     } catch (scrapeError) {
       console.error("[competitors/analyze/url] Scrape failed:", scrapeError);
       const message = scrapeError instanceof Error ? scrapeError.message : "Failed to fetch URL";
@@ -82,13 +80,11 @@ export async function POST(request: NextRequest) {
       brandContext: brandContextStr,
     });
 
-    console.log("[competitors/analyze/url] Calling Gemini, output language:", outputLanguage);
     const result = await createGeminiStructuredCompletion<CompetitorAnalysisResult>(
       systemPrompt,
       userPrompt,
       { temperature: 0.3 },
     );
-    console.log("[competitors/analyze/url] Gemini returned, competitor name:", result?.name);
 
     const jobId = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 

@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Crown, Heart, MessageCircle, Palette, Megaphone, Globe,
+  Crown, Heart, Megaphone, Globe,
   Plus, X, Info, Check, ChevronDown,
 } from 'lucide-react';
-import type { BrandArchetypeFrameworkData, WeSayNotThatPair } from '../types/framework.types';
+import type { BrandArchetypeFrameworkData } from '../types/framework.types';
 import {
   ARCHETYPES, POSITIONING_OPTIONS,
   getArchetypeById, getSubArchetypes,
@@ -66,12 +66,9 @@ interface BrandArchetypeSectionProps {
 
 // ─── Component ──────────────────────────────────────────────
 
-/** Fields that are auto-filled from archetype reference data */
+/** Fields that are auto-filled from archetype reference data (excludes deprecated voice/visual fields) */
 const AUTO_FILL_FIELDS: (keyof BrandArchetypeFrameworkData)[] = [
   'coreDesire', 'coreFear', 'brandGoal', 'strategy', 'giftTalent', 'shadowWeakness',
-  'brandVoiceDescription', 'voiceAdjectives', 'languagePatterns', 'toneVariations',
-  'weSayNotThat', 'blacklistedPhrases',
-  'colorDirection', 'typographyDirection', 'imageryStyle', 'visualMotifs',
   'marketingExpression', 'customerExperience', 'contentStrategy', 'storytellingApproach',
   'brandExamples', 'positioningApproach',
 ];

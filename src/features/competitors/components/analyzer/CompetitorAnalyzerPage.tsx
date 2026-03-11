@@ -9,7 +9,7 @@ import { useCreateCompetitor } from "../../hooks";
 import { UrlAnalyzerTab } from "./UrlAnalyzerTab";
 import { ManualEntryTab } from "./ManualEntryTab";
 import { AnalyzingCompetitorModal } from "./AnalyzingCompetitorModal";
-import type { AnalyzeJobResponse } from "../../types/competitor.types";
+
 
 // ─── Tab config ───────────────────────────────────────────
 
@@ -42,7 +42,7 @@ export function CompetitorAnalyzerPage({
   const [createError, setCreateError] = useState<string | null>(null);
 
   const handleModalComplete = useCallback(() => {
-    const latestData = useCompetitorsStore.getState().analyzeResultData as AnalyzeJobResponse | null;
+    const latestData = useCompetitorsStore.getState().analyzeResultData;
     const result = latestData?.result;
     if (result) {
       setCreateError(null);
@@ -73,6 +73,7 @@ export function CompetitorAnalyzerPage({
           hasBlog: result.hasBlog ?? undefined,
           hasCareersPage: result.hasCareersPage ?? undefined,
           competitiveScore: result.competitiveScore ?? undefined,
+          analysisData: result as unknown as Record<string, unknown>,
         })
         .then((created) => {
           closeProcessingModal();
@@ -97,6 +98,7 @@ export function CompetitorAnalyzerPage({
       <div className="space-y-6">
         {/* Breadcrumb */}
         <button
+          type="button"
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
         >
@@ -119,6 +121,7 @@ export function CompetitorAnalyzerPage({
             const isActive = activeTab === tab.id;
             return (
               <button
+                type="button"
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 pb-3 text-sm font-medium transition-colors ${
@@ -155,7 +158,7 @@ export function CompetitorAnalyzerPage({
           <AnalyzingCompetitorModal
             onComplete={handleModalComplete}
             onCancel={handleModalCancel}
-            isApiComplete={(analyzeResultData as AnalyzeJobResponse | null)?.status === "complete"}
+            isApiComplete={analyzeResultData?.status === "complete"}
           />
         )}
       </div>

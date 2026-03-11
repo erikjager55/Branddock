@@ -40,7 +40,7 @@ export function CompanyOverviewSection({
 }: CompanyOverviewSectionProps) {
   if (isEditing) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-5 mb-6">
+      <div className="rounded-lg border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Building2 className="h-4 w-4 text-gray-500" />
           Company Overview
@@ -71,7 +71,7 @@ export function CompanyOverviewSection({
   const hasMetadata = competitor.foundingYear || competitor.headquarters || competitor.employeeRange;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5 mb-6">
+    <div className="rounded-lg border border-gray-200 bg-white p-5">
       <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
         <Building2 className="h-4 w-4 text-gray-500" />
         Company Overview

@@ -3,6 +3,7 @@
 // =============================================================
 
 import { create } from "zustand";
+import type { AnalyzeJobResponse } from "../types/competitor.types";
 
 interface CompetitorsState {
   // Selected competitor for detail view
@@ -15,8 +16,8 @@ interface CompetitorsState {
   closeProcessingModal: () => void;
 
   // Analysis result data (temporary, before creating competitor)
-  analyzeResultData: unknown | null;
-  setAnalyzeResultData: (data: unknown | null) => void;
+  analyzeResultData: AnalyzeJobResponse | null;
+  setAnalyzeResultData: (data: AnalyzeJobResponse | null) => void;
 }
 
 export const useCompetitorsStore = create<CompetitorsState>((set) => ({
@@ -25,7 +26,7 @@ export const useCompetitorsStore = create<CompetitorsState>((set) => ({
 
   isProcessingModalOpen: false,
   openProcessingModal: () => set({ isProcessingModalOpen: true }),
-  closeProcessingModal: () => set({ isProcessingModalOpen: false }),
+  closeProcessingModal: () => set({ isProcessingModalOpen: false, analyzeResultData: null }),
 
   analyzeResultData: null,
   setAnalyzeResultData: (data) => set({ analyzeResultData: data }),

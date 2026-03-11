@@ -7,10 +7,12 @@ import { useRefreshCompetitor } from "../../hooks";
 
 interface QuickActionsCardProps {
   competitorId: string;
+  isLocked?: boolean;
+  hasWebsiteUrl?: boolean;
 }
 
 /** Quick actions sidebar card (refresh, export) */
-export function QuickActionsCard({ competitorId }: QuickActionsCardProps) {
+export function QuickActionsCard({ competitorId, isLocked, hasWebsiteUrl }: QuickActionsCardProps) {
   const refresh = useRefreshCompetitor(competitorId);
   const [refreshError, setRefreshError] = useState<string | null>(null);
 
@@ -32,6 +34,7 @@ export function QuickActionsCard({ competitorId }: QuickActionsCardProps) {
             });
           }}
           isLoading={refresh.isPending}
+          disabled={isLocked || !hasWebsiteUrl}
           className="justify-start"
         >
           Refresh Analysis

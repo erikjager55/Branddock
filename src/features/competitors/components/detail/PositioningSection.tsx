@@ -43,7 +43,7 @@ export function PositioningSection({
 
   if (isEditing) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-5 mb-6">
+      <div className="rounded-lg border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <Target className="h-4 w-4 text-gray-500" />
           Positioning
@@ -101,7 +101,7 @@ export function PositioningSection({
   const hasContent = competitor.valueProposition || competitor.targetAudience || competitor.differentiators.length > 0;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5 mb-6">
+    <div className="rounded-lg border border-gray-200 bg-white p-5">
       <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
         <Target className="h-4 w-4 text-gray-500" />
         Positioning

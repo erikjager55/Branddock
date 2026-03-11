@@ -30,7 +30,7 @@ interface CompetitorDetailPageProps {
   onNavigate?: (section: string) => void;
 }
 
-/** Competitor detail page with 2-column layout (8/4 split) */
+/** Competitor detail page with 2-column layout (2/3 + 1/3 split, sticky sidebar) */
 export function CompetitorDetailPage({
   competitorId,
   onBack,
@@ -111,25 +111,25 @@ export function CompetitorDetailPage({
 
   const handleSave = () => {
     setSaveError(null);
-    const year = editFoundingYear ? parseInt(editFoundingYear, 10) : undefined;
+    const year = editFoundingYear ? parseInt(editFoundingYear, 10) : null;
     updateCompetitor
       .mutateAsync({
         name: editName,
-        tagline: editTagline || undefined,
-        description: editDescription || undefined,
+        tagline: editTagline || null,
+        description: editDescription || null,
         tier: editTier as "DIRECT" | "INDIRECT" | "ASPIRATIONAL",
-        foundingYear: year && !isNaN(year) ? year : undefined,
-        headquarters: editHeadquarters || undefined,
-        employeeRange: editEmployeeRange || undefined,
-        valueProposition: editValueProposition || undefined,
-        targetAudience: editTargetAudience || undefined,
+        foundingYear: year && !isNaN(year) ? year : null,
+        headquarters: editHeadquarters || null,
+        employeeRange: editEmployeeRange || null,
+        valueProposition: editValueProposition || null,
+        targetAudience: editTargetAudience || null,
         differentiators: editDifferentiators,
         mainOfferings: editMainOfferings,
-        pricingModel: editPricingModel || undefined,
-        pricingDetails: editPricingDetails || undefined,
-        toneOfVoice: editToneOfVoice || undefined,
+        pricingModel: editPricingModel || null,
+        pricingDetails: editPricingDetails || null,
+        toneOfVoice: editToneOfVoice || null,
         messagingThemes: editMessagingThemes,
-        visualStyleNotes: editVisualStyleNotes || undefined,
+        visualStyleNotes: editVisualStyleNotes || null,
         strengths: editStrengths,
         weaknesses: editWeaknesses,
       })
@@ -141,9 +141,11 @@ export function CompetitorDetailPage({
 
   const handleDelete = () => {
     deleteCompetitor.mutateAsync().then(() => {
+      setIsDeleteConfirmOpen(false);
       qc.removeQueries({ queryKey: competitorKeys.detail(competitorId) });
       onBack();
     }).catch((err: unknown) => {
+      setIsDeleteConfirmOpen(false);
       setSaveError(err instanceof Error ? err.message : "Failed to delete competitor");
     });
   };
@@ -180,6 +182,7 @@ export function CompetitorDetailPage({
       <div className="space-y-6">
         {/* Breadcrumb */}
         <button
+          type="button"
           onClick={onBack}
           className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
         >
@@ -197,8 +200,8 @@ export function CompetitorDetailPage({
                 className="h-14 w-14 rounded-lg object-cover"
               />
             ) : (
-              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-red-100">
-                <Building2 className="h-7 w-7 text-red-600" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-gray-100">
+                <Building2 className="h-7 w-7 text-gray-500" />
               </div>
             )}
             <div>
@@ -268,9 +271,9 @@ export function CompetitorDetailPage({
         )}
 
         {/* 2-column layout */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left column — content sections */}
-          <div className="md:col-span-8 space-y-6">
+          <div className="md:col-span-2 min-w-0 space-y-6">
             <LockOverlay isLocked={lock.isLocked}>
               {/* Tier selector in edit mode */}
               {isEditing && (
@@ -345,16 +348,22 @@ export function CompetitorDetailPage({
             </LockOverlay>
           </div>
 
-          {/* Right column — sidebar cards */}
-          <div className="md:col-span-4 space-y-4">
-            <CompetitiveScoreCard score={competitor.competitiveScore} />
-            <QuickActionsCard competitorId={competitorId} />
-            <SourceInfoCard competitor={competitor} />
-            <LinkedProductsCard
-              competitorId={competitorId}
-              isLocked={lock.isLocked}
-              onNavigate={onNavigate}
-            />
+          {/* Right column — sidebar cards (sticky) */}
+          <div className="min-w-0">
+            <div className="md:sticky md:top-6 space-y-4">
+              <CompetitiveScoreCard score={competitor.competitiveScore} />
+              <QuickActionsCard
+                competitorId={competitorId}
+                isLocked={lock.isLocked}
+                hasWebsiteUrl={!!competitor.websiteUrl}
+              />
+              <SourceInfoCard competitor={competitor} />
+              <LinkedProductsCard
+                competitorId={competitorId}
+                isLocked={lock.isLocked}
+                onNavigate={onNavigate}
+              />
+            </div>
           </div>
         </div>
       </div>

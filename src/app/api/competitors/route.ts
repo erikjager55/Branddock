@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { resolveWorkspaceId } from "@/lib/auth-server";
+import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { COMPETITOR_LIST_SELECT } from "@/lib/db/queries";
 import { setCache, cachedJson, invalidateCache } from "@/lib/api/cache";
 import { cacheKeys, CACHE_TTL } from "@/lib/api/cache-keys";
@@ -135,6 +135,11 @@ export async function GET(request: NextRequest) {
 // POST /api/competitors
 export async function POST(request: NextRequest) {
   try {
+    const session = await getServerSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
@@ -179,6 +184,7 @@ export async function POST(request: NextRequest) {
         status: resolvedStatus,
         source: source ?? "MANUAL",
         workspaceId,
+        createdById: session.user.id,
         ...rest,
         socialLinks: (rest.socialLinks ?? undefined) as Prisma.InputJsonValue | undefined,
         analysisData: (rest.analysisData ?? undefined) as Prisma.InputJsonValue | undefined,

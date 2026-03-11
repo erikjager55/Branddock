@@ -123,26 +123,26 @@ export interface CreateCompetitorBody {
 /** Request body for updating a competitor */
 export interface UpdateCompetitorBody {
   name?: string;
-  description?: string;
-  tagline?: string;
-  foundingYear?: number;
-  headquarters?: string;
-  employeeRange?: string;
-  logoUrl?: string;
-  valueProposition?: string;
-  targetAudience?: string;
+  description?: string | null;
+  tagline?: string | null;
+  foundingYear?: number | null;
+  headquarters?: string | null;
+  employeeRange?: string | null;
+  logoUrl?: string | null;
+  valueProposition?: string | null;
+  targetAudience?: string | null;
   differentiators?: string[];
   mainOfferings?: string[];
-  pricingModel?: string;
-  pricingDetails?: string;
-  toneOfVoice?: string;
+  pricingModel?: string | null;
+  pricingDetails?: string | null;
+  toneOfVoice?: string | null;
   messagingThemes?: string[];
-  visualStyleNotes?: string;
+  visualStyleNotes?: string | null;
   strengths?: string[];
   weaknesses?: string[];
   tier?: "DIRECT" | "INDIRECT" | "ASPIRATIONAL";
   status?: "DRAFT" | "ANALYZED" | "ARCHIVED";
-  competitiveScore?: number;
+  competitiveScore?: number | null;
 }
 
 /** Individual analysis step */

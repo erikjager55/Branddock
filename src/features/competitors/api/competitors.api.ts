@@ -130,7 +130,12 @@ export async function refreshCompetitor(
 export async function toggleCompetitorLock(
   id: string,
   locked: boolean,
-): Promise<{ isLocked: boolean; lockedById: string | null; lockedAt: string | null }> {
+): Promise<{
+  isLocked: boolean;
+  lockedById: string | null;
+  lockedAt: string | null;
+  lockedBy: { id: string; name: string | null } | null;
+}> {
   const res = await fetch(`${BASE}/${id}/lock`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },

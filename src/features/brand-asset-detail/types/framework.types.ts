@@ -156,17 +156,31 @@ export interface BrandArchetypeFrameworkData {
   shadowWeakness: string;
 
   // Section 3: Voice & Messaging
+  // @deprecated — Voice fields are now managed exclusively in Brand Personality.
+  //   Kept for backward compatibility with existing JSON in the database.
+  /** @deprecated Managed in Brand Personality */
   brandVoiceDescription: string;
+  /** @deprecated Managed in Brand Personality */
   voiceAdjectives: string[]; // 3-5 adjectives
+  /** @deprecated Managed in Brand Personality */
   languagePatterns: string;
+  /** @deprecated Managed in Brand Personality */
   weSayNotThat: WeSayNotThatPair[];
+  /** @deprecated Managed in Brand Personality */
   toneVariations: string;
+  /** @deprecated Managed in Brand Personality */
   blacklistedPhrases: string[];
 
   // Section 4: Visual Expression
+  // @deprecated — Visual fields are now managed exclusively in Brand Personality.
+  //   Kept for backward compatibility with existing JSON in the database.
+  /** @deprecated Managed in Brand Personality */
   colorDirection: string;
+  /** @deprecated Managed in Brand Personality */
   typographyDirection: string;
+  /** @deprecated Managed in Brand Personality */
   imageryStyle: string;
+  /** @deprecated Managed in Brand Personality */
   visualMotifs: string;
 
   // Section 5: Archetype in Action

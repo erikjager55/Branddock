@@ -43,7 +43,7 @@ export function OfferingsSection({
 
   if (isEditing) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-white p-5 mb-6">
+      <div className="rounded-lg border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <ShoppingBag className="h-4 w-4 text-gray-500" />
           Offerings & Pricing
@@ -92,7 +92,7 @@ export function OfferingsSection({
   const hasContent = competitor.mainOfferings.length > 0 || competitor.pricingModel || competitor.pricingDetails;
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5 mb-6">
+    <div className="rounded-lg border border-gray-200 bg-white p-5">
       <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
         <ShoppingBag className="h-4 w-4 text-gray-500" />
         Offerings & Pricing
