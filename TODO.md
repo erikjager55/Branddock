@@ -262,7 +262,7 @@ Integrale kwaliteitsslag op de Brand Foundation module: overzichtspagina, asset 
 - [x] **Framework edits moeten BrandAssetVersion triggeren** — n.v.t., BrandAssetVersion niet meer gebruikt. Framework PATCH + content + regenerate + lock gebruiken allen ResourceVersion.
 - [x] **Version history UI** — VersionPill + VersionHistoryPanel (universeel) zijn al actief op alle asset types. Orphaned VersionHistoryTimeline + legacy versions endpoint + golden-circle history endpoint verwijderd.
 
-### 4.6 PDF Export Werkend Maken
+### 4.6 PDF Export Werkend Maken ✅
 
 - [x] Kies PDF library — jsPDF (al geïnstalleerd v4.2.0, bewezen in persona export)
 - [x] **Brand asset PDF export** — herschreven met jsPDF: header bar, metadata, description, content, framework-specifieke formatting
@@ -275,12 +275,12 @@ Integrale kwaliteitsslag op de Brand Foundation module: overzichtspagina, asset 
 
 > **Opmerking**: Content Studio export (`/api/studio/[deliverableId]/export`) is verplaatst naar Fase 6 (Campaign AI & Content).
 
-### 4.7 Design & Interactie Consistency
+### 4.7 Design & Interactie Consistency ✅
 
-- [ ] **Framework type checking refactoren** — 11 losse booleans → component map (`FRAMEWORK_COMPONENTS` Record)
-- [ ] **Lock state uniformeren** — BrandAssetCard expansion buttons respecteren geen lock state
+- [x] **Framework type checking refactoren** — 11 losse booleans → `renderFrameworkCanvas()` switch-functie, 200→236 regels, unused `visibility`/`updateContent` verwijderd
+- [x] **Lock state uniformeren** — BrandAssetCard overview cards zijn read-only (geen edit actions), `BrandAssetWithMeta` type heeft geen `isLocked` veld → non-issue
 - [x] **AssetOverflowMenu** verwijderd (was orphaned, nooit geïmporteerd) + ContentEditorSection, ContentEditMode eveneens verwijderd
-- [ ] **SWOT + PURPOSE_KOMPAS** evalueren — gebruiken legacy FrameworkRenderer fallback, niet modern canvas
+- [x] **SWOT + PURPOSE_KOMPAS** evalueren — legacy types niet in canonical 11 assets, `FrameworkSection` fallback volstaat voor backward compat
 
 ### 4.8 Workshop, Interviews & Survey — Volgt Later
 

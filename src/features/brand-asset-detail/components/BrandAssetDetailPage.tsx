@@ -3,7 +3,7 @@
 import { useCallback, useEffect } from "react";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { useAssetDetail, useUpdateContent, useUpdateFramework } from "../hooks/useBrandAssetDetail";
+import { useAssetDetail, useUpdateFramework } from "../hooks/useBrandAssetDetail";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
 import { AssetDetailHeader } from "./AssetDetailHeader";
 import { PurposeWheelSection } from "./PurposeWheelSection";
@@ -24,10 +24,47 @@ import { AssetCompletenessCard } from "./sidebar/AssetCompletenessCard";
 import { AssetResearchSidebarCard } from "./sidebar/AssetResearchSidebarCard";
 import { Skeleton, SkeletonCard } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
+import type { BrandAssetDetail } from "../types/brand-asset-detail.types";
 import { useLockState } from "@/hooks/useLockState";
-import { useLockVisibility } from "@/hooks/useLockVisibility";
 import { LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
 import { useQueryClient } from "@tanstack/react-query";
+
+/** Map framework type → canvas component. Replaces 11 booleans + conditional JSX. */
+function renderFrameworkCanvas(
+  asset: BrandAssetDetail,
+  canEdit: boolean,
+  onUpdate: (fd: unknown) => void,
+): React.ReactNode {
+  const fd = asset.frameworkData;
+
+  switch (asset.frameworkType) {
+    case 'PURPOSE_WHEEL':
+      return <PurposeWheelSection data={fd as PurposeWheelFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: PurposeWheelFrameworkData) => void} />;
+    case 'GOLDEN_CIRCLE':
+      return <GoldenCircleSection data={fd as GoldenCircleFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: GoldenCircleFrameworkData) => void} />;
+    case 'BRAND_ESSENCE':
+      return <BrandEssenceSection data={fd as BrandEssenceFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: BrandEssenceFrameworkData) => void} />;
+    case 'BRAND_PROMISE':
+      return <BrandPromiseSection data={fd as BrandPromiseFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: BrandPromiseFrameworkData) => void} />;
+    case 'TRANSFORMATIVE_GOALS':
+      return <TransformativeGoalsSection data={fd as TransformativeGoalsFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: TransformativeGoalsFrameworkData) => void} />;
+    case 'BRAND_ARCHETYPE':
+      return <BrandArchetypeSection data={fd as BrandArchetypeFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: BrandArchetypeFrameworkData) => void} />;
+    case 'BRAND_PERSONALITY':
+      return <BrandPersonalitySection data={fd as BrandPersonalityFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: BrandPersonalityFrameworkData) => void} />;
+    case 'BRAND_STORY':
+      return <BrandStorySection data={fd as BrandStoryFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: BrandStoryFrameworkData) => void} />;
+    case 'MISSION_STATEMENT':
+      return <MissionVisionSection data={fd as MissionVisionFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: MissionVisionFrameworkData) => void} />;
+    case 'ESG':
+      return <SocialRelevancySection data={fd as SocialRelevancyFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: SocialRelevancyFrameworkData) => void} />;
+    case 'BRANDHOUSE_VALUES':
+      return <BrandHouseValuesSection data={fd as BrandHouseValuesFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: BrandHouseValuesFrameworkData) => void} />;
+    default:
+      // Legacy types (SWOT, PURPOSE_KOMPAS) — read-only fallback
+      return <FrameworkSection frameworkType={asset.frameworkType!} frameworkData={fd} />;
+  }
+}
 
 interface BrandAssetDetailPageProps {
   assetId: string | null;
@@ -68,21 +105,7 @@ export function BrandAssetDetailPage({
     onLockChange: handleLockChange,
   });
 
-  const visibility = useLockVisibility(lockState.isLocked);
-  const updateContent = useUpdateContent(assetId ?? '');
   const updateFramework = useUpdateFramework(assetId ?? '');
-
-  const isPurposeWheel = asset?.frameworkType === 'PURPOSE_WHEEL';
-  const isGoldenCircle = asset?.frameworkType === 'GOLDEN_CIRCLE';
-  const isBrandEssence = asset?.frameworkType === 'BRAND_ESSENCE';
-  const isBrandPromise = asset?.frameworkType === 'BRAND_PROMISE';
-  const isTransformativeGoals = asset?.frameworkType === 'TRANSFORMATIVE_GOALS';
-  const isBrandArchetype = asset?.frameworkType === 'BRAND_ARCHETYPE';
-  const isBrandPersonality = asset?.frameworkType === 'BRAND_PERSONALITY';
-  const isBrandStory = asset?.frameworkType === 'BRAND_STORY';
-  const isMissionVision = asset?.frameworkType === 'MISSION_STATEMENT';
-  const isSocialRelevancy = asset?.frameworkType === 'ESG';
-  const isBrandHouseValues = asset?.frameworkType === 'BRANDHOUSE_VALUES';
 
   // Force editing off when locked
   useEffect(() => {
@@ -167,134 +190,10 @@ export function BrandAssetDetailPage({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Main Content — left column (2/3) */}
           <div className="md:col-span-2 min-w-0 space-y-6">
-            {/* Purpose Wheel — persona-style cards */}
-            {isPurposeWheel && (
+            {/* Framework canvas — dynamically selected by framework type */}
+            {asset.frameworkType && (
               <LockOverlay isLocked={lockState.isLocked}>
-                <PurposeWheelSection
-                  data={asset.frameworkData as PurposeWheelFrameworkData | null}
-                  isEditing={isEditing && !lockState.isLocked}
-                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
-                />
-              </LockOverlay>
-            )}
-
-            {/* Golden Circle — inline SVG circles */}
-            {isGoldenCircle && (
-              <LockOverlay isLocked={lockState.isLocked}>
-                <GoldenCircleSection
-                  data={asset.frameworkData as GoldenCircleFrameworkData | null}
-                  isEditing={isEditing && !lockState.isLocked}
-                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
-                />
-              </LockOverlay>
-            )}
-
-            {/* Brand Essence Wheel — 6-card canvas */}
-            {isBrandEssence && (
-              <LockOverlay isLocked={lockState.isLocked}>
-                <BrandEssenceSection
-                  data={asset.frameworkData as BrandEssenceFrameworkData | null}
-                  isEditing={isEditing && !lockState.isLocked}
-                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
-                />
-              </LockOverlay>
-            )}
-
-            {/* Brand Promise — 5-card canvas */}
-            {isBrandPromise && (
-              <LockOverlay isLocked={lockState.isLocked}>
-                <BrandPromiseSection
-                  data={asset.frameworkData as BrandPromiseFrameworkData | null}
-                  isEditing={isEditing && !lockState.isLocked}
-                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
-                />
-              </LockOverlay>
-            )}
-
-            {/* Transformative Goals — MTP + Goals + Authenticity + Stakeholders + Integration */}
-            {isTransformativeGoals && (
-              <LockOverlay isLocked={lockState.isLocked}>
-                <TransformativeGoalsSection
-                  data={asset.frameworkData as TransformativeGoalsFrameworkData | null}
-                  isEditing={isEditing && !lockState.isLocked}
-                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
-                />
-              </LockOverlay>
-            )}
-
-            {/* Brand Archetype — 6-section canvas */}
-            {isBrandArchetype && (
-              <LockOverlay isLocked={lockState.isLocked}>
-                <BrandArchetypeSection
-                  data={asset.frameworkData as BrandArchetypeFrameworkData | null}
-                  isEditing={isEditing && !lockState.isLocked}
-                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
-                />
-              </LockOverlay>
-            )}
-
-            {/* Brand Personality — 6-section canvas */}
-            {isBrandPersonality && (
-              <LockOverlay isLocked={lockState.isLocked}>
-                <BrandPersonalitySection
-                  data={asset.frameworkData as BrandPersonalityFrameworkData | null}
-                  isEditing={isEditing && !lockState.isLocked}
-                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
-                />
-              </LockOverlay>
-            )}
-
-            {/* Brand Story — 7-card canvas */}
-            {isBrandStory && (
-              <LockOverlay isLocked={lockState.isLocked}>
-                <BrandStorySection
-                  data={asset.frameworkData as BrandStoryFrameworkData | null}
-                  isEditing={isEditing && !lockState.isLocked}
-                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
-                />
-              </LockOverlay>
-            )}
-
-            {/* Mission & Vision — 5-card canvas */}
-            {isMissionVision && (
-              <LockOverlay isLocked={lockState.isLocked}>
-                <MissionVisionSection
-                  data={asset.frameworkData as MissionVisionFrameworkData | null}
-                  isEditing={isEditing && !lockState.isLocked}
-                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
-                />
-              </LockOverlay>
-            )}
-
-            {/* Social Relevancy — 6-card canvas */}
-            {isSocialRelevancy && (
-              <LockOverlay isLocked={lockState.isLocked}>
-                <SocialRelevancySection
-                  data={asset.frameworkData as SocialRelevancyFrameworkData | null}
-                  isEditing={isEditing && !lockState.isLocked}
-                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
-                />
-              </LockOverlay>
-            )}
-
-            {/* Core Values (BrandHouse) — 3-card canvas */}
-            {isBrandHouseValues && (
-              <LockOverlay isLocked={lockState.isLocked}>
-                <BrandHouseValuesSection
-                  data={asset.frameworkData as BrandHouseValuesFrameworkData | null}
-                  isEditing={isEditing && !lockState.isLocked}
-                  onUpdate={(fd) => updateFramework.mutate({ frameworkData: fd as unknown as Record<string, unknown> })}
-                />
-              </LockOverlay>
-            )}
-
-            {/* Framework Section (for other framework types) */}
-            {asset.frameworkType && !isPurposeWheel && !isGoldenCircle && !isBrandEssence && !isBrandPromise && !isTransformativeGoals && !isBrandArchetype && !isBrandPersonality && !isBrandStory && !isMissionVision && !isSocialRelevancy && !isBrandHouseValues && (
-              <LockOverlay isLocked={lockState.isLocked}>
-                <FrameworkSection
-                  frameworkType={asset.frameworkType}
-                  frameworkData={asset.frameworkData}
-                />
+                {renderFrameworkCanvas(asset, isEditing && !lockState.isLocked, (fd) => updateFramework.mutate({ frameworkData: fd as Record<string, unknown> }))}
               </LockOverlay>
             )}
           </div>
