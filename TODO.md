@@ -267,11 +267,11 @@ Integrale kwaliteitsslag op de Brand Foundation module: overzichtspagina, asset 
 - [x] Kies PDF library — jsPDF (al geïnstalleerd v4.2.0, bewezen in persona export)
 - [x] **Brand asset PDF export** — herschreven met jsPDF: header bar, metadata, description, content, framework-specifieke formatting
 - [x] **Framework-specifieke formatting** — alle 12 asset types (+ SWOT/PurposeKompas legacy) met dedicated formatters
-- [ ] **Brandstyle PDF export** implementeren `src/app/api/brandstyle/export-pdf/route.ts` (nu: 501)
-- [ ] **Persona PDF export** implementeren `src/app/api/personas/[id]/export/route.ts` (nu: 501)
-- [ ] **Chat/session export** implementeren `src/app/api/personas/[id]/chat/[sessionId]/export/route.ts` (nu: 501)
-- [ ] **AssetOverflowMenu integreren** — nu orphaned (nooit geïmporteerd in BrandAssetDetailPage)
-- [ ] **QuickActionsCard Export knop** aansluiten op werkende export
+- [x] **Brandstyle PDF export** — client-side jsPDF (6 secties: logo, colors met swatches, typography met type scale, tone of voice, imagery, design language). API stub + unused hook/api verwijderd.
+- [x] **Persona PDF export** — werkte al client-side via `exportPersonaPdf.ts`. Orphaned API stub verwijderd.
+- [x] **Chat/session export** — werkte al client-side in `PersonaChatInsightsTab.tsx`. Orphaned API stub verwijderd.
+- [x] **AssetOverflowMenu** — verwijderd in 4.4 (was orphaned)
+- [x] **QuickActionsCard Export knop** — al werkend aangesloten op `exportBrandAssetPdf(asset)`
 
 > **Opmerking**: Content Studio export (`/api/studio/[deliverableId]/export`) is verplaatst naar Fase 6 (Campaign AI & Content).
 

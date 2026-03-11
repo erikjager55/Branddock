@@ -13,7 +13,6 @@ import {
   saveForAi,
   addColor,
   deleteColor,
-  exportPdf,
   fetchAiContext,
 } from "../api/brandstyle.api";
 import type { SaveForAiSection } from "../types/brandstyle.types";
@@ -137,8 +136,3 @@ export function useDeleteColor() {
   });
 }
 
-export function useExportPdf() {
-  return useMutation({
-    mutationFn: exportPdf,
-  });
-}

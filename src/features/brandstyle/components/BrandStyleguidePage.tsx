@@ -8,7 +8,8 @@ import { LockBanner, LockConfirmDialog, LockOverlay } from "@/components/lock";
 import { LockShield, LockStatusPill } from "@/components/lock";
 import { useLockState } from "@/hooks/useLockState";
 import { useQueryClient } from "@tanstack/react-query";
-import { useStyleguide, useExportPdf, brandstyleKeys } from "../hooks/useBrandstyleHooks";
+import { useStyleguide, brandstyleKeys } from "../hooks/useBrandstyleHooks";
+import { exportBrandstylePdf } from "../utils/exportBrandstylePdf";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { StyleguideTabNav } from "./StyleguideTabNav";
 import { LogoSection } from "./LogoSection";
@@ -29,9 +30,12 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
   const isEditing = useBrandstyleStore((s) => s.isEditing);
   const setIsEditing = useBrandstyleStore((s) => s.setIsEditing);
   const qc = useQueryClient();
-  const exportPdf = useExportPdf();
 
   const styleguide = data?.styleguide ?? null;
+
+  const handleExportPdf = useCallback(() => {
+    if (styleguide) exportBrandstylePdf(styleguide);
+  }, [styleguide]);
 
   // Hook must be called unconditionally (Rules of Hooks).
   // Pass safe defaults when styleguide is not yet loaded.
@@ -156,12 +160,11 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
                 </button>
                 <span>·</span>
                 <button
-                  onClick={() => exportPdf.mutate()}
-                  disabled={exportPdf.isPending}
-                  className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
+                  onClick={handleExportPdf}
+                  className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
                 >
                   <Download className="h-3 w-3" />
-                  {exportPdf.isPending ? 'Exporting...' : 'Export PDF'}
+                  Export PDF
                 </button>
               </div>
             </div>

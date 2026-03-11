@@ -61,11 +61,6 @@ export async function updateStyleguide(data: Partial<BrandStyleguide>): Promise<
   return res.json();
 }
 
-export async function exportPdf(): Promise<void> {
-  const res = await fetch(`${BASE}/export-pdf`, { method: "POST" });
-  if (!res.ok) throw new Error("PDF export not yet available");
-}
-
 export async function fetchAiContext(): Promise<AiContextResponse> {
   const res = await fetch(`${BASE}/ai-context`);
   if (!res.ok) throw new Error("Failed to fetch AI context");
