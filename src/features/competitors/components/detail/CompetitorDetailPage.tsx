@@ -143,6 +143,8 @@ export function CompetitorDetailPage({
     deleteCompetitor.mutateAsync().then(() => {
       qc.removeQueries({ queryKey: competitorKeys.detail(competitorId) });
       onBack();
+    }).catch((err: unknown) => {
+      setSaveError(err instanceof Error ? err.message : "Failed to delete competitor");
     });
   };
 

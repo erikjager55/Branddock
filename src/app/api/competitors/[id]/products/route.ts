@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
@@ -101,8 +102,7 @@ export async function POST(
 
     return NextResponse.json(link, { status: 201 });
   } catch (error) {
-    // Handle unique constraint violation (already linked)
-    if (error instanceof Error && error.message.includes("Unique constraint")) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return NextResponse.json({ error: "Product already linked" }, { status: 409 });
     }
     console.error("[POST /api/competitors/:id/products]", error);

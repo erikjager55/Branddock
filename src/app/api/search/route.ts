@@ -5,7 +5,7 @@ import { resolveWorkspaceId } from '@/lib/auth-server';
 
 const searchSchema = z.object({
   query: z.string().min(1).max(200),
-  type: z.enum(['all', 'brand_assets', 'personas', 'products', 'trends', 'campaigns']).optional().default('all'),
+  type: z.enum(['all', 'brand_assets', 'personas', 'products', 'competitors', 'trends', 'campaigns']).optional().default('all'),
   limit: z.coerce.number().min(1).max(50).optional().default(20),
 });
 
@@ -79,6 +79,24 @@ export async function GET(request: NextRequest) {
         href: 'product-detail',
         icon: 'Package',
         isLocked: p.isLocked,
+      })));
+    }
+
+    // Search competitors
+    if (type === 'all' || type === 'competitors') {
+      const competitors = await prisma.competitor.findMany({
+        where: { workspaceId, name: { contains: query, mode: 'insensitive' } },
+        take: limit,
+        select: { id: true, name: true, tagline: true, tier: true, isLocked: true },
+      });
+      results.push(...competitors.map((c) => ({
+        id: c.id,
+        title: c.name,
+        type: 'Competitor',
+        description: c.tagline || c.tier,
+        href: 'competitor-detail',
+        icon: 'Swords',
+        isLocked: c.isLocked,
       })));
     }
 

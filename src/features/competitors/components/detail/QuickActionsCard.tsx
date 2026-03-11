@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { RefreshCw, Download } from "lucide-react";
 import { Button } from "@/components/shared";
 import { useRefreshCompetitor } from "../../hooks";
@@ -11,6 +12,7 @@ interface QuickActionsCardProps {
 /** Quick actions sidebar card (refresh, export) */
 export function QuickActionsCard({ competitorId }: QuickActionsCardProps) {
   const refresh = useRefreshCompetitor(competitorId);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-5">
@@ -21,7 +23,14 @@ export function QuickActionsCard({ competitorId }: QuickActionsCardProps) {
           size="sm"
           fullWidth
           icon={RefreshCw}
-          onClick={() => refresh.mutate()}
+          onClick={() => {
+            setRefreshError(null);
+            refresh.mutate(undefined, {
+              onError: (err) => {
+                setRefreshError(err instanceof Error ? err.message : "Refresh failed");
+              },
+            });
+          }}
           isLoading={refresh.isPending}
           className="justify-start"
         >
@@ -41,6 +50,9 @@ export function QuickActionsCard({ competitorId }: QuickActionsCardProps) {
           Export Data
         </Button>
       </div>
+      {refreshError && (
+        <p className="mt-2 text-xs text-red-600">{refreshError}</p>
+      )}
     </div>
   );
 }

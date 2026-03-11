@@ -46,6 +46,9 @@ export async function PATCH(
         lockedById: locked ? session.user.id : null,
         lockedAt: locked ? new Date() : null,
       },
+      include: {
+        lockedBy: { select: { id: true, name: true } },
+      },
     });
 
     invalidateCache(cacheKeys.prefixes.competitors(workspaceId));
@@ -54,6 +57,9 @@ export async function PATCH(
       isLocked: competitor.isLocked,
       lockedById: competitor.lockedById,
       lockedAt: competitor.lockedAt?.toISOString() ?? null,
+      lockedBy: competitor.lockedBy
+        ? { id: competitor.lockedBy.id, name: competitor.lockedBy.name }
+        : null,
     });
   } catch (error) {
     console.error("[PATCH /api/competitors/:id/lock]", error);

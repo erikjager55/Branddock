@@ -23,6 +23,7 @@ export function CompetitorsOverviewPage({
   return (
     <PageShell>
       <PageHeader
+        moduleKey="competitors"
         title="Competitor Analysis"
         subtitle="Track and analyze your competitive landscape"
         actions={

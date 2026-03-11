@@ -39,6 +39,7 @@ export interface BrandContextBlock {
   targetAudience?: string;
   industry?: string;
   productsOverview?: string;
+  competitorAnalysis?: string;
   competitiveLandscape?: string;
 }
 
@@ -100,6 +101,10 @@ export function formatBrandContext(ctx: BrandContextBlock): string {
   if (ctx.targetAudience) lines.push(`**Target Audience:** ${ctx.targetAudience}`);
   if (ctx.industry) lines.push(`**Industry:** ${ctx.industry}`);
   if (ctx.productsOverview) lines.push(`**Products/Services:** ${ctx.productsOverview}`);
+  if (ctx.competitorAnalysis) {
+    lines.push(`**Competitor Analysis:**`);
+    lines.push(ctx.competitorAnalysis);
+  }
   if (ctx.competitiveLandscape) {
     lines.push(`**Market Trends & Competitive Landscape:**`);
     lines.push(ctx.competitiveLandscape);

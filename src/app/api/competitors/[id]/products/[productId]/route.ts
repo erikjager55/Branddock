@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
@@ -35,6 +36,9 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") {
+      return NextResponse.json({ error: "Product link not found" }, { status: 404 });
+    }
     console.error("[DELETE /api/competitors/:id/products/:productId]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

@@ -786,7 +786,7 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
   if (cached) return cached;
 
   // Fetch all sources in parallel
-  const [workspace, brandAssets, personas, products, activatedTrends, styleguide] = await Promise.all([
+  const [workspace, brandAssets, personas, products, activatedTrends, competitors, styleguide] = await Promise.all([
     prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { name: true },
@@ -839,6 +839,23 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       },
       orderBy: { relevanceScore: 'desc' },
       take: 5,
+    }),
+
+    prisma.competitor.findMany({
+      where: { workspaceId, status: 'ANALYZED' },
+      select: {
+        name: true,
+        tier: true,
+        competitiveScore: true,
+        valueProposition: true,
+        differentiators: true,
+        strengths: true,
+        weaknesses: true,
+        targetAudience: true,
+        mainOfferings: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
     }),
 
     prisma.brandStyleguide.findFirst({
@@ -1174,6 +1191,24 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       }
       if (dlParts.length > 0) ctx.brandDesignLanguage = dlParts.join('. ');
     }
+  }
+
+  // Competitor analysis
+  if (competitors.length > 0) {
+    ctx.competitorAnalysis = competitors
+      .map((c) => {
+        const parts = [`- ${c.name} [${c.tier}`];
+        if (c.competitiveScore) parts[0] += `, score: ${c.competitiveScore}/100`;
+        parts[0] += ']';
+        if (c.valueProposition) parts.push(`  Value Proposition: ${c.valueProposition}`);
+        if (c.targetAudience) parts.push(`  Target Audience: ${c.targetAudience}`);
+        if (c.differentiators.length > 0) parts.push(`  Differentiators: ${c.differentiators.join('; ')}`);
+        if (c.mainOfferings.length > 0) parts.push(`  Offerings: ${c.mainOfferings.join('; ')}`);
+        if (c.strengths.length > 0) parts.push(`  Strengths: ${c.strengths.join('; ')}`);
+        if (c.weaknesses.length > 0) parts.push(`  Weaknesses: ${c.weaknesses.join('; ')}`);
+        return parts.join('\n');
+      })
+      .join('\n');
   }
 
   // Competitive landscape from activated trends

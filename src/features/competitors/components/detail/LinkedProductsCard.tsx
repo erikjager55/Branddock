@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Package, Plus, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/shared";
+import { useProductsStore } from "@/features/products/stores/useProductsStore";
 import { useCompetitorProducts, useUnlinkProduct } from "../../hooks";
 import { ProductSelectorModal } from "./ProductSelectorModal";
 
@@ -60,7 +61,10 @@ export function LinkedProductsCard({
               <button
                 type="button"
                 className="text-sm text-gray-700 hover:text-primary truncate text-left"
-                onClick={() => onNavigate?.("product-detail")}
+                onClick={() => {
+                  useProductsStore.getState().setSelectedProductId(product.id);
+                  onNavigate?.("product-detail");
+                }}
               >
                 {product.name}
               </button>

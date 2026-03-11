@@ -14,6 +14,7 @@ import { LazyWrapper } from './components/shared';
 // ─── Contexts, stores, hooks, utils ────────────────────────
 import { AppProviders, useBrandAssets, useResearchPlan, useUIState } from './contexts';
 import { useProductsStore } from './features/products/stores/useProductsStore';
+import { useCompetitorsStore } from './features/competitors/stores/useCompetitorsStore';
 import { useTrendRadarStore } from './features/trend-radar/stores/useTrendRadarStore';
 import { useBusinessStrategyStore } from './features/business-strategy/stores/useBusinessStrategyStore';
 import { usePersonaDetailStore } from './features/personas/stores/usePersonaDetailStore';
@@ -47,6 +48,9 @@ import {
   ProductsOverviewPage,
   ProductAnalyzerPage,
   ProductDetailPage,
+  CompetitorsOverviewPage,
+  CompetitorAnalyzerPage,
+  CompetitorDetailPage,
   TrendRadarPage,
   TrendDetailPage,
   KnowledgeLibraryPage,
@@ -563,6 +567,39 @@ function AppContent() {
           <ProductDetailPage
             productId={pdProductId}
             onBack={() => handleSetActiveSection('products')}
+            onNavigate={handleSetActiveSection}
+          />
+        );
+      }
+      case 'competitors':
+        return (
+          <CompetitorsOverviewPage
+            onNavigateToAnalyzer={() => handleSetActiveSection('competitor-analyzer')}
+            onNavigateToDetail={(id) => {
+              useCompetitorsStore.getState().setSelectedCompetitorId(id);
+              handleSetActiveSection('competitor-detail');
+            }}
+          />
+        );
+      case 'competitor-analyzer':
+        return (
+          <CompetitorAnalyzerPage
+            onBack={() => handleSetActiveSection('competitors')}
+            onNavigateToDetail={(id) => {
+              useCompetitorsStore.getState().setSelectedCompetitorId(id);
+              handleSetActiveSection('competitor-detail');
+            }}
+          />
+        );
+      case 'competitor-detail': {
+        const cdCompetitorId = useCompetitorsStore.getState().selectedCompetitorId;
+        if (!cdCompetitorId) {
+          return null;
+        }
+        return (
+          <CompetitorDetailPage
+            competitorId={cdCompetitorId}
+            onBack={() => handleSetActiveSection('competitors')}
             onNavigate={handleSetActiveSection}
           />
         );

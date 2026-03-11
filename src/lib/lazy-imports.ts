@@ -78,6 +78,17 @@ export const ProductDetailPage = lazy(() =>
   import('@/features/products/components/detail/ProductDetailPage').then(m => ({ default: m.ProductDetailPage }))
 );
 
+// ─── Competitors ──────────────────────────────────────────────
+export const CompetitorsOverviewPage = lazy(() =>
+  import('@/features/competitors/components/CompetitorsOverviewPage').then(m => ({ default: m.CompetitorsOverviewPage }))
+);
+export const CompetitorAnalyzerPage = lazy(() =>
+  import('@/features/competitors/components/analyzer/CompetitorAnalyzerPage').then(m => ({ default: m.CompetitorAnalyzerPage }))
+);
+export const CompetitorDetailPage = lazy(() =>
+  import('@/features/competitors/components/detail/CompetitorDetailPage').then(m => ({ default: m.CompetitorDetailPage }))
+);
+
 // ─── Trend Radar ────────────────────────────────────────────
 export const TrendRadarPage = lazy(() =>
   import('@/features/trend-radar/components/TrendRadarPage').then(m => ({ default: m.TrendRadarPage }))
@@ -185,6 +196,7 @@ const moduleLoaders: Record<string, () => Promise<unknown>> = {
   'brandstyle': () => import('@/features/brandstyle/components/BrandstyleAnalyzerPage'),
   'personas': () => import('@/features/personas/components/PersonasPage'),
   'products': () => import('@/features/products/components/ProductsOverviewPage'),
+  'competitors': () => import('@/features/competitors/components/CompetitorsOverviewPage'),
   'trends': () => import('@/features/trend-radar/components/TrendRadarPage'),
   'knowledge': () => import('@/features/knowledge-library/components/KnowledgeLibraryPage'),
   'research': () => import('@/features/research/components/hub/ResearchHubPage'),
