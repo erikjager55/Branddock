@@ -84,20 +84,6 @@ async function main() {
     await prisma.brandAssetVersion.deleteMany({ where: { brandAssetId: visionAsset.id } });
     await prisma.brandAssetResearchMethod.deleteMany({ where: { brandAssetId: visionAsset.id } });
 
-    // Delete AI analysis sessions and messages
-    const aiSessions = await prisma.aIBrandAnalysisSession.findMany({
-      where: { brandAssetId: visionAsset.id },
-      select: { id: true },
-    });
-    if (aiSessions.length > 0) {
-      await prisma.aIAnalysisMessage.deleteMany({
-        where: { sessionId: { in: aiSessions.map(s => s.id) } },
-      });
-      await prisma.aIBrandAnalysisSession.deleteMany({
-        where: { brandAssetId: visionAsset.id },
-      });
-    }
-
     // Delete exploration sessions and messages
     const explorationSessions = await prisma.explorationSession.findMany({
       where: { itemId: visionAsset.id },

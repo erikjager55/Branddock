@@ -31,7 +31,6 @@ import {
   BrandFoundationPage,
   BrandAssetDetailPage,
   TransformativeGoalsDashboard,
-  AIBrandAnalysisPage,
   BrandstyleAnalyzerPage,
   BrandStyleguidePage,
   WorkshopPurchasePage,
@@ -763,21 +762,6 @@ function AppContent() {
 
       case 'brand-alignment':
         return <BrandAlignmentPage />;
-
-      case 'ai-brand-analysis':
-        return (
-          <AIBrandAnalysisPage
-            assetId={selectedAssetId ?? ''}
-            assetName={selectedAssetId ? getBrandAsset(selectedAssetId)?.title : undefined}
-            onBack={() => {
-              if (selectedAssetId) {
-                handleNavigateAssetDetail(selectedAssetId);
-              } else {
-                handleSetActiveSection('brand');
-              }
-            }}
-          />
-        );
 
       case 'ai-exploration-brand-asset': {
         const aeAssetId = selectedAssetId;

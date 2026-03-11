@@ -30,13 +30,6 @@ export interface LockedByUser {
   email: string;
 }
 
-export interface AISessionSummary {
-  id: string;
-  status: string;
-  progress: number;
-  completedAt: string | null;
-}
-
 export interface BrandAssetDetail {
   id: string;
   name: string;
@@ -63,7 +56,6 @@ export interface BrandAssetDetail {
   updatedAt: string;
   researchMethods: ResearchMethodDetail[];
   versions: VersionDetail[];
-  aiAnalysisSessions: AISessionSummary[];
   validationPercentage: number;
   completedMethods: number;
   totalMethods: number;

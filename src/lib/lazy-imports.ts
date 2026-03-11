@@ -19,11 +19,6 @@ export const TransformativeGoalsDashboard = lazy(() =>
   import('@/components/TransformativeGoalsDashboard').then(m => ({ default: m.TransformativeGoalsDashboard }))
 );
 
-// ─── AI Brand Analysis ─────────────────────────────────────
-export const AIBrandAnalysisPage = lazy(() =>
-  import('@/features/ai-brand-analysis/components/AIBrandAnalysisPage').then(m => ({ default: m.AIBrandAnalysisPage }))
-);
-
 // ─── Brandstyle ────────────────────────────────────────────
 export const BrandstyleAnalyzerPage = lazy(() =>
   import('@/features/brandstyle/components/BrandstyleAnalyzerPage').then(m => ({ default: m.BrandstyleAnalyzerPage }))

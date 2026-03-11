@@ -3,7 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 import { DEFAULT_PERSONA_CHAT_PROMPT } from "./seed/persona-chat-config";
 import { CANONICAL_BRAND_ASSETS, RESEARCH_METHOD_TYPES } from "../src/lib/constants/canonical-brand-assets";
-import type { NotificationType, NotificationCategory, AssetCategory, AssetStatus, AIMessageType, ResearchMethodType, ResearchMethodStatus, WorkshopStatus, InterviewStatus, InterviewQuestionType, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, StyleguideSource, AnalysisStatus, ColorCategory, PersonaAvatarSource, PersonaResearchMethodType, InsightCategory, InsightScope, ImpactLevel, InsightTimeframe, InsightSource, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, ResourceSource, ProductSource, ProductStatus, DifficultyLevel, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus, TicketCategory, TicketPriority, TicketStatus, FeatureRequestStatus, OAuthProvider, ConnectionStatus, BillingCycle, InvoiceStatus, Theme, AccentColor, FontSize, SidebarPosition, SubscriptionStatus, ProductImageCategory, TrendDetectionSource, TrendScanStatus } from "@prisma/client";
+import type { NotificationType, NotificationCategory, AssetCategory, AssetStatus, ResearchMethodType, ResearchMethodStatus, WorkshopStatus, InterviewStatus, InterviewQuestionType, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, StyleguideSource, AnalysisStatus, ColorCategory, PersonaAvatarSource, PersonaResearchMethodType, InsightCategory, InsightScope, ImpactLevel, InsightTimeframe, InsightSource, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, ResourceSource, ProductSource, ProductStatus, DifficultyLevel, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus, TicketCategory, TicketPriority, TicketStatus, FeatureRequestStatus, OAuthProvider, ConnectionStatus, BillingCycle, InvoiceStatus, Theme, AccentColor, FontSize, SidebarPosition, SubscriptionStatus, ProductImageCategory, TrendDetectionSource, TrendScanStatus } from "@prisma/client";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -101,8 +101,6 @@ async function main() {
   await prisma.workshopBundle.deleteMany();
   await prisma.brandAssetVersion.deleteMany();
   await prisma.brandAssetResearchMethod.deleteMany();
-  await prisma.aIAnalysisMessage.deleteMany();
-  await prisma.aIBrandAnalysisSession.deleteMany();
   await prisma.brandAsset.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.dashboardPreference.deleteMany();
@@ -372,68 +370,6 @@ async function main() {
         workspaceId: workspace.id,
       },
     });
-  }
-
-  // AI Brand Analysis Session (Fase 1B) — for Mission & Vision
-  const missionAsset = await prisma.brandAsset.findFirst({
-    where: { slug: "mission-statement", workspaceId: workspace.id },
-  });
-
-  if (missionAsset) {
-    const session = await prisma.aIBrandAnalysisSession.create({
-      data: {
-        status: "REPORT_READY",
-        progress: 125,
-        totalQuestions: 8,
-        answeredQuestions: 10,
-        brandAssetId: missionAsset.id,
-        workspaceId: workspace.id,
-        createdById: user.id,
-        completedAt: new Date(),
-        lastUpdatedAt: new Date(),
-        reportData: JSON.stringify({
-          executiveSummary: "Based on comprehensive analysis of your vision statement, we identified strong alignment between stated values and market positioning. Key areas for improvement include audience specificity and competitive differentiation. The vision directly connects to societal impact through brand-led innovation.",
-          findings: [
-            { key: "brand_purpose", title: "Strong Purpose Foundation", description: "Your brand purpose clearly articulates the value you provide to organizations seeking authentic brand strategies.", icon: "Target" },
-            { key: "target_audience", title: "Audience Needs Refinement", description: "While the mid-market focus is clear, specific pain points and decision-making patterns need deeper exploration.", icon: "Users" },
-            { key: "unique_value", title: "Compelling Value Proposition", description: "The combination of AI-powered analysis with human research methods creates a unique market position.", icon: "Sparkles" },
-            { key: "customer_challenge", title: "Budget Sensitivity Identified", description: "Target customers are price-sensitive and need clear ROI justification for brand strategy investments.", icon: "Lightbulb" },
-            { key: "market_position", title: "Emerging Market Opportunity", description: "Growing demand for accessible brand strategy tools positions you well in an underserved segment.", icon: "TrendingUp" },
-          ],
-          recommendations: [
-            { number: 1, title: "Develop Customer Personas", description: "Create 3-5 detailed personas for different segments within the 50-500 employee range.", priority: "high" },
-            { number: 2, title: "Quantify ROI Metrics", description: "Build case studies showing measurable brand impact to address budget sensitivity.", priority: "high" },
-            { number: 3, title: "Competitive Positioning Map", description: "Create a visual positioning map highlighting your unique AI+research combination.", priority: "medium" },
-            { number: 4, title: "Content Strategy Alignment", description: "Ensure all content channels reflect the research-validated methodology differentiator.", priority: "medium" },
-            { number: 5, title: "Community Building", description: "Launch a community for brand strategists to share insights and best practices.", priority: "low" },
-          ],
-          dataPointsCount: 47,
-          sourcesCount: 12,
-          confidenceScore: 87,
-          completedAt: new Date().toISOString(),
-          lastUpdatedAt: new Date().toISOString(),
-        }),
-      },
-    });
-
-    const messages: Array<{ type: AIMessageType; content: string; orderIndex: number }> = [
-      { type: "SYSTEM_INTRO", content: "Welcome to AI Brand Analysis! I'll help you explore and validate your brand framework through a series of questions. Let's start by understanding your brand purpose.", orderIndex: 0 },
-      { type: "AI_QUESTION", content: "What is the core purpose of your brand? In other words, why does your organization exist beyond making a profit?", orderIndex: 1 },
-      { type: "USER_ANSWER", content: "We exist to empower organizations to build authentic, research-validated brand strategies. Too many companies rely on gut feeling instead of real data.", orderIndex: 2 },
-      { type: "AI_FEEDBACK", content: "Great foundation! Your purpose focuses on authenticity and validation, which differentiates you from traditional branding agencies. Let me dig deeper into your target audience.", orderIndex: 3 },
-      { type: "AI_QUESTION", content: "Who is your primary target audience? Describe the ideal customer in terms of company size, industry, and current brand maturity.", orderIndex: 4 },
-      { type: "USER_ANSWER", content: "Mid-market companies, 50-500 employees. They know they need better branding but can't afford enterprise agencies. Often marketing teams of 2-5 people.", orderIndex: 5 },
-      { type: "AI_FEEDBACK", content: "Excellent specificity. The 50-500 employee range with small marketing teams is an underserved segment. This creates a strong positioning opportunity.", orderIndex: 6 },
-      { type: "AI_QUESTION", content: "What makes your approach unique compared to other brand strategy tools or agencies?", orderIndex: 7 },
-      { type: "USER_ANSWER", content: "We combine AI analysis with real research methods - interviews, workshops, questionnaires. It's not just AI-generated, it's AI-assisted with human validation.", orderIndex: 8 },
-      { type: "AI_FEEDBACK", content: "The AI + human research hybrid is a powerful differentiator. Most tools are either fully automated or fully manual. Your combination addresses both efficiency and credibility concerns.", orderIndex: 9 },
-    ];
-
-    for (const msg of messages) {
-      await prisma.aIAnalysisMessage.create({
-        data: { ...msg, sessionId: session.id },
-      });
-    }
   }
 
   // === FASE 1C: Research Methods, Frameworks, Version History ===

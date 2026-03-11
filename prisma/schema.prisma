@@ -125,7 +125,6 @@ model Workspace {
   dashboardPreferences DashboardPreference[]
   notifications        Notification[]
   brandAssets          BrandAsset[]
-  aiAnalysisSessions   AIBrandAnalysisSession[]
   workshops            Workshop[]
   workshopBundles      WorkshopBundle[]
   interviews              Interview[]
@@ -212,7 +211,6 @@ model User {
   accounts           Account[]
 
   // Bestaande relaties
-  aiAnalysisSessions AIBrandAnalysisSession[]
   lockedAssets       BrandAsset[]           @relation("LockedAssets")
   assetVersions      BrandAssetVersion[]
   createdInterviews  Interview[]       @relation("InterviewCreator")
@@ -349,7 +347,6 @@ model BrandAsset {
   // Relations
   workspaceId            String
   workspace              Workspace     @relation(fields: [workspaceId], references: [id])
-  aiAnalysisSessions     AIBrandAnalysisSession[]
   versions               BrandAssetVersion[]
   researchMethods        BrandAssetResearchMethod[]
   workshops              Workshop[]
@@ -387,73 +384,12 @@ enum AssetStatus {
   READY
 }
 
-// === FASE 1B: AI BRAND ANALYSIS ===
-
-model AIBrandAnalysisSession {
-  id                String            @id @default(cuid())
-  status            AIAnalysisStatus  @default(NOT_STARTED)
-  progress          Float             @default(0)
-  totalQuestions    Int               @default(0)
-  answeredQuestions Int               @default(0)
-  reportData        Json?
-  locked            Boolean           @default(false)
-  completedAt       DateTime?
-
-  // Relations
-  brandAssetId      String
-  brandAsset        BrandAsset        @relation(fields: [brandAssetId], references: [id], onDelete: Cascade)
-  workspaceId       String
-  workspace         Workspace         @relation(fields: [workspaceId], references: [id])
-  createdById       String
-  createdBy         User              @relation(fields: [createdById], references: [id])
-  personaId         String?
-  persona           Persona?          @relation("BrandAIAnalysis", fields: [personaId], references: [id], onDelete: SetNull)
-
-  lastUpdatedAt     DateTime?
-
-  messages          AIAnalysisMessage[]
-
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-
-  @@index([brandAssetId])
-  @@index([workspaceId])
-}
-
-model AIAnalysisMessage {
-  id          String          @id @default(cuid())
-  type        AIMessageType
-  content     String          @db.Text
-  orderIndex  Int
-  metadata    Json?
-
-  sessionId   String
-  session     AIBrandAnalysisSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  createdAt   DateTime        @default(now())
-
-  @@index([sessionId, orderIndex])
-}
-
-enum AIAnalysisStatus {
-  NOT_STARTED
-  IN_PROGRESS
-  COMPLETED
-  REPORT_GENERATING
-  REPORT_READY
-  ERROR
-  // R0.1: nieuwe waarden uit extension
-  IDLE
-  ANALYZING
-  FAILED
-}
-
+// Shared enum — used by AIPersonaAnalysisMessage, ExplorationMessage
 enum AIMessageType {
   SYSTEM_INTRO
   AI_QUESTION
   USER_ANSWER
   AI_FEEDBACK
-  // R0.1: nieuwe waarden uit extension
   USER
   ASSISTANT
   SYSTEM
@@ -1449,9 +1385,6 @@ model Persona {
   aiAnalysisSessions    AIPersonaAnalysisSession[]
   chatSessions          PersonaChatSession[]
   linkedProducts        ProductPersona[]
-  // S1: Brand AI Analysis sessions
-  brandAnalysisSessions AIBrandAnalysisSession[] @relation("BrandAIAnalysis")
-
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 

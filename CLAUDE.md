@@ -1,5 +1,5 @@
 # BRANDDOCK — Claude Code Context
-## Laatst bijgewerkt: 11 maart 2026 (BPE-FIX: Brand Personality Field Suggestions Fix)
+## Laatst bijgewerkt: 11 maart 2026 (S1-DEL: S1 AI Brand Analysis Verwijderd)
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 
@@ -98,7 +98,6 @@ Workspace resolution: sessie-based (activeOrganizationId → workspace resolutio
 
 **Live op database:**
 - Brand Assets (13 assets, 3 met content+framework, 52 research methods, 6 versions) — `/api/brand-assets` GET + POST
-- AI Brand Analysis (1 demo session REPORT_READY, 10 messages) — `/api/brand-assets/:id/ai-analysis` POST (start) + `/:sessionId` GET + `/answer` POST + `/complete` POST + `/generate-report` POST + `/report` GET + `/report/raw` GET + `/lock` PATCH (8 endpoints)
 - AI Exploration (generic) — `/api/exploration/[itemType]/[itemId]` POST (start) + `/sessions/[sessionId]/answer` POST + `/sessions/[sessionId]/complete` POST (3 endpoints per item type). Ondersteunt: persona, brand_asset. Backend-driven config via ExplorationConfig model.
 - AI Exploration Config (admin) — `/api/admin/exploration-configs` GET + POST, `/api/admin/exploration-configs/[id]` GET + PUT + DELETE (5 endpoints). Beheer van prompts, dimensies, AI modellen per item type/subtype.
 - Universal Versioning — `/api/versions` GET (polymorphic ResourceVersion). Werkt voor brand assets, personas, en toekomstige modules.
@@ -138,14 +137,11 @@ Elke gemigreerde module heeft een adapter die DB data mapt naar het bestaande mo
 - **Cross-module:** Leest uit 6 Knowledge modules, schrijft fixes naar Personas/Products/BrandAssets
 - **Sidebar:** Badge count met aantal open issues
 
-### AI Exploration (Universal — S2 nieuw generiek systeem)
+### AI Exploration (Universal)
 
-⚠️ **Er zijn twee AI chat systemen voor brand assets. S2 (nieuw) is het juiste:**
-
-| Systeem | Model | API Route | Component | Status |
-|---------|-------|-----------|-----------|--------|
-| **S1 (oud)** | `AIBrandAnalysisSession` | `/api/brand-assets/[id]/ai-analysis` | `AIBrandAnalysisPage` | Actief, legacy |
-| **S2 (nieuw)** | `ExplorationSession` | `/api/exploration/[itemType]/[itemId]` | `AIExplorationPage` / `AIBrandAssetExplorationPage` | Actief, generiek |
+| Model | API Route | Component |
+|-------|-----------|-----------|
+| `ExplorationSession` | `/api/exploration/[itemType]/[itemId]` | `AIExplorationPage` / `AIBrandAssetExplorationPage` |
 
 - **Backend-driven config**: `ExplorationConfig` Prisma model met prompts, dimensies, AI provider/model per item type/subtype
 - **Config resolution**: DB lookup → hardcoded fallback → system defaults (`src/lib/ai/exploration/config-resolver.ts`)
@@ -243,7 +239,7 @@ Elke gemigreerde module heeft een adapter die DB data mapt naar het bestaande mo
 Navigatie in de sidebar stuurt `setActiveSection(id)`. Mapping:
 
 **Werkend:**
-dashboard→DashboardPage, brand→BrandFoundationPage, brand-asset-detail→BrandAssetDetailPage, workshop-purchase→WorkshopPurchasePage, workshop-session→WorkshopSessionPage, workshop-results→WorkshopCompletePage, brandstyle→BrandstyleAnalyzerPage, brandstyle-guide→BrandStyleguidePage, interviews→InterviewsPage, golden-circle→GoldenCirclePage, personas→PersonasPage, products→ProductsOverviewPage, trends→TrendRadarPage, knowledge→KnowledgeLibraryPage, new-strategy→NewStrategyPage, active-campaigns→ActiveCampaignsPage, research/research-hub→ResearchHubPage, research-bundles→ResearchBundlesPage, research-custom/custom-validation→CustomValidationPage, settings-account→AccountSettingsPage, settings-team→TeamManagementPage, settings-agency→AgencySettingsPage, settings-clients→ClientManagementPage, settings-billing→BillingSettingsPage, settings-notifications→NotificationsSettingsPage, settings-appearance→AppearanceSettingsPage, brand-alignment→BrandAlignmentPage, ai-brand-analysis→AIBrandAnalysisPage, business-strategy→BusinessStrategyPage, settings-admin→AdministratorTab (via SettingsPage initialTab='admin')
+dashboard→DashboardPage, brand→BrandFoundationPage, brand-asset-detail→BrandAssetDetailPage, workshop-purchase→WorkshopPurchasePage, workshop-session→WorkshopSessionPage, workshop-results→WorkshopCompletePage, brandstyle→BrandstyleAnalyzerPage, brandstyle-guide→BrandStyleguidePage, interviews→InterviewsPage, golden-circle→GoldenCirclePage, personas→PersonasPage, products→ProductsOverviewPage, trends→TrendRadarPage, knowledge→KnowledgeLibraryPage, new-strategy→NewStrategyPage, active-campaigns→ActiveCampaignsPage, research/research-hub→ResearchHubPage, research-bundles→ResearchBundlesPage, research-custom/custom-validation→CustomValidationPage, settings-account→AccountSettingsPage, settings-team→TeamManagementPage, settings-agency→AgencySettingsPage, settings-clients→ClientManagementPage, settings-billing→BillingSettingsPage, settings-notifications→NotificationsSettingsPage, settings-appearance→AppearanceSettingsPage, brand-alignment→BrandAlignmentPage, business-strategy→BusinessStrategyPage, settings-admin→AdministratorTab (via SettingsPage initialTab='admin')
 
 **ComingSoonPage:** help
 
@@ -550,25 +546,6 @@ src/
 │   │   ├── store/                   ← useWorkshopStore (purchase + session + results state)
 │   │   ├── api/                     ← workshop.api.ts
 │   │   └── types/                   ← workshop.types.ts, workshop-purchase.types.ts
-│   ├── ai-brand-analysis/              ← S1: Chat-based AI analysis + rapport
-│   │   ├── components/
-│   │   │   ├── AIBrandAnalysisPage.tsx      ← Orchestrator (chat vs report)
-│   │   │   ├── PageHeader.tsx               ← Building2 icoon + breadcrumb
-│   │   │   ├── ChatInterface.tsx            ← HERBRUIKBAAR (ook Fase 4)
-│   │   │   ├── MessageList.tsx              ← Auto-scroll
-│   │   │   ├── ChatBubble.tsx               ← 3 varianten (question/answer/feedback)
-│   │   │   ├── TypingIndicator.tsx          ← 3 dots pulse
-│   │   │   ├── InputArea.tsx                ← Auto-resize textarea
-│   │   │   ├── OverflowProgressBar.tsx      ← >100% support
-│   │   │   ├── NavigationButtons.tsx        ← 3 states
-│   │   │   ├── AllAnsweredBanner.tsx
-│   │   │   └── GenerateReportButton.tsx
-│   │   ├── report/
-│   │   │   ├── ReportView.tsx               ← Report orchestrator
-│   │   │   ├── SuccessBanner.tsx ExportToolbar.tsx ExecutiveSummary.tsx
-│   │   │   ├── FindingCard.tsx FindingCardsGrid.tsx
-│   │   │   └── RecommendationItem.tsx RecommendationsList.tsx
-│   │   ├── hooks/ store/ api/ types/ utils/
 │   ├── ai-exploration/                    ← Universal AI Exploration (S2 — nieuw generiek systeem)
 │   │   ├── components/
 │   │   │   ├── AIExplorationPage.tsx          ← Generieke exploration orchestrator (5-stap flow)
@@ -1054,7 +1031,7 @@ src/
     └── ...
 
 prisma/
-├── schema.prisma                        ← 78+ database modellen (AE: +ExplorationSession/Message/Config/KnowledgeItem, BAD: +ResourceVersion)
+├── schema.prisma                        ← 76+ database modellen (AE: +ExplorationSession/Message/Config/KnowledgeItem, BAD: +ResourceVersion)
 ├── prisma.config.ts                     ← Prisma 7 configuratie
 └── seed.ts                              ← Seed data (S1: +3 asset content, SWOT framework, 6 versions, 10-msg AI session)
 
@@ -1085,12 +1062,12 @@ DATABASE_URL="postgresql://erikjager:@localhost:5432/branddock" npx tsx prisma/s
 ```
 
 ### Status
-- 78+ tabellen live, schema in sync (`npx prisma db push` succesvol)
+- 76+ tabellen live, schema in sync (`npx prisma db push` succesvol)
 - R0.1 Schema Extension: 6 nieuwe modellen (ProductPersona, MarketInsight, InsightSourceUrl, AlignmentScan, ModuleScore, AlignmentIssue)
 - AI Exploration modellen: ExplorationSession (generieke chat sessie per item type), ExplorationMessage (Q&A + feedback berichten), ExplorationConfig (backend-driven AI configuratie per item type/subtype), ExplorationKnowledgeItem (custom knowledge per config)
 - Universal Versioning: ResourceVersion (polymorphic versie tracking, entityType + entityId + data JSON)
 - 28 enums: BrandstyleAnalysisStatus, ProductSource, ProductStatus, ProductImageCategory, InsightCategory (CONSUMER_BEHAVIOR/TECHNOLOGY/MARKET_DYNAMICS/COMPETITIVE/REGULATORY), InsightScope, ImpactLevel (CRITICAL/HIGH/MEDIUM/LOW), InsightTimeframe, InsightSource, ResourceType, ResourceSource, DifficultyLevel, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus, TrendSourceStatus, TrendDetectionSource, TrendScanStatus
-- 16 uitgebreide enums: AIAnalysisStatus, AIMessageType, ResearchMethodStatus, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, ColorCategory, PersonaAvatarSource, AIPersonaAnalysisStatus, PersonaChatMode, ChatRole
+- 15 uitgebreide enums: AIMessageType, ResearchMethodStatus, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, ColorCategory, PersonaAvatarSource, AIPersonaAnalysisStatus, PersonaChatMode, ChatRole
 - Veld-extensies op 9 bestaande modellen: Product (+sourceUrl, sourceFileName, processingStatus, processingData, productPersonas), Persona (+productPersonas), KnowledgeResource (+slug, source, isFeatured, isFavorite, isArchived, publicationDate, isbn, pageCount, fileName, fileSize, fileType, fileUrl, importedMetadata, estimatedDuration), BrandAssetResearchMethod (+weight, resultData, workspaceId), PersonaResearchMethod (+weight, resultData, workspaceId), FocusArea (+color), Milestone (+completedAt, createdAt), WorkshopParticipant (+email), WorkshopFinding (+category, createdAt)
 - Workspace model: +6 relatie-velden (brandAssetResearchMethods, personaResearchMethods, marketInsights, alignmentScans, validationPlans, researchStudies)
 - Seed gedraaid met multi-tenant demo data + R0.1/R0.2 extensies
@@ -1302,14 +1279,6 @@ Directe klant (Organization type=DIRECT)
 | `/api/alignment/issues/:id/dismiss` | POST | Issue dismissen (Zod: optional reason) |
 | `/api/alignment/issues/:id/fix-options` | GET | 3 AI fix opties (A/B/C) met currentContent + preview |
 | `/api/alignment/issues/:id/fix` | POST | Fix toepassen (Zod optionKey A/B/C, markeert FIXED) |
-| `/api/brand-assets/:id/ai-analysis` | POST | Start AI analysis sessie (optioneel personaId, genereert intro+eerste vraag via OpenAI) |
-| `/api/brand-assets/:id/ai-analysis/:sessionId` | GET | Sessie + messages ophalen |
-| `/api/brand-assets/:id/ai-analysis/:sessionId/answer` | POST | Antwoord submitten (AI feedback + volgende vraag via OpenAI) |
-| `/api/brand-assets/:id/ai-analysis/:sessionId/complete` | POST | Sessie markeren als COMPLETED |
-| `/api/brand-assets/:id/ai-analysis/:sessionId/generate-report` | POST | Rapport genereren via OpenAI structured output |
-| `/api/brand-assets/:id/ai-analysis/:sessionId/report` | GET | Rapport ophalen (poll tot REPORT_READY) |
-| `/api/brand-assets/:id/ai-analysis/:sessionId/report/raw` | GET | Volledige sessie + messages + reportData |
-| `/api/brand-assets/:id/ai-analysis/:sessionId/lock` | PATCH | Lock/unlock sessie toggle |
 | `/api/brandstyle` | GET | Styleguide ophalen (met colors + createdBy) |
 | `/api/brandstyle` | PATCH | Styleguide velden updaten (Zod) |
 | `/api/brandstyle/analyze/url` | POST | URL analyse starten (8s demo, 5 kleuren) |
@@ -1611,6 +1580,8 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 
 98. **BHV: Core Values (BrandHouse Values) Asset — compleet** — Laatste brand asset zonder modern canvas component. Was fallback naar legacy `FrameworkSection` ("Unknown framework type"). Nu volledig uitgewerkt op basis van het BrandHouse/Brandstar waarde-model (BetterBrands.nl methodiek: Inventarisatie → Selectie → Positionering & Articulatie). **Component**: `BrandHouseValuesSection.tsx` (~305 regels) met methodiek-intro + 3 kaarten: Card 1 Roots/Anchor Values (teal, Anchor icon — 2x ValueField voor anchorValue1/2, foundational values already lived today), Card 2 Wings/Aspiration Values (violet, Compass icon — 2x ValueField voor aspirationValue1/2, values that give direction and ambition), Card 3 Fire/Own Value + Value Tension (amber, Flame icon — highlighted ownValue + valueTension textarea, the most distinguishing characteristic). `normalize()` + `normalizeValue()` null-safe defaults, `ValueField` sub-component (name input + description textarea). **Wiring**: `BrandAssetDetailPage.tsx` — `isBrandHouseValues` detection + `LockOverlay` wrapped render block + fallback exclusion. **AI Exploration**: 6 methodology-driven dimensies (value_inventory, roots_foundation, wings_direction, fire_distinction, validation_test, tension_balance) + 12 field suggestions covering all BrandHouseValuesFrameworkData velden (nested name+description pairs). Gesynchroniseerd in seed-exploration-configs.ts, brand-asset-exploration-config.ts, config-resolver.ts. Seed script gedraaid → DB bijgewerkt. **AI Export**: `formatBrandHouseValues()` in brand-context.ts verbeterd — van platte labels naar Roots/Wings/Fire terminologie (bijv. "Roots (Anchor Values): X — desc; Y — desc"). **Bug fix**: `resolveItemSubType()` in constants.ts checkte `item.slug` vóór `item.frameworkType` → asset slug `core-values` matchte geen DB config (keyed op `brandhouse-values`) → fallback naar 4 generieke default dimensies. Fix: frameworkType nu prioriteit (maps `BRANDHOUSE_VALUES` → `brandhouse-values` via `FRAMEWORK_TO_SUBTYPE`), slug als fallback voor non-brand-asset items. Stale sessies + messages opgeruimd. **Review**: 2 rondes met telkens 2 onafhankelijke review-agents. 0 CRITICAL, 0 WARNING. 7 bestanden gewijzigd. TypeScript 0 errors.
 
+99. **S1-DEL: S1 AI Brand Analysis Verwijderd — compleet** — Volledige verwijdering van het legacy S1 AI chat-systeem voor brand assets. S2 (ExplorationSession) heeft volledige feature parity en is nu het enige AI chat-systeem. **Verwijderd (~36 bestanden)**: Feature directory `src/features/ai-brand-analysis/` (~21 bestanden: componenten, report, hooks, store, api, types, utils), API routes `src/app/api/brand-assets/[id]/ai-analysis/` (8 route files, 8 endpoints), `src/types/ai-analysis.ts` (11 interfaces), `src/stores/useAIAnalysisStore.ts`, `src/lib/ai/prompts/brand-analysis.ts`, `e2e/tests/brand-foundation/ai-analysis.spec.ts`. **Prisma**: `AIBrandAnalysisSession` model + `AIAnalysisMessage` model + `AIAnalysisStatus` enum verwijderd, relaties verwijderd van Workspace/User/BrandAsset/Persona modellen, `AIMessageType` enum behouden (shared met AIPersonaAnalysisMessage + ExplorationMessage), tabellen gedropt via `prisma db push --accept-data-loss`. **Aangepast (~10 bestanden)**: `App.tsx` (routing case + import), `lazy-imports.ts` (lazy export), `brand-assets/[id]/route.ts` (Prisma include), `brand-asset-detail.types.ts` (AISessionSummary + veld), `seed.ts` (cleanup calls + seed data + import), `merge-mission-vision.ts` (S1 block), `CLAUDE.md` + `TODO.md`. **Review**: 2 rondes met telkens 2 onafhankelijke review-agents. 0 issues. TypeScript 0 errors.
+
 ### ⚠️ TECHNISCHE SCHULD
 - **Adapter pattern** — tijdelijk, componenten moeten op termijn direct DB-model gebruiken
 - **mock-to-meta-adapter.ts** — reverse adapter (mock→API format) voor Brand Foundation. Verdwijnt wanneer context direct BrandAssetWithMeta levert.
@@ -1619,7 +1590,7 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 - **~~NEXT_PUBLIC_WORKSPACE_ID~~** — ✅ Volledig verwijderd uit code en .env bestanden.
 - **~~Hardcoded Tailwind colors~~** — ✅ BrandFoundationHeader en BrandAssetCard gemigreerd naar design tokens.
 - **~~Geen Error Boundary~~** — ✅ ErrorBoundary beschikbaar via shared barrel, top-level wrap in App.tsx.
-- **S1 vs S2 AI systeem overlap** — Twee AI chat systemen voor brand assets (AIBrandAnalysisSession S1 + ExplorationSession S2). S1 kan op termijn deprecated worden wanneer S2 volledige feature parity heeft.
+- **~~S1 vs S2 AI systeem overlap~~** — ✅ Opgelost. S1 (AIBrandAnalysisSession) volledig verwijderd. S2 (ExplorationSession) is het enige AI chat systeem.
 - **ExplorationConfig hardcoded fallbacks** — System defaults in config-resolver.ts. Op termijn alle configs via DB seed beheren. **13 van 13 configs nu in DB** — fallbacks alleen nog relevant voor nieuwe item types.
 - **AI Exploration re-test na config wijziging** — Om opnieuw te testen na config-wijzigingen, moeten ExplorationSession + ExplorationMessage + BrandAssetResearchMethod (method: 'AI_EXPLORATION', status → 'AVAILABLE') gereset worden voor het betreffende asset. Alleen een nieuwe sessie pakt bijgewerkte config op.
 - **~~Lock/unlock inconsistentie~~** — ✅ Opgelost, endpoint gebruikt body-based `{ locked: boolean }`.
@@ -1682,7 +1653,7 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 - S5.2: ✅ Integratie — all flows, pricing calculator, optimistic favorites, Open Resource links, Download stub, Resume/Validate stubs, 0 TS errors
 
 **S6. Campaigns + Content Library + Content Studio ✅ VOLLEDIG**
-- S6.0: ✅ Schema + Seed — Campaign herstructureerd, 7 nieuwe modellen, 5 enums, 78+ tabellen
+- S6.0: ✅ Schema + Seed — Campaign herstructureerd, 7 nieuwe modellen, 5 enums, 76+ tabellen
 - S6.A: ✅ Campaigns Overview + Quick Content + Campaign Detail (Prompt 2) — 22 componenten, 20 API endpoints (14 route files), 20+ hooks, Zustand store, content type registry
 - S6.B: ✅ Content Library + Campaign Wizard (Prompt 3) — 18 componenten, 14 endpoints, 2 stores, 8 hooks, 3 helpers
 - S6.C: ✅ Content Studio Layout + Left Panel + Center Canvas (Prompt 4) — 16 componenten (layout+header+left panel 10+canvas 6), Zustand store, types

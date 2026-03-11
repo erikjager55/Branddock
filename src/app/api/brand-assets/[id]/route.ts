@@ -54,11 +54,6 @@ export async function GET(
           },
         },
         lockedBy: { select: { id: true, name: true, email: true } },
-        aiAnalysisSessions: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          select: { id: true, status: true, progress: true, completedAt: true },
-        },
       },
     });
 

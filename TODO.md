@@ -211,11 +211,15 @@ Vervangen door Trend Radar (TR sprint) met volledige AI research pipeline (Gemin
 
 AI Exploration (S2) volstaat voor persona verrijking. One-click regenerate niet nodig.
 
-### 3.7 S1 vs S2 AI Systeem Consolidatie
+### 3.7 S1 vs S2 AI Systeem Consolidatie ✅
 
-- [ ] Evalueer of S1 (AIBrandAnalysisSession) deprecated kan worden
-- [ ] Migreer gebruikers van S1 naar S2 (ExplorationSession) indien mogelijk
-- [ ] Verwijder S1 code als S2 volledige feature parity heeft
+S2 (ExplorationSession) heeft volledige feature parity. S1 volledig verwijderd:
+- [x] Prisma modellen (AIBrandAnalysisSession, AIAnalysisMessage) + enum (AIAnalysisStatus) verwijderd
+- [x] Feature directory (`src/features/ai-brand-analysis/`) verwijderd (~21 bestanden)
+- [x] API routes (`/api/brand-assets/[id]/ai-analysis/`) verwijderd (8 route files)
+- [x] Types, store, prompts verwijderd (3 bestanden)
+- [x] App.tsx routing + lazy imports opgeschoond
+- [x] Cross-referenties opgeschoond (brand-asset detail API, types, migration script)
 
 ---
 
