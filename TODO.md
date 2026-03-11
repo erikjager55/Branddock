@@ -202,10 +202,7 @@ Vervangen door Trend Radar (TR sprint) met volledige AI research pipeline (Gemin
 - [x] AI research pipeline (Query→Extract→Synthesize→Score→Judge)
 - [x] Brand context + focus areas voor gerichte research
 
-### 3.5 Campaign Strategy AI Generatie (placeholder → echt)
-
-- [ ] Implementeer echte strategy generatie in `src/app/api/campaigns/[id]/strategy/generate/route.ts`
-- [ ] Gebruik brand assets + knowledge als context
+### ~~3.5 Campaign Strategy AI Generatie~~ → verplaatst naar Fase 6 (eigen fase)
 
 ### ~~3.6 Persona Regenerate AI~~ — geschrapt
 
@@ -223,29 +220,83 @@ S2 (ExplorationSession) heeft volledige feature parity. S1 volledig verwijderd:
 
 ---
 
-## Fase 4: Export & Data Portability
+## Fase 4: Knowledge / Brand Foundation Afronden
 
-Nodig voor echte gebruikers die data willen exporteren.
+Integrale kwaliteitsslag op de Brand Foundation module: overzichtspagina, asset detail pagina's, AI Exploration flow, versioning, export en informatie-overlap.
 
-### 4.1 PDF Export
+### 4.1 Overzichtspagina Stats Fixen
+
+- [ ] **Avg. Coverage berekenen uit research methods** — nu statisch `researchCoverage` mock veld, moet gewogen validation % worden (AI 0.15 + Workshop 0.30 + Interviews 0.25 + Survey 0.30)
+- [ ] **Ready to Use** valideren — komt status correct uit API of alleen uit adapter mapping?
+- [ ] **Need Attention** review — telt DRAFT + NEEDS_ATTENTION + IN_PROGRESS; is dit gewenst of moet DRAFT apart?
+- [ ] Coverage % op BrandAssetCard syncen met echte validation % uit API (niet mock `researchCoverage`)
+
+### 4.2 Completeness Score Verbeteren
+
+- [ ] Try-catch toevoegen aan JSON parse in `getAssetCompletenessFields()` (crash bij malformed data)
+- [ ] Completeness % centraliseren — nu onafhankelijk berekend in BrandAssetCard EN AssetCompletenessCard
+- [ ] Valideer per framework type of de juiste velden geteld worden (steekproef alle 12 types)
+- [ ] Edge case: NaN voorkomen bij 0 velden (division by zero guard)
+
+### 4.3 AI Exploration Interactie Fixen (KRITIEK)
+
+- [ ] **Sessie ophalen i.p.v. altijd nieuw** — check of er een bestaande sessie bestaat voor het asset
+- [ ] **"Continue" moet hervatten** — laad bestaande sessie + berichten, ga verder bij volgende onbeantwoorde dimensie
+- [ ] **"View Results" moet rapport tonen** — laad insightsData uit bestaande sessie, toon AIExplorationReport
+- [ ] **API endpoint toevoegen**: `GET /api/exploration/[itemType]/[itemId]/sessions` — lijst sessies voor een asset
+- [ ] **Pill tekst afstemmen op status**: AVAILABLE→"Start AI Exploration", IN_PROGRESS→"Continue Exploration", COMPLETED→"View Report"
+- [ ] **Store reset verwijderen** bij mount — alleen resetten bij expliciet nieuwe sessie
+- [ ] **Sessie persistentie** — navigatie weg en terug moet sessie behouden
+
+### 4.4 Informatie Overlap Oplossen
+
+- [ ] **Research methods consolideren** — nu 4 kopieën (ResearchMethodsSection, sidebar, card, ValidationBreakdown). Eén `RESEARCH_METHODS` constant maken
+- [ ] **ResearchMethodsSection verwijderen uit main content** — sidebar toont al research methods, main content is redundant
+- [ ] **Hardcoded method count** `4` vervangen door `RESEARCH_METHODS.length` (2 plekken)
+- [ ] **Content vs Framework scheiding verduidelijken** — evalueer of `asset.content` nog nodig is naast `frameworkData`
+- [ ] **ValidationBreakdown component** evalueren — nog nodig of vervangen door sidebar card?
+
+### 4.5 Version History Verbeteren
+
+- [ ] **Duaal versioning systeem evalueren** — BrandAssetVersion (legacy) vs ResourceVersion (universal). Eén systeem kiezen.
+- [ ] **Framework edits moeten BrandAssetVersion triggeren** — nu alleen ResourceVersion bij framework PATCH
+- [ ] **Version history UI** verifiëren op alle 12 asset types (steekproef)
+
+### 4.6 PDF Export Werkend Maken
 
 - [ ] Kies PDF library (Puppeteer/jsPDF/react-pdf)
-- [ ] Implementeer brandstyle PDF export `src/app/api/brandstyle/export-pdf/route.ts` (nu: 501)
-- [ ] Implementeer persona PDF export `src/app/api/personas/[id]/export/route.ts` (nu: 501)
-- [ ] Implementeer brand asset PDF export (overflow menu in BrandAssetDetailPage)
+- [ ] **Brand asset PDF export** implementeren — nu produceert `.txt`, moet echte PDF worden
+- [ ] **Framework-specifieke formatting** — elke asset type moet een leesbare PDF layout krijgen
+- [ ] **Brandstyle PDF export** implementeren `src/app/api/brandstyle/export-pdf/route.ts` (nu: 501)
+- [ ] **Persona PDF export** implementeren `src/app/api/personas/[id]/export/route.ts` (nu: 501)
+- [ ] **Chat/session export** implementeren `src/app/api/personas/[id]/chat/[sessionId]/export/route.ts` (nu: 501)
+- [ ] **AssetOverflowMenu integreren** — nu orphaned (nooit geïmporteerd in BrandAssetDetailPage)
+- [ ] **QuickActionsCard Export knop** aansluiten op werkende export
 
-### 4.2 Chat/Session Export
+> **Opmerking**: Content Studio export (`/api/studio/[deliverableId]/export`) is verplaatst naar Fase 6 (Campaign AI & Content).
 
-- [ ] Implementeer chat session export `src/app/api/personas/[id]/chat/[sessionId]/export/route.ts` (nu: 501)
-- [ ] Formaat: JSON of PDF met gesprek + insights
+### 4.7 Design & Interactie Consistency
 
-### ~~4.3 Content Studio Export~~ → verplaatst naar Fase 5b (volledige herziening)
+- [ ] **Framework type checking refactoren** — 11 losse booleans → component map (`FRAMEWORK_COMPONENTS` Record)
+- [ ] **Lock state uniformeren** — BrandAssetCard expansion buttons respecteren geen lock state
+- [ ] **AssetOverflowMenu** verwijderen of integreren (orphaned component + store state)
+- [ ] **SWOT + PURPOSE_KOMPAS** evalueren — gebruiken legacy FrameworkRenderer fallback, niet modern canvas
+
+### 4.8 Workshop, Interviews & Survey — Volgt Later
+
+Status: UI shells aanwezig, functioneel zijn het stubs. Uitgebreide uitwerking in aparte fase.
+
+- [ ] 🔜 **Workshop module** — volledige interactieve workshop flow (planning, uitvoer, rapport)
+- [ ] 🔜 **Interviews module** — interview wizard (contact, planning, vragen, uitvoer, goedkeuring)
+- [ ] 🔜 **Survey/Questionnaire module** — survey builder, distributie, response verzameling, analyse
+
+> **Opmerking**: Deze drie research methods zijn de kern van de validation pipeline. Ze verdienen elk een eigen uitwerking vergelijkbaar met AI Exploration. Gepland voor latere fase wanneer de basis (4.1-4.7) is afgerond.
 
 ---
 
 ## Fase 5: Research & Validation Voltooien
 
-Voltooit de research flow die nu hardcoded stubs bevat.
+Voltooit de research en validation flows die nu hardcoded stubs bevatten. Moet af voordat Campaign AI hierop kan bouwen.
 
 ### 5.1 Research Hub Stubs Vervangen
 
@@ -276,35 +327,57 @@ Voltooit de research flow die nu hardcoded stubs bevat.
 
 ---
 
-## Fase 5b: Content Studio Herziening
+## Fase 6: Campaign AI Strategie & Content Generatie
 
-Volledige herziening van de Content Studio module — UI, AI generatie, export, en kwaliteitsscoring.
+Kern van de Branddock waardepropositie — AI-gedreven campagne-strategie en content generatie op basis van het complete merkfundament. Verdient uitgebreide aandacht.
 
-### 5b.1 Content Studio Redesign
+### 6.1 Campaign Strategy AI Generatie
+
+- [ ] Echte strategy generatie in `src/app/api/campaigns/[id]/strategy/generate/route.ts` (nu: placeholder 85% confidence)
+- [ ] Brand context injectie (brand assets + personas + products + trends als AI input)
+- [ ] Knowledge assets als aanvullende context (campaign-specifiek)
+- [ ] Gestructureerde strategy output (doelgroep, kanalen, messaging, timing, KPIs)
+- [ ] Confidence scoring op basis van beschikbare data (meer assets → hogere confidence)
+
+### 6.2 Campaign Strategy Regeneratie & Iteratie
+
+- [ ] Strategy regeneratie met aangepaste parameters
+- [ ] Iteratieve verfijning (feedback loop: gebruiker past aan → AI verbetert)
+- [ ] A/B strategie vergelijking (meerdere strategieën genereren en vergelijken)
+
+### 6.3 Content Studio AI Generatie
+
+- [ ] Echte AI content generatie (`/api/studio/[deliverableId]/generate`) — tekst, afbeeldingen, video scripts
+- [ ] Echte AI content regeneratie (`/api/studio/[deliverableId]/regenerate`)
+- [ ] Brand voice enforcement (tone of voice uit brandstyle als constraint)
+- [ ] Persona-gerichte content (doelgroep-specifieke toon en messaging)
+- [ ] Product context integratie (product features/benefits als content input)
+
+### 6.4 Content Quality & Scoring
+
+- [ ] Echte quality scoring (`/api/studio/[deliverableId]/quality`) — AI-gebaseerd
+- [ ] Brand alignment score (past content bij merkwaarden?)
+- [ ] Readability scoring (Flesch-Kincaid of equivalent)
+- [ ] AI improve suggestions op basis van quality metrics
+
+### 6.5 Content Studio Export
+
+- [ ] Echte content export (`/api/studio/[deliverableId]/export`)
+- [ ] Meerdere formaten (PDF, DOCX, PNG, MP4)
+
+### 6.6 Content Studio UI Herziening
 
 - [ ] Nieuw UI ontwerp en interactiemodel bepalen
 - [ ] Bestaande Content Studio componenten evalueren (behouden/herschrijven/verwijderen)
 - [ ] Nieuwe componentenstructuur opzetten
 
-### 5b.2 Content Studio AI Generatie
-
-- [ ] Echte AI content generatie (`/api/studio/[deliverableId]/generate`)
-- [ ] Echte AI content regeneratie (`/api/studio/[deliverableId]/regenerate`)
-- [ ] Echte quality scoring (`/api/studio/[deliverableId]/quality`)
-- [ ] Brand context integratie voor content generatie
-
-### 5b.3 Content Studio Export
-
-- [ ] Echte content export (`/api/studio/[deliverableId]/export`)
-- [ ] Meerdere formaten (PDF, DOCX, PNG, MP4)
-
 ---
 
-## Fase 6: UI Polish — Persona Restyling (PSR.6-8)
+## Fase 7: UI Polish — Persona Restyling (PSR.6-8)
 
 Visuele verfijning persona module op basis van Figma designs.
 
-### 6.1 PSR.6: Layout Optimalisatie Fase 2 (6 prompts)
+### 7.1 PSR.6: Layout Optimalisatie Fase 2 (6 prompts)
 
 - [ ] Grid containment fix
 - [ ] Quick Actions sidebar volgorde
@@ -313,14 +386,14 @@ Visuele verfijning persona module op basis van Figma designs.
 - [ ] Compact empty states
 - [ ] Sub-grid columns
 
-### 6.2 PSR.7: AI Persona Analysis Redesign (4 prompts)
+### 7.2 PSR.7: AI Persona Analysis Redesign (4 prompts)
 
 - [ ] Chat restylen naar Brand Analysis stijl (teal kleuren, platte bubbels)
 - [ ] Rapport fase (Executive Summary + Bevindingen + Aanbevelingen)
 - [ ] Veldsuggesties per persona-veld (accept/reject/edit)
 - [ ] FieldSuggestionCard component
 
-### 6.3 PSR.8: Foto Generatie Fix
+### 7.3 PSR.8: Foto Generatie Fix
 
 - [ ] Echte Gemini API implementatie (i.p.v. DiceBear placeholder stub)
 - [ ] DiceBear als fallback wanneer GEMINI_API_KEY niet gezet
@@ -328,11 +401,11 @@ Visuele verfijning persona module op basis van Figma designs.
 
 ---
 
-## Fase 7: Billing & Auth (S10-S11)
+## Fase 8: Billing & Auth (S10-S11)
 
 Commerciele features voor go-to-market.
 
-### 7.1 S10: Stripe Billing
+### 8.1 S10: Stripe Billing
 
 - [ ] Stripe account setup + API keys
 - [ ] Checkout flow (plan selectie → Stripe Checkout)
@@ -342,14 +415,14 @@ Commerciele features voor go-to-market.
 - [ ] Subscription management (upgrade/downgrade/cancel)
 - [ ] Invoice generatie + download
 
-### 7.2 S11: OAuth & SSO
+### 8.2 S11: OAuth & SSO
 
 - [ ] Google OAuth provider toevoegen aan Better Auth config
 - [ ] Microsoft OAuth provider toevoegen
 - [ ] Social login buttons op AuthPage
 - [ ] Account linking (bestaand email+password account koppelen aan OAuth)
 
-### 7.3 S11: Testing
+### 8.3 S11: Testing
 
 - [ ] Playwright setup voor E2E tests
 - [ ] Critical path tests: login → dashboard → asset detail → AI exploration
@@ -358,11 +431,11 @@ Commerciele features voor go-to-market.
 
 ---
 
-## Fase 8: Deployment & Monitoring (S12)
+## Fase 9: Deployment & Monitoring (S12)
 
 Go-live infrastructure.
 
-### 8.1 Deployment
+### 9.1 Deployment
 
 - [ ] Vercel project setup
 - [ ] Environment variables configureren (production)
@@ -370,13 +443,13 @@ Go-live infrastructure.
 - [ ] CI/CD pipeline (GitHub Actions → Vercel)
 - [ ] Custom domain configuratie
 
-### 8.2 Monitoring
+### 9.2 Monitoring
 
 - [ ] Sentry integratie voor error tracking
 - [ ] Sentry source maps configuratie
 - [ ] Alert rules voor kritieke errors
 
-### 8.3 Analytics
+### 9.3 Analytics
 
 - [ ] PostHog integratie
 - [ ] Key events tracking (signup, asset create, AI exploration start, campaign create)
@@ -390,12 +463,13 @@ Go-live infrastructure.
 |------|-------|--------|------------|
 | 1. Technische Schuld | ~75 items | Grotendeels ✅ (1.1-1.13 done, 1.2/1.6 deferred) | Hoog — schoon eerst op |
 | 2. Production Infra | ~12 items | Niet gestart | Hoog — blokkeert deployment |
-| 3. AI Features | ~14 items | Niet gestart | Hoog — core waarde |
-| 4. Export | ~6 items | Niet gestart | Medium |
-| 5. Research & Validation | ~10 items | Niet gestart | Medium |
-| 6. UI Polish (PSR) | ~11 items | Niet gestart | Medium |
-| 7. Billing & Auth | ~10 items | Niet gestart | Medium-Laag |
-| 8. Deployment | ~8 items | Niet gestart | Laag (laatste) |
+| 3. AI Features | ~6 items | Grotendeels ✅ (3.2-3.4 done, 3.5-3.7 verplaatst/done) | Hoog — core waarde |
+| 4. Knowledge Afronden | ~32 items | Niet gestart | Hoog — kwaliteitsslag + export (incl. PDF) |
+| 5. Research & Validation | ~10 items | Niet gestart | Medium — prerequisite voor Fase 6 |
+| 6. Campaign AI & Content | ~18 items | Niet gestart | Hoog — kern waardepropositie |
+| 7. UI Polish (PSR) | ~11 items | Niet gestart | Medium |
+| 8. Billing & Auth | ~10 items | Niet gestart | Medium-Laag |
+| 9. Deployment | ~8 items | Niet gestart | Laag (laatste) |
 
 **Totaal: ~146 items**
 
