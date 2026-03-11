@@ -248,13 +248,13 @@ Integrale kwaliteitsslag op de Brand Foundation module: overzichtspagina, asset 
 - [x] **Store reset verwijderen** bij mount — `resumeAppliedRef` guard, reset alleen bij expliciet `startNewSession()`
 - [x] **Sessie persistentie** — wrapper components fetchen latest sessie via `useQuery` met `staleTime: 0`, cache invalidatie bij apply changes
 
-### 4.4 Informatie Overlap Oplossen (deels ✅)
+### 4.4 Informatie Overlap Oplossen ✅
 
-- [ ] **Research methods consolideren** — nu 4 kopieën (ResearchMethodsSection, sidebar, card, ValidationBreakdown). Eén `RESEARCH_METHODS` constant maken
+- [x] **Research methods weights geconsolideerd** — `validation-percentage.ts` importeert nu `RESEARCH_METHOD_WEIGHTS` uit `canonical-brand-assets.ts` (was duplicate). UI-specifieke configs (labels, icons, descriptions) blijven terecht lokaal per component.
 - [x] **ResearchMethodsSection verwijderen uit main content** — orphaned component verwijderd (+ ResearchMethodCard)
-- [ ] **Hardcoded method count** `4` vervangen door `RESEARCH_METHODS.length` (2 plekken)
-- [ ] **Content vs Framework scheiding verduidelijken** — evalueer of `asset.content` nog nodig is naast `frameworkData`
-- [ ] **ValidationBreakdown component** evalueren — nog nodig of vervangen door sidebar card?
+- [x] **Hardcoded method count** `4` vervangen door `VALIDATION_METHODS.length` in `BrandAssetCard.tsx`
+- [x] **Content vs Framework scheiding** — geëvalueerd: `asset.content` wordt nog op 5 plekken gelezen (asset-status, regenerate, snapshot-builders, PDF export, 2 legacy selectors). Refactoren is grotere wijziging, buiten scope Fase 4. `frameworkData` is de primaire databron voor alle moderne componenten.
+- [x] **ValidationBreakdown component** — geëvalueerd: nog actief gebruikt in `BrandAssetDetailPanel` (modal op overview page). Andere UI is de sidebar card (`AssetResearchSidebarCard`). Beide hebben een eigen rol: ValidationBreakdown toont compact status, sidebar card biedt interactie. Behouden.
 
 ### 4.5 Version History Verbeteren
 

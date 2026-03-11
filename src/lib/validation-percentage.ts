@@ -6,19 +6,14 @@
  * IN_PROGRESS methods contribute weight × progress (0-100).
  */
 
-const RESEARCH_WEIGHTS: Record<string, number> = {
-  AI_EXPLORATION: 0.15,
-  WORKSHOP: 0.30,
-  INTERVIEWS: 0.25,
-  QUESTIONNAIRE: 0.30,
-};
+import { RESEARCH_METHOD_WEIGHTS } from '@/lib/constants/canonical-brand-assets';
 
 export function computeValidationPercentage(
   methods: ReadonlyArray<{ method: string; status: string; progress: number }>
 ): number {
   let total = 0;
   for (const m of methods) {
-    const weight = RESEARCH_WEIGHTS[m.method] ?? 0;
+    const weight = RESEARCH_METHOD_WEIGHTS[m.method] ?? 0;
     if (m.status === "COMPLETED" || m.status === "VALIDATED") {
       total += weight * 100;
     } else if (m.status === "IN_PROGRESS") {

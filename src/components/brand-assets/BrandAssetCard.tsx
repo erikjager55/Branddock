@@ -197,7 +197,7 @@ export function BrandAssetCard({
         >
           <div className="flex items-center gap-1.5">
             <Sparkles className="h-3.5 w-3.5" />
-            <span>Validation Methods ({completedMethods}/4)</span>
+            <span>Validation Methods ({completedMethods}/{VALIDATION_METHODS.length})</span>
           </div>
           <ChevronDown
             className={cn(
