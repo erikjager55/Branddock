@@ -1,7 +1,7 @@
 # BRANDDOCK — Development Roadmap & TODO
 
 > Geprioriteerde gids voor alle openstaande ontwikkelstappen.
-> Laatst bijgewerkt: 6 maart 2026
+> Laatst bijgewerkt: 11 maart 2026
 
 ---
 
@@ -233,25 +233,25 @@ Integrale kwaliteitsslag op de Brand Foundation module: overzichtspagina, asset 
 
 ### 4.2 Completeness Score Verbeteren
 
-- [ ] Try-catch toevoegen aan JSON parse in `getAssetCompletenessFields()` (crash bij malformed data)
+- [x] Try-catch toevoegen aan JSON parse in `getAssetCompletenessFields()` (crash bij malformed data)
 - [ ] Completeness % centraliseren — nu onafhankelijk berekend in BrandAssetCard EN AssetCompletenessCard
 - [ ] Valideer per framework type of de juiste velden geteld worden (steekproef alle 12 types)
 - [ ] Edge case: NaN voorkomen bij 0 velden (division by zero guard)
 
-### 4.3 AI Exploration Interactie Fixen (KRITIEK)
+### 4.3 AI Exploration Interactie Fixen (KRITIEK) — Grotendeels ✅
 
-- [ ] **Sessie ophalen i.p.v. altijd nieuw** — check of er een bestaande sessie bestaat voor het asset
-- [ ] **"Continue" moet hervatten** — laad bestaande sessie + berichten, ga verder bij volgende onbeantwoorde dimensie
-- [ ] **"View Results" moet rapport tonen** — laad insightsData uit bestaande sessie, toon AIExplorationReport
-- [ ] **API endpoint toevoegen**: `GET /api/exploration/[itemType]/[itemId]/sessions` — lijst sessies voor een asset
+- [x] **Sessie ophalen i.p.v. altijd nieuw** — `GET /api/exploration/[itemType]/[itemId]/latest` endpoint + `fetchLatestExplorationSession()` client
+- [x] **"Continue" moet hervatten** — `resumeSession` prop op AIExplorationPage, store pre-populated met bestaande berichten + progress
+- [x] **"View Results" moet rapport tonen** — COMPLETED sessie met insightsData → direct rapport view, edge case COMPLETED+null insightsData → nieuwe sessie
+- [x] **API endpoint toevoegen**: `GET /api/exploration/[itemType]/[itemId]/latest` — meest recente sessie voor een asset (incl. berichten + metadata)
 - [ ] **Pill tekst afstemmen op status**: AVAILABLE→"Start AI Exploration", IN_PROGRESS→"Continue Exploration", COMPLETED→"View Report"
-- [ ] **Store reset verwijderen** bij mount — alleen resetten bij expliciet nieuwe sessie
-- [ ] **Sessie persistentie** — navigatie weg en terug moet sessie behouden
+- [x] **Store reset verwijderen** bij mount — `resumeAppliedRef` guard, reset alleen bij expliciet `startNewSession()`
+- [x] **Sessie persistentie** — wrapper components fetchen latest sessie via `useQuery` met `staleTime: 0`, cache invalidatie bij apply changes
 
-### 4.4 Informatie Overlap Oplossen
+### 4.4 Informatie Overlap Oplossen (deels ✅)
 
 - [ ] **Research methods consolideren** — nu 4 kopieën (ResearchMethodsSection, sidebar, card, ValidationBreakdown). Eén `RESEARCH_METHODS` constant maken
-- [ ] **ResearchMethodsSection verwijderen uit main content** — sidebar toont al research methods, main content is redundant
+- [x] **ResearchMethodsSection verwijderen uit main content** — orphaned component verwijderd (+ ResearchMethodCard)
 - [ ] **Hardcoded method count** `4` vervangen door `RESEARCH_METHODS.length` (2 plekken)
 - [ ] **Content vs Framework scheiding verduidelijken** — evalueer of `asset.content` nog nodig is naast `frameworkData`
 - [ ] **ValidationBreakdown component** evalueren — nog nodig of vervangen door sidebar card?
@@ -279,7 +279,7 @@ Integrale kwaliteitsslag op de Brand Foundation module: overzichtspagina, asset 
 
 - [ ] **Framework type checking refactoren** — 11 losse booleans → component map (`FRAMEWORK_COMPONENTS` Record)
 - [ ] **Lock state uniformeren** — BrandAssetCard expansion buttons respecteren geen lock state
-- [ ] **AssetOverflowMenu** verwijderen of integreren (orphaned component + store state)
+- [x] **AssetOverflowMenu** verwijderd (was orphaned, nooit geïmporteerd) + ContentEditorSection, ContentEditMode eveneens verwijderd
 - [ ] **SWOT + PURPOSE_KOMPAS** evalueren — gebruiken legacy FrameworkRenderer fallback, niet modern canvas
 
 ### 4.8 Workshop, Interviews & Survey — Volgt Later
@@ -464,7 +464,7 @@ Go-live infrastructure.
 | 1. Technische Schuld | ~75 items | Grotendeels ✅ (1.1-1.13 done, 1.2/1.6 deferred) | Hoog — schoon eerst op |
 | 2. Production Infra | ~12 items | Niet gestart | Hoog — blokkeert deployment |
 | 3. AI Features | ~6 items | Grotendeels ✅ (3.2-3.4 done, 3.5-3.7 verplaatst/done) | Hoog — core waarde |
-| 4. Knowledge Afronden | ~32 items | Niet gestart | Hoog — kwaliteitsslag + export (incl. PDF) |
+| 4. Knowledge Afronden | ~32 items | Deels ✅ (4.2 try-catch, 4.3 resume 6/7, 4.4 orphans, 4.7 orphans) | Hoog — kwaliteitsslag + export (incl. PDF) |
 | 5. Research & Validation | ~10 items | Niet gestart | Medium — prerequisite voor Fase 6 |
 | 6. Campaign AI & Content | ~18 items | Niet gestart | Hoog — kern waardepropositie |
 | 7. UI Polish (PSR) | ~11 items | Niet gestart | Medium |
