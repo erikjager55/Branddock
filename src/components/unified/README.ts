@@ -159,9 +159,7 @@
  * - `/components/campaign-strategy/DeliverableCardUnified.tsx` - Deliverables
  * - `/components/research/ValidationCardUnified.tsx` - Validation items
  * 
- * ### Legacy (Deprecated)
- * - `/components/brand-assets/EnhancedAssetCard.tsx` - Old asset card
- * 
+ *
  * ## Maintenance
  * 
  * To update styling globally:

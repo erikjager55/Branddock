@@ -1,4 +1,5 @@
 export { AIExplorationPage } from './AIExplorationPage';
+export type { ResumeSessionData } from './AIExplorationPage';
 export { AIExplorationChatInterface } from './AIExplorationChatInterface';
 export { AIExplorationReport } from './AIExplorationReport';
 export { AIExplorationSuggestions } from './AIExplorationSuggestions';

@@ -1,12 +1,15 @@
 // ─── AI Brand Asset Exploration — Thin Wrapper ──────────────
 // Delegates to the generic AIExplorationPage with brand asset config.
 // Uses dynamic field mapping — the backend handles field detection.
+// Fetches the latest session to support resume/view results.
 // ────────────────────────────────────────────────────────────
 
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { AIExplorationPage } from '@/components/ai-exploration';
+import type { ResumeSessionData } from '@/components/ai-exploration';
+import type { BackendDimension } from '@/components/ai-exploration/types';
 import { useAssetDetail } from '../../hooks/useBrandAssetDetail';
 import { getDimensionsForSlug } from '../../constants/brand-asset-exploration-config';
 import { buildAutoFillData, ARCHETYPES } from '../../constants/archetype-constants';
@@ -91,7 +94,14 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
   const { data: asset } = useAssetDetail(assetId);
   const queryClient = useQueryClient();
 
-  if (!asset) {
+  // Fetch latest exploration session for this asset
+  const { data: latestData, isLoading: isLoadingLatest } = useQuery({
+    queryKey: ['exploration-latest', 'brand_asset', assetId],
+    queryFn: () => explorationApi.fetchLatestExplorationSession('brand_asset', assetId),
+    staleTime: 0, // Always fetch fresh on navigation
+  });
+
+  if (!asset || isLoadingLatest) {
     return (
       <PageShell>
         <div className="space-y-4">
@@ -102,8 +112,27 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
     );
   }
 
+  // Build resumeSession from latest data if session exists
+  let resumeSession: ResumeSessionData | null = null;
+  if (latestData?.session) {
+    const s = latestData.session;
+    const metadata = s.metadata as Record<string, unknown> | null;
+    const dimensions = (metadata?.dimensions as BackendDimension[] | undefined) ?? undefined;
+
+    resumeSession = {
+      sessionId: s.id,
+      status: s.status,
+      messages: s.messages,
+      progress: s.progress,
+      answeredDimensions: s.answeredDimensions,
+      dimensions,
+      insightsData: s.insightsData ?? undefined,
+    };
+  }
+
   return (
     <AIExplorationPage
+      resumeSession={resumeSession}
       config={{
         itemType: 'brand_asset',
         itemId: assetId,
@@ -224,6 +253,8 @@ export function AIBrandAssetExplorationPage({ assetId, onBack }: AIBrandAssetExp
           // Invalidate cache to refresh the detail page
           queryClient.invalidateQueries({ queryKey: ['brand-asset-detail', assetId] });
           queryClient.invalidateQueries({ queryKey: ['brand-assets'] });
+          // Invalidate latest session cache so next navigation picks up changes
+          queryClient.invalidateQueries({ queryKey: ['exploration-latest', 'brand_asset', assetId] });
         },
       }}
       onStartSession={() =>

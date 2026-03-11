@@ -46,11 +46,18 @@ export function getAssetCompletenessFields(asset: CompletenessInput): FieldCheck
 
   if (!asset.frameworkType) return fields;
 
-  const data = !asset.frameworkData
-    ? null
-    : typeof asset.frameworkData === 'string'
-      ? JSON.parse(asset.frameworkData as string)
-      : asset.frameworkData;
+  let data: unknown = null;
+  if (asset.frameworkData) {
+    if (typeof asset.frameworkData === 'string') {
+      try {
+        data = JSON.parse(asset.frameworkData as string);
+      } catch {
+        // Malformed JSON — treat as empty
+      }
+    } else {
+      data = asset.frameworkData;
+    }
+  }
 
   switch (asset.frameworkType) {
     case 'PURPOSE_WHEEL': {

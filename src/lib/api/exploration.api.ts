@@ -45,6 +45,33 @@ export async function startExplorationSession(
   return res.json();
 }
 
+// ─── Fetch Latest Session ────────────────────────────────────
+
+export async function fetchLatestExplorationSession(
+  itemType: string,
+  itemId: string,
+): Promise<{
+  session: {
+    id: string;
+    status: string;
+    progress: number;
+    totalDimensions: number;
+    answeredDimensions: number;
+    insightsData: ExplorationInsightsData | null;
+    metadata: Record<string, unknown> | null;
+    createdAt: string;
+    messages: ExplorationMessage[];
+  } | null;
+}> {
+  const res = await fetch(`${baseUrl(itemType, itemId)}/latest`);
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    console.error('[exploration.api] fetchLatestExplorationSession error:', res.status, errorData);
+    throw new Error(errorData.error || `Failed to fetch latest session (${res.status})`);
+  }
+  return res.json();
+}
+
 // ─── Get Session ────────────────────────────────────────────
 
 export async function fetchExplorationSession(

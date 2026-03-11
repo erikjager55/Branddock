@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { ArrowLeft, Bot, RefreshCw, Sparkles } from 'lucide-react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import { ArrowLeft, Bot, RefreshCw, Sparkles, RotateCcw } from 'lucide-react';
 import type { ExplorationConfig, ExplorationInsightsData, ExplorationMessage, BackendDimension } from './types';
 import { mapBackendDimensions } from './utils/map-backend-dimensions';
 import { useAIExplorationStore } from './hooks/useAIExplorationStore';
@@ -9,8 +9,21 @@ import { AIExplorationChatInterface } from './AIExplorationChatInterface';
 import { AIExplorationReport } from './AIExplorationReport';
 import { AIExplorationSuggestions } from './AIExplorationSuggestions';
 
+/** Data shape for resuming an existing session */
+export interface ResumeSessionData {
+  sessionId: string;
+  status: string;
+  messages: ExplorationMessage[];
+  progress: number;
+  answeredDimensions: number;
+  dimensions?: BackendDimension[];
+  insightsData?: ExplorationInsightsData | null;
+}
+
 interface AIExplorationPageProps {
   config: ExplorationConfig;
+  /** Pass existing session data to resume instead of starting a new session */
+  resumeSession?: ResumeSessionData | null;
   onStartSession: () => Promise<{
     sessionId: string;
     messages: ExplorationMessage[];
@@ -35,6 +48,7 @@ interface AIExplorationPageProps {
 
 export function AIExplorationPage({
   config,
+  resumeSession,
   onStartSession,
   onSendAnswer,
   onComplete,
@@ -61,6 +75,7 @@ export function AIExplorationPage({
   const reset = useAIExplorationStore((s) => s.reset);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
+  const resumeAppliedRef = useRef(false);
 
   // Build effective config: override dimensions with backend-driven ones when available
   const effectiveConfig = useMemo(() => {
@@ -68,9 +83,10 @@ export function AIExplorationPage({
     return { ...config, dimensions: mapBackendDimensions(backendDimensions) };
   }, [config, backendDimensions]);
 
-  const startSession = useCallback(() => {
+  const startNewSession = useCallback(() => {
     setStartError(null);
     reset();
+    resumeAppliedRef.current = false;
     setStatus('in_progress');
     onStartSession()
       .then((data) => {
@@ -89,8 +105,35 @@ export function AIExplorationPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onStartSession]);
 
+  // Resume existing session or start new one
   useEffect(() => {
-    startSession();
+    if (resumeSession && !resumeAppliedRef.current) {
+      // Resume: populate store from existing session data
+      resumeAppliedRef.current = true;
+      reset();
+      setSessionId(resumeSession.sessionId);
+      setMessages(resumeSession.messages);
+      setProgress(resumeSession.progress);
+      setAnsweredDimensions(resumeSession.answeredDimensions);
+
+      if (resumeSession.dimensions) {
+        setBackendDimensions(resumeSession.dimensions);
+      }
+
+      if (resumeSession.status === 'COMPLETED' && resumeSession.insightsData) {
+        setInsightsData(resumeSession.insightsData);
+        setStatus('completed');
+      } else if (resumeSession.status === 'COMPLETED') {
+        // COMPLETED but no insightsData (corrupted/partial) — start fresh
+        startNewSession();
+        return;
+      } else {
+        setStatus('in_progress');
+      }
+    } else if (!resumeSession) {
+      // No session to resume — start fresh
+      startNewSession();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.itemId]);
 
@@ -139,10 +182,19 @@ export function AIExplorationPage({
 
       if (result.isComplete) {
         setStatus('completing');
-        const completeResult = await onComplete(sessionId);
-        setInsightsData(completeResult.insightsData);
-        setStatus('completed');
+        try {
+          const completeResult = await onComplete(sessionId);
+          setInsightsData(completeResult.insightsData);
+          setStatus('completed');
+        } catch (completeErr) {
+          console.error('[AIExplorationPage] Report generation failed:', completeErr);
+          // Fall back to chat view so user isn't stuck on spinner
+          setStatus('in_progress');
+          setStartError('Report generation failed. Please try again or start a new exploration.');
+        }
       }
+    } catch (err) {
+      console.error('[AIExplorationPage] Failed to send answer:', err);
     } finally {
       setAITyping(false);
     }
@@ -164,7 +216,7 @@ export function AIExplorationPage({
           <div className="flex flex-col items-center justify-center rounded-xl" style={{ padding: '48px', border: '1px solid #fecaca', backgroundColor: '#fef2f2' }}>
             <p className="text-sm font-medium" style={{ color: '#991b1b', marginBottom: '12px' }}>{startError}</p>
             <button
-              onClick={() => startSession()}
+              onClick={() => startNewSession()}
               className="flex items-center gap-2 text-sm font-medium rounded-lg text-white transition-all"
               style={{ padding: '8px 20px', background: 'linear-gradient(135deg, #14b8a6, #10b981)' }}
             >
@@ -264,11 +316,25 @@ export function AIExplorationPage({
 
         {/* ─── Report ─── */}
         {status === 'completed' && insightsData && !showSuggestions && (
-          <AIExplorationReport
-            config={effectiveConfig}
-            insightsData={insightsData}
-            onViewSuggestions={() => setShowSuggestions(true)}
-          />
+          <>
+            <AIExplorationReport
+              config={effectiveConfig}
+              insightsData={insightsData}
+              onViewSuggestions={() => setShowSuggestions(true)}
+            />
+            {/* Start New Exploration button */}
+            <div className="flex justify-center" style={{ marginTop: '24px', paddingBottom: '16px' }}>
+              <button
+                type="button"
+                onClick={() => startNewSession()}
+                className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                style={{ padding: '8px 20px' }}
+              >
+                <RotateCcw className="h-4 w-4" />
+                Start New Exploration
+              </button>
+            </div>
+          </>
         )}
 
         {/* ─── Suggestions ─── */}
