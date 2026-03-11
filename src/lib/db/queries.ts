@@ -50,6 +50,23 @@ export const PRODUCT_LIST_SELECT = {
   _count: { select: { linkedPersonas: true } },
 } as const;
 
+export const COMPETITOR_LIST_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+  websiteUrl: true,
+  description: true,
+  tagline: true,
+  logoUrl: true,
+  tier: true,
+  status: true,
+  competitiveScore: true,
+  differentiators: true,
+  isLocked: true,
+  updatedAt: true,
+  _count: { select: { linkedProducts: true } },
+} as const;
+
 export const INSIGHT_LIST_SELECT = {
   id: true,
   title: true,

@@ -4,7 +4,7 @@ import { ShieldAlert, ShieldCheck, Pencil, Trash2, Sparkles, MessageCircle, Eye,
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef, useCallback } from 'react';
 
-type LockEntityType = 'persona' | 'brand-asset' | 'trend-radar';
+type LockEntityType = 'persona' | 'brand-asset' | 'trend-radar' | 'competitor';
 
 interface LockConfirmDialogProps {
   isOpen: boolean;
