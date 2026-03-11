@@ -131,7 +131,7 @@ export function BrandAssetCard({
     frameworkData: asset.frameworkData,
   });
   const filledCount = fields.filter(f => f.filled).length;
-  const completenessPercent = Math.round((filledCount / fields.length) * 100);
+  const completenessPercent = fields.length > 0 ? Math.round((filledCount / fields.length) * 100) : 0;
 
   return (
     <Card

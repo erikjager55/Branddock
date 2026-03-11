@@ -231,12 +231,12 @@ Integrale kwaliteitsslag op de Brand Foundation module: overzichtspagina, asset 
 - [x] **Need Attention** review — DRAFT + NEEDS_ATTENTION + IN_PROGRESS in stats.needValidation (API + component aligned)
 - [x] Coverage % op BrandAssetCard syncen met echte validation % uit API (coveragePercentage computed from researchMethods)
 
-### 4.2 Completeness Score Verbeteren
+### 4.2 Completeness Score Verbeteren ✅
 
 - [x] Try-catch toevoegen aan JSON parse in `getAssetCompletenessFields()` (crash bij malformed data)
-- [ ] Completeness % centraliseren — nu onafhankelijk berekend in BrandAssetCard EN AssetCompletenessCard
-- [ ] Valideer per framework type of de juiste velden geteld worden (steekproef alle 12 types)
-- [ ] Edge case: NaN voorkomen bij 0 velden (division by zero guard)
+- [x] Completeness % centraliseren — beide componenten gebruiken al dezelfde `getAssetCompletenessFields()` (geëxporteerd uit AssetCompletenessCard, geïmporteerd door BrandAssetCard)
+- [x] Valideer per framework type of de juiste velden geteld worden — alle 11 canonical + 2 legacy types gedekt, veldchecks matchen type definities
+- [x] Edge case: NaN voorkomen bij 0 velden — `fields.length > 0` guard in BrandAssetCard + AssetCompletenessCard
 
 ### 4.3 AI Exploration Interactie Fixen (KRITIEK) — Grotendeels ✅
 
