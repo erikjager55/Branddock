@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchAssetDetail,
-  updateAssetContent,
   updateAssetStatus,
   toggleAssetLock,
   deleteAsset,
@@ -9,7 +8,6 @@ import {
   updateAssetFramework,
 } from "../api/brand-asset-detail.api";
 import type {
-  ContentUpdatePayload,
   StatusUpdatePayload,
   FrameworkUpdatePayload,
 } from "../types/brand-asset-detail.types";
@@ -27,19 +25,6 @@ export function useAssetDetail(id: string | null) {
     enabled: !!id,
     staleTime: 60_000,
     gcTime: 10 * 60_000,
-  });
-}
-
-export function useUpdateContent(id: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: ContentUpdatePayload) =>
-      updateAssetContent(id, payload),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: assetDetailKeys.detail(id) });
-      qc.invalidateQueries({ queryKey: versionKeys.list('BRAND_ASSET', id) });
-      qc.invalidateQueries({ queryKey: ["brand-assets"] });
-    },
   });
 }
 
