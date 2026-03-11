@@ -256,17 +256,17 @@ Integrale kwaliteitsslag op de Brand Foundation module: overzichtspagina, asset 
 - [x] **Content vs Framework scheiding** — geëvalueerd: `asset.content` wordt nog op 5 plekken gelezen (asset-status, regenerate, snapshot-builders, PDF export, 2 legacy selectors). Refactoren is grotere wijziging, buiten scope Fase 4. `frameworkData` is de primaire databron voor alle moderne componenten.
 - [x] **ValidationBreakdown component** — geëvalueerd: nog actief gebruikt in `BrandAssetDetailPanel` (modal op overview page). Andere UI is de sidebar card (`AssetResearchSidebarCard`). Beide hebben een eigen rol: ValidationBreakdown toont compact status, sidebar card biedt interactie. Behouden.
 
-### 4.5 Version History Verbeteren
+### 4.5 Version History Verbeteren ✅
 
-- [ ] **Duaal versioning systeem evalueren** — BrandAssetVersion (legacy) vs ResourceVersion (universal). Eén systeem kiezen.
-- [ ] **Framework edits moeten BrandAssetVersion triggeren** — nu alleen ResourceVersion bij framework PATCH
-- [ ] **Version history UI** verifiëren op alle 12 asset types (steekproef)
+- [x] **Duaal versioning systeem evalueren** — ResourceVersion gekozen. Alle brand asset versioning geconsolideerd naar ResourceVersion. Legacy BrandAssetVersion creation verwijderd uit content + regenerate routes.
+- [x] **Framework edits moeten BrandAssetVersion triggeren** — n.v.t., BrandAssetVersion niet meer gebruikt. Framework PATCH + content + regenerate + lock gebruiken allen ResourceVersion.
+- [x] **Version history UI** — VersionPill + VersionHistoryPanel (universeel) zijn al actief op alle asset types. Orphaned VersionHistoryTimeline + legacy versions endpoint + golden-circle history endpoint verwijderd.
 
 ### 4.6 PDF Export Werkend Maken
 
-- [ ] Kies PDF library (Puppeteer/jsPDF/react-pdf)
-- [ ] **Brand asset PDF export** implementeren — nu produceert `.txt`, moet echte PDF worden
-- [ ] **Framework-specifieke formatting** — elke asset type moet een leesbare PDF layout krijgen
+- [x] Kies PDF library — jsPDF (al geïnstalleerd v4.2.0, bewezen in persona export)
+- [x] **Brand asset PDF export** — herschreven met jsPDF: header bar, metadata, description, content, framework-specifieke formatting
+- [x] **Framework-specifieke formatting** — alle 12 asset types (+ SWOT/PurposeKompas legacy) met dedicated formatters
 - [ ] **Brandstyle PDF export** implementeren `src/app/api/brandstyle/export-pdf/route.ts` (nu: 501)
 - [ ] **Persona PDF export** implementeren `src/app/api/personas/[id]/export/route.ts` (nu: 501)
 - [ ] **Chat/session export** implementeren `src/app/api/personas/[id]/chat/[sessionId]/export/route.ts` (nu: 501)
