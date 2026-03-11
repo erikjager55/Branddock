@@ -33,7 +33,7 @@ function getProfileFields(persona: PersonaWithMeta): FieldCheck[] {
 export function ProfileCompletenessCard({ persona }: ProfileCompletenessCardProps) {
   const fields = getProfileFields(persona);
   const filledCount = fields.filter((f) => f.filled).length;
-  const percentage = Math.round((filledCount / fields.length) * 100);
+  const percentage = fields.length > 0 ? Math.round((filledCount / fields.length) * 100) : 0;
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
