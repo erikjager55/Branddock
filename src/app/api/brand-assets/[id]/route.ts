@@ -2,28 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
-
-const RESEARCH_WEIGHTS: Record<string, number> = {
-  AI_EXPLORATION: 0.15,
-  WORKSHOP: 0.30,
-  INTERVIEWS: 0.25,
-  QUESTIONNAIRE: 0.30,
-};
-
-function calculateValidationPercentage(
-  methods: Array<{ method: string; status: string; progress: number }>
-): number {
-  let total = 0;
-  for (const m of methods) {
-    const weight = RESEARCH_WEIGHTS[m.method] ?? 0;
-    if (m.status === "COMPLETED" || m.status === "VALIDATED") {
-      total += weight * 100;
-    } else if (m.status === "IN_PROGRESS") {
-      total += weight * m.progress;
-    }
-  }
-  return Math.round(total * 100) / 100;
-}
+import { computeValidationPercentage, getCompletedMethodsCount } from "@/lib/validation-percentage";
 
 // =============================================================
 // GET /api/brand-assets/[id] — detail with research methods, versions, validation %
@@ -61,17 +40,8 @@ export async function GET(
       return NextResponse.json({ error: "Asset not found" }, { status: 404 });
     }
 
-    const validationPercentage = calculateValidationPercentage(
-      asset.researchMethods.map((m) => ({
-        method: m.method,
-        status: m.status,
-        progress: m.progress,
-      }))
-    );
-
-    const completedMethods = asset.researchMethods.filter(
-      (m) => m.status === "COMPLETED" || m.status === "VALIDATED"
-    ).length;
+    const validationPercentage = computeValidationPercentage(asset.researchMethods);
+    const completedMethods = getCompletedMethodsCount(asset.researchMethods);
 
     return NextResponse.json({
       ...asset,

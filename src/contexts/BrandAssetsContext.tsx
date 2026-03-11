@@ -18,7 +18,7 @@ import React, {
   useCallback,
   ReactNode,
 } from "react";
-import { BrandAsset } from "../types/brand-asset";
+import { BrandAsset, SummaryStats } from "../types/brand-asset";
 import { logger } from "../utils/logger";
 import { ChangeType } from "../types/change-impact";
 import { fetchBrandAssets } from "../lib/api/brand-assets";
@@ -37,6 +37,9 @@ interface BrandAssetsContextType {
   ) => void;
   addBrandAsset: (asset: BrandAsset) => void;
   removeBrandAsset: (id: string) => void;
+
+  /** API-computed summary stats (total, ready, needValidation, avgCoverage) */
+  stats: SummaryStats | null;
 
   // Data source info
   dataSource: "api" | "loading";
@@ -64,6 +67,7 @@ const BrandAssetsContext = createContext<BrandAssetsContextType | undefined>(
 export function BrandAssetsProvider({ children }: { children: ReactNode }) {
   const { workspaceId, isLoading: wsLoading } = useWorkspace();
   const [brandAssets, setBrandAssets] = useState<BrandAsset[]>([]);
+  const [stats, setStats] = useState<SummaryStats | null>(null);
   const [dataSource, setDataSource] = useState<"api" | "loading">("loading");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -105,6 +109,7 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
         );
 
         setBrandAssets(mapped);
+        setStats(response.stats);
         setDataSource("api");
         setIsLoading(false);
       })
@@ -113,6 +118,7 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
 
         logger.warn("Brand assets API fetch failed:", err);
         setBrandAssets([]);
+        setStats(null);
         setDataSource("loading");
         setError(err instanceof Error ? err : new Error(String(err)));
         setIsLoading(false);
@@ -198,6 +204,7 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
       .then((response) => {
         const mapped = apiAssetsToMockFormat(response.assets);
         setBrandAssets(mapped);
+        setStats(response.stats);
         setDataSource("api");
         setIsLoading(false);
       })
@@ -216,6 +223,7 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
         updateBrandAsset,
         addBrandAsset,
         removeBrandAsset,
+        stats,
         dataSource,
         isLoading,
         error,

@@ -1,4 +1,10 @@
-import type { ResearchMethodDetail } from "../types/brand-asset-detail.types";
+/**
+ * Compute weighted validation % from research method statuses.
+ *
+ * Weights: AI_EXPLORATION 15%, WORKSHOP 30%, INTERVIEWS 25%, QUESTIONNAIRE 30%.
+ * COMPLETED/VALIDATED methods contribute their full weight × 100.
+ * IN_PROGRESS methods contribute weight × progress (0-100).
+ */
 
 const RESEARCH_WEIGHTS: Record<string, number> = {
   AI_EXPLORATION: 0.15,
@@ -7,8 +13,8 @@ const RESEARCH_WEIGHTS: Record<string, number> = {
   QUESTIONNAIRE: 0.30,
 };
 
-export function calculateValidationPercentage(
-  methods: ResearchMethodDetail[]
+export function computeValidationPercentage(
+  methods: ReadonlyArray<{ method: string; status: string; progress: number }>
 ): number {
   let total = 0;
   for (const m of methods) {
@@ -23,7 +29,7 @@ export function calculateValidationPercentage(
 }
 
 export function getCompletedMethodsCount(
-  methods: ResearchMethodDetail[]
+  methods: ReadonlyArray<{ status: string }>
 ): number {
   return methods.filter(
     (m) => m.status === "COMPLETED" || m.status === "VALIDATED"

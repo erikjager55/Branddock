@@ -7,6 +7,7 @@ import type {
   AssetCategory,
   AssetStatus,
 } from "@/types/brand-asset";
+import { computeValidationPercentage } from "@/lib/validation-percentage";
 
 // =============================================================
 // GET /api/brand-assets
@@ -36,16 +37,17 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // Build orderBy
+    // Build orderBy — coveragePercentage is computed from research methods,
+    // not stored in DB, so we sort in-memory after computation when requested
+    const sortByCoverage = sortBy === "coveragePercentage";
     const orderByMap: Record<string, string> = {
       name: "name",
       updatedAt: "updatedAt",
-      coveragePercentage: "coveragePercentage",
     };
     const orderByField = orderByMap[sortBy] ?? "name";
-    const orderBy = { [orderByField]: sortOrder === "desc" ? "desc" : "asc" };
+    const orderBy = sortByCoverage ? { name: "asc" as const } : { [orderByField]: sortOrder === "desc" ? "desc" : "asc" };
 
-    // Query
+    // Query — include research methods to compute real validation %
     const dbAssets = await prisma.brandAsset.findMany({
       where,
       orderBy,
@@ -56,7 +58,6 @@ export async function GET(request: NextRequest) {
         description: true,
         category: true,
         status: true,
-        coveragePercentage: true,
         validatedCount: true,
         artifactCount: true,
         frameworkType: true,
@@ -66,10 +67,13 @@ export async function GET(request: NextRequest) {
         interviewValidated: true,
         questionnaireValidated: true,
         updatedAt: true,
+        researchMethods: {
+          select: { method: true, status: true, progress: true },
+        },
       },
     });
 
-    // Map to BrandAssetWithMeta
+    // Map to BrandAssetWithMeta — compute validation % from research methods
     const assets: BrandAssetWithMeta[] = dbAssets.map((a) => ({
       id: a.id,
       name: a.name,
@@ -77,7 +81,7 @@ export async function GET(request: NextRequest) {
       description: a.description,
       category: a.category as AssetCategory,
       status: a.status as AssetStatus,
-      coveragePercentage: a.coveragePercentage,
+      coveragePercentage: computeValidationPercentage(a.researchMethods),
       validatedCount: a.validatedCount,
       artifactCount: a.artifactCount,
       frameworkType: a.frameworkType,
@@ -91,13 +95,24 @@ export async function GET(request: NextRequest) {
       updatedAt: a.updatedAt.toISOString(),
     }));
 
+    // Sort by computed coveragePercentage if requested
+    if (sortByCoverage) {
+      const dir = sortOrder === "desc" ? -1 : 1;
+      assets.sort((a, b) => dir * (a.coveragePercentage - b.coveragePercentage));
+    }
+
     // Compute summary stats
+    const avgCoverage = assets.length > 0
+      ? Math.round(assets.reduce((sum, a) => sum + a.coveragePercentage, 0) / assets.length)
+      : 0;
+
     const stats = {
       total: assets.length,
       ready: assets.filter((a) => a.status === "READY").length,
       needValidation: assets.filter(
-        (a) => a.status === "NEEDS_ATTENTION" || a.status === "IN_PROGRESS"
+        (a) => a.status === "NEEDS_ATTENTION" || a.status === "IN_PROGRESS" || a.status === "DRAFT"
       ).length,
+      avgCoverage,
     };
 
     const response: BrandAssetListResponse = { assets, stats };

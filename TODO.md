@@ -224,12 +224,12 @@ S2 (ExplorationSession) heeft volledige feature parity. S1 volledig verwijderd:
 
 Integrale kwaliteitsslag op de Brand Foundation module: overzichtspagina, asset detail pagina's, AI Exploration flow, versioning, export en informatie-overlap.
 
-### 4.1 Overzichtspagina Stats Fixen
+### 4.1 Overzichtspagina Stats Fixen ✅
 
-- [ ] **Avg. Coverage berekenen uit research methods** — nu statisch `researchCoverage` mock veld, moet gewogen validation % worden (AI 0.15 + Workshop 0.30 + Interviews 0.25 + Survey 0.30)
-- [ ] **Ready to Use** valideren — komt status correct uit API of alleen uit adapter mapping?
-- [ ] **Need Attention** review — telt DRAFT + NEEDS_ATTENTION + IN_PROGRESS; is dit gewenst of moet DRAFT apart?
-- [ ] Coverage % op BrandAssetCard syncen met echte validation % uit API (niet mock `researchCoverage`)
+- [x] **Avg. Coverage berekenen uit research methods** — API compute nu gewogen validation % (AI 0.15 + Workshop 0.30 + Interviews 0.25 + Questionnaire 0.30) via shared `src/lib/validation-percentage.ts`
+- [x] **Ready to Use** valideren — status komt correct uit API (BrandAsset.status), stats.ready = READY count
+- [x] **Need Attention** review — DRAFT + NEEDS_ATTENTION + IN_PROGRESS in stats.needValidation (API + component aligned)
+- [x] Coverage % op BrandAssetCard syncen met echte validation % uit API (coveragePercentage computed from researchMethods)
 
 ### 4.2 Completeness Score Verbeteren
 

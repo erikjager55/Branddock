@@ -87,6 +87,7 @@ export interface SummaryStats {
   ready: number;
   needValidation: number;
   total: number;
+  avgCoverage: number;
 }
 
 export interface CreateBrandAssetBody {
