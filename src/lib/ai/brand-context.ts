@@ -155,7 +155,7 @@ interface TransformativeGoalData {
   measurableCommitment?: string;
   theoryOfChange?: string;
   currentProgress?: number;
-  milestones?: { title?: string; achieved?: boolean }[];
+  milestones?: { year?: number; target?: string; achieved?: boolean }[];
   sdgAlignment?: number[];
 }
 
@@ -229,8 +229,17 @@ function formatTransformativeGoals(data: TransformativeGoalsData): string {
           gParts.push(`Progress: ${g.currentProgress}%`);
         }
         if (Array.isArray(g.milestones) && g.milestones.length > 0) {
-          const achieved = g.milestones.filter((m) => m.achieved).length;
-          gParts.push(`Milestones: ${achieved}/${g.milestones.length} achieved`);
+          const msDetails = g.milestones
+            .filter((m) => m.target || m.year)
+            .map((m) => {
+              const label = m.target || 'milestone';
+              const year = m.year ? ` (${m.year})` : '';
+              const status = m.achieved ? ' [achieved]' : '';
+              return `${label}${year}${status}`;
+            });
+          if (msDetails.length > 0) {
+            gParts.push(`Milestones: ${msDetails.join(', ')}`);
+          }
         }
         if (Array.isArray(g.sdgAlignment) && g.sdgAlignment.length > 0) {
           gParts.push(`SDGs: ${g.sdgAlignment.join(', ')}`);
@@ -240,11 +249,16 @@ function formatTransformativeGoals(data: TransformativeGoalsData): string {
     if (goalSummaries.length > 0) parts.push(`Goals: ${goalSummaries.join('; ')}`);
   }
   if (data.authenticityScores) {
-    const vals = Object.values(data.authenticityScores);
-    const total = vals.reduce((a, b) => a + b, 0);
-    if (total > 0) {
-      const avg = Math.round((total / vals.length) * 20);
-      parts.push(`Authenticity score: ${avg}%`);
+    const scoreLabels: Record<string, string> = {
+      ambition: 'Ambition', authenticity: 'Authenticity', clarity: 'Clarity',
+      measurability: 'Measurability', integration: 'Integration', longevity: 'Longevity',
+    };
+    const entries = Object.entries(data.authenticityScores)
+      .filter(([, v]) => typeof v === 'number' && v > 0);
+    if (entries.length > 0) {
+      const details = entries.map(([k, v]) => `${scoreLabels[k] || k}: ${v}/5`).join(', ');
+      const avg = Math.round((entries.reduce((a, [, v]) => a + v, 0) / entries.length) * 20);
+      parts.push(`Authenticity (${avg}%): ${details}`);
     }
   }
   if (data.brandIntegration?.positioningLink) {
@@ -700,36 +714,51 @@ function extractContentText(content: unknown): string | null {
   return null;
 }
 
-/** Format BrandHouse Values frameworkData into a readable string for AI context */
+/** Format BrandHouse Values frameworkData into a readable string for AI context. */
 function formatBrandHouseValues(data: unknown): string | null {
   if (!data || typeof data !== 'object') return null;
   const obj = data as Record<string, unknown>;
-  const parts: string[] = [];
+  const sections: string[] = [];
 
-  // BrandHouse model: anchorValue1/2, aspirationValue1/2, ownValue, valueTension
-  const valueFields = [
-    { key: 'anchorValue1', label: 'Anchor Value 1' },
-    { key: 'anchorValue2', label: 'Anchor Value 2' },
-    { key: 'aspirationValue1', label: 'Aspiration Value 1' },
-    { key: 'aspirationValue2', label: 'Aspiration Value 2' },
-    { key: 'ownValue', label: 'Own Value' },
-  ];
+  // Helper to format a single BrandHouseValue (name + description)
+  const fmtValue = (raw: unknown): string | null => {
+    if (!raw || typeof raw !== 'object') return null;
+    const v = raw as Record<string, unknown>;
+    if (typeof v.name !== 'string' || !v.name) return null;
+    return typeof v.description === 'string' && v.description
+      ? `${v.name} — ${v.description}`
+      : v.name;
+  };
 
-  for (const { key, label } of valueFields) {
-    const val = obj[key] as { name?: string; description?: string } | undefined;
-    if (val?.name) {
-      let entry = `${label}: ${val.name}`;
-      if (val.description) entry += ` — ${val.description}`;
-      parts.push(entry);
-    }
+  // Roots (Anchor Values) — foundational values already lived today
+  const root1 = fmtValue(obj.anchorValue1);
+  const root2 = fmtValue(obj.anchorValue2);
+  if (root1 || root2) {
+    const roots = [root1, root2].filter(Boolean).join('; ');
+    sections.push(`Roots (Anchor Values): ${roots}`);
   }
 
+  // Wings (Aspiration Values) — values that give direction and ambition
+  const wing1 = fmtValue(obj.aspirationValue1);
+  const wing2 = fmtValue(obj.aspirationValue2);
+  if (wing1 || wing2) {
+    const wings = [wing1, wing2].filter(Boolean).join('; ');
+    sections.push(`Wings (Aspiration Values): ${wings}`);
+  }
+
+  // Fire (Own Value) — the most distinguishing characteristic
+  const fire = fmtValue(obj.ownValue);
+  if (fire) {
+    sections.push(`Fire (Own Value): ${fire}`);
+  }
+
+  // Value Tension — how the values balance each other
   if (typeof obj.valueTension === 'string' && obj.valueTension) {
-    parts.push(`Value tension: ${obj.valueTension}`);
+    sections.push(`Value Tension: ${obj.valueTension}`);
   }
 
   // Fallback: legacy { values: [...] } shape
-  if (parts.length === 0 && Array.isArray(obj.values) && obj.values.length > 0) {
+  if (sections.length === 0 && Array.isArray(obj.values) && obj.values.length > 0) {
     return (obj.values as unknown[]).map((v: unknown) => {
       if (typeof v === 'string') return v;
       if (typeof v === 'object' && v !== null) {
@@ -740,7 +769,7 @@ function formatBrandHouseValues(data: unknown): string | null {
     }).join(', ');
   }
 
-  return parts.length > 0 ? parts.join('. ') : null;
+  return sections.length > 0 ? sections.join('. ') : null;
 }
 
 // ─── Aggregator ────────────────────────────────────────────
