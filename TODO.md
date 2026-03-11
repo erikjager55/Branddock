@@ -207,10 +207,9 @@ Vervangen door Trend Radar (TR sprint) met volledige AI research pipeline (Gemin
 - [ ] Implementeer echte strategy generatie in `src/app/api/campaigns/[id]/strategy/generate/route.ts`
 - [ ] Gebruik brand assets + knowledge als context
 
-### 3.6 Persona Regenerate AI
+### ~~3.6 Persona Regenerate AI~~ — geschrapt
 
-- [ ] Implementeer echte persona regeneratie in `src/app/api/personas/[id]/regenerate/route.ts` (nu: 501)
-- [ ] Gebruik bestaande persona data als context voor AI enrichment
+AI Exploration (S2) volstaat voor persona verrijking. One-click regenerate niet nodig.
 
 ### 3.7 S1 vs S2 AI Systeem Consolidatie
 
