@@ -184,6 +184,9 @@ model Workspace {
   detectedTrends            DetectedTrend[]
   trendResearchJobs         TrendResearchJob[]
 
+  // Competitors
+  competitors               Competitor[]
+
   @@index([organizationId])
 }
 
@@ -252,6 +255,10 @@ model User {
   // Trend Radar
   lockedTrends           DetectedTrend[]    @relation("TrendLocker")
   activatedTrends        DetectedTrend[]    @relation("TrendActivator")
+
+  // Competitors
+  lockedCompetitors      Competitor[]       @relation("LockedCompetitors")
+  createdCompetitors     Competitor[]       @relation("CreatedCompetitors")
 
   @@index([workspaceId])
 }
@@ -1776,6 +1783,7 @@ model Product {
   analysisData    Json?
   linkedPersonas  ProductPersona[]
   images          ProductImage[]
+  competitorLinks CompetitorProduct[]
 
   // Lock fields
   isLocked        Boolean         @default(false)
@@ -2997,4 +3005,94 @@ model TrendResearchJob {
 
   @@index([workspaceId])
   @@index([status])
+}
+
+// =============================================================
+// Competitors Analysis
+// =============================================================
+
+enum CompetitorTier {
+  DIRECT
+  INDIRECT
+  ASPIRATIONAL
+}
+
+enum CompetitorStatus {
+  DRAFT
+  ANALYZED
+  ARCHIVED
+}
+
+model Competitor {
+  id                String            @id @default(cuid())
+  name              String
+  slug              String
+  websiteUrl        String?
+  description       String?           @db.Text
+  tagline           String?
+  foundingYear      Int?
+  headquarters      String?
+  employeeRange     String?
+  logoUrl           String?
+
+  // Positioning (AI-extracted)
+  valueProposition  String?           @db.Text
+  targetAudience    String?           @db.Text
+  differentiators   String[]          @default([])
+  mainOfferings     String[]          @default([])
+  pricingModel      String?
+  pricingDetails    String?           @db.Text
+
+  // Brand signals (AI-extracted)
+  toneOfVoice       String?           @db.Text
+  messagingThemes   String[]          @default([])
+  visualStyleNotes  String?           @db.Text
+
+  // SWOT
+  strengths         String[]          @default([])
+  weaknesses        String[]          @default([])
+
+  // Online presence
+  socialLinks       Json?
+  hasBlog           Boolean?
+  hasCareersPage    Boolean?
+
+  // Score
+  competitiveScore  Int?
+
+  // Metadata
+  tier              CompetitorTier    @default(DIRECT)
+  status            CompetitorStatus  @default(DRAFT)
+  source            String            @default("MANUAL")
+  lastScrapedAt     DateTime?
+  analysisData      Json?
+
+  // Lock
+  isLocked          Boolean           @default(false)
+  lockedAt          DateTime?
+  lockedById        String?
+  lockedBy          User?             @relation("LockedCompetitors", fields: [lockedById], references: [id])
+
+  // Relations
+  workspaceId       String
+  workspace         Workspace         @relation(fields: [workspaceId], references: [id])
+  createdById       String?
+  createdBy         User?             @relation("CreatedCompetitors", fields: [createdById], references: [id])
+  linkedProducts    CompetitorProduct[]
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+  @@index([workspaceId, tier])
+}
+
+model CompetitorProduct {
+  competitorId String
+  competitor   Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([competitorId, productId])
 }

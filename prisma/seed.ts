@@ -3,7 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { hashPassword } from "better-auth/crypto";
 import { DEFAULT_PERSONA_CHAT_PROMPT } from "./seed/persona-chat-config";
 import { CANONICAL_BRAND_ASSETS, RESEARCH_METHOD_TYPES } from "../src/lib/constants/canonical-brand-assets";
-import type { NotificationType, NotificationCategory, AssetCategory, AssetStatus, ResearchMethodType, ResearchMethodStatus, WorkshopStatus, InterviewStatus, InterviewQuestionType, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, StyleguideSource, AnalysisStatus, ColorCategory, PersonaAvatarSource, PersonaResearchMethodType, InsightCategory, InsightScope, ImpactLevel, InsightTimeframe, InsightSource, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, ResourceSource, ProductSource, ProductStatus, DifficultyLevel, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus, TicketCategory, TicketPriority, TicketStatus, FeatureRequestStatus, OAuthProvider, ConnectionStatus, BillingCycle, InvoiceStatus, Theme, AccentColor, FontSize, SidebarPosition, SubscriptionStatus, ProductImageCategory, TrendDetectionSource, TrendScanStatus } from "@prisma/client";
+import type { NotificationType, NotificationCategory, AssetCategory, AssetStatus, ResearchMethodType, ResearchMethodStatus, WorkshopStatus, InterviewStatus, InterviewQuestionType, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, StyleguideSource, AnalysisStatus, ColorCategory, PersonaAvatarSource, PersonaResearchMethodType, InsightCategory, InsightScope, ImpactLevel, InsightTimeframe, InsightSource, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, ResourceSource, ProductSource, ProductStatus, DifficultyLevel, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus, TicketCategory, TicketPriority, TicketStatus, FeatureRequestStatus, OAuthProvider, ConnectionStatus, BillingCycle, InvoiceStatus, Theme, AccentColor, FontSize, SidebarPosition, SubscriptionStatus, ProductImageCategory, TrendDetectionSource, TrendScanStatus, CompetitorTier, CompetitorStatus } from "@prisma/client";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -64,6 +64,8 @@ async function main() {
   await prisma.aIPersonaAnalysisMessage.deleteMany();
   await prisma.aIPersonaAnalysisSession.deleteMany();
   await prisma.personaResearchMethod.deleteMany();
+  await prisma.competitorProduct.deleteMany();
+  await prisma.competitor.deleteMany();
   await prisma.productImage.deleteMany();
   await prisma.productPersona.deleteMany();
   await prisma.persona.deleteMany();
@@ -1841,6 +1843,111 @@ async function main() {
       { productId: product3.id, url: "https://placehold.co/800x600/0284c7/ffffff?text=iOS+%2B+Android", category: picMockup, altText: "Cross-platform mobile mockup", sortOrder: 1, source: "SCRAPED" },
       { productId: product3.id, url: "https://placehold.co/800x600/4f46e5/ffffff?text=UI+Components", category: picDetail, altText: "Pre-built UI component library", sortOrder: 2, source: "SCRAPED" },
     ],
+  });
+
+  // ============================================
+  // COMPETITORS ANALYSIS SEED DATA
+  // ============================================
+
+  const tierDirect: CompetitorTier = "DIRECT";
+  const tierIndirect: CompetitorTier = "INDIRECT";
+  const tierAspirational: CompetitorTier = "ASPIRATIONAL";
+  const compStatusAnalyzed: CompetitorStatus = "ANALYZED";
+  const compStatusDraft: CompetitorStatus = "DRAFT";
+
+  const competitor1 = await prisma.competitor.create({
+    data: {
+      name: "BrandBuilder Pro",
+      slug: "brandbuilder-pro",
+      websiteUrl: "https://brandbuilder.pro",
+      description: "All-in-one brand management platform offering brand strategy templates, asset libraries, and collaborative workspaces for marketing teams. Strong focus on visual brand consistency and template-driven workflows.",
+      tagline: "Build brands that matter",
+      foundingYear: 2019,
+      headquarters: "Amsterdam, Netherlands",
+      employeeRange: "50-200",
+      logoUrl: "https://placehold.co/200x200/3b82f6/ffffff?text=BB",
+      valueProposition: "Streamlined brand management through intuitive templates and collaborative workflows, enabling teams to maintain brand consistency at scale without specialized design skills.",
+      targetAudience: "Mid-market marketing teams (10-50 people) at B2B SaaS companies looking to scale their brand operations without hiring additional brand designers.",
+      differentiators: ["Template-first approach", "Real-time brand consistency checker", "300+ pre-built brand frameworks", "Figma & Canva integrations"],
+      mainOfferings: ["Brand Strategy Suite", "Asset Management", "Brand Guidelines Builder", "Team Collaboration Hub"],
+      pricingModel: "Per seat",
+      pricingDetails: "Starter €29/seat/month, Professional €59/seat/month, Enterprise custom pricing. Annual billing saves 20%.",
+      toneOfVoice: "Professional yet approachable. Uses action-oriented language with emphasis on efficiency and results. Avoids jargon, focuses on practical outcomes.",
+      messagingThemes: ["Brand consistency at scale", "Template-driven efficiency", "Collaborative brand building"],
+      visualStyleNotes: "Clean, modern design with blue primary color palette. Heavy use of whitespace. Dashboard-style UI with card-based layouts. Sans-serif typography (Inter).",
+      strengths: ["Extensive template library (300+)", "Strong Figma/Canva integration ecosystem", "Intuitive drag-and-drop UI", "Competitive pricing for small teams"],
+      weaknesses: ["Limited AI capabilities", "No research validation features", "Basic analytics/reporting", "No persona management"],
+      socialLinks: { linkedin: "https://linkedin.com/company/brandbuilder-pro", twitter: "https://twitter.com/brandbuilder" },
+      hasBlog: true,
+      hasCareersPage: true,
+      competitiveScore: 72,
+      tier: tierDirect,
+      status: compStatusAnalyzed,
+      source: "WEBSITE_URL",
+      lastScrapedAt: new Date("2026-03-01"),
+      createdById: DEMO_USER_ID,
+      workspaceId: DEMO_WORKSPACE_ID,
+    },
+  });
+
+  const competitor2 = await prisma.competitor.create({
+    data: {
+      name: "StrategyHive",
+      slug: "strategyhive",
+      websiteUrl: "https://strategyhive.io",
+      description: "Collaborative strategy platform combining OKR management with brand strategy tools. Focuses on aligning business strategy with brand positioning through structured frameworks.",
+      tagline: "Strategy that sticks",
+      foundingYear: 2021,
+      headquarters: "Berlin, Germany",
+      employeeRange: "10-50",
+      logoUrl: "https://placehold.co/200x200/f59e0b/ffffff?text=SH",
+      valueProposition: "Bridge the gap between business strategy and brand execution with AI-powered OKR alignment and brand health monitoring.",
+      targetAudience: "Strategy consultants and brand managers at enterprises (500+ employees) who need to connect brand positioning to business outcomes.",
+      differentiators: ["OKR-brand alignment engine", "Strategy visualization tools", "Executive reporting dashboard"],
+      mainOfferings: ["Strategy Workspace", "Brand Health Monitor", "OKR Alignment Engine"],
+      pricingModel: "Tiered",
+      pricingDetails: "Growth €199/month (5 users), Scale €499/month (20 users), Enterprise custom.",
+      toneOfVoice: "Strategic and data-driven. Uses business terminology and frameworks. Positions itself as a thought leader in brand-business alignment.",
+      messagingThemes: ["Strategy-brand alignment", "Data-driven brand decisions"],
+      strengths: ["Strong OKR integration", "Executive-level reporting", "Strategy visualization"],
+      weaknesses: ["Complex onboarding", "No content generation features", "Limited to enterprise use cases", "Expensive for small teams"],
+      socialLinks: { linkedin: "https://linkedin.com/company/strategyhive" },
+      hasBlog: true,
+      hasCareersPage: false,
+      competitiveScore: 58,
+      tier: tierIndirect,
+      status: compStatusAnalyzed,
+      source: "WEBSITE_URL",
+      lastScrapedAt: new Date("2026-02-20"),
+      createdById: DEMO_USER_ID,
+      workspaceId: DEMO_WORKSPACE_ID,
+    },
+  });
+
+  await prisma.competitor.create({
+    data: {
+      name: "MarketPulse AI",
+      slug: "marketpulse-ai",
+      websiteUrl: "https://marketpulse.ai",
+      description: "AI-first market intelligence platform providing real-time competitive analysis, trend detection, and strategic recommendations for brand teams.",
+      tagline: "AI-powered brand intelligence",
+      foundingYear: 2023,
+      headquarters: "San Francisco, USA",
+      employeeRange: "10-50",
+      tier: tierAspirational,
+      status: compStatusDraft,
+      source: "MANUAL",
+      createdById: DEMO_USER_ID,
+      workspaceId: DEMO_WORKSPACE_ID,
+    },
+  });
+
+  // Link competitor1 to product1
+  await prisma.competitorProduct.create({
+    data: {
+      competitorId: competitor1.id,
+      productId: product1.id,
+    },
   });
 
   // ============================================
@@ -4619,7 +4726,7 @@ Respond only with valid JSON.`,
     });
   }
 
-  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 11 brand assets (7 with frameworkData), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 10 knowledge resources (2 featured), 8 detected trends, 1 research job, 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, 3 exploration configs, S9 Settings: 1 user profile, 1 email preference, 3 connected accounts, 3 plans, 1 subscription, 1 payment method, 4 invoices, 1 notification preference, 1 appearance preference, S9 Help: 6 help categories, 5 help articles, 6 video tutorials, 7 FAQ items, 5 feature requests");
+  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 11 brand assets (7 with frameworkData), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 3 competitors (1 linked product), 10 knowledge resources (2 featured), 8 detected trends, 1 research job, 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, 3 exploration configs, S9 Settings: 1 user profile, 1 email preference, 3 connected accounts, 3 plans, 1 subscription, 1 payment method, 4 invoices, 1 notification preference, 1 appearance preference, S9 Help: 6 help categories, 5 help articles, 6 video tutorials, 7 FAQ items, 5 feature requests");
 }
 
 main()
