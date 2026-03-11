@@ -195,10 +195,12 @@ Core differentiator van Branddock — hoogste gebruikerswaarde.
 - [x] Update polling endpoint `src/app/api/brandstyle/analyze/status/[jobId]/route.ts`
 - [x] Extraheer echte kleuren, typografie, tone-of-voice uit website/PDF
 
-### 3.4 Market Insights AI Research (mock → echt)
+### 3.4 Market Insights AI Research (mock → echt) ✅
 
-- [ ] Implementeer echte AI research in `src/app/api/insights/ai-research/route.ts` (nu: mock insights)
-- [ ] Gebruik brand context + focus areas voor gerichte research
+Vervangen door Trend Radar (TR sprint) met volledige AI research pipeline (Gemini + Claude, 5-fase).
+
+- [x] AI research pipeline (Query→Extract→Synthesize→Score→Judge)
+- [x] Brand context + focus areas voor gerichte research
 
 ### 3.5 Campaign Strategy AI Generatie (placeholder → echt)
 
