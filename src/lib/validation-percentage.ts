@@ -18,20 +18,32 @@ export const PERSONA_VALIDATION_WEIGHTS: Record<string, number> = {
   USER_TESTING: 0.25,
 };
 
+/**
+ * Compute weighted validation % from research method statuses.
+ *
+ * Currently deactivated — returns 0. INTERVIEWS, WORKSHOP, QUESTIONNAIRE
+ * and USER_TESTING are temporarily disabled. Re-enable the body below
+ * when those methods are reactivated.
+ */
 export function computeValidationPercentage(
-  methods: ReadonlyArray<{ method: string; status: string; progress?: number }>,
-  weights: Record<string, number> = RESEARCH_METHOD_WEIGHTS,
+  _methods: ReadonlyArray<{ method: string; status: string; progress?: number }>,
+  _weights: Record<string, number> = RESEARCH_METHOD_WEIGHTS,
 ): number {
-  let total = 0;
-  for (const m of methods) {
-    const weight = weights[m.method] ?? 0;
-    if (m.status === "COMPLETED" || m.status === "VALIDATED") {
-      total += weight * 100;
-    } else if (m.status === "IN_PROGRESS") {
-      total += weight * (m.progress ?? 0);
-    }
-  }
-  return Math.round(total);
+  // Deactivated: validation % is meaningless with only AI_EXPLORATION (15% weight).
+  // Re-enable when INTERVIEWS/WORKSHOP/QUESTIONNAIRE return.
+  return 0;
+
+  // Original implementation (preserved for re-activation):
+  // let total = 0;
+  // for (const m of _methods) {
+  //   const weight = _weights[m.method] ?? 0;
+  //   if (m.status === "COMPLETED" || m.status === "VALIDATED") {
+  //     total += weight * 100;
+  //   } else if (m.status === "IN_PROGRESS") {
+  //     total += weight * (m.progress ?? 0);
+  //   }
+  // }
+  // return Math.round(total);
 }
 
 export function getCompletedMethodsCount(

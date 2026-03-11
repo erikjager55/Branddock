@@ -27,13 +27,19 @@ export const CANONICAL_BRAND_ASSETS: CanonicalBrandAsset[] = [
   { name: "Social Relevancy",     slug: "social-relevancy",     category: "ESG",         description: "Your brand's societal and environmental impact",       frameworkType: "ESG" },
 ];
 
-/** The 4 research method types every brand asset gets */
+/** All research method types (including deactivated). Kept for backward compat. */
 export const RESEARCH_METHOD_TYPES = [
   "AI_EXPLORATION",
   "WORKSHOP",
   "INTERVIEWS",
   "QUESTIONNAIRE",
 ] as const;
+
+/**
+ * Currently active research methods — only these are shown in UI and
+ * created for new workspaces. Re-activate by moving methods back here.
+ */
+export const ACTIVE_RESEARCH_METHOD_TYPES = ["AI_EXPLORATION"] as const;
 
 /** Validation weights per research method (used in validation % calculation) */
 export const RESEARCH_METHOD_WEIGHTS: Record<string, number> = {

@@ -119,18 +119,22 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Apply filter after computing validation
+    // Apply filter — validation % deactivated (always 0), so use AI_EXPLORATION completion as "ready" proxy.
+    // Re-enable validation-based filtering when INTERVIEWS/WORKSHOP/QUESTIONNAIRE return.
+    const isReady = (p: typeof personas[number]) =>
+      p.researchMethods.some((m) => m.method === 'AI_EXPLORATION' && (m.status === 'COMPLETED' || m.status === 'VALIDATED'));
+
     const filtered =
       filter === "ready"
-        ? personas.filter((p) => p.validationPercentage >= 80)
+        ? personas.filter(isReady)
         : filter === "needs_work"
-          ? personas.filter((p) => p.validationPercentage < 80)
+          ? personas.filter((p) => !isReady(p))
           : personas;
 
     const stats = {
       total: personas.length,
-      ready: personas.filter((p) => p.validationPercentage >= 80).length,
-      needsWork: personas.filter((p) => p.validationPercentage < 80).length,
+      ready: personas.filter(isReady).length,
+      needsWork: personas.filter((p) => !isReady(p)).length,
     };
 
     const responseData = { personas: filtered, stats };
@@ -201,10 +205,8 @@ export async function POST(request: NextRequest) {
         decisionCriteria: data.decisionCriteria ?? [],
         researchMethods: {
           create: [
+            // Only AI_EXPLORATION is active. Others deactivated — re-add when methods return.
             { method: "AI_EXPLORATION", status: "AVAILABLE", workspaceId },
-            { method: "INTERVIEWS", status: "AVAILABLE", workspaceId },
-            { method: "QUESTIONNAIRE", status: "AVAILABLE", workspaceId },
-            { method: "USER_TESTING", status: "AVAILABLE", workspaceId },
           ],
         },
       },

@@ -36,11 +36,6 @@ export function PersonaDetailHeader({
   onUpdate,
   onVersionRestore,
 }: PersonaDetailHeaderProps) {
-  const completedMethods = (persona.researchMethods ?? []).filter(
-    (m) => m.status === 'COMPLETED' || m.status === 'VALIDATED',
-  ).length;
-  const totalMethods = (persona.researchMethods ?? []).length;
-
   const generateImage = useGeneratePersonaImage(persona.id);
 
   return (
@@ -187,9 +182,6 @@ export function PersonaDetailHeader({
                 )}
               </div>
               <div className="flex items-center gap-3 mt-3">
-                <span className="text-xs text-gray-500">
-                  {completedMethods}/{totalMethods} methods completed
-                </span>
                 <VersionPill
                   resourceType="PERSONA"
                   resourceId={persona.id}

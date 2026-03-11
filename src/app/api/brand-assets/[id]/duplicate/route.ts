@@ -20,7 +20,6 @@ export async function POST(
 
     const source = await prisma.brandAsset.findFirst({
       where: { id, workspaceId },
-      include: { researchMethods: true },
     });
 
     if (!source) {
@@ -50,11 +49,10 @@ export async function POST(
         frameworkData: (source.frameworkData as Prisma.InputJsonValue) ?? undefined,
         workspaceId,
         researchMethods: {
-          create: source.researchMethods.map((m) => ({
-            method: m.method,
-            status: "AVAILABLE",
-            progress: 0,
-          })),
+          create: [
+            // Only AI_EXPLORATION is active. Others deactivated — re-add when methods return.
+            { method: "AI_EXPLORATION", status: "AVAILABLE", progress: 0 },
+          ],
         },
       },
       include: { researchMethods: true },

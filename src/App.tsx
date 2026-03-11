@@ -356,14 +356,6 @@ function AppContent() {
             setSelectedAssetId(assetId);
             handleSetActiveSection('ai-exploration-brand-asset');
           }}
-          onNavigateToInterviews={(assetId) => {
-            setSelectedAssetId(assetId);
-            handleSetActiveSection('interviews');
-          }}
-          onNavigateToWorkshop={(assetId) => {
-            setSelectedAssetId(assetId);
-            handleSetActiveSection('workshop-purchase');
-          }}
         />
       );
     }
@@ -433,14 +425,6 @@ function AppContent() {
             setSelectedAssetId(assetId);
             handleSetActiveSection('ai-exploration-brand-asset');
           }}
-          onNavigateToInterviews={(assetId) => {
-            setSelectedAssetId(assetId);
-            handleSetActiveSection('interviews');
-          }}
-          onNavigateToWorkshop={(assetId) => {
-            setSelectedAssetId(assetId);
-            handleSetActiveSection('workshop-purchase');
-          }}
         />
       );
     }
@@ -470,14 +454,6 @@ function AppContent() {
             onNavigateToAnalysis={(assetId) => {
               setSelectedAssetId(assetId);
               handleSetActiveSection('ai-exploration-brand-asset');
-            }}
-            onNavigateToInterviews={(assetId) => {
-              setSelectedAssetId(assetId);
-              handleSetActiveSection('interviews');
-            }}
-            onNavigateToWorkshop={(assetId) => {
-              setSelectedAssetId(assetId);
-              handleSetActiveSection('workshop-purchase');
             }}
           />
         );

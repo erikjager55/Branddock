@@ -1,27 +1,25 @@
 'use client';
 
-import { FlaskConical, Bot, MessageCircle, ClipboardList, Wrench, CheckCircle, Plus, Eye, Play } from 'lucide-react';
+import { FlaskConical, Bot, CheckCircle, Plus, Eye, Play } from 'lucide-react';
 import type { BrandAssetDetail } from '../../types/brand-asset-detail.types';
 
 interface AssetResearchSidebarCardProps {
   asset: BrandAssetDetail;
   onStartAnalysis?: () => void;
-  onStartInterviews?: () => void;
-  onStartWorkshop?: () => void;
   isLocked?: boolean;
 }
 
+/** Only AI Exploration is currently active. Other methods (INTERVIEWS, WORKSHOP, QUESTIONNAIRE) are deactivated. */
 const METHODS = [
   { method: 'AI_EXPLORATION' as const, label: 'AI Exploration', description: 'AI-assisted analysis and ideation for brand strategy and positioning', icon: Bot, isFree: true, startLabel: 'Start Exploration', continueLabel: 'Continue', completedLabel: 'View Report' },
-  { method: 'INTERVIEWS' as const, label: 'Interviews', description: 'One-on-one deep-dive interviews with key stakeholders and customers', icon: MessageCircle, isFree: false, startLabel: 'Start', continueLabel: 'Continue', completedLabel: 'View Results' },
-  { method: 'WORKSHOP' as const, label: 'Canvas Workshop', description: 'Collaborative workshop sessions using strategic frameworks', icon: Wrench, isFree: false, priceLabel: 'From $1,200', startLabel: 'Start', continueLabel: 'Continue', completedLabel: 'View Results' },
-  { method: 'QUESTIONNAIRE' as const, label: 'Questionnaire', description: 'Comprehensive surveys for quantitative validation insights', icon: ClipboardList, isFree: false, priceLabel: 'From $500', startLabel: 'Start', continueLabel: 'Continue', completedLabel: 'View Results' },
+  // Deactivated — re-add when methods return:
+  // { method: 'INTERVIEWS' as const, label: 'Interviews', ... },
+  // { method: 'WORKSHOP' as const, label: 'Canvas Workshop', ... },
+  // { method: 'QUESTIONNAIRE' as const, label: 'Questionnaire', ... },
 ];
 
-export function AssetResearchSidebarCard({ asset, onStartAnalysis, onStartInterviews, onStartWorkshop, isLocked = false }: AssetResearchSidebarCardProps) {
+export function AssetResearchSidebarCard({ asset, onStartAnalysis, isLocked = false }: AssetResearchSidebarCardProps) {
   const methods = asset.researchMethods ?? [];
-  const completedMethods = methods.filter(m => m.status === 'COMPLETED' || m.status === 'VALIDATED').length;
-  const totalMethods = METHODS.length;
 
   const getMethodStatus = (method: string) => {
     const m = methods.find(rm => rm.method === method);
@@ -30,28 +28,16 @@ export function AssetResearchSidebarCard({ asset, onStartAnalysis, onStartInterv
 
   const handleStart = (method: string) => {
     if (method === 'AI_EXPLORATION') onStartAnalysis?.();
-    else if (method === 'INTERVIEWS') onStartInterviews?.();
-    else if (method === 'WORKSHOP' || method === 'QUESTIONNAIRE') onStartWorkshop?.();
   };
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       {/* Header */}
-      <div className="flex items-center gap-2.5 mb-3">
+      <div className="flex items-center gap-2.5 mb-4">
         <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
           <FlaskConical className="h-4 w-4 text-blue-600" />
         </div>
-        <h3 className="text-sm font-semibold text-gray-900">
-          Validation Methods ({completedMethods}/{totalMethods})
-        </h3>
-      </div>
-
-      {/* Progress bar */}
-      <div className="w-full h-1.5 bg-gray-100 rounded-full mb-4">
-        <div
-          className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-          style={{ width: `${totalMethods > 0 ? (completedMethods / totalMethods) * 100 : 0}%` }}
-        />
+        <h3 className="text-sm font-semibold text-gray-900">Research</h3>
       </div>
 
       {/* Method cards */}
@@ -123,9 +109,6 @@ export function AssetResearchSidebarCard({ asset, onStartAnalysis, onStartInterv
                   <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{config.description}</p>
                   {!isCompleted && config.isFree && (
                     <span className="text-[11px] font-medium text-emerald-600 mt-1 block">FREE</span>
-                  )}
-                  {!isCompleted && config.priceLabel && (
-                    <span className="text-[11px] font-medium text-gray-500 mt-1 block">{config.priceLabel}</span>
                   )}
                 </div>
               </div>

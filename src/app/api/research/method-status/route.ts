@@ -12,7 +12,8 @@ export async function GET() {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const methodTypes = ["AI_EXPLORATION", "WORKSHOP", "INTERVIEWS", "QUESTIONNAIRE"] as const;
+    // Only AI_EXPLORATION is active. Others deactivated — re-add when methods return.
+    const methodTypes = ["AI_EXPLORATION"] as const;
 
     const methods = await Promise.all(
       methodTypes.map(async (type) => {

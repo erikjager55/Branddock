@@ -100,10 +100,8 @@ export function AssetDetailHeader({
             <p className="text-base text-gray-500 mt-0.5">{asset.description}</p>
           )}
 
-          {/* Metadata bar */}
+          {/* Metadata bar — validation % deactivated, methods count hidden */}
           <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
-            <span>{asset.completedMethods}/{asset.totalMethods} methods completed</span>
-            <span className="text-teal-600 font-medium">{Math.round(asset.validationPercentage)}% Validated</span>
             <VersionPill
               resourceType="BRAND_ASSET"
               resourceId={asset.id}
@@ -124,7 +122,7 @@ export function AssetDetailHeader({
                   </p>
                   <div className="pt-2 border-t border-gray-200 space-y-1.5 text-xs text-gray-500">
                     <p><span className="font-medium text-gray-900">Category:</span> {categoryLabel}</p>
-                    <p><span className="font-medium text-gray-900">Validation:</span> {Math.round(asset.validationPercentage)}% validated through research methods</p>
+                    <p><span className="font-medium text-gray-900">Research:</span> AI Exploration available for strategic analysis</p>
                     <p><span className="font-medium text-gray-900">Version Controlled:</span> Full history of changes with lock/unlock protection</p>
                   </div>
                 </div>

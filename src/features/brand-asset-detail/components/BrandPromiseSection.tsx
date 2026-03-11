@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Shield, Heart, Package, Sparkles, Users, Target, ShieldCheck, CheckCircle, Plus, X, Info,
+  Shield, Heart, Package, Sparkles, Users, Target, ShieldCheck, CheckCircle, Plus, X,
 } from 'lucide-react';
 import type { BrandPromiseFrameworkData } from '../types/framework.types';
+import { CompanionValuesPanel } from './shared/CompanionValuesPanel';
+import { ProofPointsGuidanceBanner } from './shared/ProofPointsGuidanceBanner';
 
 // ─── Constants ──────────────────────────────────────────────
 
@@ -36,6 +38,7 @@ interface BrandPromiseSectionProps {
   data: BrandPromiseFrameworkData | null;
   isEditing: boolean;
   onUpdate: (data: BrandPromiseFrameworkData) => void;
+  companionData?: { functional?: string; emotional?: string; selfExpressive?: string } | null;
 }
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -53,7 +56,7 @@ function normalize(raw: BrandPromiseFrameworkData | null): BrandPromiseFramework
 // ─── Component ──────────────────────────────────────────────
 
 /** Brand Promise canvas with 5 sections based on Keller/Aaker value model. */
-export function BrandPromiseSection({ data, isEditing, onUpdate }: BrandPromiseSectionProps) {
+export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }: BrandPromiseSectionProps) {
   const [draft, setDraft] = useState<BrandPromiseFrameworkData>(() => normalize(data));
 
   useEffect(() => {
@@ -166,12 +169,11 @@ export function BrandPromiseSection({ data, isEditing, onUpdate }: BrandPromiseS
           </div>
         </div>
 
-        <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg mb-4">
-          <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-blue-700">
-            These articulate what you <strong>deliver</strong> to customers. For your core brand identity, see Brand Essence.
-          </p>
-        </div>
+        <CompanionValuesPanel
+          companionName="Brand Essence"
+          values={companionData ?? {}}
+          perspective="commitment"
+        />
 
         <div className="space-y-4">
           <BenefitField
@@ -319,6 +321,7 @@ export function BrandPromiseSection({ data, isEditing, onUpdate }: BrandPromiseS
         {/* Proof Points */}
         <div className="mb-5">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Proof Points</p>
+          <ProofPointsGuidanceBanner assetType="promise" />
           <StringListEditor
             items={isEditing ? draft.proofPoints : d.proofPoints}
             isEditing={isEditing}

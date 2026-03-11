@@ -12,13 +12,11 @@
 'use client';
 
 import React from 'react';
-import { Lock, Unlock, Pencil, Layers, Calendar, FileText } from 'lucide-react';
+import { Lock, Unlock, Pencil, Calendar, FileText } from 'lucide-react';
 import { Modal } from '@/components/shared/Modal';
 import { Button } from '@/components/shared/Button';
-import { ProgressBar } from '@/components/shared/ProgressBar';
 import { AssetStatusBadge } from './AssetStatusBadge';
 import { CategoryBadge } from './CategoryBadge';
-import { ValidationBreakdown } from './ValidationBreakdown';
 import { cn } from '@/components/ui/utils';
 import type { BrandAssetWithMeta } from '@/types/brand-asset';
 
@@ -37,13 +35,6 @@ export interface BrandAssetDetailPanelProps {
 }
 
 // ─── Helpers ─────────────────────────────────────────────
-
-function progressColor(percentage: number): 'emerald' | 'amber' | 'red' | 'teal' {
-  if (percentage >= 75) return 'emerald';
-  if (percentage >= 40) return 'amber';
-  if (percentage > 0) return 'red';
-  return 'teal';
-}
 
 function formatDate(dateStr: string): string {
   try {
@@ -154,32 +145,11 @@ export function BrandAssetDetailPanel({
           </Section>
         )}
 
-        {/* Coverage */}
-        <Section title="Validation Coverage">
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
-              <ProgressBar
-                value={asset.coveragePercentage}
-                color={progressColor(asset.coveragePercentage)}
-                showLabel
-              />
-            </div>
-          </div>
-        </Section>
-
-        {/* Validation Methods */}
-        <Section title="Research Methods">
-          <ValidationBreakdown methods={asset.validationMethods} variant="full" />
-        </Section>
+        {/* Validation Coverage + Research Methods hidden — validation % deactivated.
+            Re-enable when INTERVIEWS/WORKSHOP/QUESTIONNAIRE return. */}
 
         {/* Stats grid */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-gray-50 rounded-lg p-3 text-center">
-            <div className="text-lg font-semibold text-gray-900 tabular-nums">
-              {asset.validatedCount}
-            </div>
-            <div className="text-xs text-gray-500 mt-0.5">Validated</div>
-          </div>
+        <div className="grid grid-cols-2 gap-4">
           <div className="bg-gray-50 rounded-lg p-3 text-center">
             <div className="text-lg font-semibold text-gray-900 tabular-nums">
               {asset.artifactCount}
@@ -188,9 +158,9 @@ export function BrandAssetDetailPanel({
           </div>
           <div className="bg-gray-50 rounded-lg p-3 text-center">
             <div className="text-lg font-semibold text-gray-900 tabular-nums">
-              {Math.round(asset.coveragePercentage)}%
+              {asset.validationMethods.ai ? 'Yes' : 'No'}
             </div>
-            <div className="text-xs text-gray-500 mt-0.5">Coverage</div>
+            <div className="text-xs text-gray-500 mt-0.5">AI Explored</div>
           </div>
         </div>
 

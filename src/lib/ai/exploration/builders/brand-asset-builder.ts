@@ -358,35 +358,13 @@ export const brandAssetItemConfig: ItemTypeConfig = {
       data: { status: 'COMPLETED', progress: 100, completedAt: new Date() },
     });
 
-    // Recalculate validation percentage
-    const methods = await prisma.brandAssetResearchMethod.findMany({
-      where: { brandAssetId: itemId },
-    });
-
-    const WEIGHTS: Record<string, number> = {
-      AI_EXPLORATION: 0.15,
-      WORKSHOP: 0.30,
-      INTERVIEWS: 0.25,
-      QUESTIONNAIRE: 0.30,
-    };
-
-    let totalWeight = 0;
-    let completedWeight = 0;
-    for (const m of methods) {
-      const w = WEIGHTS[m.method] ?? 0.25;
-      totalWeight += w;
-      if (m.status === 'COMPLETED') completedWeight += w;
-    }
-
-    const validationPercentage = totalWeight > 0
-      ? Math.round((completedWeight / totalWeight) * 100)
-      : 0;
-
+    // Validation percentage deactivated — INTERVIEWS/WORKSHOP/QUESTIONNAIRE are disabled.
+    // Set to 0 for consistency with computeValidationPercentage(). Re-enable when methods return.
     await prisma.brandAsset.update({
       where: { id: itemId },
-      data: { coveragePercentage: validationPercentage },
+      data: { coveragePercentage: 0 },
     });
 
-    return validationPercentage;
+    return 0;
   },
 };

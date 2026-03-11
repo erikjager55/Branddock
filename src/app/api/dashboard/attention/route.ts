@@ -24,17 +24,15 @@ export async function GET() {
 
     const items = assets.map((asset) => {
       const isDraft = asset.status === 'DRAFT';
-      const coveragePercentage = isDraft ? 0 : Math.floor(Math.random() * 45) + 5;
       return {
         id: asset.id,
         title: asset.name,
-        description: `Coverage is ${coveragePercentage}% (<50% threshold). ${isDraft ? `${asset.name} has no content yet` : `${asset.name} needs review`}`,
+        description: isDraft ? `${asset.name} has no content yet` : `${asset.name} needs review`,
         icon: isDraft ? 'FileText' : 'AlertTriangle',
         iconColor: isDraft ? 'text-gray-400' : 'text-orange-500',
         actionType: isDraft ? 'take_action' as const : 'fix' as const,
         actionLabel: isDraft ? 'Take Action' : 'Fix',
         actionHref: 'brand-asset-detail',
-        coveragePercentage,
       };
     });
 

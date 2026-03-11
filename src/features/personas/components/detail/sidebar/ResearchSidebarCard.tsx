@@ -1,6 +1,6 @@
 'use client';
 
-import { FlaskConical, Bot, MessageCircle, ClipboardList, Smartphone, CheckCircle, Clock, Plus, Eye, Play } from 'lucide-react';
+import { FlaskConical, Bot, MessageCircle, ClipboardList, Smartphone, CheckCircle, Plus, Eye, Play } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { PersonaWithMeta } from '../../../types/persona.types';
 import { PERSONA_RESEARCH_METHODS } from '../../../constants/persona-research-methods';
@@ -20,31 +20,15 @@ const ICON_MAP: Record<string, LucideIcon> = {
 
 export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }: ResearchSidebarCardProps) {
   const methods = persona.researchMethods ?? [];
-  const completedMethods = methods.filter(
-    (m) => m.status === 'COMPLETED' || m.status === 'VALIDATED',
-  ).length;
-  const totalMethods = methods.length;
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
       {/* Header */}
-      <div className="flex items-center gap-2.5 mb-3">
+      <div className="flex items-center gap-2.5 mb-4">
         <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
           <FlaskConical className="h-4 w-4 text-blue-600" />
         </div>
-        <div>
-          <h3 className="text-sm font-semibold text-gray-900">
-            Validation Methods ({completedMethods}/{totalMethods})
-          </h3>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="w-full h-1.5 bg-gray-100 rounded-full mb-4">
-        <div
-          className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-          style={{ width: `${totalMethods > 0 ? (completedMethods / totalMethods) * 100 : 0}%` }}
-        />
+        <h3 className="text-sm font-semibold text-gray-900">Research</h3>
       </div>
 
       {/* Method cards */}

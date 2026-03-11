@@ -25,6 +25,7 @@ import {
   getGrandTotalThreshold,
 } from '../constants/social-relevancy-constants';
 import type { PillarConfig } from '../constants/social-relevancy-constants';
+import { ProofPointsGuidanceBanner } from './shared/ProofPointsGuidanceBanner';
 
 // ─── Props ──────────────────────────────────────────────────
 
@@ -737,6 +738,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
             </div>
 
             {/* Proof Points */}
+            <ProofPointsGuidanceBanner assetType="social-relevancy" />
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Proof Points</label>
               <StringListEditor
@@ -809,6 +811,12 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
 
         {expandedCard === 6 && (
           <div className="mt-4 space-y-4 pl-12">
+            {/* SDG cross-reference */}
+            <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+              <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-700">For how your transformative goals map to SDGs, see Transformative Goals.</p>
+            </div>
+
             {/* SDG Alignment */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">

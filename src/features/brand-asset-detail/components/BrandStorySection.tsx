@@ -6,6 +6,7 @@ import {
   Plus, X, ChevronDown, Info, Check,
 } from 'lucide-react';
 import type { BrandStoryFrameworkData, AudienceAdaptations } from '../types/framework.types';
+import { ProofPointsGuidanceBanner } from './shared/ProofPointsGuidanceBanner';
 import {
   NARRATIVE_ARC_TYPES,
   EMOTIONAL_TERRITORY_SUGGESTIONS,
@@ -571,6 +572,7 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
         <>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-2">Proof Points <span className="text-gray-400 font-normal">(testimonials, data, awards)</span></label>
+            <ProofPointsGuidanceBanner assetType="story" />
             <StringListEditor
               items={d.proofPoints}
               onAdd={() => addListItem('proofPoints')}

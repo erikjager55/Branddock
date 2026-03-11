@@ -4,7 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
 import { prisma } from "./prisma";
 import { ac, owner, admin, member, viewer } from "./auth-permissions";
-import { CANONICAL_BRAND_ASSETS, RESEARCH_METHOD_TYPES } from "./constants/canonical-brand-assets";
+import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from "./constants/canonical-brand-assets";
 import type { SocialProviders } from "better-auth/social-providers";
 
 // ─── Build socialProviders config from env vars ────────────
@@ -75,7 +75,7 @@ async function provisionNewUser(userId: string, userName: string) {
     const workspace = org.workspaces[0];
     if (!workspace) return;
 
-    // Create 11 canonical brand assets with 4 research methods each
+    // Create 11 canonical brand assets with active research methods
     for (const asset of CANONICAL_BRAND_ASSETS) {
       await tx.brandAsset.create({
         data: {
@@ -87,7 +87,7 @@ async function provisionNewUser(userId: string, userName: string) {
           frameworkType: asset.frameworkType,
           workspaceId: workspace.id,
           researchMethods: {
-            create: RESEARCH_METHOD_TYPES.map((method) => ({
+            create: ACTIVE_RESEARCH_METHOD_TYPES.map((method) => ({
               method: method as never,
               status: "AVAILABLE" as never,
               progress: 0,

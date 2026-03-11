@@ -272,7 +272,7 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
   if (itemType === 'brand_asset' && itemSubType === 'brand-essence') {
     return [
       { key: 'brand_dna', title: 'Brand DNA', icon: 'Fingerprint', question: 'If your brand were a person in a room full of competitors, what would make people gravitate toward them? What is the single most defining characteristic?' },
-      { key: 'value_landscape', title: 'Value Landscape', icon: 'Heart', question: 'Describe the best experience a customer has with your brand. What tangible result do they get, what feeling does it create, and how does it let them express who they are?' },
+      { key: 'value_landscape', title: 'Value Landscape', icon: 'Heart', question: 'What tangible quality, emotional feeling, and self-expression does your brand embody as part of its identity? Focus on who the brand IS, not what it delivers.' },
       { key: 'audience_truth', title: 'Audience Truth', icon: 'Users', question: 'What is the underlying tension, frustration, or deep desire your audience carries — the thing they might not say out loud but your brand uniquely addresses?' },
       { key: 'evidence_heritage', title: 'Evidence & Heritage', icon: 'ShieldCheck', question: "What concrete facts, achievements, or moments from your brand's history prove that your essence is real — not aspirational, but lived?" },
       { key: 'differentiation', title: 'Differentiation', icon: 'Target', question: 'Complete this sentence: "Only [your brand] can _____ because _____." What is the single most compelling reason to choose your brand?' },
@@ -282,7 +282,7 @@ function getDefaultDimensions(itemType: string, itemSubType?: string | null): St
   if (itemType === 'brand_asset' && itemSubType === 'brand-promise') {
     return [
       { key: 'promise_core', title: 'Promise Core', icon: 'Shield', question: 'What is the one promise your brand makes to every customer, every time — the commitment they can always count on? Can you distill that into a single sentence that could serve as a tagline?' },
-      { key: 'value_layers', title: 'Value Layers', icon: 'Heart', question: 'Describe the best experience a customer has when you deliver on your promise. What tangible result do they get, what feeling does it create, and how does it let them express who they are?' },
+      { key: 'value_layers', title: 'Value Layers', icon: 'Heart', question: 'What tangible result, emotional payoff, and self-expression does your brand commit to deliver to customers? Focus on the promise, not the identity.' },
       { key: 'audience_need', title: 'Audience & Need', icon: 'Users', question: 'Who is your promise for, and what deeper need does it address — the thing your audience might not say out loud but your brand uniquely solves?' },
       { key: 'onlyness', title: 'Onlyness & Differentiation', icon: 'Target', question: 'Complete this sentence: "Only [your brand] can _____ because _____." What makes your promise impossible to replicate?' },
       { key: 'evidence', title: 'Evidence & Outcomes', icon: 'ShieldCheck', question: 'What concrete proof exists that you deliver on your promise? Name 3-5 specific facts, metrics, or customer outcomes that demonstrate it.' },
@@ -423,14 +423,14 @@ function getDefaultFieldSuggestionsConfig(
       { field: 'description', label: 'Description', type: 'text' as const, extractionHint: 'Summarize the brand promise' },
       { field: 'frameworkData.promiseStatement', label: 'Promise Statement', type: 'text' as const, extractionHint: 'Craft the core brand promise' },
       { field: 'frameworkData.promiseOneLiner', label: 'One-Liner', type: 'text' as const, extractionHint: 'Distill the promise into one sentence' },
-      { field: 'frameworkData.functionalValue', label: 'Functional Value', type: 'text' as const, extractionHint: 'Extract the tangible functional benefit' },
-      { field: 'frameworkData.emotionalValue', label: 'Emotional Value', type: 'text' as const, extractionHint: 'Extract the emotional benefit' },
-      { field: 'frameworkData.selfExpressiveValue', label: 'Self-Expressive Value', type: 'text' as const, extractionHint: 'Extract how the brand helps self-expression' },
+      { field: 'frameworkData.functionalValue', label: 'Functional Value', type: 'text' as const, extractionHint: 'Extract the tangible, measurable benefit the brand guarantees to deliver' },
+      { field: 'frameworkData.emotionalValue', label: 'Emotional Value', type: 'text' as const, extractionHint: 'Extract the emotional payoff customers can count on receiving' },
+      { field: 'frameworkData.selfExpressiveValue', label: 'Self-Expressive Value', type: 'text' as const, extractionHint: 'Extract how customers signal their identity by choosing this brand' },
       { field: 'frameworkData.targetAudience', label: 'Target Audience', type: 'text' as const, extractionHint: 'Identify the target audience' },
       { field: 'frameworkData.coreCustomerNeed', label: 'Core Need', type: 'text' as const, extractionHint: 'Extract the core customer need' },
       { field: 'frameworkData.differentiator', label: 'Differentiator', type: 'text' as const, extractionHint: 'Extract what makes the promise unique' },
       { field: 'frameworkData.onlynessStatement', label: 'Onlyness Statement', type: 'text' as const, extractionHint: 'Craft the "Only [brand] can..." statement' },
-      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'array' as const, extractionHint: 'Extract 3-5 concrete proof points as a JSON array of strings' },
+      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'array' as const, extractionHint: '3-5 verifiable proofs that the brand delivers on its promise (guarantees, certifications, customer statistics, SLAs) as a JSON array of strings' },
       { field: 'frameworkData.measurableOutcomes', label: 'Measurable Outcomes', type: 'array' as const, extractionHint: 'Extract 3-5 measurable outcomes that prove the promise is kept as a JSON array of strings' },
     ];
   }
@@ -462,7 +462,7 @@ function getDefaultFieldSuggestionsConfig(
       { field: 'frameworkData.milieu.pillarReflection', label: 'Environment Reflection', type: 'text' as const, extractionHint: 'Reflect on the environmental pillar as a whole' },
       { field: 'frameworkData.mens.pillarReflection', label: 'People Reflection', type: 'text' as const, extractionHint: 'Reflect on the people pillar as a whole' },
       { field: 'frameworkData.maatschappij.pillarReflection', label: 'Society Reflection', type: 'text' as const, extractionHint: 'Reflect on the society pillar as a whole' },
-      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'array' as const, extractionHint: 'Extract 3-7 concrete proof points as a JSON array of strings' },
+      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'array' as const, extractionHint: '3-7 evidence items of social/environmental impact (impact reports, certifications, B Corp status, partnership outcomes) as a JSON array of strings' },
       { field: 'frameworkData.certifications', label: 'Certifications', type: 'array' as const, extractionHint: 'Extract relevant certifications (B Corp, ISO 14001, Fair Trade, etc.) as a JSON array of strings' },
       { field: 'frameworkData.antiGreenwashingStatement', label: 'Anti-Greenwashing Statement', type: 'text' as const, extractionHint: 'Write an honest acknowledgment of where the brand falls short' },
       { field: 'frameworkData.sdgAlignment', label: 'SDG Alignment', type: 'array' as const, extractionHint: 'Identify 1-3 most relevant UN SDG numbers (1-17) as a JSON array of numbers' },
@@ -489,6 +489,7 @@ function getDefaultFieldSuggestionsConfig(
       { field: 'frameworkData.goals[1].measurableCommitment', label: 'Goal 2 Measurable Target', type: 'text' as const, extractionHint: 'Extract a concrete, measurable commitment for goal 2' },
       { field: 'frameworkData.goals[2].title', label: 'Goal 3 Title', type: 'text' as const, extractionHint: 'Extract the third transformative goal title' },
       { field: 'frameworkData.goals[2].description', label: 'Goal 3 Description', type: 'text' as const, extractionHint: 'Describe the third goal in 1-2 sentences' },
+      { field: 'frameworkData.goals[0].sdgAlignment', label: 'Goal 1 SDG Alignment', type: 'array' as const, extractionHint: 'Identify 1-3 most relevant UN SDG numbers (1-17) for this goal\'s impact domain as a JSON array of numbers' },
       { field: 'frameworkData.brandIntegration.positioningLink', label: 'Positioning Link', type: 'text' as const, extractionHint: 'Describe how these goals connect to the brand\'s market positioning and competitive differentiation' },
       { field: 'frameworkData.brandIntegration.communicationThemes', label: 'Communication Themes', type: 'array' as const, extractionHint: 'Extract 3-5 communication themes as a JSON array of strings' },
       { field: 'frameworkData.brandIntegration.campaignDirections', label: 'Campaign Directions', type: 'array' as const, extractionHint: 'Suggest 2-4 campaign directions as a JSON array of strings' },
@@ -538,7 +539,7 @@ function getDefaultFieldSuggestionsConfig(
       { field: 'frameworkData.keyNarrativeMessages', label: 'Key Messages', type: 'array' as const, extractionHint: 'Extract 3-5 recurring narrative messages as a JSON array of strings' },
       { field: 'frameworkData.narrativeArc', label: 'Narrative Arc', type: 'text' as const, extractionHint: 'Identify the narrative structure: Hero\'s Journey, Sparkline, Rags to Riches, Overcoming the Monster, or Quest' },
       // Card 6: Evidence
-      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'array' as const, extractionHint: 'Extract 3-5 concrete proof points as a JSON array of strings' },
+      { field: 'frameworkData.proofPoints', label: 'Proof Points', type: 'array' as const, extractionHint: '3-5 narrative milestones that support the brand story (awards, pivotal moments, customer success stories, growth metrics) as a JSON array of strings' },
       { field: 'frameworkData.valuesInAction', label: 'Values in Action', type: 'array' as const, extractionHint: 'Extract stories where values were proven through action as a JSON array of strings' },
       { field: 'frameworkData.brandMilestones', label: 'Brand Milestones', type: 'array' as const, extractionHint: 'Extract key moments in the brand journey as a JSON array of strings' },
       // Card 7: Expressions

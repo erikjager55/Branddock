@@ -69,10 +69,6 @@ const RIGHT_FIELDS = ["location", "education", "familyStatus"];
 export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
 
-  const completedMethods = persona.researchMethods.filter(
-    (m) => m.status === "COMPLETED" || m.status === "VALIDATED",
-  ).length;
-
   const initials = persona.name
     .split(" ")
     .map((n) => n[0])
@@ -98,9 +94,13 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
   const filledFields = profileFields.filter(Boolean).length;
   const profileCompleteness = Math.round((filledFields / profileFields.length) * 100);
 
-  // Validation score: based on research methods
-  const totalMethods = persona.researchMethods.length || 1;
-  const validationScore = Math.round((completedMethods / totalMethods) * 100);
+  // Only show active research methods (AI_EXPLORATION)
+  const activeResearchMethods = persona.researchMethods.filter(
+    (m) => m.method === 'AI_EXPLORATION',
+  );
+  const activeCompletedMethods = activeResearchMethods.filter(
+    (m) => m.status === "COMPLETED" || m.status === "VALIDATED",
+  ).length;
 
   const allFields: Record<string, string | null | undefined> = {
     age: persona.age,
@@ -153,7 +153,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
           )}
         </div>
 
-        {/* Completeness + Validation Badges */}
+        {/* Completeness badge — validated pill hidden (validation % deactivated) */}
         <div className="absolute right-0 top-0 flex items-center gap-1.5">
           <div className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
             profileCompleteness >= 80 ? 'border-emerald-200 text-emerald-600 bg-emerald-50' :
@@ -161,13 +161,6 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
             'border-red-200 text-red-500 bg-red-50'
           }`}>
             {profileCompleteness}% complete
-          </div>
-          <div className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-            validationScore >= 80 ? 'border-emerald-200 text-emerald-600 bg-emerald-50' :
-            validationScore >= 50 ? 'border-amber-200 text-amber-600 bg-amber-50' :
-            'border-gray-200 text-gray-500 bg-gray-50'
-          }`}>
-            {validationScore}% validated
           </div>
         </div>
       </div>
@@ -229,7 +222,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
         >
           <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600">
             <Sparkles className="h-3.5 w-3.5" />
-            <span>Validation Methods ({completedMethods}/{persona.researchMethods.length})</span>
+            <span>Research ({activeCompletedMethods}/{activeResearchMethods.length})</span>
           </div>
           <ChevronDown
             className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${
@@ -241,7 +234,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
         {/* Accordion content — conditional render for reliability */}
         {isAccordionOpen && (
           <div className="mt-2 space-y-2">
-            {persona.researchMethods
+            {activeResearchMethods
             .filter((m) => {
               // When locked, hide non-started methods
               if (!persona.isLocked) return true;

@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useAssetDetail, useUpdateFramework } from "../hooks/useBrandAssetDetail";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
+import { useBrandAssetsQuery } from "@/hooks/use-brand-assets";
+import { useWorkspace } from "@/hooks/use-workspace";
 import { AssetDetailHeader } from "./AssetDetailHeader";
 import { PurposeWheelSection } from "./PurposeWheelSection";
 import { BrandEssenceSection } from "./BrandEssenceSection";
@@ -29,11 +31,19 @@ import { useLockState } from "@/hooks/useLockState";
 import { LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
 import { useQueryClient } from "@tanstack/react-query";
 
+/** Parsed companion framework data for cross-referencing between Brand Essence ↔ Brand Promise. */
+interface CompanionData {
+  name: string;
+  essenceValues?: { functional?: string; emotional?: string; selfExpressive?: string };
+  promiseValues?: { functional?: string; emotional?: string; selfExpressive?: string };
+}
+
 /** Map framework type → canvas component. Replaces 11 booleans + conditional JSX. */
 function renderFrameworkCanvas(
   asset: BrandAssetDetail,
   canEdit: boolean,
   onUpdate: (fd: unknown) => void,
+  companionData?: CompanionData | null,
 ): React.ReactNode {
   const fd = asset.frameworkData;
 
@@ -43,9 +53,9 @@ function renderFrameworkCanvas(
     case 'GOLDEN_CIRCLE':
       return <GoldenCircleSection data={fd as GoldenCircleFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: GoldenCircleFrameworkData) => void} />;
     case 'BRAND_ESSENCE':
-      return <BrandEssenceSection data={fd as BrandEssenceFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: BrandEssenceFrameworkData) => void} />;
+      return <BrandEssenceSection data={fd as BrandEssenceFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: BrandEssenceFrameworkData) => void} companionData={companionData?.promiseValues ?? null} />;
     case 'BRAND_PROMISE':
-      return <BrandPromiseSection data={fd as BrandPromiseFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: BrandPromiseFrameworkData) => void} />;
+      return <BrandPromiseSection data={fd as BrandPromiseFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: BrandPromiseFrameworkData) => void} companionData={companionData?.essenceValues ?? null} />;
     case 'TRANSFORMATIVE_GOALS':
       return <TransformativeGoalsSection data={fd as TransformativeGoalsFrameworkData | null} isEditing={canEdit} onUpdate={onUpdate as (d: TransformativeGoalsFrameworkData) => void} />;
     case 'BRAND_ARCHETYPE':
@@ -70,21 +80,54 @@ interface BrandAssetDetailPageProps {
   assetId: string | null;
   onNavigateBack?: () => void;
   onNavigateToAnalysis?: (assetId: string) => void;
-  onNavigateToInterviews?: (assetId: string) => void;
-  onNavigateToWorkshop?: (assetId: string) => void;
 }
 
 export function BrandAssetDetailPage({
   assetId,
   onNavigateBack,
   onNavigateToAnalysis,
-  onNavigateToInterviews,
-  onNavigateToWorkshop,
 }: BrandAssetDetailPageProps) {
   const { data: asset, isLoading, error } = useAssetDetail(assetId);
   const isEditing = useBrandAssetDetailStore((s) => s.isEditing);
   const setIsEditing = useBrandAssetDetailStore((s) => s.setIsEditing);
   const qc = useQueryClient();
+  const { workspaceId } = useWorkspace();
+  const { data: allAssetsData } = useBrandAssetsQuery(workspaceId ?? undefined);
+
+  // Resolve companion data for Brand Essence ↔ Brand Promise cross-referencing
+  const companionData = useMemo(() => {
+    if (!asset || !allAssetsData?.assets) return null;
+    const isEssence = asset.frameworkType === 'BRAND_ESSENCE';
+    const isPromise = asset.frameworkType === 'BRAND_PROMISE';
+    if (!isEssence && !isPromise) return null;
+
+    const companionSlug = isEssence ? 'brand-promise' : 'brand-essence';
+    const companion = allAssetsData.assets.find(a => a.slug === companionSlug);
+    if (!companion) return null;
+
+    let parsedFd: Record<string, unknown> | null = null;
+    try {
+      parsedFd = companion.frameworkData
+        ? (typeof companion.frameworkData === 'string' ? JSON.parse(companion.frameworkData) : companion.frameworkData) as Record<string, unknown>
+        : null;
+    } catch { /* ignore parse errors */ }
+
+    const result: CompanionData = { name: companion.name };
+    if (isEssence && parsedFd) {
+      result.promiseValues = {
+        functional: (parsedFd.functionalValue as string) || undefined,
+        emotional: (parsedFd.emotionalValue as string) || undefined,
+        selfExpressive: (parsedFd.selfExpressiveValue as string) || undefined,
+      };
+    } else if (isPromise && parsedFd) {
+      result.essenceValues = {
+        functional: (parsedFd.functionalBenefit as string) || undefined,
+        emotional: (parsedFd.emotionalBenefit as string) || undefined,
+        selfExpressive: (parsedFd.selfExpressiveBenefit as string) || undefined,
+      };
+    }
+    return result;
+  }, [asset, allAssetsData]);
 
   const handleLockChange = useCallback(() => {
     qc.invalidateQueries({ queryKey: ['brand-asset-detail', assetId] });
@@ -193,7 +236,7 @@ export function BrandAssetDetailPage({
             {/* Framework canvas — dynamically selected by framework type */}
             {asset.frameworkType && (
               <LockOverlay isLocked={lockState.isLocked}>
-                {renderFrameworkCanvas(asset, isEditing && !lockState.isLocked, (fd) => updateFramework.mutate({ frameworkData: fd as Record<string, unknown> }))}
+                {renderFrameworkCanvas(asset, isEditing && !lockState.isLocked, (fd) => updateFramework.mutate({ frameworkData: fd as Record<string, unknown> }), companionData)}
               </LockOverlay>
             )}
           </div>
@@ -211,8 +254,6 @@ export function BrandAssetDetailPage({
               <AssetResearchSidebarCard
                 asset={asset}
                 onStartAnalysis={() => onNavigateToAnalysis?.(asset.id)}
-                onStartInterviews={() => onNavigateToInterviews?.(asset.id)}
-                onStartWorkshop={() => onNavigateToWorkshop?.(asset.id)}
                 isLocked={lockState.isLocked}
               />
 

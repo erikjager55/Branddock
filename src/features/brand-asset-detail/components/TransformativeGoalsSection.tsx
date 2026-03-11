@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Rocket, Users, Globe, TrendingUp, Target, ShieldCheck,
   CheckCircle, Plus, X, Sparkles, Leaf, HandHeart, BarChart3,
-  ArrowRight, Clock, ChevronDown, ChevronUp,
+  ArrowRight, Clock, ChevronDown, ChevronUp, Info,
 } from 'lucide-react';
 import type {
   TransformativeGoalsFrameworkData,
@@ -16,6 +16,7 @@ import type {
   BrandIntegration,
   GoalMilestone,
 } from '../types/framework.types';
+import { UN_SDGS } from '../constants/social-relevancy-constants';
 
 // ─── Constants ──────────────────────────────────────────────
 
@@ -92,17 +93,6 @@ const MTP_EXAMPLES = [
   { brand: 'Google', mtp: 'Organize the world\'s information' },
 ];
 
-const UN_SDGS = [
-  { number: 1, name: 'No Poverty' }, { number: 2, name: 'Zero Hunger' },
-  { number: 3, name: 'Good Health' }, { number: 4, name: 'Quality Education' },
-  { number: 5, name: 'Gender Equality' }, { number: 6, name: 'Clean Water' },
-  { number: 7, name: 'Affordable Energy' }, { number: 8, name: 'Decent Work' },
-  { number: 9, name: 'Innovation' }, { number: 10, name: 'Reduced Inequalities' },
-  { number: 11, name: 'Sustainable Cities' }, { number: 12, name: 'Responsible Consumption' },
-  { number: 13, name: 'Climate Action' }, { number: 14, name: 'Life Below Water' },
-  { number: 15, name: 'Life on Land' }, { number: 16, name: 'Peace & Justice' },
-  { number: 17, name: 'Partnerships' },
-];
 
 // ─── Props ──────────────────────────────────────────────────
 
@@ -794,22 +784,31 @@ function GoalCard({
               {/* SDG Alignment */}
               <div>
                 <label className="text-xs font-medium text-gray-500 mb-2 block">UN SDG Alignment</label>
+                {/* SDG cross-reference */}
+                <div className="flex items-start gap-2 p-2.5 bg-blue-50 border border-blue-100 rounded-lg mb-2">
+                  <Info className="h-3.5 w-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-blue-700">SDG alignment here links goals to global impact. For evidence-backed SDG commitments, see Social Relevancy.</p>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {UN_SDGS.map((sdg) => (
-                    <button
-                      key={sdg.number}
-                      type="button"
-                      onClick={() => onSdgToggle(sdg.number)}
-                      className={`px-2 py-1 rounded text-xs transition-colors ${
-                        goal.sdgAlignment.includes(sdg.number)
-                          ? 'bg-teal-500 text-white'
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                      }`}
-                      title={sdg.name}
-                    >
-                      {sdg.number}
-                    </button>
-                  ))}
+                  {UN_SDGS.map((sdg) => {
+                    const selected = goal.sdgAlignment.includes(sdg.number);
+                    return (
+                      <button
+                        key={sdg.number}
+                        type="button"
+                        onClick={() => onSdgToggle(sdg.number)}
+                        className={`px-2 py-1 rounded text-xs transition-colors ${
+                          selected
+                            ? 'text-white'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
+                        style={selected ? { backgroundColor: sdg.color } : undefined}
+                        title={sdg.name}
+                      >
+                        {sdg.number}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -881,7 +880,12 @@ function GoalCard({
                     {[...goal.sdgAlignment].sort((a, b) => a - b).map((sdg) => {
                       const sdgInfo = UN_SDGS.find((s) => s.number === sdg);
                       return (
-                        <span key={sdg} className="px-2 py-0.5 bg-teal-50 text-teal-700 rounded text-xs font-medium" title={sdgInfo?.name}>
+                        <span
+                          key={sdg}
+                          className="px-2 py-0.5 rounded text-xs font-medium text-white"
+                          style={{ backgroundColor: sdgInfo?.color ?? '#0d9488' }}
+                          title={sdgInfo?.name}
+                        >
                           SDG {sdg}
                         </span>
                       );

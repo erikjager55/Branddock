@@ -12,7 +12,7 @@
 import React, { useState } from 'react';
 import {
   ChevronDown, CheckCircle, Plus,
-  Sparkles, Users as UsersIcon, FileQuestion, ClipboardList,
+  Sparkles,
 } from 'lucide-react';
 import { CardLockIndicator } from '@/components/lock';
 import * as LucideIcons from 'lucide-react';
@@ -49,6 +49,7 @@ const CATEGORY_ICONS: Record<AssetCategory, string> = {
 };
 
 // ─── Validation method config ───────────────────────────────
+// Only AI Exploration is currently active. Others deactivated — re-add when methods return.
 
 const VALIDATION_METHODS = [
   {
@@ -58,25 +59,10 @@ const VALIDATION_METHODS = [
     description: 'AI-assisted analysis and ideation for brand strategy',
     priceLabel: 'FREE',
   },
-  {
-    key: 'workshop' as const,
-    label: 'Workshop',
-    icon: UsersIcon,
-    description: 'Collaborative workshop sessions with stakeholders',
-  },
-  {
-    key: 'interview' as const,
-    label: 'Interviews',
-    icon: FileQuestion,
-    description: 'One-on-one deep-dive interviews with key stakeholders and customers',
-  },
-  {
-    key: 'questionnaire' as const,
-    label: 'Survey',
-    icon: ClipboardList,
-    description: 'Comprehensive surveys distributed to broader audience for quantitative insights',
-    priceLabel: 'From $500',
-  },
+  // Deactivated:
+  // { key: 'workshop', label: 'Workshop', icon: UsersIcon, ... },
+  // { key: 'interview', label: 'Interviews', icon: FileQuestion, ... },
+  // { key: 'questionnaire', label: 'Survey', icon: ClipboardList, ... },
 ];
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -165,7 +151,7 @@ export function BrandAssetCard({
             </p>
           </div>
 
-          {/* Two pills: complete + validated */}
+          {/* Completeness pill — validated pill hidden (validation % deactivated) */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
               completenessPercent >= 80 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' :
@@ -173,13 +159,6 @@ export function BrandAssetCard({
               'border-red-200 bg-red-50 text-red-500'
             }`}>
               {completenessPercent}% complete
-            </span>
-            <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium ${
-              asset.coveragePercentage >= 80 ? 'border-emerald-200 bg-emerald-50 text-emerald-700' :
-              asset.coveragePercentage >= 50 ? 'border-amber-200 bg-amber-50 text-amber-600' :
-              'border-gray-200 bg-gray-50 text-gray-600'
-            }`}>
-              {Math.round(asset.coveragePercentage)}% validated
             </span>
           </div>
         </div>

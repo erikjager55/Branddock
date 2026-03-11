@@ -5,11 +5,13 @@ export const RESEARCH_STATS_CONFIG = {
   totalInsights: { icon: "Lightbulb", bg: "bg-purple-50", iconColor: "text-purple-600", label: "Total Insights" },
 } as const;
 
+// Only AI_EXPLORATION is active. Others deactivated — re-add when methods return.
 export const METHOD_STATUS_CONFIG = [
-  { type: "WORKSHOP", icon: "Building2", label: "Workshop", color: "text-blue-600" },
-  { type: "INTERVIEWS", icon: "MessageSquare", label: "1-on-1 Interviews", color: "text-green-600" },
-  { type: "QUESTIONNAIRE", icon: "ClipboardList", label: "Questionnaire", color: "text-orange-500" },
   { type: "AI_EXPLORATION", icon: "Bot", label: "AI Exploration", color: "text-purple-600" },
+  // Deactivated:
+  // { type: "WORKSHOP", icon: "Building2", label: "Workshop", color: "text-blue-600" },
+  // { type: "INTERVIEWS", icon: "MessageSquare", label: "1-on-1 Interviews", color: "text-green-600" },
+  // { type: "QUESTIONNAIRE", icon: "ClipboardList", label: "Questionnaire", color: "text-orange-500" },
 ] as const;
 
 export const METHOD_PRICING: Record<string, { price: number; unit: string; confidence: string; name: string; description: string }> = {

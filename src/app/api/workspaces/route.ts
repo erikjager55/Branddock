@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
-import { CANONICAL_BRAND_ASSETS, RESEARCH_METHOD_TYPES } from "@/lib/constants/canonical-brand-assets";
+import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from "@/lib/constants/canonical-brand-assets";
 
 // GET /api/workspaces — list workspaces for the active organization
 export async function GET() {
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Create 11 canonical brand assets with 4 research methods each
+      // Create 11 canonical brand assets with active research methods
       for (const asset of CANONICAL_BRAND_ASSETS) {
         await tx.brandAsset.create({
           data: {
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
             frameworkType: asset.frameworkType,
             workspaceId: ws.id,
             researchMethods: {
-              create: RESEARCH_METHOD_TYPES.map((method) => ({
+              create: ACTIVE_RESEARCH_METHOD_TYPES.map((method) => ({
                 method: method as never,
                 status: "AVAILABLE" as never,
                 progress: 0,

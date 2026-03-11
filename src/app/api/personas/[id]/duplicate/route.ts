@@ -64,10 +64,8 @@ export async function POST(
         createdById: session.user.id,
         researchMethods: {
           create: [
+            // Only AI_EXPLORATION is active. Others deactivated — re-add when methods return.
             { method: "AI_EXPLORATION", status: "AVAILABLE", workspaceId },
-            { method: "INTERVIEWS", status: "AVAILABLE", workspaceId },
-            { method: "QUESTIONNAIRE", status: "AVAILABLE", workspaceId },
-            { method: "USER_TESTING", status: "AVAILABLE", workspaceId },
           ],
         },
       },

@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Diamond, Heart, Package, Sparkles, Target, Users, ShieldCheck, CheckCircle, Plus, X, Info,
+  Diamond, Heart, Package, Sparkles, Target, Users, ShieldCheck, CheckCircle, Plus, X,
 } from 'lucide-react';
 import type { BrandEssenceFrameworkData, BrandEssenceValidationScores } from '../types/framework.types';
+import { CompanionValuesPanel } from './shared/CompanionValuesPanel';
+import { ProofPointsGuidanceBanner } from './shared/ProofPointsGuidanceBanner';
 
 // ─── Constants ──────────────────────────────────────────────
 
@@ -48,6 +50,7 @@ interface BrandEssenceSectionProps {
   data: BrandEssenceFrameworkData | null;
   isEditing: boolean;
   onUpdate: (data: BrandEssenceFrameworkData) => void;
+  companionData?: { functional?: string; emotional?: string; selfExpressive?: string } | null;
 }
 
 // ─── Helpers ────────────────────────────────────────────────
@@ -74,7 +77,7 @@ function averageScore(scores: BrandEssenceValidationScores): number {
 
 // ─── Component ──────────────────────────────────────────────
 
-export function BrandEssenceSection({ data, isEditing, onUpdate }: BrandEssenceSectionProps) {
+export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }: BrandEssenceSectionProps) {
   const [draft, setDraft] = useState<BrandEssenceFrameworkData>(() => normalize(data));
 
   useEffect(() => {
@@ -188,12 +191,11 @@ export function BrandEssenceSection({ data, isEditing, onUpdate }: BrandEssenceS
           </div>
         </div>
 
-        <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg mb-4">
-          <Info className="h-4 w-4 text-blue-500 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-blue-700">
-            These describe who your brand <strong>IS</strong> at its core. For customer-facing commitments, see Brand Promise.
-          </p>
-        </div>
+        <CompanionValuesPanel
+          companionName="Brand Promise"
+          values={companionData ?? {}}
+          perspective="identity"
+        />
 
         <div className="space-y-4">
           {/* Functional Benefit */}
@@ -316,6 +318,7 @@ export function BrandEssenceSection({ data, isEditing, onUpdate }: BrandEssenceS
         {/* Proof Points */}
         <div className="mb-5">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Proof Points</p>
+          <ProofPointsGuidanceBanner assetType="essence" />
           <StringListEditor
             items={isEditing ? draft.proofPoints : d.proofPoints}
             isEditing={isEditing}

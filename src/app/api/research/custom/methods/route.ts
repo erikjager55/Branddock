@@ -12,14 +12,18 @@ export async function GET() {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const methods = Object.entries(METHOD_PRICING).map(([type, config]) => ({
-      type,
-      name: config.name,
-      description: config.description,
-      price: config.price,
-      unit: config.unit,
-      confidence: config.confidence,
-    }));
+    // Only return active methods — INTERVIEWS/WORKSHOP/QUESTIONNAIRE deactivated.
+    // Re-enable when methods return.
+    const methods = Object.entries(METHOD_PRICING)
+      .filter(([type]) => type === 'AI_EXPLORATION')
+      .map(([type, config]) => ({
+        type,
+        name: config.name,
+        description: config.description,
+        price: config.price,
+        unit: config.unit,
+        confidence: config.confidence,
+      }));
 
     return NextResponse.json({ methods });
   } catch (error) {
