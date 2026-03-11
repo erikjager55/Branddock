@@ -21,10 +21,13 @@ export function ProcessingProgress({ jobId, onComplete }: ProcessingProgressProp
 
   useEffect(() => {
     if (data?.status === "COMPLETE") {
-      const timer = setTimeout(() => onComplete(), 1000);
+      const timer = setTimeout(() => {
+        stopAnalysis();
+        onComplete();
+      }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [data?.status, onComplete]);
+  }, [data?.status, onComplete, stopAnalysis]);
 
   const isError = data?.status === "ERROR" || !!fetchError;
 

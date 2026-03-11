@@ -32,11 +32,13 @@ export async function parsePdf(
   buffer: Buffer,
   fileName: string
 ): Promise<ParsedPdfData> {
-  const { text: fullText, totalPages } = await extractText(buffer, { mergePages: true });
+  // unpdf requires Uint8Array, not Buffer (strict type check)
+  const uint8 = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+  const { text: fullText, totalPages } = await extractText(uint8, { mergePages: true });
 
   let metadata: ParsedPdfData['metadata'] = { title: null, author: null, creator: null };
   try {
-    const meta = await getMeta(buffer);
+    const meta = await getMeta(uint8);
     const info = meta?.info as Record<string, unknown> | undefined;
     metadata = {
       title: (info?.Title as string) || null,

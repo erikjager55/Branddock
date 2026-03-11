@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
@@ -21,10 +21,22 @@ type InputTab = "url" | "pdf";
 
 export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: BrandstyleAnalyzerPageProps) {
   const { data, isLoading, isError } = useStyleguide();
-  const { analysisJobId, isAnalyzing } = useBrandstyleStore();
+  const { analysisJobId, isAnalyzing, stopAnalysis } = useBrandstyleStore();
   const [activeInputTab, setActiveInputTab] = useState<InputTab>("url");
 
   const hasExistingStyleguide = !isLoading && data?.styleguide?.status === "COMPLETE";
+
+  // Reset stale analysis state on mount — prevents showing ProcessingProgress
+  // with a jobId from a previous (completed/deleted) analysis session
+  useEffect(() => {
+    if (isAnalyzing && analysisJobId && !isLoading) {
+      const currentStatus = data?.styleguide?.analysisStatus;
+      // If there's no styleguide or it's already COMPLETE/ERROR, the store is stale
+      if (!data?.styleguide || currentStatus === "COMPLETE" || currentStatus === "ERROR") {
+        stopAnalysis();
+      }
+    }
+  }, [isAnalyzing, analysisJobId, isLoading, data?.styleguide, stopAnalysis]);
 
   if (isLoading) {
     return (
