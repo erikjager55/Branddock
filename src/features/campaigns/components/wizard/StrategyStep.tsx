@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Sparkles,
   Loader2,
@@ -15,8 +15,15 @@ import {
 } from "lucide-react";
 import { Button, Badge, ProgressBar } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
+import { useWizardKnowledge } from "../../hooks";
 import { generateBlueprintSSE } from "../../api/campaigns.api";
 import type { PipelineStep, PipelineStepStatus } from "../../types/campaign-wizard.types";
+import type { StrategicChoice } from "@/lib/campaigns/strategy-blueprint.types";
+
+/** Extract display text from a strategic choice (string or object) */
+function getChoiceText(choice: string | StrategicChoice): string {
+  return typeof choice === 'string' ? choice : choice.choice;
+}
 
 // ─── Pipeline Step Config ────────────────────────────────
 
@@ -106,6 +113,29 @@ export function StrategyStep() {
   const blueprintResult = useCampaignWizardStore((s) => s.blueprintResult);
   const pipelineSteps = useCampaignWizardStore((s) => s.pipelineSteps);
   const pipelineError = useCampaignWizardStore((s) => s.pipelineError);
+  const selectedKnowledgeIds = useCampaignWizardStore((s) => s.selectedKnowledgeIds);
+
+  // Briefing fields
+  const briefingOccasion = useCampaignWizardStore((s) => s.briefingOccasion);
+  const briefingAudienceObjective = useCampaignWizardStore((s) => s.briefingAudienceObjective);
+  const briefingCoreMessage = useCampaignWizardStore((s) => s.briefingCoreMessage);
+  const briefingTonePreference = useCampaignWizardStore((s) => s.briefingTonePreference);
+  const briefingConstraints = useCampaignWizardStore((s) => s.briefingConstraints);
+
+  const { data: knowledgeData } = useWizardKnowledge();
+
+  // Extract IDs per source type from the selected knowledge items
+  const selectedContextIds = useMemo(() => {
+    if (!knowledgeData?.groups) return { personaIds: [], productIds: [], competitorIds: [], trendIds: [] };
+    const allItems = knowledgeData.groups.flatMap((g) => g.items);
+    const selectedItems = allItems.filter((item) => selectedKnowledgeIds.includes(item.sourceId));
+    return {
+      personaIds: selectedItems.filter((i) => i.sourceType === 'persona').map((i) => i.sourceId),
+      productIds: selectedItems.filter((i) => i.sourceType === 'product').map((i) => i.sourceId),
+      competitorIds: selectedItems.filter((i) => i.sourceType === 'competitor').map((i) => i.sourceId),
+      trendIds: selectedItems.filter((i) => i.sourceType === 'detected_trend').map((i) => i.sourceId),
+    };
+  }, [knowledgeData, selectedKnowledgeIds]);
 
   const abortRef = useRef<{ abort: () => void } | null>(null);
   const generationIdRef = useRef(0);
@@ -144,11 +174,21 @@ export function StrategyStep() {
       "wizard",
       {
         strategicIntent,
-        personaIds: [], // Wizard uses all available personas
+        personaIds: selectedContextIds.personaIds,
+        productIds: selectedContextIds.productIds,
+        competitorIds: selectedContextIds.competitorIds,
+        trendIds: selectedContextIds.trendIds,
         wizardContext: {
           campaignName: campaignName || "Untitled Campaign",
           campaignDescription: campaignDescription,
           campaignGoalType,
+          briefing: {
+            occasion: briefingOccasion || undefined,
+            audienceObjective: briefingAudienceObjective || undefined,
+            coreMessage: briefingCoreMessage || undefined,
+            tonePreference: briefingTonePreference || undefined,
+            constraints: briefingConstraints || undefined,
+          },
         },
       },
       (event) => {
@@ -205,7 +245,7 @@ export function StrategyStep() {
     );
 
     abortRef.current = { abort };
-  }, [campaignName, campaignDescription, campaignGoalType, strategicIntent]);
+  }, [campaignName, campaignDescription, campaignGoalType, strategicIntent, selectedContextIds, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints]);
 
   const handleRegenerate = useCallback(() => {
     abortRef.current?.abort();
@@ -329,39 +369,10 @@ export function StrategyStep() {
   // ── Post-generation: show blueprint results ──
   if (!blueprintResult) return null;
 
-  const { strategy, architecture, channelPlan, assetPlan, confidence, personaValidation } = blueprintResult;
+  const { strategy, architecture, channelPlan, assetPlan } = blueprintResult;
 
   return (
     <div className="space-y-5 max-w-2xl mx-auto">
-      {/* Confidence bar */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-gray-700">
-            Blueprint Confidence
-          </span>
-          <span className={`text-lg font-bold ${
-            confidence >= 80 ? "text-emerald-600" : confidence >= 60 ? "text-amber-500" : "text-red-500"
-          }`}>
-            {Math.round(confidence)}%
-          </span>
-        </div>
-        <ProgressBar
-          value={confidence}
-          color={confidence >= 80 ? "emerald" : confidence >= 60 ? "amber" : "red"}
-          size="md"
-        />
-        {personaValidation.length > 0 && (
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-xs text-muted-foreground">
-              Validated by {personaValidation.length} persona{personaValidation.length !== 1 ? "s" : ""}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              (avg score: {(personaValidation.reduce((sum, pv) => sum + pv.overallScore, 0) / Math.max(personaValidation.length, 1)).toFixed(1)}/10)
-            </span>
-          </div>
-        )}
-      </div>
-
       {/* Action buttons */}
       <div className="flex items-center gap-2">
         <Button
@@ -417,7 +428,7 @@ export function StrategyStep() {
                   {strategy.strategicChoices.slice(0, 3).map((choice, i) => (
                     <li key={i} className="text-xs text-gray-600 flex items-start gap-1.5">
                       <span className="text-emerald-500 mt-0.5">&#8226;</span>
-                      {choice}
+                      {getChoiceText(choice)}
                     </li>
                   ))}
                 </ul>
@@ -441,9 +452,9 @@ export function StrategyStep() {
               </span>
             </div>
             <div className="flex gap-2 flex-wrap">
-              {architecture.journeyPhases.map((phase) => (
+              {architecture.journeyPhases.map((phase, i) => (
                 <div
-                  key={phase.id}
+                  key={phase.id ?? `phase-${i}`}
                   className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs"
                 >
                   <p className="font-medium text-gray-900">{phase.name}</p>

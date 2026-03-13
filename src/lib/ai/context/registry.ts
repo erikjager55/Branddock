@@ -53,25 +53,8 @@ export const CONTEXT_REGISTRY: ContextSourceConfig[] = [
     ],
     includeRelations: ['researchMethods'],
   },
-  {
-    key: 'brandstyle',
-    label: 'Brand Style',
-    icon: 'Palette',
-    category: 'brand',
-    prismaModel: 'brandStyleguide',
-    workspaceFilter: 'workspaceId',
-    titleField: 'id', // No "name" field, use sourceType as title fallback
-    descriptionField: undefined,
-    statusField: 'status',
-    excludeFields: [
-      'id', 'createdAt', 'updatedAt', 'workspaceId',
-      'createdById', 'analysisJobId', 'analysisStatus',
-      'sourceUrl', 'sourceFileName',
-      'logoSavedForAi', 'colorsSavedForAi', 'typographySavedForAi',
-      'toneSavedForAi', 'imagerySavedForAi',
-    ],
-    includeRelations: ['colors'],
-  },
+  // Brandstyle is always-on context (loaded via buildStyleguideContext),
+  // not shown in the knowledge selector.
   {
     key: 'persona',
     label: 'Personas',

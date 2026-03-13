@@ -5,6 +5,7 @@ import type {
   CampaignBlueprint,
   PipelineStep,
   StrategicIntent,
+  CampaignBriefing,
 } from "../types/campaign-wizard.types";
 
 // ─── Types ────────────────────────────────────────────────
@@ -24,6 +25,13 @@ interface CampaignWizardState {
   activeDeliverableTab: string;
   saveAsTemplate: boolean;
   templateName: string;
+
+  // ─── Campaign Briefing ──────────────────────────────────
+  briefingOccasion: string;
+  briefingAudienceObjective: string;
+  briefingCoreMessage: string;
+  briefingTonePreference: string;
+  briefingConstraints: string;
 
   // ─── Blueprint Pipeline ──────────────────────────────────
   strategicIntent: StrategicIntent;
@@ -54,6 +62,13 @@ interface CampaignWizardState {
   canProceed: () => boolean;
   resetWizard: () => void;
 
+  // ─── Campaign Briefing Actions ──────────────────────────
+  setBriefingOccasion: (v: string) => void;
+  setBriefingAudienceObjective: (v: string) => void;
+  setBriefingCoreMessage: (v: string) => void;
+  setBriefingTonePreference: (v: string) => void;
+  setBriefingConstraints: (v: string) => void;
+
   // ─── Blueprint Pipeline Actions ──────────────────────────
   setStrategicIntent: (intent: StrategicIntent) => void;
   setBlueprintResult: (result: CampaignBlueprint | null) => void;
@@ -76,9 +91,16 @@ const INITIAL_STATE = {
   strategyResult: null as StrategyResultResponse | null,
   isStrategyEditing: false,
   selectedDeliverables: [] as { type: string; quantity: number }[],
-  activeDeliverableTab: "Written",
+  activeDeliverableTab: "Long-Form Content",
   saveAsTemplate: false,
   templateName: "",
+
+  // ─── Campaign Briefing ──────────────────────────────────
+  briefingOccasion: "",
+  briefingAudienceObjective: "",
+  briefingCoreMessage: "",
+  briefingTonePreference: "",
+  briefingConstraints: "",
 
   // ─── Blueprint Pipeline ──────────────────────────────────
   strategicIntent: "hybrid" as StrategicIntent,
@@ -168,6 +190,17 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     },
 
     resetWizard: () => set(INITIAL_STATE),
+
+    // ─── Campaign Briefing Actions ──────────────────────────
+    setBriefingOccasion: (briefingOccasion) => set({ briefingOccasion }),
+    setBriefingAudienceObjective: (briefingAudienceObjective) =>
+      set({ briefingAudienceObjective }),
+    setBriefingCoreMessage: (briefingCoreMessage) =>
+      set({ briefingCoreMessage }),
+    setBriefingTonePreference: (briefingTonePreference) =>
+      set({ briefingTonePreference }),
+    setBriefingConstraints: (briefingConstraints) =>
+      set({ briefingConstraints }),
 
     // ─── Blueprint Pipeline Actions ──────────────────────────
     setStrategicIntent: (strategicIntent) => set({ strategicIntent }),

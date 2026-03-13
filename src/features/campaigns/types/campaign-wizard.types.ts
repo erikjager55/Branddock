@@ -1,6 +1,9 @@
+import type { CampaignBlueprint as CampaignBlueprintType } from '@/lib/campaigns/strategy-blueprint.types';
+
 // Re-export blueprint types for convenience
 export type {
   CampaignBlueprint,
+  CampaignBriefing,
   StrategicIntent,
   PipelineStep,
   PipelineStepStatus,
@@ -66,7 +69,7 @@ export interface LaunchCampaignBody {
   startDate?: string;
   endDate?: string;
   knowledgeIds: string[];
-  strategy: StrategyResultResponse;
+  strategy: StrategyResultResponse | CampaignBlueprintType;
   deliverables: { type: string; quantity: number }[];
   saveAsTemplate: boolean;
   templateName?: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Megaphone, Target, PenTool, Users, TrendingUp, Zap, Scale } from "lucide-react";
+import { Megaphone, Target, PenTool, Users, TrendingUp, Zap, Scale, MessageCircle } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Input } from "@/components/shared";
 import { SelectionCard } from "@/components/ui/layout";
@@ -91,6 +91,18 @@ export function SetupStep() {
   const endDate = useCampaignWizardStore((s) => s.endDate);
   const setEndDate = useCampaignWizardStore((s) => s.setEndDate);
 
+  // Briefing fields
+  const briefingOccasion = useCampaignWizardStore((s) => s.briefingOccasion);
+  const setBriefingOccasion = useCampaignWizardStore((s) => s.setBriefingOccasion);
+  const briefingAudienceObjective = useCampaignWizardStore((s) => s.briefingAudienceObjective);
+  const setBriefingAudienceObjective = useCampaignWizardStore((s) => s.setBriefingAudienceObjective);
+  const briefingCoreMessage = useCampaignWizardStore((s) => s.briefingCoreMessage);
+  const setBriefingCoreMessage = useCampaignWizardStore((s) => s.setBriefingCoreMessage);
+  const briefingTonePreference = useCampaignWizardStore((s) => s.briefingTonePreference);
+  const setBriefingTonePreference = useCampaignWizardStore((s) => s.setBriefingTonePreference);
+  const briefingConstraints = useCampaignWizardStore((s) => s.briefingConstraints);
+  const setBriefingConstraints = useCampaignWizardStore((s) => s.setBriefingConstraints);
+
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       {/* Campaign name */}
@@ -114,6 +126,82 @@ export function SetupStep() {
           rows={3}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
         />
+      </div>
+
+      {/* Campaign Briefing */}
+      <div className="border border-gray-200 rounded-lg p-5 space-y-4 bg-gray-50/50">
+        <div className="flex items-center gap-2 mb-1">
+          <MessageCircle className="h-4 w-4 text-primary" />
+          <label className="text-sm font-medium text-gray-700">
+            Campaign Briefing
+          </label>
+          <span className="text-xs text-muted-foreground">(optional — improves strategy quality)</span>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Why now? What&apos;s the occasion?
+          </label>
+          <textarea
+            value={briefingOccasion}
+            onChange={(e) => setBriefingOccasion(e.target.value)}
+            placeholder="e.g., Product launch in Q2, seasonal peak, competitor move, anniversary..."
+            rows={2}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none bg-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            What should your audience Think, Feel, and Do?
+          </label>
+          <textarea
+            value={briefingAudienceObjective}
+            onChange={(e) => setBriefingAudienceObjective(e.target.value)}
+            placeholder="e.g., Think: 'This brand understands my challenges.' Feel: trust and excitement. Do: sign up for a demo."
+            rows={2}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none bg-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Core message — the single most important takeaway
+          </label>
+          <textarea
+            value={briefingCoreMessage}
+            onChange={(e) => setBriefingCoreMessage(e.target.value)}
+            placeholder="e.g., 'We make brand strategy accessible to every business, not just enterprises.'"
+            rows={2}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none bg-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Desired tone or creative direction
+          </label>
+          <textarea
+            value={briefingTonePreference}
+            onChange={(e) => setBriefingTonePreference(e.target.value)}
+            placeholder="e.g., Professional but approachable, data-driven, bold and disruptive, warm and empathetic..."
+            rows={2}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none bg-white"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">
+            Constraints or mandatories
+          </label>
+          <textarea
+            value={briefingConstraints}
+            onChange={(e) => setBriefingConstraints(e.target.value)}
+            placeholder="e.g., Must mention sustainability, avoid competitor comparisons, budget max €5000, no paid social..."
+            rows={2}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none bg-white"
+          />
+        </div>
       </div>
 
       {/* Goal type selector */}

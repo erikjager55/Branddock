@@ -45,6 +45,9 @@ export async function POST(request: NextRequest) {
             'wizard', // placeholder ID — not used in wizard mode
             {
               personaIds: body.personaIds,
+              productIds: body.productIds,
+              competitorIds: body.competitorIds,
+              trendIds: body.trendIds,
               strategicIntent: body.strategicIntent,
               wizardContext: body.wizardContext,
             },

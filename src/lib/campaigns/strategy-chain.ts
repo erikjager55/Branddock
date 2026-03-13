@@ -31,6 +31,7 @@ import {
 } from './strategy-blueprint.types';
 import type {
   CampaignBlueprint,
+  CampaignBriefing,
   StrategyLayer,
   ArchitectureLayer,
   ChannelPlanLayer,
@@ -38,6 +39,8 @@ import type {
   PersonaValidationResult,
   PipelineStep,
   StrategicIntent,
+  TouchpointPersonaRelevance,
+  PersonaRelevance,
 } from './strategy-blueprint.types';
 
 // ─── Constants ──────────────────────────────────────────────
@@ -45,7 +48,7 @@ import type {
 const CLAUDE_SONNET = 'claude-sonnet-4-5-20250929';
 const CLAUDE_OPUS = 'claude-opus-4-6';
 const GEMINI_PRO = 'gemini-3.1-pro-preview';
-const GEMINI_FLASH = 'gemini-3.1-flash';
+const GEMINI_FLASH = 'gemini-2.5-flash';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -55,10 +58,14 @@ interface WizardContext {
   campaignName: string;
   campaignDescription?: string;
   campaignGoalType?: string;
+  briefing?: CampaignBriefing;
 }
 
 interface GenerateOptions {
   personaIds?: string[];
+  productIds?: string[];
+  competitorIds?: string[];
+  trendIds?: string[];
   strategicIntent?: StrategicIntent;
   /** When provided, the pipeline runs without a DB campaign lookup */
   wizardContext?: WizardContext;
@@ -71,9 +78,13 @@ interface SynthesizedResult {
 
 // ─── Context Builders ───────────────────────────────────────
 
-async function buildProductContext(workspaceId: string): Promise<string> {
+async function buildProductContext(workspaceId: string, productIds?: string[]): Promise<string> {
+  const where: Record<string, unknown> = { workspaceId };
+  if (productIds && productIds.length > 0) {
+    where.id = { in: productIds };
+  }
   const products = await prisma.product.findMany({
-    where: { workspaceId },
+    where,
     select: { name: true, description: true, category: true, pricingDetails: true, features: true },
     take: 10,
   });
@@ -84,9 +95,13 @@ async function buildProductContext(workspaceId: string): Promise<string> {
   }).join('\n');
 }
 
-async function buildCompetitorContext(workspaceId: string): Promise<string> {
+async function buildCompetitorContext(workspaceId: string, competitorIds?: string[]): Promise<string> {
+  const where: Record<string, unknown> = { workspaceId };
+  if (competitorIds && competitorIds.length > 0) {
+    where.id = { in: competitorIds };
+  }
   const competitors = await prisma.competitor.findMany({
-    where: { workspaceId },
+    where,
     select: { name: true, description: true, tier: true, valueProposition: true, differentiators: true },
     take: 10,
   });
@@ -97,9 +112,16 @@ async function buildCompetitorContext(workspaceId: string): Promise<string> {
   }).join('\n');
 }
 
-async function buildTrendContext(workspaceId: string): Promise<string> {
+async function buildTrendContext(workspaceId: string, trendIds?: string[]): Promise<string> {
+  const where: Record<string, unknown> = { workspaceId };
+  if (trendIds && trendIds.length > 0) {
+    where.id = { in: trendIds };
+  } else {
+    // When no specific trends selected, load nothing (user must explicitly select trends)
+    return '';
+  }
   const trends = await prisma.detectedTrend.findMany({
-    where: { workspaceId, isActivated: true },
+    where,
     select: { title: true, description: true, category: true, relevanceScore: true },
     take: 10,
   });
@@ -200,6 +222,66 @@ function validateOrWarn<T>(schema: { safeParse: (data: unknown) => { success: bo
   return result.data as T;
 }
 
+// ─── Architecture Normalization ─────────────────────────────
+
+/**
+ * Normalize personaRelevance from various AI output formats to the expected array format.
+ * Handles: already-correct arrays, flat objects {personaId: "level"}, and missing values.
+ */
+function normalizePersonaRelevance(raw: unknown): TouchpointPersonaRelevance[] {
+  // Case 1: Already correct array format [{personaId, relevance, messagingAngle}]
+  if (Array.isArray(raw)) {
+    return raw.map((item: Record<string, unknown>) => ({
+      personaId: String(item.personaId ?? ''),
+      relevance: (['high', 'medium', 'low'].includes(String(item.relevance)) ? item.relevance : 'medium') as PersonaRelevance,
+      messagingAngle: String(item.messagingAngle ?? ''),
+    }));
+  }
+  // Case 2: Flat object format {personaId: "level"} — convert to array
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    return Object.entries(raw as Record<string, string>).map(([personaId, relevance]) => ({
+      personaId,
+      relevance: (['high', 'medium', 'low'].includes(relevance) ? relevance : 'medium') as PersonaRelevance,
+      messagingAngle: '',
+    }));
+  }
+  return [];
+}
+
+/**
+ * Normalize AI-generated architecture data to match the expected ArchitectureLayer schema.
+ * Handles common AI deviations: `phase` instead of `name`, missing `id`/`description`/`orderIndex`,
+ * missing `personaPhaseData`, flat object `personaRelevance` on touchpoints.
+ */
+function normalizeArchitectureLayer(raw: ArchitectureLayer): ArchitectureLayer {
+  return {
+    campaignType: raw.campaignType ?? 'hybrid',
+    journeyPhases: (raw.journeyPhases ?? []).map((rawPhase, index) => {
+      // Cast to access potential non-schema fields (e.g. `phase` instead of `name`)
+      const p = rawPhase as unknown as Record<string, unknown>;
+      return {
+        // Map `phase` → `name`, fallback to `id`, then to generated slug
+        name: String(p.name || p.phase || p.id || `phase-${index}`),
+        id: String(p.id || p.name || p.phase || `phase-${index}`),
+        description: String(p.description || p.goal || ''),
+        orderIndex: typeof p.orderIndex === 'number' ? p.orderIndex : index,
+        goal: String(p.goal || ''),
+        kpis: Array.isArray(p.kpis) ? p.kpis : [],
+        // personaPhaseData is often missing — default to empty array
+        personaPhaseData: Array.isArray(p.personaPhaseData) ? p.personaPhaseData : [],
+        // Normalize touchpoints — especially personaRelevance format
+        touchpoints: (Array.isArray(p.touchpoints) ? p.touchpoints : []).map((tp: Record<string, unknown>) => ({
+          channel: String(tp.channel ?? ''),
+          contentType: String(tp.contentType ?? ''),
+          message: String(tp.message ?? ''),
+          role: tp.role === 'primary' ? 'primary' as const : 'supporting' as const,
+          personaRelevance: normalizePersonaRelevance(tp.personaRelevance),
+        })),
+      };
+    }),
+  };
+}
+
 // ─── Main Pipeline ──────────────────────────────────────────
 
 /**
@@ -227,7 +309,9 @@ export async function generateCampaignBlueprint(
     campaignName = options.wizardContext!.campaignName;
     campaignDescription = options.wizardContext!.campaignDescription ?? '';
     campaignGoalType = options.wizardContext!.campaignGoalType ?? 'BRAND';
-    knowledgeAssetCount = 0;
+    // Count all explicitly selected knowledge items (personas + products + competitors + trends)
+    // Brand assets are counted separately via brandAssetCount in the confidence calculator
+    knowledgeAssetCount = (options.personaIds?.length ?? 0) + (options.productIds?.length ?? 0) + (options.competitorIds?.length ?? 0) + (options.trendIds?.length ?? 0);
   } else {
     const campaign = await prisma.campaign.findFirst({
       where: { id: campaignId, workspaceId },
@@ -250,13 +334,20 @@ export async function generateCampaignBlueprint(
     personaIds = allPersonas.map(p => p.id);
   }
 
+  // Resolve optional context IDs — empty arrays mean "not selected"
+  const productIds = options.productIds ?? [];
+  const competitorIds = options.competitorIds ?? [];
+  const trendIds = options.trendIds ?? [];
+
   // Fetch all context in parallel
+  // Brand assets + styleguide are always loaded (brand identity, always relevant)
+  // Products, competitors, trends, and personas are only loaded when explicitly selected
   const [brandContext, personaContext, productContext, competitorContext, trendContext, styleguideContext, personaProfiles, personaChannelPrefs] = await Promise.all([
     getBrandContext(workspaceId),
     buildSelectedPersonasContext(personaIds, workspaceId),
-    buildProductContext(workspaceId),
-    buildCompetitorContext(workspaceId),
-    buildTrendContext(workspaceId),
+    productIds.length > 0 ? buildProductContext(workspaceId, productIds) : Promise.resolve(''),
+    competitorIds.length > 0 ? buildCompetitorContext(workspaceId, competitorIds) : Promise.resolve(''),
+    trendIds.length > 0 ? buildTrendContext(workspaceId, trendIds) : Promise.resolve(''),
     buildStyleguideContext(workspaceId),
     buildPersonaProfiles(personaIds, workspaceId),
     buildPersonaChannelPrefs(personaIds, workspaceId),
@@ -266,6 +357,8 @@ export async function generateCampaignBlueprint(
 
   // ─── Step 1: Strategy Architect (Claude Sonnet) ──────────
   onProgress?.({ step: 1, name: 'Strategy Architect', status: 'running', label: 'Formulating campaign strategy...' });
+
+  const briefing = isWizardMode ? options.wizardContext!.briefing : undefined;
 
   const step1Prompt = buildStrategyArchitectPrompt({
     brandContext: brandContextText,
@@ -277,6 +370,7 @@ export async function generateCampaignBlueprint(
     productContext,
     competitorContext,
     trendContext,
+    briefing,
   });
 
   const strategyRaw = await createClaudeStructuredCompletion<StrategyLayer>(
@@ -309,8 +403,8 @@ export async function generateCampaignBlueprint(
     ),
   ]);
 
-  const variantA = validateOrWarn(architectureLayerSchema, variantARaw, 'Step 2a Variant A');
-  const variantB = validateOrWarn(architectureLayerSchema, variantBRaw, 'Step 2b Variant B');
+  const variantA = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, variantARaw, 'Step 2a Variant A'));
+  const variantB = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, variantBRaw, 'Step 2b Variant B'));
 
   onProgress?.({ step: 2, name: 'Campaign Architecture', status: 'complete', label: 'Both variants generated', preview: `A: ${variantA.journeyPhases.length} phases (${variantA.campaignType}) | B: ${variantB.journeyPhases.length} phases (${variantB.campaignType})` });
 
@@ -376,7 +470,7 @@ export async function generateCampaignBlueprint(
     throw new Error('Step 4 Synthesis returned unexpected structure — expected {strategy, architecture} object');
   }
   const synthesizedStrategy = validateOrWarn(strategyLayerSchema, synthesizedRaw.strategy, 'Step 4 Strategy');
-  const synthesizedArchitecture = validateOrWarn(architectureLayerSchema, synthesizedRaw.architecture, 'Step 4 Architecture');
+  const synthesizedArchitecture = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, synthesizedRaw.architecture, 'Step 4 Architecture'));
 
   onProgress?.({ step: 4, name: 'Strategy Synthesis', status: 'complete', label: 'Optimal strategy synthesized', preview: `${synthesizedArchitecture.journeyPhases.length} phases, ${synthesizedArchitecture.campaignType}` });
 
@@ -424,15 +518,16 @@ export async function generateCampaignBlueprint(
   onProgress?.({ step: 6, name: 'Asset Planner', status: 'complete', label: 'Asset plan complete', preview: `${assetPlan.totalDeliverables} deliverables` });
 
   // ─── Calculate confidence ────────────────────────────────
-  const [brandAssetCount, productCount, ctCount] = await Promise.all([
+  const [brandAssetCount, workspacePersonaCount, productCount, ctCount] = await Promise.all([
     countNonEmptyAssets(workspaceId),
+    prisma.persona.count({ where: { workspaceId } }),
     prisma.product.count({ where: { workspaceId } }),
     countCompetitorsAndTrends(workspaceId),
   ]);
 
   const { confidence, breakdown } = calculateBlueprintConfidence({
     brandAssetCount,
-    personaCount: personaIds.length,
+    personaCount: workspacePersonaCount,
     personaValidation,
     productCount,
     competitorAndTrendCount: ctCount,
@@ -453,6 +548,12 @@ export async function generateCampaignBlueprint(
     variantBScore,
     pipelineDuration: Date.now() - startTime,
     modelsUsed: [CLAUDE_SONNET, GEMINI_PRO, CLAUDE_OPUS, GEMINI_FLASH],
+    contextSelection: {
+      personaIds,
+      productIds,
+      competitorIds,
+      trendIds,
+    },
   };
 
   return blueprint;
@@ -481,20 +582,28 @@ export async function regenerateBlueprintLayer(
   });
   if (!campaign) throw new Error('Campaign not found');
 
-  const personaIds = await prisma.persona.findMany({
+  // Use the context selection stored in the blueprint (from initial generation)
+  // Falls back to empty arrays (= no context loaded) for items not explicitly selected
+  const personaIds = existingBlueprint.contextSelection?.personaIds ?? [];
+  const productIds = existingBlueprint.contextSelection?.productIds ?? [];
+  const competitorIds = existingBlueprint.contextSelection?.competitorIds ?? [];
+  const trendIds = existingBlueprint.contextSelection?.trendIds ?? [];
+
+  // If no personas were stored in contextSelection, fall back to all workspace personas
+  const resolvedPersonaIds = personaIds.length > 0 ? personaIds : await prisma.persona.findMany({
     where: { workspaceId },
     select: { id: true },
   }).then(ps => ps.map(p => p.id));
 
   const [brandContext, personaContext, productContext, competitorContext, trendContext, styleguideContext, personaProfiles, personaChannelPrefs] = await Promise.all([
     getBrandContext(workspaceId),
-    buildSelectedPersonasContext(personaIds, workspaceId),
-    buildProductContext(workspaceId),
-    buildCompetitorContext(workspaceId),
-    buildTrendContext(workspaceId),
+    buildSelectedPersonasContext(resolvedPersonaIds, workspaceId),
+    productIds.length > 0 ? buildProductContext(workspaceId, productIds) : Promise.resolve(''),
+    competitorIds.length > 0 ? buildCompetitorContext(workspaceId, competitorIds) : Promise.resolve(''),
+    trendIds.length > 0 ? buildTrendContext(workspaceId, trendIds) : Promise.resolve(''),
     buildStyleguideContext(workspaceId),
-    buildPersonaProfiles(personaIds, workspaceId),
-    buildPersonaChannelPrefs(personaIds, workspaceId),
+    buildPersonaProfiles(resolvedPersonaIds, workspaceId),
+    buildPersonaChannelPrefs(resolvedPersonaIds, workspaceId),
   ]);
 
   const brandContextText = formatBrandContext(brandContext);
@@ -538,14 +647,14 @@ export async function regenerateBlueprintLayer(
     const descriptionWithFeedback = layer === 'architecture' && feedback ? `\n\nUser feedback: ${feedback}` : '';
     const prompt = buildArchitectAPrompt({
       strategyLayer: strategyJson + descriptionWithFeedback,
-      personaContext, productContext, personaIds,
+      personaContext, productContext, personaIds: resolvedPersonaIds,
     });
 
     const archRaw = await createClaudeStructuredCompletion<ArchitectureLayer>(
       prompt.system, prompt.user,
       { model: CLAUDE_SONNET, temperature: 0.5, maxTokens: 16000, timeoutMs: 180_000 },
     );
-    blueprint.architecture = validateOrWarn(architectureLayerSchema, archRaw, 'Regenerate Architecture');
+    blueprint.architecture = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, archRaw, 'Regenerate Architecture'));
 
     onProgress?.({ step: 2, name: 'Campaign Architecture', status: 'complete', label: 'Architecture regenerated' });
     // Fall through to regenerate channel plan
@@ -600,7 +709,7 @@ export async function regenerateBlueprintLayer(
 
   const { confidence, breakdown } = calculateBlueprintConfidence({
     brandAssetCount,
-    personaCount: personaIds.length,
+    personaCount: resolvedPersonaIds.length,
     personaValidation: blueprint.personaValidation,
     productCount,
     competitorAndTrendCount: ctCount,
@@ -611,6 +720,8 @@ export async function regenerateBlueprintLayer(
   blueprint.confidenceBreakdown = breakdown;
   blueprint.pipelineDuration = Date.now() - startTime;
   blueprint.generatedAt = new Date().toISOString();
+  // Preserve context selection for future regenerations
+  blueprint.contextSelection = existingBlueprint.contextSelection;
 
   return blueprint;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   FileText,
   Newspaper,
@@ -11,9 +11,7 @@ import {
   Instagram,
   Facebook,
   BarChart3,
-  Image,
   Presentation,
-  Palette,
   Mail,
   MailPlus,
   Megaphone,
@@ -21,15 +19,41 @@ import {
   Minus,
   Plus,
   Package,
+  Sparkles,
+  Layers,
+  BookMarked,
+  Lightbulb,
+  Clapperboard,
+  GalleryHorizontalEnd,
+  Search,
+  BadgeDollarSign,
+  MonitorSmartphone,
+  RotateCcw,
+  Play,
+  PanelTop,
+  MailWarning,
+  ShoppingBag,
+  HelpCircle,
+  GitCompareArrows,
+  Globe,
+  Video,
+  MessageSquareQuote,
+  Film,
+  Mic,
+  FileSpreadsheet,
+  ClipboardList,
+  Tag,
+  Send,
+  Building2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Badge, Card } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import {
   DELIVERABLE_CATEGORIES,
+  DELIVERABLE_TYPE_IDS,
   getDeliverablesByCategory,
 } from "../../lib/deliverable-types";
-import { Sparkles } from "lucide-react";
 
 // ─── Icon Map ─────────────────────────────────────────────
 
@@ -43,13 +67,36 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Instagram,
   Facebook,
   BarChart3,
-  Image,
   Presentation,
-  Palette,
   Mail,
   MailPlus,
   Megaphone,
   Timer,
+  Layers,
+  BookMarked,
+  Lightbulb,
+  Clapperboard,
+  GalleryHorizontalEnd,
+  Search,
+  BadgeDollarSign,
+  MonitorSmartphone,
+  RotateCcw,
+  Play,
+  PanelTop,
+  MailWarning,
+  ShoppingBag,
+  HelpCircle,
+  GitCompareArrows,
+  Globe,
+  Video,
+  MessageSquareQuote,
+  Film,
+  Mic,
+  FileSpreadsheet,
+  ClipboardList,
+  Tag,
+  Send,
+  Building2,
 };
 
 function getIcon(iconName: string): LucideIcon {
@@ -89,6 +136,25 @@ export function DeliverablesStep() {
   const mustHaveCount = recommendedDeliverables.filter((d) => d.productionPriority === "must-have").length;
   const totalRecommended = recommendedDeliverables.length;
 
+  // Collect the set of recommended contentType IDs that match our catalog
+  const recommendedTypeIds = new Set(
+    recommendedDeliverables
+      .map((d) => d.contentType)
+      .filter((ct) => DELIVERABLE_TYPE_IDS.includes(ct)),
+  );
+
+  // Auto-pre-select AI-recommended deliverables (once, when blueprint arrives)
+  const hasAutoSelected = useRef(false);
+  useEffect(() => {
+    if (hasAutoSelected.current || recommendedTypeIds.size === 0) return;
+    if (selectedDeliverables.length > 0) return; // user already has selections
+
+    hasAutoSelected.current = true;
+    for (const typeId of recommendedTypeIds) {
+      toggleDeliverable(typeId);
+    }
+  }, [recommendedTypeIds.size, selectedDeliverables.length, toggleDeliverable]);
+
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       {/* Strategy recommendations banner */}
@@ -100,28 +166,36 @@ export function DeliverablesStep() {
               Strategy recommends {totalRecommended} deliverable{totalRecommended !== 1 ? "s" : ""}
             </p>
             <p className="text-xs text-emerald-600 mt-0.5">
-              {mustHaveCount} must-have, {totalRecommended - mustHaveCount} optional — based on your campaign blueprint
+              {mustHaveCount} must-have, {totalRecommended - mustHaveCount} optional — auto-selected based on your campaign blueprint
             </p>
           </div>
         </div>
       )}
 
-      {/* Category tabs */}
-      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+      {/* Category tabs — scrollable for 8 categories */}
+      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1 overflow-x-auto">
         {DELIVERABLE_CATEGORIES.map((category) => {
           const isActive = category === activeCategory;
+          const categoryCount = selectedDeliverables.filter((d) =>
+            getDeliverablesByCategory(category).some((item) => item.id === d.type),
+          ).length;
           return (
             <button
               key={category}
               type="button"
               onClick={() => setActiveDeliverableTab(category)}
-              className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-all ${
+              className={`flex-shrink-0 px-3 py-2 text-xs font-medium rounded-md transition-all whitespace-nowrap ${
                 isActive
                   ? "bg-white text-gray-900 shadow-sm"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
               {category}
+              {categoryCount > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold rounded-full bg-primary text-white">
+                  {categoryCount}
+                </span>
+              )}
             </button>
           );
         })}
@@ -136,6 +210,7 @@ export function DeliverablesStep() {
           const currentQty =
             selectedDeliverables.find((d) => d.type === item.id)?.quantity || 1;
           const Icon = getIcon(item.icon);
+          const isRecommended = recommendedTypeIds.has(item.id);
 
           return (
             <Card
@@ -160,9 +235,14 @@ export function DeliverablesStep() {
                     <Icon className="w-5 h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-gray-900">
-                      {item.name}
-                    </h4>
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="text-sm font-semibold text-gray-900">
+                        {item.name}
+                      </h4>
+                      {isRecommended && (
+                        <Sparkles className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {item.description}
                     </p>
@@ -175,13 +255,16 @@ export function DeliverablesStep() {
                   />
                 </div>
 
-                {/* Output formats */}
+                {/* Output formats + funnel stage */}
                 <div className="flex flex-wrap gap-1">
                   {item.outputFormats.map((format) => (
                     <Badge key={format} size="sm">
                       {format}
                     </Badge>
                   ))}
+                  <Badge size="sm" variant="info">
+                    {item.funnelStage}
+                  </Badge>
                 </div>
 
                 {/* Quantity stepper (only when selected) */}
@@ -233,6 +316,11 @@ export function DeliverablesStep() {
         <span className="text-sm text-gray-600">
           <span className="font-semibold text-gray-900">{totalSelected}</span>{" "}
           {totalSelected === 1 ? "deliverable" : "deliverables"} selected
+          {recommendedTypeIds.size > 0 && (
+            <span className="text-gray-400 ml-1">
+              ({recommendedTypeIds.size} from AI strategy)
+            </span>
+          )}
         </span>
       </div>
     </div>

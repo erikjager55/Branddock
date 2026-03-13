@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 import { z } from "zod";
 
 // POST /api/campaigns/wizard/launch — Launch a campaign from the wizard
@@ -82,7 +84,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ campaign: { id: campaign.id, title: campaign.title, slug: campaign.slug } }, { status: 201 });
+    // Invalidate server-side cache
+    invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
+    const deliverableCount = deliverables?.length ?? 0;
+
+    return NextResponse.json({
+      campaignId: campaign.id,
+      campaignSlug: campaign.slug,
+      deliverableCount,
+    }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/campaigns/wizard/launch]", error);
     return NextResponse.json(

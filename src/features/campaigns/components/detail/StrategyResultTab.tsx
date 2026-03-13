@@ -10,17 +10,15 @@ import {
   Lightbulb,
   LayoutDashboard,
   Layers,
-  GitBranch,
+  Route,
   Radio,
-  Package,
 } from "lucide-react";
 import { Badge, EmptyState } from "@/components/shared";
 import { useCampaignStore } from "../../stores/useCampaignStore";
 import { BlueprintOverviewSection } from "./strategy/BlueprintOverviewSection";
 import { StrategySection } from "./strategy/StrategySection";
-import { ArchitectureSection } from "./strategy/ArchitectureSection";
+import { JourneyMatrixSection } from "./strategy/JourneyMatrixSection";
 import { ChannelPlanSection } from "./strategy/ChannelPlanSection";
-import { AssetPlanSection } from "./strategy/AssetPlanSection";
 import { RegenerateSectionButton } from "./strategy/RegenerateSectionButton";
 import type { StrategyResponse, LegacyStrategyResponse } from "@/types/campaign";
 
@@ -47,16 +45,15 @@ const LEGACY_SUB_TABS = [
   { id: "deliverables" as const, label: "Deliverables", icon: FileText },
 ];
 
-// Blueprint sub-tabs (new 5-tab layout)
+// Blueprint sub-tabs (4-tab layout: merged Architecture + Asset Plan → Journey)
 const BLUEPRINT_SUB_TABS = [
   { id: "overview" as const, label: "Overview", icon: LayoutDashboard },
   { id: "strategy" as const, label: "Strategy", icon: Layers },
-  { id: "architecture" as const, label: "Architecture", icon: GitBranch },
+  { id: "journey" as const, label: "Journey", icon: Route },
   { id: "channel-plan" as const, label: "Channel Plan", icon: Radio },
-  { id: "asset-plan" as const, label: "Asset Plan", icon: Package },
 ];
 
-/** Strategy result tab with 5 sub-tabs for blueprint format, 4 for legacy */
+/** Strategy result tab with 4 sub-tabs for blueprint format, 4 for legacy */
 export function StrategyResultTab({
   strategy,
   campaignId,
@@ -124,51 +121,49 @@ export function StrategyResultTab({
         </div>
 
         {/* Sub-tab content */}
-        <div className="bg-white rounded-lg border p-6">
-          {currentTab === "overview" && (
+        {currentTab === "overview" && (
+          <div className="bg-white rounded-lg border p-6">
             <BlueprintOverviewSection blueprint={blueprint} />
-          )}
+          </div>
+        )}
 
-          {currentTab === "strategy" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Campaign Strategy</h3>
-                <RegenerateSectionButton campaignId={campaignId} layer="strategy" />
-              </div>
-              <StrategySection strategy={blueprint.strategy} />
+        {currentTab === "strategy" && blueprint.strategy && (
+          <div className="bg-white rounded-lg border p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Campaign Strategy</h3>
+              <RegenerateSectionButton campaignId={campaignId} layer="strategy" />
             </div>
-          )}
+            <StrategySection strategy={blueprint.strategy} />
+          </div>
+        )}
 
-          {currentTab === "architecture" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Campaign Architecture</h3>
-                <RegenerateSectionButton campaignId={campaignId} layer="architecture" />
+        {currentTab === "journey" && blueprint.architecture && blueprint.assetPlan && blueprint.channelPlan && (
+          <div className="bg-white rounded-lg border p-4 space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="text-lg font-semibold text-gray-900">Journey Map</h3>
+              <div className="flex items-center gap-2">
+                <RegenerateSectionButton campaignId={campaignId} layer="architecture" label="Regenerate Journey" />
+                <RegenerateSectionButton campaignId={campaignId} layer="assetPlan" label="Regenerate Assets" />
               </div>
-              <ArchitectureSection architecture={blueprint.architecture} />
             </div>
-          )}
+            <JourneyMatrixSection
+              architecture={blueprint.architecture}
+              assetPlan={blueprint.assetPlan}
+              channelPlan={blueprint.channelPlan}
+              onBringToLife={onBringToLife}
+            />
+          </div>
+        )}
 
-          {currentTab === "channel-plan" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Channel & Media Plan</h3>
-                <RegenerateSectionButton campaignId={campaignId} layer="channelPlan" />
-              </div>
-              <ChannelPlanSection channelPlan={blueprint.channelPlan} />
+        {currentTab === "channel-plan" && blueprint.channelPlan && (
+          <div className="bg-white rounded-lg border p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Channel & Media Plan</h3>
+              <RegenerateSectionButton campaignId={campaignId} layer="channelPlan" />
             </div>
-          )}
-
-          {currentTab === "asset-plan" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900">Asset Plan</h3>
-                <RegenerateSectionButton campaignId={campaignId} layer="assetPlan" />
-              </div>
-              <AssetPlanSection assetPlan={blueprint.assetPlan} onBringToLife={onBringToLife} />
-            </div>
-          )}
-        </div>
+            <ChannelPlanSection channelPlan={blueprint.channelPlan} />
+          </div>
+        )}
       </div>
     );
   }
@@ -214,29 +209,39 @@ export function StrategyResultTab({
       )}
 
       {/* Legacy Sub Tabs */}
-      <div className="flex gap-2 mb-6 bg-gray-100 rounded-lg p-1">
-        {LEGACY_SUB_TABS.map((tab) => {
-          const TabIcon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveStrategySubTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                activeStrategySubTab === tab.id
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              <TabIcon className="h-3.5 w-3.5" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {(() => {
+        // Ensure we're on a valid legacy tab (e.g. after switching from blueprint campaign)
+        const validLegacyIds = LEGACY_SUB_TABS.map((t) => t.id);
+        const currentLegacyTab = validLegacyIds.includes(activeStrategySubTab as typeof validLegacyIds[number])
+          ? (activeStrategySubTab as typeof validLegacyIds[number])
+          : "core-concept";
 
-      {/* Legacy Sub Tab Content */}
-      <div className="bg-white rounded-lg border p-6">
-        {activeStrategySubTab === "core-concept" && (
+        return (
+          <>
+            <div className="flex gap-2 mb-6 bg-gray-100 rounded-lg p-1">
+              {LEGACY_SUB_TABS.map((tab) => {
+                const TabIcon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveStrategySubTab(tab.id)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      currentLegacyTab === tab.id
+                        ? "bg-white text-gray-900 shadow-sm"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    <TabIcon className="h-3.5 w-3.5" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Legacy Sub Tab Content */}
+            <div className="bg-white rounded-lg border p-6">
+              {currentLegacyTab === "core-concept" && (
           <div>
             <h3 className="text-lg font-semibold mb-4">Core Concept</h3>
             <p className="text-gray-700 leading-relaxed whitespace-pre-line">
@@ -260,7 +265,7 @@ export function StrategyResultTab({
           </div>
         )}
 
-        {activeStrategySubTab === "channel-mix" && (
+              {currentLegacyTab === "channel-mix" && (
           <div>
             <h3 className="text-lg font-semibold mb-4">Channel Mix</h3>
             {strategy.recommendedChannels.length > 0 ? (
@@ -277,24 +282,27 @@ export function StrategyResultTab({
           </div>
         )}
 
-        {activeStrategySubTab === "target-audience" && (
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Target Audience</h3>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-              {strategy.targetAudience || "Target audience insights will be generated with your strategy."}
-            </p>
-          </div>
-        )}
+              {currentLegacyTab === "target-audience" && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Target Audience</h3>
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                    {strategy.targetAudience || "Target audience insights will be generated with your strategy."}
+                  </p>
+                </div>
+              )}
 
-        {activeStrategySubTab === "deliverables" && (
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Recommended Deliverables</h3>
-            <p className="text-gray-500">
-              Deliverables based on your strategy will appear in the Deliverables tab.
-            </p>
-          </div>
-        )}
-      </div>
+              {currentLegacyTab === "deliverables" && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Recommended Deliverables</h3>
+                  <p className="text-gray-500">
+                    Deliverables based on your strategy will appear in the Deliverables tab.
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }

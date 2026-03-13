@@ -29,7 +29,7 @@ interface CampaignStoreState {
   selectedCampaignId: string | null;
   selectedDeliverableId: string | null;
   activeCampaignTab: 'configure' | 'strategy';
-  activeStrategySubTab: 'core-concept' | 'channel-mix' | 'target-audience' | 'deliverables' | 'overview' | 'strategy' | 'architecture' | 'channel-plan' | 'asset-plan';
+  activeStrategySubTab: 'core-concept' | 'channel-mix' | 'target-audience' | 'deliverables' | 'overview' | 'strategy' | 'journey' | 'channel-plan';
   setSelectedCampaignId: (id: string | null) => void;
   setSelectedDeliverableId: (id: string | null) => void;
   setActiveCampaignTab: (tab: 'configure' | 'strategy') => void;

@@ -21,7 +21,7 @@ import {
 import { ConfigureInputsTab } from "./ConfigureInputsTab";
 import { StrategyResultTab } from "./StrategyResultTab";
 import { DeliverablesTab } from "./DeliverablesTab";
-import type { BlueprintStrategyResponse } from "@/types/campaign";
+import type { BlueprintStrategyResponse, KnowledgeAssetResponse } from "@/types/campaign";
 import type { CampaignBlueprint } from "@/lib/campaigns/strategy-blueprint.types";
 
 interface CampaignDetailPageProps {
@@ -46,7 +46,9 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
     },
   });
   const visibility = useLockVisibility(lock.isLocked);
-  const { data: assets, isLoading: assetsLoading } = useKnowledgeAssets(campaignId);
+  const { data: rawAssets, isLoading: assetsLoading } = useKnowledgeAssets(campaignId);
+  // API may return { assets: [...] } wrapper or bare array — normalize
+  const assets: KnowledgeAssetResponse[] = Array.isArray(rawAssets) ? rawAssets : (rawAssets as any)?.assets ?? [];
   const { data: strategy, isLoading: strategyLoading } = useStrategy(campaignId);
   const { data: deliverables } = useDeliverables(campaignId);
   const removeAsset = useRemoveKnowledgeAsset(campaignId);
@@ -78,7 +80,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
     onOpenInStudio?.(cId, did);
   };
 
-  /** "Bring to Life" from AssetPlanSection: create deliverable → set context → navigate to studio */
+  /** "Bring to Life" from JourneyMatrixSection: create deliverable → set context → navigate to studio */
   const [bringToLifeError, setBringToLifeError] = React.useState<string | null>(null);
   const handleBringToLife = async (deliverableTitle: string, contentType: string) => {
     setBringToLifeError(null);

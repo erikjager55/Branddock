@@ -1,7 +1,17 @@
 "use client";
 
 import { Badge } from "@/components/shared";
-import type { StrategyLayer } from "@/lib/campaigns/strategy-blueprint.types";
+import type { StrategyLayer, StrategicChoice } from "@/lib/campaigns/strategy-blueprint.types";
+
+/** Extract display text from a strategic choice (string or object) */
+function getChoiceText(choice: string | StrategicChoice): string {
+  return typeof choice === 'string' ? choice : choice.choice;
+}
+
+/** Check if a strategic choice is an object with rationale/tradeoff */
+function isChoiceObject(choice: string | StrategicChoice): choice is StrategicChoice {
+  return typeof choice === 'object' && choice !== null && 'choice' in choice;
+}
 
 interface StrategySectionProps {
   strategy: StrategyLayer;
@@ -97,13 +107,25 @@ export function StrategySection({ strategy }: StrategySectionProps) {
       {strategy.strategicChoices.length > 0 && (
         <div>
           <h4 className="text-sm font-semibold text-gray-900 mb-3">Strategic Choices</h4>
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {strategy.strategicChoices.map((choice, i) => (
               <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
                 <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold flex items-center justify-center flex-shrink-0 mt-0.5">
                   {i + 1}
                 </span>
-                {choice}
+                <div className="flex-1">
+                  <p className="font-medium">{getChoiceText(choice)}</p>
+                  {isChoiceObject(choice) && (
+                    <div className="mt-1 space-y-0.5">
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium text-gray-600">Rationale:</span> {choice.rationale}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        <span className="font-medium text-gray-600">Tradeoff:</span> {choice.tradeoff}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

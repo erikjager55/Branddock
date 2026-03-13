@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   Check,
   AlertTriangle,
@@ -35,6 +35,29 @@ export function KnowledgeStep() {
   const deselectAllKnowledge = useCampaignWizardStore(
     (s) => s.deselectAllKnowledge,
   );
+
+  // Auto-select brand_asset items on first load (brand foundation is always-on context)
+  const hasAutoSelected = useRef(false);
+  useEffect(() => {
+    if (hasAutoSelected.current) return;
+    if (!knowledgeData?.groups) return;
+
+    // Only auto-select on fresh wizard (no items selected yet)
+    const currentIds = useCampaignWizardStore.getState().selectedKnowledgeIds;
+    if (currentIds.length > 0) {
+      hasAutoSelected.current = true;
+      return;
+    }
+
+    const brandAssetIds = knowledgeData.groups
+      .filter((g) => g.key === "brand_asset")
+      .flatMap((g) => g.items.map((i) => i.sourceId));
+
+    if (brandAssetIds.length > 0) {
+      selectAllKnowledge(brandAssetIds);
+    }
+    hasAutoSelected.current = true;
+  }, [knowledgeData, selectAllKnowledge]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<string>("all");
@@ -270,14 +293,14 @@ export function KnowledgeStep() {
                       className="h-4 w-4 rounded border flex items-center justify-center transition-colors"
                       style={{
                         backgroundColor: allGroupSelected
-                          ? "hsl(var(--primary))"
+                          ? "var(--primary)"
                           : someGroupSelected
-                            ? "hsl(var(--primary) / 0.4)"
+                            ? "color-mix(in srgb, var(--primary) 40%, transparent)"
                             : "#ffffff",
                         borderColor: allGroupSelected
-                          ? "hsl(var(--primary))"
+                          ? "var(--primary)"
                           : someGroupSelected
-                            ? "hsl(var(--primary) / 0.5)"
+                            ? "color-mix(in srgb, var(--primary) 50%, transparent)"
                             : "#d1d5db",
                       }}
                       onClick={(e) => {
@@ -309,7 +332,7 @@ export function KnowledgeStep() {
                         className="flex items-center gap-2.5 w-full pl-9 pr-3 py-1.5 text-left transition-colors hover:bg-gray-50"
                         style={{
                           backgroundColor: isSelected
-                            ? "hsl(var(--primary) / 0.06)"
+                            ? "color-mix(in srgb, var(--primary) 6%, transparent)"
                             : undefined,
                         }}
                       >
@@ -318,10 +341,10 @@ export function KnowledgeStep() {
                           className="h-[18px] w-[18px] rounded border flex items-center justify-center flex-shrink-0 transition-colors"
                           style={{
                             backgroundColor: isSelected
-                              ? "hsl(var(--primary))"
+                              ? "var(--primary)"
                               : "#ffffff",
                             borderColor: isSelected
-                              ? "hsl(var(--primary))"
+                              ? "var(--primary)"
                               : "#d1d5db",
                           }}
                         >

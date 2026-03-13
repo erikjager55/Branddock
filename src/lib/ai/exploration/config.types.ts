@@ -52,5 +52,5 @@ export const EXPLORATION_AI_MODELS: AIModelOption[] = [
   { id: 'gpt-4o', provider: 'openai', label: 'GPT-4o', description: 'OpenAI flagship model' },
   { id: 'gpt-4o-mini', provider: 'openai', label: 'GPT-4o Mini', description: 'Faster and more affordable' },
   { id: 'gemini-3.1-pro-preview', provider: 'google', label: 'Gemini 3.1 Pro', description: 'Google — Advanced reasoning' },
-  { id: 'gemini-3.1-flash', provider: 'google', label: 'Gemini 3.1 Flash', description: 'Google — Fast and cost-efficient' },
+  { id: 'gemini-2.5-flash', provider: 'google', label: 'Gemini 2.5 Flash', description: 'Google — Fast and cost-efficient' },
 ];

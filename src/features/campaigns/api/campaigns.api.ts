@@ -110,7 +110,8 @@ export async function convertToCampaign(id: string, body: ConvertToCampaignBody)
 export async function fetchKnowledgeAssets(campaignId: string): Promise<KnowledgeAssetResponse[]> {
   const res = await fetch(`/api/campaigns/${campaignId}/knowledge`);
   if (!res.ok) throw new Error('Failed to fetch knowledge assets');
-  return res.json();
+  const data = await res.json();
+  return data?.assets ?? data ?? [];
 }
 
 export async function addKnowledgeAsset(campaignId: string, body: AddKnowledgeAssetBody): Promise<KnowledgeAssetResponse> {

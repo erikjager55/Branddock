@@ -31,6 +31,12 @@ export interface JTBDFraming {
   socialJob: string;
 }
 
+export interface StrategicChoice {
+  choice: string;
+  rationale: string;
+  tradeoff: string;
+}
+
 export interface StrategyLayer {
   strategicIntent: StrategicIntent;
   intentRatio: { brand: number; activation: number };
@@ -38,7 +44,7 @@ export interface StrategyLayer {
   positioningStatement: string;
   messagingHierarchy: MessagingHierarchy;
   jtbdFraming: JTBDFraming;
-  strategicChoices: string[];
+  strategicChoices: (string | StrategicChoice)[];
 }
 
 // ─── Layer 2: Campaign Architecture ─────────────────────────
@@ -154,6 +160,14 @@ export interface PersonaValidationResult {
 
 // ─── Complete Blueprint ─────────────────────────────────────
 
+/** Context selection metadata — which IDs were selected for generation */
+export interface ContextSelection {
+  personaIds: string[];
+  productIds: string[];
+  competitorIds: string[];
+  trendIds: string[];
+}
+
 export interface CampaignBlueprint {
   strategy: StrategyLayer;
   architecture: ArchitectureLayer;
@@ -167,6 +181,8 @@ export interface CampaignBlueprint {
   variantBScore: number;
   pipelineDuration: number;
   modelsUsed: string[];
+  /** Stores which context items were selected during generation (for regeneration) */
+  contextSelection?: ContextSelection;
 }
 
 // ─── Pipeline Types ─────────────────────────────────────────
@@ -184,14 +200,32 @@ export interface PipelineStep {
 
 export type RegenerateLayer = 'strategy' | 'architecture' | 'channelPlan' | 'assetPlan';
 
+/** Strategic briefing fields that guide the AI toward a specific, actionable strategy */
+export interface CampaignBriefing {
+  /** Why communicate now? What's the trigger or occasion? */
+  occasion?: string;
+  /** What should the audience Think, Feel, and Do after seeing this campaign? */
+  audienceObjective?: string;
+  /** The single most important message or promise the audience should take away */
+  coreMessage?: string;
+  /** Desired tone, style, or creative direction */
+  tonePreference?: string;
+  /** Constraints, mandatories, or requirements that must be respected */
+  constraints?: string;
+}
+
 export interface GenerateBlueprintBody {
   personaIds?: string[];
+  productIds?: string[];
+  competitorIds?: string[];
+  trendIds?: string[];
   strategicIntent?: StrategicIntent;
   /** Wizard context — when provided, the pipeline runs without a DB campaign */
   wizardContext?: {
     campaignName: string;
     campaignDescription?: string;
     campaignGoalType?: string;
+    briefing?: CampaignBriefing;
   };
 }
 
@@ -243,6 +277,12 @@ export const jtbdFramingSchema = z.object({
   socialJob: z.string(),
 });
 
+export const strategicChoiceSchema = z.object({
+  choice: z.string(),
+  rationale: z.string(),
+  tradeoff: z.string(),
+});
+
 export const strategyLayerSchema = z.object({
   strategicIntent: z.enum(['brand_building', 'sales_activation', 'hybrid']),
   intentRatio: z.object({ brand: z.number(), activation: z.number() }),
@@ -250,7 +290,7 @@ export const strategyLayerSchema = z.object({
   positioningStatement: z.string(),
   messagingHierarchy: messagingHierarchySchema,
   jtbdFraming: jtbdFramingSchema,
-  strategicChoices: z.array(z.string()),
+  strategicChoices: z.array(z.union([z.string(), strategicChoiceSchema])),
 });
 
 // ─── Layer 2 Schema ─────────────────────────────────────────

@@ -4,7 +4,8 @@
 // Christensen JTBD, Google HHH model
 // =============================================================================
 
-import type { StrategicIntent } from '@/lib/campaigns/strategy-blueprint.types';
+import type { StrategicIntent, CampaignBriefing } from '@/lib/campaigns/strategy-blueprint.types';
+import { DELIVERABLE_TYPE_IDS } from '@/features/campaigns/lib/deliverable-types';
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -36,6 +37,7 @@ export function buildStrategyArchitectPrompt(params: {
   productContext: string;
   competitorContext: string;
   trendContext: string;
+  briefing?: CampaignBriefing;
 }): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
 
@@ -48,6 +50,8 @@ Academic frameworks you must apply:
 - Binet & Field's effectiveness data: ${ratio.brand}% brand building / ${ratio.activation}% activation
 - Christensen's Jobs-to-be-Done (JTBD) framework for audience framing
 
+IMPORTANT: If a Creative Briefing is provided, use it as the primary strategic direction. The occasion drives urgency, the audience objective shapes messaging, the core message anchors the campaign theme, tone preferences guide creative direction, and constraints are non-negotiable boundaries.
+
 Output requirements:
 - strategicIntent: "${params.strategicIntent}"
 - intentRatio: { brand: ${ratio.brand}, activation: ${ratio.activation} }
@@ -59,12 +63,34 @@ Output requirements:
 
 Respond with valid JSON matching the StrategyLayer schema.`;
 
+  // Build creative briefing section
+  const briefingLines: string[] = [];
+  if (params.briefing?.occasion) {
+    briefingLines.push(`Occasion / Why now: ${params.briefing.occasion}`);
+  }
+  if (params.briefing?.audienceObjective) {
+    briefingLines.push(`Audience objective (Think/Feel/Do): ${params.briefing.audienceObjective}`);
+  }
+  if (params.briefing?.coreMessage) {
+    briefingLines.push(`Core message: ${params.briefing.coreMessage}`);
+  }
+  if (params.briefing?.tonePreference) {
+    briefingLines.push(`Desired tone / creative direction: ${params.briefing.tonePreference}`);
+  }
+  if (params.briefing?.constraints) {
+    briefingLines.push(`Constraints / mandatories: ${params.briefing.constraints}`);
+  }
+
+  const briefingSection = briefingLines.length > 0
+    ? `\n\n## Creative Briefing\n${briefingLines.join('\n')}`
+    : '';
+
   const user = `Create a campaign strategy for "${params.campaignName}".
 
 ## Campaign Brief
 Description: ${params.campaignDescription || 'No description provided'}
 Goal: ${params.goalType}
-Strategic Intent: ${intentDescription(params.strategicIntent)}
+Strategic Intent: ${intentDescription(params.strategicIntent)}${briefingSection}
 
 ## Brand Context
 ${params.brandContext}
@@ -239,6 +265,55 @@ Output a complete combined result with TWO top-level keys:
 - "strategy": The refined StrategyLayer (same schema as input, with improvements)
 - "architecture": The synthesized ArchitectureLayer (best of A+B)
 
+CRITICAL JSON SCHEMA — the architecture object MUST use these EXACT field names:
+
+architecture: {
+  campaignType: string,
+  journeyPhases: [
+    {
+      id: string,           // e.g. "awareness" (lowercase, no spaces)
+      name: string,          // e.g. "Awareness" (display name)
+      description: string,   // Brief description of the phase
+      orderIndex: number,    // 0-based position
+      goal: string,          // What to achieve in this phase
+      kpis: string[],
+      personaPhaseData: [    // One entry per persona — REQUIRED
+        {
+          personaId: string,
+          personaName: string,
+          needs: string[],
+          painPoints: string[],
+          mindset: string,
+          keyQuestion: string,
+          triggers: string[]
+        }
+      ],
+      touchpoints: [
+        {
+          channel: string,
+          contentType: string,
+          message: string,
+          role: "primary" | "supporting",
+          personaRelevance: [  // MUST be an ARRAY of objects, NOT a flat object
+            {
+              personaId: string,
+              relevance: "high" | "medium" | "low",
+              messagingAngle: string
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+IMPORTANT:
+- Use "name" (NOT "phase") for the journey phase display name
+- Use "id" for the phase identifier (lowercase slug)
+- personaRelevance MUST be an ARRAY of objects, NOT a flat object like {"id": "high"}
+- personaPhaseData MUST be included — one entry per persona from the input
+- Every persona from the input MUST appear in EVERY phase's personaPhaseData
+
 Respond with valid JSON.`;
 
   const user = `Synthesize the optimal campaign blueprint.
@@ -307,13 +382,15 @@ export function buildAssetPlannerPrompt(params: {
   productContext: string;
   styleguideContext: string;
 }): { system: string; user: string } {
+  const validTypes = DELIVERABLE_TYPE_IDS.join(', ');
+
   const system = `You are a content strategist creating a deliverable plan for a campaign.
 
 Your role: Based on the campaign strategy, architecture, and channel plan, define the specific content pieces (deliverables) that need to be produced.
 
 Requirements per deliverable:
 - title: Descriptive title (e.g., "LinkedIn Thought Leadership Article — AI in Brand Strategy")
-- contentType: Specific type (e.g., "blog_post", "social_carousel", "email_newsletter", "landing_page", "video_script", "infographic")
+- contentType: MUST be one of these valid IDs: ${validTypes}
 - channel: Which channel this goes on
 - phase: Which journey phase this serves
 - targetPersonas: Which persona IDs this targets
@@ -321,11 +398,13 @@ Requirements per deliverable:
 - productionPriority: "must-have" (core deliverables), "should-have" (enhances campaign), "nice-to-have" (stretch goals)
 - estimatedEffort: "low" (< 2 hours), "medium" (2-8 hours), "high" (> 8 hours)
 
+IMPORTANT: The contentType field MUST exactly match one of the valid IDs listed above. Do NOT invent new content types. Choose the closest matching type from the list.
+
 Also provide:
 - totalDeliverables: Count of all deliverables
 - prioritySummary: One sentence describing what to produce first and why
 
-Produce 8-15 deliverables that form a coherent content ecosystem.
+Produce 8-15 deliverables that form a coherent content ecosystem covering awareness, consideration, conversion, and retention stages.
 
 Respond with valid JSON matching the AssetPlanLayer schema.`;
 
