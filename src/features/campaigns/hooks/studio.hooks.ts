@@ -21,6 +21,7 @@ import {
   exportContent,
 } from '../api/studio.api';
 import type { UpdateStudioBody, GenerateContentBody, InsertInsightBody, ExportBody } from '@/types/studio';
+import { campaignKeys } from './index';
 
 export const studioKeys = {
   all: ['studio'] as const,
@@ -67,6 +68,8 @@ export function useGenerateContent(deliverableId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: studioKeys.state(deliverableId) });
       qc.invalidateQueries({ queryKey: studioKeys.costEstimate(deliverableId) });
+      // Invalidate campaign queries so detail page reflects updated deliverable status
+      qc.invalidateQueries({ queryKey: campaignKeys.all });
     },
   });
 }
@@ -77,6 +80,8 @@ export function useRegenerateContent(deliverableId: string) {
     mutationFn: (body: GenerateContentBody) => regenerateContent(deliverableId, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: studioKeys.state(deliverableId) });
+      // Invalidate campaign queries so detail page reflects updated deliverable status
+      qc.invalidateQueries({ queryKey: campaignKeys.all });
     },
   });
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useContentStudioStore } from "@/stores/useContentStudioStore";
 
-const QUICK_PROMPTS = [
+const DEFAULT_QUICK_PROMPTS = [
   "Professional tone",
   "Focus on benefits",
   "Include statistics",
@@ -12,12 +12,40 @@ const QUICK_PROMPTS = [
 
 export function PromptSection() {
   const { prompt, setPrompt } = useContentStudioStore();
+  const campaignBlueprint = useContentStudioStore((s) => s.campaignBlueprint);
+  const deliverableBrief = useContentStudioStore((s) => s.deliverableBrief);
+  const campaignName = useContentStudioStore((s) => s.campaignName);
+  const campaignGoalType = useContentStudioStore((s) => s.campaignGoalType);
+
+  // Dynamic chips: deliverable brief → campaign messaging → fallback generic
+  const quickPrompts = useMemo(() => {
+    let chips: string[];
+    if (deliverableBrief) {
+      chips = [deliverableBrief.keyMessage, deliverableBrief.callToAction, deliverableBrief.toneDirection].filter(Boolean);
+    } else if (campaignBlueprint?.strategy?.messagingHierarchy) {
+      const { brandMessage, campaignMessage, proofPoints } = campaignBlueprint.strategy.messagingHierarchy;
+      chips = [brandMessage, campaignMessage, ...(proofPoints ?? []).slice(0, 2)].filter(Boolean);
+    } else {
+      chips = DEFAULT_QUICK_PROMPTS;
+    }
+    // Deduplicate to avoid React key collisions
+    return [...new Set(chips)];
+  }, [deliverableBrief, campaignBlueprint]);
 
   return (
     <div>
       <label className="block text-sm font-semibold text-gray-900 mb-2">
         Prompt
       </label>
+
+      {/* Campaign context hint */}
+      {campaignBlueprint && (
+        <p className="text-xs text-muted-foreground mb-2">
+          Campaign: {campaignName} {campaignGoalType ? `\u2022 Goal: ${campaignGoalType}` : ""}{" "}
+          {campaignBlueprint.strategy?.campaignTheme ? `\u2022 Theme: ${campaignBlueprint.strategy.campaignTheme}` : ""}
+        </p>
+      )}
+
       <textarea
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
@@ -32,7 +60,7 @@ export function PromptSection() {
 
       {/* Quick Prompt Chips */}
       <div className="flex flex-wrap gap-1.5 mt-2">
-        {QUICK_PROMPTS.map((chip) => (
+        {quickPrompts.map((chip) => (
           <button
             key={chip}
             onClick={() => {

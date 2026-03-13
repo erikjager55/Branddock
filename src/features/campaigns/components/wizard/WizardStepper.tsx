@@ -34,7 +34,6 @@ export function WizardStepper({
         const stepNumber = index + 1;
         const isCompleted = stepNumber < currentStep;
         const isCurrent = stepNumber === currentStep;
-        const isUpcoming = stepNumber > currentStep;
 
         return (
           <React.Fragment key={stepNumber}>
@@ -43,11 +42,12 @@ export function WizardStepper({
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-all ${
                   isCompleted
-                    ? "bg-emerald-500 text-white"
+                    ? "bg-primary text-white"
                     : isCurrent
-                      ? "bg-emerald-500 text-white ring-4 ring-emerald-100"
+                      ? "bg-primary text-white"
                       : "bg-white text-gray-400 border-2 border-gray-200"
                 }`}
+                style={isCurrent ? { boxShadow: '0 0 0 4px hsl(var(--primary) / 0.15)' } : undefined}
               >
                 {isCompleted ? (
                   <Check className="w-4 h-4" />
@@ -58,7 +58,7 @@ export function WizardStepper({
               <span
                 className={`text-xs font-medium whitespace-nowrap ${
                   isCurrent
-                    ? "text-emerald-600"
+                    ? "text-primary"
                     : isCompleted
                       ? "text-gray-700"
                       : "text-gray-400"
@@ -73,7 +73,7 @@ export function WizardStepper({
               <div
                 className={`flex-1 h-0.5 mx-3 mb-5 rounded-full transition-colors ${
                   stepNumber < currentStep
-                    ? "bg-emerald-500"
+                    ? "bg-primary"
                     : "bg-gray-200"
                 }`}
               />

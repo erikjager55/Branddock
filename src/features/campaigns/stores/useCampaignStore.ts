@@ -29,7 +29,7 @@ interface CampaignStoreState {
   selectedCampaignId: string | null;
   selectedDeliverableId: string | null;
   activeCampaignTab: 'configure' | 'strategy';
-  activeStrategySubTab: 'core-concept' | 'channel-mix' | 'target-audience' | 'deliverables';
+  activeStrategySubTab: 'core-concept' | 'channel-mix' | 'target-audience' | 'deliverables' | 'overview' | 'strategy' | 'architecture' | 'channel-plan' | 'asset-plan';
   setSelectedCampaignId: (id: string | null) => void;
   setSelectedDeliverableId: (id: string | null) => void;
   setActiveCampaignTab: (tab: 'configure' | 'strategy') => void;
@@ -70,7 +70,7 @@ export const useCampaignStore = create<CampaignStoreState>((set) => ({
   selectedCampaignId: null,
   selectedDeliverableId: null,
   activeCampaignTab: 'configure',
-  activeStrategySubTab: 'core-concept',
+  activeStrategySubTab: 'overview',
   setSelectedCampaignId: (id) => set({ selectedCampaignId: id }),
   setSelectedDeliverableId: (id) => set({ selectedDeliverableId: id }),
   setActiveCampaignTab: (tab) => set({ activeCampaignTab: tab }),

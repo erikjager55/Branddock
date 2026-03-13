@@ -52,6 +52,10 @@ export const cacheKeys = {
   alignment: {
     issues: (wsId: string) => `alignment:${wsId}:issues`,
   },
+  campaigns: {
+    list: (wsId: string) => `campaigns:${wsId}:list`,
+    detail: (wsId: string, id: string) => `campaigns:${wsId}:detail:${id}`,
+  },
   competitors: {
     list: (wsId: string) => `competitors:${wsId}:list`,
     detail: (wsId: string, id: string) => `competitors:${wsId}:detail:${id}`,
@@ -68,6 +72,7 @@ export const cacheKeys = {
     trendRadar: (wsId: string) => `trend-radar:${wsId}`,
     knowledgeResources: (wsId: string) => `knowledge-resources:${wsId}`,
     alignment: (wsId: string) => `alignment:${wsId}`,
+    campaigns: (wsId: string) => `campaigns:${wsId}`,
     competitors: (wsId: string) => `competitors:${wsId}`,
     notifications: (wsId: string) => `notifications:${wsId}`,
     allDashboards: 'dashboard:',

@@ -34,7 +34,7 @@ export function CarouselEditor({ isPreviewMode }: CarouselEditorProps) {
 
   const handleAddSlide = () => {
     const newSlide = {
-      index: slides.length,
+      slideNumber: slides.length + 1,
       imageUrl: null,
       textOverlay: null,
     };

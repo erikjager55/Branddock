@@ -3,7 +3,9 @@
 // =============================================================
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { UseMutationResult } from '@tanstack/react-query';
 import type { CampaignListParams } from '@/types/campaign';
+import type { CampaignBlueprint, RegenerateBlueprintBody } from '@/lib/campaigns/strategy-blueprint.types';
 import {
   fetchCampaigns,
   fetchCampaignStats,
@@ -25,6 +27,7 @@ import {
   deleteDeliverable,
   fetchStrategy,
   generateStrategy,
+  regenerateBlueprintLayer,
 } from '../api/campaigns.api';
 
 // ─── Query Keys ────────────────────────────────────────────
@@ -267,7 +270,6 @@ import type {
   LaunchCampaignResponse,
   EstimateTimelineResponse,
 } from '../types/campaign-wizard.types';
-import type { UseMutationResult } from '@tanstack/react-query';
 
 // ─── Content Library Query Keys ───────────────────────────
 
@@ -436,6 +438,25 @@ export function useRegenerateStrategy(): UseMutationResult<
 > {
   return useMutation({
     mutationFn: regenerateWizardStrategy,
+  });
+}
+
+// ─── Blueprint Hooks ──────────────────────────────────────
+
+/** Regenerate a specific layer of an existing campaign blueprint */
+export function useRegenerateBlueprintLayer(campaignId: string): UseMutationResult<
+  CampaignBlueprint,
+  Error,
+  RegenerateBlueprintBody
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: RegenerateBlueprintBody) => regenerateBlueprintLayer(campaignId, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: campaignKeys.strategy(campaignId) });
+      qc.invalidateQueries({ queryKey: campaignKeys.detail(campaignId) });
+      qc.invalidateQueries({ queryKey: campaignKeys.all });
+    },
   });
 }
 

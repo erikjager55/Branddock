@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
 import { buildSelectedPersonasContext } from "@/lib/ai/persona-context";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 
 const generateSchema = z.object({
   model: z.string(),
@@ -31,11 +33,18 @@ export async function POST(
       );
     }
 
-    // Verify ownership
+    // Verify ownership — include campaign strategy for context injection
     const deliverable = await prisma.deliverable.findUnique({
       where: { id: deliverableId },
       include: {
-        campaign: { select: { workspaceId: true } },
+        campaign: {
+          select: {
+            workspaceId: true,
+            title: true,
+            campaignGoalType: true,
+            strategy: true,
+          },
+        },
       },
     });
 
@@ -55,9 +64,55 @@ export async function POST(
     let personaContext = "";
     if (personaIds && personaIds.length > 0) {
       personaContext = await buildSelectedPersonasContext(personaIds, workspaceId);
-      console.log("[generate] Persona context loaded:", {
-        requestedIds: personaIds,
-        contextLength: personaContext.length,
+    }
+
+    // Build campaign strategy context if available
+    let campaignContextBlock = "";
+    const campaignStrategy = deliverable.campaign.strategy as Record<string, unknown> | null;
+    if (campaignStrategy && typeof campaignStrategy === "object" && "strategy" in campaignStrategy) {
+      const blueprint = campaignStrategy as {
+        strategy?: { campaignTheme?: string; positioningStatement?: string; messagingHierarchy?: { brandMessage?: string; campaignMessage?: string; proofPoints?: string[] }; jtbdFraming?: { jobStatement?: string } };
+        assetPlan?: { deliverables?: Array<{ title?: string; brief?: { objective?: string; keyMessage?: string; toneDirection?: string; callToAction?: string; contentOutline?: string[] } }> };
+      };
+
+      const strat = blueprint.strategy;
+      const matchedBrief = blueprint.assetPlan?.deliverables?.find(
+        (d) => d.title === deliverable.title
+      )?.brief;
+
+      const parts: string[] = [];
+      parts.push(`## Campaign Strategy`);
+      if (deliverable.campaign.title) parts.push(`Campaign: ${deliverable.campaign.title}`);
+      if (strat?.campaignTheme) parts.push(`Theme: ${strat.campaignTheme}`);
+      if (strat?.positioningStatement) parts.push(`Positioning: ${strat.positioningStatement}`);
+      if (deliverable.campaign.campaignGoalType) parts.push(`Goal: ${deliverable.campaign.campaignGoalType}`);
+
+      if (strat?.messagingHierarchy) {
+        parts.push(`\n## Key Messages`);
+        if (strat.messagingHierarchy.brandMessage) parts.push(`1. ${strat.messagingHierarchy.brandMessage}`);
+        if (strat.messagingHierarchy.campaignMessage) parts.push(`2. ${strat.messagingHierarchy.campaignMessage}`);
+        strat.messagingHierarchy.proofPoints?.forEach((pp, i) => parts.push(`${i + 3}. ${pp}`));
+      }
+
+      if (matchedBrief) {
+        parts.push(`\n## This Deliverable`);
+        if (matchedBrief.objective) parts.push(`Objective: ${matchedBrief.objective}`);
+        if (matchedBrief.keyMessage) parts.push(`Key Message: ${matchedBrief.keyMessage}`);
+        if (matchedBrief.toneDirection) parts.push(`Tone: ${matchedBrief.toneDirection}`);
+        if (matchedBrief.callToAction) parts.push(`CTA: ${matchedBrief.callToAction}`);
+        if (matchedBrief.contentOutline && matchedBrief.contentOutline.length > 0) {
+          parts.push(`Outline:\n${matchedBrief.contentOutline.map((p) => `- ${p}`).join("\n")}`);
+        }
+      }
+
+      campaignContextBlock = parts.join("\n");
+    }
+
+    // TODO: Pass personaContext + campaignContextBlock to AI completion call when replacing stubs
+    if (personaContext || campaignContextBlock) {
+      console.log("[generate] Context loaded:", {
+        personaContextLength: personaContext.length,
+        campaignContextLength: campaignContextBlock.length,
       });
     }
 
@@ -145,6 +200,10 @@ export async function POST(
       where: { id: deliverableId },
       data: updateData,
     });
+
+    // Invalidate caches so campaign detail + dashboard reflect updated deliverable
+    invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json({
       generatedText,

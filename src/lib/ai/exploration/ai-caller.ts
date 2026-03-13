@@ -98,6 +98,121 @@ export async function generateAIResponse(
   return response.choices[0]?.message?.content ?? '';
 }
 
+// ─── OpenAI Structured JSON Completion (JSON Schema constrained decoding) ───
+
+interface OpenAICompletionOptions {
+  temperature?: number;
+  maxTokens?: number;
+  timeoutMs?: number;
+}
+
+/**
+ * Call OpenAI (GPT-4.1/4.1-mini) with native JSON Schema constrained decoding.
+ * Uses `response_format: { type: 'json_schema' }` for 99.9%+ compliance.
+ */
+export async function createOpenAIStructuredCompletion<T>(
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+  jsonSchema: { name: string; strict: boolean; schema: Record<string, unknown> },
+  options?: OpenAICompletionOptions,
+): Promise<T> {
+  const client = getOpenAIClient();
+  const temperature = options?.temperature ?? 0.3;
+  const maxTokens = options?.maxTokens ?? 8000;
+
+  const response = await client.chat.completions.create(
+    {
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature,
+      max_tokens: maxTokens,
+      response_format: {
+        type: 'json_schema',
+        json_schema: jsonSchema,
+      },
+    },
+    { signal: AbortSignal.timeout(options?.timeoutMs ?? 120_000) },
+  );
+
+  const text = response.choices[0]?.message?.content ?? '';
+  if (!text) {
+    throw new Error(`Empty response from OpenAI ${model} (structured completion)`);
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch (parseError) {
+    const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+    throw new Error(`Failed to parse OpenAI ${model} response as JSON: ${msg}. Response starts with: "${text.slice(0, 200)}"`);
+  }
+}
+
+// ─── JSON Extraction Helper ─────────────────────────────────
+
+/**
+ * Extract the first complete JSON object or array from a string.
+ * Uses brace/bracket depth tracking that respects string literals,
+ * so trailing commentary from the model is correctly discarded.
+ */
+function extractFirstJson(text: string): string {
+  // Determine whether the top-level value is an object or array
+  const objectStart = text.indexOf('{');
+  const arrayStart = text.indexOf('[');
+
+  let start: number;
+  let open: string;
+  let close: string;
+
+  if (arrayStart !== -1 && (objectStart === -1 || arrayStart < objectStart)) {
+    start = arrayStart;
+    open = '[';
+    close = ']';
+  } else if (objectStart !== -1) {
+    start = objectStart;
+    open = '{';
+    close = '}';
+  } else {
+    return text; // no JSON structure found — return as-is for downstream error
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (ch === '\\' && inString) {
+      escape = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+
+    if (ch === open) depth++;
+    if (ch === close) {
+      depth--;
+      if (depth === 0) {
+        return text.slice(start, i + 1);
+      }
+    }
+  }
+
+  // Unbalanced — return from start to end as fallback
+  return text.slice(start);
+}
+
 // ─── Claude Structured JSON Completion ──────────────────────
 
 const CLAUDE_SONNET = 'claude-sonnet-4-5-20250929';
@@ -147,11 +262,10 @@ export async function createClaudeStructuredCompletion<T>(
     cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?\s*```\s*$/, '');
   }
 
-  const jsonStart = cleaned.indexOf('{');
-  const jsonEnd = cleaned.lastIndexOf('}');
-  if (jsonStart !== -1 && jsonEnd !== -1 && jsonStart < jsonEnd) {
-    cleaned = cleaned.slice(jsonStart, jsonEnd + 1);
-  }
+  // Extract the first complete JSON value using brace/bracket depth tracking.
+  // This correctly ignores braces inside string literals and stops at the
+  // matching close, so trailing commentary from the model is discarded.
+  cleaned = extractFirstJson(cleaned);
 
   try {
     return JSON.parse(cleaned) as T;

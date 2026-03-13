@@ -52,6 +52,13 @@ export function ContentStudioPage({ deliverableId, campaignId, onBack }: Content
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studio?.id]);
 
+  // Clear campaign context when leaving the studio page
+  useEffect(() => {
+    return () => {
+      useContentStudioStore.getState().clearCampaignContext();
+    };
+  }, []);
+
   // Auto-save: debounced 5 seconds after last change
   const triggerAutoSave = useCallback(() => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);

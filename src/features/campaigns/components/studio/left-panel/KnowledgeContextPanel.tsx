@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Sparkles, Shield, Users, Package, TrendingUp, Database } from "lucide-react";
+import { useContentStudioStore } from "@/stores/useContentStudioStore";
 import type { KnowledgeAssetResponse } from "@/types/campaign";
 
 interface KnowledgeContextPanelProps {
@@ -18,6 +19,8 @@ const ASSET_TYPE_ICONS: Record<string, typeof Shield> = {
 };
 
 export function KnowledgeContextPanel({ assets, confidence }: KnowledgeContextPanelProps) {
+  const campaignBlueprint = useContentStudioStore((s) => s.campaignBlueprint);
+  const campaignName = useContentStudioStore((s) => s.campaignName);
   const safeAssets = Array.isArray(assets) ? assets : [];
 
   if (safeAssets.length === 0) {
@@ -47,6 +50,17 @@ export function KnowledgeContextPanel({ assets, confidence }: KnowledgeContextPa
           </span>
         )}
       </div>
+      {/* Campaign context indicator */}
+      {campaignBlueprint && (
+        <div className="mb-2 px-2.5 py-1.5 rounded-md bg-teal-50 border border-teal-100">
+          <p className="text-xs font-medium text-teal-700">
+            Campaign: {campaignName}
+          </p>
+          <p className="text-[10px] text-teal-600 mt-0.5">
+            Strategy context will be injected into AI generation
+          </p>
+        </div>
+      )}
       <div className="space-y-1.5">
         {safeAssets.slice(0, 5).map((asset) => {
           const Icon = ASSET_TYPE_ICONS[asset.assetType] || Database;

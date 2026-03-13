@@ -19,7 +19,7 @@ const TAB_LABELS: Record<ContentTab, string> = {
 };
 
 export function GenerateButton({ deliverableId, activeTab }: GenerateButtonProps) {
-  const { prompt, aiModel, settings, isGenerating, setIsGenerating, setTextContent, setImageUrls, setVideoUrl, setSlides, setIsDirty, selectedPersonaIds } = useContentStudioStore();
+  const { prompt, aiModel, settings, isGenerating, setIsGenerating, setTextContent, setImageUrls, setVideoUrl, setSlides, setIsDirty, selectedPersonaIds, campaignKnowledgeAssetIds } = useContentStudioStore();
   const generate = useGenerateContent(deliverableId);
   const { data: costData } = useCostEstimate(deliverableId);
 
@@ -27,12 +27,17 @@ export function GenerateButton({ deliverableId, activeTab }: GenerateButtonProps
     if (!prompt.trim() || !settings) return;
     setIsGenerating(true);
     generate.mutate(
-      { model: aiModel, prompt, settings, knowledgeAssetIds: [], personaIds: selectedPersonaIds },
+      { model: aiModel, prompt, settings, knowledgeAssetIds: campaignKnowledgeAssetIds, personaIds: selectedPersonaIds },
       {
         onSuccess: (data) => {
-          // The API returns content as a string, but we set it based on active tab
-          if (activeTab === "text") {
-            setTextContent(data.content);
+          if (activeTab === "text" && data.generatedText) {
+            setTextContent(data.generatedText);
+          } else if (activeTab === "images" && data.generatedImageUrls) {
+            setImageUrls(data.generatedImageUrls);
+          } else if (activeTab === "video" && data.generatedVideoUrl !== undefined) {
+            setVideoUrl(data.generatedVideoUrl);
+          } else if (activeTab === "carousel" && data.generatedSlides) {
+            setSlides(data.generatedSlides);
           }
           setIsDirty(true);
           setIsGenerating(false);

@@ -1,50 +1,25 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import {
-  Search,
-  Building2,
-  Package,
-  Radar,
-  BookOpen,
-  Megaphone,
-  FileText,
-  Palette,
-  Check,
-} from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Modal } from '@/components/shared';
 import { useAvailableContext, useSaveContext } from '../../hooks';
+import {
+  SOURCE_TYPE_META,
+  CONTEXT_ICON_MAP,
+  DEFAULT_SOURCE_ICON,
+  SEARCH_ICON,
+} from '@/lib/ai/context/source-ui-config';
 import type { AvailableContextGroupItem } from '../../api/persona-chat.api';
 
 type SourceType = 'all' | string;
 
-/** Groups to hide from the context selector (not useful as knowledge context) */
+/**
+ * Groups to hide from the persona chat context selector.
+ * - brand_asset/brandstyle: already auto-injected via brand context
+ * - persona: you're already talking TO a persona
+ */
 const EXCLUDED_GROUPS = ['brand_asset', 'brandstyle', 'persona'];
-
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  Building2,
-  Fingerprint: Building2, // Fingerprint maps to Building2 as visual fallback
-  Package,
-  Radar,
-  BookOpen,
-  Megaphone,
-  FileText,
-  Palette,
-};
-
-const SOURCE_TYPE_META: Record<
-  string,
-  { label: string; icon: React.ComponentType<{ className?: string }>; color: string }
-> = {
-  brand_asset: { label: 'Brand Asset', icon: Building2, color: 'bg-emerald-100 text-emerald-700' },
-  product: { label: 'Product', icon: Package, color: 'bg-blue-100 text-blue-700' },
-  detected_trend: { label: 'Trend', icon: Radar, color: 'bg-amber-100 text-amber-700' },
-  knowledge_resource: { label: 'Library', icon: BookOpen, color: 'bg-purple-100 text-purple-700' },
-  campaign: { label: 'Campaign', icon: Megaphone, color: 'bg-rose-100 text-rose-700' },
-  deliverable: { label: 'Deliverable', icon: FileText, color: 'bg-sky-100 text-sky-700' },
-  brandstyle: { label: 'Brandstyle', icon: Palette, color: 'bg-pink-100 text-pink-700' },
-  strategic_implication: { label: 'Implication', icon: Radar, color: 'bg-emerald-100 text-emerald-700' },
-};
 
 interface FlatItem extends AvailableContextGroupItem {
   groupLabel: string;
@@ -74,14 +49,14 @@ export function KnowledgeContextSelector({
 
   // Build filter chips dynamically from groups (excluding irrelevant ones)
   const filterChips = useMemo(() => {
-    if (!data?.groups) return [{ key: 'all' as SourceType, label: 'All', icon: Search }];
+    if (!data?.groups) return [{ key: 'all' as SourceType, label: 'All', icon: SEARCH_ICON }];
     const allowedGroups = data.groups.filter((g) => !EXCLUDED_GROUPS.includes(g.key));
     return [
-      { key: 'all' as SourceType, label: 'All', icon: Search },
+      { key: 'all' as SourceType, label: 'All', icon: SEARCH_ICON },
       ...allowedGroups.map((g) => ({
         key: g.key as SourceType,
         label: g.label,
-        icon: ICON_MAP[g.icon] || FileText,
+        icon: CONTEXT_ICON_MAP[g.icon] || DEFAULT_SOURCE_ICON,
       })),
     ];
   }, [data]);
@@ -155,6 +130,8 @@ export function KnowledgeContextSelector({
     setActiveFilter('all');
   };
 
+  const SearchIcon = SEARCH_ICON;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -179,7 +156,7 @@ export function KnowledgeContextSelector({
               onClick={handleApply}
               disabled={selected.size === 0 || saveContext.isPending}
               style={{
-                backgroundColor: selected.size > 0 ? '#0d9488' : '#e5e7eb',
+                backgroundColor: selected.size > 0 ? 'hsl(var(--primary))' : '#e5e7eb',
                 color: selected.size > 0 ? '#ffffff' : '#9ca3af',
               }}
               className="px-4 py-2 text-sm font-medium rounded-lg transition-opacity hover:opacity-90 disabled:cursor-not-allowed"
@@ -193,13 +170,13 @@ export function KnowledgeContextSelector({
       <div className="flex flex-col gap-3">
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder="Search knowledge items..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
           />
         </div>
 
@@ -214,7 +191,7 @@ export function KnowledgeContextSelector({
                 onClick={() => setActiveFilter(chip.key)}
                 className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
                   isActive
-                    ? 'bg-teal-100 text-teal-700 ring-1 ring-teal-300'
+                    ? 'bg-primary/10 text-primary ring-1 ring-primary/30'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -226,7 +203,7 @@ export function KnowledgeContextSelector({
         </div>
 
         {/* Items list */}
-        <div className="max-h-[40vh] overflow-y-auto border border-gray-100 rounded-lg divide-y divide-gray-50">
+        <div className="max-h-[40vh] overflow-y-auto border border-gray-200 rounded-lg">
           {isLoading ? (
             <div className="flex items-center justify-center py-12 text-sm text-gray-400">
               Loading available context...
@@ -240,31 +217,33 @@ export function KnowledgeContextSelector({
               const key = `${item.sourceType}:${item.sourceId}`;
               const isSelected = selected.has(key);
               const meta = SOURCE_TYPE_META[item.sourceType];
-              const Icon = meta?.icon ?? FileText;
+              const Icon = meta?.icon ?? DEFAULT_SOURCE_ICON;
 
               return (
                 <button
                   key={key}
                   onClick={() => toggleItem(item)}
-                  className={`flex items-center gap-3 w-full px-3 py-2.5 text-left transition-colors hover:bg-gray-50 ${
-                    isSelected ? 'bg-teal-50/50' : ''
+                  className={`flex items-center gap-2.5 w-full px-3 py-1.5 text-left transition-colors hover:bg-gray-50 border-b border-gray-50 last:border-b-0 ${
+                    isSelected ? 'bg-primary/5' : ''
                   }`}
                 >
                   {/* Checkbox */}
                   <div
-                    className="flex items-center justify-center w-5 h-5 rounded border flex-shrink-0 transition-colors"
-                    style={
-                      isSelected
-                        ? { backgroundColor: '#0d9488', borderColor: '#0d9488' }
-                        : { backgroundColor: '#ffffff', borderColor: '#d1d5db' }
-                    }
+                    className="flex items-center justify-center rounded border flex-shrink-0 transition-colors"
+                    style={{
+                      width: 18,
+                      height: 18,
+                      ...(isSelected
+                        ? { backgroundColor: 'hsl(var(--primary))', borderColor: 'hsl(var(--primary))' }
+                        : { backgroundColor: '#ffffff', borderColor: '#d1d5db' }),
+                    }}
                   >
                     {isSelected && <Check className="w-3 h-3 text-white" />}
                   </div>
 
                   {/* Icon */}
-                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 flex-shrink-0">
-                    <Icon className="w-4 h-4 text-gray-500" />
+                  <div className="flex items-center justify-center w-7 h-7 rounded-md bg-gray-100 flex-shrink-0">
+                    <Icon className="w-3.5 h-3.5 text-gray-500" />
                   </div>
 
                   {/* Content */}

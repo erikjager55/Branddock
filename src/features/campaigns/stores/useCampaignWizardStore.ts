@@ -2,6 +2,9 @@ import { create } from "zustand";
 import type {
   CampaignGoalType,
   StrategyResultResponse,
+  CampaignBlueprint,
+  PipelineStep,
+  StrategicIntent,
 } from "../types/campaign-wizard.types";
 
 // ─── Types ────────────────────────────────────────────────
@@ -21,6 +24,14 @@ interface CampaignWizardState {
   activeDeliverableTab: string;
   saveAsTemplate: boolean;
   templateName: string;
+
+  // ─── Blueprint Pipeline ──────────────────────────────────
+  strategicIntent: StrategicIntent;
+  blueprintResult: CampaignBlueprint | null;
+  pipelineSteps: PipelineStep[];
+  currentPipelineStep: number;
+  pipelineError: string | null;
+
   setCurrentStep: (step: number) => void;
   nextStep: () => void;
   prevStep: () => void;
@@ -42,6 +53,13 @@ interface CampaignWizardState {
   setTemplateName: (name: string) => void;
   canProceed: () => boolean;
   resetWizard: () => void;
+
+  // ─── Blueprint Pipeline Actions ──────────────────────────
+  setStrategicIntent: (intent: StrategicIntent) => void;
+  setBlueprintResult: (result: CampaignBlueprint | null) => void;
+  updateStepStatus: (step: PipelineStep) => void;
+  setPipelineError: (error: string | null) => void;
+  resetPipeline: () => void;
 }
 
 // ─── Initial state ────────────────────────────────────────
@@ -61,6 +79,13 @@ const INITIAL_STATE = {
   activeDeliverableTab: "Written",
   saveAsTemplate: false,
   templateName: "",
+
+  // ─── Blueprint Pipeline ──────────────────────────────────
+  strategicIntent: "hybrid" as StrategicIntent,
+  blueprintResult: null as CampaignBlueprint | null,
+  pipelineSteps: [] as PipelineStep[],
+  currentPipelineStep: 0,
+  pipelineError: null as string | null,
 };
 
 // ─── Store ────────────────────────────────────────────────
@@ -132,7 +157,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         case 2:
           return state.selectedKnowledgeIds.length > 0;
         case 3:
-          return state.strategyResult !== null;
+          return state.strategyResult !== null || state.blueprintResult !== null;
         case 4:
           return state.selectedDeliverables.length > 0;
         case 5:
@@ -143,5 +168,31 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     },
 
     resetWizard: () => set(INITIAL_STATE),
+
+    // ─── Blueprint Pipeline Actions ──────────────────────────
+    setStrategicIntent: (strategicIntent) => set({ strategicIntent }),
+    setBlueprintResult: (blueprintResult) => set({ blueprintResult }),
+    updateStepStatus: (step) =>
+      set((s) => {
+        const steps = [...s.pipelineSteps];
+        const idx = steps.findIndex((st) => st.step === step.step);
+        if (idx >= 0) {
+          steps[idx] = step;
+        } else {
+          steps.push(step);
+        }
+        return {
+          pipelineSteps: steps,
+          currentPipelineStep: step.step,
+        };
+      }),
+    setPipelineError: (pipelineError) => set({ pipelineError }),
+    resetPipeline: () =>
+      set({
+        blueprintResult: null,
+        pipelineSteps: [],
+        currentPipelineStep: 0,
+        pipelineError: null,
+      }),
   }),
 );

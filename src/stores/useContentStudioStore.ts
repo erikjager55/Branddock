@@ -11,6 +11,17 @@ import type {
   InsertFormatType,
   InsertLocationType,
 } from '@/types/studio';
+import type { CampaignBlueprint, AssetPlanLayer } from '@/lib/campaigns/strategy-blueprint.types';
+
+/** Context passed from campaign detail to Content Studio */
+export interface CampaignStudioContext {
+  campaignId: string;
+  campaignName: string;
+  campaignGoalType: string | null;
+  campaignKnowledgeAssetIds: string[];
+  campaignBlueprint: CampaignBlueprint | null;
+  deliverableBrief: AssetPlanLayer['deliverables'][0]['brief'] | null;
+}
 
 interface ContentStudioState {
   // ─── Tab & Lock ─────────────────────────────────────────
@@ -57,6 +68,14 @@ interface ContentStudioState {
 
   // ─── Persona Context ──────────────────────────────────
   selectedPersonaIds: string[];
+
+  // ─── Campaign Blueprint Context ───────────────────────
+  campaignId: string | null;
+  campaignName: string;
+  campaignGoalType: string | null;
+  campaignKnowledgeAssetIds: string[];
+  campaignBlueprint: CampaignBlueprint | null;
+  deliverableBrief: AssetPlanLayer['deliverables'][0]['brief'] | null;
 }
 
 interface ContentStudioActions {
@@ -107,6 +126,10 @@ interface ContentStudioActions {
   setSelectedPersonaIds: (ids: string[]) => void;
   togglePersonaId: (id: string) => void;
 
+  // ─── Campaign Blueprint Context ───────────────────────
+  setCampaignContext: (ctx: CampaignStudioContext) => void;
+  clearCampaignContext: () => void;
+
   // ─── Reset ──────────────────────────────────────────────
   resetStore: () => void;
 }
@@ -135,6 +158,12 @@ const initialState: ContentStudioState = {
   selectedInsertLocation: 'cursor',
   checklistItems: [],
   selectedPersonaIds: [],
+  campaignId: null,
+  campaignName: '',
+  campaignGoalType: null,
+  campaignKnowledgeAssetIds: [],
+  campaignBlueprint: null,
+  deliverableBrief: null,
 };
 
 export const useContentStudioStore = create<ContentStudioState & ContentStudioActions>((set) => ({
@@ -205,6 +234,26 @@ export const useContentStudioStore = create<ContentStudioState & ContentStudioAc
         ? state.selectedPersonaIds.filter((pid) => pid !== id)
         : [...state.selectedPersonaIds, id],
     })),
+
+  // ─── Campaign Blueprint Context ───────────────────────
+  setCampaignContext: (ctx) =>
+    set({
+      campaignId: ctx.campaignId,
+      campaignName: ctx.campaignName,
+      campaignGoalType: ctx.campaignGoalType,
+      campaignKnowledgeAssetIds: ctx.campaignKnowledgeAssetIds,
+      campaignBlueprint: ctx.campaignBlueprint,
+      deliverableBrief: ctx.deliverableBrief,
+    }),
+  clearCampaignContext: () =>
+    set({
+      campaignId: null,
+      campaignName: '',
+      campaignGoalType: null,
+      campaignKnowledgeAssetIds: [],
+      campaignBlueprint: null,
+      deliverableBrief: null,
+    }),
 
   // ─── Reset ──────────────────────────────────────────────
   resetStore: () => set(initialState),

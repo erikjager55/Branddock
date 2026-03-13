@@ -179,7 +179,9 @@ export interface CoverageResponse {
 
 // ─── Strategy ──────────────────────────────────────────────
 
-export interface StrategyResponse {
+/** Legacy strategy response (pre-blueprint) */
+export interface LegacyStrategyResponse {
+  format?: 'legacy';
   coreConcept: string | null;
   channelMix: string | null;
   targetAudience: string | null;
@@ -190,6 +192,17 @@ export interface StrategyResponse {
   recommendedChannels: string[];
   personaCount?: number;
 }
+
+/** New blueprint strategy response */
+export interface BlueprintStrategyResponse {
+  format: 'blueprint';
+  blueprint: import('@/lib/campaigns/strategy-blueprint.types').CampaignBlueprint;
+  confidence: number | null;
+  generatedAt: string | null;
+  personaCount: number;
+}
+
+export type StrategyResponse = LegacyStrategyResponse | BlueprintStrategyResponse;
 
 export interface PromptSuggestionsResponse {
   suggestions: string[];

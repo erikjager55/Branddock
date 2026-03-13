@@ -39,7 +39,7 @@ export const CONTEXT_REGISTRY: ContextSourceConfig[] = [
   // ────────────────────────────────────
   {
     key: 'brand_asset',
-    label: 'Brand Assets',
+    label: 'Brand Foundation',
     icon: 'Fingerprint',
     category: 'brand',
     prismaModel: 'brandAsset',
@@ -71,6 +71,22 @@ export const CONTEXT_REGISTRY: ContextSourceConfig[] = [
       'toneSavedForAi', 'imagerySavedForAi',
     ],
     includeRelations: ['colors'],
+  },
+  {
+    key: 'persona',
+    label: 'Personas',
+    icon: 'Users',
+    category: 'brand',
+    prismaModel: 'persona',
+    workspaceFilter: 'workspaceId',
+    titleField: 'name',
+    descriptionField: 'occupation',
+    excludeFields: [
+      'id', 'createdAt', 'updatedAt', 'workspaceId',
+      'lockedById', 'lockedAt', 'isLocked',
+      'avatarUrl', 'avatarSource', 'strategicImplications',
+      'validationPercentage',
+    ],
   },
 
   // ────────────────────────────────────
@@ -126,26 +142,41 @@ export const CONTEXT_REGISTRY: ContextSourceConfig[] = [
       'addedBy', 'createdBy', 'thumbnail',
     ],
   },
+  {
+    key: 'competitor',
+    label: 'Competitors',
+    icon: 'Swords',
+    category: 'knowledge',
+    prismaModel: 'competitor',
+    workspaceFilter: 'workspaceId',
+    titleField: 'name',
+    descriptionField: 'description',
+    statusField: 'status',
+    excludeFields: [
+      'id', 'createdAt', 'updatedAt', 'workspaceId', 'slug',
+      'lockedById', 'lockedAt', 'isLocked', 'createdById',
+      'websiteUrl', 'scrapedData', 'lastScrapedAt',
+    ],
+  },
 
   // ────────────────────────────────────
   // STRATEGY
   // ────────────────────────────────────
   {
-    key: 'campaign',
-    label: 'Campaigns',
-    icon: 'Megaphone',
+    key: 'business_strategy',
+    label: 'Business Strategy',
+    icon: 'Target',
     category: 'strategy',
-    prismaModel: 'campaign',
+    prismaModel: 'businessStrategy',
     workspaceFilter: 'workspaceId',
     titleField: 'title',
     descriptionField: 'description',
     statusField: 'status',
     excludeFields: [
       'id', 'createdAt', 'updatedAt', 'workspaceId', 'slug',
-      'isArchived', 'isSavedAsTemplate', 'templateName',
-      'strategy', 'aiResearchConfig',
+      'isArchived',
     ],
-    includeRelations: ['deliverables'],
+    includeRelations: ['objectives'],
   },
   {
     key: 'deliverable',
@@ -170,8 +201,6 @@ export const CONTEXT_REGISTRY: ContextSourceConfig[] = [
 // ────────────────────────────────────
 // EXPLICITLY EXCLUDED (with reason)
 // ────────────────────────────────────
-// Personas      → You're already talking TO a persona
 // Questionnaires → Meta/config, not content
 // Research Hub   → Config, not relevant for conversation
 // Settings       → System config, not relevant
-// OKRs/Strategy  → Too abstract, confusing for persona character

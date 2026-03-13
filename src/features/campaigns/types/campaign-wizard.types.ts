@@ -1,19 +1,36 @@
+// Re-export blueprint types for convenience
+export type {
+  CampaignBlueprint,
+  StrategicIntent,
+  PipelineStep,
+  PipelineStepStatus,
+  RegenerateLayer,
+  GenerateBlueprintBody,
+  RegenerateBlueprintBody,
+  AssetPlanDeliverable,
+  DeliverableBrief,
+} from '@/lib/campaigns/strategy-blueprint.types';
+
 export type CampaignGoalType = "BRAND" | "PRODUCT" | "CONTENT" | "ENGAGEMENT";
 
-export interface WizardKnowledgeCategory {
-  category: string;
-  items: WizardKnowledgeItem[];
+export interface WizardKnowledgeGroupItem {
+  sourceType: string;
+  sourceId: string;
+  title: string;
+  description?: string;
+  status?: string;
 }
 
-export interface WizardKnowledgeItem {
-  id: string;
-  name: string;
-  type: string;
-  validationStatus: string | null;
+export interface WizardKnowledgeGroup {
+  key: string;
+  label: string;
+  icon: string;
+  category: string;
+  items: WizardKnowledgeGroupItem[];
 }
 
 export interface WizardKnowledgeResponse {
-  categories: WizardKnowledgeCategory[];
+  groups: WizardKnowledgeGroup[];
 }
 
 export interface GenerateStrategyBody {
@@ -75,3 +92,28 @@ export interface EstimateTimelineResponse {
   estimatedDays: number;
   breakdown: { phase: string; days: number }[];
 }
+
+/** GET /api/campaigns/:id/strategy response for new blueprint format */
+export interface BlueprintStrategyResponse {
+  format: 'blueprint';
+  blueprint: import('@/lib/campaigns/strategy-blueprint.types').CampaignBlueprint;
+  confidence: number | null;
+  generatedAt: string | null;
+  personaCount: number;
+}
+
+/** GET /api/campaigns/:id/strategy response for legacy format */
+export interface LegacyStrategyResponse {
+  format: 'legacy';
+  coreConcept: string | null;
+  channelMix: unknown;
+  targetAudience: string | null;
+  generatedAt: string | null;
+  confidence: number | null;
+  strategicApproach: string | null;
+  keyMessages: string[];
+  recommendedChannels: string[];
+  personaCount: number;
+}
+
+export type StrategyResponse = BlueprintStrategyResponse | LegacyStrategyResponse;

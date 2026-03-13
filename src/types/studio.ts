@@ -37,9 +37,10 @@ export type TypeSettings = TextSettings | ImageSettings | VideoSettings | Carous
 // ─── Carousel ────────────────────────────────────────────────
 
 export interface CarouselSlide {
-  index: number;
+  slideNumber: number;
   imageUrl: string | null;
   textOverlay: string | null;
+  subtitle?: string | null;
 }
 
 // ─── Checklist ───────────────────────────────────────────────
@@ -84,10 +85,16 @@ export interface GenerateContentBody {
 }
 
 export interface GenerateContentResponse {
-  content: string;
+  generatedText: string | null;
+  generatedImageUrls: string[];
+  generatedVideoUrl: string | null;
+  generatedSlides: CarouselSlide[];
   qualityScore: number;
+  qualityMetrics: Record<string, number>;
   costIncurred: number;
   generationTime: number;
+  contentTab: string;
+  model: string;
 }
 
 // ─── Update Studio ───────────────────────────────────────────

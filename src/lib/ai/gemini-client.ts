@@ -36,6 +36,8 @@ export interface GeminiCompletionOptions {
   maxOutputTokens?: number;
   /** JSON Schema for responseSchema — enforces exact structure from Gemini */
   responseSchema?: Record<string, unknown>;
+  /** Override the default 60s timeout (in milliseconds) */
+  timeoutMs?: number;
 }
 
 const DEFAULT_MODEL = 'gemini-3.1-pro-preview';
@@ -267,8 +269,7 @@ export async function createGeminiStructuredCompletion<T>(
       maxOutputTokens,
       responseMimeType: 'application/json',
       ...(options?.responseSchema ? { responseSchema: options.responseSchema } : {}),
-      // 60s timeout to prevent indefinite hangs
-      abortSignal: AbortSignal.timeout(60_000),
+      abortSignal: AbortSignal.timeout(options?.timeoutMs ?? 60_000),
     },
   });
 

@@ -180,3 +180,100 @@ export async function generateStrategy(campaignId: string): Promise<CampaignDeta
   if (!res.ok) throw new Error('Failed to generate strategy');
   return res.json();
 }
+
+/**
+ * Generate campaign blueprint via SSE stream.
+ * Calls onEvent for each SSE data event (progress, complete, error).
+ * Returns an abort function.
+ */
+export function generateBlueprintSSE(
+  campaignId: string,
+  body: import('@/lib/campaigns/strategy-blueprint.types').GenerateBlueprintBody,
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  const controller = new AbortController();
+
+  (async () => {
+    try {
+      const res = await fetch(`/api/campaigns/${campaignId}/strategy/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Failed to start generation' }));
+        onError(err.error || 'Failed to start generation');
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        onError('No response stream');
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              onEvent(data);
+            } catch {
+              // Skip malformed JSON lines
+            }
+          }
+        }
+      }
+
+      // Flush any remaining bytes from the TextDecoder and process all buffered lines
+      buffer += decoder.decode();
+      const remaining = buffer.split('\n');
+      for (const line of remaining) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            onEvent(data);
+          } catch {
+            // Skip malformed final chunk
+          }
+        }
+      }
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      onError(message);
+    }
+  })();
+
+  return { abort: () => controller.abort() };
+}
+
+/** Regenerate a specific layer of the blueprint */
+export async function regenerateBlueprintLayer(
+  campaignId: string,
+  body: import('@/lib/campaigns/strategy-blueprint.types').RegenerateBlueprintBody,
+): Promise<import('@/lib/campaigns/strategy-blueprint.types').CampaignBlueprint> {
+  const res = await fetch(`/api/campaigns/${campaignId}/strategy/regenerate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error('Failed to regenerate blueprint layer');
+  return res.json();
+}

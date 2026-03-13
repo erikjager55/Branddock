@@ -29,6 +29,7 @@ import {
   DELIVERABLE_CATEGORIES,
   getDeliverablesByCategory,
 } from "../../lib/deliverable-types";
+import { Sparkles } from "lucide-react";
 
 // ─── Icon Map ─────────────────────────────────────────────
 
@@ -73,6 +74,7 @@ export function DeliverablesStep() {
   const setDeliverableQuantity = useCampaignWizardStore(
     (s) => s.setDeliverableQuantity,
   );
+  const blueprintResult = useCampaignWizardStore((s) => s.blueprintResult);
 
   const activeCategory = activeDeliverableTab || DELIVERABLE_CATEGORIES[0];
   const categoryItems = getDeliverablesByCategory(activeCategory);
@@ -82,8 +84,28 @@ export function DeliverablesStep() {
     0,
   );
 
+  // Strategy-driven deliverable recommendations
+  const recommendedDeliverables = blueprintResult?.assetPlan?.deliverables ?? [];
+  const mustHaveCount = recommendedDeliverables.filter((d) => d.productionPriority === "must-have").length;
+  const totalRecommended = recommendedDeliverables.length;
+
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
+      {/* Strategy recommendations banner */}
+      {totalRecommended > 0 && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-3">
+          <Sparkles className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-emerald-800">
+              Strategy recommends {totalRecommended} deliverable{totalRecommended !== 1 ? "s" : ""}
+            </p>
+            <p className="text-xs text-emerald-600 mt-0.5">
+              {mustHaveCount} must-have, {totalRecommended - mustHaveCount} optional — based on your campaign blueprint
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Category tabs */}
       <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
         {DELIVERABLE_CATEGORIES.map((category) => {

@@ -1,11 +1,11 @@
 "use client";
 
-import { Megaphone, Target, PenTool, Users } from "lucide-react";
+import { Megaphone, Target, PenTool, Users, TrendingUp, Zap, Scale } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Input } from "@/components/shared";
 import { SelectionCard } from "@/components/ui/layout";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
-import type { CampaignGoalType } from "../../types/campaign-wizard.types";
+import type { CampaignGoalType, StrategicIntent } from "../../types/campaign-wizard.types";
 
 // ─── Goal Type Cards ──────────────────────────────────────
 
@@ -41,6 +41,38 @@ const GOAL_TYPES: {
   },
 ];
 
+// ─── Strategic Intent Cards ──────────────────────────────
+
+const STRATEGIC_INTENTS: {
+  type: StrategicIntent;
+  label: string;
+  ratio: string;
+  description: string;
+  icon: LucideIcon;
+}[] = [
+  {
+    type: "brand_building",
+    label: "Brand Building",
+    ratio: "60/40",
+    description: "Build long-term brand equity and awareness",
+    icon: TrendingUp,
+  },
+  {
+    type: "sales_activation",
+    label: "Sales Activation",
+    ratio: "40/60",
+    description: "Drive short-term conversions and leads",
+    icon: Zap,
+  },
+  {
+    type: "hybrid",
+    label: "Hybrid",
+    ratio: "50/50",
+    description: "Balance brand building with direct response",
+    icon: Scale,
+  },
+];
+
 // ─── Component ────────────────────────────────────────────
 
 export function SetupStep() {
@@ -52,6 +84,8 @@ export function SetupStep() {
   const setCampaignGoalType = useCampaignWizardStore(
     (s) => s.setCampaignGoalType,
   );
+  const strategicIntent = useCampaignWizardStore((s) => s.strategicIntent);
+  const setStrategicIntent = useCampaignWizardStore((s) => s.setStrategicIntent);
   const startDate = useCampaignWizardStore((s) => s.startDate);
   const setStartDate = useCampaignWizardStore((s) => s.setStartDate);
   const endDate = useCampaignWizardStore((s) => s.endDate);
@@ -97,6 +131,33 @@ export function SetupStep() {
               subtitle={desc}
               selected={campaignGoalType === type}
               onSelect={() => setCampaignGoalType(type)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Strategic Intent */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          Strategic Intent
+        </label>
+        <p className="text-xs text-muted-foreground mb-3">
+          How should the campaign balance long-term brand building vs. short-term activation? (Binet & Field IPA data)
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {STRATEGIC_INTENTS.map(({ type, label, ratio, description: desc, icon }) => (
+            <SelectionCard
+              key={type}
+              icon={icon}
+              title={label}
+              subtitle={desc}
+              selected={strategicIntent === type}
+              onSelect={() => setStrategicIntent(type)}
+              badges={
+                <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                  {ratio} brand/activation
+                </span>
+              }
             />
           ))}
         </div>

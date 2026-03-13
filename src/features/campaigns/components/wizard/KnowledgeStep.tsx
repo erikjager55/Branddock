@@ -1,33 +1,23 @@
 "use client";
 
-import React from "react";
-import { AlertTriangle, CheckCircle2, Database } from "lucide-react";
-import { Badge, Skeleton } from "@/components/shared";
+import React, { useState, useMemo } from "react";
+import {
+  Check,
+  AlertTriangle,
+  Database,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
+import { Skeleton } from "@/components/shared";
 import { useWizardKnowledge } from "../../hooks";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
-
-// ─── Validation status badge ──────────────────────────────
-
-function ValidationBadge({ status }: { status: string | null }) {
-  if (!status) return null;
-
-  const map: Record<string, { label: string; variant: "success" | "warning" | "default" }> = {
-    validated: { label: "Validated", variant: "success" },
-    pending: { label: "Pending", variant: "warning" },
-    draft: { label: "Draft", variant: "default" },
-  };
-
-  const info = map[status.toLowerCase()] || {
-    label: status,
-    variant: "default" as const,
-  };
-
-  return (
-    <Badge variant={info.variant} size="sm">
-      {info.label}
-    </Badge>
-  );
-}
+import {
+  SOURCE_TYPE_META,
+  CONTEXT_ICON_MAP,
+  DEFAULT_SOURCE_ICON,
+  SEARCH_ICON,
+} from "@/lib/ai/context/source-ui-config";
+import type { WizardKnowledgeGroup } from "../../types/campaign-wizard.types";
 
 // ─── Component ────────────────────────────────────────────
 
@@ -46,56 +36,116 @@ export function KnowledgeStep() {
     (s) => s.deselectAllKnowledge,
   );
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    new Set(),
+  );
+
+  // Build filter chips from groups
+  const filterChips = useMemo(() => {
+    if (!knowledgeData?.groups)
+      return [{ key: "all", label: "All", icon: SEARCH_ICON }];
+    return [
+      { key: "all", label: "All", icon: SEARCH_ICON },
+      ...knowledgeData.groups.map((g) => ({
+        key: g.key,
+        label: g.label,
+        icon: CONTEXT_ICON_MAP[g.icon] || DEFAULT_SOURCE_ICON,
+      })),
+    ];
+  }, [knowledgeData]);
+
+  // Filter groups based on search and active filter
+  const visibleGroups = useMemo(() => {
+    if (!knowledgeData?.groups) return [];
+
+    let groups = knowledgeData.groups;
+
+    // Type filter
+    if (activeFilter !== "all") {
+      groups = groups.filter((g) => g.key === activeFilter);
+    }
+
+    // Search filter within groups
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      groups = groups
+        .map((g) => ({
+          ...g,
+          items: g.items.filter(
+            (i) =>
+              i.title.toLowerCase().includes(q) ||
+              (i.description && i.description.toLowerCase().includes(q)),
+          ),
+        }))
+        .filter((g) => g.items.length > 0);
+    }
+
+    return groups;
+  }, [knowledgeData, activeFilter, searchQuery]);
+
+  // All item IDs across all groups (unfiltered)
+  const allItemIds = useMemo(() => {
+    if (!knowledgeData?.groups) return [];
+    return knowledgeData.groups.flatMap((g) => g.items.map((i) => i.sourceId));
+  }, [knowledgeData]);
+
+  const toggleGroupCollapse = (groupKey: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) next.delete(groupKey);
+      else next.add(groupKey);
+      return next;
+    });
+  };
+
+  const toggleGroupSelection = (group: WizardKnowledgeGroup) => {
+    const groupIds = group.items.map((i) => i.sourceId);
+    const allSelected = groupIds.every((id) =>
+      selectedKnowledgeIds.includes(id),
+    );
+
+    if (allSelected) {
+      // Deselect group: keep all except this group's IDs
+      selectAllKnowledge(
+        selectedKnowledgeIds.filter((id) => !groupIds.includes(id)),
+      );
+    } else {
+      // Select group: add all group IDs to current selection
+      selectAllKnowledge([
+        ...new Set([...selectedKnowledgeIds, ...groupIds]),
+      ]);
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-2xl mx-auto">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="space-y-3">
-            <Skeleton width="30%" height={16} className="rounded" />
-            <div className="space-y-2">
-              {Array.from({ length: 3 }).map((_, j) => (
-                <Skeleton key={j} width="100%" height={40} className="rounded-lg" />
-              ))}
-            </div>
-          </div>
-        ))}
+      <div className="space-y-3 max-w-2xl mx-auto">
+        <Skeleton width="100%" height={40} className="rounded-lg" />
+        <div className="flex gap-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} width={80} height={28} className="rounded-full" />
+          ))}
+        </div>
+        <div className="space-y-1">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} width="100%" height={40} className="rounded-lg" />
+          ))}
+        </div>
       </div>
     );
   }
 
-  const categories = knowledgeData?.categories || [];
-  const allItemIds = categories.flatMap((cat) =>
-    cat.items.map((item) => item.id),
-  );
-
-  const handleSelectAllCategory = (
-    categoryItems: { id: string }[],
-    allSelected: boolean,
-  ) => {
-    if (allSelected) {
-      // Deselect all in this category
-      categoryItems.forEach((item) => {
-        if (selectedKnowledgeIds.includes(item.id)) {
-          toggleKnowledgeId(item.id);
-        }
-      });
-    } else {
-      // Select all in this category
-      categoryItems.forEach((item) => {
-        if (!selectedKnowledgeIds.includes(item.id)) {
-          toggleKnowledgeId(item.id);
-        }
-      });
-    }
-  };
+  const SearchIcon = SEARCH_ICON;
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      {/* Header with global select/deselect */}
+    <div className="space-y-3 max-w-2xl mx-auto">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-gray-900">
-            Select Knowledge Assets
+            Select Knowledge Context
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
             Choose the brand knowledge to inform your campaign strategy
@@ -105,7 +155,7 @@ export function KnowledgeStep() {
           <button
             type="button"
             onClick={() => selectAllKnowledge(allItemIds)}
-            className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+            className="text-xs text-primary hover:opacity-80 font-medium"
           >
             Select All
           </button>
@@ -122,7 +172,7 @@ export function KnowledgeStep() {
 
       {/* Warning if none selected */}
       {selectedKnowledgeIds.length === 0 && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-lg">
+        <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
           <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
           <p className="text-xs text-amber-700">
             Select at least one knowledge asset to generate an effective
@@ -131,82 +181,191 @@ export function KnowledgeStep() {
         </div>
       )}
 
-      {/* Category sections */}
-      {categories.map((category) => {
-        const categoryItemIds = category.items.map((i) => i.id);
-        const allCategorySelected = categoryItemIds.every((id) =>
-          selectedKnowledgeIds.includes(id),
-        );
-        const someCategorySelected =
-          categoryItemIds.some((id) => selectedKnowledgeIds.includes(id)) &&
-          !allCategorySelected;
+      {/* Search */}
+      <div className="relative">
+        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search knowledge items..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        />
+      </div>
 
-        return (
-          <div key={category.category} className="space-y-2">
-            {/* Category header */}
-            <div className="flex items-center gap-3 pb-2 border-b border-gray-100">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={allCategorySelected}
-                  ref={(el) => {
-                    if (el) el.indeterminate = someCategorySelected;
-                  }}
-                  onChange={() =>
-                    handleSelectAllCategory(
-                      category.items,
-                      allCategorySelected,
-                    )
-                  }
-                  className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                />
-                <span className="text-sm font-semibold text-gray-900">
-                  {category.category}
-                </span>
-              </label>
-              <Badge size="sm">{category.items.length}</Badge>
-            </div>
+      {/* Filter chips */}
+      <div className="flex flex-wrap gap-1.5">
+        {filterChips.map((chip) => {
+          const Icon = chip.icon;
+          const isActive = activeFilter === chip.key;
+          return (
+            <button
+              key={chip.key}
+              type="button"
+              onClick={() => setActiveFilter(chip.key)}
+              className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
+                isActive
+                  ? "bg-primary/10 text-primary ring-1 ring-primary/30"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
+            >
+              <Icon className="w-3 h-3" />
+              {chip.label}
+            </button>
+          );
+        })}
+      </div>
 
-            {/* Items */}
-            <div className="space-y-1 pl-2">
-              {category.items.map((item) => {
-                const isSelected = selectedKnowledgeIds.includes(item.id);
-
-                return (
-                  <label
-                    key={item.id}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors ${
-                      isSelected
-                        ? "bg-teal-50/50 border border-teal-200"
-                        : "hover:bg-gray-50 border border-transparent"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleKnowledgeId(item.id)}
-                      className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
-                    />
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className="text-sm text-gray-900 truncate">
-                        {item.name}
-                      </span>
-                      <Badge size="sm">{item.type}</Badge>
-                      <ValidationBadge status={item.validationStatus} />
-                    </div>
-                    {isSelected && (
-                      <CheckCircle2 className="w-4 h-4 text-teal-500 flex-shrink-0" />
-                    )}
-                  </label>
-                );
-              })}
-            </div>
+      {/* Grouped items list */}
+      <div className="max-h-[40vh] overflow-y-auto border border-gray-200 rounded-lg">
+        {visibleGroups.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-sm text-gray-400">
+            <Database className="w-6 h-6 mb-2 text-gray-300" />
+            {searchQuery
+              ? "No items match your search"
+              : "No context items available"}
           </div>
-        );
-      })}
+        ) : (
+          visibleGroups.map((group, groupIdx) => {
+            const isCollapsed = collapsedGroups.has(group.key);
+            const groupIds = group.items.map((i) => i.sourceId);
+            const selectedInGroup = groupIds.filter((id) =>
+              selectedKnowledgeIds.includes(id),
+            ).length;
+            const allGroupSelected =
+              selectedInGroup === group.items.length && group.items.length > 0;
+            const someGroupSelected = selectedInGroup > 0 && !allGroupSelected;
+            const GroupIcon =
+              CONTEXT_ICON_MAP[group.icon] || DEFAULT_SOURCE_ICON;
+
+            return (
+              <div
+                key={group.key}
+                className={groupIdx > 0 ? "border-t border-gray-200" : ""}
+              >
+                {/* Group header */}
+                <button
+                  type="button"
+                  onClick={() => toggleGroupCollapse(group.key)}
+                  className="flex items-center gap-2 w-full px-3 py-2 bg-gray-50/80 hover:bg-gray-100/80 transition-colors"
+                >
+                  {isCollapsed ? (
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                  )}
+                  <GroupIcon className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" />
+                  <span className="text-xs font-semibold text-gray-700 truncate">
+                    {group.label}
+                  </span>
+                  <span className="text-[10px] text-gray-400 flex-shrink-0">
+                    ({selectedInGroup}/{group.items.length})
+                  </span>
+
+                  {/* Group select-all checkbox */}
+                  <div className="ml-auto flex-shrink-0">
+                    <div
+                      role="checkbox"
+                      aria-checked={allGroupSelected}
+                      className="h-4 w-4 rounded border flex items-center justify-center transition-colors"
+                      style={{
+                        backgroundColor: allGroupSelected
+                          ? "hsl(var(--primary))"
+                          : someGroupSelected
+                            ? "hsl(var(--primary) / 0.4)"
+                            : "#ffffff",
+                        borderColor: allGroupSelected
+                          ? "hsl(var(--primary))"
+                          : someGroupSelected
+                            ? "hsl(var(--primary) / 0.5)"
+                            : "#d1d5db",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleGroupSelection(group);
+                      }}
+                    >
+                      {(allGroupSelected || someGroupSelected) && (
+                        <Check className="w-2.5 h-2.5 text-white" />
+                      )}
+                    </div>
+                  </div>
+                </button>
+
+                {/* Group items */}
+                {!isCollapsed &&
+                  group.items.map((item) => {
+                    const isSelected = selectedKnowledgeIds.includes(
+                      item.sourceId,
+                    );
+                    const meta = SOURCE_TYPE_META[item.sourceType];
+                    const Icon = meta?.icon ?? DEFAULT_SOURCE_ICON;
+
+                    return (
+                      <button
+                        key={`${item.sourceType}:${item.sourceId}`}
+                        type="button"
+                        onClick={() => toggleKnowledgeId(item.sourceId)}
+                        className="flex items-center gap-2.5 w-full pl-9 pr-3 py-1.5 text-left transition-colors hover:bg-gray-50"
+                        style={{
+                          backgroundColor: isSelected
+                            ? "hsl(var(--primary) / 0.06)"
+                            : undefined,
+                        }}
+                      >
+                        {/* Checkbox */}
+                        <div
+                          className="h-[18px] w-[18px] rounded border flex items-center justify-center flex-shrink-0 transition-colors"
+                          style={{
+                            backgroundColor: isSelected
+                              ? "hsl(var(--primary))"
+                              : "#ffffff",
+                            borderColor: isSelected
+                              ? "hsl(var(--primary))"
+                              : "#d1d5db",
+                          }}
+                        >
+                          {isSelected && (
+                            <Check className="w-3 h-3 text-white" />
+                          )}
+                        </div>
+
+                        {/* Icon */}
+                        <div className="flex items-center justify-center w-7 h-7 rounded-md bg-gray-100 flex-shrink-0">
+                          <Icon className="w-3.5 h-3.5 text-gray-500" />
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {item.title}
+                          </p>
+                          {item.description && (
+                            <p className="text-xs text-gray-500 truncate">
+                              {item.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Type badge */}
+                        {meta && (
+                          <span
+                            className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${meta.color}`}
+                          >
+                            {meta.label}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+              </div>
+            );
+          })
+        )}
+      </div>
 
       {/* Selected count */}
-      <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
+      <div className="flex items-center gap-2 pt-1">
         <Database className="w-4 h-4 text-gray-400" />
         <span className="text-sm text-gray-600">
           <span className="font-semibold text-gray-900">

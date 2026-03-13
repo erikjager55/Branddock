@@ -8,6 +8,7 @@ import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog 
 import { useLockState } from "@/hooks/useLockState";
 import { useLockVisibility } from "@/hooks/useLockVisibility";
 import { useCampaignStore } from "../../stores/useCampaignStore";
+import { useContentStudioStore } from "@/stores/useContentStudioStore";
 import {
   useCampaignDetail,
   useKnowledgeAssets,
@@ -15,10 +16,13 @@ import {
   useStrategy,
   useGenerateCampaignStrategy,
   useDeliverables,
+  useAddDeliverable,
 } from "../../hooks";
 import { ConfigureInputsTab } from "./ConfigureInputsTab";
 import { StrategyResultTab } from "./StrategyResultTab";
 import { DeliverablesTab } from "./DeliverablesTab";
+import type { BlueprintStrategyResponse } from "@/types/campaign";
+import type { CampaignBlueprint } from "@/lib/campaigns/strategy-blueprint.types";
 
 interface CampaignDetailPageProps {
   campaignId: string;
@@ -47,6 +51,68 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
   const { data: deliverables } = useDeliverables(campaignId);
   const removeAsset = useRemoveKnowledgeAsset(campaignId);
   const generateStrategy = useGenerateCampaignStrategy(campaignId);
+  const addDeliverable = useAddDeliverable(campaignId);
+
+  /** Warm handover: set campaign context in Content Studio store before navigation */
+  const handleOpenInStudio = (cId: string, did: string) => {
+    // Extract blueprint if strategy is in blueprint format
+    let blueprint: CampaignBlueprint | null = null;
+    if (strategy && 'format' in strategy && strategy.format === 'blueprint') {
+      blueprint = (strategy as BlueprintStrategyResponse).blueprint;
+    }
+
+    // Find matching deliverable brief from asset plan
+    const deliverableBrief = blueprint?.assetPlan?.deliverables?.find(
+      (d) => d.title === deliverables?.find((del) => del.id === did)?.title
+    )?.brief ?? null;
+
+    useContentStudioStore.getState().setCampaignContext({
+      campaignId: cId,
+      campaignName: campaign?.title ?? '',
+      campaignGoalType: campaign?.campaignGoalType ?? null,
+      campaignKnowledgeAssetIds: (assets ?? []).map((a) => a.id),
+      campaignBlueprint: blueprint,
+      deliverableBrief,
+    });
+
+    onOpenInStudio?.(cId, did);
+  };
+
+  /** "Bring to Life" from AssetPlanSection: create deliverable → set context → navigate to studio */
+  const [bringToLifeError, setBringToLifeError] = React.useState<string | null>(null);
+  const handleBringToLife = async (deliverableTitle: string, contentType: string) => {
+    setBringToLifeError(null);
+    try {
+      const result = await addDeliverable.mutateAsync({ title: deliverableTitle, contentType });
+      if (result?.id) {
+        // Pass deliverableTitle directly for brief matching — avoids stale deliverables cache
+        // since the newly created deliverable may not yet be in the TanStack cache
+        let bpBlueprint: CampaignBlueprint | null = null;
+        if (strategy && 'format' in strategy && strategy.format === 'blueprint') {
+          bpBlueprint = (strategy as BlueprintStrategyResponse).blueprint;
+        }
+
+        const matchedBrief = bpBlueprint?.assetPlan?.deliverables?.find(
+          (d) => d.title === deliverableTitle
+        )?.brief ?? null;
+
+        useContentStudioStore.getState().setCampaignContext({
+          campaignId,
+          campaignName: campaign?.title ?? '',
+          campaignGoalType: campaign?.campaignGoalType ?? null,
+          campaignKnowledgeAssetIds: (assets ?? []).map((a) => a.id),
+          campaignBlueprint: bpBlueprint,
+          deliverableBrief: matchedBrief,
+        });
+
+        onOpenInStudio?.(campaignId, result.id);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create deliverable";
+      console.error("[handleBringToLife]", message);
+      setBringToLifeError(message);
+    }
+  };
 
   if (campaignLoading) {
     return (
@@ -163,18 +229,25 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
               />
             ) : (
               <div className="space-y-8">
+                {bringToLifeError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                    {bringToLifeError}
+                  </div>
+                )}
                 {visibility.showAITools && (
                   <StrategyResultTab
                     strategy={strategy}
+                    campaignId={campaignId}
                     isLoading={strategyLoading}
                     onGenerate={() => generateStrategy.mutate()}
                     isGenerating={generateStrategy.isPending}
+                    onBringToLife={onOpenInStudio ? handleBringToLife : undefined}
                   />
                 )}
                 <DeliverablesTab
                   deliverables={deliverables || campaign.deliverables || []}
                   onAddDeliverable={() => alert("Add deliverable coming in S6.B")}
-                  onOpenInStudio={visibility.showAITools ? (did) => onOpenInStudio?.(campaignId, did) : undefined}
+                  onOpenInStudio={visibility.showAITools ? (did) => handleOpenInStudio(campaignId, did) : undefined}
                 />
               </div>
             )
@@ -183,7 +256,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
             <DeliverablesTab
               deliverables={deliverables || campaign.deliverables || []}
               onAddDeliverable={() => alert("Add deliverable coming in S6.B")}
-              onOpenInStudio={visibility.showAITools ? (did) => onOpenInStudio?.(campaignId, did) : undefined}
+              onOpenInStudio={visibility.showAITools ? (did) => handleOpenInStudio(campaignId, did) : undefined}
             />
           )}
         </div>

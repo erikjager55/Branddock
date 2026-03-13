@@ -1,114 +1,143 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { resolveWorkspaceId } from "@/lib/auth-server";
-import { buildAllPersonasContext } from "@/lib/ai/persona-context";
-import { requireUnlocked } from "@/lib/lock-guard";
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { resolveWorkspaceId } from '@/lib/auth-server';
+import { requireUnlocked } from '@/lib/lock-guard';
+import { generateCampaignBlueprint } from '@/lib/campaigns/strategy-chain';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
+import type { PipelineStep, GenerateBlueprintBody } from '@/lib/campaigns/strategy-blueprint.types';
 
 // ---------------------------------------------------------------------------
-// POST /api/campaigns/[id]/strategy/generate — Generate campaign strategy
+// Shared: save blueprint to campaign + invalidate caches
+// ---------------------------------------------------------------------------
+async function saveBlueprintToCampaign(
+  id: string,
+  workspaceId: string,
+  blueprint: import('@/lib/campaigns/strategy-blueprint.types').CampaignBlueprint,
+) {
+  await prisma.campaign.update({
+    where: { id },
+    data: {
+      strategy: JSON.parse(JSON.stringify(blueprint)),
+      strategyConfidence: blueprint.confidence,
+      strategicApproach: blueprint.strategy.positioningStatement,
+      keyMessages: [
+        blueprint.strategy.messagingHierarchy.brandMessage,
+        blueprint.strategy.messagingHierarchy.campaignMessage,
+        ...blueprint.strategy.messagingHierarchy.proofPoints.slice(0, 3),
+      ],
+      targetAudienceInsights: blueprint.personaValidation.length > 0
+        ? blueprint.personaValidation.map(p => `${p.personaName}: ${p.feedback}`).join('\n')
+        : blueprint.strategy.jtbdFraming.jobStatement,
+      recommendedChannels: blueprint.channelPlan.channels.map(c => c.name),
+      strategyGeneratedAt: new Date(),
+    },
+  });
+
+  invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+  invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/campaigns/[id]/strategy/generate
+// Supports two modes:
+//   - Accept: text/event-stream → SSE with real-time progress (used by wizard)
+//   - Accept: application/json  → synchronous JSON response (used by detail page)
 // ---------------------------------------------------------------------------
 export async function POST(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
-      return NextResponse.json({ error: "No workspace found" }, { status: 403 });
+      return NextResponse.json({ error: 'No workspace found' }, { status: 403 });
     }
 
     const { id } = await params;
 
-    const lockResponse = await requireUnlocked("campaign", id);
+    const lockResponse = await requireUnlocked('campaign', id);
     if (lockResponse) return lockResponse;
 
     const campaign = await prisma.campaign.findFirst({
       where: { id, workspaceId },
     });
     if (!campaign) {
-      return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
     }
 
-    // Fetch persona context for the workspace
-    const personaContext = await buildAllPersonasContext(workspaceId);
+    // Parse request body
+    let body: GenerateBlueprintBody = {};
+    try {
+      body = await request.json();
+    } catch {
+      // Empty body is fine — use defaults
+    }
 
-    // Build audience insights from persona data
-    const targetAudienceInsights = personaContext.count > 0
-      ? `Target audience analysis based on ${personaContext.count} persona${personaContext.count !== 1 ? 's' : ''}. Primary segments show high engagement potential with content-driven strategies across digital channels.\n\n${personaContext.text}`
-      : "Target audience analysis based on your campaign objectives. Primary segments show high engagement potential with content-driven strategies across digital channels.";
+    const accept = request.headers.get('accept') || '';
+    const wantsSSE = accept.includes('text/event-stream');
 
-    // Enrich key messages when personas are available
-    const keyMessages = personaContext.count > 0
-      ? [
-          "Key message 1: Reinforce brand value proposition aligned with persona goals",
-          "Key message 2: Address target audience pain points and frustrations",
-          "Key message 3: Differentiate from competitors using persona-driven insights",
-        ]
-      : [
-          "Key message 1: Reinforce brand value proposition",
-          "Key message 2: Address target audience pain points",
-          "Key message 3: Differentiate from competitors",
-        ];
+    // ── JSON mode: run pipeline synchronously, return result ──
+    if (!wantsSSE) {
+      const blueprint = await generateCampaignBlueprint(
+        workspaceId,
+        id,
+        {
+          personaIds: body.personaIds,
+          strategicIntent: body.strategicIntent,
+        },
+      );
 
-    const updated = await prisma.campaign.update({
-      where: { id },
-      data: {
-        strategyConfidence: personaContext.count > 0 ? 88 : 75,
-        strategicApproach: personaContext.count > 0
-          ? `AI-generated strategic approach based on your brand assets, ${personaContext.count} target persona${personaContext.count !== 1 ? 's' : ''}, and campaign objectives. This strategy leverages your unique brand positioning and persona insights to maximize engagement and deliver measurable results.`
-          : "AI-generated strategic approach based on your brand assets and campaign objectives. This strategy leverages your unique brand positioning to maximize engagement and deliver measurable results.",
-        keyMessages,
-        targetAudienceInsights,
-        recommendedChannels: ["Social Media", "Email", "Content Marketing"],
-        strategyGeneratedAt: new Date(),
-      },
-      include: {
-        deliverables: { orderBy: { createdAt: "asc" } },
-        knowledgeAssets: true,
+      await saveBlueprintToCampaign(id, workspaceId, blueprint);
+      return NextResponse.json(blueprint);
+    }
+
+    // ── SSE mode: stream progress events ──
+    let currentStep = 0;
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        function sendEvent(data: PipelineStep | { type: string; blueprint?: unknown; error?: string; failedStep?: number }) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        }
+
+        try {
+          const blueprint = await generateCampaignBlueprint(
+            workspaceId,
+            id,
+            {
+              personaIds: body.personaIds,
+              strategicIntent: body.strategicIntent,
+            },
+            (step: PipelineStep) => {
+              currentStep = step.step;
+              sendEvent(step);
+            },
+          );
+
+          await saveBlueprintToCampaign(id, workspaceId, blueprint);
+
+          // Send completion event
+          sendEvent({ type: 'complete', blueprint });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          console.error('[strategy/generate] Pipeline error:', message);
+          sendEvent({ type: 'error', error: message, failedStep: currentStep });
+        } finally {
+          controller.close();
+        }
       },
     });
 
-    return NextResponse.json({
-      id: updated.id,
-      title: updated.title,
-      slug: updated.slug,
-      type: updated.type,
-      status: updated.status,
-      strategyConfidence: updated.strategyConfidence,
-      strategicApproach: updated.strategicApproach,
-      keyMessages: updated.keyMessages,
-      targetAudienceInsights: updated.targetAudienceInsights,
-      recommendedChannels: updated.recommendedChannels,
-      strategyGeneratedAt: updated.strategyGeneratedAt?.toISOString() ?? null,
-      personaCount: personaContext.count,
-      createdAt: updated.createdAt.toISOString(),
-      updatedAt: updated.updatedAt.toISOString(),
-      deliverables: updated.deliverables.map((d) => ({
-        id: d.id,
-        title: d.title,
-        contentType: d.contentType,
-        status: d.status,
-        progress: d.progress,
-        qualityScore: d.qualityScore,
-        assignedTo: d.assignedTo,
-        isFavorite: d.isFavorite,
-        createdAt: d.createdAt.toISOString(),
-        updatedAt: d.updatedAt.toISOString(),
-      })),
-      knowledgeAssets: updated.knowledgeAssets.map((ka) => ({
-        id: ka.id,
-        assetName: ka.assetName,
-        assetType: ka.assetType,
-        validationStatus: ka.validationStatus,
-        isAutoSelected: ka.isAutoSelected,
-        brandAssetId: ka.brandAssetId,
-        personaId: ka.personaId,
-        productId: ka.productId,
-        insightId: ka.insightId,
-      })),
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     });
   } catch (error) {
-    console.error("[POST /api/campaigns/:id/strategy/generate]", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    console.error('[POST /api/campaigns/:id/strategy/generate]', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { getAvailableContextItems } from "@/lib/ai/context/fetcher";
 
-// GET /api/campaigns/wizard/knowledge — List knowledge assets available for campaign wizard
+// GET /api/campaigns/wizard/knowledge — Knowledge context items for the campaign wizard
+// Uses the same context fetcher as persona chat "Add Context"
 export async function GET() {
   try {
     const workspaceId = await resolveWorkspaceId();
@@ -10,18 +11,9 @@ export async function GET() {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const assets = await prisma.brandAsset.findMany({
-      where: { workspaceId },
-      select: {
-        id: true,
-        name: true,
-        category: true,
-        status: true,
-      },
-      orderBy: { name: "asc" },
-    });
+    const groups = await getAvailableContextItems(workspaceId);
 
-    return NextResponse.json(assets);
+    return NextResponse.json({ groups });
   } catch (error) {
     console.error("[GET /api/campaigns/wizard/knowledge]", error);
     return NextResponse.json(
