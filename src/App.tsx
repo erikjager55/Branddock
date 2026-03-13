@@ -906,6 +906,7 @@ function AppContent() {
             onMethodClick={(assetId, methodType) => handleNavigateToResearchMethod(assetId, methodType, 'work')}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            onCreateContent={() => useCampaignStore.getState().openQuickModal()}
           />
           <main className="flex-1 overflow-y-auto bg-background">
             <LazyWrapper>

@@ -1,39 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import Image from 'next/image';
 import { Button } from './ui/button';
-import { Badge } from './ui/badge';
 import * as LucideIcons from 'lucide-react';
 import {
-  User,
-  Building2,
-  Network,
-  CreditCard,
-  Bell,
-  Globe,
-  ShoppingCart,
   PanelLeftOpen,
   PanelLeftClose,
-  ChevronDown,
-  Sparkles,
   Settings,
   HelpCircle,
-  Users,
-  Shield,
+  Plus,
 } from 'lucide-react';
-import { useBrandAssets } from '../contexts/BrandAssetsContext';
-import { useBrandAlignment } from '../contexts/BrandAlignmentContext';
 import { SIDEBAR_NAV } from '../lib/constants/design-tokens';
 import { ResearchMethodType } from '../types/brand-asset';
-import { PlanBadge, UsageMeter } from './billing';
-import { useBillingPlan } from '../hooks/use-billing';
 import { preloadModule } from '../lib/lazy-imports';
-
-type NavigationItem = {
-  id: string;
-  label: string;
-  icon: any;
-  badge?: string;
-};
 
 interface EnhancedSidebarSimpleProps {
   activeSection: string;
@@ -42,6 +20,7 @@ interface EnhancedSidebarSimpleProps {
   onMethodClick?: (assetId: string, methodType: ResearchMethodType) => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
+  onCreateContent?: () => void;
 }
 
 function getIcon(iconName: string): React.ComponentType<{ className?: string }> {
@@ -53,32 +32,8 @@ export function EnhancedSidebarSimple({
   setActiveSection,
   collapsed,
   onToggleCollapse,
+  onCreateContent,
 }: EnhancedSidebarSimpleProps) {
-  const { brandAssets } = useBrandAssets();
-  const { overview: alignmentOverview } = useBrandAlignment();
-  const openIssuesCount = alignmentOverview?.openIssuesCount ?? 0;
-  const billing = useBillingPlan();
-
-  const settingsItems: NavigationItem[] = [
-    { id: 'settings-account', label: 'Account', icon: User },
-    { id: 'settings-team', label: 'Team', icon: Users },
-    { id: 'settings-agency', label: 'Agency', icon: Building2 },
-    { id: 'settings-clients', label: 'Clients', icon: Network },
-    { id: 'settings-billing', label: 'Billing & Payments', icon: CreditCard },
-    { id: 'settings-notifications', label: 'Notifications', icon: Bell },
-    { id: 'settings-appearance', label: 'Appearance', icon: Globe },
-    { id: 'settings-admin', label: 'AI Configuration', icon: Shield },
-    { id: 'settings-commercial-demo', label: 'Commercial Demo', icon: ShoppingCart },
-    { id: 'validation-demo', label: 'Demo: Compact Variant', icon: Sparkles, badge: 'NEW' },
-  ];
-
-  const [settingsExpanded, setSettingsExpanded] = useState(true);
-
-  // Count assets that need attention
-  const needsAttentionCount = useMemo(() => {
-    return brandAssets.filter(asset => asset.status === 'ready-to-validate').length;
-  }, [brandAssets]);
-
   // All nav items flat for collapsed mode
   const allNavItems = useMemo(() => {
     return SIDEBAR_NAV.sections.flatMap(s => s.items);
@@ -86,9 +41,9 @@ export function EnhancedSidebarSimple({
 
   if (collapsed) {
     return (
-      <div data-testid="sidebar" className="h-screen bg-white border-r border-border w-16 flex-shrink-0 flex flex-col shadow-sm">
+      <div data-testid="sidebar" className="h-full bg-white border-r border-gray-200 w-16 flex-shrink-0 flex flex-col">
         {/* Logo - Collapsed */}
-        <div className="p-3 border-b border-border">
+        <div className="p-3 border-b border-gray-200">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
             <span className="text-white font-bold text-lg">B</span>
           </div>
@@ -99,7 +54,7 @@ export function EnhancedSidebarSimple({
             variant="ghost"
             size="icon"
             onClick={onToggleCollapse}
-            className="w-8 h-8 hover:bg-muted"
+            className="w-8 h-8 hover:bg-gray-100"
           >
             <PanelLeftOpen className="h-4 w-4 text-gray-400" />
           </Button>
@@ -134,11 +89,11 @@ export function EnhancedSidebarSimple({
   }
 
   return (
-    <div data-testid="sidebar" className="h-screen bg-gray-50 border-r border-gray-200 flex-shrink-0 flex flex-col w-[180px]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-      {/* Top Section - Logo & Collapse Button */}
-      <div className="px-4 pt-6 pb-4 border-b border-gray-200">
-        {/* Logo/Brand */}
-        <div className="flex items-center justify-between mb-4">
+    <div data-testid="sidebar" className="h-full bg-white border-r border-gray-200 flex-shrink-0 flex flex-col w-[200px]" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      {/* Top Section - Logo & Create Button */}
+      <div className="px-4 pt-5 pb-2">
+        {/* Logo + Collapse */}
+        <div className="flex items-center justify-between mb-5">
           <Image
             src="/Logo_Branddock_RGB.png"
             alt="Branddock"
@@ -151,20 +106,29 @@ export function EnhancedSidebarSimple({
             variant="ghost"
             size="icon"
             onClick={onToggleCollapse}
-            className="h-8 w-8 hover:bg-gray-200 text-gray-600 flex-shrink-0"
+            className="h-7 w-7 hover:bg-gray-100 text-gray-400 flex-shrink-0"
           >
             <PanelLeftClose className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* + Create Content Button */}
+        <button
+          onClick={onCreateContent}
+          className="w-full flex items-center justify-center gap-2 h-9 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
+          <Plus className="h-4 w-4" />
+          Create Content
+        </button>
       </div>
 
-      {/* Main Navigation + Settings + Help (all scrollable) */}
-      <nav className="flex-1 overflow-y-auto px-3 space-y-6">
+      {/* Scrollable Navigation */}
+      <nav className="flex-1 overflow-y-auto px-3 pt-4 pb-4 space-y-5">
         {SIDEBAR_NAV.sections.map((section) => (
-          <div key={section.label} className="space-y-1">
+          <div key={section.label} className="space-y-0.5">
             {section.label && (
-              <div className="px-2 mb-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+              <div className="px-2 mb-1.5">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
                   {section.label}
                 </h3>
               </div>
@@ -172,118 +136,54 @@ export function EnhancedSidebarSimple({
             {section.items.map((item) => {
               const Icon = getIcon(item.icon);
               const isActive = activeSection === item.key || activeSection.startsWith(item.key + '-');
-              const showBrandBadge = item.key === 'brand' && needsAttentionCount > 0;
-              const showAlignmentBadge = item.key === 'brand-alignment' && openIssuesCount > 0;
 
               return (
-                <Button
+                <button
                   key={item.key}
-                  variant="ghost"
                   data-section-id={item.key}
-                  className={`w-full justify-start gap-3 h-9 px-3 ${
+                  className={`w-full flex items-center gap-3 h-9 px-3 rounded-md text-sm transition-colors ${
                     isActive
-                      ? 'bg-emerald-50 text-emerald-700 font-medium'
-                      : 'text-gray-700 hover:bg-gray-50'
+                      ? 'bg-emerald-50 text-emerald-700 font-medium border-l-[3px] border-emerald-500 pl-[9px]'
+                      : 'text-gray-600 hover:bg-gray-50 border-l-[3px] border-transparent pl-[9px]'
                   }`}
                   onClick={() => setActiveSection(item.key)}
                   onMouseEnter={() => preloadModule(item.key)}
                 >
                   <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-emerald-600' : 'text-gray-400'}`} />
-                  <span className="flex-1 text-left text-sm">{item.label}</span>
-                  {showBrandBadge && (
-                    <Badge variant="secondary" className="bg-gray-300 text-gray-900 text-xs h-5 px-1.5">
-                      {needsAttentionCount}
-                    </Badge>
-                  )}
-                  {showAlignmentBadge && (
-                    <span className="bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                      {openIssuesCount}
-                    </span>
-                  )}
-                </Button>
+                  <span className="flex-1 text-left">{item.label}</span>
+                </button>
               );
             })}
           </div>
         ))}
-
-        {/* Settings & Help — inside scrollable area */}
-        <div className="border-t border-gray-200 pt-3 space-y-1">
-          <Button
-            variant="ghost"
-            className={`w-full justify-between h-9 px-3 ${
-              activeSection.startsWith('settings-')
-                ? 'bg-emerald-50 text-emerald-700 font-medium'
-                : 'text-gray-700 hover:bg-gray-50'
-            }`}
-            onClick={() => setSettingsExpanded(!settingsExpanded)}
-          >
-            <div className="flex items-center gap-3">
-              <Settings className={`h-4 w-4 flex-shrink-0 ${activeSection.startsWith('settings-') ? 'text-emerald-600' : 'text-gray-400'}`} />
-              <span className="text-sm">Settings</span>
-            </div>
-            <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${settingsExpanded ? 'rotate-180' : ''}`} />
-          </Button>
-
-          {settingsExpanded && (
-            <div className="pl-7 space-y-1">
-              {settingsItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = activeSection === item.id || activeSection.startsWith(item.id + '-');
-
-                return (
-                  <Button
-                    key={item.id}
-                    variant="ghost"
-                    data-section-id={item.id}
-                    className={`w-full justify-start gap-3 h-8 px-3 ${
-                      isActive
-                        ? 'bg-emerald-50 text-emerald-700 font-medium'
-                        : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                    onClick={() => setActiveSection(item.id)}
-                    onMouseEnter={() => preloadModule(item.id)}
-                  >
-                    <Icon className={`h-4 w-4 flex-shrink-0 ${isActive ? 'text-emerald-600' : 'text-gray-400'}`} />
-                    <span className="flex-1 text-left text-sm">{item.label}</span>
-                    {item.badge && (
-                      <Badge variant="secondary" className="bg-gray-300 text-gray-900 text-xs h-5 px-1.5">
-                        {item.badge}
-                      </Badge>
-                    )}
-                  </Button>
-                );
-              })}
-            </div>
-          )}
-
-          <Button
-            variant="ghost"
-            className={`w-full justify-start gap-3 h-9 px-3 ${
-              activeSection === 'help'
-                ? 'bg-emerald-50 text-emerald-700 font-medium'
-                : 'text-gray-700 hover:bg-gray-50'
-            }`}
-            onClick={() => setActiveSection('help')}
-          >
-            <HelpCircle className={`h-4 w-4 flex-shrink-0 ${activeSection === 'help' ? 'text-emerald-600' : 'text-gray-400'}`} />
-            <span className="flex-1 text-left text-sm">Help & Support</span>
-          </Button>
-        </div>
-
-        {/* Plan Badge + Usage Meter */}
-        <div className="border-t border-gray-200 pt-3 pb-4 px-1 space-y-2">
-          <div className="flex items-center justify-center">
-            <PlanBadge tier={billing.plan.tier} isFreeBeta={billing.isFreeBeta} />
-          </div>
-          {!billing.isFreeBeta && billing.usage.percentage > 50 && (
-            <UsageMeter
-              used={billing.usage.aiTokens}
-              limit={billing.usage.aiTokensLimit}
-              compact
-            />
-          )}
-        </div>
       </nav>
+
+      {/* Bottom Section - Fixed (compact, no accordion) */}
+      <div className="flex-shrink-0 border-t border-gray-200 px-3 py-2 space-y-0.5">
+        <button
+          className={`w-full flex items-center gap-3 h-9 px-3 rounded-md text-sm transition-colors ${
+            activeSection.startsWith('settings-')
+              ? 'bg-emerald-50 text-emerald-700 font-medium border-l-[3px] border-emerald-500 pl-[9px]'
+              : 'text-gray-600 hover:bg-gray-50 border-l-[3px] border-transparent pl-[9px]'
+          }`}
+          onClick={() => setActiveSection('settings-account')}
+          onMouseEnter={() => preloadModule('settings-account')}
+        >
+          <Settings className={`h-4 w-4 flex-shrink-0 ${activeSection.startsWith('settings-') ? 'text-emerald-600' : 'text-gray-400'}`} />
+          <span className="flex-1 text-left">Settings</span>
+        </button>
+        <button
+          className={`w-full flex items-center gap-3 h-9 px-3 rounded-md text-sm transition-colors ${
+            activeSection === 'help'
+              ? 'bg-emerald-50 text-emerald-700 font-medium border-l-[3px] border-emerald-500 pl-[9px]'
+              : 'text-gray-600 hover:bg-gray-50 border-l-[3px] border-transparent pl-[9px]'
+          }`}
+          onClick={() => setActiveSection('help')}
+        >
+          <HelpCircle className={`h-4 w-4 flex-shrink-0 ${activeSection === 'help' ? 'text-emerald-600' : 'text-gray-400'}`} />
+          <span className="flex-1 text-left">Help & Support</span>
+        </button>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// ─── Security headers applied to ALL responses ───────────
+const isProduction = process.env.NODE_ENV === 'production';
+
+const SECURITY_HEADERS: Record<string, string> = {
+  'X-Frame-Options': 'DENY',
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'X-XSS-Protection': '0',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  ...(isProduction
+    ? { 'Strict-Transport-Security': 'max-age=31536000; includeSubDomains' }
+    : {}),
+};
+
+// ─── Auth route rate limiting (per IP, sliding window) ─────
+// Protects /api/auth/* from brute-force login attempts.
+// 10 requests per minute per IP address.
+
+const AUTH_RATE_LIMIT_WINDOW_MS = 60_000;
+const AUTH_RATE_LIMIT_MAX = 10;
+const authRateLimitStore = new Map<string, number[]>();
+
+function checkAuthRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const windowStart = now - AUTH_RATE_LIMIT_WINDOW_MS;
+  const timestamps = (authRateLimitStore.get(ip) ?? []).filter((t) => t > windowStart);
+
+  if (timestamps.length >= AUTH_RATE_LIMIT_MAX) {
+    authRateLimitStore.set(ip, timestamps);
+    return false;
+  }
+
+  timestamps.push(now);
+  authRateLimitStore.set(ip, timestamps);
+  return true;
+}
+
 // ─── Cache-Control header rules for API routes ─────────────
 // Only applied to GET requests; mutations get no cache headers.
 
@@ -58,25 +95,52 @@ const cacheRules: CacheRule[] = [
 ];
 
 export function middleware(request: NextRequest) {
-  // Only add cache headers to API GET requests
-  if (!request.nextUrl.pathname.startsWith('/api/') || request.method !== 'GET') {
-    return NextResponse.next();
-  }
-
   const pathname = request.nextUrl.pathname;
 
-  // Find matching cache rule
-  for (const rule of cacheRules) {
-    if (rule.match(pathname)) {
-      const response = NextResponse.next();
-      response.headers.set('Cache-Control', rule.value);
-      return response;
+  // Start with a next() response so we can add headers
+  const response = NextResponse.next();
+
+  // Apply security headers to all responses
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    response.headers.set(key, value);
+  }
+
+  // Auth route rate limiting (brute-force protection)
+  if (pathname.startsWith('/api/auth/') && request.method === 'POST') {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      || request.headers.get('x-real-ip')
+      || 'unknown';
+
+    if (!checkAuthRateLimit(ip)) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please try again later.' },
+        {
+          status: 429,
+          headers: {
+            ...Object.fromEntries(
+              Object.entries(SECURITY_HEADERS).map(([k, v]) => [k, v]),
+            ),
+            'Retry-After': '60',
+          },
+        },
+      );
     }
   }
 
-  return NextResponse.next();
+  // Apply cache-control rules to API GET requests
+  if (pathname.startsWith('/api/') && request.method === 'GET') {
+    for (const rule of cacheRules) {
+      if (rule.match(pathname)) {
+        response.headers.set('Cache-Control', rule.value);
+        return response;
+      }
+    }
+  }
+
+  return response;
 }
 
 export const config = {
-  matcher: '/api/:path*',
+  // Match all routes except static assets
+  matcher: '/((?!_next/static|_next/image|favicon.ico).*)',
 };

@@ -492,23 +492,26 @@ export const SIDEBAR_NAV: {
     {
       label: 'KNOWLEDGE',
       items: [
-        { key: 'brand', label: 'Brand Foundation', icon: 'Shield', href: '/knowledge/brand-foundation', badge: true, badgeColor: 'orange' },
+        { key: 'brand', label: 'Brand Foundation', icon: 'Shield', href: '/knowledge/brand-foundation' },
         { key: 'business-strategy', label: 'Business Strategy', icon: 'Target', href: '/knowledge/business-strategy' },
         { key: 'brandstyle', label: 'Brandstyle', icon: 'Palette', href: '/knowledge/brand-style' },
         { key: 'personas', label: 'Personas', icon: 'Users', href: '/knowledge/personas' },
         { key: 'products', label: 'Products & Services', icon: 'Package', href: '/knowledge/products' },
         { key: 'competitors', label: 'Competitors', icon: 'Swords', href: '/knowledge/competitors' },
-        { key: 'trends', label: 'Trend Radar', icon: 'Radar', href: '/knowledge/trend-radar' },
-        { key: 'knowledge', label: 'Knowledge Library', icon: 'BookOpen', href: '/knowledge/library' },
-        { key: 'brand-alignment', label: 'Brand Alignment', icon: 'GitCompare', href: '/knowledge/brand-alignment', badge: true, badgeColor: 'red' },
+      ],
+    },
+    {
+      label: 'INSIGHTS',
+      items: [
+        { key: 'trends', label: 'Trend Radar', icon: 'Radar', href: '/insights/trend-radar' },
+        { key: 'knowledge', label: 'Knowledge Library', icon: 'BookOpen', href: '/insights/library' },
       ],
     },
     {
       label: 'VALIDATION',
       items: [
         { key: 'research', label: 'Research Hub', icon: 'FlaskConical', href: '/validation/research-hub' },
-        { key: 'research-bundles', label: 'Research Bundles', icon: 'Boxes', href: '/validation/research-bundles' },
-        { key: 'custom-validation', label: 'Custom Validation', icon: 'Sparkles', href: '/validation/custom-validations' },
+        { key: 'brand-alignment', label: 'Brand Alignment', icon: 'GitCompare', href: '/validation/brand-alignment' },
       ],
     },
   ],
