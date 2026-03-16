@@ -2,6 +2,7 @@
 
 import React, { useMemo } from "react";
 import { useContentStudioStore } from "@/stores/useContentStudioStore";
+import { GOAL_LABELS } from "@/features/campaigns/lib/goal-types";
 
 const DEFAULT_QUICK_PROMPTS = [
   "Professional tone",
@@ -41,7 +42,7 @@ export function PromptSection() {
       {/* Campaign context hint */}
       {campaignBlueprint && (
         <p className="text-xs text-muted-foreground mb-2">
-          Campaign: {campaignName} {campaignGoalType ? `\u2022 Goal: ${campaignGoalType}` : ""}{" "}
+          Campaign: {campaignName} {campaignGoalType ? `\u2022 Goal: ${GOAL_LABELS[campaignGoalType] ?? campaignGoalType}` : ""}{" "}
           {campaignBlueprint.strategy?.campaignTheme ? `\u2022 Theme: ${campaignBlueprint.strategy.campaignTheme}` : ""}
         </p>
       )}

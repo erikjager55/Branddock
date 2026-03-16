@@ -376,12 +376,12 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     icon: "Tag",
   },
 
-  // ─── PR & Communications (3) ───────────────────────────
+  // ─── PR, HR & Communications (8) ───────────────────────
   {
     id: "press-release",
     name: "Press Release",
     description: "Official media announcement with boilerplate",
-    category: "PR & Communications",
+    category: "PR, HR & Communications",
     funnelStage: "awareness",
     outputFormats: ["Text"],
     icon: "Newspaper",
@@ -390,7 +390,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     id: "media-pitch",
     name: "Media Pitch",
     description: "Personalized journalist/editor pitch email",
-    category: "PR & Communications",
+    category: "PR, HR & Communications",
     funnelStage: "awareness",
     outputFormats: ["Text"],
     icon: "Send",
@@ -399,10 +399,55 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     id: "internal-comms",
     name: "Internal Communication",
     description: "Employee-facing announcement or update",
-    category: "PR & Communications",
+    category: "PR, HR & Communications",
     funnelStage: "retention",
     outputFormats: ["Text", "HTML"],
     icon: "Building2",
+  },
+  {
+    id: "career-page",
+    name: "Career Page",
+    description: "Employer branding landing page for talent attraction",
+    category: "PR, HR & Communications",
+    funnelStage: "awareness",
+    outputFormats: ["Text", "HTML"],
+    icon: "Briefcase",
+  },
+  {
+    id: "job-ad-copy",
+    name: "Job Advertisement",
+    description: "Compelling job ad copy with employer brand messaging",
+    category: "PR, HR & Communications",
+    funnelStage: "conversion",
+    outputFormats: ["Text"],
+    icon: "UserPlus",
+  },
+  {
+    id: "employee-story",
+    name: "Employee Story",
+    description: "Employee testimonial or day-in-the-life story",
+    category: "PR, HR & Communications",
+    funnelStage: "awareness",
+    outputFormats: ["Text", "HTML"],
+    icon: "Users",
+  },
+  {
+    id: "employer-brand-video",
+    name: "Employer Branding Video",
+    description: "Script for recruitment or culture video (60-120s)",
+    category: "PR, HR & Communications",
+    funnelStage: "awareness",
+    outputFormats: ["Text"],
+    icon: "Video",
+  },
+  {
+    id: "impact-report",
+    name: "Impact Report",
+    description: "CSR or social impact report for stakeholders",
+    category: "PR, HR & Communications",
+    funnelStage: "retention",
+    outputFormats: ["Text", "PDF"],
+    icon: "Leaf",
   },
 ];
 
@@ -414,7 +459,7 @@ export const DELIVERABLE_CATEGORIES = [
   "Website & Landing Pages",
   "Video & Audio",
   "Sales Enablement",
-  "PR & Communications",
+  "PR, HR & Communications",
 ] as const;
 
 /** All valid deliverable type IDs — used to constrain AI output */

@@ -13,15 +13,7 @@ import {
 import { Badge, Input, ProgressBar } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import { useEstimateTimeline } from "../../hooks";
-
-// ─── Goal label map ───────────────────────────────────────
-
-const GOAL_LABELS: Record<string, string> = {
-  BRAND: "Brand Awareness",
-  PRODUCT: "Product Launch",
-  CONTENT: "Content Marketing",
-  ENGAGEMENT: "Audience Engagement",
-};
+import { GOAL_LABELS } from "../../lib/goal-types";
 
 // ─── Section Wrapper ──────────────────────────────────────
 

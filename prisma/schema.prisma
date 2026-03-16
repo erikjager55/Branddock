@@ -788,7 +788,7 @@ model Campaign {
   // Strategic Campaign specifiek
   confidence        Float?                  // 0-100
   strategy          Json?                   // AI-gegenereerde strategie
-  campaignGoalType  String?                 // BRAND / PRODUCT / CONTENT / ENGAGEMENT
+  campaignGoalType  String?                 // See goal-types.ts — 15 types + 4 legacy
   description       String?                 @db.Text
   startDate         DateTime?
   endDate           DateTime?

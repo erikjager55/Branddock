@@ -45,6 +45,10 @@ import {
   Tag,
   Send,
   Building2,
+  Briefcase,
+  UserPlus,
+  Users,
+  Leaf,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Badge, Card } from "@/components/shared";
@@ -97,6 +101,10 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Tag,
   Send,
   Building2,
+  Briefcase,
+  UserPlus,
+  Users,
+  Leaf,
 };
 
 function getIcon(iconName: string): LucideIcon {

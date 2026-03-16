@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { getTimeBinding } from "../lib/goal-types";
 import type {
   CampaignGoalType,
   StrategyResultResponse,
@@ -124,7 +125,15 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
 
     setName: (name) => set({ name }),
     setDescription: (description) => set({ description }),
-    setCampaignGoalType: (campaignGoalType) => set({ campaignGoalType }),
+    setCampaignGoalType: (campaignGoalType) => {
+      const updates: Partial<CampaignWizardState> = { campaignGoalType };
+      // Clear dates when switching to an always-on goal (dates are hidden)
+      if (getTimeBinding(campaignGoalType) === 'always-on') {
+        updates.startDate = '';
+        updates.endDate = '';
+      }
+      set(updates);
+    },
     setStartDate: (startDate) => set({ startDate }),
     setEndDate: (endDate) => set({ endDate }),
 
@@ -174,8 +183,16 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     canProceed: () => {
       const state = get();
       switch (state.currentStep) {
-        case 1:
-          return state.name.trim().length > 0 && state.campaignGoalType !== null;
+        case 1: {
+          const hasName = state.name.trim().length > 0;
+          const hasGoal = state.campaignGoalType !== null;
+          if (!hasName || !hasGoal) return false;
+          // Time-bound goals require both dates, and end must be >= start
+          if (state.campaignGoalType && getTimeBinding(state.campaignGoalType) === 'time-bound') {
+            return state.startDate.length > 0 && state.endDate.length > 0 && state.endDate >= state.startDate;
+          }
+          return true;
+        }
         case 2:
           return state.selectedKnowledgeIds.length > 0;
         case 3:

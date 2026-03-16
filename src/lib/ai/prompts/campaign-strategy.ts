@@ -6,6 +6,7 @@
 
 import type { StrategicIntent, CampaignBriefing } from '@/lib/campaigns/strategy-blueprint.types';
 import { DELIVERABLE_TYPE_IDS } from '@/features/campaigns/lib/deliverable-types';
+import { GOAL_LABELS, getGoalTypeGuidance } from '@/features/campaigns/lib/goal-types';
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -89,7 +90,8 @@ Respond with valid JSON matching the StrategyLayer schema.`;
 
 ## Campaign Brief
 Description: ${params.campaignDescription || 'No description provided'}
-Goal: ${params.goalType}
+Goal: ${GOAL_LABELS[params.goalType] ?? params.goalType}
+Goal Guidance: ${getGoalTypeGuidance(params.goalType)}
 Strategic Intent: ${intentDescription(params.strategicIntent)}${briefingSection}
 
 ## Brand Context
@@ -117,12 +119,18 @@ export function buildArchitectAPrompt(params: {
   personaContext: string;
   productContext: string;
   personaIds: string[];
+  goalType?: string;
+  goalGuidance?: string;
 }): { system: string; user: string } {
+  const goalContext = params.goalType && params.goalGuidance
+    ? `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${params.goalGuidance}\nAdapt channel selection and journey design to this specific goal type.`
+    : '';
+
   const system = `You are a campaign architect specializing in organic growth and thought leadership strategies.
 
 Your role: Design the campaign architecture — journey phases, touchpoints, and campaign type — with a FOCUS ON ORGANIC REACH AND THOUGHT LEADERSHIP.
 
-Framework: Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Pull strategies.
+Framework: Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Pull strategies.${goalContext}
 
 Requirements:
 - campaignType: Choose the type that best fits the strategy and audience journey
@@ -156,12 +164,18 @@ export function buildArchitectBPrompt(params: {
   personaContext: string;
   productContext: string;
   personaIds: string[];
+  goalType?: string;
+  goalGuidance?: string;
 }): { system: string; user: string } {
+  const goalContext = params.goalType && params.goalGuidance
+    ? `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${params.goalGuidance}\nAdapt channel selection and journey design to this specific goal type.`
+    : '';
+
   const system = `You are a performance marketing architect specializing in conversion optimization and paid media strategies.
 
 Your role: Design the campaign architecture — journey phases, touchpoints, and campaign type — with a FOCUS ON DIRECT CONVERSION AND PAID MEDIA.
 
-Framework: Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Push and Profile strategies.
+Framework: Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Push and Profile strategies.${goalContext}
 
 Requirements:
 - campaignType: Choose the type that best fits the strategy and audience journey
@@ -195,10 +209,16 @@ export function buildPersonaValidatorPrompt(params: {
   variantA: string;
   variantB: string;
   personas: Array<{ id: string; name: string; profile: string }>;
+  goalType?: string;
+  goalGuidance?: string;
 }): { system: string; user: string } {
+  const goalContext = params.goalType && params.goalGuidance
+    ? `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${params.goalGuidance}\nEvaluate how well each variant serves this specific goal type from each persona's perspective.`
+    : '';
+
   const system = `You are simulating target personas evaluating two campaign strategy variants.
 
-Your role: For EACH persona, roleplay as that person and evaluate both variant A (organic/thought leadership) and variant B (conversion/paid media).
+Your role: For EACH persona, roleplay as that person and evaluate both variant A (organic/thought leadership) and variant B (conversion/paid media).${goalContext}
 
 Evaluation criteria per persona:
 - overallScore: 1-10 (how well does this strategy resonate with this persona?)
@@ -243,10 +263,16 @@ export function buildStrategySynthesizerPrompt(params: {
   personaValidation: string;
   variantAScore: number;
   variantBScore: number;
+  goalType?: string;
+  goalGuidance?: string;
 }): { system: string; user: string } {
+  const goalContext = params.goalType && params.goalGuidance
+    ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nEnsure the synthesized blueprint optimally serves this goal type.`
+    : '';
+
   const system = `You are a chief strategy officer performing the final synthesis of a campaign blueprint.
 
-Your task: Combine the BEST elements from variant A (organic) and variant B (paid/conversion) into ONE optimal campaign architecture, informed by persona feedback.
+Your task: Combine the BEST elements from variant A (organic) and variant B (paid/conversion) into ONE optimal campaign architecture, informed by persona feedback.${goalContext}
 
 Synthesis rules:
 1. Select the strongest journey phases from either variant
@@ -342,10 +368,16 @@ export function buildChannelPlannerPrompt(params: {
   synthesizedStrategy: string;
   synthesizedArchitecture: string;
   personaChannelPrefs: string;
+  goalType?: string;
+  goalGuidance?: string;
 }): { system: string; user: string } {
+  const goalContext = params.goalType && params.goalGuidance
+    ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nPrioritize channels that best serve this goal type.`
+    : '';
+
   const system = `You are a media strategist creating a channel and media plan.
 
-Framework: Google's Hero-Hub-Hygiene (HHH) model for channel role assignment.
+Framework: Google's Hero-Hub-Hygiene (HHH) model for channel role assignment.${goalContext}
 
 Requirements:
 - channels: 4-8 channels with role (hero/hub/hygiene), objective, target personas, content mix
@@ -381,12 +413,18 @@ export function buildAssetPlannerPrompt(params: {
   channelPlan: string;
   productContext: string;
   styleguideContext: string;
+  goalType?: string;
+  goalGuidance?: string;
 }): { system: string; user: string } {
   const validTypes = DELIVERABLE_TYPE_IDS.join(', ');
 
+  const goalContext = params.goalType && params.goalGuidance
+    ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nSelect deliverable types that are most relevant for this goal type.`
+    : '';
+
   const system = `You are a content strategist creating a deliverable plan for a campaign.
 
-Your role: Based on the campaign strategy, architecture, and channel plan, define the specific content pieces (deliverables) that need to be produced.
+Your role: Based on the campaign strategy, architecture, and channel plan, define the specific content pieces (deliverables) that need to be produced.${goalContext}
 
 Requirements per deliverable:
 - title: Descriptive title (e.g., "LinkedIn Thought Leadership Article — AI in Brand Strategy")

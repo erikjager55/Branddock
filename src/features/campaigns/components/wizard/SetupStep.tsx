@@ -1,45 +1,12 @@
 "use client";
 
-import { Megaphone, Target, PenTool, Users, TrendingUp, Zap, Scale, MessageCircle } from "lucide-react";
+import { TrendingUp, Zap, Scale, MessageCircle } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Input } from "@/components/shared";
 import { SelectionCard } from "@/components/ui/layout";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
-import type { CampaignGoalType, StrategicIntent } from "../../types/campaign-wizard.types";
-
-// ─── Goal Type Cards ──────────────────────────────────────
-
-const GOAL_TYPES: {
-  type: CampaignGoalType;
-  label: string;
-  description: string;
-  icon: LucideIcon;
-}[] = [
-  {
-    type: "BRAND",
-    label: "Brand Awareness",
-    description: "Increase visibility and recognition of your brand",
-    icon: Megaphone,
-  },
-  {
-    type: "PRODUCT",
-    label: "Product Launch",
-    description: "Promote a new product or service to your audience",
-    icon: Target,
-  },
-  {
-    type: "CONTENT",
-    label: "Content Marketing",
-    description: "Create valuable content to attract and retain customers",
-    icon: PenTool,
-  },
-  {
-    type: "ENGAGEMENT",
-    label: "Audience Engagement",
-    description: "Build deeper connections with your target audience",
-    icon: Users,
-  },
-];
+import { GOAL_CATEGORIES, getTimeBinding } from "../../lib/goal-types";
+import type { StrategicIntent } from "../../types/campaign-wizard.types";
 
 // ─── Strategic Intent Cards ──────────────────────────────
 
@@ -204,22 +171,31 @@ export function SetupStep() {
         </div>
       </div>
 
-      {/* Goal type selector */}
+      {/* Goal type selector — grouped by category */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
           <span className="text-red-500 mr-0.5">*</span>
           Campaign Goal
         </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {GOAL_TYPES.map(({ type, label, description: desc, icon }) => (
-            <SelectionCard
-              key={type}
-              icon={icon}
-              title={label}
-              subtitle={desc}
-              selected={campaignGoalType === type}
-              onSelect={() => setCampaignGoalType(type)}
-            />
+        <div className="space-y-5">
+          {GOAL_CATEGORIES.map((category) => (
+            <div key={category.key}>
+              <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                {category.label}
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {category.types.map(({ id, label, description: desc, icon }) => (
+                  <SelectionCard
+                    key={id}
+                    icon={icon}
+                    title={label}
+                    subtitle={desc}
+                    selected={campaignGoalType === id}
+                    onSelect={() => setCampaignGoalType(id)}
+                  />
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -251,32 +227,39 @@ export function SetupStep() {
         </div>
       </div>
 
-      {/* Date fields */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Start Date (optional)
-          </label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            End Date (optional)
-          </label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            min={startDate || undefined}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-          />
-        </div>
-      </div>
+      {/* Date fields — visibility based on time-binding */}
+      {(() => {
+        const tb = campaignGoalType ? getTimeBinding(campaignGoalType) : 'hybrid';
+        if (tb === 'always-on') return null;
+        const dateLabel = tb === 'time-bound' ? '(required)' : '(optional)';
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Start Date <span className="text-xs text-gray-400 font-normal">{dateLabel}</span>
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                End Date <span className="text-xs text-gray-400 font-normal">{dateLabel}</span>
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                min={startDate || undefined}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

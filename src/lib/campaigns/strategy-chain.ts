@@ -10,6 +10,7 @@ import { buildSelectedPersonasContext } from '@/lib/ai/persona-context';
 import { createClaudeStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
 import { calculateBlueprintConfidence } from './confidence-calculator';
+import { getGoalTypeGuidance } from '@/features/campaigns/lib/goal-types';
 import {
   buildStrategyArchitectPrompt,
   buildArchitectAPrompt,
@@ -308,7 +309,7 @@ export async function generateCampaignBlueprint(
   if (isWizardMode) {
     campaignName = options.wizardContext!.campaignName;
     campaignDescription = options.wizardContext!.campaignDescription ?? '';
-    campaignGoalType = options.wizardContext!.campaignGoalType ?? 'BRAND';
+    campaignGoalType = options.wizardContext!.campaignGoalType ?? 'BRAND_AWARENESS';
     // Count all explicitly selected knowledge items (personas + products + competitors + trends)
     // Brand assets are counted separately via brandAssetCount in the confidence calculator
     knowledgeAssetCount = (options.personaIds?.length ?? 0) + (options.productIds?.length ?? 0) + (options.competitorIds?.length ?? 0) + (options.trendIds?.length ?? 0);
@@ -320,7 +321,7 @@ export async function generateCampaignBlueprint(
     if (!campaign) throw new Error('Campaign not found');
     campaignName = campaign.title;
     campaignDescription = campaign.description || '';
-    campaignGoalType = campaign.campaignGoalType || 'BRAND';
+    campaignGoalType = campaign.campaignGoalType || 'BRAND_AWARENESS';
     knowledgeAssetCount = campaign.knowledgeAssets.length;
   }
 
@@ -387,8 +388,9 @@ export async function generateCampaignBlueprint(
 
   const strategyLayerJson = JSON.stringify(strategyLayer);
 
-  const step2aPrompt = buildArchitectAPrompt({ strategyLayer: strategyLayerJson, personaContext, productContext, personaIds });
-  const step2bPrompt = buildArchitectBPrompt({ strategyLayer: strategyLayerJson, personaContext, productContext, personaIds });
+  const goalGuidance = getGoalTypeGuidance(campaignGoalType);
+  const step2aPrompt = buildArchitectAPrompt({ strategyLayer: strategyLayerJson, personaContext, productContext, personaIds, goalType: campaignGoalType, goalGuidance });
+  const step2bPrompt = buildArchitectBPrompt({ strategyLayer: strategyLayerJson, personaContext, productContext, personaIds, goalType: campaignGoalType, goalGuidance });
 
   const [variantARaw, variantBRaw] = await Promise.all([
     createClaudeStructuredCompletion<ArchitectureLayer>(
@@ -421,6 +423,8 @@ export async function generateCampaignBlueprint(
       variantA: JSON.stringify(variantA),
       variantB: JSON.stringify(variantB),
       personas: personaProfiles,
+      goalType: campaignGoalType,
+      goalGuidance,
     });
 
     const validationRaw = await createClaudeStructuredCompletion<PersonaValidationResult[]>(
@@ -457,6 +461,8 @@ export async function generateCampaignBlueprint(
     personaValidation: JSON.stringify(personaValidation),
     variantAScore,
     variantBScore,
+    goalType: campaignGoalType,
+    goalGuidance,
   });
 
   // Step 4 returns BOTH strategy + architecture in a single response — needs high token limit
@@ -485,6 +491,8 @@ export async function generateCampaignBlueprint(
     synthesizedStrategy: synthesizedStrategyJson,
     synthesizedArchitecture: synthesizedArchitectureJson,
     personaChannelPrefs,
+    goalType: campaignGoalType,
+    goalGuidance,
   });
 
   const channelPlanRaw = await createGeminiStructuredCompletion<ChannelPlanLayer>(
@@ -506,6 +514,8 @@ export async function generateCampaignBlueprint(
     channelPlan: JSON.stringify(channelPlan),
     productContext,
     styleguideContext,
+    goalType: campaignGoalType,
+    goalGuidance,
   });
 
   const assetPlanRaw = await createGeminiStructuredCompletion<AssetPlanLayer>(
@@ -664,7 +674,7 @@ export async function regenerateBlueprintLayer(
       personaContext,
       campaignName: campaign.title,
       campaignDescription: `${campaign.description || ''}${feedback ? `\n\nUser feedback for regeneration: ${feedback}` : ''}`,
-      goalType: campaign.campaignGoalType || 'BRAND',
+      goalType: campaign.campaignGoalType || 'BRAND_AWARENESS',
       strategicIntent: blueprint.strategy.strategicIntent,
       productContext,
       competitorContext,
@@ -692,9 +702,12 @@ export async function regenerateBlueprintLayer(
 
     const strategyJson = JSON.stringify(blueprint.strategy);
     const descriptionWithFeedback = layer === 'architecture' && feedback ? `\n\nUser feedback: ${feedback}` : '';
+    const regenGoalGuidance = getGoalTypeGuidance(campaign.campaignGoalType || 'BRAND_AWARENESS');
     const prompt = buildArchitectAPrompt({
       strategyLayer: strategyJson + descriptionWithFeedback,
       personaContext, productContext, personaIds: resolvedPersonaIds,
+      goalType: campaign.campaignGoalType || 'BRAND_AWARENESS',
+      goalGuidance: regenGoalGuidance,
     });
 
     const archRaw = await createClaudeStructuredCompletion<ArchitectureLayer>(
@@ -711,10 +724,13 @@ export async function regenerateBlueprintLayer(
     onProgress?.({ step: 5, name: 'Channel Planner', status: 'running', label: 'Regenerating channel plan...' });
 
     const channelFeedback = layer === 'channelPlan' && feedback ? `\n\nUser feedback: ${feedback}` : '';
+    const regenGoalType = campaign.campaignGoalType || 'BRAND_AWARENESS';
     const prompt = buildChannelPlannerPrompt({
       synthesizedStrategy: JSON.stringify(blueprint.strategy) + channelFeedback,
       synthesizedArchitecture: JSON.stringify(blueprint.architecture),
       personaChannelPrefs,
+      goalType: regenGoalType,
+      goalGuidance: getGoalTypeGuidance(regenGoalType),
     });
 
     const channelRaw = await createGeminiStructuredCompletion<ChannelPlanLayer>(
@@ -731,12 +747,15 @@ export async function regenerateBlueprintLayer(
   onProgress?.({ step: 6, name: 'Asset Planner', status: 'running', label: 'Regenerating asset plan...' });
 
   const assetFeedback = layer === 'assetPlan' && feedback ? `\n\nUser feedback: ${feedback}` : '';
+  const assetRegenGoalType = campaign.campaignGoalType || 'BRAND_AWARENESS';
   const assetPrompt = buildAssetPlannerPrompt({
     synthesizedStrategy: JSON.stringify(blueprint.strategy) + assetFeedback,
     synthesizedArchitecture: JSON.stringify(blueprint.architecture),
     channelPlan: JSON.stringify(blueprint.channelPlan),
     productContext,
     styleguideContext,
+    goalType: assetRegenGoalType,
+    goalGuidance: getGoalTypeGuidance(assetRegenGoalType),
   });
 
   const assetRaw = await createGeminiStructuredCompletion<AssetPlanLayer>(

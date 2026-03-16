@@ -14,7 +14,12 @@ export type {
   DeliverableBrief,
 } from '@/lib/campaigns/strategy-blueprint.types';
 
-export type CampaignGoalType = "BRAND" | "PRODUCT" | "CONTENT" | "ENGAGEMENT";
+export type CampaignGoalType =
+  | "BRAND_AWARENESS" | "PRODUCT_LAUNCH" | "MARKET_EXPANSION" | "REBRANDING"
+  | "CONTENT_MARKETING" | "AUDIENCE_ENGAGEMENT" | "COMMUNITY_BUILDING" | "LOYALTY_RETENTION"
+  | "EMPLOYER_BRANDING" | "INTERNAL_BRANDING" | "THOUGHT_LEADERSHIP" | "CSR_IMPACT"
+  | "LEAD_GENERATION" | "SALES_ACTIVATION" | "EVENT_SEASONAL"
+  | "BRAND" | "PRODUCT" | "CONTENT" | "ENGAGEMENT"; // legacy
 
 export interface WizardKnowledgeGroupItem {
   sourceType: string;

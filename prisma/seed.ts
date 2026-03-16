@@ -2841,7 +2841,7 @@ async function main() {
       type: campaignTypeStrategic,
       status: campaignStatusActive,
       confidence: 87,
-      campaignGoalType: "BRAND",
+      campaignGoalType: "REBRANDING",
       description: "Comprehensive brand refresh campaign for spring 2025, updating visual identity and messaging to reflect our evolved positioning in the AI-powered brand strategy market.",
       startDate: new Date("2025-03-01"),
       endDate: new Date("2025-06-30"),
@@ -2863,7 +2863,7 @@ async function main() {
       type: campaignTypeStrategic,
       status: campaignStatusActive,
       confidence: 92,
-      campaignGoalType: "PRODUCT",
+      campaignGoalType: "PRODUCT_LAUNCH",
       description: "Launch campaign for the new AI Brand Assistant feature, targeting existing users and new prospects with a freemium trial approach.",
       startDate: new Date("2025-04-01"),
       endDate: new Date("2025-07-31"),
@@ -2885,7 +2885,7 @@ async function main() {
       type: campaignTypeStrategic,
       status: campaignStatusCompleted,
       confidence: 78,
-      campaignGoalType: "CONTENT",
+      campaignGoalType: "THOUGHT_LEADERSHIP",
       description: "Establish Branddock as a thought leader in AI-driven brand strategy through a series of research-backed articles and speaking engagements.",
       startDate: new Date("2025-01-01"),
       endDate: new Date("2025-03-31"),
@@ -3259,7 +3259,7 @@ async function main() {
   await prisma.campaignTemplate.create({
     data: {
       name: "Brand Launch Template",
-      campaignGoalType: "BRAND",
+      campaignGoalType: "BRAND_AWARENESS",
       knowledgePattern: { requiredTypes: ["Brand", "Persona", "Product"], minAssets: 3 },
       deliverableMix: [
         { contentType: "Blog Post", quantity: 2 },
