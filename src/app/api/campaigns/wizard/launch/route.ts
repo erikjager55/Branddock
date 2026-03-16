@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { createDeliverablesFromBlueprint } from "@/lib/campaigns/strategy-chain";
+import type { AssetPlanDeliverable } from "@/lib/campaigns/strategy-blueprint.types";
 import { z } from "zod";
 
 // POST /api/campaigns/wizard/launch — Launch a campaign from the wizard
@@ -70,8 +72,14 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Create deliverables if provided
-    if (deliverables && deliverables.length > 0) {
+    // Create deliverables: prefer blueprint asset plan (rich metadata), fall back to simple list
+    const blueprintStrategy = strategy as { assetPlan?: { deliverables?: AssetPlanDeliverable[] } } | undefined;
+    const assetPlanDeliverables = blueprintStrategy?.assetPlan?.deliverables;
+
+    if (assetPlanDeliverables && assetPlanDeliverables.length > 0) {
+      await createDeliverablesFromBlueprint(campaign.id, assetPlanDeliverables);
+    } else if (deliverables && deliverables.length > 0) {
+      // Fallback: use wizard-provided deliverables (title+type only)
       for (const d of deliverables) {
         await prisma.deliverable.create({
           data: {

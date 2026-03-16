@@ -8,10 +8,6 @@ import {
   Share2,
   FileText,
   Lightbulb,
-  LayoutDashboard,
-  Layers,
-  Route,
-  Radio,
 } from "lucide-react";
 import { Badge, EmptyState } from "@/components/shared";
 import { useCampaignStore } from "../../stores/useCampaignStore";
@@ -45,15 +41,7 @@ const LEGACY_SUB_TABS = [
   { id: "deliverables" as const, label: "Deliverables", icon: FileText },
 ];
 
-// Blueprint sub-tabs (4-tab layout: merged Architecture + Asset Plan → Journey)
-const BLUEPRINT_SUB_TABS = [
-  { id: "overview" as const, label: "Overview", icon: LayoutDashboard },
-  { id: "strategy" as const, label: "Strategy", icon: Layers },
-  { id: "journey" as const, label: "Journey", icon: Route },
-  { id: "channel-plan" as const, label: "Channel Plan", icon: Radio },
-];
-
-/** Strategy result tab with 4 sub-tabs for blueprint format, 4 for legacy */
+/** Strategy result with overview stats at top, then Journey → Strategy → Channel Plan sections */
 export function StrategyResultTab({
   strategy,
   campaignId,
@@ -86,58 +74,17 @@ export function StrategyResultTab({
     );
   }
 
-  // ─── Blueprint format ──────────────────────────────────────
+  // ─── Blueprint format — single page layout (no tabs) ──────
   if (!isLegacyStrategy(strategy)) {
     const { blueprint } = strategy;
 
-    // Ensure we're on a valid blueprint tab
-    const validBlueprintIds = BLUEPRINT_SUB_TABS.map((t) => t.id);
-    const currentTab = validBlueprintIds.includes(activeStrategySubTab as typeof validBlueprintIds[number])
-      ? (activeStrategySubTab as typeof validBlueprintIds[number])
-      : "overview";
-
     return (
-      <div>
-        {/* Sub-tab navigation */}
-        <div className="flex gap-1 mb-6 bg-gray-100 rounded-lg p-1 overflow-x-auto">
-          {BLUEPRINT_SUB_TABS.map((tab) => {
-            const TabIcon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveStrategySubTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
-                  currentTab === tab.id
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                <TabIcon className="h-3.5 w-3.5" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+      <div className="space-y-6">
+        {/* Overview stats — always visible at top */}
+        <BlueprintOverviewSection blueprint={blueprint} />
 
-        {/* Sub-tab content */}
-        {currentTab === "overview" && (
-          <div className="bg-white rounded-lg border p-6">
-            <BlueprintOverviewSection blueprint={blueprint} />
-          </div>
-        )}
-
-        {currentTab === "strategy" && blueprint.strategy && (
-          <div className="bg-white rounded-lg border p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Campaign Strategy</h3>
-              <RegenerateSectionButton campaignId={campaignId} layer="strategy" />
-            </div>
-            <StrategySection strategy={blueprint.strategy} />
-          </div>
-        )}
-
-        {currentTab === "journey" && blueprint.architecture && blueprint.assetPlan && blueprint.channelPlan && (
+        {/* Journey Map */}
+        {blueprint.architecture && blueprint.assetPlan && blueprint.channelPlan && (
           <div className="bg-white rounded-lg border p-4 space-y-4">
             <div className="flex items-center justify-between px-2">
               <h3 className="text-lg font-semibold text-gray-900">Journey Map</h3>
@@ -155,7 +102,19 @@ export function StrategyResultTab({
           </div>
         )}
 
-        {currentTab === "channel-plan" && blueprint.channelPlan && (
+        {/* Campaign Strategy */}
+        {blueprint.strategy && (
+          <div className="bg-white rounded-lg border p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Campaign Strategy</h3>
+              <RegenerateSectionButton campaignId={campaignId} layer="strategy" />
+            </div>
+            <StrategySection strategy={blueprint.strategy} />
+          </div>
+        )}
+
+        {/* Channel & Media Plan */}
+        {blueprint.channelPlan && (
           <div className="bg-white rounded-lg border p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Channel & Media Plan</h3>

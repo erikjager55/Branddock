@@ -426,7 +426,7 @@ export async function generateCampaignBlueprint(
     const validationRaw = await createClaudeStructuredCompletion<PersonaValidationResult[]>(
       step3Prompt.system,
       step3Prompt.user,
-      { model: CLAUDE_SONNET, temperature: 0.7, maxTokens: 16000, timeoutMs: 300_000 },
+      { model: CLAUDE_SONNET, temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000 },
     );
     personaValidation = validateOrWarn(personaValidationArraySchema, validationRaw, 'Step 3 Validation');
 
@@ -459,10 +459,11 @@ export async function generateCampaignBlueprint(
     variantBScore,
   });
 
+  // Step 4 returns BOTH strategy + architecture in a single response — needs high token limit
   const synthesizedRaw = await createClaudeStructuredCompletion<SynthesizedResult>(
     step4Prompt.system,
     step4Prompt.user,
-    { model: CLAUDE_OPUS, temperature: 0.3, maxTokens: 16000, timeoutMs: 300_000 },
+    { model: CLAUDE_OPUS, temperature: 0.3, maxTokens: 32000, timeoutMs: 300_000 },
   );
 
   // Validate both sub-outputs — guard against unexpected structure
@@ -557,6 +558,52 @@ export async function generateCampaignBlueprint(
   };
 
   return blueprint;
+}
+
+// ─── Deliverable Creation from Blueprint ────────────────────
+
+/**
+ * Create Deliverable DB records from the asset plan's deliverable list.
+ * Safely replaces NOT_STARTED deliverables that have no generated content,
+ * preserving any IN_PROGRESS or COMPLETED work.
+ */
+export async function createDeliverablesFromBlueprint(
+  campaignId: string,
+  assetPlanDeliverables: import('./strategy-blueprint.types').AssetPlanDeliverable[],
+): Promise<number> {
+  // 1. Delete existing NOT_STARTED deliverables without generated content
+  await prisma.deliverable.deleteMany({
+    where: {
+      campaignId,
+      status: 'NOT_STARTED',
+      generatedText: null,
+      generatedVideoUrl: null,
+      generatedImageUrls: { isEmpty: true },
+    },
+  });
+
+  // 2. Create new deliverables from blueprint
+  for (const d of assetPlanDeliverables) {
+    await prisma.deliverable.create({
+      data: {
+        campaignId,
+        title: d.title,
+        contentType: d.contentType,
+        status: 'NOT_STARTED',
+        progress: 0,
+        settings: JSON.parse(JSON.stringify({
+          channel: d.channel,
+          phase: d.phase,
+          targetPersonas: d.targetPersonas,
+          brief: d.brief,
+          productionPriority: d.productionPriority,
+          estimatedEffort: d.estimatedEffort,
+        })),
+      },
+    });
+  }
+
+  return assetPlanDeliverables.length;
 }
 
 // ─── Per-Layer Regeneration ─────────────────────────────────

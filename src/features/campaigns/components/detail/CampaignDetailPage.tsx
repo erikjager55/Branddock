@@ -118,7 +118,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
 
   if (campaignLoading) {
     return (
-      <PageShell maxWidth="5xl">
+      <PageShell maxWidth="7xl">
         <div className="py-8">
           <div className="h-8 w-48 bg-gray-100 rounded animate-pulse mb-8" />
           <div className="h-64 bg-gray-100 rounded-lg animate-pulse" />
@@ -129,7 +129,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
 
   if (!campaign) {
     return (
-      <PageShell maxWidth="5xl">
+      <PageShell maxWidth="7xl">
         <div className="py-8 text-center">
           <p className="text-gray-500">Campaign not found.</p>
           <Button variant="secondary" onClick={onBack} className="mt-4">
@@ -143,7 +143,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
   const isStrategic = campaign.type === "STRATEGIC";
 
   return (
-    <PageShell maxWidth="5xl">
+    <PageShell maxWidth="7xl">
       {/* Header */}
       <div className="bg-white border-b rounded-t-lg -mx-6 px-6 py-6 mb-6">
         <button

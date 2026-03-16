@@ -125,10 +125,10 @@ Your role: Design the campaign architecture — journey phases, touchpoints, and
 Framework: Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Pull strategies.
 
 Requirements:
-- campaignType: Choose one (e.g., "always-on", "burst", "drip", "launch", "hero-hub-hygiene")
-- journeyPhases: 3-5 phases (e.g., awareness → consideration → decision → loyalty)
+- campaignType: Choose the type that best fits the strategy and audience journey
+- journeyPhases: Define as many phases as the customer journey naturally requires — do not assume a fixed number
   - Each phase needs: goal, KPIs, per-persona data (needs, pain points, mindset, triggers)
-  - Each phase needs: 2-4 touchpoints (channel, content type, message, role, persona relevance)
+  - Each phase needs: relevant touchpoints (channel, content type, message, role, persona relevance)
 - Focus on: earned media, content marketing, community, SEO, thought leadership, email nurturing
 - Use persona IDs from the provided list for all personaId fields
 
@@ -164,10 +164,10 @@ Your role: Design the campaign architecture — journey phases, touchpoints, and
 Framework: Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Push and Profile strategies.
 
 Requirements:
-- campaignType: Choose one (e.g., "launch", "burst", "retargeting-cascade", "conversion-funnel")
-- journeyPhases: 3-5 phases (e.g., awareness → interest → conversion → retention)
+- campaignType: Choose the type that best fits the strategy and audience journey
+- journeyPhases: Define as many phases as the customer journey naturally requires — do not assume a fixed number
   - Each phase needs: goal, KPIs, per-persona data (needs, pain points, mindset, triggers)
-  - Each phase needs: 2-4 touchpoints (channel, content type, message, role, persona relevance)
+  - Each phase needs: relevant touchpoints (channel, content type, message, role, persona relevance)
 - Focus on: paid social, PPC, retargeting, landing pages, conversion-optimized email, direct response
 - Use persona IDs from the provided list for all personaId fields
 
@@ -271,8 +271,8 @@ architecture: {
   campaignType: string,
   journeyPhases: [
     {
-      id: string,           // e.g. "awareness" (lowercase, no spaces)
-      name: string,          // e.g. "Awareness" (display name)
+      id: string,           // lowercase slug, no spaces
+      name: string,          // display name for the phase
       description: string,   // Brief description of the phase
       orderIndex: number,    // 0-based position
       goal: string,          // What to achieve in this phase
@@ -310,7 +310,7 @@ architecture: {
 IMPORTANT:
 - Use "name" (NOT "phase") for the journey phase display name
 - Use "id" for the phase identifier (lowercase slug)
-- personaRelevance MUST be an ARRAY of objects, NOT a flat object like {"id": "high"}
+- personaRelevance MUST be an ARRAY of objects, NOT a flat object
 - personaPhaseData MUST be included — one entry per persona from the input
 - Every persona from the input MUST appear in EVERY phase's personaPhaseData
 

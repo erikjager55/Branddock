@@ -273,6 +273,17 @@ export async function createGeminiStructuredCompletion<T>(
     },
   });
 
+  // Detect truncation via Gemini finish reason
+  const finishReason = response.candidates?.[0]?.finishReason;
+  if (finishReason === 'MAX_TOKENS') {
+    const partialText = response.text ?? '';
+    console.error(`[gemini-client] Gemini response truncated (MAX_TOKENS). Model: ${model}, maxOutputTokens: ${maxOutputTokens}, output length: ${partialText.length} chars.`);
+    throw new Error(
+      `Gemini response was truncated (hit ${maxOutputTokens} token limit). The JSON output is incomplete. ` +
+      `Try increasing maxOutputTokens or simplifying the prompt. Output was ${partialText.length} chars.`
+    );
+  }
+
   const text = response.text?.trim() ?? '';
 
   if (!text) {

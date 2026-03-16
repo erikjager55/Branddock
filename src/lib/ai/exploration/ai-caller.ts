@@ -228,6 +228,9 @@ interface ClaudeCompletionOptions {
  * Call Claude for structured JSON output.
  * Claude excels at analytical reasoning and structured data extraction.
  * Parses the JSON from the text response automatically.
+ *
+ * Uses streaming to avoid the Anthropic SDK 10-minute timeout limit
+ * on non-streaming requests (required for large maxTokens on slow models).
  */
 export async function createClaudeStructuredCompletion<T>(
   systemPrompt: string,
@@ -239,7 +242,10 @@ export async function createClaudeStructuredCompletion<T>(
   const temperature = options?.temperature ?? 0.3;
   const maxTokens = options?.maxTokens ?? 8000;
 
-  const response = await client.messages.create(
+  // Use streaming to avoid the Anthropic SDK's 10-minute timeout on
+  // non-streaming requests. This is required for Claude Opus with high
+  // maxTokens where generation can exceed 10 minutes.
+  const stream = client.messages.stream(
     {
       model,
       system: `${systemPrompt}\n\nIMPORTANT: Respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.`,
@@ -249,6 +255,20 @@ export async function createClaudeStructuredCompletion<T>(
     },
     { signal: AbortSignal.timeout(options?.timeoutMs ?? 90_000) },
   );
+
+  // Collect the full response via the stream's finalMessage helper
+  const response = await stream.finalMessage();
+
+  // Detect truncation: if the model stopped because it ran out of tokens,
+  // the JSON will be incomplete and unparseable
+  if (response.stop_reason === 'max_tokens') {
+    const partialText = response.content[0]?.type === 'text' ? response.content[0].text : '';
+    console.error(`[ai-caller] Claude response truncated (max_tokens reached). Model: ${model}, maxTokens: ${maxTokens}, output length: ${partialText.length} chars. Increase maxTokens to avoid this.`);
+    throw new Error(
+      `Claude response was truncated (hit ${maxTokens} token limit). The JSON output is incomplete. ` +
+      `Try increasing maxTokens or simplifying the prompt. Output was ${partialText.length} chars.`
+    );
+  }
 
   const text = response.content[0]?.type === 'text' ? response.content[0].text.trim() : '';
 

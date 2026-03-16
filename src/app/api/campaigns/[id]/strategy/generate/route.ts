@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { requireUnlocked } from '@/lib/lock-guard';
-import { generateCampaignBlueprint } from '@/lib/campaigns/strategy-chain';
+import { generateCampaignBlueprint, createDeliverablesFromBlueprint } from '@/lib/campaigns/strategy-chain';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import type { PipelineStep, GenerateBlueprintBody } from '@/lib/campaigns/strategy-blueprint.types';
@@ -33,6 +33,11 @@ async function saveBlueprintToCampaign(
       strategyGeneratedAt: new Date(),
     },
   });
+
+  // Auto-populate deliverables from the asset plan
+  if (blueprint.assetPlan?.deliverables?.length > 0) {
+    await createDeliverablesFromBlueprint(id, blueprint.assetPlan.deliverables);
+  }
 
   invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
   invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));

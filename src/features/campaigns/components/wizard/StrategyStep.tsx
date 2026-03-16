@@ -28,12 +28,42 @@ function getChoiceText(choice: string | StrategicChoice): string {
 // ─── Pipeline Step Config ────────────────────────────────
 
 const PIPELINE_STEPS = [
-  { step: 1, name: "Strategy Architect", label: "Formulating campaign strategy..." },
-  { step: 2, name: "Campaign Architecture (Dual)", label: "Generating strategy variants A & B..." },
-  { step: 3, name: "Persona Validator", label: "Validating with personas..." },
-  { step: 4, name: "Strategy Synthesizer", label: "Synthesizing optimal strategy..." },
-  { step: 5, name: "Channel Planner", label: "Planning channel strategy..." },
-  { step: 6, name: "Asset Planner", label: "Creating asset plan..." },
+  {
+    step: 1,
+    name: "Strategy Architect",
+    label: "Formulating campaign strategy...",
+    description: "Analyzes your brand identity, personas, and campaign goals to formulate the strategic foundation — positioning, theme, and key messaging.",
+  },
+  {
+    step: 2,
+    name: "Campaign Architecture (Dual)",
+    label: "Generating strategy variants A & B...",
+    description: "Two independent AI models each generate a complete campaign journey variant with phases, touchpoints, and content moments — creating diversity for stronger results.",
+  },
+  {
+    step: 3,
+    name: "Persona Validator",
+    label: "Validating with personas...",
+    description: "Each persona evaluates both variants on relevance, engagement potential, and emotional resonance. Their scores and feedback determine which approach wins.",
+  },
+  {
+    step: 4,
+    name: "Strategy Synthesizer",
+    label: "Synthesizing optimal strategy...",
+    description: "Our most advanced model merges the strongest elements from both variants, guided by persona validation, into one optimal campaign strategy and journey.",
+  },
+  {
+    step: 5,
+    name: "Channel Planner",
+    label: "Planning channel strategy...",
+    description: "Maps the right channels and media to each journey phase based on your personas' channel preferences and the campaign objectives.",
+  },
+  {
+    step: 6,
+    name: "Asset Planner",
+    label: "Creating asset plan...",
+    description: "Creates a concrete deliverable plan with content types, production priorities, and creative briefs for each journey phase and channel.",
+  },
 ] as const;
 
 // ─── Step Status Icon ────────────────────────────────────
@@ -346,12 +376,21 @@ export function StrategyStep() {
               >
                 <StepStatusIcon status={status} />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
-                    {config.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {status === "running" ? config.label : status === "complete" ? "Completed" : status === "error" ? (stepData?.error || "Failed") : "Waiting..."}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-gray-900">
+                      {config.name}
+                    </p>
+                    <span className={`text-xs ${
+                      status === "running" ? "text-primary" : status === "complete" ? "text-emerald-600" : status === "error" ? "text-red-600" : "text-muted-foreground"
+                    }`}>
+                      {status === "running" ? config.label : status === "complete" ? "Completed" : status === "error" ? (stepData?.error || "Failed") : "Waiting..."}
+                    </span>
+                  </div>
+                  {(status === "running" || status === "complete" || status === "error") && (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {config.description}
+                    </p>
+                  )}
                   {preview && status === "complete" && (
                     <p className="text-xs text-emerald-700 mt-1 line-clamp-1">
                       {preview}

@@ -60,6 +60,22 @@ export interface KnowledgeAssetResponse {
   insightId: string | null;
 }
 
+/** Rich metadata stored in Deliverable.settings from the blueprint asset plan */
+export interface DeliverableBriefSettings {
+  channel?: string;
+  phase?: string;
+  targetPersonas?: string[];
+  brief?: {
+    objective?: string;
+    keyMessage?: string;
+    toneDirection?: string;
+    callToAction?: string;
+    contentOutline?: string[];
+  };
+  productionPriority?: 'must-have' | 'should-have' | 'nice-to-have';
+  estimatedEffort?: 'low' | 'medium' | 'high';
+}
+
 export interface DeliverableResponse {
   id: string;
   title: string;
@@ -69,6 +85,7 @@ export interface DeliverableResponse {
   qualityScore: number | null;
   assignedTo: string | null;
   isFavorite: boolean;
+  settings: DeliverableBriefSettings | null;
   createdAt: string;
   updatedAt: string;
 }
