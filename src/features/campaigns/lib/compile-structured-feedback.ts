@@ -23,6 +23,10 @@ function getRatingLabel(key: string): string {
   const variantPrefix = variantMatch ? `Variant ${variantMatch[1]}: ` : "";
   const rest = variantMatch ? variantMatch[2] : key;
 
+  // Touchpoint ratings: "phase.0.tp.1" → "Phase 1, Touchpoint 2"
+  const tpMatch = rest.match(/^phase\.(\d+)\.tp\.(\d+)$/);
+  if (tpMatch) return `${variantPrefix}Phase ${parseInt(tpMatch[1], 10) + 1}, Touchpoint ${parseInt(tpMatch[2], 10) + 1}`;
+
   // Phase ratings: "phase.0" → "Phase 1"
   const phaseMatch = rest.match(/^phase\.(\d+)$/);
   if (phaseMatch) return `${variantPrefix}Journey Phase ${parseInt(phaseMatch[1], 10) + 1}`;

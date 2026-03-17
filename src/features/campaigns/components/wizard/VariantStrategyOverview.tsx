@@ -27,32 +27,32 @@ function RatingButtons({ ratingKey }: { ratingKey: string }) {
   const setRating = useCampaignWizardStore((s) => s.setStrategyRating);
 
   return (
-    <span className="inline-flex items-center gap-0.5 ml-2 flex-shrink-0">
+    <span className="inline-flex items-center gap-1 ml-2 flex-shrink-0">
       <button
         type="button"
         aria-pressed={rating === "up"}
         onClick={() => setRating(ratingKey, rating === "up" ? null : "up")}
-        className={`p-0.5 rounded transition-colors ${
+        className={`px-1.5 py-1 rounded-md border transition-colors ${
           rating === "up"
-            ? "text-emerald-600 bg-emerald-50"
-            : "text-gray-300 hover:text-emerald-500"
+            ? "bg-emerald-100 border-emerald-300 text-emerald-600"
+            : "bg-gray-50 border-gray-200 text-gray-400 hover:text-emerald-500 hover:border-emerald-200"
         }`}
-        title="Approve this element"
+        title="Approve"
       >
-        <ThumbsUp className="w-3.5 h-3.5" />
+        <ThumbsUp className="w-4 h-4" />
       </button>
       <button
         type="button"
         aria-pressed={rating === "down"}
         onClick={() => setRating(ratingKey, rating === "down" ? null : "down")}
-        className={`p-0.5 rounded transition-colors ${
+        className={`px-1.5 py-1 rounded-md border transition-colors ${
           rating === "down"
-            ? "text-red-500 bg-red-50"
-            : "text-gray-300 hover:text-red-400"
+            ? "bg-red-100 border-red-300 text-red-500"
+            : "bg-gray-50 border-gray-200 text-gray-400 hover:text-red-400 hover:border-red-200"
         }`}
         title="Needs change"
       >
-        <ThumbsDown className="w-3.5 h-3.5" />
+        <ThumbsDown className="w-4 h-4" />
       </button>
     </span>
   );
@@ -98,6 +98,7 @@ export function VariantStrategyOverview({ strategyLayer, variantKey }: VariantSt
   const messagingHierarchy = strategyLayer.messagingHierarchy ?? { brandMessage: "", campaignMessage: "", proofPoints: [] };
   const jtbdFraming = strategyLayer.jtbdFraming ?? { jobStatement: "", functionalJob: "", emotionalJob: "", socialJob: "" };
   const strategicChoices = strategyLayer.strategicChoices ?? [];
+  const intentRatio = strategyLayer.intentRatio ?? { brand: 50, activation: 50 };
 
   return (
     <div className="border border-gray-200 rounded-lg p-5 space-y-5">
@@ -134,7 +135,7 @@ export function VariantStrategyOverview({ strategyLayer, variantKey }: VariantSt
               : strategyLayer.strategicIntent === "sales_activation"
                 ? "Sales Activation"
                 : "Hybrid"}{" "}
-            ({strategyLayer.intentRatio.brand}/{strategyLayer.intentRatio.activation})
+            ({intentRatio.brand}/{intentRatio.activation})
           </Badge>
         </div>
       </div>

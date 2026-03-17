@@ -244,26 +244,35 @@ function validateOrWarn<T>(schema: { safeParse: (data: unknown) => { success: bo
 
 /**
  * Normalize persona validation results to fix common AI output issues:
- * - Clamp overallScore to 1-10 (0 or null → 5)
+ * - Clamp overallScore to 1-10 (non-number → 5)
+ * - Ensure personaId and personaName are non-empty strings
  * - Normalize preferredVariant to uppercase "A" or "B"
- * - Ensure resonates/concerns/suggestions are arrays
+ * - Filter falsy values from resonates/concerns/suggestions arrays
  * - Ensure feedback is a non-empty string
  */
 function normalizePersonaValidation(results: PersonaValidationResult[]): PersonaValidationResult[] {
   return results.map((p) => ({
     ...p,
-    overallScore: (typeof p.overallScore === 'number' && !isNaN(p.overallScore) && p.overallScore >= 1)
-      ? Math.min(p.overallScore, 10)
+    personaId: (typeof p.personaId === 'string' && p.personaId.trim().length > 0)
+      ? p.personaId
+      : `unknown-${Math.random().toString(36).slice(2, 8)}`,
+    personaName: (typeof p.personaName === 'string' && p.personaName.trim().length > 0)
+      ? p.personaName
+      : 'Unknown Persona',
+    overallScore: (typeof p.overallScore === 'number' && !isNaN(p.overallScore))
+      ? Math.max(1, Math.min(p.overallScore, 10))
       : 5,
     preferredVariant: (
       typeof p.preferredVariant === 'string' && ['A', 'B'].includes(p.preferredVariant.trim().toUpperCase())
         ? p.preferredVariant.trim().toUpperCase() as 'A' | 'B'
         : 'A'
     ),
-    feedback: (typeof p.feedback === 'string' && p.feedback.trim().length > 0) ? p.feedback : 'No specific feedback provided.',
-    resonates: Array.isArray(p.resonates) ? p.resonates : [],
-    concerns: Array.isArray(p.concerns) ? p.concerns : [],
-    suggestions: Array.isArray(p.suggestions) ? p.suggestions : [],
+    feedback: (typeof p.feedback === 'string' && p.feedback.trim().length >= 10)
+      ? p.feedback
+      : `${p.personaName || 'This persona'} found the strategy moderately relevant but could not provide detailed feedback at this time.`,
+    resonates: Array.isArray(p.resonates) ? p.resonates.filter(Boolean) : [],
+    concerns: Array.isArray(p.concerns) ? p.concerns.filter(Boolean) : [],
+    suggestions: Array.isArray(p.suggestions) ? p.suggestions.filter(Boolean) : [],
   }));
 }
 

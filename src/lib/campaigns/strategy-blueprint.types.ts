@@ -532,7 +532,7 @@ export const personaValidationSchema = z.object({
   personaId: z.string(),
   personaName: z.string(),
   overallScore: z.number().min(1).max(10),
-  feedback: z.string(),
+  feedback: z.string().min(10),
   resonates: z.array(z.string()),
   concerns: z.array(z.string()),
   suggestions: z.array(z.string()),

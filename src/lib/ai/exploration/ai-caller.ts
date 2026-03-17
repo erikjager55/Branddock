@@ -213,6 +213,30 @@ function extractFirstJson(text: string): string {
   return text.slice(start);
 }
 
+// ─── Retry Helper ────────────────────────────────────────────
+
+const MAX_RETRIES = 3;
+const BASE_DELAY_MS = 2000;
+
+/**
+ * Returns true if the error is a transient Anthropic API error
+ * that should be retried (overloaded, rate limited, 5xx).
+ */
+function isTransientError(error: unknown): boolean {
+  if (error instanceof Anthropic.APIError) {
+    // 429 = rate limited, 529 = overloaded, 5xx = server errors
+    if (error.status === 429 || error.status === 529 || error.status >= 500) return true;
+  }
+  // Check for the error message pattern from non-APIError responses
+  const msg = error instanceof Error ? error.message : String(error);
+  if (msg.includes('overloaded') || msg.includes('rate_limit') || msg.includes('529')) return true;
+  return false;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // ─── Claude Structured JSON Completion ──────────────────────
 
 const CLAUDE_SONNET = 'claude-sonnet-4-5-20250929';
@@ -231,6 +255,9 @@ interface ClaudeCompletionOptions {
  *
  * Uses streaming to avoid the Anthropic SDK 10-minute timeout limit
  * on non-streaming requests (required for large maxTokens on slow models).
+ *
+ * Retries up to 3 times with exponential backoff for transient API errors
+ * (overloaded_error, rate_limit_error, 5xx server errors).
  */
 export async function createClaudeStructuredCompletion<T>(
   systemPrompt: string,
@@ -242,55 +269,75 @@ export async function createClaudeStructuredCompletion<T>(
   const temperature = options?.temperature ?? 0.3;
   const maxTokens = options?.maxTokens ?? 8000;
 
-  // Use streaming to avoid the Anthropic SDK's 10-minute timeout on
-  // non-streaming requests. This is required for Claude Opus with high
-  // maxTokens where generation can exceed 10 minutes.
-  const stream = client.messages.stream(
-    {
-      model,
-      system: `${systemPrompt}\n\nIMPORTANT: Respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.`,
-      messages: [{ role: 'user', content: userPrompt }],
-      temperature,
-      max_tokens: maxTokens,
-    },
-    { signal: AbortSignal.timeout(options?.timeoutMs ?? 90_000) },
-  );
+  let lastError: unknown;
 
-  // Collect the full response via the stream's finalMessage helper
-  const response = await stream.finalMessage();
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      // Use streaming to avoid the Anthropic SDK's 10-minute timeout on
+      // non-streaming requests. This is required for Claude Opus with high
+      // maxTokens where generation can exceed 10 minutes.
+      const stream = client.messages.stream(
+        {
+          model,
+          system: `${systemPrompt}\n\nIMPORTANT: Respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.`,
+          messages: [{ role: 'user', content: userPrompt }],
+          temperature,
+          max_tokens: maxTokens,
+        },
+        { signal: AbortSignal.timeout(options?.timeoutMs ?? 90_000) },
+      );
 
-  // Detect truncation: if the model stopped because it ran out of tokens,
-  // the JSON will be incomplete and unparseable
-  if (response.stop_reason === 'max_tokens') {
-    const partialText = response.content[0]?.type === 'text' ? response.content[0].text : '';
-    console.error(`[ai-caller] Claude response truncated (max_tokens reached). Model: ${model}, maxTokens: ${maxTokens}, output length: ${partialText.length} chars. Increase maxTokens to avoid this.`);
-    throw new Error(
-      `Claude response was truncated (hit ${maxTokens} token limit). The JSON output is incomplete. ` +
-      `Try increasing maxTokens or simplifying the prompt. Output was ${partialText.length} chars.`
-    );
+      // Collect the full response via the stream's finalMessage helper
+      const response = await stream.finalMessage();
+
+      // Detect truncation: if the model stopped because it ran out of tokens,
+      // the JSON will be incomplete and unparseable
+      if (response.stop_reason === 'max_tokens') {
+        const partialText = response.content[0]?.type === 'text' ? response.content[0].text : '';
+        console.error(`[ai-caller] Claude response truncated (max_tokens reached). Model: ${model}, maxTokens: ${maxTokens}, output length: ${partialText.length} chars. Increase maxTokens to avoid this.`);
+        throw new Error(
+          `Claude response was truncated (hit ${maxTokens} token limit). The JSON output is incomplete. ` +
+          `Try increasing maxTokens or simplifying the prompt. Output was ${partialText.length} chars.`
+        );
+      }
+
+      const text = response.content[0]?.type === 'text' ? response.content[0].text.trim() : '';
+
+      if (!text) {
+        throw new Error('Empty response from Claude (structured completion)');
+      }
+
+      // Parse JSON — handle markdown code blocks that the model sometimes wraps
+      let cleaned = text;
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?\s*```\s*$/, '');
+      }
+
+      // Extract the first complete JSON value using brace/bracket depth tracking.
+      // This correctly ignores braces inside string literals and stops at the
+      // matching close, so trailing commentary from the model is discarded.
+      cleaned = extractFirstJson(cleaned);
+
+      try {
+        return JSON.parse(cleaned) as T;
+      } catch (parseError) {
+        const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+        throw new Error(`Failed to parse Claude response as JSON: ${msg}. Response starts with: "${cleaned.slice(0, 200)}"`);
+      }
+    } catch (error) {
+      lastError = error;
+
+      if (attempt < MAX_RETRIES && isTransientError(error)) {
+        const delay = BASE_DELAY_MS * Math.pow(2, attempt); // 2s, 4s, 8s
+        console.warn(`[ai-caller] Transient error on attempt ${attempt + 1}/${MAX_RETRIES + 1} for model ${model}. Retrying in ${delay}ms...`, error instanceof Error ? error.message : error);
+        await sleep(delay);
+        continue;
+      }
+
+      throw error;
+    }
   }
 
-  const text = response.content[0]?.type === 'text' ? response.content[0].text.trim() : '';
-
-  if (!text) {
-    throw new Error('Empty response from Claude (structured completion)');
-  }
-
-  // Parse JSON — handle markdown code blocks that the model sometimes wraps
-  let cleaned = text;
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?\s*```\s*$/, '');
-  }
-
-  // Extract the first complete JSON value using brace/bracket depth tracking.
-  // This correctly ignores braces inside string literals and stops at the
-  // matching close, so trailing commentary from the model is discarded.
-  cleaned = extractFirstJson(cleaned);
-
-  try {
-    return JSON.parse(cleaned) as T;
-  } catch (parseError) {
-    const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
-    throw new Error(`Failed to parse Claude response as JSON: ${msg}. Response starts with: "${cleaned.slice(0, 200)}"`);
-  }
+  // Should not reach here, but TypeScript needs it
+  throw lastError;
 }

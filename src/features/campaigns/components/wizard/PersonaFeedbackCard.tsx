@@ -1,8 +1,7 @@
 "use client";
 
 import React from "react";
-import { ThumbsUp } from "lucide-react";
-import { Badge } from "@/components/shared";
+import { ThumbsUp, CheckCircle, AlertTriangle, Lightbulb } from "lucide-react";
 import type { PersonaValidationResult } from "@/lib/campaigns/strategy-blueprint.types";
 
 // ─── Types ──────────────────────────────────────────────
@@ -13,6 +12,25 @@ interface PersonaFeedbackCardProps {
   onToggleEndorse: () => void;
 }
 
+// ─── Score Circle ────────────────────────────────────────
+
+function ScoreCircle({ score }: { score: number }) {
+  const color =
+    score >= 7
+      ? "text-emerald-600 border-emerald-200 bg-emerald-50"
+      : score >= 5
+        ? "text-amber-600 border-amber-200 bg-amber-50"
+        : "text-red-600 border-red-200 bg-red-50";
+
+  return (
+    <div
+      className={`w-12 h-12 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${color}`}
+    >
+      <span className="text-lg font-bold">{score}</span>
+    </div>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────
 
 export function PersonaFeedbackCard({
@@ -20,8 +38,10 @@ export function PersonaFeedbackCard({
   isEndorsed,
   onToggleEndorse,
 }: PersonaFeedbackCardProps) {
-  const scoreColor =
-    persona.overallScore >= 7 ? "success" : persona.overallScore >= 5 ? "warning" : "danger";
+  const variantColor =
+    persona.preferredVariant === "A"
+      ? "bg-teal-100 text-teal-700 border-teal-300"
+      : "bg-blue-100 text-blue-700 border-blue-300";
 
   return (
     <div
@@ -31,23 +51,20 @@ export function PersonaFeedbackCard({
           : "border-gray-200"
       }`}
     >
-      {/* Header row: avatar + name + badges + endorse */}
+      {/* Header row: avatar + name + score circle + endorse */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600 flex-shrink-0">
-            {(persona.personaName || "?").charAt(0)}
-          </div>
+          <ScoreCircle score={persona.overallScore} />
           <div>
             <p className="text-sm font-semibold text-gray-900">
               {persona.personaName}
             </p>
             <div className="flex items-center gap-2 mt-0.5">
-              <Badge variant={scoreColor}>
-                {persona.overallScore}/10
-              </Badge>
-              <Badge variant="default">
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${variantColor}`}
+              >
                 Prefers {persona.preferredVariant}
-              </Badge>
+              </span>
             </div>
           </div>
         </div>
@@ -55,14 +72,15 @@ export function PersonaFeedbackCard({
           type="button"
           aria-pressed={isEndorsed}
           onClick={onToggleEndorse}
-          className={`p-1.5 rounded-lg border transition-all ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all text-sm font-medium ${
             isEndorsed
               ? "border-emerald-300 bg-emerald-50 text-emerald-600"
-              : "border-gray-200 bg-white text-gray-400 hover:text-emerald-500 hover:border-emerald-200"
+              : "border-gray-200 bg-white text-gray-500 hover:text-emerald-500 hover:border-emerald-200"
           }`}
           title={isEndorsed ? "Remove endorsement" : "Endorse this persona's feedback for synthesis"}
         >
           <ThumbsUp className={`w-4 h-4 ${isEndorsed ? "fill-current" : ""}`} />
+          <span>{isEndorsed ? "Endorsed" : "Endorse"}</span>
         </button>
       </div>
 
@@ -73,8 +91,11 @@ export function PersonaFeedbackCard({
 
       {/* Resonates tags (green) */}
       {persona.resonates.length > 0 && (
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-emerald-700">Resonates</p>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+            <p className="text-xs font-semibold text-emerald-700">Resonates</p>
+          </div>
           <div className="flex flex-wrap gap-1.5">
             {persona.resonates.map((item, i) => (
               <span
@@ -90,8 +111,11 @@ export function PersonaFeedbackCard({
 
       {/* Concerns tags (amber) */}
       {persona.concerns.length > 0 && (
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-amber-700">Concerns</p>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+            <p className="text-xs font-semibold text-amber-700">Concerns</p>
+          </div>
           <div className="flex flex-wrap gap-1.5">
             {persona.concerns.map((item, i) => (
               <span
@@ -107,8 +131,11 @@ export function PersonaFeedbackCard({
 
       {/* Suggestions tags (blue) */}
       {persona.suggestions.length > 0 && (
-        <div className="space-y-1">
-          <p className="text-xs font-medium text-blue-700">Suggestions</p>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <Lightbulb className="w-3.5 h-3.5 text-blue-500" />
+            <p className="text-xs font-semibold text-blue-700">Suggestions</p>
+          </div>
           <div className="flex flex-wrap gap-1.5">
             {persona.suggestions.map((item, i) => (
               <span

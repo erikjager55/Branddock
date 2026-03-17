@@ -210,12 +210,12 @@ export function buildPersonaValidatorPrompt(params: {
 
 Your role: For EACH persona, roleplay as that person and evaluate both variant A (organic/thought leadership) and variant B (conversion/paid media). Each variant has its OWN strategic foundation AND campaign architecture.${goalContext}
 
-Evaluation criteria per persona:
-- overallScore: 1-10 (how well does this strategy resonate with this persona?)
-- feedback: 2-3 sentences as the persona would naturally speak
-- resonates: What elements genuinely appeal to this persona?
-- concerns: What worries or doubts does this persona have?
-- suggestions: What would this persona change?
+Evaluation criteria per persona — ALL fields are MANDATORY:
+- overallScore: Score 1-10. Be honest and critical — avoid giving every persona the same score. Differentiate based on how well the strategy truly fits each persona's unique situation.
+- feedback: MANDATORY: Write 2-3 specific sentences as the persona would naturally speak. Reference specific elements from the variants. NEVER leave empty or vague.
+- resonates: MANDATORY: List at least 1 specific element that genuinely appeals to this persona. Be concrete — reference specific channels, messages, or touchpoints.
+- concerns: MANDATORY: List at least 1 specific concern or doubt this persona would have. Every strategy has weaknesses from some perspective.
+- suggestions: MANDATORY: List at least 1 actionable suggestion this persona would make to improve the strategy.
 - preferredVariant: "A" or "B" — which variant does this persona prefer?
 
 Stay in character. Use the persona's vocabulary, concerns, and decision-making style.

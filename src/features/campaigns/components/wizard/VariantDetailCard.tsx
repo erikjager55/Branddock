@@ -10,6 +10,7 @@ import {
   Zap,
   ThumbsUp,
   ThumbsDown,
+  Route,
 } from "lucide-react";
 import { Badge } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
@@ -91,7 +92,38 @@ function PersonaPhaseInfo({ data }: { data: PersonaPhaseData }) {
   );
 }
 
-function TouchpointRow({ touchpoint }: { touchpoint: Touchpoint }) {
+function CollapsiblePersonaData({ personaPhaseData, defaultCollapsed }: { personaPhaseData: PersonaPhaseData[]; defaultCollapsed: boolean }) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+
+  return (
+    <div className="space-y-1.5">
+      <button
+        type="button"
+        onClick={() => setCollapsed(!collapsed)}
+        className="flex items-center gap-1 group"
+      >
+        {collapsed ? (
+          <ChevronRight className="w-3 h-3 text-gray-400" />
+        ) : (
+          <ChevronDown className="w-3 h-3 text-gray-400" />
+        )}
+        <Users className="w-3 h-3 text-gray-400" />
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          Per Persona ({personaPhaseData.length})
+        </p>
+      </button>
+      {!collapsed && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {personaPhaseData.map((ppd) => (
+            <PersonaPhaseInfo key={ppd.personaId} data={ppd} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TouchpointRow({ touchpoint, ratingKey }: { touchpoint: Touchpoint; ratingKey: string }) {
   return (
     <div className="p-2.5 bg-white rounded border border-gray-100 space-y-1.5">
       <div className="flex items-center gap-2">
@@ -104,6 +136,7 @@ function TouchpointRow({ touchpoint }: { touchpoint: Touchpoint }) {
         <span className="text-xs text-muted-foreground">
           ({touchpoint.contentType})
         </span>
+        <PhaseRatingButtons ratingKey={ratingKey} />
       </div>
       <p className="text-xs text-gray-700">{touchpoint.message}</p>
       {touchpoint.personaRelevance.length > 0 && (
@@ -140,32 +173,32 @@ function PhaseRatingButtons({ ratingKey }: { ratingKey: string }) {
   const setRating = useCampaignWizardStore((s) => s.setStrategyRating);
 
   return (
-    <span className="inline-flex items-center gap-0.5 ml-1 flex-shrink-0">
+    <span className="inline-flex items-center gap-1 ml-1 flex-shrink-0">
       <button
         type="button"
         aria-pressed={rating === "up"}
         onClick={(e) => { e.stopPropagation(); setRating(ratingKey, rating === "up" ? null : "up"); }}
-        className={`p-0.5 rounded transition-colors ${
+        className={`px-1.5 py-1 rounded-md border transition-colors ${
           rating === "up"
-            ? "text-emerald-600 bg-emerald-50"
-            : "text-gray-300 hover:text-emerald-500"
+            ? "bg-emerald-100 border-emerald-300 text-emerald-600"
+            : "bg-gray-50 border-gray-200 text-gray-400 hover:text-emerald-500 hover:border-emerald-200"
         }`}
-        title="Approve this phase"
+        title="Approve"
       >
-        <ThumbsUp className="w-3 h-3" />
+        <ThumbsUp className="w-4 h-4" />
       </button>
       <button
         type="button"
         aria-pressed={rating === "down"}
         onClick={(e) => { e.stopPropagation(); setRating(ratingKey, rating === "down" ? null : "down"); }}
-        className={`p-0.5 rounded transition-colors ${
+        className={`px-1.5 py-1 rounded-md border transition-colors ${
           rating === "down"
-            ? "text-red-500 bg-red-50"
-            : "text-gray-300 hover:text-red-400"
+            ? "bg-red-100 border-red-300 text-red-500"
+            : "bg-gray-50 border-gray-200 text-gray-400 hover:text-red-400 hover:border-red-200"
         }`}
         title="Needs change"
       >
-        <ThumbsDown className="w-3 h-3" />
+        <ThumbsDown className="w-4 h-4" />
       </button>
     </span>
   );
@@ -187,12 +220,12 @@ function PhaseSection({ phase, index, variantKey }: { phase: JourneyPhase; index
           <ChevronRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
         )}
         <span className="text-xs font-semibold text-gray-900 flex-1">
-          {formatPhaseName(phase.name)}
+          Phase {index + 1}: {formatPhaseName(phase.name)}
         </span>
         <PhaseRatingButtons ratingKey={`${variantKey}.phase.${index}`} />
-        <span className="text-xs text-muted-foreground">
+        <Badge variant="default">
           {phase.touchpoints.length} touchpoint{phase.touchpoints.length !== 1 ? "s" : ""}
-        </span>
+        </Badge>
       </button>
 
       {expanded && (
@@ -219,35 +252,24 @@ function PhaseSection({ phase, index, variantKey }: { phase: JourneyPhase; index
             </div>
           )}
 
-          {/* Persona data */}
+          {/* Persona data — collapsible when >2 personas */}
           {phase.personaPhaseData.length > 0 && (
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-1">
-                <Users className="w-3 h-3 text-gray-400" />
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Per Persona
-                </p>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {phase.personaPhaseData.map((ppd) => (
-                  <PersonaPhaseInfo key={ppd.personaId} data={ppd} />
-                ))}
-              </div>
-            </div>
+            <CollapsiblePersonaData personaPhaseData={phase.personaPhaseData} defaultCollapsed={phase.personaPhaseData.length > 2} />
           )}
 
           {/* Touchpoints */}
           {phase.touchpoints.length > 0 && (
             <div className="space-y-1.5">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <Zap className="w-3 h-3 text-gray-400" />
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Touchpoints
                 </p>
+                <Badge variant="default">{phase.touchpoints.length}</Badge>
               </div>
               <div className="space-y-1.5">
                 {phase.touchpoints.map((tp, i) => (
-                  <TouchpointRow key={i} touchpoint={tp} />
+                  <TouchpointRow key={i} touchpoint={tp} ratingKey={`${variantKey}.phase.${index}.tp.${i}`} />
                 ))}
               </div>
             </div>
@@ -295,6 +317,11 @@ export function VariantDetailCard({
 
       {/* Journey phases (collapsible) */}
       <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Route className="w-4 h-4 text-gray-500" />
+          <span className="text-sm font-semibold text-gray-900">Journey Phases</span>
+          <Badge variant="default">{variant.journeyPhases.length} phases</Badge>
+        </div>
         {variant.journeyPhases.map((phase, i) => (
           <PhaseSection key={phase.id ?? `phase-${i}`} phase={phase} index={i} variantKey={variantKey} />
         ))}
