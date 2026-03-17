@@ -48,7 +48,8 @@ export async function POST(request: NextRequest) {
           const result = await synthesizeStrategy(
             {
               variantFeedback: body.variantFeedback,
-              strategyLayer: body.strategyLayer,
+              strategyLayerA: body.strategyLayerA,
+              strategyLayerB: body.strategyLayerB,
               variantA: body.variantA,
               variantB: body.variantB,
               personaValidation: body.personaValidation,

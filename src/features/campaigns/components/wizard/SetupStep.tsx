@@ -180,7 +180,7 @@ export function SetupStep() {
           <span className="text-red-500 mr-0.5">*</span>
           Campaign Goal
         </label>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-8">
           {GOAL_CATEGORIES.map((category) => (
             <div key={category.key}>
               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">

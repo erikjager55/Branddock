@@ -7,7 +7,7 @@ interface CompileStructuredFeedbackParams {
   personaValidation: PersonaValidationResult[];
 }
 
-/** Rating key → human-readable label */
+/** Rating key → human-readable label (without variant prefix) */
 const RATING_LABELS: Record<string, string> = {
   theme: "Campaign Theme",
   positioning: "Positioning Statement",
@@ -18,9 +18,22 @@ const RATING_LABELS: Record<string, string> = {
 };
 
 function getRatingLabel(key: string): string {
-  if (RATING_LABELS[key]) return RATING_LABELS[key];
-  if (key.startsWith("choice.")) return `Strategic Choice #${parseInt(key.split(".")[1], 10) + 1}`;
-  return key;
+  // Strip variant prefix (e.g. "A.theme" → variant "A", rest "theme")
+  const variantMatch = key.match(/^([AB])\.(.+)$/);
+  const variantPrefix = variantMatch ? `Variant ${variantMatch[1]}: ` : "";
+  const rest = variantMatch ? variantMatch[2] : key;
+
+  // Phase ratings: "phase.0" → "Phase 1"
+  const phaseMatch = rest.match(/^phase\.(\d+)$/);
+  if (phaseMatch) return `${variantPrefix}Journey Phase ${parseInt(phaseMatch[1], 10) + 1}`;
+
+  // Choice ratings: "choice.0" → "Strategic Choice #1"
+  if (rest.startsWith("choice.")) return `${variantPrefix}Strategic Choice #${parseInt(rest.split(".")[1], 10) + 1}`;
+
+  // Known labels
+  if (RATING_LABELS[rest]) return `${variantPrefix}${RATING_LABELS[rest]}`;
+
+  return `${variantPrefix}${rest}`;
 }
 
 /**

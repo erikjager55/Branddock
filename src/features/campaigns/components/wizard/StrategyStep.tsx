@@ -37,18 +37,12 @@ function getChoiceText(choice: string | StrategicChoice): string {
 const PHASE_A_STEPS: PipelineStepConfig[] = [
   {
     step: 1,
-    name: "Strategy Architect",
-    label: "Formulating campaign strategy...",
-    description: "Analyzes your brand identity, personas, and campaign goals to formulate the strategic foundation.",
+    name: "Dual Full Variants",
+    label: "Generating strategy variants A & B...",
+    description: "Two independent AI models each generate a complete strategy + campaign journey variant.",
   },
   {
     step: 2,
-    name: "Campaign Architecture (Dual)",
-    label: "Generating strategy variants A & B...",
-    description: "Two independent AI models each generate a complete campaign journey variant.",
-  },
-  {
-    step: 3,
     name: "Persona Validator",
     label: "Validating with personas...",
     description: "Each persona evaluates both variants on relevance, engagement potential, and emotional resonance.",
@@ -128,7 +122,8 @@ export function StrategyStep() {
   const strategyPhase = useCampaignWizardStore((s) => s.strategyPhase);
 
   // Phase data
-  const strategyLayer = useCampaignWizardStore((s) => s.strategyLayer);
+  const strategyLayerA = useCampaignWizardStore((s) => s.strategyLayerA);
+  const strategyLayerB = useCampaignWizardStore((s) => s.strategyLayerB);
   const variantA = useCampaignWizardStore((s) => s.variantA);
   const variantB = useCampaignWizardStore((s) => s.variantB);
   const personaValidation = useCampaignWizardStore((s) => s.personaValidation);
@@ -217,7 +212,8 @@ export function StrategyStep() {
 
         if (data.type === "complete" && data.result) {
           const result = data.result as {
-            strategyLayer: import("@/lib/campaigns/strategy-blueprint.types").StrategyLayer;
+            strategyLayerA: import("@/lib/campaigns/strategy-blueprint.types").StrategyLayer;
+            strategyLayerB: import("@/lib/campaigns/strategy-blueprint.types").StrategyLayer;
             variantA: import("@/lib/campaigns/strategy-blueprint.types").ArchitectureLayer;
             variantB: import("@/lib/campaigns/strategy-blueprint.types").ArchitectureLayer;
             personaValidation: import("@/lib/campaigns/strategy-blueprint.types").PersonaValidationResult[];
@@ -265,7 +261,7 @@ export function StrategyStep() {
   // ─── Phase B: Synthesize Strategy ────────────────────
 
   const handleSynthesize = useCallback(() => {
-    if (!strategyLayer || !variantA || !variantB) return;
+    if (!strategyLayerA || !strategyLayerB || !variantA || !variantB) return;
     const currentGenId = ++generationIdRef.current;
     setPhaseError(null);
 
@@ -289,7 +285,8 @@ export function StrategyStep() {
     const { abort } = synthesizeStrategySSE(
       {
         variantFeedback: compiledFeedback,
-        strategyLayer,
+        strategyLayerA,
+        strategyLayerB,
         variantA,
         variantB,
         personaValidation: personaValidation ?? [],
@@ -344,7 +341,7 @@ export function StrategyStep() {
       },
     );
     abortRef.current = { abort };
-  }, [strategyLayer, variantA, variantB, personaValidation, variantAScore, variantBScore, wizardContext, strategicIntent]);
+  }, [strategyLayerA, strategyLayerB, variantA, variantB, personaValidation, variantAScore, variantBScore, wizardContext, strategicIntent]);
 
   // ─── Phase C: Elaborate Journey ──────────────────────
 
@@ -519,10 +516,11 @@ export function StrategyStep() {
   }
 
   // Phase A result: Review variants
-  if (strategyPhase === "review_variants" && strategyLayer && variantA && variantB) {
+  if (strategyPhase === "review_variants" && strategyLayerA && strategyLayerB && variantA && variantB) {
     return (
       <VariantReviewView
-        strategyLayer={strategyLayer}
+        strategyLayerA={strategyLayerA}
+        strategyLayerB={strategyLayerB}
         variantA={variantA}
         variantB={variantB}
         personaValidation={personaValidation ?? []}

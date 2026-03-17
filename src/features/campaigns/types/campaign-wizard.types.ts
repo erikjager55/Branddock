@@ -23,6 +23,7 @@ export type {
   ChannelPlanLayer,
   AssetPlanLayer,
   PersonaValidationResult,
+  FullVariant,
 } from '@/lib/campaigns/strategy-blueprint.types';
 
 export type CampaignGoalType =

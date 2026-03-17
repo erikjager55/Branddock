@@ -1,6 +1,7 @@
 // =============================================================================
-// Campaign Strategy Blueprint — 7-Step Prompt Chain Orchestrator
-// Runs 7 AI calls (2a+2b parallel, 5→6 sequential) to produce a CampaignBlueprint
+// Campaign Strategy Blueprint — 5-Step Prompt Chain Orchestrator
+// Runs 5 AI calls (1a+1b parallel full variants, 2 persona validation,
+// 3 synthesis, 4 channel plan, 5 asset plan) to produce a CampaignBlueprint
 // =============================================================================
 
 import { prisma } from '@/lib/prisma';
@@ -12,9 +13,8 @@ import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
 import { calculateBlueprintConfidence } from './confidence-calculator';
 import { getGoalTypeGuidance } from '@/features/campaigns/lib/goal-types';
 import {
-  buildStrategyArchitectPrompt,
-  buildArchitectAPrompt,
-  buildArchitectBPrompt,
+  buildFullVariantAPrompt,
+  buildFullVariantBPrompt,
   buildPersonaValidatorPrompt,
   buildStrategySynthesizerPrompt,
   buildChannelPlannerPrompt,
@@ -23,10 +23,11 @@ import {
 import {
   strategyLayerSchema,
   architectureLayerSchema,
+  fullVariantSchema,
   channelPlanLayerSchema,
   assetPlanLayerSchema,
   personaValidationArraySchema,
-  architectureLayerResponseSchema,
+  fullVariantResponseSchema,
   channelPlanResponseSchema,
   assetPlanResponseSchema,
 } from './strategy-blueprint.types';
@@ -35,6 +36,7 @@ import type {
   CampaignBriefing,
   StrategyLayer,
   ArchitectureLayer,
+  FullVariant,
   ChannelPlanLayer,
   AssetPlanLayer,
   PersonaValidationResult,
@@ -338,8 +340,8 @@ interface PhaseContext {
 }
 
 /**
- * Phase A: Generate strategy + 2 architecture variants + persona validation.
- * Runs Steps 1-3 of the pipeline and returns variant data for user review.
+ * Phase A: Generate 2 full variants (strategy + architecture each) + persona validation.
+ * Runs Steps 1-2 of the pipeline and returns variant data for user review.
  */
 export async function generateStrategyVariants(
   ctx: PhaseContext,
@@ -380,10 +382,7 @@ export async function generateStrategyVariants(
   const brandContextText = formatBrandContext(brandContext);
   const briefing = wizardContext.briefing;
 
-  // Step 1: Strategy Architect
-  onProgress?.({ step: 1, name: 'Strategy Architect', status: 'running', label: 'Formulating campaign strategy...' });
-
-  const step1Prompt = buildStrategyArchitectPrompt({
+  const sharedPromptParams = {
     brandContext: brandContextText,
     personaContext,
     campaignName,
@@ -393,55 +392,52 @@ export async function generateStrategyVariants(
     productContext,
     competitorContext,
     trendContext,
+    personaIds,
     briefing,
-  });
+  };
 
-  const strategyRaw = await withStepContext('Step 1 (Strategy Architect)', 180, () =>
-    createClaudeStructuredCompletion<StrategyLayer>(
-      step1Prompt.system,
-      step1Prompt.user,
-      { model: CLAUDE_SONNET, temperature: 0.4, maxTokens: 8000, timeoutMs: 180_000 },
-    ),
-  );
-  const strategyLayer = validateOrWarn(strategyLayerSchema, strategyRaw, 'Step 1 Strategy');
-  onProgress?.({ step: 1, name: 'Strategy Architect', status: 'complete', label: 'Strategy formulated', preview: `Theme: "${strategyLayer.campaignTheme}"` });
+  // Step 1: Dual Full Variants (parallel — each model generates its own strategy + architecture)
+  onProgress?.({ step: 1, name: 'Dual Full Variants', status: 'running', label: 'Two AI models generating complete strategy variants...' });
 
-  // Step 2: Dual Architecture variants
-  onProgress?.({ step: 2, name: 'Campaign Architecture', status: 'running', label: 'Generating strategy variants A & B...' });
+  const step1aPrompt = buildFullVariantAPrompt(sharedPromptParams);
+  const step1bPrompt = buildFullVariantBPrompt(sharedPromptParams);
 
-  const strategyLayerJson = JSON.stringify(strategyLayer);
-  const goalGuidance = getGoalTypeGuidance(campaignGoalType);
-  const step2aPrompt = buildArchitectAPrompt({ strategyLayer: strategyLayerJson, personaContext, productContext, personaIds, goalType: campaignGoalType, goalGuidance });
-  const step2bPrompt = buildArchitectBPrompt({ strategyLayer: strategyLayerJson, personaContext, productContext, personaIds, goalType: campaignGoalType, goalGuidance });
-
-  const [variantARaw, variantBRaw] = await Promise.all([
-    withStepContext('Step 2a (Variant A — Claude)', 300, () =>
-      createClaudeStructuredCompletion<ArchitectureLayer>(
-        step2aPrompt.system, step2aPrompt.user,
-        { model: CLAUDE_SONNET, temperature: 0.5, maxTokens: 16000, timeoutMs: 300_000 },
+  const [fullVariantARaw, fullVariantBRaw] = await Promise.all([
+    withStepContext('Step 1a (Full Variant A — Claude)', 300, () =>
+      createClaudeStructuredCompletion<FullVariant>(
+        step1aPrompt.system, step1aPrompt.user,
+        { model: CLAUDE_SONNET, temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
       ),
     ),
-    withStepContext('Step 2b (Variant B — Gemini)', 300, () =>
-      createGeminiStructuredCompletion<ArchitectureLayer>(
-        step2bPrompt.system, step2bPrompt.user,
-        { model: GEMINI_PRO, temperature: 0.4, maxOutputTokens: 16000, timeoutMs: 300_000, responseSchema: architectureLayerResponseSchema },
+    withStepContext('Step 1b (Full Variant B — Gemini)', 300, () =>
+      createGeminiStructuredCompletion<FullVariant>(
+        step1bPrompt.system, step1bPrompt.user,
+        { model: GEMINI_PRO, temperature: 0.4, maxOutputTokens: 24000, timeoutMs: 300_000, responseSchema: fullVariantResponseSchema },
       ),
     ),
   ]);
-  const variantA = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, variantARaw, 'Step 2a Variant A'));
-  const variantB = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, variantBRaw, 'Step 2b Variant B'));
-  onProgress?.({ step: 2, name: 'Campaign Architecture', status: 'complete', label: 'Both variants generated', preview: `A: ${variantA.journeyPhases.length} phases | B: ${variantB.journeyPhases.length} phases` });
 
-  // Step 3: Persona Validation
-  onProgress?.({ step: 3, name: 'Persona Validation', status: 'running', label: 'Validating with personas...' });
+  const fullVariantA = validateOrWarn(fullVariantSchema, fullVariantARaw, 'Step 1a Full Variant A');
+  const fullVariantB = validateOrWarn(fullVariantSchema, fullVariantBRaw, 'Step 1b Full Variant B');
+  const strategyLayerA = fullVariantA.strategy;
+  const strategyLayerB = fullVariantB.strategy;
+  const variantA = normalizeArchitectureLayer(fullVariantA.architecture);
+  const variantB = normalizeArchitectureLayer(fullVariantB.architecture);
 
+  onProgress?.({ step: 1, name: 'Dual Full Variants', status: 'complete', label: 'Both complete variants generated', preview: `A: "${strategyLayerA.campaignTheme}" (${variantA.journeyPhases.length} phases) | B: "${strategyLayerB.campaignTheme}" (${variantB.journeyPhases.length} phases)` });
+
+  // Step 2: Persona Validation
+  onProgress?.({ step: 2, name: 'Persona Validation', status: 'running', label: 'Validating with personas...' });
+
+  const goalGuidance = getGoalTypeGuidance(campaignGoalType);
   let personaValidation: PersonaValidationResult[] = [];
   let variantAScore = 0;
   let variantBScore = 0;
 
   if (personaProfiles.length > 0) {
-    const step3Prompt = buildPersonaValidatorPrompt({
-      strategyLayer: strategyLayerJson,
+    const step2Prompt = buildPersonaValidatorPrompt({
+      strategyLayerA: JSON.stringify(strategyLayerA),
+      strategyLayerB: JSON.stringify(strategyLayerB),
       variantA: JSON.stringify(variantA),
       variantB: JSON.stringify(variantB),
       personas: personaProfiles,
@@ -449,14 +445,14 @@ export async function generateStrategyVariants(
       goalGuidance,
     });
 
-    const validationRaw = await withStepContext('Step 3 (Persona Validation)', 300, () =>
+    const validationRaw = await withStepContext('Step 2 (Persona Validation)', 300, () =>
       createClaudeStructuredCompletion<PersonaValidationResult[]>(
-        step3Prompt.system, step3Prompt.user,
+        step2Prompt.system, step2Prompt.user,
         { model: CLAUDE_SONNET, temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000 },
       ),
     );
     personaValidation = normalizePersonaValidation(
-      validateOrWarn(personaValidationArraySchema, validationRaw, 'Step 3 Validation'),
+      validateOrWarn(personaValidationArraySchema, validationRaw, 'Step 2 Validation'),
     );
 
     if (personaValidation.length > 0) {
@@ -472,9 +468,9 @@ export async function generateStrategyVariants(
     variantBScore = 7;
   }
 
-  onProgress?.({ step: 3, name: 'Persona Validation', status: 'complete', label: 'Personas evaluated', preview: personaValidation.length > 0 ? `${personaValidation.length} personas scored` : 'Skipped (no personas)' });
+  onProgress?.({ step: 2, name: 'Persona Validation', status: 'complete', label: 'Personas evaluated', preview: personaValidation.length > 0 ? `${personaValidation.length} personas scored` : 'Skipped (no personas)' });
 
-  return { strategyLayer, variantA, variantB, personaValidation, variantAScore, variantBScore };
+  return { strategyLayerA, strategyLayerB, variantA, variantB, personaValidation, variantAScore, variantBScore };
 }
 
 /**
@@ -484,7 +480,8 @@ export async function generateStrategyVariants(
 export async function synthesizeStrategy(
   data: {
     variantFeedback: string;
-    strategyLayer: StrategyLayer;
+    strategyLayerA: StrategyLayer;
+    strategyLayerB: StrategyLayer;
     variantA: ArchitectureLayer;
     variantB: ArchitectureLayer;
     personaValidation: PersonaValidationResult[];
@@ -506,7 +503,8 @@ export async function synthesizeStrategy(
     : JSON.stringify(data.personaValidation);
 
   const step4Prompt = buildStrategySynthesizerPrompt({
-    strategyLayer: JSON.stringify(data.strategyLayer),
+    strategyLayerA: JSON.stringify(data.strategyLayerA),
+    strategyLayerB: JSON.stringify(data.strategyLayerB),
     variantA: JSON.stringify(data.variantA),
     variantB: JSON.stringify(data.variantB),
     personaValidation: personaValidationWithFeedback,
@@ -690,12 +688,13 @@ export async function generateCampaignBlueprint(
 
   const brandContextText = formatBrandContext(brandContext);
 
-  // ─── Step 1: Strategy Architect (Claude Sonnet) ──────────
-  onProgress?.({ step: 1, name: 'Strategy Architect', status: 'running', label: 'Formulating campaign strategy...' });
+  // ─── Step 1: Dual Full Variants (parallel) ──────────
+  onProgress?.({ step: 1, name: 'Dual Full Variants', status: 'running', label: 'Generating strategy variants A & B...' });
 
   const briefing = isWizardMode ? options.wizardContext!.briefing : undefined;
+  const goalGuidance = getGoalTypeGuidance(campaignGoalType);
 
-  const step1Prompt = buildStrategyArchitectPrompt({
+  const fullVariantParams = {
     brandContext: brandContextText,
     personaContext,
     campaignName,
@@ -705,61 +704,51 @@ export async function generateCampaignBlueprint(
     productContext,
     competitorContext,
     trendContext,
+    personaIds,
     briefing,
-  });
+  };
 
-  const strategyRaw = await withStepContext('Step 1 (Strategy Architect)', 180, () =>
-    createClaudeStructuredCompletion<StrategyLayer>(
-      step1Prompt.system,
-      step1Prompt.user,
-      { model: CLAUDE_SONNET, temperature: 0.4, maxTokens: 8000, timeoutMs: 180_000 },
-    ),
-  );
-  const strategyLayer = validateOrWarn(strategyLayerSchema, strategyRaw, 'Step 1 Strategy');
+  const step1aPrompt = buildFullVariantAPrompt(fullVariantParams);
+  const step1bPrompt = buildFullVariantBPrompt(fullVariantParams);
 
-  onProgress?.({ step: 1, name: 'Strategy Architect', status: 'complete', label: 'Strategy formulated', preview: `Theme: "${strategyLayer.campaignTheme}"` });
-
-  // ─── Step 2a+2b: Campaign Architects (parallel) ──────────
-  onProgress?.({ step: 2, name: 'Campaign Architecture', status: 'running', label: 'Generating strategy variants A & B...' });
-
-  const strategyLayerJson = JSON.stringify(strategyLayer);
-
-  const goalGuidance = getGoalTypeGuidance(campaignGoalType);
-  const step2aPrompt = buildArchitectAPrompt({ strategyLayer: strategyLayerJson, personaContext, productContext, personaIds, goalType: campaignGoalType, goalGuidance });
-  const step2bPrompt = buildArchitectBPrompt({ strategyLayer: strategyLayerJson, personaContext, productContext, personaIds, goalType: campaignGoalType, goalGuidance });
-
-  const [variantARaw, variantBRaw] = await Promise.all([
-    withStepContext('Step 2a (Variant A — Claude)', 300, () =>
-      createClaudeStructuredCompletion<ArchitectureLayer>(
-        step2aPrompt.system,
-        step2aPrompt.user,
-        { model: CLAUDE_SONNET, temperature: 0.5, maxTokens: 16000, timeoutMs: 300_000 },
+  const [fullVariantARaw, fullVariantBRaw] = await Promise.all([
+    withStepContext('Step 1a (Full Variant A — Claude)', 300, () =>
+      createClaudeStructuredCompletion<FullVariant>(
+        step1aPrompt.system,
+        step1aPrompt.user,
+        { model: CLAUDE_SONNET, temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
       ),
     ),
-    withStepContext('Step 2b (Variant B — Gemini)', 300, () =>
-      createGeminiStructuredCompletion<ArchitectureLayer>(
-        step2bPrompt.system,
-        step2bPrompt.user,
-        { model: GEMINI_PRO, temperature: 0.4, maxOutputTokens: 16000, timeoutMs: 300_000, responseSchema: architectureLayerResponseSchema },
+    withStepContext('Step 1b (Full Variant B — Gemini)', 300, () =>
+      createGeminiStructuredCompletion<FullVariant>(
+        step1bPrompt.system,
+        step1bPrompt.user,
+        { model: GEMINI_PRO, temperature: 0.4, maxOutputTokens: 24000, timeoutMs: 300_000, responseSchema: fullVariantResponseSchema },
       ),
     ),
   ]);
 
-  const variantA = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, variantARaw, 'Step 2a Variant A'));
-  const variantB = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, variantBRaw, 'Step 2b Variant B'));
+  const fullA = fullVariantSchema.parse(fullVariantARaw);
+  const fullB = fullVariantSchema.parse(fullVariantBRaw);
 
-  onProgress?.({ step: 2, name: 'Campaign Architecture', status: 'complete', label: 'Both variants generated', preview: `A: ${variantA.journeyPhases.length} phases (${variantA.campaignType}) | B: ${variantB.journeyPhases.length} phases (${variantB.campaignType})` });
+  const strategyLayerA = validateOrWarn(strategyLayerSchema, fullA.strategy, 'Step 1a Strategy A');
+  const strategyLayerB = validateOrWarn(strategyLayerSchema, fullB.strategy, 'Step 1b Strategy B');
+  const variantA = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, fullA.architecture, 'Step 1a Architecture A'));
+  const variantB = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, fullB.architecture, 'Step 1b Architecture B'));
 
-  // ─── Step 3: Persona Validator (Claude Sonnet) ───────────
-  onProgress?.({ step: 3, name: 'Persona Validation', status: 'running', label: 'Validating with personas...' });
+  onProgress?.({ step: 1, name: 'Dual Full Variants', status: 'complete', label: 'Both variants generated', preview: `A: ${variantA.journeyPhases.length} phases | B: ${variantB.journeyPhases.length} phases` });
+
+  // ─── Step 2: Persona Validator (Claude Sonnet) ───────────
+  onProgress?.({ step: 2, name: 'Persona Validation', status: 'running', label: 'Validating with personas...' });
 
   let personaValidation: PersonaValidationResult[] = [];
   let variantAScore = 0;
   let variantBScore = 0;
 
   if (personaProfiles.length > 0) {
-    const step3Prompt = buildPersonaValidatorPrompt({
-      strategyLayer: strategyLayerJson,
+    const step2Prompt = buildPersonaValidatorPrompt({
+      strategyLayerA: JSON.stringify(strategyLayerA),
+      strategyLayerB: JSON.stringify(strategyLayerB),
       variantA: JSON.stringify(variantA),
       variantB: JSON.stringify(variantB),
       personas: personaProfiles,
@@ -767,15 +756,15 @@ export async function generateCampaignBlueprint(
       goalGuidance,
     });
 
-    const validationRaw = await withStepContext('Step 3 (Persona Validation)', 300, () =>
+    const validationRaw = await withStepContext('Step 2 (Persona Validation)', 300, () =>
       createClaudeStructuredCompletion<PersonaValidationResult[]>(
-        step3Prompt.system,
-        step3Prompt.user,
+        step2Prompt.system,
+        step2Prompt.user,
         { model: CLAUDE_SONNET, temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000 },
       ),
     );
     personaValidation = normalizePersonaValidation(
-      validateOrWarn(personaValidationArraySchema, validationRaw, 'Step 3 Validation'),
+      validateOrWarn(personaValidationArraySchema, validationRaw, 'Step 2 Validation'),
     );
 
     // Calculate average scores per variant, falling back to overall average
@@ -793,13 +782,14 @@ export async function generateCampaignBlueprint(
     variantBScore = 7;
   }
 
-  onProgress?.({ step: 3, name: 'Persona Validation', status: 'complete', label: 'Personas evaluated', preview: personaValidation.length > 0 ? `${personaValidation.length} personas, avg score ${(personaValidation.reduce((s, p) => s + p.overallScore, 0) / personaValidation.length).toFixed(1)}/10` : 'Skipped (no personas)' });
+  onProgress?.({ step: 2, name: 'Persona Validation', status: 'complete', label: 'Personas evaluated', preview: personaValidation.length > 0 ? `${personaValidation.length} personas, avg score ${(personaValidation.reduce((s, p) => s + p.overallScore, 0) / personaValidation.length).toFixed(1)}/10` : 'Skipped (no personas)' });
 
-  // ─── Step 4: Strategy Synthesizer (Claude Opus) ──────────
-  onProgress?.({ step: 4, name: 'Strategy Synthesis', status: 'running', label: 'Synthesizing optimal strategy...' });
+  // ─── Step 3: Strategy Synthesizer (Claude Opus) ──────────
+  onProgress?.({ step: 3, name: 'Strategy Synthesis', status: 'running', label: 'Synthesizing optimal strategy...' });
 
-  const step4Prompt = buildStrategySynthesizerPrompt({
-    strategyLayer: strategyLayerJson,
+  const step3Prompt = buildStrategySynthesizerPrompt({
+    strategyLayerA: JSON.stringify(strategyLayerA),
+    strategyLayerB: JSON.stringify(strategyLayerB),
     variantA: JSON.stringify(variantA),
     variantB: JSON.stringify(variantB),
     personaValidation: JSON.stringify(personaValidation),
@@ -809,31 +799,31 @@ export async function generateCampaignBlueprint(
     goalGuidance,
   });
 
-  // Step 4 returns BOTH strategy + architecture in a single response — needs high token limit
-  const synthesizedRaw = await withStepContext('Step 4 (Strategy Synthesis — Opus)', 300, () =>
+  // Step 3 returns BOTH strategy + architecture in a single response — needs high token limit
+  const synthesizedRaw = await withStepContext('Step 3 (Strategy Synthesis — Opus)', 300, () =>
     createClaudeStructuredCompletion<SynthesizedResult>(
-      step4Prompt.system,
-      step4Prompt.user,
+      step3Prompt.system,
+      step3Prompt.user,
       { model: CLAUDE_OPUS, temperature: 0.3, maxTokens: 32000, timeoutMs: 300_000 },
     ),
   );
 
   // Validate both sub-outputs — guard against unexpected structure
   if (!synthesizedRaw || typeof synthesizedRaw !== 'object' || !('strategy' in synthesizedRaw) || !('architecture' in synthesizedRaw)) {
-    throw new Error('Step 4 Synthesis returned unexpected structure — expected {strategy, architecture} object');
+    throw new Error('Step 3 Synthesis returned unexpected structure — expected {strategy, architecture} object');
   }
-  const synthesizedStrategy = validateOrWarn(strategyLayerSchema, synthesizedRaw.strategy, 'Step 4 Strategy');
-  const synthesizedArchitecture = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, synthesizedRaw.architecture, 'Step 4 Architecture'));
+  const synthesizedStrategy = validateOrWarn(strategyLayerSchema, synthesizedRaw.strategy, 'Step 3 Strategy');
+  const synthesizedArchitecture = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, synthesizedRaw.architecture, 'Step 3 Architecture'));
 
-  onProgress?.({ step: 4, name: 'Strategy Synthesis', status: 'complete', label: 'Optimal strategy synthesized', preview: `${synthesizedArchitecture.journeyPhases.length} phases, ${synthesizedArchitecture.campaignType}` });
+  onProgress?.({ step: 3, name: 'Strategy Synthesis', status: 'complete', label: 'Optimal strategy synthesized', preview: `${synthesizedArchitecture.journeyPhases.length} phases, ${synthesizedArchitecture.campaignType}` });
 
-  // ─── Step 5: Channel Planner (Gemini Flash) ────────────
-  onProgress?.({ step: 5, name: 'Channel Planner', status: 'running', label: 'Planning channel strategy...' });
+  // ─── Step 4: Channel Planner (Gemini Flash) ────────────
+  onProgress?.({ step: 4, name: 'Channel Planner', status: 'running', label: 'Planning channel strategy...' });
 
   const synthesizedStrategyJson = JSON.stringify(synthesizedStrategy);
   const synthesizedArchitectureJson = JSON.stringify(synthesizedArchitecture);
 
-  const step5Prompt = buildChannelPlannerPrompt({
+  const step4Prompt = buildChannelPlannerPrompt({
     synthesizedStrategy: synthesizedStrategyJson,
     synthesizedArchitecture: synthesizedArchitectureJson,
     personaChannelPrefs,
@@ -841,22 +831,22 @@ export async function generateCampaignBlueprint(
     goalGuidance,
   });
 
-  const channelPlanRaw = await withStepContext('Step 5 (Channel Planner — Gemini)', 180, () =>
+  const channelPlanRaw = await withStepContext('Step 4 (Channel Planner — Gemini)', 180, () =>
     createGeminiStructuredCompletion<ChannelPlanLayer>(
-      step5Prompt.system,
-      step5Prompt.user,
+      step4Prompt.system,
+      step4Prompt.user,
       { model: GEMINI_FLASH, temperature: 0.2, maxOutputTokens: 12000, timeoutMs: 180_000, responseSchema: channelPlanResponseSchema },
     ),
   );
 
-  const channelPlan = validateOrWarn(channelPlanLayerSchema, channelPlanRaw, 'Step 5 Channel Plan');
+  const channelPlan = validateOrWarn(channelPlanLayerSchema, channelPlanRaw, 'Step 4 Channel Plan');
 
-  onProgress?.({ step: 5, name: 'Channel Planner', status: 'complete', label: 'Channel plan complete', preview: `${channelPlan.channels.length} channels` });
+  onProgress?.({ step: 4, name: 'Channel Planner', status: 'complete', label: 'Channel plan complete', preview: `${channelPlan.channels.length} channels` });
 
-  // ─── Step 6: Asset Planner (Gemini Flash) — sequential so it receives channelPlan
-  onProgress?.({ step: 6, name: 'Asset Planner', status: 'running', label: 'Creating asset plan...' });
+  // ─── Step 5: Asset Planner (Gemini Flash) — sequential so it receives channelPlan
+  onProgress?.({ step: 5, name: 'Asset Planner', status: 'running', label: 'Creating asset plan...' });
 
-  const step6Prompt = buildAssetPlannerPrompt({
+  const step5Prompt = buildAssetPlannerPrompt({
     synthesizedStrategy: synthesizedStrategyJson,
     synthesizedArchitecture: synthesizedArchitectureJson,
     channelPlan: JSON.stringify(channelPlan),
@@ -866,17 +856,17 @@ export async function generateCampaignBlueprint(
     goalGuidance,
   });
 
-  const assetPlanRaw = await withStepContext('Step 6 (Asset Planner — Gemini)', 120, () =>
+  const assetPlanRaw = await withStepContext('Step 5 (Asset Planner — Gemini)', 120, () =>
     createGeminiStructuredCompletion<AssetPlanLayer>(
-      step6Prompt.system,
-      step6Prompt.user,
+      step5Prompt.system,
+      step5Prompt.user,
       { model: GEMINI_FLASH, temperature: 0.3, maxOutputTokens: 16000, timeoutMs: 120_000, responseSchema: assetPlanResponseSchema },
     ),
   );
 
-  const assetPlan = validateOrWarn(assetPlanLayerSchema, assetPlanRaw, 'Step 6 Asset Plan');
+  const assetPlan = validateOrWarn(assetPlanLayerSchema, assetPlanRaw, 'Step 5 Asset Plan');
 
-  onProgress?.({ step: 6, name: 'Asset Planner', status: 'complete', label: 'Asset plan complete', preview: `${assetPlan.totalDeliverables} deliverables` });
+  onProgress?.({ step: 5, name: 'Asset Planner', status: 'complete', label: 'Asset plan complete', preview: `${assetPlan.totalDeliverables} deliverables` });
 
   // ─── Calculate confidence ────────────────────────────────
   const [brandAssetCount, workspacePersonaCount, productCount, ctCount] = await Promise.all([
@@ -1017,66 +1007,45 @@ export async function regenerateBlueprintLayer(
   const brandContextText = formatBrandContext(brandContext);
 
   // Regenerate from the requested layer downward
-  if (layer === 'strategy') {
-    onProgress?.({ step: 1, name: 'Strategy Architect', status: 'running', label: 'Regenerating strategy...' });
+  // Strategy and architecture are now coupled — regeneration produces both via a full variant.
+  if (layer === 'strategy' || layer === 'architecture') {
+    onProgress?.({ step: 1, name: 'Full Variant Regeneration', status: 'running', label: 'Regenerating strategy & architecture...' });
 
-    const prompt = buildStrategyArchitectPrompt({
+    const regenDescription = `${campaign.description || ''}${feedback ? `\n\nUser feedback for regeneration: ${feedback}` : ''}`;
+    const prompt = buildFullVariantAPrompt({
       brandContext: brandContextText,
       personaContext,
       campaignName: campaign.title,
-      campaignDescription: `${campaign.description || ''}${feedback ? `\n\nUser feedback for regeneration: ${feedback}` : ''}`,
+      campaignDescription: regenDescription,
       goalType: campaign.campaignGoalType || 'BRAND_AWARENESS',
       strategicIntent: blueprint.strategy.strategicIntent,
       productContext,
       competitorContext,
       trendContext,
+      personaIds: resolvedPersonaIds,
     });
 
-    const strategyRaw = await withStepContext('Regenerate Strategy (Step 1)', 180, () =>
-      createClaudeStructuredCompletion<StrategyLayer>(
+    const fullVariantRaw = await withStepContext('Regenerate Full Variant (Step 1)', 300, () =>
+      createClaudeStructuredCompletion<FullVariant>(
         prompt.system, prompt.user,
-        { model: CLAUDE_SONNET, temperature: 0.4, maxTokens: 8000, timeoutMs: 180_000 },
+        { model: CLAUDE_SONNET, temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
       ),
     );
-    blueprint.strategy = validateOrWarn(strategyLayerSchema, strategyRaw, 'Regenerate Strategy');
+    const fullVariant = fullVariantSchema.parse(fullVariantRaw);
+    blueprint.strategy = validateOrWarn(strategyLayerSchema, fullVariant.strategy, 'Regenerate Strategy');
+    blueprint.architecture = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, fullVariant.architecture, 'Regenerate Architecture'));
 
     // Clear stale persona validation — it was scored against the previous strategy.
-    // Re-running steps 3+4 is skipped in regeneration for speed/cost.
     blueprint.personaValidation = [];
     blueprint.variantAScore = 0;
     blueprint.variantBScore = 0;
 
-    onProgress?.({ step: 1, name: 'Strategy Architect', status: 'complete', label: 'Strategy regenerated' });
-    // Fall through to regenerate architecture
-  }
-
-  if (layer === 'strategy' || layer === 'architecture') {
-    onProgress?.({ step: 2, name: 'Campaign Architecture', status: 'running', label: 'Regenerating architecture...' });
-
-    const strategyJson = JSON.stringify(blueprint.strategy);
-    const descriptionWithFeedback = layer === 'architecture' && feedback ? `\n\nUser feedback: ${feedback}` : '';
-    const regenGoalGuidance = getGoalTypeGuidance(campaign.campaignGoalType || 'BRAND_AWARENESS');
-    const prompt = buildArchitectAPrompt({
-      strategyLayer: strategyJson + descriptionWithFeedback,
-      personaContext, productContext, personaIds: resolvedPersonaIds,
-      goalType: campaign.campaignGoalType || 'BRAND_AWARENESS',
-      goalGuidance: regenGoalGuidance,
-    });
-
-    const archRaw = await withStepContext('Regenerate Architecture (Step 2)', 180, () =>
-      createClaudeStructuredCompletion<ArchitectureLayer>(
-        prompt.system, prompt.user,
-        { model: CLAUDE_SONNET, temperature: 0.5, maxTokens: 16000, timeoutMs: 180_000 },
-      ),
-    );
-    blueprint.architecture = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, archRaw, 'Regenerate Architecture'));
-
-    onProgress?.({ step: 2, name: 'Campaign Architecture', status: 'complete', label: 'Architecture regenerated' });
+    onProgress?.({ step: 1, name: 'Full Variant Regeneration', status: 'complete', label: 'Strategy & architecture regenerated' });
     // Fall through to regenerate channel plan
   }
 
   if (layer === 'strategy' || layer === 'architecture' || layer === 'channelPlan') {
-    onProgress?.({ step: 5, name: 'Channel Planner', status: 'running', label: 'Regenerating channel plan...' });
+    onProgress?.({ step: 4, name: 'Channel Planner', status: 'running', label: 'Regenerating channel plan...' });
 
     const channelFeedback = layer === 'channelPlan' && feedback ? `\n\nUser feedback: ${feedback}` : '';
     const regenGoalType = campaign.campaignGoalType || 'BRAND_AWARENESS';
@@ -1088,7 +1057,7 @@ export async function regenerateBlueprintLayer(
       goalGuidance: getGoalTypeGuidance(regenGoalType),
     });
 
-    const channelRaw = await withStepContext('Regenerate Channel Plan (Step 5)', 180, () =>
+    const channelRaw = await withStepContext('Regenerate Channel Plan (Step 4)', 180, () =>
       createGeminiStructuredCompletion<ChannelPlanLayer>(
         prompt.system, prompt.user,
         { model: GEMINI_FLASH, temperature: 0.2, maxOutputTokens: 12000, timeoutMs: 180_000, responseSchema: channelPlanResponseSchema },
@@ -1096,12 +1065,12 @@ export async function regenerateBlueprintLayer(
     );
     blueprint.channelPlan = validateOrWarn(channelPlanLayerSchema, channelRaw, 'Regenerate Channel Plan');
 
-    onProgress?.({ step: 5, name: 'Channel Planner', status: 'complete', label: 'Channel plan regenerated' });
+    onProgress?.({ step: 4, name: 'Channel Planner', status: 'complete', label: 'Channel plan regenerated' });
     // Fall through to regenerate asset plan
   }
 
   // Asset plan is always regenerated
-  onProgress?.({ step: 6, name: 'Asset Planner', status: 'running', label: 'Regenerating asset plan...' });
+  onProgress?.({ step: 5, name: 'Asset Planner', status: 'running', label: 'Regenerating asset plan...' });
 
   const assetFeedback = layer === 'assetPlan' && feedback ? `\n\nUser feedback: ${feedback}` : '';
   const assetRegenGoalType = campaign.campaignGoalType || 'BRAND_AWARENESS';
@@ -1115,7 +1084,7 @@ export async function regenerateBlueprintLayer(
     goalGuidance: getGoalTypeGuidance(assetRegenGoalType),
   });
 
-  const assetRaw = await withStepContext('Regenerate Asset Plan (Step 6)', 180, () =>
+  const assetRaw = await withStepContext('Regenerate Asset Plan (Step 5)', 180, () =>
     createGeminiStructuredCompletion<AssetPlanLayer>(
       assetPrompt.system, assetPrompt.user,
       { model: GEMINI_FLASH, temperature: 0.3, maxOutputTokens: 16000, timeoutMs: 180_000, responseSchema: assetPlanResponseSchema },
@@ -1123,7 +1092,7 @@ export async function regenerateBlueprintLayer(
   );
   blueprint.assetPlan = validateOrWarn(assetPlanLayerSchema, assetRaw, 'Regenerate Asset Plan');
 
-  onProgress?.({ step: 6, name: 'Asset Planner', status: 'complete', label: 'Asset plan regenerated' });
+  onProgress?.({ step: 5, name: 'Asset Planner', status: 'complete', label: 'Asset plan regenerated' });
 
   // Recalculate confidence
   const [brandAssetCount, productCount, ctCount] = await Promise.all([

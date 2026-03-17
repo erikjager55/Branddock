@@ -10,14 +10,14 @@ import {
 import { Button } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import type { ArchitectureLayer, StrategyLayer, PersonaValidationResult } from "../../types/campaign-wizard.types";
-import { VariantStrategyOverview } from "./VariantStrategyOverview";
 import { VariantDetailCard } from "./VariantDetailCard";
 import { PersonaFeedbackCard } from "./PersonaFeedbackCard";
 
 // ─── Types ──────────────────────────────────────────────
 
 interface VariantReviewViewProps {
-  strategyLayer: StrategyLayer;
+  strategyLayerA: StrategyLayer;
+  strategyLayerB: StrategyLayer;
   variantA: ArchitectureLayer;
   variantB: ArchitectureLayer;
   personaValidation: PersonaValidationResult[];
@@ -30,7 +30,8 @@ interface VariantReviewViewProps {
 // ─── Main Component ─────────────────────────────────────
 
 export function VariantReviewView({
-  strategyLayer,
+  strategyLayerA,
+  strategyLayerB,
   variantA,
   variantB,
   personaValidation,
@@ -60,20 +61,21 @@ export function VariantReviewView({
         </p>
       </div>
 
-      {/* 1. Strategy Foundation with ratings */}
-      <VariantStrategyOverview strategyLayer={strategyLayer} />
-
-      {/* 2. Variant Details */}
+      {/* 1. Variant Details (each with own strategy + architecture) */}
       <div className="space-y-3">
         <VariantDetailCard
           label="Variant A (Claude)"
           variant={variantA}
+          strategy={strategyLayerA}
+          variantKey="A"
           score={variantAScore}
           isPreferred={preferredVariant === "A"}
         />
         <VariantDetailCard
           label="Variant B (Gemini)"
           variant={variantB}
+          strategy={strategyLayerB}
+          variantKey="B"
           score={variantBScore}
           isPreferred={preferredVariant === "B"}
         />

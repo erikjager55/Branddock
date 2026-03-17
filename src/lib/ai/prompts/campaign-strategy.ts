@@ -26,9 +26,20 @@ function intentRatio(intent: StrategicIntent): { brand: number; activation: numb
   }
 }
 
-// ─── Step 1: Strategy Architect ─────────────────────────────
+// ─── Step 1a: Full Variant A (Claude — organic/thought leadership) ────────
 
-export function buildStrategyArchitectPrompt(params: {
+/** Shared campaign brief section builder */
+function buildBriefingSection(briefing?: CampaignBriefing): string {
+  const briefingLines: string[] = [];
+  if (briefing?.occasion) briefingLines.push(`Occasion / Why now: ${briefing.occasion}`);
+  if (briefing?.audienceObjective) briefingLines.push(`Audience objective (Think/Feel/Do): ${briefing.audienceObjective}`);
+  if (briefing?.coreMessage) briefingLines.push(`Core message: ${briefing.coreMessage}`);
+  if (briefing?.tonePreference) briefingLines.push(`Desired tone / creative direction: ${briefing.tonePreference}`);
+  if (briefing?.constraints) briefingLines.push(`Constraints / mandatories: ${briefing.constraints}`);
+  return briefingLines.length > 0 ? `\n\n## Creative Briefing\n${briefingLines.join('\n')}` : '';
+}
+
+interface FullVariantPromptParams {
   brandContext: string;
   personaContext: string;
   campaignName: string;
@@ -38,67 +49,65 @@ export function buildStrategyArchitectPrompt(params: {
   productContext: string;
   competitorContext: string;
   trendContext: string;
+  personaIds: string[];
   briefing?: CampaignBriefing;
-}): { system: string; user: string } {
+}
+
+export function buildFullVariantAPrompt(params: FullVariantPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
+  const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
 
-  const system = `You are a senior brand strategist specializing in integrated campaign planning.
+  const system = `You are a senior brand strategist specializing in organic growth and thought leadership campaigns.
 
-Your role: Formulate the strategic foundation for a campaign based on the brand's assets, target personas, products, and competitive landscape.
+Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response, with a FOCUS ON ORGANIC REACH AND THOUGHT LEADERSHIP.
 
-Academic frameworks you must apply:
+Academic frameworks to apply:
 - Percy & Elliott's campaign planning model (stimulus → processing → response)
 - Binet & Field's effectiveness data: ${ratio.brand}% brand building / ${ratio.activation}% activation
 - Christensen's Jobs-to-be-Done (JTBD) framework for audience framing
+- Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Pull strategies${goalContext}
 
-IMPORTANT: If a Creative Briefing is provided, use it as the primary strategic direction. The occasion drives urgency, the audience objective shapes messaging, the core message anchors the campaign theme, tone preferences guide creative direction, and constraints are non-negotiable boundaries.
+IMPORTANT: If a Creative Briefing is provided, use it as the primary strategic direction.
 
-Output requirements:
-- strategicIntent: "${params.strategicIntent}"
-- intentRatio: { brand: ${ratio.brand}, activation: ${ratio.activation} }
-- campaignTheme: A compelling 3-7 word campaign theme
-- positioningStatement: One sentence positioning statement
-- messagingHierarchy: Brand message (always-on), campaign message (specific), 3-5 proof points
-- jtbdFraming: Complete JTBD with "When I..., I want to..., so I can..." job statement
-- strategicChoices: 3-5 conscious strategic decisions with rationale
+Output a JSON object with TWO top-level keys:
 
-Respond with valid JSON matching the StrategyLayer schema.`;
+"strategy": {
+  strategicIntent: "${params.strategicIntent}",
+  intentRatio: { brand: ${ratio.brand}, activation: ${ratio.activation} },
+  campaignTheme: A compelling 3-7 word campaign theme,
+  positioningStatement: One sentence positioning statement,
+  messagingHierarchy: { brandMessage, campaignMessage, proofPoints (3-5) },
+  jtbdFraming: { jobStatement ("When I..., I want to..., so I can..."), functionalJob, emotionalJob, socialJob },
+  strategicChoices: Array of { choice, rationale, tradeoff } (3-5 items)
+}
 
-  // Build creative briefing section
-  const briefingLines: string[] = [];
-  if (params.briefing?.occasion) {
-    briefingLines.push(`Occasion / Why now: ${params.briefing.occasion}`);
-  }
-  if (params.briefing?.audienceObjective) {
-    briefingLines.push(`Audience objective (Think/Feel/Do): ${params.briefing.audienceObjective}`);
-  }
-  if (params.briefing?.coreMessage) {
-    briefingLines.push(`Core message: ${params.briefing.coreMessage}`);
-  }
-  if (params.briefing?.tonePreference) {
-    briefingLines.push(`Desired tone / creative direction: ${params.briefing.tonePreference}`);
-  }
-  if (params.briefing?.constraints) {
-    briefingLines.push(`Constraints / mandatories: ${params.briefing.constraints}`);
-  }
+"architecture": {
+  campaignType: Choose the type that best fits,
+  journeyPhases: Array of phases, each with:
+    id, name, description, orderIndex, goal, kpis,
+    personaPhaseData: [{ personaId, personaName, needs, painPoints, mindset, keyQuestion, triggers }],
+    touchpoints: [{ channel, contentType, message, role ("primary"|"supporting"),
+      personaRelevance: [{ personaId, relevance ("high"|"medium"|"low"), messagingAngle }] }]
+}
 
-  const briefingSection = briefingLines.length > 0
-    ? `\n\n## Creative Briefing\n${briefingLines.join('\n')}`
-    : '';
+Focus on: earned media, content marketing, community, SEO, thought leadership, email nurturing.
+Use persona IDs from the provided list for all personaId fields.
 
-  const user = `Create a campaign strategy for "${params.campaignName}".
+Respond with valid JSON.`;
+
+  const user = `Generate the complete strategy + architecture for variant A (organic/thought leadership focus) for "${params.campaignName}".
 
 ## Campaign Brief
 Description: ${params.campaignDescription || 'No description provided'}
 Goal: ${GOAL_LABELS[params.goalType] ?? params.goalType}
-Goal Guidance: ${getGoalTypeGuidance(params.goalType)}
-Strategic Intent: ${intentDescription(params.strategicIntent)}${briefingSection}
+Strategic Intent: ${intentDescription(params.strategicIntent)}${buildBriefingSection(params.briefing)}
 
 ## Brand Context
 ${params.brandContext}
 
 ## Target Personas
 ${params.personaContext || 'No personas available — create strategy based on brand positioning only.'}
+Persona IDs to use: ${JSON.stringify(params.personaIds)}
 
 ## Products & Services
 ${params.productContext || 'No products defined yet.'}
@@ -112,100 +121,81 @@ ${params.trendContext || 'No trends defined yet.'}`;
   return { system, user };
 }
 
-// ─── Step 2a: Campaign Architect A (Claude — organic/thought leadership) ────
+// ─── Step 1b: Full Variant B (Gemini — conversion/paid media) ────────
 
-export function buildArchitectAPrompt(params: {
-  strategyLayer: string;
-  personaContext: string;
-  productContext: string;
-  personaIds: string[];
-  goalType?: string;
-  goalGuidance?: string;
-}): { system: string; user: string } {
-  const goalContext = params.goalType && params.goalGuidance
-    ? `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${params.goalGuidance}\nAdapt channel selection and journey design to this specific goal type.`
-    : '';
+export function buildFullVariantBPrompt(params: FullVariantPromptParams): { system: string; user: string } {
+  const ratio = intentRatio(params.strategicIntent);
+  const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
 
-  const system = `You are a campaign architect specializing in organic growth and thought leadership strategies.
+  const system = `You are a performance marketing strategist specializing in conversion optimization and paid media campaigns.
 
-Your role: Design the campaign architecture — journey phases, touchpoints, and campaign type — with a FOCUS ON ORGANIC REACH AND THOUGHT LEADERSHIP.
+Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response, with a FOCUS ON DIRECT CONVERSION AND PAID MEDIA.
 
-Framework: Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Pull strategies.${goalContext}
+Academic frameworks to apply:
+- Percy & Elliott's campaign planning model (stimulus → processing → response)
+- Binet & Field's effectiveness data: ${ratio.brand}% brand building / ${ratio.activation}% activation
+- Christensen's Jobs-to-be-Done (JTBD) framework for audience framing
+- Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Push and Profile strategies${goalContext}
 
-Requirements:
-- campaignType: Choose the type that best fits the strategy and audience journey
-- journeyPhases: Define as many phases as the customer journey naturally requires — do not assume a fixed number
-  - Each phase needs: goal, KPIs, per-persona data (needs, pain points, mindset, triggers)
-  - Each phase needs: relevant touchpoints (channel, content type, message, role, persona relevance)
-- Focus on: earned media, content marketing, community, SEO, thought leadership, email nurturing
-- Use persona IDs from the provided list for all personaId fields
+IMPORTANT: If a Creative Briefing is provided, use it as the primary strategic direction.
 
-Respond with valid JSON matching the ArchitectureLayer schema.`;
+Output a JSON object with TWO top-level keys:
 
-  const user = `Design campaign architecture variant A (organic/thought leadership focus).
+"strategy": {
+  strategicIntent: "${params.strategicIntent}",
+  intentRatio: { brand: ${ratio.brand}, activation: ${ratio.activation} },
+  campaignTheme: A compelling 3-7 word campaign theme,
+  positioningStatement: One sentence positioning statement,
+  messagingHierarchy: { brandMessage, campaignMessage, proofPoints (3-5) },
+  jtbdFraming: { jobStatement ("When I..., I want to..., so I can..."), functionalJob, emotionalJob, socialJob },
+  strategicChoices: Array of { choice, rationale, tradeoff } (3-5 items)
+}
 
-## Campaign Strategy (Layer 1)
-${params.strategyLayer}
+"architecture": {
+  campaignType: Choose the type that best fits,
+  journeyPhases: Array of phases, each with:
+    id, name, description, orderIndex, goal, kpis,
+    personaPhaseData: [{ personaId, personaName, needs, painPoints, mindset, keyQuestion, triggers }],
+    touchpoints: [{ channel, contentType, message, role ("primary"|"supporting"),
+      personaRelevance: [{ personaId, relevance ("high"|"medium"|"low"), messagingAngle }] }]
+}
+
+Focus on: paid social, PPC, retargeting, landing pages, conversion-optimized email, direct response.
+Use persona IDs from the provided list for all personaId fields.
+
+Respond with valid JSON.`;
+
+  const user = `Generate the complete strategy + architecture for variant B (conversion/paid media focus) for "${params.campaignName}".
+
+## Campaign Brief
+Description: ${params.campaignDescription || 'No description provided'}
+Goal: ${GOAL_LABELS[params.goalType] ?? params.goalType}
+Strategic Intent: ${intentDescription(params.strategicIntent)}${buildBriefingSection(params.briefing)}
+
+## Brand Context
+${params.brandContext}
 
 ## Target Personas
-${params.personaContext || 'No personas — design for a general audience.'}
+${params.personaContext || 'No personas available — create strategy based on brand positioning only.'}
 Persona IDs to use: ${JSON.stringify(params.personaIds)}
 
 ## Products & Services
-${params.productContext || 'No products defined yet.'}`;
+${params.productContext || 'No products defined yet.'}
+
+## Competitive Landscape
+${params.competitorContext || 'No competitors defined yet.'}
+
+## Market Trends
+${params.trendContext || 'No trends defined yet.'}`;
 
   return { system, user };
 }
 
-// ─── Step 2b: Campaign Architect B (Gemini Pro — conversion/paid) ────────
-
-export function buildArchitectBPrompt(params: {
-  strategyLayer: string;
-  personaContext: string;
-  productContext: string;
-  personaIds: string[];
-  goalType?: string;
-  goalGuidance?: string;
-}): { system: string; user: string } {
-  const goalContext = params.goalType && params.goalGuidance
-    ? `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${params.goalGuidance}\nAdapt channel selection and journey design to this specific goal type.`
-    : '';
-
-  const system = `You are a performance marketing architect specializing in conversion optimization and paid media strategies.
-
-Your role: Design the campaign architecture — journey phases, touchpoints, and campaign type — with a FOCUS ON DIRECT CONVERSION AND PAID MEDIA.
-
-Framework: Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Push and Profile strategies.${goalContext}
-
-Requirements:
-- campaignType: Choose the type that best fits the strategy and audience journey
-- journeyPhases: Define as many phases as the customer journey naturally requires — do not assume a fixed number
-  - Each phase needs: goal, KPIs, per-persona data (needs, pain points, mindset, triggers)
-  - Each phase needs: relevant touchpoints (channel, content type, message, role, persona relevance)
-- Focus on: paid social, PPC, retargeting, landing pages, conversion-optimized email, direct response
-- Use persona IDs from the provided list for all personaId fields
-
-Respond with valid JSON matching the ArchitectureLayer schema.`;
-
-  const user = `Design campaign architecture variant B (conversion/paid media focus).
-
-## Campaign Strategy (Layer 1)
-${params.strategyLayer}
-
-## Target Personas
-${params.personaContext || 'No personas — design for a general audience.'}
-Persona IDs to use: ${JSON.stringify(params.personaIds)}
-
-## Products & Services
-${params.productContext || 'No products defined yet.'}`;
-
-  return { system, user };
-}
-
-// ─── Step 3: Persona Validator ──────────────────────────────
+// ─── Step 2: Persona Validator ──────────────────────────────
 
 export function buildPersonaValidatorPrompt(params: {
-  strategyLayer: string;
+  strategyLayerA: string;
+  strategyLayerB: string;
   variantA: string;
   variantB: string;
   personas: Array<{ id: string; name: string; profile: string }>;
@@ -216,9 +206,9 @@ export function buildPersonaValidatorPrompt(params: {
     ? `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${params.goalGuidance}\nEvaluate how well each variant serves this specific goal type from each persona's perspective.`
     : '';
 
-  const system = `You are simulating target personas evaluating two campaign strategy variants.
+  const system = `You are simulating target personas evaluating two complete campaign strategy variants.
 
-Your role: For EACH persona, roleplay as that person and evaluate both variant A (organic/thought leadership) and variant B (conversion/paid media).${goalContext}
+Your role: For EACH persona, roleplay as that person and evaluate both variant A (organic/thought leadership) and variant B (conversion/paid media). Each variant has its OWN strategic foundation AND campaign architecture.${goalContext}
 
 Evaluation criteria per persona:
 - overallScore: 1-10 (how well does this strategy resonate with this persona?)
@@ -237,15 +227,22 @@ Respond with a JSON array of persona validation objects.`;
     `### ${p.name} (ID: ${p.id})\n${p.profile}`
   ).join('\n\n');
 
-  const user = `Evaluate these two campaign variants as each persona.
-
-## Campaign Strategy (Layer 1)
-${params.strategyLayer}
+  const user = `Evaluate these two complete campaign variants as each persona.
 
 ## Variant A — Organic/Thought Leadership
+
+### Strategy A
+${params.strategyLayerA}
+
+### Architecture A
 ${params.variantA}
 
 ## Variant B — Conversion/Paid Media
+
+### Strategy B
+${params.strategyLayerB}
+
+### Architecture B
 ${params.variantB}
 
 ## Personas to Simulate
@@ -257,7 +254,8 @@ ${personaProfiles}`;
 // ─── Step 4: Strategy Synthesizer (Claude Opus) ─────────────
 
 export function buildStrategySynthesizerPrompt(params: {
-  strategyLayer: string;
+  strategyLayerA: string;
+  strategyLayerB: string;
   variantA: string;
   variantB: string;
   personaValidation: string;
@@ -282,7 +280,9 @@ Synthesis rules:
 5. Keep the campaign type that best serves the strategic intent
 6. Ensure every persona's preferred elements are represented
 
-You must also refine the original strategy layer based on persona feedback:
+Each variant has its OWN strategy AND architecture. You must synthesize the best elements from both strategies AND both architectures:
+- Pick the strongest campaign theme and positioning from either variant
+- Merge messaging hierarchies where they complement each other
 - Adjust messaging hierarchy if personas identified gaps
 - Strengthen proof points where personas were skeptical
 - Refine JTBD if personas revealed unaddressed jobs
@@ -347,13 +347,20 @@ Respond with valid JSON.`;
 Variant A average persona score: ${params.variantAScore.toFixed(1)}/10
 Variant B average persona score: ${params.variantBScore.toFixed(1)}/10
 
-## Original Strategy (Layer 1)
-${params.strategyLayer}
-
 ## Variant A — Organic/Thought Leadership
+
+### Strategy A
+${params.strategyLayerA}
+
+### Architecture A
 ${params.variantA}
 
 ## Variant B — Conversion/Paid Media
+
+### Strategy B
+${params.strategyLayerB}
+
+### Architecture B
 ${params.variantB}
 
 ## Persona Validation Results

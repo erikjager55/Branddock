@@ -17,6 +17,7 @@ import type { StrategyLayer, StrategicChoice } from "@/lib/campaigns/strategy-bl
 
 interface VariantStrategyOverviewProps {
   strategyLayer: StrategyLayer;
+  variantKey: string;
 }
 
 // ─── Sub-Components ─────────────────────────────────────
@@ -93,7 +94,7 @@ function getChoiceTradeoff(choice: string | StrategicChoice): string | null {
 
 // ─── Main Component ─────────────────────────────────────
 
-export function VariantStrategyOverview({ strategyLayer }: VariantStrategyOverviewProps) {
+export function VariantStrategyOverview({ strategyLayer, variantKey }: VariantStrategyOverviewProps) {
   const messagingHierarchy = strategyLayer.messagingHierarchy ?? { brandMessage: "", campaignMessage: "", proofPoints: [] };
   const jtbdFraming = strategyLayer.jtbdFraming ?? { jobStatement: "", functionalJob: "", emotionalJob: "", socialJob: "" };
   const strategicChoices = strategyLayer.strategicChoices ?? [];
@@ -104,7 +105,7 @@ export function VariantStrategyOverview({ strategyLayer }: VariantStrategyOvervi
       <div className="flex items-center gap-2">
         <Target className="w-4 h-4 text-gray-500" />
         <span className="text-sm font-semibold text-gray-900">
-          Strategy Foundation
+          Strategy
         </span>
         <span className="text-xs text-muted-foreground">
           Rate elements to guide synthesis
@@ -116,12 +117,12 @@ export function VariantStrategyOverview({ strategyLayer }: VariantStrategyOvervi
         <RatableField
           label="Campaign Theme"
           value={strategyLayer.campaignTheme}
-          ratingKey="theme"
+          ratingKey={`${variantKey}.theme`}
         />
         <RatableField
           label="Positioning Statement"
           value={strategyLayer.positioningStatement}
-          ratingKey="positioning"
+          ratingKey={`${variantKey}.positioning`}
         />
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-0.5">
@@ -150,12 +151,12 @@ export function VariantStrategyOverview({ strategyLayer }: VariantStrategyOvervi
           <RatableField
             label="Brand Message"
             value={messagingHierarchy.brandMessage}
-            ratingKey="messaging.brand"
+            ratingKey={`${variantKey}.messaging.brand`}
           />
           <RatableField
             label="Campaign Message"
             value={messagingHierarchy.campaignMessage}
-            ratingKey="messaging.campaign"
+            ratingKey={`${variantKey}.messaging.campaign`}
           />
         </div>
         {messagingHierarchy.proofPoints.length > 0 && (
@@ -164,7 +165,7 @@ export function VariantStrategyOverview({ strategyLayer }: VariantStrategyOvervi
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Proof Points
               </p>
-              <RatingButtons ratingKey="messaging.proofPoints" />
+              <RatingButtons ratingKey={`${variantKey}.messaging.proofPoints`} />
             </div>
             <div className="flex flex-wrap gap-1.5">
               {messagingHierarchy.proofPoints.map((pp, i) => (
@@ -189,7 +190,7 @@ export function VariantStrategyOverview({ strategyLayer }: VariantStrategyOvervi
           <RatableField
             label="Job Statement"
             value={jtbdFraming.jobStatement}
-            ratingKey="jtbd.statement"
+            ratingKey={`${variantKey}.jtbd.statement`}
           />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
@@ -243,7 +244,7 @@ export function VariantStrategyOverview({ strategyLayer }: VariantStrategyOvervi
                       </p>
                     )}
                   </div>
-                  <RatingButtons ratingKey={`choice.${i}`} />
+                  <RatingButtons ratingKey={`${variantKey}.choice.${i}`} />
                 </div>
               </div>
             ))}

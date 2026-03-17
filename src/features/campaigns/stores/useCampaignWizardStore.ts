@@ -52,7 +52,8 @@ interface CampaignWizardState {
   personaValidation: PersonaValidationResult[] | null;
   variantAScore: number;
   variantBScore: number;
-  strategyLayer: StrategyLayer | null;
+  strategyLayerA: StrategyLayer | null;
+  strategyLayerB: StrategyLayer | null;
   variantFeedback: string;
   synthesisFeedback: string;
   synthesizedStrategy: StrategyLayer | null;
@@ -101,7 +102,8 @@ interface CampaignWizardState {
   // ─── Interactive Strategy Phase Actions ─────────────────
   setStrategyPhase: (phase: StrategyPhase) => void;
   setVariantResults: (data: {
-    strategyLayer: StrategyLayer;
+    strategyLayerA: StrategyLayer;
+    strategyLayerB: StrategyLayer;
     variantA: ArchitectureLayer;
     variantB: ArchitectureLayer;
     personaValidation: PersonaValidationResult[];
@@ -157,7 +159,8 @@ const INITIAL_STATE = {
   personaValidation: null as PersonaValidationResult[] | null,
   variantAScore: 0,
   variantBScore: 0,
-  strategyLayer: null as StrategyLayer | null,
+  strategyLayerA: null as StrategyLayer | null,
+  strategyLayerB: null as StrategyLayer | null,
   variantFeedback: "",
   synthesisFeedback: "",
   synthesizedStrategy: null as StrategyLayer | null,
@@ -306,7 +309,8 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     setStrategyPhase: (strategyPhase) => set({ strategyPhase }),
     setVariantResults: (data) =>
       set({
-        strategyLayer: data.strategyLayer,
+        strategyLayerA: data.strategyLayerA,
+        strategyLayerB: data.strategyLayerB,
         variantA: data.variantA,
         variantB: data.variantB,
         personaValidation: data.personaValidation,
@@ -322,7 +326,8 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     setSynthesisFeedback: (synthesisFeedback) => set({ synthesisFeedback }),
     clearPhaseData: () =>
       set({
-        strategyLayer: null,
+        strategyLayerA: null,
+        strategyLayerB: null,
         variantA: null,
         variantB: null,
         personaValidation: null,

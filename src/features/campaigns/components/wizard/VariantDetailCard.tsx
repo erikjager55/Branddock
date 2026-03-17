@@ -8,20 +8,36 @@ import {
   MapPin,
   Users,
   Zap,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import { Badge } from "@/components/shared";
+import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
+import { VariantStrategyOverview } from "./VariantStrategyOverview";
 import type {
   ArchitectureLayer,
+  StrategyLayer,
   JourneyPhase,
   Touchpoint,
   PersonaPhaseData,
 } from "@/lib/campaigns/strategy-blueprint.types";
+
+// ─── Helpers ────────────────────────────────────────────
+
+/** Format phase names: "unaware_discovery" → "Unaware Discovery" */
+function formatPhaseName(name: string): string {
+  return name
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 // ─── Types ──────────────────────────────────────────────
 
 interface VariantDetailCardProps {
   label: string;
   variant: ArchitectureLayer;
+  strategy: StrategyLayer;
+  variantKey: string;
   score: number;
   isPreferred: boolean;
 }
@@ -119,7 +135,43 @@ function TouchpointRow({ touchpoint }: { touchpoint: Touchpoint }) {
   );
 }
 
-function PhaseSection({ phase, index }: { phase: JourneyPhase; index: number }) {
+function PhaseRatingButtons({ ratingKey }: { ratingKey: string }) {
+  const rating = useCampaignWizardStore((s) => s.strategyRatings[ratingKey]);
+  const setRating = useCampaignWizardStore((s) => s.setStrategyRating);
+
+  return (
+    <span className="inline-flex items-center gap-0.5 ml-1 flex-shrink-0">
+      <button
+        type="button"
+        aria-pressed={rating === "up"}
+        onClick={(e) => { e.stopPropagation(); setRating(ratingKey, rating === "up" ? null : "up"); }}
+        className={`p-0.5 rounded transition-colors ${
+          rating === "up"
+            ? "text-emerald-600 bg-emerald-50"
+            : "text-gray-300 hover:text-emerald-500"
+        }`}
+        title="Approve this phase"
+      >
+        <ThumbsUp className="w-3 h-3" />
+      </button>
+      <button
+        type="button"
+        aria-pressed={rating === "down"}
+        onClick={(e) => { e.stopPropagation(); setRating(ratingKey, rating === "down" ? null : "down"); }}
+        className={`p-0.5 rounded transition-colors ${
+          rating === "down"
+            ? "text-red-500 bg-red-50"
+            : "text-gray-300 hover:text-red-400"
+        }`}
+        title="Needs change"
+      >
+        <ThumbsDown className="w-3 h-3" />
+      </button>
+    </span>
+  );
+}
+
+function PhaseSection({ phase, index, variantKey }: { phase: JourneyPhase; index: number; variantKey: string }) {
   const [expanded, setExpanded] = useState(index === 0);
 
   return (
@@ -135,8 +187,9 @@ function PhaseSection({ phase, index }: { phase: JourneyPhase; index: number }) 
           <ChevronRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
         )}
         <span className="text-xs font-semibold text-gray-900 flex-1">
-          {phase.name}
+          {formatPhaseName(phase.name)}
         </span>
+        <PhaseRatingButtons ratingKey={`${variantKey}.phase.${index}`} />
         <span className="text-xs text-muted-foreground">
           {phase.touchpoints.length} touchpoint{phase.touchpoints.length !== 1 ? "s" : ""}
         </span>
@@ -160,7 +213,7 @@ function PhaseSection({ phase, index }: { phase: JourneyPhase; index: number }) 
             <div className="flex flex-wrap gap-1">
               {phase.kpis.map((kpi, i) => (
                 <Badge key={i} variant="info">
-                  {kpi}
+                  {typeof kpi === "string" ? kpi : (kpi as { metric?: string; target?: string }).metric ?? "KPI"}
                 </Badge>
               ))}
             </div>
@@ -210,6 +263,8 @@ function PhaseSection({ phase, index }: { phase: JourneyPhase; index: number }) 
 export function VariantDetailCard({
   label,
   variant,
+  strategy,
+  variantKey,
   score,
   isPreferred,
 }: VariantDetailCardProps) {
@@ -235,10 +290,13 @@ export function VariantDetailCard({
         </div>
       </div>
 
+      {/* Strategy overview (per-variant) */}
+      <VariantStrategyOverview strategyLayer={strategy} variantKey={variantKey} />
+
       {/* Journey phases (collapsible) */}
       <div className="space-y-2">
         {variant.journeyPhases.map((phase, i) => (
-          <PhaseSection key={phase.id ?? `phase-${i}`} phase={phase} index={i} />
+          <PhaseSection key={phase.id ?? `phase-${i}`} phase={phase} index={i} variantKey={variantKey} />
         ))}
       </div>
     </div>
