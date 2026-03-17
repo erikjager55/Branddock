@@ -15,6 +15,7 @@ import { BlueprintOverviewSection } from "./strategy/BlueprintOverviewSection";
 import { StrategySection } from "./strategy/StrategySection";
 import { JourneyMatrixSection } from "./strategy/JourneyMatrixSection";
 import { ChannelPlanSection } from "./strategy/ChannelPlanSection";
+import { DeploymentTimelineSection } from "./strategy/DeploymentTimelineSection";
 import { RegenerateSectionButton } from "./strategy/RegenerateSectionButton";
 import type { StrategyResponse, LegacyStrategyResponse } from "@/types/campaign";
 
@@ -98,6 +99,20 @@ export function StrategyResultTab({
               assetPlan={blueprint.assetPlan}
               channelPlan={blueprint.channelPlan}
               onBringToLife={onBringToLife}
+            />
+          </div>
+        )}
+
+        {/* Deployment Timeline */}
+        {blueprint.assetPlan && blueprint.architecture && blueprint.channelPlan && (
+          <div className="bg-white rounded-lg border p-4 space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <h3 className="text-lg font-semibold text-gray-900">Deployment Timeline</h3>
+            </div>
+            <DeploymentTimelineSection
+              assetPlan={blueprint.assetPlan}
+              architecture={blueprint.architecture}
+              channelPlan={blueprint.channelPlan}
             />
           </div>
         )}

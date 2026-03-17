@@ -137,6 +137,8 @@ export interface AssetPlanDeliverable {
   brief: DeliverableBrief;
   productionPriority: ProductionPriority;
   estimatedEffort: EffortLevel;
+  /** 1-based deployment order within phase, set by AI in Step 6 */
+  suggestedOrder?: number;
 }
 
 export interface AssetPlanLayer {
@@ -183,6 +185,124 @@ export interface CampaignBlueprint {
   modelsUsed: string[];
   /** Stores which context items were selected during generation (for regeneration) */
   contextSelection?: ContextSelection;
+}
+
+// ─── Deployment Timeline Types ───────────────────────────────
+
+/** A deliverable placed on the deployment timeline */
+export interface ScheduledDeliverable {
+  deliverable: AssetPlanDeliverable;
+  /** 0-based absolute beat index across all phases */
+  beatIndex: number;
+  phaseIndex: number;
+  channel: string;
+  /** Normalized channel key (e.g. "LinkedIn Post" → "linkedin") */
+  normalizedChannel: string;
+  targetPersonas: string[];
+  /** True when targetPersonas is empty (targets all personas) */
+  isShared: boolean;
+  priority: ProductionPriority;
+}
+
+/** Channel capacity exceeded in a single beat */
+export interface DeploymentCollision {
+  beatIndex: number;
+  channel: string;
+  items: ScheduledDeliverable[];
+  capacity: number;
+  severity: 'warning' | 'overload';
+}
+
+/** Persona has no touchpoints for 2+ consecutive beats (Byron Sharp gap) */
+export interface ContinuityGap {
+  persona: string;
+  startBeat: number;
+  endBeat: number;
+  gapLength: number;
+}
+
+/** Complete deployment schedule computed from asset plan */
+export interface DeploymentSchedule {
+  scheduled: ScheduledDeliverable[];
+  collisions: DeploymentCollision[];
+  gaps: ContinuityGap[];
+  totalBeats: number;
+  phaseBoundaries: { phase: string; startBeat: number; endBeat: number }[];
+}
+
+// ─── Strategy Phase Types ────────────────────────────────────
+
+/** Tracks which interactive phase the wizard strategy step is in */
+export type StrategyPhase =
+  | 'idle'
+  | 'generating_variants'
+  | 'review_variants'
+  | 'generating_synthesis'
+  | 'review_synthesis'
+  | 'generating_journey'
+  | 'complete';
+
+/** Data returned after Phase A (Steps 1-3) */
+export interface VariantPhaseResult {
+  strategyLayer: StrategyLayer;
+  variantA: ArchitectureLayer;
+  variantB: ArchitectureLayer;
+  personaValidation: PersonaValidationResult[];
+  variantAScore: number;
+  variantBScore: number;
+}
+
+/** Data returned after Phase B (Step 4) */
+export interface SynthesisPhaseResult {
+  strategy: StrategyLayer;
+  architecture: ArchitectureLayer;
+}
+
+/** Data returned after Phase C (Steps 5-6) */
+export interface JourneyPhaseResult {
+  channelPlan: ChannelPlanLayer;
+  assetPlan: AssetPlanLayer;
+}
+
+/** Body for the synthesize endpoint */
+export interface SynthesizeStrategyBody {
+  variantFeedback: string;
+  strategyLayer: StrategyLayer;
+  variantA: ArchitectureLayer;
+  variantB: ArchitectureLayer;
+  personaValidation: PersonaValidationResult[];
+  variantAScore: number;
+  variantBScore: number;
+  wizardContext: {
+    campaignName: string;
+    campaignDescription?: string;
+    campaignGoalType?: string;
+    briefing?: CampaignBriefing;
+  };
+  personaIds?: string[];
+  productIds?: string[];
+  competitorIds?: string[];
+  trendIds?: string[];
+  strategicIntent?: StrategicIntent;
+}
+
+/** Body for the elaborate endpoint */
+export interface ElaborateJourneyBody {
+  synthesisFeedback: string;
+  synthesizedStrategy: StrategyLayer;
+  synthesizedArchitecture: ArchitectureLayer;
+  personaValidation: PersonaValidationResult[];
+  wizardContext: {
+    campaignName: string;
+    campaignDescription?: string;
+    campaignGoalType?: string;
+    briefing?: CampaignBriefing;
+  };
+  personaIds?: string[];
+  productIds?: string[];
+  competitorIds?: string[];
+  trendIds?: string[];
+  strategicIntent?: StrategicIntent;
 }
 
 // ─── Pipeline Types ─────────────────────────────────────────
@@ -383,6 +503,7 @@ export const assetPlanDeliverableSchema = z.object({
   brief: deliverableBriefSchema,
   productionPriority: z.enum(['must-have', 'should-have', 'nice-to-have']),
   estimatedEffort: z.enum(['low', 'medium', 'high']),
+  suggestedOrder: z.number().optional(),
 });
 
 export const assetPlanLayerSchema = z.object({
@@ -564,8 +685,9 @@ export const assetPlanResponseSchema: Record<string, unknown> = {
           },
           productionPriority: { type: 'string', enum: ['must-have', 'should-have', 'nice-to-have'] },
           estimatedEffort: { type: 'string', enum: ['low', 'medium', 'high'] },
+          suggestedOrder: { type: 'number' },
         },
-        required: ['title', 'contentType', 'channel', 'phase', 'targetPersonas', 'brief', 'productionPriority', 'estimatedEffort'],
+        required: ['title', 'contentType', 'channel', 'phase', 'targetPersonas', 'brief', 'productionPriority', 'estimatedEffort', 'suggestedOrder'],
       },
     },
     totalDeliverables: { type: 'number' },

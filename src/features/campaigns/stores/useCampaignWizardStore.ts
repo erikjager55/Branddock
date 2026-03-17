@@ -7,6 +7,10 @@ import type {
   PipelineStep,
   StrategicIntent,
   CampaignBriefing,
+  StrategyPhase,
+  StrategyLayer,
+  ArchitectureLayer,
+  PersonaValidationResult,
 } from "../types/campaign-wizard.types";
 
 // ─── Types ────────────────────────────────────────────────
@@ -40,6 +44,23 @@ interface CampaignWizardState {
   pipelineSteps: PipelineStep[];
   currentPipelineStep: number;
   pipelineError: string | null;
+
+  // ─── Interactive Strategy Phases ──────────────────────────
+  strategyPhase: StrategyPhase;
+  variantA: ArchitectureLayer | null;
+  variantB: ArchitectureLayer | null;
+  personaValidation: PersonaValidationResult[] | null;
+  variantAScore: number;
+  variantBScore: number;
+  strategyLayer: StrategyLayer | null;
+  variantFeedback: string;
+  synthesisFeedback: string;
+  synthesizedStrategy: StrategyLayer | null;
+  synthesizedArchitecture: ArchitectureLayer | null;
+
+  // ─── Interactive Feedback (Variant Review) ─────────────────
+  endorsedPersonaIds: string[];
+  strategyRatings: Record<string, 'up' | 'down'>;
 
   setCurrentStep: (step: number) => void;
   nextStep: () => void;
@@ -76,6 +97,25 @@ interface CampaignWizardState {
   updateStepStatus: (step: PipelineStep) => void;
   setPipelineError: (error: string | null) => void;
   resetPipeline: () => void;
+
+  // ─── Interactive Strategy Phase Actions ─────────────────
+  setStrategyPhase: (phase: StrategyPhase) => void;
+  setVariantResults: (data: {
+    strategyLayer: StrategyLayer;
+    variantA: ArchitectureLayer;
+    variantB: ArchitectureLayer;
+    personaValidation: PersonaValidationResult[];
+    variantAScore: number;
+    variantBScore: number;
+  }) => void;
+  setVariantFeedback: (feedback: string) => void;
+  setSynthesisResult: (data: { strategy: StrategyLayer; architecture: ArchitectureLayer }) => void;
+  setSynthesisFeedback: (feedback: string) => void;
+  clearPhaseData: () => void;
+
+  // ─── Interactive Feedback Actions ─────────────────────────
+  togglePersonaEndorsement: (personaId: string) => void;
+  setStrategyRating: (key: string, rating: 'up' | 'down' | null) => void;
 }
 
 // ─── Initial state ────────────────────────────────────────
@@ -109,6 +149,23 @@ const INITIAL_STATE = {
   pipelineSteps: [] as PipelineStep[],
   currentPipelineStep: 0,
   pipelineError: null as string | null,
+
+  // ─── Interactive Strategy Phases ──────────────────────────
+  strategyPhase: "idle" as StrategyPhase,
+  variantA: null as ArchitectureLayer | null,
+  variantB: null as ArchitectureLayer | null,
+  personaValidation: null as PersonaValidationResult[] | null,
+  variantAScore: 0,
+  variantBScore: 0,
+  strategyLayer: null as StrategyLayer | null,
+  variantFeedback: "",
+  synthesisFeedback: "",
+  synthesizedStrategy: null as StrategyLayer | null,
+  synthesizedArchitecture: null as ArchitectureLayer | null,
+
+  // ─── Interactive Feedback ──────────────────────────────────
+  endorsedPersonaIds: [] as string[],
+  strategyRatings: {} as Record<string, 'up' | 'down'>,
 };
 
 // ─── Store ────────────────────────────────────────────────
@@ -196,7 +253,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         case 2:
           return state.selectedKnowledgeIds.length > 0;
         case 3:
-          return state.strategyResult !== null || state.blueprintResult !== null;
+          return state.strategyPhase === 'complete' && state.blueprintResult !== null;
         case 4:
           return state.selectedDeliverables.length > 0;
         case 5:
@@ -243,6 +300,58 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         pipelineSteps: [],
         currentPipelineStep: 0,
         pipelineError: null,
+      }),
+
+    // ─── Interactive Strategy Phase Actions ─────────────────
+    setStrategyPhase: (strategyPhase) => set({ strategyPhase }),
+    setVariantResults: (data) =>
+      set({
+        strategyLayer: data.strategyLayer,
+        variantA: data.variantA,
+        variantB: data.variantB,
+        personaValidation: data.personaValidation,
+        variantAScore: data.variantAScore,
+        variantBScore: data.variantBScore,
+      }),
+    setVariantFeedback: (variantFeedback) => set({ variantFeedback }),
+    setSynthesisResult: (data) =>
+      set({
+        synthesizedStrategy: data.strategy,
+        synthesizedArchitecture: data.architecture,
+      }),
+    setSynthesisFeedback: (synthesisFeedback) => set({ synthesisFeedback }),
+    clearPhaseData: () =>
+      set({
+        strategyLayer: null,
+        variantA: null,
+        variantB: null,
+        personaValidation: null,
+        variantAScore: 0,
+        variantBScore: 0,
+        synthesizedStrategy: null,
+        synthesizedArchitecture: null,
+        variantFeedback: "",
+        synthesisFeedback: "",
+        endorsedPersonaIds: [],
+        strategyRatings: {},
+      }),
+
+    // ─── Interactive Feedback Actions ─────────────────────────
+    togglePersonaEndorsement: (personaId) =>
+      set((s) => ({
+        endorsedPersonaIds: s.endorsedPersonaIds.includes(personaId)
+          ? s.endorsedPersonaIds.filter((id) => id !== personaId)
+          : [...s.endorsedPersonaIds, personaId],
+      })),
+    setStrategyRating: (key, rating) =>
+      set((s) => {
+        const next = { ...s.strategyRatings };
+        if (rating === null) {
+          delete next[key];
+        } else {
+          next[key] = rating;
+        }
+        return { strategyRatings: next };
       }),
   }),
 );

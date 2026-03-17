@@ -1,10 +1,8 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useRef } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Sparkles,
-  Loader2,
-  Check,
   AlertCircle,
   Target,
   Layers,
@@ -13,89 +11,73 @@ import {
   ChevronDown,
   ChevronRight,
 } from "lucide-react";
-import { Button, Badge, ProgressBar } from "@/components/shared";
+import { Button, Badge } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import { useWizardKnowledge } from "../../hooks";
-import { generateBlueprintSSE } from "../../api/campaigns.api";
+import {
+  generateVariantsSSE,
+  synthesizeStrategySSE,
+  elaborateJourneySSE,
+} from "../../api/campaigns.api";
 import type { PipelineStep, PipelineStepStatus } from "../../types/campaign-wizard.types";
 import type { StrategicChoice } from "@/lib/campaigns/strategy-blueprint.types";
+import { PipelineProgressView } from "./PipelineProgressView";
+import type { PipelineStepConfig } from "./PipelineProgressView";
+import { VariantReviewView } from "./VariantReviewView";
+import { SynthesisReviewView } from "./SynthesisReviewView";
+import { compileStructuredFeedback } from "../../lib/compile-structured-feedback";
 
 /** Extract display text from a strategic choice (string or object) */
 function getChoiceText(choice: string | StrategicChoice): string {
-  return typeof choice === 'string' ? choice : choice.choice;
+  return typeof choice === "string" ? choice : choice.choice;
 }
 
-// ─── Pipeline Step Config ────────────────────────────────
+// ─── Pipeline Step Configs per Phase ────────────────────
 
-const PIPELINE_STEPS = [
+const PHASE_A_STEPS: PipelineStepConfig[] = [
   {
     step: 1,
     name: "Strategy Architect",
     label: "Formulating campaign strategy...",
-    description: "Analyzes your brand identity, personas, and campaign goals to formulate the strategic foundation — positioning, theme, and key messaging.",
+    description: "Analyzes your brand identity, personas, and campaign goals to formulate the strategic foundation.",
   },
   {
     step: 2,
     name: "Campaign Architecture (Dual)",
     label: "Generating strategy variants A & B...",
-    description: "Two independent AI models each generate a complete campaign journey variant with phases, touchpoints, and content moments — creating diversity for stronger results.",
+    description: "Two independent AI models each generate a complete campaign journey variant.",
   },
   {
     step: 3,
     name: "Persona Validator",
     label: "Validating with personas...",
-    description: "Each persona evaluates both variants on relevance, engagement potential, and emotional resonance. Their scores and feedback determine which approach wins.",
+    description: "Each persona evaluates both variants on relevance, engagement potential, and emotional resonance.",
   },
+];
+
+const PHASE_B_STEPS: PipelineStepConfig[] = [
   {
     step: 4,
     name: "Strategy Synthesizer",
     label: "Synthesizing optimal strategy...",
-    description: "Our most advanced model merges the strongest elements from both variants, guided by persona validation, into one optimal campaign strategy and journey.",
+    description: "Merges the strongest elements from both variants into one optimal campaign strategy.",
   },
+];
+
+const PHASE_C_STEPS: PipelineStepConfig[] = [
   {
     step: 5,
     name: "Channel Planner",
     label: "Planning channel strategy...",
-    description: "Maps the right channels and media to each journey phase based on your personas' channel preferences and the campaign objectives.",
+    description: "Maps the right channels and media to each journey phase.",
   },
   {
     step: 6,
     name: "Asset Planner",
     label: "Creating asset plan...",
-    description: "Creates a concrete deliverable plan with content types, production priorities, and creative briefs for each journey phase and channel.",
+    description: "Creates a concrete deliverable plan with content types and creative briefs.",
   },
-] as const;
-
-// ─── Step Status Icon ────────────────────────────────────
-
-function StepStatusIcon({ status }: { status: PipelineStepStatus }) {
-  switch (status) {
-    case "complete":
-      return (
-        <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center">
-          <Check className="w-3.5 h-3.5 text-emerald-600" />
-        </div>
-      );
-    case "running":
-      return (
-        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-          <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
-        </div>
-      );
-    case "error":
-      return (
-        <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
-          <AlertCircle className="w-3.5 h-3.5 text-red-600" />
-        </div>
-      );
-    default:
-      return (
-        <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center">
-          <div className="w-2 h-2 rounded-full bg-gray-300" />
-        </div>
-      );
-  }
-}
+];
 
 // ─── Collapsible Preview Section ─────────────────────────
 
@@ -140,10 +122,22 @@ export function StrategyStep() {
   const campaignGoalType = useCampaignWizardStore((s) => s.campaignGoalType);
   const strategicIntent = useCampaignWizardStore((s) => s.strategicIntent);
   const isGenerating = useCampaignWizardStore((s) => s.isGenerating);
-  const blueprintResult = useCampaignWizardStore((s) => s.blueprintResult);
   const pipelineSteps = useCampaignWizardStore((s) => s.pipelineSteps);
   const pipelineError = useCampaignWizardStore((s) => s.pipelineError);
   const selectedKnowledgeIds = useCampaignWizardStore((s) => s.selectedKnowledgeIds);
+  const strategyPhase = useCampaignWizardStore((s) => s.strategyPhase);
+
+  // Phase data
+  const strategyLayer = useCampaignWizardStore((s) => s.strategyLayer);
+  const variantA = useCampaignWizardStore((s) => s.variantA);
+  const variantB = useCampaignWizardStore((s) => s.variantB);
+  const personaValidation = useCampaignWizardStore((s) => s.personaValidation);
+  const variantAScore = useCampaignWizardStore((s) => s.variantAScore);
+  const variantBScore = useCampaignWizardStore((s) => s.variantBScore);
+  const synthesizedStrategy = useCampaignWizardStore((s) => s.synthesizedStrategy);
+  const synthesizedArchitecture = useCampaignWizardStore((s) => s.synthesizedArchitecture);
+  const synthesisFeedback = useCampaignWizardStore((s) => s.synthesisFeedback);
+  const blueprintResult = useCampaignWizardStore((s) => s.blueprintResult);
 
   // Briefing fields
   const briefingOccasion = useCampaignWizardStore((s) => s.briefingOccasion);
@@ -151,6 +145,8 @@ export function StrategyStep() {
   const briefingCoreMessage = useCampaignWizardStore((s) => s.briefingCoreMessage);
   const briefingTonePreference = useCampaignWizardStore((s) => s.briefingTonePreference);
   const briefingConstraints = useCampaignWizardStore((s) => s.briefingConstraints);
+
+  const [phaseError, setPhaseError] = useState<string | null>(null);
 
   const { data: knowledgeData } = useWizardKnowledge();
 
@@ -160,10 +156,10 @@ export function StrategyStep() {
     const allItems = knowledgeData.groups.flatMap((g) => g.items);
     const selectedItems = allItems.filter((item) => selectedKnowledgeIds.includes(item.sourceId));
     return {
-      personaIds: selectedItems.filter((i) => i.sourceType === 'persona').map((i) => i.sourceId),
-      productIds: selectedItems.filter((i) => i.sourceType === 'product').map((i) => i.sourceId),
-      competitorIds: selectedItems.filter((i) => i.sourceType === 'competitor').map((i) => i.sourceId),
-      trendIds: selectedItems.filter((i) => i.sourceType === 'detected_trend').map((i) => i.sourceId),
+      personaIds: selectedItems.filter((i) => i.sourceType === "persona").map((i) => i.sourceId),
+      productIds: selectedItems.filter((i) => i.sourceType === "product").map((i) => i.sourceId),
+      competitorIds: selectedItems.filter((i) => i.sourceType === "competitor").map((i) => i.sourceId),
+      trendIds: selectedItems.filter((i) => i.sourceType === "detected_trend").map((i) => i.sourceId),
     };
   }, [knowledgeData, selectedKnowledgeIds]);
 
@@ -177,385 +173,538 @@ export function StrategyStep() {
     };
   }, []);
 
-  const handleGenerate = useCallback(() => {
-    if (!campaignGoalType) return;
+  const wizardContext = useMemo(() => ({
+    campaignName: campaignName || "Untitled Campaign",
+    campaignDescription,
+    campaignGoalType: campaignGoalType ?? undefined,
+    briefing: {
+      occasion: briefingOccasion || undefined,
+      audienceObjective: briefingAudienceObjective || undefined,
+      coreMessage: briefingCoreMessage || undefined,
+      tonePreference: briefingTonePreference || undefined,
+      constraints: briefingConstraints || undefined,
+    },
+  }), [campaignName, campaignDescription, campaignGoalType, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints]);
 
-    // Increment generation ID to invalidate stale callbacks from previous SSE connections
+  // ─── Phase A: Generate Variants ──────────────────────
+
+  const handleGenerateVariants = useCallback(() => {
+    if (!campaignGoalType) return;
     const currentGenId = ++generationIdRef.current;
 
-    // Reset previous state
     const store = useCampaignWizardStore.getState();
     store.resetPipeline();
     store.setIsGenerating(true);
+    store.setStrategyPhase("generating_variants");
 
-    // Initialize pipeline steps as pending
-    for (const step of PIPELINE_STEPS) {
-      store.updateStepStatus({
-        step: step.step,
-        name: step.name,
-        status: "pending",
-        label: step.label,
-      });
+    // Initialize steps as pending
+    for (const step of PHASE_A_STEPS) {
+      store.updateStepStatus({ step: step.step, name: step.name, status: "pending", label: step.label });
     }
 
-    // Use the wizard endpoint which doesn't require an existing campaign in the DB.
-    // The /api/campaigns/wizard/strategy/generate route handles this case.
-    const { abort } = generateBlueprintSSE(
-      "wizard",
+    const { abort } = generateVariantsSSE(
       {
         strategicIntent,
         personaIds: selectedContextIds.personaIds,
         productIds: selectedContextIds.productIds,
         competitorIds: selectedContextIds.competitorIds,
         trendIds: selectedContextIds.trendIds,
-        wizardContext: {
-          campaignName: campaignName || "Untitled Campaign",
-          campaignDescription: campaignDescription,
-          campaignGoalType,
-          briefing: {
-            occasion: briefingOccasion || undefined,
-            audienceObjective: briefingAudienceObjective || undefined,
-            coreMessage: briefingCoreMessage || undefined,
-            tonePreference: briefingTonePreference || undefined,
-            constraints: briefingConstraints || undefined,
-          },
-        },
+        wizardContext,
       },
       (event) => {
-        // Ignore events from a stale generation (e.g. after regenerate)
         if (generationIdRef.current !== currentGenId) return;
+        const data = event as Record<string, unknown>;
 
-        const data = event as {
-          step?: number;
-          name?: string;
-          status?: PipelineStepStatus;
-          label?: string;
-          preview?: string;
-          error?: string;
-          type?: string;
-          blueprint?: unknown;
-        };
-
-        if (data.type === "complete" && data.blueprint) {
-          // Pipeline finished successfully
-          const store = useCampaignWizardStore.getState();
-          store.setBlueprintResult(
-            data.blueprint as import("@/lib/campaigns/strategy-blueprint.types").CampaignBlueprint,
-          );
-          store.setIsGenerating(false);
+        if (data.type === "complete" && data.result) {
+          const result = data.result as {
+            strategyLayer: import("@/lib/campaigns/strategy-blueprint.types").StrategyLayer;
+            variantA: import("@/lib/campaigns/strategy-blueprint.types").ArchitectureLayer;
+            variantB: import("@/lib/campaigns/strategy-blueprint.types").ArchitectureLayer;
+            personaValidation: import("@/lib/campaigns/strategy-blueprint.types").PersonaValidationResult[];
+            variantAScore: number;
+            variantBScore: number;
+          };
+          const s = useCampaignWizardStore.getState();
+          s.setVariantResults(result);
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_variants");
           return;
         }
 
         if (data.type === "error") {
-          const store = useCampaignWizardStore.getState();
-          store.setPipelineError(data.error || "An unexpected error occurred");
-          store.setIsGenerating(false);
+          const s = useCampaignWizardStore.getState();
+          s.setPipelineError((data.error as string) || "An unexpected error occurred");
+          s.setIsGenerating(false);
+          s.setStrategyPhase("idle");
           return;
         }
 
-        // Step progress update
+        // Step progress
         if (data.step && data.name && data.status && data.label) {
           useCampaignWizardStore.getState().updateStepStatus({
-            step: data.step,
-            name: data.name,
-            status: data.status,
-            label: data.label,
-            preview: data.preview,
-            error: data.error,
+            step: data.step as number,
+            name: data.name as string,
+            status: data.status as PipelineStepStatus,
+            label: data.label as string,
+            preview: data.preview as string | undefined,
+            error: data.error as string | undefined,
           });
         }
       },
       (error) => {
-        // Ignore errors from a stale generation
         if (generationIdRef.current !== currentGenId) return;
-        const store = useCampaignWizardStore.getState();
-        store.setPipelineError(error);
-        store.setIsGenerating(false);
+        const s = useCampaignWizardStore.getState();
+        s.setPipelineError(error);
+        s.setIsGenerating(false);
+        s.setStrategyPhase("idle");
       },
     );
-
     abortRef.current = { abort };
-  }, [campaignName, campaignDescription, campaignGoalType, strategicIntent, selectedContextIds, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints]);
+  }, [campaignGoalType, strategicIntent, selectedContextIds, wizardContext]);
 
-  const handleRegenerate = useCallback(() => {
+  // ─── Phase B: Synthesize Strategy ────────────────────
+
+  const handleSynthesize = useCallback(() => {
+    if (!strategyLayer || !variantA || !variantB) return;
+    const currentGenId = ++generationIdRef.current;
+    setPhaseError(null);
+
+    const store = useCampaignWizardStore.getState();
+    store.resetPipeline();
+    store.setIsGenerating(true);
+    store.setStrategyPhase("generating_synthesis");
+
+    for (const step of PHASE_B_STEPS) {
+      store.updateStepStatus({ step: step.step, name: step.name, status: "pending", label: step.label });
+    }
+
+    const { endorsedPersonaIds, strategyRatings, variantFeedback: currentFeedback } = useCampaignWizardStore.getState();
+    const compiledFeedback = compileStructuredFeedback({
+      freeText: currentFeedback,
+      endorsedPersonaIds,
+      strategyRatings,
+      personaValidation: personaValidation ?? [],
+    });
+
+    const { abort } = synthesizeStrategySSE(
+      {
+        variantFeedback: compiledFeedback,
+        strategyLayer,
+        variantA,
+        variantB,
+        personaValidation: personaValidation ?? [],
+        variantAScore,
+        variantBScore,
+        wizardContext,
+        strategicIntent,
+      },
+      (event) => {
+        if (generationIdRef.current !== currentGenId) return;
+        const data = event as Record<string, unknown>;
+
+        if (data.type === "complete" && data.result) {
+          const result = data.result as {
+            strategy: import("@/lib/campaigns/strategy-blueprint.types").StrategyLayer;
+            architecture: import("@/lib/campaigns/strategy-blueprint.types").ArchitectureLayer;
+          };
+          const s = useCampaignWizardStore.getState();
+          s.setSynthesisResult(result);
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_synthesis");
+          return;
+        }
+
+        if (data.type === "error") {
+          const s = useCampaignWizardStore.getState();
+          s.setPipelineError(null);
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_variants");
+          setPhaseError("Synthesis failed. Please adjust your feedback and try again.");
+          return;
+        }
+
+        if (data.step && data.name && data.status && data.label) {
+          useCampaignWizardStore.getState().updateStepStatus({
+            step: data.step as number,
+            name: data.name as string,
+            status: data.status as PipelineStepStatus,
+            label: data.label as string,
+            preview: data.preview as string | undefined,
+            error: data.error as string | undefined,
+          });
+        }
+      },
+      (error) => {
+        if (generationIdRef.current !== currentGenId) return;
+        const s = useCampaignWizardStore.getState();
+        s.setPipelineError(null);
+        s.setIsGenerating(false);
+        s.setStrategyPhase("review_variants");
+        setPhaseError("Synthesis failed due to a network error. Please try again.");
+      },
+    );
+    abortRef.current = { abort };
+  }, [strategyLayer, variantA, variantB, personaValidation, variantAScore, variantBScore, wizardContext, strategicIntent]);
+
+  // ─── Phase C: Elaborate Journey ──────────────────────
+
+  const handleElaborate = useCallback(() => {
+    if (!synthesizedStrategy || !synthesizedArchitecture) return;
+    const currentGenId = ++generationIdRef.current;
+    setPhaseError(null);
+
+    const store = useCampaignWizardStore.getState();
+    store.resetPipeline();
+    store.setIsGenerating(true);
+    store.setStrategyPhase("generating_journey");
+
+    for (const step of PHASE_C_STEPS) {
+      store.updateStepStatus({ step: step.step, name: step.name, status: "pending", label: step.label });
+    }
+
+    const { abort } = elaborateJourneySSE(
+      {
+        synthesisFeedback: synthesisFeedback,
+        synthesizedStrategy,
+        synthesizedArchitecture,
+        personaValidation: personaValidation ?? [],
+        wizardContext,
+        personaIds: selectedContextIds.personaIds,
+        productIds: selectedContextIds.productIds,
+        competitorIds: selectedContextIds.competitorIds,
+        trendIds: selectedContextIds.trendIds,
+        strategicIntent,
+      },
+      (event) => {
+        if (generationIdRef.current !== currentGenId) return;
+        const data = event as Record<string, unknown>;
+
+        if (data.type === "complete" && data.result) {
+          const result = data.result as {
+            channelPlan: import("@/lib/campaigns/strategy-blueprint.types").ChannelPlanLayer;
+            assetPlan: import("@/lib/campaigns/strategy-blueprint.types").AssetPlanLayer;
+          };
+
+          // Assemble the complete blueprint from all 3 phases
+          const s = useCampaignWizardStore.getState();
+          if (!s.synthesizedStrategy || !s.synthesizedArchitecture) {
+            s.setPipelineError("Strategy data was lost. Please restart generation.");
+            s.setIsGenerating(false);
+            s.setStrategyPhase("idle");
+            return;
+          }
+          const blueprint: import("@/lib/campaigns/strategy-blueprint.types").CampaignBlueprint = {
+            strategy: s.synthesizedStrategy,
+            architecture: s.synthesizedArchitecture,
+            channelPlan: result.channelPlan,
+            assetPlan: result.assetPlan,
+            personaValidation: s.personaValidation ?? [],
+            confidence: 0, // Calculated server-side on launch
+            confidenceBreakdown: {},
+            generatedAt: new Date().toISOString(),
+            variantAScore: s.variantAScore,
+            variantBScore: s.variantBScore,
+            pipelineDuration: 0,
+            modelsUsed: [],
+            contextSelection: {
+              personaIds: selectedContextIds.personaIds,
+              productIds: selectedContextIds.productIds,
+              competitorIds: selectedContextIds.competitorIds,
+              trendIds: selectedContextIds.trendIds,
+            },
+          };
+
+          s.setBlueprintResult(blueprint);
+          s.setIsGenerating(false);
+          s.setStrategyPhase("complete");
+          return;
+        }
+
+        if (data.type === "error") {
+          const s = useCampaignWizardStore.getState();
+          s.setPipelineError(null);
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_synthesis");
+          setPhaseError("Journey elaboration failed. Please adjust your feedback and try again.");
+          return;
+        }
+
+        if (data.step && data.name && data.status && data.label) {
+          useCampaignWizardStore.getState().updateStepStatus({
+            step: data.step as number,
+            name: data.name as string,
+            status: data.status as PipelineStepStatus,
+            label: data.label as string,
+            preview: data.preview as string | undefined,
+            error: data.error as string | undefined,
+          });
+        }
+      },
+      (error) => {
+        if (generationIdRef.current !== currentGenId) return;
+        const s = useCampaignWizardStore.getState();
+        s.setPipelineError(null);
+        s.setIsGenerating(false);
+        s.setStrategyPhase("review_synthesis");
+        setPhaseError("Journey elaboration failed due to a network error. Please try again.");
+      },
+    );
+    abortRef.current = { abort };
+  }, [synthesizedStrategy, synthesizedArchitecture, personaValidation, synthesisFeedback, wizardContext, selectedContextIds, strategicIntent]);
+
+  // ─── Restart ─────────────────────────────────────────
+
+  const handleRestart = useCallback(() => {
     abortRef.current?.abort();
-    handleGenerate();
-  }, [handleGenerate]);
+    abortRef.current = null;
+    generationIdRef.current++;
+    const store = useCampaignWizardStore.getState();
+    store.resetPipeline();
+    store.setStrategyPhase("idle");
+    store.setBlueprintResult(null);
+    store.clearPhaseData();
+  }, []);
 
-  // ── Compute overall progress ──
-  const completedSteps = pipelineSteps.filter((s) => s.status === "complete").length;
-  const totalSteps = PIPELINE_STEPS.length;
-  const progressPercent = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+  // ─── Render based on phase ───────────────────────────
 
-  // ── Pre-generation state ──
-  if (!blueprintResult && !isGenerating && !pipelineError) {
+  // Pre-generation CTA
+  if (strategyPhase === "idle" && !isGenerating && !pipelineError) {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
         <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-4">
           <Sparkles className="w-8 h-8 text-emerald-500" />
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Generate Campaign Blueprint
+          Generate Strategy Variants
         </h3>
         <p className="text-sm text-gray-500 mb-2 max-w-sm mx-auto">
-          Our AI will analyze your brand context, personas, and campaign goals
-          to create a comprehensive 4-layer campaign blueprint.
+          Our AI will analyze your brand context and generate two independent strategy variants
+          for you to review and refine.
         </p>
         <p className="text-xs text-muted-foreground mb-6">
-          Uses multiple AI models for diverse perspectives and persona validation.
-          Takes approximately 80-120 seconds.
+          You&apos;ll review the variants, provide feedback, and guide the AI to a final strategy.
         </p>
-        <Button variant="cta" size="lg" icon={Sparkles} onClick={handleGenerate}>
-          Generate Blueprint
+        <Button variant="cta" size="lg" icon={Sparkles} onClick={handleGenerateVariants}>
+          Generate Strategy Variants
         </Button>
       </div>
     );
   }
 
-  // ── Error state with retry ──
+  // Error state with retry
   if (pipelineError && !isGenerating) {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
         <div className="w-16 h-16 mx-auto rounded-full bg-red-50 flex items-center justify-center mb-4">
           <AlertCircle className="w-8 h-8 text-red-500" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Generation Failed
-        </h3>
-        <p className="text-sm text-red-600 mb-6 max-w-sm mx-auto">
-          {pipelineError}
-        </p>
-        <Button variant="cta" size="lg" icon={Sparkles} onClick={handleRegenerate}>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Generation Failed</h3>
+        <p className="text-sm text-red-600 mb-6 max-w-sm mx-auto">{pipelineError}</p>
+        <Button variant="cta" size="lg" icon={Sparkles} onClick={handleRestart}>
           Try Again
         </Button>
       </div>
     );
   }
 
-  // ── Generating state: pipeline progress ──
-  if (isGenerating) {
+  // Phase A: Generating variants
+  if (strategyPhase === "generating_variants" && isGenerating) {
     return (
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center">
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">
-            Generating Campaign Blueprint
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            {completedSteps} of {totalSteps} steps completed
-          </p>
+      <PipelineProgressView
+        title="Generating Strategy Variants"
+        steps={PHASE_A_STEPS}
+        pipelineSteps={pipelineSteps}
+      />
+    );
+  }
+
+  // Phase A result: Review variants
+  if (strategyPhase === "review_variants" && strategyLayer && variantA && variantB) {
+    return (
+      <VariantReviewView
+        strategyLayer={strategyLayer}
+        variantA={variantA}
+        variantB={variantB}
+        personaValidation={personaValidation ?? []}
+        variantAScore={variantAScore}
+        variantBScore={variantBScore}
+        onSynthesize={handleSynthesize}
+        errorMessage={phaseError}
+      />
+    );
+  }
+
+  // Phase B: Generating synthesis
+  if (strategyPhase === "generating_synthesis" && isGenerating) {
+    return (
+      <PipelineProgressView
+        title="Synthesizing Definitive Strategy"
+        steps={PHASE_B_STEPS}
+        pipelineSteps={pipelineSteps}
+      />
+    );
+  }
+
+  // Phase B result: Review synthesis
+  if (strategyPhase === "review_synthesis" && synthesizedStrategy && synthesizedArchitecture) {
+    return (
+      <SynthesisReviewView
+        synthesizedStrategy={synthesizedStrategy}
+        synthesizedArchitecture={synthesizedArchitecture}
+        onElaborate={handleElaborate}
+        errorMessage={phaseError}
+      />
+    );
+  }
+
+  // Phase C: Generating journey
+  if (strategyPhase === "generating_journey" && isGenerating) {
+    return (
+      <PipelineProgressView
+        title="Elaborating Customer Journey"
+        steps={PHASE_C_STEPS}
+        pipelineSteps={pipelineSteps}
+      />
+    );
+  }
+
+  // Complete: Show full blueprint preview
+  if (strategyPhase === "complete" && blueprintResult) {
+    const { strategy, architecture, channelPlan, assetPlan } = blueprintResult;
+
+    return (
+      <div className="space-y-5">
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" icon={Sparkles} onClick={handleRestart}>
+            Start Over
+          </Button>
         </div>
 
-        {/* Overall progress bar */}
-        <ProgressBar
-          value={progressPercent}
-          color="emerald"
-          size="md"
-          showLabel
-        />
-
-        {/* Step list */}
-        <div className="space-y-2">
-          {PIPELINE_STEPS.map((config) => {
-            const stepData = pipelineSteps.find((s) => s.step === config.step);
-            const status = stepData?.status || "pending";
-            const preview = stepData?.preview;
-
-            return (
-              <div
-                key={config.step}
-                className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
-                  status === "running"
-                    ? "border-primary/30 bg-primary/5"
-                    : status === "complete"
-                      ? "border-emerald-200 bg-emerald-50/50"
-                      : status === "error"
-                        ? "border-red-200 bg-red-50/50"
-                        : "border-gray-100 bg-gray-50/50"
-                }`}
-              >
-                <StepStatusIcon status={status} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-gray-900">
-                      {config.name}
-                    </p>
-                    <span className={`text-xs ${
-                      status === "running" ? "text-primary" : status === "complete" ? "text-emerald-600" : status === "error" ? "text-red-600" : "text-muted-foreground"
-                    }`}>
-                      {status === "running" ? config.label : status === "complete" ? "Completed" : status === "error" ? (stepData?.error || "Failed") : "Waiting..."}
-                    </span>
-                  </div>
-                  {(status === "running" || status === "complete" || status === "error") && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {config.description}
-                    </p>
-                  )}
-                  {preview && status === "complete" && (
-                    <p className="text-xs text-emerald-700 mt-1 line-clamp-1">
-                      {preview}
-                    </p>
-                  )}
+        {/* Blueprint layer previews — 2 columns on large screens */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          {/* Strategy Summary */}
+          <CollapsiblePreview title="Campaign Strategy" icon={Target} defaultOpen>
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Theme</p>
+                <p className="text-sm font-medium text-gray-900">{strategy.campaignTheme}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Positioning</p>
+                <p className="text-sm text-gray-700">{strategy.positioningStatement}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Strategic Intent</p>
+                <div className="flex items-center gap-2">
+                  <Badge variant="teal">
+                    {strategy.strategicIntent === "brand_building" ? "Brand Building" : strategy.strategicIntent === "sales_activation" ? "Sales Activation" : "Hybrid"}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {strategy.intentRatio.brand}/{strategy.intentRatio.activation} brand/activation
+                  </span>
                 </div>
               </div>
-            );
-          })}
+              {strategy.strategicChoices.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Strategic Choices</p>
+                  <ul className="space-y-1">
+                    {strategy.strategicChoices.slice(0, 3).map((choice, i) => (
+                      <li key={i} className="text-xs text-gray-600 flex items-start gap-1.5">
+                        <span className="text-emerald-500 mt-0.5">&#8226;</span>
+                        {getChoiceText(choice)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CollapsiblePreview>
+
+          {/* Architecture Overview */}
+          <CollapsiblePreview title="Campaign Architecture" icon={Layers}>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <Badge variant="default">{architecture.campaignType}</Badge>
+                <span className="text-xs text-muted-foreground">
+                  {architecture.journeyPhases.length} journey phase{architecture.journeyPhases.length !== 1 ? "s" : ""}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {architecture.journeyPhases.reduce((sum, p) => sum + p.touchpoints.length, 0)} touchpoints
+                </span>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                {architecture.journeyPhases.map((phase, i) => (
+                  <div key={phase.id ?? `phase-${i}`} className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs">
+                    <p className="font-medium text-gray-900">{phase.name}</p>
+                    <p className="text-muted-foreground">{phase.touchpoints.length} touchpoints</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CollapsiblePreview>
+
+          {/* Channel Plan */}
+          <CollapsiblePreview title="Channel & Media Plan" icon={Share2}>
+            <div className="space-y-3">
+              <div className="flex gap-2 flex-wrap">
+                {channelPlan.channels.map((channel) => (
+                  <div key={channel.name} className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-full text-xs">
+                    <span className="font-medium text-gray-900">{channel.name}</span>
+                    <Badge variant={channel.role === "hero" ? "success" : channel.role === "hub" ? "info" : "default"}>
+                      {channel.role}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              {channelPlan.timingStrategy && (
+                <p className="text-xs text-muted-foreground">{channelPlan.timingStrategy}</p>
+              )}
+            </div>
+          </CollapsiblePreview>
+
+          {/* Asset Plan */}
+          <CollapsiblePreview title="Asset Plan" icon={FileText}>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-700">
+                {assetPlan.totalDeliverables} deliverable{assetPlan.totalDeliverables !== 1 ? "s" : ""} recommended
+              </p>
+              <div className="flex gap-2 flex-wrap">
+                {["must-have", "should-have", "nice-to-have"].map((priority) => {
+                  const count = assetPlan.deliverables.filter((d) => d.productionPriority === priority).length;
+                  if (count === 0) return null;
+                  return (
+                    <Badge key={priority} variant={priority === "must-have" ? "success" : priority === "should-have" ? "warning" : "default"}>
+                      {count} {priority}
+                    </Badge>
+                  );
+                })}
+              </div>
+              {assetPlan.prioritySummary && (
+                <p className="text-xs text-muted-foreground">{assetPlan.prioritySummary}</p>
+              )}
+            </div>
+          </CollapsiblePreview>
         </div>
       </div>
     );
   }
 
-  // ── Post-generation: show blueprint results ──
-  if (!blueprintResult) return null;
-
-  const { strategy, architecture, channelPlan, assetPlan } = blueprintResult;
-
+  // Fallback — redirect to idle state to prevent blank screen
   return (
-    <div className="space-y-5 max-w-2xl mx-auto">
-      {/* Action buttons */}
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={Sparkles}
-          onClick={handleRegenerate}
-        >
-          Regenerate
-        </Button>
+    <div className="max-w-lg mx-auto text-center py-12">
+      <div className="w-16 h-16 mx-auto rounded-full bg-amber-50 flex items-center justify-center mb-4">
+        <AlertCircle className="w-8 h-8 text-amber-500" />
       </div>
-
-      {/* Blueprint layer previews */}
-      <div className="space-y-3">
-        {/* Strategy Summary */}
-        <CollapsiblePreview title="Campaign Strategy" icon={Target} defaultOpen>
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                Theme
-              </p>
-              <p className="text-sm font-medium text-gray-900">
-                {strategy.campaignTheme}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                Positioning
-              </p>
-              <p className="text-sm text-gray-700">
-                {strategy.positioningStatement}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                Strategic Intent
-              </p>
-              <div className="flex items-center gap-2">
-                <Badge variant="teal">
-                  {strategy.strategicIntent === "brand_building" ? "Brand Building" : strategy.strategicIntent === "sales_activation" ? "Sales Activation" : "Hybrid"}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {strategy.intentRatio.brand}/{strategy.intentRatio.activation} brand/activation
-                </span>
-              </div>
-            </div>
-            {strategy.strategicChoices.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                  Strategic Choices
-                </p>
-                <ul className="space-y-1">
-                  {strategy.strategicChoices.slice(0, 3).map((choice, i) => (
-                    <li key={i} className="text-xs text-gray-600 flex items-start gap-1.5">
-                      <span className="text-emerald-500 mt-0.5">&#8226;</span>
-                      {getChoiceText(choice)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </CollapsiblePreview>
-
-        {/* Architecture Overview */}
-        <CollapsiblePreview title="Campaign Architecture" icon={Layers}>
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 flex-wrap">
-              <Badge variant="default">
-                {architecture.campaignType}
-              </Badge>
-              <span className="text-xs text-muted-foreground">
-                {architecture.journeyPhases.length} journey phase{architecture.journeyPhases.length !== 1 ? "s" : ""}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {architecture.journeyPhases.reduce((sum, p) => sum + p.touchpoints.length, 0)} touchpoints
-              </span>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {architecture.journeyPhases.map((phase, i) => (
-                <div
-                  key={phase.id ?? `phase-${i}`}
-                  className="px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs"
-                >
-                  <p className="font-medium text-gray-900">{phase.name}</p>
-                  <p className="text-muted-foreground">{phase.touchpoints.length} touchpoints</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </CollapsiblePreview>
-
-        {/* Channel Plan */}
-        <CollapsiblePreview title="Channel & Media Plan" icon={Share2}>
-          <div className="space-y-3">
-            <div className="flex gap-2 flex-wrap">
-              {channelPlan.channels.map((channel) => (
-                <div
-                  key={channel.name}
-                  className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 border border-gray-200 rounded-full text-xs"
-                >
-                  <span className="font-medium text-gray-900">{channel.name}</span>
-                  <Badge variant={channel.role === "hero" ? "success" : channel.role === "hub" ? "info" : "default"}>
-                    {channel.role}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-            {channelPlan.timingStrategy && (
-              <p className="text-xs text-muted-foreground">
-                {channelPlan.timingStrategy}
-              </p>
-            )}
-          </div>
-        </CollapsiblePreview>
-
-        {/* Asset Plan */}
-        <CollapsiblePreview title="Asset Plan" icon={FileText}>
-          <div className="space-y-3">
-            <p className="text-sm text-gray-700">
-              {assetPlan.totalDeliverables} deliverable{assetPlan.totalDeliverables !== 1 ? "s" : ""} recommended
-            </p>
-            <div className="flex gap-2 flex-wrap">
-              {["must-have", "should-have", "nice-to-have"].map((priority) => {
-                const count = assetPlan.deliverables.filter((d) => d.productionPriority === priority).length;
-                if (count === 0) return null;
-                return (
-                  <Badge
-                    key={priority}
-                    variant={priority === "must-have" ? "success" : priority === "should-have" ? "warning" : "default"}
-                  >
-                    {count} {priority}
-                  </Badge>
-                );
-              })}
-            </div>
-            {assetPlan.prioritySummary && (
-              <p className="text-xs text-muted-foreground">
-                {assetPlan.prioritySummary}
-              </p>
-            )}
-          </div>
-        </CollapsiblePreview>
-      </div>
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        Something went wrong
+      </h3>
+      <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
+        The strategy step encountered an unexpected state. Please restart the generation.
+      </p>
+      <Button variant="cta" size="lg" icon={Sparkles} onClick={handleRestart}>
+        Start Over
+      </Button>
     </div>
   );
 }

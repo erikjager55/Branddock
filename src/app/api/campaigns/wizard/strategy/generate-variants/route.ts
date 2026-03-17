@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveWorkspaceId } from '@/lib/auth-server';
-import { generateCampaignBlueprint } from '@/lib/campaigns/strategy-chain';
+import { generateStrategyVariants } from '@/lib/campaigns/strategy-chain';
 import type { PipelineStep, GenerateBlueprintBody } from '@/lib/campaigns/strategy-blueprint.types';
 
-// Allow up to 10 minutes for the full 6-step pipeline
-export const maxDuration = 600;
+// Allow up to 5 minutes for Phase A (3 AI calls: strategy + dual architecture + persona validation)
+export const maxDuration = 300;
 
 // ---------------------------------------------------------------------------
-// POST /api/campaigns/wizard/strategy/generate
-// Wizard-mode: generates a blueprint before the campaign exists in the DB.
-// Always returns SSE (the wizard always uses streaming progress).
+// POST /api/campaigns/wizard/strategy/generate-variants
+// Phase A: Generates strategy + 2 architecture variants + persona validation.
+// Returns SSE stream with progress events + final VariantPhaseResult.
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +18,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No workspace found' }, { status: 403 });
     }
 
-    // Parse request body
     let body: GenerateBlueprintBody = {};
     try {
       body = await request.json();
@@ -33,26 +32,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // SSE stream for wizard progress
     let currentStep = 0;
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        function sendEvent(data: PipelineStep | { type: string; blueprint?: unknown; error?: string; failedStep?: number }) {
+        function sendEvent(data: PipelineStep | { type: string; result?: unknown; error?: string; failedStep?: number }) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
         }
 
+        // Send SSE keepalive comments every 15s to prevent connection drops
+        const keepalive = setInterval(() => {
+          try { controller.enqueue(encoder.encode(': keepalive\n\n')); } catch { /* stream closed */ }
+        }, 15_000);
+
         try {
-          const blueprint = await generateCampaignBlueprint(
-            workspaceId,
-            'wizard', // placeholder ID — not used in wizard mode
+          const result = await generateStrategyVariants(
             {
+              workspaceId,
               personaIds: body.personaIds,
               productIds: body.productIds,
               competitorIds: body.competitorIds,
               trendIds: body.trendIds,
               strategicIntent: body.strategicIntent,
-              wizardContext: body.wizardContext,
+              wizardContext: body.wizardContext!,
             },
             (step: PipelineStep) => {
               currentStep = step.step;
@@ -60,13 +62,13 @@ export async function POST(request: NextRequest) {
             },
           );
 
-          // Send completion event (not saved to DB — wizard saves on campaign creation)
-          sendEvent({ type: 'complete', blueprint });
+          sendEvent({ type: 'complete', result });
         } catch (error) {
           const message = error instanceof Error ? error.message : 'Unknown error';
-          console.error('[wizard/strategy/generate] Pipeline error:', message);
+          console.error('[wizard/strategy/generate-variants] Pipeline error:', message);
           sendEvent({ type: 'error', error: message, failedStep: currentStep });
         } finally {
+          clearInterval(keepalive);
           controller.close();
         }
       },
@@ -80,7 +82,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[POST /api/campaigns/wizard/strategy/generate]', error);
+    console.error('[POST /api/campaigns/wizard/strategy/generate-variants]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

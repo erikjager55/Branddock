@@ -144,7 +144,7 @@ export function KnowledgeStep() {
 
   if (isLoading) {
     return (
-      <div className="space-y-3 max-w-2xl mx-auto">
+      <div className="space-y-3">
         <Skeleton width="100%" height={40} className="rounded-lg" />
         <div className="flex gap-2">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -163,7 +163,7 @@ export function KnowledgeStep() {
   const SearchIcon = SEARCH_ICON;
 
   return (
-    <div className="space-y-3 max-w-2xl mx-auto">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

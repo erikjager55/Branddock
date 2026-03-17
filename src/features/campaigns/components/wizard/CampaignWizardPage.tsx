@@ -38,7 +38,6 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   const selectedKnowledgeIds = useCampaignWizardStore(
     (s) => s.selectedKnowledgeIds,
   );
-  const strategyResult = useCampaignWizardStore((s) => s.strategyResult);
   const blueprintResult = useCampaignWizardStore((s) => s.blueprintResult);
   const selectedDeliverables = useCampaignWizardStore(
     (s) => s.selectedDeliverables,
@@ -66,8 +65,7 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   const isLastStep = currentStep === 5;
 
   const handleLaunch = () => {
-    const strategy = strategyResult ?? blueprintResult;
-    if (!campaignGoalType || !strategy) return;
+    if (!campaignGoalType || !blueprintResult) return;
 
     launchCampaign.mutate(
       {
@@ -77,7 +75,7 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
         startDate: startDate || undefined,
         endDate: endDate || undefined,
         knowledgeIds: selectedKnowledgeIds,
-        strategy,
+        strategy: blueprintResult,
         deliverables: selectedDeliverables,
         saveAsTemplate,
         templateName: saveAsTemplate ? templateName : undefined,

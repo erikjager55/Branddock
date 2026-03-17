@@ -74,6 +74,8 @@ export interface DeliverableBriefSettings {
   };
   productionPriority?: 'must-have' | 'should-have' | 'nice-to-have';
   estimatedEffort?: 'low' | 'medium' | 'high';
+  /** 1-based deployment order within phase, set by AI */
+  suggestedOrder?: number;
 }
 
 export interface DeliverableResponse {

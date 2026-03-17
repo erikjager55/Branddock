@@ -12,6 +12,17 @@ export type {
   RegenerateBlueprintBody,
   AssetPlanDeliverable,
   DeliverableBrief,
+  StrategyPhase,
+  VariantPhaseResult,
+  SynthesisPhaseResult,
+  JourneyPhaseResult,
+  SynthesizeStrategyBody,
+  ElaborateJourneyBody,
+  StrategyLayer,
+  ArchitectureLayer,
+  ChannelPlanLayer,
+  AssetPlanLayer,
+  PersonaValidationResult,
 } from '@/lib/campaigns/strategy-blueprint.types';
 
 export type CampaignGoalType =

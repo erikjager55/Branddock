@@ -1,5 +1,5 @@
 # BRANDDOCK — Claude Code Context
-## Laatst bijgewerkt: 16 maart 2026 (CGT: Campaign Goal Types 4→15 + Time-Binding + AI Guidance)
+## Laatst bijgewerkt: 17 maart 2026 (VRR: Variant Review UX Redesign — rich strategy overview, persona feedback, interactive ratings)
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 
@@ -885,7 +885,11 @@ src/
 │       │   ├── content-library/
 │       │   │   └── ContentLibraryPage.tsx           ← Content library (S6.B)
 │       │   ├── wizard/
-│       │   │   └── CampaignWizardPage.tsx           ← Campaign wizard (S6.B)
+│       │   │   ├── CampaignWizardPage.tsx           ← Campaign wizard (S6.B)
+│       │   │   ├── VariantReviewView.tsx             ← Variant review orchestrator (strategy+detail+persona)
+│       │   │   ├── VariantStrategyOverview.tsx       ← Strategy foundation with thumbs up/down ratings
+│       │   │   ├── VariantDetailCard.tsx             ← Per-variant journey detail (phases+touchpoints+personas)
+│       │   │   └── PersonaFeedbackCard.tsx           ← Per-persona feedback with endorsement toggle
 │       │   └── studio/                              ← S6.C+D: Content Studio
 │       │       ├── ContentStudioPage.tsx            ← 3-column layout orchestrator
 │       │       ├── StudioHeader.tsx                 ← Header with breadcrumb + actions
@@ -1659,6 +1663,8 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 
 111. **CGT: Campaign Goal Types Expansion (4→15) — compleet** — Campagnedoeltypen uitgebreid van 4 naar 15 types in 4 categorieën met time-binding gedrag en AI guidance doorvoer door de volledige 7-staps strategie-pipeline. **Nieuw bestand**: `src/features/campaigns/lib/goal-types.ts` — centraal bestand met 15 GoalTypeDefinitions in 4 GoalCategories (Growth & Awareness, Engagement & Loyalty, Brand & Culture, Conversion & Activation), TimeBinding type (`time-bound`/`always-on`/`hybrid`), GOAL_LABELS (incl. 4 legacy mappings BRAND/PRODUCT/CONTENT/ENGAGEMENT), getTimeBinding(), getGoalTypeGuidance() met strategische AI guidance per type. **Type**: CampaignGoalType union uitgebreid naar 19 waarden (15 nieuw + 4 legacy). GoalTypeDefinition.id getypt als CampaignGoalType (geen unsafe cast). **SetupStep**: Goal selector gegroepeerd per categorie met h4 headers + 2-col grids. Datumvelden conditioneel: `always-on` verborgen, `time-bound` verplicht met "(required)" label, `hybrid` optioneel met "(optional)" label. **Store**: setCampaignGoalType wist datums bij switch naar always-on. canProceed() enforced datums + endDate >= startDate voor time-bound goals. **AI Pipeline**: Goal-specifieke guidance geïnjecteerd in alle 7 stappen (1: Strategy Architect, 2a: Architect A, 2b: Architect B, 3: Persona Validator, 4: Strategy Synthesizer, 5: Channel Planner, 6: Asset Planner) + regeneration flow. **Deliverables**: 5 nieuwe types (career-page, job-ad-copy, employee-story, employer-brand-video, impact-report), categorie hernoemd "PR & Communications" → "PR, HR & Communications". DeliverablesStep 4 ontbrekende icons toegevoegd (Briefcase, UserPlus, Users, Leaf). **PromptSection**: GOAL_LABELS voor human-readable display i.p.v. raw ID. **Seed**: 4 campaigns bijgewerkt naar nieuwe goal type IDs (REBRANDING, PRODUCT_LAUNCH, THOUGHT_LEADERSHIP, BRAND_AWARENESS). **Schema**: campaignGoalType comment bijgewerkt. **Defaults**: strategy-chain.ts fallback 'BRAND' → 'BRAND_AWARENESS'. **Backward compat**: Legacy types (BRAND, PRODUCT, CONTENT, ENGAGEMENT) in union type + GOAL_LABELS + getGoalTypeGuidance(). **Review**: 4 rondes met telkens 2 onafhankelijke review-agents (8 agents totaal). 1 CRITICAL + 6 WARNING + 11 MINOR gevonden en gefixt. Finale ronde: 0 CRITICAL, 0 WARNING. 12 bestanden gewijzigd/aangemaakt. TypeScript 0 errors.
 
+112. **VRR: Variant Review UX Redesign — compleet** — Variant review scherm herschreven van minimale data-weergave naar rijke interactieve review ervaring. **(1) Data fix**: `normalizePersonaValidation()` in `strategy-chain.ts` — clampt `overallScore` naar 1-10, normaliseert `preferredVariant` naar uppercase A/B, garandeert arrays en strings met defaults. Toegepast in `generateStrategyVariants()` en `generateCampaignBlueprint()`. **(2) Store uitbreiding**: `useCampaignWizardStore.ts` — `endorsedPersonaIds: string[]` (persona endorsement toggle), `strategyRatings: Record<string, 'up' | 'down'>` (strategy element ratings), `togglePersonaEndorsement()` en `setStrategyRating()` actions. Reset in `clearPhaseData()` en via `INITIAL_STATE`. **(3) 3 nieuwe sub-componenten**: `VariantStrategyOverview.tsx` (strategie-fundering met campagnethema, positionering, messaging hierarchy, JTBD framing, strategische keuzes — elk met thumbs up/down rating buttons via `setStrategyRating(key)`), `VariantDetailCard.tsx` (per-variant journey detail met collapsible fasen, KPI tags, persona phase data, touchpoints met kanaal/content type/bericht/persona relevance), `PersonaFeedbackCard.tsx` (per-persona feedback met score badge, preferred variant badge, feedback tekst, resonates/concerns/suggestions als gekleurde tags, endorsement toggle button). **(4) VariantReviewView.tsx herschreven als orchestrator**: Strategy overview → side-by-side variant detail cards → persona feedback sectie → free-text textarea → "Generate Definitive Strategy" CTA. **(5) Structured feedback compilatie**: `compile-structured-feedback.ts` — combineert strategy element ratings (APPROVED/NEEDS CHANGE), endorsed persona feedback (naam, score, preferred variant, feedback, resonates, concerns, suggestions), en vrije tekst tot markdown-geformateerde string. Geïntegreerd in `handleSynthesize` in `StrategyStep.tsx` via `getState()` pattern. **(6) Performance + accessibility fixes**: Stale closure fix (`variantFeedback` via `getState()` i.p.v. closure), onnodige Zustand subscription verwijderd (voorheen re-render bij elke toetsaanslag), null guards voor AI-gegenereerde data (`messagingHierarchy`, `jtbdFraming`, `strategicChoices` met `??` defaults), `aria-pressed` op alle toggle buttons, empty personaName guard. **Review**: 2 rondes met telkens 2 onafhankelijke review-agents (4 agents totaal). 7 fixes toegepast. 0 CRITICAL, 0 openstaande issues. 7 bestanden gewijzigd/aangemaakt. TypeScript 0 errors.
+
 ### ⚠️ TECHNISCHE SCHULD
 - **Adapter pattern** — tijdelijk, componenten moeten op termijn direct DB-model gebruiken
 - **mock-to-meta-adapter.ts** — reverse adapter (mock→API format) voor Brand Foundation. Verdwijnt wanneer context direct BrandAssetWithMeta levert.
@@ -1833,6 +1839,52 @@ Alle prompt-bestanden: `/mnt/user-data/outputs/` (52 .md bestanden)
 - COMP.B: ✅ Frontend — ~17 componenten (overview+card, analyzer 2-tab+modal, detail 2-kolom+5 secties+4 sidebar+ProductSelectorModal)
 - COMP.2: ✅ Integratie — Sidebar (Swords icon), routing (3 cases), brand context (competitor landscape), dashboard stats, global search
 - COMP.R: ✅ Review — 2 rondes (2 agents per ronde), 7 fixes (nullable fields, dedup, createdById, typed store, spacing, cleanup), 0 CRITICAL remaining
+
+**INT. Externe Integraties (onderzocht maart 2026, keuze pending)**
+
+Verkennend onderzoek afgerond naar 25+ externe applicaties. Hieronder de shortlist gegroepeerd op prioriteit. Keuze nog niet gemaakt — alle items zijn 📋 pending beslissing.
+
+**Tier 1 — Direct implementeren (hoog ROI, lage inspanning)**
+- INT.1: 📋 **Resend** (Email API) — SDK al geïnstalleerd (`resend` v6.9.3), gratis 3K/maand. Enablet invite flow, notificatie-emails, campaign alerts. Kosten: gratis.
+- INT.2: 📋 **Perplexity Sonar API** (AI Search/Research) — OpenAI-compatibele API, real-time web search + LLM synthese met citaten. Vervangt/verbetert Gemini grounding in Trend Radar. Kosten: pay-per-token (~$1/M tokens).
+- INT.3: 📋 **Pexels API** (Stock Media) — Gratis stock foto's + video's voor Content Studio, campaigns, persona avatars. Officieel Node.js SDK. Kosten: gratis.
+- INT.4: 📋 **Brandfetch** (Brand Data API) — Logo's, kleuren, fonts, firmographics voor 60M+ merken. Verrijkt Competitor Analyzer + client onboarding. Kosten: $99/maand (2.500 calls).
+- INT.5: 📋 **Ayrshare** (Unified Social Publishing) — Eén API voor publicatie naar 15+ social platforms (LinkedIn, Instagram, X, TikTok, YouTube). Scheduling + analytics. Kosten: vanaf $10/maand.
+- INT.6: 📋 **OpenAI Image / Google Imagen 4** (AI Image Generation) — Beeldgeneratie in Content Studio met brand context uit Brandstyle. SDKs al aanwezig. Kosten: $0.02-0.19/beeld.
+
+**Tier 2 — Hoge strategische waarde (gemiddelde inspanning)**
+- INT.7: 📋 **HubSpot CRM + Marketing Hub** — Gratis CRM API (1M contacts, 40K calls/dag). Persona validatie, campaign→deal ROI tracking, email distributie. TypeScript SDK. Kosten: gratis (CRM), $20+/user (Marketing).
+- INT.8: 📋 **Google Analytics 4 Data API** — Content performance tracking, audience demographics, campaign ROI. Gratis, TypeScript SDK. Kosten: gratis.
+- INT.9: 📋 **DataForSEO** (SEO Data) — SERP, keywords, backlinks, domain analytics. Verrijkt Competitors + Content Studio + Campaigns. TypeScript SDK. Kosten: pay-as-you-go (~$0.60/1K SERPs).
+- INT.10: 📋 **Writer.com** (AI Brand Voice) — Knowledge Graph RAG + brand voice enforcement. Palmyra model. TypeScript SDK. Kosten: $0.60/1M input tokens.
+- INT.11: 📋 **Canva Connect API** — Brandstyle sync naar Canva Brand Kit, Content Studio→Canva voor visuele verfijning, Resize API. Kosten: gratis (public integrations).
+- INT.12: 📋 **Typeform** (Survey & Research) — Enablet Research & Validation module. Auto-genereer brand surveys, feed responses terug. Kosten: gratis (10 resp/maand), $25+/maand.
+- INT.13: 📋 **Slack** (Notifications) — Real-time alerts voor Brand Alignment, Trend Radar, Campaign status. Bolt framework (Node.js). Kosten: gratis.
+- INT.14: 📋 **WordPress REST API** — One-click publishing vanuit Content Studio. Kosten: gratis.
+
+**Tier 3 — Bouwen bij vraag (hoge waarde, hogere inspanning of niche)**
+- INT.15: 📋 **ElevenLabs** (AI Audio) — Audio content type voor Content Studio (TTS, voice cloning, brand voice). Gratis 10K chars/maand. TypeScript SDK. Kosten: gratis-$99/maand.
+- INT.16: 📋 **Marker API** (Document Parsing) — Betere PDF/DOCX/PPTX parsing dan `unpdf`. Self-hosted gratis (<$2M omzet). Kosten: $6/1K pagina's (cloud).
+- INT.17: 📋 **Visualping** (Website Monitoring) — Competitor website change detection met webhooks. Kosten: $100+/maand (API).
+- INT.18: 📋 **Meta Marketing API** (Ads) — Campaign deliverables als ad creatives, persona→audience targeting. Kosten: gratis.
+- INT.19: 📋 **Semrush** (SEO) — Content optimalisatie, competitor SEO, zoekvolume. Kosten: $417+/maand.
+- INT.20: 📋 **Shopify GraphQL** — Product catalog sync, AI productbeschrijvingen. Kosten: gratis (dev stores).
+- INT.21: 📋 **Asana / Linear** (Project Management) — Deliverables als taken, milestones sync. Kosten: gratis.
+- INT.22: 📋 **Audiense** (Audience Intelligence) — Persona verrijking met echte demographic/psychographic data. Kosten: ~$12K/jaar.
+
+**Tier 4 — Niet aanbevolen of uitgesteld**
+- INT.23: ⏸️ **Buffer** — API gesloten voor nieuwe applicaties. Ayrshare is superieur alternatief.
+- INT.24: ⏸️ **Brand24** (Social Listening) — Te duur ($198+/maand), gesloten docs, geen Node.js SDK.
+- INT.25: ⏸️ **SparkToro** (Audience Intelligence) — API "Coming Soon", niet beschikbaar.
+- INT.26: ⏸️ **Attest** (Consumer Research) — Geen publieke API, alleen Zapier.
+- INT.27: ⏸️ **The Color API** — Overlap met bestaande `color-utils.ts`.
+- INT.28: ⏸️ **Microsoft Clarity** — Verkeerde use case (website heatmaps), 10 req/dag limiet.
+- INT.29: ⏸️ **Clarity.ai** (ESG Analytics) — Enterprise-only pricing, geen Node.js SDK. Relevant voor Social Relevancy asset maar te duur.
+- INT.30: ⏸️ **Mailchimp** — Overlap met HubSpot Marketing Hub.
+- INT.31: ⏸️ **Figma REST API** — Read-only, medium waarde. Canva Connect is actiever alternatief.
+- INT.32: ⏸️ **Frontify / Bynder** (DAM) — Enterprise pricing, niche doelgroep.
+
+**Architectuur-aanbeveling**: Bouw een Integration Hub (`src/lib/integrations/`, `IntegrationConfig` Prisma model, generieke OAuth handler + webhook receiver, Settings > Integrations UI) voordat individuele integraties worden gebouwd.
 
 **S10-S12. Production Ready**
 - S10: Stripe Billing (checkout, webhooks, plan enforcement, agency model)

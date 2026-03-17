@@ -164,7 +164,7 @@ export function DeliverablesStep() {
   }, [recommendedTypeIds.size, selectedDeliverables.length, toggleDeliverable]);
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="space-y-6">
       {/* Strategy recommendations banner */}
       {totalRecommended > 0 && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-3">
@@ -210,7 +210,7 @@ export function DeliverablesStep() {
       </div>
 
       {/* Deliverable cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {categoryItems.map((item) => {
           const isSelected = selectedDeliverables.some(
             (d) => d.type === item.id,

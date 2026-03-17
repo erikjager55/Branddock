@@ -435,6 +435,7 @@ Requirements per deliverable:
 - brief: Structured content brief with objective, key message, tone direction, CTA, and 3-5 bullet content outline
 - productionPriority: "must-have" (core deliverables), "should-have" (enhances campaign), "nice-to-have" (stretch goals)
 - estimatedEffort: "low" (< 2 hours), "medium" (2-8 hours), "high" (> 8 hours)
+- suggestedOrder: number (1-based deployment order within this phase — 1 goes out first, 2 second, etc. Consider channel variety and persona rotation when ordering. Avoid scheduling two deliverables for the same channel back-to-back.)
 
 IMPORTANT: The contentType field MUST exactly match one of the valid IDs listed above. Do NOT invent new content types. Choose the closest matching type from the list.
 

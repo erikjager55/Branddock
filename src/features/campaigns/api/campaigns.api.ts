@@ -278,3 +278,110 @@ export async function regenerateBlueprintLayer(
   if (!res.ok) throw new Error('Failed to regenerate blueprint layer');
   return res.json();
 }
+
+// ─── Interactive Strategy Phase SSE Functions ────────────────
+
+/** Shared SSE stream reader for phase endpoints */
+function createPhaseSSE(
+  url: string,
+  body: unknown,
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  const controller = new AbortController();
+
+  (async () => {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Failed to start phase' }));
+        onError(err.error || 'Failed to start phase');
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        onError('No response stream');
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              onEvent(data);
+            } catch {
+              // Skip malformed JSON lines
+            }
+          }
+        }
+      }
+
+      buffer += decoder.decode();
+      const remaining = buffer.split('\n');
+      for (const line of remaining) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            onEvent(data);
+          } catch {
+            // Skip malformed final chunk
+          }
+        }
+      }
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      onError(message);
+    }
+  })();
+
+  return { abort: () => controller.abort() };
+}
+
+/** Phase A: Generate strategy variants via SSE stream */
+export function generateVariantsSSE(
+  body: import('@/lib/campaigns/strategy-blueprint.types').GenerateBlueprintBody,
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  return createPhaseSSE('/api/campaigns/wizard/strategy/generate-variants', body, onEvent, onError);
+}
+
+/** Phase B: Synthesize strategy via SSE stream */
+export function synthesizeStrategySSE(
+  body: import('@/lib/campaigns/strategy-blueprint.types').SynthesizeStrategyBody,
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  return createPhaseSSE('/api/campaigns/wizard/strategy/synthesize', body, onEvent, onError);
+}
+
+/** Phase C: Elaborate journey (channel + asset plan) via SSE stream */
+export function elaborateJourneySSE(
+  body: import('@/lib/campaigns/strategy-blueprint.types').ElaborateJourneyBody,
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  return createPhaseSSE('/api/campaigns/wizard/strategy/elaborate', body, onEvent, onError);
+}

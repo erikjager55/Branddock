@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { requireUnlocked } from '@/lib/lock-guard';
 import { generateCampaignBlueprint, createDeliverablesFromBlueprint } from '@/lib/campaigns/strategy-chain';
+
+// Allow up to 10 minutes for the full 6-step pipeline
+export const maxDuration = 600;
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import type { PipelineStep, GenerateBlueprintBody } from '@/lib/campaigns/strategy-blueprint.types';

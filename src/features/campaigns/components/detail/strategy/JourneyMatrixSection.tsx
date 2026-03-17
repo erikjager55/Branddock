@@ -28,6 +28,7 @@ import type {
   Touchpoint,
   PersonaPhaseData,
 } from "@/lib/campaigns/strategy-blueprint.types";
+import { getPersonaColor, type PersonaColorStyle } from "@/features/campaigns/lib/persona-colors";
 
 // ─── Types ─────────────────────────────────────────────────────
 
@@ -55,24 +56,7 @@ interface PersonaInfo {
   occupation?: string | null;
 }
 
-interface PersonaColorStyle {
-  bg: string;
-  text: string;
-  border: string;
-  dot: string;
-  avatarBg: string;
-}
-
 // ─── Constants ──────────────────────────────────────────────────
-
-const PERSONA_COLORS: PersonaColorStyle[] = [
-  { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200", dot: "bg-blue-500", avatarBg: "bg-blue-100" },
-  { bg: "bg-rose-50", text: "text-rose-700", border: "border-rose-200", dot: "bg-rose-500", avatarBg: "bg-rose-100" },
-  { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", dot: "bg-amber-500", avatarBg: "bg-amber-100" },
-  { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200", dot: "bg-purple-500", avatarBg: "bg-purple-100" },
-  { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200", dot: "bg-emerald-500", avatarBg: "bg-emerald-100" },
-  { bg: "bg-cyan-50", text: "text-cyan-700", border: "border-cyan-200", dot: "bg-cyan-500", avatarBg: "bg-cyan-100" },
-];
 
 const PRIORITY_STYLES: Record<string, { dot: string; label: string }> = {
   "must-have": { dot: "bg-emerald-500", label: "Must-have" },
@@ -86,8 +70,9 @@ const EFFORT_LABEL: Record<string, string> = {
   high: "High effort",
 };
 
-/** Stable empty map to avoid re-creating on every render in fallback path */
+/** Stable empty maps to avoid re-creating on every render in fallback paths */
 const EMPTY_PHASE_CELLS = new Map<string, CellData>();
+const EMPTY_PHASE_DATA = new Map<string, PersonaPhaseData>();
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -96,11 +81,6 @@ function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   return name.slice(0, 2).toUpperCase();
-}
-
-/** Get persona color style by index (cycles) */
-function getPersonaColor(index: number): PersonaColorStyle {
-  return PERSONA_COLORS[index % PERSONA_COLORS.length];
 }
 
 // ─── Sub-components ─────────────────────────────────────────────
@@ -943,7 +923,7 @@ export function JourneyMatrixSection({
               persona={persona}
               phases={sortedPhases}
               phaseCells={personaMatrix.get(persona.personaId) ?? EMPTY_PHASE_CELLS}
-              phaseDataMap={personaPhaseDataLookup.get(persona.personaId) ?? new Map()}
+              phaseDataMap={personaPhaseDataLookup.get(persona.personaId) ?? EMPTY_PHASE_DATA}
               colorStyle={getPersonaColor(persona.colorIndex)}
               onBringToLife={onBringToLife}
             />
