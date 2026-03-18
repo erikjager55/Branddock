@@ -58,8 +58,8 @@ export async function POST(request: NextRequest) {
               wizardContext: body.wizardContext,
               strategicIntent: body.strategicIntent,
             },
-            (step: PipelineStep) => {
-              sendEvent(step);
+            (event: import('@/features/campaigns/types/campaign-wizard.types').PipelineEvent) => {
+              sendEvent(event);
             },
           );
 

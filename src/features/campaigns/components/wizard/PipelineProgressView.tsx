@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, Loader2, AlertCircle } from "lucide-react";
+import { Check, Loader2, AlertCircle, Palette } from "lucide-react";
 import { ProgressBar } from "@/components/shared";
 import type { PipelineStep, PipelineStepStatus } from "../../types/campaign-wizard.types";
 
@@ -36,6 +36,37 @@ function StepStatusIcon({ status }: { status: PipelineStepStatus }) {
   }
 }
 
+// ─── Enrichment Indicator ──────────────────────────────
+
+function EnrichmentIndicator({ status, blockCount }: { status: 'idle' | 'running' | 'complete' | 'skipped'; blockCount: number }) {
+  if (status === 'idle') return null;
+
+  return (
+    <div
+      className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border transition-colors ${
+        status === 'running'
+          ? 'border-violet-200 bg-violet-50/70'
+          : status === 'complete'
+            ? 'border-violet-200 bg-violet-50/50'
+            : 'border-gray-200 bg-gray-50/50'
+      }`}
+    >
+      {status === 'running' ? (
+        <Loader2 className="w-4 h-4 text-violet-500 animate-spin flex-shrink-0" />
+      ) : (
+        <Palette className={`w-4 h-4 flex-shrink-0 ${status === 'complete' ? 'text-violet-500' : 'text-gray-400'}`} />
+      )}
+      <span className={`text-sm ${status === 'running' ? 'text-violet-700' : status === 'complete' ? 'text-violet-600' : 'text-gray-500'}`}>
+        {status === 'running'
+          ? 'Injecting creative inspiration...'
+          : status === 'complete'
+            ? `${blockCount} cultural reference${blockCount !== 1 ? 's' : ''} injected`
+            : 'No creative references found'}
+      </span>
+    </div>
+  );
+}
+
 // ─── Types ──────────────────────────────────────────────
 
 export interface PipelineStepConfig {
@@ -50,12 +81,14 @@ interface PipelineProgressViewProps {
   subtitle?: string;
   steps: PipelineStepConfig[];
   pipelineSteps: PipelineStep[];
+  enrichmentStatus?: 'idle' | 'running' | 'complete' | 'skipped';
+  enrichmentBlockCount?: number;
 }
 
 // ─── Component ──────────────────────────────────────────
 
 /** Reusable pipeline progress view for any subset of steps */
-export function PipelineProgressView({ title, subtitle, steps, pipelineSteps }: PipelineProgressViewProps) {
+export function PipelineProgressView({ title, subtitle, steps, pipelineSteps, enrichmentStatus = 'idle', enrichmentBlockCount = 0 }: PipelineProgressViewProps) {
   const completedSteps = pipelineSteps.filter((s) => s.status === "complete").length;
   const totalSteps = steps.length;
   const progressPercent = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
@@ -70,6 +103,8 @@ export function PipelineProgressView({ title, subtitle, steps, pipelineSteps }: 
       </div>
 
       <ProgressBar value={progressPercent} color="emerald" size="md" showLabel />
+
+      <EnrichmentIndicator status={enrichmentStatus} blockCount={enrichmentBlockCount} />
 
       <div className="grid grid-cols-1 gap-2">
         {steps.map((config) => {

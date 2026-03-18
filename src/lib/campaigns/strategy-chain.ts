@@ -42,7 +42,6 @@ import type {
   ChannelPlanLayer,
   AssetPlanLayer,
   PersonaValidationResult,
-  PipelineStep,
   StrategicIntent,
   TouchpointPersonaRelevance,
   PersonaRelevance,
@@ -50,6 +49,7 @@ import type {
   SynthesisPhaseResult,
   JourneyPhaseResult,
 } from './strategy-blueprint.types';
+import type { PipelineEvent } from '@/features/campaigns/types/campaign-wizard.types';
 
 // ─── Constants ──────────────────────────────────────────────
 
@@ -74,7 +74,7 @@ async function withStepContext<T>(stepLabel: string, timeoutSec: number, fn: () 
 
 // ─── Types ──────────────────────────────────────────────────
 
-export type ProgressCallback = (step: PipelineStep) => void;
+export type ProgressCallback = (event: PipelineEvent) => void;
 
 interface WizardContext {
   campaignName: string;
@@ -399,8 +399,14 @@ export async function generateStrategyVariants(
     arenaQueriesPromise,
   ]);
 
-  // Fetch Are.na context (non-blocking enrichment)
+  // Fetch Are.na context (non-blocking enrichment) — emit SSE events for real-time feedback
+  onProgress?.({ type: 'enrichment', status: 'running' });
   const arenaResult = await fetchArenaContext(arenaQueries);
+  if (arenaResult.meta && arenaResult.meta.totalBlocks > 0) {
+    onProgress?.({ type: 'enrichment', status: 'complete', totalBlocks: arenaResult.meta.totalBlocks, queries: arenaResult.meta.queries });
+  } else {
+    onProgress?.({ type: 'enrichment', status: 'skipped' });
+  }
 
   const brandContextText = formatBrandContext(brandContext);
   const briefing = wizardContext.briefing;

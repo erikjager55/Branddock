@@ -60,9 +60,11 @@ export async function POST(request: NextRequest) {
               strategicIntent: body.strategicIntent,
             },
             workspaceId,
-            (step: PipelineStep) => {
-              currentStep = step.step;
-              sendEvent(step);
+            (event: import('@/features/campaigns/types/campaign-wizard.types').PipelineEvent) => {
+              if ('step' in event) {
+                currentStep = event.step;
+              }
+              sendEvent(event);
             },
           );
 

@@ -11,6 +11,7 @@ import type {
   StrategyLayer,
   ArchitectureLayer,
   PersonaValidationResult,
+  ArenaEnrichmentTracking,
 } from "../types/campaign-wizard.types";
 
 // ─── Types ────────────────────────────────────────────────
@@ -58,6 +59,12 @@ interface CampaignWizardState {
   synthesisFeedback: string;
   synthesizedStrategy: StrategyLayer | null;
   synthesizedArchitecture: ArchitectureLayer | null;
+  arenaEnrichment: ArenaEnrichmentTracking | null;
+
+  // ─── Enrichment Status (Are.na real-time feedback) ─────────
+  enrichmentStatus: 'idle' | 'running' | 'complete' | 'skipped';
+  enrichmentBlockCount: number;
+  enrichmentQueries: string[];
 
   // ─── Interactive Feedback (Variant Review) ─────────────────
   endorsedPersonaIds: string[];
@@ -109,11 +116,15 @@ interface CampaignWizardState {
     personaValidation: PersonaValidationResult[];
     variantAScore: number;
     variantBScore: number;
+    arenaEnrichment?: ArenaEnrichmentTracking | null;
   }) => void;
   setVariantFeedback: (feedback: string) => void;
   setSynthesisResult: (data: { strategy: StrategyLayer; architecture: ArchitectureLayer }) => void;
   setSynthesisFeedback: (feedback: string) => void;
   clearPhaseData: () => void;
+
+  // ─── Enrichment Status Actions ──────────────────────────────
+  setEnrichmentStatus: (status: 'idle' | 'running' | 'complete' | 'skipped', meta?: { totalBlocks?: number; queries?: string[] }) => void;
 
   // ─── Interactive Feedback Actions ─────────────────────────
   togglePersonaEndorsement: (personaId: string) => void;
@@ -165,6 +176,12 @@ const INITIAL_STATE = {
   synthesisFeedback: "",
   synthesizedStrategy: null as StrategyLayer | null,
   synthesizedArchitecture: null as ArchitectureLayer | null,
+  arenaEnrichment: null as ArenaEnrichmentTracking | null,
+
+  // ─── Enrichment Status ──────────────────────────────────────
+  enrichmentStatus: 'idle' as 'idle' | 'running' | 'complete' | 'skipped',
+  enrichmentBlockCount: 0,
+  enrichmentQueries: [] as string[],
 
   // ─── Interactive Feedback ──────────────────────────────────
   endorsedPersonaIds: [] as string[],
@@ -303,6 +320,9 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         pipelineSteps: [],
         currentPipelineStep: 0,
         pipelineError: null,
+        enrichmentStatus: 'idle',
+        enrichmentBlockCount: 0,
+        enrichmentQueries: [],
       }),
 
     // ─── Interactive Strategy Phase Actions ─────────────────
@@ -316,6 +336,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         personaValidation: data.personaValidation,
         variantAScore: data.variantAScore,
         variantBScore: data.variantBScore,
+        arenaEnrichment: data.arenaEnrichment ?? null,
       }),
     setVariantFeedback: (variantFeedback) => set({ variantFeedback }),
     setSynthesisResult: (data) =>
@@ -335,10 +356,22 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         variantBScore: 0,
         synthesizedStrategy: null,
         synthesizedArchitecture: null,
+        arenaEnrichment: null,
         variantFeedback: "",
         synthesisFeedback: "",
         endorsedPersonaIds: [],
         strategyRatings: {},
+        enrichmentStatus: 'idle',
+        enrichmentBlockCount: 0,
+        enrichmentQueries: [],
+      }),
+
+    // ─── Enrichment Status Actions ──────────────────────────────
+    setEnrichmentStatus: (status, meta) =>
+      set({
+        enrichmentStatus: status,
+        enrichmentBlockCount: meta?.totalBlocks ?? 0,
+        enrichmentQueries: meta?.queries ?? [],
       }),
 
     // ─── Interactive Feedback Actions ─────────────────────────

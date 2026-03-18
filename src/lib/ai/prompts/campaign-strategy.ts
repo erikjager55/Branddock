@@ -6,7 +6,7 @@
 
 import type { StrategicIntent, CampaignBriefing } from '@/lib/campaigns/strategy-blueprint.types';
 import { DELIVERABLE_TYPE_IDS } from '@/features/campaigns/lib/deliverable-types';
-import { GOAL_LABELS, getGoalTypeGuidance } from '@/features/campaigns/lib/goal-types';
+import { GOAL_LABELS, getGoalTypeGuidance, getGoalTypeStrategicInsights } from '@/features/campaigns/lib/goal-types';
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -39,6 +39,57 @@ function buildBriefingSection(briefing?: CampaignBriefing): string {
   return briefingLines.length > 0 ? `\n\n## Creative Briefing\n${briefingLines.join('\n')}` : '';
 }
 
+/**
+ * Builds a structured markdown prompt section from GoalTypeStrategicInsights data.
+ * Returns empty string if no insights are available for the given goal type.
+ */
+export function buildGoalInsightsPromptSection(goalType: string): string {
+  const insights = getGoalTypeStrategicInsights(goalType);
+  if (!insights) return '';
+
+  const kpiLines = insights.recommendedKPIs
+    .map(kpi => `- ${kpi.name}: ${kpi.description}${kpi.benchmark ? ` (benchmark: ${kpi.benchmark})` : ''}`)
+    .join('\n');
+
+  const pitfallLines = insights.pitfalls
+    .map(p => `- AVOID: ${p}`)
+    .join('\n');
+
+  const primaryChannels = insights.channelEmphasis.primary.join(', ');
+  const secondaryChannels = insights.channelEmphasis.secondary.join(', ');
+  const avoidChannels = insights.channelEmphasis.avoid.join(', ');
+
+  const formatLines = insights.contentFormats
+    .map(f => `- ${f.format} [${f.priority}]: ${f.rationale}`)
+    .join('\n');
+
+  const { awareness, consideration, conversion, retention } = insights.funnelEmphasis;
+
+  return `
+
+## Strategic Framework for ${insights.label} Campaigns
+
+### Recommended KPIs
+${kpiLines}
+
+### Strategic Pitfalls to Avoid
+${pitfallLines}
+
+### Channel Emphasis
+Primary: ${primaryChannels}
+Secondary: ${secondaryChannels}
+Channels to avoid for this goal: ${avoidChannels}
+
+### Content Format Priorities
+${formatLines}
+
+### Timing Considerations
+${insights.timingConsiderations}
+
+### Funnel Allocation
+Awareness ${awareness}% / Consideration ${consideration}% / Conversion ${conversion}% / Retention ${retention}%`;
+}
+
 interface FullVariantPromptParams {
   brandContext: string;
   personaContext: string;
@@ -58,6 +109,7 @@ interface FullVariantPromptParams {
 export function buildFullVariantAPrompt(params: FullVariantPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
+  const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
   const system = `You are a senior brand strategist specializing in organic growth and thought leadership campaigns.
 
@@ -67,7 +119,7 @@ Academic frameworks to apply:
 - Percy & Elliott's campaign planning model (stimulus → processing → response)
 - Binet & Field's effectiveness data: ${ratio.brand}% brand building / ${ratio.activation}% activation
 - Christensen's Jobs-to-be-Done (JTBD) framework for audience framing
-- Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Pull strategies${goalContext}
+- Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Pull strategies${goalContext}${goalInsights}
 
 IMPORTANT: If a Creative Briefing is provided, use it as the primary strategic direction.
 
@@ -133,6 +185,7 @@ ${params.arenaContext}` : ''}`;
 export function buildFullVariantBPrompt(params: FullVariantPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
+  const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
   const system = `You are a performance marketing strategist specializing in conversion optimization and paid media campaigns.
 
@@ -142,7 +195,7 @@ Academic frameworks to apply:
 - Percy & Elliott's campaign planning model (stimulus → processing → response)
 - Binet & Field's effectiveness data: ${ratio.brand}% brand building / ${ratio.activation}% activation
 - Christensen's Jobs-to-be-Done (JTBD) framework for audience framing
-- Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Push and Profile strategies${goalContext}
+- Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Push and Profile strategies${goalContext}${goalInsights}
 
 IMPORTANT: If a Creative Briefing is provided, use it as the primary strategic direction.
 
@@ -217,10 +270,11 @@ export function buildPersonaValidatorPrompt(params: {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${params.goalGuidance}\nEvaluate how well each variant serves this specific goal type from each persona's perspective.`
     : '';
+  const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const system = `You are simulating target personas evaluating two complete campaign strategy variants.
 
-Your role: For EACH persona, roleplay as that person and evaluate both variant A (organic/thought leadership) and variant B (conversion/paid media). Each variant has its OWN strategic foundation AND campaign architecture.${goalContext}
+Your role: For EACH persona, roleplay as that person and evaluate both variant A (organic/thought leadership) and variant B (conversion/paid media). Each variant has its OWN strategic foundation AND campaign architecture.${goalContext}${goalInsights}
 
 Evaluation criteria per persona — ALL fields are MANDATORY:
 - overallScore: Score 1-10. Be honest and critical — avoid giving every persona the same score. Differentiate based on how well the strategy truly fits each persona's unique situation.
@@ -279,10 +333,11 @@ export function buildStrategySynthesizerPrompt(params: {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nEnsure the synthesized blueprint optimally serves this goal type.`
     : '';
+  const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const system = `You are a chief strategy officer performing the final synthesis of a campaign blueprint.
 
-Your task: Combine the BEST elements from variant A (organic) and variant B (paid/conversion) into ONE optimal campaign architecture, informed by persona feedback.${goalContext}
+Your task: Combine the BEST elements from variant A (organic) and variant B (paid/conversion) into ONE optimal campaign architecture, informed by persona feedback.${goalContext}${goalInsights}
 
 Synthesis rules:
 1. Select the strongest journey phases from either variant
@@ -393,10 +448,11 @@ export function buildChannelPlannerPrompt(params: {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nPrioritize channels that best serve this goal type.`
     : '';
+  const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const system = `You are a media strategist creating a channel and media plan.
 
-Framework: Google's Hero-Hub-Hygiene (HHH) model for channel role assignment.${goalContext}
+Framework: Google's Hero-Hub-Hygiene (HHH) model for channel role assignment.${goalContext}${goalInsights}
 
 Requirements:
 - channels: 4-8 channels with role (hero/hub/hygiene), objective, target personas, content mix
@@ -440,10 +496,11 @@ export function buildAssetPlannerPrompt(params: {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nSelect deliverable types that are most relevant for this goal type.`
     : '';
+  const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const system = `You are a content strategist creating a deliverable plan for a campaign.
 
-Your role: Based on the campaign strategy, architecture, and channel plan, define the specific content pieces (deliverables) that need to be produced.${goalContext}
+Your role: Based on the campaign strategy, architecture, and channel plan, define the specific content pieces (deliverables) that need to be produced.${goalContext}${goalInsights}
 
 Requirements per deliverable:
 - title: Descriptive title (e.g., "LinkedIn Thought Leadership Article — AI in Brand Strategy")
@@ -470,6 +527,13 @@ Also provide:
   - Every must-have deliverable should participate in at least one connection
   - Do NOT create circular chains (A→B→C→A)
   - Include a short "label" describing the relationship (e.g. "drives traffic to", "nurtures leads", "re-engages visitors")
+- prepDeliverables: An array of 2-5 preparation items that MUST be completed BEFORE the campaign launches (Week 0). These are NOT content pieces — they are internal setup, alignment, and planning documents. Each prep deliverable has:
+  - title: Clear action-oriented title (e.g. "Define Brand Voice Guidelines for Campaign")
+  - description: 1-2 sentences describing what needs to be prepared and why
+  - category: One of "campaign-brief", "brand-guidelines", "content-calendar", "audience-brief", "asset-checklist", "channel-setup", "stakeholder-alignment"
+  - owner: Role responsible (e.g. "Brand Manager", "Content Lead", "Strategy Team", "Design Lead")
+  - estimatedEffort: "low" (< 2h), "medium" (2-8h), "high" (> 8h)
+  Typical prep deliverables include: campaign brief finalization, brand/tone guidelines, content calendar setup, audience segment definitions, channel account setup, stakeholder alignment docs, asset templates, and approval workflows.
 
 Produce 8-15 deliverables that form a coherent content ecosystem covering awareness, consideration, conversion, and retention stages.
 

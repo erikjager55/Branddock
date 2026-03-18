@@ -10,6 +10,10 @@ import {
   FileText,
   ChevronDown,
   ChevronRight,
+  Palette,
+  BarChart3,
+  Megaphone,
+  TrendingUp,
 } from "lucide-react";
 import { Button, Badge } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
@@ -26,6 +30,8 @@ import type { PipelineStepConfig } from "./PipelineProgressView";
 import { VariantReviewView } from "./VariantReviewView";
 import { SynthesisReviewView } from "./SynthesisReviewView";
 import { compileStructuredFeedback } from "../../lib/compile-structured-feedback";
+import { getGoalTypeStrategicInsights } from "../../lib/goal-types";
+import type { GoalTypeStrategicInsights } from "../../lib/goal-types";
 
 /** Extract display text from a strategic choice (string or object) */
 function getChoiceText(choice: string | StrategicChoice): string {
@@ -108,6 +114,141 @@ function CollapsiblePreview({
   );
 }
 
+// ─── Are.na Enrichment Indicator ────────────────────────────
+
+function ArenaEnrichmentBadge({ totalBlocks, queriesUsed }: { totalBlocks: number; queriesUsed: string[] }) {
+  const [showQueries, setShowQueries] = React.useState(false);
+
+  return (
+    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-violet-50 border border-violet-200 rounded-full text-xs text-violet-700">
+      <Palette className="w-3.5 h-3.5" />
+      <span>{totalBlocks} cultural references from Are.na</span>
+      <button
+        type="button"
+        onClick={() => setShowQueries(!showQueries)}
+        className="ml-0.5 text-violet-400 hover:text-violet-600 transition-colors"
+        title="Show search queries"
+      >
+        {showQueries ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+      </button>
+      {showQueries && (
+        <span className="text-violet-500 ml-1">
+          {queriesUsed.map(q => `"${q}"`).join(", ")}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ─── Goal Insights Preview ──────────────────────────────────
+
+function GoalInsightsPreview({ insights }: { insights: GoalTypeStrategicInsights }) {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  const { awareness, consideration, conversion, retention } = insights.funnelEmphasis;
+  const funnelSegments = [
+    { label: 'Awareness', pct: awareness, color: 'bg-blue-400' },
+    { label: 'Consideration', pct: consideration, color: 'bg-amber-400' },
+    { label: 'Conversion', pct: conversion, color: 'bg-emerald-500' },
+    { label: 'Retention', pct: retention, color: 'bg-violet-400' },
+  ];
+
+  return (
+    <div className="border border-teal-200 rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 w-full px-4 py-3 bg-teal-50/50 hover:bg-teal-50 transition-colors text-left"
+      >
+        {isOpen ? (
+          <ChevronDown className="w-4 h-4 text-teal-500" />
+        ) : (
+          <ChevronRight className="w-4 h-4 text-teal-500" />
+        )}
+        <BarChart3 className="w-4 h-4 text-teal-600" />
+        <span className="text-sm font-medium text-teal-900">
+          Strategic Framework: {insights.label}
+        </span>
+      </button>
+      {isOpen && (
+        <div className="px-4 py-3 space-y-4">
+          {/* KPI pills */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+              Recommended KPIs
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {insights.recommendedKPIs.map((kpi) => (
+                <span
+                  key={kpi.name}
+                  className="inline-flex items-center px-2.5 py-1 bg-teal-50 border border-teal-200 rounded-full text-xs text-teal-700"
+                  title={`${kpi.description}${kpi.benchmark ? ` — Benchmark: ${kpi.benchmark}` : ''}`}
+                >
+                  <TrendingUp className="w-3 h-3 mr-1 text-teal-500" />
+                  {kpi.name}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Channel emphasis */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                Primary Channels
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {insights.channelEmphasis.primary.map((ch) => (
+                  <span key={ch} className="inline-flex items-center px-2 py-0.5 bg-emerald-50 border border-emerald-200 rounded text-xs text-emerald-700">
+                    <Megaphone className="w-3 h-3 mr-1 text-emerald-500" />
+                    {ch}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                Secondary Channels
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {insights.channelEmphasis.secondary.map((ch) => (
+                  <span key={ch} className="inline-flex items-center px-2 py-0.5 bg-gray-50 border border-gray-200 rounded text-xs text-gray-600">
+                    {ch}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Funnel allocation bar */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1.5">
+              Funnel Allocation
+            </p>
+            <div className="flex h-3 rounded-full overflow-hidden">
+              {funnelSegments.map((seg) => (
+                <div
+                  key={seg.label}
+                  className={`${seg.color} transition-all`}
+                  style={{ width: `${seg.pct}%` }}
+                  title={`${seg.label}: ${seg.pct}%`}
+                />
+              ))}
+            </div>
+            <div className="flex justify-between mt-1">
+              {funnelSegments.map((seg) => (
+                <span key={seg.label} className="text-[10px] text-muted-foreground">
+                  {seg.label} {seg.pct}%
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────
 
 export function StrategyStep() {
@@ -133,6 +274,9 @@ export function StrategyStep() {
   const synthesizedArchitecture = useCampaignWizardStore((s) => s.synthesizedArchitecture);
   const synthesisFeedback = useCampaignWizardStore((s) => s.synthesisFeedback);
   const blueprintResult = useCampaignWizardStore((s) => s.blueprintResult);
+  const arenaEnrichment = useCampaignWizardStore((s) => s.arenaEnrichment);
+  const enrichmentStatus = useCampaignWizardStore((s) => s.enrichmentStatus);
+  const enrichmentBlockCount = useCampaignWizardStore((s) => s.enrichmentBlockCount);
 
   // Briefing fields
   const briefingOccasion = useCampaignWizardStore((s) => s.briefingOccasion);
@@ -157,6 +301,11 @@ export function StrategyStep() {
       trendIds: selectedItems.filter((i) => i.sourceType === "detected_trend").map((i) => i.sourceId),
     };
   }, [knowledgeData, selectedKnowledgeIds]);
+
+  const goalInsights = useMemo(
+    () => (campaignGoalType ? getGoalTypeStrategicInsights(campaignGoalType) : null),
+    [campaignGoalType],
+  );
 
   const abortRef = useRef<{ abort: () => void } | null>(null);
   const generationIdRef = useRef(0);
@@ -210,6 +359,15 @@ export function StrategyStep() {
         if (generationIdRef.current !== currentGenId) return;
         const data = event as Record<string, unknown>;
 
+        // Enrichment events (Are.na creative inspiration)
+        if (data.type === "enrichment") {
+          useCampaignWizardStore.getState().setEnrichmentStatus(
+            data.status as 'running' | 'complete' | 'skipped',
+            { totalBlocks: (data.totalBlocks as number) ?? 0, queries: (data.queries as string[]) ?? [] },
+          );
+          return;
+        }
+
         if (data.type === "complete" && data.result) {
           const result = data.result as {
             strategyLayerA: import("@/lib/campaigns/strategy-blueprint.types").StrategyLayer;
@@ -219,6 +377,7 @@ export function StrategyStep() {
             personaValidation: import("@/lib/campaigns/strategy-blueprint.types").PersonaValidationResult[];
             variantAScore: number;
             variantBScore: number;
+            arenaEnrichment: import("@/lib/campaigns/strategy-blueprint.types").ArenaEnrichmentTracking | null;
           };
           const s = useCampaignWizardStore.getState();
           s.setVariantResults(result);
@@ -507,28 +666,39 @@ export function StrategyStep() {
   // Phase A: Generating variants
   if (strategyPhase === "generating_variants" && isGenerating) {
     return (
-      <PipelineProgressView
-        title="Generating Strategy Variants"
-        steps={PHASE_A_STEPS}
-        pipelineSteps={pipelineSteps}
-      />
+      <div className="space-y-4">
+        <PipelineProgressView
+          title="Generating Strategy Variants"
+          steps={PHASE_A_STEPS}
+          pipelineSteps={pipelineSteps}
+          enrichmentStatus={enrichmentStatus}
+          enrichmentBlockCount={enrichmentBlockCount}
+        />
+        {goalInsights && <GoalInsightsPreview insights={goalInsights} />}
+      </div>
     );
   }
 
   // Phase A result: Review variants
   if (strategyPhase === "review_variants" && strategyLayerA && strategyLayerB && variantA && variantB) {
     return (
-      <VariantReviewView
-        strategyLayerA={strategyLayerA}
-        strategyLayerB={strategyLayerB}
-        variantA={variantA}
-        variantB={variantB}
-        personaValidation={personaValidation ?? []}
-        variantAScore={variantAScore}
-        variantBScore={variantBScore}
-        onSynthesize={handleSynthesize}
-        errorMessage={phaseError}
-      />
+      <div className="space-y-3">
+        {goalInsights && <GoalInsightsPreview insights={goalInsights} />}
+        {arenaEnrichment && arenaEnrichment.totalBlocks > 0 && (
+          <ArenaEnrichmentBadge totalBlocks={arenaEnrichment.totalBlocks} queriesUsed={arenaEnrichment.queries} />
+        )}
+        <VariantReviewView
+          strategyLayerA={strategyLayerA}
+          strategyLayerB={strategyLayerB}
+          variantA={variantA}
+          variantB={variantB}
+          personaValidation={personaValidation ?? []}
+          variantAScore={variantAScore}
+          variantBScore={variantBScore}
+          onSynthesize={handleSynthesize}
+          errorMessage={phaseError}
+        />
+      </div>
     );
   }
 
@@ -577,6 +747,9 @@ export function StrategyStep() {
           <Button variant="ghost" size="sm" icon={Sparkles} onClick={handleRestart}>
             Start Over
           </Button>
+          {arenaEnrichment && arenaEnrichment.totalBlocks > 0 && (
+            <ArenaEnrichmentBadge totalBlocks={arenaEnrichment.totalBlocks} queriesUsed={arenaEnrichment.queries} />
+          )}
         </div>
 
         {/* Blueprint layer previews — 2 columns on large screens */}

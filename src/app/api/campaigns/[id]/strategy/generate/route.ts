@@ -117,9 +117,11 @@ export async function POST(
               personaIds: body.personaIds,
               strategicIntent: body.strategicIntent,
             },
-            (step: PipelineStep) => {
-              currentStep = step.step;
-              sendEvent(step);
+            (event: import('@/features/campaigns/types/campaign-wizard.types').PipelineEvent) => {
+              if ('step' in event) {
+                currentStep = event.step;
+              }
+              sendEvent(event);
             },
           );
 

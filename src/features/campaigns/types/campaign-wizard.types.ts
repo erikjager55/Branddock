@@ -14,6 +14,7 @@ export type {
   DeliverableBrief,
   StrategyPhase,
   VariantPhaseResult,
+  ArenaEnrichmentTracking,
   SynthesisPhaseResult,
   JourneyPhaseResult,
   SynthesizeStrategyBody,
@@ -137,3 +138,21 @@ export interface LegacyStrategyResponse {
 }
 
 export type StrategyResponse = BlueprintStrategyResponse | LegacyStrategyResponse;
+
+/**
+ * Enrichment event emitted during Are.na context fetching in the strategy pipeline.
+ * This is a separate event type that doesn't fit the normal PipelineStep structure.
+ */
+export type EnrichmentEvent = {
+  type: 'enrichment';
+  status: 'running' | 'complete' | 'skipped';
+  totalBlocks?: number;
+  queries?: string[];
+};
+
+/**
+ * Discriminated union of all pipeline events (normal steps + enrichment).
+ * This allows the strategy pipeline to emit both structured pipeline steps
+ * and enrichment-specific events without unsafe type casts.
+ */
+export type PipelineEvent = import('@/lib/campaigns/strategy-blueprint.types').PipelineStep | EnrichmentEvent;
