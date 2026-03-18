@@ -3,9 +3,11 @@
 import React, { useRef, useState, type DragEvent } from "react";
 import {
   ArrowRightLeft,
+  CheckCircle2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Loader2,
   Users,
   Zap,
 } from "lucide-react";
@@ -44,6 +46,12 @@ export const EFFORT_LABEL: Record<string, string> = {
   high: "High effort",
 };
 
+export const STATUS_STYLES: Record<string, { bg: string; text: string; border: string; icon: typeof CheckCircle2; label: string } | null> = {
+  COMPLETED: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: CheckCircle2, label: 'Completed' },
+  IN_PROGRESS: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', icon: Loader2, label: 'In Progress' },
+  NOT_STARTED: null,
+};
+
 // ─── Sub-components ─────────────────────────────────────────────
 
 /** Deliverable card with expand-on-click and drag support */
@@ -59,6 +67,7 @@ export function DeliverableCard({
   hasFlowConnection = false,
   beatIndex,
   dragData,
+  status,
 }: {
   deliverable: AssetPlanDeliverable;
   /** Channel label to display on the card */
@@ -79,11 +88,14 @@ export function DeliverableCard({
   beatIndex?: number;
   /** Drag data for drag & drop repositioning */
   dragData?: DeliverableCardDragData;
+  /** Deliverable status from DB */
+  status?: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
 }) {
   const [expanded, setExpanded] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const didDragRef = useRef(false);
   const priority = PRIORITY_STYLES[deliverable.productionPriority];
+  const statusStyle = status ? STATUS_STYLES[status] : null;
 
   const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
     if (!dragData) return;
@@ -113,7 +125,7 @@ export function DeliverableCard({
       onDragEnd={handleDragEnd}
       data-flow-id={beatIndex != null ? `${deliverable.title}::${beatIndex}` : undefined}
       className={`bg-white border rounded-lg shadow-sm text-xs hover:shadow transition-all ${
-        highlighted ? "border-blue-400 ring-2 ring-blue-400/50" : "border-gray-200"
+        highlighted ? "border-blue-400 ring-2 ring-blue-400/50" : status === 'COMPLETED' ? "border-emerald-200" : "border-gray-200"
       } ${dragData ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
       style={isDragging ? { opacity: 0.5 } : undefined}
       onClick={handleClick}
@@ -133,6 +145,12 @@ export function DeliverableCard({
         <div className="flex items-center gap-1 flex-shrink-0">
           {hasFlowConnection && (
             <ArrowRightLeft className="w-3 h-3 text-gray-400" aria-label="Has flow connections" />
+          )}
+          {statusStyle && (
+            <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border} text-[10px] font-medium`}>
+              <statusStyle.icon className={`w-2.5 h-2.5 ${status === 'IN_PROGRESS' ? 'animate-spin' : ''}`} />
+              {statusStyle.label}
+            </span>
           )}
           {channel && (
             <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-[10px] font-medium text-gray-600">

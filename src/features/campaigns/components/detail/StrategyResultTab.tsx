@@ -70,6 +70,19 @@ export function StrategyResultTab({
 }: StrategyResultTabProps) {
   const { activeStrategySubTab, setActiveStrategySubTab } = useCampaignStore();
 
+  // Build deliverable title → status map from DB deliverables (case-insensitive + trimmed)
+  const deliverableStatuses = React.useMemo(() => {
+    if (!deliverables?.length) return undefined;
+    const map = new Map<string, string>();
+    for (const d of deliverables) {
+      const key = d.title.trim().toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, d.status);
+      }
+    }
+    return map;
+  }, [deliverables]);
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -199,6 +212,7 @@ export function StrategyResultTab({
                 channelPlan={blueprint.channelPlan}
                 onBringToLife={onBringToLife}
                 campaignStartDate={campaignStartDate}
+                deliverableStatuses={deliverableStatuses}
               />
             </div>
           ) : (

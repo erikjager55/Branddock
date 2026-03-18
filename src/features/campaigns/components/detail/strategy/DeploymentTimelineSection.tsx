@@ -39,6 +39,18 @@ const ZOOM_MAX = 150;
 const ZOOM_STEP = 10;
 const ZOOM_DEFAULT = 100;
 
+/** Priority sort order for deliverables within a beat (must-have first) */
+const PRIORITY_ORDER: Record<string, number> = { 'must-have': 0, 'should-have': 1, 'nice-to-have': 2 };
+
+/** Validate and narrow a deliverable status string to the expected union type */
+function resolveDeliverableStatus(
+  statuses: Map<string, string> | undefined,
+  title: string,
+): 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | undefined {
+  const s = statuses?.get(title.trim().toLowerCase());
+  return s === 'NOT_STARTED' || s === 'IN_PROGRESS' || s === 'COMPLETED' ? s : undefined;
+}
+
 // ─── Helpers ────────────────────────────────────────────────────
 
 /** Format a date as short label, e.g. "Mar 7" */
@@ -63,6 +75,8 @@ interface DeploymentTimelineSectionProps {
   onBringToLife?: (deliverableTitle: string, contentType: string) => void;
   /** Optional campaign start date — enables week date labels in headers */
   campaignStartDate?: string | null;
+  /** Deliverable title → status lookup (from DB deliverables) */
+  deliverableStatuses?: Map<string, string>;
 }
 
 // ─── Sub-components ─────────────────────────────────────────────
@@ -298,6 +312,7 @@ export function DeploymentTimelineSection({
   channelPlan,
   onBringToLife,
   campaignStartDate,
+  deliverableStatuses,
 }: DeploymentTimelineSectionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -497,6 +512,7 @@ export function DeploymentTimelineSection({
   // Build deliverable cell lookup: weekIndex → items[] (flat, no channel dimension)
   // Applies any manual beat overrides from user repositioning.
   // Each item preserves its schedulerBeatIndex for stable keying.
+  // Items within each beat are sorted by priority (must-have first) then suggestedOrder.
   const cellLookup = useMemo(() => {
     const map = new Map<number, (ScheduledDeliverable & { schedulerBeatIndex: number })[]>();
     for (const s of schedule.scheduled) {
@@ -505,6 +521,15 @@ export function DeploymentTimelineSection({
       const adjusted = { ...s, beatIndex: beat, schedulerBeatIndex: s.beatIndex };
       if (!map.has(beat)) map.set(beat, []);
       map.get(beat)!.push(adjusted);
+    }
+    // Sort items within each beat by priority then suggestedOrder
+    for (const items of map.values()) {
+      items.sort((a, b) => {
+        const pa = PRIORITY_ORDER[a.deliverable.productionPriority] ?? 2;
+        const pb = PRIORITY_ORDER[b.deliverable.productionPriority] ?? 2;
+        if (pa !== pb) return pa - pb;
+        return (a.deliverable.suggestedOrder ?? 999) - (b.deliverable.suggestedOrder ?? 999);
+      });
     }
     return map;
   }, [schedule, beatOverrides]);
@@ -611,6 +636,17 @@ export function DeploymentTimelineSection({
   }, [effectiveResolvedConnections]);
 
   const hasFlowConnections = effectiveResolvedConnections.length > 0;
+
+  // Build deliverable title → targetPersonas lookup for persona-colored flow connections
+  const deliverablePersonaMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const s of schedule.scheduled) {
+      if (!map.has(s.deliverable.title)) {
+        map.set(s.deliverable.title, s.targetPersonas);
+      }
+    }
+    return map;
+  }, [schedule.scheduled]);
 
   const { totalBeats, phaseBoundaries } = schedule;
 
@@ -761,18 +797,20 @@ export function DeploymentTimelineSection({
                       {personaLanes.map((lane) => {
                         const hasContent = lane.beats.has(beatIdx);
                         const isInRange = beatIdx >= lane.firstBeat && beatIdx <= lane.lastBeat;
+                        const isSelectedPersona = selectedPersonaIds.size > 0 && selectedPersonaIds.has(lane.personaId);
+                        const isDimmed = selectedPersonaIds.size > 0 && !isSelectedPersona;
 
                         if (!isInRange) {
-                          return <div key={lane.personaId} className="h-[3px]" />;
+                          return <div key={lane.personaId} className="h-1" />;
                         }
 
                         return (
                           <div
                             key={lane.personaId}
-                            className="h-[3px] rounded-full transition-opacity"
+                            className="h-1 rounded-full transition-opacity"
                             style={{
                               backgroundColor: lane.color.activeHex,
-                              opacity: hasContent ? 1 : 0.15,
+                              opacity: isDimmed ? 0.08 : hasContent ? 1 : 0.15,
                             }}
                           />
                         );
@@ -832,6 +870,7 @@ export function DeploymentTimelineSection({
                               itemKey: getItemKey(item.deliverable, item.schedulerBeatIndex),
                               sourceBeat: beatIdx,
                             }}
+                            status={resolveDeliverableStatus(deliverableStatuses, item.deliverable.title)}
                           />
                         ))}
 
@@ -857,6 +896,9 @@ export function DeploymentTimelineSection({
               visible={showFlows}
               hiddenTitles={hiddenTitles}
               onHoverTitles={setHoveredFlowTitles}
+              personaColorMap={personaColorMap}
+              deliverablePersonaMap={deliverablePersonaMap}
+              personaNames={personaNames}
             />
           </div>
         </div>

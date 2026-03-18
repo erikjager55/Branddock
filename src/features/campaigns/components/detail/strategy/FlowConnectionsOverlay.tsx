@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useCallback, useLayoutEffect, useRef, useState } from "react";
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ResolvedFlowConnection } from "@/lib/campaigns/strategy-blueprint.types";
+import type { PersonaColorStyle } from "@/features/campaigns/lib/persona-colors";
 
 // ─── Constants ─────────────────────────────────────────────────
 
@@ -10,6 +11,9 @@ const CONNECTION_COLORS: Record<string, { stroke: string; fill: string; label: s
   amplifies: { stroke: "#60a5fa", fill: "#60a5fa", label: "Amplifies" }, // blue-400
   retargets: { stroke: "#fbbf24", fill: "#fbbf24", label: "Retargets" }, // amber-400
 };
+
+/** Default shared color for connections where both endpoints are shared */
+const SHARED_HEX = "#6b7280"; // gray-500
 
 const ARROW_SIZE = 6;
 const ARC_HEIGHT = 40;
@@ -28,6 +32,12 @@ interface FlowConnectionsOverlayProps {
   hiddenTitles: Set<string>;
   /** Callback when a connection is hovered (highlights connected cards) */
   onHoverTitles?: (titles: Set<string> | null) => void;
+  /** Persona color map (personaId → PersonaColorStyle) for persona-colored lines */
+  personaColorMap?: Map<string, PersonaColorStyle>;
+  /** Deliverable title → targetPersonas lookup for persona-colored lines */
+  deliverablePersonaMap?: Map<string, string[]>;
+  /** Persona name map (personaId → display name) for tooltip */
+  personaNames?: Map<string, string>;
 }
 
 interface PathRect {
@@ -87,6 +97,80 @@ function buildPath(from: PathRect, to: PathRect, sameBeat: boolean): string {
   return `M ${x1},${y1} Q ${midX},${arcY} ${x2},${y2}`;
 }
 
+/**
+ * Resolve the persona color for a connection edge.
+ * - Both endpoints share the same specific persona → that persona's activeHex
+ * - One side is shared (empty targetPersonas), other is persona-specific → specific persona's color
+ * - Both shared → SHARED_HEX
+ * - Multiple shared personas → first shared persona's color
+ */
+function resolveEdgeColor(
+  fromTitle: string,
+  toTitle: string,
+  deliverablePersonaMap: Map<string, string[]>,
+  personaColorMap: Map<string, PersonaColorStyle>,
+): string {
+  const fromPersonas = deliverablePersonaMap.get(fromTitle) ?? [];
+  const toPersonas = deliverablePersonaMap.get(toTitle) ?? [];
+
+  const fromIsShared = fromPersonas.length === 0;
+  const toIsShared = toPersonas.length === 0;
+
+  // Both shared → gray
+  if (fromIsShared && toIsShared) return SHARED_HEX;
+
+  // One shared, one specific → use the specific persona's color
+  if (fromIsShared && !toIsShared) {
+    return personaColorMap.get(toPersonas[0])?.activeHex ?? SHARED_HEX;
+  }
+  if (toIsShared && !fromIsShared) {
+    return personaColorMap.get(fromPersonas[0])?.activeHex ?? SHARED_HEX;
+  }
+
+  // Both specific — find shared personas between them
+  const sharedPersonas = fromPersonas.filter((p) => toPersonas.includes(p));
+  if (sharedPersonas.length > 0) {
+    return personaColorMap.get(sharedPersonas[0])?.activeHex ?? SHARED_HEX;
+  }
+
+  // No overlap — use the from persona's color
+  return personaColorMap.get(fromPersonas[0])?.activeHex ?? SHARED_HEX;
+}
+
+/** Resolve persona name(s) for a connection tooltip */
+function resolveEdgePersonaLabel(
+  fromTitle: string,
+  toTitle: string,
+  deliverablePersonaMap: Map<string, string[]>,
+  personaNames: Map<string, string>,
+): string | null {
+  const fromPersonas = deliverablePersonaMap.get(fromTitle) ?? [];
+  const toPersonas = deliverablePersonaMap.get(toTitle) ?? [];
+
+  const fromIsShared = fromPersonas.length === 0;
+  const toIsShared = toPersonas.length === 0;
+
+  if (fromIsShared && toIsShared) return null;
+
+  // Determine which persona(s) to show
+  let relevantIds: string[];
+  if (fromIsShared) {
+    relevantIds = toPersonas;
+  } else if (toIsShared) {
+    relevantIds = fromPersonas;
+  } else {
+    const shared = fromPersonas.filter((p) => toPersonas.includes(p));
+    relevantIds = shared.length > 0 ? shared : fromPersonas;
+  }
+
+  const names = relevantIds
+    .map((id) => personaNames.get(id))
+    .filter(Boolean)
+    .slice(0, 2);
+
+  return names.length > 0 ? names.join(", ") : null;
+}
+
 // ─── Component ─────────────────────────────────────────────────
 
 export function FlowConnectionsOverlay({
@@ -96,11 +180,16 @@ export function FlowConnectionsOverlay({
   visible,
   hiddenTitles,
   onHoverTitles,
+  personaColorMap,
+  deliverablePersonaMap,
+  personaNames,
 }: FlowConnectionsOverlayProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [paths, setPaths] = useState<ComputedPath[]>([]);
   const [svgSize, setSvgSize] = useState({ width: 0, height: 0 });
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  const usePersonaColors = !!personaColorMap && !!deliverablePersonaMap;
 
   const computePaths = useCallback(() => {
     const gridEl = gridRef.current;
@@ -168,6 +257,28 @@ export function FlowConnectionsOverlay({
     };
   }, [computePaths, gridRef]);
 
+  // Pre-compute per-edge colors and marker IDs for persona-colored mode
+  const edgeColors = useMemo(() => {
+    if (!usePersonaColors || !deliverablePersonaMap || !personaColorMap) return null;
+    const colorMap = new Map<number, string>();
+    paths.forEach((item, idx) => {
+      const hex = resolveEdgeColor(
+        item.connection.fromTitle,
+        item.connection.toTitle,
+        deliverablePersonaMap,
+        personaColorMap,
+      );
+      colorMap.set(idx, hex);
+    });
+    return colorMap;
+  }, [paths, usePersonaColors, deliverablePersonaMap, personaColorMap]);
+
+  // Collect unique edge colors for dynamic markers
+  const uniqueEdgeHexes = useMemo(() => {
+    if (!edgeColors) return [];
+    return Array.from(new Set(edgeColors.values()));
+  }, [edgeColors]);
+
   if (!visible || paths.length === 0) return null;
 
   return (
@@ -178,7 +289,7 @@ export function FlowConnectionsOverlay({
       height={svgSize.height}
       style={{ overflow: "visible" }}
     >
-      {/* Arrow markers */}
+      {/* Arrow markers — per connection type (fallback) + per unique persona color */}
       <defs>
         {Object.entries(CONNECTION_COLORS).map(([type, colors]) => (
           <marker
@@ -197,13 +308,48 @@ export function FlowConnectionsOverlay({
             />
           </marker>
         ))}
+        {/* Dynamic persona-colored markers */}
+        {uniqueEdgeHexes.map((hex) => (
+          <marker
+            key={`persona-${hex}`}
+            id={`arrow-persona-${hex.replace('#', '')}`}
+            markerWidth={ARROW_SIZE}
+            markerHeight={ARROW_SIZE}
+            refX={ARROW_SIZE}
+            refY={ARROW_SIZE / 2}
+            orient="auto"
+            markerUnits="strokeWidth"
+          >
+            <path
+              d={`M 0 0 L ${ARROW_SIZE} ${ARROW_SIZE / 2} L 0 ${ARROW_SIZE} Z`}
+              fill={hex}
+            />
+          </marker>
+        ))}
       </defs>
 
       {/* Connection paths */}
       {paths.map((item, idx) => {
-        const colors = CONNECTION_COLORS[item.connection.connectionType] ?? CONNECTION_COLORS.sequence;
+        const fallbackColors = CONNECTION_COLORS[item.connection.connectionType] ?? CONNECTION_COLORS.sequence;
         const isHovered = hoveredIdx === idx;
         const isDashed = item.connection.connectionType === "retargets";
+
+        // Resolve stroke color: persona-colored or fallback to connection type
+        const edgeHex = edgeColors?.get(idx);
+        const strokeColor = edgeHex ?? fallbackColors.stroke;
+        const markerId = edgeHex
+          ? `arrow-persona-${edgeHex.replace('#', '')}`
+          : `arrow-${item.connection.connectionType}`;
+
+        // Persona name for tooltip
+        const personaLabel = deliverablePersonaMap && personaNames
+          ? resolveEdgePersonaLabel(
+              item.connection.fromTitle,
+              item.connection.toTitle,
+              deliverablePersonaMap,
+              personaNames,
+            )
+          : null;
 
         return (
           <g key={`flow-${idx}`}>
@@ -228,10 +374,10 @@ export function FlowConnectionsOverlay({
             <path
               d={item.d}
               fill="none"
-              stroke={colors.stroke}
+              stroke={strokeColor}
               strokeWidth={isHovered ? 2.5 : 1.5}
               strokeDasharray={isDashed ? "6,4" : undefined}
-              markerEnd={`url(#arrow-${item.connection.connectionType})`}
+              markerEnd={`url(#${markerId})`}
               opacity={isHovered ? 1 : 0.6}
               className="transition-opacity"
             />
@@ -240,24 +386,27 @@ export function FlowConnectionsOverlay({
             {isHovered && (
               <foreignObject
                 x={Math.min(item.fromRect.x, item.toRect.x) + Math.abs(item.toRect.x - item.fromRect.x) / 2 - 100}
-                y={Math.min(item.fromRect.y, item.toRect.y) - ARC_HEIGHT - 36}
+                y={Math.min(item.fromRect.y, item.toRect.y) - ARC_HEIGHT - (personaLabel ? 48 : 36)}
                 width={200}
-                height={36}
+                height={personaLabel ? 48 : 36}
                 className="pointer-events-none"
               >
                 <div className="bg-gray-900 text-white text-[10px] rounded-md px-2.5 py-1.5 text-center shadow-lg whitespace-nowrap overflow-hidden text-ellipsis">
                   <span className="font-medium">{item.connection.fromTitle}</span>
-                  <span className="text-gray-400 mx-1">→</span>
+                  <span className="text-gray-400 mx-1">&rarr;</span>
                   <span className="font-medium">{item.connection.toTitle}</span>
                   {item.connection.label && (
                     <span className="block text-gray-400 mt-0.5">{item.connection.label}</span>
                   )}
                   <span
                     className="inline-block ml-1 px-1 py-0 rounded text-[9px] font-medium"
-                    style={{ backgroundColor: colors.fill, color: "#fff" }}
+                    style={{ backgroundColor: strokeColor, color: "#fff" }}
                   >
-                    {colors.label}
+                    {fallbackColors.label}
                   </span>
+                  {personaLabel && (
+                    <span className="block text-gray-300 mt-0.5 text-[9px]">{personaLabel}</span>
+                  )}
                 </div>
               </foreignObject>
             )}
