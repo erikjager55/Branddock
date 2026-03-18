@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { ArrowLeft, Megaphone, Zap } from "lucide-react";
 import { Badge, Button, Modal, Input, Select } from "@/components/shared";
 import { DELIVERABLE_TYPES } from "../../lib/deliverable-types";
+import { deriveBriefFromBlueprint } from "../../lib/derive-brief";
 import { PageShell } from "@/components/ui/layout";
 import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
 import { useLockState } from "@/hooks/useLockState";
@@ -106,6 +107,14 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
     return Array.from(personas.entries()).map(([id, name]) => ({ id, name }));
   }, [blueprint]);
 
+  // Derive brief fields from blueprint when modal context changes
+  const derivedBrief = useMemo(
+    () => deriveBriefFromBlueprint(blueprint, addContentType, addPhase, addChannel),
+    [blueprint, addContentType, addPhase, addChannel],
+  );
+
+  const hasDerivedBrief = !!(derivedBrief.keyMessage || derivedBrief.toneDirection || derivedBrief.callToAction || derivedBrief.contentOutline.length > 0);
+
   const contentTypeOptions = useMemo(() => {
     const groups = new Map<string, { value: string; label: string }[]>();
     for (const dt of DELIVERABLE_TYPES) {
@@ -137,7 +146,14 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
       if (addChannel) settings.channel = addChannel;
       if (addTargetPersonas.length > 0) settings.targetPersonas = addTargetPersonas;
       if (addPriority) settings.productionPriority = addPriority as 'must-have' | 'should-have' | 'nice-to-have';
-      if (addObjective.trim()) settings.brief = { objective: addObjective.trim() };
+      // Merge user objective with derived brief fields
+      const briefFields: NonNullable<typeof settings.brief> = {};
+      if (addObjective.trim()) briefFields.objective = addObjective.trim();
+      if (derivedBrief.keyMessage) briefFields.keyMessage = derivedBrief.keyMessage;
+      if (derivedBrief.toneDirection) briefFields.toneDirection = derivedBrief.toneDirection;
+      if (derivedBrief.callToAction) briefFields.callToAction = derivedBrief.callToAction;
+      if (derivedBrief.contentOutline.length > 0) briefFields.contentOutline = derivedBrief.contentOutline;
+      if (Object.keys(briefFields).length > 0) settings.brief = briefFields;
 
       await addDeliverable.mutateAsync({
         title: addTitle.trim(),
@@ -464,6 +480,41 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
                   placeholder="Brief description of the deliverable's objective..."
                 />
               </div>
+
+              {/* Derived brief preview */}
+              {hasDerivedBrief && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 space-y-2">
+                  <p className="text-xs font-medium text-emerald-700 uppercase tracking-wider">Derived from campaign strategy</p>
+                  {derivedBrief.keyMessage && (
+                    <div>
+                      <span className="text-xs font-medium text-gray-500">Key Message</span>
+                      <p className="text-sm text-gray-800">{derivedBrief.keyMessage}</p>
+                    </div>
+                  )}
+                  {derivedBrief.toneDirection && (
+                    <div>
+                      <span className="text-xs font-medium text-gray-500">Tone</span>
+                      <p className="text-sm text-gray-800">{derivedBrief.toneDirection}</p>
+                    </div>
+                  )}
+                  {derivedBrief.callToAction && (
+                    <div>
+                      <span className="text-xs font-medium text-gray-500">Call to Action</span>
+                      <p className="text-sm text-gray-800">{derivedBrief.callToAction}</p>
+                    </div>
+                  )}
+                  {derivedBrief.contentOutline.length > 0 && (
+                    <div>
+                      <span className="text-xs font-medium text-gray-500">Content Outline</span>
+                      <ul className="text-sm text-gray-800 list-disc list-inside mt-0.5">
+                        {derivedBrief.contentOutline.map((item, i) => (
+                          <li key={i}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

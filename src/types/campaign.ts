@@ -175,7 +175,13 @@ export interface CreateDeliverableBody {
     channel?: string;
     targetPersonas?: string[];
     productionPriority?: 'must-have' | 'should-have' | 'nice-to-have';
-    brief?: { objective?: string };
+    brief?: {
+      objective?: string;
+      keyMessage?: string;
+      toneDirection?: string;
+      callToAction?: string;
+      contentOutline?: string[];
+    };
   };
 }
 

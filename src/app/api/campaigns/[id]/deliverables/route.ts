@@ -65,6 +65,10 @@ const createDeliverableSchema = z.object({
     productionPriority: z.enum(['must-have', 'should-have', 'nice-to-have']).optional(),
     brief: z.object({
       objective: z.string().max(2000).optional(),
+      keyMessage: z.string().max(2000).optional(),
+      toneDirection: z.string().max(2000).optional(),
+      callToAction: z.string().max(2000).optional(),
+      contentOutline: z.array(z.string()).optional(),
     }).optional(),
   }).optional(),
 });
