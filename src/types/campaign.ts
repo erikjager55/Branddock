@@ -170,6 +170,13 @@ export interface ConvertToCampaignBody {
 export interface CreateDeliverableBody {
   title: string;
   contentType: string;
+  settings?: {
+    phase?: string;
+    channel?: string;
+    targetPersonas?: string[];
+    productionPriority?: 'must-have' | 'should-have' | 'nice-to-have';
+    brief?: { objective?: string };
+  };
 }
 
 export interface UpdateDeliverableBody {

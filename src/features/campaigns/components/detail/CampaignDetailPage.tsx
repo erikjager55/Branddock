@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { ArrowLeft, Megaphone, Zap } from "lucide-react";
-import { Badge, Button } from "@/components/shared";
+import { Badge, Button, Modal, Input, Select } from "@/components/shared";
+import { DELIVERABLE_TYPES } from "../../lib/deliverable-types";
 import { PageShell } from "@/components/ui/layout";
 import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
 import { useLockState } from "@/hooks/useLockState";
@@ -16,10 +17,17 @@ import {
   useDeliverables,
   useAddDeliverable,
 } from "../../hooks";
+import { useCampaignStore } from "../../stores/useCampaignStore";
 import { StrategyResultTab } from "./StrategyResultTab";
 import { DeliverablesTab } from "./DeliverablesTab";
 import type { BlueprintStrategyResponse, KnowledgeAssetResponse } from "@/types/campaign";
 import type { CampaignBlueprint } from "@/lib/campaigns/strategy-blueprint.types";
+
+const PRIORITY_OPTIONS = [
+  { value: 'must-have', label: 'Must Have' },
+  { value: 'should-have', label: 'Should Have' },
+  { value: 'nice-to-have', label: 'Nice to Have' },
+];
 
 interface CampaignDetailPageProps {
   campaignId: string;
@@ -49,15 +57,101 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
   const { data: deliverables } = useDeliverables(campaignId);
   const generateStrategy = useGenerateCampaignStrategy(campaignId);
   const addDeliverable = useAddDeliverable(campaignId);
+  const activeSubTab = useCampaignStore((s) => s.activeStrategySubTab);
+
+  // ── Add deliverable modal ──────────────────────────────────
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addTitle, setAddTitle] = useState("");
+  const [addContentType, setAddContentType] = useState<string | null>(null);
+  const [addPhase, setAddPhase] = useState<string | null>(null);
+  const [addChannel, setAddChannel] = useState<string | null>(null);
+  const [addTargetPersonas, setAddTargetPersonas] = useState<string[]>([]);
+  const [addPriority, setAddPriority] = useState<string | null>(null);
+  const [addObjective, setAddObjective] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
+  const [bringToLifeError, setBringToLifeError] = useState<string | null>(null);
+
+  // Extract blueprint for dropdown options
+  const blueprint: CampaignBlueprint | null = useMemo(() => {
+    if (strategy && 'format' in strategy && strategy.format === 'blueprint') {
+      return (strategy as BlueprintStrategyResponse).blueprint;
+    }
+    return null;
+  }, [strategy]);
+
+  const phaseOptions = useMemo(() =>
+    (blueprint?.architecture?.journeyPhases ?? []).map((p) => ({
+      value: p.name,
+      label: p.name,
+    })),
+  [blueprint]);
+
+  const channelOptions = useMemo(() => {
+    const channels = new Set<string>();
+    for (const ch of blueprint?.channelPlan?.channels ?? []) {
+      if (ch.name) channels.add(ch.name);
+    }
+    return Array.from(channels).map((c) => ({ value: c, label: c }));
+  }, [blueprint]);
+
+  const personaOptions = useMemo(() => {
+    const personas = new Map<string, string>();
+    for (const phase of blueprint?.architecture?.journeyPhases ?? []) {
+      for (const ppd of phase.personaPhaseData ?? []) {
+        if (ppd.personaId && ppd.personaName) {
+          personas.set(ppd.personaId, ppd.personaName);
+        }
+      }
+    }
+    return Array.from(personas.entries()).map(([id, name]) => ({ id, name }));
+  }, [blueprint]);
+
+  const contentTypeOptions = useMemo(() => {
+    const groups = new Map<string, { value: string; label: string }[]>();
+    for (const dt of DELIVERABLE_TYPES) {
+      if (!groups.has(dt.category)) groups.set(dt.category, []);
+      groups.get(dt.category)!.push({ value: dt.id, label: dt.name });
+    }
+    return Array.from(groups.entries()).map(([label, options]) => ({ label, options }));
+  }, []);
+
+  const resetAddModal = () => {
+    setShowAddModal(false);
+    setAddTitle("");
+    setAddContentType(null);
+    setAddPhase(null);
+    setAddChannel(null);
+    setAddTargetPersonas([]);
+    setAddPriority(null);
+    setAddObjective("");
+    setAddError(null);
+  };
+
+  const handleAddDeliverable = async () => {
+    if (!addTitle.trim() || !addContentType || addDeliverable.isPending) return;
+    setAddError(null);
+    try {
+      // Build settings from optional fields, omit empty values
+      const settings: NonNullable<import('@/types/campaign').CreateDeliverableBody['settings']> = {};
+      if (addPhase) settings.phase = addPhase;
+      if (addChannel) settings.channel = addChannel;
+      if (addTargetPersonas.length > 0) settings.targetPersonas = addTargetPersonas;
+      if (addPriority) settings.productionPriority = addPriority as 'must-have' | 'should-have' | 'nice-to-have';
+      if (addObjective.trim()) settings.brief = { objective: addObjective.trim() };
+
+      await addDeliverable.mutateAsync({
+        title: addTitle.trim(),
+        contentType: addContentType,
+        ...(Object.keys(settings).length > 0 ? { settings } : {}),
+      });
+      resetAddModal();
+    } catch (err) {
+      setAddError(err instanceof Error ? err.message : "Failed to add deliverable");
+    }
+  };
 
   /** Warm handover: set campaign context in Content Studio store before navigation */
   const handleOpenInStudio = (cId: string, did: string) => {
-    // Extract blueprint if strategy is in blueprint format
-    let blueprint: CampaignBlueprint | null = null;
-    if (strategy && 'format' in strategy && strategy.format === 'blueprint') {
-      blueprint = (strategy as BlueprintStrategyResponse).blueprint;
-    }
-
     // Find matching deliverable brief from asset plan
     const deliverableBrief = blueprint?.assetPlan?.deliverables?.find(
       (d) => d.title === deliverables?.find((del) => del.id === did)?.title
@@ -76,7 +170,6 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
   };
 
   /** "Bring to Life" from Campaign Timeline: create deliverable → set context → navigate to studio */
-  const [bringToLifeError, setBringToLifeError] = React.useState<string | null>(null);
   const handleBringToLife = async (deliverableTitle: string, contentType: string) => {
     setBringToLifeError(null);
     try {
@@ -84,12 +177,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
       if (result?.id) {
         // Pass deliverableTitle directly for brief matching — avoids stale deliverables cache
         // since the newly created deliverable may not yet be in the TanStack cache
-        let bpBlueprint: CampaignBlueprint | null = null;
-        if (strategy && 'format' in strategy && strategy.format === 'blueprint') {
-          bpBlueprint = (strategy as BlueprintStrategyResponse).blueprint;
-        }
-
-        const matchedBrief = bpBlueprint?.assetPlan?.deliverables?.find(
+        const matchedBrief = blueprint?.assetPlan?.deliverables?.find(
           (d) => d.title === deliverableTitle
         )?.brief ?? null;
 
@@ -98,7 +186,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
           campaignName: campaign?.title ?? '',
           campaignGoalType: campaign?.campaignGoalType ?? null,
           campaignKnowledgeAssetIds: (assets ?? []).map((a) => a.id),
-          campaignBlueprint: bpBlueprint,
+          campaignBlueprint: blueprint,
           deliverableBrief: matchedBrief,
         });
 
@@ -212,20 +300,21 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
                   onGenerate={() => generateStrategy.mutate()}
                   isGenerating={generateStrategy.isPending}
                   onBringToLife={onOpenInStudio ? handleBringToLife : undefined}
+                  onAddDeliverable={() => setShowAddModal(true)}
                   campaignStartDate={campaign?.startDate}
                 />
               )}
-              <DeliverablesTab
-                deliverables={deliverables || campaign.deliverables || []}
-                onAddDeliverable={() => alert("Add deliverable coming in S6.B")}
-                onOpenInStudio={visibility.showAITools ? (did) => handleOpenInStudio(campaignId, did) : undefined}
-              />
+              {activeSubTab === "timeline" && (
+                <DeliverablesTab
+                  deliverables={deliverables || campaign.deliverables || []}
+                  onOpenInStudio={visibility.showAITools ? (did) => handleOpenInStudio(campaignId, did) : undefined}
+                />
+              )}
             </div>
           ) : (
             /* Quick Content shows deliverables directly */
             <DeliverablesTab
               deliverables={deliverables || campaign.deliverables || []}
-              onAddDeliverable={() => alert("Add deliverable coming in S6.B")}
               onOpenInStudio={visibility.showAITools ? (did) => handleOpenInStudio(campaignId, did) : undefined}
             />
           )}
@@ -240,6 +329,139 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
         onConfirm={lock.confirmToggle}
         onCancel={lock.cancelToggle}
       />
+
+      {/* Add Deliverable Modal */}
+      <Modal
+        isOpen={showAddModal}
+        onClose={resetAddModal}
+        title="Add Deliverable"
+        size="md"
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={resetAddModal}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddDeliverable}
+              disabled={!addTitle.trim() || !addContentType || addDeliverable.isPending}
+              isLoading={addDeliverable.isPending}
+            >
+              Add
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-5">
+          {/* ── Basics ── */}
+          <div>
+            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Basics</h4>
+            <div className="space-y-4">
+              <Input
+                label="Title"
+                value={addTitle}
+                onChange={(e) => setAddTitle(e.target.value)}
+                placeholder="e.g. Instagram Carousel — Brand Launch"
+                required
+              />
+              <Select
+                label="Content Type"
+                value={addContentType}
+                onChange={setAddContentType}
+                groups={contentTypeOptions}
+                placeholder="Select content type..."
+                required
+              />
+            </div>
+          </div>
+
+          {/* ── Context (optional) ── */}
+          <div>
+            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Context (optional)</h4>
+            {!blueprint && (
+              <p className="text-xs text-gray-400 mb-3">Generate a campaign strategy to populate phase and channel options.</p>
+            )}
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <Select
+                  label="Phase"
+                  value={addPhase}
+                  onChange={setAddPhase}
+                  options={phaseOptions}
+                  placeholder={phaseOptions.length > 0 ? "Select phase..." : "No phases available"}
+                  disabled={phaseOptions.length === 0}
+                  allowClear
+                />
+                <Select
+                  label="Channel"
+                  value={addChannel}
+                  onChange={setAddChannel}
+                  options={channelOptions}
+                  placeholder={channelOptions.length > 0 ? "Select channel..." : "No channels available"}
+                  disabled={channelOptions.length === 0}
+                  allowClear
+                />
+              </div>
+
+              {/* Target Personas — checkbox list */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Target Personas</label>
+                {personaOptions.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {personaOptions.map((p) => (
+                      <label key={p.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                          checked={addTargetPersonas.includes(p.name)}
+                          onChange={(e) => {
+                            setAddTargetPersonas((prev) =>
+                              e.target.checked
+                                ? [...prev, p.name]
+                                : prev.filter((n) => n !== p.name)
+                            );
+                          }}
+                        />
+                        {p.name}
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400">No personas available — generate a strategy first.</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Select
+                  label="Priority"
+                  value={addPriority}
+                  onChange={setAddPriority}
+                  options={PRIORITY_OPTIONS}
+                  placeholder="Select priority..."
+                  allowClear
+                />
+                <div /> {/* spacer for grid alignment */}
+              </div>
+
+              <div>
+                <label htmlFor="add-deliverable-objective" className="block text-sm font-medium text-gray-700 mb-1">Objective</label>
+                <textarea
+                  id="add-deliverable-objective"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none"
+                  rows={2}
+                  maxLength={2000}
+                  value={addObjective}
+                  onChange={(e) => setAddObjective(e.target.value)}
+                  placeholder="Brief description of the deliverable's objective..."
+                />
+              </div>
+            </div>
+          </div>
+
+          {addError && (
+            <p className="text-sm text-red-600" role="alert">{addError}</p>
+          )}
+        </div>
+      </Modal>
     </PageShell>
   );
 }

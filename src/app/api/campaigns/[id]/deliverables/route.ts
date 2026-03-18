@@ -56,8 +56,17 @@ export async function GET(
 // POST /api/campaigns/[id]/deliverables — Add deliverable
 // ---------------------------------------------------------------------------
 const createDeliverableSchema = z.object({
-  title: z.string().min(1, "title is required"),
+  title: z.string().trim().min(1, "title is required").max(200),
   contentType: z.string().min(1, "contentType is required"),
+  settings: z.object({
+    phase: z.string().optional(),
+    channel: z.string().optional(),
+    targetPersonas: z.array(z.string()).optional(),
+    productionPriority: z.enum(['must-have', 'should-have', 'nice-to-have']).optional(),
+    brief: z.object({
+      objective: z.string().max(2000).optional(),
+    }).optional(),
+  }).optional(),
 });
 
 export async function POST(
@@ -98,6 +107,7 @@ export async function POST(
         status: "NOT_STARTED",
         progress: 0,
         campaignId: id,
+        ...(parsed.data.settings ? { settings: parsed.data.settings } : {}),
       },
     });
 
