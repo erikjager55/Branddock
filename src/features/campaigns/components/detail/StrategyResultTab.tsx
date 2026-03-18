@@ -8,12 +8,11 @@ import {
   Share2,
   FileText,
   Lightbulb,
+  CalendarDays,
 } from "lucide-react";
-import { Badge, EmptyState } from "@/components/shared";
+import { Badge, EmptyState, StatCard } from "@/components/shared";
 import { useCampaignStore } from "../../stores/useCampaignStore";
-import { BlueprintOverviewSection } from "./strategy/BlueprintOverviewSection";
 import { StrategySection } from "./strategy/StrategySection";
-import { JourneyMatrixSection } from "./strategy/JourneyMatrixSection";
 import { ChannelPlanSection } from "./strategy/ChannelPlanSection";
 import { DeploymentTimelineSection } from "./strategy/DeploymentTimelineSection";
 import { RegenerateSectionButton } from "./strategy/RegenerateSectionButton";
@@ -32,7 +31,16 @@ interface StrategyResultTabProps {
   isGenerating: boolean;
   /** Called when user clicks "Bring to Life" on an asset plan deliverable */
   onBringToLife?: (deliverableTitle: string, contentType: string) => void;
+  /** Optional campaign start date — enables week date labels in the timeline */
+  campaignStartDate?: string | null;
 }
+
+// Blueprint tabs (3 tabs: Timeline, Campaign Strategy, Channel & Media)
+const BLUEPRINT_TABS = [
+  { id: "timeline" as const, label: "Campaign Timeline", icon: CalendarDays },
+  { id: "strategy" as const, label: "Campaign Strategy", icon: Target },
+  { id: "channel-plan" as const, label: "Channel & Media", icon: Share2 },
+];
 
 // Legacy sub-tabs (backward compat)
 const LEGACY_SUB_TABS = [
@@ -42,7 +50,7 @@ const LEGACY_SUB_TABS = [
   { id: "deliverables" as const, label: "Deliverables", icon: FileText },
 ];
 
-/** Strategy result with overview stats at top, then Journey → Strategy → Channel Plan sections */
+/** Strategy result with summary stats at top, then Timeline / Strategy / Channel Plan tabs */
 export function StrategyResultTab({
   strategy,
   campaignId,
@@ -50,6 +58,7 @@ export function StrategyResultTab({
   onGenerate,
   isGenerating,
   onBringToLife,
+  campaignStartDate,
 }: StrategyResultTabProps) {
   const { activeStrategySubTab, setActiveStrategySubTab } = useCampaignStore();
 
@@ -75,68 +84,119 @@ export function StrategyResultTab({
     );
   }
 
-  // ─── Blueprint format — single page layout (no tabs) ──────
+  // ─── Blueprint format — tabbed layout ──────────────────────
   if (!isLegacyStrategy(strategy)) {
     const { blueprint } = strategy;
 
+    // Ensure we're on a valid blueprint tab
+    const validBlueprintIds = BLUEPRINT_TABS.map((t) => t.id);
+    const currentTab = validBlueprintIds.includes(activeStrategySubTab as typeof validBlueprintIds[number])
+      ? (activeStrategySubTab as typeof validBlueprintIds[number])
+      : "timeline";
+
+    const phaseCount = blueprint.architecture?.journeyPhases?.length ?? 0;
+    const touchpointCount = (blueprint.architecture?.journeyPhases ?? []).reduce(
+      (sum: number, p: { touchpoints?: unknown[] }) => sum + (p.touchpoints?.length ?? 0), 0
+    );
+    const channelCount = blueprint.channelPlan?.channels?.length ?? 0;
+    const deliverableCount = blueprint.assetPlan?.totalDeliverables ?? 0;
+
     return (
       <div className="space-y-6">
-        {/* Overview stats — always visible at top */}
-        <BlueprintOverviewSection blueprint={blueprint} />
+        {/* Stats */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard label="Journey Phases" value={phaseCount} icon={Target} />
+          <StatCard label="Touchpoints" value={touchpointCount} icon={Share2} />
+          <StatCard label="Channels" value={channelCount} icon={Share2} />
+          <StatCard label="Deliverables" value={deliverableCount} icon={FileText} />
+        </div>
 
-        {/* Journey Map */}
-        {blueprint.architecture && blueprint.assetPlan && blueprint.channelPlan && (
-          <div className="bg-white rounded-lg border p-4 space-y-4">
-            <div className="flex items-center justify-between px-2">
-              <h3 className="text-lg font-semibold text-gray-900">Journey Map</h3>
-              <div className="flex items-center gap-2">
-                <RegenerateSectionButton campaignId={campaignId} layer="architecture" label="Regenerate Journey" />
-                <RegenerateSectionButton campaignId={campaignId} layer="assetPlan" label="Regenerate Assets" />
+        {/* Tab navigation */}
+        <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
+          {BLUEPRINT_TABS.map((tab) => {
+            const TabIcon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveStrategySubTab(tab.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  currentTab === tab.id
+                    ? "bg-white text-gray-900 shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <TabIcon className="h-3.5 w-3.5" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Campaign Timeline tab */}
+        {currentTab === "timeline" && (
+          blueprint.assetPlan && blueprint.architecture && blueprint.channelPlan ? (
+            <div className="bg-white rounded-lg border p-4 space-y-4">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="text-lg font-semibold text-gray-900">Campaign Timeline</h3>
+                <div className="flex items-center gap-2">
+                  <RegenerateSectionButton campaignId={campaignId} layer="architecture" label="Regenerate Journey" />
+                  <RegenerateSectionButton campaignId={campaignId} layer="assetPlan" label="Regenerate Assets" />
+                </div>
               </div>
+              <DeploymentTimelineSection
+                assetPlan={blueprint.assetPlan}
+                architecture={blueprint.architecture}
+                channelPlan={blueprint.channelPlan}
+                onBringToLife={onBringToLife}
+                campaignStartDate={campaignStartDate}
+              />
             </div>
-            <JourneyMatrixSection
-              architecture={blueprint.architecture}
-              assetPlan={blueprint.assetPlan}
-              channelPlan={blueprint.channelPlan}
-              onBringToLife={onBringToLife}
+          ) : (
+            <EmptyState
+              icon={CalendarDays}
+              title="Timeline not available yet"
+              description="Generate a campaign strategy to see the deployment timeline."
             />
-          </div>
+          )
         )}
 
-        {/* Deployment Timeline */}
-        {blueprint.assetPlan && blueprint.architecture && blueprint.channelPlan && (
-          <div className="bg-white rounded-lg border p-4 space-y-4">
-            <div className="flex items-center justify-between px-2">
-              <h3 className="text-lg font-semibold text-gray-900">Deployment Timeline</h3>
+        {/* Campaign Strategy tab */}
+        {currentTab === "strategy" && (
+          blueprint.strategy ? (
+            <div className="bg-white rounded-lg border p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Campaign Strategy</h3>
+                <RegenerateSectionButton campaignId={campaignId} layer="strategy" />
+              </div>
+              <StrategySection strategy={blueprint.strategy} />
             </div>
-            <DeploymentTimelineSection
-              assetPlan={blueprint.assetPlan}
-              architecture={blueprint.architecture}
-              channelPlan={blueprint.channelPlan}
+          ) : (
+            <EmptyState
+              icon={Target}
+              title="Strategy not available yet"
+              description="Generate a campaign strategy to see the strategic approach."
             />
-          </div>
+          )
         )}
 
-        {/* Campaign Strategy */}
-        {blueprint.strategy && (
-          <div className="bg-white rounded-lg border p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Campaign Strategy</h3>
-              <RegenerateSectionButton campaignId={campaignId} layer="strategy" />
+        {/* Channel & Media Plan tab */}
+        {currentTab === "channel-plan" && (
+          blueprint.channelPlan ? (
+            <div className="bg-white rounded-lg border p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Channel & Media Plan</h3>
+                <RegenerateSectionButton campaignId={campaignId} layer="channelPlan" />
+              </div>
+              <ChannelPlanSection channelPlan={blueprint.channelPlan} />
             </div>
-            <StrategySection strategy={blueprint.strategy} />
-          </div>
-        )}
-
-        {/* Channel & Media Plan */}
-        {blueprint.channelPlan && (
-          <div className="bg-white rounded-lg border p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Channel & Media Plan</h3>
-              <RegenerateSectionButton campaignId={campaignId} layer="channelPlan" />
-            </div>
-            <ChannelPlanSection channelPlan={blueprint.channelPlan} />
-          </div>
+          ) : (
+            <EmptyState
+              icon={Share2}
+              title="Channel plan not available yet"
+              description="Generate a campaign strategy to see the channel and media plan."
+            />
+          )
         )}
       </div>
     );

@@ -28,11 +28,9 @@ interface CampaignStoreState {
   // ─── Campaign Detail ──────────────────────────────────────
   selectedCampaignId: string | null;
   selectedDeliverableId: string | null;
-  activeCampaignTab: 'configure' | 'strategy';
-  activeStrategySubTab: 'core-concept' | 'channel-mix' | 'target-audience' | 'deliverables' | 'overview' | 'strategy' | 'journey' | 'channel-plan';
+  activeStrategySubTab: 'core-concept' | 'channel-mix' | 'target-audience' | 'deliverables' | 'timeline' | 'strategy' | 'channel-plan';
   setSelectedCampaignId: (id: string | null) => void;
   setSelectedDeliverableId: (id: string | null) => void;
-  setActiveCampaignTab: (tab: 'configure' | 'strategy') => void;
   setActiveStrategySubTab: (tab: CampaignStoreState['activeStrategySubTab']) => void;
 
   // ─── Convert Modal ────────────────────────────────────────
@@ -69,11 +67,9 @@ export const useCampaignStore = create<CampaignStoreState>((set) => ({
   // ─── Campaign Detail defaults ──────────────────────────────
   selectedCampaignId: null,
   selectedDeliverableId: null,
-  activeCampaignTab: 'configure',
-  activeStrategySubTab: 'overview',
+  activeStrategySubTab: 'timeline',
   setSelectedCampaignId: (id) => set({ selectedCampaignId: id }),
   setSelectedDeliverableId: (id) => set({ selectedDeliverableId: id }),
-  setActiveCampaignTab: (tab) => set({ activeCampaignTab: tab }),
   setActiveStrategySubTab: (tab) => set({ activeStrategySubTab: tab }),
 
   // ─── Convert Modal defaults ────────────────────────────────
