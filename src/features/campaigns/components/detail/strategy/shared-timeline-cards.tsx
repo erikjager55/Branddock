@@ -3,16 +3,14 @@
 import React, { useState } from "react";
 import {
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
+  Users,
   Zap,
-  Radio,
-  FileText,
-  MessageSquare,
 } from "lucide-react";
-import { Badge, Button } from "@/components/shared";
+import { Button } from "@/components/shared";
 import type {
   AssetPlanDeliverable,
-  Touchpoint,
 } from "@/lib/campaigns/strategy-blueprint.types";
 import type { PersonaColorStyle } from "@/features/campaigns/lib/persona-colors";
 
@@ -41,76 +39,29 @@ export const EFFORT_LABEL: Record<string, string> = {
 
 // ─── Sub-components ─────────────────────────────────────────────
 
-/** Touchpoint card with full specs */
-export function TouchpointCard({
-  tp,
-  personas,
-}: {
-  tp: Touchpoint;
-  personas?: CardPersonaInfo[];
-}) {
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm text-xs">
-      {/* Header bar with channel + role */}
-      <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50/50 rounded-t-lg">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Radio className="w-3 h-3 text-gray-400 flex-shrink-0" />
-          <span className="font-semibold text-gray-900 truncate">{tp.channel}</span>
-        </div>
-        <Badge
-          variant={tp.role === "primary" ? "success" : "default"}
-        >
-          {tp.role}
-        </Badge>
-      </div>
-
-      <div className="px-3 py-2 space-y-1.5">
-        {/* Persona dots + names */}
-        {personas && personas.length > 0 && (
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {personas.map((p) => (
-              <span key={p.personaId} className="inline-flex items-center gap-1">
-                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${p.colorStyle.dot}`} />
-                <span className={`${p.colorStyle.text} font-medium`}>{p.name.split(" ")[0]}</span>
-              </span>
-            ))}
-          </div>
-        )}
-
-        {/* Content type */}
-        {tp.contentType && (
-          <div className="flex items-center gap-1.5">
-            <FileText className="w-3 h-3 text-gray-400 flex-shrink-0" />
-            <span className="text-gray-700">{tp.contentType}</span>
-          </div>
-        )}
-
-        {/* Message */}
-        {tp.message && (
-          <div className="flex items-start gap-1.5">
-            <MessageSquare className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" />
-            <p className="text-gray-600 leading-relaxed">{tp.message}</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 /** Deliverable card with expand-on-click */
 export function DeliverableCard({
   deliverable,
   channel,
   personas,
   onBringToLife,
+  onMove,
+  canMoveLeft = false,
+  canMoveRight = false,
 }: {
   deliverable: AssetPlanDeliverable;
   /** Channel label to display on the card */
   channel?: string;
   personas?: CardPersonaInfo[];
   onBringToLife?: (title: string, contentType: string) => void;
+  /** Called when the user wants to move this deliverable to a different week */
+  onMove?: (direction: -1 | 1) => void;
+  /** Whether the deliverable can be moved earlier (not at first beat) */
+  canMoveLeft?: boolean;
+  /** Whether the deliverable can be moved later (not at last beat) */
+  canMoveRight?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const priority = PRIORITY_STYLES[deliverable.productionPriority];
 
   return (
@@ -161,8 +112,11 @@ export function DeliverableCard({
             ))}
           </div>
         ) : (
-          <div className="mb-1.5">
-            <span className="text-[10px] text-gray-400 italic">All personas</span>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-gray-100 border border-gray-200">
+              <Users className="w-2.5 h-2.5 text-gray-500" />
+              <span className="text-[10px] font-medium text-gray-600">All personas</span>
+            </span>
           </div>
         )}
 
@@ -220,6 +174,30 @@ export function DeliverableCard({
           </div>
         )}
       </div>
+
+      {/* Move controls */}
+      {onMove && (
+        <div className="flex items-center justify-between px-3 py-1 border-t border-gray-100">
+          <button
+            type="button"
+            disabled={!canMoveLeft}
+            className="inline-flex items-center gap-0.5 text-[10px] font-medium text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            onClick={(e) => { e.stopPropagation(); onMove(-1); }}
+          >
+            <ChevronLeft className="w-3 h-3" />
+            Earlier
+          </button>
+          <button
+            type="button"
+            disabled={!canMoveRight}
+            className="inline-flex items-center gap-0.5 text-[10px] font-medium text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            onClick={(e) => { e.stopPropagation(); onMove(1); }}
+          >
+            Later
+            <ChevronRight className="w-3 h-3" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -229,7 +207,4 @@ export interface PersonaLegendInfo {
   personaId: string;
   personaName: string;
   colorIndex: number;
-  avatarUrl?: string | null;
-  tagline?: string | null;
-  occupation?: string | null;
 }

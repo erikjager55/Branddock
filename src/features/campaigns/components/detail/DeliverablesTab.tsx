@@ -1,18 +1,16 @@
 "use client";
 
 import React from "react";
-import { Plus, FileText } from "lucide-react";
-import { Button, EmptyState, ProgressBar } from "@/components/shared";
+import { ProgressBar } from "@/components/shared";
 import { DeliverableRow } from "./DeliverableRow";
 import type { DeliverableResponse } from "@/types/campaign";
 
 interface DeliverablesTabProps {
   deliverables: DeliverableResponse[];
-  onAddDeliverable: () => void;
   onOpenInStudio?: (deliverableId: string) => void;
 }
 
-export function DeliverablesTab({ deliverables, onAddDeliverable, onOpenInStudio }: DeliverablesTabProps) {
+export function DeliverablesTab({ deliverables, onOpenInStudio }: DeliverablesTabProps) {
   const safeDeliverables = Array.isArray(deliverables) ? deliverables : [];
   const completed = safeDeliverables.filter((d) => d.status === "COMPLETED").length;
   const total = safeDeliverables.length;
@@ -34,7 +32,7 @@ export function DeliverablesTab({ deliverables, onAddDeliverable, onOpenInStudio
       )}
 
       {/* Deliverable List */}
-      {safeDeliverables.length > 0 ? (
+      {safeDeliverables.length > 0 && (
         <div className="space-y-2">
           {safeDeliverables.map((d) => (
             <DeliverableRow
@@ -43,22 +41,6 @@ export function DeliverablesTab({ deliverables, onAddDeliverable, onOpenInStudio
               onOpenInStudio={() => onOpenInStudio?.(d.id)}
             />
           ))}
-        </div>
-      ) : (
-        <EmptyState
-          icon={FileText}
-          title="No deliverables yet"
-          description="Add deliverables to track your campaign content."
-          action={{ label: "Add Deliverable", onClick: onAddDeliverable }}
-        />
-      )}
-
-      {/* Add Button */}
-      {deliverables.length > 0 && (
-        <div className="mt-4">
-          <Button data-testid="add-deliverable-button" variant="secondary" icon={Plus} onClick={onAddDeliverable} fullWidth>
-            Add Deliverable
-          </Button>
         </div>
       )}
     </div>

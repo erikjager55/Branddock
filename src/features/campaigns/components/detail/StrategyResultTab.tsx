@@ -9,8 +9,9 @@ import {
   FileText,
   Lightbulb,
   CalendarDays,
+  Plus,
 } from "lucide-react";
-import { Badge, EmptyState, StatCard } from "@/components/shared";
+import { Badge, Button, EmptyState, StatCard } from "@/components/shared";
 import { useCampaignStore } from "../../stores/useCampaignStore";
 import { StrategySection } from "./strategy/StrategySection";
 import { ChannelPlanSection } from "./strategy/ChannelPlanSection";
@@ -31,6 +32,8 @@ interface StrategyResultTabProps {
   isGenerating: boolean;
   /** Called when user clicks "Bring to Life" on an asset plan deliverable */
   onBringToLife?: (deliverableTitle: string, contentType: string) => void;
+  /** Called when user clicks "Add Deliverable" in the timeline header */
+  onAddDeliverable?: () => void;
   /** Optional campaign start date — enables week date labels in the timeline */
   campaignStartDate?: string | null;
 }
@@ -58,6 +61,7 @@ export function StrategyResultTab({
   onGenerate,
   isGenerating,
   onBringToLife,
+  onAddDeliverable,
   campaignStartDate,
 }: StrategyResultTabProps) {
   const { activeStrategySubTab, setActiveStrategySubTab } = useCampaignStore();
@@ -142,6 +146,11 @@ export function StrategyResultTab({
                 <div className="flex items-center gap-2">
                   <RegenerateSectionButton campaignId={campaignId} layer="architecture" label="Regenerate Journey" />
                   <RegenerateSectionButton campaignId={campaignId} layer="assetPlan" label="Regenerate Assets" />
+                  {onAddDeliverable && (
+                    <Button variant="primary" size="sm" icon={Plus} onClick={onAddDeliverable}>
+                      Add Deliverable
+                    </Button>
+                  )}
                 </div>
               </div>
               <DeploymentTimelineSection

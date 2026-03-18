@@ -22,7 +22,7 @@ import type {
 import { normalizeChannel, getChannelCapacity } from './channel-frequency';
 
 /** Minimum consecutive empty beats before flagging a continuity gap */
-const GAP_THRESHOLD = 2;
+const GAP_THRESHOLD = 4;
 
 /**
  * Compute a complete deployment schedule from blueprint layers.
@@ -65,20 +65,39 @@ export function computeDeploymentSchedule(
   // ── 2. Assign beats ─────────────────────────────────────────
   const deliverables = assetPlan.deliverables ?? [];
 
-  // Group deliverables by phase name (lowercase)
-  const byPhase = new Map<string, typeof deliverables>();
+  // Build multi-key lookup: lowercase key → phase boundary index.
+  // AI may set deliverable.phase to the phase name, id, or a variation,
+  // so we index on both name and id for each phase.
+  const phaseKeyToIndex = new Map<string, number>();
+  for (let pi = 0; pi < phases.length; pi++) {
+    const p = phases[pi];
+    phaseKeyToIndex.set(p.name.toLowerCase(), pi);
+    if (p.id) phaseKeyToIndex.set(p.id.toLowerCase(), pi);
+    // Also add slug-ified name (e.g. "Awareness & Discovery" → "awareness-discovery")
+    const slug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (slug) phaseKeyToIndex.set(slug, pi);
+  }
+
+  // Group deliverables by resolved phase index
+  const byPhaseIndex = new Map<number, typeof deliverables>();
+  const unmatched: typeof deliverables = [];
+
   for (const d of deliverables) {
     const key = (d.phase ?? '').toLowerCase();
-    if (!byPhase.has(key)) byPhase.set(key, []);
-    byPhase.get(key)!.push(d);
+    const pi = phaseKeyToIndex.get(key);
+    if (pi !== undefined) {
+      if (!byPhaseIndex.has(pi)) byPhaseIndex.set(pi, []);
+      byPhaseIndex.get(pi)!.push(d);
+    } else {
+      unmatched.push(d);
+    }
   }
 
   const scheduled: ScheduledDeliverable[] = [];
 
   for (let pi = 0; pi < phaseBoundaries.length; pi++) {
     const pb = phaseBoundaries[pi];
-    const phaseName = pb.phase.toLowerCase();
-    const phaseDeliverables = byPhase.get(phaseName) ?? [];
+    const phaseDeliverables = byPhaseIndex.get(pi) ?? [];
     const phaseDuration = pb.endBeat - pb.startBeat + 1;
 
     // Sort by suggestedOrder (fallback to array index)
@@ -114,22 +133,23 @@ export function computeDeploymentSchedule(
     }
   }
 
-  // Also handle deliverables with no phase match — place them at beat 0
-  for (const d of deliverables) {
-    const key = (d.phase ?? '').toLowerCase();
-    const hasPhase = phaseBoundaries.some((pb) => pb.phase.toLowerCase() === key);
-    if (!hasPhase) {
-      scheduled.push({
-        deliverable: d,
-        beatIndex: 0,
-        phaseIndex: 0,
-        channel: d.channel,
-        normalizedChannel: normalizeChannel(d.channel),
-        targetPersonas: d.targetPersonas ?? [],
-        isShared: (d.targetPersonas ?? []).length === 0,
-        priority: d.productionPriority,
-      });
-    }
+  // Spread unmatched deliverables evenly across the full timeline
+  for (let i = 0; i < unmatched.length; i++) {
+    const d = unmatched[i];
+    const beatIndex = unmatched.length <= 1
+      ? 0
+      : Math.round((i / (unmatched.length - 1)) * (totalBeats - 1));
+
+    scheduled.push({
+      deliverable: d,
+      beatIndex,
+      phaseIndex: 0,
+      channel: d.channel,
+      normalizedChannel: normalizeChannel(d.channel),
+      targetPersonas: d.targetPersonas ?? [],
+      isShared: (d.targetPersonas ?? []).length === 0,
+      priority: d.productionPriority,
+    });
   }
 
   // ── 3. Detect collisions ────────────────────────────────────

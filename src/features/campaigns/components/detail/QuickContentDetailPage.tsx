@@ -95,7 +95,6 @@ export function QuickContentDetailPage({
         {/* Deliverable */}
         <DeliverablesTab
           deliverables={deliverables || campaign.deliverables || []}
-          onAddDeliverable={() => alert("Quick content has a single deliverable")}
           onOpenInStudio={(did) => onOpenInStudio?.(campaignId, did)}
         />
       </div>
