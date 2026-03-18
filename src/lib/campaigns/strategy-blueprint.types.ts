@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { ArenaEnrichmentMeta } from '@/lib/arena/arena-client';
 
 // =============================================================================
 // Campaign Strategy Blueprint — Types + Zod Schemas
@@ -168,6 +169,8 @@ export interface ContextSelection {
   productIds: string[];
   competitorIds: string[];
   trendIds: string[];
+  /** Are.na channels that contributed associative context */
+  arenaChannels?: Array<{ title: string; slug: string; blockCount: number }>;
 }
 
 export interface CampaignBlueprint {
@@ -248,6 +251,9 @@ export interface FullVariant {
   architecture: ArchitectureLayer;
 }
 
+/** Are.na enrichment tracking metadata — re-exported from arena-client for convenience */
+export type ArenaEnrichmentTracking = ArenaEnrichmentMeta;
+
 /** Data returned after Phase A (Steps 1-2) */
 export interface VariantPhaseResult {
   strategyLayerA: StrategyLayer;
@@ -257,6 +263,8 @@ export interface VariantPhaseResult {
   personaValidation: PersonaValidationResult[];
   variantAScore: number;
   variantBScore: number;
+  /** Are.na enrichment metadata (null if enrichment was skipped or produced no results) */
+  arenaEnrichment: ArenaEnrichmentTracking | null;
 }
 
 /** Data returned after Phase B (Step 4) */

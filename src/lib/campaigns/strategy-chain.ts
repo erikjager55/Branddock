@@ -20,6 +20,8 @@ import {
   buildChannelPlannerPrompt,
   buildAssetPlannerPrompt,
 } from '@/lib/ai/prompts/campaign-strategy';
+import { buildArenaQueries } from '@/lib/arena/arena-queries';
+import { fetchArenaContext } from '@/lib/arena/arena-client';
 import {
   strategyLayerSchema,
   architectureLayerSchema,
@@ -380,14 +382,26 @@ export async function generateStrategyVariants(
   const competitorIds = competitorIdsOpt ?? [];
   const trendIds = trendIdsOpt ?? [];
 
-  const [brandContext, personaContext, productContext, competitorContext, trendContext, personaProfiles] = await Promise.all([
+  // Build Are.na queries from available input (non-blocking)
+  const arenaQueriesPromise = buildArenaQueries({
+    workspaceId,
+    campaignGoalType,
+    personaIds,
+  }).catch(() => []);
+
+  const [brandContext, personaContext, productContext, competitorContext, trendContext, personaProfiles, arenaQueries] = await Promise.all([
     getBrandContext(workspaceId),
     buildSelectedPersonasContext(personaIds, workspaceId),
     productIds.length > 0 ? buildProductContext(workspaceId, productIds) : Promise.resolve(''),
     competitorIds.length > 0 ? buildCompetitorContext(workspaceId, competitorIds) : Promise.resolve(''),
     trendIds.length > 0 ? buildTrendContext(workspaceId, trendIds) : Promise.resolve(''),
     buildPersonaProfiles(personaIds, workspaceId),
+    arenaQueriesPromise,
   ]);
+
+  // Fetch Are.na context (non-blocking enrichment)
+  const arenaResult = await fetchArenaContext(arenaQueries);
+
   const brandContextText = formatBrandContext(brandContext);
   const briefing = wizardContext.briefing;
 
@@ -403,6 +417,7 @@ export async function generateStrategyVariants(
     trendContext,
     personaIds,
     briefing,
+    arenaContext: arenaResult.contextText || undefined,
   };
 
   // Step 1: Dual Full Variants (parallel — each model generates its own strategy + architecture)
@@ -479,7 +494,10 @@ export async function generateStrategyVariants(
 
   onProgress?.({ step: 2, name: 'Persona Validation', status: 'complete', label: 'Personas evaluated', preview: personaValidation.length > 0 ? `${personaValidation.length} personas scored` : 'Skipped (no personas)' });
 
-  return { strategyLayerA, strategyLayerB, variantA, variantB, personaValidation, variantAScore, variantBScore };
+  return {
+    strategyLayerA, strategyLayerB, variantA, variantB, personaValidation, variantAScore, variantBScore,
+    arenaEnrichment: arenaResult.meta ?? null,
+  };
 }
 
 /**
@@ -681,10 +699,17 @@ export async function generateCampaignBlueprint(
   const competitorIds = options.competitorIds ?? [];
   const trendIds = options.trendIds ?? [];
 
+  // Build Are.na queries from available input (non-blocking)
+  const arenaQueriesPromise = buildArenaQueries({
+    workspaceId,
+    campaignGoalType,
+    personaIds,
+  }).catch(() => []);
+
   // Fetch all context in parallel
   // Brand assets + styleguide are always loaded (brand identity, always relevant)
   // Products, competitors, trends, and personas are only loaded when explicitly selected
-  const [brandContext, personaContext, productContext, competitorContext, trendContext, styleguideContext, personaProfiles, personaChannelPrefs] = await Promise.all([
+  const [brandContext, personaContext, productContext, competitorContext, trendContext, styleguideContext, personaProfiles, personaChannelPrefs, arenaQueries] = await Promise.all([
     getBrandContext(workspaceId),
     buildSelectedPersonasContext(personaIds, workspaceId),
     productIds.length > 0 ? buildProductContext(workspaceId, productIds) : Promise.resolve(''),
@@ -693,7 +718,11 @@ export async function generateCampaignBlueprint(
     buildStyleguideContext(workspaceId),
     buildPersonaProfiles(personaIds, workspaceId),
     buildPersonaChannelPrefs(personaIds, workspaceId),
+    arenaQueriesPromise,
   ]);
+
+  // Fetch Are.na context (non-blocking enrichment)
+  const arenaResult = await fetchArenaContext(arenaQueries);
 
   const brandContextText = formatBrandContext(brandContext);
 
@@ -715,6 +744,7 @@ export async function generateCampaignBlueprint(
     trendContext,
     personaIds,
     briefing,
+    arenaContext: arenaResult.contextText || undefined,
   };
 
   const step1aPrompt = buildFullVariantAPrompt(fullVariantParams);
@@ -913,6 +943,7 @@ export async function generateCampaignBlueprint(
       productIds,
       competitorIds,
       trendIds,
+      arenaChannels: arenaResult.meta?.channels,
     },
   };
 
@@ -1002,7 +1033,17 @@ export async function regenerateBlueprintLayer(
     select: { id: true },
   }).then(ps => ps.map(p => p.id));
 
-  const [brandContext, personaContext, productContext, competitorContext, trendContext, styleguideContext, personaProfiles, personaChannelPrefs] = await Promise.all([
+  // Build Are.na queries — only needed when regenerating strategy/architecture layers
+  const needsArenaContext = layer === 'strategy' || layer === 'architecture';
+  const regenArenaQueriesPromise = needsArenaContext
+    ? buildArenaQueries({
+        workspaceId,
+        campaignGoalType: campaign.campaignGoalType || 'BRAND_AWARENESS',
+        personaIds: resolvedPersonaIds,
+      }).catch(() => [])
+    : Promise.resolve([]);
+
+  const [brandContext, personaContext, productContext, competitorContext, trendContext, styleguideContext, personaProfiles, personaChannelPrefs, regenArenaQueries] = await Promise.all([
     getBrandContext(workspaceId),
     buildSelectedPersonasContext(resolvedPersonaIds, workspaceId),
     productIds.length > 0 ? buildProductContext(workspaceId, productIds) : Promise.resolve(''),
@@ -1011,7 +1052,11 @@ export async function regenerateBlueprintLayer(
     buildStyleguideContext(workspaceId),
     buildPersonaProfiles(resolvedPersonaIds, workspaceId),
     buildPersonaChannelPrefs(resolvedPersonaIds, workspaceId),
+    regenArenaQueriesPromise,
   ]);
+
+  // Fetch Are.na context (non-blocking enrichment)
+  const regenArenaResult = await fetchArenaContext(regenArenaQueries);
 
   const brandContextText = formatBrandContext(brandContext);
 
@@ -1032,6 +1077,7 @@ export async function regenerateBlueprintLayer(
       competitorContext,
       trendContext,
       personaIds: resolvedPersonaIds,
+      arenaContext: regenArenaResult.contextText || undefined,
     });
 
     const fullVariantRaw = await withStepContext('Regenerate Full Variant (Step 1)', 300, () =>
@@ -1123,8 +1169,19 @@ export async function regenerateBlueprintLayer(
   blueprint.confidenceBreakdown = breakdown;
   blueprint.pipelineDuration = Date.now() - startTime;
   blueprint.generatedAt = new Date().toISOString();
-  // Preserve context selection for future regenerations
-  blueprint.contextSelection = existingBlueprint.contextSelection;
+  // Preserve context selection for future regenerations, updating arena channels
+  blueprint.contextSelection = existingBlueprint.contextSelection
+    ? {
+        ...existingBlueprint.contextSelection,
+        arenaChannels: regenArenaResult.meta?.channels ?? existingBlueprint.contextSelection.arenaChannels,
+      }
+    : {
+        personaIds: resolvedPersonaIds,
+        productIds,
+        competitorIds,
+        trendIds,
+        arenaChannels: regenArenaResult.meta?.channels,
+      };
 
   return blueprint;
 }

@@ -51,6 +51,8 @@ interface FullVariantPromptParams {
   trendContext: string;
   personaIds: string[];
   briefing?: CampaignBriefing;
+  /** Are.na associative context (cultural/strategic inspiration) */
+  arenaContext?: string;
 }
 
 export function buildFullVariantAPrompt(params: FullVariantPromptParams): { system: string; user: string } {
@@ -116,7 +118,12 @@ ${params.productContext || 'No products defined yet.'}
 ${params.competitorContext || 'No competitors defined yet.'}
 
 ## Market Trends
-${params.trendContext || 'No trends defined yet.'}`;
+${params.trendContext || 'No trends defined yet.'}${params.arenaContext ? `
+
+## Associative Inspiration (Are.na)
+The following curated cultural and strategic references were found on Are.na, a knowledge platform used by creatives and strategists. Use these as associative inspiration — they may spark unexpected angles, metaphors, or positioning ideas. Do not copy them literally, but let them inform your creative thinking.
+
+${params.arenaContext}` : ''}`;
 
   return { system, user };
 }
@@ -186,7 +193,12 @@ ${params.productContext || 'No products defined yet.'}
 ${params.competitorContext || 'No competitors defined yet.'}
 
 ## Market Trends
-${params.trendContext || 'No trends defined yet.'}`;
+${params.trendContext || 'No trends defined yet.'}${params.arenaContext ? `
+
+## Associative Inspiration (Are.na)
+The following curated cultural and strategic references were found on Are.na, a knowledge platform used by creatives and strategists. Use these as associative inspiration — they may spark unexpected angles, metaphors, or positioning ideas. Do not copy them literally, but let them inform your creative thinking.
+
+${params.arenaContext}` : ''}`;
 
   return { system, user };
 }
