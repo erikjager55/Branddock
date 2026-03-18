@@ -152,10 +152,19 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
 
   /** Warm handover: set campaign context in Content Studio store before navigation */
   const handleOpenInStudio = (cId: string, did: string) => {
-    // Find matching deliverable brief from asset plan
-    const deliverableBrief = blueprint?.assetPlan?.deliverables?.find(
-      (d) => d.title === deliverables?.find((del) => del.id === did)?.title
+    // Find matching deliverable brief from blueprint, fall back to DB deliverable's own settings
+    const matchedDeliverable = deliverables?.find((del) => del.id === did);
+    const blueprintBrief = blueprint?.assetPlan?.deliverables?.find(
+      (d) => d.title === matchedDeliverable?.title
     )?.brief ?? null;
+    const settingsBrief = matchedDeliverable?.settings?.brief;
+    const deliverableBrief = blueprintBrief ?? (settingsBrief ? {
+      objective: settingsBrief.objective ?? '',
+      keyMessage: settingsBrief.keyMessage ?? '',
+      toneDirection: settingsBrief.toneDirection ?? '',
+      callToAction: settingsBrief.callToAction ?? '',
+      contentOutline: settingsBrief.contentOutline ?? [],
+    } : null);
 
     useContentStudioStore.getState().setCampaignContext({
       campaignId: cId,
@@ -302,6 +311,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
                   onBringToLife={onOpenInStudio ? handleBringToLife : undefined}
                   onAddDeliverable={() => setShowAddModal(true)}
                   campaignStartDate={campaign?.startDate}
+                  deliverables={deliverables}
                 />
               )}
               {activeSubTab === "timeline" && (

@@ -470,8 +470,40 @@ Go-live infrastructure.
 | 7. UI Polish (PSR) | ~11 items | Niet gestart | Medium |
 | 8. Billing & Auth | ~10 items | Niet gestart | Medium-Laag |
 | 9. Deployment | ~8 items | Niet gestart | Laag (laatste) |
+| 10. Externe API-koppelingen | ~40 items | 📋 Keuze pending | Medium — na deployment |
 
-**Totaal: ~146 items**
+**Totaal: ~186 items**
+
+---
+
+## Fase 10: Externe API-koppelingen
+
+Verkennend onderzoek afgerond naar 40+ externe applicaties en publieke API's. Volledige shortlist met Tier 1-4 prioritering staat in CLAUDE.md sectie "INT. Externe Integraties". Keuze nog niet gemaakt — alle items zijn 📋 pending beslissing.
+
+### Samenvatting per Tier
+
+| Tier | Beschrijving | Aantal | Voorbeelden |
+|------|-------------|--------|-------------|
+| **Tier 1** | Direct implementeren (hoog ROI, laag effort) | 6 | Resend, Perplexity Sonar, Pexels, Brandfetch, Ayrshare, OpenAI Image |
+| **Tier 2** | Hoge strategische waarde (gemiddeld effort) | 8 | HubSpot, GA4, DataForSEO, Writer.com, Canva, Typeform, Slack, WordPress |
+| **Tier 3** | Bouwen bij vraag (hoog effort of niche) | 8 | ElevenLabs, Marker API, Visualping, Meta Ads, Semrush, Shopify, Asana/Linear, Audiense |
+| **Tier 4** | Niet aanbevolen / uitgesteld | 10 | Buffer, Brand24, SparkToro, Clarity.ai, Mailchimp, etc. |
+| **Tier 5 (nieuw)** | Public API kandidaten (gratis/goedkoop) | 8 | NewsAPI, GNews, Unsplash, Clearbit Logo, Markerapi, JSON2Video, Aylien, Colormind |
+
+### Tier 5: Public API Kandidaten (bron: github.com/public-apis/public-apis)
+
+Gratis of goedkope publieke API's die Branddock-modules verrijken:
+
+- [ ] 📋 **INT.33: NewsAPI** (`apiKey`, gratis dev) — Real-time nieuws per keyword/merk/industrie → extra bron voor Trend Radar scanning pipeline
+- [ ] 📋 **INT.34: GNews** (`apiKey`, gratis 100 req/dag) — Alternatieve nieuwsbron voor trenddetectie + brand monitoring
+- [ ] 📋 **INT.35: Unsplash** (`OAuth`, gratis 50 req/uur) — Hoge kwaliteit stockfoto's in Content Studio + campaign assets
+- [ ] 📋 **INT.36: Clearbit Logo API** (`apiKey`, gratis) — Competitor logo's automatisch ophalen voor concurrentanalyse cards
+- [ ] 📋 **INT.37: Markerapi** (gratis) — Trademark zoeken → merkregistratie-check bij brand name validatie
+- [ ] 📋 **INT.38: JSON2Video** (`apiKey`, betaald) — Programmatisch video's maken uit campaign deliverables (watermarks, slideshows, voice-over)
+- [ ] 📋 **INT.39: Aylien Text Analysis** (`apiKey`, betaald) — Sentiment analyse + entity extraction op brand mentions → Brand Alignment verrijking
+- [ ] 📋 **INT.40: Colormind** (gratis, geen auth) — AI kleurenpalet generatie → Brandstyle Analyzer alternatieve paletten voorstellen
+
+> **Architectuur-aanbeveling**: Bouw een Integration Hub (`src/lib/integrations/`, `IntegrationConfig` Prisma model, generieke OAuth handler + webhook receiver, Settings > Integrations UI) voordat individuele integraties worden gebouwd.
 
 ---
 

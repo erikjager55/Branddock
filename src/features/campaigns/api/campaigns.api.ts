@@ -140,7 +140,8 @@ export async function fetchCoverage(campaignId: string): Promise<CoverageRespons
 export async function fetchDeliverables(campaignId: string): Promise<DeliverableResponse[]> {
   const res = await fetch(`/api/campaigns/${campaignId}/deliverables`);
   if (!res.ok) throw new Error('Failed to fetch deliverables');
-  return res.json();
+  const data = await res.json();
+  return data?.deliverables ?? data ?? [];
 }
 
 export async function addDeliverable(campaignId: string, body: CreateDeliverableBody): Promise<DeliverableResponse> {

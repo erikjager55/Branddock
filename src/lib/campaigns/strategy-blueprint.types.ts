@@ -121,6 +121,18 @@ export interface ChannelPlanLayer {
 
 // ─── Layer 4: Asset Plan ────────────────────────────────────
 
+/** Describes a content-flow connection between two deliverables on the deployment timeline */
+export interface FlowConnection {
+  /** Must exactly match a deliverable.title */
+  fromTitle: string;
+  /** Must exactly match a deliverable.title */
+  toTitle: string;
+  /** sequence = direct flow, amplifies = reinforcing, retargets = follow-up for non-converters */
+  connectionType: 'sequence' | 'amplifies' | 'retargets';
+  /** Short description, e.g. "drives traffic to" */
+  label?: string;
+}
+
 export interface DeliverableBrief {
   objective: string;
   keyMessage: string;
@@ -146,6 +158,8 @@ export interface AssetPlanLayer {
   deliverables: AssetPlanDeliverable[];
   totalDeliverables: number;
   prioritySummary: string;
+  /** Content-flow connections between deliverables (optional — AI-generated) */
+  flowConnections?: FlowConnection[];
 }
 
 // ─── Persona Validation ─────────────────────────────────────
@@ -224,6 +238,17 @@ export interface ContinuityGap {
   gapLength: number;
 }
 
+/** A flow connection resolved to beat positions on the timeline */
+export interface ResolvedFlowConnection {
+  fromTitle: string;
+  toTitle: string;
+  fromBeatIndex: number;
+  toBeatIndex: number;
+  connectionType: 'sequence' | 'amplifies' | 'retargets';
+  label?: string;
+  sharedPersonas: string[];
+}
+
 /** Complete deployment schedule computed from asset plan */
 export interface DeploymentSchedule {
   scheduled: ScheduledDeliverable[];
@@ -231,6 +256,8 @@ export interface DeploymentSchedule {
   gaps: ContinuityGap[];
   totalBeats: number;
   phaseBoundaries: { phase: string; startBeat: number; endBeat: number }[];
+  /** Flow connections resolved to timeline beat positions */
+  resolvedConnections: ResolvedFlowConnection[];
 }
 
 // ─── Strategy Phase Types ────────────────────────────────────
@@ -528,10 +555,18 @@ export const assetPlanDeliverableSchema = z.object({
   suggestedOrder: z.number().optional(),
 });
 
+export const flowConnectionSchema = z.object({
+  fromTitle: z.string(),
+  toTitle: z.string(),
+  connectionType: z.enum(['sequence', 'amplifies', 'retargets']),
+  label: z.string().optional(),
+});
+
 export const assetPlanLayerSchema = z.object({
   deliverables: z.array(assetPlanDeliverableSchema),
   totalDeliverables: z.number(),
   prioritySummary: z.string(),
+  flowConnections: z.array(flowConnectionSchema).optional(),
 });
 
 // ─── Persona Validation Schema ──────────────────────────────
@@ -771,6 +806,19 @@ export const assetPlanResponseSchema: Record<string, unknown> = {
     },
     totalDeliverables: { type: 'number' },
     prioritySummary: { type: 'string' },
+    flowConnections: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          fromTitle: { type: 'string' },
+          toTitle: { type: 'string' },
+          connectionType: { type: 'string', enum: ['sequence', 'amplifies', 'retargets'] },
+          label: { type: 'string' },
+        },
+        required: ['fromTitle', 'toTitle', 'connectionType'],
+      },
+    },
   },
   required: ['deliverables', 'totalDeliverables', 'prioritySummary'],
 };

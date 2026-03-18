@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
+  ArrowRightLeft,
   Minus,
   Plus,
   Maximize2,
@@ -28,6 +29,7 @@ import {
   type PersonaLegendInfo,
   type CardPersonaInfo,
 } from "./shared-timeline-cards";
+import { FlowConnectionsOverlay } from "./FlowConnectionsOverlay";
 
 // ─── Zoom constants ─────────────────────────────────────────────
 
@@ -297,7 +299,12 @@ export function DeploymentTimelineSection({
   campaignStartDate,
 }: DeploymentTimelineSectionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(ZOOM_DEFAULT);
+
+  // Flow connections state
+  const [showFlows, setShowFlows] = useState(true);
+  const [hoveredFlowTitles, setHoveredFlowTitles] = useState<Set<string> | null>(null);
 
   // Manual beat position overrides: itemKey → new absolute beatIndex
   const [beatOverrides, setBeatOverrides] = useState<Map<string, number>>(new Map());
@@ -518,6 +525,58 @@ export function DeploymentTimelineSection({
     return lanes;
   }, [personaLegendList, filteredCellLookup, personaColorMap]);
 
+  // ─── Flow connections (re-resolved with beatOverrides) ──────
+  const effectiveResolvedConnections = useMemo(() => {
+    if (!schedule.resolvedConnections || schedule.resolvedConnections.length === 0) return [];
+    if (beatOverrides.size === 0) return schedule.resolvedConnections;
+
+    // Build title → beat lookup from cellLookup (first match wins, consistent with scheduler)
+    const titleToBeat = new Map<string, number>();
+    for (const [beat, items] of cellLookup) {
+      for (const item of items) {
+        if (!titleToBeat.has(item.deliverable.title)) {
+          titleToBeat.set(item.deliverable.title, beat);
+        }
+      }
+    }
+
+    return schedule.resolvedConnections.map((conn) => ({
+      ...conn,
+      fromBeatIndex: titleToBeat.get(conn.fromTitle) ?? conn.fromBeatIndex,
+      toBeatIndex: titleToBeat.get(conn.toTitle) ?? conn.toBeatIndex,
+    }));
+  }, [schedule.resolvedConnections, beatOverrides, cellLookup]);
+
+  // Set of titles currently hidden by filters (only hidden if ALL instances fail)
+  const hiddenTitles = useMemo(() => {
+    if (selectedPersonaIds.size === 0 && selectedChannels.size === 0) return new Set<string>();
+    const visible = new Set<string>();
+    const all = new Set<string>();
+    for (const s of schedule.scheduled) {
+      all.add(s.deliverable.title);
+      const passChannel = selectedChannels.size === 0 || selectedChannels.has(s.normalizedChannel);
+      const passPersona = selectedPersonaIds.size === 0 || s.targetPersonas.length === 0 || s.targetPersonas.some((p) => selectedPersonaIds.has(p));
+      if (passChannel && passPersona) visible.add(s.deliverable.title);
+    }
+    const hidden = new Set<string>();
+    for (const title of all) {
+      if (!visible.has(title)) hidden.add(title);
+    }
+    return hidden;
+  }, [schedule.scheduled, selectedPersonaIds, selectedChannels]);
+
+  // Set of all titles that participate in at least one flow connection
+  const flowTitleSet = useMemo(() => {
+    const titles = new Set<string>();
+    for (const conn of effectiveResolvedConnections) {
+      titles.add(conn.fromTitle);
+      titles.add(conn.toTitle);
+    }
+    return titles;
+  }, [effectiveResolvedConnections]);
+
+  const hasFlowConnections = effectiveResolvedConnections.length > 0;
+
   const { totalBeats, phaseBoundaries } = schedule;
 
   // Grid template — no label column, just week cells
@@ -560,6 +619,20 @@ export function DeploymentTimelineSection({
             {schedule.gaps.length} gap{schedule.gaps.length !== 1 ? "s" : ""}
           </span>
         )}
+        {hasFlowConnections && (
+          <button
+            type="button"
+            onClick={() => setShowFlows((v) => !v)}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${
+              showFlows
+                ? "bg-gray-900 text-white border-gray-900"
+                : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            <ArrowRightLeft className="w-3 h-3" />
+            Flows
+          </button>
+        )}
       </div>
 
       {/* Filter bar (replaces static persona legend) */}
@@ -582,7 +655,9 @@ export function DeploymentTimelineSection({
           className="overflow-x-auto border border-gray-200 rounded-lg"
         >
           <div
+            ref={gridRef}
             data-timeline-grid
+            className="relative"
             style={zoom !== 100 ? { zoom: zoom / 100 } : undefined}
           >
             {/* Week header row */}
@@ -708,6 +783,9 @@ export function DeploymentTimelineSection({
                             onMove={(dir) => handleMoveBeat(item.deliverable, item.schedulerBeatIndex, beatIdx, dir)}
                             canMoveLeft={beatIdx > 0}
                             canMoveRight={beatIdx < totalBeats - 1}
+                            highlighted={hoveredFlowTitles?.has(item.deliverable.title) ?? false}
+                            hasFlowConnection={flowTitleSet.has(item.deliverable.title)}
+                            beatIndex={beatIdx}
                           />
                         ))}
 
@@ -724,6 +802,16 @@ export function DeploymentTimelineSection({
                 );
               })}
             </div>
+
+            {/* Flow connections SVG overlay */}
+            <FlowConnectionsOverlay
+              connections={effectiveResolvedConnections}
+              gridRef={gridRef}
+              zoom={zoom}
+              visible={showFlows}
+              hiddenTitles={hiddenTitles}
+              onHoverTitles={setHoveredFlowTitles}
+            />
           </div>
         </div>
 

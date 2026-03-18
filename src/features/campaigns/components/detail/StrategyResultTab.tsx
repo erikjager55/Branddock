@@ -17,7 +17,8 @@ import { StrategySection } from "./strategy/StrategySection";
 import { ChannelPlanSection } from "./strategy/ChannelPlanSection";
 import { DeploymentTimelineSection } from "./strategy/DeploymentTimelineSection";
 import { RegenerateSectionButton } from "./strategy/RegenerateSectionButton";
-import type { StrategyResponse, LegacyStrategyResponse } from "@/types/campaign";
+import type { StrategyResponse, LegacyStrategyResponse, DeliverableResponse } from "@/types/campaign";
+import type { AssetPlanDeliverable, AssetPlanLayer } from "@/lib/campaigns/strategy-blueprint.types";
 
 /** Type guard for legacy strategy format */
 function isLegacyStrategy(s: StrategyResponse): s is LegacyStrategyResponse {
@@ -36,6 +37,8 @@ interface StrategyResultTabProps {
   onAddDeliverable?: () => void;
   /** Optional campaign start date — enables week date labels in the timeline */
   campaignStartDate?: string | null;
+  /** DB deliverables (includes manually added ones via modal) */
+  deliverables?: DeliverableResponse[];
 }
 
 // Blueprint tabs (3 tabs: Timeline, Campaign Strategy, Channel & Media)
@@ -63,6 +66,7 @@ export function StrategyResultTab({
   onBringToLife,
   onAddDeliverable,
   campaignStartDate,
+  deliverables,
 }: StrategyResultTabProps) {
   const { activeStrategySubTab, setActiveStrategySubTab } = useCampaignStore();
 
@@ -92,6 +96,42 @@ export function StrategyResultTab({
   if (!isLegacyStrategy(strategy)) {
     const { blueprint } = strategy;
 
+    // ── Merge manually-added DB deliverables into the blueprint asset plan ──
+    const mergedAssetPlan: AssetPlanLayer | undefined = React.useMemo(() => {
+      const basePlan = blueprint.assetPlan;
+      if (!basePlan || !deliverables?.length) return basePlan;
+
+      const baseDeliverables = basePlan.deliverables ?? [];
+      const blueprintTitles = new Set(baseDeliverables.map((d) => d.title.trim().toLowerCase()));
+      const manualDeliverables: AssetPlanDeliverable[] = deliverables
+        .filter((d) => !blueprintTitles.has(d.title.trim().toLowerCase()))
+        .map((d) => ({
+          title: d.title,
+          contentType: d.contentType,
+          phase: d.settings?.phase ?? '',
+          channel: d.settings?.channel ?? d.contentType,
+          targetPersonas: d.settings?.targetPersonas ?? [],
+          brief: {
+            objective: d.settings?.brief?.objective ?? '',
+            keyMessage: d.settings?.brief?.keyMessage ?? '',
+            toneDirection: d.settings?.brief?.toneDirection ?? '',
+            callToAction: d.settings?.brief?.callToAction ?? '',
+            contentOutline: d.settings?.brief?.contentOutline ?? [],
+          },
+          productionPriority: d.settings?.productionPriority ?? 'should-have',
+          estimatedEffort: d.settings?.estimatedEffort ?? 'medium',
+          suggestedOrder: d.settings?.suggestedOrder,
+        }));
+
+      if (manualDeliverables.length === 0) return basePlan;
+
+      return {
+        ...basePlan,
+        deliverables: [...baseDeliverables, ...manualDeliverables],
+        totalDeliverables: (basePlan.totalDeliverables ?? baseDeliverables.length) + manualDeliverables.length,
+      };
+    }, [blueprint.assetPlan, deliverables]);
+
     // Ensure we're on a valid blueprint tab
     const validBlueprintIds = BLUEPRINT_TABS.map((t) => t.id);
     const currentTab = validBlueprintIds.includes(activeStrategySubTab as typeof validBlueprintIds[number])
@@ -103,7 +143,7 @@ export function StrategyResultTab({
       (sum: number, p: { touchpoints?: unknown[] }) => sum + (p.touchpoints?.length ?? 0), 0
     );
     const channelCount = blueprint.channelPlan?.channels?.length ?? 0;
-    const deliverableCount = blueprint.assetPlan?.totalDeliverables ?? 0;
+    const deliverableCount = mergedAssetPlan?.totalDeliverables ?? 0;
 
     return (
       <div className="space-y-6">
@@ -139,7 +179,7 @@ export function StrategyResultTab({
 
         {/* Campaign Timeline tab */}
         {currentTab === "timeline" && (
-          blueprint.assetPlan && blueprint.architecture && blueprint.channelPlan ? (
+          mergedAssetPlan && blueprint.architecture && blueprint.channelPlan ? (
             <div className="bg-white rounded-lg border p-4 space-y-4">
               <div className="flex items-center justify-between px-2">
                 <h3 className="text-lg font-semibold text-gray-900">Campaign Timeline</h3>
@@ -154,7 +194,7 @@ export function StrategyResultTab({
                 </div>
               </div>
               <DeploymentTimelineSection
-                assetPlan={blueprint.assetPlan}
+                assetPlan={mergedAssetPlan}
                 architecture={blueprint.architecture}
                 channelPlan={blueprint.channelPlan}
                 onBringToLife={onBringToLife}

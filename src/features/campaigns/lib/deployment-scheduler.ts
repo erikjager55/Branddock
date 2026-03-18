@@ -18,6 +18,8 @@ import type {
   DeploymentCollision,
   ContinuityGap,
   DeploymentSchedule,
+  FlowConnection,
+  ResolvedFlowConnection,
 } from '@/lib/campaigns/strategy-blueprint.types';
 import { normalizeChannel, getChannelCapacity } from './channel-frequency';
 
@@ -232,5 +234,55 @@ export function computeDeploymentSchedule(
     }
   }
 
-  return { scheduled, collisions, gaps, totalBeats, phaseBoundaries };
+  // ── 5. Resolve flow connections ──────────────────────────────
+  const resolvedConnections = resolveFlowConnections(
+    assetPlan.flowConnections ?? [],
+    scheduled,
+  );
+
+  return { scheduled, collisions, gaps, totalBeats, phaseBoundaries, resolvedConnections };
+}
+
+/**
+ * Resolve FlowConnection titles to beat positions using scheduled deliverables.
+ * Silently skips connections where either title cannot be found.
+ */
+function resolveFlowConnections(
+  connections: FlowConnection[],
+  scheduled: ScheduledDeliverable[],
+): ResolvedFlowConnection[] {
+  if (connections.length === 0) return [];
+
+  // Build title → ScheduledDeliverable lookup (first match wins if duplicates exist)
+  // Trim titles to handle minor AI whitespace inconsistencies
+  const titleMap = new Map<string, ScheduledDeliverable>();
+  for (const s of scheduled) {
+    const key = s.deliverable.title.trim();
+    if (!titleMap.has(key)) {
+      titleMap.set(key, s);
+    }
+  }
+
+  const resolved: ResolvedFlowConnection[] = [];
+  for (const conn of connections) {
+    const from = titleMap.get(conn.fromTitle.trim());
+    const to = titleMap.get(conn.toTitle.trim());
+    if (!from || !to) continue; // Silently skip unresolvable connections
+
+    // Compute shared personas between the two deliverables
+    const fromSet = new Set(from.targetPersonas);
+    const sharedPersonas = to.targetPersonas.filter((p) => fromSet.has(p));
+
+    resolved.push({
+      fromTitle: from.deliverable.title,
+      toTitle: to.deliverable.title,
+      fromBeatIndex: from.beatIndex,
+      toBeatIndex: to.beatIndex,
+      connectionType: conn.connectionType,
+      label: conn.label,
+      sharedPersonas,
+    });
+  }
+
+  return resolved;
 }

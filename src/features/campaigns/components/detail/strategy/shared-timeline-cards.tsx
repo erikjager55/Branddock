@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import {
+  ArrowRightLeft,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -48,6 +49,9 @@ export function DeliverableCard({
   onMove,
   canMoveLeft = false,
   canMoveRight = false,
+  highlighted = false,
+  hasFlowConnection = false,
+  beatIndex,
 }: {
   deliverable: AssetPlanDeliverable;
   /** Channel label to display on the card */
@@ -60,6 +64,12 @@ export function DeliverableCard({
   canMoveLeft?: boolean;
   /** Whether the deliverable can be moved later (not at last beat) */
   canMoveRight?: boolean;
+  /** Whether this card is highlighted (hovered flow connection) */
+  highlighted?: boolean;
+  /** Whether this deliverable participates in a flow connection */
+  hasFlowConnection?: boolean;
+  /** Beat index for data-flow-id attribute */
+  beatIndex?: number;
 }) {
   const [expanded, setExpanded] = useState(true);
   const priority = PRIORITY_STYLES[deliverable.productionPriority];
@@ -68,7 +78,10 @@ export function DeliverableCard({
     <div
       role="button"
       tabIndex={0}
-      className="bg-white border border-gray-200 rounded-lg shadow-sm text-xs hover:shadow cursor-pointer transition-shadow"
+      data-flow-id={beatIndex != null ? `${deliverable.title}::${beatIndex}` : undefined}
+      className={`bg-white border rounded-lg shadow-sm text-xs hover:shadow cursor-pointer transition-all ${
+        highlighted ? "border-blue-400 ring-2 ring-blue-400/50" : "border-gray-200"
+      }`}
       onClick={() => setExpanded(!expanded)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -84,6 +97,9 @@ export function DeliverableCard({
           <span className="font-semibold text-gray-900 truncate">{deliverable.title}</span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
+          {hasFlowConnection && (
+            <ArrowRightLeft className="w-3 h-3 text-gray-400" aria-label="Has flow connections" />
+          )}
           {channel && (
             <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-[10px] font-medium text-gray-600">
               {channel}
