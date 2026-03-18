@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, type DragEvent } from "react";
 import {
   AlertTriangle,
   ArrowRightLeft,
@@ -26,6 +26,7 @@ import { getChannelLabel } from "@/features/campaigns/lib/channel-frequency";
 import { getPersonaColor, type PersonaColorStyle } from "@/features/campaigns/lib/persona-colors";
 import {
   DeliverableCard,
+  type DeliverableCardDragData,
   type PersonaLegendInfo,
   type CardPersonaInfo,
 } from "./shared-timeline-cards";
@@ -445,6 +446,40 @@ export function DeploymentTimelineSection({
     });
   }, [schedule.totalBeats]);
 
+  // ─── Drag & drop state + handlers ──────────────────────────────
+  const [dragOverBeat, setDragOverBeat] = useState<number | null>(null);
+
+  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>, beatIdx: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverBeat(beatIdx);
+  }, []);
+
+  const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
+    // Suppress leave events when the pointer moves to a child element inside the same cell
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setDragOverBeat(null);
+  }, []);
+
+  const handleDrop = useCallback((e: DragEvent<HTMLDivElement>, targetBeat: number) => {
+    e.preventDefault();
+    setDragOverBeat(null);
+    try {
+      const raw = e.dataTransfer.getData("application/json");
+      if (!raw) return;
+      const data: DeliverableCardDragData = JSON.parse(raw);
+      if (data.sourceBeat === targetBeat) return;
+      if (targetBeat < 0 || targetBeat >= schedule.totalBeats) return;
+      setBeatOverrides((prev) => {
+        const next = new Map(prev);
+        next.set(data.itemKey, targetBeat);
+        return next;
+      });
+    } catch {
+      // ignore malformed drag data
+    }
+  }, [schedule.totalBeats]);
+
   // Collect unique channels from deliverables (sorted by first appearance)
   const channels = useMemo(() => {
     const seen = new Map<string, string>(); // normalizedChannel → original channel label
@@ -763,12 +798,19 @@ export function DeploymentTimelineSection({
                 const isPhaseStart = phase?.startBeat === beatIdx;
                 const phaseColor = phaseIdx >= 0 ? getPhaseColor(phaseIdx) : undefined;
 
+                const isDragOver = dragOverBeat === beatIdx;
+
                 return (
                   <div
                     key={beatIdx}
-                    className={`border-b border-r border-gray-100 p-2 align-top ${
+                    onDragOver={(e) => handleDragOver(e, beatIdx)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, beatIdx)}
+                    className={`border-b border-r border-gray-100 p-2 align-top transition-colors ${
                       isPhaseStart ? `border-l-2 ${phaseColor?.border ?? "border-l-gray-300"}` : ""
-                    } ${weekCollisions.length > 0 ? "bg-red-50/40" : phaseColor?.cell ?? ""}`}
+                    } ${weekCollisions.length > 0 ? "bg-red-50/40" : phaseColor?.cell ?? ""} ${
+                      isDragOver ? "ring-2 ring-inset ring-teal-400 bg-teal-50/30" : ""
+                    }`}
                     style={items.length === 0 ? { minHeight: 64 } : undefined}
                   >
                     {items.length > 0 ? (
@@ -786,6 +828,10 @@ export function DeploymentTimelineSection({
                             highlighted={hoveredFlowTitles?.has(item.deliverable.title) ?? false}
                             hasFlowConnection={flowTitleSet.has(item.deliverable.title)}
                             beatIndex={beatIdx}
+                            dragData={{
+                              itemKey: getItemKey(item.deliverable, item.schedulerBeatIndex),
+                              sourceBeat: beatIdx,
+                            }}
                           />
                         ))}
 

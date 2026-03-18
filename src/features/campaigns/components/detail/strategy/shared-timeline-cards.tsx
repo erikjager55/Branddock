@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState, type DragEvent } from "react";
 import {
   ArrowRightLeft,
   ChevronDown,
@@ -24,6 +24,12 @@ export interface CardPersonaInfo {
   colorStyle: PersonaColorStyle;
 }
 
+/** Data transferred during a deliverable card drag */
+export interface DeliverableCardDragData {
+  itemKey: string;
+  sourceBeat: number;
+}
+
 // ─── Constants ──────────────────────────────────────────────────
 
 export const PRIORITY_STYLES: Record<string, { dot: string; label: string }> = {
@@ -40,7 +46,7 @@ export const EFFORT_LABEL: Record<string, string> = {
 
 // ─── Sub-components ─────────────────────────────────────────────
 
-/** Deliverable card with expand-on-click */
+/** Deliverable card with expand-on-click and drag support */
 export function DeliverableCard({
   deliverable,
   channel,
@@ -52,6 +58,7 @@ export function DeliverableCard({
   highlighted = false,
   hasFlowConnection = false,
   beatIndex,
+  dragData,
 }: {
   deliverable: AssetPlanDeliverable;
   /** Channel label to display on the card */
@@ -70,23 +77,50 @@ export function DeliverableCard({
   hasFlowConnection?: boolean;
   /** Beat index for data-flow-id attribute */
   beatIndex?: number;
+  /** Drag data for drag & drop repositioning */
+  dragData?: DeliverableCardDragData;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const didDragRef = useRef(false);
   const priority = PRIORITY_STYLES[deliverable.productionPriority];
+
+  const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
+    if (!dragData) return;
+    e.dataTransfer.setData("application/json", JSON.stringify(dragData));
+    e.dataTransfer.effectAllowed = "move";
+    setIsDragging(true);
+    didDragRef.current = true;
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    // Clear after a frame so the click handler (which fires synchronously after dragend) can still check it
+    requestAnimationFrame(() => { didDragRef.current = false; });
+  };
+
+  const handleClick = () => {
+    if (didDragRef.current) return;
+    setExpanded((prev) => !prev);
+  };
 
   return (
     <div
       role="button"
       tabIndex={0}
+      draggable={!!dragData}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       data-flow-id={beatIndex != null ? `${deliverable.title}::${beatIndex}` : undefined}
-      className={`bg-white border rounded-lg shadow-sm text-xs hover:shadow cursor-pointer transition-all ${
+      className={`bg-white border rounded-lg shadow-sm text-xs hover:shadow transition-all ${
         highlighted ? "border-blue-400 ring-2 ring-blue-400/50" : "border-gray-200"
-      }`}
-      onClick={() => setExpanded(!expanded)}
+      } ${dragData ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
+      style={isDragging ? { opacity: 0.5 } : undefined}
+      onClick={handleClick}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          setExpanded(!expanded);
+          setExpanded((prev) => !prev);
         }
       }}
     >
