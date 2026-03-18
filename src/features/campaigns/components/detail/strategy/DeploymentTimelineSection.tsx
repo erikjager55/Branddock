@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   Minus,
   Plus,
   Maximize2,
   Info,
+  Route,
+  X,
 } from "lucide-react";
 import type {
   AssetPlanLayer,
@@ -15,11 +17,19 @@ import type {
   ScheduledDeliverable,
   DeploymentCollision,
   ContinuityGap,
+  Touchpoint,
 } from "@/lib/campaigns/strategy-blueprint.types";
 import { usePersonas } from "@/features/personas/hooks";
+import type { PersonaWithMeta } from "@/features/personas/types/persona.types";
 import { computeDeploymentSchedule } from "@/features/campaigns/lib/deployment-scheduler";
-import { getChannelLabel } from "@/features/campaigns/lib/channel-frequency";
-import { getPersonaColor, SHARED_COLOR } from "@/features/campaigns/lib/persona-colors";
+import { getChannelLabel, normalizeChannel } from "@/features/campaigns/lib/channel-frequency";
+import { getPersonaColor, type PersonaColorStyle } from "@/features/campaigns/lib/persona-colors";
+import {
+  TouchpointCard,
+  DeliverableCard,
+  type PersonaLegendInfo,
+  type CardPersonaInfo,
+} from "./shared-timeline-cards";
 
 // ─── Zoom constants ─────────────────────────────────────────────
 
@@ -28,17 +38,35 @@ const ZOOM_MAX = 150;
 const ZOOM_STEP = 10;
 const ZOOM_DEFAULT = 100;
 
+// ─── Helpers ────────────────────────────────────────────────────
+
+/** Format a date as short label, e.g. "Mar 7" */
+function formatWeekDate(date: Date): string {
+  return date.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+}
+
+/** Get the date for a specific week index, given a campaign start date.
+ *  Appends T00:00:00 to parse as local midnight (avoids off-by-one from UTC parsing). */
+function getWeekDate(startDate: string, weekIndex: number): Date {
+  const d = new Date(startDate + "T00:00:00");
+  d.setDate(d.getDate() + weekIndex * 7);
+  return d;
+}
+
 // ─── Types ──────────────────────────────────────────────────────
 
 interface DeploymentTimelineSectionProps {
   assetPlan: AssetPlanLayer;
   architecture: ArchitectureLayer;
   channelPlan: ChannelPlanLayer;
+  onBringToLife?: (deliverableTitle: string, contentType: string) => void;
+  /** Optional campaign start date — enables week date labels in headers */
+  campaignStartDate?: string | null;
 }
 
 // ─── Sub-components ─────────────────────────────────────────────
 
-/** Floating zoom toolbar (same pattern as JourneyMatrixSection) */
+/** Floating zoom toolbar */
 function TimelineToolbar({
   zoom,
   onZoomIn,
@@ -89,97 +117,20 @@ function TimelineToolbar({
   );
 }
 
-/** Deliverable pill with persona-colored background and tooltip */
-function DeliverablePill({
-  item,
-  personaColorIndex,
-  personaNames,
-}: {
-  item: ScheduledDeliverable;
-  personaColorIndex: Map<string, number>;
-  personaNames: Map<string, string>;
-}) {
-  const [showTooltip, setShowTooltip] = useState(false);
-  const pillRef = useRef<HTMLDivElement>(null);
-  const [tooltipSide, setTooltipSide] = useState<'top' | 'bottom'>('top');
-
-  // Determine color: shared = gray, single persona = persona color, multi = first persona color
-  const firstPersona = item.targetPersonas[0];
-  const color = useMemo(() => {
-    if (item.isShared) return SHARED_COLOR;
-    const idx = firstPersona ? (personaColorIndex.get(firstPersona) ?? 0) : 0;
-    return getPersonaColor(idx);
-  }, [item.isShared, firstPersona, personaColorIndex]);
-
-  const priorityDot =
-    item.priority === "must-have"
-      ? "bg-emerald-500"
-      : item.priority === "should-have"
-        ? "bg-amber-500"
-        : "bg-gray-300";
-
-  const handleMouseEnter = useCallback(() => {
-    // Decide tooltip direction based on available space above
-    if (pillRef.current) {
-      const rect = pillRef.current.getBoundingClientRect();
-      setTooltipSide(rect.top < 120 ? 'bottom' : 'top');
-    }
-    setShowTooltip(true);
-  }, []);
-
-  const resolvedPersonas = useMemo(
-    () => item.targetPersonas.map((p) => personaNames.get(p) ?? p),
-    [item.targetPersonas, personaNames],
-  );
-
-  return (
-    <div
-      ref={pillRef}
-      className="relative"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={() => setShowTooltip(false)}
-    >
-      <div
-        className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium border truncate max-w-[180px] cursor-default ${color.bg} ${color.text} ${color.border}`}
-      >
-        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${priorityDot}`} />
-        <span className="truncate">{item.deliverable.title}</span>
-      </div>
-
-      {/* Tooltip */}
-      {showTooltip && (
-        <div
-          className={`absolute z-50 ${
-            tooltipSide === 'top' ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
-          } left-0 w-64 bg-gray-900 text-white text-xs rounded-lg shadow-lg p-3 pointer-events-none`}
-        >
-          <p className="font-semibold mb-1">{item.deliverable.title}</p>
-          <p className="text-gray-300 mb-1">{item.deliverable.contentType} &middot; {item.channel}</p>
-          {resolvedPersonas.length > 0 ? (
-            <p className="text-gray-400">
-              Personas: {resolvedPersonas.join(", ")}
-            </p>
-          ) : (
-            <p className="text-gray-400">All personas (shared)</p>
-          )}
-          <p className="text-gray-400 mt-0.5">
-            Priority: {item.priority} &middot; Effort: {item.deliverable.estimatedEffort}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Red collision badge */
+/** Red collision badge with keyboard/mouse/touch tooltip */
 function CollisionBadge({ collision }: { collision: DeploymentCollision }) {
   const [showTooltip, setShowTooltip] = useState(false);
 
   return (
     <div
       className="relative inline-flex"
+      tabIndex={0}
+      aria-label={`${collision.items.length} items on ${getChannelLabel(collision.channel)}, channel ${collision.severity === "overload" ? "overloaded" : "near capacity"}`}
+      aria-describedby={showTooltip ? `collision-tooltip-${collision.channel}` : undefined}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
+      onFocus={() => setShowTooltip(true)}
+      onBlur={() => setShowTooltip(false)}
     >
       <span
         className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold text-white ${
@@ -189,12 +140,12 @@ function CollisionBadge({ collision }: { collision: DeploymentCollision }) {
         {collision.items.length}
       </span>
       {showTooltip && (
-        <div className="absolute z-50 bottom-full left-0 mb-1.5 w-52 bg-gray-900 text-white text-xs rounded-lg shadow-lg p-2.5 pointer-events-none">
+        <div id={`collision-tooltip-${collision.channel}`} className="absolute z-50 bottom-full left-0 mb-1.5 w-52 bg-gray-900 text-white text-xs rounded-lg shadow-lg p-2.5 pointer-events-none" role="tooltip">
           <p className="font-semibold text-red-300 mb-1">
             Channel {collision.severity === "overload" ? "overloaded" : "near capacity"}
           </p>
           <p className="text-gray-300">
-            {collision.items.length} items on {getChannelLabel(collision.channel)} (max {collision.capacity}/beat)
+            {collision.items.length} items on {getChannelLabel(collision.channel)} (max {collision.capacity}/week)
           </p>
         </div>
       )}
@@ -216,7 +167,7 @@ function GapWarnings({ gaps, personaNames }: { gaps: ContinuityGap[]; personaNam
           <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
           <span>
             <span className="font-medium">{personaNames.get(gap.persona) ?? gap.persona}</span>
-            {" "}has no touchpoints for {gap.gapLength} consecutive beat{gap.gapLength !== 1 ? "s" : ""} (beat {gap.startBeat + 1}&ndash;{gap.endBeat + 1}).
+            {" "}has no touchpoints for {gap.gapLength} consecutive week{gap.gapLength !== 1 ? "s" : ""} (week {gap.startBeat + 1}&ndash;{gap.endBeat + 1}).
             Mental availability may decrease.
           </span>
         </div>
@@ -225,58 +176,109 @@ function GapWarnings({ gaps, personaNames }: { gaps: ContinuityGap[]; personaNam
   );
 }
 
-/** Color legend for personas */
-function TimelineLegend({
-  personaColorIndex,
-  personaNames,
-  hasCollisions,
-  hasGaps,
+/** Filter bar for persona + channel filtering */
+function TimelineFilterBar({
+  personaLegendList,
+  channels,
+  selectedPersonaIds,
+  selectedChannels,
+  onTogglePersona,
+  onToggleChannel,
+  onClearFilters,
 }: {
-  personaColorIndex: Map<string, number>;
-  personaNames: Map<string, string>;
-  hasCollisions: boolean;
-  hasGaps: boolean;
+  personaLegendList: PersonaLegendInfo[];
+  channels: { normalized: string; label: string }[];
+  selectedPersonaIds: Set<string>;
+  selectedChannels: Set<string>;
+  onTogglePersona: (id: string) => void;
+  onToggleChannel: (normalized: string) => void;
+  onClearFilters: () => void;
 }) {
-  return (
-    <div className="flex items-center gap-3 flex-wrap text-xs text-gray-600">
-      {/* Persona colors */}
-      {Array.from(personaColorIndex.entries()).map(([id, idx]) => {
-        const color = getPersonaColor(idx);
-        return (
-          <div key={id} className="flex items-center gap-1.5">
-            <span className={`w-2.5 h-2.5 rounded-full ${color.dot}`} />
-            <span>{personaNames.get(id) ?? id}</span>
-          </div>
-        );
-      })}
-      {/* Shared */}
-      <div className="flex items-center gap-1.5">
-        <span className={`w-2.5 h-2.5 rounded-full ${SHARED_COLOR.dot}`} />
-        <span>Shared</span>
-      </div>
+  const hasActiveFilter = selectedPersonaIds.size > 0 || selectedChannels.size > 0;
 
-      {/* Indicator legend */}
-      {hasCollisions && (
-        <>
-          <div className="w-px h-4 bg-gray-200" />
-          <div className="flex items-center gap-1.5">
-            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-400 text-[9px] font-bold text-white">!</span>
-            <span>Channel collision</span>
-          </div>
-        </>
+  return (
+    <div className="space-y-2">
+      {/* Persona filter pills */}
+      {personaLegendList.length > 0 && (
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Personas:</span>
+        {personaLegendList.map((p) => {
+          const color = getPersonaColor(p.colorIndex);
+          const isActive = selectedPersonaIds.has(p.personaId);
+          return (
+            <button
+              key={p.personaId}
+              type="button"
+              onClick={() => onTogglePersona(p.personaId)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${
+                isActive
+                  ? `${color.bg} ${color.text} ${color.border}`
+                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${color.dot}`} />
+              {p.personaName}
+            </button>
+          );
+        })}
+      </div>
       )}
-      {hasGaps && (
-        <>
-          <div className="w-px h-4 bg-gray-200" />
-          <div className="flex items-center gap-1.5">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-            <span>Continuity gap</span>
-          </div>
-        </>
-      )}
+
+      {/* Channel filter pills */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Channels:</span>
+        {channels.map((ch) => {
+          const isActive = selectedChannels.has(ch.normalized);
+          return (
+            <button
+              key={ch.normalized}
+              type="button"
+              onClick={() => onToggleChannel(ch.normalized)}
+              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${
+                isActive
+                  ? "bg-gray-800 text-white border-gray-800"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              {ch.label}
+            </button>
+          );
+        })}
+
+        {/* Clear filters button */}
+        {hasActiveFilter && (
+          <button
+            type="button"
+            onClick={onClearFilters}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
+          >
+            <X className="w-3 h-3" />
+            Clear filters
+          </button>
+        )}
+      </div>
     </div>
   );
 }
+
+// ─── Phase color palette ────────────────────────────────────────
+
+const PHASE_COLORS = [
+  { header: "bg-blue-50", cell: "bg-blue-50/30", border: "border-l-blue-300", text: "text-blue-700" },
+  { header: "bg-violet-50", cell: "bg-violet-50/30", border: "border-l-violet-300", text: "text-violet-700" },
+  { header: "bg-amber-50", cell: "bg-amber-50/30", border: "border-l-amber-300", text: "text-amber-700" },
+  { header: "bg-emerald-50", cell: "bg-emerald-50/30", border: "border-l-emerald-300", text: "text-emerald-700" },
+  { header: "bg-rose-50", cell: "bg-rose-50/30", border: "border-l-rose-300", text: "text-rose-700" },
+  { header: "bg-cyan-50", cell: "bg-cyan-50/30", border: "border-l-cyan-300", text: "text-cyan-700" },
+];
+
+function getPhaseColor(phaseIdx: number) {
+  return PHASE_COLORS[phaseIdx % PHASE_COLORS.length];
+}
+
+// ─── Grid column constants ──────────────────────────────────────
+
+const CELL_MIN_WIDTH = 240;
 
 // ─── Main Component ─────────────────────────────────────────────
 
@@ -284,6 +286,8 @@ export function DeploymentTimelineSection({
   assetPlan,
   architecture,
   channelPlan,
+  onBringToLife,
+  campaignStartDate,
 }: DeploymentTimelineSectionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(ZOOM_DEFAULT);
@@ -294,21 +298,23 @@ export function DeploymentTimelineSection({
     const container = containerRef.current;
     if (!container) { setZoom(ZOOM_DEFAULT); return; }
     const scrollEl = container.querySelector("[data-timeline-scroll]") as HTMLElement | null;
-    const gridEl = container.querySelector("[data-timeline-grid]") as HTMLElement | null;
-    if (!scrollEl || !gridEl) { setZoom(ZOOM_DEFAULT); return; }
+    if (!scrollEl) { setZoom(ZOOM_DEFAULT); return; }
+    // CSS zoom affects layout, so scrollWidth reflects zoomed size.
+    // Compute natural width by dividing out current zoom factor.
+    const currentZoomFactor = zoom / 100 || 1;
     const containerWidth = scrollEl.clientWidth;
-    const gridWidth = gridEl.scrollWidth;
-    if (gridWidth <= 0) { setZoom(ZOOM_DEFAULT); return; }
-    const idealZoom = Math.floor((containerWidth / gridWidth) * 100);
+    const naturalGridWidth = scrollEl.scrollWidth / currentZoomFactor;
+    if (naturalGridWidth <= 0) { setZoom(ZOOM_DEFAULT); return; }
+    const idealZoom = Math.floor((containerWidth / naturalGridWidth) * 100);
     setZoom(Math.max(ZOOM_MIN, Math.min(idealZoom, ZOOM_MAX)));
-  }, []);
+  }, [zoom]);
 
-  // Fetch real persona data for name resolution (same pattern as JourneyMatrixSection)
+  // Fetch real persona data for name resolution + legend enrichment
   const { data: personasData } = usePersonas();
   const personaLookup = useMemo(() => {
-    const map = new Map<string, string>();
+    const map = new Map<string, PersonaWithMeta>();
     for (const p of personasData?.personas ?? []) {
-      map.set(p.id, p.name);
+      map.set(p.id, p);
     }
     return map;
   }, [personasData]);
@@ -320,17 +326,29 @@ export function DeploymentTimelineSection({
   );
 
   // Build persona color + name maps, enriching with real persona names from DB
-  const { personaColorIndex, personaNames } = useMemo(() => {
+  const { personaNames, personaLegendList, personaColorMap } = useMemo(() => {
     const colorMap = new Map<string, number>();
     const nameMap = new Map<string, string>();
+    const legendList: PersonaLegendInfo[] = [];
     let idx = 0;
 
     // Extract persona names from architecture (personaPhaseData), enriched with real names
     for (const phase of architecture.journeyPhases ?? []) {
       for (const ppd of phase.personaPhaseData ?? []) {
         if (!colorMap.has(ppd.personaId)) {
-          colorMap.set(ppd.personaId, idx++);
-          nameMap.set(ppd.personaId, personaLookup.get(ppd.personaId) ?? ppd.personaName);
+          const realPersona = personaLookup.get(ppd.personaId);
+          const name = realPersona?.name ?? ppd.personaName;
+          colorMap.set(ppd.personaId, idx);
+          nameMap.set(ppd.personaId, name);
+          legendList.push({
+            personaId: ppd.personaId,
+            personaName: name,
+            colorIndex: idx,
+            avatarUrl: realPersona?.avatarUrl ?? null,
+            tagline: realPersona?.tagline ?? null,
+            occupation: realPersona?.occupation ?? null,
+          });
+          idx++;
         }
       }
     }
@@ -339,52 +357,200 @@ export function DeploymentTimelineSection({
     for (const s of schedule.scheduled) {
       for (const p of s.targetPersonas) {
         if (!colorMap.has(p)) {
-          colorMap.set(p, idx++);
-          nameMap.set(p, personaLookup.get(p) ?? p);
+          const realPersona = personaLookup.get(p);
+          const name = realPersona?.name ?? p;
+          colorMap.set(p, idx);
+          nameMap.set(p, name);
+          legendList.push({
+            personaId: p,
+            personaName: name,
+            colorIndex: idx,
+            avatarUrl: realPersona?.avatarUrl ?? null,
+            tagline: realPersona?.tagline ?? null,
+            occupation: realPersona?.occupation ?? null,
+          });
+          idx++;
         }
       }
     }
 
-    return { personaColorIndex: colorMap, personaNames: nameMap };
+    // Derive personaId → PersonaColorStyle map
+    const pColorMap = new Map<string, PersonaColorStyle>();
+    for (const [personaId, colorIdx] of colorMap) {
+      pColorMap.set(personaId, getPersonaColor(colorIdx));
+    }
+
+    return { personaNames: nameMap, personaLegendList: legendList, personaColorMap: pColorMap };
   }, [architecture, schedule, personaLookup]);
 
-  // Collect unique channels (sorted by first appearance)
+  // ─── Persona resolution helpers ───────────────────────────────
+  const resolvePersonas = useCallback((ids: string[]): CardPersonaInfo[] => {
+    return ids
+      .filter((id) => personaNames.has(id))
+      .map((id) => ({
+        personaId: id,
+        name: personaNames.get(id)!,
+        colorStyle: personaColorMap.get(id) ?? getPersonaColor(0),
+      }));
+  }, [personaNames, personaColorMap]);
+
+  const resolveTouchpointPersonas = useCallback((tp: Touchpoint): CardPersonaInfo[] => {
+    const relevanceArray = Array.isArray(tp.personaRelevance) ? tp.personaRelevance : [];
+    return relevanceArray
+      .filter((pr) => personaNames.has(pr.personaId))
+      .map((pr) => ({
+        personaId: pr.personaId,
+        name: personaNames.get(pr.personaId)!,
+        colorStyle: personaColorMap.get(pr.personaId) ?? getPersonaColor(0),
+      }));
+  }, [personaNames, personaColorMap]);
+
+  // ─── Filter state ─────────────────────────────────────────────
+  const [selectedPersonaIds, setSelectedPersonaIds] = useState<Set<string>>(new Set());
+  const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set());
+
+  const handleTogglePersona = useCallback((id: string) => {
+    setSelectedPersonaIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const handleToggleChannel = useCallback((normalized: string) => {
+    setSelectedChannels((prev) => {
+      const next = new Set(prev);
+      if (next.has(normalized)) next.delete(normalized);
+      else next.add(normalized);
+      return next;
+    });
+  }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setSelectedPersonaIds(new Set());
+    setSelectedChannels(new Set());
+  }, []);
+
+  // Collect unique channels from both deliverables AND touchpoints (sorted by first appearance)
   const channels = useMemo(() => {
-    const seen = new Map<string, string>(); // normalizedChannel → original channel
+    const seen = new Map<string, string>(); // normalizedChannel → original channel label
+
+    // From scheduled deliverables
     for (const s of schedule.scheduled) {
       if (!seen.has(s.normalizedChannel)) {
         seen.set(s.normalizedChannel, s.channel);
       }
     }
+
+    // From touchpoints in architecture
+    for (const phase of architecture.journeyPhases ?? []) {
+      for (const tp of phase.touchpoints ?? []) {
+        const norm = normalizeChannel(tp.channel);
+        if (!seen.has(norm)) {
+          seen.set(norm, tp.channel);
+        }
+      }
+    }
+
     return Array.from(seen.entries()).map(([norm, orig]) => {
       const resolved = getChannelLabel(norm);
       return { normalized: norm, label: resolved !== "Other" ? resolved : orig };
     });
-  }, [schedule]);
+  }, [schedule, architecture]);
 
-  // Build collision lookup: beatIndex:normalizedChannel → collision
-  const collisionLookup = useMemo(() => {
-    const map = new Map<string, DeploymentCollision>();
-    for (const c of schedule.collisions) {
-      map.set(`${c.beatIndex}:${c.channel}`, c);
-    }
-    return map;
-  }, [schedule]);
-
-  // Build cell lookup: beatIndex:normalizedChannel → items[]
+  // Build deliverable cell lookup: weekIndex → items[] (flat, no channel dimension)
   const cellLookup = useMemo(() => {
-    const map = new Map<string, ScheduledDeliverable[]>();
+    const map = new Map<number, ScheduledDeliverable[]>();
     for (const s of schedule.scheduled) {
-      const key = `${s.beatIndex}:${s.normalizedChannel}`;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(s);
+      if (!map.has(s.beatIndex)) map.set(s.beatIndex, []);
+      map.get(s.beatIndex)!.push(s);
     }
     return map;
   }, [schedule]);
+
+  // Build touchpoint cell lookup: weekIndex → Touchpoint[]
+  // Touchpoints are spread evenly across their phase weeks (same interpolation as deliverables)
+  const touchpointCellLookup = useMemo(() => {
+    const map = new Map<number, Touchpoint[]>();
+    const { phaseBoundaries } = schedule;
+
+    for (const phase of architecture.journeyPhases ?? []) {
+      // Find the phase boundary for this phase
+      const phaseName = (phase.name || "").toLowerCase();
+      const pb = phaseBoundaries.find(
+        (b) => b.phase.toLowerCase() === phaseName,
+      );
+      if (!pb) continue;
+
+      const phaseDuration = pb.endBeat - pb.startBeat + 1;
+      const tps = phase.touchpoints ?? [];
+
+      // Spread touchpoints evenly across the phase
+      for (let i = 0; i < tps.length; i++) {
+        const beatOffset = tps.length <= 1
+          ? 0
+          : Math.round((i / (tps.length - 1)) * (phaseDuration - 1));
+        const beatIndex = pb.startBeat + Math.min(beatOffset, phaseDuration - 1);
+        if (!map.has(beatIndex)) map.set(beatIndex, []);
+        map.get(beatIndex)!.push(tps[i]);
+      }
+    }
+
+    return map;
+  }, [architecture, schedule]);
+
+  // ─── Filtered lookups (applies persona + channel filters) ─────
+  const filteredCellLookup = useMemo(() => {
+    if (selectedPersonaIds.size === 0 && selectedChannels.size === 0) return cellLookup;
+    const map = new Map<number, ScheduledDeliverable[]>();
+    for (const [beat, items] of cellLookup) {
+      const filtered = items.filter((s) => {
+        if (selectedChannels.size > 0 && !selectedChannels.has(s.normalizedChannel)) return false;
+        if (selectedPersonaIds.size > 0 && s.targetPersonas.length > 0 && !s.targetPersonas.some((p) => selectedPersonaIds.has(p))) return false;
+        return true;
+      });
+      if (filtered.length > 0) map.set(beat, filtered);
+    }
+    return map;
+  }, [cellLookup, selectedPersonaIds, selectedChannels]);
+
+  const filteredTouchpointLookup = useMemo(() => {
+    if (selectedPersonaIds.size === 0 && selectedChannels.size === 0) return touchpointCellLookup;
+    const map = new Map<number, Touchpoint[]>();
+    for (const [beat, tps] of touchpointCellLookup) {
+      const filtered = tps.filter((tp) => {
+        if (selectedChannels.size > 0 && !selectedChannels.has(normalizeChannel(tp.channel))) return false;
+        if (selectedPersonaIds.size > 0) {
+          const rel = Array.isArray(tp.personaRelevance) ? tp.personaRelevance : [];
+          if (rel.length > 0 && !rel.some((pr) => selectedPersonaIds.has(pr.personaId))) return false;
+        }
+        return true;
+      });
+      if (filtered.length > 0) map.set(beat, filtered);
+    }
+    return map;
+  }, [touchpointCellLookup, selectedPersonaIds, selectedChannels]);
 
   const { totalBeats, phaseBoundaries } = schedule;
 
-  if (schedule.scheduled.length === 0) {
+  // Count total touchpoints for summary
+  const totalTouchpoints = useMemo(() => {
+    let count = 0;
+    for (const phase of architecture.journeyPhases ?? []) {
+      count += (phase.touchpoints ?? []).length;
+    }
+    return count;
+  }, [architecture]);
+
+  // Grid template — no label column, just week cells
+  const gridTemplateColumns = `repeat(${totalBeats}, minmax(${CELL_MIN_WIDTH}px, 1fr))`;
+  const gridMinWidth = `${totalBeats * CELL_MIN_WIDTH}px`;
+
+  // Whether campaign start date is available for week date labels
+  const hasStartDate = !!campaignStartDate;
+
+  if (schedule.scheduled.length === 0 && totalTouchpoints === 0) {
     return (
       <div className="flex items-center gap-2 px-3 py-4 text-sm text-gray-500 bg-gray-50 rounded-lg">
         <Info className="w-4 h-4 text-gray-400" />
@@ -394,126 +560,160 @@ export function DeploymentTimelineSection({
   }
 
   return (
-    <div className="space-y-3">
-      {/* Legend */}
-      <TimelineLegend
-        personaColorIndex={personaColorIndex}
-        personaNames={personaNames}
-        hasCollisions={schedule.collisions.length > 0}
-        hasGaps={schedule.gaps.length > 0}
-      />
+    <div className="space-y-4">
+      {/* Summary bar */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="text-sm text-gray-600">
+          <Route className="w-3.5 h-3.5 inline mr-1" />
+          {phaseBoundaries.length} phase{phaseBoundaries.length !== 1 ? "s" : ""}
+        </span>
+        {totalTouchpoints > 0 && (
+          <span className="text-sm text-gray-600">
+            {totalTouchpoints} touchpoint{totalTouchpoints !== 1 ? "s" : ""}
+          </span>
+        )}
+        <span className="text-sm text-gray-600">
+          {schedule.scheduled.length} deliverable{schedule.scheduled.length !== 1 ? "s" : ""}
+        </span>
+        <span className="text-sm text-gray-600">
+          {totalBeats} week{totalBeats !== 1 ? "s" : ""}
+        </span>
+        {schedule.collisions.length > 0 && (
+          <span className="text-sm text-red-600 font-medium">
+            {schedule.collisions.length} collision{schedule.collisions.length !== 1 ? "s" : ""}
+          </span>
+        )}
+        {schedule.gaps.length > 0 && (
+          <span className="text-sm text-amber-600 font-medium">
+            {schedule.gaps.length} gap{schedule.gaps.length !== 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
+
+      {/* Filter bar (replaces static persona legend) */}
+      {(personaLegendList.length > 0 || channels.length > 0) && (
+        <TimelineFilterBar
+          personaLegendList={personaLegendList}
+          channels={channels}
+          selectedPersonaIds={selectedPersonaIds}
+          selectedChannels={selectedChannels}
+          onTogglePersona={handleTogglePersona}
+          onToggleChannel={handleToggleChannel}
+          onClearFilters={handleClearFilters}
+        />
+      )}
 
       {/* Timeline grid */}
       <div ref={containerRef} className="relative">
         <div
           data-timeline-scroll
           className="overflow-x-auto border border-gray-200 rounded-lg"
-          style={{ WebkitOverflowScrolling: "touch" }}
         >
           <div
             data-timeline-grid
-            className="origin-top-left transition-transform duration-150"
-            style={{
-              transform: zoom !== 100 ? `scale(${zoom / 100})` : undefined,
-              transformOrigin: "top left",
-            }}
+            style={zoom !== 100 ? { zoom: zoom / 100 } : undefined}
           >
-            {/* Phase header row */}
+            {/* Week header row */}
             <div
               className="grid"
-              style={{
-                gridTemplateColumns: `140px repeat(${totalBeats}, minmax(120px, 1fr))`,
-                minWidth: `${140 + totalBeats * 120}px`,
-              }}
+              style={{ gridTemplateColumns, minWidth: gridMinWidth }}
             >
-              {/* Corner */}
-              <div className="bg-gray-50 border-b border-r border-gray-200 p-2 flex items-center">
-                <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">
-                  Channel / Beat
-                </span>
-              </div>
-
-              {/* Beat headers with phase grouping */}
               {Array.from({ length: totalBeats }).map((_, beatIdx) => {
                 const phaseIdx = phaseBoundaries.findIndex(
                   (pb) => beatIdx >= pb.startBeat && beatIdx <= pb.endBeat,
                 );
                 const phase = phaseIdx >= 0 ? phaseBoundaries[phaseIdx] : undefined;
                 const isPhaseStart = phase?.startBeat === beatIdx;
+                const phaseColor = phaseIdx >= 0 ? getPhaseColor(phaseIdx) : undefined;
 
                 return (
                   <div
                     key={beatIdx}
                     className={`border-b border-r border-gray-200 p-2 text-center ${
-                      isPhaseStart ? "border-l-2 border-l-gray-300" : ""
-                    }`}
-                    style={{ backgroundColor: phaseIdx >= 0 ? `rgba(0,0,0,${0.02 + (phaseIdx % 2) * 0.02})` : undefined }}
+                      phaseColor?.header ?? ""
+                    } ${isPhaseStart ? `border-l-2 ${phaseColor?.border ?? "border-l-gray-300"}` : ""}`}
                   >
-                    {isPhaseStart && (
-                      <div className="text-[10px] font-semibold text-gray-700 truncate mb-0.5">
+                    {phase && (
+                      <div className={`text-[10px] truncate mb-0.5 ${
+                        isPhaseStart
+                          ? `font-semibold ${phaseColor?.text ?? "text-gray-700"}`
+                          : "font-medium text-gray-400"
+                      }`}>
                         {phase.phase}
                       </div>
                     )}
-                    <div className="text-[10px] text-gray-400">
-                      Beat {beatIdx + 1}
+                    <div className="text-[10px] text-gray-500 font-medium">
+                      Week {beatIdx + 1}
                     </div>
+                    {hasStartDate && (
+                      <div className="text-[9px] text-gray-400">
+                        {formatWeekDate(getWeekDate(campaignStartDate!, beatIdx))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
 
-            {/* Channel rows */}
-            {channels.map((ch) => (
-              <div
-                key={ch.normalized}
-                className="grid"
-                style={{
-                  gridTemplateColumns: `140px repeat(${totalBeats}, minmax(120px, 1fr))`,
-                  minWidth: `${140 + totalBeats * 120}px`,
-                }}
-              >
-                {/* Channel label */}
-                <div className="bg-gray-50/50 border-b border-r border-gray-200 p-2 flex items-center">
-                  <span className="text-xs font-medium text-gray-700 truncate">
-                    {ch.label}
-                  </span>
-                </div>
+            {/* Single content row — all items per week in one cell */}
+            <div
+              className="grid"
+              style={{ gridTemplateColumns, minWidth: gridMinWidth }}
+            >
+              {Array.from({ length: totalBeats }).map((_, beatIdx) => {
+                const items = filteredCellLookup.get(beatIdx) ?? [];
+                const touchpoints = filteredTouchpointLookup.get(beatIdx) ?? [];
+                // Collect any collisions for this week (across all channels)
+                const weekCollisions = schedule.collisions.filter((c) => c.beatIndex === beatIdx);
+                const phaseIdx = phaseBoundaries.findIndex(
+                  (pb) => beatIdx >= pb.startBeat && beatIdx <= pb.endBeat,
+                );
+                const phase = phaseIdx >= 0 ? phaseBoundaries[phaseIdx] : undefined;
+                const isPhaseStart = phase?.startBeat === beatIdx;
+                const phaseColor = phaseIdx >= 0 ? getPhaseColor(phaseIdx) : undefined;
+                const hasContent = items.length > 0 || touchpoints.length > 0;
 
-                {/* Beat cells */}
-                {Array.from({ length: totalBeats }).map((_, beatIdx) => {
-                  const cellKey = `${beatIdx}:${ch.normalized}`;
-                  const items = cellLookup.get(cellKey) ?? [];
-                  const collision = collisionLookup.get(cellKey);
-                  const phase = phaseBoundaries.find(
-                    (pb) => beatIdx >= pb.startBeat && beatIdx <= pb.endBeat,
-                  );
-                  const isPhaseStart = phase?.startBeat === beatIdx;
-
-                  return (
-                    <div
-                      key={beatIdx}
-                      className={`border-b border-r border-gray-100 p-1.5 min-h-[40px] ${
-                        isPhaseStart ? "border-l-2 border-l-gray-300" : ""
-                      } ${collision ? "bg-red-50/40" : ""}`}
-                    >
-                      <div className="flex flex-wrap gap-1 items-start">
-                        {items.map((item, i) => (
-                          <DeliverablePill
-                            key={`${item.deliverable.title}-${i}`}
-                            item={item}
-                            personaColorIndex={personaColorIndex}
-                            personaNames={personaNames}
+                return (
+                  <div
+                    key={beatIdx}
+                    className={`border-b border-r border-gray-100 p-2 align-top ${
+                      isPhaseStart ? `border-l-2 ${phaseColor?.border ?? "border-l-gray-300"}` : ""
+                    } ${weekCollisions.length > 0 ? "bg-red-50/40" : phaseColor?.cell ?? ""}`}
+                    style={!hasContent ? { minHeight: 64 } : undefined}
+                  >
+                    {hasContent ? (
+                      <div className="space-y-2">
+                        {touchpoints.map((tp, i) => (
+                          <TouchpointCard
+                            key={`tp-${tp.channel}-${tp.contentType}-${i}`}
+                            tp={tp}
+                            personas={resolveTouchpointPersonas(tp)}
                           />
                         ))}
-                        {collision && (
-                          <CollisionBadge collision={collision} />
-                        )}
+
+                        {items.map((item, i) => (
+                          <DeliverableCard
+                            key={`d-${item.deliverable.title}-${i}`}
+                            deliverable={item.deliverable}
+                            channel={getChannelLabel(item.normalizedChannel)}
+                            personas={resolvePersonas(item.targetPersonas)}
+                            onBringToLife={onBringToLife}
+                          />
+                        ))}
+
+                        {weekCollisions.map((collision) => (
+                          <CollisionBadge key={`col-${collision.channel}`} collision={collision} />
+                        ))}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="w-1 h-1 rounded-full bg-gray-200" aria-hidden="true" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -527,21 +727,6 @@ export function DeploymentTimelineSection({
 
       {/* Continuity gap warnings */}
       <GapWarnings gaps={schedule.gaps} personaNames={personaNames} />
-
-      {/* Summary stats */}
-      <div className="flex items-center gap-4 text-xs text-gray-500 pt-1">
-        <span>{schedule.scheduled.length} deliverables across {totalBeats} beats</span>
-        {schedule.collisions.length > 0 && (
-          <span className="text-red-600 font-medium">
-            {schedule.collisions.length} channel collision{schedule.collisions.length !== 1 ? "s" : ""}
-          </span>
-        )}
-        {schedule.gaps.length > 0 && (
-          <span className="text-amber-600 font-medium">
-            {schedule.gaps.length} continuity gap{schedule.gaps.length !== 1 ? "s" : ""}
-          </span>
-        )}
-      </div>
     </div>
   );
 }

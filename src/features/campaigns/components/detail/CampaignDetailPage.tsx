@@ -7,18 +7,15 @@ import { PageShell } from "@/components/ui/layout";
 import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
 import { useLockState } from "@/hooks/useLockState";
 import { useLockVisibility } from "@/hooks/useLockVisibility";
-import { useCampaignStore } from "../../stores/useCampaignStore";
 import { useContentStudioStore } from "@/stores/useContentStudioStore";
 import {
   useCampaignDetail,
   useKnowledgeAssets,
-  useRemoveKnowledgeAsset,
   useStrategy,
   useGenerateCampaignStrategy,
   useDeliverables,
   useAddDeliverable,
 } from "../../hooks";
-import { ConfigureInputsTab } from "./ConfigureInputsTab";
 import { StrategyResultTab } from "./StrategyResultTab";
 import { DeliverablesTab } from "./DeliverablesTab";
 import type { BlueprintStrategyResponse, KnowledgeAssetResponse } from "@/types/campaign";
@@ -31,7 +28,6 @@ interface CampaignDetailPageProps {
 }
 
 export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: CampaignDetailPageProps) {
-  const { activeCampaignTab, setActiveCampaignTab } = useCampaignStore();
 
   const { data: campaign, isLoading: campaignLoading } = useCampaignDetail(campaignId);
 
@@ -46,12 +42,11 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
     },
   });
   const visibility = useLockVisibility(lock.isLocked);
-  const { data: rawAssets, isLoading: assetsLoading } = useKnowledgeAssets(campaignId);
+  const { data: rawAssets } = useKnowledgeAssets(campaignId);
   // API may return { assets: [...] } wrapper or bare array — normalize
   const assets: KnowledgeAssetResponse[] = Array.isArray(rawAssets) ? rawAssets : (rawAssets as any)?.assets ?? [];
   const { data: strategy, isLoading: strategyLoading } = useStrategy(campaignId);
   const { data: deliverables } = useDeliverables(campaignId);
-  const removeAsset = useRemoveKnowledgeAsset(campaignId);
   const generateStrategy = useGenerateCampaignStrategy(campaignId);
   const addDeliverable = useAddDeliverable(campaignId);
 
@@ -80,7 +75,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
     onOpenInStudio?.(cId, did);
   };
 
-  /** "Bring to Life" from JourneyMatrixSection: create deliverable → set context → navigate to studio */
+  /** "Bring to Life" from Campaign Timeline: create deliverable → set context → navigate to studio */
   const [bringToLifeError, setBringToLifeError] = React.useState<string | null>(null);
   const handleBringToLife = async (deliverableTitle: string, contentType: string) => {
     setBringToLifeError(null);
@@ -194,25 +189,6 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
           </div>
         </div>
 
-        {/* Tab Navigation (Strategic campaigns only) */}
-        {isStrategic && (
-          <div className="flex gap-6 mt-6 border-b -mb-px">
-            {(["configure", "strategy"] as const).map((tab) => (
-              <button
-                key={tab}
-                data-testid={`campaign-tab-${tab}`}
-                onClick={() => setActiveCampaignTab(tab)}
-                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeCampaignTab === tab
-                    ? "border-primary text-primary"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {tab === "configure" ? "Configure Inputs" : "Strategy Result"}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Lock Banner */}
@@ -222,37 +198,29 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
       <LockOverlay isLocked={lock.isLocked}>
         <div>
           {isStrategic ? (
-            activeCampaignTab === "configure" ? (
-              <ConfigureInputsTab
-                assets={assets || []}
-                isLoading={assetsLoading}
-                onAddAssets={() => alert("Asset selection modal coming in S6.B")}
-                onRemoveAsset={(assetId) => removeAsset.mutate(assetId)}
-              />
-            ) : (
-              <div className="space-y-8">
-                {bringToLifeError && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
-                    {bringToLifeError}
-                  </div>
-                )}
-                {visibility.showAITools && (
-                  <StrategyResultTab
-                    strategy={strategy}
-                    campaignId={campaignId}
-                    isLoading={strategyLoading}
-                    onGenerate={() => generateStrategy.mutate()}
-                    isGenerating={generateStrategy.isPending}
-                    onBringToLife={onOpenInStudio ? handleBringToLife : undefined}
-                  />
-                )}
-                <DeliverablesTab
-                  deliverables={deliverables || campaign.deliverables || []}
-                  onAddDeliverable={() => alert("Add deliverable coming in S6.B")}
-                  onOpenInStudio={visibility.showAITools ? (did) => handleOpenInStudio(campaignId, did) : undefined}
+            <div className="space-y-8">
+              {bringToLifeError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                  {bringToLifeError}
+                </div>
+              )}
+              {visibility.showAITools && (
+                <StrategyResultTab
+                  strategy={strategy}
+                  campaignId={campaignId}
+                  isLoading={strategyLoading}
+                  onGenerate={() => generateStrategy.mutate()}
+                  isGenerating={generateStrategy.isPending}
+                  onBringToLife={onOpenInStudio ? handleBringToLife : undefined}
+                  campaignStartDate={campaign?.startDate}
                 />
-              </div>
-            )
+              )}
+              <DeliverablesTab
+                deliverables={deliverables || campaign.deliverables || []}
+                onAddDeliverable={() => alert("Add deliverable coming in S6.B")}
+                onOpenInStudio={visibility.showAITools ? (did) => handleOpenInStudio(campaignId, did) : undefined}
+              />
+            </div>
           ) : (
             /* Quick Content shows deliverables directly */
             <DeliverablesTab

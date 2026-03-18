@@ -79,7 +79,7 @@ function CollapsiblePreview({
   title,
   icon: Icon,
   children,
-  defaultOpen = false,
+  defaultOpen = true,
 }: {
   title: string;
   icon: React.ElementType;
