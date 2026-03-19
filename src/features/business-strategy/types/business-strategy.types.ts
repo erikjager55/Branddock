@@ -90,19 +90,36 @@ export interface MilestoneItem {
   completedAt: string | null;
 }
 
+export interface LinkedCampaignItem {
+  campaignId: string;
+  title: string;
+  type: string;
+  status: string;
+  slug: string;
+}
+
 export interface StrategyDetailResponse extends Omit<StrategyWithMeta, 'objectives'> {
   vision: string | null;
   rationale: string | null;
   keyAssumptions: string[];
+  strengths: string[];
+  weaknesses: string[];
+  opportunities: string[];
+  threats: string[];
   objectives: ObjectiveWithKeyResults[];
   focusAreaDetails: FocusAreaDetail[];
   milestones: MilestoneItem[];
-  linkedCampaigns: never[];
+  linkedCampaigns: LinkedCampaignItem[];
   lockedAt: string | null;
   lockedBy: { id: string; name: string } | null;
 }
 
 // ─── Body Types ────────────────────────────────────────────
+
+export interface InitialObjective {
+  title: string;
+  keyResults?: string[];
+}
 
 export interface CreateStrategyBody {
   name: string;
@@ -112,6 +129,7 @@ export interface CreateStrategyBody {
   endDate?: string;
   vision?: string;
   focusAreas?: string[];
+  initialObjectives?: InitialObjective[];
 }
 
 export interface UpdateStrategyBody {
@@ -178,4 +196,20 @@ export interface UpdateContextBody {
   vision?: string;
   rationale?: string;
   keyAssumptions?: string[];
+}
+
+// ─── AI Review Types ──────────────────────────────────────────
+
+export interface AiReviewFinding {
+  area: string;
+  score: number;
+  assessment: string;
+  recommendation: string;
+}
+
+export interface AiReviewResponse {
+  overallScore: number;
+  summary: string;
+  findings: AiReviewFinding[];
+  topPriorities: string[];
 }

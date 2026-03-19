@@ -7,6 +7,7 @@ import {
   Award,
   Settings,
   Puzzle,
+  Calendar,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Badge } from '@/components/shared';
@@ -93,6 +94,22 @@ export function StrategyCard({ strategy, onClick }: StrategyCardProps) {
       {/* Name + description */}
       <h3 className="font-semibold text-gray-900 mb-1">{strategy.name}</h3>
       <p className="text-sm text-gray-500 line-clamp-2 mb-3">{strategy.description}</p>
+
+      {/* Date range */}
+      {(strategy.startDate || strategy.endDate) && (
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
+          <Calendar className="w-3.5 h-3.5 text-gray-400" />
+          <span>
+            {strategy.startDate
+              ? new Date(strategy.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+              : '...'}
+            {' \u2013 '}
+            {strategy.endDate
+              ? new Date(strategy.endDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+              : '...'}
+          </span>
+        </div>
+      )}
 
       {/* Multi-segment progress bar */}
       <div className="mb-3">

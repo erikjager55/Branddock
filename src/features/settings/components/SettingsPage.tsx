@@ -8,6 +8,7 @@ import { AccountTab } from './account/AccountTab';
 import { TeamTab } from './team/TeamTab';
 import { BillingTab } from './billing/BillingTab';
 import { AdministratorTab } from './administrator/AdministratorTab';
+import { AiModelsTab } from './ai-models/AiModelsTab';
 
 interface SettingsPageProps {
   initialTab?: SettingsTab;
@@ -45,6 +46,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
         );
       case 'administrator':
         return <AdministratorTab />;
+      case 'ai-models':
+        return <AiModelsTab />;
       default:
         return <AccountTab />;
     }

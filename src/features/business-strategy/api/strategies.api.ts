@@ -264,6 +264,104 @@ export async function addFocusArea(
   return res.json();
 }
 
+export async function updateFocusArea(
+  strategyId: string,
+  focusAreaId: string,
+  data: { name?: string; description?: string | null; icon?: string; color?: string },
+): Promise<{ focusArea: { id: string; name: string } }> {
+  const res = await fetch(`${BASE}/${strategyId}/focus-areas/${focusAreaId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update focus area");
+  return res.json();
+}
+
+export async function deleteFocusArea(
+  strategyId: string,
+  focusAreaId: string,
+): Promise<{ deleted: boolean }> {
+  const res = await fetch(`${BASE}/${strategyId}/focus-areas/${focusAreaId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete focus area");
+  return res.json();
+}
+
+// ─── Campaign Linking ─────────────────────────────────────
+
+export async function linkCampaign(
+  strategyId: string,
+  campaignId: string,
+): Promise<{ linked: { campaignId: string; title: string; type: string; status: string; slug: string } }> {
+  const res = await fetch(`${BASE}/${strategyId}/link-campaign`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ campaignId }),
+  });
+  if (!res.ok) throw new Error("Failed to link campaign");
+  return res.json();
+}
+
+export async function unlinkCampaign(
+  strategyId: string,
+  campaignId: string,
+): Promise<{ unlinked: boolean }> {
+  const res = await fetch(`${BASE}/${strategyId}/unlink-campaign/${campaignId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to unlink campaign");
+  return res.json();
+}
+
+export async function searchCampaigns(
+  query?: string,
+): Promise<{ campaigns: { id: string; title: string; type: string; status: string; slug: string }[] }> {
+  const url = new URL("/api/campaigns", window.location.origin);
+  if (query) url.searchParams.set("search", query);
+  const res = await fetch(url.toString());
+  if (!res.ok) throw new Error("Failed to search campaigns");
+  return res.json();
+}
+
+// ─── SWOT ─────────────────────────────────────────────────
+
+export async function updateSwot(
+  id: string,
+  data: { strengths?: string[]; weaknesses?: string[]; opportunities?: string[]; threats?: string[] },
+): Promise<{ success: boolean }> {
+  const res = await fetch(`${BASE}/${id}/swot`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update SWOT");
+  return res.json();
+}
+
+// ─── Progress History ────────────────────────────────────
+
+export async function fetchProgressHistory(
+  strategyId: string,
+): Promise<{ snapshots: { id: string; percentage: number; date: string }[] }> {
+  const res = await fetch(`${BASE}/${strategyId}/progress-history`);
+  if (!res.ok) throw new Error("Failed to fetch progress history");
+  return res.json();
+}
+
+// ─── AI Review ──────────────────────────────────────────────
+
+export async function generateAiReview(
+  strategyId: string,
+): Promise<{ review: import("../types/business-strategy.types").AiReviewResponse }> {
+  const res = await fetch(`${BASE}/${strategyId}/ai-review`, {
+    method: "POST",
+  });
+  if (!res.ok) throw new Error("Failed to generate AI review");
+  return res.json();
+}
+
 // ─── Recalculate ───────────────────────────────────────────
 
 export async function recalculateProgress(

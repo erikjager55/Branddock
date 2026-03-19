@@ -39,7 +39,9 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         },
         focusAreas: { include: { _count: { select: { objectives: true } } } },
         milestones: { orderBy: { date: "asc" } },
-        linkedCampaigns: true,
+        linkedCampaigns: {
+          include: { campaign: { select: { title: true, type: true, status: true, slug: true } } },
+        },
         lockedBy: { select: { id: true, name: true } },
       },
     });
@@ -102,7 +104,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         },
         focusAreas: { include: { _count: { select: { objectives: true } } } },
         milestones: { orderBy: { date: "asc" } },
-        linkedCampaigns: true,
+        linkedCampaigns: {
+          include: { campaign: { select: { title: true, type: true, status: true, slug: true } } },
+        },
       },
     });
 

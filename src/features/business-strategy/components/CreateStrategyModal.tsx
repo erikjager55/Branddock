@@ -1,49 +1,42 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  TrendingUp,
-  Globe,
-  Rocket,
-  Award,
-  Settings,
-  Puzzle,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { Button, Modal, Input } from '@/components/shared';
+import { Button, Modal } from '@/components/shared';
 import { useCreateStrategy } from '../hooks';
 import { useBusinessStrategyStore } from '../stores/useBusinessStrategyStore';
-import type { StrategyType } from '../types/business-strategy.types';
+import type { StrategyType, InitialObjective } from '../types/business-strategy.types';
+import { WizardStepIndicator } from './wizard/WizardStepIndicator';
+import { WizardStep1TypeName } from './wizard/WizardStep1TypeName';
+import { WizardStep2Timeline } from './wizard/WizardStep2Timeline';
+import { WizardStep3Objectives } from './wizard/WizardStep3Objectives';
 
-// ─── Strategy type options ────────────────────────────────
-const STRATEGY_TYPE_OPTIONS: {
-  key: StrategyType;
-  icon: LucideIcon;
-  label: string;
-  description: string;
-}[] = [
-  { key: 'GROWTH', icon: TrendingUp, label: 'Growth', description: 'Scale revenue and market share' },
-  { key: 'MARKET_ENTRY', icon: Globe, label: 'Market Entry', description: 'Enter new markets or segments' },
-  { key: 'PRODUCT_LAUNCH', icon: Rocket, label: 'Product Launch', description: 'Launch new products or features' },
-  { key: 'BRAND_BUILDING', icon: Award, label: 'Brand Building', description: 'Build brand awareness and authority' },
-  { key: 'OPERATIONAL_EXCELLENCE', icon: Settings, label: 'Operational Excellence', description: 'Improve efficiency and processes' },
-  { key: 'CUSTOM', icon: Puzzle, label: 'Custom', description: 'Define your own strategy type' },
-];
+// Step 2 vision is stored but sent in the body as `vision`
+
 
 interface CreateStrategyModalProps {
   onNavigateToDetail?: (strategyId: string) => void;
 }
 
 export function CreateStrategyModal({ onNavigateToDetail }: CreateStrategyModalProps) {
-  const { isCreateModalOpen, setCreateModalOpen } = useBusinessStrategyStore();
+  const { isCreateModalOpen, setCreateModalOpen, createWizardStep, setCreateWizardStep } =
+    useBusinessStrategyStore();
   const createStrategy = useCreateStrategy();
 
+  // Step 1
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<StrategyType>('GROWTH');
+
+  // Step 2
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [focusAreasText, setFocusAreasText] = useState('');
+  const [focusAreas, setFocusAreas] = useState<string[]>([]);
+
+  // Step 3
+  const [objectives, setObjectives] = useState<InitialObjective[]>([]);
+
+  // Template-applied vision (sent in body)
+  const [vision, setVision] = useState('');
 
   const resetForm = () => {
     setName('');
@@ -51,7 +44,26 @@ export function CreateStrategyModal({ onNavigateToDetail }: CreateStrategyModalP
     setType('GROWTH');
     setStartDate('');
     setEndDate('');
-    setFocusAreasText('');
+    setFocusAreas([]);
+    setObjectives([]);
+    setVision('');
+    setCreateWizardStep(1);
+  };
+
+  const handleApplyTemplate = (tmpl: {
+    name: string;
+    description: string;
+    type: StrategyType;
+    vision: string;
+    focusAreas: string[];
+    objectives: InitialObjective[];
+  }) => {
+    setName(tmpl.name);
+    setDescription(tmpl.description);
+    setType(tmpl.type);
+    setVision(tmpl.vision);
+    setFocusAreas(tmpl.focusAreas);
+    setObjectives(tmpl.objectives);
   };
 
   const handleClose = () => {
@@ -62,10 +74,8 @@ export function CreateStrategyModal({ onNavigateToDetail }: CreateStrategyModalP
   const handleSubmit = () => {
     if (!name.trim() || !description.trim()) return;
 
-    const focusAreas = focusAreasText
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
+    // Filter out objectives without titles
+    const validObjectives = objectives.filter((o) => o.title.trim());
 
     createStrategy.mutate(
       {
@@ -74,7 +84,9 @@ export function CreateStrategyModal({ onNavigateToDetail }: CreateStrategyModalP
         type,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
+        vision: vision.trim() || undefined,
         focusAreas: focusAreas.length > 0 ? focusAreas : undefined,
+        initialObjectives: validObjectives.length > 0 ? validObjectives : undefined,
       },
       {
         onSuccess: (data) => {
@@ -87,126 +99,102 @@ export function CreateStrategyModal({ onNavigateToDetail }: CreateStrategyModalP
     );
   };
 
-  const isValid = name.trim().length > 0 && description.trim().length > 0;
+  const isStep1Valid = name.trim().length > 0 && description.trim().length > 0;
+
+  const handleNext = () => {
+    if (createWizardStep < 3) {
+      setCreateWizardStep(createWizardStep + 1);
+    }
+  };
+
+  const handleBack = () => {
+    if (createWizardStep > 1) {
+      setCreateWizardStep(createWizardStep - 1);
+    }
+  };
+
+  const stepTitles: Record<number, { title: string; subtitle: string }> = {
+    1: { title: 'Choose Type & Name', subtitle: 'Select the strategy type and give it a name' },
+    2: { title: 'Set Timeline', subtitle: 'Define the timeline and focus areas' },
+    3: { title: 'Add Objectives', subtitle: 'Optionally add initial objectives' },
+  };
+
+  const { title, subtitle } = stepTitles[createWizardStep] ?? stepTitles[1];
 
   return (
     <Modal
       isOpen={isCreateModalOpen}
       onClose={handleClose}
-      title="Create Strategy"
-      subtitle="Define a new business strategy for your brand"
+      title={title}
+      subtitle={subtitle}
       size="lg"
       footer={
-        <div className="flex justify-end gap-3">
-          <Button variant="ghost" onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button
-            data-testid="create-strategy-submit"
-            variant="cta"
-            onClick={handleSubmit}
-            disabled={!isValid || createStrategy.isPending}
-            isLoading={createStrategy.isPending}
-          >
-            Create Strategy
-          </Button>
+        <div className="flex justify-between">
+          <div>
+            {createWizardStep > 1 && (
+              <Button variant="ghost" onClick={handleBack}>
+                Back
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-3">
+            <Button variant="ghost" onClick={handleClose}>
+              Cancel
+            </Button>
+            {createWizardStep < 3 ? (
+              <Button
+                variant="cta"
+                onClick={handleNext}
+                disabled={createWizardStep === 1 && !isStep1Valid}
+              >
+                Next
+              </Button>
+            ) : (
+              <Button
+                data-testid="create-strategy-submit"
+                variant="cta"
+                onClick={handleSubmit}
+                disabled={!isStep1Valid || createStrategy.isPending}
+                isLoading={createStrategy.isPending}
+              >
+                Create Strategy
+              </Button>
+            )}
+          </div>
         </div>
       }
     >
-      <div className="space-y-5">
-        {/* Name */}
-        <Input
-          label="Strategy Name"
-          data-testid="strategy-name-input"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Q1 Growth Strategy"
-          maxLength={200}
+      <WizardStepIndicator currentStep={createWizardStep} />
+
+      {createWizardStep === 1 && (
+        <WizardStep1TypeName
+          name={name}
+          description={description}
+          type={type}
+          onNameChange={setName}
+          onDescriptionChange={setDescription}
+          onTypeChange={setType}
+          onApplyTemplate={handleApplyTemplate}
         />
+      )}
 
-        {/* Description */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
-          </label>
-          <textarea
-            data-testid="strategy-description-input"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe the goals and scope of this strategy..."
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
-          />
-        </div>
-
-        {/* Strategy Type — 2x3 grid */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Strategy Type
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {STRATEGY_TYPE_OPTIONS.map((opt) => {
-              const isSelected = type === opt.key;
-              return (
-                <button
-                  key={opt.key}
-                  data-testid={`strategy-type-${opt.key}`}
-                  type="button"
-                  onClick={() => setType(opt.key)}
-                  className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 text-center transition-colors ${
-                    isSelected
-                      ? 'border-emerald-500 bg-emerald-50'
-                      : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                >
-                  <opt.icon
-                    className={`w-5 h-5 ${
-                      isSelected ? 'text-emerald-600' : 'text-gray-400'
-                    }`}
-                  />
-                  <span
-                    className={`text-xs font-medium ${
-                      isSelected ? 'text-emerald-700' : 'text-gray-700'
-                    }`}
-                  >
-                    {opt.label}
-                  </span>
-                  <span className="text-[10px] text-gray-500 leading-tight">
-                    {opt.description}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Dates */}
-        <div className="grid grid-cols-2 gap-4">
-          <Input
-            label="Start Date"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-          <Input
-            label="End Date"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
-        </div>
-
-        {/* Focus Areas */}
-        <Input
-          label="Focus Areas (optional)"
-          value={focusAreasText}
-          onChange={(e) => setFocusAreasText(e.target.value)}
-          placeholder="Revenue Growth, Customer Acquisition, Brand Awareness"
+      {createWizardStep === 2 && (
+        <WizardStep2Timeline
+          startDate={startDate}
+          endDate={endDate}
+          focusAreas={focusAreas}
+          onStartDateChange={setStartDate}
+          onEndDateChange={setEndDate}
+          onFocusAreasChange={setFocusAreas}
         />
-        <p className="text-xs text-gray-500 -mt-3">
-          Separate multiple focus areas with commas
-        </p>
-      </div>
+      )}
+
+      {createWizardStep === 3 && (
+        <WizardStep3Objectives
+          objectives={objectives}
+          onObjectivesChange={setObjectives}
+        />
+      )}
     </Modal>
   );
 }

@@ -17,7 +17,7 @@ interface SuggestionCardProps {
 // ─── Component ─────────────────────────────────────────
 
 export function SuggestionCard({ suggestion, onApply, onDismiss, onPreview }: SuggestionCardProps) {
-  const { id, metric, impactPoints, currentText, suggestedText, status } = suggestion;
+  const { id, metric, impactPoints, currentText, suggestedText, reason, status } = suggestion;
 
   if (status === 'APPLIED') {
     return (
@@ -52,6 +52,11 @@ export function SuggestionCard({ suggestion, onApply, onDismiss, onPreview }: Su
           +{impactPoints} pts
         </Badge>
       </div>
+
+      {/* Reason */}
+      {reason && (
+        <p className="text-xs text-gray-500">{reason}</p>
+      )}
 
       {/* Comparison blocks */}
       {currentText && suggestedText && (

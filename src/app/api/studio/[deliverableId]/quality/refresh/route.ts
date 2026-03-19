@@ -1,56 +1,93 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
-import { getMetricsForType } from '@/lib/studio/quality-metrics';
+import { scoreContentQuality } from '@/lib/studio/quality-scorer';
+import { buildGenerationContext } from '@/lib/studio/context-builder';
 
 type RouteParams = { params: Promise<{ deliverableId: string }> };
 
-// POST /api/studio/[deliverableId]/quality/refresh — Recalculate quality score
+// POST /api/studio/[deliverableId]/quality/refresh — Score content with AI
 export async function POST(_request: NextRequest, { params }: RouteParams) {
   try {
     const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const { deliverableId } = await params;
 
     const deliverable = await prisma.deliverable.findFirst({
       where: {
         id: deliverableId,
-        campaign: { workspaceId: workspaceId ?? undefined },
+        campaign: { workspaceId },
       },
-      select: { contentTab: true },
+      include: {
+        campaign: {
+          select: {
+            workspaceId: true,
+            title: true,
+            campaignGoalType: true,
+            strategy: true,
+          },
+        },
+      },
     });
 
     if (!deliverable) {
       return NextResponse.json({ error: 'Deliverable not found' }, { status: 404 });
     }
 
-    // Generate random metrics between 70-95
-    const metricNames = getMetricsForType(deliverable.contentTab);
-    const metricsObj: Record<string, number> = {};
-    let total = 0;
-
-    for (const name of metricNames) {
-      const score = Math.floor(Math.random() * 26) + 70; // 70-95
-      metricsObj[name] = score;
-      total += score;
+    const content = deliverable.generatedText;
+    if (!content || content.trim().length < 50) {
+      return NextResponse.json({
+        overall: 0,
+        metrics: [],
+        summary: 'No content to evaluate. Generate content first.',
+      });
     }
 
-    const overall = Math.round(total / metricNames.length);
+    // Build context for quality evaluation
+    const context = await buildGenerationContext(
+      deliverable.campaign.workspaceId,
+      [],
+      {
+        campaignTitle: deliverable.campaign.title,
+        campaignGoalType: deliverable.campaign.campaignGoalType,
+        strategy: deliverable.campaign.strategy as Record<string, unknown> | null,
+      },
+      deliverable.title,
+    );
+
+    // Score content with AI
+    const result = await scoreContentQuality(
+      content,
+      context,
+      deliverable.contentType,
+      deliverable.title,
+      workspaceId,
+    );
+
+    // Save scores to database
+    const metricsObj: Record<string, number> = {};
+    for (const dim of result.dimensions) {
+      metricsObj[dim.name] = dim.score;
+    }
 
     await prisma.deliverable.update({
       where: { id: deliverableId },
       data: {
-        qualityScore: overall,
+        qualityScore: result.overall,
         qualityMetrics: metricsObj,
       },
     });
 
     return NextResponse.json({
-      overall,
-      metrics: metricNames.map((name) => ({
-        name,
-        score: metricsObj[name],
+      overall: result.overall,
+      metrics: result.dimensions.map((d) => ({
+        name: d.name,
+        score: d.score,
         maxScore: 100,
       })),
+      summary: result.summary,
     });
   } catch (error) {
     console.error('POST /api/studio/[deliverableId]/quality/refresh error:', error);

@@ -13,17 +13,18 @@ import { GenerateButton } from "./GenerateButton";
 interface LeftPanelProps {
   deliverableId: string;
   activeTab: ContentTab;
+  contentType: string;
   knowledgeAssets: KnowledgeAssetResponse[];
   knowledgeConfidence: number | null;
 }
 
-export function LeftPanel({ deliverableId, activeTab, knowledgeAssets, knowledgeConfidence }: LeftPanelProps) {
+export function LeftPanel({ deliverableId, activeTab, contentType, knowledgeAssets, knowledgeConfidence }: LeftPanelProps) {
   return (
     <div className="w-80 border-r bg-white overflow-y-auto flex flex-col">
       <div className="flex-1 p-4 space-y-5">
         <PromptSection />
         <AiModelSelector activeTab={activeTab} />
-        <TypeSettingsPanel activeTab={activeTab} />
+        <TypeSettingsPanel activeTab={activeTab} contentType={contentType} />
         <KnowledgeContextPanel
           assets={knowledgeAssets}
           confidence={knowledgeConfidence}

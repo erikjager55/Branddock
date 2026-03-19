@@ -8,13 +8,16 @@ type RouteParams = { params: Promise<{ deliverableId: string; suggestionId: stri
 export async function POST(_request: NextRequest, { params }: RouteParams) {
   try {
     const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const { deliverableId, suggestionId } = await params;
 
     // Verify ownership
     const deliverable = await prisma.deliverable.findFirst({
       where: {
         id: deliverableId,
-        campaign: { workspaceId: workspaceId ?? undefined },
+        campaign: { workspaceId },
       },
     });
 
@@ -30,11 +33,9 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Suggestion not found' }, { status: 404 });
     }
 
-    // Update suggestion status to APPLIED
-    await prisma.improveSuggestion.update({
-      where: { id: suggestionId },
-      data: { status: 'APPLIED' },
-    });
+    if (suggestion.status !== 'PENDING') {
+      return NextResponse.json({ error: 'Suggestion already processed' }, { status: 409 });
+    }
 
     // If suggestion has suggestedText and deliverable has generatedText, do replacement
     let updatedText = deliverable.generatedText;
@@ -45,16 +46,26 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Add impactPoints to qualityScore
-    const newScore = Math.min(100, (deliverable.qualityScore ?? 0) + suggestion.impactPoints);
+    // Add impactPoints only if text was actually changed
+    const textChanged = updatedText !== deliverable.generatedText;
+    const newScore = textChanged
+      ? Math.min(100, (deliverable.qualityScore ?? 0) + suggestion.impactPoints)
+      : (deliverable.qualityScore ?? 0);
 
-    await prisma.deliverable.update({
-      where: { id: deliverableId },
-      data: {
-        qualityScore: newScore,
-        ...(updatedText !== deliverable.generatedText ? { generatedText: updatedText } : {}),
-      },
-    });
+    // Atomic transaction: update suggestion status + deliverable together
+    await prisma.$transaction([
+      prisma.improveSuggestion.update({
+        where: { id: suggestionId },
+        data: { status: 'APPLIED' },
+      }),
+      prisma.deliverable.update({
+        where: { id: deliverableId },
+        data: {
+          qualityScore: newScore,
+          ...(textChanged ? { generatedText: updatedText } : {}),
+        },
+      }),
+    ]);
 
     return NextResponse.json({
       suggestion: {
@@ -62,6 +73,7 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
         status: 'APPLIED',
       },
       qualityScore: newScore,
+      generatedText: updatedText,
     });
   } catch (error) {
     console.error('POST /api/studio/.../improve/.../apply error:', error);

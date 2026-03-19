@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { ChevronDown, ChevronRight, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { ChevronDown, ChevronRight, GripVertical, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
 import { Badge, ProgressBar } from '@/components/shared';
 import { OBJECTIVE_STATUS_COLORS, METRIC_FORMATTERS } from '../../constants/strategy-types';
 import { KeyResultItemComponent } from './KeyResultItemComponent';
@@ -13,6 +13,9 @@ interface ObjectiveCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onKeyResultStatusToggle?: (keyResultId: string, newStatus: KeyResultStatus) => void;
+  draggable?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
 }
 
 const PRIORITY_COLORS: Record<string, { bg: string; text: string }> = {
@@ -26,9 +29,14 @@ export function ObjectiveCard({
   onEdit,
   onDelete,
   onKeyResultStatusToggle,
+  draggable,
+  onDragStart,
+  onDragEnd,
 }: ObjectiveCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const didDragRef = useRef(false);
 
   const statusColor = OBJECTIVE_STATUS_COLORS[objective.status];
   const priorityColor = PRIORITY_COLORS[objective.priority] ?? PRIORITY_COLORS.MEDIUM;
@@ -40,10 +48,25 @@ export function ObjectiveCard({
     : 0;
 
   return (
-    <div className="p-4 bg-white border border-gray-200 rounded-lg">
+    <div
+      className={`p-4 bg-white border border-gray-200 rounded-lg ${isDragging ? 'opacity-50' : ''} ${draggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      draggable={draggable}
+      onDragStart={(e) => {
+        setIsDragging(true);
+        didDragRef.current = true;
+        onDragStart?.(e);
+      }}
+      onDragEnd={(e) => {
+        setIsDragging(false);
+        onDragEnd?.(e);
+      }}
+    >
       {/* Header */}
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center gap-2 flex-wrap">
+          {draggable && (
+            <GripVertical className="w-4 h-4 text-gray-300 flex-shrink-0 cursor-grab" />
+          )}
           <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ${statusColor.bg} ${statusColor.text}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${statusColor.dot}`} />
             {objective.status.replace('_', ' ')}

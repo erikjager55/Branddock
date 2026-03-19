@@ -83,6 +83,44 @@ export function StrategyResultTab({
     return map;
   }, [deliverables]);
 
+  // ── Merge manually-added DB deliverables into the blueprint asset plan ──
+  // NOTE: This useMemo MUST be before early returns to satisfy React Rules of Hooks
+  const mergedAssetPlan: AssetPlanLayer | undefined = React.useMemo(() => {
+    if (!strategy || isLegacyStrategy(strategy)) return undefined;
+    const basePlan = strategy.blueprint.assetPlan;
+    if (!basePlan || !deliverables?.length) return basePlan;
+
+    const baseDeliverables = basePlan.deliverables ?? [];
+    const blueprintTitles = new Set(baseDeliverables.map((d) => d.title.trim().toLowerCase()));
+    const manualDeliverables: AssetPlanDeliverable[] = deliverables
+      .filter((d) => !blueprintTitles.has(d.title.trim().toLowerCase()))
+      .map((d) => ({
+        title: d.title,
+        contentType: d.contentType,
+        phase: d.settings?.phase ?? '',
+        channel: d.settings?.channel ?? d.contentType,
+        targetPersonas: d.settings?.targetPersonas ?? [],
+        brief: {
+          objective: d.settings?.brief?.objective ?? '',
+          keyMessage: d.settings?.brief?.keyMessage ?? '',
+          toneDirection: d.settings?.brief?.toneDirection ?? '',
+          callToAction: d.settings?.brief?.callToAction ?? '',
+          contentOutline: d.settings?.brief?.contentOutline ?? [],
+        },
+        productionPriority: d.settings?.productionPriority ?? 'should-have',
+        estimatedEffort: d.settings?.estimatedEffort ?? 'medium',
+        suggestedOrder: d.settings?.suggestedOrder,
+      }));
+
+    if (manualDeliverables.length === 0) return basePlan;
+
+    return {
+      ...basePlan,
+      deliverables: [...baseDeliverables, ...manualDeliverables],
+      totalDeliverables: (basePlan.totalDeliverables ?? baseDeliverables.length) + manualDeliverables.length,
+    };
+  }, [strategy, deliverables]);
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -108,42 +146,6 @@ export function StrategyResultTab({
   // ─── Blueprint format — tabbed layout ──────────────────────
   if (!isLegacyStrategy(strategy)) {
     const { blueprint } = strategy;
-
-    // ── Merge manually-added DB deliverables into the blueprint asset plan ──
-    const mergedAssetPlan: AssetPlanLayer | undefined = React.useMemo(() => {
-      const basePlan = blueprint.assetPlan;
-      if (!basePlan || !deliverables?.length) return basePlan;
-
-      const baseDeliverables = basePlan.deliverables ?? [];
-      const blueprintTitles = new Set(baseDeliverables.map((d) => d.title.trim().toLowerCase()));
-      const manualDeliverables: AssetPlanDeliverable[] = deliverables
-        .filter((d) => !blueprintTitles.has(d.title.trim().toLowerCase()))
-        .map((d) => ({
-          title: d.title,
-          contentType: d.contentType,
-          phase: d.settings?.phase ?? '',
-          channel: d.settings?.channel ?? d.contentType,
-          targetPersonas: d.settings?.targetPersonas ?? [],
-          brief: {
-            objective: d.settings?.brief?.objective ?? '',
-            keyMessage: d.settings?.brief?.keyMessage ?? '',
-            toneDirection: d.settings?.brief?.toneDirection ?? '',
-            callToAction: d.settings?.brief?.callToAction ?? '',
-            contentOutline: d.settings?.brief?.contentOutline ?? [],
-          },
-          productionPriority: d.settings?.productionPriority ?? 'should-have',
-          estimatedEffort: d.settings?.estimatedEffort ?? 'medium',
-          suggestedOrder: d.settings?.suggestedOrder,
-        }));
-
-      if (manualDeliverables.length === 0) return basePlan;
-
-      return {
-        ...basePlan,
-        deliverables: [...baseDeliverables, ...manualDeliverables],
-        totalDeliverables: (basePlan.totalDeliverables ?? baseDeliverables.length) + manualDeliverables.length,
-      };
-    }, [blueprint.assetPlan, deliverables]);
 
     // Ensure we're on a valid blueprint tab
     const validBlueprintIds = BLUEPRINT_TABS.map((t) => t.id);

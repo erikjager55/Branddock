@@ -8,12 +8,15 @@ type RouteParams = { params: Promise<{ deliverableId: string }> };
 export async function POST(_request: NextRequest, { params }: RouteParams) {
   try {
     const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const { deliverableId } = await params;
 
     const deliverable = await prisma.deliverable.findFirst({
       where: {
         id: deliverableId,
-        campaign: { workspaceId: workspaceId ?? undefined },
+        campaign: { workspaceId },
       },
     });
 
@@ -35,39 +38,45 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       });
     }
 
-    // Apply text replacements sequentially
+    // Apply all suggestions — only count impactPoints when text actually changed
     let currentText = deliverable.generatedText;
     let totalImpact = 0;
 
     for (const suggestion of pendingSuggestions) {
-      // Update status to APPLIED
-      await prisma.improveSuggestion.update({
-        where: { id: suggestion.id },
-        data: { status: 'APPLIED' },
-      });
-
-      // Replace text if applicable
       if (suggestion.suggestedText && suggestion.currentText && currentText) {
+        const before = currentText;
         currentText = currentText.replace(suggestion.currentText, suggestion.suggestedText);
+        if (currentText !== before) {
+          totalImpact += suggestion.impactPoints;
+        }
       }
-
-      totalImpact += suggestion.impactPoints;
     }
 
-    // Update deliverable quality score
     const newScore = Math.min(100, (deliverable.qualityScore ?? 0) + totalImpact);
 
-    await prisma.deliverable.update({
-      where: { id: deliverableId },
-      data: {
-        qualityScore: newScore,
-        ...(currentText !== deliverable.generatedText ? { generatedText: currentText } : {}),
-      },
-    });
+    await prisma.$transaction([
+      // Mark all pending suggestions as APPLIED
+      prisma.improveSuggestion.updateMany({
+        where: {
+          deliverableId,
+          status: 'PENDING',
+        },
+        data: { status: 'APPLIED' },
+      }),
+      // Update deliverable score + text
+      prisma.deliverable.update({
+        where: { id: deliverableId },
+        data: {
+          qualityScore: newScore,
+          ...(currentText !== deliverable.generatedText ? { generatedText: currentText } : {}),
+        },
+      }),
+    ]);
 
     return NextResponse.json({
       appliedCount: pendingSuggestions.length,
       qualityScore: newScore,
+      generatedText: currentText,
     });
   } catch (error) {
     console.error('POST /api/studio/[deliverableId]/improve/apply-all error:', error);

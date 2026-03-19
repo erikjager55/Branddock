@@ -11,6 +11,7 @@
 import { prisma } from '@/lib/prisma';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
 import { createClaudeStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
+import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
 import {
   buildTrendAnalysisSystemPrompt,
   buildTrendAnalysisUserPrompt,
@@ -164,11 +165,13 @@ export async function synthesizeTrends(params: {
       sourceCount: params.sourceCount,
     });
 
-    // Use Claude Sonnet 4.5 for highest quality analytical synthesis
+    // Resolve configurable model for trend synthesis
+    const { model: trendModel } = await resolveFeatureModel(params.workspaceId, 'trend-synthesis');
+
     const result = await createClaudeStructuredCompletion<SynthesisResult>(
       systemPrompt,
       userPrompt,
-      { temperature: 0.4, maxTokens: 10000, timeoutMs: 180_000 },
+      { model: trendModel, temperature: 0.4, maxTokens: 10000, timeoutMs: 180_000 },
     );
 
     if (!result?.trends?.length) {

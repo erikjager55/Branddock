@@ -10,7 +10,7 @@ export interface ExportFormat {
 
 export const EXPORT_FORMATS: Record<string, ExportFormat[]> = {
   text: [
-    { id: 'docx', label: 'Word Document', extension: '.docx' },
+    { id: 'txt', label: 'Plain Text', extension: '.txt' },
     { id: 'pdf', label: 'PDF', extension: '.pdf' },
     { id: 'html', label: 'HTML', extension: '.html' },
   ],
@@ -25,7 +25,6 @@ export const EXPORT_FORMATS: Record<string, ExportFormat[]> = {
   ],
   carousel: [
     { id: 'pdf', label: 'PDF', extension: '.pdf' },
-    { id: 'pptx', label: 'PowerPoint', extension: '.pptx' },
     { id: 'png', label: 'PNG (all slides)', extension: '.png' },
   ],
 };

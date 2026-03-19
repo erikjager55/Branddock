@@ -3,6 +3,7 @@ import { z } from "zod";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { scrapeProductUrl } from "@/lib/products/url-scraper";
 import { createGeminiStructuredCompletion } from "@/lib/ai/gemini-client";
+import { resolveFeatureModel, assertProvider } from "@/lib/ai/feature-models.server";
 import { getBrandContext } from "@/lib/ai/brand-context";
 import { formatBrandContext } from "@/lib/ai/prompt-templates";
 import {
@@ -82,11 +83,16 @@ export async function POST(request: NextRequest) {
       brandContext: brandContextStr,
     });
 
+    // Resolve configurable model for product analysis
+    const resolved = await resolveFeatureModel(workspaceId, 'product-analysis');
+    assertProvider(resolved, 'google', 'product-analysis');
+    const productModel = resolved.model;
+
     console.log("[analyze/url] Calling Gemini, output language:", outputLanguage);
     const result = await createGeminiStructuredCompletion<ProductAnalysisResult>(
       systemPrompt,
       userPrompt,
-      { temperature: 0.3 },
+      { model: productModel, temperature: 0.3 },
     );
     console.log("[analyze/url] Gemini returned, product name:", result?.name);
 

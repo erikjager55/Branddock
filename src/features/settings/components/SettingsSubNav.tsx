@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Users, CreditCard, Bell, Palette, Shield } from 'lucide-react';
+import { User, Users, CreditCard, Bell, Palette, Shield, Brain } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useSettingsStore, type SettingsTab } from '@/stores/useSettingsStore';
 
@@ -50,6 +50,18 @@ export function SettingsSubNav() {
         <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
           Administrator
         </p>
+        <button
+          data-testid="settings-tab-ai-models"
+          onClick={() => setActiveTab('ai-models')}
+          className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'ai-models'
+              ? 'bg-primary/10 text-primary'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`}
+        >
+          <Brain className="w-4 h-4" />
+          AI Models
+        </button>
         <button
           data-testid="settings-tab-administrator"
           onClick={() => setActiveTab('administrator')}

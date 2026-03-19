@@ -46,6 +46,11 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       data: { progressPercentage },
     });
 
+    // Save a progress snapshot
+    await prisma.progressSnapshot.create({
+      data: { percentage: progressPercentage, strategyId: id },
+    });
+
     return NextResponse.json({ progressPercentage });
   } catch (error) {
     console.error("[POST /api/strategies/[id]/recalculate]", error);

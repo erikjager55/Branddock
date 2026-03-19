@@ -3,6 +3,7 @@ import { z } from "zod";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { scrapeProductUrl } from "@/lib/products/url-scraper";
 import { createGeminiStructuredCompletion } from "@/lib/ai/gemini-client";
+import { resolveFeatureModel, assertProvider } from "@/lib/ai/feature-models.server";
 import { getBrandContext } from "@/lib/ai/brand-context";
 import { formatBrandContext } from "@/lib/ai/prompt-templates";
 import {
@@ -80,10 +81,15 @@ export async function POST(request: NextRequest) {
       brandContext: brandContextStr,
     });
 
+    // Resolve configurable model for competitor analysis
+    const resolved = await resolveFeatureModel(workspaceId, 'competitor-analysis');
+    assertProvider(resolved, 'google', 'competitor-analysis');
+    const competitorModel = resolved.model;
+
     const result = await createGeminiStructuredCompletion<CompetitorAnalysisResult>(
       systemPrompt,
       userPrompt,
-      { temperature: 0.3 },
+      { model: competitorModel, temperature: 0.3 },
     );
 
     const jobId = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;

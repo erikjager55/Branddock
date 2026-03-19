@@ -1,6 +1,8 @@
 'use client';
 
 import { Badge } from '@/components/shared';
+import { useProgressHistory } from '../../hooks';
+import { SparklineChart } from './SparklineChart';
 import type { StrategyDetailResponse } from '../../types/business-strategy.types';
 
 interface StrategyProgressSectionProps {
@@ -18,14 +20,21 @@ export function StrategyProgressSection({ strategy }: StrategyProgressSectionPro
   const onTrackPct = total > 0 ? ((onTrack + completed) / total) * progress : 0;
   const atRiskPct = total > 0 ? (atRisk / total) * progress : 0;
 
+  const { data: historyData } = useProgressHistory(strategy.id);
+  const snapshots = historyData?.snapshots ?? [];
+  const sparklineData = snapshots.map((s) => s.percentage);
+
   return (
     <div className="p-6 bg-white border border-gray-200 rounded-lg">
       <div className="flex items-center gap-8">
-        {/* Big percentage */}
-        <div className="flex-shrink-0">
+        {/* Big percentage + sparkline */}
+        <div className="flex items-center gap-3 flex-shrink-0">
           <span className="text-3xl font-bold text-gray-900">
             {Math.round(progress)}%
           </span>
+          {sparklineData.length >= 2 && (
+            <SparklineChart data={sparklineData} />
+          )}
         </div>
 
         {/* Progress bar */}

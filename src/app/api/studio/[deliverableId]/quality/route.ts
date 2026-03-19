@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
-import { getMetricsForType } from '@/lib/studio/quality-metrics';
 
 type RouteParams = { params: Promise<{ deliverableId: string }> };
 
@@ -9,17 +8,19 @@ type RouteParams = { params: Promise<{ deliverableId: string }> };
 export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const { deliverableId } = await params;
 
     const deliverable = await prisma.deliverable.findFirst({
       where: {
         id: deliverableId,
-        campaign: { workspaceId: workspaceId ?? undefined },
+        campaign: { workspaceId },
       },
       select: {
         qualityScore: true,
         qualityMetrics: true,
-        contentTab: true,
       },
     });
 
@@ -32,7 +33,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       const metricsObj = deliverable.qualityMetrics as Record<string, number>;
       const metricNames = Object.keys(metricsObj);
       return NextResponse.json({
-        overall: deliverable.qualityScore ?? 75,
+        overall: deliverable.qualityScore ?? 0,
         metrics: metricNames.map((name) => ({
           name,
           score: metricsObj[name],
@@ -41,15 +42,10 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       });
     }
 
-    // Return stub metrics for the content type
-    const metricNames = getMetricsForType(deliverable.contentTab);
+    // No metrics yet — return zero scores
     return NextResponse.json({
-      overall: deliverable.qualityScore ?? 75,
-      metrics: metricNames.map((name) => ({
-        name,
-        score: 75,
-        maxScore: 100,
-      })),
+      overall: 0,
+      metrics: [],
     });
   } catch (error) {
     console.error('GET /api/studio/[deliverableId]/quality error:', error);

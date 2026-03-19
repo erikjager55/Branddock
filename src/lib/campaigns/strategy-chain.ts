@@ -11,6 +11,7 @@ import { buildSelectedPersonasContext } from '@/lib/ai/persona-context';
 import { createClaudeStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
 import { calculateBlueprintConfidence } from './confidence-calculator';
+import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
 import { getGoalTypeGuidance } from '@/features/campaigns/lib/goal-types';
 import {
   buildFullVariantAPrompt,
@@ -369,6 +370,9 @@ export async function generateStrategyVariants(
   } = ctx;
   const strategicIntent = intentOpt ?? 'hybrid';
   const campaignName = wizardContext.campaignName;
+
+  // Resolve configurable model for campaign-strategy feature
+  const { model: resolvedModel } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
   const campaignDescription = wizardContext.campaignDescription ?? '';
   const campaignGoalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
 
@@ -436,7 +440,7 @@ export async function generateStrategyVariants(
     withStepContext('Step 1a (Full Variant A — Claude)', 300, () =>
       createClaudeStructuredCompletion<FullVariant>(
         step1aPrompt.system, step1aPrompt.user,
-        { model: CLAUDE_SONNET, temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
+        { model: resolvedModel, temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
       ),
     ),
     withStepContext('Step 1b (Full Variant B — Gemini)', 300, () =>
@@ -478,7 +482,7 @@ export async function generateStrategyVariants(
     const validationRaw = await withStepContext('Step 2 (Persona Validation)', 300, () =>
       createClaudeStructuredCompletion<PersonaValidationResult[]>(
         step2Prompt.system, step2Prompt.user,
-        { model: CLAUDE_SONNET, temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000 },
+        { model: resolvedModel, temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000 },
       ),
     );
     personaValidation = normalizePersonaValidation(
@@ -664,6 +668,9 @@ export async function generateCampaignBlueprint(
   const strategicIntent = options.strategicIntent ?? 'hybrid';
   const isWizardMode = !!options.wizardContext;
 
+  // Resolve configurable model for campaign-strategy feature
+  const { model: resolvedModel } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
+
   // ─── Gather context ──────────────────────────────────────
   // In wizard mode, we don't have a campaign in the DB yet
   let campaignName: string;
@@ -761,7 +768,7 @@ export async function generateCampaignBlueprint(
       createClaudeStructuredCompletion<FullVariant>(
         step1aPrompt.system,
         step1aPrompt.user,
-        { model: CLAUDE_SONNET, temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
+        { model: resolvedModel, temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
       ),
     ),
     withStepContext('Step 1b (Full Variant B — Gemini)', 300, () =>
@@ -805,7 +812,7 @@ export async function generateCampaignBlueprint(
       createClaudeStructuredCompletion<PersonaValidationResult[]>(
         step2Prompt.system,
         step2Prompt.user,
-        { model: CLAUDE_SONNET, temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000 },
+        { model: resolvedModel, temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000 },
       ),
     );
     personaValidation = normalizePersonaValidation(
@@ -943,7 +950,7 @@ export async function generateCampaignBlueprint(
     variantAScore,
     variantBScore,
     pipelineDuration: Date.now() - startTime,
-    modelsUsed: [CLAUDE_SONNET, GEMINI_PRO, CLAUDE_OPUS, GEMINI_FLASH],
+    modelsUsed: [resolvedModel, GEMINI_PRO, CLAUDE_OPUS, GEMINI_FLASH],
     contextSelection: {
       personaIds,
       productIds,
@@ -1020,6 +1027,9 @@ export async function regenerateBlueprintLayer(
   const startTime = Date.now();
   const blueprint = structuredClone(existingBlueprint);
 
+  // Resolve configurable model for campaign-strategy feature
+  const { model: resolvedModel } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
+
   const campaign = await prisma.campaign.findFirst({
     where: { id: campaignId, workspaceId },
     include: { knowledgeAssets: true },
@@ -1089,7 +1099,7 @@ export async function regenerateBlueprintLayer(
     const fullVariantRaw = await withStepContext('Regenerate Full Variant (Step 1)', 300, () =>
       createClaudeStructuredCompletion<FullVariant>(
         prompt.system, prompt.user,
-        { model: CLAUDE_SONNET, temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
+        { model: resolvedModel, temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
       ),
     );
     const fullVariant = fullVariantSchema.parse(fullVariantRaw);

@@ -12,12 +12,11 @@ import { AutoSaveIndicator } from './AutoSaveIndicator';
 
 interface RightPanelProps {
   deliverableId: string;
-  contentTab: string | null;
 }
 
 // ─── Component ─────────────────────────────────────────
 
-export function RightPanel({ deliverableId, contentTab }: RightPanelProps) {
+export function RightPanel({ deliverableId }: RightPanelProps) {
   const isDirty = useContentStudioStore((s) => s.isDirty);
   const lastSavedAt = useContentStudioStore((s) => s.lastSavedAt);
 
@@ -27,7 +26,7 @@ export function RightPanel({ deliverableId, contentTab }: RightPanelProps) {
       <AutoSaveIndicator lastSavedAt={lastSavedAt} isDirty={isDirty} />
 
       {/* Quality score */}
-      <QualityScoreWidget deliverableId={deliverableId} contentTab={contentTab} />
+      <QualityScoreWidget deliverableId={deliverableId} />
 
       {/* Divider */}
       <hr className="border-gray-100" />

@@ -73,22 +73,18 @@ export async function buildArenaQueries(input: QueryInput): Promise<ArenaQuery[]
 
     const humanParts: string[] = [];
 
-    // Pick psychographic keywords from personas
+    // Pick psychographic keywords from personas — trimmed to essentials
     for (const p of personas) {
-      if (p.personalityType) humanParts.push(p.personalityType);
-      // Take first 2 core values
-      for (const v of p.coreValues.slice(0, 2)) {
-        humanParts.push(v);
-      }
-      // Take first frustration as pain point signal
-      if (p.frustrations.length > 0) {
-        humanParts.push(p.frustrations[0]);
-      }
+      if (p.personalityType) humanParts.push(trimToKeywords(p.personalityType, 2));
+      // Take first core value (trimmed)
+      if (p.coreValues.length > 0) humanParts.push(trimToKeywords(p.coreValues[0], 2));
+      // Take first frustration as pain point signal (trimmed)
+      if (p.frustrations.length > 0) humanParts.push(trimToKeywords(p.frustrations[0], 2));
     }
 
     if (humanParts.length > 0) {
-      // Limit query length — Are.na search works best with concise queries (~80 chars)
-      const humanQuery = humanParts.slice(0, 5).join(' ').slice(0, 80);
+      // Are.na search works best with concise queries of 2-4 words
+      const humanQuery = humanParts.slice(0, 4).join(' ').slice(0, 60);
       queries.push({
         query: humanQuery,
         layer: 'human',
@@ -114,13 +110,10 @@ export async function buildArenaQueries(input: QueryInput): Promise<ArenaQuery[]
         ? JSON.parse(brandValues.frameworkData)
         : brandValues.frameworkData;
 
-      // Extract value names from BrandHouse Values structure
-      const valueNames: string[] = [];
-      if (data.anchorValue1?.name) valueNames.push(data.anchorValue1.name);
-      if (data.aspirationValue1?.name) valueNames.push(data.aspirationValue1.name);
-      if (data.ownValue?.name) valueNames.push(data.ownValue.name);
-
-      creativeParts.push(...valueNames.slice(0, 3));
+      // Extract value names from BrandHouse Values structure — trimmed for search
+      if (data.anchorValue1?.name) creativeParts.push(trimToKeywords(data.anchorValue1.name, 2));
+      if (data.aspirationValue1?.name) creativeParts.push(trimToKeywords(data.aspirationValue1.name, 2));
+      if (data.ownValue?.name) creativeParts.push(trimToKeywords(data.ownValue.name, 2));
     } catch {
       // Ignore parse errors
     }
@@ -142,8 +135,8 @@ export async function buildArenaQueries(input: QueryInput): Promise<ArenaQuery[]
           ? JSON.parse(essence.frameworkData)
           : essence.frameworkData;
 
-        if (data.essenceStatement) creativeParts.push(data.essenceStatement);
-        if (data.discriminator) creativeParts.push(data.discriminator);
+        if (data.essenceStatement) creativeParts.push(trimToKeywords(data.essenceStatement, 3));
+        if (data.discriminator) creativeParts.push(trimToKeywords(data.discriminator, 2));
       } catch {
         // Ignore parse errors
       }
@@ -154,12 +147,37 @@ export async function buildArenaQueries(input: QueryInput): Promise<ArenaQuery[]
 
   if (creativeParts.length > 0) {
     queries.push({
-      query: creativeParts.slice(0, 4).join(' '),
+      query: creativeParts.slice(0, 4).join(' ').slice(0, 60),
       layer: 'creative',
     });
   }
 
   return queries;
+}
+
+/**
+ * Trim a long phrase to its first 2-4 meaningful keywords.
+ * Are.na search works best with short, punchy queries — long phrases
+ * like "Innovation and Forward Thinking" dilute search precision.
+ */
+function trimToKeywords(text: string, maxWords = 3): string {
+  const STOP_WORDS = new Set(['and', 'the', 'of', 'for', 'in', 'to', 'a', 'an', 'with', 'on', 'at', 'by', 'is', 'are']);
+  return text
+    .split(/\s+/)
+    .filter(w => w.length > 1 && !STOP_WORDS.has(w.toLowerCase()))
+    .slice(0, maxWords)
+    .join(' ');
+}
+
+/**
+ * Build a simplified fallback query from a layer's original query.
+ * Used when the original query returns 0 results — tries a shorter, more generic version.
+ */
+export function buildFallbackQuery(originalQuery: string): string | null {
+  const words = originalQuery.split(/\s+/).filter(w => w.length > 2);
+  if (words.length <= 2) return null; // Already short, no further simplification possible
+  // Take just the first 2 meaningful words
+  return words.slice(0, 2).join(' ');
 }
 
 /**

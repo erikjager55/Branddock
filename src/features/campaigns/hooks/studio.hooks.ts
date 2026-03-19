@@ -18,9 +18,8 @@ import {
   fetchVersions,
   createVersion,
   restoreVersion,
-  exportContent,
 } from '../api/studio.api';
-import type { UpdateStudioBody, GenerateContentBody, InsertInsightBody, ExportBody } from '@/types/studio';
+import type { UpdateStudioBody, GenerateContentBody, InsertInsightBody } from '@/types/studio';
 import { campaignKeys } from './index';
 
 export const studioKeys = {
@@ -216,8 +215,4 @@ export function useRestoreVersion(deliverableId: string) {
   });
 }
 
-export function useExport(deliverableId: string) {
-  return useMutation({
-    mutationFn: (body: ExportBody) => exportContent(deliverableId, body),
-  });
-}
+

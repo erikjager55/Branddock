@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { ArrowLeft, Archive, Trash2, MoreHorizontal } from 'lucide-react';
+import { useState, useCallback, useRef } from 'react';
+import { ArrowLeft, Archive, Trash2, MoreHorizontal, Sparkles, FileDown } from 'lucide-react';
 import { Badge, Button, SkeletonCard, SkeletonText } from '@/components/shared';
 import { PageShell } from '@/components/ui/layout';
 import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from '@/components/lock';
 import { VersionPill } from '@/components/versioning/VersionPill';
 import { useLockState } from '@/hooks/useLockState';
-import { useLockVisibility } from '@/hooks/useLockVisibility';
 import { STRATEGY_TYPES, STRATEGY_STATUS_COLORS } from '../../constants/strategy-types';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -18,6 +17,7 @@ import {
   useArchiveStrategy,
   useDeleteStrategy,
   useRecalculateProgress,
+  useReorderObjectives,
   strategyKeys,
 } from '../../hooks';
 import { useBusinessStrategyStore } from '../../stores/useBusinessStrategyStore';
@@ -29,7 +29,10 @@ import { AddObjectiveModal } from './AddObjectiveModal';
 import { FocusAreaCards } from './FocusAreaCards';
 import { LinkedCampaignsSection } from './LinkedCampaignsSection';
 import { MilestoneTimeline } from './MilestoneTimeline';
+import { SwotSection } from './SwotSection';
+import { AiReviewPanel } from './AiReviewPanel';
 import { AddMilestoneModal } from './AddMilestoneModal';
+import { exportStrategyPdf } from '../../utils/exportStrategyPdf';
 
 interface StrategyDetailPageProps {
   strategyId: string;
@@ -42,9 +45,11 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
   const archiveStrategy = useArchiveStrategy(strategyId);
   const deleteStrategy = useDeleteStrategy(strategyId);
   const recalculate = useRecalculateProgress(strategyId);
+  const reorderObjectives = useReorderObjectives(strategyId);
 
   const qc = useQueryClient();
-  const { isAddObjectiveModalOpen, setAddObjectiveModalOpen, isAddMilestoneModalOpen, setAddMilestoneModalOpen } =
+  const dragIndexRef = useRef<number | null>(null);
+  const { isAddObjectiveModalOpen, setAddObjectiveModalOpen, isAddMilestoneModalOpen, setAddMilestoneModalOpen, isAiReviewOpen, setAiReviewOpen } =
     useBusinessStrategyStore();
 
   const [showHeaderMenu, setShowHeaderMenu] = useState(false);
@@ -59,8 +64,6 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
       lockedBy: strategy?.lockedBy ?? null,
     },
   });
-  const visibility = useLockVisibility(lock.isLocked);
-
   const handleContextUpdate = (data: UpdateContextBody) => {
     updateContext.mutate(data);
   };
@@ -78,6 +81,34 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
       });
     }
   };
+
+  const handleObjectiveDragStart = useCallback((index: number, e: React.DragEvent) => {
+    dragIndexRef.current = index;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  }, []);
+
+  const handleObjectiveDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const handleObjectiveDrop = useCallback((dropIndex: number, e: React.DragEvent) => {
+    e.preventDefault();
+    const dragIndex = dragIndexRef.current;
+    if (dragIndex === null || dragIndex === dropIndex || !strategy) return;
+
+    const ids = strategy.objectives.map((o) => o.id);
+    const [moved] = ids.splice(dragIndex, 1);
+    ids.splice(dropIndex, 0, moved);
+
+    reorderObjectives.mutate(ids, {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: strategyKeys.detail(strategyId) });
+      },
+    });
+    dragIndexRef.current = null;
+  }, [strategy, reorderObjectives, qc, strategyId]);
 
   // Loading state
   if (isLoading) {
@@ -152,6 +183,13 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAiReviewOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 rounded-lg transition-colors"
+            >
+              <Sparkles className="w-4 h-4" />
+              AI Review
+            </button>
             <LockShield
               isLocked={lock.isLocked}
               isToggling={lock.isToggling}
@@ -172,6 +210,15 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
             </button>
             {showHeaderMenu && (
               <div className="absolute right-0 top-10 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 w-44">
+                <button
+                  onClick={() => {
+                    setShowHeaderMenu(false);
+                    exportStrategyPdf(strategy);
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  <FileDown className="w-4 h-4" /> Export PDF
+                </button>
                 <button
                   onClick={handleArchive}
                   className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -206,6 +253,18 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
           />
         </LockOverlay>
 
+        {/* SWOT Analysis */}
+        <LockOverlay isLocked={lock.isLocked}>
+          <SwotSection
+            strategyId={strategyId}
+            strengths={strategy.strengths}
+            weaknesses={strategy.weaknesses}
+            opportunities={strategy.opportunities}
+            threats={strategy.threats}
+            canEdit={lock.canEdit}
+          />
+        </LockOverlay>
+
         {/* Objectives */}
         <LockOverlay isLocked={lock.isLocked}>
         <div data-testid="objectives-section" className="p-6 bg-white border border-gray-200 rounded-lg">
@@ -224,13 +283,21 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
 
           {strategy.objectives.length > 0 ? (
             <div className="space-y-3">
-              {strategy.objectives.map((obj) => (
-                <ObjectiveCardWithHooks
+              {strategy.objectives.map((obj, idx) => (
+                <div
                   key={obj.id}
-                  objective={obj}
-                  strategyId={strategyId}
-                  onRecalculate={() => recalculate.mutate(undefined)}
-                />
+                  onDragOver={handleObjectiveDragOver}
+                  onDrop={(e) => handleObjectiveDrop(idx, e)}
+                >
+                  <ObjectiveCardWithHooks
+                    objective={obj}
+                    strategyId={strategyId}
+                    index={idx}
+                    canEdit={lock.canEdit}
+                    onRecalculate={() => recalculate.mutate(undefined)}
+                    onDragStart={handleObjectiveDragStart}
+                  />
+                </div>
               ))}
             </div>
           ) : (
@@ -244,13 +311,20 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
           <FocusAreaCards focusAreas={strategy.focusAreaDetails} strategyId={strategyId} />
         </LockOverlay>
 
-        {/* Linked Campaigns (stub) */}
-        <LinkedCampaignsSection />
+        {/* Linked Campaigns */}
+        <LockOverlay isLocked={lock.isLocked}>
+          <LinkedCampaignsSection
+            strategyId={strategyId}
+            linkedCampaigns={strategy.linkedCampaigns}
+            canEdit={lock.canEdit}
+          />
+        </LockOverlay>
 
         {/* Milestones */}
         <LockOverlay isLocked={lock.isLocked}>
           <MilestoneTimeline
             milestones={strategy.milestones}
+            strategyId={strategyId}
             onAdd={() => setAddMilestoneModalOpen(true)}
           />
         </LockOverlay>
@@ -276,6 +350,13 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
           onConfirm={lock.confirmToggle}
           onCancel={lock.cancelToggle}
         />
+
+        {/* AI Review Panel */}
+        <AiReviewPanel
+          strategyId={strategyId}
+          isOpen={isAiReviewOpen}
+          onClose={() => setAiReviewOpen(false)}
+        />
       </div>
     </PageShell>
   );
@@ -286,11 +367,17 @@ export function StrategyDetailPage({ strategyId, onNavigateBack }: StrategyDetai
 function ObjectiveCardWithHooks({
   objective,
   strategyId,
+  index,
+  canEdit,
   onRecalculate,
+  onDragStart,
 }: {
   objective: import('../../types/business-strategy.types').ObjectiveWithKeyResults;
   strategyId: string;
+  index: number;
+  canEdit: boolean;
   onRecalculate: () => void;
+  onDragStart: (index: number, e: React.DragEvent) => void;
 }) {
   const updateKR = useUpdateKeyResult(strategyId, objective.id);
   const deleteObjective = useDeleteObjective(strategyId, objective.id);
@@ -312,6 +399,8 @@ function ObjectiveCardWithHooks({
     <ObjectiveCard
       objective={objective}
       strategyId={strategyId}
+      draggable={canEdit}
+      onDragStart={(e) => onDragStart(index, e)}
       onDelete={handleDelete}
       onKeyResultStatusToggle={handleKRStatusToggle}
     />

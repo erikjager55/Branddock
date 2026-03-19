@@ -11,6 +11,10 @@ const createStrategySchema = z.object({
   endDate: z.string().optional(),
   vision: z.string().optional(),
   focusAreas: z.array(z.string()).optional(),
+  initialObjectives: z.array(z.object({
+    title: z.string().min(1).max(200),
+    keyResults: z.array(z.string()).optional(),
+  })).optional(),
 });
 
 // =============================================================
@@ -90,32 +94,62 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { name, description, type, startDate, endDate, vision, focusAreas } = parsed.data;
+    const { name, description, type, startDate, endDate, vision, focusAreas, initialObjectives } = parsed.data;
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-    const strategy = await prisma.businessStrategy.create({
-      data: {
-        name,
-        slug,
-        description,
-        type: type ?? "CUSTOM",
-        vision: vision ?? null,
-        startDate: startDate ? new Date(startDate) : null,
-        endDate: endDate ? new Date(endDate) : null,
-        workspaceId,
-        createdById: session.user.id,
-        focusAreas: focusAreas?.length
-          ? {
-              create: focusAreas.map((fa) => ({ name: fa })),
-            }
-          : undefined,
-      },
-      include: {
-        objectives: { include: { keyResults: true, focusArea: true } },
-        focusAreas: { include: { _count: { select: { objectives: true } } } },
-        milestones: true,
-        linkedCampaigns: true,
-      },
+    const strategy = await prisma.$transaction(async (tx) => {
+      const created = await tx.businessStrategy.create({
+        data: {
+          name,
+          slug,
+          description,
+          type: type ?? "CUSTOM",
+          vision: vision ?? null,
+          startDate: startDate ? new Date(startDate) : null,
+          endDate: endDate ? new Date(endDate) : null,
+          workspaceId,
+          createdById: session.user.id,
+          focusAreas: focusAreas?.length
+            ? {
+                create: focusAreas.map((fa) => ({ name: fa })),
+              }
+            : undefined,
+        },
+      });
+
+      // Create initial objectives with key results if provided
+      if (initialObjectives?.length) {
+        for (let i = 0; i < initialObjectives.length; i++) {
+          const obj = initialObjectives[i];
+          await tx.objective.create({
+            data: {
+              title: obj.title,
+              strategyId: created.id,
+              sortOrder: i,
+              targetValue: 100,
+              keyResults: obj.keyResults?.length
+                ? {
+                    create: obj.keyResults.map((kr, krIdx) => ({
+                      description: kr,
+                      sortOrder: krIdx,
+                    })),
+                  }
+                : undefined,
+            },
+          });
+        }
+      }
+
+      // Re-fetch with all relations
+      return tx.businessStrategy.findUniqueOrThrow({
+        where: { id: created.id },
+        include: {
+          objectives: { include: { keyResults: true, focusArea: true } },
+          focusAreas: { include: { _count: { select: { objectives: true } } } },
+          milestones: true,
+          linkedCampaigns: true,
+        },
+      });
     });
 
     return NextResponse.json({ strategy: mapStrategyDetail(strategy) }, { status: 201 });
@@ -138,10 +172,20 @@ function mapStrategyDetail(s: any) {
     vision: s.vision,
     rationale: s.rationale,
     keyAssumptions: s.keyAssumptions ?? [],
+    strengths: s.strengths ?? [],
+    weaknesses: s.weaknesses ?? [],
+    opportunities: s.opportunities ?? [],
+    threats: s.threats ?? [],
     objectives: (s.objectives ?? []).map(mapObjective),
     focusAreaDetails: (s.focusAreas ?? []).map(mapFocusArea),
     milestones: (s.milestones ?? []).map(mapMilestone),
-    linkedCampaigns: [],
+    linkedCampaigns: (s.linkedCampaigns ?? []).map((lc: { campaignId: string; campaign?: { title: string; type: string; status: string; slug: string } }) => ({
+      campaignId: lc.campaignId,
+      title: lc.campaign?.title ?? "Unknown",
+      type: lc.campaign?.type ?? "STRATEGIC",
+      status: lc.campaign?.status ?? "ACTIVE",
+      slug: lc.campaign?.slug ?? "",
+    })),
     focusAreas: (s.focusAreas ?? []).map((fa: { name: string }) => fa.name),
     linkedCampaignCount: s.linkedCampaigns?.length ?? 0,
     isLocked: s.isLocked ?? false,

@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, useState, type DragEvent } from "react";
 import {
   AlertTriangle,
-  ArrowRightLeft,
+  ClipboardList,
   Minus,
   Plus,
   Maximize2,
@@ -30,7 +30,6 @@ import {
   type PersonaLegendInfo,
   type CardPersonaInfo,
 } from "./shared-timeline-cards";
-import { FlowConnectionsOverlay } from "./FlowConnectionsOverlay";
 
 // ─── Zoom constants ─────────────────────────────────────────────
 
@@ -318,10 +317,6 @@ export function DeploymentTimelineSection({
   const gridRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(ZOOM_DEFAULT);
 
-  // Flow connections state
-  const [showFlows, setShowFlows] = useState(true);
-  const [hoveredFlowTitles, setHoveredFlowTitles] = useState<Set<string> | null>(null);
-
   // Manual beat position overrides: itemKey → new absolute beatIndex
   const [beatOverrides, setBeatOverrides] = useState<Map<string, number>>(new Map());
 
@@ -359,18 +354,30 @@ export function DeploymentTimelineSection({
   );
 
   // Build persona color + name maps, enriching with real persona names from DB
-  const { personaNames, personaLegendList, personaColorMap } = useMemo(() => {
+  const { personaNames, personaLegendList, personaColorMap, idRemapping } = useMemo(() => {
     const colorMap = new Map<string, number>();
     const nameMap = new Map<string, string>();
     const legendList: PersonaLegendInfo[] = [];
+    const nameToFirstId = new Map<string, string>(); // lowercase name → canonical personaId
+    const remapping = new Map<string, string>();       // duplicate personaId → canonical personaId
     let idx = 0;
 
-    // Extract persona names from architecture (personaPhaseData), enriched with real names
+    // Extract persona names from architecture (personaPhaseData), deduplicate on name
     for (const phase of architecture.journeyPhases ?? []) {
       for (const ppd of phase.personaPhaseData ?? []) {
+        const realPersona = personaLookup.get(ppd.personaId);
+        const name = realPersona?.name ?? ppd.personaName;
+        const nameLower = name.toLowerCase();
+
+        // Check for duplicate name with different ID → remap to canonical
+        const existingId = nameToFirstId.get(nameLower);
+        if (existingId && existingId !== ppd.personaId) {
+          remapping.set(ppd.personaId, existingId);
+          continue;
+        }
+
         if (!colorMap.has(ppd.personaId)) {
-          const realPersona = personaLookup.get(ppd.personaId);
-          const name = realPersona?.name ?? ppd.personaName;
+          nameToFirstId.set(nameLower, ppd.personaId);
           colorMap.set(ppd.personaId, idx);
           nameMap.set(ppd.personaId, name);
           legendList.push({
@@ -386,17 +393,32 @@ export function DeploymentTimelineSection({
     // Also pick up any personas only referenced in deliverables
     for (const s of schedule.scheduled) {
       for (const p of s.targetPersonas) {
-        if (!colorMap.has(p)) {
-          const realPersona = personaLookup.get(p);
-          const name = realPersona?.name ?? p;
-          colorMap.set(p, idx);
-          nameMap.set(p, name);
+        const canonicalId = remapping.get(p) ?? p;
+        if (!colorMap.has(canonicalId)) {
+          const realPersona = personaLookup.get(canonicalId);
+          const name = realPersona?.name ?? canonicalId;
+          const nameLower = name.toLowerCase();
+
+          const existingNameId = nameToFirstId.get(nameLower);
+          if (existingNameId && existingNameId !== canonicalId) {
+            remapping.set(canonicalId, existingNameId);
+            if (p !== canonicalId) remapping.set(p, existingNameId);
+            continue;
+          }
+
+          nameToFirstId.set(nameLower, canonicalId);
+          colorMap.set(canonicalId, idx);
+          nameMap.set(canonicalId, name);
           legendList.push({
-            personaId: p,
+            personaId: canonicalId,
             personaName: name,
             colorIndex: idx,
           });
           idx++;
+        }
+        // Ensure the original ID is also remapped if it differs
+        if (p !== canonicalId && !remapping.has(p)) {
+          remapping.set(p, canonicalId);
         }
       }
     }
@@ -407,19 +429,21 @@ export function DeploymentTimelineSection({
       pColorMap.set(personaId, getPersonaColor(colorIdx));
     }
 
-    return { personaNames: nameMap, personaLegendList: legendList, personaColorMap: pColorMap };
+    return { personaNames: nameMap, personaLegendList: legendList, personaColorMap: pColorMap, idRemapping: remapping };
   }, [architecture, schedule, personaLookup]);
 
   // ─── Persona resolution helpers ───────────────────────────────
   const resolvePersonas = useCallback((ids: string[]): CardPersonaInfo[] => {
     return ids
+      .map((id) => idRemapping.get(id) ?? id)
+      .filter((id, i, arr) => arr.indexOf(id) === i) // deduplicate after remapping
       .filter((id) => personaNames.has(id))
       .map((id) => ({
         personaId: id,
         name: personaNames.get(id)!,
         colorStyle: personaColorMap.get(id) ?? getPersonaColor(0),
       }));
-  }, [personaNames, personaColorMap]);
+  }, [personaNames, personaColorMap, idRemapping]);
 
   // ─── Filter state ─────────────────────────────────────────────
   const [selectedPersonaIds, setSelectedPersonaIds] = useState<Set<string>>(new Set());
@@ -518,7 +542,10 @@ export function DeploymentTimelineSection({
     for (const s of schedule.scheduled) {
       const key = getItemKey(s.deliverable, s.beatIndex);
       const beat = beatOverrides.get(key) ?? s.beatIndex;
-      const adjusted = { ...s, beatIndex: beat, schedulerBeatIndex: s.beatIndex };
+      // Remap duplicate persona IDs to canonical IDs
+      const remappedPersonas = s.targetPersonas.map((id) => idRemapping.get(id) ?? id);
+      const uniquePersonas = remappedPersonas.filter((id, i, arr) => arr.indexOf(id) === i);
+      const adjusted = { ...s, beatIndex: beat, schedulerBeatIndex: s.beatIndex, targetPersonas: uniquePersonas };
       if (!map.has(beat)) map.set(beat, []);
       map.get(beat)!.push(adjusted);
     }
@@ -532,7 +559,7 @@ export function DeploymentTimelineSection({
       });
     }
     return map;
-  }, [schedule, beatOverrides]);
+  }, [schedule, beatOverrides, idRemapping]);
 
 
   // ─── Filtered lookups (applies persona + channel filters) ─────
@@ -585,74 +612,11 @@ export function DeploymentTimelineSection({
     return lanes;
   }, [personaLegendList, filteredCellLookup, personaColorMap]);
 
-  // ─── Flow connections (re-resolved with beatOverrides) ──────
-  const effectiveResolvedConnections = useMemo(() => {
-    if (!schedule.resolvedConnections || schedule.resolvedConnections.length === 0) return [];
-    if (beatOverrides.size === 0) return schedule.resolvedConnections;
-
-    // Build title → beat lookup from cellLookup (first match wins, consistent with scheduler)
-    const titleToBeat = new Map<string, number>();
-    for (const [beat, items] of cellLookup) {
-      for (const item of items) {
-        if (!titleToBeat.has(item.deliverable.title)) {
-          titleToBeat.set(item.deliverable.title, beat);
-        }
-      }
-    }
-
-    return schedule.resolvedConnections.map((conn) => ({
-      ...conn,
-      fromBeatIndex: titleToBeat.get(conn.fromTitle) ?? conn.fromBeatIndex,
-      toBeatIndex: titleToBeat.get(conn.toTitle) ?? conn.toBeatIndex,
-    }));
-  }, [schedule.resolvedConnections, beatOverrides, cellLookup]);
-
-  // Set of titles currently hidden by filters (only hidden if ALL instances fail)
-  const hiddenTitles = useMemo(() => {
-    if (selectedPersonaIds.size === 0 && selectedChannels.size === 0) return new Set<string>();
-    const visible = new Set<string>();
-    const all = new Set<string>();
-    for (const s of schedule.scheduled) {
-      all.add(s.deliverable.title);
-      const passChannel = selectedChannels.size === 0 || selectedChannels.has(s.normalizedChannel);
-      const passPersona = selectedPersonaIds.size === 0 || s.targetPersonas.length === 0 || s.targetPersonas.some((p) => selectedPersonaIds.has(p));
-      if (passChannel && passPersona) visible.add(s.deliverable.title);
-    }
-    const hidden = new Set<string>();
-    for (const title of all) {
-      if (!visible.has(title)) hidden.add(title);
-    }
-    return hidden;
-  }, [schedule.scheduled, selectedPersonaIds, selectedChannels]);
-
-  // Set of all titles that participate in at least one flow connection
-  const flowTitleSet = useMemo(() => {
-    const titles = new Set<string>();
-    for (const conn of effectiveResolvedConnections) {
-      titles.add(conn.fromTitle);
-      titles.add(conn.toTitle);
-    }
-    return titles;
-  }, [effectiveResolvedConnections]);
-
-  const hasFlowConnections = effectiveResolvedConnections.length > 0;
-
-  // Build deliverable title → targetPersonas lookup for persona-colored flow connections
-  const deliverablePersonaMap = useMemo(() => {
-    const map = new Map<string, string[]>();
-    for (const s of schedule.scheduled) {
-      if (!map.has(s.deliverable.title)) {
-        map.set(s.deliverable.title, s.targetPersonas);
-      }
-    }
-    return map;
-  }, [schedule.scheduled]);
-
   const { totalBeats, phaseBoundaries } = schedule;
 
-  // Grid template — no label column, just week cells
-  const gridTemplateColumns = `repeat(${totalBeats}, minmax(${CELL_MIN_WIDTH}px, 1fr))`;
-  const gridMinWidth = `${totalBeats * CELL_MIN_WIDTH}px`;
+  // Grid template — prep column + week cells
+  const gridTemplateColumns = `${CELL_MIN_WIDTH}px repeat(${totalBeats}, minmax(${CELL_MIN_WIDTH}px, 1fr))`;
+  const gridMinWidth = `${(totalBeats + 1) * CELL_MIN_WIDTH}px`;
 
   // Whether campaign start date is available for week date labels
   const hasStartDate = !!campaignStartDate;
@@ -690,20 +654,6 @@ export function DeploymentTimelineSection({
             {schedule.gaps.length} gap{schedule.gaps.length !== 1 ? "s" : ""}
           </span>
         )}
-        {hasFlowConnections && (
-          <button
-            type="button"
-            onClick={() => setShowFlows((v) => !v)}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border ${
-              showFlows
-                ? "bg-gray-900 text-white border-gray-900"
-                : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
-            }`}
-          >
-            <ArrowRightLeft className="w-3 h-3" />
-            Flows
-          </button>
-        )}
       </div>
 
       {/* Filter bar (replaces static persona legend) */}
@@ -736,6 +686,11 @@ export function DeploymentTimelineSection({
               className="grid"
               style={{ gridTemplateColumns, minWidth: gridMinWidth }}
             >
+              {/* Prep column header */}
+              <div className="border-b border-r border-gray-200 p-2 text-center bg-slate-50">
+                <div className="text-[10px] font-semibold text-slate-600 mb-0.5">Preparation</div>
+                <div className="text-[10px] text-slate-500 font-medium">Week 0</div>
+              </div>
               {Array.from({ length: totalBeats }).map((_, beatIdx) => {
                 const phaseIdx = phaseBoundaries.findIndex(
                   (pb) => beatIdx >= pb.startBeat && beatIdx <= pb.endBeat,
@@ -779,7 +734,13 @@ export function DeploymentTimelineSection({
                 className="grid"
                 style={{ gridTemplateColumns, minWidth: gridMinWidth }}
               >
-                {Array.from({ length: totalBeats }).map((_, beatIdx) => {
+                {/* Prep column persona lane cell */}
+              <div className="flex flex-col gap-px py-1 px-1 border-r border-gray-100 bg-slate-50/30">
+                {personaLanes.map((lane) => (
+                  <div key={lane.personaId} className="h-1" />
+                ))}
+              </div>
+              {Array.from({ length: totalBeats }).map((_, beatIdx) => {
                   const phaseIdx = phaseBoundaries.findIndex(
                     (pb) => beatIdx >= pb.startBeat && beatIdx <= pb.endBeat,
                   );
@@ -826,6 +787,46 @@ export function DeploymentTimelineSection({
               className="grid"
               style={{ gridTemplateColumns, minWidth: gridMinWidth }}
             >
+              {/* Prep column content cell */}
+              <div
+                className="border-b border-r border-gray-100 p-2 align-top bg-slate-50/20"
+                style={{ minHeight: 64 }}
+              >
+                {assetPlan.prepDeliverables?.length ? (
+                  <div className="space-y-1.5">
+                    {assetPlan.prepDeliverables.map((prep, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-white border border-slate-200 rounded-md px-2 py-1.5 shadow-sm break-words"
+                      >
+                        <div className="flex items-start gap-1.5">
+                          <ClipboardList className="w-3 h-3 text-slate-400 mt-0.5 flex-shrink-0" />
+                          <div className="min-w-0">
+                            <div className="text-[10px] font-medium text-slate-700 leading-tight truncate">
+                              {prep.title}
+                            </div>
+                            <div className="text-[9px] text-slate-400 leading-tight mt-0.5 line-clamp-2">
+                              {prep.description}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="text-[8px] text-slate-400 bg-slate-50 px-1 rounded">
+                                {prep.owner}
+                              </span>
+                              <span className="text-[8px] text-slate-400 bg-slate-50 px-1 rounded capitalize">
+                                {prep.estimatedEffort}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-[10px] text-slate-400 italic">No prep items</span>
+                  </div>
+                )}
+              </div>
               {Array.from({ length: totalBeats }).map((_, beatIdx) => {
                 const items = filteredCellLookup.get(beatIdx) ?? [];
                 const weekCollisions = schedule.collisions.filter((c) => c.beatIndex === beatIdx);
@@ -863,9 +864,6 @@ export function DeploymentTimelineSection({
                             onMove={(dir) => handleMoveBeat(item.deliverable, item.schedulerBeatIndex, beatIdx, dir)}
                             canMoveLeft={beatIdx > 0}
                             canMoveRight={beatIdx < totalBeats - 1}
-                            highlighted={hoveredFlowTitles?.has(item.deliverable.title) ?? false}
-                            hasFlowConnection={flowTitleSet.has(item.deliverable.title)}
-                            beatIndex={beatIdx}
                             dragData={{
                               itemKey: getItemKey(item.deliverable, item.schedulerBeatIndex),
                               sourceBeat: beatIdx,
@@ -888,18 +886,6 @@ export function DeploymentTimelineSection({
               })}
             </div>
 
-            {/* Flow connections SVG overlay */}
-            <FlowConnectionsOverlay
-              connections={effectiveResolvedConnections}
-              gridRef={gridRef}
-              zoom={zoom}
-              visible={showFlows}
-              hiddenTitles={hiddenTitles}
-              onHoverTitles={setHoveredFlowTitles}
-              personaColorMap={personaColorMap}
-              deliverablePersonaMap={deliverablePersonaMap}
-              personaNames={personaNames}
-            />
           </div>
         </div>
 

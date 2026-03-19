@@ -4,12 +4,21 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Download, FileText, Image, Film, FileSpreadsheet } from 'lucide-react';
 import { Button } from '@/components/shared';
 import { getFormatsForType } from '@/lib/studio/export-formats';
-import { useExport } from '../../hooks/studio.hooks';
+import { useContentStudioStore } from '@/stores/useContentStudioStore';
+import {
+  exportAsPdf,
+  exportAsHtml,
+  exportAsText,
+  downloadImage,
+  sanitizeFilename,
+} from '@/lib/studio/export-studio-content';
 
 // ─── Types ─────────────────────────────────────────────
 
 interface ExportDropdownProps {
-  deliverableId: string;
+  title: string;
+  contentType: string;
+  campaignTitle: string;
   contentTab: string | null;
 }
 
@@ -33,10 +42,9 @@ function getFormatIcon(formatId: string) {
 
 // ─── Component ─────────────────────────────────────────
 
-export function ExportDropdown({ deliverableId, contentTab }: ExportDropdownProps) {
+export function ExportDropdown({ title, contentType, campaignTitle, contentTab }: ExportDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const exportMutation = useExport(deliverableId);
 
   const rawFormats = getFormatsForType(contentTab);
   const formats = Array.isArray(rawFormats) ? rawFormats : [];
@@ -54,16 +62,45 @@ export function ExportDropdown({ deliverableId, contentTab }: ExportDropdownProp
   }, [isOpen]);
 
   const handleExport = (formatId: string) => {
-    exportMutation.mutate(
-      { format: formatId },
-      {
-        onSuccess: (data) => {
-          // Open download URL
-          window.open(data.downloadUrl, '_blank');
-          setIsOpen(false);
-        },
-      }
-    );
+    const store = useContentStudioStore.getState();
+    const ctx = {
+      title,
+      contentType,
+      campaignTitle,
+      textContent: store.textContent,
+      imageUrls: store.imageUrls,
+      videoUrl: store.videoUrl,
+    };
+
+    switch (formatId) {
+      case 'pdf':
+        exportAsPdf(ctx);
+        break;
+      case 'html':
+        exportAsHtml(ctx);
+        break;
+      case 'txt':
+        exportAsText(ctx);
+        break;
+      case 'jpeg':
+      case 'png':
+      case 'webp':
+        // Download first image
+        if (ctx.imageUrls.length > 0) {
+          downloadImage(ctx.imageUrls[0], `${sanitizeFilename(title)}.${formatId}`);
+        }
+        break;
+      case 'mp4':
+      case 'webm':
+        if (ctx.videoUrl) {
+          downloadImage(ctx.videoUrl, `${sanitizeFilename(title)}.${formatId}`);
+        }
+        break;
+      default:
+        exportAsText(ctx);
+    }
+
+    setIsOpen(false);
   };
 
   return (

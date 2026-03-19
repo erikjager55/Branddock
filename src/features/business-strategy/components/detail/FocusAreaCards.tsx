@@ -13,8 +13,12 @@ import {
   Lightbulb,
   Target,
   Zap,
+  Pencil,
+  Trash2,
+  Check,
+  X,
 } from 'lucide-react';
-import { useAddFocusArea } from '../../hooks';
+import { useAddFocusArea, useUpdateFocusArea, useDeleteFocusArea } from '../../hooks';
 import type { FocusAreaDetail } from '../../types/business-strategy.types';
 
 interface FocusAreaCardsProps {
@@ -53,6 +57,102 @@ function getColorClasses(color: string | null) {
   return map[c] ?? map.gray;
 }
 
+function FocusAreaCard({
+  fa,
+  strategyId,
+}: {
+  fa: FocusAreaDetail;
+  strategyId: string;
+}) {
+  const updateFocusArea = useUpdateFocusArea(strategyId);
+  const deleteFocusArea = useDeleteFocusArea(strategyId);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(fa.name);
+
+  const colors = getColorClasses(fa.color);
+  const IconComponent = fa.icon ? ICON_MAP[fa.icon] : null;
+
+  const handleSave = () => {
+    if (!editName.trim() || editName.trim() === fa.name) {
+      setIsEditing(false);
+      setEditName(fa.name);
+      return;
+    }
+    updateFocusArea.mutate(
+      { focusAreaId: fa.id, data: { name: editName.trim() } },
+      { onSuccess: () => setIsEditing(false) },
+    );
+  };
+
+  const handleDelete = () => {
+    if (confirm(`Delete focus area "${fa.name}"?`)) {
+      deleteFocusArea.mutate(fa.id);
+    }
+  };
+
+  return (
+    <div
+      className={`group relative border border-gray-200 border-t-4 ${colors.border} rounded-lg p-3 text-center`}
+    >
+      {/* Hover actions */}
+      <div className="absolute top-1.5 right-1.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          type="button"
+          onClick={() => { setEditName(fa.name); setIsEditing(true); }}
+          className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100"
+          title="Edit"
+        >
+          <Pencil className="w-3 h-3" />
+        </button>
+        <button
+          type="button"
+          onClick={handleDelete}
+          className="p-1 text-gray-400 hover:text-red-500 rounded hover:bg-red-50"
+          title="Delete"
+        >
+          <Trash2 className="w-3 h-3" />
+        </button>
+      </div>
+
+      {IconComponent && (
+        <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${colors.bg} mb-2`}>
+          <IconComponent className={`w-4 h-4 ${colors.text}`} />
+        </div>
+      )}
+
+      {isEditing ? (
+        <div className="flex items-center gap-1 mt-1">
+          <input
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSave();
+              if (e.key === 'Escape') { setIsEditing(false); setEditName(fa.name); }
+            }}
+            className="w-full px-1.5 py-0.5 border border-gray-300 rounded text-sm text-center focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+          />
+          <button type="button" onClick={handleSave} className="p-0.5 text-emerald-600 hover:text-emerald-700">
+            <Check className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => { setIsEditing(false); setEditName(fa.name); }}
+            className="p-0.5 text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ) : (
+        <p className="text-sm font-medium text-gray-900 truncate">{fa.name}</p>
+      )}
+      <p className="text-xs text-gray-500 mt-0.5">
+        {fa.objectiveCount} objective{fa.objectiveCount !== 1 ? 's' : ''}
+      </p>
+    </div>
+  );
+}
+
 export function FocusAreaCards({ focusAreas, strategyId }: FocusAreaCardsProps) {
   const addFocusArea = useAddFocusArea(strategyId);
   const [isAdding, setIsAdding] = useState(false);
@@ -77,27 +177,9 @@ export function FocusAreaCards({ focusAreas, strategyId }: FocusAreaCardsProps) 
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Focus Areas</h2>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        {focusAreas.map((fa) => {
-          const colors = getColorClasses(fa.color);
-          const IconComponent = fa.icon ? ICON_MAP[fa.icon] : null;
-
-          return (
-            <div
-              key={fa.id}
-              className={`border border-gray-200 border-t-4 ${colors.border} rounded-lg p-3 text-center`}
-            >
-              {IconComponent && (
-                <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${colors.bg} mb-2`}>
-                  <IconComponent className={`w-4 h-4 ${colors.text}`} />
-                </div>
-              )}
-              <p className="text-sm font-medium text-gray-900 truncate">{fa.name}</p>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {fa.objectiveCount} objective{fa.objectiveCount !== 1 ? 's' : ''}
-              </p>
-            </div>
-          );
-        })}
+        {focusAreas.map((fa) => (
+          <FocusAreaCard key={fa.id} fa={fa} strategyId={strategyId} />
+        ))}
 
         {/* Add card */}
         {isAdding ? (

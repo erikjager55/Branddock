@@ -3,6 +3,8 @@
 // Fetches curated cultural/strategic content from Are.na channels
 // =============================================================================
 
+import { buildFallbackQuery } from './arena-queries';
+
 // ─── Types ──────────────────────────────────────────────────
 
 /** A single content block extracted from Are.na */
@@ -141,6 +143,7 @@ async function searchArena(query: string): Promise<{
       slug: ch.slug,
     }));
 
+    console.info(`[arena] Query "${query}": ${blocks.length} blocks, ${channels.length} channels`);
     return { blocks, channels };
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'Unknown error';
@@ -166,14 +169,31 @@ export async function fetchArenaContext(
   queries: Array<{ query: string; layer: 'strategic' | 'human' | 'creative' }>,
 ): Promise<ArenaEnrichmentResult> {
   if (queries.length === 0) {
+    console.info('[arena] No queries provided — skipping enrichment');
     return { contextText: '', meta: null };
   }
 
+  console.info(`[arena] Queries: ${JSON.stringify(queries.map(q => q.query))}`);
+
   try {
     // Run all queries in parallel — failures don't block success
+    // If a query returns 0 blocks, attempt a simplified fallback query
     const results = await Promise.allSettled(
       queries.map(async ({ query, layer }) => {
         const result = await searchArena(query);
+        if (result.blocks.length === 0) {
+          const fallback = buildFallbackQuery(query);
+          if (fallback) {
+            console.info(`[arena] Fallback for "${query}" → "${fallback}"`);
+            const fallbackResult = await searchArena(fallback);
+            return {
+              layer,
+              query: `${query} → ${fallback}`,
+              blocks: fallbackResult.blocks.map(b => ({ ...b, queryLayer: layer })),
+              channels: fallbackResult.channels,
+            };
+          }
+        }
         return {
           layer,
           query,
@@ -229,6 +249,7 @@ export async function fetchArenaContext(
     const finalBlocks = dedupedBlocks.slice(0, MAX_TOTAL_BLOCKS);
 
     if (finalBlocks.length === 0) {
+      console.info('[arena] Enrichment complete: 0 blocks found');
       return { contextText: '', meta: null };
     }
 
@@ -239,6 +260,10 @@ export async function fetchArenaContext(
 
     // Format as prompt context
     const contextText = formatArenaContext(finalBlocks, allChannels);
+
+    console.info(
+      `[arena] Enrichment complete: ${finalBlocks.length} blocks (strategic: ${layerCounts.strategic}, human: ${layerCounts.human}, creative: ${layerCounts.creative}), ${(contextText.length / 1024).toFixed(1)}KB context text, ${allChannels.length} channels`,
+    );
 
     return {
       contextText,

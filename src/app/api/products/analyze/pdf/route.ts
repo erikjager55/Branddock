@@ -10,6 +10,7 @@ import {
   buildPdfAnalysisPrompt,
   type ProductAnalysisResult,
 } from "@/lib/ai/prompts/product-analysis";
+import { resolveFeatureModel, assertProvider } from "@/lib/ai/feature-models.server";
 import { ANALYZE_STEPS, VALID_CATEGORIES } from "@/features/products/constants/product-constants";
 
 // POST /api/products/analyze/pdf — AI-powered product extraction from PDF (Gemini 3.1)
@@ -88,10 +89,15 @@ export async function POST(request: NextRequest) {
       brandContext: brandContextStr,
     });
 
+    // Resolve configurable model for product analysis
+    const resolved = await resolveFeatureModel(workspaceId, 'product-analysis');
+    assertProvider(resolved, 'google', 'product-analysis');
+    const productModel = resolved.model;
+
     const result = await createGeminiStructuredCompletion<ProductAnalysisResult>(
       systemPrompt,
       userPrompt,
-      { temperature: 0.3 },
+      { model: productModel, temperature: 0.3 },
     );
 
     // 4. Validate and normalize result

@@ -21,6 +21,8 @@ export const strategyKeys = {
   stats: () => [...strategyKeys.all, "stats"] as const,
   objectives: (id: string) =>
     [...strategyKeys.all, id, "objectives"] as const,
+  progressHistory: (id: string) =>
+    [...strategyKeys.all, id, "progress-history"] as const,
 };
 
 // ─── List + Stats ──────────────────────────────────────────
@@ -310,6 +312,97 @@ export function useAddFocusArea(strategyId: string | undefined) {
   });
 }
 
+export function useUpdateFocusArea(strategyId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      focusAreaId,
+      data,
+    }: {
+      focusAreaId: string;
+      data: { name?: string; description?: string | null; icon?: string; color?: string };
+    }) => api.updateFocusArea(strategyId!, focusAreaId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: strategyKeys.detail(strategyId!) });
+    },
+  });
+}
+
+export function useDeleteFocusArea(strategyId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (focusAreaId: string) =>
+      api.deleteFocusArea(strategyId!, focusAreaId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: strategyKeys.detail(strategyId!) });
+    },
+  });
+}
+
+// ─── Campaign Linking ─────────────────────────────────────
+
+export function useLinkCampaign(strategyId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (campaignId: string) =>
+      api.linkCampaign(strategyId!, campaignId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: strategyKeys.detail(strategyId!) });
+    },
+  });
+}
+
+export function useUnlinkCampaign(strategyId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (campaignId: string) =>
+      api.unlinkCampaign(strategyId!, campaignId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: strategyKeys.detail(strategyId!) });
+    },
+  });
+}
+
+export function useSearchCampaigns(query: string) {
+  return useQuery({
+    queryKey: ["campaigns", "search", query] as const,
+    queryFn: () => api.searchCampaigns(query),
+    staleTime: 10_000,
+  });
+}
+
+// ─── SWOT ─────────────────────────────────────────────────
+
+export function useUpdateSwot(strategyId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { strengths?: string[]; weaknesses?: string[]; opportunities?: string[]; threats?: string[] }) =>
+      api.updateSwot(strategyId!, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: strategyKeys.detail(strategyId!) });
+    },
+  });
+}
+
+// ─── AI Review ──────────────────────────────────────────────
+
+export function useAiReview(strategyId: string | undefined) {
+  return useMutation({
+    mutationFn: () => api.generateAiReview(strategyId!),
+  });
+}
+
+// ─── Progress History ────────────────────────────────────
+
+export function useProgressHistory(strategyId: string | undefined) {
+  return useQuery({
+    queryKey: strategyKeys.progressHistory(strategyId ?? ""),
+    queryFn: () => api.fetchProgressHistory(strategyId!),
+    enabled: !!strategyId,
+    staleTime: 60_000,
+  });
+}
+
 // ─── Recalculate ───────────────────────────────────────────
 
 export function useRecalculateProgress(strategyId: string | undefined) {
@@ -320,6 +413,7 @@ export function useRecalculateProgress(strategyId: string | undefined) {
       qc.invalidateQueries({ queryKey: strategyKeys.detail(strategyId!) });
       qc.invalidateQueries({ queryKey: strategyKeys.list() });
       qc.invalidateQueries({ queryKey: strategyKeys.stats() });
+      qc.invalidateQueries({ queryKey: strategyKeys.progressHistory(strategyId!) });
     },
   });
 }

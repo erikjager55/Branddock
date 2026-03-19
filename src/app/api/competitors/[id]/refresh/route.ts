@@ -11,6 +11,7 @@ import {
   buildCompetitorUrlAnalysisPrompt,
   type CompetitorAnalysisResult,
 } from "@/lib/ai/prompts/competitor-analysis";
+import { resolveFeatureModel, assertProvider } from "@/lib/ai/feature-models.server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import type { Prisma } from "@prisma/client";
@@ -73,10 +74,15 @@ export async function POST(
       brandContext: brandContextStr,
     });
 
+    // Resolve configurable model for competitor analysis
+    const resolved = await resolveFeatureModel(workspaceId, 'competitor-analysis');
+    assertProvider(resolved, 'google', 'competitor-analysis');
+    const competitorModel = resolved.model;
+
     const result = await createGeminiStructuredCompletion<CompetitorAnalysisResult>(
       systemPrompt,
       userPrompt,
-      { temperature: 0.3 },
+      { model: competitorModel, temperature: 0.3 },
     );
 
     // 4. Update competitor with fresh data

@@ -187,6 +187,9 @@ model Workspace {
   // Competitors
   competitors               Competitor[]
 
+  // Per-feature AI model configuration
+  aiConfigs                 WorkspaceAiConfig[]
+
   @@index([organizationId])
 }
 
@@ -948,6 +951,7 @@ model ImproveSuggestion {
   impactPoints    Float
   currentText     String?           @db.Text
   suggestedText   String?           @db.Text
+  reason          String?           @db.Text
   status          SuggestionStatus  @default(PENDING)
   deliverableId   String
   deliverable     Deliverable       @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
@@ -1020,16 +1024,23 @@ model BusinessStrategy {
   endDate            DateTime?
   progressPercentage Float             @default(0)
 
+  // SWOT
+  strengths          String[]
+  weaknesses         String[]
+  opportunities      String[]
+  threats            String[]
+
   // Lock fields
   isLocked           Boolean           @default(false)
   lockedAt           DateTime?
   lockedById         String?
   lockedBy           User?             @relation("LockedStrategies", fields: [lockedById], references: [id])
 
-  objectives         Objective[]
-  focusAreas         FocusArea[]
-  milestones         Milestone[]
-  linkedCampaigns    CampaignStrategy[]
+  objectives          Objective[]
+  focusAreas          FocusArea[]
+  milestones          Milestone[]
+  linkedCampaigns     CampaignStrategy[]
+  progressSnapshots   ProgressSnapshot[]
 
   workspaceId        String
   workspace          Workspace         @relation(fields: [workspaceId], references: [id])
@@ -1042,6 +1053,16 @@ model BusinessStrategy {
   @@index([workspaceId])
   @@index([status])
   @@index([workspaceId, status])
+}
+
+model ProgressSnapshot {
+  id          String           @id @default(cuid())
+  percentage  Float
+  date        DateTime         @default(now())
+  strategyId  String
+  strategy    BusinessStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@index([strategyId, date])
 }
 
 model Objective {
@@ -3095,4 +3116,18 @@ model CompetitorProduct {
   product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@id([competitorId, productId])
+}
+
+// Per-feature AI model configuration (overrides defaults per workspace)
+model WorkspaceAiConfig {
+  id          String    @id @default(cuid())
+  workspaceId String
+  featureKey  String    // e.g. "persona-chat", "campaign-strategy", "trend-synthesis"
+  provider    String    // "anthropic" | "openai" | "google"
+  model       String    // e.g. "claude-sonnet-4-5-20250929", "gpt-4o", "gemini-3.1-pro-preview"
+  updatedAt   DateTime  @updatedAt
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, featureKey])
+  @@map("workspace_ai_config")
 }

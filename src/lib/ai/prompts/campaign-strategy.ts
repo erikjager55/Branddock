@@ -518,15 +518,6 @@ IMPORTANT: The contentType field MUST exactly match one of the valid IDs listed 
 Also provide:
 - totalDeliverables: Count of all deliverables
 - prioritySummary: One sentence describing what to produce first and why
-- flowConnections: An array of 5-15 objects describing how deliverables connect in the customer journey content flow. Each connection links two deliverables by their EXACT title. Connection types:
-  - "sequence": Direct flow — one deliverable leads to the next (e.g. ad → landing page → email follow-up)
-  - "amplifies": One deliverable reinforces another (e.g. social post amplifies a blog article)
-  - "retargets": Follow-up for non-converters (e.g. retargeting ad for people who visited landing page but didn't convert)
-  Rules for flowConnections:
-  - fromTitle and toTitle MUST exactly match a deliverable title from your deliverables array
-  - Every must-have deliverable should participate in at least one connection
-  - Do NOT create circular chains (A→B→C→A)
-  - Include a short "label" describing the relationship (e.g. "drives traffic to", "nurtures leads", "re-engages visitors")
 - prepDeliverables: An array of 2-5 preparation items that MUST be completed BEFORE the campaign launches (Week 0). These are NOT content pieces — they are internal setup, alignment, and planning documents. Each prep deliverable has:
   - title: Clear action-oriented title (e.g. "Define Brand Voice Guidelines for Campaign")
   - description: 1-2 sentences describing what needs to be prepared and why

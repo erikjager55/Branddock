@@ -121,18 +121,6 @@ export interface ChannelPlanLayer {
 
 // ─── Layer 4: Asset Plan ────────────────────────────────────
 
-/** Describes a content-flow connection between two deliverables on the deployment timeline */
-export interface FlowConnection {
-  /** Must exactly match a deliverable.title */
-  fromTitle: string;
-  /** Must exactly match a deliverable.title */
-  toTitle: string;
-  /** sequence = direct flow, amplifies = reinforcing, retargets = follow-up for non-converters */
-  connectionType: 'sequence' | 'amplifies' | 'retargets';
-  /** Short description, e.g. "drives traffic to" */
-  label?: string;
-}
-
 export interface DeliverableBrief {
   objective: string;
   keyMessage: string;
@@ -154,12 +142,24 @@ export interface AssetPlanDeliverable {
   suggestedOrder?: number;
 }
 
+/** A preparation deliverable for the pre-campaign "Week 0" phase */
+export interface PrepDeliverable {
+  title: string;
+  description: string;
+  /** e.g. "brand-guidelines", "content-calendar", "audience-brief", "campaign-brief", "asset-checklist" */
+  category: string;
+  /** Who is responsible (e.g. "Brand Manager", "Content Lead", "Strategy Team") */
+  owner: string;
+  /** Estimated effort: "low" (< 2h), "medium" (2-8h), "high" (> 8h) */
+  estimatedEffort: EffortLevel;
+}
+
 export interface AssetPlanLayer {
   deliverables: AssetPlanDeliverable[];
   totalDeliverables: number;
   prioritySummary: string;
-  /** Content-flow connections between deliverables (optional — AI-generated) */
-  flowConnections?: FlowConnection[];
+  /** Pre-campaign preparation deliverables for Week 0 (optional — AI-generated) */
+  prepDeliverables?: PrepDeliverable[];
 }
 
 // ─── Persona Validation ─────────────────────────────────────
@@ -238,17 +238,6 @@ export interface ContinuityGap {
   gapLength: number;
 }
 
-/** A flow connection resolved to beat positions on the timeline */
-export interface ResolvedFlowConnection {
-  fromTitle: string;
-  toTitle: string;
-  fromBeatIndex: number;
-  toBeatIndex: number;
-  connectionType: 'sequence' | 'amplifies' | 'retargets';
-  label?: string;
-  sharedPersonas: string[];
-}
-
 /** Complete deployment schedule computed from asset plan */
 export interface DeploymentSchedule {
   scheduled: ScheduledDeliverable[];
@@ -256,8 +245,6 @@ export interface DeploymentSchedule {
   gaps: ContinuityGap[];
   totalBeats: number;
   phaseBoundaries: { phase: string; startBeat: number; endBeat: number }[];
-  /** Flow connections resolved to timeline beat positions */
-  resolvedConnections: ResolvedFlowConnection[];
 }
 
 // ─── Strategy Phase Types ────────────────────────────────────
@@ -555,18 +542,19 @@ export const assetPlanDeliverableSchema = z.object({
   suggestedOrder: z.number().optional(),
 });
 
-export const flowConnectionSchema = z.object({
-  fromTitle: z.string(),
-  toTitle: z.string(),
-  connectionType: z.enum(['sequence', 'amplifies', 'retargets']),
-  label: z.string().optional(),
+export const prepDeliverableSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  category: z.string(),
+  owner: z.string(),
+  estimatedEffort: z.enum(['low', 'medium', 'high']),
 });
 
 export const assetPlanLayerSchema = z.object({
   deliverables: z.array(assetPlanDeliverableSchema),
   totalDeliverables: z.number(),
   prioritySummary: z.string(),
-  flowConnections: z.array(flowConnectionSchema).optional(),
+  prepDeliverables: z.array(prepDeliverableSchema).optional(),
 });
 
 // ─── Persona Validation Schema ──────────────────────────────
@@ -806,17 +794,18 @@ export const assetPlanResponseSchema: Record<string, unknown> = {
     },
     totalDeliverables: { type: 'number' },
     prioritySummary: { type: 'string' },
-    flowConnections: {
+    prepDeliverables: {
       type: 'array',
       items: {
         type: 'object',
         properties: {
-          fromTitle: { type: 'string' },
-          toTitle: { type: 'string' },
-          connectionType: { type: 'string', enum: ['sequence', 'amplifies', 'retargets'] },
-          label: { type: 'string' },
+          title: { type: 'string' },
+          description: { type: 'string' },
+          category: { type: 'string', enum: ['campaign-brief', 'brand-guidelines', 'content-calendar', 'audience-brief', 'asset-checklist', 'channel-setup', 'stakeholder-alignment'] },
+          owner: { type: 'string' },
+          estimatedEffort: { type: 'string', enum: ['low', 'medium', 'high'] },
         },
-        required: ['fromTitle', 'toTitle', 'connectionType'],
+        required: ['title', 'description', 'category', 'owner', 'estimatedEffort'],
       },
     },
   },

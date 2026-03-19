@@ -7,6 +7,7 @@ import {
   DEFAULT_SYSTEM_PROMPT_TEMPLATE,
 } from "@/lib/ai/context/prompt-builder";
 import { parseAIError, getReadableErrorMessage, getAIErrorStatus } from "@/lib/ai/error-handler";
+import { resolveFeatureModel } from "@/lib/ai/feature-models.server";
 // Lock guard not needed: chatting doesn't modify persona data
 
 // ─── POST /api/personas/[id]/chat ────────────────────────────
@@ -141,8 +142,12 @@ export async function POST(
       where: { workspaceId },
     });
 
-    const provider = chatConfig?.provider || "anthropic";
-    const model = chatConfig?.model || "claude-sonnet-4-20250514";
+    // PersonaChatConfig overrides take priority (all-or-nothing: both provider+model must be set),
+    // then workspace AI config, then hardcoded default
+    const featureModel = await resolveFeatureModel(workspaceId, 'persona-chat');
+    const hasChatConfigOverride = !!(chatConfig?.provider && chatConfig?.model);
+    const provider = hasChatConfigOverride ? chatConfig.provider : featureModel.provider;
+    const model = hasChatConfigOverride ? chatConfig.model : featureModel.model;
     const temperature = chatConfig?.temperature ?? 0.8;
     const maxTokens = chatConfig?.maxTokens ?? 1000;
     const promptTemplate = chatConfig?.systemPromptTemplate || DEFAULT_SYSTEM_PROMPT_TEMPLATE;

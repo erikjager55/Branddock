@@ -150,6 +150,7 @@ export interface ImproveSuggestionItem {
   impactPoints: number;
   currentText: string | null;
   suggestedText: string | null;
+  reason: string | null;
   status: 'PENDING' | 'APPLIED' | 'DISMISSED' | 'PREVIEWING';
 }
 

@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
-import { buildSelectedPersonasContext } from "@/lib/ai/persona-context";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { buildGenerationContext } from "@/lib/studio/context-builder";
+import { getPromptTemplate } from "@/lib/studio/prompt-templates";
+import { routeGeneration, isModelAvailable } from "@/lib/studio/ai-router";
+import { parseGeneratedContent } from "@/lib/studio/output-parser";
+import { DELIVERABLE_TYPES } from "@/features/campaigns/lib/deliverable-types";
 
 const generateSchema = z.object({
   model: z.string(),
@@ -14,7 +18,26 @@ const generateSchema = z.object({
   personaIds: z.array(z.string()).optional(),
 });
 
-// POST /api/studio/[deliverableId]/generate — Generate content (stub)
+/**
+ * Resolve a contentType (display name like "Blog Post" or slug like "blog-post")
+ * to a prompt template ID (slug). Returns the input unchanged if already a valid slug.
+ */
+function resolveTemplateId(contentType: string): string {
+  // Direct slug match (e.g. "blog-post")
+  const directMatch = DELIVERABLE_TYPES.find((d) => d.id === contentType);
+  if (directMatch) return directMatch.id;
+
+  // Display name match (e.g. "Blog Post")
+  const nameMatch = DELIVERABLE_TYPES.find(
+    (d) => d.name.toLowerCase() === contentType.toLowerCase()
+  );
+  if (nameMatch) return nameMatch.id;
+
+  // Slugify the contentType as last resort (e.g. "Blog Post" → "blog-post")
+  return contentType.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+}
+
+// POST /api/studio/[deliverableId]/generate — Generate content via AI
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ deliverableId: string }> }
@@ -30,6 +53,16 @@ export async function POST(
       return NextResponse.json(
         { error: "Invalid request body", details: parsed.error.flatten() },
         { status: 400 }
+      );
+    }
+
+    const { model, prompt, settings, personaIds } = parsed.data;
+
+    // Check if the selected AI model is available
+    if (!isModelAvailable(model)) {
+      return NextResponse.json(
+        { error: `AI model "${model}" is not configured. Please check your API keys.` },
+        { status: 422 }
       );
     }
 
@@ -59,166 +92,88 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Build persona context if personaIds provided
-    const { personaIds } = parsed.data;
-    let personaContext = "";
-    if (personaIds && personaIds.length > 0) {
-      personaContext = await buildSelectedPersonasContext(personaIds, workspaceId);
-    }
-
-    // Build campaign strategy context if available
-    let campaignContextBlock = "";
-    const campaignStrategy = deliverable.campaign.strategy as Record<string, unknown> | null;
-    if (campaignStrategy && typeof campaignStrategy === "object" && "strategy" in campaignStrategy) {
-      const blueprint = campaignStrategy as {
-        strategy?: { campaignTheme?: string; positioningStatement?: string; messagingHierarchy?: { brandMessage?: string; campaignMessage?: string; proofPoints?: string[] }; jtbdFraming?: { jobStatement?: string } };
-        assetPlan?: { deliverables?: Array<{ title?: string; brief?: { objective?: string; keyMessage?: string; toneDirection?: string; callToAction?: string; contentOutline?: string[] } }> };
-      };
-
-      const strat = blueprint.strategy;
-      const matchedBrief = blueprint.assetPlan?.deliverables?.find(
-        (d) => d.title === deliverable.title
-      )?.brief;
-
-      const parts: string[] = [];
-      parts.push(`## Campaign Strategy`);
-      if (deliverable.campaign.title) parts.push(`Campaign: ${deliverable.campaign.title}`);
-      if (strat?.campaignTheme) parts.push(`Theme: ${strat.campaignTheme}`);
-      if (strat?.positioningStatement) parts.push(`Positioning: ${strat.positioningStatement}`);
-      if (deliverable.campaign.campaignGoalType) parts.push(`Goal: ${deliverable.campaign.campaignGoalType}`);
-
-      if (strat?.messagingHierarchy) {
-        parts.push(`\n## Key Messages`);
-        if (strat.messagingHierarchy.brandMessage) parts.push(`1. ${strat.messagingHierarchy.brandMessage}`);
-        if (strat.messagingHierarchy.campaignMessage) parts.push(`2. ${strat.messagingHierarchy.campaignMessage}`);
-        strat.messagingHierarchy.proofPoints?.forEach((pp, i) => parts.push(`${i + 3}. ${pp}`));
-      }
-
-      if (matchedBrief) {
-        parts.push(`\n## This Deliverable`);
-        if (matchedBrief.objective) parts.push(`Objective: ${matchedBrief.objective}`);
-        if (matchedBrief.keyMessage) parts.push(`Key Message: ${matchedBrief.keyMessage}`);
-        if (matchedBrief.toneDirection) parts.push(`Tone: ${matchedBrief.toneDirection}`);
-        if (matchedBrief.callToAction) parts.push(`CTA: ${matchedBrief.callToAction}`);
-        if (matchedBrief.contentOutline && matchedBrief.contentOutline.length > 0) {
-          parts.push(`Outline:\n${matchedBrief.contentOutline.map((p) => `- ${p}`).join("\n")}`);
-        }
-      }
-
-      campaignContextBlock = parts.join("\n");
-    }
-
-    // TODO: Pass personaContext + campaignContextBlock to AI completion call when replacing stubs
-    if (personaContext || campaignContextBlock) {
-      console.log("[generate] Context loaded:", {
-        personaContextLength: personaContext.length,
-        campaignContextLength: campaignContextBlock.length,
-      });
-    }
-
     const contentTab = deliverable.contentTab || "text";
-    const { model } = parsed.data;
 
-    // Generate demo content based on contentTab
-    let generatedText: string | null = null;
-    let generatedImageUrls: string[] = [];
-    let generatedVideoUrl: string | null = null;
-    let generatedSlides: Array<Record<string, string | number>> = [];
-
-    switch (contentTab) {
-      case "text":
-        generatedText = `# Brand Strategy: A Comprehensive Guide\n\nIn today's rapidly evolving marketplace, a strong brand strategy is the foundation upon which successful businesses are built. Your brand is more than just a logo or a tagline — it's the emotional connection you forge with your audience, the promise you make, and the experience you deliver at every touchpoint.\n\nEffective brand strategy begins with deep understanding. Understanding your market, your competitors, and most importantly, your customers. Through rigorous research and validation, brands can identify the unique positioning that sets them apart. This involves analyzing market trends, conducting persona interviews, and leveraging AI-driven insights to uncover hidden opportunities that traditional methods might miss.\n\nThe journey from strategy to execution requires alignment across all channels and touchpoints. Content should be consistent yet adaptive — speaking the same brand language while resonating with different audience segments. By maintaining this balance, organizations can build lasting brand equity that drives growth, loyalty, and competitive advantage in an increasingly crowded marketplace.`;
-        break;
-
-      case "images":
-        generatedImageUrls = [
-          "https://picsum.photos/800/600?random=1",
-          "https://picsum.photos/800/600?random=2",
-          "https://picsum.photos/800/600?random=3",
-        ];
-        break;
-
-      case "video":
-        generatedVideoUrl = "";
-        break;
-
-      case "carousel":
-        generatedSlides = [
-          {
-            slideNumber: 1,
-            imageUrl: "https://picsum.photos/1080/1080?random=10",
-            textOverlay: "Building Brands That Matter",
-            subtitle: "A strategic approach to brand development",
-          },
-          {
-            slideNumber: 2,
-            imageUrl: "https://picsum.photos/1080/1080?random=11",
-            textOverlay: "Research-Driven Insights",
-            subtitle: "Uncover what your audience truly needs",
-          },
-          {
-            slideNumber: 3,
-            imageUrl: "https://picsum.photos/1080/1080?random=12",
-            textOverlay: "Consistent Brand Voice",
-            subtitle: "Speak with clarity across every channel",
-          },
-          {
-            slideNumber: 4,
-            imageUrl: "https://picsum.photos/1080/1080?random=13",
-            textOverlay: "Measure & Optimize",
-            subtitle: "Data-driven decisions for lasting impact",
-          },
-        ];
-        break;
+    // Only text tab uses AI generation for now; images/video/carousel remain stubs
+    if (contentTab !== "text") {
+      return generateStubContent(deliverableId, contentTab, model, workspaceId);
     }
+
+    // ─── AI Text Generation ───────────────────────────────────
+
+    const startTime = Date.now();
+
+    // 1. Build generation context (brand + persona + campaign + brief)
+    const context = await buildGenerationContext(
+      workspaceId,
+      personaIds || [],
+      {
+        campaignTitle: deliverable.campaign.title,
+        campaignGoalType: deliverable.campaign.campaignGoalType,
+        strategy: deliverable.campaign.strategy as Record<string, unknown> | null,
+      },
+      deliverable.title,
+    );
+
+    // 2. Get prompt template for this deliverable type
+    const templateId = resolveTemplateId(deliverable.contentType);
+    const template = getPromptTemplate(templateId);
+
+    // 3. Build system + user prompts
+    const systemPrompt = template.systemPrompt;
+    const userPrompt = template.buildUserPrompt({
+      userPrompt: prompt,
+      context,
+      settings: (settings as unknown) as import("@/types/studio").TypeSettings | null,
+      deliverableTitle: deliverable.title,
+      contentType: deliverable.contentType,
+    });
+
+    // 4. Route to AI provider and generate
+    const rawOutput = await routeGeneration({
+      modelId: model,
+      systemPrompt,
+      userPrompt,
+      contentLength: (settings as Record<string, unknown>)?.length as string | undefined,
+      workspaceId,
+    });
+
+    // 5. Parse markdown → HTML for TipTap
+    const generatedHtml = parseGeneratedContent(rawOutput);
+
+    const generationTime = Date.now() - startTime;
 
     // Calculate cost based on model
     const costMap: Record<string, number> = {
       claude: 0.05,
       "gpt-4": 0.06,
       gemini: 0.03,
-      nanobanana: 0.10,
-      veo: 0.80,
     };
     const costIncurred = costMap[model] || 0.05;
 
-    // Build update data for Prisma
-    const updateData: Record<string, unknown> = {
-      status: "IN_PROGRESS",
-      progress: 50,
-    };
-
-    if (generatedText !== null) updateData.generatedText = generatedText;
-    if (generatedImageUrls.length > 0)
-      updateData.generatedImageUrls = generatedImageUrls;
-    if (generatedVideoUrl !== null)
-      updateData.generatedVideoUrl = generatedVideoUrl;
-    if (generatedSlides.length > 0)
-      updateData.generatedSlides = JSON.parse(JSON.stringify(generatedSlides));
-
+    // Save generated content to database
     await prisma.deliverable.update({
       where: { id: deliverableId },
-      data: updateData,
+      data: {
+        generatedText: generatedHtml,
+        status: "IN_PROGRESS",
+        progress: 50,
+      },
     });
 
-    // Invalidate caches so campaign detail + dashboard reflect updated deliverable
+    // Invalidate caches
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json({
-      generatedText,
-      generatedImageUrls,
-      generatedVideoUrl,
-      generatedSlides,
-      qualityScore: 82,
-      qualityMetrics: {
-        clarity: 85,
-        brandAlignment: 80,
-        engagement: 78,
-        originality: 84,
-      },
+      generatedText: generatedHtml,
+      generatedImageUrls: [],
+      generatedVideoUrl: null,
+      generatedSlides: [],
+      qualityScore: null,
+      qualityMetrics: null,
       costIncurred,
-      generationTime: 3500,
+      generationTime,
       contentTab,
       model,
     });
@@ -227,9 +182,86 @@ export async function POST(
       "POST /api/studio/[deliverableId]/generate error:",
       error
     );
+
+    // Return a user-friendly error message
+    const message = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: message },
       { status: 500 }
     );
   }
+}
+
+/**
+ * Generate stub content for non-text tabs (images, video, carousel).
+ * These remain placeholder until visual generation is implemented.
+ */
+async function generateStubContent(
+  deliverableId: string,
+  contentTab: string,
+  model: string,
+  workspaceId: string,
+) {
+  let generatedImageUrls: string[] = [];
+  let generatedVideoUrl: string | null = null;
+  let generatedSlides: Array<Record<string, string | number>> = [];
+
+  switch (contentTab) {
+    case "images":
+      generatedImageUrls = [
+        "https://picsum.photos/800/600?random=1",
+        "https://picsum.photos/800/600?random=2",
+        "https://picsum.photos/800/600?random=3",
+      ];
+      break;
+
+    case "video":
+      generatedVideoUrl = "";
+      break;
+
+    case "carousel":
+      generatedSlides = [
+        { slideNumber: 1, imageUrl: "https://picsum.photos/1080/1080?random=10", textOverlay: "Building Brands That Matter", subtitle: "A strategic approach" },
+        { slideNumber: 2, imageUrl: "https://picsum.photos/1080/1080?random=11", textOverlay: "Research-Driven Insights", subtitle: "Uncover what matters" },
+        { slideNumber: 3, imageUrl: "https://picsum.photos/1080/1080?random=12", textOverlay: "Consistent Brand Voice", subtitle: "Across every channel" },
+        { slideNumber: 4, imageUrl: "https://picsum.photos/1080/1080?random=13", textOverlay: "Measure & Optimize", subtitle: "Data-driven decisions" },
+      ];
+      break;
+  }
+
+  const updateData: Record<string, unknown> = {
+    status: "IN_PROGRESS",
+    progress: 50,
+  };
+
+  if (generatedImageUrls.length > 0) updateData.generatedImageUrls = generatedImageUrls;
+  if (generatedVideoUrl !== null) updateData.generatedVideoUrl = generatedVideoUrl;
+  if (generatedSlides.length > 0) updateData.generatedSlides = JSON.parse(JSON.stringify(generatedSlides));
+
+  await prisma.deliverable.update({
+    where: { id: deliverableId },
+    data: updateData,
+  });
+
+  invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+  invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
+  const costMap: Record<string, number> = {
+    nanobanana: 0.10,
+    veo: 0.80,
+    gemini: 0.03,
+  };
+
+  return NextResponse.json({
+    generatedText: null,
+    generatedImageUrls,
+    generatedVideoUrl,
+    generatedSlides,
+    qualityScore: null,
+    qualityMetrics: null,
+    costIncurred: costMap[model] || 0.05,
+    generationTime: 3500,
+    contentTab,
+    model,
+  });
 }

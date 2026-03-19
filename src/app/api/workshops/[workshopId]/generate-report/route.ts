@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { openaiClient } from "@/lib/ai/openai-client";
+import { resolveFeatureModel, assertProvider } from "@/lib/ai/feature-models.server";
 import { buildWorkshopReportPrompt } from "@/lib/ai/prompts/workshop-report";
 import { parseAIError, getReadableErrorMessage, getAIErrorStatus } from "@/lib/ai/error-handler";
 
@@ -44,8 +45,13 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       workshop.steps,
     );
 
+    // Resolve configurable model for workshop report generation
+    const resolved = await resolveFeatureModel(workspaceId, 'workshop-report');
+    assertProvider(resolved, 'openai', 'workshop-report');
+    const reportModel = resolved.model;
+
     // Call OpenAI — createChatCompletion returns the text directly
-    const content = await openaiClient.createChatCompletion(messages);
+    const content = await openaiClient.createChatCompletion(messages, { model: reportModel });
 
     if (!content) {
       return NextResponse.json({ error: "Empty AI response" }, { status: 502 });

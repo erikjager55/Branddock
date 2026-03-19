@@ -2,7 +2,6 @@
 
 import React, { useRef, useState, type DragEvent } from "react";
 import {
-  ArrowRightLeft,
   CheckCircle2,
   ChevronDown,
   ChevronLeft,
@@ -63,9 +62,6 @@ export function DeliverableCard({
   onMove,
   canMoveLeft = false,
   canMoveRight = false,
-  highlighted = false,
-  hasFlowConnection = false,
-  beatIndex,
   dragData,
   status,
 }: {
@@ -80,12 +76,6 @@ export function DeliverableCard({
   canMoveLeft?: boolean;
   /** Whether the deliverable can be moved later (not at last beat) */
   canMoveRight?: boolean;
-  /** Whether this card is highlighted (hovered flow connection) */
-  highlighted?: boolean;
-  /** Whether this deliverable participates in a flow connection */
-  hasFlowConnection?: boolean;
-  /** Beat index for data-flow-id attribute */
-  beatIndex?: number;
   /** Drag data for drag & drop repositioning */
   dragData?: DeliverableCardDragData;
   /** Deliverable status from DB */
@@ -123,9 +113,8 @@ export function DeliverableCard({
       draggable={!!dragData}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      data-flow-id={beatIndex != null ? `${deliverable.title}::${beatIndex}` : undefined}
       className={`bg-white border rounded-lg shadow-sm text-xs hover:shadow transition-all ${
-        highlighted ? "border-blue-400 ring-2 ring-blue-400/50" : status === 'COMPLETED' ? "border-emerald-200" : "border-gray-200"
+        status === 'COMPLETED' ? "border-emerald-200" : "border-gray-200"
       } ${dragData ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
       style={isDragging ? { opacity: 0.5 } : undefined}
       onClick={handleClick}
@@ -143,9 +132,6 @@ export function DeliverableCard({
           <span className="font-semibold text-gray-900 truncate">{deliverable.title}</span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          {hasFlowConnection && (
-            <ArrowRightLeft className="w-3 h-3 text-gray-400" aria-label="Has flow connections" />
-          )}
           {statusStyle && (
             <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border} text-[10px] font-medium`}>
               <statusStyle.icon className={`w-2.5 h-2.5 ${status === 'IN_PROGRESS' ? 'animate-spin' : ''}`} />
