@@ -129,7 +129,8 @@ function formatKnowledgeItems(
 // ─── System Defaults ────────────────────────────────────────
 // Backwards compatible — werkt zonder DB config
 
-function getSystemDefault(itemType: string, itemSubType?: string | null): ExplorationConfigData {
+/** Exported for auto-provisioning in admin GET endpoint */
+export function getSystemDefault(itemType: string, itemSubType?: string | null): ExplorationConfigData {
   const isArchetype = itemType === 'brand_asset' && itemSubType === 'brand-archetype';
   return {
     id: `system-default-${itemType}-${itemSubType ?? 'base'}`,
