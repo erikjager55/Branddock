@@ -7,6 +7,49 @@
 
 > Brand Assets: 12 assets met elk een eigen frameworkType (PURPOSE_WHEEL, GOLDEN_CIRCLE, BRAND_ESSENCE, BRAND_PROMISE, MISSION_STATEMENT, VISION_STATEMENT, BRAND_ARCHETYPE, TRANSFORMATIVE_GOALS, BRAND_PERSONALITY, BRAND_STORY, BRANDHOUSE_VALUES, ESG). Veldspecificaties per asset: zie `docs/brand-assets-field-specifications.md`
 
+> # Workflow Rules
+
+## Planning
+
+- For any task with 3+ steps or architectural impact: enter plan mode FIRST. Present the plan, wait for approval before executing.
+- Every plan must include: (1) what you'll change, (2) how you'll verify it works, (3) what "done" looks like.
+- If something breaks during execution: STOP. Do not patch forward. Re-plan from the current state.
+
+## Verification
+
+- Never report a task as done without proof. Run the relevant check (test, build, type-check, manual verification) and include the output.
+- After any UI change: describe what you see or expect the user to see. Do not assume it looks correct.
+- Before committing: run `tsc --noEmit` and fix all errors. Zero type errors is a hard requirement.
+
+## Bug Fixing
+
+- When you encounter a bug: trace to root cause before writing any fix. Explain the root cause before proposing a solution.
+- Never apply a workaround without flagging it as such. If a proper fix is possible, do that instead.
+- After fixing a bug caused by a mistake in approach: append a lesson to `gotchas.md` with the date, what went wrong, and the rule to prevent it.
+
+## Self-Improvement
+
+- Read `gotchas.md` at the start of every session before doing any work.
+- If you notice a pattern of similar mistakes in gotchas.md, propose a new rule for this CLAUDE.md file.
+
+## Session Discipline
+
+- At the start of each session: read this file, read `gotchas.md`, then confirm what you understand the current task to be.
+- Do not work on files that overlap with a parallel session. If unsure, ask which files are safe to touch.
+- When a task is complete: summarize what changed, what was verified, and any open items.
+
+## Code Quality
+
+- Prefer the simplest solution that solves the problem. Do not abstract prematurely.
+- Do not add comments that restate what the code does. Only comment on *why* when the reason is non-obvious.
+- Follow existing patterns in the codebase. If you want to introduce a new pattern, flag it in the plan.
+
+## Communication
+
+- If a task is ambiguous, ask before assuming. One clarifying question is cheaper than a wrong implementation.
+- If you're unsure between two approaches, present both with trade-offs. Do not silently pick one.
+- Never say "I've updated the code" without specifying which file(s) and what changed.
+
 ---
 
 ## Project
