@@ -9,6 +9,9 @@ import { TeamTab } from './team/TeamTab';
 import { BillingTab } from './billing/BillingTab';
 import { AdministratorTab } from './administrator/AdministratorTab';
 import { AiModelsTab } from './ai-models/AiModelsTab';
+import { useDeveloperAccess } from '@/hooks/use-developer-access';
+
+const DEVELOPER_TABS: SettingsTab[] = ['administrator', 'ai-models'];
 
 interface SettingsPageProps {
   initialTab?: SettingsTab;
@@ -17,6 +20,7 @@ interface SettingsPageProps {
 export function SettingsPage({ initialTab }: SettingsPageProps) {
   const activeTab = useSettingsStore((s) => s.activeTab);
   const setActiveTab = useSettingsStore((s) => s.setActiveTab);
+  const { data: isDeveloper } = useDeveloperAccess();
 
   useEffect(() => {
     if (initialTab && initialTab !== activeTab) {
@@ -24,8 +28,20 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
     }
   }, [initialTab]);
 
+  // Redirect non-developers away from developer tabs and sync store
+  const shouldRedirect =
+    isDeveloper !== true && DEVELOPER_TABS.includes(activeTab);
+
+  useEffect(() => {
+    if (shouldRedirect) {
+      setActiveTab('account');
+    }
+  }, [shouldRedirect, setActiveTab]);
+
+  const effectiveTab = shouldRedirect ? 'account' : activeTab;
+
   function renderTabContent() {
-    switch (activeTab) {
+    switch (effectiveTab) {
       case 'account':
         return <AccountTab />;
       case 'team':

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
+import { resolveWorkspaceId } from "@/lib/auth-server";
+import { requireDeveloper } from "@/lib/developer-access";
 import {
   AI_FEATURES,
   AVAILABLE_MODELS,
@@ -15,9 +16,9 @@ const VALID_FEATURE_KEYS = new Set(AI_FEATURES.map((f) => f.key));
 // Returns all feature configs merged with defaults
 export async function GET() {
   try {
-    const session = await getServerSession();
+    const session = await requireDeveloper();
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const workspaceId = await resolveWorkspaceId();
@@ -66,25 +67,14 @@ const patchSchema = z.object({
 
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    const session = await requireDeveloper();
     if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
-    }
-
-    // Only owners and admins can change AI model settings
-    const activeOrgId = (session.session as Record<string, unknown>).activeOrganizationId as string | undefined;
-    if (activeOrgId) {
-      const membership = await prisma.organizationMember.findUnique({
-        where: { userId_organizationId: { userId: session.user.id, organizationId: activeOrgId } },
-      });
-      if (!membership || !["owner", "admin"].includes(membership.role)) {
-        return NextResponse.json({ error: "Only owners and admins can change AI model settings" }, { status: 403 });
-      }
     }
 
     const body = await request.json();

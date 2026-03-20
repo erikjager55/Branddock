@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { requireDeveloper } from '@/lib/developer-access';
 
 // GET single config
 export async function GET(
@@ -9,6 +10,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    if (!(await requireDeveloper())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) return NextResponse.json({ error: 'No workspace' }, { status: 403 });
 
@@ -31,6 +36,10 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    if (!(await requireDeveloper())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) return NextResponse.json({ error: 'No workspace' }, { status: 403 });
 
@@ -82,6 +91,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    if (!(await requireDeveloper())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) return NextResponse.json({ error: 'No workspace' }, { status: 403 });
 

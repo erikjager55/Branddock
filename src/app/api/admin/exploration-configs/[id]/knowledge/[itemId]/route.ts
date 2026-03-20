@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { requireDeveloper } from '@/lib/developer-access';
 
 // PUT /api/admin/exploration-configs/[id]/knowledge/[itemId] — update item
 export async function PUT(
@@ -8,6 +9,10 @@ export async function PUT(
   { params }: { params: Promise<{ id: string; itemId: string }> },
 ) {
   try {
+    if (!(await requireDeveloper())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) return NextResponse.json({ error: 'No workspace' }, { status: 403 });
 
@@ -49,6 +54,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; itemId: string }> },
 ) {
   try {
+    if (!(await requireDeveloper())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) return NextResponse.json({ error: 'No workspace' }, { status: 403 });
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { requireDeveloper } from '@/lib/developer-access';
 import { CANONICAL_BRAND_ASSETS } from '@/lib/constants/canonical-brand-assets';
 import { FRAMEWORK_TO_SUBTYPE } from '@/lib/ai/exploration/constants';
 import { getSystemDefault } from '@/lib/ai/exploration/config-resolver';
@@ -41,6 +42,10 @@ function getExpectedConfigs(): ExpectedConfig[] {
 
 export async function GET() {
   try {
+    if (!(await requireDeveloper())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) return NextResponse.json({ error: 'No workspace' }, { status: 403 });
 
@@ -113,6 +118,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!(await requireDeveloper())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) return NextResponse.json({ error: 'No workspace' }, { status: 403 });
 
