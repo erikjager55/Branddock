@@ -277,6 +277,7 @@ export function StrategyStep() {
   const arenaEnrichment = useCampaignWizardStore((s) => s.arenaEnrichment);
   const enrichmentStatus = useCampaignWizardStore((s) => s.enrichmentStatus);
   const enrichmentBlockCount = useCampaignWizardStore((s) => s.enrichmentBlockCount);
+  const enrichmentSources = useCampaignWizardStore((s) => s.enrichmentSources);
 
   // Briefing fields
   const briefingOccasion = useCampaignWizardStore((s) => s.briefingOccasion);
@@ -359,11 +360,17 @@ export function StrategyStep() {
         if (generationIdRef.current !== currentGenId) return;
         const data = event as Record<string, unknown>;
 
-        // Enrichment events (Are.na creative inspiration)
+        // Enrichment events (Are.na, Exa, Scholar, BCT context enrichment)
         if (data.type === "enrichment") {
+          const status = data.status;
+          if (status !== 'running' && status !== 'complete' && status !== 'skipped') return;
           useCampaignWizardStore.getState().setEnrichmentStatus(
-            data.status as 'running' | 'complete' | 'skipped',
-            { totalBlocks: (data.totalBlocks as number) ?? 0, queries: (data.queries as string[]) ?? [] },
+            status,
+            {
+              totalBlocks: typeof data.totalBlocks === 'number' ? data.totalBlocks : 0,
+              queries: Array.isArray(data.queries) ? data.queries as string[] : [],
+              sources: (data.sources && typeof data.sources === 'object' ? data.sources : {}) as { arena?: number; exa?: number; scholar?: number; bct?: boolean },
+            },
           );
           return;
         }
@@ -673,6 +680,7 @@ export function StrategyStep() {
           pipelineSteps={pipelineSteps}
           enrichmentStatus={enrichmentStatus}
           enrichmentBlockCount={enrichmentBlockCount}
+          enrichmentSources={enrichmentSources}
         />
         {goalInsights && <GoalInsightsPreview insights={goalInsights} />}
       </div>

@@ -12,6 +12,7 @@ import type {
   ArchitectureLayer,
   PersonaValidationResult,
   ArenaEnrichmentTracking,
+  EnrichmentSources,
 } from "../types/campaign-wizard.types";
 
 // ─── Types ────────────────────────────────────────────────
@@ -61,10 +62,11 @@ interface CampaignWizardState {
   synthesizedArchitecture: ArchitectureLayer | null;
   arenaEnrichment: ArenaEnrichmentTracking | null;
 
-  // ─── Enrichment Status (Are.na real-time feedback) ─────────
+  // ─── Enrichment Status (real-time feedback for all sources) ─────────
   enrichmentStatus: 'idle' | 'running' | 'complete' | 'skipped';
   enrichmentBlockCount: number;
   enrichmentQueries: string[];
+  enrichmentSources: EnrichmentSources;
 
   // ─── Interactive Feedback (Variant Review) ─────────────────
   endorsedPersonaIds: string[];
@@ -124,7 +126,7 @@ interface CampaignWizardState {
   clearPhaseData: () => void;
 
   // ─── Enrichment Status Actions ──────────────────────────────
-  setEnrichmentStatus: (status: 'idle' | 'running' | 'complete' | 'skipped', meta?: { totalBlocks?: number; queries?: string[] }) => void;
+  setEnrichmentStatus: (status: 'idle' | 'running' | 'complete' | 'skipped', meta?: { totalBlocks?: number; queries?: string[]; sources?: EnrichmentSources }) => void;
 
   // ─── Interactive Feedback Actions ─────────────────────────
   togglePersonaEndorsement: (personaId: string) => void;
@@ -182,6 +184,7 @@ const INITIAL_STATE = {
   enrichmentStatus: 'idle' as 'idle' | 'running' | 'complete' | 'skipped',
   enrichmentBlockCount: 0,
   enrichmentQueries: [] as string[],
+  enrichmentSources: {} as { arena?: number; exa?: number; scholar?: number; bct?: boolean },
 
   // ─── Interactive Feedback ──────────────────────────────────
   endorsedPersonaIds: [] as string[],
@@ -323,6 +326,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         enrichmentStatus: 'idle',
         enrichmentBlockCount: 0,
         enrichmentQueries: [],
+        enrichmentSources: {},
       }),
 
     // ─── Interactive Strategy Phase Actions ─────────────────
@@ -364,6 +368,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         enrichmentStatus: 'idle',
         enrichmentBlockCount: 0,
         enrichmentQueries: [],
+        enrichmentSources: {},
       }),
 
     // ─── Enrichment Status Actions ──────────────────────────────
@@ -372,6 +377,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         enrichmentStatus: status,
         enrichmentBlockCount: meta?.totalBlocks ?? 0,
         enrichmentQueries: meta?.queries ?? [],
+        enrichmentSources: meta?.sources ?? {},
       }),
 
     // ─── Interactive Feedback Actions ─────────────────────────

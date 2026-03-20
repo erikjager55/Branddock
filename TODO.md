@@ -371,6 +371,28 @@ Kern van de Branddock waardepropositie — AI-gedreven campagne-strategie en con
 - [ ] Bestaande Content Studio componenten evalueren (behouden/herschrijven/verwijderen)
 - [ ] Nieuwe componentenstructuur opzetten
 
+### 6.7 Strategy Quality Enhancement — External Enrichments
+
+Multi-fase integratie van externe data-bronnen voor hogere strategie-kwaliteit (behavioral science + creativiteit).
+
+#### Fase 1: Gratis (CURRENT) ✅
+- [x] BCT Ontology (local JSON) — behavioral science foundation per goal type (COM-B model, 32 BCTs)
+- [x] Exa API (1000 free/month) — cross-industry creative analogies via neural semantic search
+- [x] Semantic Scholar API (free) — academic papers for behavioral strategy evidence
+- [x] Pipeline integration — all 3 sources wired into strategy-chain.ts (parallel, non-blocking)
+- [x] Prompt differentiation — Variant A: evidence-based (scholar+bct), Variant B: creative provocations (exa)
+- [x] UI enrichment indicators — per-source breakdown (Are.na, Exa, Scholar, BCT) in PipelineProgressView
+
+#### Fase 2: Low-Cost ($99-198/mo) — pending
+- [ ] SparkToro — audience intelligence, real behavioral data per persona
+- [ ] Glimpse — emerging trend detection, cultural moment identification
+
+#### Fase 3: Premium — pending
+- [ ] Crayon — competitive intelligence, real-time competitor strategy monitoring
+- [ ] Brandwatch/Brand24 — social listening, brand sentiment, cultural conversations
+
+Env vars (optional): `EXA_API_KEY`, `S2_API_KEY`
+
 ---
 
 ## Fase 7: UI Polish — Persona Restyling (PSR.6-8)

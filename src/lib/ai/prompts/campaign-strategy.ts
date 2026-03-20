@@ -26,7 +26,7 @@ function intentRatio(intent: StrategicIntent): { brand: number; activation: numb
   }
 }
 
-// ─── Step 1a: Full Variant A (Claude — organic/thought leadership) ────────
+// ─── Step 1a: Full Variant A (Claude — Evidence-Based / Expected) ────────
 
 /** Shared campaign brief section builder */
 function buildBriefingSection(briefing?: CampaignBriefing): string {
@@ -64,6 +64,9 @@ export function buildGoalInsightsPromptSection(goalType: string): string {
     .join('\n');
 
   const { awareness, consideration, conversion, retention } = insights.funnelEmphasis;
+
+  // NOTE: BCT context is NOT injected here — it is injected per-variant via params.bctContext
+  // in the user prompt (Variant A only). This avoids double-injection.
 
   return `
 
@@ -104,6 +107,12 @@ interface FullVariantPromptParams {
   briefing?: CampaignBriefing;
   /** Are.na associative context (cultural/strategic inspiration) */
   arenaContext?: string;
+  /** Exa neural search context (cross-industry analogies, cultural tensions) */
+  exaContext?: string;
+  /** Semantic Scholar academic evidence context */
+  scholarContext?: string;
+  /** BCT behavioral science context (COM-B model, behavior change techniques) */
+  bctContext?: string;
 }
 
 export function buildFullVariantAPrompt(params: FullVariantPromptParams): { system: string; user: string } {
@@ -111,15 +120,23 @@ export function buildFullVariantAPrompt(params: FullVariantPromptParams): { syst
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
-  const system = `You are a senior brand strategist specializing in organic growth and thought leadership campaigns.
+  const system = `You are a senior brand strategist specializing in evidence-based strategy and proven methodologies.
 
-Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response, with a FOCUS ON ORGANIC REACH AND THOUGHT LEADERSHIP.
+Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response, grounded in BEHAVIORAL SCIENCE EVIDENCE AND VALIDATED MARKETING FRAMEWORKS.
 
 Academic frameworks to apply:
 - Percy & Elliott's campaign planning model (stimulus → processing → response)
 - Binet & Field's effectiveness data: ${ratio.brand}% brand building / ${ratio.activation}% activation
 - Christensen's Jobs-to-be-Done (JTBD) framework for audience framing
-- Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Pull strategies${goalContext}${goalInsights}
+- Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Pull strategies
+- COM-B Model (Capability, Opportunity, Motivation → Behavior) for behavioral change
+- Behavior Change Technique (BCT) Taxonomy v1 for intervention design${goalContext}${goalInsights}
+
+Your strategic approach should be:
+- Grounded in behavioral science evidence and proven marketing frameworks
+- Risk-managed with validated approaches backed by academic research
+- Focused on measurable behavior change using COM-B and BCT techniques
+- Built on proven channel strategies with strong evidence of effectiveness
 
 IMPORTANT: If a Creative Briefing is provided, use it as the primary strategic direction.
 
@@ -144,12 +161,12 @@ Output a JSON object with TWO top-level keys:
       personaRelevance: [{ personaId, relevance ("high"|"medium"|"low"), messagingAngle }] }]
 }
 
-Focus on: earned media, content marketing, community, SEO, thought leadership, email nurturing.
+Focus on: evidence-based channel selection, behavioral nudges, content marketing, community building, email nurturing, earned media.
 Use persona IDs from the provided list for all personaId fields.
 
 Respond with valid JSON.`;
 
-  const user = `Generate the complete strategy + architecture for variant A (organic/thought leadership focus) for "${params.campaignName}".
+  const user = `Generate the complete strategy + architecture for variant A (evidence-based, proven methodologies) for "${params.campaignName}".
 
 ## Campaign Brief
 Description: ${params.campaignDescription || 'No description provided'}
@@ -173,29 +190,51 @@ ${params.competitorContext || 'No competitors defined yet.'}
 ${params.trendContext || 'No trends defined yet.'}${params.arenaContext ? `
 
 ## Associative Inspiration (Are.na)
-The following curated cultural and strategic references were found on Are.na, a knowledge platform used by creatives and strategists. Use these as associative inspiration — they may spark unexpected angles, metaphors, or positioning ideas. Do not copy them literally, but let them inform your creative thinking.
+The following curated cultural and strategic references were found on Are.na. Use these as associative inspiration to inform your creative thinking.
 
-${params.arenaContext}` : ''}`;
+${params.arenaContext}` : ''}${params.scholarContext ? `
+
+## Research Evidence (Semantic Scholar)
+The following academic papers provide evidence-based foundations for your strategy. Reference these findings to ground your strategic choices in research.
+
+${params.scholarContext}` : ''}${params.bctContext ? `
+
+## Behavioral Science Framework
+The following Behavior Change Techniques (BCTs) from the HBCP Taxonomy are recommended for this goal type. Integrate these into your strategy to drive measurable behavior change.
+
+${params.bctContext}` : ''}`;
 
   return { system, user };
 }
 
-// ─── Step 1b: Full Variant B (Gemini — conversion/paid media) ────────
+// ─── Step 1b: Full Variant B (Gemini — Creative Provocations / Unexpected) ────────
+// NOTE: Intentional variant asymmetry in enrichment context injection:
+//   Variant A (evidence-based): arenaContext + scholarContext + bctContext (NO exaContext)
+//   Variant B (creative):       arenaContext + exaContext (NO scholarContext/bctContext)
+// This ensures each variant has a distinct strategic personality.
 
 export function buildFullVariantBPrompt(params: FullVariantPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
-  const system = `You are a performance marketing strategist specializing in conversion optimization and paid media campaigns.
+  const system = `You are a creative provocateur who finds breakthrough strategies through cross-industry analogies and cultural tensions.
 
-Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response, with a FOCUS ON DIRECT CONVERSION AND PAID MEDIA.
+Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response. Generate a strategy that SURPRISES — find the unexpected angle that competitors would never think of.
 
-Academic frameworks to apply:
+Creative frameworks to apply:
 - Percy & Elliott's campaign planning model (stimulus → processing → response)
 - Binet & Field's effectiveness data: ${ratio.brand}% brand building / ${ratio.activation}% activation
 - Christensen's Jobs-to-be-Done (JTBD) framework for audience framing
-- Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Push and Profile strategies${goalContext}${goalInsights}
+- Cultural tension identification (what unspoken tension can the brand own?)
+- Cross-industry analogy mapping (what can we learn from completely different industries?)
+- Distinctive brand assets creation (Byron Sharp's "How Brands Grow")${goalContext}${goalInsights}
+
+Your strategic approach should be:
+- Built on unexpected cross-industry analogies and cultural tensions
+- Distinctive and ownable — something competitors would never think of
+- Culturally resonant with current tensions and emerging conversations
+- Bold in channel choices, mixing unconventional with proven approaches
 
 IMPORTANT: If a Creative Briefing is provided, use it as the primary strategic direction.
 
@@ -220,12 +259,12 @@ Output a JSON object with TWO top-level keys:
       personaRelevance: [{ personaId, relevance ("high"|"medium"|"low"), messagingAngle }] }]
 }
 
-Focus on: paid social, PPC, retargeting, landing pages, conversion-optimized email, direct response.
+Focus on: culturally resonant channels, unexpected media choices, creative content formats, community-driven amplification, distinctive brand moments.
 Use persona IDs from the provided list for all personaId fields.
 
 Respond with valid JSON.`;
 
-  const user = `Generate the complete strategy + architecture for variant B (conversion/paid media focus) for "${params.campaignName}".
+  const user = `Generate the complete strategy + architecture for variant B (unexpected, creative provocations) for "${params.campaignName}".
 
 ## Campaign Brief
 Description: ${params.campaignDescription || 'No description provided'}
@@ -249,9 +288,14 @@ ${params.competitorContext || 'No competitors defined yet.'}
 ${params.trendContext || 'No trends defined yet.'}${params.arenaContext ? `
 
 ## Associative Inspiration (Are.na)
-The following curated cultural and strategic references were found on Are.na, a knowledge platform used by creatives and strategists. Use these as associative inspiration — they may spark unexpected angles, metaphors, or positioning ideas. Do not copy them literally, but let them inform your creative thinking.
+The following curated cultural and strategic references were found on Are.na. Use these as associative inspiration — they may spark unexpected angles, metaphors, or positioning ideas. Do not copy them literally, but let them inform your creative thinking.
 
-${params.arenaContext}` : ''}`;
+${params.arenaContext}` : ''}${params.exaContext ? `
+
+## Cross-Industry Insights (Exa Neural Search)
+The following cross-industry analogies, cultural tensions, and trend-driven insights were found via neural semantic search. These come from OUTSIDE your industry — use them to find unexpected strategic connections, metaphors, and angles that competitors would never discover.
+
+${params.exaContext}` : ''}`;
 
   return { system, user };
 }
@@ -274,7 +318,7 @@ export function buildPersonaValidatorPrompt(params: {
 
   const system = `You are simulating target personas evaluating two complete campaign strategy variants.
 
-Your role: For EACH persona, roleplay as that person and evaluate both variant A (organic/thought leadership) and variant B (conversion/paid media). Each variant has its OWN strategic foundation AND campaign architecture.${goalContext}${goalInsights}
+Your role: For EACH persona, roleplay as that person and evaluate both variant A (evidence-based, proven methodologies) and variant B (unexpected, creative provocations). Each variant has its OWN strategic foundation AND campaign architecture.${goalContext}${goalInsights}
 
 Evaluation criteria per persona — ALL fields are MANDATORY:
 - overallScore: Score 1-10. Be honest and critical — avoid giving every persona the same score. Differentiate based on how well the strategy truly fits each persona's unique situation.
@@ -283,6 +327,7 @@ Evaluation criteria per persona — ALL fields are MANDATORY:
 - concerns: MANDATORY: List at least 1 specific concern or doubt this persona would have. Every strategy has weaknesses from some perspective.
 - suggestions: MANDATORY: List at least 1 actionable suggestion this persona would make to improve the strategy.
 - preferredVariant: "A" or "B" — which variant does this persona prefer?
+- behavioralResonance: MANDATORY: Evaluate whether the behavioral change approach in each variant would actually motivate this persona to act. Consider what drives their behavior (capability, opportunity, or motivation barriers) and whether the strategy addresses it.
 
 Stay in character. Use the persona's vocabulary, concerns, and decision-making style.
 Consider their goals, pain points, preferred channels, and buying triggers.
@@ -295,7 +340,7 @@ Respond with a JSON array of persona validation objects.`;
 
   const user = `Evaluate these two complete campaign variants as each persona.
 
-## Variant A — Organic/Thought Leadership
+## Variant A — Evidence-Based (Proven Methodologies)
 
 ### Strategy A
 ${params.strategyLayerA}
@@ -303,7 +348,7 @@ ${params.strategyLayerA}
 ### Architecture A
 ${params.variantA}
 
-## Variant B — Conversion/Paid Media
+## Variant B — Unexpected (Creative Provocations)
 
 ### Strategy B
 ${params.strategyLayerB}
@@ -337,7 +382,7 @@ export function buildStrategySynthesizerPrompt(params: {
 
   const system = `You are a chief strategy officer performing the final synthesis of a campaign blueprint.
 
-Your task: Combine the BEST elements from variant A (organic) and variant B (paid/conversion) into ONE optimal campaign architecture, informed by persona feedback.${goalContext}${goalInsights}
+Your task: Combine the BEST elements from variant A (evidence-based) and variant B (unexpected/creative) into ONE optimal campaign architecture, informed by persona feedback.${goalContext}${goalInsights}
 
 Synthesis rules:
 1. Select the strongest journey phases from either variant
@@ -414,7 +459,7 @@ Respond with valid JSON.`;
 Variant A average persona score: ${params.variantAScore.toFixed(1)}/10
 Variant B average persona score: ${params.variantBScore.toFixed(1)}/10
 
-## Variant A — Organic/Thought Leadership
+## Variant A — Evidence-Based (Proven Methodologies)
 
 ### Strategy A
 ${params.strategyLayerA}
@@ -422,7 +467,7 @@ ${params.strategyLayerA}
 ### Architecture A
 ${params.variantA}
 
-## Variant B — Conversion/Paid Media
+## Variant B — Unexpected (Creative Provocations)
 
 ### Strategy B
 ${params.strategyLayerB}

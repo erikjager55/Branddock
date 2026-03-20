@@ -185,6 +185,12 @@ export interface ContextSelection {
   trendIds: string[];
   /** Are.na channels that contributed associative context */
   arenaChannels?: Array<{ title: string; slug: string; blockCount: number }>;
+  /** Exa neural search queries used for cross-industry enrichment */
+  exaQueries?: string[];
+  /** Number of Semantic Scholar papers used for behavioral science enrichment */
+  scholarPaperCount?: number;
+  /** Goal type used for BCT behavioral science mapping */
+  bctGoalType?: string;
 }
 
 export interface CampaignBlueprint {

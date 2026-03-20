@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { Check, Loader2, AlertCircle, Palette } from "lucide-react";
+import { Check, Loader2, AlertCircle, Palette, BookOpen, Search, FlaskConical } from "lucide-react";
 import { ProgressBar } from "@/components/shared";
-import type { PipelineStep, PipelineStepStatus } from "../../types/campaign-wizard.types";
+import type { PipelineStep, PipelineStepStatus, EnrichmentSources } from "../../types/campaign-wizard.types";
 
 // ─── Step Status Icon ────────────────────────────────────
 
@@ -38,12 +38,24 @@ function StepStatusIcon({ status }: { status: PipelineStepStatus }) {
 
 // ─── Enrichment Indicator ──────────────────────────────
 
-function EnrichmentIndicator({ status, blockCount }: { status: 'idle' | 'running' | 'complete' | 'skipped'; blockCount: number }) {
+function SourcePill({ icon: Icon, label, count }: { icon: React.ElementType; label: string; count: number | boolean }) {
+  if (!count) return null;
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-100/80 text-violet-700 text-xs">
+      <Icon className="w-3 h-3" />
+      {typeof count === 'boolean' ? label : `${label} ${count}`}
+    </span>
+  );
+}
+
+function EnrichmentIndicator({ status, blockCount, sources }: { status: 'idle' | 'running' | 'complete' | 'skipped'; blockCount: number; sources?: EnrichmentSources }) {
   if (status === 'idle') return null;
+
+  const hasSourceBreakdown = sources && (sources.arena || sources.exa || sources.scholar || sources.bct);
 
   return (
     <div
-      className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-lg border transition-colors ${
+      className={`flex flex-col gap-1.5 px-3.5 py-2.5 rounded-lg border transition-colors ${
         status === 'running'
           ? 'border-violet-200 bg-violet-50/70'
           : status === 'complete'
@@ -51,18 +63,28 @@ function EnrichmentIndicator({ status, blockCount }: { status: 'idle' | 'running
             : 'border-gray-200 bg-gray-50/50'
       }`}
     >
-      {status === 'running' ? (
-        <Loader2 className="w-4 h-4 text-violet-500 animate-spin flex-shrink-0" />
-      ) : (
-        <Palette className={`w-4 h-4 flex-shrink-0 ${status === 'complete' ? 'text-violet-500' : 'text-gray-400'}`} />
+      <div className="flex items-center gap-2.5">
+        {status === 'running' ? (
+          <Loader2 className="w-4 h-4 text-violet-500 animate-spin flex-shrink-0" />
+        ) : (
+          <Palette className={`w-4 h-4 flex-shrink-0 ${status === 'complete' ? 'text-violet-500' : 'text-gray-400'}`} />
+        )}
+        <span className={`text-sm ${status === 'running' ? 'text-violet-700' : status === 'complete' ? 'text-violet-600' : 'text-gray-500'}`}>
+          {status === 'running'
+            ? 'Enriching strategy context...'
+            : status === 'complete'
+              ? `${blockCount} enrichment source${blockCount !== 1 ? 's' : ''} injected`
+              : 'No enrichment sources found'}
+        </span>
+      </div>
+      {status === 'complete' && hasSourceBreakdown && (
+        <div className="flex flex-wrap gap-1.5 ml-6.5">
+          <SourcePill icon={Palette} label="Are.na" count={sources.arena ?? 0} />
+          <SourcePill icon={Search} label="Exa" count={sources.exa ?? 0} />
+          <SourcePill icon={BookOpen} label="Scholar" count={sources.scholar ?? 0} />
+          <SourcePill icon={FlaskConical} label="BCT" count={sources.bct ?? false} />
+        </div>
       )}
-      <span className={`text-sm ${status === 'running' ? 'text-violet-700' : status === 'complete' ? 'text-violet-600' : 'text-gray-500'}`}>
-        {status === 'running'
-          ? 'Injecting creative inspiration...'
-          : status === 'complete'
-            ? `${blockCount} cultural reference${blockCount !== 1 ? 's' : ''} injected`
-            : 'No creative references found'}
-      </span>
     </div>
   );
 }
@@ -83,12 +105,13 @@ interface PipelineProgressViewProps {
   pipelineSteps: PipelineStep[];
   enrichmentStatus?: 'idle' | 'running' | 'complete' | 'skipped';
   enrichmentBlockCount?: number;
+  enrichmentSources?: EnrichmentSources;
 }
 
 // ─── Component ──────────────────────────────────────────
 
 /** Reusable pipeline progress view for any subset of steps */
-export function PipelineProgressView({ title, subtitle, steps, pipelineSteps, enrichmentStatus = 'idle', enrichmentBlockCount = 0 }: PipelineProgressViewProps) {
+export function PipelineProgressView({ title, subtitle, steps, pipelineSteps, enrichmentStatus = 'idle', enrichmentBlockCount = 0, enrichmentSources }: PipelineProgressViewProps) {
   const completedSteps = pipelineSteps.filter((s) => s.status === "complete").length;
   const totalSteps = steps.length;
   const progressPercent = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
@@ -104,7 +127,7 @@ export function PipelineProgressView({ title, subtitle, steps, pipelineSteps, en
 
       <ProgressBar value={progressPercent} color="emerald" size="md" showLabel />
 
-      <EnrichmentIndicator status={enrichmentStatus} blockCount={enrichmentBlockCount} />
+      <EnrichmentIndicator status={enrichmentStatus} blockCount={enrichmentBlockCount} sources={enrichmentSources} />
 
       <div className="grid grid-cols-1 gap-2">
         {steps.map((config) => {

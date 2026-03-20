@@ -140,14 +140,23 @@ export interface LegacyStrategyResponse {
 export type StrategyResponse = BlueprintStrategyResponse | LegacyStrategyResponse;
 
 /**
- * Enrichment event emitted during Are.na context fetching in the strategy pipeline.
+ * Enrichment event emitted during context fetching in the strategy pipeline.
  * This is a separate event type that doesn't fit the normal PipelineStep structure.
  */
+/** Per-source breakdown of enrichment results */
+export interface EnrichmentSources {
+  arena?: number;
+  exa?: number;
+  scholar?: number;
+  bct?: boolean;
+}
+
 export type EnrichmentEvent = {
   type: 'enrichment';
   status: 'running' | 'complete' | 'skipped';
   totalBlocks?: number;
   queries?: string[];
+  sources?: EnrichmentSources;
 };
 
 /**
