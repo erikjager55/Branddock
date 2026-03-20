@@ -8,7 +8,7 @@ import { prisma } from '@/lib/prisma';
 import { getBrandContext } from '@/lib/ai/brand-context';
 import { formatBrandContext } from '@/lib/ai/prompt-templates';
 import { buildSelectedPersonasContext } from '@/lib/ai/persona-context';
-import { createClaudeStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
+import { createClaudeStructuredCompletion, createStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
 import { calculateBlueprintConfidence } from './confidence-calculator';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
@@ -23,6 +23,11 @@ import {
 } from '@/lib/ai/prompts/campaign-strategy';
 import { buildArenaQueries } from '@/lib/arena/arena-queries';
 import { fetchArenaContext } from '@/lib/arena/arena-client';
+import { buildExaQueries } from '@/lib/exa/exa-queries';
+import { fetchExaContext } from '@/lib/exa/exa-client';
+import { buildScholarQueries } from '@/lib/semantic-scholar/scholar-queries';
+import { fetchScholarContext } from '@/lib/semantic-scholar/scholar-client';
+import { getBctContext, getGoalBctMapping } from '@/lib/bct/goal-bct-mapping';
 import {
   strategyLayerSchema,
   architectureLayerSchema,
@@ -30,7 +35,6 @@ import {
   channelPlanLayerSchema,
   assetPlanLayerSchema,
   personaValidationArraySchema,
-  fullVariantResponseSchema,
   channelPlanResponseSchema,
   assetPlanResponseSchema,
 } from './strategy-blueprint.types';
@@ -56,7 +60,6 @@ import type { PipelineEvent } from '@/features/campaigns/types/campaign-wizard.t
 
 const CLAUDE_SONNET = 'claude-sonnet-4-5-20250929';
 const CLAUDE_OPUS = 'claude-opus-4-6';
-const GEMINI_PRO = 'gemini-3.1-pro-preview';
 const GEMINI_FLASH = 'gemini-2.5-flash';
 
 /** Wraps an AI call with step-specific error context for better debugging */
@@ -371,8 +374,11 @@ export async function generateStrategyVariants(
   const strategicIntent = intentOpt ?? 'hybrid';
   const campaignName = wizardContext.campaignName;
 
-  // Resolve configurable model for campaign-strategy feature
-  const { model: resolvedModel } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
+  // Resolve configurable models for campaign-strategy features (Variant A + B)
+  const [{ model: resolvedModel, provider: resolvedProvider }, { model: resolvedModelB, provider: resolvedProviderB }] = await Promise.all([
+    resolveFeatureModel(workspaceId, 'campaign-strategy'),
+    resolveFeatureModel(workspaceId, 'campaign-strategy-b'),
+  ]);
   const campaignDescription = wizardContext.campaignDescription ?? '';
   const campaignGoalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
 
@@ -386,7 +392,7 @@ export async function generateStrategyVariants(
   const competitorIds = competitorIdsOpt ?? [];
   const trendIds = trendIdsOpt ?? [];
 
-  // Build Are.na queries from available input (non-blocking)
+  // Build enrichment queries (non-blocking)
   const arenaQueriesPromise = buildArenaQueries({
     workspaceId,
     campaignGoalType,
@@ -403,11 +409,39 @@ export async function generateStrategyVariants(
     arenaQueriesPromise,
   ]);
 
-  // Fetch Are.na context (non-blocking enrichment) — emit SSE events for real-time feedback
+  // Build Exa + Scholar + BCT queries from context (all sync, non-blocking)
+  const bctMapping = getGoalBctMapping(campaignGoalType);
+  const exaQueries = buildExaQueries({
+    campaignGoalType,
+    brandName: brandContext.brandName,
+    brandValues: brandContext.brandValues,
+  });
+  const scholarQueries = buildScholarQueries({
+    campaignGoalType,
+    comBTarget: bctMapping?.comBTarget,
+  });
+  const bctContext = getBctContext(campaignGoalType);
+
+  // Fetch all enrichments in parallel — emit SSE events for real-time feedback
   onProgress?.({ type: 'enrichment', status: 'running' });
-  const arenaResult = await fetchArenaContext(arenaQueries);
-  if (arenaResult.meta && arenaResult.meta.totalBlocks > 0) {
-    onProgress?.({ type: 'enrichment', status: 'complete', totalBlocks: arenaResult.meta.totalBlocks, queries: arenaResult.meta.queries });
+  const [arenaResult, exaResult, scholarResult] = await Promise.all([
+    fetchArenaContext(arenaQueries),
+    fetchExaContext(exaQueries),
+    fetchScholarContext(scholarQueries),
+  ]);
+
+  const totalEnrichmentBlocks = (arenaResult.meta?.totalBlocks ?? 0) + (exaResult.meta?.totalResults ?? 0) + (scholarResult.meta?.totalPapers ?? 0);
+  if (totalEnrichmentBlocks > 0 || bctContext) {
+    onProgress?.({ type: 'enrichment', status: 'complete', totalBlocks: totalEnrichmentBlocks, queries: [
+      ...(arenaResult.meta?.queries ?? []),
+      ...(exaResult.meta?.queries ?? []),
+      ...(scholarResult.meta?.queries ?? []),
+    ], sources: {
+      arena: arenaResult.meta?.totalBlocks ?? 0,
+      exa: exaResult.meta?.totalResults ?? 0,
+      scholar: scholarResult.meta?.totalPapers ?? 0,
+      bct: !!bctContext,
+    } });
   } else {
     onProgress?.({ type: 'enrichment', status: 'skipped' });
   }
@@ -428,6 +462,9 @@ export async function generateStrategyVariants(
     personaIds,
     briefing,
     arenaContext: arenaResult.contextText || undefined,
+    exaContext: exaResult.contextText || undefined,
+    scholarContext: scholarResult.contextText || undefined,
+    bctContext: bctContext || undefined,
   };
 
   // Step 1: Dual Full Variants (parallel — each model generates its own strategy + architecture)
@@ -437,16 +474,18 @@ export async function generateStrategyVariants(
   const step1bPrompt = buildFullVariantBPrompt(sharedPromptParams);
 
   const [fullVariantARaw, fullVariantBRaw] = await Promise.all([
-    withStepContext('Step 1a (Full Variant A — Claude)', 300, () =>
-      createClaudeStructuredCompletion<FullVariant>(
+    withStepContext('Step 1a (Full Variant A)', 300, () =>
+      createStructuredCompletion<FullVariant>(
+        resolvedProvider, resolvedModel,
         step1aPrompt.system, step1aPrompt.user,
-        { model: resolvedModel, temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
+        { temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
       ),
     ),
-    withStepContext('Step 1b (Full Variant B — Gemini)', 300, () =>
-      createGeminiStructuredCompletion<FullVariant>(
+    withStepContext('Step 1b (Full Variant B)', 300, () =>
+      createStructuredCompletion<FullVariant>(
+        resolvedProviderB, resolvedModelB,
         step1bPrompt.system, step1bPrompt.user,
-        { model: GEMINI_PRO, temperature: 0.4, maxOutputTokens: 24000, timeoutMs: 300_000, responseSchema: fullVariantResponseSchema },
+        { temperature: 0.4, maxTokens: 24000, timeoutMs: 300_000 },
       ),
     ),
   ]);
@@ -480,9 +519,10 @@ export async function generateStrategyVariants(
     });
 
     const validationRaw = await withStepContext('Step 2 (Persona Validation)', 300, () =>
-      createClaudeStructuredCompletion<PersonaValidationResult[]>(
+      createStructuredCompletion<PersonaValidationResult[]>(
+        resolvedProvider, resolvedModel,
         step2Prompt.system, step2Prompt.user,
-        { model: resolvedModel, temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000 },
+        { temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000 },
       ),
     );
     personaValidation = normalizePersonaValidation(
@@ -668,8 +708,11 @@ export async function generateCampaignBlueprint(
   const strategicIntent = options.strategicIntent ?? 'hybrid';
   const isWizardMode = !!options.wizardContext;
 
-  // Resolve configurable model for campaign-strategy feature
-  const { model: resolvedModel } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
+  // Resolve configurable models for campaign-strategy features (Variant A + B)
+  const [{ model: resolvedModel, provider: resolvedProvider }, { model: resolvedModelB, provider: resolvedProviderB }] = await Promise.all([
+    resolveFeatureModel(workspaceId, 'campaign-strategy'),
+    resolveFeatureModel(workspaceId, 'campaign-strategy-b'),
+  ]);
 
   // ─── Gather context ──────────────────────────────────────
   // In wizard mode, we don't have a campaign in the DB yet
@@ -712,7 +755,7 @@ export async function generateCampaignBlueprint(
   const competitorIds = options.competitorIds ?? [];
   const trendIds = options.trendIds ?? [];
 
-  // Build Are.na queries from available input (non-blocking)
+  // Build enrichment queries (non-blocking)
   const arenaQueriesPromise = buildArenaQueries({
     workspaceId,
     campaignGoalType,
@@ -734,8 +777,42 @@ export async function generateCampaignBlueprint(
     arenaQueriesPromise,
   ]);
 
-  // Fetch Are.na context (non-blocking enrichment)
-  const arenaResult = await fetchArenaContext(arenaQueries);
+  // Build Exa + Scholar + BCT queries from context (all sync, non-blocking)
+  const bctMapping = getGoalBctMapping(campaignGoalType);
+  const exaQueries = buildExaQueries({
+    campaignGoalType,
+    brandName: brandContext.brandName,
+    brandValues: brandContext.brandValues,
+  });
+  const scholarQueries = buildScholarQueries({
+    campaignGoalType,
+    comBTarget: bctMapping?.comBTarget,
+  });
+  const bctContext = getBctContext(campaignGoalType);
+
+  // Fetch all enrichments in parallel (non-blocking)
+  onProgress?.({ type: 'enrichment', status: 'running' });
+  const [arenaResult, exaResult, scholarResult] = await Promise.all([
+    fetchArenaContext(arenaQueries),
+    fetchExaContext(exaQueries),
+    fetchScholarContext(scholarQueries),
+  ]);
+
+  const totalBlueprintEnrichmentBlocks = (arenaResult.meta?.totalBlocks ?? 0) + (exaResult.meta?.totalResults ?? 0) + (scholarResult.meta?.totalPapers ?? 0);
+  if (totalBlueprintEnrichmentBlocks > 0 || bctContext) {
+    onProgress?.({ type: 'enrichment', status: 'complete', totalBlocks: totalBlueprintEnrichmentBlocks, queries: [
+      ...(arenaResult.meta?.queries ?? []),
+      ...(exaResult.meta?.queries ?? []),
+      ...(scholarResult.meta?.queries ?? []),
+    ], sources: {
+      arena: arenaResult.meta?.totalBlocks ?? 0,
+      exa: exaResult.meta?.totalResults ?? 0,
+      scholar: scholarResult.meta?.totalPapers ?? 0,
+      bct: !!bctContext,
+    } });
+  } else {
+    onProgress?.({ type: 'enrichment', status: 'skipped' });
+  }
 
   const brandContextText = formatBrandContext(brandContext);
 
@@ -758,24 +835,29 @@ export async function generateCampaignBlueprint(
     personaIds,
     briefing,
     arenaContext: arenaResult.contextText || undefined,
+    exaContext: exaResult.contextText || undefined,
+    scholarContext: scholarResult.contextText || undefined,
+    bctContext: bctContext || undefined,
   };
 
   const step1aPrompt = buildFullVariantAPrompt(fullVariantParams);
   const step1bPrompt = buildFullVariantBPrompt(fullVariantParams);
 
   const [fullVariantARaw, fullVariantBRaw] = await Promise.all([
-    withStepContext('Step 1a (Full Variant A — Claude)', 300, () =>
-      createClaudeStructuredCompletion<FullVariant>(
+    withStepContext('Step 1a (Full Variant A)', 300, () =>
+      createStructuredCompletion<FullVariant>(
+        resolvedProvider, resolvedModel,
         step1aPrompt.system,
         step1aPrompt.user,
-        { model: resolvedModel, temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
+        { temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
       ),
     ),
-    withStepContext('Step 1b (Full Variant B — Gemini)', 300, () =>
-      createGeminiStructuredCompletion<FullVariant>(
+    withStepContext('Step 1b (Full Variant B)', 300, () =>
+      createStructuredCompletion<FullVariant>(
+        resolvedProviderB, resolvedModelB,
         step1bPrompt.system,
         step1bPrompt.user,
-        { model: GEMINI_PRO, temperature: 0.4, maxOutputTokens: 24000, timeoutMs: 300_000, responseSchema: fullVariantResponseSchema },
+        { temperature: 0.4, maxTokens: 24000, timeoutMs: 300_000 },
       ),
     ),
   ]);
@@ -809,10 +891,11 @@ export async function generateCampaignBlueprint(
     });
 
     const validationRaw = await withStepContext('Step 2 (Persona Validation)', 300, () =>
-      createClaudeStructuredCompletion<PersonaValidationResult[]>(
+      createStructuredCompletion<PersonaValidationResult[]>(
+        resolvedProvider, resolvedModel,
         step2Prompt.system,
         step2Prompt.user,
-        { model: resolvedModel, temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000 },
+        { temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000 },
       ),
     );
     personaValidation = normalizePersonaValidation(
@@ -950,13 +1033,16 @@ export async function generateCampaignBlueprint(
     variantAScore,
     variantBScore,
     pipelineDuration: Date.now() - startTime,
-    modelsUsed: [resolvedModel, GEMINI_PRO, CLAUDE_OPUS, GEMINI_FLASH],
+    modelsUsed: [resolvedModel, resolvedModelB, CLAUDE_OPUS, GEMINI_FLASH],
     contextSelection: {
       personaIds,
       productIds,
       competitorIds,
       trendIds,
       arenaChannels: arenaResult.meta?.channels,
+      exaQueries: exaResult.meta?.queries,
+      scholarPaperCount: scholarResult.meta?.totalPapers,
+      bctGoalType: campaignGoalType,
     },
   };
 
@@ -1028,7 +1114,7 @@ export async function regenerateBlueprintLayer(
   const blueprint = structuredClone(existingBlueprint);
 
   // Resolve configurable model for campaign-strategy feature
-  const { model: resolvedModel } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
+  const { model: resolvedModel, provider: resolvedProvider } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
 
   const campaign = await prisma.campaign.findFirst({
     where: { id: campaignId, workspaceId },
@@ -1049,12 +1135,14 @@ export async function regenerateBlueprintLayer(
     select: { id: true },
   }).then(ps => ps.map(p => p.id));
 
-  // Build Are.na queries — only needed when regenerating strategy/architecture layers
-  const needsArenaContext = layer === 'strategy' || layer === 'architecture';
-  const regenArenaQueriesPromise = needsArenaContext
+  // Build enrichment queries — only needed when regenerating strategy/architecture layers
+  const needsEnrichment = layer === 'strategy' || layer === 'architecture';
+  const regenCampaignGoalType = campaign.campaignGoalType || 'BRAND_AWARENESS';
+
+  const regenArenaQueriesPromise = needsEnrichment
     ? buildArenaQueries({
         workspaceId,
-        campaignGoalType: campaign.campaignGoalType || 'BRAND_AWARENESS',
+        campaignGoalType: regenCampaignGoalType,
         personaIds: resolvedPersonaIds,
       }).catch(() => [])
     : Promise.resolve([]);
@@ -1071,8 +1159,43 @@ export async function regenerateBlueprintLayer(
     regenArenaQueriesPromise,
   ]);
 
-  // Fetch Are.na context (non-blocking enrichment)
-  const regenArenaResult = await fetchArenaContext(regenArenaQueries);
+  // Build + fetch all enrichments in parallel (only for strategy/architecture regen)
+  let regenArenaContext: string | undefined;
+  let regenExaContext: string | undefined;
+  let regenScholarContext: string | undefined;
+  let regenBctContext: string | undefined;
+  let regenArenaResult: Pick<Awaited<ReturnType<typeof fetchArenaContext>>, 'meta'> = { meta: null };
+  let regenExaResult: Pick<Awaited<ReturnType<typeof fetchExaContext>>, 'meta'> = { meta: null };
+  let regenScholarResult: Pick<Awaited<ReturnType<typeof fetchScholarContext>>, 'meta'> = { meta: null };
+
+  if (needsEnrichment) {
+    const bctMapping = getGoalBctMapping(regenCampaignGoalType);
+    const exaQueries = buildExaQueries({
+      campaignGoalType: regenCampaignGoalType,
+      brandName: brandContext.brandName,
+      brandValues: brandContext.brandValues,
+    });
+    const scholarQueries = buildScholarQueries({
+      campaignGoalType: regenCampaignGoalType,
+      comBTarget: bctMapping?.comBTarget,
+    });
+
+    const [arenaRes, exaRes, scholarRes] = await Promise.all([
+      fetchArenaContext(regenArenaQueries),
+      fetchExaContext(exaQueries),
+      fetchScholarContext(scholarQueries),
+    ]);
+
+    regenArenaContext = arenaRes.contextText || undefined;
+    regenExaContext = exaRes.contextText || undefined;
+    regenScholarContext = scholarRes.contextText || undefined;
+    regenBctContext = getBctContext(regenCampaignGoalType) || undefined;
+    regenArenaResult = arenaRes;
+    regenExaResult = exaRes;
+    regenScholarResult = scholarRes;
+  }
+  // When needsEnrichment is false (channelPlan/assetPlan), all regen* variables
+  // keep their default undefined values — no enrichment context needed.
 
   const brandContextText = formatBrandContext(brandContext);
 
@@ -1087,19 +1210,22 @@ export async function regenerateBlueprintLayer(
       personaContext,
       campaignName: campaign.title,
       campaignDescription: regenDescription,
-      goalType: campaign.campaignGoalType || 'BRAND_AWARENESS',
+      goalType: regenCampaignGoalType,
       strategicIntent: blueprint.strategy.strategicIntent,
       productContext,
       competitorContext,
       trendContext,
       personaIds: resolvedPersonaIds,
-      arenaContext: regenArenaResult.contextText || undefined,
+      arenaContext: regenArenaContext,
+      scholarContext: regenScholarContext,
+      bctContext: regenBctContext,
     });
 
     const fullVariantRaw = await withStepContext('Regenerate Full Variant (Step 1)', 300, () =>
-      createClaudeStructuredCompletion<FullVariant>(
+      createStructuredCompletion<FullVariant>(
+        resolvedProvider, resolvedModel,
         prompt.system, prompt.user,
-        { model: resolvedModel, temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
+        { temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
       ),
     );
     const fullVariant = fullVariantSchema.parse(fullVariantRaw);
@@ -1185,11 +1311,14 @@ export async function regenerateBlueprintLayer(
   blueprint.confidenceBreakdown = breakdown;
   blueprint.pipelineDuration = Date.now() - startTime;
   blueprint.generatedAt = new Date().toISOString();
-  // Preserve context selection for future regenerations, updating arena channels
+  // Preserve context selection for future regenerations, updating enrichment metadata
   blueprint.contextSelection = existingBlueprint.contextSelection
     ? {
         ...existingBlueprint.contextSelection,
         arenaChannels: regenArenaResult.meta?.channels ?? existingBlueprint.contextSelection.arenaChannels,
+        exaQueries: regenExaResult?.meta?.queries ?? existingBlueprint.contextSelection.exaQueries,
+        scholarPaperCount: regenScholarResult?.meta?.totalPapers ?? existingBlueprint.contextSelection.scholarPaperCount,
+        bctGoalType: regenCampaignGoalType ?? existingBlueprint.contextSelection.bctGoalType,
       }
     : {
         personaIds: resolvedPersonaIds,
@@ -1197,6 +1326,9 @@ export async function regenerateBlueprintLayer(
         competitorIds,
         trendIds,
         arenaChannels: regenArenaResult.meta?.channels,
+        exaQueries: regenExaResult?.meta?.queries,
+        scholarPaperCount: regenScholarResult?.meta?.totalPapers,
+        bctGoalType: regenCampaignGoalType,
       };
 
   return blueprint;
