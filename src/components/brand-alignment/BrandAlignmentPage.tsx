@@ -4,6 +4,9 @@ import {
   RefreshCw,
   Loader2,
   XCircle,
+  Download,
+  FileText,
+  FileJson,
 } from 'lucide-react';
 import {
   EmptyState,
@@ -20,6 +23,8 @@ import {
 import { useBrandAlignmentStore } from '@/stores/useBrandAlignmentStore';
 import { useUIState } from '@/contexts/UIStateContext';
 import type { AlignmentIssueListParams } from '@/types/brand-alignment';
+import { exportAlignmentPdf } from '@/features/brand-alignment/utils/exportAlignmentPdf';
+import { exportAlignmentJson } from '@/features/brand-alignment/utils/exportAlignmentJson';
 
 import { AlignmentScoreGauge } from './AlignmentScoreGauge';
 import { AlignmentStatsRow } from './AlignmentStatsRow';
@@ -112,6 +117,16 @@ export function BrandAlignmentPage() {
     setActiveSection(section);
   }
 
+  function handleExportPdf() {
+    if (!scan) return;
+    exportAlignmentPdf({ scan, modules, issues });
+  }
+
+  function handleExportJson() {
+    if (!scan) return;
+    exportAlignmentJson({ scan, modules, issues });
+  }
+
   // ─── Loading state ──────────────────────────────────────
 
   if (isOverviewLoading) {
@@ -148,15 +163,29 @@ export function BrandAlignmentPage() {
         title="Brand Alignment"
         subtitle="Ensure consistency across all brand touchpoints"
         actions={
-          <Button
-            onClick={handleStartScan}
-            disabled={startScan.isPending || isScanning}
-            isLoading={startScan.isPending}
-            className="gap-2"
-          >
-            {!startScan.isPending && <RefreshCw className="h-4 w-4" />}
-            {startScan.isPending ? 'Scanning...' : 'Run Alignment Check'}
-          </Button>
+          <div className="flex items-center gap-2">
+            {hasScan && (
+              <>
+                <Button variant="secondary" onClick={handleExportPdf} className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Export PDF
+                </Button>
+                <Button variant="secondary" onClick={handleExportJson} className="gap-2">
+                  <FileJson className="h-4 w-4" />
+                  Export JSON
+                </Button>
+              </>
+            )}
+            <Button
+              onClick={handleStartScan}
+              disabled={startScan.isPending || isScanning}
+              isLoading={startScan.isPending}
+              className="gap-2"
+            >
+              {!startScan.isPending && <RefreshCw className="h-4 w-4" />}
+              {startScan.isPending ? 'Scanning...' : 'Run Alignment Check'}
+            </Button>
+          </div>
         }
       />
 

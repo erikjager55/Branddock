@@ -1,23 +1,65 @@
-import { useSession, authClient } from '@/lib/auth-client';
-import { useMemo } from 'react';
+import { useSession } from '@/lib/auth-client';
+import { useState, useEffect, useMemo } from 'react';
 
+/**
+ * Returns the active workspace ID resolved by the server (from cookie or session fallback).
+ *
+ * Previously this hook returned the organization ID as workspaceId, which is
+ * semantically wrong and prevented client-side cache keys from changing when
+ * switching workspaces within the same organization.
+ *
+ * Now it fetches the actual workspace ID from GET /api/workspace/active.
+ */
 export function useWorkspace() {
-  const { data: session, isPending } = useSession();
+  const { data: session, isPending: sessionPending } = useSession();
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
+  const [wsLoading, setWsLoading] = useState(true);
 
-  const result = useMemo(() => {
-    if (isPending) {
-      return { workspaceId: null, organizationId: null, isLoading: true };
+  const organizationId = useMemo(() => {
+    if (sessionPending || !session) return null;
+    return (session.session as Record<string, unknown> | undefined)
+      ?.activeOrganizationId as string | undefined ?? null;
+  }, [session, sessionPending]);
+
+  useEffect(() => {
+    if (sessionPending) return;
+
+    if (!organizationId) {
+      setWorkspaceId(null);
+      setWsLoading(false);
+      return;
     }
 
-    // Try session-based org
-    const activeOrgId = (session?.session as Record<string, unknown> | undefined)?.activeOrganizationId as string | undefined;
-    if (activeOrgId) {
-      // workspaceId will be resolved server-side; client just needs to know it exists
-      return { workspaceId: activeOrgId, organizationId: activeOrgId, isLoading: false };
-    }
+    let cancelled = false;
+    setWsLoading(true);
 
-    return { workspaceId: null, organizationId: null, isLoading: false };
-  }, [session, isPending]);
+    fetch('/api/workspace/active')
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        if (!cancelled) {
+          setWorkspaceId(data?.workspaceId ?? null);
+          setWsLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.warn('[useWorkspace] Failed to resolve workspace:', err);
+          setWorkspaceId(null);
+          setWsLoading(false);
+        }
+      });
 
-  return result;
+    return () => {
+      cancelled = true;
+    };
+  }, [organizationId, sessionPending]);
+
+  return {
+    workspaceId,
+    organizationId,
+    isLoading: sessionPending || wsLoading,
+  };
 }

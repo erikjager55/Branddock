@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
+import { clearAllCache } from "@/lib/api/cache";
 
 // POST /api/workspace/switch — switch active workspace (sets cookie)
 export async function POST(request: NextRequest) {
@@ -74,6 +75,9 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Clear all server-side caches to prevent stale data after workspace switch
+    clearAllCache();
+
     // Set cookie with active workspace ID
     const response = NextResponse.json({
       workspace: {
@@ -93,6 +97,37 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("[POST /api/workspace/switch]", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/workspace/switch — clear workspace cookie (used when switching organizations)
+export async function DELETE() {
+  try {
+    const session = await getServerSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Clear all server-side caches
+    clearAllCache();
+
+    const response = NextResponse.json({ cleared: true });
+
+    // Delete the workspace cookie
+    response.cookies.set("branddock-workspace-id", "", {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    });
+
+    return response;
+  } catch (error) {
+    console.error("[DELETE /api/workspace/switch]", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

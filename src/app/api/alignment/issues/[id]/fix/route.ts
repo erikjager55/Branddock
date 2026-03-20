@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { resolveWorkspaceId } from "@/lib/auth-server";
+import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { applyFixOption } from "@/lib/alignment/fix-generator";
-import { invalidateCache } from "@/lib/api/cache";
-import { cacheKeys } from "@/lib/api/cache-keys";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -32,10 +30,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const result = await applyFixOption(id, parsed.data.optionKey, workspaceId);
-
-    invalidateCache(cacheKeys.prefixes.alignment(workspaceId));
-    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+    const session = await getServerSession();
+    const result = await applyFixOption(id, parsed.data.optionKey, workspaceId, session?.user?.id);
 
     return NextResponse.json(result);
   } catch (error) {

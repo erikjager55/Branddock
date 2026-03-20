@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { scrapeProductUrl } from "@/lib/products/url-scraper";
-import { createGeminiStructuredCompletion } from "@/lib/ai/gemini-client";
+import { createStructuredCompletion } from "@/lib/ai/exploration/ai-caller";
 import { getBrandContext } from "@/lib/ai/brand-context";
 import { formatBrandContext } from "@/lib/ai/prompt-templates";
 import {
@@ -11,7 +11,7 @@ import {
   buildCompetitorUrlAnalysisPrompt,
   type CompetitorAnalysisResult,
 } from "@/lib/ai/prompts/competitor-analysis";
-import { resolveFeatureModel, assertProvider } from "@/lib/ai/feature-models.server";
+import { resolveFeatureModel } from "@/lib/ai/feature-models.server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import type { Prisma } from "@prisma/client";
@@ -76,13 +76,13 @@ export async function POST(
 
     // Resolve configurable model for competitor analysis
     const resolved = await resolveFeatureModel(workspaceId, 'competitor-analysis');
-    assertProvider(resolved, 'google', 'competitor-analysis');
-    const competitorModel = resolved.model;
 
-    const result = await createGeminiStructuredCompletion<CompetitorAnalysisResult>(
+    const result = await createStructuredCompletion<CompetitorAnalysisResult>(
+      resolved.provider,
+      resolved.model,
       systemPrompt,
       userPrompt,
-      { model: competitorModel, temperature: 0.3 },
+      { temperature: 0.3 },
     );
 
     // 4. Update competitor with fresh data

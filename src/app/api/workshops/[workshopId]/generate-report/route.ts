@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
-import { openaiClient } from "@/lib/ai/openai-client";
-import { resolveFeatureModel, assertProvider } from "@/lib/ai/feature-models.server";
+import { resolveFeatureModel } from "@/lib/ai/feature-models.server";
+import { generateAIResponse } from "@/lib/ai/exploration/ai-caller";
 import { buildWorkshopReportPrompt } from "@/lib/ai/prompts/workshop-report";
 import { parseAIError, getReadableErrorMessage, getAIErrorStatus } from "@/lib/ai/error-handler";
 
@@ -45,13 +45,22 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       workshop.steps,
     );
 
+    // Extract system and user prompts from messages array
+    const systemPrompt = messages.find((m) => m.role === 'system')?.content as string ?? '';
+    const userPrompt = messages.find((m) => m.role === 'user')?.content as string ?? '';
+
     // Resolve configurable model for workshop report generation
     const resolved = await resolveFeatureModel(workspaceId, 'workshop-report');
-    assertProvider(resolved, 'openai', 'workshop-report');
-    const reportModel = resolved.model;
 
-    // Call OpenAI — createChatCompletion returns the text directly
-    const content = await openaiClient.createChatCompletion(messages, { model: reportModel });
+    // Call AI provider — generateAIResponse supports all providers
+    const content = await generateAIResponse(
+      resolved.provider,
+      resolved.model,
+      systemPrompt,
+      userPrompt,
+      0.3,
+      4000,
+    );
 
     if (!content) {
       return NextResponse.json({ error: "Empty AI response" }, { status: 502 });

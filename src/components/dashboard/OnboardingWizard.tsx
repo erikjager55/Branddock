@@ -3,10 +3,14 @@
 import React, { useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, ChevronLeft, ChevronRight, CheckCircle, Rocket } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, CheckCircle, Rocket, Globe, ArrowRight } from 'lucide-react';
 import { Checkbox } from '../ui/checkbox';
 import { useDashboardStore } from '../../stores/useDashboardStore';
 import { useDashboardPreferences, useUpdatePreferences } from '../../hooks/use-dashboard';
+
+interface OnboardingWizardProps {
+  onNavigate?: (section: string) => void;
+}
 
 // ─── Step Data ─────────────────────────────────────────────
 
@@ -146,57 +150,9 @@ function ProcessIllustration() {
   );
 }
 
-function CheckmarkIllustration() {
-  return (
-    <motion.svg
-      viewBox="0 0 320 320"
-      fill="none"
-      className="w-full h-full"
-      animate={{ y: [0, -6, 0] }}
-      transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-    >
-      {/* Outer glow ring */}
-      <circle cx="160" cy="160" r="110" fill="url(#checkGlow)" opacity="0.1" />
-      <circle cx="160" cy="160" r="90" fill="url(#checkGlow)" opacity="0.15" />
-      {/* Main circle */}
-      <circle cx="160" cy="160" r="70" fill="url(#checkGrad)" />
-      {/* Checkmark */}
-      <path
-        d="M130 160L150 180L192 138"
-        stroke="white"
-        strokeWidth="6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* Celebration particles */}
-      <circle cx="90" cy="80" r="6" fill="#5EEAD4" opacity="0.7" />
-      <circle cx="240" cy="90" r="8" fill="#14B8A6" opacity="0.5" />
-      <circle cx="70" cy="230" r="7" fill="#99F6E4" opacity="0.5" />
-      <circle cx="260" cy="220" r="5" fill="#2DD4BF" opacity="0.6" />
-      <circle cx="160" cy="60" r="4" fill="#5EEAD4" opacity="0.8" />
-      <circle cx="100" cy="130" r="3" fill="#2DD4BF" opacity="0.6" />
-      <circle cx="225" cy="150" r="4" fill="#99F6E4" opacity="0.5" />
-      {/* Sparkle stars */}
-      <path d="M80 120L83 126L89 129L83 132L80 138L77 132L71 129L77 126Z" fill="#5EEAD4" opacity="0.6" />
-      <path d="M245 170L248 176L254 179L248 182L245 188L242 182L236 179L242 176Z" fill="#14B8A6" opacity="0.5" />
-      <path d="M200 70L202 74L206 76L202 78L200 82L198 78L194 76L198 74Z" fill="#2DD4BF" opacity="0.7" />
-      <defs>
-        <radialGradient id="checkGlow" cx="160" cy="160" r="110">
-          <stop stopColor="#14B8A6" />
-          <stop offset="1" stopColor="#5EEAD4" stopOpacity="0" />
-        </radialGradient>
-        <linearGradient id="checkGrad" x1="90" y1="90" x2="230" y2="230">
-          <stop stopColor="#0D9488" />
-          <stop offset="1" stopColor="#14B8A6" />
-        </linearGradient>
-      </defs>
-    </motion.svg>
-  );
-}
-
 // ─── Component ──────────────────────────────────────────────
 
-export function OnboardingWizard() {
+export function OnboardingWizard({ onNavigate }: OnboardingWizardProps = {}) {
   const {
     showOnboarding,
     onboardingStep,
@@ -339,13 +295,21 @@ export function OnboardingWizard() {
                     {step === 3 && <Step3Content />}
                   </div>
 
-                  {/* Right Column — Illustration */}
+                  {/* Right Column — Illustration or Scan CTA */}
                   <div className="hidden md:flex items-center justify-center">
-                    <div className="w-full max-w-[280px]">
-                      {step === 1 && <HexagonIllustration />}
-                      {step === 2 && <ProcessIllustration />}
-                      {step === 3 && <CheckmarkIllustration />}
-                    </div>
+                    {step === 3 ? (
+                      <ScanWebsiteCTA
+                        onScan={() => {
+                          handleClose();
+                          onNavigate?.('website-scanner');
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full max-w-[280px]">
+                        {step === 1 && <HexagonIllustration />}
+                        {step === 2 && <ProcessIllustration />}
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -530,5 +494,38 @@ function Step3Content() {
         ))}
       </div>
     </div>
+  );
+}
+
+function ScanWebsiteCTA({ onScan }: { onScan: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.2 }}
+      className="w-full max-w-[280px] p-6 rounded-xl border-2 border-dashed border-teal-200 bg-teal-50/50 text-center space-y-4"
+    >
+      <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center" style={{ backgroundColor: '#0D9488' }}>
+        <Globe className="h-6 w-6 text-white" />
+      </div>
+      <div>
+        <h3 className="text-base font-semibold text-gray-900 mb-1">
+          Have a website?
+        </h3>
+        <p className="text-sm text-gray-500 leading-relaxed">
+          Scan it to auto-populate your brand profile in minutes.
+        </p>
+      </div>
+      <button
+        onClick={onScan}
+        className="inline-flex items-center gap-2 px-5 py-2.5 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+        style={{ backgroundColor: '#0D9488' }}
+        onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#0F766E'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#0D9488'; }}
+      >
+        Start Scan
+        <ArrowRight className="h-4 w-4" />
+      </button>
+    </motion.div>
   );
 }

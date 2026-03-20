@@ -15,6 +15,8 @@ import {
   ExternalLink,
   BarChart3,
   FileText,
+  FileDown,
+  FileJson,
   ImageIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -36,6 +38,8 @@ import {
   DETECTION_SOURCE_CONFIG,
 } from '../../constants/trend-radar-constants';
 import type { InsightCategory, InsightScope, ImpactLevel, InsightTimeframe } from '../../types/trend-radar.types';
+import { exportTrendDetailPdf } from '../../utils/exportTrendRadarPdf';
+import { exportTrendDetailJson } from '../../utils/exportTrendRadarJson';
 
 interface TrendDetailPageProps {
   onNavigate: (section: string) => void;
@@ -401,6 +405,22 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
               </>
             ) : (
               <>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={FileDown}
+                  onClick={() => exportTrendDetailPdf(trend)}
+                >
+                  PDF
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={FileJson}
+                  onClick={() => exportTrendDetailJson(trend)}
+                >
+                  JSON
+                </Button>
                 <Button
                   variant="secondary"
                   size="sm"

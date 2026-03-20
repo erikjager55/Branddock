@@ -62,11 +62,15 @@ export function OrganizationSwitcher() {
         const wsRes = await fetch('/api/workspaces');
         if (wsRes.ok) {
           const wsData = await wsRes.json();
-          setWorkspaces(wsData.workspaces ?? []);
+          const wsList = wsData.workspaces ?? [];
+          setWorkspaces(wsList);
 
-          // Set active workspace (first one or from cookie)
-          if (wsData.workspaces?.length > 0) {
-            setActiveWorkspace(wsData.workspaces[0]);
+          // Set active workspace based on server-resolved workspace ID (from cookie)
+          if (wsList.length > 0) {
+            const activeWs = wsData.activeWorkspaceId
+              ? wsList.find((ws: WorkspaceData) => ws.id === wsData.activeWorkspaceId)
+              : null;
+            setActiveWorkspace(activeWs ?? wsList[0]);
           }
         }
       }
@@ -99,22 +103,35 @@ export function OrganizationSwitcher() {
   }, [isOpen]);
 
   const handleSwitchOrg = async (orgId: string) => {
-    await authClient.organization.setActive({ organizationId: orgId });
-    setIsOpen(false);
-    window.location.reload();
+    try {
+      // Clear the workspace cookie first — it belongs to the old org
+      await fetch('/api/workspace/switch', { method: 'DELETE' });
+      await authClient.organization.setActive({ organizationId: orgId });
+      setIsOpen(false);
+      window.location.reload();
+    } catch (err) {
+      console.error('[OrganizationSwitcher] Failed to switch organization:', err);
+    }
   };
 
   const handleSwitchWorkspace = async (workspace: WorkspaceData) => {
-    const res = await fetch('/api/workspace/switch', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workspaceId: workspace.id }),
-    });
+    try {
+      const res = await fetch('/api/workspace/switch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspaceId: workspace.id }),
+      });
 
-    if (res.ok) {
-      setActiveWorkspace(workspace);
-      setIsOpen(false);
-      window.location.reload();
+      if (res.ok) {
+        setActiveWorkspace(workspace);
+        setIsOpen(false);
+        window.location.reload();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        console.error('[OrganizationSwitcher] Workspace switch failed:', data.error);
+      }
+    } catch (err) {
+      console.error('[OrganizationSwitcher] Failed to switch workspace:', err);
     }
   };
 

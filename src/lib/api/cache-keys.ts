@@ -34,6 +34,8 @@ export const cacheKeys = {
     readiness: (wsId: string) => `dashboard:${wsId}:readiness`,
     attention: (wsId: string) => `dashboard:${wsId}:attention`,
     recommended: (wsId: string) => `dashboard:${wsId}:recommended`,
+    activity: (wsId: string) => `dashboard:${wsId}:activity`,
+    campaignsPreview: (wsId: string) => `dashboard:${wsId}:campaigns-preview`,
   },
 
   // Module lists (workspace-scoped)
@@ -60,6 +62,9 @@ export const cacheKeys = {
     list: (wsId: string) => `competitors:${wsId}:list`,
     detail: (wsId: string, id: string) => `competitors:${wsId}:detail:${id}`,
   },
+  websiteScanner: {
+    scan: (wsId: string, scanId: string) => `website-scanner:${wsId}:scan:${scanId}`,
+  },
   notifications: {
     list: (wsId: string, userId: string) => `notifications:${wsId}:${userId}:list`,
   },
@@ -74,6 +79,7 @@ export const cacheKeys = {
     alignment: (wsId: string) => `alignment:${wsId}`,
     campaigns: (wsId: string) => `campaigns:${wsId}`,
     competitors: (wsId: string) => `competitors:${wsId}`,
+    websiteScanner: (wsId: string) => `website-scanner:${wsId}`,
     notifications: (wsId: string) => `notifications:${wsId}`,
     allDashboards: 'dashboard:',
     allStatic: 'static:',

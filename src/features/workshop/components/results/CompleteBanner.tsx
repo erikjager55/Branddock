@@ -11,13 +11,15 @@ import {
   FileJson,
 } from 'lucide-react';
 import type { Workshop } from '../../types/workshop.types';
+import { exportWorkshopPdf } from '../../utils/exportWorkshopPdf';
 
 interface CompleteBannerProps {
   workshop: Workshop;
+  brandAssetName?: string;
   onExportRaw: () => void;
 }
 
-export function CompleteBanner({ workshop, onExportRaw }: CompleteBannerProps) {
+export function CompleteBanner({ workshop, brandAssetName, onExportRaw }: CompleteBannerProps) {
   const completedDate = workshop.completedAt
     ? new Date(workshop.completedAt).toLocaleDateString('en-US', {
         month: 'short',
@@ -47,7 +49,12 @@ export function CompleteBanner({ workshop, onExportRaw }: CompleteBannerProps) {
 
         <div className="flex items-center gap-2">
           <Badge variant="success">Completed</Badge>
-          <Button variant="secondary" size="sm" icon={FileDown} disabled>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={FileDown}
+            onClick={() => exportWorkshopPdf(workshop, brandAssetName)}
+          >
             PDF
           </Button>
           <Button

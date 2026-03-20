@@ -1,6 +1,7 @@
 import React from 'react';
-import { Megaphone, ArrowRight, Plus } from 'lucide-react';
-import { useCampaignsPreview } from '../../hooks/use-dashboard';
+import { Megaphone, ArrowRight, Plus, AlertTriangle } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCampaignsPreview, dashboardKeys } from '../../hooks/use-dashboard';
 import { Badge, ProgressBar, Skeleton } from '../shared';
 
 interface ActiveCampaignsPreviewProps {
@@ -8,7 +9,8 @@ interface ActiveCampaignsPreviewProps {
 }
 
 export function ActiveCampaignsPreview({ onNavigate }: ActiveCampaignsPreviewProps) {
-  const { data, isLoading } = useCampaignsPreview();
+  const { data, isLoading, isError } = useCampaignsPreview();
+  const queryClient = useQueryClient();
 
   if (isLoading) {
     return (
@@ -24,6 +26,23 @@ export function ActiveCampaignsPreview({ onNavigate }: ActiveCampaignsPreviewPro
     );
   }
 
+  if (isError) {
+    return (
+      <div className="bg-white rounded-lg border border-red-200 p-5">
+        <div className="flex items-center gap-2 text-red-600 mb-2">
+          <AlertTriangle className="h-4 w-4" />
+          <span className="text-sm font-medium">Failed to load campaigns</span>
+        </div>
+        <button
+          onClick={() => queryClient.invalidateQueries({ queryKey: dashboardKeys.campaigns })}
+          className="text-sm text-red-600 hover:text-red-700 underline"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div data-testid="campaigns-preview" className="bg-white rounded-lg border border-gray-200 p-5">
       <div className="flex items-center justify-between mb-4">
@@ -33,7 +52,7 @@ export function ActiveCampaignsPreview({ onNavigate }: ActiveCampaignsPreviewPro
         </div>
         <button
           onClick={() => onNavigate('active-campaigns')}
-          className="text-xs text-green-600 hover:text-green-700 font-medium inline-flex items-center gap-1"
+          className="text-xs text-emerald-600 hover:text-emerald-700 font-medium inline-flex items-center gap-1"
         >
           View All
           <ArrowRight className="h-3 w-3" />
@@ -73,7 +92,7 @@ export function ActiveCampaignsPreview({ onNavigate }: ActiveCampaignsPreviewPro
 
       <button
         onClick={() => onNavigate('campaign-wizard')}
-        className="mt-4 w-full flex items-center justify-center gap-2 py-2 border border-green-200 text-green-600 text-sm font-medium rounded-lg hover:bg-green-50 transition-colors"
+        className="mt-4 w-full flex items-center justify-center gap-2 py-2 border border-emerald-200 text-emerald-600 text-sm font-medium rounded-lg hover:bg-emerald-50 transition-colors"
       >
         <Plus className="h-4 w-4" />
         Start New Campaign

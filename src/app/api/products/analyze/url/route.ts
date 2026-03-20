@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { scrapeProductUrl } from "@/lib/products/url-scraper";
-import { createGeminiStructuredCompletion } from "@/lib/ai/gemini-client";
-import { resolveFeatureModel, assertProvider } from "@/lib/ai/feature-models.server";
+import { createStructuredCompletion } from "@/lib/ai/exploration/ai-caller";
+import { resolveFeatureModel } from "@/lib/ai/feature-models.server";
 import { getBrandContext } from "@/lib/ai/brand-context";
 import { formatBrandContext } from "@/lib/ai/prompt-templates";
 import {
@@ -85,16 +85,16 @@ export async function POST(request: NextRequest) {
 
     // Resolve configurable model for product analysis
     const resolved = await resolveFeatureModel(workspaceId, 'product-analysis');
-    assertProvider(resolved, 'google', 'product-analysis');
-    const productModel = resolved.model;
 
-    console.log("[analyze/url] Calling Gemini, output language:", outputLanguage);
-    const result = await createGeminiStructuredCompletion<ProductAnalysisResult>(
+    console.log(`[analyze/url] Calling ${resolved.provider}/${resolved.model}, output language:`, outputLanguage);
+    const result = await createStructuredCompletion<ProductAnalysisResult>(
+      resolved.provider,
+      resolved.model,
       systemPrompt,
       userPrompt,
-      { model: productModel, temperature: 0.3 },
+      { temperature: 0.3 },
     );
-    console.log("[analyze/url] Gemini returned, product name:", result?.name);
+    console.log("[analyze/url] AI returned, product name:", result?.name);
 
     // 4. Validate and normalize result
     const category = VALID_CATEGORIES.includes(result.category) ? result.category : "other";

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { parsePdf } from "@/lib/brandstyle/pdf-parser";
-import { createGeminiStructuredCompletion } from "@/lib/ai/gemini-client";
+import { createStructuredCompletion } from "@/lib/ai/exploration/ai-caller";
 import { getBrandContext } from "@/lib/ai/brand-context";
 import { formatBrandContext } from "@/lib/ai/prompt-templates";
 import {
@@ -10,7 +10,7 @@ import {
   buildPdfAnalysisPrompt,
   type ProductAnalysisResult,
 } from "@/lib/ai/prompts/product-analysis";
-import { resolveFeatureModel, assertProvider } from "@/lib/ai/feature-models.server";
+import { resolveFeatureModel } from "@/lib/ai/feature-models.server";
 import { ANALYZE_STEPS, VALID_CATEGORIES } from "@/features/products/constants/product-constants";
 
 // POST /api/products/analyze/pdf — AI-powered product extraction from PDF (Gemini 3.1)
@@ -91,13 +91,13 @@ export async function POST(request: NextRequest) {
 
     // Resolve configurable model for product analysis
     const resolved = await resolveFeatureModel(workspaceId, 'product-analysis');
-    assertProvider(resolved, 'google', 'product-analysis');
-    const productModel = resolved.model;
 
-    const result = await createGeminiStructuredCompletion<ProductAnalysisResult>(
+    const result = await createStructuredCompletion<ProductAnalysisResult>(
+      resolved.provider,
+      resolved.model,
       systemPrompt,
       userPrompt,
-      { model: productModel, temperature: 0.3 },
+      { temperature: 0.3 },
     );
 
     // 4. Validate and normalize result

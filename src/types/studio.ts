@@ -191,6 +191,7 @@ export interface ContentVersionItem {
   id: string;
   versionNumber: number;
   qualityScore: number | null;
+  contentPreview: string | null;
   createdAt: string;
   createdBy: string | null;
 }

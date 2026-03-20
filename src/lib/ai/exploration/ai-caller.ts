@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { GoogleGenAI } from '@google/genai';
+import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
 
 // ─── Singleton Clients ──────────────────────────────────────
 
@@ -340,4 +341,79 @@ export async function createClaudeStructuredCompletion<T>(
 
   // Should not reach here, but TypeScript needs it
   throw lastError;
+}
+
+// ─── Generic Structured Completion (Multi-Provider) ─────
+
+interface StructuredCompletionOptions {
+  temperature?: number;
+  maxTokens?: number;
+  timeoutMs?: number;
+  /** Gemini-specific: JSON Schema for responseSchema */
+  responseSchema?: Record<string, unknown>;
+}
+
+/**
+ * Provider-agnostic structured JSON completion.
+ * Dispatches to Claude, OpenAI, or Gemini based on the provider string.
+ */
+export async function createStructuredCompletion<T>(
+  provider: string,
+  model: string,
+  systemPrompt: string,
+  userPrompt: string,
+  options?: StructuredCompletionOptions,
+): Promise<T> {
+  if (provider === 'anthropic') {
+    return createClaudeStructuredCompletion<T>(systemPrompt, userPrompt, {
+      model,
+      temperature: options?.temperature,
+      maxTokens: options?.maxTokens,
+      timeoutMs: options?.timeoutMs,
+    });
+  }
+
+  if (provider === 'google') {
+    return createGeminiStructuredCompletion<T>(systemPrompt, userPrompt, {
+      model,
+      temperature: options?.temperature,
+      maxOutputTokens: options?.maxTokens,
+      responseSchema: options?.responseSchema,
+      timeoutMs: options?.timeoutMs,
+    });
+  }
+
+  if (provider === 'openai') {
+    const client = getOpenAIClient();
+    const temperature = options?.temperature ?? 0.3;
+    const maxTokens = options?.maxTokens ?? 8000;
+
+    const response = await client.chat.completions.create(
+      {
+        model,
+        messages: [
+          { role: 'system', content: `${systemPrompt}\n\nIMPORTANT: Respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.` },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature,
+        max_tokens: maxTokens,
+        response_format: { type: 'json_object' },
+      },
+      { signal: AbortSignal.timeout(options?.timeoutMs ?? 120_000) },
+    );
+
+    const text = response.choices[0]?.message?.content ?? '';
+    if (!text) {
+      throw new Error(`Empty response from OpenAI ${model} (structured completion)`);
+    }
+
+    try {
+      return JSON.parse(text) as T;
+    } catch (parseError) {
+      const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+      throw new Error(`Failed to parse OpenAI ${model} response as JSON: ${msg}. Response starts with: "${text.slice(0, 200)}"`);
+    }
+  }
+
+  throw new Error(`Unsupported AI provider: "${provider}". Valid providers: anthropic, google, openai`);
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "@/lib/auth-server";
+import { getServerSession, resolveWorkspaceId } from "@/lib/auth-server";
 import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from "@/lib/constants/canonical-brand-assets";
 
 // GET /api/workspaces — list workspaces for the active organization
@@ -15,16 +15,19 @@ export async function GET() {
       .activeOrganizationId as string | undefined;
 
     if (!activeOrgId) {
-      return NextResponse.json({ workspaces: [] });
+      return NextResponse.json({ workspaces: [], activeWorkspaceId: null });
     }
 
-    const workspaces = await prisma.workspace.findMany({
-      where: { organizationId: activeOrgId },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, slug: true, createdAt: true },
-    });
+    const [workspaces, activeWorkspaceId] = await Promise.all([
+      prisma.workspace.findMany({
+        where: { organizationId: activeOrgId },
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, slug: true, createdAt: true },
+      }),
+      resolveWorkspaceId(),
+    ]);
 
-    return NextResponse.json({ workspaces });
+    return NextResponse.json({ workspaces, activeWorkspaceId });
   } catch (error) {
     console.error("[GET /api/workspaces]", error);
     return NextResponse.json(

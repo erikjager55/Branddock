@@ -148,7 +148,8 @@ export async function insertInsight(deliverableId: string, body: InsertInsightBo
 export async function fetchVersions(deliverableId: string): Promise<ContentVersionItem[]> {
   const res = await fetch(`/api/studio/${deliverableId}/versions`);
   if (!res.ok) throw new Error('Failed to fetch versions');
-  return res.json();
+  const data = await res.json();
+  return data?.versions ?? data ?? [];
 }
 
 export async function createVersion(deliverableId: string): Promise<ContentVersionItem> {

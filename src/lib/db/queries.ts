@@ -196,8 +196,8 @@ export async function getDashboardReadiness(workspaceId: string) {
     percentage,
     breakdown: {
       ready: counts.ready,
-      needAttention: counts.inProgress + counts.needsAttention,
-      inProgress: counts.draft,
+      needAttention: counts.needsAttention,
+      inProgress: counts.inProgress + counts.draft,
     },
   };
 }
@@ -217,8 +217,8 @@ export async function getDashboardStats(workspaceId: string) {
 
   return {
     readyToUse: counts.ready,
-    needAttention: counts.inProgress + counts.needsAttention,
-    inProgress: counts.draft,
+    needAttention: counts.needsAttention,
+    inProgress: counts.inProgress + counts.draft,
     activeCampaigns,
     contentCreated,
   };

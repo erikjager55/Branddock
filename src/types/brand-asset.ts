@@ -47,6 +47,10 @@ export interface BrandAsset {
   validatedBy?: string;
   contentSections?: { title: string; content: string; completed: boolean }[];
   version?: string;
+  /** Preserved from API for completeness calculation */
+  frameworkType?: string | null;
+  /** Preserved from API for completeness calculation */
+  frameworkData?: Record<string, unknown> | null;
 }
 
 export interface BrandAssetWithMeta {

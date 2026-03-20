@@ -10,7 +10,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
-import { createClaudeStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
+import { createStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
 import {
   buildTrendAnalysisSystemPrompt,
@@ -166,12 +166,13 @@ export async function synthesizeTrends(params: {
     });
 
     // Resolve configurable model for trend synthesis
-    const { model: trendModel } = await resolveFeatureModel(params.workspaceId, 'trend-synthesis');
+    const { model: trendModel, provider: trendProvider } = await resolveFeatureModel(params.workspaceId, 'trend-synthesis');
 
-    const result = await createClaudeStructuredCompletion<SynthesisResult>(
+    const result = await createStructuredCompletion<SynthesisResult>(
+      trendProvider, trendModel,
       systemPrompt,
       userPrompt,
-      { model: trendModel, temperature: 0.4, maxTokens: 10000, timeoutMs: 180_000 },
+      { temperature: 0.4, maxTokens: 10000, timeoutMs: 180_000 },
     );
 
     if (!result?.trends?.length) {

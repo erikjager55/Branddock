@@ -7,6 +7,7 @@ import {
   Users,
   Share2,
   FileText,
+  FileJson,
   Lightbulb,
   CalendarDays,
   Plus,
@@ -19,6 +20,8 @@ import { DeploymentTimelineSection } from "./strategy/DeploymentTimelineSection"
 import { RegenerateSectionButton } from "./strategy/RegenerateSectionButton";
 import type { StrategyResponse, LegacyStrategyResponse, DeliverableResponse } from "@/types/campaign";
 import type { AssetPlanDeliverable, AssetPlanLayer } from "@/lib/campaigns/strategy-blueprint.types";
+import { exportCampaignStrategyPdf } from "../../utils/exportCampaignStrategyPdf";
+import { exportCampaignStrategyJson } from "../../utils/exportCampaignStrategyJson";
 
 /** Type guard for legacy strategy format */
 function isLegacyStrategy(s: StrategyResponse): s is LegacyStrategyResponse {
@@ -28,6 +31,8 @@ function isLegacyStrategy(s: StrategyResponse): s is LegacyStrategyResponse {
 interface StrategyResultTabProps {
   strategy: StrategyResponse | undefined;
   campaignId: string;
+  campaignName?: string;
+  campaignGoalType?: string;
   isLoading: boolean;
   onGenerate: () => void;
   isGenerating: boolean;
@@ -60,6 +65,8 @@ const LEGACY_SUB_TABS = [
 export function StrategyResultTab({
   strategy,
   campaignId,
+  campaignName,
+  campaignGoalType,
   isLoading,
   onGenerate,
   isGenerating,
@@ -168,6 +175,38 @@ export function StrategyResultTab({
           <StatCard label="Touchpoints" value={touchpointCount} icon={Share2} />
           <StatCard label="Channels" value={channelCount} icon={Share2} />
           <StatCard label="Deliverables" value={deliverableCount} icon={FileText} />
+        </div>
+
+        {/* Export buttons */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={FileText}
+            onClick={() => exportCampaignStrategyPdf({
+              campaignName: campaignName ?? 'Campaign',
+              campaignGoalType,
+              blueprint,
+              confidence: strategy.confidence,
+              generatedAt: strategy.generatedAt,
+            })}
+          >
+            Export PDF
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={FileJson}
+            onClick={() => exportCampaignStrategyJson({
+              campaignName: campaignName ?? 'Campaign',
+              campaignGoalType,
+              blueprint,
+              confidence: strategy.confidence,
+              generatedAt: strategy.generatedAt,
+            })}
+          >
+            Export JSON
+          </Button>
         </div>
 
         {/* Tab navigation */}

@@ -1,5 +1,24 @@
 import { jsPDF } from 'jspdf';
 
+interface ExplorationDimension {
+  key: string;
+  title: string;
+  summary: string;
+}
+
+interface ExplorationFinding {
+  title: string;
+  description: string;
+}
+
+export interface PersonaExplorationData {
+  dimensions?: ExplorationDimension[];
+  findings?: ExplorationFinding[];
+  recommendations?: string[];
+  executiveSummary?: string;
+  completedAt?: string;
+}
+
 interface PersonaExportData {
   name: string;
   tagline?: string;
@@ -20,8 +39,11 @@ interface PersonaExportData {
   frustrations?: Array<string | { text?: string }>;
   behaviors?: Array<string | { text?: string }>;
   preferredChannels?: string[];
+  techStack?: string[];
   buyingTriggers?: Array<string | { text?: string }>;
+  decisionCriteria?: Array<string | { text?: string }>;
   strategicImplications?: string;
+  exploration?: PersonaExplorationData;
 }
 
 function getItemText(item: string | { text?: string; name?: string; title?: string }): string {
@@ -30,6 +52,7 @@ function getItemText(item: string | { text?: string; name?: string; title?: stri
 }
 
 export function exportPersonaPdf(data: PersonaExportData) {
+  try {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
@@ -177,11 +200,30 @@ export function exportPersonaPdf(data: PersonaExportData) {
     addSectionHeader('Preferred Channels');
     doc.setTextColor(55, 65, 81);
     doc.setFontSize(10);
-    doc.text(data.preferredChannels.join('  |  '), margin, y);
-    y += 6;
+    const channelLines = doc.splitTextToSize(data.preferredChannels.join('  |  '), contentWidth);
+    for (const line of channelLines) {
+      checkPageBreak(5);
+      doc.text(line, margin, y);
+      y += 5;
+    }
+  }
+
+  // Tech Stack
+  if (data.techStack && data.techStack.length > 0) {
+    addSectionHeader('Tech Stack');
+    doc.setTextColor(55, 65, 81);
+    doc.setFontSize(10);
+    const techLines = doc.splitTextToSize(data.techStack.join('  |  '), contentWidth);
+    for (const line of techLines) {
+      checkPageBreak(5);
+      doc.text(line, margin, y);
+      y += 5;
+    }
+    y += 2;
   }
 
   addList('Buying Triggers', data.buyingTriggers);
+  addList('Decision Criteria', data.decisionCriteria);
 
   // Strategic Implications
   if (data.strategicImplications) {
@@ -192,6 +234,86 @@ export function exportPersonaPdf(data: PersonaExportData) {
     checkPageBreak(implLines.length * 5 + 4);
     doc.text(implLines, margin, y);
     y += implLines.length * 5 + 4;
+  }
+
+  // AI Exploration Results
+  if (data.exploration) {
+    const ex = data.exploration;
+
+    // Executive Summary
+    if (ex.executiveSummary) {
+      addSectionHeader('AI Exploration — Executive Summary');
+      doc.setTextColor(55, 65, 81);
+      doc.setFontSize(10);
+      const summaryLines = doc.splitTextToSize(ex.executiveSummary, contentWidth);
+      for (const line of summaryLines) {
+        checkPageBreak(5);
+        doc.text(line, margin, y);
+        y += 4.5;
+      }
+      y += 4;
+    }
+
+    // Dimension insights
+    if (ex.dimensions && ex.dimensions.length > 0) {
+      addSectionHeader('AI Exploration — Dimension Insights');
+      for (const dim of ex.dimensions) {
+        checkPageBreak(14);
+        doc.setTextColor(17, 24, 39);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(dim.title, margin, y);
+        y += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(55, 65, 81);
+        doc.setFontSize(9);
+        const dimLines = doc.splitTextToSize(dim.summary, contentWidth - 4);
+        for (const line of dimLines) {
+          checkPageBreak(4.5);
+          doc.text(line, margin + 2, y);
+          y += 4;
+        }
+        y += 3;
+      }
+    }
+
+    // Findings
+    if (ex.findings && ex.findings.length > 0) {
+      addSectionHeader('AI Exploration — Key Findings');
+      for (let i = 0; i < ex.findings.length; i++) {
+        const finding = ex.findings[i];
+        checkPageBreak(14);
+        doc.setTextColor(17, 24, 39);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${i + 1}. ${finding.title}`, margin, y);
+        y += 5;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(55, 65, 81);
+        doc.setFontSize(9);
+        const findingLines = doc.splitTextToSize(finding.description, contentWidth - 4);
+        for (const line of findingLines) {
+          checkPageBreak(4.5);
+          doc.text(line, margin + 2, y);
+          y += 4;
+        }
+        y += 3;
+      }
+    }
+
+    // Recommendations
+    if (ex.recommendations && ex.recommendations.length > 0) {
+      addSectionHeader('AI Exploration — Recommendations');
+      doc.setTextColor(55, 65, 81);
+      doc.setFontSize(10);
+      for (const rec of ex.recommendations) {
+        checkPageBreak(8);
+        const recLines = doc.splitTextToSize(`•  ${rec}`, contentWidth - 5);
+        doc.text(recLines, margin + 2, y);
+        y += recLines.length * 5 + 2;
+      }
+      y += 2;
+    }
   }
 
   // Footer
@@ -206,5 +328,14 @@ export function exportPersonaPdf(data: PersonaExportData) {
   }
 
   // Save
-  doc.save(`${data.name.toLowerCase().replace(/\s+/g, '-')}-persona.pdf`);
+  const filename = data.name
+    .replace(/[^a-zA-Z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .toLowerCase()
+    .slice(0, 60) || 'persona';
+  doc.save(`${filename}-persona.pdf`);
+  } catch (error) {
+    console.error('[exportPersonaPdf] Failed to generate PDF:', error);
+    alert('Failed to generate PDF. Please try again.');
+  }
 }

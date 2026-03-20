@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Download, FileText, Image, Film, FileSpreadsheet } from 'lucide-react';
+import { Download, FileText, Image, Film, FileSpreadsheet, ClipboardCheck, History } from 'lucide-react';
 import { Button } from '@/components/shared';
 import { getFormatsForType } from '@/lib/studio/export-formats';
 import { useContentStudioStore } from '@/stores/useContentStudioStore';
@@ -11,7 +11,10 @@ import {
   exportAsText,
   downloadImage,
   sanitizeFilename,
+  exportVersionHistoryPdf,
 } from '@/lib/studio/export-studio-content';
+import { exportQualityReportPdf } from '../../utils/exportQualityReportPdf';
+import { useQualityScore, useImproveSuggestions, useVersions } from '../../hooks/studio.hooks';
 
 // ─── Types ─────────────────────────────────────────────
 
@@ -20,6 +23,7 @@ interface ExportDropdownProps {
   contentType: string;
   campaignTitle: string;
   contentTab: string | null;
+  deliverableId: string;
 }
 
 // ─── Icon mapping ──────────────────────────────────────
@@ -42,9 +46,13 @@ function getFormatIcon(formatId: string) {
 
 // ─── Component ─────────────────────────────────────────
 
-export function ExportDropdown({ title, contentType, campaignTitle, contentTab }: ExportDropdownProps) {
+export function ExportDropdown({ title, contentType, campaignTitle, contentTab, deliverableId }: ExportDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const { data: qualityData } = useQualityScore(deliverableId);
+  const { data: improveData } = useImproveSuggestions(deliverableId);
+  const { data: versionsData } = useVersions(deliverableId);
 
   const rawFormats = getFormatsForType(contentTab);
   const formats = Array.isArray(rawFormats) ? rawFormats : [];
@@ -103,6 +111,33 @@ export function ExportDropdown({ title, contentType, campaignTitle, contentTab }
     setIsOpen(false);
   };
 
+  const handleVersionHistory = () => {
+    const versions = Array.isArray(versionsData) ? versionsData : [];
+    if (versions.length === 0) return;
+    exportVersionHistoryPdf({
+      deliverableTitle: title,
+      campaignTitle,
+      contentType,
+      versions,
+    });
+    setIsOpen(false);
+  };
+
+  const handleQualityReport = () => {
+    if (!qualityData) return;
+    const store = useContentStudioStore.getState();
+    exportQualityReportPdf({
+      deliverableTitle: title,
+      campaignTitle,
+      contentType,
+      quality: qualityData,
+      suggestions: improveData?.suggestions ?? [],
+      potentialScore: improveData?.potentialScore ?? null,
+      checklistItems: store.checklistItems,
+    });
+    setIsOpen(false);
+  };
+
   return (
     <div data-testid="export-dropdown" className="relative" ref={dropdownRef}>
       <Button
@@ -131,6 +166,27 @@ export function ExportDropdown({ title, contentType, campaignTitle, contentTab }
               </button>
             );
           })}
+
+          {/* Quality Report separator + items */}
+          <div className="border-t border-gray-100 my-1" />
+          <button
+            onClick={handleQualityReport}
+            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <ClipboardCheck className="w-4 h-4 text-gray-400" />
+            <span className="flex-1 text-left">Quality Report</span>
+            <span className="text-xs text-gray-400">.pdf</span>
+          </button>
+          {Array.isArray(versionsData) && versionsData.length > 0 && (
+            <button
+              onClick={handleVersionHistory}
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <History className="w-4 h-4 text-gray-400" />
+              <span className="flex-1 text-left">Version History</span>
+              <span className="text-xs text-gray-400">.pdf</span>
+            </button>
+          )}
         </div>
       )}
     </div>

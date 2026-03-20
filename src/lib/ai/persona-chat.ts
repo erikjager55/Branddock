@@ -1,5 +1,5 @@
 // =============================================================
-// Persona Chat — LLM Streaming (Anthropic primary, OpenAI fallback)
+// Persona Chat — LLM Streaming (Anthropic, OpenAI, Google)
 //
 // Core function: streamPersonaChat() returns a ReadableStream
 // with SSE-formatted chunks for real-time chat UI.
@@ -11,6 +11,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
+import { GoogleGenAI } from '@google/genai';
 import { parseAIError, getReadableErrorMessage } from './error-handler';
 
 // ─── Types ─────────────────────────────────────────────────
@@ -19,7 +20,7 @@ export interface PersonaChatParams {
   systemPrompt: string;
   history: { role: 'user' | 'assistant'; content: string }[];
   message: string;
-  provider: string;   // "anthropic" | "openai"
+  provider: string;   // "anthropic" | "openai" | "google"
   model: string;
   temperature: number;
   maxTokens: number;
@@ -208,6 +209,86 @@ async function streamOpenAI(params: PersonaChatParams): Promise<ReadableStream<U
   });
 }
 
+// ─── Google Gemini Client Singleton ───────────────────────
+
+const globalForGemini = globalThis as unknown as {
+  geminiPersonaClient: InstanceType<typeof GoogleGenAI> | undefined;
+};
+
+function getGeminiClient(): InstanceType<typeof GoogleGenAI> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is not set. Add it to .env.local.');
+  }
+
+  if (!globalForGemini.geminiPersonaClient) {
+    globalForGemini.geminiPersonaClient = new GoogleGenAI({ apiKey });
+  }
+
+  return globalForGemini.geminiPersonaClient;
+}
+
+// ─── Google Gemini Streaming ──────────────────────────────
+
+async function streamGoogle(params: PersonaChatParams): Promise<ReadableStream<Uint8Array>> {
+  const client = getGeminiClient();
+  const encoder = new TextEncoder();
+
+  // Gemini: system instruction as separate field, history as contents
+  const contents = [
+    ...params.history.map((m) => ({
+      role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
+      parts: [{ text: m.content }],
+    })),
+    { role: 'user' as const, parts: [{ text: params.message }] },
+  ];
+
+  const response = await client.models.generateContentStream({
+    model: params.model,
+    contents,
+    config: {
+      systemInstruction: params.systemPrompt,
+      temperature: params.temperature,
+      maxOutputTokens: params.maxTokens,
+      abortSignal: AbortSignal.timeout(120_000),
+    },
+  });
+
+  let fullText = '';
+
+  return new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of response) {
+          const text = chunk.text;
+          if (text) {
+            fullText += text;
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ token: text })}\n\n`),
+            );
+          }
+        }
+
+        const donePayload: StreamDonePayload = {
+          done: true,
+          fullText,
+          usage: { promptTokens: 0, completionTokens: 0 },
+        };
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify(donePayload)}\n\n`),
+        );
+        controller.close();
+      } catch (err) {
+        const errorMsg = getReadableErrorMessage(err);
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ error: errorMsg })}\n\n`),
+        );
+        controller.close();
+      }
+    },
+  });
+}
+
 // ─── Public API ────────────────────────────────────────────
 
 /**
@@ -242,6 +323,10 @@ export async function streamPersonaChat(
       }
       throw err;
     }
+  }
+
+  if (provider === 'google') {
+    return await streamGoogle(params);
   }
 
   // OpenAI primary

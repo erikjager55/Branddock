@@ -12,9 +12,15 @@ import {
   TrendingUp,
   Brain,
   Lightbulb,
+  Download,
+  FileText,
+  FileJson,
 } from 'lucide-react';
 import type { ExplorationConfig, ExplorationInsightsData } from './types';
 import { AIExplorationDimensionCard } from './AIExplorationDimensionCard';
+import { useAIExplorationStore } from './hooks/useAIExplorationStore';
+import { exportExplorationPdf } from './utils/exportExplorationPdf';
+import { exportExplorationJson } from './utils/exportExplorationJson';
 
 const FINDING_CONFIGS = [
   { icon: Target, bg: '#dbeafe', color: '#2563eb' },
@@ -31,6 +37,7 @@ interface AIExplorationReportProps {
 }
 
 export function AIExplorationReport({ config, insightsData, onViewSuggestions }: AIExplorationReportProps) {
+  const { messages, sessionId } = useAIExplorationStore();
   const dimensions = insightsData.dimensions ?? [];
   const totalDimensions = dimensions.length;
   const findings = insightsData.findings ?? dimensions.map((d) => ({
@@ -43,6 +50,29 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
     `The AI analysis of ${config.itemName} has analyzed ${totalDimensions} strategic dimensions and provides insights for market positioning and communication.`;
   const suggestionCount = (insightsData.fieldSuggestions ?? []).length;
   const researchBoost = insightsData.researchBoostPercentage ?? 15;
+
+  const handleExportPdf = () => {
+    exportExplorationPdf({
+      itemName: config.itemName,
+      itemType: config.itemType,
+      sessionDate: insightsData.completedAt
+        ? new Date(insightsData.completedAt).toLocaleDateString('en-US')
+        : new Date().toLocaleDateString('en-US'),
+      messages,
+      insightsData,
+    });
+  };
+
+  const handleExportJson = () => {
+    exportExplorationJson({
+      itemName: config.itemName,
+      itemType: config.itemType,
+      sessionId,
+      sessionDate: insightsData.completedAt ?? new Date().toISOString(),
+      messages,
+      insightsData,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -93,6 +123,26 @@ export function AIExplorationReport({ config, insightsData, onViewSuggestions }:
           </div>
         </div>
         <div className="absolute -right-8 -bottom-8 w-40 h-40 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, #059669, transparent)' }} />
+      </div>
+
+      {/* Export Buttons */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleExportPdf}
+          className="flex items-center gap-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80"
+          style={{ padding: '8px 14px', color: '#374151', border: '1px solid #e5e7eb', backgroundColor: '#ffffff' }}
+        >
+          <FileText className="h-4 w-4" />
+          Export PDF
+        </button>
+        <button
+          onClick={handleExportJson}
+          className="flex items-center gap-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80"
+          style={{ padding: '8px 14px', color: '#374151', border: '1px solid #e5e7eb', backgroundColor: '#ffffff' }}
+        >
+          <FileJson className="h-4 w-4" />
+          Export JSON
+        </button>
       </div>
 
       {/* Executive Summary */}

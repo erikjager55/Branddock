@@ -9,7 +9,8 @@ import { LockBanner, LockOverlay, LockConfirmDialog } from '@/components/lock';
 import { useLockState } from '@/hooks/useLockState';
 import { useLockVisibility } from '@/hooks/useLockVisibility';
 import { usePersonaDetail, useUpdatePersona, useGenerateImplications, useDeletePersona, personaKeys } from '../../hooks';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import * as explorationApi from '@/lib/api/exploration.api';
 import { usePersonaDetailStore } from '../../stores/usePersonaDetailStore';
 import { PersonaDetailHeader } from './PersonaDetailHeader';
 import { DemographicsSection } from './DemographicsSection';
@@ -45,6 +46,14 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
   const setChatModalOpen = usePersonaDetailStore((s) => s.setChatModalOpen);
 
   const queryClient = useQueryClient();
+
+  // Fetch latest AI Exploration session for PDF export enrichment
+  const { data: explorationData } = useQuery({
+    queryKey: ['exploration-latest', 'persona', personaId],
+    queryFn: () => explorationApi.fetchLatestExplorationSession('persona', personaId),
+    staleTime: 5 * 60 * 1000, // 5 min — not critical for export
+    enabled: !!personaId,
+  });
 
   // Set initial editing state from prop (for newly created personas)
   useEffect(() => {
@@ -285,6 +294,20 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
                     preferredChannels: persona.preferredChannels ?? undefined,
                     buyingTriggers: persona.buyingTriggers ?? undefined,
                     strategicImplications: persona.strategicImplications ?? undefined,
+                    exploration: explorationData?.session?.insightsData ? {
+                      dimensions: explorationData.session.insightsData.dimensions?.map(d => ({
+                        key: d.key ?? '',
+                        title: d.title ?? d.key ?? '',
+                        summary: d.summary ?? '',
+                      })),
+                      findings: explorationData.session.insightsData.findings?.map(f => ({
+                        title: f.title ?? '',
+                        description: f.description ?? '',
+                      })),
+                      recommendations: explorationData.session.insightsData.recommendations,
+                      executiveSummary: explorationData.session.insightsData.executiveSummary,
+                      completedAt: explorationData.session.createdAt,
+                    } : undefined,
                   });
                 }}
                 onDelete={() => setShowDeleteConfirm(true)}

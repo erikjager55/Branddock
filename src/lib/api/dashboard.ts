@@ -1,24 +1,20 @@
 import type {
-  DashboardResponse,
+  ReadinessResponse,
+  DashboardStatsResponse,
   DashboardPreferencesResponse,
   AttentionItem,
   RecommendedAction,
   CampaignPreviewItem,
+  ActivityItem,
 } from '@/types/dashboard';
 
-export async function fetchDashboard(): Promise<DashboardResponse> {
-  const res = await fetch('/api/dashboard');
-  if (!res.ok) throw new Error('Failed to fetch dashboard');
-  return res.json();
-}
-
-export async function fetchReadiness(): Promise<DashboardResponse['readiness']> {
+export async function fetchReadiness(): Promise<ReadinessResponse> {
   const res = await fetch('/api/dashboard/readiness');
   if (!res.ok) throw new Error('Failed to fetch readiness');
   return res.json();
 }
 
-export async function fetchDashboardStats(): Promise<DashboardResponse['stats']> {
+export async function fetchDashboardStats(): Promise<DashboardStatsResponse> {
   const res = await fetch('/api/dashboard/stats');
   if (!res.ok) throw new Error('Failed to fetch stats');
   return res.json();
@@ -30,7 +26,7 @@ export async function fetchAttention(): Promise<AttentionItem[]> {
   return res.json();
 }
 
-export async function fetchRecommended(): Promise<RecommendedAction | null> {
+export async function fetchRecommended(): Promise<RecommendedAction[]> {
   const res = await fetch('/api/dashboard/recommended');
   if (!res.ok) throw new Error('Failed to fetch recommended');
   return res.json();
@@ -39,6 +35,12 @@ export async function fetchRecommended(): Promise<RecommendedAction | null> {
 export async function fetchCampaignsPreview(): Promise<CampaignPreviewItem[]> {
   const res = await fetch('/api/dashboard/campaigns-preview');
   if (!res.ok) throw new Error('Failed to fetch campaigns preview');
+  return res.json();
+}
+
+export async function fetchActivity(): Promise<ActivityItem[]> {
+  const res = await fetch('/api/dashboard/activity');
+  if (!res.ok) throw new Error('Failed to fetch activity');
   return res.json();
 }
 

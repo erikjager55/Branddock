@@ -53,6 +53,7 @@ import {
   CompetitorDetailPage,
   TrendRadarPage,
   TrendDetailPage,
+  WebsiteScannerPage,
   KnowledgeLibraryPage,
   ResearchHubPage,
   ResearchBundlesPage,
@@ -876,6 +877,9 @@ function AppContent() {
 
       case 'campaign-wizard':
         return <CampaignWizardPage onNavigate={handleSetActiveSection} />;
+
+      case 'website-scanner':
+        return <WebsiteScannerPage onNavigate={handleSetActiveSection} />;
 
       default:
         return <DashboardPage onNavigate={handleSetActiveSection} />;

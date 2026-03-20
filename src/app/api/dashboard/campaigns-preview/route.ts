@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { cachedJson, setCache } from '@/lib/api/cache';
+import { cacheKeys, CACHE_TTL } from '@/lib/api/cache-keys';
 
 export async function GET() {
   try {
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) return NextResponse.json({ error: 'No workspace' }, { status: 403 });
+
+    const hit = cachedJson(cacheKeys.dashboard.campaignsPreview(workspaceId));
+    if (hit) return hit;
 
     const campaigns = await prisma.campaign.findMany({
       where: { workspaceId, status: 'ACTIVE' },
@@ -29,6 +34,7 @@ export async function GET() {
       };
     });
 
+    setCache(cacheKeys.dashboard.campaignsPreview(workspaceId), items, CACHE_TTL.DASHBOARD);
     return NextResponse.json(items);
   } catch (error) {
     console.error('[GET /api/dashboard/campaigns-preview]', error);

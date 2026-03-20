@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 
 const DEFAULT_QUICK_START_ITEMS = [
+  { key: 'website_scan', label: 'Scan your website', completed: false, href: 'website-scanner' },
   { key: 'brand_asset', label: 'Create your first brand asset', completed: false, href: 'brand' },
   { key: 'persona', label: 'Define your target persona', completed: false, href: 'personas' },
   { key: 'research', label: 'Plan your first research session', completed: false, href: 'research' },

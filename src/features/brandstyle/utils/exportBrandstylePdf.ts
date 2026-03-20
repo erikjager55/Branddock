@@ -12,6 +12,7 @@ function parseHex(hexStr: string | null | undefined): [number, number, number] {
 
 /** Export a brand styleguide as a professionally formatted PDF */
 export function exportBrandstylePdf(styleguide: BrandStyleguide) {
+  try {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
@@ -49,7 +50,7 @@ export function exportBrandstylePdf(styleguide: BrandStyleguide) {
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   const parts: string[] = [];
-  if (styleguide.createdBy.name) parts.push(`Created by ${styleguide.createdBy.name}`);
+  if (styleguide.createdBy?.name) parts.push(`Created by ${styleguide.createdBy.name}`);
   parts.push(new Date(styleguide.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }));
   if (styleguide.sourceUrl) parts.push(`Source: ${styleguide.sourceUrl}`);
   doc.text(parts.join('  |  '), margin, y);
@@ -235,6 +236,35 @@ export function exportBrandstylePdf(styleguide: BrandStyleguide) {
   addList("Imagery Don'ts", styleguide.imageryDonts);
 
   // ═══════════════════════════════════════════════════════════════
+  // 5b. BRAND IMAGES
+  // ═══════════════════════════════════════════════════════════════
+  if (styleguide.brandImages && styleguide.brandImages.length > 0) {
+    addSubHeader('Brand Images');
+    doc.setTextColor(55, 65, 81);
+    doc.setFontSize(10);
+    for (const img of styleguide.brandImages) {
+      checkPageBreak(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${img.context.charAt(0).toUpperCase() + img.context.slice(1)}`, margin + 2, y);
+      doc.setFont('helvetica', 'normal');
+      if (img.alt) {
+        doc.setTextColor(107, 114, 128);
+        doc.setFontSize(9);
+        doc.text(img.alt, margin + 30, y);
+      }
+      y += 5;
+      doc.setTextColor(79, 70, 229); // indigo-600
+      doc.setFontSize(8);
+      const displayUrl = img.url.length > 90 ? img.url.slice(0, 87) + '...' : img.url;
+      doc.text(displayUrl, margin + 4, y);
+      y += 6;
+      doc.setTextColor(55, 65, 81);
+      doc.setFontSize(10);
+    }
+    y += 2;
+  }
+
+  // ═══════════════════════════════════════════════════════════════
   // 6. DESIGN LANGUAGE
   // ═══════════════════════════════════════════════════════════════
   const hasDesignLanguage = styleguide.graphicElements || styleguide.patternsTextures
@@ -308,4 +338,8 @@ export function exportBrandstylePdf(styleguide: BrandStyleguide) {
   }
 
   doc.save('brand-styleguide.pdf');
+  } catch (error) {
+    console.error('[exportBrandstylePdf] Failed to generate PDF:', error);
+    alert('Failed to generate PDF. Please try again.');
+  }
 }

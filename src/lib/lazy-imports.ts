@@ -97,6 +97,11 @@ export const TrendDetailPage = lazy(() =>
   import('@/features/trend-radar/components/detail/TrendDetailPage').then(m => ({ default: m.TrendDetailPage }))
 );
 
+// ─── Website Scanner ────────────────────────────────────────
+export const WebsiteScannerPage = lazy(() =>
+  import('@/features/website-scanner/components/WebsiteScannerPage').then(m => ({ default: m.WebsiteScannerPage }))
+);
+
 // ─── Knowledge Library ─────────────────────────────────────
 export const KnowledgeLibraryPage = lazy(() =>
   import('@/features/knowledge-library/components/KnowledgeLibraryPage').then(m => ({ default: m.KnowledgeLibraryPage }))

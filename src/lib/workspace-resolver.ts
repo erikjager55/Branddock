@@ -35,6 +35,7 @@ export async function getExplicitWorkspace(userId: string) {
 export async function getWorkspaceForOrganization(organizationId: string) {
   return prisma.workspace.findFirst({
     where: { organizationId },
+    orderBy: { createdAt: "asc" },
   });
 }
 

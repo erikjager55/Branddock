@@ -61,6 +61,8 @@ export function apiAssetToMockFormat(asset: BrandAssetWithMeta): BrandAsset {
     researchCoverage: asset.coveragePercentage,
     artifactsGenerated: asset.artifactCount,
     artifactsValidated: asset.validatedCount,
+    frameworkType: asset.frameworkType,
+    frameworkData: asset.frameworkData,
   };
 }
 

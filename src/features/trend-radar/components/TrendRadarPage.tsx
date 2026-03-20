@@ -1,9 +1,11 @@
 'use client';
 
-import { Radar, PenLine, Sparkles } from 'lucide-react';
+import { Radar, PenLine, Sparkles, FileDown, FileJson } from 'lucide-react';
 import { Button, Badge } from '@/components/shared';
 import { useTrendRadarStore } from '../stores/useTrendRadarStore';
 import { useTrends } from '../hooks';
+import { exportTrendRadarOverviewPdf } from '../utils/exportTrendRadarPdf';
+import { exportTrendRadarJson } from '../utils/exportTrendRadarJson';
 import { TrendFilterBar } from './feed/TrendFilterBar';
 import { TrendCardGrid } from './TrendCardGrid';
 import { AddManualTrendModal } from './AddManualTrendModal';
@@ -46,6 +48,30 @@ export function TrendRadarPage({ onNavigate }: TrendRadarPageProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {totalCount > 0 && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={FileDown}
+                onClick={() => {
+                  if (data?.trends) exportTrendRadarOverviewPdf(data.trends);
+                }}
+              >
+                PDF
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={FileJson}
+                onClick={() => {
+                  if (data?.trends) exportTrendRadarJson(data.trends);
+                }}
+              >
+                JSON
+              </Button>
+            </>
+          )}
           <Button variant="secondary" size="sm" icon={PenLine} onClick={openAddManualTrendModal}>
             Add Trend
           </Button>

@@ -48,6 +48,14 @@ export function invalidateCache(prefix: string): void {
 }
 
 /**
+ * Clear the entire cache. Used when switching workspaces/organizations
+ * to ensure no stale data is served.
+ */
+export function clearAllCache(): void {
+  cache.clear();
+}
+
+/**
  * Return a cached NextResponse.json() if available, or null on cache miss.
  * Use in route handlers for inline caching:
  *

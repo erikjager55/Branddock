@@ -4,6 +4,7 @@ import { ProfileForm } from './ProfileForm';
 import { PasswordForm } from './PasswordForm';
 import { EmailPreferences } from './EmailPreferences';
 import { ConnectedAccounts } from './ConnectedAccounts';
+import { DataExportSection } from './DataExportSection';
 import { DangerZone } from './DangerZone';
 
 export function AccountTab() {
@@ -20,6 +21,7 @@ export function AccountTab() {
       <PasswordForm />
       <EmailPreferences />
       <ConnectedAccounts />
+      <DataExportSection />
       <DangerZone />
     </div>
   );

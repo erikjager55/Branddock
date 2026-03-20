@@ -249,3 +249,99 @@ export async function scrapeProductUrl(url: string): Promise<ScrapedProductData>
     images,
   };
 }
+
+/**
+ * Fetch and parse an HTML page, returning the Cheerio API and metadata.
+ * Reuses the same SSRF protection and fetch logic as scrapeProductUrl.
+ */
+export async function fetchAndParse(url: string): Promise<{
+  $: cheerio.CheerioAPI;
+  title: string | null;
+  description: string | null;
+}> {
+  const parsed = new URL(url);
+  if (isPrivateHostname(parsed.hostname)) {
+    throw new Error('URLs pointing to private or internal networks are not allowed');
+  }
+
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
+    signal: AbortSignal.timeout(15000),
+    redirect: 'follow',
+  });
+
+  if (response.url !== url) {
+    try {
+      const redirectedParsed = new URL(response.url);
+      if (isPrivateHostname(redirectedParsed.hostname)) {
+        throw new Error('URL redirected to a private or internal network');
+      }
+    } catch (e) {
+      if (e instanceof Error && e.message.includes('private')) throw e;
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch URL: ${response.status} ${response.statusText}`);
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('text/html') && !contentType.includes('application/xhtml')) {
+    throw new Error('URL does not return HTML content');
+  }
+
+  const html = await response.text();
+  const $ = cheerio.load(html);
+
+  const title = $('title').first().text().trim() || null;
+  const description =
+    $('meta[name="description"]').attr('content')?.trim() ||
+    $('meta[property="og:description"]').attr('content')?.trim() ||
+    null;
+
+  return { $, title, description };
+}
+
+/**
+ * Discover internal links from a parsed HTML page.
+ * Returns unique same-origin URLs (excluding anchors, assets, etc.)
+ */
+export function discoverInternalLinks(
+  $: cheerio.CheerioAPI,
+  baseUrl: string,
+): string[] {
+  const base = new URL(baseUrl);
+  const seen = new Set<string>();
+  const links: string[] = [];
+
+  $('a[href]').each((_, el) => {
+    const href = $(el).attr('href');
+    if (!href) return;
+
+    // Skip non-page links
+    if (href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return;
+
+    try {
+      const resolved = new URL(href, baseUrl);
+      // Same origin only
+      if (resolved.origin !== base.origin) return;
+      // Strip hash and search params for dedup
+      resolved.hash = '';
+      const normalized = resolved.toString().replace(/\/$/, '');
+      // Skip already seen
+      if (seen.has(normalized)) return;
+      // Skip asset URLs
+      if (/\.(pdf|jpg|jpeg|png|gif|svg|webp|mp4|mp3|zip|css|js|ico|woff|woff2|ttf|eot)$/i.test(resolved.pathname)) return;
+      seen.add(normalized);
+      links.push(normalized);
+    } catch {
+      // Invalid URL — skip
+    }
+  });
+
+  return links;
+}

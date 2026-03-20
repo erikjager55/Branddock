@@ -126,17 +126,6 @@ export interface AlignmentIssueListParams {
   status?: IssueStatus;
 }
 
-// Scan progress (polling response shape)
-export interface ScanProgressResponse {
-  scanId: string;
-  status: ScanStatus;
-  progress: number;
-  currentStep: number;
-  completedSteps: string[];
-  score?: number;
-  issuesFound?: number;
-}
-
 // POST /api/alignment/issues/:id/dismiss body
 export interface DismissIssueBody {
   reason?: string;
@@ -161,12 +150,21 @@ export interface FixOptionsResponse {
   options: FixOption[];
 }
 
+export interface FixOptionChange {
+  entityType: string;   // 'Persona' | 'Product' | 'BrandAsset' | etc.
+  entityId: string;
+  field: string;        // 'description' | 'frameworkData.toneDimensions' | etc.
+  currentValue: string;
+  newValue: string;
+}
+
 export interface FixOption {
   key: 'A' | 'B' | 'C';
   title: string;
   description: string;
   preview: string | null;
   affectedModule: AlignmentModule;
+  changes?: FixOptionChange[];
 }
 
 // POST /api/alignment/issues/:id/fix body + response

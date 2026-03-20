@@ -1,12 +1,66 @@
 import React from 'react';
-import { AlertTriangle } from 'lucide-react';
-import * as LucideIcons from 'lucide-react';
-import { useAttentionItems } from '../../hooks/use-dashboard';
+import {
+  AlertTriangle,
+  FileText,
+  Users,
+  RefreshCw,
+  TrendingUp,
+  Megaphone,
+  Clock,
+  Target,
+  Circle,
+} from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAttentionItems, dashboardKeys } from '../../hooks/use-dashboard';
 import { Skeleton } from '../shared';
-import type { AttentionItem } from '../../types/dashboard';
+import { useBrandAssetStore } from '../../stores/useBrandAssetStore';
+import { usePersonaDetailStore } from '../../features/personas/stores/usePersonaDetailStore';
+import { useCompetitorsStore } from '../../features/competitors/stores/useCompetitorsStore';
+import { useTrendRadarStore } from '../../features/trend-radar/stores/useTrendRadarStore';
+import { useCampaignStore } from '../../features/campaigns/stores/useCampaignStore';
+import type { AttentionItem, AttentionEntityType } from '../../types/dashboard';
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  FileText,
+  AlertTriangle,
+  Users,
+  RefreshCw,
+  TrendingUp,
+  Megaphone,
+  Clock,
+  Target,
+};
 
 function getIcon(iconName: string): React.ComponentType<{ className?: string }> {
-  return (LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[iconName] || LucideIcons.Circle;
+  return ICON_MAP[iconName] || Circle;
+}
+
+function navigateToEntity(
+  entityType: AttentionEntityType,
+  entityId: string,
+  actionHref: string,
+  onNavigate: (section: string) => void,
+) {
+  if (entityId) {
+    switch (entityType) {
+      case 'brand-asset':
+        useBrandAssetStore.getState().setSelectedAssetId(entityId);
+        break;
+      case 'persona':
+        usePersonaDetailStore.getState().setSelectedPersonaId(entityId);
+        break;
+      case 'competitor':
+        useCompetitorsStore.getState().setSelectedCompetitorId(entityId);
+        break;
+      case 'trend':
+        useTrendRadarStore.getState().setSelectedTrendId(entityId);
+        break;
+      case 'campaign':
+        useCampaignStore.getState().setSelectedCampaignId(entityId);
+        break;
+    }
+  }
+  onNavigate(actionHref);
 }
 
 interface AttentionItemCardProps {
@@ -32,7 +86,7 @@ function AttentionItemCard({ item, index, onNavigate }: AttentionItemCardProps) 
         <div className="text-xs text-gray-500 truncate">{item.description}</div>
       </div>
       <button
-        onClick={() => onNavigate(item.actionHref)}
+        onClick={() => navigateToEntity(item.entityType, item.entityId, item.actionHref, onNavigate)}
         className={`px-3 py-1.5 text-xs font-medium rounded-md flex-shrink-0 transition-colors ${
           isFixAction
             ? 'bg-orange-50 text-orange-700 hover:bg-orange-100'
@@ -50,7 +104,8 @@ interface AttentionListProps {
 }
 
 export function AttentionList({ onNavigate }: AttentionListProps) {
-  const { data, isLoading } = useAttentionItems();
+  const { data, isLoading, isError } = useAttentionItems();
+  const queryClient = useQueryClient();
 
   if (isLoading) {
     return (
@@ -67,6 +122,23 @@ export function AttentionList({ onNavigate }: AttentionListProps) {
             <Skeleton className="h-7 w-20 rounded-md" />
           </div>
         ))}
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="bg-white rounded-lg border border-red-200 p-5">
+        <div className="flex items-center gap-2 text-red-600 mb-2">
+          <AlertTriangle className="h-4 w-4" />
+          <span className="text-sm font-medium">Failed to load attention items</span>
+        </div>
+        <button
+          onClick={() => queryClient.invalidateQueries({ queryKey: dashboardKeys.attention })}
+          className="text-sm text-red-600 hover:text-red-700 underline"
+        >
+          Retry
+        </button>
       </div>
     );
   }

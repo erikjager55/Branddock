@@ -122,6 +122,7 @@ export function ContentStudioPage({ deliverableId, campaignId, onBack }: Content
         contentType={studio.contentType}
         campaignTitle={studio.campaignTitle}
         contentTab={activeTab}
+        deliverableId={deliverableId}
         lastSavedAt={lastSavedAt}
         isPreviewMode={isPreviewMode}
         onBack={onBack}

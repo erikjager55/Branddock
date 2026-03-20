@@ -9,9 +9,13 @@ import {
   Mail,
   MoreVertical,
   Trash2,
+  FileText,
+  FileJson,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { Interview, InterviewStatus } from '../types/interview.types';
+import { exportInterviewPdf } from '../utils/exportInterviewPdf';
+import { exportInterviewJson } from '../utils/exportInterviewJson';
 
 const STATUS_MAP: Record<InterviewStatus, { label: string; variant: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'teal' }> = {
   TO_SCHEDULE: { label: 'To Schedule', variant: 'default' },
@@ -75,6 +79,33 @@ export function InterviewCard({
                   onClick={() => setMenuOpen(false)}
                 />
                 <div className="absolute right-0 top-8 z-20 w-44 bg-white border border-gray-200 rounded-lg shadow-lg py-1">
+                  {(interview.status === 'COMPLETED' || interview.status === 'APPROVED') && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          exportInterviewPdf(interview);
+                          setMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Export PDF
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          exportInterviewJson(interview);
+                          setMenuOpen(false);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        <FileJson className="w-3.5 h-3.5" />
+                        Export JSON
+                      </button>
+                      <div className="border-t border-gray-100 my-1" />
+                    </>
+                  )}
                   <button
                     onClick={() => {
                       onDelete(interview.id);

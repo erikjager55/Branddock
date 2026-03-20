@@ -321,6 +321,8 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
                 <StrategyResultTab
                   strategy={strategy}
                   campaignId={campaignId}
+                  campaignName={campaign.title}
+                  campaignGoalType={campaign.campaignGoalType ?? undefined}
                   isLoading={strategyLoading}
                   onGenerate={() => generateStrategy.mutate()}
                   isGenerating={generateStrategy.isPending}

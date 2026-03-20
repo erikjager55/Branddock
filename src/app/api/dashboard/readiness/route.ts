@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { cachedJson, setCache } from '@/lib/api/cache';
 import { cacheKeys, CACHE_TTL } from '@/lib/api/cache-keys';
-import { getDashboardReadiness } from '@/lib/db/queries';
+import { getBrandAssetStatusCounts } from '@/lib/db/queries';
 
 export async function GET() {
   try {
@@ -12,7 +13,49 @@ export async function GET() {
     const hit = cachedJson(cacheKeys.dashboard.readiness(workspaceId));
     if (hit) return hit;
 
-    const data = await getDashboardReadiness(workspaceId);
+    const [counts, personaCount, personasWithExploration, productCount, activeCampaignCount, activatedTrends] = await Promise.all([
+      getBrandAssetStatusCounts(workspaceId),
+      prisma.persona.count({ where: { workspaceId } }),
+      prisma.persona.count({
+        where: {
+          workspaceId,
+          researchMethods: { some: { method: 'AI_EXPLORATION', status: 'COMPLETED' } },
+        },
+      }),
+      prisma.product.count({ where: { workspaceId } }),
+      prisma.campaign.count({ where: { workspaceId, status: 'ACTIVE' } }),
+      prisma.detectedTrend.count({ where: { workspaceId, isActivated: true } }),
+    ]);
+
+    // Per-module scores (0-100)
+    const moduleScores = {
+      brandAssets: counts.total > 0 ? Math.round((counts.ready / counts.total) * 100) : 0,
+      personas: personaCount > 0 ? Math.round((personasWithExploration / personaCount) * 100) : 0,
+      products: Math.min(100, productCount * 20),
+      campaigns: Math.min(100, activeCampaignCount * 25),
+      trends: Math.min(100, activatedTrends * 10),
+    };
+
+    // Weighted overall score
+    const weights = { brandAssets: 0.25, personas: 0.20, products: 0.15, campaigns: 0.20, trends: 0.20 };
+    const weightedOverall = Math.round(
+      moduleScores.brandAssets * weights.brandAssets +
+      moduleScores.personas * weights.personas +
+      moduleScores.products * weights.products +
+      moduleScores.campaigns * weights.campaigns +
+      moduleScores.trends * weights.trends,
+    );
+
+    const data = {
+      percentage: weightedOverall,
+      breakdown: {
+        ready: counts.ready,
+        needAttention: counts.needsAttention,
+        inProgress: counts.inProgress + counts.draft,
+      },
+      moduleScores,
+    };
+
     setCache(cacheKeys.dashboard.readiness(workspaceId), data, CACHE_TTL.DASHBOARD);
     return NextResponse.json(data);
   } catch (error) {

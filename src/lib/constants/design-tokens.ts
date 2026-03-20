@@ -480,6 +480,7 @@ export const SIDEBAR_NAV: {
       label: 'WORKSPACE',
       items: [
         { key: 'dashboard', label: 'Overview', icon: 'LayoutDashboard', href: '/' },
+        { key: 'website-scanner', label: 'Website Scanner', icon: 'Globe', href: '/website-scanner' }, // TODO: remove — temporary for testing
       ],
     },
     {

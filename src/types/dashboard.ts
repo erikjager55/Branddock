@@ -1,26 +1,14 @@
 // =============================================================
-// Dashboard Types (S8)
+// Dashboard Types (S8 — Dashboard Overhaul)
 // =============================================================
 
-export interface DashboardResponse {
-  readiness: {
-    percentage: number;
-    breakdown: { ready: number; needAttention: number; inProgress: number };
-  };
-  stats: {
-    readyToUse: number;
-    needAttention: number;
-    inProgress: number;
-    activeCampaigns: number;
-    contentCreated: number;
-  };
-  attention: AttentionItem[];
-  recommended: RecommendedAction | null;
-  campaignsPreview: CampaignPreviewItem[];
-}
+export type AttentionEntityType = 'brand-asset' | 'persona' | 'competitor' | 'trend' | 'campaign';
 
 export interface AttentionItem {
   id: string;
+  entityId: string;
+  entityType: AttentionEntityType;
+  priority: number;
   title: string;
   description: string;
   icon: string;
@@ -28,7 +16,6 @@ export interface AttentionItem {
   actionType: 'fix' | 'take_action';
   actionLabel: string;
   actionHref: string;
-  coveragePercentage: number;
 }
 
 export interface RecommendedAction {
@@ -38,6 +25,39 @@ export interface RecommendedAction {
   description: string;
   actionLabel: string;
   actionHref: string;
+  entityId?: string;
+  entityType?: AttentionEntityType;
+  icon: string;
+}
+
+export interface ModuleScores {
+  brandAssets: number;
+  personas: number;
+  products: number;
+  campaigns: number;
+  trends: number;
+}
+
+export interface ReadinessResponse {
+  percentage: number;
+  breakdown: { ready: number; needAttention: number; inProgress: number };
+  moduleScores: ModuleScores;
+}
+
+export interface DashboardStatsResponse {
+  brandAssets: { ready: number; total: number };
+  personas: number;
+  products: number;
+  campaigns: number;
+  trends: number;
+  competitors: number;
+}
+
+export interface ActivityItem {
+  id: string;
+  title: string;
+  type: 'brand-asset' | 'persona' | 'campaign' | 'competitor';
+  updatedAt: string;
 }
 
 export interface CampaignPreviewItem {

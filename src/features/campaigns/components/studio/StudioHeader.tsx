@@ -12,6 +12,7 @@ interface StudioHeaderProps {
   contentType: string;
   campaignTitle: string;
   contentTab: string | null;
+  deliverableId: string;
   lastSavedAt: string | null;
   isPreviewMode: boolean;
   onBack: () => void;
@@ -24,6 +25,7 @@ export function StudioHeader({
   contentType,
   campaignTitle,
   contentTab,
+  deliverableId,
   lastSavedAt,
   isPreviewMode,
   onBack,
@@ -129,6 +131,7 @@ export function StudioHeader({
           contentType={contentType}
           campaignTitle={campaignTitle}
           contentTab={contentTab}
+          deliverableId={deliverableId}
         />
 
         {/* Context menu */}

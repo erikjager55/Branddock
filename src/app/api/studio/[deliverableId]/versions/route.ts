@@ -30,19 +30,33 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         id: true,
         versionNumber: true,
         qualityScore: true,
+        contentSnapshot: true,
         createdAt: true,
         createdBy: true,
       },
     });
 
     return NextResponse.json({
-      versions: versions.map((v) => ({
-        id: v.id,
-        versionNumber: v.versionNumber,
-        qualityScore: v.qualityScore,
-        createdAt: v.createdAt.toISOString(),
-        createdBy: v.createdBy,
-      })),
+      versions: versions.map((v) => {
+        // Extract text preview from contentSnapshot (first 500 chars)
+        let contentPreview: string | null = null;
+        if (v.contentSnapshot && typeof v.contentSnapshot === 'object') {
+          const snap = v.contentSnapshot as Record<string, unknown>;
+          const text = typeof snap.text === 'string' ? snap.text : '';
+          if (text) {
+            // Strip HTML for preview
+            contentPreview = text.replace(/<[^>]*>/g, '').slice(0, 500) || null;
+          }
+        }
+        return {
+          id: v.id,
+          versionNumber: v.versionNumber,
+          qualityScore: v.qualityScore,
+          contentPreview,
+          createdAt: v.createdAt.toISOString(),
+          createdBy: v.createdBy,
+        };
+      }),
     });
   } catch (error) {
     console.error('GET /api/studio/[deliverableId]/versions error:', error);

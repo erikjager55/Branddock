@@ -1,44 +1,37 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  fetchDashboard,
   fetchReadiness,
   fetchDashboardStats,
   fetchAttention,
   fetchRecommended,
   fetchCampaignsPreview,
+  fetchActivity,
   fetchPreferences,
   updatePreferences,
   completeQuickStartItem,
 } from '@/lib/api/dashboard';
 import type {
-  DashboardResponse,
+  ReadinessResponse,
+  DashboardStatsResponse,
   DashboardPreferencesResponse,
   AttentionItem,
   RecommendedAction,
   CampaignPreviewItem,
+  ActivityItem,
 } from '@/types/dashboard';
 
 export const dashboardKeys = {
-  all: ['dashboard'] as const,
   readiness: ['dashboard', 'readiness'] as const,
   stats: ['dashboard', 'stats'] as const,
   attention: ['dashboard', 'attention'] as const,
   recommended: ['dashboard', 'recommended'] as const,
   campaigns: ['dashboard', 'campaigns'] as const,
+  activity: ['dashboard', 'activity'] as const,
   preferences: ['dashboard', 'preferences'] as const,
 };
 
-export function useDashboard() {
-  return useQuery<DashboardResponse>({
-    queryKey: dashboardKeys.all,
-    queryFn: fetchDashboard,
-    staleTime: 60_000,
-    gcTime: 10 * 60_000,
-  });
-}
-
 export function useReadiness() {
-  return useQuery<DashboardResponse['readiness']>({
+  return useQuery<ReadinessResponse>({
     queryKey: dashboardKeys.readiness,
     queryFn: fetchReadiness,
     staleTime: 60_000,
@@ -47,7 +40,7 @@ export function useReadiness() {
 }
 
 export function useDashboardStats() {
-  return useQuery<DashboardResponse['stats']>({
+  return useQuery<DashboardStatsResponse>({
     queryKey: dashboardKeys.stats,
     queryFn: fetchDashboardStats,
     staleTime: 60_000,
@@ -64,8 +57,8 @@ export function useAttentionItems() {
   });
 }
 
-export function useRecommendedAction() {
-  return useQuery<RecommendedAction | null>({
+export function useRecommendedActions() {
+  return useQuery<RecommendedAction[]>({
     queryKey: dashboardKeys.recommended,
     queryFn: fetchRecommended,
     staleTime: 60_000,
@@ -77,6 +70,15 @@ export function useCampaignsPreview() {
   return useQuery<CampaignPreviewItem[]>({
     queryKey: dashboardKeys.campaigns,
     queryFn: fetchCampaignsPreview,
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+  });
+}
+
+export function useRecentActivity() {
+  return useQuery<ActivityItem[]>({
+    queryKey: dashboardKeys.activity,
+    queryFn: fetchActivity,
     staleTime: 60_000,
     gcTime: 10 * 60_000,
   });

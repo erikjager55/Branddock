@@ -1,12 +1,12 @@
 export const SCAN_STEPS = [
-  'Scanning Brand Foundation',
-  'Analyzing Business Strategy',
-  'Checking Brandstyle consistency',
-  'Cross-referencing Personas with positioning',
-  'Validating Products & Services',
-  'Evaluating Market Insights relevance',
-  'Checking Knowledge Library references',
-  'Calculating alignment score',
+  'Gathering brand context...',
+  'Analyzing Brand Foundation alignment...',
+  'Analyzing Business Strategy alignment...',
+  'Analyzing Brandstyle consistency...',
+  'Cross-referencing Personas with brand positioning...',
+  'Validating Products & Services alignment...',
+  'Evaluating Market Insights relevance...',
+  'Calculating final alignment score...',
 ] as const;
 
 export type ScanStep = typeof SCAN_STEPS[number];
