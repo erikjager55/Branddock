@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { mockPersonas } from "../data/mock-personas";
 import { saveToStorage, loadFromStorage, StorageKeys } from "../utils/storage";
 import { logger } from "../utils/logger";
 import { fetchPersonas } from "../lib/api/personas";
@@ -48,8 +47,7 @@ export function PersonasProvider({ children }: { children: ReactNode }) {
   const { workspaceId, isLoading: wsLoading } = useWorkspace();
   const [personas, setPersonas] = useState<MockPersona[]>(() => {
     const stored = loadFromStorage<MockPersona[]>(StorageKeys.PERSONAS, []);
-    if (stored.length === 0) return mockPersonas as unknown as MockPersona[];
-    return migratePersonaData(stored);
+    return stored.length > 0 ? migratePersonaData(stored) : [];
   });
 
   const [dataSource, setDataSource] = useState<"api" | "mock">("mock");

@@ -20,7 +20,7 @@ import { Card } from '@/components/shared/Card';
 import { cn } from '@/components/ui/utils';
 import type { BrandAssetWithMeta, AssetCategory } from '@/types/brand-asset';
 import { ICON_CONTAINERS } from '@/lib/constants/design-tokens';
-import { getAssetCompletenessFields } from '@/features/brand-asset-detail/components/sidebar/AssetCompletenessCard';
+import { getAssetCompletenessFields } from '@/lib/brand-asset-completeness';
 
 // ─── Category gradient map ──────────────────────────────────
 

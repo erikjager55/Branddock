@@ -31,12 +31,9 @@ import {
   Filter,
   X
 } from 'lucide-react';
-import { CampaignStrategyGeneratorDetail } from './strategy-tools/CampaignStrategyGeneratorDetail';
 import { UniversalAIExploration } from './strategy-tools/UniversalAIExploration';
-import { UniversalStrategyGenerator } from './strategy-tools/UniversalStrategyGenerator';
 import { FrameworkWorkspace } from './strategy-tools/FrameworkWorkspace';
 import { frameworkConfigs } from './strategy-tools/framework-configs';
-import { CampaignWorkspace } from './CampaignWorkspace';
 
 interface StrategyFramework {
   id: string;
@@ -222,12 +219,7 @@ export function NewStrategyPage() {
 
   const hasActiveFilters = searchQuery !== '' || selectedTag !== 'all' || selectedTimeRange !== 'all';
 
-  // Show CampaignWorkspace for Campaign Strategy Generator
-  if (selectedFramework === 'campaign-strategy') {
-    return <CampaignWorkspace campaignId="1" onBack={() => setSelectedFramework(null)} />;
-  }
-
-  // Show FrameworkWorkspace for all other strategy frameworks
+  // Show FrameworkWorkspace for strategy frameworks
   if (selectedFramework) {
     const framework = frameworks.find(f => f.id === selectedFramework);
     const config = frameworkConfigs[selectedFramework];

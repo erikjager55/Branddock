@@ -33,7 +33,7 @@ export function useWorkspace() {
     let cancelled = false;
     setWsLoading(true);
 
-    fetch('/api/workspace/active')
+    fetch('/api/workspace/active', { cache: 'no-store' })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();

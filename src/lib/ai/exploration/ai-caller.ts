@@ -421,6 +421,7 @@ export async function createStructuredCompletion<T>(
   options?: StructuredCompletionOptions,
 ): Promise<T> {
   if (provider === 'anthropic') {
+    // No withRetry here — createClaudeStructuredCompletion has its own internal retry loop
     return createClaudeStructuredCompletion<T>(systemPrompt, userPrompt, {
       model,
       temperature: options?.temperature,

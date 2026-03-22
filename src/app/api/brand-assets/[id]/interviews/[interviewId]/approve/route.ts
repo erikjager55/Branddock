@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 
 type RouteParams = { params: Promise<{ id: string; interviewId: string }> };
 
@@ -56,6 +58,8 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
         ...(progress >= 100 ? { completedAt: new Date() } : {}),
       },
     });
+
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json({ interview: updated, progress });
   } catch (error) {

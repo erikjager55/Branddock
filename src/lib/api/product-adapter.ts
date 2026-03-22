@@ -1,4 +1,4 @@
-import type { ProductServiceData } from "@/components/ProductServiceAnalyzer";
+import type { ProductServiceData } from "@/types/product";
 import type { ProductWithMeta } from "@/types/product";
 
 /**

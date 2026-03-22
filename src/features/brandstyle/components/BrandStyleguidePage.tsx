@@ -65,6 +65,12 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
     onNavigateToAnalyzer();
   }, [setIsEditing, onNavigateToAnalyzer]);
 
+  useEffect(() => {
+    if (!isLoading && !isError && !styleguide) {
+      onNavigateToAnalyzer();
+    }
+  }, [isLoading, isError, styleguide, onNavigateToAnalyzer]);
+
   if (isLoading) {
     return (
       <PageShell maxWidth="5xl">
@@ -88,7 +94,6 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
   }
 
   if (!styleguide) {
-    onNavigateToAnalyzer();
     return null;
   }
 

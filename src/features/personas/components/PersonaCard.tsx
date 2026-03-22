@@ -127,7 +127,7 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
       onClick={onClick}
     >
       {/* Header */}
-      <div className="relative mb-4 flex items-start gap-4">
+      <div className="mb-4 flex items-start gap-4">
         {/* Avatar */}
         <OptimizedImage
           key={persona.avatarUrl || persona.id}
@@ -143,25 +143,24 @@ export function PersonaCard({ persona, onClick, onChat }: PersonaCardProps) {
         />
 
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-semibold text-gray-900">
-            {persona.name}
-          </h3>
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="truncate font-semibold text-gray-900">
+              {persona.name}
+            </h3>
+            {/* Completeness badge */}
+            <div className={`flex-shrink-0 flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
+              profileCompleteness >= 80 ? 'border-emerald-200 text-emerald-600 bg-emerald-50' :
+              profileCompleteness >= 50 ? 'border-amber-200 text-amber-600 bg-amber-50' :
+              'border-red-200 text-red-500 bg-red-50'
+            }`}>
+              {profileCompleteness}% complete
+            </div>
+          </div>
           {persona.tagline && (
             <p className="line-clamp-2 text-sm text-muted-foreground">
               {persona.tagline}
             </p>
           )}
-        </div>
-
-        {/* Completeness badge — validated pill hidden (validation % deactivated) */}
-        <div className="absolute right-0 top-0 flex items-center gap-1.5">
-          <div className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${
-            profileCompleteness >= 80 ? 'border-emerald-200 text-emerald-600 bg-emerald-50' :
-            profileCompleteness >= 50 ? 'border-amber-200 text-amber-600 bg-amber-50' :
-            'border-red-200 text-red-500 bg-red-50'
-          }`}>
-            {profileCompleteness}% complete
-          </div>
         </div>
       </div>
 

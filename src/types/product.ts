@@ -2,6 +2,18 @@
 // Product types — DB model + API contracts
 // =============================================================
 
+export interface ProductServiceData {
+  id: string;
+  source: string;
+  name: string;
+  description: string;
+  category: string;
+  pricing: { model: string; amount?: string };
+  features: string[];
+  benefits: string[];
+  useCases: string[];
+}
+
 export interface ProductWithMeta {
   id: string;
   name: string;

@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { cachedJson, setCache } from '@/lib/api/cache';
 import { cacheKeys, CACHE_TTL } from '@/lib/api/cache-keys';
-import { getBrandAssetStatusCounts } from '@/lib/db/queries';
+import { getAssetCompletenessPercentage } from '@/lib/brand-asset-completeness';
 
 export async function GET() {
   try {
@@ -13,8 +13,11 @@ export async function GET() {
     const hit = cachedJson(cacheKeys.dashboard.readiness(workspaceId));
     if (hit) return hit;
 
-    const [counts, personaCount, personasWithExploration, productCount, activeCampaignCount, activatedTrends] = await Promise.all([
-      getBrandAssetStatusCounts(workspaceId),
+    const [allAssets, personaCount, personasWithExploration, productCount, activeCampaignCount, activatedTrends] = await Promise.all([
+      prisma.brandAsset.findMany({
+        where: { workspaceId },
+        select: { description: true, frameworkType: true, frameworkData: true },
+      }),
       prisma.persona.count({ where: { workspaceId } }),
       prisma.persona.count({
         where: {
@@ -27,9 +30,19 @@ export async function GET() {
       prisma.detectedTrend.count({ where: { workspaceId, isActivated: true } }),
     ]);
 
+    const totalAssets = allAssets.length;
+    const fullyComplete = allAssets.filter(a =>
+      getAssetCompletenessPercentage({
+        description: a.description ?? '',
+        frameworkType: a.frameworkType,
+        frameworkData: a.frameworkData,
+      }) === 100
+    ).length;
+    const notComplete = totalAssets - fullyComplete;
+
     // Per-module scores (0-100)
     const moduleScores = {
-      brandAssets: counts.total > 0 ? Math.round((counts.ready / counts.total) * 100) : 0,
+      brandAssets: totalAssets > 0 ? Math.round((fullyComplete / totalAssets) * 100) : 0,
       personas: personaCount > 0 ? Math.round((personasWithExploration / personaCount) * 100) : 0,
       products: Math.min(100, productCount * 20),
       campaigns: Math.min(100, activeCampaignCount * 25),
@@ -49,9 +62,9 @@ export async function GET() {
     const data = {
       percentage: weightedOverall,
       breakdown: {
-        ready: counts.ready,
-        needAttention: counts.needsAttention,
-        inProgress: counts.inProgress + counts.draft,
+        ready: fullyComplete,
+        needAttention: notComplete,
+        inProgress: 0,
       },
       moduleScores,
     };

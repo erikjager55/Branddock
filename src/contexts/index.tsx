@@ -13,12 +13,10 @@ import { UIStateProvider } from './UIStateContext';
 import { ResearchBundleProvider } from './ResearchBundleContext';
 import { CollaborationProvider } from './CollaborationContext';
 import { WhiteLabelProvider } from './WhiteLabelContext';
-import { TemplateProvider } from './TemplateContext';
 import { ChangeImpactProvider } from './ChangeImpactContext';
 import { ChangeImpactConnector } from '../components/impact/ChangeImpactConnector';
 import { ProductTierProvider } from './ProductTierContext';
 import { ProductsProvider } from './ProductsContext';
-import { TrendsProvider } from './TrendsContext';
 import { KnowledgeProvider } from './KnowledgeContext';
 import { CampaignsProvider } from './CampaignsContext';
 import { BrandAlignmentProvider } from './BrandAlignmentContext';
@@ -35,7 +33,6 @@ export function AppProviders({ children }: AppProvidersProps) {
           <ChangeImpactConnector />
           <PersonasProvider>
             <ProductsProvider>
-              <TrendsProvider>
               <KnowledgeProvider>
               <CampaignsProvider>
               <BrandAlignmentProvider>
@@ -43,11 +40,9 @@ export function AppProviders({ children }: AppProvidersProps) {
                 <ResearchBundleProvider>
                   <CollaborationProvider>
                     <WhiteLabelProvider>
-                      <TemplateProvider>
                         <UIStateProvider>
                           {children}
                         </UIStateProvider>
-                      </TemplateProvider>
                     </WhiteLabelProvider>
                   </CollaborationProvider>
                 </ResearchBundleProvider>
@@ -55,7 +50,6 @@ export function AppProviders({ children }: AppProvidersProps) {
               </BrandAlignmentProvider>
             </CampaignsProvider>
               </KnowledgeProvider>
-              </TrendsProvider>
               </ProductsProvider>
           </PersonasProvider>
         </ChangeImpactProvider>
@@ -72,11 +66,9 @@ export { useUIState } from './UIStateContext';
 export { useResearchBundles } from './ResearchBundleContext';
 export { useCollaboration } from './CollaborationContext';
 export { useWhiteLabel } from './WhiteLabelContext';
-export { useTemplates } from './TemplateContext';
 export { useChangeImpact } from './ChangeImpactContext';
 export { useProductTier } from './ProductTierContext';
 export { useProducts } from './ProductsContext';
-export { useTrendsContext } from './TrendsContext';
 export { useKnowledgeContext } from './KnowledgeContext';
 export { useCampaignsContext } from './CampaignsContext';
 export { useBrandAlignment, useAlignmentModules, useAlignmentHistory, useAlignmentIssues, useAlignmentIssueDetail, useStartAlignmentScan, useDismissIssue, useScanProgress, useFixOptions, useApplyFix, useCancelScan } from './BrandAlignmentContext';

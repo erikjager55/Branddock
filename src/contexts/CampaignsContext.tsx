@@ -15,16 +15,6 @@ interface CampaignsContextType {
 
 const CampaignsContext = createContext<CampaignsContextType | undefined>(undefined);
 
-// ---- Mock fallback ----
-let mockFallback: Campaign[] | null = null;
-async function getMockFallback(): Promise<Campaign[]> {
-  if (!mockFallback) {
-    const mod = await import('../data/mock-campaigns');
-    mockFallback = Object.values(mod.mockCampaigns);
-  }
-  return mockFallback;
-}
-
 export function CampaignsProvider({ children }: { children: ReactNode }) {
   const { workspaceId, isLoading: wsLoading } = useWorkspace();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -34,10 +24,7 @@ export function CampaignsProvider({ children }: { children: ReactNode }) {
     if (wsLoading) return;
 
     if (!workspaceId) {
-      getMockFallback().then(data => {
-        setCampaigns(data);
-        setIsLoading(false);
-      });
+      setIsLoading(false);
       return;
     }
 
@@ -46,13 +33,10 @@ export function CampaignsProvider({ children }: { children: ReactNode }) {
       .then(data => {
         if (data.campaigns && data.campaigns.length > 0) {
           setCampaigns(apiCampaignsToMockFormat(data.campaigns));
-        } else {
-          return getMockFallback().then(setCampaigns);
         }
       })
       .catch(err => {
-        console.warn('[CampaignsContext] API fetch failed, using mock data:', err.message);
-        getMockFallback().then(setCampaigns);
+        console.warn('[CampaignsContext] API fetch failed:', err.message);
       })
       .finally(() => setIsLoading(false));
   }, [workspaceId, wsLoading]);

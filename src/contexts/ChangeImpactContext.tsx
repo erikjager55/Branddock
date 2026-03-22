@@ -44,12 +44,10 @@ interface ChangeImpactContextType {
 
 const ChangeImpactContext = createContext<ChangeImpactContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'change-impact-store';
-
 export function ChangeImpactProvider({ children }: { children: ReactNode }) {
   const [store, setStore] = useState<ChangeImpactStore>(() => {
     // Load from localStorage
-    const stored = loadFromStorage<ChangeImpactStore>(STORAGE_KEY, {
+    const stored = loadFromStorage<ChangeImpactStore>(StorageKeys.CHANGE_IMPACT, {
       changes: [],
       impactAnalyses: [],
       notifications: [],
@@ -62,7 +60,7 @@ export function ChangeImpactProvider({ children }: { children: ReactNode }) {
 
   // Persist to localStorage
   useEffect(() => {
-    saveToStorage(STORAGE_KEY, store);
+    saveToStorage(StorageKeys.CHANGE_IMPACT, store);
   }, [store]);
 
   /**

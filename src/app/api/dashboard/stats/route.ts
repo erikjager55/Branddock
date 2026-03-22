@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { cachedJson, setCache } from '@/lib/api/cache';
 import { cacheKeys, CACHE_TTL } from '@/lib/api/cache-keys';
-import { getBrandAssetStatusCounts } from '@/lib/db/queries';
+import { getAssetCompletenessPercentage } from '@/lib/brand-asset-completeness';
 
 export async function GET() {
   try {
@@ -13,8 +13,11 @@ export async function GET() {
     const hit = cachedJson(cacheKeys.dashboard.stats(workspaceId));
     if (hit) return hit;
 
-    const [counts, personaCount, productCount, activeCampaigns, activatedTrends, analyzedCompetitors] = await Promise.all([
-      getBrandAssetStatusCounts(workspaceId),
+    const [allAssets, personaCount, productCount, activeCampaigns, activatedTrends, analyzedCompetitors] = await Promise.all([
+      prisma.brandAsset.findMany({
+        where: { workspaceId },
+        select: { description: true, frameworkType: true, frameworkData: true },
+      }),
       prisma.persona.count({ where: { workspaceId } }),
       prisma.product.count({ where: { workspaceId } }),
       prisma.campaign.count({ where: { workspaceId, status: 'ACTIVE' } }),
@@ -22,8 +25,16 @@ export async function GET() {
       prisma.competitor.count({ where: { workspaceId, status: 'ANALYZED' } }),
     ]);
 
+    const fullyComplete = allAssets.filter(a =>
+      getAssetCompletenessPercentage({
+        description: a.description ?? '',
+        frameworkType: a.frameworkType,
+        frameworkData: a.frameworkData,
+      }) === 100
+    ).length;
+
     const data = {
-      brandAssets: { ready: counts.ready, total: counts.total },
+      brandAssets: { ready: fullyComplete, total: allAssets.length },
       personas: personaCount,
       products: productCount,
       campaigns: activeCampaigns,

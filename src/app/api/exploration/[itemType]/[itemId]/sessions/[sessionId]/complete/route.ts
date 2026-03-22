@@ -7,6 +7,8 @@ import { resolveItemSubType } from '@/lib/ai/exploration/constants';
 import { createVersion } from '@/lib/versioning';
 import { buildPersonaSnapshot, buildBrandAssetSnapshot } from '@/lib/snapshot-builders';
 import type { VersionedResourceType } from '@prisma/client';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 
 // ─── POST /api/exploration/[itemType]/[itemId]/sessions/[sessionId]/complete ──
 export async function POST(
@@ -122,6 +124,7 @@ export async function POST(
     // Update research method if applicable
     if (config.updateResearchMethod) {
       const validationPercentage = await config.updateResearchMethod(itemId, workspaceId);
+      invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
       return NextResponse.json({
         status: 'COMPLETED',
         insightsData,

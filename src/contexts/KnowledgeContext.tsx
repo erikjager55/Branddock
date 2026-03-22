@@ -22,25 +22,6 @@ interface KnowledgeContextType {
 
 const KnowledgeContext = createContext<KnowledgeContextType | undefined>(undefined);
 
-// ---- Mock fallback data (imported lazily) ----
-let mockFallback: Knowledge[] | null = null;
-async function getMockFallback(): Promise<Knowledge[]> {
-  if (!mockFallback) {
-    const mod = await import('../data/mock-knowledge');
-    mockFallback = mod.mockKnowledge;
-  }
-  return mockFallback;
-}
-
-let collectionsFallback: Collection[] | null = null;
-async function getCollectionsFallback(): Promise<Collection[]> {
-  if (!collectionsFallback) {
-    const mod = await import('../data/knowledge-resources');
-    collectionsFallback = mod.mockCollections;
-  }
-  return collectionsFallback;
-}
-
 export function KnowledgeProvider({ children }: { children: ReactNode }) {
   const { workspaceId, isLoading: wsLoading } = useWorkspace();
   const [knowledge, setKnowledge] = useState<Knowledge[]>([]);
@@ -48,16 +29,10 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load collections (mock-only for now, no API yet)
-    getCollectionsFallback().then(setCollections);
-
     if (wsLoading) return;
 
     if (!workspaceId) {
-      getMockFallback().then(data => {
-        setKnowledge(data);
-        setIsLoading(false);
-      });
+      setIsLoading(false);
       return;
     }
 
@@ -66,13 +41,10 @@ export function KnowledgeProvider({ children }: { children: ReactNode }) {
       .then(data => {
         if (data.resources && data.resources.length > 0) {
           setKnowledge(apiKnowledgeToMockFormatList(data.resources) as unknown as Knowledge[]);
-        } else {
-          return getMockFallback().then(setKnowledge);
         }
       })
       .catch(err => {
-        console.warn('[KnowledgeContext] API fetch failed, using mock data:', err.message);
-        getMockFallback().then(setKnowledge);
+        console.warn('[KnowledgeContext] API fetch failed:', err.message);
       })
       .finally(() => setIsLoading(false));
   }, [workspaceId, wsLoading]);

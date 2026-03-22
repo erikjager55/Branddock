@@ -4,13 +4,13 @@
 // Promo Video Script, Webinar Outline, Podcast Outline
 // =============================================================
 
-import type { PromptTemplate } from './index';
-import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './index';
+import type { PromptTemplate } from './helpers';
+import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './helpers';
 
 function buildVideoAudioUserPrompt(
   userPrompt: string,
-  context: import('./index').UserPromptParams['context'],
-  settings: import('./index').UserPromptParams['settings'],
+  context: import('./helpers').UserPromptParams['context'],
+  settings: import('./helpers').UserPromptParams['settings'],
   formatGuidance: string,
 ): string {
   const { tone } = extractTextSettings(settings);

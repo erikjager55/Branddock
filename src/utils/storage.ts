@@ -18,6 +18,7 @@ export const StorageKeys = {
   SHARED_ASSETS: `${STORAGE_PREFIX}shared_assets`,
   UI_STATE: `${STORAGE_PREFIX}ui_state`,
   VERSION: `${STORAGE_PREFIX}version`,
+  CHANGE_IMPACT: 'change-impact-store',
 } as const;
 
 /**

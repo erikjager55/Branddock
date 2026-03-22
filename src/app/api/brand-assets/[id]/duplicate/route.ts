@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import type { Prisma } from "@prisma/client";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 
 // =============================================================
 // POST /api/brand-assets/[id]/duplicate — deep copy asset
@@ -57,6 +59,8 @@ export async function POST(
       },
       include: { researchMethods: true },
     });
+
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json(duplicate, { status: 201 });
   } catch (error) {

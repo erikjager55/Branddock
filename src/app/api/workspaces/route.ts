@@ -27,7 +27,9 @@ export async function GET() {
       resolveWorkspaceId(),
     ]);
 
-    return NextResponse.json({ workspaces, activeWorkspaceId });
+    return NextResponse.json({ workspaces, activeWorkspaceId }, {
+      headers: { 'Cache-Control': 'no-store, max-age=0' },
+    });
   } catch (error) {
     console.error("[GET /api/workspaces]", error);
     return NextResponse.json(

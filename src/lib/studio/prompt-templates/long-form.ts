@@ -4,8 +4,8 @@
 // E-book, Feature Article, Thought Leadership
 // =============================================================
 
-import type { PromptTemplate } from './index';
-import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './index';
+import type { PromptTemplate } from './helpers';
+import { buildBaseSystemPrompt, extractTextSettings, buildContextBlock, formatAdditionalSettings } from './helpers';
 
 const BLOG_POST_SYSTEM = buildBaseSystemPrompt(
   `You are an expert blog writer and content strategist. Write engaging, SEO-optimized blog posts that educate and convert readers. Your posts should have:
@@ -73,8 +73,8 @@ const THOUGHT_LEADERSHIP_SYSTEM = buildBaseSystemPrompt(
 
 function buildLongFormUserPrompt(
   userPrompt: string,
-  context: import('./index').UserPromptParams['context'],
-  settings: import('./index').UserPromptParams['settings'],
+  context: import('./helpers').UserPromptParams['context'],
+  settings: import('./helpers').UserPromptParams['settings'],
   typeSpecific: string = '',
 ): string {
   const { tone, length, targetAudience } = extractTextSettings(settings);

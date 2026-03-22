@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
 import { requireUnlocked } from "@/lib/lock-guard";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 
 const StatusUpdateSchema = z.object({
   status: z.enum(["DRAFT", "IN_PROGRESS", "NEEDS_ATTENTION", "READY"]),
@@ -47,6 +49,8 @@ export async function PATCH(
       where: { id },
       data: { status: parsed.data.status },
     });
+
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json(updated);
   } catch (error) {

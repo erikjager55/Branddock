@@ -8,6 +8,8 @@ import type {
   AssetStatus,
 } from "@/types/brand-asset";
 import { computeValidationPercentage } from "@/lib/validation-percentage";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 
 // =============================================================
 // GET /api/brand-assets
@@ -173,6 +175,8 @@ export async function POST(request: NextRequest) {
         workspaceId,
       },
     });
+
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json(asset, { status: 201 });
   } catch (error) {

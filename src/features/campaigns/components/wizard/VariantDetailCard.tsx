@@ -46,6 +46,10 @@ interface VariantDetailCardProps {
 // ─── Sub-Components ─────────────────────────────────────
 
 function PersonaPhaseInfo({ data }: { data: PersonaPhaseData }) {
+  const needs = Array.isArray(data.needs) ? data.needs : [];
+  const painPoints = Array.isArray(data.painPoints) ? data.painPoints : [];
+  const triggers = Array.isArray(data.triggers) ? data.triggers : [];
+
   return (
     <div className="p-2.5 bg-white rounded border border-gray-100">
       <p className="text-xs font-semibold text-gray-800 mb-1">
@@ -60,27 +64,27 @@ function PersonaPhaseInfo({ data }: { data: PersonaPhaseData }) {
           <span className="font-medium text-gray-500">Key question:</span>{" "}
           {data.keyQuestion}
         </p>
-        {data.needs.length > 0 && (
+        {needs.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1">
-            {data.needs.map((n, i) => (
+            {needs.map((n, i) => (
               <Badge key={i} variant="info">
                 {n}
               </Badge>
             ))}
           </div>
         )}
-        {data.painPoints.length > 0 && (
+        {painPoints.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1">
-            {data.painPoints.map((p, i) => (
+            {painPoints.map((p, i) => (
               <Badge key={i} variant="warning">
                 {p}
               </Badge>
             ))}
           </div>
         )}
-        {data.triggers.length > 0 && (
+        {triggers.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1">
-            {data.triggers.map((t, i) => (
+            {triggers.map((t, i) => (
               <Badge key={i} variant="default">
                 {t}
               </Badge>
@@ -209,10 +213,12 @@ function PhaseSection({ phase, index, variantKey }: { phase: JourneyPhase; index
 
   return (
     <div className="border border-gray-100 rounded-lg overflow-hidden">
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpanded(!expanded); } }}
+        className="w-full flex items-center gap-2 px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors text-left cursor-pointer"
       >
         {expanded ? (
           <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -226,7 +232,7 @@ function PhaseSection({ phase, index, variantKey }: { phase: JourneyPhase; index
         <Badge variant="default">
           {phase.touchpoints.length} touchpoint{phase.touchpoints.length !== 1 ? "s" : ""}
         </Badge>
-      </button>
+      </div>
 
       {expanded && (
         <div className="p-3 space-y-3">

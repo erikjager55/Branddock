@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { authClient, useSession } from '@/lib/auth-client';
 import { Building2, ChevronDown, Check, Plus, Loader2, Briefcase } from 'lucide-react';
+import { clearAllStorage } from '@/utils/storage';
 
 interface OrgData {
   id: string;
@@ -59,7 +60,7 @@ export function OrganizationSwitcher() {
 
       // Fetch workspaces for active org
       if (activeOrgId) {
-        const wsRes = await fetch('/api/workspaces');
+        const wsRes = await fetch('/api/workspaces', { cache: 'no-store' });
         if (wsRes.ok) {
           const wsData = await wsRes.json();
           const wsList = wsData.workspaces ?? [];
@@ -108,6 +109,8 @@ export function OrganizationSwitcher() {
       await fetch('/api/workspace/switch', { method: 'DELETE' });
       await authClient.organization.setActive({ organizationId: orgId });
       setIsOpen(false);
+      // Clear client-side localStorage to prevent stale data from previous workspace
+      clearAllStorage();
       window.location.reload();
     } catch (err) {
       console.error('[OrganizationSwitcher] Failed to switch organization:', err);
@@ -125,6 +128,8 @@ export function OrganizationSwitcher() {
       if (res.ok) {
         setActiveWorkspace(workspace);
         setIsOpen(false);
+        // Clear client-side localStorage to prevent stale data from previous workspace
+        clearAllStorage();
         window.location.reload();
       } else {
         const data = await res.json().catch(() => ({}));

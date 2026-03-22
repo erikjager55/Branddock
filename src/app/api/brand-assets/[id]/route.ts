@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
 import { computeValidationPercentage, getCompletedMethodsCount } from "@/lib/validation-percentage";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 
 // =============================================================
 // GET /api/brand-assets/[id] — detail with research methods, versions, validation %
@@ -132,6 +134,8 @@ export async function DELETE(
     }
 
     await prisma.brandAsset.delete({ where: { id } });
+
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json({ success: true });
   } catch (error) {
