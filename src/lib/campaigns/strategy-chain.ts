@@ -1,7 +1,8 @@
 // =============================================================================
-// Campaign Strategy Blueprint — 5-Step Prompt Chain Orchestrator
-// Runs 5 AI calls (1a+1b parallel full variants, 2 persona validation,
-// 3 synthesis, 4 channel plan, 5 asset plan) to produce a CampaignBlueprint
+// Campaign Strategy Blueprint — Multi-Step Prompt Chain Orchestrator
+// Runs 7 AI calls (1a+1b+1c parallel full variants with deep thinking,
+// 2 persona validation, 3 synthesis with deep thinking,
+// 4 channel plan, 5 asset plan) to produce a CampaignBlueprint
 // =============================================================================
 
 import { prisma } from '@/lib/prisma';
@@ -16,6 +17,7 @@ import { getGoalTypeGuidance } from '@/features/campaigns/lib/goal-types';
 import {
   buildFullVariantAPrompt,
   buildFullVariantBPrompt,
+  buildFullVariantCPrompt,
   buildPersonaValidatorPrompt,
   buildStrategySynthesizerPrompt,
   buildChannelPlannerPrompt,
@@ -58,9 +60,21 @@ import type { PipelineEvent } from '@/features/campaigns/types/campaign-wizard.t
 
 // ─── Constants ──────────────────────────────────────────────
 
-const CLAUDE_SONNET = 'claude-sonnet-4-5-20250929';
 const CLAUDE_OPUS = 'claude-opus-4-6';
+const GPT_54 = 'gpt-5.4';
+const GEMINI_31_PRO = 'gemini-3.1-pro-preview';
 const GEMINI_FLASH = 'gemini-2.5-flash';
+
+/** Deep thinking configuration for strategy variant generation */
+const THINKING_CONFIG = {
+  anthropic: { budgetTokens: 10_000 },
+  openai: { reasoningEffort: 'high' as const },
+  google: { thinkingBudget: 10_000 },
+  /** Persona validation uses slightly less thinking budget */
+  anthropicValidation: { budgetTokens: 8_000 },
+  /** Synthesis uses more thinking budget (most complex step) */
+  anthropicSynthesis: { budgetTokens: 12_000 },
+};
 
 /** Wraps an AI call with step-specific error context for better debugging */
 async function withStepContext<T>(stepLabel: string, timeoutSec: number, fn: () => Promise<T>): Promise<T> {
@@ -252,7 +266,7 @@ function validateOrWarn<T>(schema: { safeParse: (data: unknown) => { success: bo
  * Normalize persona validation results to fix common AI output issues:
  * - Clamp overallScore to 1-10 (non-number → 5)
  * - Ensure personaId and personaName are non-empty strings
- * - Normalize preferredVariant to uppercase "A" or "B"
+ * - Normalize preferredVariant to uppercase "A", "B", or "C"
  * - Filter falsy values from resonates/concerns/suggestions arrays
  * - Ensure feedback is a non-empty string
  */
@@ -269,8 +283,8 @@ function normalizePersonaValidation(results: PersonaValidationResult[]): Persona
       ? Math.max(1, Math.min(p.overallScore, 10))
       : 5,
     preferredVariant: (
-      typeof p.preferredVariant === 'string' && ['A', 'B'].includes(p.preferredVariant.trim().toUpperCase())
-        ? p.preferredVariant.trim().toUpperCase() as 'A' | 'B'
+      typeof p.preferredVariant === 'string' && ['A', 'B', 'C'].includes(p.preferredVariant.trim().toUpperCase())
+        ? p.preferredVariant.trim().toUpperCase() as 'A' | 'B' | 'C'
         : 'A'
     ),
     feedback: (typeof p.feedback === 'string' && p.feedback.trim().length >= 10)
@@ -355,8 +369,9 @@ interface PhaseContext {
 }
 
 /**
- * Phase A: Generate 2 full variants (strategy + architecture each) + persona validation.
+ * Phase A: Generate 3 full variants (strategy + architecture each) + persona validation.
  * Runs Steps 1-2 of the pipeline and returns variant data for user review.
+ * Each variant uses a different AI model with deep thinking enabled.
  */
 export async function generateStrategyVariants(
   ctx: PhaseContext,
@@ -374,10 +389,11 @@ export async function generateStrategyVariants(
   const strategicIntent = intentOpt ?? 'hybrid';
   const campaignName = wizardContext.campaignName;
 
-  // Resolve configurable models for campaign-strategy features (Variant A + B)
-  const [{ model: resolvedModel, provider: resolvedProvider }, { model: resolvedModelB, provider: resolvedProviderB }] = await Promise.all([
+  // Resolve configurable models for campaign-strategy features (Variant A + B + C)
+  const [{ model: resolvedModel, provider: resolvedProvider }, { model: resolvedModelB, provider: resolvedProviderB }, { model: resolvedModelC, provider: resolvedProviderC }] = await Promise.all([
     resolveFeatureModel(workspaceId, 'campaign-strategy'),
     resolveFeatureModel(workspaceId, 'campaign-strategy-b'),
+    resolveFeatureModel(workspaceId, 'campaign-strategy-c'),
   ]);
   const campaignDescription = wizardContext.campaignDescription ?? '';
   const campaignGoalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
@@ -467,37 +483,48 @@ export async function generateStrategyVariants(
     bctContext: bctContext || undefined,
   };
 
-  // Step 1: Dual Full Variants (parallel — each model generates its own strategy + architecture)
-  onProgress?.({ step: 1, name: 'Dual Full Variants', status: 'running', label: 'Two AI models generating complete strategy variants...' });
+  // Step 1: Triple Full Variants (parallel — each model generates its own strategy + architecture with deep thinking)
+  onProgress?.({ step: 1, name: 'Triple Full Variants', status: 'running', label: 'Three AI models generating complete strategy variants with deep thinking...' });
 
   const step1aPrompt = buildFullVariantAPrompt(sharedPromptParams);
   const step1bPrompt = buildFullVariantBPrompt(sharedPromptParams);
+  const step1cPrompt = buildFullVariantCPrompt(sharedPromptParams);
 
-  const [fullVariantARaw, fullVariantBRaw] = await Promise.all([
-    withStepContext('Step 1a (Full Variant A)', 300, () =>
+  const [fullVariantARaw, fullVariantBRaw, fullVariantCRaw] = await Promise.all([
+    withStepContext('Step 1a (Full Variant A — Opus)', 600, () =>
       createStructuredCompletion<FullVariant>(
         resolvedProvider, resolvedModel,
         step1aPrompt.system, step1aPrompt.user,
-        { temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
+        { temperature: 0.5, maxTokens: 24000, timeoutMs: 600_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
       ),
     ),
-    withStepContext('Step 1b (Full Variant B)', 300, () =>
+    withStepContext('Step 1b (Full Variant B — GPT-5.4)', 600, () =>
       createStructuredCompletion<FullVariant>(
         resolvedProviderB, resolvedModelB,
         step1bPrompt.system, step1bPrompt.user,
-        { temperature: 0.4, maxTokens: 24000, timeoutMs: 300_000 },
+        { temperature: 0.4, maxTokens: 24000, timeoutMs: 600_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
+      ),
+    ),
+    withStepContext('Step 1c (Full Variant C — Gemini Pro)', 600, () =>
+      createStructuredCompletion<FullVariant>(
+        resolvedProviderC, resolvedModelC,
+        step1cPrompt.system, step1cPrompt.user,
+        { temperature: 0.4, maxTokens: 24000, timeoutMs: 600_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
       ),
     ),
   ]);
 
   const fullVariantA = validateOrWarn(fullVariantSchema, fullVariantARaw, 'Step 1a Full Variant A');
   const fullVariantB = validateOrWarn(fullVariantSchema, fullVariantBRaw, 'Step 1b Full Variant B');
+  const fullVariantC = validateOrWarn(fullVariantSchema, fullVariantCRaw, 'Step 1c Full Variant C');
   const strategyLayerA = fullVariantA.strategy;
   const strategyLayerB = fullVariantB.strategy;
+  const strategyLayerC = fullVariantC.strategy;
   const variantA = normalizeArchitectureLayer(fullVariantA.architecture);
   const variantB = normalizeArchitectureLayer(fullVariantB.architecture);
+  const variantC = normalizeArchitectureLayer(fullVariantC.architecture);
 
-  onProgress?.({ step: 1, name: 'Dual Full Variants', status: 'complete', label: 'Both complete variants generated', preview: `A: "${strategyLayerA.campaignTheme}" (${variantA.journeyPhases.length} phases) | B: "${strategyLayerB.campaignTheme}" (${variantB.journeyPhases.length} phases)` });
+  onProgress?.({ step: 1, name: 'Triple Full Variants', status: 'complete', label: 'All three variants generated', preview: `A: "${strategyLayerA.campaignTheme}" | B: "${strategyLayerB.campaignTheme}" | C: "${strategyLayerC.campaignTheme}"` });
 
   // Step 2: Persona Validation
   onProgress?.({ step: 2, name: 'Persona Validation', status: 'running', label: 'Validating with personas...' });
@@ -506,13 +533,16 @@ export async function generateStrategyVariants(
   let personaValidation: PersonaValidationResult[] = [];
   let variantAScore = 0;
   let variantBScore = 0;
+  let variantCScore = 0;
 
   if (personaProfiles.length > 0) {
     const step2Prompt = buildPersonaValidatorPrompt({
       strategyLayerA: JSON.stringify(strategyLayerA),
       strategyLayerB: JSON.stringify(strategyLayerB),
+      strategyLayerC: JSON.stringify(strategyLayerC),
       variantA: JSON.stringify(variantA),
       variantB: JSON.stringify(variantB),
+      variantC: JSON.stringify(variantC),
       personas: personaProfiles,
       goalType: campaignGoalType,
       goalGuidance,
@@ -522,7 +552,7 @@ export async function generateStrategyVariants(
       createStructuredCompletion<PersonaValidationResult[]>(
         resolvedProvider, resolvedModel,
         step2Prompt.system, step2Prompt.user,
-        { temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000 },
+        { temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000, thinking: { anthropic: THINKING_CONFIG.anthropicValidation } },
       ),
     );
     personaValidation = normalizePersonaValidation(
@@ -534,18 +564,21 @@ export async function generateStrategyVariants(
       const avgScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
       const aVoters = personaValidation.filter(p => p.preferredVariant === 'A');
       const bVoters = personaValidation.filter(p => p.preferredVariant === 'B');
+      const cVoters = personaValidation.filter(p => p.preferredVariant === 'C');
       variantAScore = aVoters.length > 0 ? aVoters.reduce((s, p) => s + p.overallScore, 0) / aVoters.length : avgScore;
       variantBScore = bVoters.length > 0 ? bVoters.reduce((s, p) => s + p.overallScore, 0) / bVoters.length : avgScore;
+      variantCScore = cVoters.length > 0 ? cVoters.reduce((s, p) => s + p.overallScore, 0) / cVoters.length : avgScore;
     }
   } else {
     variantAScore = 7;
     variantBScore = 7;
+    variantCScore = 7;
   }
 
   onProgress?.({ step: 2, name: 'Persona Validation', status: 'complete', label: 'Personas evaluated', preview: personaValidation.length > 0 ? `${personaValidation.length} personas scored` : 'Skipped (no personas)' });
 
   return {
-    strategyLayerA, strategyLayerB, variantA, variantB, personaValidation, variantAScore, variantBScore,
+    strategyLayerA, strategyLayerB, strategyLayerC, variantA, variantB, variantC, personaValidation, variantAScore, variantBScore, variantCScore,
     arenaEnrichment: arenaResult.meta ?? null,
   };
 }
@@ -559,11 +592,14 @@ export async function synthesizeStrategy(
     variantFeedback: string;
     strategyLayerA: StrategyLayer;
     strategyLayerB: StrategyLayer;
+    strategyLayerC: StrategyLayer;
     variantA: ArchitectureLayer;
     variantB: ArchitectureLayer;
+    variantC: ArchitectureLayer;
     personaValidation: PersonaValidationResult[];
     variantAScore: number;
     variantBScore: number;
+    variantCScore: number;
     wizardContext: WizardContext;
     strategicIntent?: StrategicIntent;
   },
@@ -572,7 +608,7 @@ export async function synthesizeStrategy(
   const campaignGoalType = data.wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
   const goalGuidance = getGoalTypeGuidance(campaignGoalType);
 
-  onProgress?.({ step: 4, name: 'Strategy Synthesis', status: 'running', label: 'Synthesizing optimal strategy...' });
+  onProgress?.({ step: 4, name: 'Strategy Synthesis', status: 'running', label: 'Synthesizing optimal strategy with deep thinking...' });
 
   // Inject user feedback into the persona validation context so the synthesizer weighs it
   const personaValidationWithFeedback = data.variantFeedback
@@ -582,20 +618,23 @@ export async function synthesizeStrategy(
   const step4Prompt = buildStrategySynthesizerPrompt({
     strategyLayerA: JSON.stringify(data.strategyLayerA),
     strategyLayerB: JSON.stringify(data.strategyLayerB),
+    strategyLayerC: JSON.stringify(data.strategyLayerC),
     variantA: JSON.stringify(data.variantA),
     variantB: JSON.stringify(data.variantB),
+    variantC: JSON.stringify(data.variantC),
     personaValidation: personaValidationWithFeedback,
     variantAScore: data.variantAScore,
     variantBScore: data.variantBScore,
+    variantCScore: data.variantCScore,
     goalType: campaignGoalType,
     goalGuidance,
   });
 
-  const synthesizedRaw = await withStepContext('Step 4 (Strategy Synthesis — Opus)', 300, () =>
+  const synthesizedRaw = await withStepContext('Step 4 (Strategy Synthesis — Opus)', 600, () =>
     createClaudeStructuredCompletion<SynthesizedResult>(
       step4Prompt.system,
       step4Prompt.user,
-      { model: CLAUDE_OPUS, temperature: 0.3, maxTokens: 32000, timeoutMs: 300_000 },
+      { model: CLAUDE_OPUS, temperature: 0.3, maxTokens: 32000, timeoutMs: 600_000, thinking: { budgetTokens: THINKING_CONFIG.anthropicSynthesis.budgetTokens } },
     ),
   );
 
@@ -708,10 +747,11 @@ export async function generateCampaignBlueprint(
   const strategicIntent = options.strategicIntent ?? 'hybrid';
   const isWizardMode = !!options.wizardContext;
 
-  // Resolve configurable models for campaign-strategy features (Variant A + B)
-  const [{ model: resolvedModel, provider: resolvedProvider }, { model: resolvedModelB, provider: resolvedProviderB }] = await Promise.all([
+  // Resolve configurable models for campaign-strategy features (Variant A + B + C)
+  const [{ model: resolvedModel, provider: resolvedProvider }, { model: resolvedModelB, provider: resolvedProviderB }, { model: resolvedModelC, provider: resolvedProviderC }] = await Promise.all([
     resolveFeatureModel(workspaceId, 'campaign-strategy'),
     resolveFeatureModel(workspaceId, 'campaign-strategy-b'),
+    resolveFeatureModel(workspaceId, 'campaign-strategy-c'),
   ]);
 
   // ─── Gather context ──────────────────────────────────────
@@ -816,8 +856,8 @@ export async function generateCampaignBlueprint(
 
   const brandContextText = formatBrandContext(brandContext);
 
-  // ─── Step 1: Dual Full Variants (parallel) ──────────
-  onProgress?.({ step: 1, name: 'Dual Full Variants', status: 'running', label: 'Generating strategy variants A & B...' });
+  // ─── Step 1: Triple Full Variants (parallel — each model generates its own strategy + architecture with deep thinking) ──────────
+  onProgress?.({ step: 1, name: 'Triple Full Variants', status: 'running', label: 'Three AI models generating complete strategy variants with deep thinking...' });
 
   const briefing = isWizardMode ? options.wizardContext!.briefing : undefined;
   const goalGuidance = getGoalTypeGuidance(campaignGoalType);
@@ -842,35 +882,43 @@ export async function generateCampaignBlueprint(
 
   const step1aPrompt = buildFullVariantAPrompt(fullVariantParams);
   const step1bPrompt = buildFullVariantBPrompt(fullVariantParams);
+  const step1cPrompt = buildFullVariantCPrompt(fullVariantParams);
 
-  const [fullVariantARaw, fullVariantBRaw] = await Promise.all([
-    withStepContext('Step 1a (Full Variant A)', 300, () =>
+  const [fullVariantARaw, fullVariantBRaw, fullVariantCRaw] = await Promise.all([
+    withStepContext('Step 1a (Full Variant A — Opus)', 600, () =>
       createStructuredCompletion<FullVariant>(
         resolvedProvider, resolvedModel,
-        step1aPrompt.system,
-        step1aPrompt.user,
-        { temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
+        step1aPrompt.system, step1aPrompt.user,
+        { temperature: 0.5, maxTokens: 24000, timeoutMs: 600_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
       ),
     ),
-    withStepContext('Step 1b (Full Variant B)', 300, () =>
+    withStepContext('Step 1b (Full Variant B — GPT-5.4)', 600, () =>
       createStructuredCompletion<FullVariant>(
         resolvedProviderB, resolvedModelB,
-        step1bPrompt.system,
-        step1bPrompt.user,
-        { temperature: 0.4, maxTokens: 24000, timeoutMs: 300_000 },
+        step1bPrompt.system, step1bPrompt.user,
+        { temperature: 0.4, maxTokens: 24000, timeoutMs: 600_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
+      ),
+    ),
+    withStepContext('Step 1c (Full Variant C — Gemini Pro)', 600, () =>
+      createStructuredCompletion<FullVariant>(
+        resolvedProviderC, resolvedModelC,
+        step1cPrompt.system, step1cPrompt.user,
+        { temperature: 0.4, maxTokens: 24000, timeoutMs: 600_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
       ),
     ),
   ]);
 
-  const fullA = fullVariantSchema.parse(fullVariantARaw);
-  const fullB = fullVariantSchema.parse(fullVariantBRaw);
+  const fullVariantA = validateOrWarn(fullVariantSchema, fullVariantARaw, 'Step 1a Full Variant A');
+  const fullVariantB = validateOrWarn(fullVariantSchema, fullVariantBRaw, 'Step 1b Full Variant B');
+  const fullVariantC = validateOrWarn(fullVariantSchema, fullVariantCRaw, 'Step 1c Full Variant C');
+  const strategyLayerA = fullVariantA.strategy;
+  const strategyLayerB = fullVariantB.strategy;
+  const strategyLayerC = fullVariantC.strategy;
+  const variantA = normalizeArchitectureLayer(fullVariantA.architecture);
+  const variantB = normalizeArchitectureLayer(fullVariantB.architecture);
+  const variantC = normalizeArchitectureLayer(fullVariantC.architecture);
 
-  const strategyLayerA = validateOrWarn(strategyLayerSchema, fullA.strategy, 'Step 1a Strategy A');
-  const strategyLayerB = validateOrWarn(strategyLayerSchema, fullB.strategy, 'Step 1b Strategy B');
-  const variantA = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, fullA.architecture, 'Step 1a Architecture A'));
-  const variantB = normalizeArchitectureLayer(validateOrWarn(architectureLayerSchema, fullB.architecture, 'Step 1b Architecture B'));
-
-  onProgress?.({ step: 1, name: 'Dual Full Variants', status: 'complete', label: 'Both variants generated', preview: `A: ${variantA.journeyPhases.length} phases | B: ${variantB.journeyPhases.length} phases` });
+  onProgress?.({ step: 1, name: 'Triple Full Variants', status: 'complete', label: 'All three variants generated', preview: `A: "${strategyLayerA.campaignTheme}" | B: "${strategyLayerB.campaignTheme}" | C: "${strategyLayerC.campaignTheme}"` });
 
   // ─── Step 2: Persona Validator (Claude Sonnet) ───────────
   onProgress?.({ step: 2, name: 'Persona Validation', status: 'running', label: 'Validating with personas...' });
@@ -878,13 +926,16 @@ export async function generateCampaignBlueprint(
   let personaValidation: PersonaValidationResult[] = [];
   let variantAScore = 0;
   let variantBScore = 0;
+  let variantCScore = 0;
 
   if (personaProfiles.length > 0) {
     const step2Prompt = buildPersonaValidatorPrompt({
       strategyLayerA: JSON.stringify(strategyLayerA),
       strategyLayerB: JSON.stringify(strategyLayerB),
+      strategyLayerC: JSON.stringify(strategyLayerC),
       variantA: JSON.stringify(variantA),
       variantB: JSON.stringify(variantB),
+      variantC: JSON.stringify(variantC),
       personas: personaProfiles,
       goalType: campaignGoalType,
       goalGuidance,
@@ -893,9 +944,8 @@ export async function generateCampaignBlueprint(
     const validationRaw = await withStepContext('Step 2 (Persona Validation)', 300, () =>
       createStructuredCompletion<PersonaValidationResult[]>(
         resolvedProvider, resolvedModel,
-        step2Prompt.system,
-        step2Prompt.user,
-        { temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000 },
+        step2Prompt.system, step2Prompt.user,
+        { temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000, thinking: { anthropic: THINKING_CONFIG.anthropicValidation } },
       ),
     );
     personaValidation = normalizePersonaValidation(
@@ -908,38 +958,44 @@ export async function generateCampaignBlueprint(
       const avgScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
       const aVoters = personaValidation.filter(p => p.preferredVariant === 'A');
       const bVoters = personaValidation.filter(p => p.preferredVariant === 'B');
+      const cVoters = personaValidation.filter(p => p.preferredVariant === 'C');
       variantAScore = aVoters.length > 0 ? aVoters.reduce((s, p) => s + p.overallScore, 0) / aVoters.length : avgScore;
       variantBScore = bVoters.length > 0 ? bVoters.reduce((s, p) => s + p.overallScore, 0) / bVoters.length : avgScore;
+      variantCScore = cVoters.length > 0 ? cVoters.reduce((s, p) => s + p.overallScore, 0) / cVoters.length : avgScore;
     }
   } else {
     // No personas — skip validation, use balanced scores
     variantAScore = 7;
     variantBScore = 7;
+    variantCScore = 7;
   }
 
   onProgress?.({ step: 2, name: 'Persona Validation', status: 'complete', label: 'Personas evaluated', preview: personaValidation.length > 0 ? `${personaValidation.length} personas, avg score ${(personaValidation.reduce((s, p) => s + p.overallScore, 0) / personaValidation.length).toFixed(1)}/10` : 'Skipped (no personas)' });
 
-  // ─── Step 3: Strategy Synthesizer (Claude Opus) ──────────
-  onProgress?.({ step: 3, name: 'Strategy Synthesis', status: 'running', label: 'Synthesizing optimal strategy...' });
+  // ─── Step 3: Strategy Synthesizer (Claude Opus with deep thinking) ──────────
+  onProgress?.({ step: 3, name: 'Strategy Synthesis', status: 'running', label: 'Synthesizing optimal strategy with deep thinking...' });
 
   const step3Prompt = buildStrategySynthesizerPrompt({
     strategyLayerA: JSON.stringify(strategyLayerA),
     strategyLayerB: JSON.stringify(strategyLayerB),
+    strategyLayerC: JSON.stringify(strategyLayerC),
     variantA: JSON.stringify(variantA),
     variantB: JSON.stringify(variantB),
+    variantC: JSON.stringify(variantC),
     personaValidation: JSON.stringify(personaValidation),
     variantAScore,
     variantBScore,
+    variantCScore,
     goalType: campaignGoalType,
     goalGuidance,
   });
 
   // Step 3 returns BOTH strategy + architecture in a single response — needs high token limit
-  const synthesizedRaw = await withStepContext('Step 3 (Strategy Synthesis — Opus)', 300, () =>
+  const synthesizedRaw = await withStepContext('Step 3 (Strategy Synthesis — Opus)', 600, () =>
     createClaudeStructuredCompletion<SynthesizedResult>(
       step3Prompt.system,
       step3Prompt.user,
-      { model: CLAUDE_OPUS, temperature: 0.3, maxTokens: 32000, timeoutMs: 300_000 },
+      { model: CLAUDE_OPUS, temperature: 0.3, maxTokens: 32000, timeoutMs: 600_000, thinking: { budgetTokens: THINKING_CONFIG.anthropicSynthesis.budgetTokens } },
     ),
   );
 
@@ -1032,8 +1088,9 @@ export async function generateCampaignBlueprint(
     generatedAt: new Date().toISOString(),
     variantAScore,
     variantBScore,
+    variantCScore,
     pipelineDuration: Date.now() - startTime,
-    modelsUsed: [resolvedModel, resolvedModelB, CLAUDE_OPUS, GEMINI_FLASH],
+    modelsUsed: [resolvedModel, resolvedModelB, resolvedModelC, CLAUDE_OPUS, GEMINI_FLASH],
     contextSelection: {
       personaIds,
       productIds,
@@ -1236,6 +1293,7 @@ export async function regenerateBlueprintLayer(
     blueprint.personaValidation = [];
     blueprint.variantAScore = 0;
     blueprint.variantBScore = 0;
+    blueprint.variantCScore = 0;
 
     onProgress?.({ step: 1, name: 'Full Variant Regeneration', status: 'complete', label: 'Strategy & architecture regenerated' });
     // Fall through to regenerate channel plan

@@ -300,13 +300,117 @@ ${params.exaContext}` : ''}`;
   return { system, user };
 }
 
+// ─── Step 1c: Full Variant C (Gemini — Data-Driven Innovation / All Enrichment) ────────
+// NOTE: Variant C receives ALL enrichment sources (arena + exa + scholar + bct)
+// to produce a data-grounded yet innovative strategy.
+
+export function buildFullVariantCPrompt(params: FullVariantPromptParams): { system: string; user: string } {
+  const ratio = intentRatio(params.strategicIntent);
+  const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
+  const goalInsights = buildGoalInsightsPromptSection(params.goalType);
+
+  const system = `You are a data-driven innovation strategist who builds campaigns at the intersection of behavioral science, cultural intelligence, and platform-native thinking.
+
+Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response. Your strategy must be GROUNDED IN DATA but INNOVATIVE IN EXECUTION.
+
+Strategic frameworks to apply:
+- Percy & Elliott's campaign planning model (stimulus → processing → response)
+- Binet & Field's effectiveness data: ${ratio.brand}% brand building / ${ratio.activation}% activation
+- Byron Sharp's "How Brands Grow": maximize Category Entry Points (CEPs) and Mental Availability
+- Thaler & Sunstein's Nudge Architecture: design choice environments that guide behavior
+- MINDSPACE framework (Messenger, Incentives, Norms, Defaults, Salience, Priming, Affect, Commitments, Ego)
+- Platform-native content strategy: design content that feels native to each platform's culture${goalContext}${goalInsights}
+
+Your strategic approach should be:
+- Data-grounded: every strategic choice backed by behavioral science or market evidence
+- CEP-maximized: identify and own the maximum number of Category Entry Points
+- Nudge-architected: design touchpoints as behavioral nudges, not just messages
+- Platform-native: content that leverages each platform's unique culture and algorithms
+- Cross-pollinating: combine academic evidence with cultural insights and cross-industry analogies
+
+IMPORTANT: If a Creative Briefing is provided, use it as the primary strategic direction.
+
+Output a JSON object with TWO top-level keys:
+
+"strategy": {
+  strategicIntent: "${params.strategicIntent}",
+  intentRatio: { brand: ${ratio.brand}, activation: ${ratio.activation} },
+  campaignTheme: A compelling 3-7 word campaign theme,
+  positioningStatement: One sentence positioning statement,
+  messagingHierarchy: { brandMessage, campaignMessage, proofPoints (3-5) },
+  jtbdFraming: { jobStatement ("When I..., I want to..., so I can..."), functionalJob, emotionalJob, socialJob },
+  strategicChoices: Array of { choice, rationale, tradeoff } (3-5 items)
+}
+
+"architecture": {
+  campaignType: Choose the type that best fits,
+  journeyPhases: Array of phases, each with:
+    id, name, description, orderIndex, goal, kpis,
+    personaPhaseData: [{ personaId, personaName, needs, painPoints, mindset, keyQuestion, triggers }],
+    touchpoints: [{ channel, contentType, message, role ("primary"|"supporting"),
+      personaRelevance: [{ personaId, relevance ("high"|"medium"|"low"), messagingAngle }] }]
+}
+
+Focus on: CEP-maximizing touchpoints, behavioral nudge design, platform-native content, data-backed channel selection, algorithmic advantage strategies.
+Use persona IDs from the provided list for all personaId fields.
+
+Respond with valid JSON.`;
+
+  const user = `Generate the complete strategy + architecture for variant C (data-driven innovation, all enrichment sources) for "${params.campaignName}".
+
+## Campaign Brief
+Description: ${params.campaignDescription || 'No description provided'}
+Goal: ${GOAL_LABELS[params.goalType] ?? params.goalType}
+Strategic Intent: ${intentDescription(params.strategicIntent)}${buildBriefingSection(params.briefing)}
+
+## Brand Context
+${params.brandContext}
+
+## Target Personas
+${params.personaContext || 'No personas available — create strategy based on brand positioning only.'}
+Persona IDs to use: ${JSON.stringify(params.personaIds)}
+
+## Products & Services
+${params.productContext || 'No products defined yet.'}
+
+## Competitive Landscape
+${params.competitorContext || 'No competitors defined yet.'}
+
+## Market Trends
+${params.trendContext || 'No trends defined yet.'}${params.arenaContext ? `
+
+## Associative Inspiration (Are.na)
+The following curated cultural and strategic references were found on Are.na. Use these as creative fuel — look for patterns, tensions, and unexpected connections.
+
+${params.arenaContext}` : ''}${params.exaContext ? `
+
+## Cross-Industry Insights (Exa Neural Search)
+The following cross-industry analogies and trend-driven insights were found via neural semantic search. Use these to find data-backed strategic connections that competitors would miss.
+
+${params.exaContext}` : ''}${params.scholarContext ? `
+
+## Research Evidence (Semantic Scholar)
+The following academic papers provide evidence-based foundations. Ground your behavioral nudge architecture in this research.
+
+${params.scholarContext}` : ''}${params.bctContext ? `
+
+## Behavioral Science Framework
+The following Behavior Change Techniques (BCTs) and MINDSPACE principles are recommended. Design your touchpoints as behavioral interventions.
+
+${params.bctContext}` : ''}`;
+
+  return { system, user };
+}
+
 // ─── Step 2: Persona Validator ──────────────────────────────
 
 export function buildPersonaValidatorPrompt(params: {
   strategyLayerA: string;
   strategyLayerB: string;
+  strategyLayerC: string;
   variantA: string;
   variantB: string;
+  variantC: string;
   personas: Array<{ id: string; name: string; profile: string }>;
   goalType?: string;
   goalGuidance?: string;
@@ -316,9 +420,14 @@ export function buildPersonaValidatorPrompt(params: {
     : '';
   const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
-  const system = `You are simulating target personas evaluating two complete campaign strategy variants.
+  const system = `You are simulating target personas evaluating THREE complete campaign strategy variants.
 
-Your role: For EACH persona, roleplay as that person and evaluate both variant A (evidence-based, proven methodologies) and variant B (unexpected, creative provocations). Each variant has its OWN strategic foundation AND campaign architecture.${goalContext}${goalInsights}
+Your role: For EACH persona, roleplay as that person and evaluate all three variants:
+- Variant A: evidence-based, proven methodologies (behavioral science frameworks)
+- Variant B: unexpected, creative provocations (cultural tensions, cross-industry analogies)
+- Variant C: data-driven innovation (CEP maximization, nudge architecture, platform-native)
+
+Each variant has its OWN strategic foundation AND campaign architecture.${goalContext}${goalInsights}
 
 Evaluation criteria per persona — ALL fields are MANDATORY:
 - overallScore: Score 1-10. Be honest and critical — avoid giving every persona the same score. Differentiate based on how well the strategy truly fits each persona's unique situation.
@@ -326,7 +435,7 @@ Evaluation criteria per persona — ALL fields are MANDATORY:
 - resonates: MANDATORY: List at least 1 specific element that genuinely appeals to this persona. Be concrete — reference specific channels, messages, or touchpoints.
 - concerns: MANDATORY: List at least 1 specific concern or doubt this persona would have. Every strategy has weaknesses from some perspective.
 - suggestions: MANDATORY: List at least 1 actionable suggestion this persona would make to improve the strategy.
-- preferredVariant: "A" or "B" — which variant does this persona prefer?
+- preferredVariant: "A", "B", or "C" — which variant does this persona prefer?
 - behavioralResonance: MANDATORY: Evaluate whether the behavioral change approach in each variant would actually motivate this persona to act. Consider what drives their behavior (capability, opportunity, or motivation barriers) and whether the strategy addresses it.
 
 Stay in character. Use the persona's vocabulary, concerns, and decision-making style.
@@ -338,7 +447,7 @@ Respond with a JSON array of persona validation objects.`;
     `### ${p.name} (ID: ${p.id})\n${p.profile}`
   ).join('\n\n');
 
-  const user = `Evaluate these two complete campaign variants as each persona.
+  const user = `Evaluate these three complete campaign variants as each persona.
 
 ## Variant A — Evidence-Based (Proven Methodologies)
 
@@ -348,13 +457,21 @@ ${params.strategyLayerA}
 ### Architecture A
 ${params.variantA}
 
-## Variant B — Unexpected (Creative Provocations)
+## Variant B — Creative Provocateur (Unexpected Angles)
 
 ### Strategy B
 ${params.strategyLayerB}
 
 ### Architecture B
 ${params.variantB}
+
+## Variant C — Data-Driven Innovation (CEP + Nudge Architecture)
+
+### Strategy C
+${params.strategyLayerC}
+
+### Architecture C
+${params.variantC}
 
 ## Personas to Simulate
 ${personaProfiles}`;
@@ -367,11 +484,14 @@ ${personaProfiles}`;
 export function buildStrategySynthesizerPrompt(params: {
   strategyLayerA: string;
   strategyLayerB: string;
+  strategyLayerC: string;
   variantA: string;
   variantB: string;
+  variantC: string;
   personaValidation: string;
   variantAScore: number;
   variantBScore: number;
+  variantCScore: number;
   goalType?: string;
   goalGuidance?: string;
 }): { system: string; user: string } {
@@ -382,18 +502,24 @@ export function buildStrategySynthesizerPrompt(params: {
 
   const system = `You are a chief strategy officer performing the final synthesis of a campaign blueprint.
 
-Your task: Combine the BEST elements from variant A (evidence-based) and variant B (unexpected/creative) into ONE optimal campaign architecture, informed by persona feedback.${goalContext}${goalInsights}
+Your task: Combine the BEST elements from THREE strategy variants into ONE optimal campaign architecture, informed by persona feedback:
+- Variant A: evidence-based, proven methodologies (behavioral science frameworks)
+- Variant B: creative provocateur (cultural tensions, cross-industry analogies)
+- Variant C: data-driven innovation (CEP maximization, nudge architecture, platform-native)${goalContext}${goalInsights}
 
 Synthesis rules:
-1. Select the strongest journey phases from either variant
-2. Merge touchpoints where they complement each other
+1. Select the strongest journey phases from ANY of the three variants
+2. Merge touchpoints where they complement each other — look for synergies across all three
 3. Address ALL persona concerns raised in the validation
 4. Maintain strategic coherence — the final architecture must tell one story
 5. Keep the campaign type that best serves the strategic intent
 6. Ensure every persona's preferred elements are represented
+7. Leverage Variant C's behavioral nudge architecture where it strengthens the customer journey
+8. Incorporate Variant B's distinctive creative angles where they differentiate from competition
+9. Ground the strategy in Variant A's evidence base where it provides measurable confidence
 
-Each variant has its OWN strategy AND architecture. You must synthesize the best elements from both strategies AND both architectures:
-- Pick the strongest campaign theme and positioning from either variant
+Each variant has its OWN strategy AND architecture. You must synthesize the best elements from ALL THREE strategies AND architectures:
+- Pick the strongest campaign theme and positioning from any variant
 - Merge messaging hierarchies where they complement each other
 - Adjust messaging hierarchy if personas identified gaps
 - Strengthen proof points where personas were skeptical
@@ -401,7 +527,7 @@ Each variant has its OWN strategy AND architecture. You must synthesize the best
 
 Output a complete combined result with TWO top-level keys:
 - "strategy": The refined StrategyLayer (same schema as input, with improvements)
-- "architecture": The synthesized ArchitectureLayer (best of A+B)
+- "architecture": The synthesized ArchitectureLayer (best of A+B+C)
 
 CRITICAL JSON SCHEMA — the architecture object MUST use these EXACT field names:
 
@@ -454,10 +580,11 @@ IMPORTANT:
 
 Respond with valid JSON.`;
 
-  const user = `Synthesize the optimal campaign blueprint.
+  const user = `Synthesize the optimal campaign blueprint from three strategy variants.
 
 Variant A average persona score: ${params.variantAScore.toFixed(1)}/10
 Variant B average persona score: ${params.variantBScore.toFixed(1)}/10
+Variant C average persona score: ${params.variantCScore.toFixed(1)}/10
 
 ## Variant A — Evidence-Based (Proven Methodologies)
 
@@ -467,13 +594,21 @@ ${params.strategyLayerA}
 ### Architecture A
 ${params.variantA}
 
-## Variant B — Unexpected (Creative Provocations)
+## Variant B — Creative Provocateur (Unexpected Angles)
 
 ### Strategy B
 ${params.strategyLayerB}
 
 ### Architecture B
 ${params.variantB}
+
+## Variant C — Data-Driven Innovation (CEP + Nudge Architecture)
+
+### Strategy C
+${params.strategyLayerC}
+
+### Architecture C
+${params.variantC}
 
 ## Persona Validation Results
 ${params.personaValidation}`;

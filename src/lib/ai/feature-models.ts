@@ -49,6 +49,11 @@ export type AiFeatureKey =
   | 'persona-chat'
   | 'campaign-strategy'
   | 'campaign-strategy-b'
+  | 'campaign-strategy-c'
+  | 'campaign-curator'
+  | 'campaign-briefing-validation'
+  | 'campaign-strategy-foundation'
+  | 'campaign-creative-synthesis'
   | 'content-generate'
   | 'content-quality'
   | 'content-improve'
@@ -82,20 +87,65 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
   },
   {
     key: 'campaign-strategy',
-    label: 'Campaign Strategy — Variant A',
-    description: 'First strategy variant model (primary)',
+    label: 'Strategy Variant A',
+    description: 'Evidence-based strategy variant (deep thinking enabled)',
+    category: 'chat-analysis',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-opus-4-6',
+    supportedProviders: ['anthropic', 'openai', 'google'],
+  },
+  {
+    key: 'campaign-strategy-b',
+    label: 'Strategy Variant B',
+    description: 'Creative provocateur strategy variant (deep thinking enabled)',
+    category: 'chat-analysis',
+    defaultProvider: 'openai',
+    defaultModel: 'gpt-5.4',
+    supportedProviders: ['anthropic', 'openai', 'google'],
+  },
+  {
+    key: 'campaign-strategy-c',
+    label: 'Strategy Variant C',
+    description: 'Data-driven innovator strategy variant (deep thinking enabled)',
+    category: 'chat-analysis',
+    defaultProvider: 'google',
+    defaultModel: 'gemini-3.1-pro-preview',
+    supportedProviders: ['anthropic', 'openai', 'google'],
+  },
+  {
+    key: 'campaign-curator',
+    label: 'Creative Angle Curator',
+    description: 'AI curator that selects 3 creative angles from the 20-angle library and assigns each to the best-suited LLM',
     category: 'chat-analysis',
     defaultProvider: 'anthropic',
     defaultModel: 'claude-sonnet-4-5-20250929',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {
-    key: 'campaign-strategy-b',
-    label: 'Campaign Strategy — Variant B',
-    description: 'Second strategy variant model (creative divergence)',
+    key: 'campaign-briefing-validation',
+    label: 'Briefing Validation',
+    description: 'AI validation of campaign briefing completeness',
     category: 'chat-analysis',
-    defaultProvider: 'google',
-    defaultModel: 'gemini-3.1-pro-preview',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-haiku-4-5-20251001',
+    supportedProviders: ['anthropic', 'openai', 'google'],
+  },
+  {
+    key: 'campaign-strategy-foundation',
+    label: 'Strategy Foundation',
+    description: 'AI develops behavioral change strategy via chain-of-prompts: behavioral diagnosis → enrichment synthesis → strategic direction',
+    category: 'chat-analysis',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-5-20250929',
+    supportedProviders: ['anthropic', 'openai', 'google'],
+  },
+  {
+    key: 'campaign-creative-synthesis',
+    label: 'Creative Enrichment Synthesis',
+    description: 'Pre-step for creative hooks: synthesizes enrichment data + MINDSPACE + ELM into a focused creative brief',
+    category: 'chat-analysis',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-5-20250929',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   // Campaign & Content

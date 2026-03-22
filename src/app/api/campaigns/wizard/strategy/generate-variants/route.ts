@@ -8,7 +8,7 @@ export const maxDuration = 300;
 
 // ---------------------------------------------------------------------------
 // POST /api/campaigns/wizard/strategy/generate-variants
-// Phase A: Generates strategy + 2 architecture variants + persona validation.
+// Phase A: Generates strategy + 3 architecture variants + persona validation.
 // Returns SSE stream with progress events + final VariantPhaseResult.
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {

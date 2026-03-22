@@ -41,7 +41,9 @@ export function PersonaFeedbackCard({
   const variantColor =
     persona.preferredVariant === "A"
       ? "bg-teal-100 text-teal-700 border-teal-300"
-      : "bg-blue-100 text-blue-700 border-blue-300";
+      : persona.preferredVariant === "C"
+        ? "bg-amber-100 text-amber-700 border-amber-300"
+        : "bg-blue-100 text-blue-700 border-blue-300";
 
   return (
     <div

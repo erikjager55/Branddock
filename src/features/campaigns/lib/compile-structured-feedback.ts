@@ -19,7 +19,7 @@ const RATING_LABELS: Record<string, string> = {
 
 function getRatingLabel(key: string): string {
   // Strip variant prefix (e.g. "A.theme" → variant "A", rest "theme")
-  const variantMatch = key.match(/^([AB])\.(.+)$/);
+  const variantMatch = key.match(/^([ABC])\.(.+)$/);
   const variantPrefix = variantMatch ? `Variant ${variantMatch[1]}: ` : "";
   const rest = variantMatch ? variantMatch[2] : key;
 

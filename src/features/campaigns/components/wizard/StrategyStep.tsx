@@ -43,15 +43,15 @@ function getChoiceText(choice: string | StrategicChoice): string {
 const PHASE_A_STEPS: PipelineStepConfig[] = [
   {
     step: 1,
-    name: "Dual Full Variants",
-    label: "Generating strategy variants A & B...",
-    description: "Two independent AI models each generate a complete strategy + campaign journey variant.",
+    name: "Triple Full Variants",
+    label: "Generating strategy variants A, B & C...",
+    description: "Three independent AI models each generate a complete strategy + campaign journey variant with deep thinking.",
   },
   {
     step: 2,
     name: "Persona Validator",
     label: "Validating with personas...",
-    description: "Each persona evaluates both variants on relevance, engagement potential, and emotional resonance.",
+    description: "Each persona evaluates all three variants on relevance, engagement potential, and emotional resonance.",
   },
 ];
 
@@ -60,7 +60,7 @@ const PHASE_B_STEPS: PipelineStepConfig[] = [
     step: 4,
     name: "Strategy Synthesizer",
     label: "Synthesizing optimal strategy...",
-    description: "Merges the strongest elements from both variants into one optimal campaign strategy.",
+    description: "Merges the strongest elements from all three variants into one optimal campaign strategy.",
   },
 ];
 
@@ -265,11 +265,14 @@ export function StrategyStep() {
   // Phase data
   const strategyLayerA = useCampaignWizardStore((s) => s.strategyLayerA);
   const strategyLayerB = useCampaignWizardStore((s) => s.strategyLayerB);
+  const strategyLayerC = useCampaignWizardStore((s) => s.strategyLayerC);
   const variantA = useCampaignWizardStore((s) => s.variantA);
   const variantB = useCampaignWizardStore((s) => s.variantB);
+  const variantC = useCampaignWizardStore((s) => s.variantC);
   const personaValidation = useCampaignWizardStore((s) => s.personaValidation);
   const variantAScore = useCampaignWizardStore((s) => s.variantAScore);
   const variantBScore = useCampaignWizardStore((s) => s.variantBScore);
+  const variantCScore = useCampaignWizardStore((s) => s.variantCScore);
   const synthesizedStrategy = useCampaignWizardStore((s) => s.synthesizedStrategy);
   const synthesizedArchitecture = useCampaignWizardStore((s) => s.synthesizedArchitecture);
   const synthesisFeedback = useCampaignWizardStore((s) => s.synthesisFeedback);
@@ -379,11 +382,14 @@ export function StrategyStep() {
           const result = data.result as {
             strategyLayerA: import("@/lib/campaigns/strategy-blueprint.types").StrategyLayer;
             strategyLayerB: import("@/lib/campaigns/strategy-blueprint.types").StrategyLayer;
+            strategyLayerC: import("@/lib/campaigns/strategy-blueprint.types").StrategyLayer;
             variantA: import("@/lib/campaigns/strategy-blueprint.types").ArchitectureLayer;
             variantB: import("@/lib/campaigns/strategy-blueprint.types").ArchitectureLayer;
+            variantC: import("@/lib/campaigns/strategy-blueprint.types").ArchitectureLayer;
             personaValidation: import("@/lib/campaigns/strategy-blueprint.types").PersonaValidationResult[];
             variantAScore: number;
             variantBScore: number;
+            variantCScore: number;
             arenaEnrichment: import("@/lib/campaigns/strategy-blueprint.types").ArenaEnrichmentTracking | null;
           };
           const s = useCampaignWizardStore.getState();
@@ -427,7 +433,7 @@ export function StrategyStep() {
   // ─── Phase B: Synthesize Strategy ────────────────────
 
   const handleSynthesize = useCallback(() => {
-    if (!strategyLayerA || !strategyLayerB || !variantA || !variantB) return;
+    if (!strategyLayerA || !strategyLayerB || !strategyLayerC || !variantA || !variantB || !variantC) return;
     const currentGenId = ++generationIdRef.current;
     setPhaseError(null);
 
@@ -453,11 +459,14 @@ export function StrategyStep() {
         variantFeedback: compiledFeedback,
         strategyLayerA,
         strategyLayerB,
+        strategyLayerC,
         variantA,
         variantB,
+        variantC,
         personaValidation: personaValidation ?? [],
         variantAScore,
         variantBScore,
+        variantCScore,
         wizardContext,
         strategicIntent,
       },
@@ -507,7 +516,7 @@ export function StrategyStep() {
       },
     );
     abortRef.current = { abort };
-  }, [strategyLayerA, strategyLayerB, variantA, variantB, personaValidation, variantAScore, variantBScore, wizardContext, strategicIntent]);
+  }, [strategyLayerA, strategyLayerB, strategyLayerC, variantA, variantB, variantC, personaValidation, variantAScore, variantBScore, variantCScore, wizardContext, strategicIntent]);
 
   // ─── Phase C: Elaborate Journey ──────────────────────
 
@@ -567,6 +576,7 @@ export function StrategyStep() {
             generatedAt: new Date().toISOString(),
             variantAScore: s.variantAScore,
             variantBScore: s.variantBScore,
+            variantCScore: s.variantCScore,
             pipelineDuration: 0,
             modelsUsed: [],
             contextSelection: {
@@ -641,7 +651,7 @@ export function StrategyStep() {
           Generate Strategy Variants
         </h3>
         <p className="text-sm text-gray-500 mb-2 max-w-sm mx-auto">
-          Our AI will analyze your brand context and generate two independent strategy variants
+          Our AI will analyze your brand context and generate three independent strategy variants
           for you to review and refine.
         </p>
         <p className="text-xs text-muted-foreground mb-6">
@@ -688,7 +698,7 @@ export function StrategyStep() {
   }
 
   // Phase A result: Review variants
-  if (strategyPhase === "review_variants" && strategyLayerA && strategyLayerB && variantA && variantB) {
+  if (strategyPhase === "review_variants" && strategyLayerA && strategyLayerB && strategyLayerC && variantA && variantB && variantC) {
     return (
       <div className="space-y-3">
         {goalInsights && <GoalInsightsPreview insights={goalInsights} />}
@@ -698,11 +708,14 @@ export function StrategyStep() {
         <VariantReviewView
           strategyLayerA={strategyLayerA}
           strategyLayerB={strategyLayerB}
+          strategyLayerC={strategyLayerC}
           variantA={variantA}
           variantB={variantB}
+          variantC={variantC}
           personaValidation={personaValidation ?? []}
           variantAScore={variantAScore}
           variantBScore={variantBScore}
+          variantCScore={variantCScore}
           onSynthesize={handleSynthesize}
           errorMessage={phaseError}
         />

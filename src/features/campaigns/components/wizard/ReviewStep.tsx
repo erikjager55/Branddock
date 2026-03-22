@@ -187,8 +187,8 @@ export function ReviewStep() {
               <div className="flex items-center gap-4 text-xs text-gray-500">
                 <span>{blueprintResult.architecture.journeyPhases.length} journey phases</span>
                 <span>{blueprintResult.channelPlan.channels.length} channels</span>
-                {(blueprintResult.variantAScore > 0 || blueprintResult.variantBScore > 0) && (
-                  <span>Variant scores: {(blueprintResult.variantAScore ?? 0).toFixed(1)} / {(blueprintResult.variantBScore ?? 0).toFixed(1)}</span>
+                {(blueprintResult.variantAScore > 0 || blueprintResult.variantBScore > 0 || blueprintResult.variantCScore > 0) && (
+                  <span>Variant scores: A: {(blueprintResult.variantAScore ?? 0).toFixed(1)} / B: {(blueprintResult.variantBScore ?? 0).toFixed(1)} / C: {(blueprintResult.variantCScore ?? 0).toFixed(1)}</span>
                 )}
               </div>
             </div>

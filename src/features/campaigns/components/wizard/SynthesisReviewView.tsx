@@ -46,7 +46,7 @@ export function SynthesisReviewView({
           Review Definitive Strategy
         </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          The AI has synthesized the best elements from both variants into one optimal strategy.
+          The AI has synthesized the best elements from all three variants into one optimal strategy.
           Review it and provide any additional feedback before elaborating the customer journey.
         </p>
       </div>

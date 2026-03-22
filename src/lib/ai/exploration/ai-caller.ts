@@ -220,18 +220,45 @@ const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 2000;
 
 /**
- * Returns true if the error is a transient Anthropic API error
- * that should be retried (overloaded, rate limited, 5xx).
+ * Returns true if the error is a transient API error from any provider
+ * (Anthropic, OpenAI, Google) that should be retried.
  */
 function isTransientError(error: unknown): boolean {
+  // Anthropic SDK errors
   if (error instanceof Anthropic.APIError) {
-    // 429 = rate limited, 529 = overloaded, 5xx = server errors
     if (error.status === 429 || error.status === 529 || error.status >= 500) return true;
   }
-  // Check for the error message pattern from non-APIError responses
+  // OpenAI SDK errors
+  if (error instanceof OpenAI.APIError) {
+    if (error.status === 429 || error.status >= 500) return true;
+  }
+  // Message-based detection (covers Google/Gemini and generic errors)
   const msg = error instanceof Error ? error.message : String(error);
-  if (msg.includes('overloaded') || msg.includes('rate_limit') || msg.includes('529')) return true;
+  if (/overloaded|rate.?limit|too many requests|resource.?exhausted|\b529\b|service.?unavailable|quota.?exceeded|internal.?error/i.test(msg)) return true;
   return false;
+}
+
+/**
+ * Generic retry wrapper with exponential backoff.
+ * Retries up to MAX_RETRIES times for transient errors.
+ */
+async function withRetry<T>(label: string, fn: () => Promise<T>): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (attempt < MAX_RETRIES && isTransientError(error)) {
+        const delay = BASE_DELAY_MS * Math.pow(2, attempt);
+        console.warn(`[ai-caller] Transient error on attempt ${attempt + 1}/${MAX_RETRIES + 1} for ${label}. Retrying in ${delay}ms...`, error instanceof Error ? error.message : error);
+        await sleep(delay);
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -247,6 +274,9 @@ interface ClaudeCompletionOptions {
   temperature?: number;
   maxTokens?: number;
   timeoutMs?: number;
+  /** Enable extended thinking — model reasons internally before responding.
+   *  When enabled, temperature MUST be undefined (Anthropic requirement). */
+  thinking?: { budgetTokens: number };
 }
 
 /**
@@ -267,25 +297,42 @@ export async function createClaudeStructuredCompletion<T>(
 ): Promise<T> {
   const client = getAnthropicClient();
   const model = options?.model ?? CLAUDE_SONNET;
-  const temperature = options?.temperature ?? 0.3;
   const maxTokens = options?.maxTokens ?? 8000;
+  const useThinking = !!options?.thinking;
+  // When extended thinking is enabled, temperature MUST be undefined (Anthropic requirement)
+  const temperature = useThinking ? undefined : (options?.temperature ?? 0.3);
+  // Extended thinking needs more time (thinking + generation) — default 10 min
+  const defaultTimeout = useThinking ? 600_000 : 90_000;
 
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
+      // Build request params — conditionally include thinking config
+      const requestParams: Record<string, unknown> = {
+        model,
+        system: `${systemPrompt}\n\nIMPORTANT: Respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.`,
+        messages: [{ role: 'user', content: userPrompt }],
+        max_tokens: maxTokens,
+      };
+
+      if (temperature !== undefined) {
+        requestParams.temperature = temperature;
+      }
+
+      if (useThinking) {
+        requestParams.thinking = {
+          type: 'enabled',
+          budget_tokens: options!.thinking!.budgetTokens,
+        };
+      }
+
       // Use streaming to avoid the Anthropic SDK's 10-minute timeout on
       // non-streaming requests. This is required for Claude Opus with high
       // maxTokens where generation can exceed 10 minutes.
       const stream = client.messages.stream(
-        {
-          model,
-          system: `${systemPrompt}\n\nIMPORTANT: Respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.`,
-          messages: [{ role: 'user', content: userPrompt }],
-          temperature,
-          max_tokens: maxTokens,
-        },
-        { signal: AbortSignal.timeout(options?.timeoutMs ?? 90_000) },
+        requestParams as Parameters<typeof client.messages.stream>[0],
+        { signal: AbortSignal.timeout(options?.timeoutMs ?? defaultTimeout) },
       );
 
       // Collect the full response via the stream's finalMessage helper
@@ -294,15 +341,18 @@ export async function createClaudeStructuredCompletion<T>(
       // Detect truncation: if the model stopped because it ran out of tokens,
       // the JSON will be incomplete and unparseable
       if (response.stop_reason === 'max_tokens') {
-        const partialText = response.content[0]?.type === 'text' ? response.content[0].text : '';
-        console.error(`[ai-caller] Claude response truncated (max_tokens reached). Model: ${model}, maxTokens: ${maxTokens}, output length: ${partialText.length} chars. Increase maxTokens to avoid this.`);
+        const partialText = response.content.find(b => b.type === 'text');
+        const partialLen = partialText && 'text' in partialText ? partialText.text.length : 0;
+        console.error(`[ai-caller] Claude response truncated (max_tokens reached). Model: ${model}, maxTokens: ${maxTokens}, output length: ${partialLen} chars. Increase maxTokens to avoid this.`);
         throw new Error(
           `Claude response was truncated (hit ${maxTokens} token limit). The JSON output is incomplete. ` +
-          `Try increasing maxTokens or simplifying the prompt. Output was ${partialText.length} chars.`
+          `Try increasing maxTokens or simplifying the prompt. Output was ${partialLen} chars.`
         );
       }
 
-      const text = response.content[0]?.type === 'text' ? response.content[0].text.trim() : '';
+      // Extract text from response — skip thinking blocks, take only text blocks
+      const textBlock = response.content.find(b => b.type === 'text');
+      const text = textBlock && 'text' in textBlock ? textBlock.text.trim() : '';
 
       if (!text) {
         throw new Error('Empty response from Claude (structured completion)');
@@ -351,6 +401,12 @@ interface StructuredCompletionOptions {
   timeoutMs?: number;
   /** Gemini-specific: JSON Schema for responseSchema */
   responseSchema?: Record<string, unknown>;
+  /** Deep thinking / reasoning — per-provider configuration */
+  thinking?: {
+    anthropic?: { budgetTokens: number };
+    openai?: { reasoningEffort: 'low' | 'medium' | 'high' };
+    google?: { thinkingBudget: number };
+  };
 }
 
 /**
@@ -370,26 +426,32 @@ export async function createStructuredCompletion<T>(
       temperature: options?.temperature,
       maxTokens: options?.maxTokens,
       timeoutMs: options?.timeoutMs,
+      thinking: options?.thinking?.anthropic,
     });
   }
 
   if (provider === 'google') {
+    // No withRetry here — createGeminiStructuredCompletion has its own internal retry loop
     return createGeminiStructuredCompletion<T>(systemPrompt, userPrompt, {
       model,
       temperature: options?.temperature,
       maxOutputTokens: options?.maxTokens,
       responseSchema: options?.responseSchema,
       timeoutMs: options?.timeoutMs,
+      thinkingConfig: options?.thinking?.google,
     });
   }
 
   if (provider === 'openai') {
-    const client = getOpenAIClient();
-    const temperature = options?.temperature ?? 0.3;
-    const maxTokens = options?.maxTokens ?? 8000;
+    return withRetry('OpenAI ' + model, async () => {
+      const client = getOpenAIClient();
+      const reasoningConfig = options?.thinking?.openai;
+      // When reasoning is enabled, temperature should be 1 (OpenAI requirement for reasoning models)
+      const temperature = reasoningConfig ? 1 : (options?.temperature ?? 0.3);
+      const maxTokens = options?.maxTokens ?? 8000;
+      const defaultTimeout = reasoningConfig ? 600_000 : 120_000;
 
-    const response = await client.chat.completions.create(
-      {
+      const requestBody: Record<string, unknown> = {
         model,
         messages: [
           { role: 'system', content: `${systemPrompt}\n\nIMPORTANT: Respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.` },
@@ -398,21 +460,29 @@ export async function createStructuredCompletion<T>(
         temperature,
         max_tokens: maxTokens,
         response_format: { type: 'json_object' },
-      },
-      { signal: AbortSignal.timeout(options?.timeoutMs ?? 120_000) },
-    );
+      };
 
-    const text = response.choices[0]?.message?.content ?? '';
-    if (!text) {
-      throw new Error(`Empty response from OpenAI ${model} (structured completion)`);
-    }
+      if (reasoningConfig) {
+        requestBody.reasoning_effort = reasoningConfig.reasoningEffort;
+      }
 
-    try {
-      return JSON.parse(text) as T;
-    } catch (parseError) {
-      const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
-      throw new Error(`Failed to parse OpenAI ${model} response as JSON: ${msg}. Response starts with: "${text.slice(0, 200)}"`);
-    }
+      const response = await client.chat.completions.create(
+        requestBody as unknown as Parameters<typeof client.chat.completions.create>[0],
+        { signal: AbortSignal.timeout(options?.timeoutMs ?? defaultTimeout) },
+      ) as OpenAI.Chat.Completions.ChatCompletion;
+
+      const text = response.choices[0]?.message?.content ?? '';
+      if (!text) {
+        throw new Error(`Empty response from OpenAI ${model} (structured completion)`);
+      }
+
+      try {
+        return JSON.parse(text) as T;
+      } catch (parseError) {
+        const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+        throw new Error(`Failed to parse OpenAI ${model} response as JSON: ${msg}. Response starts with: "${text.slice(0, 200)}"`);
+      }
+    });
   }
 
   throw new Error(`Unsupported AI provider: "${provider}". Valid providers: anthropic, google, openai`);

@@ -13,6 +13,13 @@ import type {
   PersonaValidationResult,
   ArenaEnrichmentTracking,
   EnrichmentSources,
+  // ─── 9-Phase Architecture Types ──────────────────────────
+  CreativeHook,
+  BriefingValidation,
+  StrategyFoundation,
+  EnrichmentContext,
+  CuratorSelection,
+  HookConcept,
 } from "../types/campaign-wizard.types";
 
 // ─── Types ────────────────────────────────────────────────
@@ -49,18 +56,35 @@ interface CampaignWizardState {
 
   // ─── Interactive Strategy Phases ──────────────────────────
   strategyPhase: StrategyPhase;
-  variantA: ArchitectureLayer | null;
-  variantB: ArchitectureLayer | null;
   personaValidation: PersonaValidationResult[] | null;
-  variantAScore: number;
-  variantBScore: number;
-  strategyLayerA: StrategyLayer | null;
-  strategyLayerB: StrategyLayer | null;
-  variantFeedback: string;
-  synthesisFeedback: string;
   synthesizedStrategy: StrategyLayer | null;
   synthesizedArchitecture: ArchitectureLayer | null;
   arenaEnrichment: ArenaEnrichmentTracking | null;
+
+  // ─── 9-Phase Architecture ──────────────────────────────────
+  briefingValidation: BriefingValidation | null;
+  strategyFoundation: StrategyFoundation | null;
+  strategyFeedback: string;
+  enrichmentContext: EnrichmentContext | null;
+  curatorSelection: CuratorSelection | null;
+  hooks: CreativeHook[];
+  hookScores: number[];
+  hookFeedback: Record<number, string>;
+  selectedHookIndex: number | null;
+  refinedHookConcept: HookConcept | null;
+
+  // @deprecated — legacy variant fields, removed in Session 4 UI rewrite
+  variantA: ArchitectureLayer | null;
+  variantB: ArchitectureLayer | null;
+  variantC: ArchitectureLayer | null;
+  variantAScore: number;
+  variantBScore: number;
+  variantCScore: number;
+  strategyLayerA: StrategyLayer | null;
+  strategyLayerB: StrategyLayer | null;
+  strategyLayerC: StrategyLayer | null;
+  variantFeedback: string;
+  synthesisFeedback: string;
 
   // ─── Enrichment Status (real-time feedback for all sources) ─────────
   enrichmentStatus: 'idle' | 'running' | 'complete' | 'skipped';
@@ -68,7 +92,7 @@ interface CampaignWizardState {
   enrichmentQueries: string[];
   enrichmentSources: EnrichmentSources;
 
-  // ─── Interactive Feedback (Variant Review) ─────────────────
+  // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: string[];
   strategyRatings: Record<string, 'up' | 'down'>;
 
@@ -110,23 +134,45 @@ interface CampaignWizardState {
 
   // ─── Interactive Strategy Phase Actions ─────────────────
   setStrategyPhase: (phase: StrategyPhase) => void;
-  setVariantResults: (data: {
-    strategyLayerA: StrategyLayer;
-    strategyLayerB: StrategyLayer;
-    variantA: ArchitectureLayer;
-    variantB: ArchitectureLayer;
+  setSynthesisResult: (data: { strategy: StrategyLayer; architecture: ArchitectureLayer }) => void;
+  clearPhaseData: () => void;
+
+  // ─── 9-Phase Architecture Actions ─────────────────────────
+  setBriefingValidation: (validation: BriefingValidation | null) => void;
+  setStrategyFoundation: (foundation: StrategyFoundation | null) => void;
+  setStrategyFeedback: (feedback: string) => void;
+  setEnrichmentContext: (context: EnrichmentContext | null) => void;
+  setCuratorSelection: (selection: CuratorSelection | null) => void;
+  setHookResults: (data: {
+    hooks: CreativeHook[];
     personaValidation: PersonaValidationResult[];
-    variantAScore: number;
-    variantBScore: number;
+    hookScores: number[];
+    curatorSelection: CuratorSelection;
     arenaEnrichment?: ArenaEnrichmentTracking | null;
   }) => void;
-  setVariantFeedback: (feedback: string) => void;
-  setSynthesisResult: (data: { strategy: StrategyLayer; architecture: ArchitectureLayer }) => void;
-  setSynthesisFeedback: (feedback: string) => void;
-  clearPhaseData: () => void;
+  setHookFeedback: (hookIndex: number, feedback: string) => void;
+  setSelectedHook: (index: number | null) => void;
+  setRefinedHookConcept: (concept: HookConcept | null) => void;
 
   // ─── Enrichment Status Actions ──────────────────────────────
   setEnrichmentStatus: (status: 'idle' | 'running' | 'complete' | 'skipped', meta?: { totalBlocks?: number; queries?: string[]; sources?: EnrichmentSources }) => void;
+
+  // @deprecated — legacy variant actions, removed in Session 4 UI rewrite
+  setVariantResults: (data: {
+    strategyLayerA: StrategyLayer;
+    strategyLayerB: StrategyLayer;
+    strategyLayerC: StrategyLayer;
+    variantA: ArchitectureLayer;
+    variantB: ArchitectureLayer;
+    variantC: ArchitectureLayer;
+    personaValidation: PersonaValidationResult[];
+    variantAScore: number;
+    variantBScore: number;
+    variantCScore: number;
+    arenaEnrichment?: ArenaEnrichmentTracking | null;
+  }) => void;
+  setVariantFeedback: (feedback: string) => void;
+  setSynthesisFeedback: (feedback: string) => void;
 
   // ─── Interactive Feedback Actions ─────────────────────────
   togglePersonaEndorsement: (personaId: string) => void;
@@ -167,18 +213,35 @@ const INITIAL_STATE = {
 
   // ─── Interactive Strategy Phases ──────────────────────────
   strategyPhase: "idle" as StrategyPhase,
-  variantA: null as ArchitectureLayer | null,
-  variantB: null as ArchitectureLayer | null,
   personaValidation: null as PersonaValidationResult[] | null,
-  variantAScore: 0,
-  variantBScore: 0,
-  strategyLayerA: null as StrategyLayer | null,
-  strategyLayerB: null as StrategyLayer | null,
-  variantFeedback: "",
-  synthesisFeedback: "",
   synthesizedStrategy: null as StrategyLayer | null,
   synthesizedArchitecture: null as ArchitectureLayer | null,
   arenaEnrichment: null as ArenaEnrichmentTracking | null,
+
+  // ─── 9-Phase Architecture ──────────────────────────────────
+  briefingValidation: null as BriefingValidation | null,
+  strategyFoundation: null as StrategyFoundation | null,
+  strategyFeedback: "",
+  enrichmentContext: null as EnrichmentContext | null,
+  curatorSelection: null as CuratorSelection | null,
+  hooks: [] as CreativeHook[],
+  hookScores: [] as number[],
+  hookFeedback: {} as Record<number, string>,
+  selectedHookIndex: null as number | null,
+  refinedHookConcept: null as HookConcept | null,
+
+  // @deprecated — legacy variant fields
+  variantA: null as ArchitectureLayer | null,
+  variantB: null as ArchitectureLayer | null,
+  variantC: null as ArchitectureLayer | null,
+  variantAScore: 0,
+  variantBScore: 0,
+  variantCScore: 0,
+  strategyLayerA: null as StrategyLayer | null,
+  strategyLayerB: null as StrategyLayer | null,
+  strategyLayerC: null as StrategyLayer | null,
+  variantFeedback: "",
+  synthesisFeedback: "",
 
   // ─── Enrichment Status ──────────────────────────────────────
   enrichmentStatus: 'idle' as 'idle' | 'running' | 'complete' | 'skipped',
@@ -186,7 +249,7 @@ const INITIAL_STATE = {
   enrichmentQueries: [] as string[],
   enrichmentSources: {} as { arena?: number; exa?: number; scholar?: number; bct?: boolean },
 
-  // ─── Interactive Feedback ──────────────────────────────────
+  // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: [] as string[],
   strategyRatings: {} as Record<string, 'up' | 'down'>,
 };
@@ -331,45 +394,68 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
 
     // ─── Interactive Strategy Phase Actions ─────────────────
     setStrategyPhase: (strategyPhase) => set({ strategyPhase }),
-    setVariantResults: (data) =>
-      set({
-        strategyLayerA: data.strategyLayerA,
-        strategyLayerB: data.strategyLayerB,
-        variantA: data.variantA,
-        variantB: data.variantB,
-        personaValidation: data.personaValidation,
-        variantAScore: data.variantAScore,
-        variantBScore: data.variantBScore,
-        arenaEnrichment: data.arenaEnrichment ?? null,
-      }),
-    setVariantFeedback: (variantFeedback) => set({ variantFeedback }),
     setSynthesisResult: (data) =>
       set({
         synthesizedStrategy: data.strategy,
         synthesizedArchitecture: data.architecture,
       }),
-    setSynthesisFeedback: (synthesisFeedback) => set({ synthesisFeedback }),
     clearPhaseData: () =>
       set({
-        strategyLayerA: null,
-        strategyLayerB: null,
-        variantA: null,
-        variantB: null,
         personaValidation: null,
-        variantAScore: 0,
-        variantBScore: 0,
         synthesizedStrategy: null,
         synthesizedArchitecture: null,
         arenaEnrichment: null,
-        variantFeedback: "",
-        synthesisFeedback: "",
         endorsedPersonaIds: [],
         strategyRatings: {},
         enrichmentStatus: 'idle',
         enrichmentBlockCount: 0,
         enrichmentQueries: [],
         enrichmentSources: {},
+        // 9-Phase fields
+        briefingValidation: null,
+        strategyFoundation: null,
+        strategyFeedback: "",
+        enrichmentContext: null,
+        curatorSelection: null,
+        hooks: [],
+        hookScores: [],
+        hookFeedback: {},
+        selectedHookIndex: null,
+        refinedHookConcept: null,
+        // Legacy variant fields
+        variantA: null,
+        variantB: null,
+        variantC: null,
+        variantAScore: 0,
+        variantBScore: 0,
+        variantCScore: 0,
+        strategyLayerA: null,
+        strategyLayerB: null,
+        strategyLayerC: null,
+        variantFeedback: "",
+        synthesisFeedback: "",
       }),
+
+    // ─── 9-Phase Architecture Actions ─────────────────────────
+    setBriefingValidation: (briefingValidation) => set({ briefingValidation }),
+    setStrategyFoundation: (strategyFoundation) => set({ strategyFoundation }),
+    setStrategyFeedback: (strategyFeedback) => set({ strategyFeedback }),
+    setEnrichmentContext: (enrichmentContext) => set({ enrichmentContext }),
+    setCuratorSelection: (curatorSelection) => set({ curatorSelection }),
+    setHookResults: (data) =>
+      set({
+        hooks: data.hooks,
+        personaValidation: data.personaValidation,
+        hookScores: data.hookScores,
+        curatorSelection: data.curatorSelection,
+        arenaEnrichment: data.arenaEnrichment ?? null,
+      }),
+    setHookFeedback: (hookIndex, feedback) =>
+      set((s) => ({
+        hookFeedback: { ...s.hookFeedback, [hookIndex]: feedback },
+      })),
+    setSelectedHook: (selectedHookIndex) => set({ selectedHookIndex }),
+    setRefinedHookConcept: (refinedHookConcept) => set({ refinedHookConcept }),
 
     // ─── Enrichment Status Actions ──────────────────────────────
     setEnrichmentStatus: (status, meta) =>
@@ -379,6 +465,24 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         enrichmentQueries: meta?.queries ?? [],
         enrichmentSources: meta?.sources ?? {},
       }),
+
+    // @deprecated — legacy variant actions, removed in Session 4 UI rewrite
+    setVariantResults: (data) =>
+      set({
+        variantA: data.variantA,
+        variantB: data.variantB,
+        variantC: data.variantC,
+        personaValidation: data.personaValidation,
+        variantAScore: data.variantAScore,
+        variantBScore: data.variantBScore,
+        variantCScore: data.variantCScore,
+        strategyLayerA: data.strategyLayerA,
+        strategyLayerB: data.strategyLayerB,
+        strategyLayerC: data.strategyLayerC,
+        arenaEnrichment: data.arenaEnrichment ?? null,
+      }),
+    setVariantFeedback: (variantFeedback) => set({ variantFeedback }),
+    setSynthesisFeedback: (synthesisFeedback) => set({ synthesisFeedback }),
 
     // ─── Interactive Feedback Actions ─────────────────────────
     togglePersonaEndorsement: (personaId) =>

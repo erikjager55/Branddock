@@ -21,11 +21,14 @@ import { PersonaFeedbackCard } from "./PersonaFeedbackCard";
 interface VariantReviewViewProps {
   strategyLayerA: StrategyLayer;
   strategyLayerB: StrategyLayer;
+  strategyLayerC: StrategyLayer;
   variantA: ArchitectureLayer;
   variantB: ArchitectureLayer;
+  variantC: ArchitectureLayer;
   personaValidation: PersonaValidationResult[];
   variantAScore: number;
   variantBScore: number;
+  variantCScore: number;
   onSynthesize: () => void;
   errorMessage?: string | null;
 }
@@ -104,11 +107,14 @@ function RatingSummaryBar() {
 export function VariantReviewView({
   strategyLayerA,
   strategyLayerB,
+  strategyLayerC,
   variantA,
   variantB,
+  variantC,
   personaValidation,
   variantAScore,
   variantBScore,
+  variantCScore,
   onSynthesize,
   errorMessage,
 }: VariantReviewViewProps) {
@@ -117,7 +123,12 @@ export function VariantReviewView({
   const endorsedPersonaIds = useCampaignWizardStore((s) => s.endorsedPersonaIds);
   const togglePersonaEndorsement = useCampaignWizardStore((s) => s.togglePersonaEndorsement);
 
-  const preferredVariant = variantAScore >= variantBScore ? "A" : "B";
+  const preferredVariant = useMemo(() => {
+    const scores = { A: variantAScore, B: variantBScore, C: variantCScore };
+    return (Object.entries(scores) as [string, number][]).reduce((best, [key, score]) =>
+      score > best[1] ? [key, score] : best
+    , ["A", variantAScore])[0];
+  }, [variantAScore, variantBScore, variantCScore]);
 
   return (
     <div className="space-y-8">
@@ -127,7 +138,7 @@ export function VariantReviewView({
           Review Strategy Variants
         </h3>
         <p className="text-sm text-muted-foreground max-w-lg mx-auto">
-          Two AI models generated independent campaign journey variants. Review the strategy
+          Three AI models generated independent campaign journey variants. Review the strategy
           foundation, rate elements, endorse persona feedback, and provide notes to guide the
           definitive synthesis.
         </p>
@@ -156,12 +167,20 @@ export function VariantReviewView({
             isPreferred={preferredVariant === "A"}
           />
           <VariantDetailCard
-            label="Variant B (Gemini)"
+            label="Variant B (GPT)"
             variant={variantB}
             strategy={strategyLayerB}
             variantKey="B"
             score={variantBScore}
             isPreferred={preferredVariant === "B"}
+          />
+          <VariantDetailCard
+            label="Variant C (Gemini)"
+            variant={variantC}
+            strategy={strategyLayerC}
+            variantKey="C"
+            score={variantCScore}
+            isPreferred={preferredVariant === "C"}
           />
         </div>
       </div>

@@ -38,9 +38,25 @@ export interface GeminiCompletionOptions {
   responseSchema?: Record<string, unknown>;
   /** Override the default 60s timeout (in milliseconds) */
   timeoutMs?: number;
+  /** Enable Gemini thinking mode — model reasons internally before responding */
+  thinkingConfig?: { thinkingBudget: number };
 }
 
 const DEFAULT_MODEL = 'gemini-3.1-pro-preview';
+
+// ─── Retry Helper (self-contained to avoid circular deps with ai-caller) ───
+
+const GEMINI_MAX_RETRIES = 3;
+const GEMINI_BASE_DELAY_MS = 2000;
+
+function isGeminiTransientError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return /overloaded|rate.?limit|too many requests|resource.?exhausted|service.?unavailable|quota.?exceeded|internal.?error|\b429\b|\b500\b|\b503\b/i.test(msg);
+}
+
+function geminiSleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // Re-export Type enum for schema building
 export { Type as GeminiSchemaType };
@@ -254,58 +270,92 @@ export async function createGeminiStructuredCompletion<T>(
   const model = options?.model ?? DEFAULT_MODEL;
   const temperature = options?.temperature ?? 0.3;
   const maxOutputTokens = options?.maxOutputTokens ?? 4000;
+  const useThinking = !!options?.thinkingConfig;
+  // Thinking mode needs more time — default 10 min
+  const defaultTimeout = useThinking ? 600_000 : 60_000;
 
-  const response = await client.models.generateContent({
-    model,
-    contents: [
-      {
-        role: 'user' as const,
-        parts: [{ text: userPrompt }],
-      },
-    ],
-    config: {
-      systemInstruction: systemPrompt,
-      temperature,
-      maxOutputTokens,
-      responseMimeType: 'application/json',
-      ...(options?.responseSchema ? { responseSchema: options.responseSchema } : {}),
-      abortSignal: AbortSignal.timeout(options?.timeoutMs ?? 60_000),
-    },
-  });
+  let lastError: unknown;
 
-  // Detect truncation via Gemini finish reason
-  const finishReason = response.candidates?.[0]?.finishReason;
-  if (finishReason === 'MAX_TOKENS') {
-    const partialText = response.text ?? '';
-    console.error(`[gemini-client] Gemini response truncated (MAX_TOKENS). Model: ${model}, maxOutputTokens: ${maxOutputTokens}, output length: ${partialText.length} chars.`);
-    throw new Error(
-      `Gemini response was truncated (hit ${maxOutputTokens} token limit). The JSON output is incomplete. ` +
-      `Try increasing maxOutputTokens or simplifying the prompt. Output was ${partialText.length} chars.`
-    );
+  for (let attempt = 0; attempt <= GEMINI_MAX_RETRIES; attempt++) {
+    try {
+      const config: Record<string, unknown> = {
+        systemInstruction: systemPrompt,
+        temperature,
+        maxOutputTokens,
+        responseMimeType: 'application/json',
+        abortSignal: AbortSignal.timeout(options?.timeoutMs ?? defaultTimeout),
+      };
+
+      if (options?.responseSchema) {
+        config.responseSchema = options.responseSchema;
+      }
+
+      if (useThinking) {
+        config.thinkingConfig = {
+          thinkingBudget: options!.thinkingConfig!.thinkingBudget,
+        };
+      }
+
+      const response = await client.models.generateContent({
+        model,
+        contents: [
+          {
+            role: 'user' as const,
+            parts: [{ text: userPrompt }],
+          },
+        ],
+        config: config as Parameters<typeof client.models.generateContent>[0]['config'],
+      });
+
+      // Detect truncation via Gemini finish reason
+      const finishReason = response.candidates?.[0]?.finishReason;
+      if (finishReason === 'MAX_TOKENS') {
+        const partialText = response.text ?? '';
+        console.error(`[gemini-client] Gemini response truncated (MAX_TOKENS). Model: ${model}, maxOutputTokens: ${maxOutputTokens}, output length: ${partialText.length} chars.`);
+        throw new Error(
+          `Gemini response was truncated (hit ${maxOutputTokens} token limit). The JSON output is incomplete. ` +
+          `Try increasing maxOutputTokens or simplifying the prompt. Output was ${partialText.length} chars.`
+        );
+      }
+
+      const text = response.text?.trim() ?? '';
+
+      if (!text) {
+        throw new Error('Empty response from Gemini (structured completion)');
+      }
+
+      // Parse JSON — handle markdown code blocks that Gemini sometimes wraps
+      let cleaned = text;
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?\s*```\s*$/, '');
+      }
+
+      const jsonStart = cleaned.indexOf('{');
+      const jsonEnd = cleaned.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonStart < jsonEnd) {
+        cleaned = cleaned.slice(jsonStart, jsonEnd + 1);
+      }
+
+      try {
+        return JSON.parse(cleaned) as T;
+      } catch (parseError) {
+        const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
+        throw new Error(`Failed to parse Gemini response as JSON: ${msg}. Response starts with: "${cleaned.slice(0, 200)}"`);
+      }
+    } catch (error) {
+      lastError = error;
+
+      if (attempt < GEMINI_MAX_RETRIES && isGeminiTransientError(error)) {
+        const delay = GEMINI_BASE_DELAY_MS * Math.pow(2, attempt);
+        console.warn(`[gemini-client] Transient error on attempt ${attempt + 1}/${GEMINI_MAX_RETRIES + 1} for model ${model}. Retrying in ${delay}ms...`, error instanceof Error ? error.message : error);
+        await geminiSleep(delay);
+        continue;
+      }
+
+      throw error;
+    }
   }
 
-  const text = response.text?.trim() ?? '';
-
-  if (!text) {
-    throw new Error('Empty response from Gemini (structured completion)');
-  }
-
-  // Parse JSON — handle markdown code blocks that Gemini sometimes wraps
-  let cleaned = text;
-  if (cleaned.startsWith('```')) {
-    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?\s*```\s*$/, '');
-  }
-
-  const jsonStart = cleaned.indexOf('{');
-  const jsonEnd = cleaned.lastIndexOf('}');
-  if (jsonStart !== -1 && jsonEnd !== -1 && jsonStart < jsonEnd) {
-    cleaned = cleaned.slice(jsonStart, jsonEnd + 1);
-  }
-
-  try {
-    return JSON.parse(cleaned) as T;
-  } catch (parseError) {
-    const msg = parseError instanceof Error ? parseError.message : 'Unknown parse error';
-    throw new Error(`Failed to parse Gemini response as JSON: ${msg}. Response starts with: "${cleaned.slice(0, 200)}"`);
-  }
+  // Should not reach here, but TypeScript needs it
+  throw lastError;
 }
