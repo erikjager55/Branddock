@@ -46,6 +46,20 @@ export interface StrategyLayer {
   messagingHierarchy: MessagingHierarchy;
   jtbdFraming: JTBDFraming;
   strategicChoices: (string | StrategicChoice)[];
+  /** The underlying human truth that drives recognition */
+  humanInsight?: string;
+  /** The societal tension the brand addresses */
+  culturalTension?: string;
+  /** The Big Idea — the organizing principle across all touchpoints */
+  creativePlatform?: string;
+  /** Visual/emotional world description */
+  creativeTerritory?: string;
+  /** How the brand resolves the tension or insight */
+  brandRole?: string;
+  /** The distinctive mechanism that makes the concept unforgettable */
+  memorableDevice?: string;
+  /** Why this concept has award potential */
+  effieRationale?: string;
 }
 
 // ─── Layer 2: Campaign Architecture ─────────────────────────
@@ -173,6 +187,16 @@ export interface PersonaValidationResult {
   concerns: string[];
   suggestions: string[];
   preferredVariant: PreferredVariant;
+  /** Creative quality: would this make me stop scrolling? (1-10) */
+  originalityScore?: number;
+  /** Would I still remember this next week? (1-10) */
+  memorabilityScore?: number;
+  /** Does this feel culturally relevant right now? (1-10) */
+  culturalRelevanceScore?: number;
+  /** Would I share this or spark conversation? (1-10) */
+  talkabilityScore?: number;
+  /** One-line creative judgment */
+  creativeVerdict?: string;
 }
 
 // ─── Complete Blueprint ─────────────────────────────────────
@@ -689,6 +713,13 @@ export const strategyLayerSchema = z.object({
   messagingHierarchy: messagingHierarchySchema,
   jtbdFraming: jtbdFramingSchema,
   strategicChoices: z.array(z.union([z.string(), strategicChoiceSchema])),
+  humanInsight: z.string().optional(),
+  culturalTension: z.string().optional(),
+  creativePlatform: z.string().optional(),
+  creativeTerritory: z.string().optional(),
+  brandRole: z.string().optional(),
+  memorableDevice: z.string().optional(),
+  effieRationale: z.string().optional(),
 });
 
 // ─── Layer 2 Schema ─────────────────────────────────────────
@@ -816,6 +847,11 @@ export const personaValidationSchema = z.object({
   concerns: z.array(z.string()),
   suggestions: z.array(z.string()),
   preferredVariant: z.enum(['A', 'B', 'C']),
+  originalityScore: z.number().min(1).max(10).optional(),
+  memorabilityScore: z.number().min(1).max(10).optional(),
+  culturalRelevanceScore: z.number().min(1).max(10).optional(),
+  talkabilityScore: z.number().min(1).max(10).optional(),
+  creativeVerdict: z.string().optional(),
 });
 
 export const personaValidationArraySchema = z.array(personaValidationSchema);
@@ -954,8 +990,15 @@ export const fullVariantResponseSchema: Record<string, unknown> = {
             required: ['choice', 'rationale', 'tradeoff'],
           },
         },
+        humanInsight: { type: 'string' },
+        culturalTension: { type: 'string' },
+        creativePlatform: { type: 'string' },
+        creativeTerritory: { type: 'string' },
+        brandRole: { type: 'string' },
+        memorableDevice: { type: 'string' },
+        effieRationale: { type: 'string' },
       },
-      required: ['strategicIntent', 'intentRatio', 'campaignTheme', 'positioningStatement', 'messagingHierarchy', 'jtbdFraming', 'strategicChoices'],
+      required: ['strategicIntent', 'intentRatio', 'campaignTheme', 'positioningStatement', 'messagingHierarchy', 'jtbdFraming', 'strategicChoices', 'humanInsight', 'creativePlatform', 'creativeTerritory', 'brandRole'],
     },
     architecture: architectureLayerResponseSchema,
   },

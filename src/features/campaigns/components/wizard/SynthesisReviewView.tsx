@@ -7,6 +7,8 @@ import {
   Layers,
   MessageSquare,
   AlertCircle,
+  Eye,
+  Palette,
 } from "lucide-react";
 import { Button, Badge } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
@@ -58,6 +60,63 @@ export function SynthesisReviewView({
           <span className="text-sm font-semibold text-gray-900">Campaign Strategy</span>
         </div>
 
+        {/* Human Insight — the foundation */}
+        {synthesizedStrategy.humanInsight && (
+          <div className="p-3.5 bg-violet-50 border border-violet-200 rounded-lg">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Eye className="w-3.5 h-3.5 text-violet-500" />
+              <p className="text-xs font-semibold text-violet-700 uppercase tracking-wider">
+                Human Insight
+              </p>
+            </div>
+            <p className="text-sm text-gray-800 italic leading-relaxed">
+              &ldquo;{synthesizedStrategy.humanInsight}&rdquo;
+            </p>
+            {synthesizedStrategy.culturalTension && (
+              <p className="text-xs text-violet-600 mt-1.5">
+                <span className="font-medium">Cultural tension:</span> {synthesizedStrategy.culturalTension}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Creative Platform (Big Idea) */}
+        {synthesizedStrategy.creativePlatform && (
+          <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Palette className="w-3.5 h-3.5 text-amber-500" />
+              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider">
+                Creative Platform (Big Idea)
+              </p>
+            </div>
+            <p className="text-base font-semibold text-gray-900">
+              {synthesizedStrategy.creativePlatform}
+            </p>
+          </div>
+        )}
+
+        {/* Creative Territory + Brand Role */}
+        {(synthesizedStrategy.creativeTerritory || synthesizedStrategy.brandRole) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {synthesizedStrategy.creativeTerritory && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                  Creative Territory
+                </p>
+                <p className="text-sm text-gray-700">{synthesizedStrategy.creativeTerritory}</p>
+              </div>
+            )}
+            {synthesizedStrategy.brandRole && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                  Brand Role
+                </p>
+                <p className="text-sm text-gray-700">{synthesizedStrategy.brandRole}</p>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
@@ -80,7 +139,7 @@ export function SynthesisReviewView({
                     : "Hybrid"}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                {synthesizedStrategy.intentRatio.brand}/{synthesizedStrategy.intentRatio.activation} brand/activation
+                {synthesizedStrategy.intentRatio?.brand ?? 50}/{synthesizedStrategy.intentRatio?.activation ?? 50} brand/activation
               </span>
             </div>
           </div>
@@ -100,14 +159,14 @@ export function SynthesisReviewView({
           <ul className="space-y-1">
             <li className="text-xs text-gray-600 flex items-start gap-1.5">
               <span className="text-emerald-500 mt-0.5">&#8226;</span>
-              <span><span className="font-medium text-gray-700">Brand:</span> {synthesizedStrategy.messagingHierarchy.brandMessage}</span>
+              <span><span className="font-medium text-gray-700">Brand:</span> {synthesizedStrategy.messagingHierarchy?.brandMessage ?? ''}</span>
             </li>
             <li className="text-xs text-gray-600 flex items-start gap-1.5">
               <span className="text-emerald-500 mt-0.5">&#8226;</span>
-              <span><span className="font-medium text-gray-700">Campaign:</span> {synthesizedStrategy.messagingHierarchy.campaignMessage}</span>
+              <span><span className="font-medium text-gray-700">Campaign:</span> {synthesizedStrategy.messagingHierarchy?.campaignMessage ?? ''}</span>
             </li>
-            {synthesizedStrategy.messagingHierarchy.proofPoints.length > 0 &&
-              synthesizedStrategy.messagingHierarchy.proofPoints.map((pp, i) => (
+            {(synthesizedStrategy.messagingHierarchy?.proofPoints ?? []).length > 0 &&
+              (synthesizedStrategy.messagingHierarchy?.proofPoints ?? []).map((pp, i) => (
                 <li key={i} className="text-xs text-gray-600 flex items-start gap-1.5">
                   <span className="text-emerald-500 mt-0.5">&#8226;</span>
                   <span><span className="font-medium text-gray-700">Proof:</span> {pp}</span>
@@ -116,19 +175,29 @@ export function SynthesisReviewView({
           </ul>
         </div>
 
-        {synthesizedStrategy.strategicChoices.length > 0 && (
+        {(synthesizedStrategy.strategicChoices ?? []).length > 0 && (
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
               Strategic Choices
             </p>
             <ul className="space-y-1">
-              {synthesizedStrategy.strategicChoices.map((choice, i) => (
+              {(synthesizedStrategy.strategicChoices ?? []).map((choice, i) => (
                 <li key={i} className="text-xs text-gray-600 flex items-start gap-1.5">
                   <span className="text-emerald-500 mt-0.5">&#8226;</span>
                   {getChoiceText(choice)}
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Effie Rationale */}
+        {synthesizedStrategy.effieRationale && (
+          <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-lg">
+            <p className="text-xs font-medium text-emerald-700 uppercase tracking-wider mb-1">
+              Why This Concept Has Award Potential
+            </p>
+            <p className="text-sm text-gray-700 leading-relaxed">{synthesizedStrategy.effieRationale}</p>
           </div>
         )}
       </div>

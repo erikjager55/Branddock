@@ -8,6 +8,10 @@ import {
   MessageSquare,
   Crosshair,
   Lightbulb,
+  Eye,
+  Palette,
+  Compass,
+  Shield,
 } from "lucide-react";
 import { Badge } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
@@ -112,6 +116,73 @@ export function VariantStrategyOverview({ strategyLayer, variantKey }: VariantSt
           Rate elements to guide synthesis
         </span>
       </div>
+
+      {/* Human Insight — the foundation */}
+      {strategyLayer.humanInsight && (
+        <div className="p-3.5 bg-violet-50 border border-violet-200 rounded-lg">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Eye className="w-3.5 h-3.5 text-violet-500" />
+            <p className="text-xs font-semibold text-violet-700 uppercase tracking-wider">
+              Human Insight
+            </p>
+            <RatingButtons ratingKey={`${variantKey}.humanInsight`} />
+          </div>
+          <p className="text-sm text-gray-800 italic leading-relaxed">
+            &ldquo;{strategyLayer.humanInsight}&rdquo;
+          </p>
+          {strategyLayer.culturalTension && (
+            <p className="text-xs text-violet-600 mt-1.5">
+              <span className="font-medium">Cultural tension:</span> {strategyLayer.culturalTension}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Creative Platform (Big Idea) — hero element */}
+      {strategyLayer.creativePlatform && (
+        <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-center gap-1.5 mb-1">
+            <Palette className="w-3.5 h-3.5 text-amber-500" />
+            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider">
+              Creative Platform (Big Idea)
+            </p>
+            <RatingButtons ratingKey={`${variantKey}.creativePlatform`} />
+          </div>
+          <p className="text-base font-semibold text-gray-900">
+            {strategyLayer.creativePlatform}
+          </p>
+        </div>
+      )}
+
+      {/* Creative Territory + Brand Role */}
+      {(strategyLayer.creativeTerritory || strategyLayer.brandRole) && (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {strategyLayer.creativeTerritory && (
+          <div>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Compass className="w-3 h-3 text-gray-400" />
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Creative Territory
+              </p>
+              <RatingButtons ratingKey={`${variantKey}.creativeTerritory`} />
+            </div>
+            <p className="text-sm text-gray-700">{strategyLayer.creativeTerritory}</p>
+          </div>
+        )}
+        {strategyLayer.brandRole && (
+          <div>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Shield className="w-3 h-3 text-gray-400" />
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Brand Role
+              </p>
+              <RatingButtons ratingKey={`${variantKey}.brandRole`} />
+            </div>
+            <p className="text-sm text-gray-700">{strategyLayer.brandRole}</p>
+          </div>
+        )}
+      </div>
+      )}
 
       {/* Theme + Positioning + Intent */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

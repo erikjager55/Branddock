@@ -78,7 +78,7 @@ function EnrichmentIndicator({ status, blockCount, sources }: { status: 'idle' |
         </span>
       </div>
       {status === 'complete' && hasSourceBreakdown && (
-        <div className="flex flex-wrap gap-1.5 ml-6.5">
+        <div className="flex flex-wrap gap-1.5 ml-7">
           <SourcePill icon={Palette} label="Are.na" count={sources.arena ?? 0} />
           <SourcePill icon={Search} label="Exa" count={sources.exa ?? 0} />
           <SourcePill icon={BookOpen} label="Scholar" count={sources.scholar ?? 0} />

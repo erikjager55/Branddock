@@ -94,7 +94,7 @@ export async function generateAIResponse(
       { role: 'user', content: userPrompt },
     ],
     temperature,
-    max_tokens: maxTokens,
+    max_completion_tokens: maxTokens,
   });
   return response.choices[0]?.message?.content ?? '';
 }
@@ -130,7 +130,7 @@ export async function createOpenAIStructuredCompletion<T>(
         { role: 'user', content: userPrompt },
       ],
       temperature,
-      max_tokens: maxTokens,
+      max_completion_tokens: maxTokens,
       response_format: {
         type: 'json_schema',
         json_schema: jsonSchema,
@@ -459,7 +459,7 @@ export async function createStructuredCompletion<T>(
           { role: 'user', content: userPrompt },
         ],
         temperature,
-        max_tokens: maxTokens,
+        max_completion_tokens: maxTokens,
         response_format: { type: 'json_object' },
       };
 

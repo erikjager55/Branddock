@@ -311,7 +311,7 @@ export function VariantDetailCard({
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-muted-foreground">Persona score:</span>
-          <Badge variant={score >= 7 ? "success" : score >= 5 ? "warning" : "danger"}>
+          <Badge variant={(score ?? 0) >= 7 ? "success" : (score ?? 0) >= 5 ? "warning" : "danger"}>
             {(score ?? 0).toFixed(1)}/10
           </Badge>
           {isPreferred && <Badge variant="teal">Preferred</Badge>}

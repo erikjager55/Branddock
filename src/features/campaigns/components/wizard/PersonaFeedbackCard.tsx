@@ -86,6 +86,42 @@ export function PersonaFeedbackCard({
         </button>
       </div>
 
+      {/* Creative Verdict */}
+      {persona.creativeVerdict && (
+        <p className="text-sm text-gray-800 italic leading-relaxed">
+          &ldquo;{persona.creativeVerdict}&rdquo;
+        </p>
+      )}
+
+      {/* Creative Quality Scores (mini-bars) */}
+      {(persona.originalityScore != null || persona.memorabilityScore != null || persona.culturalRelevanceScore != null || persona.talkabilityScore != null) && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {[
+            { label: "Originality", score: persona.originalityScore },
+            { label: "Memorability", score: persona.memorabilityScore },
+            { label: "Cultural Fit", score: persona.culturalRelevanceScore },
+            { label: "Talkability", score: persona.talkabilityScore },
+          ].map(({ label, score }) =>
+            score != null ? (
+              <div key={label}>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-xs text-muted-foreground">{label}</span>
+                  <span className="text-xs font-semibold text-gray-700">{score}</span>
+                </div>
+                <div className="w-full h-1.5 rounded-full bg-gray-100">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      score >= 7 ? "bg-emerald-500" : score >= 5 ? "bg-amber-400" : "bg-red-400"
+                    }`}
+                    style={{ width: `${score * 10}%` }}
+                  />
+                </div>
+              </div>
+            ) : null,
+          )}
+        </div>
+      )}
+
       {/* Feedback text */}
       <p className="text-sm text-gray-700 leading-relaxed">
         {persona.feedback}

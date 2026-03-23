@@ -113,16 +113,80 @@ interface FullVariantPromptParams {
   scholarContext?: string;
   /** BCT behavioral science context (COM-B model, behavior change techniques) */
   bctContext?: string;
+  /** Creative angle assigned to this variant (from creative-angles.ts) */
+  creativeAngleContext?: string;
 }
+
+// ─── Shared Prompt Fragments ─────────────────────────────────
+
+const INSIGHT_MINING_INSTRUCTIONS = `
+STEP 1: INSIGHT MINING (mandatory — do this BEFORE generating any strategy)
+
+Find the deepest human insight first. An insight is NOT:
+- A fact ("People use social media")
+- An observation ("Millennials value authenticity")
+- A positioning statement ("We are the best")
+
+A human insight IS:
+- An unspoken truth that triggers recognition ("We post the best version of our lives online, but feel most seen when someone knows the real story")
+- A tension people feel but don't articulate
+- The "why behind the why" — the deeper motivation beneath the surface behavior
+
+Test your insight: if the audience reads it and thinks "yes, exactly — that's how it feels", it's good.
+
+STEP 2: CREATIVE PLATFORM (mandatory — build on the insight)
+
+Translate the insight into a Big Idea — a creative platform that:
+- Is bigger than a slogan (it's a world, not a sentence)
+- Can manifest in 100 different ways across all touchpoints
+- Is understandable in 3 seconds but appreciable in 30 minutes
+- Says something the competitor CANNOT say
+- Has a clear visual/emotional territory
+
+Examples of platforms (not taglines):
+- Dove: "Real Beauty" (a belief system, not a slogan)
+- Nike: "Just Do It" (a permission statement)
+- Spotify Wrapped: "Your Year in Music" (data-as-identity)
+- Patagonia: "Don't Buy This Jacket" (radical transparency)`;
+
+const ANTI_GENERIC_GUARDRAILS = `
+QUALITY FILTER — REJECT your own output if:
+- The campaign theme sounds like something 10 other brands could also say
+- The insight is an open door that everyone already knows
+- The concept doesn't evoke a specific visual world
+- You can't explain it in 1 sentence to a 10-year-old
+- There is no surprising element that provokes a reaction
+- The creative platform is just a rephrased positioning statement
+
+If your output fails this filter, start over from a different perspective.`;
+
+const EFFIE_STRATEGY_JSON_SCHEMA = `
+"strategy": {
+  strategicIntent: string ("brand_building" | "sales_activation" | "hybrid"),
+  intentRatio: { brand: number, activation: number },
+  campaignTheme: A compelling 3-7 word campaign theme,
+  positioningStatement: One sentence positioning statement,
+  messagingHierarchy: { brandMessage, campaignMessage, proofPoints (3-5) },
+  jtbdFraming: { jobStatement ("When I..., I want to..., so I can..."), functionalJob, emotionalJob, socialJob },
+  strategicChoices: Array of { choice, rationale, tradeoff } (3-5 items),
+  humanInsight: The deep human truth that drives the entire concept (2-3 sentences),
+  culturalTension: The societal tension the brand can own (1-2 sentences, optional but strongly preferred),
+  creativePlatform: The Big Idea / organizing principle that lives across all touchpoints (NOT just a tagline),
+  creativeTerritory: Description of the visual and emotional world this concept lives in (2-3 sentences),
+  brandRole: How the brand uniquely resolves the tension or fulfills the insight (1-2 sentences),
+  memorableDevice: The distinctive mechanism that makes this concept unforgettable (optional — a ritual, a format, a catchphrase, a visual motif),
+  effieRationale: One paragraph explaining why this concept has Effie Award potential — reference insight depth, creative distinctiveness, and results potential
+}`;
 
 export function buildFullVariantAPrompt(params: FullVariantPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
-  const system = `You are a senior brand strategist specializing in evidence-based strategy and proven methodologies.
+  const system = `You are a senior brand strategist who creates Effie Award-winning campaigns grounded in evidence-based strategy and behavioral science.
 
-Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response, grounded in BEHAVIORAL SCIENCE EVIDENCE AND VALIDATED MARKETING FRAMEWORKS.
+Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response. Your output must be AWARD-WORTHY — not just strategically correct, but creatively distinctive.
+${INSIGHT_MINING_INSTRUCTIONS}
 
 Academic frameworks to apply:
 - Percy & Elliott's campaign planning model (stimulus → processing → response)
@@ -130,27 +194,24 @@ Academic frameworks to apply:
 - Christensen's Jobs-to-be-Done (JTBD) framework for audience framing
 - Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Pull strategies
 - COM-B Model (Capability, Opportunity, Motivation → Behavior) for behavioral change
-- Behavior Change Technique (BCT) Taxonomy v1 for intervention design${goalContext}${goalInsights}
+- Behavior Change Technique (BCT) Taxonomy v1 for intervention design${goalContext}${goalInsights}${params.creativeAngleContext ? `
+
+## Your Assigned Creative Angle
+${params.creativeAngleContext}
+Use this angle as your PRIMARY creative lens. Let it shape your insight, platform, and execution.` : ''}
 
 Your strategic approach should be:
+- INSIGHT-FIRST: Start with the deepest human truth, not the brand benefit
 - Grounded in behavioral science evidence and proven marketing frameworks
-- Risk-managed with validated approaches backed by academic research
 - Focused on measurable behavior change using COM-B and BCT techniques
-- Built on proven channel strategies with strong evidence of effectiveness
+- Built on a creative platform that is OWNABLE — not generic marketing-speak
+${ANTI_GENERIC_GUARDRAILS}
 
 IMPORTANT: If a Creative Briefing is provided, use it as the primary strategic direction.
 
 Output a JSON object with TWO top-level keys:
 
-"strategy": {
-  strategicIntent: "${params.strategicIntent}",
-  intentRatio: { brand: ${ratio.brand}, activation: ${ratio.activation} },
-  campaignTheme: A compelling 3-7 word campaign theme,
-  positioningStatement: One sentence positioning statement,
-  messagingHierarchy: { brandMessage, campaignMessage, proofPoints (3-5) },
-  jtbdFraming: { jobStatement ("When I..., I want to..., so I can..."), functionalJob, emotionalJob, socialJob },
-  strategicChoices: Array of { choice, rationale, tradeoff } (3-5 items)
-}
+${EFFIE_STRATEGY_JSON_SCHEMA}
 
 "architecture": {
   campaignType: Choose the type that best fits,
@@ -166,7 +227,7 @@ Use persona IDs from the provided list for all personaId fields.
 
 Respond with valid JSON.`;
 
-  const user = `Generate the complete strategy + architecture for variant A (evidence-based, proven methodologies) for "${params.campaignName}".
+  const user = `Generate the complete strategy + architecture for variant A (evidence-based, insight-driven) for "${params.campaignName}".
 
 ## Campaign Brief
 Description: ${params.campaignDescription || 'No description provided'}
@@ -218,9 +279,10 @@ export function buildFullVariantBPrompt(params: FullVariantPromptParams): { syst
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
-  const system = `You are a creative provocateur who finds breakthrough strategies through cross-industry analogies and cultural tensions.
+  const system = `You are a creative provocateur who creates Cannes Lions-winning campaigns through cultural tensions, cross-industry analogies, and unexpected creative leaps.
 
-Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response. Generate a strategy that SURPRISES — find the unexpected angle that competitors would never think of.
+Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response. Your strategy must SURPRISE — find the angle that makes people stop, think, and share.
+${INSIGHT_MINING_INSTRUCTIONS}
 
 Creative frameworks to apply:
 - Percy & Elliott's campaign planning model (stimulus → processing → response)
@@ -228,27 +290,25 @@ Creative frameworks to apply:
 - Christensen's Jobs-to-be-Done (JTBD) framework for audience framing
 - Cultural tension identification (what unspoken tension can the brand own?)
 - Cross-industry analogy mapping (what can we learn from completely different industries?)
-- Distinctive brand assets creation (Byron Sharp's "How Brands Grow")${goalContext}${goalInsights}
+- Distinctive brand assets creation (Byron Sharp's "How Brands Grow")${goalContext}${goalInsights}${params.creativeAngleContext ? `
+
+## Your Assigned Creative Angle
+${params.creativeAngleContext}
+Use this angle as your PRIMARY creative lens. Let it shape your insight, platform, and execution.` : ''}
 
 Your strategic approach should be:
-- Built on unexpected cross-industry analogies and cultural tensions
+- INSIGHT-FIRST: Find the cultural tension or unspoken truth BEFORE thinking about channels
 - Distinctive and ownable — something competitors would never think of
 - Culturally resonant with current tensions and emerging conversations
 - Bold in channel choices, mixing unconventional with proven approaches
+- Built on a creative platform that people would TALK about
+${ANTI_GENERIC_GUARDRAILS}
 
 IMPORTANT: If a Creative Briefing is provided, use it as the primary strategic direction.
 
 Output a JSON object with TWO top-level keys:
 
-"strategy": {
-  strategicIntent: "${params.strategicIntent}",
-  intentRatio: { brand: ${ratio.brand}, activation: ${ratio.activation} },
-  campaignTheme: A compelling 3-7 word campaign theme,
-  positioningStatement: One sentence positioning statement,
-  messagingHierarchy: { brandMessage, campaignMessage, proofPoints (3-5) },
-  jtbdFraming: { jobStatement ("When I..., I want to..., so I can..."), functionalJob, emotionalJob, socialJob },
-  strategicChoices: Array of { choice, rationale, tradeoff } (3-5 items)
-}
+${EFFIE_STRATEGY_JSON_SCHEMA}
 
 "architecture": {
   campaignType: Choose the type that best fits,
@@ -309,9 +369,10 @@ export function buildFullVariantCPrompt(params: FullVariantPromptParams): { syst
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
-  const system = `You are a data-driven innovation strategist who builds campaigns at the intersection of behavioral science, cultural intelligence, and platform-native thinking.
+  const system = `You are a data-driven innovation strategist who creates D&AD-winning campaigns at the intersection of behavioral science, cultural intelligence, and platform-native thinking.
 
-Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response. Your strategy must be GROUNDED IN DATA but INNOVATIVE IN EXECUTION.
+Your role: Generate BOTH the strategic foundation AND the campaign architecture in a single response. Your strategy must be GROUNDED IN DATA but BRILLIANT IN EXECUTION — where science meets creativity.
+${INSIGHT_MINING_INSTRUCTIONS}
 
 Strategic frameworks to apply:
 - Percy & Elliott's campaign planning model (stimulus → processing → response)
@@ -319,28 +380,26 @@ Strategic frameworks to apply:
 - Byron Sharp's "How Brands Grow": maximize Category Entry Points (CEPs) and Mental Availability
 - Thaler & Sunstein's Nudge Architecture: design choice environments that guide behavior
 - MINDSPACE framework (Messenger, Incentives, Norms, Defaults, Salience, Priming, Affect, Commitments, Ego)
-- Platform-native content strategy: design content that feels native to each platform's culture${goalContext}${goalInsights}
+- Platform-native content strategy: design content that feels native to each platform's culture${goalContext}${goalInsights}${params.creativeAngleContext ? `
+
+## Your Assigned Creative Angle
+${params.creativeAngleContext}
+Use this angle as your PRIMARY creative lens. Let it shape your insight, platform, and execution.` : ''}
 
 Your strategic approach should be:
+- INSIGHT-FIRST: Find the behavioral or data-driven insight BEFORE building the architecture
 - Data-grounded: every strategic choice backed by behavioral science or market evidence
 - CEP-maximized: identify and own the maximum number of Category Entry Points
 - Nudge-architected: design touchpoints as behavioral nudges, not just messages
 - Platform-native: content that leverages each platform's unique culture and algorithms
-- Cross-pollinating: combine academic evidence with cultural insights and cross-industry analogies
+- Built on a creative platform that turns DATA into EMOTION
+${ANTI_GENERIC_GUARDRAILS}
 
 IMPORTANT: If a Creative Briefing is provided, use it as the primary strategic direction.
 
 Output a JSON object with TWO top-level keys:
 
-"strategy": {
-  strategicIntent: "${params.strategicIntent}",
-  intentRatio: { brand: ${ratio.brand}, activation: ${ratio.activation} },
-  campaignTheme: A compelling 3-7 word campaign theme,
-  positioningStatement: One sentence positioning statement,
-  messagingHierarchy: { brandMessage, campaignMessage, proofPoints (3-5) },
-  jtbdFraming: { jobStatement ("When I..., I want to..., so I can..."), functionalJob, emotionalJob, socialJob },
-  strategicChoices: Array of { choice, rationale, tradeoff } (3-5 items)
-}
+${EFFIE_STRATEGY_JSON_SCHEMA}
 
 "architecture": {
   campaignType: Choose the type that best fits,
@@ -438,6 +497,13 @@ Evaluation criteria per persona — ALL fields are MANDATORY:
 - preferredVariant: "A", "B", or "C" — which variant does this persona prefer?
 - behavioralResonance: MANDATORY: Evaluate whether the behavioral change approach in each variant would actually motivate this persona to act. Consider what drives their behavior (capability, opportunity, or motivation barriers) and whether the strategy addresses it.
 
+CREATIVE QUALITY EVALUATION — ALL scores are MANDATORY per persona:
+- originalityScore: Score 1-10. "Would this concept make me stop scrolling? Is this something I haven't seen before from a brand?" Be brutally honest — a 7+ means genuinely surprising.
+- memorabilityScore: Score 1-10. "Would I still remember this campaign next week? Could I describe the concept to a friend in one sentence?" A 7+ means it sticks.
+- culturalRelevanceScore: Score 1-10. "Does this feel like NOW? Does it tap into something I'm actually thinking, feeling, or talking about?" A 7+ means it's culturally plugged in.
+- talkabilityScore: Score 1-10. "Would I share this? Would it spark a conversation at dinner, on social media, or with colleagues?" A 7+ means it's inherently shareable.
+- creativeVerdict: One sentence as the persona — your gut reaction to the winning variant's creative concept. Be specific and opinionated, not generic.
+
 Stay in character. Use the persona's vocabulary, concerns, and decision-making style.
 Consider their goals, pain points, preferred channels, and buying triggers.
 
@@ -502,32 +568,52 @@ export function buildStrategySynthesizerPrompt(params: {
 
   const system = `You are a chief strategy officer performing the final synthesis of a campaign blueprint.
 
-Your task: Combine the BEST elements from THREE strategy variants into ONE optimal campaign architecture, informed by persona feedback:
+SYNTHESIS APPROACH — ELEVATION, NOT COMBINATION
+
+You are NOT averaging three good ideas into one mediocre idea.
+You ARE identifying the single strongest creative platform and making it unstoppable.
+
+Your task: Elevate the BEST variant into an award-winning campaign, informed by persona feedback:
 - Variant A: evidence-based, proven methodologies (behavioral science frameworks)
 - Variant B: creative provocateur (cultural tensions, cross-industry analogies)
 - Variant C: data-driven innovation (CEP maximization, nudge architecture, platform-native)${goalContext}${goalInsights}
 
-Synthesis rules:
-1. Select the strongest journey phases from ANY of the three variants
-2. Merge touchpoints where they complement each other — look for synergies across all three
-3. Address ALL persona concerns raised in the validation
-4. Maintain strategic coherence — the final architecture must tell one story
-5. Keep the campaign type that best serves the strategic intent
-6. Ensure every persona's preferred elements are represented
-7. Leverage Variant C's behavioral nudge architecture where it strengthens the customer journey
-8. Incorporate Variant B's distinctive creative angles where they differentiate from competition
-9. Ground the strategy in Variant A's evidence base where it provides measurable confidence
+STEP 1: IDENTIFY THE WINNER
+- Which variant has the most powerful human insight? (deepest truth, highest originalityScore from personas)
+- Which variant has the most distinctive creative platform? (hardest to copy, highest memorabilityScore)
+- Which variant scored highest on culturalRelevanceScore + talkabilityScore from personas?
+- Pick ONE variant as the creative foundation. This is non-negotiable — do NOT blend creative platforms.
 
-Each variant has its OWN strategy AND architecture. You must synthesize the best elements from ALL THREE strategies AND architectures:
-- Pick the strongest campaign theme and positioning from any variant
-- Merge messaging hierarchies where they complement each other
-- Adjust messaging hierarchy if personas identified gaps
-- Strengthen proof points where personas were skeptical
-- Refine JTBD if personas revealed unaddressed jobs
+STEP 2: STRENGTHEN WITH ELEMENTS FROM OTHERS
+- Steal the best proof points from other variants
+- Take the strongest journey phase design
+- Borrow channel innovations and behavioral nudges
+- Incorporate the best touchpoint ideas
+- But NEVER dilute the winning creative platform, human insight, or brand role
+
+STEP 3: EFFIE TEST
+Before finalizing, pass your synthesis through the Effie Award criteria:
+1. Strategic Thinking: Is there a clear insight-to-strategy-to-execution logic?
+2. Creative Idea: Is the Big Idea genuinely surprising and ownable?
+3. Bringing the Idea to Life: Does every touchpoint express the same creative platform?
+4. Results Potential: Can you point to specific KPIs this concept would move?
+
+If it fails any criterion, go back to Step 2.
+
+Synthesis rules:
+1. The winning variant's humanInsight, creativePlatform, and brandRole MUST survive intact
+2. Select the strongest journey phases from ANY of the three variants
+3. Merge touchpoints where they complement each other — look for synergies across all three
+4. Address ALL persona concerns raised in the validation
+5. Maintain strategic coherence — the final architecture must tell one story
+6. Keep the campaign type that best serves the strategic intent
+7. Ensure every persona's preferred elements are represented
+8. The creativeTerritory must be vivid and specific — not generic marketing language
+9. The memorableDevice should be distinctive and ownable
 
 Output a complete combined result with TWO top-level keys:
-- "strategy": The refined StrategyLayer (same schema as input, with improvements)
-- "architecture": The synthesized ArchitectureLayer (best of A+B+C)
+- "strategy": The elevated StrategyLayer (same schema as input, with the winning platform strengthened). MUST include: humanInsight, creativePlatform, creativeTerritory, brandRole, and effieRationale.
+- "architecture": The synthesized ArchitectureLayer (best of A+B+C, unified under the winning creative platform)
 
 CRITICAL JSON SCHEMA — the architecture object MUST use these EXACT field names:
 

@@ -9,6 +9,13 @@ interface CompileStructuredFeedbackParams {
 
 /** Rating key → human-readable label (without variant prefix) */
 const RATING_LABELS: Record<string, string> = {
+  humanInsight: "Human Insight",
+  culturalTension: "Cultural Tension",
+  creativePlatform: "Creative Platform (Big Idea)",
+  creativeTerritory: "Creative Territory",
+  brandRole: "Brand Role",
+  memorableDevice: "Memorable Device",
+  effieRationale: "Effie Award Rationale",
   theme: "Campaign Theme",
   positioning: "Positioning Statement",
   "messaging.brand": "Brand Message",

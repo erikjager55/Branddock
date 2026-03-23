@@ -30,6 +30,10 @@ import { fetchExaContext } from '@/lib/exa/exa-client';
 import { buildScholarQueries } from '@/lib/semantic-scholar/scholar-queries';
 import { fetchScholarContext } from '@/lib/semantic-scholar/scholar-client';
 import { getBctContext, getGoalBctMapping } from '@/lib/bct/goal-bct-mapping';
+import { getTopAnglesForGoal } from '@/lib/campaigns/creative-angles';
+import { getLlmProfile } from '@/lib/campaigns/llm-creative-profiles';
+import type { CreativeAngleDefinition } from '@/lib/campaigns/creative-angles';
+import type { AiProvider } from '@/lib/ai/feature-models';
 import {
   strategyLayerSchema,
   architectureLayerSchema,
@@ -67,13 +71,13 @@ const GEMINI_FLASH = 'gemini-2.5-flash';
 
 /** Deep thinking configuration for strategy variant generation */
 const THINKING_CONFIG = {
-  anthropic: { budgetTokens: 10_000 },
+  anthropic: { budgetTokens: 16_000 },
   openai: { reasoningEffort: 'high' as const },
-  google: { thinkingBudget: 10_000 },
-  /** Persona validation uses slightly less thinking budget */
-  anthropicValidation: { budgetTokens: 8_000 },
-  /** Synthesis uses more thinking budget (most complex step) */
-  anthropicSynthesis: { budgetTokens: 12_000 },
+  google: { thinkingBudget: 16_000 },
+  /** Persona validation uses moderate thinking budget */
+  anthropicValidation: { budgetTokens: 10_000 },
+  /** Synthesis uses the most thinking budget (Effie-level elevation) */
+  anthropicSynthesis: { budgetTokens: 20_000 },
 };
 
 /** Wraps an AI call with step-specific error context for better debugging */
@@ -244,6 +248,78 @@ async function countCompetitorsAndTrends(workspaceId: string): Promise<number> {
   return competitors + trends;
 }
 
+// ─── Creative Angle Selection ────────────────────────────────
+
+interface CreativeAngleAssignment {
+  angle: CreativeAngleDefinition;
+  provider: AiProvider;
+  label: string;
+}
+
+/**
+ * Format a single creative angle as a prompt section for injection into a variant prompt.
+ */
+function formatAngleForPrompt(angle: CreativeAngleDefinition): string {
+  const parts = [
+    `**${angle.name}** (${angle.insightFamily})`,
+    `Starting insight type: ${angle.startingInsightType}`,
+    angle.description,
+    `Output signature: ${angle.outputSignature}`,
+    `Famous examples: ${angle.famousExamples.join('; ')}`,
+    `Risk level: ${angle.riskLevel} | Effie/Cannes potential: ${angle.effieCannesPotential}`,
+  ];
+  if (angle.subMethodologies?.length) {
+    parts.push(`Sub-methodologies: ${angle.subMethodologies.join(', ')}`);
+  }
+  return parts.join('\n');
+}
+
+/**
+ * Select the 3 best creative angles for the campaign goal and assign each to a provider.
+ * Each variant gets a DIFFERENT angle to force creative divergence.
+ * Provider matching: prioritize angles that are in the provider's bestAngleIds.
+ */
+function selectCreativeAngles(
+  goalType: string,
+  providerA: AiProvider,
+  providerB: AiProvider,
+  providerC: AiProvider,
+): CreativeAngleAssignment[] {
+  const topAngles = getTopAnglesForGoal(goalType, 8);
+  if (topAngles.length === 0) return [];
+
+  const providers = [
+    { provider: providerA, label: 'A' },
+    { provider: providerB, label: 'B' },
+    { provider: providerC, label: 'C' },
+  ];
+
+  const usedAngleIds = new Set<string>();
+  const assignments: CreativeAngleAssignment[] = [];
+
+  // For each provider, find the best-fitting angle that hasn't been used yet
+  for (const { provider, label } of providers) {
+    const profile = getLlmProfile(provider);
+    const bestIds = profile?.bestAngleIds ?? [];
+
+    // Try to find an angle from the provider's best list first
+    let selectedAngle = topAngles.find(a => bestIds.includes(a.id) && !usedAngleIds.has(a.id));
+    // Fallback: take the highest-ranked unused angle
+    if (!selectedAngle) {
+      selectedAngle = topAngles.find(a => !usedAngleIds.has(a.id));
+    }
+    // Last resort: just take the first angle (all used)
+    if (!selectedAngle) {
+      selectedAngle = topAngles[0];
+    }
+
+    usedAngleIds.add(selectedAngle.id);
+    assignments.push({ angle: selectedAngle, provider, label });
+  }
+
+  return assignments;
+}
+
 // ─── Zod validation helper ──────────────────────────────────
 
 /**
@@ -282,6 +358,18 @@ function normalizePersonaValidation(results: PersonaValidationResult[]): Persona
     overallScore: (typeof p.overallScore === 'number' && !isNaN(p.overallScore))
       ? Math.max(1, Math.min(p.overallScore, 10))
       : 5,
+    originalityScore: (typeof p.originalityScore === 'number' && !isNaN(p.originalityScore))
+      ? Math.max(1, Math.min(p.originalityScore, 10))
+      : undefined,
+    memorabilityScore: (typeof p.memorabilityScore === 'number' && !isNaN(p.memorabilityScore))
+      ? Math.max(1, Math.min(p.memorabilityScore, 10))
+      : undefined,
+    culturalRelevanceScore: (typeof p.culturalRelevanceScore === 'number' && !isNaN(p.culturalRelevanceScore))
+      ? Math.max(1, Math.min(p.culturalRelevanceScore, 10))
+      : undefined,
+    talkabilityScore: (typeof p.talkabilityScore === 'number' && !isNaN(p.talkabilityScore))
+      ? Math.max(1, Math.min(p.talkabilityScore, 10))
+      : undefined,
     preferredVariant: (
       typeof p.preferredVariant === 'string' && ['A', 'B', 'C'].includes(p.preferredVariant.trim().toUpperCase())
         ? p.preferredVariant.trim().toUpperCase() as 'A' | 'B' | 'C'
@@ -483,12 +571,24 @@ export async function generateStrategyVariants(
     bctContext: bctContext || undefined,
   };
 
-  // Step 1: Triple Full Variants (parallel — each model generates its own strategy + architecture with deep thinking)
-  onProgress?.({ step: 1, name: 'Triple Full Variants', status: 'running', label: 'Three AI models generating complete strategy variants with deep thinking...' });
+  // Select creative angles for each variant (forces creative divergence)
+  const creativeAngles = selectCreativeAngles(
+    campaignGoalType,
+    resolvedProvider as AiProvider,
+    resolvedProviderB as AiProvider,
+    resolvedProviderC as AiProvider,
+  );
+  const angleA = creativeAngles.find(a => a.label === 'A');
+  const angleB = creativeAngles.find(a => a.label === 'B');
+  const angleC = creativeAngles.find(a => a.label === 'C');
 
-  const step1aPrompt = buildFullVariantAPrompt(sharedPromptParams);
-  const step1bPrompt = buildFullVariantBPrompt(sharedPromptParams);
-  const step1cPrompt = buildFullVariantCPrompt(sharedPromptParams);
+  // Step 1: Triple Full Variants (parallel — each model generates its own strategy + architecture with deep thinking)
+  const anglePreview = creativeAngles.map(a => `${a.label}: ${a.angle.name}`).join(' | ');
+  onProgress?.({ step: 1, name: 'Triple Full Variants', status: 'running', label: `Three AI models generating strategy variants with creative angles: ${anglePreview}` });
+
+  const step1aPrompt = buildFullVariantAPrompt({ ...sharedPromptParams, creativeAngleContext: angleA ? formatAngleForPrompt(angleA.angle) : undefined });
+  const step1bPrompt = buildFullVariantBPrompt({ ...sharedPromptParams, creativeAngleContext: angleB ? formatAngleForPrompt(angleB.angle) : undefined });
+  const step1cPrompt = buildFullVariantCPrompt({ ...sharedPromptParams, creativeAngleContext: angleC ? formatAngleForPrompt(angleC.angle) : undefined });
 
   const [fullVariantARaw, fullVariantBRaw, fullVariantCRaw] = await Promise.all([
     withStepContext('Step 1a (Full Variant A — Opus)', 600, () =>
@@ -857,10 +957,22 @@ export async function generateCampaignBlueprint(
   const brandContextText = formatBrandContext(brandContext);
 
   // ─── Step 1: Triple Full Variants (parallel — each model generates its own strategy + architecture with deep thinking) ──────────
-  onProgress?.({ step: 1, name: 'Triple Full Variants', status: 'running', label: 'Three AI models generating complete strategy variants with deep thinking...' });
-
   const briefing = isWizardMode ? options.wizardContext!.briefing : undefined;
   const goalGuidance = getGoalTypeGuidance(campaignGoalType);
+
+  // Select creative angles for each variant (forces creative divergence)
+  const blueprintAngles = selectCreativeAngles(
+    campaignGoalType,
+    resolvedProvider as AiProvider,
+    resolvedProviderB as AiProvider,
+    resolvedProviderC as AiProvider,
+  );
+  const bpAngleA = blueprintAngles.find(a => a.label === 'A');
+  const bpAngleB = blueprintAngles.find(a => a.label === 'B');
+  const bpAngleC = blueprintAngles.find(a => a.label === 'C');
+
+  const bpAnglePreview = blueprintAngles.map(a => `${a.label}: ${a.angle.name}`).join(' | ');
+  onProgress?.({ step: 1, name: 'Triple Full Variants', status: 'running', label: `Three AI models generating strategy variants with creative angles: ${bpAnglePreview}` });
 
   const fullVariantParams = {
     brandContext: brandContextText,
@@ -880,9 +992,9 @@ export async function generateCampaignBlueprint(
     bctContext: bctContext || undefined,
   };
 
-  const step1aPrompt = buildFullVariantAPrompt(fullVariantParams);
-  const step1bPrompt = buildFullVariantBPrompt(fullVariantParams);
-  const step1cPrompt = buildFullVariantCPrompt(fullVariantParams);
+  const step1aPrompt = buildFullVariantAPrompt({ ...fullVariantParams, creativeAngleContext: bpAngleA ? formatAngleForPrompt(bpAngleA.angle) : undefined });
+  const step1bPrompt = buildFullVariantBPrompt({ ...fullVariantParams, creativeAngleContext: bpAngleB ? formatAngleForPrompt(bpAngleB.angle) : undefined });
+  const step1cPrompt = buildFullVariantCPrompt({ ...fullVariantParams, creativeAngleContext: bpAngleC ? formatAngleForPrompt(bpAngleC.angle) : undefined });
 
   const [fullVariantARaw, fullVariantBRaw, fullVariantCRaw] = await Promise.all([
     withStepContext('Step 1a (Full Variant A — Opus)', 600, () =>
@@ -1262,6 +1374,11 @@ export async function regenerateBlueprintLayer(
     onProgress?.({ step: 1, name: 'Full Variant Regeneration', status: 'running', label: 'Regenerating strategy & architecture...' });
 
     const regenDescription = `${campaign.description || ''}${feedback ? `\n\nUser feedback for regeneration: ${feedback}` : ''}`;
+
+    // Select a single creative angle for regeneration
+    const regenAngles = selectCreativeAngles(regenCampaignGoalType, resolvedProvider as AiProvider, resolvedProvider as AiProvider, resolvedProvider as AiProvider);
+    const regenAngle = regenAngles[0]; // Best-fit angle for the provider
+
     const prompt = buildFullVariantAPrompt({
       brandContext: brandContextText,
       personaContext,
@@ -1276,13 +1393,14 @@ export async function regenerateBlueprintLayer(
       arenaContext: regenArenaContext,
       scholarContext: regenScholarContext,
       bctContext: regenBctContext,
+      creativeAngleContext: regenAngle ? formatAngleForPrompt(regenAngle.angle) : undefined,
     });
 
     const fullVariantRaw = await withStepContext('Regenerate Full Variant (Step 1)', 300, () =>
       createStructuredCompletion<FullVariant>(
         resolvedProvider, resolvedModel,
         prompt.system, prompt.user,
-        { temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000 },
+        { temperature: 0.5, maxTokens: 24000, timeoutMs: 300_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
       ),
     );
     const fullVariant = fullVariantSchema.parse(fullVariantRaw);

@@ -90,7 +90,7 @@ function resolveOptions(opts?: CompletionOptions) {
   return {
     model: opts?.model ?? aiConfig.model,
     temperature: opts?.temperature ?? aiConfig.temperature(useCase),
-    max_tokens: opts?.maxTokens ?? aiConfig.maxTokens(useCase),
+    max_completion_tokens: opts?.maxTokens ?? aiConfig.maxTokens(useCase),
     timeout: aiConfig.timeout(useCase),
   };
 }
@@ -106,12 +106,12 @@ export const openaiClient = {
     messages: ChatCompletionMessageParam[],
     options?: CompletionOptions,
   ): Promise<string> {
-    const { model, temperature, max_tokens, timeout } = resolveOptions(options);
+    const { model, temperature, max_completion_tokens, timeout } = resolveOptions(options);
     const client = getClient();
 
     const response = await withRetry(() =>
       client.chat.completions.create(
-        { model, messages, temperature, max_tokens },
+        { model, messages, temperature, max_completion_tokens },
         { timeout },
       ),
     );
@@ -127,12 +127,12 @@ export const openaiClient = {
     messages: ChatCompletionMessageParam[],
     options?: StreamingOptions,
   ): Promise<ReadableStream<Uint8Array>> {
-    const { model, temperature, max_tokens, timeout } = resolveOptions(options);
+    const { model, temperature, max_completion_tokens, timeout } = resolveOptions(options);
     const client = getClient();
 
     const stream = await withRetry(() =>
       client.chat.completions.create(
-        { model, messages, temperature, max_tokens, stream: true },
+        { model, messages, temperature, max_completion_tokens, stream: true },
         { timeout },
       ),
     );
@@ -168,7 +168,7 @@ export const openaiClient = {
     messages: ChatCompletionMessageParam[],
     options?: CompletionOptions,
   ): Promise<T> {
-    const { model, temperature, max_tokens, timeout } = resolveOptions(options);
+    const { model, temperature, max_completion_tokens, timeout } = resolveOptions(options);
     const client = getClient();
     const useCase = options?.useCase ?? 'STRUCTURED';
 
@@ -178,7 +178,7 @@ export const openaiClient = {
           model,
           messages,
           temperature: options?.temperature ?? aiConfig.temperature(useCase),
-          max_tokens,
+          max_completion_tokens,
           response_format: { type: 'json_object' },
         },
         { timeout },
