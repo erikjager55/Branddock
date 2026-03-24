@@ -3,6 +3,7 @@
 import React from "react";
 import { FileText, Image, Film, Layers, Lock } from "lucide-react";
 import type { ContentTab } from "@/types/studio";
+import { STUDIO } from "@/lib/constants/design-tokens";
 
 interface ContentTypeTabsProps {
   activeTab: ContentTab;
@@ -32,7 +33,7 @@ export function ContentTypeTabs({ activeTab, isTabLocked, onTabChange }: Content
             disabled={isLocked}
             className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               isActive
-                ? "bg-teal-50 text-teal-700"
+                ? `${STUDIO.toolbar.active.bg} ${STUDIO.toolbar.active.text}`
                 : isLocked
                 ? "text-gray-300 cursor-not-allowed"
                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"

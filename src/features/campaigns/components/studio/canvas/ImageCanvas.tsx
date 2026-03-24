@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { ZoomIn, ZoomOut, RotateCcw, Image as ImageIcon } from "lucide-react";
 import { useContentStudioStore } from "@/stores/useContentStudioStore";
+import { EmptyState } from "@/components/shared";
 
 interface ImageCanvasProps {
   isPreviewMode: boolean;
@@ -17,13 +18,11 @@ export function ImageCanvas({ isPreviewMode }: ImageCanvasProps) {
   if (imageUrls.length === 0) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <ImageIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500 font-medium">No images yet</p>
-          <p className="text-xs text-gray-400 mt-1">
-            Write a prompt and click Generate to create images
-          </p>
-        </div>
+        <EmptyState
+          icon={ImageIcon}
+          title="No images yet"
+          description="Write a prompt and click Generate to create images"
+        />
       </div>
     );
   }
@@ -81,7 +80,7 @@ export function ImageCanvas({ isPreviewMode }: ImageCanvasProps) {
               key={i}
               onClick={() => setSelectedIndex(i)}
               className={`h-14 w-14 rounded-lg overflow-hidden border-2 transition-colors ${
-                i === selectedIndex ? "border-teal-500" : "border-gray-200 hover:border-gray-300"
+                i === selectedIndex ? "border-teal-500 ring-1 ring-teal-200" : "border-gray-200 hover:border-gray-300"
               }`}
             >
               <img src={url} alt={`Thumbnail ${i + 1}`} className="w-full h-full object-cover" />

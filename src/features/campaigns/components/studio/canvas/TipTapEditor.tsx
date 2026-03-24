@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect, useCallback, useState, useRef } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -31,8 +31,13 @@ import {
   Redo2,
   Minus,
   FileText,
+  X,
+  Check,
+  Unlink,
 } from "lucide-react";
 import { useContentStudioStore } from "@/stores/useContentStudioStore";
+import { STUDIO } from "@/lib/constants/design-tokens";
+import { EmptyState } from "@/components/shared";
 
 interface TipTapEditorProps {
   isPreviewMode: boolean;
@@ -58,8 +63,8 @@ function ToolbarButton({
       disabled={disabled}
       className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${
         isActive
-          ? "bg-teal-50 text-teal-700"
-          : "text-gray-500 hover:text-gray-700"
+          ? `${STUDIO.toolbar.active.bg} ${STUDIO.toolbar.active.text}`
+          : `${STUDIO.toolbar.inactive.text} ${STUDIO.toolbar.inactive.hover}`
       } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
       title={label}
       type="button"
@@ -74,27 +79,92 @@ function ToolbarSeparator() {
   return <div className="w-px h-5 bg-gray-200 mx-1" />;
 }
 
-/** Link insertion handler */
-function handleLinkInsert(editor: Editor) {
-  const previousUrl = editor.getAttributes("link").href;
-  const url = window.prompt("URL", previousUrl || "https://");
+/** Inline link popover that replaces window.prompt() */
+function LinkPopover({ editor, onClose }: { editor: Editor; onClose: () => void }) {
+  const currentUrl = editor.getAttributes("link").href || "";
+  const [url, setUrl] = useState(currentUrl || "https://");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
 
-  if (url === null) return;
-  if (url === "") {
+  useEffect(() => {
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
+
+  const handleApply = () => {
+    if (!url.trim()) {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run();
+    } else {
+      editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+    }
+    onClose();
+  };
+
+  const handleRemove = () => {
     editor.chain().focus().extendMarkRange("link").unsetLink().run();
-    return;
-  }
+    onClose();
+  };
 
-  editor
-    .chain()
-    .focus()
-    .extendMarkRange("link")
-    .setLink({ href: url })
-    .run();
+  return (
+    <div
+      ref={popoverRef}
+      className="absolute left-0 top-full mt-1 z-30 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex items-center gap-1.5"
+    >
+      <input
+        ref={inputRef}
+        type="url"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleApply();
+          if (e.key === "Escape") onClose();
+        }}
+        placeholder="https://example.com"
+        className={`w-56 px-2 py-1 text-sm border border-gray-200 rounded focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none`}
+      />
+      <button
+        type="button"
+        onClick={handleApply}
+        className={`p-1 rounded ${STUDIO.toolbar.active.text} hover:bg-teal-50`}
+        title="Apply link"
+      >
+        <Check className="h-4 w-4" />
+      </button>
+      {currentUrl && (
+        <button
+          type="button"
+          onClick={handleRemove}
+          className="p-1 rounded text-gray-400 hover:bg-gray-100 hover:text-red-500"
+          title="Remove link"
+        >
+          <Unlink className="h-4 w-4" />
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={onClose}
+        className="p-1 rounded text-gray-400 hover:bg-gray-100"
+        title="Cancel"
+      >
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
 }
 
 /** Editor toolbar with formatting options */
 function EditorToolbar({ editor }: { editor: Editor }) {
+  const [showLinkPopover, setShowLinkPopover] = useState(false);
   return (
     <div className="flex items-center gap-0.5 p-2 bg-white rounded-t-lg border border-b-0 flex-wrap">
       {/* Text formatting */}
@@ -181,12 +251,17 @@ function EditorToolbar({ editor }: { editor: Editor }) {
         label="Horizontal Rule"
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
       />
-      <ToolbarButton
-        icon={Link2}
-        label="Link"
-        isActive={editor.isActive("link")}
-        onClick={() => handleLinkInsert(editor)}
-      />
+      <div className="relative">
+        <ToolbarButton
+          icon={Link2}
+          label="Link"
+          isActive={editor.isActive("link")}
+          onClick={() => setShowLinkPopover((prev) => !prev)}
+        />
+        {showLinkPopover && (
+          <LinkPopover editor={editor} onClose={() => setShowLinkPopover(false)} />
+        )}
+      </div>
 
       <ToolbarSeparator />
 
@@ -315,13 +390,11 @@ export function TipTapEditor({ isPreviewMode }: TipTapEditorProps) {
   if (!textContent && !editor?.isFocused) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500 font-medium">No content yet</p>
-          <p className="text-xs text-gray-400 mt-1">
-            Write a prompt and click Generate to create content
-          </p>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="No content yet"
+          description="Write a prompt and click Generate to create content"
+        />
       </div>
     );
   }

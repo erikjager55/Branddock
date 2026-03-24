@@ -5,6 +5,7 @@ import { Sparkles, Loader2 } from "lucide-react";
 import { useContentStudioStore } from "@/stores/useContentStudioStore";
 import { useGenerateContent, useCostEstimate } from "../../../hooks/studio.hooks";
 import type { ContentTab } from "@/types/studio";
+import { STUDIO } from "@/lib/constants/design-tokens";
 
 interface GenerateButtonProps {
   deliverableId: string;
@@ -58,7 +59,7 @@ export function GenerateButton({ deliverableId, activeTab }: GenerateButtonProps
       className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
         isDisabled
           ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-          : "bg-gradient-to-r from-teal-600 to-emerald-600 text-white hover:from-teal-700 hover:to-emerald-700 shadow-sm"
+          : `${STUDIO.generateButton} text-white shadow-sm`
       }`}
     >
       {isGenerating ? (

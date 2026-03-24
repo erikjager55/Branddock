@@ -68,7 +68,7 @@ export function PromptSection() {
               const separator = prompt.length > 0 ? ". " : "";
               setPrompt((prompt + separator + chip).slice(0, 500));
             }}
-            className="px-2 py-1 text-xs rounded-full border border-gray-200 text-gray-600 hover:border-teal-300 hover:text-teal-700 hover:bg-teal-50 transition-colors"
+            className="px-2 py-1 text-xs rounded-full border border-gray-200 text-gray-600 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
           >
             {chip}
           </button>

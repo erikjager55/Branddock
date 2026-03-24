@@ -3,9 +3,11 @@
 import React, { useState, useRef } from "react";
 import { Play, Pause, Film } from "lucide-react";
 import { useContentStudioStore } from "@/stores/useContentStudioStore";
+import { EmptyState } from "@/components/shared";
+import { STUDIO } from "@/lib/constants/design-tokens";
 
 export function VideoPlayer() {
-  const { videoUrl } = useContentStudioStore();
+  const videoUrl = useContentStudioStore((s) => s.videoUrl);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -14,13 +16,11 @@ export function VideoPlayer() {
   if (!videoUrl) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <Film className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500 font-medium">No video yet</p>
-          <p className="text-xs text-gray-400 mt-1">
-            Write a prompt and click Generate to create a video
-          </p>
-        </div>
+        <EmptyState
+          icon={Film}
+          title="No video yet"
+          description="Write a prompt and click Generate to create a video"
+        />
       </div>
     );
   }
@@ -62,7 +62,7 @@ export function VideoPlayer() {
         <div className="flex items-center gap-3 mt-3 px-2">
           <button
             onClick={togglePlay}
-            className="p-2 rounded-full bg-teal-600 text-white hover:bg-teal-700"
+            className={`p-2 rounded-full text-white ${STUDIO.generateButton}`}
           >
             {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </button>
@@ -81,7 +81,7 @@ export function VideoPlayer() {
             }}
           >
             <div
-              className="h-full bg-teal-600 rounded-full transition-all"
+              className="h-full rounded-full transition-all bg-gradient-to-r from-teal-600 to-emerald-600"
               style={{ width: `${progress}%` }}
             />
           </div>

@@ -5,6 +5,7 @@ import { RefreshCw } from 'lucide-react';
 import { ProgressBar, Button } from '@/components/shared';
 import { useQualityScore, useRefreshQuality } from '../../hooks/studio.hooks';
 import { ImproveScoreButton } from './ImproveScoreButton';
+import { STUDIO } from '@/lib/constants/design-tokens';
 
 // ─── Types ─────────────────────────────────────────────
 
@@ -15,9 +16,9 @@ interface QualityScoreWidgetProps {
 // ─── Helpers ───────────────────────────────────────────
 
 function getScoreColor(score: number): string {
-  if (score >= 80) return 'text-emerald-600';
-  if (score >= 60) return 'text-amber-500';
-  return 'text-red-500';
+  if (score >= 80) return STUDIO.quality.high;
+  if (score >= 60) return STUDIO.quality.medium;
+  return STUDIO.quality.low;
 }
 
 function getBorderColor(score: number): string {

@@ -7,6 +7,7 @@ import {
   resolveDeliverableTypeId,
 } from "@/features/campaigns/lib/deliverable-type-settings";
 import type { SettingsField } from "@/features/campaigns/lib/deliverable-type-settings";
+import { STUDIO } from "@/lib/constants/design-tokens";
 
 interface DynamicSettingsPanelProps {
   contentType: string;
@@ -127,10 +128,10 @@ function PillsField({
             key={opt.value}
             type="button"
             onClick={() => onChange(opt.value)}
-            className={`px-2 py-1 text-xs rounded-md transition-colors ${
+            className={`px-2 py-1 text-xs rounded-md transition-colors border ${
               value === opt.value
-                ? "bg-teal-50 text-teal-700 border border-teal-200"
-                : "bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300"
+                ? STUDIO.pill.active
+                : `${STUDIO.pill.inactive}`
             }`}
           >
             {opt.label}

@@ -732,6 +732,67 @@ export const DASHBOARD_TOKENS = {
   },
 } as const;
 
+// ─── CONTENT STUDIO TOKENS ──────────────────────────────────
+
+export const STUDIO = {
+  /** Panel widths */
+  panel: {
+    left: 'w-80',              // 320px
+    leftPx: 320,
+    right: 'w-80',             // 320px
+    rightPx: 320,
+  },
+
+  /** Canvas background */
+  canvas: {
+    bg: 'bg-gray-50',
+  },
+
+  /** Toolbar active state (formatting buttons) */
+  toolbar: {
+    active: {
+      bg: 'bg-teal-50',
+      text: 'text-teal-700',
+    },
+    inactive: {
+      text: 'text-gray-500',
+      hover: 'hover:bg-gray-100 hover:text-gray-700',
+    },
+  },
+
+  /** Auto-save indicator */
+  autoSave: {
+    saved: 'text-gray-400',
+    saving: 'text-amber-500',
+    unsaved: 'text-gray-300',
+  },
+
+  /** Section headers in panels */
+  sectionHeader: 'text-xs font-semibold text-gray-500 uppercase tracking-wider',
+
+  /** Active pill/chip in settings panels */
+  pill: {
+    active: 'bg-teal-50 text-teal-700 border-teal-200',
+    inactive: 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50',
+  },
+
+  /** Generate button gradient */
+  generateButton: 'bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700',
+
+  /** Content type tabs */
+  tab: {
+    active: 'text-teal-700 border-b-2 border-teal-600',
+    inactive: 'text-gray-500 hover:text-gray-700',
+  },
+
+  /** Quality score colors */
+  quality: {
+    high: 'text-emerald-600',   // ≥80
+    medium: 'text-amber-500',   // ≥60
+    low: 'text-red-500',        // <60
+  },
+} as const;
+
 // ─── HELPER: cn() ──────────────────────────────────────────
 // Utility to merge multiple class strings (simple version)
 // For production: use clsx or tailwind-merge

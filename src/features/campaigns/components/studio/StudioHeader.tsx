@@ -35,6 +35,7 @@ export function StudioHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Cleanup feedback timer on unmount
   useEffect(() => {
@@ -42,6 +43,18 @@ export function StudioHeader({
       if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
     };
   }, []);
+
+  // Close context menu on click-outside
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
 
   const formatSavedTime = (iso: string) => {
     const diff = Date.now() - new Date(iso).getTime();
@@ -135,7 +148,7 @@ export function StudioHeader({
         />
 
         {/* Context menu */}
-        <div className="relative">
+        <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((prev) => !prev)}
             className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
@@ -145,9 +158,6 @@ export function StudioHeader({
           </button>
 
           {menuOpen && (
-            <>
-              {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
-              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
               <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg border border-gray-200 shadow-lg z-20 py-1">
                 <button
                   onClick={handleDuplicate}
@@ -171,7 +181,6 @@ export function StudioHeader({
                   Delete
                 </button>
               </div>
-            </>
           )}
         </div>
       </div>

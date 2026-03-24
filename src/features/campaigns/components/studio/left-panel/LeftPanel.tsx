@@ -9,6 +9,7 @@ import { TypeSettingsPanel } from "./TypeSettingsPanel";
 import { KnowledgeContextPanel } from "./KnowledgeContextPanel";
 import { PersonaContextPanel } from "./PersonaContextPanel";
 import { GenerateButton } from "./GenerateButton";
+import { STUDIO } from "@/lib/constants/design-tokens";
 
 interface LeftPanelProps {
   deliverableId: string;
@@ -20,7 +21,7 @@ interface LeftPanelProps {
 
 export function LeftPanel({ deliverableId, activeTab, contentType, knowledgeAssets, knowledgeConfidence }: LeftPanelProps) {
   return (
-    <div className="w-80 border-r bg-white overflow-y-auto flex flex-col">
+    <div className={`${STUDIO.panel.left} flex-shrink-0 border-r border-gray-200 bg-white overflow-y-auto flex flex-col`}>
       <div className="flex-1 p-4 space-y-5">
         <PromptSection />
         <AiModelSelector activeTab={activeTab} />
