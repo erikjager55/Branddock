@@ -15,6 +15,29 @@ import { Button, Badge } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import type { StrategyFoundation } from "../../types/campaign-wizard.types";
 
+// ─── Helpers ─────────────────────────────────────────────
+
+/** Safely coerce an AI-returned value to a display string. The AI may return
+ *  plain strings OR objects (e.g. {barrier, severity, comBComponent, description}).
+ *  This picks the most descriptive string field, or JSON-stringifies as last resort. */
+function toDisplayString(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value == null) return "";
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    // Pick the most descriptive text field available
+    for (const key of ["barrier", "behavior", "name", "title", "description", "label", "text", "value", "techniqueName", "factor", "insight", "opportunity", "summary", "rationale"]) {
+      if (typeof obj[key] === "string" && obj[key]) return obj[key] as string;
+    }
+    // Fallback: join all string values
+    const strings = Object.values(obj).filter((v) => typeof v === "string" && v) as string[];
+    if (strings.length > 0) return strings.join(" — ");
+    return JSON.stringify(value);
+  }
+  return String(value);
+}
+
 // ─── Types ──────────────────────────────────────────────
 
 interface StrategyFoundationReviewViewProps {
@@ -95,7 +118,7 @@ export function StrategyFoundationReviewView({
               Strategic Direction
             </p>
             <p className="text-sm text-teal-700">
-              {foundation.strategicDirection}
+              {toDisplayString(foundation.strategicDirection)}
             </p>
           </div>
         </div>
@@ -110,7 +133,7 @@ export function StrategyFoundationReviewView({
               Suggested Approach
             </p>
             <p className="text-sm text-blue-700">
-              {foundation.suggestedApproach}
+              {toDisplayString(foundation.suggestedApproach)}
             </p>
           </div>
         </div>
@@ -124,15 +147,15 @@ export function StrategyFoundationReviewView({
         defaultOpen
       >
         {/* Target behaviors */}
-        {foundation.targetBehaviors.length > 0 && (
+        {(foundation.targetBehaviors ?? []).length > 0 && (
           <div>
             <p className="text-xs font-medium text-gray-500 uppercase mb-1.5">
               Target Behaviors
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {foundation.targetBehaviors.map((b, i) => (
+              {(foundation.targetBehaviors ?? []).map((b, i) => (
                 <Badge key={i} variant="default">
-                  {b}
+                  {toDisplayString(b)}
                 </Badge>
               ))}
             </div>
@@ -141,32 +164,32 @@ export function StrategyFoundationReviewView({
         {/* Barriers & desired behaviors */}
         {foundation.behavioralDiagnosis && (
           <>
-            {foundation.behavioralDiagnosis.behavioralBarriers.length > 0 && (
+            {(foundation.behavioralDiagnosis.behavioralBarriers ?? []).length > 0 && (
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase mb-1.5">
                   Behavioral Barriers
                 </p>
                 <ul className="space-y-1">
-                  {foundation.behavioralDiagnosis.behavioralBarriers.map(
+                  {(foundation.behavioralDiagnosis.behavioralBarriers ?? []).map(
                     (b, i) => (
                       <li key={i} className="text-sm text-gray-600">
-                        &bull; {b}
+                        &bull; {toDisplayString(b)}
                       </li>
                     ),
                   )}
                 </ul>
               </div>
             )}
-            {foundation.behavioralDiagnosis.desiredBehaviors.length > 0 && (
+            {(foundation.behavioralDiagnosis.desiredBehaviors ?? []).length > 0 && (
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase mb-1.5">
                   Desired Behaviors
                 </p>
                 <ul className="space-y-1">
-                  {foundation.behavioralDiagnosis.desiredBehaviors.map(
+                  {(foundation.behavioralDiagnosis.desiredBehaviors ?? []).map(
                     (b, i) => (
                       <li key={i} className="text-sm text-gray-600">
-                        &bull; {b}
+                        &bull; {toDisplayString(b)}
                       </li>
                     ),
                   )}
@@ -178,70 +201,66 @@ export function StrategyFoundationReviewView({
       </Section>
 
       {/* Behavioral Strategy */}
-      <Section
-        title="Behavioral Strategy"
-        icon={Sparkles}
-        iconColor="text-amber-500"
-      >
-        {foundation.behavioralStrategy && (
-          <>
-            <p className="text-sm text-gray-700">
-              {foundation.behavioralStrategy.summary}
-            </p>
-            {foundation.behavioralStrategy.selectedBCTs.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase mb-1.5">
-                  Selected BCTs
-                </p>
-                <div className="space-y-1.5">
-                  {foundation.behavioralStrategy.selectedBCTs.map((bct, i) => (
-                    <div
-                      key={i}
-                      className="text-sm text-gray-600 border-l-2 border-amber-300 pl-3"
-                    >
-                      <span className="font-medium">{bct.techniqueName}</span>
-                      {bct.applicationHint && (
-                        <span className="text-gray-500">
-                          {" "}
-                          — {bct.applicationHint}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
+      {foundation.behavioralStrategy && (
+        <Section
+          title="Behavioral Strategy"
+          icon={Sparkles}
+          iconColor="text-amber-500"
+        >
+          <p className="text-sm text-gray-700">
+            {toDisplayString(foundation.behavioralStrategy.summary)}
+          </p>
+          {(foundation.behavioralStrategy.selectedBCTs ?? []).length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase mb-1.5">
+                Selected BCTs
+              </p>
+              <div className="space-y-1.5">
+                {(foundation.behavioralStrategy.selectedBCTs ?? []).map((bct, i) => (
+                  <div
+                    key={i}
+                    className="text-sm text-gray-600 border-l-2 border-amber-300 pl-3"
+                  >
+                    <span className="font-medium">{toDisplayString(bct.techniqueName)}</span>
+                    {bct.applicationHint && (
+                      <span className="text-gray-500">
+                        {" "}
+                        — {toDisplayString(bct.applicationHint)}
+                      </span>
+                    )}
+                  </div>
+                ))}
               </div>
-            )}
-          </>
-        )}
-      </Section>
+            </div>
+          )}
+        </Section>
+      )}
 
       {/* ELM Route */}
-      <Section
-        title="ELM Route Recommendation"
-        icon={Compass}
-        iconColor="text-indigo-500"
-      >
-        {foundation.elmRouteRecommendation && (
-          <>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={
-                  foundation.elmRouteRecommendation.primaryRoute === "central"
-                    ? "success"
-                    : "info"
-                }
-              >
-                {foundation.elmRouteRecommendation.primaryRoute === "central"
-                  ? "Central Route"
-                  : "Peripheral Route"}
-              </Badge>
-            </div>
-            <p className="text-sm text-gray-600">
-              {foundation.elmRouteRecommendation.rationale}
-            </p>
-          </>
-        )}
-      </Section>
+      {foundation.elmRouteRecommendation && (
+        <Section
+          title="ELM Route Recommendation"
+          icon={Compass}
+          iconColor="text-indigo-500"
+        >
+          <div className="flex items-center gap-2">
+            <Badge
+              variant={
+                foundation.elmRouteRecommendation.primaryRoute === "central"
+                  ? "success"
+                  : "info"
+              }
+            >
+              {foundation.elmRouteRecommendation.primaryRoute === "central"
+                ? "Central Route"
+                : "Peripheral Route"}
+            </Badge>
+          </div>
+          <p className="text-sm text-gray-600">
+            {toDisplayString(foundation.elmRouteRecommendation.rationale)}
+          </p>
+        </Section>
+      )}
 
       {/* Key Insights */}
       <Section
@@ -250,17 +269,17 @@ export function StrategyFoundationReviewView({
         iconColor="text-yellow-500"
         defaultOpen
       >
-        {foundation.keyInsights.length > 0 && (
+        {(foundation.keyInsights ?? []).length > 0 && (
           <div className="space-y-2">
-            {foundation.keyInsights.map((insight, i) => (
+            {(foundation.keyInsights ?? []).map((insight, i) => (
               <div
                 key={i}
                 className="flex items-start gap-3 rounded-lg bg-gray-50 p-3"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-700">{insight.insight}</p>
+                  <p className="text-sm text-gray-700">{toDisplayString(insight.insight)}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="default">{insight.source}</Badge>
+                    <Badge variant="default">{toDisplayString(insight.source)}</Badge>
                     <Badge
                       variant={
                         insight.confidence === "high"
@@ -270,7 +289,7 @@ export function StrategyFoundationReviewView({
                             : "default"
                       }
                     >
-                      {insight.confidence}
+                      {toDisplayString(insight.confidence)}
                     </Badge>
                   </div>
                 </div>
@@ -281,46 +300,48 @@ export function StrategyFoundationReviewView({
       </Section>
 
       {/* Audience Insights */}
-      {foundation.audienceInsights.length > 0 && (
+      {(foundation.audienceInsights ?? []).length > 0 && (
         <Section
           title="Audience Insights"
           icon={Users}
           iconColor="text-blue-500"
         >
           <div className="space-y-3">
-            {foundation.audienceInsights.map((ai, i) => (
+            {(foundation.audienceInsights ?? []).map((ai, i) => (
               <div
                 key={i}
                 className="rounded-lg border border-gray-100 bg-white p-3"
               >
                 <div className="flex items-center gap-2 mb-1.5">
                   <span className="text-sm font-medium text-gray-800">
-                    {ai.personaName}
+                    {toDisplayString(ai.personaName) || "Unknown Persona"}
                   </span>
-                  <Badge variant="default">{ai.ttmStage}</Badge>
-                  <Badge
-                    variant={
-                      ai.elmRoute === "central" ? "success" : "info"
-                    }
-                  >
-                    {ai.elmRoute}
-                  </Badge>
+                  <Badge variant="default">{toDisplayString(ai.ttmStage) || "Unknown"}</Badge>
+                  {ai.elmRoute && (
+                    <Badge
+                      variant={
+                        ai.elmRoute === "central" ? "success" : "info"
+                      }
+                    >
+                      {toDisplayString(ai.elmRoute)}
+                    </Badge>
+                  )}
                 </div>
-                <p className="text-sm text-gray-600 mb-2">{ai.insight}</p>
-                {ai.topCasiBarriers.length > 0 && (
+                <p className="text-sm text-gray-600 mb-2">{toDisplayString(ai.insight)}</p>
+                {(ai.topCasiBarriers ?? []).length > 0 && (
                   <div className="flex flex-wrap gap-1 mb-1">
-                    {ai.topCasiBarriers.map((b, j) => (
+                    {(ai.topCasiBarriers ?? []).map((b, j) => (
                       <Badge key={j} variant="warning">
-                        {b}
+                        {toDisplayString(b)}
                       </Badge>
                     ))}
                   </div>
                 )}
-                {ai.recommendedBCTs.length > 0 && (
+                {(ai.recommendedBCTs ?? []).length > 0 && (
                   <div className="flex flex-wrap gap-1">
-                    {ai.recommendedBCTs.map((b, j) => (
+                    {(ai.recommendedBCTs ?? []).map((b, j) => (
                       <Badge key={j} variant="success">
-                        {b}
+                        {toDisplayString(b)}
                       </Badge>
                     ))}
                   </div>
@@ -332,14 +353,14 @@ export function StrategyFoundationReviewView({
       )}
 
       {/* MINDSPACE Assessment */}
-      {foundation.mindspaceAssessment.length > 0 && (
+      {(foundation.mindspaceAssessment ?? []).length > 0 && (
         <Section
           title="MINDSPACE Assessment"
           icon={Brain}
           iconColor="text-violet-500"
         >
           <div className="grid grid-cols-2 gap-2">
-            {foundation.mindspaceAssessment.map((m, i) => (
+            {(foundation.mindspaceAssessment ?? []).map((m, i) => (
               <div
                 key={i}
                 className={`rounded-lg p-3 text-sm ${
@@ -354,7 +375,7 @@ export function StrategyFoundationReviewView({
                       m.applicable ? "text-emerald-800" : "text-gray-500"
                     }`}
                   >
-                    {m.factor}
+                    {toDisplayString(m.factor)}
                   </span>
                   {m.applicable && (
                     <Badge variant="success">Active</Badge>
@@ -365,7 +386,7 @@ export function StrategyFoundationReviewView({
                     m.applicable ? "text-emerald-700" : "text-gray-500"
                   }
                 >
-                  {m.opportunity}
+                  {toDisplayString(m.opportunity)}
                 </p>
               </div>
             ))}

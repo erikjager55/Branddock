@@ -290,7 +290,7 @@ export function KnowledgeStep() {
                     <div
                       role="checkbox"
                       aria-checked={allGroupSelected}
-                      className="h-4 w-4 rounded border flex items-center justify-center transition-colors"
+                      className="h-[18px] w-[18px] rounded border-2 flex items-center justify-center transition-colors"
                       style={{
                         backgroundColor: allGroupSelected
                           ? "var(--primary)"
@@ -301,7 +301,7 @@ export function KnowledgeStep() {
                           ? "var(--primary)"
                           : someGroupSelected
                             ? "color-mix(in srgb, var(--primary) 50%, transparent)"
-                            : "#d1d5db",
+                            : "#9ca3af",
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -338,14 +338,14 @@ export function KnowledgeStep() {
                       >
                         {/* Checkbox */}
                         <div
-                          className="h-[18px] w-[18px] rounded border flex items-center justify-center flex-shrink-0 transition-colors"
+                          className="h-[18px] w-[18px] rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors"
                           style={{
                             backgroundColor: isSelected
                               ? "var(--primary)"
                               : "#ffffff",
                             borderColor: isSelected
                               ? "var(--primary)"
-                              : "#d1d5db",
+                              : "#9ca3af",
                           }}
                         >
                           {isSelected && (

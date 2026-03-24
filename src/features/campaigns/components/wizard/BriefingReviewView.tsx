@@ -67,7 +67,8 @@ const FIELD_LABELS: Record<BriefingField, string> = {
   constraints: "Constraints & Mandatories",
 };
 
-function mapGapToField(gapField: string): BriefingField | null {
+function mapGapToField(gapField: string | undefined | null): BriefingField | null {
+  if (!gapField) return null;
   const lower = gapField.toLowerCase();
   for (const entry of FIELD_KEYWORDS) {
     if (entry.keywords.some((kw) => lower.includes(kw))) {
@@ -95,21 +96,23 @@ export function BriefingReviewView({
   const [appliedGaps, setAppliedGaps] = React.useState<Set<number>>(new Set());
   const [hasEdited, setHasEdited] = React.useState(false);
 
+  const score = validation.overallScore ?? 0;
+
   const scoreColor =
-    validation.overallScore >= 80
+    score >= 80
       ? "text-emerald-600"
-      : validation.overallScore >= 60
+      : score >= 60
         ? "text-amber-600"
         : "text-red-600";
 
   const scoreBg =
-    validation.overallScore >= 80
+    score >= 80
       ? "bg-emerald-50 border-emerald-200"
-      : validation.overallScore >= 60
+      : score >= 60
         ? "bg-amber-50 border-amber-200"
         : "bg-red-50 border-red-200";
 
-  const hasCriticalGaps = validation.gaps.some((g) => g.severity === "critical");
+  const hasCriticalGaps = (validation.gaps ?? []).some((g) => g.severity === "critical");
 
   const handleFieldChange = (field: BriefingField, value: string) => {
     onBriefingChange(field, value);
@@ -148,7 +151,7 @@ export function BriefingReviewView({
           <div>
             <p className="text-sm font-medium text-gray-700">Briefing Score</p>
             <p className={`text-3xl font-bold ${scoreColor}`}>
-              {validation.overallScore}
+              {score}
               <span className="text-lg text-gray-400">/100</span>
             </p>
           </div>
@@ -169,11 +172,11 @@ export function BriefingReviewView({
       </div>
 
       {/* Strengths */}
-      {validation.strengths.length > 0 && (
+      {(validation.strengths ?? []).length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-700">Strengths</h4>
           <ul className="space-y-1.5">
-            {validation.strengths.map((s, i) => (
+            {(validation.strengths ?? []).map((s, i) => (
               <li
                 key={i}
                 className="flex items-start gap-2 text-sm text-gray-600"
@@ -187,14 +190,14 @@ export function BriefingReviewView({
       )}
 
       {/* Gaps */}
-      {validation.gaps.length > 0 && (
+      {(validation.gaps ?? []).length > 0 && (
         <div className="space-y-2">
           <button
             type="button"
             className="flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-gray-900"
             onClick={() => setShowGaps(!showGaps)}
           >
-            Gaps ({validation.gaps.length})
+            Gaps ({(validation.gaps ?? []).length})
             {showGaps ? (
               <ChevronUp className="w-4 h-4" />
             ) : (
@@ -203,8 +206,8 @@ export function BriefingReviewView({
           </button>
           {showGaps && (
             <div className="space-y-2">
-              {validation.gaps.map((gap, i) => {
-                const config = SEVERITY_CONFIG[gap.severity];
+              {(validation.gaps ?? []).map((gap, i) => {
+                const config = SEVERITY_CONFIG[gap.severity as keyof typeof SEVERITY_CONFIG] ?? SEVERITY_CONFIG["nice-to-have"];
                 const Icon = config.icon;
                 const targetField = mapGapToField(gap.field);
                 const isApplied = appliedGaps.has(i);
@@ -225,7 +228,7 @@ export function BriefingReviewView({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-sm font-medium text-gray-800">
-                          {gap.field}
+                          {gap.field ?? "General"}
                         </span>
                         <Badge variant={config.variant}>{config.label}</Badge>
                       </div>
@@ -319,13 +322,13 @@ export function BriefingReviewView({
       </div>
 
       {/* Suggestions */}
-      {validation.suggestions.length > 0 && (
+      {(validation.suggestions ?? []).length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-700">
             Suggestions for Improvement
           </h4>
           <ul className="space-y-1.5">
-            {validation.suggestions.map((s, i) => (
+            {(validation.suggestions ?? []).map((s, i) => (
               <li
                 key={i}
                 className="flex items-start gap-2 text-sm text-gray-600"
