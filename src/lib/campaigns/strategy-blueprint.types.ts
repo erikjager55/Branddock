@@ -293,6 +293,7 @@ export type StrategyPhase =
   | 'review_proposal'          // Phase 6b: User reviews proposal
   | 'generating_journey'       // Phase 7: Channel plan + asset plan
   | 'complete'                 // Phase 8: Done, timeline computed client-side
+  | 'rationale_complete'       // Strategy rationale approved, ready for Concept step
   // @deprecated — legacy phases, removed in Session 4 UI rewrite
   | 'generating_variants'
   | 'review_variants'
@@ -656,6 +657,90 @@ export interface RegenerateBlueprintBody {
   feedback?: string;
 }
 
+// ─── Phase-Based Pipeline Bodies ────────────────────────────
+
+export interface ValidateBriefingBody {
+  personaIds?: string[];
+  productIds?: string[];
+  competitorIds?: string[];
+  trendIds?: string[];
+  strategicIntent?: StrategicIntent;
+  wizardContext: {
+    campaignName: string;
+    campaignDescription?: string;
+    campaignGoalType?: string;
+    briefing?: CampaignBriefing;
+  };
+}
+
+export interface ImproveBriefingBody {
+  validation: BriefingValidation;
+  strategicIntent?: StrategicIntent;
+  wizardContext: {
+    campaignName: string;
+    campaignDescription?: string;
+    campaignGoalType?: string;
+    briefing?: CampaignBriefing;
+  };
+}
+
+export interface ImprovedBriefing {
+  occasion: string;
+  audienceObjective: string;
+  coreMessage: string;
+  tonePreference: string;
+  constraints: string;
+}
+
+export interface BuildFoundationBody {
+  personaIds?: string[];
+  productIds?: string[];
+  competitorIds?: string[];
+  trendIds?: string[];
+  strategicIntent?: StrategicIntent;
+  wizardContext: {
+    campaignName: string;
+    campaignDescription?: string;
+    campaignGoalType?: string;
+    briefing?: CampaignBriefing;
+  };
+}
+
+export interface GenerateHooksBody {
+  personaIds?: string[];
+  productIds?: string[];
+  competitorIds?: string[];
+  trendIds?: string[];
+  strategicIntent?: StrategicIntent;
+  wizardContext: {
+    campaignName: string;
+    campaignDescription?: string;
+    campaignGoalType?: string;
+    briefing?: CampaignBriefing;
+  };
+  foundation: StrategyFoundation;
+  enrichmentContext: EnrichmentContext;
+  strategyFeedback?: string;
+}
+
+export interface RefineHookBody {
+  personaIds?: string[];
+  productIds?: string[];
+  competitorIds?: string[];
+  trendIds?: string[];
+  strategicIntent?: StrategicIntent;
+  wizardContext: {
+    campaignName: string;
+    campaignDescription?: string;
+    campaignGoalType?: string;
+    briefing?: CampaignBriefing;
+  };
+  selectedHook: CreativeHook;
+  foundation: StrategyFoundation;
+  personaValidation: PersonaValidationResult[];
+  hookFeedback?: string;
+}
+
 // ─── SSE Event Types ────────────────────────────────────────
 
 export interface PipelineProgressEvent {
@@ -855,6 +940,174 @@ export const personaValidationSchema = z.object({
 });
 
 export const personaValidationArraySchema = z.array(personaValidationSchema);
+
+// ─── Briefing Validation Schemas ────────────────────────────
+
+export const briefingGapSchema = z.object({
+  field: z.string(),
+  severity: z.enum(['critical', 'recommended', 'nice-to-have']),
+  suggestion: z.string(),
+});
+
+export const briefingValidationSchema = z.object({
+  isComplete: z.boolean(),
+  overallScore: z.number().min(0).max(100),
+  strengths: z.array(z.string()),
+  gaps: z.array(briefingGapSchema),
+  suggestions: z.array(z.string()),
+});
+
+// ─── Behavioral Science Sub-Schemas ─────────────────────────
+
+export const personaTTMStageSchema = z.object({
+  personaId: z.string(),
+  personaName: z.string(),
+  stage: z.enum(['precontemplation', 'contemplation', 'preparation', 'action', 'maintenance']),
+  rationale: z.string(),
+});
+
+export const casiDeterminantScoreSchema = z.object({
+  determinant: z.enum([
+    'resistance', 'self_image', 'automatisms', 'emotions',
+    'social_environment', 'physical_environment',
+    'capability', 'knowledge', 'attitude_risk_perception',
+  ]),
+  score: z.number().min(1).max(5),
+  assessment: z.string(),
+  comBComponent: z.enum(['capability', 'opportunity', 'motivation']),
+});
+
+export const comBMappingSchema = z.object({
+  capability: z.string(),
+  opportunity: z.string(),
+  motivation: z.string(),
+  primaryTarget: z.enum(['capability', 'opportunity', 'motivation']),
+});
+
+export const behavioralDiagnosisSchema = z.object({
+  ttmStages: z.array(personaTTMStageSchema),
+  casiDeterminantAnalysis: z.array(casiDeterminantScoreSchema),
+  comBMapping: comBMappingSchema,
+  behavioralBarriers: z.array(z.string()),
+  desiredBehaviors: z.array(z.string()),
+});
+
+export const enrichmentSourceSummarySchema = z.object({
+  arena: z.string(),
+  exa: z.string(),
+  scholar: z.string(),
+  bct: z.string(),
+});
+
+export const strategyInsightSchema = z.object({
+  insight: z.string(),
+  source: z.enum(['arena', 'exa', 'scholar', 'bct', 'casi', 'internal']),
+  confidence: z.enum(['high', 'medium', 'low']),
+});
+
+export const enrichmentSynthesisSchema = z.object({
+  perSourceFindings: enrichmentSourceSummarySchema,
+  crossSourcePatterns: z.array(z.string()),
+  sourceAttributedInsights: z.array(strategyInsightSchema),
+});
+
+export const selectedBCTSchema = z.object({
+  techniqueName: z.string(),
+  casiStrategy: z.string(),
+  targetDeterminant: z.enum([
+    'resistance', 'self_image', 'automatisms', 'emotions',
+    'social_environment', 'physical_environment',
+    'capability', 'knowledge', 'attitude_risk_perception',
+  ]),
+  applicationHint: z.string(),
+  rationale: z.string(),
+});
+
+export const behavioralStrategyDetailSchema = z.object({
+  summary: z.string(),
+  casiInterventionStrategy: z.string(),
+  selectedBCTs: z.array(selectedBCTSchema),
+  desiredBehavior: z.string(),
+});
+
+export const elmRouteRecommendationSchema = z.object({
+  primaryRoute: z.enum(['central', 'peripheral']),
+  rationale: z.string(),
+  perPersona: z.array(z.object({
+    personaId: z.string(),
+    route: z.enum(['central', 'peripheral']),
+    reason: z.string(),
+  })),
+});
+
+export const mindspaceAssessmentSchema = z.object({
+  factor: z.enum([
+    'messenger', 'incentives', 'norms', 'defaults', 'salience',
+    'priming', 'affect', 'commitments', 'ego',
+  ]),
+  applicable: z.boolean(),
+  opportunity: z.string(),
+});
+
+export const audienceInsightSchema = z.object({
+  personaId: z.string(),
+  personaName: z.string(),
+  insight: z.string(),
+  ttmStage: z.string(),
+  topCasiBarriers: z.array(z.string()),
+  recommendedBCTs: z.array(z.string()),
+  elmRoute: z.enum(['central', 'peripheral']),
+});
+
+// ─── Strategy Foundation Schema ─────────────────────────────
+
+export const strategyFoundationSchema = z.object({
+  strategicDirection: z.string(),
+  behavioralDiagnosis: behavioralDiagnosisSchema,
+  enrichmentSynthesis: enrichmentSynthesisSchema,
+  behavioralStrategy: behavioralStrategyDetailSchema,
+  elmRouteRecommendation: elmRouteRecommendationSchema,
+  mindspaceAssessment: z.array(mindspaceAssessmentSchema),
+  keyInsights: z.array(strategyInsightSchema),
+  suggestedApproach: z.string(),
+  targetBehaviors: z.array(z.string()),
+  audienceInsights: z.array(audienceInsightSchema),
+});
+
+// ─── Creative Hook Schemas ──────────────────────────────────
+
+export const hookConceptSchema = z.object({
+  hookTitle: z.string(),
+  bigIdea: z.string(),
+  creativeInsight: z.string(),
+  visualDirection: z.string(),
+  toneOfVoice: z.string(),
+  campaignLine: z.string(),
+  extendability: z.array(z.string()),
+  effieRationale: z.string(),
+});
+
+export const creativeAngleSelectionSchema = z.object({
+  angleId: z.string(),
+  angleName: z.string(),
+  assignedProvider: z.string(),
+  assignedModel: z.string(),
+  featureKey: z.string(),
+  selectionRationale: z.string(),
+  llmMatchRationale: z.string(),
+  insightFamily: z.enum(['insight-driven', 'structural', 'narrative']),
+});
+
+export const creativeHookSchema = z.object({
+  strategy: strategyLayerSchema,
+  architecture: architectureLayerSchema,
+  hookConcept: hookConceptSchema,
+  creativeAngleId: z.string(),
+  creativeAngleName: z.string(),
+  curatorSelection: creativeAngleSelectionSchema,
+  modelUsed: z.string(),
+  providerUsed: z.string(),
+});
 
 // ─── Complete Blueprint Schema (for storage validation) ─────
 
@@ -1102,4 +1355,224 @@ export const assetPlanResponseSchema: Record<string, unknown> = {
     },
   },
   required: ['deliverables', 'totalDeliverables', 'prioritySummary'],
+};
+
+// ─── Gemini Response Schemas for 9-Phase Pipeline ───────────
+
+/** Gemini responseSchema for Briefing Validation (Phase 1) */
+export const briefingValidationResponseSchema: Record<string, unknown> = {
+  type: 'object',
+  properties: {
+    isComplete: { type: 'boolean' },
+    overallScore: { type: 'number' },
+    strengths: { type: 'array', items: { type: 'string' } },
+    gaps: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          field: { type: 'string' },
+          severity: { type: 'string', enum: ['critical', 'recommended', 'nice-to-have'] },
+          suggestion: { type: 'string' },
+        },
+        required: ['field', 'severity', 'suggestion'],
+      },
+    },
+    suggestions: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['isComplete', 'overallScore', 'strengths', 'gaps', 'suggestions'],
+};
+
+/** Gemini responseSchema for Strategy Foundation (Phase 2) */
+export const strategyFoundationResponseSchema: Record<string, unknown> = {
+  type: 'object',
+  properties: {
+    strategicDirection: { type: 'string' },
+    behavioralDiagnosis: {
+      type: 'object',
+      properties: {
+        ttmStages: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              personaId: { type: 'string' },
+              personaName: { type: 'string' },
+              stage: { type: 'string', enum: ['precontemplation', 'contemplation', 'preparation', 'action', 'maintenance'] },
+              rationale: { type: 'string' },
+            },
+            required: ['personaId', 'personaName', 'stage', 'rationale'],
+          },
+        },
+        casiDeterminantAnalysis: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              determinant: { type: 'string', enum: ['resistance', 'self_image', 'automatisms', 'emotions', 'social_environment', 'physical_environment', 'capability', 'knowledge', 'attitude_risk_perception'] },
+              score: { type: 'number' },
+              assessment: { type: 'string' },
+              comBComponent: { type: 'string', enum: ['capability', 'opportunity', 'motivation'] },
+            },
+            required: ['determinant', 'score', 'assessment', 'comBComponent'],
+          },
+        },
+        comBMapping: {
+          type: 'object',
+          properties: {
+            capability: { type: 'string' },
+            opportunity: { type: 'string' },
+            motivation: { type: 'string' },
+            primaryTarget: { type: 'string', enum: ['capability', 'opportunity', 'motivation'] },
+          },
+          required: ['capability', 'opportunity', 'motivation', 'primaryTarget'],
+        },
+        behavioralBarriers: { type: 'array', items: { type: 'string' } },
+        desiredBehaviors: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['ttmStages', 'casiDeterminantAnalysis', 'comBMapping', 'behavioralBarriers', 'desiredBehaviors'],
+    },
+    enrichmentSynthesis: {
+      type: 'object',
+      properties: {
+        perSourceFindings: {
+          type: 'object',
+          properties: {
+            arena: { type: 'string' },
+            exa: { type: 'string' },
+            scholar: { type: 'string' },
+            bct: { type: 'string' },
+          },
+          required: ['arena', 'exa', 'scholar', 'bct'],
+        },
+        crossSourcePatterns: { type: 'array', items: { type: 'string' } },
+        sourceAttributedInsights: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              insight: { type: 'string' },
+              source: { type: 'string', enum: ['arena', 'exa', 'scholar', 'bct', 'casi', 'internal'] },
+              confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
+            },
+            required: ['insight', 'source', 'confidence'],
+          },
+        },
+      },
+      required: ['perSourceFindings', 'crossSourcePatterns', 'sourceAttributedInsights'],
+    },
+    behavioralStrategy: {
+      type: 'object',
+      properties: {
+        summary: { type: 'string' },
+        casiInterventionStrategy: { type: 'string' },
+        selectedBCTs: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              techniqueName: { type: 'string' },
+              casiStrategy: { type: 'string' },
+              targetDeterminant: { type: 'string', enum: ['resistance', 'self_image', 'automatisms', 'emotions', 'social_environment', 'physical_environment', 'capability', 'knowledge', 'attitude_risk_perception'] },
+              applicationHint: { type: 'string' },
+              rationale: { type: 'string' },
+            },
+            required: ['techniqueName', 'casiStrategy', 'targetDeterminant', 'applicationHint', 'rationale'],
+          },
+        },
+        desiredBehavior: { type: 'string' },
+      },
+      required: ['summary', 'casiInterventionStrategy', 'selectedBCTs', 'desiredBehavior'],
+    },
+    elmRouteRecommendation: {
+      type: 'object',
+      properties: {
+        primaryRoute: { type: 'string', enum: ['central', 'peripheral'] },
+        rationale: { type: 'string' },
+        perPersona: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              personaId: { type: 'string' },
+              route: { type: 'string', enum: ['central', 'peripheral'] },
+              reason: { type: 'string' },
+            },
+            required: ['personaId', 'route', 'reason'],
+          },
+        },
+      },
+      required: ['primaryRoute', 'rationale', 'perPersona'],
+    },
+    mindspaceAssessment: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          factor: { type: 'string', enum: ['messenger', 'incentives', 'norms', 'defaults', 'salience', 'priming', 'affect', 'commitments', 'ego'] },
+          applicable: { type: 'boolean' },
+          opportunity: { type: 'string' },
+        },
+        required: ['factor', 'applicable', 'opportunity'],
+      },
+    },
+    keyInsights: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          insight: { type: 'string' },
+          source: { type: 'string', enum: ['arena', 'exa', 'scholar', 'bct', 'casi', 'internal'] },
+          confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
+        },
+        required: ['insight', 'source', 'confidence'],
+      },
+    },
+    suggestedApproach: { type: 'string' },
+    targetBehaviors: { type: 'array', items: { type: 'string' } },
+    audienceInsights: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          personaId: { type: 'string' },
+          personaName: { type: 'string' },
+          insight: { type: 'string' },
+          ttmStage: { type: 'string' },
+          topCasiBarriers: { type: 'array', items: { type: 'string' } },
+          recommendedBCTs: { type: 'array', items: { type: 'string' } },
+          elmRoute: { type: 'string', enum: ['central', 'peripheral'] },
+        },
+        required: ['personaId', 'personaName', 'insight', 'ttmStage', 'topCasiBarriers', 'recommendedBCTs', 'elmRoute'],
+      },
+    },
+  },
+  required: ['strategicDirection', 'behavioralDiagnosis', 'enrichmentSynthesis', 'behavioralStrategy', 'elmRouteRecommendation', 'mindspaceAssessment', 'keyInsights', 'suggestedApproach', 'targetBehaviors', 'audienceInsights'],
+};
+
+/** Gemini responseSchema for Hook Concept (Phase 4 inner object) */
+export const hookConceptResponseSchema: Record<string, unknown> = {
+  type: 'object',
+  properties: {
+    hookTitle: { type: 'string' },
+    bigIdea: { type: 'string' },
+    creativeInsight: { type: 'string' },
+    visualDirection: { type: 'string' },
+    toneOfVoice: { type: 'string' },
+    campaignLine: { type: 'string' },
+    extendability: { type: 'array', items: { type: 'string' } },
+    effieRationale: { type: 'string' },
+  },
+  required: ['hookTitle', 'bigIdea', 'creativeInsight', 'visualDirection', 'toneOfVoice', 'campaignLine', 'extendability', 'effieRationale'],
+};
+
+/** Gemini responseSchema for Creative Hook (Phase 4 — strategy + architecture + hookConcept) */
+export const creativeHookResponseSchema: Record<string, unknown> = {
+  type: 'object',
+  properties: {
+    strategy: (fullVariantResponseSchema as { properties: Record<string, unknown> }).properties.strategy,
+    architecture: architectureLayerResponseSchema,
+    hookConcept: hookConceptResponseSchema,
+  },
+  required: ['strategy', 'architecture', 'hookConcept'],
 };

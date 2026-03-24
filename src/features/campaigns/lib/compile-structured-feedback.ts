@@ -3,7 +3,7 @@ import type { PersonaValidationResult } from "@/lib/campaigns/strategy-blueprint
 interface CompileStructuredFeedbackParams {
   freeText: string;
   endorsedPersonaIds: string[];
-  strategyRatings: Record<string, "up" | "down">;
+  strategyRatings: Record<string, { rating: "up" | "down"; comment?: string }>;
   personaValidation: PersonaValidationResult[];
 }
 
@@ -16,6 +16,7 @@ const RATING_LABELS: Record<string, string> = {
   brandRole: "Brand Role",
   memorableDevice: "Memorable Device",
   effieRationale: "Effie Award Rationale",
+  campaignTheme: "Campaign Theme",
   theme: "Campaign Theme",
   positioning: "Positioning Statement",
   "messaging.brand": "Brand Message",
@@ -25,26 +26,30 @@ const RATING_LABELS: Record<string, string> = {
 };
 
 function getRatingLabel(key: string): string {
-  // Strip variant prefix (e.g. "A.theme" → variant "A", rest "theme")
-  const variantMatch = key.match(/^([ABC])\.(.+)$/);
-  const variantPrefix = variantMatch ? `Variant ${variantMatch[1]}: ` : "";
-  const rest = variantMatch ? variantMatch[2] : key;
+  // Strip variant or concept prefix (e.g. "A.theme" → "Variant A: ", "concept.creativePlatform" → "Concept: ")
+  const prefixMatch = key.match(/^([ABC]|concept)\.(.+)$/);
+  const prefix = prefixMatch
+    ? /^[ABC]$/.test(prefixMatch[1])
+      ? `Variant ${prefixMatch[1]}: `
+      : "Concept: "
+    : "";
+  const rest = prefixMatch ? prefixMatch[2] : key;
 
   // Touchpoint ratings: "phase.0.tp.1" → "Phase 1, Touchpoint 2"
   const tpMatch = rest.match(/^phase\.(\d+)\.tp\.(\d+)$/);
-  if (tpMatch) return `${variantPrefix}Phase ${parseInt(tpMatch[1], 10) + 1}, Touchpoint ${parseInt(tpMatch[2], 10) + 1}`;
+  if (tpMatch) return `${prefix}Phase ${parseInt(tpMatch[1], 10) + 1}, Touchpoint ${parseInt(tpMatch[2], 10) + 1}`;
 
   // Phase ratings: "phase.0" → "Phase 1"
   const phaseMatch = rest.match(/^phase\.(\d+)$/);
-  if (phaseMatch) return `${variantPrefix}Journey Phase ${parseInt(phaseMatch[1], 10) + 1}`;
+  if (phaseMatch) return `${prefix}Journey Phase ${parseInt(phaseMatch[1], 10) + 1}`;
 
   // Choice ratings: "choice.0" → "Strategic Choice #1"
-  if (rest.startsWith("choice.")) return `${variantPrefix}Strategic Choice #${parseInt(rest.split(".")[1], 10) + 1}`;
+  if (rest.startsWith("choice.")) return `${prefix}Strategic Choice #${parseInt(rest.split(".")[1], 10) + 1}`;
 
   // Known labels
-  if (RATING_LABELS[rest]) return `${variantPrefix}${RATING_LABELS[rest]}`;
+  if (RATING_LABELS[rest]) return `${prefix}${RATING_LABELS[rest]}`;
 
-  return `${variantPrefix}${rest}`;
+  return `${prefix}${rest}`;
 }
 
 /**
@@ -60,11 +65,17 @@ export function compileStructuredFeedback({
   const sections: string[] = [];
 
   // Strategy element ratings
-  const ratingEntries = Object.entries(strategyRatings);
+  // Split ratings into variant (A/B/C) and concept groups for clarity
+  const variantEntries = Object.entries(strategyRatings).filter(([k]) => /^[ABC]\./.test(k));
+  const conceptEntries = Object.entries(strategyRatings).filter(([k]) => k.startsWith("concept."));
+  const otherEntries = Object.entries(strategyRatings).filter(([k]) => !/^[ABC]\./.test(k) && !k.startsWith("concept."));
+  const ratingEntries = [...variantEntries, ...conceptEntries, ...otherEntries];
   if (ratingEntries.length > 0) {
-    const lines = ratingEntries.map(([key, rating]) => {
+    const lines = ratingEntries.map(([key, entry]) => {
       const label = getRatingLabel(key);
-      return `- ${label}: ${rating === "up" ? "APPROVED" : "NEEDS CHANGE"}`;
+      const status = entry.rating === "up" ? "APPROVED" : "NEEDS CHANGE";
+      const commentSuffix = entry.comment ? ` — "${entry.comment}"` : "";
+      return `- ${label}: ${status}${commentSuffix}`;
     });
     sections.push(
       "## Strategy Element Ratings\n" + lines.join("\n"),

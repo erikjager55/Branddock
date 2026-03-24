@@ -4,7 +4,16 @@
 // Christensen JTBD, Google HHH model
 // =============================================================================
 
-import type { StrategicIntent, CampaignBriefing } from '@/lib/campaigns/strategy-blueprint.types';
+import type {
+  StrategicIntent,
+  CampaignBriefing,
+  StrategyFoundation,
+  CreativeEnrichmentBrief,
+  CreativeHook,
+  HookConcept,
+  PersonaValidationResult,
+} from '@/lib/campaigns/strategy-blueprint.types';
+import type { CreativeAngleDefinition } from '@/lib/campaigns/creative-angles';
 import { DELIVERABLE_TYPE_IDS } from '@/features/campaigns/lib/deliverable-types';
 import { GOAL_LABELS, getGoalTypeGuidance, getGoalTypeStrategicInsights } from '@/features/campaigns/lib/goal-types';
 
@@ -812,6 +821,517 @@ ${params.productContext || 'No products defined.'}
 
 ## Brand Style Guide
 ${params.styleguideContext || 'No style guide available — use professional, clean tone.'}`;
+
+  return { system, user };
+}
+
+// =============================================================================
+// 9-Phase Architecture — New Prompt Builders
+// Phase 1: Briefing Validation
+// Phase 2: Strategy Foundation (enrichment + behavioral diagnosis)
+// Phase 4: Creative Hook Generation (per-variant)
+// Phase 5: Hook Persona Validation (3 hooks evaluated)
+// Phase 6: Hook Refinement (selected hook → definitive proposal)
+// =============================================================================
+
+// ─── Phase 1: Briefing Validation ─────────────────────────────
+
+interface BriefingValidationPromptParams {
+  campaignName: string;
+  campaignDescription: string;
+  goalType: string;
+  strategicIntent: StrategicIntent;
+  briefing?: CampaignBriefing;
+  brandContext: string;
+  personaContext: string;
+  productContext: string;
+}
+
+export function buildBriefingValidationPrompt(params: BriefingValidationPromptParams): { system: string; user: string } {
+  const system = `You are a senior brand strategist evaluating a campaign briefing for completeness and quality before strategy generation begins.
+
+Your role: Assess whether the provided briefing contains sufficient information to generate a high-quality, award-winning campaign strategy. Be honest but constructive — flag gaps that would materially weaken the output.
+
+Evaluation criteria:
+- Brand context: Is the brand's positioning, values, and voice clear enough to build a campaign?
+- Target audience: Are personas defined with enough depth (demographics, psychographics, behaviors)?
+- Campaign objective: Is the goal type specific and the strategic intent (brand building / sales activation / hybrid) well-defined?
+- Creative direction: Does the briefing provide tone, occasion, core message, or constraints?
+- Product/service context: Is there enough product information to ground the strategy?
+- Competitive landscape: Is there awareness of the competitive environment?
+
+Scoring rules:
+- overallScore: 0-100. Below 50 = missing critical information, 50-70 = workable but gaps exist, 70-90 = good brief, 90+ = excellent brief.
+- isComplete: true ONLY if overallScore >= 70 AND no "critical" severity gaps exist.
+- strengths: List 2-5 strong elements already present in the briefing.
+- gaps: List each missing or weak element with severity ("critical" = blocks strategy, "recommended" = improves quality, "nice-to-have" = marginal benefit) and a specific suggestion for what to add.
+- suggestions: List 2-4 actionable suggestions to strengthen the briefing before proceeding.
+
+Respond with a JSON object matching the BriefingValidation schema.`;
+
+  const user = `Evaluate this campaign briefing for completeness and quality.
+
+## Campaign
+Name: ${params.campaignName}
+Description: ${params.campaignDescription || 'No description provided'}
+Goal: ${GOAL_LABELS[params.goalType] ?? params.goalType}
+Strategic Intent: ${intentDescription(params.strategicIntent)}${buildBriefingSection(params.briefing)}
+
+## Brand Context
+${params.brandContext || 'No brand context available.'}
+
+## Target Personas
+${params.personaContext || 'No personas defined.'}
+
+## Products & Services
+${params.productContext || 'No products defined.'}`;
+
+  return { system, user };
+}
+
+// ─── Phase 2: Strategy Foundation ───────────────────────────────
+
+interface StrategyFoundationPromptParams {
+  campaignName: string;
+  campaignDescription: string;
+  goalType: string;
+  strategicIntent: StrategicIntent;
+  briefing?: CampaignBriefing;
+  brandContext: string;
+  personaContext: string;
+  personaIds: string[];
+  productContext: string;
+  competitorContext: string;
+  trendContext: string;
+  arenaContext?: string;
+  exaContext?: string;
+  scholarContext?: string;
+  bctContext?: string;
+  casiDeterminants?: string;
+  mindspaceChecklist?: string;
+}
+
+export function buildStrategyFoundationPrompt(params: StrategyFoundationPromptParams): { system: string; user: string } {
+  const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}`;
+  const goalInsights = buildGoalInsightsPromptSection(params.goalType);
+
+  const system = `You are a behavioral scientist and senior strategist building the analytical foundation for a campaign strategy.
+
+Your role: Synthesize ALL enrichment sources into a unified strategic foundation. This foundation will be used by creative teams to generate campaign hooks — your job is to provide the deepest possible understanding of the audience, behavior, and strategic opportunity.
+
+You must produce a COMPLETE StrategyFoundation with these sections:
+
+1. **strategicDirection** (string): A 2-3 sentence summary of the recommended strategic direction. This is the "North Star" — clear enough that three different creative teams could independently build coherent campaigns from it.
+
+2. **behavioralDiagnosis** (object):
+   - ttmStages: For EACH persona, classify their Transtheoretical Model stage (precontemplation/contemplation/preparation/action/maintenance) with rationale
+   - casiDeterminantAnalysis: Score each of the 9 CASI determinants (1-5 scale, where 5 = major barrier). Map each to its COM-B component (capability/opportunity/motivation)
+   - comBMapping: Summarize the overall COM-B landscape — what is the primary behavioral target?
+   - behavioralBarriers: List 3-5 key barriers preventing the desired behavior
+   - desiredBehaviors: List 3-5 specific, observable behaviors the campaign should drive
+
+3. **enrichmentSynthesis** (object):
+   - perSourceFindings: One-paragraph summary per enrichment source (arena, exa, scholar, bct)
+   - crossSourcePatterns: 3-5 patterns that emerged across multiple sources
+   - sourceAttributedInsights: Array of insights, each attributed to its source with confidence level
+
+4. **behavioralStrategy** (object):
+   - summary: The overall behavioral change strategy in 2-3 sentences
+   - casiInterventionStrategy: Which CASI determinants to target and how
+   - selectedBCTs: 3-5 selected Behavior Change Techniques with rationale
+   - desiredBehavior: The single most important behavior to change
+
+5. **elmRouteRecommendation** (object):
+   - primaryRoute: "central" (high involvement, rational arguments) or "peripheral" (low involvement, cues/shortcuts)
+   - rationale: Why this route was selected
+   - perPersona: For each persona, which ELM route is appropriate and why
+
+6. **mindspaceAssessment** (array of 9 objects):
+   - For EACH MINDSPACE factor (messenger, incentives, norms, defaults, salience, priming, affect, commitments, ego): is it applicable? What's the opportunity?
+
+7. **keyInsights** (array): 5-8 strategic insights, each with source attribution and confidence
+
+8. **suggestedApproach** (string): A paragraph describing the recommended creative approach based on the behavioral diagnosis
+
+9. **targetBehaviors** (string[]): The 3-5 most important behaviors to target
+
+10. **audienceInsights** (array): Per persona — insight, TTM stage, top CASI barriers, recommended BCTs, ELM route${goalContext}${goalInsights}
+
+CRITICAL: Every field is MANDATORY. Do not skip any section. The creative teams depend on this analysis.
+
+Respond with valid JSON matching the StrategyFoundation schema.`;
+
+  const user = `Build the complete strategy foundation for "${params.campaignName}".
+
+## Campaign Brief
+Description: ${params.campaignDescription || 'No description provided'}
+Goal: ${GOAL_LABELS[params.goalType] ?? params.goalType}
+Strategic Intent: ${intentDescription(params.strategicIntent)}${buildBriefingSection(params.briefing)}
+
+## Brand Context
+${params.brandContext}
+
+## Target Personas
+${params.personaContext || 'No personas available.'}
+Persona IDs: ${JSON.stringify(params.personaIds)}
+
+## Products & Services
+${params.productContext || 'No products defined.'}
+
+## Competitive Landscape
+${params.competitorContext || 'No competitors defined.'}
+
+## Market Trends
+${params.trendContext || 'No trends defined.'}${params.arenaContext ? `
+
+## Cultural Inspiration (Are.na)
+${params.arenaContext}` : ''}${params.exaContext ? `
+
+## Cross-Industry Insights (Exa Neural Search)
+${params.exaContext}` : ''}${params.scholarContext ? `
+
+## Research Evidence (Semantic Scholar)
+${params.scholarContext}` : ''}${params.bctContext ? `
+
+## Behavioral Science Framework (BCT Taxonomy)
+${params.bctContext}` : ''}${params.casiDeterminants ? `
+
+## CASI Behavioral Determinants
+${params.casiDeterminants}` : ''}${params.mindspaceChecklist ? `
+
+## MINDSPACE Influence Factors
+${params.mindspaceChecklist}` : ''}`;
+
+  return { system, user };
+}
+
+// ─── Phase 4: Creative Hook Generation (per-variant) ────────────
+
+interface CreativeHookPromptParams {
+  campaignName: string;
+  campaignDescription: string;
+  goalType: string;
+  strategicIntent: StrategicIntent;
+  briefing?: CampaignBriefing;
+  brandContext: string;
+  personaContext: string;
+  personaIds: string[];
+  productContext: string;
+  competitorContext: string;
+  trendContext: string;
+  strategyFoundation: StrategyFoundation;
+  creativeAngle: CreativeAngleDefinition;
+  creativeEnrichmentBrief: CreativeEnrichmentBrief;
+  /** User feedback from Phase 3 strategy review (if any) */
+  strategyFeedback?: string;
+}
+
+export function buildCreativeHookPrompt(params: CreativeHookPromptParams): { system: string; user: string } {
+  const ratio = intentRatio(params.strategicIntent);
+  const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}`;
+  const goalInsights = buildGoalInsightsPromptSection(params.goalType);
+  const sf = params.strategyFoundation;
+
+  const system = `You are a world-class creative director generating a campaign hook ("creatieve kapstok") — a unifying creative concept that anchors the entire campaign.
+
+Your role: Using the provided strategy foundation and your assigned creative angle, generate a COMPLETE campaign proposal with strategy layer, architecture layer, AND a creative hook concept.
+${INSIGHT_MINING_INSTRUCTIONS}
+
+## Your Assigned Creative Angle: "${params.creativeAngle.name}"
+Family: ${params.creativeAngle.insightFamily}
+Description: ${params.creativeAngle.description}
+Output signature: ${params.creativeAngle.outputSignature}
+Famous examples: ${params.creativeAngle.famousExamples.join('; ')}
+${params.creativeAngle.subMethodologies?.length ? `Sub-methodologies: ${params.creativeAngle.subMethodologies.join(', ')}` : ''}
+
+You MUST use this angle as your PRIMARY creative lens. Let it shape your insight, platform, and execution. The hook must feel native to this angle's approach.
+
+Academic frameworks:
+- Binet & Field's effectiveness data: ${ratio.brand}% brand building / ${ratio.activation}% activation
+- Christensen's Jobs-to-be-Done (JTBD) framework
+- COM-B Model (Capability, Opportunity, Motivation → Behavior)
+- ELM route: ${sf.elmRouteRecommendation.primaryRoute} (${sf.elmRouteRecommendation.rationale})${goalContext}${goalInsights}
+${ANTI_GENERIC_GUARDRAILS}
+
+Output a JSON object with THREE top-level keys:
+
+${EFFIE_STRATEGY_JSON_SCHEMA}
+
+"architecture": {
+  campaignType: string,
+  journeyPhases: Array of phases (same schema as variant prompts — id, name, description, orderIndex, goal, kpis, personaPhaseData, touchpoints)
+}
+
+"hookConcept": {
+  hookTitle: A compelling 3-7 word creative hook title (the "kapstok"),
+  bigIdea: The Big Idea in 1-2 sentences — what is this campaign REALLY about?,
+  creativeInsight: The human insight that powers this hook (2-3 sentences),
+  visualDirection: What does this campaign LOOK like? Describe the visual world (2-3 sentences),
+  toneOfVoice: The specific tone — not just "professional" but a distinctive voice direction,
+  campaignLine: The campaign tagline or line (1 sentence max),
+  extendability: Array of 3-5 ways this hook extends across different touchpoints/formats,
+  effieRationale: Why this hook has Effie Award potential — reference insight depth, creative distinctiveness, and results potential (1 paragraph)
+}
+
+Use persona IDs from the provided list for all personaId fields.
+Respond with valid JSON.`;
+
+  const user = `Generate a complete campaign hook using the "${params.creativeAngle.name}" creative angle for "${params.campaignName}".
+
+## Campaign Brief
+Description: ${params.campaignDescription || 'No description provided'}
+Goal: ${GOAL_LABELS[params.goalType] ?? params.goalType}
+Strategic Intent: ${intentDescription(params.strategicIntent)}${buildBriefingSection(params.briefing)}
+
+## Strategy Foundation
+Strategic Direction: ${sf.strategicDirection}
+Suggested Approach: ${sf.suggestedApproach}
+Target Behaviors: ${sf.targetBehaviors.join(', ')}
+Primary COM-B Target: ${sf.behavioralDiagnosis.comBMapping.primaryTarget}
+Behavioral Barriers: ${sf.behavioralDiagnosis.behavioralBarriers.join('; ')}
+ELM Route: ${sf.elmRouteRecommendation.primaryRoute}
+
+### Key Insights
+${sf.keyInsights.map(i => `- [${i.source}/${i.confidence}] ${i.insight}`).join('\n')}
+
+### Behavioral Strategy
+${sf.behavioralStrategy.summary}
+Selected BCTs: ${sf.behavioralStrategy.selectedBCTs.map(b => b.techniqueName).join(', ')}
+
+### Enrichment Cross-Source Patterns
+${sf.enrichmentSynthesis.crossSourcePatterns.join('\n- ')}
+
+## Creative Enrichment Brief
+Cultural Tensions: ${params.creativeEnrichmentBrief.culturalTensions.join('; ')}
+Behavioral Reframes: ${params.creativeEnrichmentBrief.behavioralReframes.join('; ')}
+Cross-Industry Analogies: ${params.creativeEnrichmentBrief.crossIndustryAnalogies.join('; ')}
+MINDSPACE Opportunities: ${params.creativeEnrichmentBrief.mindspaceOpportunities.join('; ')}
+ELM Creative Implications: ${params.creativeEnrichmentBrief.elmCreativeImplications}
+Audience Emotional Landscape: ${params.creativeEnrichmentBrief.audienceEmotionalLandscape}
+
+## Brand Context
+${params.brandContext}
+
+## Target Personas
+${params.personaContext || 'No personas available.'}
+Persona IDs: ${JSON.stringify(params.personaIds)}
+
+## Products & Services
+${params.productContext || 'No products defined.'}
+
+## Competitive Landscape
+${params.competitorContext || 'No competitors defined.'}
+
+## Market Trends
+${params.trendContext || 'No trends defined.'}${params.strategyFeedback ? `
+
+## User Strategy Feedback
+The user reviewed the strategy foundation and provided this feedback. Incorporate their direction:
+${params.strategyFeedback}` : ''}`;
+
+  return { system, user };
+}
+
+// ─── Phase 5: Hook Persona Validation ──────────────────────────
+
+export function buildHookPersonaValidatorPrompt(params: {
+  hooks: Array<{
+    hookConcept: HookConcept;
+    strategy: string;
+    architecture: string;
+    creativeAngleName: string;
+  }>;
+  personas: Array<{ id: string; name: string; profile: string }>;
+  goalType?: string;
+  goalGuidance?: string;
+}): { system: string; user: string } {
+  const goalContext = params.goalType && params.goalGuidance
+    ? `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${params.goalGuidance}\nEvaluate how well each hook serves this specific goal type from each persona's perspective.`
+    : '';
+  const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
+
+  const system = `You are simulating target personas evaluating THREE creative campaign hooks.
+
+Your role: For EACH persona, roleplay as that person and evaluate all three hooks.
+Each hook was generated from a different creative angle and represents a distinct campaign concept.${goalContext}${goalInsights}
+
+Evaluation criteria per persona — ALL fields are MANDATORY:
+- overallScore: Score 1-10. Be critical — hooks that don't resonate with a persona's world should score low. Differentiate genuinely.
+- feedback: MANDATORY: Write 2-3 specific sentences as the persona would naturally speak. Reference specific hook elements (title, big idea, visual direction, campaign line).
+- resonates: MANDATORY: At least 1 specific element from the hook that appeals to this persona.
+- concerns: MANDATORY: At least 1 specific concern or doubt about the hook.
+- suggestions: MANDATORY: At least 1 actionable suggestion to improve the hook for this persona.
+- preferredVariant: "A", "B", or "C" — which hook does this persona prefer?
+- behavioralResonance: MANDATORY: Would this hook actually motivate this persona to change behavior? Consider their TTM stage and barriers.
+
+CREATIVE QUALITY EVALUATION — ALL scores are MANDATORY per persona:
+- originalityScore: 1-10. "Would this hook make me stop scrolling?"
+- memorabilityScore: 1-10. "Would I remember this concept next week?"
+- culturalRelevanceScore: 1-10. "Does this feel culturally relevant right now?"
+- talkabilityScore: 1-10. "Would I share this or tell someone about it?"
+- creativeVerdict: One gut-reaction sentence from the persona about the winning hook.
+
+Stay in character. Use the persona's vocabulary, concerns, and decision-making style.
+
+Respond with a JSON array of persona validation objects.`;
+
+  const hookDescriptions = params.hooks.map((hook, i) => {
+    const label = String.fromCharCode(65 + i); // A, B, C
+    return `## Hook ${label} — "${hook.hookConcept.hookTitle}" (${hook.creativeAngleName})
+
+### Hook Concept
+Big Idea: ${hook.hookConcept.bigIdea}
+Creative Insight: ${hook.hookConcept.creativeInsight}
+Visual Direction: ${hook.hookConcept.visualDirection}
+Tone of Voice: ${hook.hookConcept.toneOfVoice}
+Campaign Line: ${hook.hookConcept.campaignLine}
+Extendability: ${hook.hookConcept.extendability.join('; ')}
+Effie Rationale: ${hook.hookConcept.effieRationale}
+
+### Strategy ${label}
+${hook.strategy}
+
+### Architecture ${label}
+${hook.architecture}`;
+  }).join('\n\n');
+
+  const personaProfiles = params.personas.map(p =>
+    `### ${p.name} (ID: ${p.id})\n${p.profile}`
+  ).join('\n\n');
+
+  const user = `Evaluate these three creative hooks as each persona.
+
+${hookDescriptions}
+
+## Personas to Simulate
+${personaProfiles}`;
+
+  return { system, user };
+}
+
+// ─── Phase 6: Hook Refinement ────────────────────────────────────
+
+interface HookRefinementPromptParams {
+  campaignName: string;
+  campaignDescription: string;
+  goalType: string;
+  strategicIntent: StrategicIntent;
+  briefing?: CampaignBriefing;
+  brandContext: string;
+  personaContext: string;
+  personaIds: string[];
+  productContext: string;
+  selectedHook: CreativeHook;
+  strategyFoundation: StrategyFoundation;
+  personaValidation: PersonaValidationResult[];
+  hookFeedback?: string;
+}
+
+export function buildHookRefinementPrompt(params: HookRefinementPromptParams): { system: string; user: string } {
+  const ratio = intentRatio(params.strategicIntent);
+  const goalContext = `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${getGoalTypeGuidance(params.goalType)}`;
+  const goalInsights = buildGoalInsightsPromptSection(params.goalType);
+  const hook = params.selectedHook;
+  const sf = params.strategyFoundation;
+
+  const personaFeedbackStr = params.personaValidation
+    .map(pv => `- ${pv.personaName} (score: ${pv.overallScore}/10, preferred: ${pv.preferredVariant}): ${pv.feedback}\n  Resonates: ${pv.resonates.join('; ')}\n  Concerns: ${pv.concerns.join('; ')}\n  Suggestions: ${pv.suggestions.join('; ')}`)
+    .join('\n');
+
+  const system = `You are a chief creative officer refining a selected campaign hook into a definitive, production-ready proposal.
+
+The user has reviewed three creative hooks and selected this one as the winner. Your job is to ELEVATE it — address persona concerns, incorporate user feedback, and make every element sharper and more distinctive.
+${INSIGHT_MINING_INSTRUCTIONS}
+
+Refinement approach — ELEVATION, NOT OVERHAUL:
+1. PRESERVE the hook's core identity (title, big idea, creative angle)
+2. SHARPEN elements that personas flagged as weak
+3. DEEPEN the strategic foundation based on behavioral diagnosis
+4. EXPAND the architecture to address persona concerns
+5. STRENGTHEN the effieRationale with specific results potential
+
+Academic frameworks:
+- Binet & Field: ${ratio.brand}% brand building / ${ratio.activation}% activation
+- ELM route: ${sf.elmRouteRecommendation.primaryRoute}
+- COM-B primary target: ${sf.behavioralDiagnosis.comBMapping.primaryTarget}${goalContext}${goalInsights}
+${ANTI_GENERIC_GUARDRAILS}
+
+Output a JSON object with THREE top-level keys:
+
+${EFFIE_STRATEGY_JSON_SCHEMA}
+
+"architecture": {
+  campaignType: string,
+  journeyPhases: Array of phases (id, name, description, orderIndex, goal, kpis, personaPhaseData, touchpoints)
+}
+
+"hookConcept": {
+  hookTitle: string (may be refined from the original),
+  bigIdea: string (refined),
+  creativeInsight: string (deepened),
+  visualDirection: string (sharpened),
+  toneOfVoice: string (refined),
+  campaignLine: string (refined),
+  extendability: string[] (expanded with persona-specific extensions),
+  effieRationale: string (strengthened)
+}
+
+CRITICAL RULES:
+- Do NOT change the creative angle or fundamental direction
+- Every persona concern MUST be addressed in the refined architecture
+- The hookConcept.hookTitle may be polished but must remain recognizably the same concept
+- personaPhaseData MUST include entries for ALL personas
+- Use persona IDs from the provided list for all personaId fields
+
+Respond with valid JSON.`;
+
+  const user = `Refine this selected campaign hook into a definitive proposal for "${params.campaignName}".
+
+## Selected Hook — "${hook.hookConcept.hookTitle}"
+Creative Angle: ${hook.creativeAngleName}
+
+### Current Hook Concept
+Big Idea: ${hook.hookConcept.bigIdea}
+Creative Insight: ${hook.hookConcept.creativeInsight}
+Visual Direction: ${hook.hookConcept.visualDirection}
+Tone of Voice: ${hook.hookConcept.toneOfVoice}
+Campaign Line: ${hook.hookConcept.campaignLine}
+Extendability: ${hook.hookConcept.extendability.join('; ')}
+Effie Rationale: ${hook.hookConcept.effieRationale}
+
+### Current Strategy
+${JSON.stringify(hook.strategy, null, 2)}
+
+### Current Architecture
+${JSON.stringify(hook.architecture, null, 2)}
+
+## Persona Feedback (address ALL concerns)
+${personaFeedbackStr}
+
+## Strategy Foundation Context
+Strategic Direction: ${sf.strategicDirection}
+Target Behaviors: ${sf.targetBehaviors.join(', ')}
+Primary COM-B Target: ${sf.behavioralDiagnosis.comBMapping.primaryTarget}
+Behavioral Barriers: ${sf.behavioralDiagnosis.behavioralBarriers.join('; ')}
+
+## Campaign Brief
+Description: ${params.campaignDescription || 'No description provided'}
+Goal: ${GOAL_LABELS[params.goalType] ?? params.goalType}
+Strategic Intent: ${intentDescription(params.strategicIntent)}${buildBriefingSection(params.briefing)}
+
+## Brand Context
+${params.brandContext}
+
+## Target Personas
+${params.personaContext || 'No personas available.'}
+Persona IDs: ${JSON.stringify(params.personaIds)}
+
+## Products & Services
+${params.productContext || 'No products defined.'}${params.hookFeedback ? `
+
+## User Feedback on Selected Hook
+The user reviewed the hooks and provided this feedback. Incorporate their direction:
+${params.hookFeedback}` : ''}`;
 
   return { system, user };
 }

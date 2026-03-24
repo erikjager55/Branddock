@@ -3,18 +3,13 @@
 import React from "react";
 import {
   Target,
-  ThumbsUp,
-  ThumbsDown,
   MessageSquare,
   Crosshair,
   Lightbulb,
   Eye,
-  Palette,
-  Compass,
-  Shield,
 } from "lucide-react";
 import { Badge } from "@/components/shared";
-import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
+import { ElementRatingCard } from "./ElementRatingCard";
 import type { StrategyLayer, StrategicChoice } from "@/lib/campaigns/strategy-blueprint.types";
 
 // ─── Types ──────────────────────────────────────────────
@@ -24,65 +19,7 @@ interface VariantStrategyOverviewProps {
   variantKey: string;
 }
 
-// ─── Sub-Components ─────────────────────────────────────
-
-function RatingButtons({ ratingKey }: { ratingKey: string }) {
-  const rating = useCampaignWizardStore((s) => s.strategyRatings[ratingKey]);
-  const setRating = useCampaignWizardStore((s) => s.setStrategyRating);
-
-  return (
-    <span className="inline-flex items-center gap-1 ml-2 flex-shrink-0">
-      <button
-        type="button"
-        aria-pressed={rating === "up"}
-        onClick={() => setRating(ratingKey, rating === "up" ? null : "up")}
-        className={`px-1.5 py-1 rounded-md border transition-colors ${
-          rating === "up"
-            ? "bg-emerald-100 border-emerald-300 text-emerald-600"
-            : "bg-gray-50 border-gray-200 text-gray-400 hover:text-emerald-500 hover:border-emerald-200"
-        }`}
-        title="Approve"
-      >
-        <ThumbsUp className="w-4 h-4" />
-      </button>
-      <button
-        type="button"
-        aria-pressed={rating === "down"}
-        onClick={() => setRating(ratingKey, rating === "down" ? null : "down")}
-        className={`px-1.5 py-1 rounded-md border transition-colors ${
-          rating === "down"
-            ? "bg-red-100 border-red-300 text-red-500"
-            : "bg-gray-50 border-gray-200 text-gray-400 hover:text-red-400 hover:border-red-200"
-        }`}
-        title="Needs change"
-      >
-        <ThumbsDown className="w-4 h-4" />
-      </button>
-    </span>
-  );
-}
-
-function RatableField({
-  label,
-  value,
-  ratingKey,
-}: {
-  label: string;
-  value: string;
-  ratingKey: string;
-}) {
-  return (
-    <div className="space-y-0.5">
-      <div className="flex items-center">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          {label}
-        </p>
-        <RatingButtons ratingKey={ratingKey} />
-      </div>
-      <p className="text-sm text-gray-800">{value}</p>
-    </div>
-  );
-}
+// ─── Helpers ────────────────────────────────────────────
 
 function getChoiceText(choice: string | StrategicChoice): string {
   return typeof choice === "string" ? choice : choice.choice;
@@ -117,81 +54,37 @@ export function VariantStrategyOverview({ strategyLayer, variantKey }: VariantSt
         </span>
       </div>
 
-      {/* Human Insight — the foundation */}
+      {/* Human Insight */}
       {strategyLayer.humanInsight && (
-        <div className="p-3.5 bg-violet-50 border border-violet-200 rounded-lg">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Eye className="w-3.5 h-3.5 text-violet-500" />
-            <p className="text-xs font-semibold text-violet-700 uppercase tracking-wider">
-              Human Insight
-            </p>
-            <RatingButtons ratingKey={`${variantKey}.humanInsight`} />
-          </div>
-          <p className="text-sm text-gray-800 italic leading-relaxed">
-            &ldquo;{strategyLayer.humanInsight}&rdquo;
-          </p>
-          {strategyLayer.culturalTension && (
-            <p className="text-xs text-violet-600 mt-1.5">
-              <span className="font-medium">Cultural tension:</span> {strategyLayer.culturalTension}
-            </p>
-          )}
-        </div>
+        <ElementRatingCard
+          label="Human Insight"
+          value={strategyLayer.humanInsight}
+          ratingKey={`${variantKey}.humanInsight`}
+          icon={Eye}
+          highlighted
+          highlightBg="bg-violet-50"
+        />
       )}
 
-      {/* Creative Platform (Big Idea) — hero element */}
-      {strategyLayer.creativePlatform && (
-        <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-lg">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Palette className="w-3.5 h-3.5 text-amber-500" />
-            <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider">
-              Creative Platform (Big Idea)
-            </p>
-            <RatingButtons ratingKey={`${variantKey}.creativePlatform`} />
-          </div>
-          <p className="text-base font-semibold text-gray-900">
-            {strategyLayer.creativePlatform}
-          </p>
-        </div>
-      )}
-
-      {/* Creative Territory + Brand Role */}
-      {(strategyLayer.creativeTerritory || strategyLayer.brandRole) && (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {strategyLayer.creativeTerritory && (
-          <div>
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <Compass className="w-3 h-3 text-gray-400" />
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Creative Territory
-              </p>
-              <RatingButtons ratingKey={`${variantKey}.creativeTerritory`} />
-            </div>
-            <p className="text-sm text-gray-700">{strategyLayer.creativeTerritory}</p>
-          </div>
-        )}
-        {strategyLayer.brandRole && (
-          <div>
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <Shield className="w-3 h-3 text-gray-400" />
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Brand Role
-              </p>
-              <RatingButtons ratingKey={`${variantKey}.brandRole`} />
-            </div>
-            <p className="text-sm text-gray-700">{strategyLayer.brandRole}</p>
-          </div>
-        )}
-      </div>
+      {/* Cultural Tension */}
+      {strategyLayer.culturalTension && (
+        <ElementRatingCard
+          label="Cultural Tension"
+          value={strategyLayer.culturalTension}
+          ratingKey={`${variantKey}.culturalTension`}
+          highlighted
+          highlightBg="bg-violet-50"
+        />
       )}
 
       {/* Theme + Positioning + Intent */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <RatableField
+        <ElementRatingCard
           label="Campaign Theme"
           value={strategyLayer.campaignTheme}
           ratingKey={`${variantKey}.theme`}
         />
-        <RatableField
+        <ElementRatingCard
           label="Positioning Statement"
           value={strategyLayer.positioningStatement}
           ratingKey={`${variantKey}.positioning`}
@@ -220,33 +113,27 @@ export function VariantStrategyOverview({ strategyLayer, variantKey }: VariantSt
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <RatableField
-            label="Brand Message"
-            value={messagingHierarchy.brandMessage}
-            ratingKey={`${variantKey}.messaging.brand`}
-          />
-          <RatableField
-            label="Campaign Message"
-            value={messagingHierarchy.campaignMessage}
-            ratingKey={`${variantKey}.messaging.campaign`}
-          />
+          {messagingHierarchy.brandMessage && (
+            <ElementRatingCard
+              label="Brand Message"
+              value={messagingHierarchy.brandMessage}
+              ratingKey={`${variantKey}.messaging.brand`}
+            />
+          )}
+          {messagingHierarchy.campaignMessage && (
+            <ElementRatingCard
+              label="Campaign Message"
+              value={messagingHierarchy.campaignMessage}
+              ratingKey={`${variantKey}.messaging.campaign`}
+            />
+          )}
         </div>
         {messagingHierarchy.proofPoints.length > 0 && (
-          <div className="space-y-1">
-            <div className="flex items-center">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                Proof Points
-              </p>
-              <RatingButtons ratingKey={`${variantKey}.messaging.proofPoints`} />
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {messagingHierarchy.proofPoints.map((pp, i) => (
-                <Badge key={i} variant="default">
-                  {pp}
-                </Badge>
-              ))}
-            </div>
-          </div>
+          <ElementRatingCard
+            label="Proof Points"
+            value={messagingHierarchy.proofPoints.join(" · ")}
+            ratingKey={`${variantKey}.messaging.proofPoints`}
+          />
         )}
       </div>
 
@@ -259,11 +146,13 @@ export function VariantStrategyOverview({ strategyLayer, variantKey }: VariantSt
           </p>
         </div>
         <div className="space-y-2">
-          <RatableField
-            label="Job Statement"
-            value={jtbdFraming.jobStatement}
-            ratingKey={`${variantKey}.jtbd.statement`}
-          />
+          {jtbdFraming.jobStatement && (
+            <ElementRatingCard
+              label="Job Statement"
+              value={jtbdFraming.jobStatement}
+              ratingKey={`${variantKey}.jtbd.statement`}
+            />
+          )}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <p className="text-xs font-medium text-muted-foreground">
@@ -295,31 +184,24 @@ export function VariantStrategyOverview({ strategyLayer, variantKey }: VariantSt
             </p>
           </div>
           <div className="space-y-2">
-            {strategicChoices.map((choice, i) => (
-              <div
-                key={i}
-                className="p-3 bg-gray-50 rounded-lg border border-gray-100"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
-                      {getChoiceText(choice)}
-                    </p>
-                    {getChoiceRationale(choice) && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Rationale: {getChoiceRationale(choice)}
-                      </p>
-                    )}
-                    {getChoiceTradeoff(choice) && (
-                      <p className="text-xs text-amber-600 mt-0.5">
-                        Trade-off: {getChoiceTradeoff(choice)}
-                      </p>
-                    )}
-                  </div>
-                  <RatingButtons ratingKey={`${variantKey}.choice.${i}`} />
-                </div>
-              </div>
-            ))}
+            {strategicChoices.map((choice, i) => {
+              const rationale = getChoiceRationale(choice);
+              const tradeoff = getChoiceTradeoff(choice);
+              const parts = [getChoiceText(choice)];
+              if (rationale) parts.push(`Rationale: ${rationale}`);
+              if (tradeoff) parts.push(`Trade-off: ${tradeoff}`);
+
+              return (
+                <ElementRatingCard
+                  key={i}
+                  label={`Choice ${i + 1}`}
+                  value={parts.join(" — ")}
+                  ratingKey={`${variantKey}.choice.${i}`}
+                  highlighted
+                  highlightBg="bg-gray-50"
+                />
+              );
+            })}
           </div>
         </div>
       )}

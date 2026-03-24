@@ -49,10 +49,13 @@ function RatingSummaryBar() {
   const strategyRatings = useCampaignWizardStore((s) => s.strategyRatings);
 
   const counts = useMemo(() => {
-    const entries = Object.values(strategyRatings);
+    // Only count variant-scoped ratings (A.*, B.*, C.*), not concept.* keys
+    const entries = Object.entries(strategyRatings)
+      .filter(([key]) => /^[ABC]\./.test(key))
+      .map(([, v]) => v);
     return {
-      approved: entries.filter((v) => v === "up").length,
-      needsChange: entries.filter((v) => v === "down").length,
+      approved: entries.filter((v) => v.rating === "up").length,
+      needsChange: entries.filter((v) => v.rating === "down").length,
       total: entries.length,
     };
   }, [strategyRatings]);
@@ -122,6 +125,7 @@ export function VariantReviewView({
   const setVariantFeedback = useCampaignWizardStore((s) => s.setVariantFeedback);
   const endorsedPersonaIds = useCampaignWizardStore((s) => s.endorsedPersonaIds);
   const togglePersonaEndorsement = useCampaignWizardStore((s) => s.togglePersonaEndorsement);
+  const allRationaleRated = useCampaignWizardStore((s) => s.allRationaleRated());
 
   const preferredVariant = useMemo(() => {
     const scores = { A: variantAScore, B: variantBScore, C: variantCScore };
@@ -242,8 +246,14 @@ export function VariantReviewView({
           placeholder="Tell the AI which aspects of each variant you prefer, what to keep, what to change..."
           className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none h-24 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
         />
+        {/* Rating progress */}
+        {!allRationaleRated && (
+          <p className="text-xs text-amber-600 text-center">
+            Rate all strategy elements across variants before proceeding.
+          </p>
+        )}
         <div className="flex justify-center">
-          <Button variant="cta" size="lg" icon={Sparkles} onClick={onSynthesize}>
+          <Button variant="cta" size="lg" icon={Sparkles} onClick={onSynthesize} disabled={!allRationaleRated}>
             Generate Definitive Strategy
           </Button>
         </div>

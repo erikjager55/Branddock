@@ -5,6 +5,7 @@ import {
   Settings,
   Database,
   Lightbulb,
+  Palette,
   Package,
   Save,
   Calendar,
@@ -199,12 +200,58 @@ export function ReviewStep() {
           )}
         </ReviewSection>
 
-        {/* 4. Deliverables */}
+        {/* 4. Concept */}
+        <ReviewSection
+          title="Creative Concept"
+          icon={Palette}
+          step={4}
+          onEdit={() => setCurrentStep(4)}
+        >
+          {blueprintResult ? (
+            <div className="space-y-2">
+              {blueprintResult.strategy.creativePlatform && (
+                <div>
+                  <span className="text-xs text-gray-500">Creative Platform</span>
+                  <p className="text-sm font-medium text-gray-900 mt-0.5">
+                    {blueprintResult.strategy.creativePlatform}
+                  </p>
+                </div>
+              )}
+              {blueprintResult.strategy.memorableDevice && (
+                <div>
+                  <span className="text-xs text-gray-500">Memorable Device</span>
+                  <p className="text-sm text-gray-700 mt-0.5 line-clamp-2">
+                    {blueprintResult.strategy.memorableDevice}
+                  </p>
+                </div>
+              )}
+              {blueprintResult.strategy.effieRationale && (
+                <div>
+                  <span className="text-xs text-gray-500">Effie Rationale</span>
+                  <p className="text-sm text-gray-700 mt-0.5 line-clamp-2">
+                    {blueprintResult.strategy.effieRationale}
+                  </p>
+                </div>
+              )}
+              {!blueprintResult.strategy.creativePlatform && !blueprintResult.strategy.memorableDevice && (
+                <p className="text-sm text-gray-400 italic">
+                  Concept details will be available after elaboration
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 italic">
+              No creative concept yet
+            </p>
+          )}
+        </ReviewSection>
+
+        {/* 5. Deliverables */}
         <ReviewSection
           title="Deliverables"
           icon={Package}
-          step={4}
-          onEdit={() => setCurrentStep(4)}
+          step={5}
+          onEdit={() => setCurrentStep(5)}
         >
           {selectedDeliverables.length > 0 ? (
             <div className="space-y-1.5">

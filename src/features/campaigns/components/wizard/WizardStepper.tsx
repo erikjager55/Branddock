@@ -16,6 +16,7 @@ const STEP_LABELS = [
   "Setup",
   "Knowledge",
   "Strategy",
+  "Concept",
   "Deliverables",
   "Review",
 ];
@@ -24,7 +25,7 @@ const STEP_LABELS = [
 
 export function WizardStepper({
   currentStep,
-  totalSteps = 5,
+  totalSteps = 6,
 }: WizardStepperProps) {
   const steps = STEP_LABELS.slice(0, totalSteps);
 

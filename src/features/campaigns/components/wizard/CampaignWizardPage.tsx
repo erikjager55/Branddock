@@ -10,6 +10,7 @@ import { WizardStepper } from "./WizardStepper";
 import { SetupStep } from "./SetupStep";
 import { KnowledgeStep } from "./KnowledgeStep";
 import { StrategyStep } from "./StrategyStep";
+import { ConceptStep } from "./ConceptStep";
 import { DeliverablesStep } from "./DeliverablesStep";
 import { ReviewStep } from "./ReviewStep";
 import { CampaignSuccessModal } from "./CampaignSuccessModal";
@@ -26,7 +27,7 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   const currentStep = useCampaignWizardStore((s) => s.currentStep);
   const nextStep = useCampaignWizardStore((s) => s.nextStep);
   const prevStep = useCampaignWizardStore((s) => s.prevStep);
-  const canProceed = useCampaignWizardStore((s) => s.canProceed);
+  const canProceedResult = useCampaignWizardStore((s) => s.canProceed());
   const resetWizard = useCampaignWizardStore((s) => s.resetWizard);
 
   // Launch state
@@ -62,7 +63,7 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const isLastStep = currentStep === 5;
+  const isLastStep = currentStep === 6;
 
   const handleLaunch = () => {
     if (!campaignGoalType || !blueprintResult) return;
@@ -110,8 +111,10 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
       case 3:
         return <StrategyStep />;
       case 4:
-        return <DeliverablesStep />;
+        return <ConceptStep />;
       case 5:
+        return <DeliverablesStep />;
+      case 6:
         return <ReviewStep />;
       default:
         return <SetupStep />;
@@ -167,7 +170,7 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
           icon={isLastStep ? Rocket : ArrowRight}
           iconPosition={isLastStep ? "left" : "right"}
           onClick={handleContinue}
-          disabled={!canProceed() || launchCampaign.isPending}
+          disabled={!canProceedResult || launchCampaign.isPending}
           isLoading={launchCampaign.isPending}
         >
           {isLastStep ? "Launch Campaign" : "Continue"}

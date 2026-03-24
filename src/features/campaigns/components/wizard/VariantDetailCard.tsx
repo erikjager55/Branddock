@@ -173,8 +173,9 @@ function TouchpointRow({ touchpoint, ratingKey }: { touchpoint: Touchpoint; rati
 }
 
 function PhaseRatingButtons({ ratingKey }: { ratingKey: string }) {
-  const rating = useCampaignWizardStore((s) => s.strategyRatings[ratingKey]);
+  const entry = useCampaignWizardStore((s) => s.strategyRatings[ratingKey]);
   const setRating = useCampaignWizardStore((s) => s.setStrategyRating);
+  const rating = entry?.rating ?? null;
 
   return (
     <span className="inline-flex items-center gap-1 ml-1 flex-shrink-0">

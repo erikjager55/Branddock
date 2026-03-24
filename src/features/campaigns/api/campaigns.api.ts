@@ -386,3 +386,55 @@ export function elaborateJourneySSE(
 ): { abort: () => void } {
   return createPhaseSSE('/api/campaigns/wizard/strategy/elaborate', body, onEvent, onError);
 }
+
+/** Phase 1: Validate briefing completeness via SSE stream */
+export function validateBriefingSSE(
+  body: import('@/lib/campaigns/strategy-blueprint.types').ValidateBriefingBody,
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  return createPhaseSSE('/api/campaigns/wizard/strategy/validate-briefing', body, onEvent, onError);
+}
+
+/** Phase 1c: AI-improve briefing based on validation gaps (simple POST, not SSE) */
+export async function improveBriefingApi(
+  body: import('@/lib/campaigns/strategy-blueprint.types').ImproveBriefingBody,
+): Promise<import('@/lib/campaigns/strategy-blueprint.types').ImprovedBriefing> {
+  const res = await fetch('/api/campaigns/wizard/strategy/improve-briefing', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to improve briefing' }));
+    throw new Error(err.error || 'Failed to improve briefing');
+  }
+  return res.json();
+}
+
+/** Phase 2: Build analytical strategy foundation via SSE stream */
+export function buildFoundationSSE(
+  body: import('@/lib/campaigns/strategy-blueprint.types').BuildFoundationBody,
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  return createPhaseSSE('/api/campaigns/wizard/strategy/build-foundation', body, onEvent, onError);
+}
+
+/** Phase 4+5: Generate creative hooks + persona validation via SSE stream */
+export function generateHooksSSE(
+  body: import('@/lib/campaigns/strategy-blueprint.types').GenerateHooksBody,
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  return createPhaseSSE('/api/campaigns/wizard/strategy/generate-hooks', body, onEvent, onError);
+}
+
+/** Phase 6: Refine selected hook into production-ready proposal via SSE stream */
+export function refineHookSSE(
+  body: import('@/lib/campaigns/strategy-blueprint.types').RefineHookBody,
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  return createPhaseSSE('/api/campaigns/wizard/strategy/refine-hook', body, onEvent, onError);
+}

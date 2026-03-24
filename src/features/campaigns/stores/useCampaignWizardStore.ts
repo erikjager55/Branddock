@@ -10,6 +10,8 @@ import type {
   StrategyPhase,
   StrategyLayer,
   ArchitectureLayer,
+  ChannelPlanLayer,
+  AssetPlanLayer,
   PersonaValidationResult,
   ArenaEnrichmentTracking,
   EnrichmentSources,
@@ -85,6 +87,7 @@ interface CampaignWizardState {
   strategyLayerC: StrategyLayer | null;
   variantFeedback: string;
   synthesisFeedback: string;
+  conceptFeedback: string;
 
   // ─── Enrichment Status (real-time feedback for all sources) ─────────
   enrichmentStatus: 'idle' | 'running' | 'complete' | 'skipped';
@@ -92,9 +95,12 @@ interface CampaignWizardState {
   enrichmentQueries: string[];
   enrichmentSources: EnrichmentSources;
 
+  // ─── Concept Step (elaborate result before blueprint assembly) ────
+  elaborateResult: { channelPlan: ChannelPlanLayer; assetPlan: AssetPlanLayer } | null;
+
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: string[];
-  strategyRatings: Record<string, 'up' | 'down'>;
+  strategyRatings: Record<string, { rating: 'up' | 'down'; comment?: string }>;
 
   setCurrentStep: (step: number) => void;
   nextStep: () => void;
@@ -116,6 +122,8 @@ interface CampaignWizardState {
   setSaveAsTemplate: (v: boolean) => void;
   setTemplateName: (name: string) => void;
   canProceed: () => boolean;
+  allRationaleRated: () => boolean;
+  allConceptRated: () => boolean;
   resetWizard: () => void;
 
   // ─── Campaign Briefing Actions ──────────────────────────
@@ -173,10 +181,15 @@ interface CampaignWizardState {
   }) => void;
   setVariantFeedback: (feedback: string) => void;
   setSynthesisFeedback: (feedback: string) => void;
+  setConceptFeedback: (feedback: string) => void;
+
+  // ─── Concept Step Actions ─────────────────────────────────
+  setElaborateResult: (result: { channelPlan: ChannelPlanLayer; assetPlan: AssetPlanLayer } | null) => void;
 
   // ─── Interactive Feedback Actions ─────────────────────────
   togglePersonaEndorsement: (personaId: string) => void;
   setStrategyRating: (key: string, rating: 'up' | 'down' | null) => void;
+  setStrategyRatingComment: (key: string, comment: string) => void;
 }
 
 // ─── Initial state ────────────────────────────────────────
@@ -242,6 +255,7 @@ const INITIAL_STATE = {
   strategyLayerC: null as StrategyLayer | null,
   variantFeedback: "",
   synthesisFeedback: "",
+  conceptFeedback: "",
 
   // ─── Enrichment Status ──────────────────────────────────────
   enrichmentStatus: 'idle' as 'idle' | 'running' | 'complete' | 'skipped',
@@ -249,9 +263,12 @@ const INITIAL_STATE = {
   enrichmentQueries: [] as string[],
   enrichmentSources: {} as { arena?: number; exa?: number; scholar?: number; bct?: boolean },
 
+  // ─── Concept Step ─────────────────────────────────────────────
+  elaborateResult: null as { channelPlan: ChannelPlanLayer; assetPlan: AssetPlanLayer } | null,
+
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: [] as string[],
-  strategyRatings: {} as Record<string, 'up' | 'down'>,
+  strategyRatings: {} as Record<string, { rating: 'up' | 'down'; comment?: string }>,
 };
 
 // ─── Store ────────────────────────────────────────────────
@@ -262,7 +279,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
 
     setCurrentStep: (step) => set({ currentStep: step }),
     nextStep: () =>
-      set((s) => ({ currentStep: Math.min(5, s.currentStep + 1) })),
+      set((s) => ({ currentStep: Math.min(6, s.currentStep + 1) })),
     prevStep: () =>
       set((s) => ({ currentStep: Math.max(1, s.currentStep - 1) })),
 
@@ -339,14 +356,83 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         case 2:
           return state.selectedKnowledgeIds.length > 0;
         case 3:
-          return state.strategyPhase === 'complete' && state.blueprintResult !== null;
+          return (state.strategyPhase === 'rationale_complete' || state.strategyPhase === 'complete')
+            && get().allRationaleRated();
         case 4:
-          return state.selectedDeliverables.length > 0;
+          return state.strategyPhase === 'complete' && state.blueprintResult !== null
+            && get().allConceptRated();
         case 5:
+          return state.selectedDeliverables.length > 0;
+        case 6:
           return true;
         default:
           return false;
       }
+    },
+
+    allRationaleRated: () => {
+      const state = get();
+      const { strategyRatings } = state;
+
+      // 9-Phase pipeline: no element-level ratings in foundation review
+      // Detection aligned with ConceptStep's is9Phase check
+      if (state.strategyFoundation !== null && state.enrichmentContext !== null) {
+        return true;
+      }
+
+      // Legacy pipeline: check all 3 variant strategy layers
+      const variants = [
+        { key: 'A', layer: state.strategyLayerA },
+        { key: 'B', layer: state.strategyLayerB },
+        { key: 'C', layer: state.strategyLayerC },
+      ] as const;
+
+      const presentVariants = variants.filter((v): v is typeof v & { layer: StrategyLayer } => v.layer !== null);
+      if (presentVariants.length === 0) return false;
+
+      for (const { key, layer } of presentVariants) {
+        // Always-present fields
+        const keys: string[] = [
+          `${key}.theme`,
+          `${key}.positioning`,
+        ];
+        // Optional keys (only if the field has content)
+        if (layer.humanInsight) keys.push(`${key}.humanInsight`);
+        if (layer.culturalTension) keys.push(`${key}.culturalTension`);
+        const mh = layer.messagingHierarchy ?? { brandMessage: '', campaignMessage: '', proofPoints: [] };
+        if (mh.brandMessage) keys.push(`${key}.messaging.brand`);
+        if (mh.campaignMessage) keys.push(`${key}.messaging.campaign`);
+        if (mh.proofPoints?.length > 0) keys.push(`${key}.messaging.proofPoints`);
+        const jtbd = layer.jtbdFraming ?? { jobStatement: '', functionalJob: '', emotionalJob: '', socialJob: '' };
+        if (jtbd.jobStatement) keys.push(`${key}.jtbd.statement`);
+        // Dynamic keys (strategic choices)
+        const choices = layer.strategicChoices ?? [];
+        choices.forEach((_, i) => keys.push(`${key}.choice.${i}`));
+
+        if (!keys.every((k) => !!strategyRatings[k])) return false;
+      }
+
+      return true;
+    },
+
+    allConceptRated: () => {
+      const state = get();
+      const strategy = state.synthesizedStrategy;
+      if (!strategy) return false;
+
+      const conceptFields: Array<{ key: string; field: keyof StrategyLayer }> = [
+        { key: 'concept.creativePlatform', field: 'creativePlatform' },
+        { key: 'concept.creativeTerritory', field: 'creativeTerritory' },
+        { key: 'concept.brandRole', field: 'brandRole' },
+        { key: 'concept.memorableDevice', field: 'memorableDevice' },
+        { key: 'concept.campaignTheme', field: 'campaignTheme' },
+        { key: 'concept.effieRationale', field: 'effieRationale' },
+      ];
+
+      const presentKeys = conceptFields.filter(({ field }) => !!strategy[field]);
+      if (presentKeys.length === 0) return false;
+
+      return presentKeys.every(({ key }) => !!state.strategyRatings[key]);
     },
 
     resetWizard: () => set(INITIAL_STATE),
@@ -383,6 +469,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     resetPipeline: () =>
       set({
         blueprintResult: null,
+        elaborateResult: null,
         pipelineSteps: [],
         currentPipelineStep: 0,
         pipelineError: null,
@@ -434,6 +521,9 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         strategyLayerC: null,
         variantFeedback: "",
         synthesisFeedback: "",
+        conceptFeedback: "",
+        // Concept step
+        elaborateResult: null,
       }),
 
     // ─── 9-Phase Architecture Actions ─────────────────────────
@@ -483,6 +573,10 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
       }),
     setVariantFeedback: (variantFeedback) => set({ variantFeedback }),
     setSynthesisFeedback: (synthesisFeedback) => set({ synthesisFeedback }),
+    setConceptFeedback: (conceptFeedback) => set({ conceptFeedback }),
+
+    // ─── Concept Step Actions ─────────────────────────────────
+    setElaborateResult: (elaborateResult) => set({ elaborateResult }),
 
     // ─── Interactive Feedback Actions ─────────────────────────
     togglePersonaEndorsement: (personaId) =>
@@ -497,9 +591,21 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         if (rating === null) {
           delete next[key];
         } else {
-          next[key] = rating;
+          const existing = next[key];
+          next[key] = { rating, comment: existing?.comment };
         }
         return { strategyRatings: next };
+      }),
+    setStrategyRatingComment: (key, comment) =>
+      set((s) => {
+        const existing = s.strategyRatings[key];
+        if (!existing) return s;
+        return {
+          strategyRatings: {
+            ...s.strategyRatings,
+            [key]: { ...existing, comment: comment || undefined },
+          },
+        };
       }),
   }),
 );

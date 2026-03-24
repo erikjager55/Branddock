@@ -22,6 +22,11 @@ import {
   buildStrategySynthesizerPrompt,
   buildChannelPlannerPrompt,
   buildAssetPlannerPrompt,
+  buildBriefingValidationPrompt,
+  buildStrategyFoundationPrompt,
+  buildCreativeHookPrompt,
+  buildHookPersonaValidatorPrompt,
+  buildHookRefinementPrompt,
 } from '@/lib/ai/prompts/campaign-strategy';
 import { buildArenaQueries } from '@/lib/arena/arena-queries';
 import { fetchArenaContext } from '@/lib/arena/arena-client';
@@ -30,6 +35,8 @@ import { fetchExaContext } from '@/lib/exa/exa-client';
 import { buildScholarQueries } from '@/lib/semantic-scholar/scholar-queries';
 import { fetchScholarContext } from '@/lib/semantic-scholar/scholar-client';
 import { getBctContext, getGoalBctMapping } from '@/lib/bct/goal-bct-mapping';
+import { formatCasiDeterminantsForPrompt } from '@/lib/bct/casi-determinants';
+import { formatMindspaceForPrompt } from '@/lib/bct/mindspace-checklist';
 import { getTopAnglesForGoal } from '@/lib/campaigns/creative-angles';
 import { getLlmProfile } from '@/lib/campaigns/llm-creative-profiles';
 import type { CreativeAngleDefinition } from '@/lib/campaigns/creative-angles';
@@ -43,6 +50,9 @@ import {
   personaValidationArraySchema,
   channelPlanResponseSchema,
   assetPlanResponseSchema,
+  briefingValidationSchema,
+  strategyFoundationSchema,
+  hookConceptSchema,
 } from './strategy-blueprint.types';
 import type {
   CampaignBlueprint,
@@ -59,6 +69,17 @@ import type {
   VariantPhaseResult,
   SynthesisPhaseResult,
   JourneyPhaseResult,
+  BriefingValidation,
+  ImprovedBriefing,
+  StrategyFoundation,
+  CreativeHook,
+  HookConcept,
+  HookPhaseResult,
+  ProposalPhaseResult,
+  EnrichmentContext,
+  CuratorSelection,
+  CreativeAngleSelection,
+  CreativeEnrichmentBrief,
 } from './strategy-blueprint.types';
 import type { PipelineEvent } from '@/features/campaigns/types/campaign-wizard.types';
 
@@ -1508,4 +1529,572 @@ export async function regenerateBlueprintLayer(
       };
 
   return blueprint;
+}
+
+// =============================================================================
+// 9-Phase Pipeline Functions (New Interactive Architecture)
+// =============================================================================
+
+// ─── Helper: Derive Creative Enrichment Brief ────────────────
+
+/**
+ * Extract creative enrichment data from the strategy foundation for hook generation.
+ * Maps behavioral & enrichment analysis into creative prompts for the hook generators.
+ */
+function deriveCreativeEnrichmentBrief(foundation: StrategyFoundation): CreativeEnrichmentBrief {
+  const enrichmentSynthesis = foundation.enrichmentSynthesis;
+  const mindspaceAssessment = foundation.mindspaceAssessment ?? [];
+  const elmRoute = foundation.elmRouteRecommendation;
+  const audienceInsights = foundation.audienceInsights ?? [];
+  const behavioralStrategy = foundation.behavioralStrategy;
+
+  return {
+    culturalTensions: enrichmentSynthesis?.crossSourcePatterns ?? [],
+    behavioralReframes: [
+      behavioralStrategy?.desiredBehavior ?? '',
+      ...(behavioralStrategy?.selectedBCTs ?? []).map(bct => `${bct.techniqueName}: ${bct.applicationHint}`),
+    ].filter(Boolean),
+    crossIndustryAnalogies: (enrichmentSynthesis?.sourceAttributedInsights ?? [])
+      .filter(i => i.source === 'exa')
+      .map(i => i.insight),
+    mindspaceOpportunities: mindspaceAssessment
+      .filter(m => m.applicable && m.opportunity)
+      .map(m => `${m.factor}: ${m.opportunity}`),
+    elmCreativeImplications: `Primary route: ${elmRoute?.primaryRoute ?? 'unknown'}. ${elmRoute?.rationale ?? ''}`,
+    audienceEmotionalLandscape: audienceInsights
+      .map(a => `${a.personaName}: ${a.insight} (TTM: ${a.ttmStage}, ELM: ${a.elmRoute})`)
+      .join(' | '),
+  };
+}
+
+// ─── Phase 1: Validate Briefing ──────────────────────────────
+
+/**
+ * Phase 1: Evaluate briefing completeness using a fast model (Gemini Flash).
+ * Returns a BriefingValidation with score, gaps, and suggestions.
+ */
+export async function validateBriefing(
+  ctx: PhaseContext,
+  onProgress?: ProgressCallback,
+): Promise<BriefingValidation> {
+  const { workspaceId, wizardContext, strategicIntent: intentOpt } = ctx;
+  const strategicIntent = intentOpt ?? 'hybrid';
+  const campaignGoalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
+
+  onProgress?.({ step: 1, name: 'Briefing Validation', status: 'running', label: 'Evaluating briefing completeness...' });
+
+  // Resolve persona IDs
+  let personaIds = ctx.personaIds ?? [];
+  if (personaIds.length === 0) {
+    const all = await prisma.persona.findMany({ where: { workspaceId }, select: { id: true } });
+    personaIds = all.map(p => p.id);
+  }
+  const productIds = ctx.productIds ?? [];
+
+  // Build context (lightweight — no enrichment for validation)
+  const [brandContext, personaContext, productContext] = await Promise.all([
+    getBrandContext(workspaceId),
+    buildSelectedPersonasContext(personaIds, workspaceId),
+    productIds.length > 0 ? buildProductContext(workspaceId, productIds) : Promise.resolve(''),
+  ]);
+
+  const prompt = buildBriefingValidationPrompt({
+    campaignName: wizardContext.campaignName,
+    campaignDescription: wizardContext.campaignDescription ?? '',
+    goalType: campaignGoalType,
+    strategicIntent,
+    briefing: wizardContext.briefing,
+    brandContext: formatBrandContext(brandContext),
+    personaContext,
+    productContext,
+  });
+
+  // Use Gemini Flash for speed
+  const raw = await withStepContext('Phase 1 (Briefing Validation)', 60, () =>
+    createStructuredCompletion<BriefingValidation>(
+      'google', GEMINI_FLASH,
+      prompt.system, prompt.user,
+      { temperature: 0.3, maxTokens: 4096, timeoutMs: 60_000 },
+    ),
+  );
+
+  const result = validateOrWarn(briefingValidationSchema, raw, 'Phase 1 Briefing Validation');
+
+  onProgress?.({ step: 1, name: 'Briefing Validation', status: 'complete', label: `Score: ${result.overallScore}/100 — ${result.isComplete ? 'Ready' : 'Gaps found'}` });
+
+  return result;
+}
+
+// ─── Phase 1c: Improve Briefing ──────────────────────────────
+
+/**
+ * Phase 1c: AI rewrites briefing fields based on validation gaps and suggestions.
+ * Uses Gemini Flash for speed. Returns improved briefing field values.
+ */
+export async function improveBriefing(
+  wizardContext: { campaignName: string; campaignDescription?: string; campaignGoalType?: string; briefing?: CampaignBriefing },
+  validation: BriefingValidation,
+  strategicIntent: StrategicIntent,
+): Promise<ImprovedBriefing> {
+  const goalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
+
+  const systemPrompt = `You are a senior campaign strategist. Your task is to improve a campaign briefing based on AI validation feedback. Rewrite each field to address the identified gaps and apply the suggestions while preserving the user's original intent.
+
+Return a JSON object with exactly these 5 fields:
+- occasion: string (why this campaign exists, what triggers it)
+- audienceObjective: string (what the audience should think, feel, or do)
+- coreMessage: string (the single most important message)
+- tonePreference: string (desired tone and communication style)
+- constraints: string (limitations, budget, timeline, requirements)
+
+Each field must be a substantive, well-written paragraph. Do NOT leave any field empty.`;
+
+  const gapsText = validation.gaps.map(g => `- [${g.severity}] ${g.field}: ${g.suggestion}`).join('\n');
+  const suggestionsText = validation.suggestions.map(s => `- ${s}`).join('\n');
+
+  const userPrompt = `Campaign: ${wizardContext.campaignName}
+Description: ${wizardContext.campaignDescription ?? 'Not provided'}
+Goal Type: ${goalType}
+Strategic Intent: ${strategicIntent}
+
+Current Briefing:
+- Occasion: ${wizardContext.briefing?.occasion || '(empty)'}
+- Audience Objective: ${wizardContext.briefing?.audienceObjective || '(empty)'}
+- Core Message: ${wizardContext.briefing?.coreMessage || '(empty)'}
+- Tone Preference: ${wizardContext.briefing?.tonePreference || '(empty)'}
+- Constraints: ${wizardContext.briefing?.constraints || '(empty)'}
+
+Validation Score: ${validation.overallScore}/100
+
+Gaps found:
+${gapsText || 'None'}
+
+Improvement Suggestions:
+${suggestionsText || 'None'}
+
+Strengths (preserve these):
+${validation.strengths.map(s => `- ${s}`).join('\n') || 'None'}
+
+Rewrite all 5 briefing fields, addressing every gap and applying the suggestions. Preserve what's already strong. Make the briefing score-worthy of 90+/100.`;
+
+  const result = await withStepContext('Phase 1c (Improve Briefing)', 30, () =>
+    createStructuredCompletion<ImprovedBriefing>(
+      'google', GEMINI_FLASH,
+      systemPrompt, userPrompt,
+      { temperature: 0.5, maxTokens: 4096, timeoutMs: 30_000 },
+    ),
+  );
+
+  // Use || (not ??) so empty strings from the LLM also fall back to originals
+  return {
+    occasion: result.occasion || wizardContext.briefing?.occasion || '',
+    audienceObjective: result.audienceObjective || wizardContext.briefing?.audienceObjective || '',
+    coreMessage: result.coreMessage || wizardContext.briefing?.coreMessage || '',
+    tonePreference: result.tonePreference || wizardContext.briefing?.tonePreference || '',
+    constraints: result.constraints || wizardContext.briefing?.constraints || '',
+  };
+}
+
+// ─── Phase 2: Build Strategy Foundation ──────────────────────
+
+/**
+ * Phase 2: Build the analytical strategy foundation using Claude Opus with deep thinking.
+ * Runs full enrichment pipeline (Arena, Exa, Scholar, BCT, CASI, MINDSPACE) and
+ * synthesizes everything into a StrategyFoundation for creative teams.
+ */
+export async function buildStrategyFoundation(
+  ctx: PhaseContext,
+  onProgress?: ProgressCallback,
+): Promise<{ foundation: StrategyFoundation; enrichmentContext: EnrichmentContext }> {
+  const { workspaceId, wizardContext, strategicIntent: intentOpt } = ctx;
+  const strategicIntent = intentOpt ?? 'hybrid';
+  const campaignGoalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
+
+  // Resolve persona IDs
+  let personaIds = ctx.personaIds ?? [];
+  if (personaIds.length === 0) {
+    const all = await prisma.persona.findMany({ where: { workspaceId }, select: { id: true } });
+    personaIds = all.map(p => p.id);
+  }
+  const productIds = ctx.productIds ?? [];
+  const competitorIds = ctx.competitorIds ?? [];
+  const trendIds = ctx.trendIds ?? [];
+
+  // Build enrichment queries (non-blocking)
+  const arenaQueriesPromise = buildArenaQueries({ workspaceId, campaignGoalType, personaIds }).catch(() => []);
+
+  const [brandContext, personaContext, productContext, competitorContext, trendContext, styleguideContext, arenaQueries] = await Promise.all([
+    getBrandContext(workspaceId),
+    buildSelectedPersonasContext(personaIds, workspaceId),
+    productIds.length > 0 ? buildProductContext(workspaceId, productIds) : Promise.resolve(''),
+    competitorIds.length > 0 ? buildCompetitorContext(workspaceId, competitorIds) : Promise.resolve(''),
+    trendIds.length > 0 ? buildTrendContext(workspaceId, trendIds) : Promise.resolve(''),
+    buildStyleguideContext(workspaceId),
+    arenaQueriesPromise,
+  ]);
+
+  // Build Exa + Scholar + BCT queries
+  const bctMapping = getGoalBctMapping(campaignGoalType);
+  const exaQueries = buildExaQueries({
+    campaignGoalType,
+    brandName: brandContext.brandName,
+    brandValues: brandContext.brandValues,
+  });
+  const scholarQueries = buildScholarQueries({ campaignGoalType, comBTarget: bctMapping?.comBTarget });
+  const bctContext = getBctContext(campaignGoalType);
+  const casiDeterminants = formatCasiDeterminantsForPrompt();
+  const mindspaceChecklist = formatMindspaceForPrompt();
+
+  // Fetch all enrichments in parallel with SSE events
+  onProgress?.({ type: 'enrichment', status: 'running' });
+  const [arenaResult, exaResult, scholarResult] = await Promise.all([
+    fetchArenaContext(arenaQueries),
+    fetchExaContext(exaQueries),
+    fetchScholarContext(scholarQueries),
+  ]);
+
+  const totalEnrichmentBlocks = (arenaResult.meta?.totalBlocks ?? 0) + (exaResult.meta?.totalResults ?? 0) + (scholarResult.meta?.totalPapers ?? 0);
+  if (totalEnrichmentBlocks > 0 || bctContext) {
+    onProgress?.({ type: 'enrichment', status: 'complete', totalBlocks: totalEnrichmentBlocks, queries: [
+      ...(arenaResult.meta?.queries ?? []),
+      ...(exaResult.meta?.queries ?? []),
+      ...(scholarResult.meta?.queries ?? []),
+    ], sources: {
+      arena: arenaResult.meta?.totalBlocks ?? 0,
+      exa: exaResult.meta?.totalResults ?? 0,
+      scholar: scholarResult.meta?.totalPapers ?? 0,
+      bct: !!bctContext,
+    } });
+  } else {
+    onProgress?.({ type: 'enrichment', status: 'skipped' });
+  }
+
+  const brandContextText = formatBrandContext(brandContext);
+
+  // Resolve Claude Opus for strategy foundation
+  const { model: resolvedModel, provider: resolvedProvider } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
+
+  onProgress?.({ step: 1, name: 'Strategy Foundation', status: 'running', label: 'Building behavioral analysis and strategic foundation...' });
+
+  const prompt = buildStrategyFoundationPrompt({
+    campaignName: wizardContext.campaignName,
+    campaignDescription: wizardContext.campaignDescription ?? '',
+    goalType: campaignGoalType,
+    strategicIntent,
+    briefing: wizardContext.briefing,
+    brandContext: brandContextText,
+    personaContext,
+    personaIds,
+    productContext,
+    competitorContext,
+    trendContext,
+    arenaContext: arenaResult.contextText || undefined,
+    exaContext: exaResult.contextText || undefined,
+    scholarContext: scholarResult.contextText || undefined,
+    bctContext: bctContext || undefined,
+    casiDeterminants,
+    mindspaceChecklist,
+  });
+
+  const raw = await withStepContext('Phase 2 (Strategy Foundation)', 600, () =>
+    createStructuredCompletion<StrategyFoundation>(
+      resolvedProvider, resolvedModel,
+      prompt.system, prompt.user,
+      { temperature: 0.4, maxTokens: 24000, timeoutMs: 600_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
+    ),
+  );
+
+  const foundation = validateOrWarn(strategyFoundationSchema, raw, 'Phase 2 Strategy Foundation');
+
+  onProgress?.({ step: 1, name: 'Strategy Foundation', status: 'complete', label: `Foundation built — ${foundation.keyInsights?.length ?? 0} insights synthesized` });
+
+  // Package all enrichment context for reuse in later phases
+  const enrichmentContext: EnrichmentContext = {
+    arenaText: arenaResult.contextText ?? '',
+    exaText: exaResult.contextText ?? '',
+    scholarText: scholarResult.contextText ?? '',
+    bctContext: bctContext ?? '',
+    casiDeterminants,
+    mindspaceChecklist,
+    goalInsights: '',
+    brandContext: brandContextText,
+    personaProfiles: personaContext,
+    productContext,
+    competitorContext,
+    trendContext,
+    styleguideContext,
+  };
+
+  return { foundation, enrichmentContext };
+}
+
+// ─── Phase 4: Generate Creative Hooks ────────────────────────
+
+interface GenerateCreativeHooksInput extends PhaseContext {
+  foundation: StrategyFoundation;
+  enrichmentContext: EnrichmentContext;
+  strategyFeedback?: string;
+}
+
+/**
+ * Phase 4: Generate 3 creative hooks in parallel, each using a different AI model
+ * and creative angle. Then validate all hooks with persona evaluation.
+ */
+export async function generateCreativeHooks(
+  ctx: GenerateCreativeHooksInput,
+  onProgress?: ProgressCallback,
+): Promise<HookPhaseResult> {
+  const { workspaceId, wizardContext, foundation, enrichmentContext, strategyFeedback } = ctx;
+  const strategicIntent = ctx.strategicIntent ?? 'hybrid';
+  const campaignGoalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
+
+  // Resolve persona IDs
+  let personaIds = ctx.personaIds ?? [];
+  if (personaIds.length === 0) {
+    const all = await prisma.persona.findMany({ where: { workspaceId }, select: { id: true } });
+    personaIds = all.map(p => p.id);
+  }
+
+  // Resolve 3 provider models
+  const [
+    { model: modelA, provider: providerA },
+    { model: modelB, provider: providerB },
+    { model: modelC, provider: providerC },
+  ] = await Promise.all([
+    resolveFeatureModel(workspaceId, 'campaign-strategy'),
+    resolveFeatureModel(workspaceId, 'campaign-strategy-b'),
+    resolveFeatureModel(workspaceId, 'campaign-strategy-c'),
+  ]);
+
+  // Select creative angles for each variant
+  const creativeAngles = selectCreativeAngles(
+    campaignGoalType,
+    providerA as AiProvider,
+    providerB as AiProvider,
+    providerC as AiProvider,
+  );
+
+  // Build curator selection from angle assignments
+  const curatorSelection: CuratorSelection = {
+    selectedAngles: creativeAngles.map(a => {
+      const profile = getLlmProfile(a.provider);
+      return {
+        angleId: a.angle.id,
+        angleName: a.angle.name,
+        assignedProvider: a.provider,
+        assignedModel: a.label === 'A' ? modelA : a.label === 'B' ? modelB : modelC,
+        featureKey: a.label === 'A' ? 'campaign-strategy' : a.label === 'B' ? 'campaign-strategy-b' : 'campaign-strategy-c',
+        selectionRationale: `Top angle for ${campaignGoalType} goal type, matched to ${a.provider}`,
+        llmMatchRationale: profile ? `${profile.moniker} (creative score: ${profile.creativeScore})` : 'Default assignment',
+        insightFamily: a.angle.insightFamily,
+      };
+    }),
+    rationale: `Selected 3 divergent creative angles for ${campaignGoalType} goal, each matched to the provider best suited for its creative requirements.`,
+    diversificationCheck: `Angles span ${new Set(creativeAngles.map(a => a.angle.insightFamily)).size} insight families: ${creativeAngles.map(a => `${a.label}=${a.angle.insightFamily}`).join(', ')}`,
+  };
+
+  // Derive creative enrichment brief from strategy foundation
+  const creativeEnrichmentBrief = deriveCreativeEnrichmentBrief(foundation);
+
+  // Build shared prompt params
+  const sharedParams = {
+    campaignName: wizardContext.campaignName,
+    campaignDescription: wizardContext.campaignDescription ?? '',
+    goalType: campaignGoalType,
+    strategicIntent,
+    briefing: wizardContext.briefing,
+    brandContext: enrichmentContext.brandContext,
+    personaContext: enrichmentContext.personaProfiles,
+    personaIds,
+    productContext: enrichmentContext.productContext,
+    competitorContext: enrichmentContext.competitorContext,
+    trendContext: enrichmentContext.trendContext,
+    strategyFoundation: foundation,
+    creativeEnrichmentBrief,
+    strategyFeedback,
+  };
+
+  const angleA = creativeAngles.find(a => a.label === 'A');
+  const angleB = creativeAngles.find(a => a.label === 'B');
+  const angleC = creativeAngles.find(a => a.label === 'C');
+
+  const anglePreview = creativeAngles.map(a => `${a.label}: ${a.angle.name}`).join(' | ');
+  onProgress?.({ step: 1, name: 'Creative Hook Generation', status: 'running', label: `Three AI models generating hooks: ${anglePreview}` });
+
+  // Generate 3 hooks in parallel — each with a different creative angle and model
+  const promptA = buildCreativeHookPrompt({ ...sharedParams, creativeAngle: angleA!.angle });
+  const promptB = buildCreativeHookPrompt({ ...sharedParams, creativeAngle: angleB!.angle });
+  const promptC = buildCreativeHookPrompt({ ...sharedParams, creativeAngle: angleC!.angle });
+
+  const [hookARaw, hookBRaw, hookCRaw] = await Promise.all([
+    withStepContext('Phase 4a (Hook A)', 600, () =>
+      createStructuredCompletion<{ strategy: StrategyLayer; architecture: ArchitectureLayer; hookConcept: HookConcept }>(
+        providerA, modelA,
+        promptA.system, promptA.user,
+        { temperature: 0.6, maxTokens: 24000, timeoutMs: 600_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
+      ),
+    ),
+    withStepContext('Phase 4b (Hook B)', 600, () =>
+      createStructuredCompletion<{ strategy: StrategyLayer; architecture: ArchitectureLayer; hookConcept: HookConcept }>(
+        providerB, modelB,
+        promptB.system, promptB.user,
+        { temperature: 0.6, maxTokens: 24000, timeoutMs: 600_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
+      ),
+    ),
+    withStepContext('Phase 4c (Hook C)', 600, () =>
+      createStructuredCompletion<{ strategy: StrategyLayer; architecture: ArchitectureLayer; hookConcept: HookConcept }>(
+        providerC, modelC,
+        promptC.system, promptC.user,
+        { temperature: 0.6, maxTokens: 24000, timeoutMs: 600_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
+      ),
+    ),
+  ]);
+
+  // Validate and assemble CreativeHook objects
+  const hooks: CreativeHook[] = [
+    { label: 'A', raw: hookARaw, angle: angleA!, model: modelA, provider: providerA },
+    { label: 'B', raw: hookBRaw, angle: angleB!, model: modelB, provider: providerB },
+    { label: 'C', raw: hookCRaw, angle: angleC!, model: modelC, provider: providerC },
+  ].map(({ raw, angle, model, provider }) => {
+    const hookConcept = validateOrWarn(hookConceptSchema, raw.hookConcept, `Hook ${angle.label} HookConcept`);
+    return {
+      strategy: raw.strategy,
+      architecture: normalizeArchitectureLayer(raw.architecture),
+      hookConcept,
+      creativeAngleId: angle.angle.id,
+      creativeAngleName: angle.angle.name,
+      curatorSelection: curatorSelection.selectedAngles.find(s => s.angleId === angle.angle.id)!,
+      modelUsed: model,
+      providerUsed: provider,
+    };
+  });
+
+  onProgress?.({ step: 1, name: 'Creative Hook Generation', status: 'complete', label: `Three hooks generated: ${hooks.map((h, i) => `${String.fromCharCode(65 + i)}: "${h.hookConcept.hookTitle}"`).join(' | ')}` });
+
+  // Phase 5: Persona validation of all 3 hooks
+  onProgress?.({ step: 2, name: 'Hook Persona Validation', status: 'running', label: 'Personas evaluating hooks...' });
+
+  const personaProfiles = await buildPersonaProfiles(personaIds, workspaceId);
+  const goalGuidance = getGoalTypeGuidance(campaignGoalType);
+
+  let personaValidation: PersonaValidationResult[] = [];
+  const hookScores = [0, 0, 0];
+
+  if (personaProfiles.length > 0) {
+    const { model: validationModel, provider: validationProvider } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
+
+    const validationPrompt = buildHookPersonaValidatorPrompt({
+      hooks: hooks.map(h => ({
+        hookConcept: h.hookConcept,
+        strategy: JSON.stringify(h.strategy),
+        architecture: JSON.stringify(h.architecture),
+        creativeAngleName: h.creativeAngleName,
+      })),
+      personas: personaProfiles,
+      goalType: campaignGoalType,
+      goalGuidance,
+    });
+
+    const validationRaw = await withStepContext('Phase 5 (Hook Persona Validation)', 300, () =>
+      createStructuredCompletion<PersonaValidationResult[]>(
+        validationProvider, validationModel,
+        validationPrompt.system, validationPrompt.user,
+        { temperature: 0.7, maxTokens: 16384, timeoutMs: 300_000, thinking: { anthropic: THINKING_CONFIG.anthropicValidation } },
+      ),
+    );
+
+    personaValidation = normalizePersonaValidation(
+      validateOrWarn(personaValidationArraySchema, validationRaw, 'Phase 5 Hook Validation'),
+    );
+
+    // Calculate per-hook scores from persona votes
+    if (personaValidation.length > 0) {
+      const allScores = personaValidation.map(p => p.overallScore);
+      const avgScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+
+      for (let i = 0; i < 3; i++) {
+        const label = String.fromCharCode(65 + i);
+        const voters = personaValidation.filter(p => p.preferredVariant === label);
+        hookScores[i] = voters.length > 0 ? voters.reduce((s, p) => s + p.overallScore, 0) / voters.length : avgScore;
+      }
+    }
+  }
+
+  onProgress?.({ step: 2, name: 'Hook Persona Validation', status: 'complete', label: `Validation complete — scores: A=${hookScores[0].toFixed(1)}, B=${hookScores[1].toFixed(1)}, C=${hookScores[2].toFixed(1)}` });
+
+  return { hooks, curatorSelection, personaValidation, hookScores };
+}
+
+// ─── Phase 6: Refine Selected Hook ──────────────────────────
+
+interface RefineSelectedHookInput extends PhaseContext {
+  selectedHook: CreativeHook;
+  foundation: StrategyFoundation;
+  personaValidation: PersonaValidationResult[];
+  hookFeedback?: string;
+}
+
+/**
+ * Phase 6: Refine the user-selected hook into a production-ready proposal.
+ * Uses Claude Opus with deep thinking to elevate the hook based on persona feedback.
+ */
+export async function refineSelectedHook(
+  ctx: RefineSelectedHookInput,
+  onProgress?: ProgressCallback,
+): Promise<ProposalPhaseResult> {
+  const { workspaceId, wizardContext, selectedHook, foundation, personaValidation, hookFeedback } = ctx;
+  const strategicIntent = ctx.strategicIntent ?? 'hybrid';
+  const campaignGoalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
+
+  // Resolve persona IDs
+  let personaIds = ctx.personaIds ?? [];
+  if (personaIds.length === 0) {
+    const all = await prisma.persona.findMany({ where: { workspaceId }, select: { id: true } });
+    personaIds = all.map(p => p.id);
+  }
+  const productIds = ctx.productIds ?? [];
+
+  const [brandContext, personaContext, productContext] = await Promise.all([
+    getBrandContext(workspaceId),
+    buildSelectedPersonasContext(personaIds, workspaceId),
+    productIds.length > 0 ? buildProductContext(workspaceId, productIds) : Promise.resolve(''),
+  ]);
+
+  const { model: resolvedModel, provider: resolvedProvider } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
+
+  onProgress?.({ step: 1, name: 'Hook Refinement', status: 'running', label: `Refining "${selectedHook.hookConcept.hookTitle}" into production-ready proposal...` });
+
+  const prompt = buildHookRefinementPrompt({
+    campaignName: wizardContext.campaignName,
+    campaignDescription: wizardContext.campaignDescription ?? '',
+    goalType: campaignGoalType,
+    strategicIntent,
+    briefing: wizardContext.briefing,
+    brandContext: formatBrandContext(brandContext),
+    personaContext,
+    personaIds,
+    productContext,
+    selectedHook,
+    strategyFoundation: foundation,
+    personaValidation,
+    hookFeedback,
+  });
+
+  const raw = await withStepContext('Phase 6 (Hook Refinement)', 600, () =>
+    createStructuredCompletion<ProposalPhaseResult>(
+      resolvedProvider, resolvedModel,
+      prompt.system, prompt.user,
+      { temperature: 0.4, maxTokens: 24000, timeoutMs: 600_000, thinking: { anthropic: THINKING_CONFIG.anthropicSynthesis, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
+    ),
+  );
+
+  const result: ProposalPhaseResult = {
+    strategy: raw.strategy,
+    architecture: normalizeArchitectureLayer(raw.architecture),
+    hookConcept: validateOrWarn(hookConceptSchema, raw.hookConcept, 'Phase 6 Refined HookConcept'),
+  };
+
+  onProgress?.({ step: 1, name: 'Hook Refinement', status: 'complete', label: `Proposal ready — "${result.hookConcept.hookTitle}"` });
+
+  return result;
 }
