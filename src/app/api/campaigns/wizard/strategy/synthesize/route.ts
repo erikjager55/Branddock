@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         function sendEvent(data: PipelineStep | { type: string; result?: unknown; error?: string; failedStep?: number }) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+          try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`)); } catch { /* stream closed */ }
         }
 
         // Send SSE keepalive comments every 15s to prevent connection drops
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
           sendEvent({ type: 'error', error: message, failedStep: 4 });
         } finally {
           clearInterval(keepalive);
-          controller.close();
+          try { controller.close(); } catch { /* already closed */ }
         }
       },
     });

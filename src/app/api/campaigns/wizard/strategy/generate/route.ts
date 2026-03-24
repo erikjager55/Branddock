@@ -38,8 +38,12 @@ export async function POST(request: NextRequest) {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
+        const heartbeat = setInterval(() => {
+          try { controller.enqueue(encoder.encode(': heartbeat\n\n')); } catch { /* stream closed */ }
+        }, 15_000);
+
         function sendEvent(data: PipelineStep | { type: string; blueprint?: unknown; error?: string; failedStep?: number }) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+          try { controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`)); } catch { /* stream closed */ }
         }
 
         try {
@@ -69,7 +73,8 @@ export async function POST(request: NextRequest) {
           console.error('[wizard/strategy/generate] Pipeline error:', message);
           sendEvent({ type: 'error', error: message, failedStep: currentStep });
         } finally {
-          controller.close();
+          clearInterval(heartbeat);
+          try { controller.close(); } catch { /* already closed */ }
         }
       },
     });
