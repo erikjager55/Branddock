@@ -55,7 +55,7 @@ const FIELD_KEYWORDS: { keywords: string[]; field: BriefingField }[] = [
   { keywords: ["occasion", "why now", "trigger"], field: "occasion" },
   { keywords: ["audience", "think", "feel", "do", "objective"], field: "audienceObjective" },
   { keywords: ["core message", "message", "takeaway"], field: "coreMessage" },
-  { keywords: ["tone", "creative direction", "direction"], field: "tonePreference" },
+  { keywords: ["tone", "creative direction"], field: "tonePreference" },
   { keywords: ["constraint", "mandatory", "limitation", "budget"], field: "constraints" },
 ];
 
@@ -71,7 +71,12 @@ function mapGapToField(gapField: string | undefined | null): BriefingField | nul
   if (!gapField) return null;
   const lower = gapField.toLowerCase();
   for (const entry of FIELD_KEYWORDS) {
-    if (entry.keywords.some((kw) => lower.includes(kw))) {
+    if (entry.keywords.some((kw) => {
+      // Use word-boundary regex to avoid substring false positives
+      // e.g. "do" should not match inside "domain" or "window"
+      const regex = new RegExp(`\\b${kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`);
+      return regex.test(lower);
+    })) {
       return entry.field;
     }
   }
@@ -92,8 +97,9 @@ export function BriefingReviewView({
   onRevalidate,
 }: BriefingReviewViewProps) {
   const [showGaps, setShowGaps] = React.useState(true);
-  const [showEditor, setShowEditor] = React.useState(false);
+  const [showEditor, setShowEditor] = React.useState(true);
   const [appliedGaps, setAppliedGaps] = React.useState<Set<number>>(new Set());
+  const [appliedSuggestions, setAppliedSuggestions] = React.useState<Set<number>>(new Set());
   const [hasEdited, setHasEdited] = React.useState(false);
 
   const score = validation.overallScore ?? 0;
@@ -112,16 +118,25 @@ export function BriefingReviewView({
         ? "bg-amber-50 border-amber-200"
         : "bg-red-50 border-red-200";
 
-  const hasCriticalGaps = (validation.gaps ?? []).some((g) => g.severity === "critical");
-
   const handleFieldChange = (field: BriefingField, value: string) => {
     onBriefingChange(field, value);
     setHasEdited(true);
   };
 
   const handleApplyGap = (gapIndex: number, suggestion: string, targetField: BriefingField) => {
-    onBriefingChange(targetField, suggestion);
+    const existing = briefing[targetField]?.trim() ?? "";
+    const newValue = existing ? `${existing}\n\n${suggestion}` : suggestion;
+    onBriefingChange(targetField, newValue);
     setAppliedGaps((prev) => new Set(prev).add(gapIndex));
+    setShowEditor(true);
+    setHasEdited(true);
+  };
+
+  const handleApplySuggestion = (index: number, suggestion: string, targetField: BriefingField) => {
+    const existing = briefing[targetField]?.trim() ?? "";
+    const newValue = existing ? `${existing}\n\n${suggestion}` : suggestion;
+    onBriefingChange(targetField, newValue);
+    setAppliedSuggestions((prev) => new Set(prev).add(index));
     setShowEditor(true);
     setHasEdited(true);
   };
@@ -129,6 +144,7 @@ export function BriefingReviewView({
   const handleRevalidate = () => {
     setHasEdited(false);
     setAppliedGaps(new Set());
+    setAppliedSuggestions(new Set());
     onRevalidate();
   };
 
@@ -169,6 +185,59 @@ export function BriefingReviewView({
             )}
           </div>
         </div>
+      </div>
+
+      {/* Inline Briefing Editor — positioned after score for immediate visibility */}
+      <div className="space-y-2">
+        <button
+          type="button"
+          className="flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-gray-900"
+          onClick={() => setShowEditor(!showEditor)}
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          {showEditor ? "Hide Briefing Fields" : "Show Briefing Fields"}
+          {showEditor ? (
+            <ChevronUp className="w-4 h-4" />
+          ) : (
+            <ChevronDown className="w-4 h-4" />
+          )}
+        </button>
+        {showEditor && (
+          <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
+            {(Object.keys(FIELD_LABELS) as BriefingField[]).map((field) => (
+              <div key={field}>
+                <label
+                  htmlFor={`briefing-${field}`}
+                  className="block text-xs font-medium text-gray-600 mb-1"
+                >
+                  {FIELD_LABELS[field]}
+                </label>
+                <textarea
+                  id={`briefing-${field}`}
+                  value={briefing[field]}
+                  onChange={(e) => handleFieldChange(field, e.target.value)}
+                  disabled={isImproving}
+                  rows={2}
+                  className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 focus:outline-none disabled:opacity-50 resize-none"
+                  placeholder={`Enter ${FIELD_LABELS[field].toLowerCase()}...`}
+                />
+              </div>
+            ))}
+            {hasEdited && (
+              <div className="pt-2 border-t border-gray-100">
+                <Button
+                  variant="secondary"
+                  icon={RotateCcw}
+                  onClick={handleRevalidate}
+                  disabled={isImproving}
+                  size="sm"
+                >
+                  Re-validate Briefing
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Strengths */}
@@ -268,76 +337,61 @@ export function BriefingReviewView({
         </div>
       )}
 
-      {/* Inline Briefing Editor */}
-      <div className="space-y-2">
-        <button
-          type="button"
-          className="flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-gray-900"
-          onClick={() => setShowEditor(!showEditor)}
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          {showEditor ? "Hide Briefing Fields" : "Show Briefing Fields"}
-          {showEditor ? (
-            <ChevronUp className="w-4 h-4" />
-          ) : (
-            <ChevronDown className="w-4 h-4" />
-          )}
-        </button>
-        {showEditor && (
-          <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
-            {(Object.keys(FIELD_LABELS) as BriefingField[]).map((field) => (
-              <div key={field}>
-                <label
-                  htmlFor={`briefing-${field}`}
-                  className="block text-xs font-medium text-gray-600 mb-1"
-                >
-                  {FIELD_LABELS[field]}
-                </label>
-                <textarea
-                  id={`briefing-${field}`}
-                  value={briefing[field]}
-                  onChange={(e) => handleFieldChange(field, e.target.value)}
-                  disabled={isImproving}
-                  rows={2}
-                  className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 focus:outline-none disabled:opacity-50 resize-none"
-                  placeholder={`Enter ${FIELD_LABELS[field].toLowerCase()}...`}
-                />
-              </div>
-            ))}
-            {hasEdited && (
-              <div className="pt-2 border-t border-gray-100">
-                <Button
-                  variant="secondary"
-                  icon={RotateCcw}
-                  onClick={handleRevalidate}
-                  disabled={isImproving}
-                  size="sm"
-                >
-                  Re-validate Briefing
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Suggestions */}
+      {/* Suggestions — with apply buttons for field-matched suggestions */}
       {(validation.suggestions ?? []).length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium text-gray-700">
             Suggestions for Improvement
           </h4>
-          <ul className="space-y-1.5">
-            {(validation.suggestions ?? []).map((s, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2 text-sm text-gray-600"
-              >
-                <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
-                {s}
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-2">
+            {(validation.suggestions ?? []).map((s, i) => {
+              const targetField = mapGapToField(s);
+              const isApplied = appliedSuggestions.has(i);
+              return (
+                <div
+                  key={i}
+                  className={`flex items-start gap-3 rounded-lg border p-3 ${
+                    isApplied
+                      ? "border-emerald-200 bg-emerald-50/50"
+                      : "border-blue-100 bg-blue-50/50"
+                  }`}
+                >
+                  {isApplied ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" />
+                  ) : (
+                    <Info className="w-4 h-4 text-blue-500 mt-0.5 shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-600">{s}</p>
+                    {targetField ? (
+                      <button
+                        type="button"
+                        disabled={isApplied || isImproving}
+                        onClick={() => handleApplySuggestion(i, s, targetField)}
+                        className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:text-teal-900 disabled:opacity-50 disabled:cursor-default"
+                      >
+                        {isApplied ? (
+                          <>
+                            <CheckCircle2 className="w-3 h-3" />
+                            Applied to {FIELD_LABELS[targetField]}
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="w-3 h-3" />
+                            Apply to {FIELD_LABELS[targetField]}
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <span className="mt-1.5 inline-flex items-center gap-1 text-xs text-gray-400">
+                        General suggestion
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -377,16 +431,21 @@ export function BriefingReviewView({
         >
           {isImproving ? "Improving..." : "Improve with AI"}
         </Button>
-        <Button
-          variant="primary"
-          icon={ArrowRight}
-          onClick={onProceed}
-          disabled={isImproving}
-        >
-          {hasCriticalGaps
-            ? "Proceed Anyway"
-            : "Build Strategy Foundation"}
-        </Button>
+        <div className="flex flex-col items-center">
+          <Button
+            variant="primary"
+            icon={ArrowRight}
+            onClick={onProceed}
+            disabled={isImproving || score < 80}
+          >
+            Build Strategy Foundation
+          </Button>
+          {score < 80 && (
+            <p className="text-xs text-gray-500 mt-1.5">
+              Score must be at least 80/100 to continue
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
