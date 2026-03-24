@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   Check,
+  Minus,
   AlertTriangle,
   Database,
   ChevronDown,
@@ -270,7 +271,7 @@ export function KnowledgeStep() {
                 <button
                   type="button"
                   onClick={() => toggleGroupCollapse(group.key)}
-                  className="flex items-center gap-2 w-full px-3 py-2 bg-gray-50/80 hover:bg-gray-100/80 transition-colors"
+                  className="flex items-center gap-2 w-full pl-3 pr-5 py-2 bg-gray-50/80 hover:bg-gray-100/80 transition-colors"
                 >
                   {isCollapsed ? (
                     <ChevronRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -290,26 +291,29 @@ export function KnowledgeStep() {
                     <div
                       role="checkbox"
                       aria-checked={allGroupSelected}
-                      className="h-[18px] w-[18px] rounded border-2 flex items-center justify-center transition-colors"
+                      className="h-5 w-5 rounded border-2 flex items-center justify-center transition-colors"
                       style={{
                         backgroundColor: allGroupSelected
-                          ? "var(--primary)"
+                          ? "#0d9488"
                           : someGroupSelected
-                            ? "color-mix(in srgb, var(--primary) 40%, transparent)"
+                            ? "#ccfbf1"
                             : "#ffffff",
                         borderColor: allGroupSelected
-                          ? "var(--primary)"
+                          ? "#0d9488"
                           : someGroupSelected
-                            ? "color-mix(in srgb, var(--primary) 50%, transparent)"
-                            : "#9ca3af",
+                            ? "#0d9488"
+                            : "#d1d5db",
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
                         toggleGroupSelection(group);
                       }}
                     >
-                      {(allGroupSelected || someGroupSelected) && (
-                        <Check className="w-2.5 h-2.5 text-white" />
+                      {allGroupSelected && (
+                        <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                      )}
+                      {someGroupSelected && !allGroupSelected && (
+                        <Minus className="w-3 h-3 text-teal-700" strokeWidth={3} />
                       )}
                     </div>
                   </div>
@@ -329,7 +333,7 @@ export function KnowledgeStep() {
                         key={`${item.sourceType}:${item.sourceId}`}
                         type="button"
                         onClick={() => toggleKnowledgeId(item.sourceId)}
-                        className="flex items-center gap-2.5 w-full pl-9 pr-3 py-1.5 text-left transition-colors hover:bg-gray-50"
+                        className="flex items-center gap-2.5 w-full pl-9 pr-5 py-1.5 text-left transition-colors hover:bg-gray-50"
                         style={{
                           backgroundColor: isSelected
                             ? "color-mix(in srgb, var(--primary) 6%, transparent)"
@@ -338,18 +342,18 @@ export function KnowledgeStep() {
                       >
                         {/* Checkbox */}
                         <div
-                          className="h-[18px] w-[18px] rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                          className="h-5 w-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors"
                           style={{
                             backgroundColor: isSelected
-                              ? "var(--primary)"
+                              ? "#0d9488"
                               : "#ffffff",
                             borderColor: isSelected
-                              ? "var(--primary)"
-                              : "#9ca3af",
+                              ? "#0d9488"
+                              : "#d1d5db",
                           }}
                         >
                           {isSelected && (
-                            <Check className="w-3 h-3 text-white" />
+                            <Check className="w-3 h-3 text-white" strokeWidth={3} />
                           )}
                         </div>
 
