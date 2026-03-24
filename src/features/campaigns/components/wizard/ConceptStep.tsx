@@ -161,6 +161,7 @@ export function ConceptStep() {
   // Detect which pipeline to use
   const is9Phase = strategyFoundation !== null && enrichmentContext !== null;
 
+
   // ─── 9-Phase: Generate Hooks ──────────────────────────
 
   const handleGenerateHooks = useCallback(() => {
@@ -450,6 +451,19 @@ export function ConceptStep() {
     abortRef.current = { abort };
   }, [strategicIntent, selectedContextIds, wizardContext, is9Phase]);
 
+  // ─── Auto-start concept generation when entering step 4 ──
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (strategyPhase === "rationale_complete" && !isGenerating && !autoStartedRef.current) {
+      autoStartedRef.current = true;
+      if (is9Phase) {
+        handleGenerateHooks();
+      } else {
+        handleElaborate();
+      }
+    }
+  }, [strategyPhase, isGenerating, is9Phase, handleGenerateHooks, handleElaborate]);
+
   // ─── Approve Concept → Assemble Blueprint ──────────────
 
   const handleApprove = useCallback(() => {
@@ -484,7 +498,8 @@ export function ConceptStep() {
 
   // ─── Render based on phase ─────────────────────────────
 
-  // Entry: rationale_complete — start concept development
+  // Entry: rationale_complete — auto-starts generation via useEffect above.
+  // This screen is briefly visible before generation begins, or shown as retry on error.
   if (strategyPhase === "rationale_complete") {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
@@ -494,27 +509,40 @@ export function ConceptStep() {
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
           Develop Creative Concept
         </h3>
-        <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
-          {is9Phase
-            ? "Generate creative hooks based on your behavioral science foundation, then refine the best one into a production-ready concept."
-            : "Elaborate the approved strategy into a full channel plan and asset plan for your campaign."}
-        </p>
 
-        {phaseError && (
-          <div className="flex items-start gap-2 p-3 mb-4 bg-red-50 border border-red-200 rounded-lg text-left max-w-sm mx-auto">
-            <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{phaseError}</p>
-          </div>
+        {phaseError ? (
+          <>
+            <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
+              {is9Phase
+                ? "Generate creative hooks based on your behavioral science foundation, then refine the best one into a production-ready concept."
+                : "Elaborate the approved strategy into a full channel plan and asset plan for your campaign."}
+            </p>
+            <div className="flex items-start gap-2 p-3 mb-4 bg-red-50 border border-red-200 rounded-lg text-left max-w-sm mx-auto">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{phaseError}</p>
+            </div>
+            <Button
+              variant="cta"
+              size="lg"
+              icon={Sparkles}
+              onClick={() => {
+                autoStartedRef.current = false;
+                setPhaseError(null);
+                if (is9Phase) {
+                  handleGenerateHooks();
+                } else {
+                  handleElaborate();
+                }
+              }}
+            >
+              Try Again
+            </Button>
+          </>
+        ) : (
+          <p className="text-sm text-gray-500 mt-2">
+            Starting concept generation...
+          </p>
         )}
-
-        <Button
-          variant="cta"
-          size="lg"
-          icon={Sparkles}
-          onClick={is9Phase ? handleGenerateHooks : handleElaborate}
-        >
-          {is9Phase ? "Generate Creative Hooks" : "Elaborate Campaign"}
-        </Button>
       </div>
     );
   }
