@@ -192,6 +192,11 @@ interface CampaignWizardState {
   // ─── External Enrichment Actions ─────────────────────────────
   setUseExternalEnrichment: (enabled: boolean) => void;
 
+  // ─── Step Proceed Override ──────────────────────────────────
+  /** When set, the wizard Continue button calls this instead of nextStep(). Cleared on step change. */
+  stepProceedOverride: (() => void) | null;
+  setStepProceedOverride: (fn: (() => void) | null) => void;
+
   // ─── Interactive Feedback Actions ─────────────────────────
   togglePersonaEndorsement: (personaId: string) => void;
   setStrategyRating: (key: string, rating: 'up' | 'down' | null) => void;
@@ -272,12 +277,15 @@ const INITIAL_STATE = {
   // ─── Concept Step ─────────────────────────────────────────────
   elaborateResult: null as { channelPlan: ChannelPlanLayer; assetPlan: AssetPlanLayer } | null,
 
-  // ─── External Enrichment Toggle ──────────────────────────────
-  useExternalEnrichment: false,
+  // ─── External Enrichment (always enabled, auto-detected) ──────────────────────────────
+  useExternalEnrichment: true,
 
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: [] as string[],
   strategyRatings: {} as Record<string, { rating: 'up' | 'down'; comment?: string }>,
+
+  // ─── Step Proceed Override ──────────────────────────────────
+  stepProceedOverride: null as (() => void) | null,
 };
 
 // ─── Store ────────────────────────────────────────────────
@@ -364,9 +372,14 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         }
         case 2:
           return state.selectedKnowledgeIds.length > 0;
-        case 3:
+        case 3: {
+          // Allow proceeding from briefing review when score >= 80 (triggers foundation build)
+          if (state.strategyPhase === 'review_briefing') {
+            return (state.briefingValidation?.overallScore ?? 0) >= 80;
+          }
           return (state.strategyPhase === 'rationale_complete' || state.strategyPhase === 'complete')
             && get().allRationaleRated();
+        }
         case 4:
           return state.strategyPhase === 'complete' && state.blueprintResult !== null
             && get().allConceptRated();
@@ -533,8 +546,6 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         conceptFeedback: "",
         // Concept step
         elaborateResult: null,
-        // External enrichment toggle
-        useExternalEnrichment: false,
       }),
 
     // ─── 9-Phase Architecture Actions ─────────────────────────
@@ -591,6 +602,9 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
 
     // ─── External Enrichment Actions ─────────────────────────────
     setUseExternalEnrichment: (useExternalEnrichment) => set({ useExternalEnrichment }),
+
+    // ─── Step Proceed Override ──────────────────────────────────
+    setStepProceedOverride: (fn) => set({ stepProceedOverride: fn }),
 
     // ─── Interactive Feedback Actions ─────────────────────────
     togglePersonaEndorsement: (personaId) =>

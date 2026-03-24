@@ -20,7 +20,6 @@ import {
   synthesizeStrategySSE,
   validateBriefingSSE,
   buildFoundationSSE,
-  improveBriefingApi,
 } from "../../api/campaigns.api";
 import type { PipelineStepStatus } from "../../types/campaign-wizard.types";
 import { PipelineProgressView } from "./PipelineProgressView";
@@ -73,14 +72,8 @@ const PHASE_VALIDATE_STEPS: PipelineStepConfig[] = [
 const PHASE_FOUNDATION_STEPS: PipelineStepConfig[] = [
   {
     step: 1,
-    name: "Context Enrichment",
-    label: "Enriching with behavioral science context...",
-    description: "Fetches BCT, CASI, MINDSPACE, and external research data to build a behavioral foundation.",
-  },
-  {
-    step: 2,
     name: "Strategy Foundation Builder",
-    label: "Building strategy foundation...",
+    label: "Building behavioral analysis and strategic foundation...",
     description: "Constructs a behavioral science-driven strategy foundation with ELM routing and audience insights.",
   },
 ];
@@ -264,8 +257,6 @@ export function StrategyStep() {
   const briefingConstraints = useCampaignWizardStore((s) => s.briefingConstraints);
 
   const [phaseError, setPhaseError] = useState<string | null>(null);
-  const [isImprovingBriefing, setIsImprovingBriefing] = useState(false);
-  const isImprovingRef = useRef(false);
 
   const { data: knowledgeData } = useWizardKnowledge();
 
@@ -294,7 +285,6 @@ export function StrategyStep() {
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
-      isImprovingRef.current = false;
     };
   }, []);
 
@@ -656,142 +646,12 @@ export function StrategyStep() {
     // Abort any running SSE stream before navigating away
     abortRef.current?.abort();
     abortRef.current = null;
-    // Reset improving state in case improve is in-flight
-    isImprovingRef.current = false;
-    setIsImprovingBriefing(false);
     setPhaseError(null);
     const store = useCampaignWizardStore.getState();
     store.setStrategyPhase("idle");
     store.setIsGenerating(false);
     store.setCurrentStep(1);
   }, []);
-
-  // ─── Improve Briefing with AI ─────────────────────
-
-  const handleImproveBriefing = useCallback(async () => {
-    // Double-click guard using ref (state would be stale in the closure)
-    if (isImprovingRef.current) return;
-    const store = useCampaignWizardStore.getState();
-    const currentValidation = store.briefingValidation;
-    if (!currentValidation) return;
-
-    isImprovingRef.current = true;
-    setIsImprovingBriefing(true);
-    setPhaseError(null);
-    try {
-      const improved = await improveBriefingApi({
-        validation: currentValidation,
-        strategicIntent,
-        wizardContext,
-      });
-
-      // If user navigated away (e.g. clicked Edit Manually) while API was
-      // in-flight, isImprovingRef was reset — bail out to avoid orphaned mutations
-      if (!isImprovingRef.current) return;
-
-      // Update store briefing fields with AI-improved values
-      const s = useCampaignWizardStore.getState();
-      s.setBriefingOccasion(improved.occasion);
-      s.setBriefingAudienceObjective(improved.audienceObjective);
-      s.setBriefingCoreMessage(improved.coreMessage);
-      s.setBriefingTonePreference(improved.tonePreference);
-      s.setBriefingConstraints(improved.constraints);
-
-      // Abort any existing SSE stream before starting re-validation
-      abortRef.current?.abort();
-      abortRef.current = null;
-
-      // Clear old validation and transition directly to validating phase
-      // (skip idle to avoid visual flash)
-      s.setBriefingValidation(null);
-      setIsImprovingBriefing(false);
-
-      // Re-validate with fresh briefing values by reading directly from store
-      // (avoids stale closure on wizardContext/handleValidateBriefing)
-      const fresh = useCampaignWizardStore.getState();
-      const freshWizardContext = {
-        campaignName: fresh.name || "Untitled Campaign",
-        campaignDescription: fresh.description,
-        campaignGoalType: fresh.campaignGoalType ?? undefined,
-        useExternalEnrichment: fresh.useExternalEnrichment,
-        briefing: {
-          occasion: fresh.briefingOccasion || undefined,
-          audienceObjective: fresh.briefingAudienceObjective || undefined,
-          coreMessage: fresh.briefingCoreMessage || undefined,
-          tonePreference: fresh.briefingTonePreference || undefined,
-          constraints: fresh.briefingConstraints || undefined,
-        },
-      };
-
-      const currentGenId = ++generationIdRef.current;
-      fresh.resetPipeline();
-      fresh.setIsGenerating(true);
-      fresh.setStrategyPhase("validating_briefing");
-
-      for (const step of PHASE_VALIDATE_STEPS) {
-        fresh.updateStepStatus({ step: step.step, name: step.name, status: "pending", label: step.label });
-      }
-
-      // Read strategicIntent fresh from store (same pattern as freshWizardContext)
-      const freshIntent = fresh.strategicIntent;
-
-      const { abort } = validateBriefingSSE(
-        {
-          strategicIntent: freshIntent,
-          personaIds: selectedContextIds.personaIds,
-          productIds: selectedContextIds.productIds,
-          competitorIds: selectedContextIds.competitorIds,
-          trendIds: selectedContextIds.trendIds,
-          wizardContext: freshWizardContext,
-        },
-        (event) => {
-          if (generationIdRef.current !== currentGenId) return;
-          const data = event as Record<string, unknown>;
-          if (data.type === "complete" && data.result) {
-            isImprovingRef.current = false;
-            const result = data.result as import("@/lib/campaigns/strategy-blueprint.types").BriefingValidation;
-            const st = useCampaignWizardStore.getState();
-            st.setBriefingValidation(result);
-            st.setIsGenerating(false);
-            st.setStrategyPhase("review_briefing");
-            return;
-          }
-          if (data.type === "error") {
-            isImprovingRef.current = false;
-            const st = useCampaignWizardStore.getState();
-            st.setPipelineError((data.error as string) || "Briefing validation failed");
-            st.setIsGenerating(false);
-            st.setStrategyPhase("idle");
-            return;
-          }
-          if (data.step && data.name && data.status && data.label) {
-            useCampaignWizardStore.getState().updateStepStatus({
-              step: data.step as number,
-              name: data.name as string,
-              status: data.status as PipelineStepStatus,
-              label: data.label as string,
-              preview: data.preview as string | undefined,
-              error: data.error as string | undefined,
-            });
-          }
-        },
-        (error) => {
-          if (generationIdRef.current !== currentGenId) return;
-          isImprovingRef.current = false;
-          const st = useCampaignWizardStore.getState();
-          st.setPipelineError(error);
-          st.setIsGenerating(false);
-          st.setStrategyPhase("idle");
-        },
-      );
-      abortRef.current = { abort };
-    } catch (error) {
-      isImprovingRef.current = false;
-      setIsImprovingBriefing(false);
-      const message = error instanceof Error ? error.message : "Failed to improve briefing";
-      setPhaseError(message);
-    }
-  }, [strategicIntent, wizardContext, selectedContextIds]);
 
   // ─── Restart ─────────────────────────────────────────
 
@@ -805,6 +665,17 @@ export function StrategyStep() {
     store.setBlueprintResult(null);
     store.clearPhaseData();
   }, []);
+
+  // ─── Set wizard Continue override for briefing review ────
+  React.useEffect(() => {
+    const store = useCampaignWizardStore.getState();
+    if (strategyPhase === "review_briefing") {
+      store.setStepProceedOverride(handleBuildFoundation);
+    } else {
+      store.setStepProceedOverride(null);
+    }
+    return () => { store.setStepProceedOverride(null); };
+  }, [strategyPhase, handleBuildFoundation]);
 
   // ─── Render based on phase ───────────────────────────
 
@@ -873,10 +744,7 @@ export function StrategyStep() {
     return (
       <BriefingReviewView
         validation={briefingValidation}
-        onProceed={handleBuildFoundation}
         onRevise={handleEditBriefing}
-        onImproveWithAI={handleImproveBriefing}
-        isImproving={isImprovingBriefing}
         error={phaseError}
         briefing={{
           occasion: briefingOccasion,

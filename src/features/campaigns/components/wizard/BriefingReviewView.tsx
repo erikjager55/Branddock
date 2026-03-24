@@ -7,9 +7,7 @@ import {
   Info,
   ChevronDown,
   ChevronUp,
-  Sparkles,
   Pencil,
-  ArrowRight,
   Loader2,
   Plus,
   RotateCcw,
@@ -18,15 +16,13 @@ import {
 import { Button, Badge } from "@/components/shared";
 import type { BriefingValidation } from "../../types/campaign-wizard.types";
 import type { CampaignBriefing } from "@/lib/campaigns/strategy-blueprint.types";
+import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 
 // ─── Types ──────────────────────────────────────────────
 
 interface BriefingReviewViewProps {
   validation: BriefingValidation;
-  onProceed: () => void;
   onRevise: () => void;
-  onImproveWithAI: () => void;
-  isImproving?: boolean;
   error?: string | null;
   briefing: {
     occasion: string;
@@ -37,6 +33,7 @@ interface BriefingReviewViewProps {
   };
   onBriefingChange: (field: keyof CampaignBriefing, value: string) => void;
   onRevalidate: () => void;
+  isRevalidating?: boolean;
 }
 
 // ─── Severity helpers ───────────────────────────────────
@@ -67,6 +64,32 @@ const FIELD_LABELS: Record<BriefingField, string> = {
   constraints: "Constraints & Mandatories",
 };
 
+// ─── Local score estimator ──────────────────────────────
+
+const FIELD_WEIGHTS: { field: BriefingField; weight: number }[] = [
+  { field: "occasion", weight: 20 },
+  { field: "audienceObjective", weight: 25 },
+  { field: "coreMessage", weight: 25 },
+  { field: "tonePreference", weight: 15 },
+  { field: "constraints", weight: 15 },
+];
+
+function estimateBriefingScore(briefing: Record<BriefingField, string>): number {
+  let total = 0;
+  for (const { field, weight } of FIELD_WEIGHTS) {
+    const len = (briefing[field] ?? "").trim().length;
+    if (len === 0) continue;
+    if (len < 20) total += weight * 0.3;
+    else if (len < 50) total += weight * 0.5;
+    else if (len < 100) total += weight * 0.7;
+    else if (len < 200) total += weight * 0.85;
+    else total += weight;
+  }
+  return Math.min(100, Math.round(total));
+}
+
+// ─── Field mapping helpers ──────────────────────────────
+
 function mapGapToField(gapField: string | undefined | null): BriefingField | null {
   if (!gapField) return null;
   const lower = gapField.toLowerCase();
@@ -87,14 +110,12 @@ function mapGapToField(gapField: string | undefined | null): BriefingField | nul
 
 export function BriefingReviewView({
   validation,
-  onProceed,
   onRevise,
-  onImproveWithAI,
-  isImproving = false,
   error = null,
   briefing,
   onBriefingChange,
   onRevalidate,
+  isRevalidating = false,
 }: BriefingReviewViewProps) {
   const [showGaps, setShowGaps] = React.useState(true);
   const [showEditor, setShowEditor] = React.useState(true);
@@ -102,7 +123,21 @@ export function BriefingReviewView({
   const [appliedSuggestions, setAppliedSuggestions] = React.useState<Set<number>>(new Set());
   const [hasEdited, setHasEdited] = React.useState(false);
 
-  const score = validation.overallScore ?? 0;
+  // Local score: use AI score as baseline, switch to estimate when fields are edited
+  const aiScore = validation.overallScore ?? 0;
+  const estimatedScore = estimateBriefingScore(briefing);
+  const score = hasEdited ? Math.max(aiScore, estimatedScore) : aiScore;
+
+  // Sync local score back to store so canProceed() works with the updated score
+  React.useEffect(() => {
+    if (hasEdited && score !== aiScore) {
+      const store = useCampaignWizardStore.getState();
+      const current = store.briefingValidation;
+      if (current && current.overallScore !== score) {
+        store.setBriefingValidation({ ...current, overallScore: score });
+      }
+    }
+  }, [hasEdited, score, aiScore]);
 
   const scoreColor =
     score >= 80
@@ -170,12 +205,20 @@ export function BriefingReviewView({
               {score}
               <span className="text-lg text-gray-400">/100</span>
             </p>
+            {hasEdited && (
+              <p className="text-xs text-gray-400 mt-0.5">Estimated — re-validate for AI score</p>
+            )}
           </div>
-          <div className="text-right">
-            {validation.isComplete ? (
+          <div className="text-right flex flex-col items-end gap-1.5">
+            {validation.isComplete && !hasEdited ? (
               <Badge variant="success">
                 <CheckCircle2 className="w-3 h-3 mr-1" />
                 Complete
+              </Badge>
+            ) : hasEdited ? (
+              <Badge variant="info">
+                <Pencil className="w-3 h-3 mr-1" />
+                Edited
               </Badge>
             ) : (
               <Badge variant="warning">
@@ -189,19 +232,30 @@ export function BriefingReviewView({
 
       {/* Inline Briefing Editor — positioned after score for immediate visibility */}
       <div className="space-y-2">
-        <button
-          type="button"
-          className="flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-gray-900"
-          onClick={() => setShowEditor(!showEditor)}
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          {showEditor ? "Hide Briefing Fields" : "Show Briefing Fields"}
-          {showEditor ? (
-            <ChevronUp className="w-4 h-4" />
-          ) : (
-            <ChevronDown className="w-4 h-4" />
-          )}
-        </button>
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            className="flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-gray-900"
+            onClick={() => setShowEditor(!showEditor)}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            {showEditor ? "Hide Briefing Fields" : "Show Briefing Fields"}
+            {showEditor ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </button>
+          <Button
+            variant="secondary"
+            icon={Pencil}
+            onClick={onRevise}
+            disabled={isRevalidating}
+            size="sm"
+          >
+            Edit Manually
+          </Button>
+        </div>
         {showEditor && (
           <div className="space-y-3 rounded-lg border border-gray-200 bg-white p-4">
             {(Object.keys(FIELD_LABELS) as BriefingField[]).map((field) => (
@@ -216,26 +270,24 @@ export function BriefingReviewView({
                   id={`briefing-${field}`}
                   value={briefing[field]}
                   onChange={(e) => handleFieldChange(field, e.target.value)}
-                  disabled={isImproving}
+                  disabled={isRevalidating}
                   rows={2}
                   className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 focus:outline-none disabled:opacity-50 resize-none"
                   placeholder={`Enter ${FIELD_LABELS[field].toLowerCase()}...`}
                 />
               </div>
             ))}
-            {hasEdited && (
-              <div className="pt-2 border-t border-gray-100">
-                <Button
-                  variant="secondary"
-                  icon={RotateCcw}
-                  onClick={handleRevalidate}
-                  disabled={isImproving}
-                  size="sm"
-                >
-                  Re-validate Briefing
-                </Button>
-              </div>
-            )}
+            <div className="pt-2 border-t border-gray-100">
+              <Button
+                variant={hasEdited ? "primary" : "secondary"}
+                icon={RotateCcw}
+                onClick={handleRevalidate}
+                disabled={isRevalidating}
+                size="sm"
+              >
+                Re-validate with AI
+              </Button>
+            </div>
           </div>
         )}
       </div>
@@ -306,7 +358,7 @@ export function BriefingReviewView({
                       {targetField ? (
                         <button
                           type="button"
-                          disabled={isApplied || isImproving}
+                          disabled={isApplied || isRevalidating}
                           onClick={() => handleApplyGap(i, gap.suggestion, targetField)}
                           className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:text-teal-900 disabled:opacity-50 disabled:cursor-default"
                         >
@@ -366,7 +418,7 @@ export function BriefingReviewView({
                     {targetField ? (
                       <button
                         type="button"
-                        disabled={isApplied || isImproving}
+                        disabled={isApplied || isRevalidating}
                         onClick={() => handleApplySuggestion(i, s, targetField)}
                         className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:text-teal-900 disabled:opacity-50 disabled:cursor-default"
                       >
@@ -396,57 +448,29 @@ export function BriefingReviewView({
       )}
 
       {/* Error feedback */}
-      {error && !isImproving && (
+      {error && (
         <div className="flex items-center gap-2 py-3 px-4 rounded-lg bg-red-50 border border-red-200">
           <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
           <span className="text-sm font-medium text-red-700">{error}</span>
         </div>
       )}
 
-      {/* AI Improving indicator */}
-      {isImproving && (
-        <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-violet-50 border border-violet-200">
-          <Loader2 className="w-4 h-4 text-violet-600 animate-spin" />
-          <span className="text-sm font-medium text-violet-700">
-            AI is improving your briefing...
+      {/* Revalidation indicator */}
+      {isRevalidating && (
+        <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-teal-50 border border-teal-200">
+          <Loader2 className="w-4 h-4 text-teal-600 animate-spin" />
+          <span className="text-sm font-medium text-teal-700">
+            Re-validating your briefing...
           </span>
         </div>
       )}
 
-      {/* Actions — 3 options */}
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 border-t border-gray-100">
-        <Button
-          variant="secondary"
-          icon={Pencil}
-          onClick={onRevise}
-          disabled={isImproving}
-        >
-          Edit Manually
-        </Button>
-        <Button
-          variant="secondary"
-          icon={isImproving ? Loader2 : Sparkles}
-          onClick={onImproveWithAI}
-          disabled={isImproving}
-        >
-          {isImproving ? "Improving..." : "Improve with AI"}
-        </Button>
-        <div className="flex flex-col items-center">
-          <Button
-            variant="primary"
-            icon={ArrowRight}
-            onClick={onProceed}
-            disabled={isImproving || score < 80}
-          >
-            Build Strategy Foundation
-          </Button>
-          {score < 80 && (
-            <p className="text-xs text-gray-500 mt-1.5">
-              Score must be at least 80/100 to continue
-            </p>
-          )}
-        </div>
-      </div>
+      {/* Score gate hint */}
+      {score < 80 && (
+        <p className="text-xs text-gray-500 text-center pt-2">
+          Score must be at least 80/100 to continue
+        </p>
+      )}
     </div>
   );
 }

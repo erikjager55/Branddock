@@ -93,9 +93,13 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
     );
   };
 
+  const stepProceedOverride = useCampaignWizardStore((s) => s.stepProceedOverride);
+
   const handleContinue = () => {
     if (isLastStep) {
       handleLaunch();
+    } else if (stepProceedOverride) {
+      stepProceedOverride();
     } else {
       nextStep();
     }

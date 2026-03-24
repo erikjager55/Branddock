@@ -560,24 +560,20 @@ export async function generateStrategyVariants(
   const framingContext = getFramingContext(campaignGoalType);
   const eastChecklist = formatEastForPrompt();
 
-  // Fetch external enrichments only if opt-in
-  const useExternal = wizardContext.useExternalEnrichment ?? false;
+  // Always fetch external enrichments automatically — individual clients handle missing API keys gracefully
+  const useExternal = true;
   onProgress?.({ type: 'enrichment', status: 'running' });
 
-  const [arenaResult, exaResult, scholarResult] = useExternal
-    ? await Promise.all([
-        fetchArenaContext(arenaQueries),
-        fetchExaContext(exaQueries),
-        fetchScholarContext(scholarQueries),
-      ])
-    : [
-        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchArenaContext>>,
-        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchExaContext>>,
-        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchScholarContext>>,
-      ];
+  const [arenaResult, exaResult, scholarResult] = await Promise.all([
+    fetchArenaContext(arenaQueries),
+    fetchExaContext(exaQueries),
+    fetchScholarContext(scholarQueries),
+  ]);
 
-  const totalEnrichmentBlocks = (arenaResult.meta?.totalBlocks ?? 0) + (exaResult.meta?.totalResults ?? 0) + (scholarResult.meta?.totalPapers ?? 0);
-  const hasAnyEnrichment = totalEnrichmentBlocks > 0 || bctContext || cialdiniContext || effectivenessContext || growthContext || framingContext || eastChecklist;
+  const externalBlocks = (arenaResult.meta?.totalBlocks ?? 0) + (exaResult.meta?.totalResults ?? 0) + (scholarResult.meta?.totalPapers ?? 0);
+  const localSourceCount = [bctContext, cialdiniContext, effectivenessContext, growthContext, framingContext, eastChecklist].filter(Boolean).length;
+  const totalEnrichmentBlocks = externalBlocks + localSourceCount;
+  const hasAnyEnrichment = totalEnrichmentBlocks > 0;
   if (hasAnyEnrichment) {
     onProgress?.({ type: 'enrichment', status: 'complete', totalBlocks: totalEnrichmentBlocks, queries: [
       ...(arenaResult.meta?.queries ?? []),
@@ -1003,24 +999,20 @@ export async function generateCampaignBlueprint(
   const bpFramingContext = getFramingContext(campaignGoalType);
   const bpEastChecklist = formatEastForPrompt();
 
-  // Fetch external enrichments only if opt-in
-  const useExternal = isWizardMode ? (options.wizardContext!.useExternalEnrichment ?? false) : false;
+  // Always fetch external enrichments automatically — individual clients handle missing API keys gracefully
+  const useExternal = true;
   onProgress?.({ type: 'enrichment', status: 'running' });
 
-  const [arenaResult, exaResult, scholarResult] = useExternal
-    ? await Promise.all([
-        fetchArenaContext(arenaQueries),
-        fetchExaContext(exaQueries),
-        fetchScholarContext(scholarQueries),
-      ])
-    : [
-        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchArenaContext>>,
-        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchExaContext>>,
-        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchScholarContext>>,
-      ];
+  const [arenaResult, exaResult, scholarResult] = await Promise.all([
+    fetchArenaContext(arenaQueries),
+    fetchExaContext(exaQueries),
+    fetchScholarContext(scholarQueries),
+  ]);
 
-  const totalBlueprintEnrichmentBlocks = (arenaResult.meta?.totalBlocks ?? 0) + (exaResult.meta?.totalResults ?? 0) + (scholarResult.meta?.totalPapers ?? 0);
-  const hasAnyBlueprintEnrichment = totalBlueprintEnrichmentBlocks > 0 || bctContext || bpCialdiniContext || bpEffectivenessContext || bpGrowthContext || bpFramingContext || bpEastChecklist;
+  const externalBlueprintBlocks = (arenaResult.meta?.totalBlocks ?? 0) + (exaResult.meta?.totalResults ?? 0) + (scholarResult.meta?.totalPapers ?? 0);
+  const localBlueprintSourceCount = [bctContext, bpCialdiniContext, bpEffectivenessContext, bpGrowthContext, bpFramingContext, bpEastChecklist].filter(Boolean).length;
+  const totalBlueprintEnrichmentBlocks = externalBlueprintBlocks + localBlueprintSourceCount;
+  const hasAnyBlueprintEnrichment = totalBlueprintEnrichmentBlocks > 0;
   if (hasAnyBlueprintEnrichment) {
     onProgress?.({ type: 'enrichment', status: 'complete', totalBlocks: totalBlueprintEnrichmentBlocks, queries: [
       ...(arenaResult.meta?.queries ?? []),
@@ -1445,8 +1437,8 @@ export async function regenerateBlueprintLayer(
   let regenScholarResult: Pick<Awaited<ReturnType<typeof fetchScholarContext>>, 'meta'> = { meta: null };
 
   if (needsEnrichment) {
-    // Respect the external enrichment preference stored during initial generation
-    const useExternal = existingBlueprint.contextSelection?.useExternalEnrichment ?? false;
+    // Always use external enrichment — individual clients handle missing API keys gracefully
+    const useExternal = true;
 
     const bctMapping = getGoalBctMapping(regenCampaignGoalType);
     const exaQueries = buildExaQueries({
@@ -1721,7 +1713,7 @@ export async function validateBriefing(
     createStructuredCompletion<BriefingValidation>(
       'google', GEMINI_FLASH,
       prompt.system, prompt.user,
-      { temperature: 0.3, maxTokens: 4096, timeoutMs: 60_000 },
+      { temperature: 0.3, maxTokens: 8192, timeoutMs: 45_000 },
     ),
   );
 
@@ -1859,24 +1851,20 @@ export async function buildStrategyFoundation(
   const sfFramingContext = getFramingContext(campaignGoalType) || undefined;
   const sfEastChecklist = formatEastForPrompt() || undefined;
 
-  // Fetch external enrichments only if opt-in
-  const useExternal = wizardContext.useExternalEnrichment ?? false;
+  // Always fetch external enrichments automatically — individual clients handle missing API keys gracefully
+  const useExternal = true;
   onProgress?.({ type: 'enrichment', status: 'running' });
 
-  const [arenaResult, exaResult, scholarResult] = useExternal
-    ? await Promise.all([
-        fetchArenaContext(arenaQueries),
-        fetchExaContext(exaQueries),
-        fetchScholarContext(scholarQueries),
-      ])
-    : [
-        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchArenaContext>>,
-        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchExaContext>>,
-        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchScholarContext>>,
-      ];
+  const [arenaResult, exaResult, scholarResult] = await Promise.all([
+    fetchArenaContext(arenaQueries),
+    fetchExaContext(exaQueries),
+    fetchScholarContext(scholarQueries),
+  ]);
 
-  const totalEnrichmentBlocks = (arenaResult.meta?.totalBlocks ?? 0) + (exaResult.meta?.totalResults ?? 0) + (scholarResult.meta?.totalPapers ?? 0);
-  const hasAnyEnrichment = totalEnrichmentBlocks > 0 || bctContext || sfCialdiniContext || sfEffectivenessContext || sfGrowthContext || sfFramingContext || sfEastChecklist;
+  const externalBlocks = (arenaResult.meta?.totalBlocks ?? 0) + (exaResult.meta?.totalResults ?? 0) + (scholarResult.meta?.totalPapers ?? 0);
+  const localSourceCount = [bctContext, sfCialdiniContext, sfEffectivenessContext, sfGrowthContext, sfFramingContext, sfEastChecklist].filter(Boolean).length;
+  const totalEnrichmentBlocks = externalBlocks + localSourceCount;
+  const hasAnyEnrichment = totalEnrichmentBlocks > 0;
   if (hasAnyEnrichment) {
     onProgress?.({ type: 'enrichment', status: 'complete', totalBlocks: totalEnrichmentBlocks, queries: [
       ...(arenaResult.meta?.queries ?? []),
