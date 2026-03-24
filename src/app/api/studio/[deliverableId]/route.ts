@@ -10,6 +10,7 @@ export async function GET(
 ) {
   try {
     const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { deliverableId } = await params;
 
     const deliverable = await prisma.deliverable.findUnique({
@@ -55,6 +56,7 @@ export async function GET(
       deliverable: {
         id: deliverable.id,
         title: deliverable.title,
+        contentType: deliverable.contentType,
         contentTab: deliverable.contentTab,
         status: deliverable.status,
         progress: deliverable.progress,
@@ -65,8 +67,12 @@ export async function GET(
         generatedImageUrls: deliverable.generatedImageUrls,
         generatedVideoUrl: deliverable.generatedVideoUrl,
         generatedSlides: deliverable.generatedSlides,
+        qualityScore: deliverable.qualityScore,
+        qualityMetrics: deliverable.qualityMetrics,
         checklistItems: deliverable.checklistItems,
+        isFavorite: deliverable.isFavorite,
         lastAutoSavedAt: deliverable.lastAutoSavedAt,
+        pipelineStatus: deliverable.pipelineStatus,
       },
       campaign: {
         id: deliverable.campaign.id,
@@ -93,6 +99,7 @@ const patchSchema = z.object({
   aiModel: z.string().optional(),
   settings: z.record(z.string(), z.unknown()).optional(),
   contentTab: z.string().optional(),
+  pipelineStatus: z.enum(['LEGACY', 'BRIEF_REVIEW', 'INITIALIZED', 'IN_PROGRESS', 'REVIEW', 'COMPLETE']).optional(),
   generatedText: z.string().nullable().optional(),
   generatedImageUrls: z.array(z.string()).optional(),
   generatedVideoUrl: z.string().nullable().optional(),
@@ -106,6 +113,7 @@ export async function PATCH(
 ) {
   try {
     const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const { deliverableId } = await params;
 
     const body = await request.json();

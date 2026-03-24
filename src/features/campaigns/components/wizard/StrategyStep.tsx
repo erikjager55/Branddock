@@ -700,13 +700,6 @@ export function StrategyStep() {
           <Button variant="cta" size="lg" icon={Sparkles} onClick={handleValidateBriefing}>
             Start Strategy Generation
           </Button>
-          <button
-            type="button"
-            className="text-xs text-gray-400 hover:text-gray-600 underline"
-            onClick={handleGenerateVariants}
-          >
-            Use legacy 3-variant flow
-          </button>
         </div>
       </div>
     );

@@ -818,6 +818,9 @@ model Campaign {
   outputFormat      String?                 // Text, Image, Video, Carousel
   qualityScore      Float?                  // 0-10
 
+  // Master Message (campaign-wide anchor)
+  masterMessage     Json?          // { coreClaim, proofPoint, emotionalHook, primaryCta }
+
   // Template
   isSavedAsTemplate Boolean                 @default(false)
   templateName      String?
@@ -901,12 +904,18 @@ model Deliverable {
   // Auto-save
   lastAutoSavedAt   DateTime?
 
+  // Pipeline (component-based generation)
+  pipelineStatus      PipelineStatus     @default(LEGACY)
+  enrichedBrief       String?            @db.Text
+  additionalInstructions String?         @db.Text
+
   // Relations
   campaignId        String
   campaign          Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   versions          ContentVersion[]
   insertedInsights  InsertedInsight[]
   improveSuggestions ImproveSuggestion[]
+  components        DeliverableComponent[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
@@ -937,6 +946,48 @@ model ContentVersion {
 
   @@index([deliverableId])
   @@unique([deliverableId, versionNumber])
+}
+
+model DeliverableComponent {
+  id              String          @id @default(cuid())
+  deliverableId   String
+  deliverable     Deliverable     @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+
+  componentType   String
+  groupType       String          // single | variant | sequence_item | slide | section
+  groupIndex      Int             @default(0)
+  order           Int
+
+  status          ComponentStatus @default(PENDING)
+
+  // Content
+  generatedContent  String?       @db.Text
+  imageUrl          String?
+  imageSource       String?       // ai_generated | stock_photo | upload | product_library | illustration
+  videoUrl          String?
+  visualBrief       String?       @db.Text  // structured visual brief JSON
+
+  // AI config
+  aiModel           String?
+  promptUsed        String?       @db.Text
+  cascadingContext   String?       @db.Text  // snapshot of approved siblings used as context
+
+  // User feedback
+  rating            Int?
+  feedbackText      String?       @db.Text
+
+  // Persona reactions
+  personaReactions  String?       @db.Text  // JSON array of persona reactions
+
+  // Metadata
+  generatedAt       DateTime?
+  approvedAt        DateTime?
+  version           Int           @default(1)
+
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  @@index([deliverableId, order])
 }
 
 model InsertedInsight {
@@ -997,6 +1048,24 @@ enum DeliverableStatus {
   NOT_STARTED
   IN_PROGRESS
   COMPLETED
+}
+
+enum ComponentStatus {
+  PENDING
+  GENERATING
+  GENERATED
+  NEEDS_REVISION
+  APPROVED
+  SKIPPED
+}
+
+enum PipelineStatus {
+  LEGACY
+  BRIEF_REVIEW
+  INITIALIZED
+  IN_PROGRESS
+  REVIEW
+  COMPLETE
 }
 
 enum InsertFormat {

@@ -1,10 +1,176 @@
 // =============================================================
-// Content Studio types — S6.C (Prompt 4 + 5)
+// Content Studio types — S6.C (Prompt 4 + 5) + Pipeline Extension
 // =============================================================
 
 // ─── Content Tab ─────────────────────────────────────────────
 
 export type ContentTab = 'text' | 'images' | 'video' | 'carousel';
+
+// ─── Pipeline Status + Component Status ─────────────────────
+
+export type PipelineStatusType =
+  | 'LEGACY'
+  | 'BRIEF_REVIEW'
+  | 'INITIALIZED'
+  | 'IN_PROGRESS'
+  | 'REVIEW'
+  | 'COMPLETE';
+
+export type ComponentStatusType =
+  | 'PENDING'
+  | 'GENERATING'
+  | 'GENERATED'
+  | 'NEEDS_REVISION'
+  | 'APPROVED'
+  | 'SKIPPED';
+
+export type ImageSourceType =
+  | 'ai_generated'
+  | 'stock_photo'
+  | 'upload'
+  | 'product_library'
+  | 'illustration';
+
+// ─── Deliverable Component (client state) ───────────────────
+
+export interface DeliverableComponentState {
+  id: string;
+  deliverableId: string;
+  componentType: string;
+  groupType: string;
+  groupIndex: number;
+  order: number;
+  status: ComponentStatusType;
+  generatedContent: string | null;
+  imageUrl: string | null;
+  imageSource: string | null;
+  videoUrl: string | null;
+  visualBrief: string | null;
+  aiModel: string | null;
+  promptUsed: string | null;
+  cascadingContext: string | null;
+  rating: number | null;
+  feedbackText: string | null;
+  personaReactions: PersonaReaction[] | null;
+  generatedAt: string | null;
+  approvedAt: string | null;
+  version: number;
+  label: string;
+}
+
+// ─── Brief Review ───────────────────────────────────────────
+
+export interface BriefReviewData {
+  brief: DeliverableBrief;
+  aiContext: AiContextPreview;
+  gaps: BriefGap[];
+}
+
+export interface DeliverableBrief {
+  objective: string | null;
+  keyMessage: string | null;
+  toneDirection: string | null;
+  cta: string | null;
+  contentOutline: string[] | null;
+  targetPersonas: string[] | null;
+  channel: string | null;
+  phase: string | null;
+}
+
+export interface AiContextPreview {
+  brandName: string | null;
+  brandVoice: string | null;
+  archetype: string | null;
+  competitors: string[];
+  activeTrends: string[];
+  personas: { id: string; name: string }[];
+  products: { id: string; name: string }[];
+  completenessPercentage: number;
+}
+
+export interface BriefGap {
+  field: string;
+  severity: 'critical' | 'warning' | 'info';
+  message: string;
+  suggestion?: string;
+}
+
+// ─── Master Message ─────────────────────────────────────────
+
+export interface MasterMessage {
+  coreClaim: string;
+  proofPoint: string;
+  emotionalHook: string;
+  primaryCta: string;
+}
+
+// ─── Persona Reaction ───────────────────────────────────────
+
+export interface PersonaReaction {
+  personaId: string;
+  personaName: string;
+  reaction: string;
+  relevanceScore: number;
+  sentiment: 'positive' | 'neutral' | 'negative';
+}
+
+// ─── Pipeline Progress ──────────────────────────────────────
+
+export interface PipelineProgress {
+  approved: number;
+  total: number;
+  percentage: number;
+}
+
+// ─── Component Generation Request ───────────────────────────
+
+export interface GenerateComponentBody {
+  aiModel?: string;
+  additionalInstructions?: string;
+}
+
+export interface RegenerateComponentBody {
+  feedback: string;
+  aiModel?: string;
+}
+
+// ─── Component Update ───────────────────────────────────────
+
+export interface UpdateComponentBody {
+  status?: ComponentStatusType;
+  rating?: number;
+  feedbackText?: string;
+  generatedContent?: string;
+  imageUrl?: string;
+  imageSource?: ImageSourceType;
+  videoUrl?: string;
+  visualBrief?: string;
+}
+
+// ─── Brief Context API Response ─────────────────────────────
+
+export interface BriefContextResponse {
+  brief: DeliverableBrief;
+  aiContext: AiContextPreview;
+  gaps: BriefGap[];
+  enrichedBrief: string | null;
+  additionalInstructions: string | null;
+}
+
+// ─── Consistency Check ──────────────────────────────────────
+
+export interface ConsistencyCheckResult {
+  overallScore: number;
+  flags: ConsistencyFlag[];
+  deliverableCount: number;
+}
+
+export interface ConsistencyFlag {
+  type: 'tone_mismatch' | 'message_drift' | 'visual_inconsistency' | 'cta_conflict';
+  severity: 'high' | 'medium' | 'low';
+  description: string;
+  deliverables: string[];
+}
 
 // ─── Type-Specific Settings ──────────────────────────────────
 
@@ -70,6 +236,7 @@ export interface StudioStateResponse {
   checklistItems: ChecklistItem[] | null;
   isFavorite: boolean;
   lastAutoSavedAt: string | null;
+  pipelineStatus: PipelineStatusType | null;
   campaignId: string;
   campaignTitle: string;
 }

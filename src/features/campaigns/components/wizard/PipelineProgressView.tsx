@@ -84,7 +84,7 @@ function EnrichmentIndicator({ status, blockCount, sources }: { status: 'idle' |
           {status === 'running'
             ? 'Enriching strategy context...'
             : status === 'complete'
-              ? `${blockCount} enrichment source${blockCount !== 1 ? 's' : ''} injected`
+              ? `${blockCount} enrichment source${blockCount !== 1 ? 's' : ''} applied`
               : 'No enrichment sources found'}
         </span>
       </div>
