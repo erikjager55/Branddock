@@ -139,12 +139,29 @@ export function StrategyFoundationReviewView({
         </div>
       </div>
 
+      {/* Feedback */}
+      <div className="space-y-2">
+        <label
+          htmlFor="strategy-feedback"
+          className="text-sm font-medium text-gray-700"
+        >
+          Feedback or refinements (optional)
+        </label>
+        <textarea
+          id="strategy-feedback"
+          className="w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-300 focus:ring-1 focus:ring-teal-300"
+          rows={3}
+          placeholder="Any strategic direction you want to emphasize, audiences to focus on, or approaches to avoid..."
+          value={strategyFeedback}
+          onChange={(e) => setStrategyFeedback(e.target.value)}
+        />
+      </div>
+
       {/* Behavioral Diagnosis */}
       <Section
         title="Behavioral Diagnosis"
         icon={Brain}
         iconColor="text-purple-500"
-        defaultOpen
       >
         {/* Target behaviors */}
         {(foundation.targetBehaviors ?? []).length > 0 && (
@@ -267,7 +284,6 @@ export function StrategyFoundationReviewView({
         title="Key Insights"
         icon={Lightbulb}
         iconColor="text-yellow-500"
-        defaultOpen
       >
         {(foundation.keyInsights ?? []).length > 0 && (
           <div className="space-y-2">
@@ -393,24 +409,6 @@ export function StrategyFoundationReviewView({
           </div>
         </Section>
       )}
-
-      {/* Feedback */}
-      <div className="space-y-2">
-        <label
-          htmlFor="strategy-feedback"
-          className="text-sm font-medium text-gray-700"
-        >
-          Feedback or refinements (optional)
-        </label>
-        <textarea
-          id="strategy-feedback"
-          className="w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-300 focus:ring-1 focus:ring-teal-300"
-          rows={3}
-          placeholder="Any strategic direction you want to emphasize, audiences to focus on, or approaches to avoid..."
-          value={strategyFeedback}
-          onChange={(e) => setStrategyFeedback(e.target.value)}
-        />
-      </div>
 
       {/* Error */}
       {errorMessage && (
