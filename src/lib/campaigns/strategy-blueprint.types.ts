@@ -215,6 +215,8 @@ export interface ContextSelection {
   scholarPaperCount?: number;
   /** Goal type used for BCT behavioral science mapping */
   bctGoalType?: string;
+  /** Whether external enrichment (Are.na, Exa, Scholar) was enabled during generation */
+  useExternalEnrichment?: boolean;
 }
 
 export interface CampaignBlueprint {
@@ -581,6 +583,7 @@ export interface SynthesizeStrategyBody {
     campaignDescription?: string;
     campaignGoalType?: string;
     briefing?: CampaignBriefing;
+    useExternalEnrichment?: boolean;
   };
   personaIds?: string[];
   productIds?: string[];
@@ -600,6 +603,7 @@ export interface ElaborateJourneyBody {
     campaignDescription?: string;
     campaignGoalType?: string;
     briefing?: CampaignBriefing;
+    useExternalEnrichment?: boolean;
   };
   personaIds?: string[];
   productIds?: string[];
@@ -649,6 +653,7 @@ export interface GenerateBlueprintBody {
     campaignDescription?: string;
     campaignGoalType?: string;
     briefing?: CampaignBriefing;
+    useExternalEnrichment?: boolean;
   };
 }
 
@@ -670,6 +675,7 @@ export interface ValidateBriefingBody {
     campaignDescription?: string;
     campaignGoalType?: string;
     briefing?: CampaignBriefing;
+    useExternalEnrichment?: boolean;
   };
 }
 
@@ -681,6 +687,7 @@ export interface ImproveBriefingBody {
     campaignDescription?: string;
     campaignGoalType?: string;
     briefing?: CampaignBriefing;
+    useExternalEnrichment?: boolean;
   };
 }
 
@@ -703,6 +710,7 @@ export interface BuildFoundationBody {
     campaignDescription?: string;
     campaignGoalType?: string;
     briefing?: CampaignBriefing;
+    useExternalEnrichment?: boolean;
   };
 }
 
@@ -717,6 +725,7 @@ export interface GenerateHooksBody {
     campaignDescription?: string;
     campaignGoalType?: string;
     briefing?: CampaignBriefing;
+    useExternalEnrichment?: boolean;
   };
   foundation: StrategyFoundation;
   enrichmentContext: EnrichmentContext;
@@ -734,6 +743,7 @@ export interface RefineHookBody {
     campaignDescription?: string;
     campaignGoalType?: string;
     briefing?: CampaignBriefing;
+    useExternalEnrichment?: boolean;
   };
   selectedHook: CreativeHook;
   foundation: StrategyFoundation;

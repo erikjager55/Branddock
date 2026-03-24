@@ -98,6 +98,9 @@ interface CampaignWizardState {
   // ─── Concept Step (elaborate result before blueprint assembly) ────
   elaborateResult: { channelPlan: ChannelPlanLayer; assetPlan: AssetPlanLayer } | null;
 
+  // ─── External Enrichment Toggle ──────────────────────────────
+  useExternalEnrichment: boolean;
+
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: string[];
   strategyRatings: Record<string, { rating: 'up' | 'down'; comment?: string }>;
@@ -186,6 +189,9 @@ interface CampaignWizardState {
   // ─── Concept Step Actions ─────────────────────────────────
   setElaborateResult: (result: { channelPlan: ChannelPlanLayer; assetPlan: AssetPlanLayer } | null) => void;
 
+  // ─── External Enrichment Actions ─────────────────────────────
+  setUseExternalEnrichment: (enabled: boolean) => void;
+
   // ─── Interactive Feedback Actions ─────────────────────────
   togglePersonaEndorsement: (personaId: string) => void;
   setStrategyRating: (key: string, rating: 'up' | 'down' | null) => void;
@@ -261,10 +267,13 @@ const INITIAL_STATE = {
   enrichmentStatus: 'idle' as 'idle' | 'running' | 'complete' | 'skipped',
   enrichmentBlockCount: 0,
   enrichmentQueries: [] as string[],
-  enrichmentSources: {} as { arena?: number; exa?: number; scholar?: number; bct?: boolean },
+  enrichmentSources: {} as EnrichmentSources,
 
   // ─── Concept Step ─────────────────────────────────────────────
   elaborateResult: null as { channelPlan: ChannelPlanLayer; assetPlan: AssetPlanLayer } | null,
+
+  // ─── External Enrichment Toggle ──────────────────────────────
+  useExternalEnrichment: false,
 
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: [] as string[],
@@ -524,6 +533,8 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         conceptFeedback: "",
         // Concept step
         elaborateResult: null,
+        // External enrichment toggle
+        useExternalEnrichment: false,
       }),
 
     // ─── 9-Phase Architecture Actions ─────────────────────────
@@ -577,6 +588,9 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
 
     // ─── Concept Step Actions ─────────────────────────────────
     setElaborateResult: (elaborateResult) => set({ elaborateResult }),
+
+    // ─── External Enrichment Actions ─────────────────────────────
+    setUseExternalEnrichment: (useExternalEnrichment) => set({ useExternalEnrichment }),
 
     // ─── Interactive Feedback Actions ─────────────────────────
     togglePersonaEndorsement: (personaId) =>

@@ -250,6 +250,7 @@ export function StrategyStep() {
   const enrichmentStatus = useCampaignWizardStore((s) => s.enrichmentStatus);
   const enrichmentBlockCount = useCampaignWizardStore((s) => s.enrichmentBlockCount);
   const enrichmentSources = useCampaignWizardStore((s) => s.enrichmentSources);
+  const useExternalEnrichment = useCampaignWizardStore((s) => s.useExternalEnrichment);
 
   // 9-Phase state
   const briefingValidation = useCampaignWizardStore((s) => s.briefingValidation);
@@ -301,6 +302,7 @@ export function StrategyStep() {
     campaignName: campaignName || "Untitled Campaign",
     campaignDescription,
     campaignGoalType: campaignGoalType ?? undefined,
+    useExternalEnrichment,
     briefing: {
       occasion: briefingOccasion || undefined,
       audienceObjective: briefingAudienceObjective || undefined,
@@ -308,7 +310,7 @@ export function StrategyStep() {
       tonePreference: briefingTonePreference || undefined,
       constraints: briefingConstraints || undefined,
     },
-  }), [campaignName, campaignDescription, campaignGoalType, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints]);
+  }), [campaignName, campaignDescription, campaignGoalType, useExternalEnrichment, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints]);
 
   // ─── Phase A: Generate Variants ──────────────────────
 
@@ -711,6 +713,7 @@ export function StrategyStep() {
         campaignName: fresh.name || "Untitled Campaign",
         campaignDescription: fresh.description,
         campaignGoalType: fresh.campaignGoalType ?? undefined,
+        useExternalEnrichment: fresh.useExternalEnrichment,
         briefing: {
           occasion: fresh.briefingOccasion || undefined,
           audienceObjective: fresh.briefingAudienceObjective || undefined,

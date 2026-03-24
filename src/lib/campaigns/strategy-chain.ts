@@ -37,6 +37,11 @@ import { fetchScholarContext } from '@/lib/semantic-scholar/scholar-client';
 import { getBctContext, getGoalBctMapping } from '@/lib/bct/goal-bct-mapping';
 import { formatCasiDeterminantsForPrompt } from '@/lib/bct/casi-determinants';
 import { formatMindspaceForPrompt } from '@/lib/bct/mindspace-checklist';
+import { formatEastForPrompt } from '@/lib/bct/east-checklist';
+import { getCialdiniContext } from '@/lib/cialdini/goal-cialdini-mapping';
+import { getEffectivenessContext } from '@/lib/effectiveness/goal-effectiveness-mapping';
+import { getGrowthContext } from '@/lib/brand-growth/goal-growth-mapping';
+import { getFramingContext } from '@/lib/framing/goal-framing-mapping';
 import { getTopAnglesForGoal } from '@/lib/campaigns/creative-angles';
 import { getLlmProfile } from '@/lib/campaigns/llm-creative-profiles';
 import type { CreativeAngleDefinition } from '@/lib/campaigns/creative-angles';
@@ -124,6 +129,7 @@ interface WizardContext {
   campaignDescription?: string;
   campaignGoalType?: string;
   briefing?: CampaignBriefing;
+  useExternalEnrichment?: boolean;
 }
 
 interface GenerateOptions {
@@ -547,16 +553,32 @@ export async function generateStrategyVariants(
   });
   const bctContext = getBctContext(campaignGoalType);
 
-  // Fetch all enrichments in parallel — emit SSE events for real-time feedback
+  // Local marketing frameworks (synchronous, no API calls)
+  const cialdiniContext = getCialdiniContext(campaignGoalType);
+  const effectivenessContext = getEffectivenessContext(campaignGoalType);
+  const growthContext = getGrowthContext(campaignGoalType);
+  const framingContext = getFramingContext(campaignGoalType);
+  const eastChecklist = formatEastForPrompt();
+
+  // Fetch external enrichments only if opt-in
+  const useExternal = wizardContext.useExternalEnrichment ?? false;
   onProgress?.({ type: 'enrichment', status: 'running' });
-  const [arenaResult, exaResult, scholarResult] = await Promise.all([
-    fetchArenaContext(arenaQueries),
-    fetchExaContext(exaQueries),
-    fetchScholarContext(scholarQueries),
-  ]);
+
+  const [arenaResult, exaResult, scholarResult] = useExternal
+    ? await Promise.all([
+        fetchArenaContext(arenaQueries),
+        fetchExaContext(exaQueries),
+        fetchScholarContext(scholarQueries),
+      ])
+    : [
+        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchArenaContext>>,
+        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchExaContext>>,
+        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchScholarContext>>,
+      ];
 
   const totalEnrichmentBlocks = (arenaResult.meta?.totalBlocks ?? 0) + (exaResult.meta?.totalResults ?? 0) + (scholarResult.meta?.totalPapers ?? 0);
-  if (totalEnrichmentBlocks > 0 || bctContext) {
+  const hasAnyEnrichment = totalEnrichmentBlocks > 0 || bctContext || cialdiniContext || effectivenessContext || growthContext || framingContext || eastChecklist;
+  if (hasAnyEnrichment) {
     onProgress?.({ type: 'enrichment', status: 'complete', totalBlocks: totalEnrichmentBlocks, queries: [
       ...(arenaResult.meta?.queries ?? []),
       ...(exaResult.meta?.queries ?? []),
@@ -566,6 +588,11 @@ export async function generateStrategyVariants(
       exa: exaResult.meta?.totalResults ?? 0,
       scholar: scholarResult.meta?.totalPapers ?? 0,
       bct: !!bctContext,
+      cialdini: !!cialdiniContext,
+      effectiveness: !!effectivenessContext,
+      growth: !!growthContext,
+      framing: !!framingContext,
+      east: !!eastChecklist,
     } });
   } else {
     onProgress?.({ type: 'enrichment', status: 'skipped' });
@@ -590,6 +617,11 @@ export async function generateStrategyVariants(
     exaContext: exaResult.contextText || undefined,
     scholarContext: scholarResult.contextText || undefined,
     bctContext: bctContext || undefined,
+    cialdiniContext: cialdiniContext || undefined,
+    effectivenessContext: effectivenessContext || undefined,
+    growthContext: growthContext || undefined,
+    framingContext: framingContext || undefined,
+    eastChecklist: eastChecklist || undefined,
   };
 
   // Select creative angles for each variant (forces creative divergence)
@@ -801,6 +833,12 @@ export async function elaborateJourney(
     buildPersonaChannelPrefs(personaIds, workspaceId),
   ]);
 
+  // Local marketing frameworks (synchronous, no API calls)
+  const journeyCialdiniContext = getCialdiniContext(campaignGoalType) || undefined;
+  const journeyFramingContext = getFramingContext(campaignGoalType) || undefined;
+  const journeyGrowthContext = getGrowthContext(campaignGoalType) || undefined;
+  const journeyEastChecklist = formatEastForPrompt() || undefined;
+
   // Inject user feedback into the synthesized strategy JSON so the channel planner considers it
   const synthesizedStrategyJson = data.synthesisFeedback
     ? JSON.stringify(data.synthesizedStrategy) + `\n\n--- USER FEEDBACK ON STRATEGY ---\n${data.synthesisFeedback}`
@@ -816,6 +854,9 @@ export async function elaborateJourney(
     personaChannelPrefs,
     goalType: campaignGoalType,
     goalGuidance,
+    cialdiniContext: journeyCialdiniContext,
+    framingContext: journeyFramingContext,
+    eastChecklist: journeyEastChecklist,
   });
 
   const channelPlanRaw = await withStepContext('Step 5 (Channel Planner — Gemini)', 180, () =>
@@ -838,6 +879,10 @@ export async function elaborateJourney(
     styleguideContext,
     goalType: campaignGoalType,
     goalGuidance,
+    cialdiniContext: journeyCialdiniContext,
+    framingContext: journeyFramingContext,
+    growthContext: journeyGrowthContext,
+    eastChecklist: journeyEastChecklist,
   });
 
   const assetPlanRaw = await withStepContext('Step 6 (Asset Planner — Gemini)', 120, () =>
@@ -951,16 +996,32 @@ export async function generateCampaignBlueprint(
   });
   const bctContext = getBctContext(campaignGoalType);
 
-  // Fetch all enrichments in parallel (non-blocking)
+  // Local marketing frameworks (synchronous, no API calls)
+  const bpCialdiniContext = getCialdiniContext(campaignGoalType);
+  const bpEffectivenessContext = getEffectivenessContext(campaignGoalType);
+  const bpGrowthContext = getGrowthContext(campaignGoalType);
+  const bpFramingContext = getFramingContext(campaignGoalType);
+  const bpEastChecklist = formatEastForPrompt();
+
+  // Fetch external enrichments only if opt-in
+  const useExternal = isWizardMode ? (options.wizardContext!.useExternalEnrichment ?? false) : false;
   onProgress?.({ type: 'enrichment', status: 'running' });
-  const [arenaResult, exaResult, scholarResult] = await Promise.all([
-    fetchArenaContext(arenaQueries),
-    fetchExaContext(exaQueries),
-    fetchScholarContext(scholarQueries),
-  ]);
+
+  const [arenaResult, exaResult, scholarResult] = useExternal
+    ? await Promise.all([
+        fetchArenaContext(arenaQueries),
+        fetchExaContext(exaQueries),
+        fetchScholarContext(scholarQueries),
+      ])
+    : [
+        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchArenaContext>>,
+        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchExaContext>>,
+        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchScholarContext>>,
+      ];
 
   const totalBlueprintEnrichmentBlocks = (arenaResult.meta?.totalBlocks ?? 0) + (exaResult.meta?.totalResults ?? 0) + (scholarResult.meta?.totalPapers ?? 0);
-  if (totalBlueprintEnrichmentBlocks > 0 || bctContext) {
+  const hasAnyBlueprintEnrichment = totalBlueprintEnrichmentBlocks > 0 || bctContext || bpCialdiniContext || bpEffectivenessContext || bpGrowthContext || bpFramingContext || bpEastChecklist;
+  if (hasAnyBlueprintEnrichment) {
     onProgress?.({ type: 'enrichment', status: 'complete', totalBlocks: totalBlueprintEnrichmentBlocks, queries: [
       ...(arenaResult.meta?.queries ?? []),
       ...(exaResult.meta?.queries ?? []),
@@ -970,6 +1031,11 @@ export async function generateCampaignBlueprint(
       exa: exaResult.meta?.totalResults ?? 0,
       scholar: scholarResult.meta?.totalPapers ?? 0,
       bct: !!bctContext,
+      cialdini: !!bpCialdiniContext,
+      effectiveness: !!bpEffectivenessContext,
+      growth: !!bpGrowthContext,
+      framing: !!bpFramingContext,
+      east: !!bpEastChecklist,
     } });
   } else {
     onProgress?.({ type: 'enrichment', status: 'skipped' });
@@ -1011,6 +1077,11 @@ export async function generateCampaignBlueprint(
     exaContext: exaResult.contextText || undefined,
     scholarContext: scholarResult.contextText || undefined,
     bctContext: bctContext || undefined,
+    cialdiniContext: bpCialdiniContext || undefined,
+    effectivenessContext: bpEffectivenessContext || undefined,
+    growthContext: bpGrowthContext || undefined,
+    framingContext: bpFramingContext || undefined,
+    eastChecklist: bpEastChecklist || undefined,
   };
 
   const step1aPrompt = buildFullVariantAPrompt({ ...fullVariantParams, creativeAngleContext: bpAngleA ? formatAngleForPrompt(bpAngleA.angle) : undefined });
@@ -1153,6 +1224,9 @@ export async function generateCampaignBlueprint(
     personaChannelPrefs,
     goalType: campaignGoalType,
     goalGuidance,
+    cialdiniContext: bpCialdiniContext || undefined,
+    framingContext: bpFramingContext || undefined,
+    eastChecklist: bpEastChecklist || undefined,
   });
 
   const channelPlanRaw = await withStepContext('Step 4 (Channel Planner — Gemini)', 180, () =>
@@ -1178,6 +1252,10 @@ export async function generateCampaignBlueprint(
     styleguideContext,
     goalType: campaignGoalType,
     goalGuidance,
+    cialdiniContext: bpCialdiniContext || undefined,
+    framingContext: bpFramingContext || undefined,
+    growthContext: bpGrowthContext || undefined,
+    eastChecklist: bpEastChecklist || undefined,
   });
 
   const assetPlanRaw = await withStepContext('Step 5 (Asset Planner — Gemini)', 120, () =>
@@ -1233,6 +1311,7 @@ export async function generateCampaignBlueprint(
       exaQueries: exaResult.meta?.queries,
       scholarPaperCount: scholarResult.meta?.totalPapers,
       bctGoalType: campaignGoalType,
+      useExternalEnrichment: useExternal,
     },
   };
 
@@ -1349,6 +1428,13 @@ export async function regenerateBlueprintLayer(
     regenArenaQueriesPromise,
   ]);
 
+  // Local marketing frameworks (always available, no API calls)
+  const regenCialdiniContext = getCialdiniContext(regenCampaignGoalType) || undefined;
+  const regenEffectivenessContext = getEffectivenessContext(regenCampaignGoalType) || undefined;
+  const regenGrowthContext = getGrowthContext(regenCampaignGoalType) || undefined;
+  const regenFramingContext = getFramingContext(regenCampaignGoalType) || undefined;
+  const regenEastChecklist = formatEastForPrompt() || undefined;
+
   // Build + fetch all enrichments in parallel (only for strategy/architecture regen)
   let regenArenaContext: string | undefined;
   let regenExaContext: string | undefined;
@@ -1359,6 +1445,9 @@ export async function regenerateBlueprintLayer(
   let regenScholarResult: Pick<Awaited<ReturnType<typeof fetchScholarContext>>, 'meta'> = { meta: null };
 
   if (needsEnrichment) {
+    // Respect the external enrichment preference stored during initial generation
+    const useExternal = existingBlueprint.contextSelection?.useExternalEnrichment ?? false;
+
     const bctMapping = getGoalBctMapping(regenCampaignGoalType);
     const exaQueries = buildExaQueries({
       campaignGoalType: regenCampaignGoalType,
@@ -1370,11 +1459,17 @@ export async function regenerateBlueprintLayer(
       comBTarget: bctMapping?.comBTarget,
     });
 
-    const [arenaRes, exaRes, scholarRes] = await Promise.all([
-      fetchArenaContext(regenArenaQueries),
-      fetchExaContext(exaQueries),
-      fetchScholarContext(scholarQueries),
-    ]);
+    const [arenaRes, exaRes, scholarRes] = useExternal
+      ? await Promise.all([
+          fetchArenaContext(regenArenaQueries),
+          fetchExaContext(exaQueries),
+          fetchScholarContext(scholarQueries),
+        ])
+      : [
+          { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchArenaContext>>,
+          { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchExaContext>>,
+          { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchScholarContext>>,
+        ];
 
     regenArenaContext = arenaRes.contextText || undefined;
     regenExaContext = exaRes.contextText || undefined;
@@ -1415,6 +1510,11 @@ export async function regenerateBlueprintLayer(
       scholarContext: regenScholarContext,
       bctContext: regenBctContext,
       creativeAngleContext: regenAngle ? formatAngleForPrompt(regenAngle.angle) : undefined,
+      cialdiniContext: regenCialdiniContext,
+      effectivenessContext: regenEffectivenessContext,
+      growthContext: regenGrowthContext,
+      framingContext: regenFramingContext,
+      eastChecklist: regenEastChecklist,
     });
 
     const fullVariantRaw = await withStepContext('Regenerate Full Variant (Step 1)', 300, () =>
@@ -1449,6 +1549,9 @@ export async function regenerateBlueprintLayer(
       personaChannelPrefs,
       goalType: regenGoalType,
       goalGuidance: getGoalTypeGuidance(regenGoalType),
+      cialdiniContext: regenCialdiniContext,
+      framingContext: regenFramingContext,
+      eastChecklist: regenEastChecklist,
     });
 
     const channelRaw = await withStepContext('Regenerate Channel Plan (Step 4)', 180, () =>
@@ -1476,6 +1579,10 @@ export async function regenerateBlueprintLayer(
     styleguideContext,
     goalType: assetRegenGoalType,
     goalGuidance: getGoalTypeGuidance(assetRegenGoalType),
+    cialdiniContext: regenCialdiniContext,
+    framingContext: regenFramingContext,
+    growthContext: regenGrowthContext,
+    eastChecklist: regenEastChecklist,
   });
 
   const assetRaw = await withStepContext('Regenerate Asset Plan (Step 5)', 180, () =>
@@ -1745,16 +1852,32 @@ export async function buildStrategyFoundation(
   const casiDeterminants = formatCasiDeterminantsForPrompt();
   const mindspaceChecklist = formatMindspaceForPrompt();
 
-  // Fetch all enrichments in parallel with SSE events
+  // Local marketing frameworks (synchronous, no API calls)
+  const sfCialdiniContext = getCialdiniContext(campaignGoalType) || undefined;
+  const sfEffectivenessContext = getEffectivenessContext(campaignGoalType) || undefined;
+  const sfGrowthContext = getGrowthContext(campaignGoalType) || undefined;
+  const sfFramingContext = getFramingContext(campaignGoalType) || undefined;
+  const sfEastChecklist = formatEastForPrompt() || undefined;
+
+  // Fetch external enrichments only if opt-in
+  const useExternal = wizardContext.useExternalEnrichment ?? false;
   onProgress?.({ type: 'enrichment', status: 'running' });
-  const [arenaResult, exaResult, scholarResult] = await Promise.all([
-    fetchArenaContext(arenaQueries),
-    fetchExaContext(exaQueries),
-    fetchScholarContext(scholarQueries),
-  ]);
+
+  const [arenaResult, exaResult, scholarResult] = useExternal
+    ? await Promise.all([
+        fetchArenaContext(arenaQueries),
+        fetchExaContext(exaQueries),
+        fetchScholarContext(scholarQueries),
+      ])
+    : [
+        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchArenaContext>>,
+        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchExaContext>>,
+        { contextText: '', meta: null } as Awaited<ReturnType<typeof fetchScholarContext>>,
+      ];
 
   const totalEnrichmentBlocks = (arenaResult.meta?.totalBlocks ?? 0) + (exaResult.meta?.totalResults ?? 0) + (scholarResult.meta?.totalPapers ?? 0);
-  if (totalEnrichmentBlocks > 0 || bctContext) {
+  const hasAnyEnrichment = totalEnrichmentBlocks > 0 || bctContext || sfCialdiniContext || sfEffectivenessContext || sfGrowthContext || sfFramingContext || sfEastChecklist;
+  if (hasAnyEnrichment) {
     onProgress?.({ type: 'enrichment', status: 'complete', totalBlocks: totalEnrichmentBlocks, queries: [
       ...(arenaResult.meta?.queries ?? []),
       ...(exaResult.meta?.queries ?? []),
@@ -1764,6 +1887,11 @@ export async function buildStrategyFoundation(
       exa: exaResult.meta?.totalResults ?? 0,
       scholar: scholarResult.meta?.totalPapers ?? 0,
       bct: !!bctContext,
+      cialdini: !!sfCialdiniContext,
+      effectiveness: !!sfEffectivenessContext,
+      growth: !!sfGrowthContext,
+      framing: !!sfFramingContext,
+      east: !!sfEastChecklist,
     } });
   } else {
     onProgress?.({ type: 'enrichment', status: 'skipped' });
@@ -1794,6 +1922,11 @@ export async function buildStrategyFoundation(
     bctContext: bctContext || undefined,
     casiDeterminants,
     mindspaceChecklist,
+    cialdiniContext: sfCialdiniContext,
+    effectivenessContext: sfEffectivenessContext,
+    growthContext: sfGrowthContext,
+    framingContext: sfFramingContext,
+    eastChecklist: sfEastChecklist,
   });
 
   const raw = await withStepContext('Phase 2 (Strategy Foundation)', 600, () =>
@@ -1896,6 +2029,12 @@ export async function generateCreativeHooks(
   // Derive creative enrichment brief from strategy foundation
   const creativeEnrichmentBrief = deriveCreativeEnrichmentBrief(foundation);
 
+  // Generate local marketing framework contexts (synchronous, no API calls)
+  const hookCialdiniContext = getCialdiniContext(campaignGoalType) || undefined;
+  const hookFramingContext = getFramingContext(campaignGoalType) || undefined;
+  const hookGrowthContext = getGrowthContext(campaignGoalType) || undefined;
+  const hookEastChecklist = formatEastForPrompt() || undefined;
+
   // Build shared prompt params
   const sharedParams = {
     campaignName: wizardContext.campaignName,
@@ -1912,6 +2051,10 @@ export async function generateCreativeHooks(
     strategyFoundation: foundation,
     creativeEnrichmentBrief,
     strategyFeedback,
+    cialdiniContext: hookCialdiniContext,
+    framingContext: hookFramingContext,
+    growthContext: hookGrowthContext,
+    eastChecklist: hookEastChecklist,
   };
 
   const angleA = creativeAngles.find(a => a.label === 'A');
@@ -2062,6 +2205,12 @@ export async function refineSelectedHook(
 
   const { model: resolvedModel, provider: resolvedProvider } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
 
+  // Generate local marketing framework contexts (synchronous, no API calls)
+  const refineCialdiniContext = getCialdiniContext(campaignGoalType) || undefined;
+  const refineFramingContext = getFramingContext(campaignGoalType) || undefined;
+  const refineGrowthContext = getGrowthContext(campaignGoalType) || undefined;
+  const refineEastChecklist = formatEastForPrompt() || undefined;
+
   onProgress?.({ step: 1, name: 'Hook Refinement', status: 'running', label: `Refining "${selectedHook.hookConcept.hookTitle}" into production-ready proposal...` });
 
   const prompt = buildHookRefinementPrompt({
@@ -2078,6 +2227,10 @@ export async function refineSelectedHook(
     strategyFoundation: foundation,
     personaValidation,
     hookFeedback,
+    cialdiniContext: refineCialdiniContext,
+    framingContext: refineFramingContext,
+    growthContext: refineGrowthContext,
+    eastChecklist: refineEastChecklist,
   });
 
   const raw = await withStepContext('Phase 6 (Hook Refinement)', 600, () =>

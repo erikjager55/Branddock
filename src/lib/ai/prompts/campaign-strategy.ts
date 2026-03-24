@@ -124,6 +124,44 @@ interface FullVariantPromptParams {
   bctContext?: string;
   /** Creative angle assigned to this variant (from creative-angles.ts) */
   creativeAngleContext?: string;
+  /** Cialdini's 7 persuasion principles mapped to goal type */
+  cialdiniContext?: string;
+  /** Binet & Field IPA effectiveness data mapped to goal type */
+  effectivenessContext?: string;
+  /** Byron Sharp / Ehrenberg-Bass brand growth principles mapped to goal type */
+  growthContext?: string;
+  /** Kahneman System 1/System 2 framing principles mapped to goal type */
+  framingContext?: string;
+  /** EAST (Easy, Attractive, Social, Timely) validation checklist */
+  eastChecklist?: string;
+}
+
+// ─── Marketing Framework Injection Helpers ──────────────────
+
+function buildMarketingFrameworkSection(params: {
+  effectivenessContext?: string;
+  growthContext?: string;
+  framingContext?: string;
+  eastChecklist?: string;
+  cialdiniContext?: string;
+}): string {
+  let section = '';
+  if (params.effectivenessContext) {
+    section += `\n\n## Marketing Effectiveness (Binet & Field IPA Data)\n${params.effectivenessContext}`;
+  }
+  if (params.growthContext) {
+    section += `\n\n## Brand Growth Principles (Byron Sharp / Ehrenberg-Bass)\n${params.growthContext}`;
+  }
+  if (params.framingContext) {
+    section += `\n\n## Cognitive Framing (Kahneman System 1/System 2)\n${params.framingContext}`;
+  }
+  if (params.eastChecklist) {
+    section += `\n\n${params.eastChecklist}`;
+  }
+  if (params.cialdiniContext) {
+    section += `\n\n## Persuasion Principles (Cialdini)\n${params.cialdiniContext}`;
+  }
+  return section;
 }
 
 // ─── Shared Prompt Fragments ─────────────────────────────────
@@ -272,7 +310,7 @@ ${params.scholarContext}` : ''}${params.bctContext ? `
 ## Behavioral Science Framework
 The following Behavior Change Techniques (BCTs) from the HBCP Taxonomy are recommended for this goal type. Integrate these into your strategy to drive measurable behavior change.
 
-${params.bctContext}` : ''}`;
+${params.bctContext}` : ''}${buildMarketingFrameworkSection({ effectivenessContext: params.effectivenessContext, growthContext: params.growthContext, framingContext: params.framingContext, eastChecklist: params.eastChecklist, cialdiniContext: params.cialdiniContext })}`;
 
   return { system, user };
 }
@@ -364,7 +402,7 @@ ${params.arenaContext}` : ''}${params.exaContext ? `
 ## Cross-Industry Insights (Exa Neural Search)
 The following cross-industry analogies, cultural tensions, and trend-driven insights were found via neural semantic search. These come from OUTSIDE your industry — use them to find unexpected strategic connections, metaphors, and angles that competitors would never discover.
 
-${params.exaContext}` : ''}`;
+${params.exaContext}` : ''}${buildMarketingFrameworkSection({ effectivenessContext: params.effectivenessContext, growthContext: params.growthContext, framingContext: params.framingContext, eastChecklist: params.eastChecklist })}`;
 
   return { system, user };
 }
@@ -465,7 +503,7 @@ ${params.scholarContext}` : ''}${params.bctContext ? `
 ## Behavioral Science Framework
 The following Behavior Change Techniques (BCTs) and MINDSPACE principles are recommended. Design your touchpoints as behavioral interventions.
 
-${params.bctContext}` : ''}`;
+${params.bctContext}` : ''}${buildMarketingFrameworkSection({ effectivenessContext: params.effectivenessContext, growthContext: params.growthContext, framingContext: params.framingContext, eastChecklist: params.eastChecklist, cialdiniContext: params.cialdiniContext })}`;
 
   return { system, user };
 }
@@ -719,6 +757,12 @@ export function buildChannelPlannerPrompt(params: {
   personaChannelPrefs: string;
   goalType?: string;
   goalGuidance?: string;
+  /** Cialdini's 7 persuasion principles mapped to goal type */
+  cialdiniContext?: string;
+  /** Kahneman System 1/System 2 framing principles mapped to goal type */
+  framingContext?: string;
+  /** EAST (Easy, Attractive, Social, Timely) validation checklist */
+  eastChecklist?: string;
 }): { system: string; user: string } {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nPrioritize channels that best serve this goal type.`
@@ -750,7 +794,7 @@ ${params.synthesizedStrategy}
 ${params.synthesizedArchitecture}
 
 ## Persona Channel Preferences
-${params.personaChannelPrefs || 'No specific channel preferences available.'}`;
+${params.personaChannelPrefs || 'No specific channel preferences available.'}${buildMarketingFrameworkSection({ cialdiniContext: params.cialdiniContext, framingContext: params.framingContext, eastChecklist: params.eastChecklist })}`;
 
   return { system, user };
 }
@@ -765,6 +809,14 @@ export function buildAssetPlannerPrompt(params: {
   styleguideContext: string;
   goalType?: string;
   goalGuidance?: string;
+  /** Cialdini's 7 persuasion principles mapped to goal type */
+  cialdiniContext?: string;
+  /** Kahneman System 1/System 2 framing principles mapped to goal type */
+  framingContext?: string;
+  /** Byron Sharp / Ehrenberg-Bass brand growth principles mapped to goal type */
+  growthContext?: string;
+  /** EAST (Easy, Attractive, Social, Timely) validation checklist */
+  eastChecklist?: string;
 }): { system: string; user: string } {
   const validTypes = DELIVERABLE_TYPE_IDS.join(', ');
 
@@ -820,7 +872,7 @@ ${params.channelPlan}
 ${params.productContext || 'No products defined.'}
 
 ## Brand Style Guide
-${params.styleguideContext || 'No style guide available — use professional, clean tone.'}`;
+${params.styleguideContext || 'No style guide available — use professional, clean tone.'}${buildMarketingFrameworkSection({ cialdiniContext: params.cialdiniContext, framingContext: params.framingContext, growthContext: params.growthContext, eastChecklist: params.eastChecklist })}`;
 
   return { system, user };
 }
@@ -909,6 +961,16 @@ interface StrategyFoundationPromptParams {
   bctContext?: string;
   casiDeterminants?: string;
   mindspaceChecklist?: string;
+  /** Cialdini's 7 persuasion principles mapped to goal type */
+  cialdiniContext?: string;
+  /** Binet & Field IPA effectiveness data mapped to goal type */
+  effectivenessContext?: string;
+  /** Byron Sharp / Ehrenberg-Bass brand growth principles mapped to goal type */
+  growthContext?: string;
+  /** Kahneman System 1/System 2 framing principles mapped to goal type */
+  framingContext?: string;
+  /** EAST (Easy, Attractive, Social, Timely) validation checklist */
+  eastChecklist?: string;
 }
 
 export function buildStrategyFoundationPrompt(params: StrategyFoundationPromptParams): { system: string; user: string } {
@@ -1000,7 +1062,7 @@ ${params.bctContext}` : ''}${params.casiDeterminants ? `
 ${params.casiDeterminants}` : ''}${params.mindspaceChecklist ? `
 
 ## MINDSPACE Influence Factors
-${params.mindspaceChecklist}` : ''}`;
+${params.mindspaceChecklist}` : ''}${buildMarketingFrameworkSection({ effectivenessContext: params.effectivenessContext, growthContext: params.growthContext, framingContext: params.framingContext, eastChecklist: params.eastChecklist, cialdiniContext: params.cialdiniContext })}`;
 
   return { system, user };
 }
@@ -1024,6 +1086,14 @@ interface CreativeHookPromptParams {
   creativeEnrichmentBrief: CreativeEnrichmentBrief;
   /** User feedback from Phase 3 strategy review (if any) */
   strategyFeedback?: string;
+  /** Cialdini's 7 persuasion principles mapped to goal type */
+  cialdiniContext?: string;
+  /** Kahneman System 1/System 2 framing principles mapped to goal type */
+  framingContext?: string;
+  /** Byron Sharp / Ehrenberg-Bass brand growth principles mapped to goal type */
+  growthContext?: string;
+  /** EAST (Easy, Attractive, Social, Timely) validation checklist */
+  eastChecklist?: string;
 }
 
 export function buildCreativeHookPrompt(params: CreativeHookPromptParams): { system: string; user: string } {
@@ -1123,7 +1193,7 @@ ${params.productContext || 'No products defined.'}
 ${params.competitorContext || 'No competitors defined.'}
 
 ## Market Trends
-${params.trendContext || 'No trends defined.'}${params.strategyFeedback ? `
+${params.trendContext || 'No trends defined.'}${buildMarketingFrameworkSection({ cialdiniContext: params.cialdiniContext, framingContext: params.framingContext, growthContext: params.growthContext, eastChecklist: params.eastChecklist })}${params.strategyFeedback ? `
 
 ## User Strategy Feedback
 The user reviewed the strategy foundation and provided this feedback. Incorporate their direction:
@@ -1225,6 +1295,14 @@ interface HookRefinementPromptParams {
   strategyFoundation: StrategyFoundation;
   personaValidation: PersonaValidationResult[];
   hookFeedback?: string;
+  /** Cialdini's 7 persuasion principles mapped to goal type */
+  cialdiniContext?: string;
+  /** Kahneman System 1/System 2 framing principles mapped to goal type */
+  framingContext?: string;
+  /** Byron Sharp / Ehrenberg-Bass brand growth principles mapped to goal type */
+  growthContext?: string;
+  /** EAST (Easy, Attractive, Social, Timely) validation checklist */
+  eastChecklist?: string;
 }
 
 export function buildHookRefinementPrompt(params: HookRefinementPromptParams): { system: string; user: string } {
@@ -1327,7 +1405,7 @@ ${params.personaContext || 'No personas available.'}
 Persona IDs: ${JSON.stringify(params.personaIds)}
 
 ## Products & Services
-${params.productContext || 'No products defined.'}${params.hookFeedback ? `
+${params.productContext || 'No products defined.'}${buildMarketingFrameworkSection({ cialdiniContext: params.cialdiniContext, framingContext: params.framingContext, growthContext: params.growthContext, eastChecklist: params.eastChecklist })}${params.hookFeedback ? `
 
 ## User Feedback on Selected Hook
 The user reviewed the hooks and provided this feedback. Incorporate their direction:

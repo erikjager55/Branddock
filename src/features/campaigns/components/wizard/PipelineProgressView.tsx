@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Check, Loader2, AlertCircle, Palette, BookOpen, Search, FlaskConical } from "lucide-react";
+import { Check, Loader2, AlertCircle, Palette, BookOpen, Search, FlaskConical, Shield, BarChart3, TrendingUp, Brain, Target } from "lucide-react";
 import { ProgressBar } from "@/components/shared";
 import type { PipelineStep, PipelineStepStatus, EnrichmentSources } from "../../types/campaign-wizard.types";
 
@@ -48,10 +48,21 @@ function SourcePill({ icon: Icon, label, count }: { icon: React.ElementType; lab
   );
 }
 
+function LocalSourcePill({ icon: Icon, label, color }: { icon: React.ElementType; label: string; color: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: `${color}20`, color }}>
+      <Icon className="w-3 h-3" />
+      {label}
+    </span>
+  );
+}
+
 function EnrichmentIndicator({ status, blockCount, sources }: { status: 'idle' | 'running' | 'complete' | 'skipped'; blockCount: number; sources?: EnrichmentSources }) {
   if (status === 'idle') return null;
 
-  const hasSourceBreakdown = sources && (sources.arena || sources.exa || sources.scholar || sources.bct);
+  const hasExternalSources = sources && (sources.arena || sources.exa || sources.scholar);
+  const hasLocalSources = sources && (sources.cialdini || sources.effectiveness || sources.growth || sources.framing || sources.east || sources.bct);
+  const hasSourceBreakdown = hasExternalSources || hasLocalSources;
 
   return (
     <div
@@ -79,10 +90,17 @@ function EnrichmentIndicator({ status, blockCount, sources }: { status: 'idle' |
       </div>
       {status === 'complete' && hasSourceBreakdown && (
         <div className="flex flex-wrap gap-1.5 ml-7">
-          <SourcePill icon={Palette} label="Are.na" count={sources.arena ?? 0} />
-          <SourcePill icon={Search} label="Exa" count={sources.exa ?? 0} />
-          <SourcePill icon={BookOpen} label="Scholar" count={sources.scholar ?? 0} />
-          <SourcePill icon={FlaskConical} label="BCT" count={sources.bct ?? false} />
+          {/* Local marketing frameworks (always active) */}
+          {sources?.cialdini && <LocalSourcePill icon={Shield} label="Cialdini" color="#7c3aed" />}
+          {sources?.effectiveness && <LocalSourcePill icon={BarChart3} label="IPA Data" color="#059669" />}
+          {sources?.growth && <LocalSourcePill icon={TrendingUp} label="Byron Sharp" color="#2563eb" />}
+          {sources?.framing && <LocalSourcePill icon={Brain} label="Kahneman" color="#d97706" />}
+          {sources?.east && <LocalSourcePill icon={Target} label="EAST" color="#0d9488" />}
+          {sources?.bct && <LocalSourcePill icon={FlaskConical} label="BCT" color="#8b5cf6" />}
+          {/* External sources (opt-in) */}
+          {(sources?.arena ?? 0) > 0 && <SourcePill icon={Palette} label="Are.na" count={sources!.arena!} />}
+          {(sources?.exa ?? 0) > 0 && <SourcePill icon={Search} label="Exa" count={sources!.exa!} />}
+          {(sources?.scholar ?? 0) > 0 && <SourcePill icon={BookOpen} label="Scholar" count={sources!.scholar!} />}
         </div>
       )}
     </div>

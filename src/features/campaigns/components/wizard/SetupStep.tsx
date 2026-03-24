@@ -1,6 +1,6 @@
 "use client";
 
-import { TrendingUp, Zap, Scale, MessageCircle } from "lucide-react";
+import { TrendingUp, Zap, Scale, MessageCircle, Search } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Input } from "@/components/shared";
 import { SelectionCard } from "@/components/ui/layout";
@@ -69,6 +69,9 @@ export function SetupStep() {
   const setBriefingTonePreference = useCampaignWizardStore((s) => s.setBriefingTonePreference);
   const briefingConstraints = useCampaignWizardStore((s) => s.briefingConstraints);
   const setBriefingConstraints = useCampaignWizardStore((s) => s.setBriefingConstraints);
+
+  const useExternalEnrichment = useCampaignWizardStore((s) => s.useExternalEnrichment);
+  const setUseExternalEnrichment = useCampaignWizardStore((s) => s.setUseExternalEnrichment);
 
   return (
     <div className="space-y-6">
@@ -171,6 +174,29 @@ export function SetupStep() {
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none bg-white"
             />
           </div>
+        </div>
+
+        {/* External Enrichment Toggle */}
+        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useExternalEnrichment}
+              onChange={(e) => setUseExternalEnrichment(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-gray-700">
+                  Include external AI research
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Queries Are.na, Exa, and Semantic Scholar for additional cultural context, creative inspiration, and academic insights. Adds 5-10 seconds to strategy generation.
+              </p>
+            </div>
+          </label>
         </div>
       </div>
 

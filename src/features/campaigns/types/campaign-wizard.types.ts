@@ -176,6 +176,11 @@ export interface EnrichmentSources {
   exa?: number;
   scholar?: number;
   bct?: boolean;
+  cialdini?: boolean;
+  effectiveness?: boolean;
+  growth?: boolean;
+  framing?: boolean;
+  east?: boolean;
 }
 
 export type EnrichmentEvent = {

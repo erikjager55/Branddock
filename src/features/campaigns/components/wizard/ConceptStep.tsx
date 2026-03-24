@@ -101,6 +101,7 @@ export function ConceptStep() {
   const enrichmentStatus = useCampaignWizardStore((s) => s.enrichmentStatus);
   const enrichmentBlockCount = useCampaignWizardStore((s) => s.enrichmentBlockCount);
   const enrichmentSources = useCampaignWizardStore((s) => s.enrichmentSources);
+  const useExternalEnrichment = useCampaignWizardStore((s) => s.useExternalEnrichment);
 
   // Legacy variant scores (for blueprint assembly)
   const variantAScore = useCampaignWizardStore((s) => s.variantAScore);
@@ -137,6 +138,7 @@ export function ConceptStep() {
     campaignName: campaignName || "Untitled Campaign",
     campaignDescription,
     campaignGoalType: campaignGoalType ?? undefined,
+    useExternalEnrichment,
     briefing: {
       occasion: briefingOccasion || undefined,
       audienceObjective: briefingAudienceObjective || undefined,
@@ -144,7 +146,7 @@ export function ConceptStep() {
       tonePreference: briefingTonePreference || undefined,
       constraints: briefingConstraints || undefined,
     },
-  }), [campaignName, campaignDescription, campaignGoalType, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints]);
+  }), [campaignName, campaignDescription, campaignGoalType, useExternalEnrichment, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints]);
 
   const abortRef = useRef<{ abort: () => void } | null>(null);
   const generationIdRef = useRef(0);
