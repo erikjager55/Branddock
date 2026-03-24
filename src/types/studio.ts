@@ -157,6 +157,16 @@ export interface BriefContextResponse {
   additionalInstructions: string | null;
 }
 
+// ─── Deliverable Brief Settings (from DB settings JSON) ─────
+
+export interface DeliverableBriefSettings {
+  objective?: string;
+  keyMessage?: string;
+  toneDirection?: string;
+  callToAction?: string;
+  contentOutline?: string[];
+}
+
 // ─── Consistency Check ──────────────────────────────────────
 
 export interface ConsistencyCheckResult {
@@ -239,6 +249,8 @@ export interface StudioStateResponse {
   pipelineStatus: PipelineStatusType | null;
   campaignId: string;
   campaignTitle: string;
+  briefSettings: DeliverableBriefSettings | null;
+  targetPersonaNames: string[];
 }
 
 // ─── Generate Content ────────────────────────────────────────
@@ -262,6 +274,11 @@ export interface GenerateContentResponse {
   generationTime: number;
   contentTab: string;
   model: string;
+  validation?: {
+    warnings: Array<{ check: string; severity: 'error' | 'warning' | 'info'; message: string; match?: string }>;
+    passedChecks: string[];
+    score: number;
+  };
 }
 
 // ─── Update Studio ───────────────────────────────────────────

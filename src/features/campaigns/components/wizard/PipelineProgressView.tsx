@@ -1,9 +1,21 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Check, Loader2, AlertCircle, Palette, BookOpen, Search, FlaskConical, Shield, BarChart3, TrendingUp, Brain, Target } from "lucide-react";
 import { ProgressBar } from "@/components/shared";
 import type { PipelineStep, PipelineStepStatus, EnrichmentSources } from "../../types/campaign-wizard.types";
+
+// ─── Constants ───────────────────────────────────────────
+
+const RUNNING_HINTS = [
+  "This may take a minute...",
+  "AI is analyzing deeply...",
+  "Still working...",
+  "Processing complex data...",
+  "Thinking through strategy...",
+];
+
+const HINT_CYCLE_MS = 8_000;
 
 // ─── Step Status Icon ────────────────────────────────────
 
@@ -34,6 +46,44 @@ function StepStatusIcon({ status }: { status: PipelineStepStatus }) {
         </div>
       );
   }
+}
+
+// ─── Running Hint ────────────────────────────────────────
+
+function RunningHint() {
+  const [hintIndex, setHintIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHintIndex((prev) => (prev + 1) % RUNNING_HINTS.length);
+    }, HINT_CYCLE_MS);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <p className="text-xs text-muted-foreground italic mt-1">
+      {RUNNING_HINTS[hintIndex]}
+    </p>
+  );
+}
+
+// ─── Elapsed Timer ───────────────────────────────────────
+
+function useElapsedTimer(isComplete: boolean) {
+  const [elapsed, setElapsed] = useState(0);
+  const startRef = useRef(Date.now());
+
+  useEffect(() => {
+    if (isComplete) return;
+    const interval = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
+    }, 1_000);
+    return () => clearInterval(interval);
+  }, [isComplete]);
+
+  const minutes = Math.floor(elapsed / 60);
+  const seconds = elapsed % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 // ─── Enrichment Indicator ──────────────────────────────
@@ -133,6 +183,9 @@ export function PipelineProgressView({ title, subtitle, steps, pipelineSteps, en
   const completedSteps = pipelineSteps.filter((s) => s.status === "complete").length;
   const totalSteps = steps.length;
   const progressPercent = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
+  const allComplete = completedSteps === totalSteps && totalSteps > 0;
+
+  const elapsedDisplay = useElapsedTimer(allComplete);
 
   return (
     <div className="space-y-6">
@@ -140,6 +193,11 @@ export function PipelineProgressView({ title, subtitle, steps, pipelineSteps, en
         <h3 className="text-lg font-semibold text-gray-900 mb-1">{title}</h3>
         <p className="text-sm text-muted-foreground">
           {subtitle ?? `${completedSteps} of ${totalSteps} steps completed`}
+          {!allComplete && (
+            <span className="ml-2 text-xs text-muted-foreground/70">
+              Elapsed: {elapsedDisplay}
+            </span>
+          )}
         </p>
       </div>
 
@@ -193,6 +251,7 @@ export function PipelineProgressView({ title, subtitle, steps, pipelineSteps, en
                 {(status === "running" || status === "complete" || status === "error") && (
                   <p className="text-xs text-muted-foreground mt-0.5">{config.description}</p>
                 )}
+                {status === "running" && <RunningHint />}
                 {preview && status === "complete" && (
                   <p className="text-xs text-emerald-700 mt-1 line-clamp-1">{preview}</p>
                 )}

@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
       updatedAt: c.updatedAt.toISOString(),
       knowledgeAssetCount: c._count.knowledgeAssets,
       deliverableCount: c._count.deliverables,
+      completedDeliverableCount: c.deliverables.length,
       teamMemberCount: c._count.teamMembers,
     }));
 

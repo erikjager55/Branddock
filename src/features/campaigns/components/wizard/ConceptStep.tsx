@@ -51,9 +51,27 @@ const HOOKS_STEPS: PipelineStepConfig[] = [
 const PROPOSAL_STEPS: PipelineStepConfig[] = [
   {
     step: 1,
-    name: "Hook Refiner",
-    label: "Refining selected hook into proposal...",
-    description: "Transforms the selected creative hook into a full production-ready campaign strategy and architecture.",
+    name: "Gathering Context",
+    label: "Gathering brand & audience context...",
+    description: "Loading brand assets, personas, products, and selected hook data for refinement.",
+  },
+  {
+    step: 2,
+    name: "Applying Frameworks",
+    label: "Applying marketing frameworks...",
+    description: "Enriching with Cialdini persuasion principles, Kahneman framing, Byron Sharp growth laws, and EAST behavioral checklist.",
+  },
+  {
+    step: 3,
+    name: "Deep Hook Refinement",
+    label: "Refining hook with deep thinking...",
+    description: "AI uses extended thinking to elevate the selected hook into a production-ready campaign strategy and architecture.",
+  },
+  {
+    step: 4,
+    name: "Finalizing Proposal",
+    label: "Packaging proposal...",
+    description: "Validating strategy layers, normalizing architecture, and assembling the final campaign proposal.",
   },
 ];
 
@@ -150,11 +168,13 @@ export function ConceptStep() {
 
   const abortRef = useRef<{ abort: () => void } | null>(null);
   const generationIdRef = useRef(0);
+  const autoStartedRef = useRef(false);
 
-  // Cleanup SSE on unmount
+  // Cleanup SSE on unmount — reset autoStartedRef so strict mode remount can restart
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
+      autoStartedRef.current = false;
     };
   }, []);
 
@@ -452,7 +472,6 @@ export function ConceptStep() {
   }, [strategicIntent, selectedContextIds, wizardContext, is9Phase]);
 
   // ─── Auto-start concept generation when entering step 4 ──
-  const autoStartedRef = useRef(false);
   useEffect(() => {
     if (strategyPhase === "rationale_complete" && !isGenerating && !autoStartedRef.current) {
       autoStartedRef.current = true;

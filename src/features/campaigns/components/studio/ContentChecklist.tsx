@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { CheckSquare } from 'lucide-react';
 import { useContentStudioStore } from '@/stores/useContentStudioStore';
+import { generateChecklist } from '@/lib/studio/checklist-generator';
 import type { ChecklistItem } from '@/types/studio';
 
 // ─── Types ─────────────────────────────────────────────
 
 interface ContentChecklistProps {
   deliverableId: string;
+  contentType?: string;
 }
 
 // ─── Default Items ─────────────────────────────────────
@@ -23,15 +25,26 @@ const DEFAULT_ITEMS: ChecklistItem[] = [
 
 // ─── Component ─────────────────────────────────────────
 
-export function ContentChecklist({ deliverableId }: ContentChecklistProps) {
+export function ContentChecklist({ deliverableId, contentType }: ContentChecklistProps) {
   const rawChecklistItems = useContentStudioStore((s) => s.checklistItems);
   const checklistItems = Array.isArray(rawChecklistItems) ? rawChecklistItems : [];
   const setChecklistItems = useContentStudioStore((s) => s.setChecklistItems);
   const toggleChecklistItem = useContentStudioStore((s) => s.toggleChecklistItem);
+  const validationResult = useContentStudioStore((s) => s.validationResult);
+  const prevValidationRef = useRef(validationResult);
 
-  // Initialize with default items if empty
+  // Generate dynamic checklist when validation result changes
   useEffect(() => {
-    if (checklistItems.length === 0) {
+    if (validationResult && validationResult !== prevValidationRef.current && contentType) {
+      const dynamicItems = generateChecklist(contentType, validationResult);
+      setChecklistItems(dynamicItems);
+    }
+    prevValidationRef.current = validationResult;
+  }, [validationResult, contentType, setChecklistItems]);
+
+  // Initialize with default items if empty and no validation
+  useEffect(() => {
+    if (checklistItems.length === 0 && !validationResult) {
       setChecklistItems(DEFAULT_ITEMS);
     }
   }, []);

@@ -54,9 +54,10 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
     deliverableCount: number;
   } | null>(null);
 
-  // Reset wizard on mount and unmount
+  // Reset wizard when leaving the page (unmount only).
+  // Do NOT reset on mount — remounts (React strict mode, ErrorBoundary
+  // recovery, Suspense) would destroy in-progress wizard state.
   useEffect(() => {
-    resetWizard();
     return () => {
       resetWizard();
     };

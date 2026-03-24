@@ -20,6 +20,22 @@ export async function fetchStudioState(deliverableId: string): Promise<StudioSta
 
   // API returns nested { deliverable, campaign, ... } — flatten to StudioStateResponse
   const d = data.deliverable;
+  // Extract brief settings and target personas from the raw settings JSON blob
+  const rawSettings = d.settings as Record<string, unknown> | null;
+  const rawBrief = (rawSettings?.brief ?? null) as Record<string, unknown> | null;
+  const briefSettings = rawBrief ? {
+    ...(rawBrief.objective ? { objective: String(rawBrief.objective) } : {}),
+    ...(rawBrief.keyMessage ? { keyMessage: String(rawBrief.keyMessage) } : {}),
+    ...(rawBrief.toneDirection ? { toneDirection: String(rawBrief.toneDirection) } : {}),
+    ...(rawBrief.callToAction ? { callToAction: String(rawBrief.callToAction) } : {}),
+    ...(Array.isArray(rawBrief.contentOutline) && rawBrief.contentOutline.length > 0
+      ? { contentOutline: rawBrief.contentOutline.map(String) }
+      : {}),
+  } : null;
+  const targetPersonaNames = Array.isArray(rawSettings?.targetPersonas)
+    ? (rawSettings.targetPersonas as string[])
+    : [];
+
   return {
     id: d.id,
     title: d.title,
@@ -41,6 +57,8 @@ export async function fetchStudioState(deliverableId: string): Promise<StudioSta
     pipelineStatus: d.pipelineStatus ?? null,
     campaignId: data.campaign.id,
     campaignTitle: data.campaign.title,
+    briefSettings: briefSettings && Object.keys(briefSettings).length > 0 ? briefSettings : null,
+    targetPersonaNames,
   };
 }
 

@@ -198,7 +198,33 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
   const handleBringToLife = async (deliverableTitle: string, contentType: string) => {
     setBringToLifeError(null);
     try {
-      const result = await addDeliverable.mutateAsync({ title: deliverableTitle, contentType });
+      // Find matching deliverable from blueprint to extract full settings
+      const bpDeliverable = blueprint?.assetPlan?.deliverables?.find(
+        (d) => d.title === deliverableTitle
+      );
+      const bringSettings: NonNullable<import('@/types/campaign').CreateDeliverableBody['settings']> = {};
+      if (bpDeliverable) {
+        if (bpDeliverable.phase) bringSettings.phase = bpDeliverable.phase;
+        if (bpDeliverable.channel) bringSettings.channel = bpDeliverable.channel;
+        if (bpDeliverable.targetPersonas?.length) bringSettings.targetPersonas = bpDeliverable.targetPersonas;
+        if (bpDeliverable.productionPriority) bringSettings.productionPriority = bpDeliverable.productionPriority as 'must-have' | 'should-have' | 'nice-to-have';
+        if (bpDeliverable.brief) {
+          const b = bpDeliverable.brief;
+          bringSettings.brief = {
+            ...(b.objective ? { objective: b.objective } : {}),
+            ...(b.keyMessage ? { keyMessage: b.keyMessage } : {}),
+            ...(b.toneDirection ? { toneDirection: b.toneDirection } : {}),
+            ...(b.callToAction ? { callToAction: b.callToAction } : {}),
+            ...(b.contentOutline?.length ? { contentOutline: b.contentOutline } : {}),
+          };
+        }
+      }
+
+      const result = await addDeliverable.mutateAsync({
+        title: deliverableTitle,
+        contentType,
+        ...(Object.keys(bringSettings).length > 0 ? { settings: bringSettings } : {}),
+      });
       if (result?.id) {
         // Pass deliverableTitle directly for brief matching — avoids stale deliverables cache
         // since the newly created deliverable may not yet be in the TanStack cache

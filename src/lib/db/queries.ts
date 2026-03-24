@@ -23,7 +23,17 @@ export const CAMPAIGN_LIST_SELECT = {
   createdBy: true,
   createdAt: true,
   updatedAt: true,
-  _count: { select: { knowledgeAssets: true, deliverables: true, teamMembers: true } },
+  _count: {
+    select: {
+      knowledgeAssets: true,
+      deliverables: true,
+      teamMembers: true,
+    },
+  },
+  deliverables: {
+    where: { status: "COMPLETED" },
+    select: { id: true },
+  },
 } as const;
 
 export const BRAND_ASSET_LIST_SELECT = {

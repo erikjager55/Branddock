@@ -347,6 +347,15 @@ export function DeploymentTimelineSection({
     return map;
   }, [personasData]);
 
+  // Name-based fallback lookup (AI may use fake IDs but correct names)
+  const personaNameLookup = useMemo(() => {
+    const map = new Map<string, PersonaWithMeta>();
+    for (const p of personasData?.personas ?? []) {
+      map.set(p.name.toLowerCase(), p);
+    }
+    return map;
+  }, [personasData]);
+
   // Compute schedule
   const schedule = useMemo(
     () => computeDeploymentSchedule(assetPlan, architecture, channelPlan),
@@ -362,50 +371,34 @@ export function DeploymentTimelineSection({
     const remapping = new Map<string, string>();       // duplicate personaId → canonical personaId
     let idx = 0;
 
-    // Extract persona names from architecture (personaPhaseData), deduplicate on name
+    // Extract persona names from architecture (personaPhaseData), deduplicate on name.
+    // Only include personas that exist in the workspace database.
     for (const phase of architecture.journeyPhases ?? []) {
       for (const ppd of phase.personaPhaseData ?? []) {
-        const realPersona = personaLookup.get(ppd.personaId);
-        const name = realPersona?.name ?? ppd.personaName;
+        // Resolve to a real DB persona: first by ID, then by name fallback
+        const realPersona = personaLookup.get(ppd.personaId)
+          ?? personaNameLookup.get((ppd.personaName ?? "").toLowerCase());
+
+        // Skip personas that don't exist in the database
+        if (!realPersona) continue;
+
+        const canonicalId = realPersona.id;
+        const name = realPersona.name;
         const nameLower = name.toLowerCase();
+
+        // Remap AI-generated ID to the real DB ID if they differ
+        if (ppd.personaId !== canonicalId) {
+          remapping.set(ppd.personaId, canonicalId);
+        }
 
         // Check for duplicate name with different ID → remap to canonical
         const existingId = nameToFirstId.get(nameLower);
-        if (existingId && existingId !== ppd.personaId) {
+        if (existingId && existingId !== canonicalId) {
           remapping.set(ppd.personaId, existingId);
           continue;
         }
 
-        if (!colorMap.has(ppd.personaId)) {
-          nameToFirstId.set(nameLower, ppd.personaId);
-          colorMap.set(ppd.personaId, idx);
-          nameMap.set(ppd.personaId, name);
-          legendList.push({
-            personaId: ppd.personaId,
-            personaName: name,
-            colorIndex: idx,
-          });
-          idx++;
-        }
-      }
-    }
-
-    // Also pick up any personas only referenced in deliverables
-    for (const s of schedule.scheduled) {
-      for (const p of s.targetPersonas) {
-        const canonicalId = remapping.get(p) ?? p;
         if (!colorMap.has(canonicalId)) {
-          const realPersona = personaLookup.get(canonicalId);
-          const name = realPersona?.name ?? canonicalId;
-          const nameLower = name.toLowerCase();
-
-          const existingNameId = nameToFirstId.get(nameLower);
-          if (existingNameId && existingNameId !== canonicalId) {
-            remapping.set(canonicalId, existingNameId);
-            if (p !== canonicalId) remapping.set(p, existingNameId);
-            continue;
-          }
-
           nameToFirstId.set(nameLower, canonicalId);
           colorMap.set(canonicalId, idx);
           nameMap.set(canonicalId, name);
@@ -415,6 +408,50 @@ export function DeploymentTimelineSection({
             colorIndex: idx,
           });
           idx++;
+        }
+      }
+    }
+
+    // Also pick up any personas only referenced in deliverables
+    // Only include personas that exist in the workspace database.
+    for (const s of schedule.scheduled) {
+      for (const p of s.targetPersonas) {
+        const canonicalId = remapping.get(p) ?? p;
+        if (!colorMap.has(canonicalId)) {
+          // Resolve to a real DB persona: first by ID, then by name fallback
+          const realPersona = personaLookup.get(canonicalId)
+            ?? personaNameLookup.get(canonicalId.toLowerCase());
+
+          // Skip personas that don't exist in the database
+          if (!realPersona) continue;
+
+          const resolvedId = realPersona.id;
+          const name = realPersona.name;
+          const nameLower = name.toLowerCase();
+
+          // Remap AI-generated ID to the real DB ID if they differ
+          if (canonicalId !== resolvedId) {
+            remapping.set(canonicalId, resolvedId);
+          }
+
+          const existingNameId = nameToFirstId.get(nameLower);
+          if (existingNameId && existingNameId !== resolvedId) {
+            remapping.set(resolvedId, existingNameId);
+            if (p !== resolvedId) remapping.set(p, existingNameId);
+            continue;
+          }
+
+          if (!colorMap.has(resolvedId)) {
+            nameToFirstId.set(nameLower, resolvedId);
+            colorMap.set(resolvedId, idx);
+            nameMap.set(resolvedId, name);
+            legendList.push({
+              personaId: resolvedId,
+              personaName: name,
+              colorIndex: idx,
+            });
+            idx++;
+          }
         }
         // Ensure the original ID is also remapped if it differs
         if (p !== canonicalId && !remapping.has(p)) {
@@ -430,7 +467,7 @@ export function DeploymentTimelineSection({
     }
 
     return { personaNames: nameMap, personaLegendList: legendList, personaColorMap: pColorMap, idRemapping: remapping };
-  }, [architecture, schedule, personaLookup]);
+  }, [architecture, schedule, personaLookup, personaNameLookup]);
 
   // ─── Persona resolution helpers ───────────────────────────────
   const resolvePersonas = useCallback((ids: string[]): CardPersonaInfo[] => {

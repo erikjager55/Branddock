@@ -10,7 +10,9 @@ import type {
   ChecklistItem,
   InsertFormatType,
   InsertLocationType,
+  DeliverableBriefSettings,
 } from '@/types/studio';
+import type { ValidationResult } from '@/lib/studio/content-validator';
 import type { CampaignBlueprint, AssetPlanLayer } from '@/lib/campaigns/strategy-blueprint.types';
 
 /** Context passed from campaign detail to Content Studio */
@@ -65,6 +67,9 @@ interface ContentStudioState {
 
   // ─── Checklist ──────────────────────────────────────────
   checklistItems: ChecklistItem[];
+
+  // ─── Validation ───────────────────────────────────────
+  validationResult: ValidationResult | null;
 
   // ─── Persona Context ──────────────────────────────────
   selectedPersonaIds: string[];
@@ -122,6 +127,9 @@ interface ContentStudioActions {
   setChecklistItems: (items: ChecklistItem[]) => void;
   toggleChecklistItem: (index: number) => void;
 
+  // ─── Validation ───────────────────────────────────────
+  setValidationResult: (result: ValidationResult | null) => void;
+
   // ─── Persona Context ──────────────────────────────────
   setSelectedPersonaIds: (ids: string[]) => void;
   togglePersonaId: (id: string) => void;
@@ -129,6 +137,7 @@ interface ContentStudioActions {
   // ─── Campaign Blueprint Context ───────────────────────
   setCampaignContext: (ctx: CampaignStudioContext) => void;
   clearCampaignContext: () => void;
+  setDeliverableBriefFromSettings: (brief: DeliverableBriefSettings) => void;
 
   // ─── Reset ──────────────────────────────────────────────
   resetStore: () => void;
@@ -157,6 +166,7 @@ const initialState: ContentStudioState = {
   selectedInsertFormat: null,
   selectedInsertLocation: 'cursor',
   checklistItems: [],
+  validationResult: null,
   selectedPersonaIds: [],
   campaignId: null,
   campaignName: '',
@@ -226,6 +236,9 @@ export const useContentStudioStore = create<ContentStudioState & ContentStudioAc
       return { checklistItems: items, isDirty: true };
     }),
 
+  // ─── Validation ───────────────────────────────────────
+  setValidationResult: (validationResult) => set({ validationResult }),
+
   // ─── Persona Context ──────────────────────────────────
   setSelectedPersonaIds: (selectedPersonaIds) => set({ selectedPersonaIds }),
   togglePersonaId: (id) =>
@@ -253,6 +266,16 @@ export const useContentStudioStore = create<ContentStudioState & ContentStudioAc
       campaignKnowledgeAssetIds: [],
       campaignBlueprint: null,
       deliverableBrief: null,
+    }),
+  setDeliverableBriefFromSettings: (brief) =>
+    set({
+      deliverableBrief: {
+        objective: brief.objective ?? '',
+        keyMessage: brief.keyMessage ?? '',
+        toneDirection: brief.toneDirection ?? '',
+        callToAction: brief.callToAction ?? '',
+        contentOutline: brief.contentOutline ?? [],
+      },
     }),
 
   // ─── Reset ──────────────────────────────────────────────

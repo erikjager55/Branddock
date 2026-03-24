@@ -8,6 +8,7 @@ import { buildGenerationContext } from "@/lib/studio/context-builder";
 import { getPromptTemplate } from "@/lib/studio/prompt-templates";
 import { routeGeneration, isModelAvailable } from "@/lib/studio/ai-router";
 import { parseGeneratedContent } from "@/lib/studio/output-parser";
+import { validateContent } from "@/lib/studio/content-validator";
 import { DELIVERABLE_TYPES } from "@/features/campaigns/lib/deliverable-types";
 
 const generateSchema = z.object({
@@ -143,6 +144,31 @@ export async function POST(
 
     const generationTime = Date.now() - startTime;
 
+    // 6. Run content validation (non-blocking, never gates output)
+    const [personaRecords, competitorRecords, workspace] = await Promise.all([
+      personaIds && personaIds.length > 0
+        ? prisma.persona.findMany({
+            where: { id: { in: personaIds } },
+            select: { name: true },
+          })
+        : Promise.resolve([]),
+      prisma.competitor.findMany({
+        where: { workspaceId },
+        select: { name: true },
+      }),
+      prisma.workspace.findFirst({
+        where: { id: workspaceId },
+        select: { name: true },
+      }),
+    ]);
+
+    const validationResult = validateContent(rawOutput, {
+      personaNames: personaRecords.map((p) => p.name),
+      competitorNames: competitorRecords.map((c) => c.name),
+      brandName: workspace?.name || '',
+      contentType: deliverable.contentType,
+    });
+
     // Calculate cost based on model
     const costMap: Record<string, number> = {
       claude: 0.05,
@@ -151,13 +177,14 @@ export async function POST(
     };
     const costIncurred = costMap[model] || 0.05;
 
-    // Save generated content to database
+    // Save generated content + validation to database
     await prisma.deliverable.update({
       where: { id: deliverableId },
       data: {
         generatedText: generatedHtml,
         status: "IN_PROGRESS",
         progress: 50,
+        qualityMetrics: JSON.parse(JSON.stringify(validationResult)),
       },
     });
 
@@ -176,6 +203,7 @@ export async function POST(
       generationTime,
       contentTab,
       model,
+      validation: validationResult,
     });
   } catch (error) {
     console.error(

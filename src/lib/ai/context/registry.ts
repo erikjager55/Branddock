@@ -152,7 +152,7 @@ export const CONTEXT_REGISTRY: ContextSourceConfig[] = [
     category: 'strategy',
     prismaModel: 'businessStrategy',
     workspaceFilter: 'workspaceId',
-    titleField: 'title',
+    titleField: 'name',
     descriptionField: 'description',
     statusField: 'status',
     excludeFields: [

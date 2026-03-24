@@ -102,7 +102,19 @@ export function buildBaseSystemPrompt(typeInstructions: string): string {
 - If persona context is provided, tailor the content specifically for that audience.
 - Address their goals, frustrations, and motivations.
 - Use language and references they would resonate with.
-- Optimize for their preferred channels and communication style.`;
+- Optimize for their preferred channels and communication style.
+
+## QUALITY GUARDRAILS — MANDATORY
+1. NEVER use placeholder values (€XX, $XX, [PRICE], TBD, etc.) — omit pricing entirely if unknown.
+2. NEVER use internal codes or jargon (Q1, Q2, SKU, FY2025, campaign IDs) — use human-readable dates and names.
+3. NEVER mention competitor names negatively — focus on own strengths and differentiation.
+4. NEVER leak persona names or segment labels into the copy — these are internal tools, not consumer-facing.
+5. NEVER use vague urgency without specifics ("limited time", "binnenkort", "snel" without a concrete date or deadline).
+6. ALL product/service names must be self-explanatory or briefly explained on first use.
+7. Headlines must be unambiguous — avoid words with unintended double meanings.
+8. Every piece of content MUST include a clear, specific call-to-action.
+9. Claims must be concrete and verifiable — replace "many" with numbers, "soon" with dates, "leading" with evidence.
+10. Write for the end consumer, not the marketing team — no meta-commentary about the content itself.`;
 }
 
 /**

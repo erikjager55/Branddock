@@ -4,6 +4,7 @@ import React, { useEffect, useCallback, useRef, useState } from "react";
 import { Layers } from "lucide-react";
 import { useStudioState, useAutoSave } from "../../hooks/studio.hooks";
 import { useKnowledgeAssets, useCampaignDetail, useDeleteDeliverable } from "../../hooks";
+import { usePersonas } from "@/features/personas/hooks";
 import { useContentStudioStore } from "@/stores/useContentStudioStore";
 import { useComponentPipelineStore } from "@/lib/studio/stores/component-pipeline-store";
 import { getDefaultModel } from "@/lib/studio/ai-model-config";
@@ -31,6 +32,7 @@ export function ContentStudioPage({ deliverableId, campaignId, onBack }: Content
   const { data: studio, isLoading } = useStudioState(deliverableId);
   const { data: campaign } = useCampaignDetail(campaignId);
   const { data: knowledgeAssets } = useKnowledgeAssets(campaignId);
+  const { data: personasData } = usePersonas();
   const autoSave = useAutoSave(deliverableId);
   const deleteMutation = useDeleteDeliverable(campaignId);
 
@@ -144,7 +146,6 @@ export function ContentStudioPage({ deliverableId, campaignId, onBack }: Content
     const tab = (studio.contentTab || "text") as ContentTab;
     s.setActiveTab(tab);
     s.setIsTabLocked(hasContent);
-    s.setPrompt(studio.prompt || "");
     s.setAiModel(studio.aiModel || getDefaultModel(tab));
     s.setSettings(studio.settings);
     s.setTextContent(studio.generatedText || "");
@@ -155,9 +156,49 @@ export function ContentStudioPage({ deliverableId, campaignId, onBack }: Content
       s.setChecklistItems(studio.checklistItems);
     }
     s.setLastSavedAt(studio.lastAutoSavedAt);
+
+    // Sync brief from DB settings (warm handover via Zustand takes precedence)
+    if (studio.briefSettings && !s.deliverableBrief) {
+      s.setDeliverableBriefFromSettings(studio.briefSettings);
+    }
+
+    // Auto-compose starter prompt if empty and brief exists
+    const brief = s.deliverableBrief ?? (studio.briefSettings ? {
+      keyMessage: studio.briefSettings.keyMessage ?? '',
+      toneDirection: studio.briefSettings.toneDirection ?? '',
+      callToAction: studio.briefSettings.callToAction ?? '',
+    } : null);
+    if (!studio.prompt && brief) {
+      const parts: string[] = [];
+      if (brief.keyMessage) parts.push(`Write a ${studio.contentType || 'text'} about: ${brief.keyMessage}.`);
+      if (brief.toneDirection) parts.push(`Tone: ${brief.toneDirection}.`);
+      if (brief.callToAction) parts.push(`CTA: ${brief.callToAction}.`);
+      if (parts.length > 0) {
+        s.setPrompt(parts.join(' '));
+      } else {
+        s.setPrompt('');
+      }
+    } else {
+      s.setPrompt(studio.prompt || '');
+    }
+
+    // Auto-select personas from brief's targetPersonaNames
+    if (studio.targetPersonaNames?.length && personasData?.personas?.length) {
+      const nameToId = new Map<string, string>();
+      for (const p of personasData.personas) {
+        nameToId.set(p.name.toLowerCase(), p.id);
+      }
+      const matchedIds = studio.targetPersonaNames
+        .map((name: string) => nameToId.get(name.toLowerCase()))
+        .filter((id): id is string => !!id);
+      if (matchedIds.length > 0) {
+        s.setSelectedPersonaIds(matchedIds);
+      }
+    }
+
     s.setIsDirty(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studio?.id]);
+  }, [studio?.id, personasData]);
 
   // Clear campaign context when leaving the studio page
   useEffect(() => {
@@ -382,7 +423,7 @@ export function ContentStudioPage({ deliverableId, campaignId, onBack }: Content
         />
 
         {/* Right Panel */}
-        <RightPanel deliverableId={deliverableId} />
+        <RightPanel deliverableId={deliverableId} contentType={studio.contentType} />
       </div>
 
       {/* Delete confirmation modal */}

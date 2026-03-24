@@ -63,18 +63,48 @@ const PHASE_B_STEPS: PipelineStepConfig[] = [
 const PHASE_VALIDATE_STEPS: PipelineStepConfig[] = [
   {
     step: 1,
-    name: "Briefing Validator",
-    label: "Validating campaign briefing...",
+    name: "Gathering Context",
+    label: "Gathering brand context...",
+    description: "Loading brand assets, personas, and product data for briefing evaluation.",
+  },
+  {
+    step: 2,
+    name: "Analyzing Briefing",
+    label: "Analyzing briefing completeness...",
     description: "AI evaluates briefing completeness, strategic clarity, and identifies gaps.",
+  },
+  {
+    step: 3,
+    name: "Scoring Results",
+    label: "Scoring results...",
+    description: "Calculating validation score and identifying improvement areas.",
   },
 ];
 
 const PHASE_FOUNDATION_STEPS: PipelineStepConfig[] = [
   {
     step: 1,
-    name: "Strategy Foundation Builder",
-    label: "Building behavioral analysis and strategic foundation...",
-    description: "Constructs a behavioral science-driven strategy foundation with ELM routing and audience insights.",
+    name: "Gathering Context",
+    label: "Gathering brand & audience context...",
+    description: "Loading brand assets, personas, products, competitors, trends, and styleguide data.",
+  },
+  {
+    step: 2,
+    name: "Enriching Strategy",
+    label: "Enriching with marketing frameworks...",
+    description: "Applying behavioral science, persuasion principles, and external research sources.",
+  },
+  {
+    step: 3,
+    name: "Deep Analysis",
+    label: "Building behavioral analysis...",
+    description: "AI constructs behavioral science-driven strategy foundation with deep thinking.",
+  },
+  {
+    step: 4,
+    name: "Finalizing Foundation",
+    label: "Synthesizing foundation insights...",
+    description: "Validating results and packaging enrichment context for creative phases.",
   },
 ];
 

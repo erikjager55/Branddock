@@ -20,7 +20,7 @@ const TAB_LABELS: Record<ContentTab, string> = {
 };
 
 export function GenerateButton({ deliverableId, activeTab }: GenerateButtonProps) {
-  const { prompt, aiModel, settings, isGenerating, setIsGenerating, setTextContent, setImageUrls, setVideoUrl, setSlides, setIsDirty, selectedPersonaIds, campaignKnowledgeAssetIds } = useContentStudioStore();
+  const { prompt, aiModel, settings, isGenerating, setIsGenerating, setTextContent, setImageUrls, setVideoUrl, setSlides, setIsDirty, selectedPersonaIds, campaignKnowledgeAssetIds, setValidationResult } = useContentStudioStore();
   const generate = useGenerateContent(deliverableId);
   const { data: costData } = useCostEstimate(deliverableId);
 
@@ -39,6 +39,9 @@ export function GenerateButton({ deliverableId, activeTab }: GenerateButtonProps
             setVideoUrl(data.generatedVideoUrl);
           } else if (activeTab === "carousel" && data.generatedSlides) {
             setSlides(data.generatedSlides);
+          }
+          if (data.validation) {
+            setValidationResult(data.validation);
           }
           setIsDirty(true);
           setIsGenerating(false);
