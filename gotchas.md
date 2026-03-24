@@ -31,3 +31,41 @@ Lessons learned from past mistakes. Read this at the start of every session.
 **What went wrong:** The Zod schema defines `behavioralBarriers` as `string[]`, but the AI returned `[{barrier: "...", severity: "...", comBComponent: "...", description: "..."}]`. Since `validateOrWarn()` passes raw data through, the array of objects reached the JSX where `{b}` was rendered directly inside `<li>` and `<Badge>` — React cannot render objects as children.
 
 **Rule:** When rendering AI-returned array items, NEVER render `{item}` directly. Always use a `toDisplayString(item)` helper that handles both strings and objects gracefully. The helper should: (1) return strings as-is, (2) for objects, pick the most descriptive field (barrier, name, title, description, etc.), (3) fallback to joining all string values or JSON.stringify. This applies to ALL `string[]` arrays from AI — the AI can and will return objects instead of strings.
+
+## 2026-03-24: React strict mode double-mount aborts SSE auto-start connections
+
+**What went wrong:** `ConceptStep.tsx` used a `useEffect` with `autoStartedRef` to auto-start an SSE connection (creative hooks generation) on mount. A separate cleanup `useEffect` called `abortRef.current?.abort()` on unmount. In development, React strict mode simulates unmount→remount: (1) mount → auto-start fires → SSE starts, (2) strict mode unmount → cleanup aborts SSE, (3) strict mode remount → `autoStartedRef.current` is still `true` (refs persist across strict mode) → no restart. The SSE `createPhaseSSE` silently swallows aborts (`if (controller.signal.aborted) return`), so no error appeared. The UI stayed stuck at "0 of 2 steps completed" indefinitely. The server log showed 0 incoming requests — the fetch was aborted before reaching the server.
+
+**Rule:** When using auto-start patterns (`autoStartedRef` + `useEffect`) that trigger SSE/fetch connections, the cleanup function MUST reset the auto-start ref: `autoStartedRef.current = false`. This allows the second mount in React strict mode to detect `false` and restart the connection. General pattern:
+```tsx
+useEffect(() => {
+  return () => {
+    abortRef.current?.abort();
+    autoStartedRef.current = false; // Allow strict mode remount to restart
+  };
+}, []);
+```
+
+## 2026-03-24: resetWizard() on mount destroys in-progress wizard state on remount
+
+**What went wrong:** `CampaignWizardPage.tsx` called `resetWizard()` in the mount body of a `useEffect(() => { resetWizard(); return () => resetWizard(); }, [])`. This resets `currentStep` to 1 on every mount. During creative concept generation (step 4), the component remounted (React strict mode, ErrorBoundary recovery, or Suspense re-trigger), firing `resetWizard()` again and sending the user back to step 1. The user saw the stepper "jump back" to setup.
+
+**Rule:** Never call state-destroying resets (like `resetWizard()`) on mount. Only reset in the cleanup function (unmount). Zustand stores already initialize with `INITIAL_STATE`, so the mount reset is a no-op on first visit and destructive on remounts. Pattern: `useEffect(() => { return () => { resetWizard(); }; }, [])` — cleanup only.
+
+## 2026-03-24: Context registry titleField must match Prisma model field name
+
+**What went wrong:** `registry.ts` had `titleField: 'title'` for the `business_strategy` entry, but the Prisma `BusinessStrategy` model uses field `name`, not `title`. The generic fetcher in `fetcher.ts` dynamically builds `orderBy: { [titleField]: 'asc' }`, causing a Prisma error `Unknown argument 'title'`. The error was caught by try-catch so the endpoint returned 200, but business strategies were silently excluded from results.
+
+**Rule:** When adding entries to `CONTEXT_REGISTRY`, verify `titleField`, `descriptionField`, and `statusField` against the actual Prisma model field names. These are used dynamically at runtime — TypeScript cannot catch mismatches since `prismaModel` and field names are strings.
+
+## 2026-03-24: AI returns numeric scores as strings → typeof check fails silently
+
+**What went wrong:** `normalizePersonaValidation()` in `strategy-chain.ts` used `typeof p.overallScore === 'number'` to validate scores. AI models sometimes return scores as strings (e.g. `"7"` instead of `7`). The `typeof` check fails for string numbers → all scores defaulted to 5, making every persona appear equally lukewarm.
+
+**Rule:** When normalizing AI-returned numeric fields, always coerce with `Number()` before checking. Pattern: `const n = Number(value); return (!isNaN(n) && n >= 1) ? clamp(n) : defaultValue;`. Never use `typeof x === 'number'` alone — AI outputs are JSON-parsed but the model may wrap numbers in quotes.
+
+## 2026-03-24: Space bar intercepted in textarea nested inside radio card
+
+**What went wrong:** `HookCard` had an `onKeyDown` handler on the outer div that called `e.preventDefault()` on space key for radio button accessibility. A `<textarea>` nested inside this div had its space key events bubble up to the card handler, preventing users from typing spaces.
+
+**Rule:** When nesting interactive elements (textarea, input) inside keyboard-accessible containers (role="radio", role="button"), add `onKeyDown={(e) => e.stopPropagation()}` on the nested element to prevent event bubbling.

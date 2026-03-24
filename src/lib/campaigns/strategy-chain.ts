@@ -374,41 +374,41 @@ function validateOrWarn<T>(schema: { safeParse: (data: unknown) => { success: bo
  * - Ensure feedback is a non-empty string
  */
 function normalizePersonaValidation(results: PersonaValidationResult[]): PersonaValidationResult[] {
-  return results.map((p) => ({
-    ...p,
-    personaId: (typeof p.personaId === 'string' && p.personaId.trim().length > 0)
-      ? p.personaId
-      : `unknown-${Math.random().toString(36).slice(2, 8)}`,
-    personaName: (typeof p.personaName === 'string' && p.personaName.trim().length > 0)
+  const clampScore = (raw: unknown, fallback: number | undefined): number | undefined => {
+    const n = Number(raw);
+    return (!isNaN(n) && n >= 1) ? Math.max(1, Math.min(n, 10)) : fallback;
+  };
+
+  return results.map((p) => {
+    const cleanName = (typeof p.personaName === 'string' && p.personaName.trim().length > 0)
       ? p.personaName
-      : 'Unknown Persona',
-    overallScore: (typeof p.overallScore === 'number' && !isNaN(p.overallScore))
-      ? Math.max(1, Math.min(p.overallScore, 10))
-      : 5,
-    originalityScore: (typeof p.originalityScore === 'number' && !isNaN(p.originalityScore))
-      ? Math.max(1, Math.min(p.originalityScore, 10))
-      : undefined,
-    memorabilityScore: (typeof p.memorabilityScore === 'number' && !isNaN(p.memorabilityScore))
-      ? Math.max(1, Math.min(p.memorabilityScore, 10))
-      : undefined,
-    culturalRelevanceScore: (typeof p.culturalRelevanceScore === 'number' && !isNaN(p.culturalRelevanceScore))
-      ? Math.max(1, Math.min(p.culturalRelevanceScore, 10))
-      : undefined,
-    talkabilityScore: (typeof p.talkabilityScore === 'number' && !isNaN(p.talkabilityScore))
-      ? Math.max(1, Math.min(p.talkabilityScore, 10))
-      : undefined,
-    preferredVariant: (
-      typeof p.preferredVariant === 'string' && ['A', 'B', 'C'].includes(p.preferredVariant.trim().toUpperCase())
-        ? p.preferredVariant.trim().toUpperCase() as 'A' | 'B' | 'C'
-        : 'A'
-    ),
-    feedback: (typeof p.feedback === 'string' && p.feedback.trim().length >= 10)
-      ? p.feedback
-      : `${p.personaName || 'This persona'} found the strategy moderately relevant but could not provide detailed feedback at this time.`,
-    resonates: Array.isArray(p.resonates) ? p.resonates.filter(Boolean) : [],
-    concerns: Array.isArray(p.concerns) ? p.concerns.filter(Boolean) : [],
-    suggestions: Array.isArray(p.suggestions) ? p.suggestions.filter(Boolean) : [],
-  }));
+      : 'Unknown Persona';
+
+    return {
+      ...p,
+      personaId: (typeof p.personaId === 'string' && p.personaId.trim().length > 0)
+        ? p.personaId
+        : `unknown-${Math.random().toString(36).slice(2, 8)}`,
+      personaName: cleanName,
+      overallScore: clampScore(p.overallScore, 5) as number,
+      originalityScore: clampScore(p.originalityScore, undefined),
+      memorabilityScore: clampScore(p.memorabilityScore, undefined),
+      culturalRelevanceScore: clampScore(p.culturalRelevanceScore, undefined),
+      talkabilityScore: clampScore(p.talkabilityScore, undefined),
+      preferredVariant: (
+        typeof p.preferredVariant === 'string' && ['A', 'B', 'C'].includes(p.preferredVariant.trim().toUpperCase())
+          ? p.preferredVariant.trim().toUpperCase() as 'A' | 'B' | 'C'
+          : 'A'
+      ),
+      feedback: (typeof p.feedback === 'string' && p.feedback.trim().length >= 10)
+        ? p.feedback
+        : `${cleanName} found the strategy moderately relevant but could not provide detailed feedback at this time.`,
+      resonates: Array.isArray(p.resonates) ? p.resonates.filter(Boolean) : [],
+      concerns: Array.isArray(p.concerns) ? p.concerns.filter(Boolean) : [],
+      suggestions: Array.isArray(p.suggestions) ? p.suggestions.filter(Boolean) : [],
+      creativeVerdict: (typeof p.creativeVerdict === 'string') ? p.creativeVerdict : undefined,
+    };
+  });
 }
 
 // ─── Architecture Normalization ─────────────────────────────
@@ -1680,7 +1680,8 @@ export async function validateBriefing(
   const strategicIntent = intentOpt ?? 'hybrid';
   const campaignGoalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
 
-  onProgress?.({ step: 1, name: 'Briefing Validation', status: 'running', label: 'Evaluating briefing completeness...' });
+  // Step 1: Gather brand context
+  onProgress?.({ step: 1, name: 'Gathering Context', status: 'running', label: 'Gathering brand context...' });
 
   // Resolve persona IDs
   let personaIds = ctx.personaIds ?? [];
@@ -1696,6 +1697,11 @@ export async function validateBriefing(
     buildSelectedPersonasContext(personaIds, workspaceId),
     productIds.length > 0 ? buildProductContext(workspaceId, productIds) : Promise.resolve(''),
   ]);
+
+  onProgress?.({ step: 1, name: 'Gathering Context', status: 'complete', label: 'Brand context gathered' });
+
+  // Step 2: Analyze briefing
+  onProgress?.({ step: 2, name: 'Analyzing Briefing', status: 'running', label: 'Analyzing briefing completeness...' });
 
   const prompt = buildBriefingValidationPrompt({
     campaignName: wizardContext.campaignName,
@@ -1717,9 +1723,14 @@ export async function validateBriefing(
     ),
   );
 
+  onProgress?.({ step: 2, name: 'Analyzing Briefing', status: 'complete', label: 'Analysis complete' });
+
+  // Step 3: Score results
+  onProgress?.({ step: 3, name: 'Scoring Results', status: 'running', label: 'Scoring results...' });
+
   const result = validateOrWarn(briefingValidationSchema, raw, 'Phase 1 Briefing Validation');
 
-  onProgress?.({ step: 1, name: 'Briefing Validation', status: 'complete', label: `Score: ${result.overallScore}/100 — ${result.isComplete ? 'Ready' : 'Gaps found'}` });
+  onProgress?.({ step: 3, name: 'Scoring Results', status: 'complete', label: `Score: ${result.overallScore}/100 — ${result.isComplete ? 'Ready' : 'Gaps found'}` });
 
   return result;
 }
@@ -1819,6 +1830,9 @@ export async function buildStrategyFoundation(
   const competitorIds = ctx.competitorIds ?? [];
   const trendIds = ctx.trendIds ?? [];
 
+  // Step 1: Gather all context
+  onProgress?.({ step: 1, name: 'Gathering Context', status: 'running', label: 'Gathering brand & audience context...' });
+
   // Build enrichment queries (non-blocking)
   const arenaQueriesPromise = buildArenaQueries({ workspaceId, campaignGoalType, personaIds }).catch(() => []);
 
@@ -1831,6 +1845,8 @@ export async function buildStrategyFoundation(
     buildStyleguideContext(workspaceId),
     arenaQueriesPromise,
   ]);
+
+  onProgress?.({ step: 1, name: 'Gathering Context', status: 'complete', label: 'Context gathered' });
 
   // Build Exa + Scholar + BCT queries
   const bctMapping = getGoalBctMapping(campaignGoalType);
@@ -1885,12 +1901,15 @@ export async function buildStrategyFoundation(
     onProgress?.({ type: 'enrichment', status: 'skipped' });
   }
 
+  onProgress?.({ step: 2, name: 'Enriching Strategy', status: 'complete', label: 'Enrichment complete' });
+
   const brandContextText = formatBrandContext(brandContext);
 
   // Resolve Claude Opus for strategy foundation
   const { model: resolvedModel, provider: resolvedProvider } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
 
-  onProgress?.({ step: 1, name: 'Strategy Foundation', status: 'running', label: 'Building behavioral analysis and strategic foundation...' });
+  // Step 3: Deep AI analysis (the long one)
+  onProgress?.({ step: 3, name: 'Deep Analysis', status: 'running', label: 'Building behavioral analysis...' });
 
   const prompt = buildStrategyFoundationPrompt({
     campaignName: wizardContext.campaignName,
@@ -1925,9 +1944,14 @@ export async function buildStrategyFoundation(
     ),
   );
 
+  onProgress?.({ step: 3, name: 'Deep Analysis', status: 'complete', label: 'Analysis complete' });
+
+  // Step 4: Finalize foundation
+  onProgress?.({ step: 4, name: 'Finalizing Foundation', status: 'running', label: 'Synthesizing foundation insights...' });
+
   const foundation = validateOrWarn(strategyFoundationSchema, raw, 'Phase 2 Strategy Foundation');
 
-  onProgress?.({ step: 1, name: 'Strategy Foundation', status: 'complete', label: `Foundation built — ${foundation.keyInsights?.length ?? 0} insights synthesized` });
+  onProgress?.({ step: 4, name: 'Finalizing Foundation', status: 'complete', label: `Foundation built — ${foundation.keyInsights?.length ?? 0} insights synthesized` });
 
   // Package all enrichment context for reuse in later phases
   const enrichmentContext: EnrichmentContext = {
@@ -2185,6 +2209,9 @@ export async function refineSelectedHook(
   }
   const productIds = ctx.productIds ?? [];
 
+  // Step 1: Gather all context
+  onProgress?.({ step: 1, name: 'Gathering Context', status: 'running', label: 'Gathering brand & audience context...' });
+
   const [brandContext, personaContext, productContext] = await Promise.all([
     getBrandContext(workspaceId),
     buildSelectedPersonasContext(personaIds, workspaceId),
@@ -2193,13 +2220,15 @@ export async function refineSelectedHook(
 
   const { model: resolvedModel, provider: resolvedProvider } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
 
-  // Generate local marketing framework contexts (synchronous, no API calls)
+  onProgress?.({ step: 1, name: 'Gathering Context', status: 'complete', label: 'Context gathered' });
+
+  // Step 2: Apply marketing frameworks
+  onProgress?.({ step: 2, name: 'Applying Frameworks', status: 'running', label: 'Applying marketing frameworks...' });
+
   const refineCialdiniContext = getCialdiniContext(campaignGoalType) || undefined;
   const refineFramingContext = getFramingContext(campaignGoalType) || undefined;
   const refineGrowthContext = getGrowthContext(campaignGoalType) || undefined;
   const refineEastChecklist = formatEastForPrompt() || undefined;
-
-  onProgress?.({ step: 1, name: 'Hook Refinement', status: 'running', label: `Refining "${selectedHook.hookConcept.hookTitle}" into production-ready proposal...` });
 
   const prompt = buildHookRefinementPrompt({
     campaignName: wizardContext.campaignName,
@@ -2221,6 +2250,13 @@ export async function refineSelectedHook(
     eastChecklist: refineEastChecklist,
   });
 
+  onProgress?.({ step: 2, name: 'Applying Frameworks', status: 'complete', label: 'Marketing frameworks applied',
+    preview: [refineCialdiniContext && 'Cialdini', refineFramingContext && 'Kahneman', refineGrowthContext && 'Byron Sharp', refineEastChecklist && 'EAST'].filter(Boolean).join(', '),
+  });
+
+  // Step 3: Deep AI hook refinement (the long one)
+  onProgress?.({ step: 3, name: 'Deep Hook Refinement', status: 'running', label: `Refining "${selectedHook.hookConcept.hookTitle}" with deep thinking...` });
+
   const raw = await withStepContext('Phase 6 (Hook Refinement)', 600, () =>
     createStructuredCompletion<ProposalPhaseResult>(
       resolvedProvider, resolvedModel,
@@ -2229,13 +2265,18 @@ export async function refineSelectedHook(
     ),
   );
 
+  onProgress?.({ step: 3, name: 'Deep Hook Refinement', status: 'complete', label: 'Hook refinement complete' });
+
+  // Step 4: Finalize proposal
+  onProgress?.({ step: 4, name: 'Finalizing Proposal', status: 'running', label: 'Packaging proposal...' });
+
   const result: ProposalPhaseResult = {
     strategy: raw.strategy,
     architecture: normalizeArchitectureLayer(raw.architecture),
     hookConcept: validateOrWarn(hookConceptSchema, raw.hookConcept, 'Phase 6 Refined HookConcept'),
   };
 
-  onProgress?.({ step: 1, name: 'Hook Refinement', status: 'complete', label: `Proposal ready — "${result.hookConcept.hookTitle}"` });
+  onProgress?.({ step: 4, name: 'Finalizing Proposal', status: 'complete', label: `Proposal ready — "${result.hookConcept.hookTitle}"` });
 
   return result;
 }

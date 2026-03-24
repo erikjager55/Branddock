@@ -542,7 +542,6 @@ Evaluation criteria per persona — ALL fields are MANDATORY:
 - concerns: MANDATORY: List at least 1 specific concern or doubt this persona would have. Every strategy has weaknesses from some perspective.
 - suggestions: MANDATORY: List at least 1 actionable suggestion this persona would make to improve the strategy.
 - preferredVariant: "A", "B", or "C" — which variant does this persona prefer?
-- behavioralResonance: MANDATORY: Evaluate whether the behavioral change approach in each variant would actually motivate this persona to act. Consider what drives their behavior (capability, opportunity, or motivation barriers) and whether the strategy addresses it.
 
 CREATIVE QUALITY EVALUATION — ALL scores are MANDATORY per persona:
 - originalityScore: Score 1-10. "Would this concept make me stop scrolling? Is this something I haven't seen before from a brand?" Be brutally honest — a 7+ means genuinely surprising.
@@ -1104,6 +1103,8 @@ export function buildCreativeHookPrompt(params: CreativeHookPromptParams): { sys
 
   const system = `You are a world-class creative director generating a campaign hook ("creatieve kapstok") — a unifying creative concept that anchors the entire campaign.
 
+IMPORTANT: All output MUST be in English, regardless of the language of the input context.
+
 Your role: Using the provided strategy foundation and your assigned creative angle, generate a COMPLETE campaign proposal with strategy layer, architecture layer, AND a creative hook concept.
 ${INSIGHT_MINING_INSTRUCTIONS}
 
@@ -1222,8 +1223,15 @@ export function buildHookPersonaValidatorPrompt(params: {
 
   const system = `You are simulating target personas evaluating THREE creative campaign hooks.
 
+IMPORTANT: All output MUST be in English, regardless of the language of the input context.
+
 Your role: For EACH persona, roleplay as that person and evaluate all three hooks.
 Each hook was generated from a different creative angle and represents a distinct campaign concept.${goalContext}${goalInsights}
+
+SCORING RULES:
+- You MUST use the FULL 1-10 range. A spread of less than 3 points across personas is unacceptable.
+- At least one persona should score 7+ (strong fit) and at least one should score below 5 (poor fit) unless all hooks genuinely resonate equally.
+- Base scores on concrete persona attributes (occupation, goals, barriers, communication style), not generic assessments.
 
 Evaluation criteria per persona — ALL fields are MANDATORY:
 - overallScore: Score 1-10. Be critical — hooks that don't resonate with a persona's world should score low. Differentiate genuinely.
@@ -1232,7 +1240,6 @@ Evaluation criteria per persona — ALL fields are MANDATORY:
 - concerns: MANDATORY: At least 1 specific concern or doubt about the hook.
 - suggestions: MANDATORY: At least 1 actionable suggestion to improve the hook for this persona.
 - preferredVariant: "A", "B", or "C" — which hook does this persona prefer?
-- behavioralResonance: MANDATORY: Would this hook actually motivate this persona to change behavior? Consider their TTM stage and barriers.
 
 CREATIVE QUALITY EVALUATION — ALL scores are MANDATORY per persona:
 - originalityScore: 1-10. "Would this hook make me stop scrolling?"
@@ -1255,8 +1262,8 @@ Creative Insight: ${hook.hookConcept.creativeInsight}
 Visual Direction: ${hook.hookConcept.visualDirection}
 Tone of Voice: ${hook.hookConcept.toneOfVoice}
 Campaign Line: ${hook.hookConcept.campaignLine}
-Extendability: ${hook.hookConcept.extendability.join('; ')}
-Effie Rationale: ${hook.hookConcept.effieRationale}
+Extendability: ${(hook.hookConcept.extendability ?? []).join('; ')}
+Effie Rationale: ${hook.hookConcept.effieRationale ?? ''}
 
 ### Strategy ${label}
 ${hook.strategy}
@@ -1374,8 +1381,8 @@ Creative Insight: ${hook.hookConcept.creativeInsight}
 Visual Direction: ${hook.hookConcept.visualDirection}
 Tone of Voice: ${hook.hookConcept.toneOfVoice}
 Campaign Line: ${hook.hookConcept.campaignLine}
-Extendability: ${hook.hookConcept.extendability.join('; ')}
-Effie Rationale: ${hook.hookConcept.effieRationale}
+Extendability: ${(hook.hookConcept.extendability ?? []).join('; ')}
+Effie Rationale: ${hook.hookConcept.effieRationale ?? ''}
 
 ### Current Strategy
 ${JSON.stringify(hook.strategy, null, 2)}
