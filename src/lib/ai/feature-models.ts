@@ -54,6 +54,11 @@ export type AiFeatureKey =
   | 'campaign-briefing-validation'
   | 'campaign-strategy-foundation'
   | 'campaign-creative-synthesis'
+  | 'canvas-text-generate'
+  | 'canvas-image-generate'
+  | 'canvas-video-generate'
+  | 'canvas-audio-generate'
+  | 'canvas-quality-check'
   | 'content-generate'
   | 'content-quality'
   | 'content-improve'
@@ -148,7 +153,53 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     defaultModel: 'claude-sonnet-4-5-20250929',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
-  // Campaign & Content
+  // Campaign & Content — Canvas
+  {
+    key: 'canvas-text-generate',
+    label: 'Canvas Text Generation',
+    description: 'Text generation for canvas content items (copy, headlines, CTAs)',
+    category: 'campaign-content',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-5-20250929',
+    supportedProviders: ['anthropic', 'openai', 'google'],
+  },
+  {
+    key: 'canvas-image-generate',
+    label: 'Canvas Image Generation',
+    description: 'Image generation for canvas visuals (placeholder for nanobanana)',
+    category: 'campaign-content',
+    defaultProvider: 'openai',
+    defaultModel: 'gpt-4o',
+    supportedProviders: ['openai'],
+  },
+  {
+    key: 'canvas-video-generate',
+    label: 'Canvas Video Generation',
+    description: 'Video generation for canvas visuals (placeholder for Runway/Kling)',
+    category: 'campaign-content',
+    defaultProvider: 'openai',
+    defaultModel: 'gpt-4o',
+    supportedProviders: ['openai'],
+  },
+  {
+    key: 'canvas-audio-generate',
+    label: 'Canvas Audio Generation',
+    description: 'Audio generation for canvas content (placeholder for ElevenLabs)',
+    category: 'campaign-content',
+    defaultProvider: 'openai',
+    defaultModel: 'gpt-4o',
+    supportedProviders: ['openai'],
+  },
+  {
+    key: 'canvas-quality-check',
+    label: 'Canvas Quality Check',
+    description: 'Quality validation for canvas content items',
+    category: 'campaign-content',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-haiku-4-5-20251001',
+    supportedProviders: ['anthropic', 'openai', 'google'],
+  },
+  // Campaign & Content — Studio
   {
     key: 'content-generate',
     label: 'Content Generation',

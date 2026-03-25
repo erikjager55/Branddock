@@ -34,9 +34,10 @@ interface CampaignDetailPageProps {
   campaignId: string;
   onBack: () => void;
   onOpenInStudio?: (campaignId: string, deliverableId: string) => void;
+  onOpenInCanvas?: (campaignId: string, deliverableId: string) => void;
 }
 
-export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: CampaignDetailPageProps) {
+export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenInCanvas }: CampaignDetailPageProps) {
 
   const { data: campaign, isLoading: campaignLoading } = useCampaignDetail(campaignId);
 
@@ -241,7 +242,12 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio }: Campa
           deliverableBrief: matchedBrief,
         });
 
-        onOpenInStudio?.(campaignId, result.id);
+        // Navigate to Canvas (generation) for new deliverables, fall back to Studio
+        if (onOpenInCanvas) {
+          onOpenInCanvas(campaignId, result.id);
+        } else {
+          onOpenInStudio?.(campaignId, result.id);
+        }
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create deliverable";

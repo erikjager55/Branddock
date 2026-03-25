@@ -18,7 +18,11 @@ const TEXT_TYPES = [
 const IMAGE_TYPES = ['hero_image', 'post_image', 'slide_image', 'thumbnail'];
 const VISUAL_BRIEF_TYPES = ['visual_brief'];
 
-export function ComponentCanvas() {
+interface ComponentCanvasProps {
+  deliverableTypeId?: string;
+}
+
+export function ComponentCanvas({ deliverableTypeId }: ComponentCanvasProps) {
   const components = useComponentPipelineStore((s) => s.components);
   const activeComponentId = useComponentPipelineStore((s) => s.activeComponentId);
   const updateComponentContent = useComponentPipelineStore((s) => s.updateComponentContent);
@@ -48,6 +52,7 @@ export function ComponentCanvas() {
         components={sameTypeComponents}
         activeComponentId={activeComponent.id}
         onContentChange={(id, content) => updateComponentContent(id, { generatedContent: content })}
+        deliverableTypeId={deliverableTypeId}
       />
     );
   }
@@ -77,6 +82,7 @@ export function ComponentCanvas() {
       onContentChange={(content) =>
         updateComponentContent(activeComponent.id, { generatedContent: content })
       }
+      deliverableTypeId={deliverableTypeId}
     />
   );
 }

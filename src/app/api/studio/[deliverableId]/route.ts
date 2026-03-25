@@ -73,6 +73,11 @@ export async function GET(
         isFavorite: deliverable.isFavorite,
         lastAutoSavedAt: deliverable.lastAutoSavedAt,
         pipelineStatus: deliverable.pipelineStatus,
+        approvalStatus: deliverable.approvalStatus ?? 'DRAFT',
+        approvalNote: deliverable.approvalNote ?? null,
+        approvedBy: deliverable.approvedBy ?? null,
+        approvedAt: deliverable.approvedAt?.toISOString() ?? null,
+        publishedAt: deliverable.publishedAt?.toISOString() ?? null,
       },
       campaign: {
         id: deliverable.campaign.id,

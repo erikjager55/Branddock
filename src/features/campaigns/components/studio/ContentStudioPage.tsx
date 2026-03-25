@@ -316,7 +316,7 @@ export function ContentStudioPage({ deliverableId, campaignId, onBack }: Content
 
           {/* Center: Component Canvas */}
           <div className="flex-1 overflow-hidden">
-            <ComponentCanvas />
+            <ComponentCanvas deliverableTypeId={studio?.contentType} />
           </div>
 
           {/* Right: Component Review Panel */}

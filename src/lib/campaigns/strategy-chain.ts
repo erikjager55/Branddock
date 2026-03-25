@@ -1341,6 +1341,7 @@ export async function createDeliverablesFromBlueprint(
         contentType: d.contentType,
         status: 'NOT_STARTED',
         progress: 0,
+        journeyPhase: d.phase ?? null,
         settings: JSON.parse(JSON.stringify({
           channel: d.channel,
           phase: d.phase,

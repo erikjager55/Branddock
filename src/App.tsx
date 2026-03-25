@@ -66,6 +66,7 @@ import {
   CampaignDetailPage,
   QuickContentDetailPage,
   ContentStudioPage,
+  CanvasPage,
   ContentLibraryPage,
   CampaignWizardPage,
   BrandAlignmentPage,
@@ -324,6 +325,11 @@ function AppContent() {
     } else if (activeSection === 'content-studio') {
       const cs = useCampaignStore.getState();
       if (!cs.selectedCampaignId || !cs.selectedDeliverableId) {
+        redirectTo = 'active-campaigns';
+      }
+    } else if (activeSection === 'content-canvas') {
+      const cc = useCampaignStore.getState();
+      if (!cc.selectedCampaignId || !cc.selectedDeliverableId) {
         redirectTo = 'active-campaigns';
       }
     }
@@ -670,6 +676,11 @@ function AppContent() {
               useCampaignStore.getState().setSelectedDeliverableId(deliverableId);
               handleSetActiveSection('content-studio');
             }}
+            onOpenInCanvas={(campaignId, deliverableId) => {
+              useCampaignStore.getState().setSelectedCampaignId(campaignId);
+              useCampaignStore.getState().setSelectedDeliverableId(deliverableId);
+              handleSetActiveSection('content-canvas');
+            }}
           />
         );
       }
@@ -868,6 +879,21 @@ function AppContent() {
               useCampaignStore.getState().setSelectedDeliverableId(null);
               handleSetActiveSection('campaign-detail');
             }}
+          />
+        );
+      }
+
+      case 'content-canvas': {
+        const ccCampaignId = useCampaignStore.getState().selectedCampaignId;
+        const ccDeliverableId = useCampaignStore.getState().selectedDeliverableId;
+        if (!ccCampaignId || !ccDeliverableId) {
+          return null;
+        }
+        return (
+          <CanvasPage
+            deliverableId={ccDeliverableId}
+            campaignId={ccCampaignId}
+            onNavigate={handleSetActiveSection}
           />
         );
       }

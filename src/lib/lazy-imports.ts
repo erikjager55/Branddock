@@ -143,6 +143,9 @@ export const QuickContentDetailPage = lazy(() =>
 export const ContentStudioPage = lazy(() =>
   import('@/features/campaigns/components/studio/ContentStudioPage').then(m => ({ default: m.ContentStudioPage }))
 );
+export const CanvasPage = lazy(() =>
+  import('@/features/campaigns/components/canvas/CanvasPage').then(m => ({ default: m.CanvasPage }))
+);
 export const ContentLibraryPage = lazy(() =>
   import('@/features/campaigns/components/content-library/ContentLibraryPage').then(m => ({ default: m.ContentLibraryPage }))
 );

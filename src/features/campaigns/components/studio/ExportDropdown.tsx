@@ -54,7 +54,7 @@ export function ExportDropdown({ title, contentType, campaignTitle, contentTab, 
   const { data: improveData } = useImproveSuggestions(deliverableId);
   const { data: versionsData } = useVersions(deliverableId);
 
-  const rawFormats = getFormatsForType(contentTab);
+  const rawFormats = getFormatsForType(contentTab, contentType);
   const formats = Array.isArray(rawFormats) ? rawFormats : [];
 
   // Close dropdown on outside click

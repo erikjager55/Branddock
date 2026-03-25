@@ -1,24 +1,42 @@
 'use client';
 
-import React from 'react';
-import { Columns, ThumbsUp, ThumbsDown } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Columns, ThumbsUp, ThumbsDown, AlertTriangle } from 'lucide-react';
 import { Badge, Button } from '@/components/shared';
 import { useComponentPipelineStore } from '@/lib/studio/stores/component-pipeline-store';
+import { validateContentConstraints, type ConstraintValidationWarning } from '@/lib/studio/content-validator';
 import type { DeliverableComponentState } from '@/types/studio';
 
 interface VariantComparisonViewProps {
   components: DeliverableComponentState[];
   activeComponentId: string;
   onContentChange: (id: string, content: string) => void;
+  deliverableTypeId?: string;
 }
 
 export function VariantComparisonView({
   components,
   activeComponentId,
   onContentChange,
+  deliverableTypeId,
 }: VariantComparisonViewProps) {
   const setComponentRating = useComponentPipelineStore((s) => s.setComponentRating);
   const approveComponent = useComponentPipelineStore((s) => s.approveComponent);
+
+  // Validate each variant's content against type-specific constraints
+  const warningsMap = useMemo(() => {
+    const map = new Map<string, ConstraintValidationWarning[]>();
+    if (!deliverableTypeId) return map;
+    for (const component of components) {
+      if (component.generatedContent) {
+        const result = validateContentConstraints(component.generatedContent, deliverableTypeId);
+        if (result.warnings.length > 0) {
+          map.set(component.id, result.warnings);
+        }
+      }
+    }
+    return map;
+  }, [components, deliverableTypeId]);
 
   const VARIANT_LABELS = ['A', 'B', 'C', 'D', 'E'];
 
@@ -73,12 +91,25 @@ export function VariantComparisonView({
 
                 {/* Content */}
                 {component.generatedContent ? (
-                  <textarea
-                    value={component.generatedContent}
-                    onChange={(e) => onContentChange(component.id, e.target.value)}
-                    className="w-full min-h-[120px] resize-none border-0 bg-transparent text-sm text-gray-900 leading-relaxed focus:ring-0 p-0"
-                    disabled={component.status === 'APPROVED'}
-                  />
+                  <>
+                    <textarea
+                      value={component.generatedContent}
+                      onChange={(e) => onContentChange(component.id, e.target.value)}
+                      className="w-full min-h-[120px] resize-none border-0 bg-transparent text-sm text-gray-900 leading-relaxed focus:ring-0 p-0"
+                      disabled={component.status === 'APPROVED'}
+                    />
+                    {warningsMap.get(component.id)?.map((w, wi) => (
+                      <div
+                        key={wi}
+                        className={`flex items-start gap-1.5 mt-1 text-xs ${
+                          w.severity === 'error' ? 'text-red-600' : 'text-amber-600'
+                        }`}
+                      >
+                        <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                        <span>{w.message}</span>
+                      </div>
+                    ))}
+                  </>
                 ) : (
                   <p className="text-sm text-gray-400 italic">Not yet generated</p>
                 )}

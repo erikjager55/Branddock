@@ -909,6 +909,25 @@ model Deliverable {
   enrichedBrief       String?            @db.Text
   additionalInstructions String?         @db.Text
 
+  // ─── Canvas: Journey & Publication ─────────────────
+  journeyPhase          String?           // awareness | consideration | decision | retention | advocacy
+  weekInCampaign        Int?
+  suggestedPublishDate  DateTime?
+  scheduledPublishDate  DateTime?
+  publishedAt           DateTime?
+
+  // ─── Canvas: Approval ──────────────────────────────
+  approvalStatus        String            @default("DRAFT")  // DRAFT | IN_REVIEW | CHANGES_REQUESTED | APPROVED | PUBLISHED
+  approvalNote          String?           @db.Text
+  approvedBy            String?
+  approvedAt            DateTime?
+
+  // ─── Canvas: State & Derivation ────────────────────
+  canvasState           Json?
+  derivedFromId         String?
+  derivedFrom           Deliverable?      @relation("DerivableContent", fields: [derivedFromId], references: [id], onDelete: SetNull)
+  derivatives           Deliverable[]     @relation("DerivableContent")
+
   // Relations
   campaignId        String
   campaign          Campaign            @relation(fields: [campaignId], references: [id], onDelete: Cascade)
@@ -921,6 +940,7 @@ model Deliverable {
 
   @@index([campaignId])
   @@index([status])
+  @@index([approvalStatus])
 }
 
 model CampaignTeamMember {
@@ -984,10 +1004,43 @@ model DeliverableComponent {
   approvedAt        DateTime?
   version           Int           @default(1)
 
+  // ─── Canvas: Variant management ────────────────────
+  variantGroup          String?
+  variantIndex          Int               @default(0)
+  isSelected            Boolean           @default(false)
+
+  // ─── Canvas: Multi-model tracking ──────────────────
+  aiProvider            String?           // anthropic | openai | nanobanana | google
+  generationDuration    Int?              // ms
+  imagePromptUsed       String?           @db.Text
+
+  // ─── Canvas: Iteration ─────────────────────────────
+  userFeedback          String?           @db.Text
+  iterationCount        Int               @default(0)
+
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
   @@index([deliverableId, order])
+  @@unique([deliverableId, variantGroup, variantIndex])
+}
+
+model MediumEnrichment {
+  id                    String   @id @default(cuid())
+  platform              String   // linkedin | instagram | facebook | email | web | tiktok | youtube | podcast
+  format                String   // organic-post | ad | carousel | feed-post | story | reel | newsletter | landing-page | blog-article | video | episode
+  specs                 Json     // { maxChars: { headline: 150, body: 3000 }, imageSize: { width: 1200, height: 627 } }
+  componentTemplate     Json     // [{ type: "headline", required: true }, { type: "body" }, ...]
+  bestPractices         Json     // ["Use a question as hook", ...]
+  phaseGuidance         Json     // { awareness: { toneShift, messageFrame, ctaType, hookStrategy, visualDirection }, ... }
+  optimalPublishTimes   Json     // { dayOfWeek: [2,3,4], hourRange: [9,12], timezone: "Europe/Amsterdam" }
+  isDefault             Boolean  @default(true)
+  workspaceId           String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([platform, format, workspaceId])
+  @@index([platform, format])
 }
 
 model InsertedInsight {
