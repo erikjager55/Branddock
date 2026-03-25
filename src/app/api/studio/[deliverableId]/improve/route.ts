@@ -4,6 +4,7 @@ import { resolveWorkspaceId } from '@/lib/auth-server';
 import { scoreContentQuality, type QualityDimension } from '@/lib/studio/quality-scorer';
 import { generateImproveSuggestions } from '@/lib/studio/improve-suggester';
 import { buildGenerationContext } from '@/lib/studio/context-builder';
+import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 
 type RouteParams = { params: Promise<{ deliverableId: string }> };
 
@@ -102,30 +103,76 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
     // Get quality dimensions — use stored metrics or score fresh
     let dimensions: QualityDimension[];
-    const storedMetrics = deliverable.qualityMetrics as Record<string, number> | null;
+    const storedMetrics = deliverable.qualityMetrics as Record<string, unknown> | null;
 
-    if (storedMetrics && Object.keys(storedMetrics).length > 0) {
-      dimensions = Object.entries(storedMetrics).map(([name, score]) => ({
-        name,
-        score,
-        weight: name === 'Clarity' ? 0.30 : 0.35,
-        explanation: '',
-      }));
-    } else {
-      // Score first, then suggest
+    // Check if qualityMetrics contains a ValidationResult (has 'score' + 'warnings')
+    const hasValidationResult = storedMetrics &&
+      typeof storedMetrics.score === 'number' && Array.isArray(storedMetrics.warnings);
+
+    if (hasValidationResult) {
+      // ValidationResult format from generate endpoint — score fresh for proper dimensions
       const result = await scoreContentQuality(
         content,
         context,
         deliverable.contentType,
         deliverable.title,
         workspaceId,
+        deliverable.contentType,
       );
       dimensions = result.dimensions;
 
-      // Save scores
-      const metricsObj: Record<string, number> = {};
+      // Persist in rich format for future reads
+      const metricsObj: Record<string, { score: number; weight: number; explanation: string }> = {};
       for (const dim of result.dimensions) {
-        metricsObj[dim.name] = dim.score;
+        metricsObj[dim.name] = { score: dim.score, weight: dim.weight, explanation: dim.explanation };
+      }
+      await prisma.deliverable.update({
+        where: { id: deliverableId },
+        data: {
+          qualityScore: result.overall,
+          qualityMetrics: metricsObj,
+        },
+      });
+    } else if (storedMetrics && Object.keys(storedMetrics).length > 0) {
+      // Support both rich format { score, weight, explanation } and legacy flat format (number)
+      const entries = Object.entries(storedMetrics);
+      const isRichFormat = entries.length > 0 && typeof entries[0][1] === 'object' && entries[0][1] !== null;
+
+      if (isRichFormat) {
+        dimensions = entries.map(([name, val]) => {
+          const rich = val as { score: number; weight: number; explanation: string };
+          return { name, score: rich.score, weight: rich.weight, explanation: rich.explanation ?? '' };
+        });
+      } else {
+        // Legacy flat format — look up type-specific criteria for correct weights
+        const typeDef = getDeliverableTypeById(deliverable.contentType);
+        const criteriaByName = new Map(
+          (typeDef?.qualityCriteria ?? []).map((c) => [c.name, c.weight]),
+        );
+        const equalWeight = 1 / entries.length;
+        dimensions = entries.map(([name, score]) => ({
+          name,
+          score: score as number,
+          weight: criteriaByName.get(name) ?? equalWeight,
+          explanation: '',
+        }));
+      }
+    } else {
+      // Score first, then suggest (pass contentType as deliverableTypeId for type-specific criteria)
+      const result = await scoreContentQuality(
+        content,
+        context,
+        deliverable.contentType,
+        deliverable.title,
+        workspaceId,
+        deliverable.contentType,
+      );
+      dimensions = result.dimensions;
+
+      // Save scores with weight and explanation for later retrieval
+      const metricsObj: Record<string, { score: number; weight: number; explanation: string }> = {};
+      for (const dim of result.dimensions) {
+        metricsObj[dim.name] = { score: dim.score, weight: dim.weight, explanation: dim.explanation };
       }
       await prisma.deliverable.update({
         where: { id: deliverableId },
@@ -136,13 +183,14 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       });
     }
 
-    // Generate suggestions via AI
+    // Generate suggestions via AI (pass contentType as deliverableTypeId for type-aware suggestions)
     const suggestionsData = await generateImproveSuggestions(
       content,
       dimensions,
       context,
       deliverable.contentType,
       workspaceId,
+      deliverable.contentType,
     );
 
     // Delete old PENDING suggestions before inserting new ones

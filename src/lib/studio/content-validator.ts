@@ -1,9 +1,20 @@
 // =============================================================
-// Content Validator — Post-generation quality checks
+// Content Validator — Post-generation quality checks + Constraint checks
 //
 // Synchronous, regex-based validator that scans generated content.
 // Returns warnings with severity levels. Never blocks saving.
+//
+// Two validation modes:
+// 1. Quality validation (validateContent) - checks for placeholders, jargon, etc.
+// 2. Constraint validation (validateContentConstraints) - checks char/word limits, required sections
 // =============================================================
+
+import {
+  getDeliverableTypeById,
+  type DeliverableTypeConstraints,
+} from '@/features/campaigns/lib/deliverable-types';
+
+// ─── Types for Quality Validation ─────────────────────────
 
 export interface ValidationWarning {
   check: string;
@@ -25,7 +36,20 @@ export interface ValidationContext {
   contentType: string;
 }
 
-// ─── Check Functions ──────────────────────────────────────
+// ─── Types for Constraint Validation ─────────────────────────
+
+export interface ConstraintValidationWarning {
+  type: 'char_limit' | 'word_limit' | 'missing_section' | 'hashtag_limit' | 'slide_limit';
+  message: string;
+  severity: 'error' | 'warning';
+}
+
+export interface ConstraintValidationResult {
+  isValid: boolean;
+  warnings: ConstraintValidationWarning[];
+}
+
+// ─── Quality Check Functions ──────────────────────────────────────
 
 function checkPlaceholders(content: string): ValidationWarning[] {
   const patterns = [
@@ -235,7 +259,7 @@ function checkContentLength(content: string, contentType: string): ValidationWar
   // Flag excessively long content for short-form types
   const shortFormTypes = [
     'linkedin-post', 'instagram-post', 'twitter-thread', 'facebook-post',
-    'tiktok-script', 'search-ad', 'social-ad', 'display-ad', 'sms-message',
+    'tiktok-script', 'search-ad', 'social-ad', 'display-ad',
   ];
   if (shortFormTypes.includes(contentType) && textLength > 3000) {
     warnings.push({
@@ -285,7 +309,7 @@ function checkVagueUrgency(content: string): ValidationWarning[] {
   return warnings;
 }
 
-// ─── Main Validator ───────────────────────────────────────
+// ─── Main Quality Validator ───────────────────────────────────────
 
 const ALL_CHECKS = [
   'placeholders',
@@ -333,4 +357,147 @@ export function validateContent(
   const score = Math.max(0, 100 - totalDeduction);
 
   return { warnings: allWarnings, passedChecks, score };
+}
+
+// ─── Constraint Validation (NEW) ───────────────────────────────────────
+
+/**
+ * Validate content against type-specific constraints from DeliverableTypeDefinition.
+ * Returns warnings for any constraint violations.
+ */
+export function validateContentConstraints(
+  content: string,
+  deliverableTypeId?: string,
+  slideCount?: number,
+): ConstraintValidationResult {
+  if (!deliverableTypeId) {
+    return { isValid: true, warnings: [] };
+  }
+
+  const typeDef = getDeliverableTypeById(deliverableTypeId);
+  if (!typeDef?.constraints) {
+    return { isValid: true, warnings: [] };
+  }
+
+  const warnings = checkConstraints(content, typeDef.constraints, slideCount);
+
+  return {
+    isValid: warnings.filter(w => w.severity === 'error').length === 0,
+    warnings,
+  };
+}
+
+// ─── Constraint Checkers ──────────────────────────────────
+
+function checkConstraints(
+  content: string,
+  constraints: DeliverableTypeConstraints,
+  slideCount?: number,
+): ConstraintValidationWarning[] {
+  const warnings: ConstraintValidationWarning[] = [];
+  // Strip HTML tags and common markdown syntax for accurate character counting
+  const plainText = content
+    .replace(/<[^>]+>/g, '')
+    .replace(/[#*_~`>\[\]()!]/g, '')
+    .replace(/\n{2,}/g, '\n')
+    .trim();
+  const charCount = plainText.length;
+  const wordCount = plainText.split(/\s+/).filter(Boolean).length;
+  const hashtagCount = (content.match(/#\w+/g) || []).length;
+  const contentLower = content.toLowerCase();
+
+  // Character limit checks
+  if (constraints.maxChars && charCount > constraints.maxChars) {
+    warnings.push({
+      type: 'char_limit',
+      message: `Content exceeds ${constraints.maxChars} character limit (currently ${charCount})`,
+      severity: 'error',
+    });
+  }
+
+  if (constraints.minChars && charCount < constraints.minChars) {
+    warnings.push({
+      type: 'char_limit',
+      message: `Content is below ${constraints.minChars} character minimum (currently ${charCount})`,
+      severity: 'warning',
+    });
+  }
+
+  // Word limit checks
+  if (constraints.maxWords && wordCount > constraints.maxWords) {
+    warnings.push({
+      type: 'word_limit',
+      message: `Content exceeds ${constraints.maxWords} word limit (currently ${wordCount})`,
+      severity: 'error',
+    });
+  }
+
+  if (constraints.minWords && wordCount < constraints.minWords) {
+    warnings.push({
+      type: 'word_limit',
+      message: `Content is below ${constraints.minWords} word minimum (currently ${wordCount})`,
+      severity: 'warning',
+    });
+  }
+
+  // Required sections check
+  if (constraints.requiredSections) {
+    for (const section of constraints.requiredSections) {
+      const sectionVariants = getSectionVariants(section);
+      const found = sectionVariants.some(variant => contentLower.includes(variant));
+      if (!found) {
+        warnings.push({
+          type: 'missing_section',
+          message: `Missing required section: "${section}"`,
+          severity: 'warning',
+        });
+      }
+    }
+  }
+
+  // Hashtag limit check
+  if (constraints.maxHashtags && hashtagCount > constraints.maxHashtags) {
+    warnings.push({
+      type: 'hashtag_limit',
+      message: `Too many hashtags: ${hashtagCount} (max ${constraints.maxHashtags})`,
+      severity: 'warning',
+    });
+  }
+
+  // Slide limit check
+  if (constraints.maxSlides && slideCount && slideCount > constraints.maxSlides) {
+    warnings.push({
+      type: 'slide_limit',
+      message: `Too many slides: ${slideCount} (max ${constraints.maxSlides})`,
+      severity: 'warning',
+    });
+  }
+
+  return warnings;
+}
+
+/**
+ * Generate common textual variants of a section name for fuzzy matching.
+ * E.g. "table-of-contents" → ["table of contents", "table-of-contents", "toc"]
+ */
+function getSectionVariants(section: string): string[] {
+  const base = section.toLowerCase();
+  const variants = [base, base.replace(/-/g, ' ')];
+
+  // Common abbreviations
+  const abbreviations: Record<string, string[]> = {
+    'table-of-contents': ['toc', 'contents'],
+    'executive-summary': ['exec summary', 'summary'],
+    'call-to-action': ['cta'],
+    cta: ['call to action', 'call-to-action'],
+    introduction: ['intro'],
+    conclusion: ['closing', 'wrap-up'],
+    abstract: ['overview'],
+  };
+
+  if (abbreviations[base]) {
+    variants.push(...abbreviations[base]);
+  }
+
+  return variants;
 }

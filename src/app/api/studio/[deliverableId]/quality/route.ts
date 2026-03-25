@@ -61,14 +61,27 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ overall, metrics });
     }
 
-    // Legacy format: qualityMetrics is a flat Record<string, number>
+    // Support both rich format { score, weight, explanation } and legacy flat format (number)
+    const entries = Object.entries(metricsObj as Record<string, unknown>);
+    const isRichFormat = entries.length > 0 && typeof entries[0][1] === 'object' && entries[0][1] !== null;
+
+    if (isRichFormat) {
+      return NextResponse.json({
+        overall: deliverable.qualityScore ?? 0,
+        metrics: entries.map(([name, val]) => {
+          const rich = val as { score: number; weight: number; explanation: string };
+          return { name, score: rich.score, maxScore: 100, weight: rich.weight, explanation: rich.explanation ?? '' };
+        }),
+      });
+    }
+
+    // Legacy flat format: Record<string, number>
     const numericMetrics = metricsObj as Record<string, number>;
-    const metricNames = Object.keys(numericMetrics);
     return NextResponse.json({
       overall: deliverable.qualityScore ?? 0,
-      metrics: metricNames.map((name) => ({
+      metrics: Object.entries(numericMetrics).map(([name, score]) => ({
         name,
-        score: numericMetrics[name],
+        score,
         maxScore: 100,
       })),
     });

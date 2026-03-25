@@ -57,19 +57,20 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       deliverable.title,
     );
 
-    // Score content with AI
+    // Score content with AI (pass contentType as deliverableTypeId for type-specific criteria)
     const result = await scoreContentQuality(
       content,
       context,
       deliverable.contentType,
       deliverable.title,
       workspaceId,
+      deliverable.contentType,
     );
 
-    // Save scores to database
-    const metricsObj: Record<string, number> = {};
+    // Save scores with weight and explanation for later retrieval
+    const metricsObj: Record<string, { score: number; weight: number; explanation: string }> = {};
     for (const dim of result.dimensions) {
-      metricsObj[dim.name] = dim.score;
+      metricsObj[dim.name] = { score: dim.score, weight: dim.weight, explanation: dim.explanation };
     }
 
     await prisma.deliverable.update({
@@ -86,6 +87,8 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
         name: d.name,
         score: d.score,
         maxScore: 100,
+        weight: d.weight,
+        explanation: d.explanation,
       })),
       summary: result.summary,
     });

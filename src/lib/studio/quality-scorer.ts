@@ -2,16 +2,16 @@
 // Quality Scoring Service
 //
 // Evaluates generated content against brand context using AI.
-// Scores across 3 dimensions:
-//  - Brand Alignment (35%): voice, values, messaging hierarchy
-//  - Engagement (35%): hook, CTA, readability, emotional resonance
-//  - Clarity (30%): structure, conciseness, actionability
+// Uses type-specific quality criteria from the deliverable type
+// registry when available, with fallback to 3 default dimensions:
+//  - Brand Alignment (35%), Engagement (35%), Clarity (30%)
 //
-// Uses Claude Sonnet 4.5 for analysis via the existing ai-caller.
+// Scoring via resolveFeatureModel('content-quality') AI caller.
 // =============================================================
 
 import { generateAIResponse } from '@/lib/ai/exploration/ai-caller';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
+import { getDeliverableTypeById, type QualityCriterion } from '@/features/campaigns/lib/deliverable-types';
 import type { GenerationContext } from './context-builder';
 
 // ─── Types ─────────────────────────────────────────────────
@@ -31,13 +31,13 @@ export interface QualityScoringResult {
 
 // ─── Constants ────────────────────────────────────────────
 
-const DIMENSIONS = [
+const DEFAULT_DIMENSIONS = [
   { name: 'Brand Alignment', weight: 0.35 },
   { name: 'Engagement', weight: 0.35 },
   { name: 'Clarity', weight: 0.30 },
 ] as const;
 
-const SCORING_SYSTEM_PROMPT = `You are a brand content quality analyst. You evaluate marketing and brand content across three dimensions.
+const DEFAULT_SCORING_SYSTEM_PROMPT = `You are a brand content quality analyst. You evaluate marketing and brand content across three dimensions.
 
 ## SCORING DIMENSIONS
 
@@ -75,6 +75,51 @@ Respond with ONLY a JSON object (no markdown fences):
 
 Each explanation should be 1-2 sentences explaining the score. Be specific about what works and what doesn't.`;
 
+// ─── Helpers ──────────────────────────────────────────────
+
+/**
+ * Convert a criterion name to a camelCase JSON key.
+ * E.g. "Brand Alignment" → "brandAlignment"
+ */
+function criterionToKey(name: string): string {
+  return name
+    .replace(/[^a-zA-Z0-9\s]/g, '')
+    .split(/\s+/)
+    .map((w, i) => i === 0 ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join('');
+}
+
+/**
+ * Build a dynamic scoring prompt from type-specific quality criteria.
+ */
+function buildTypeSpecificScoringPrompt(criteria: QualityCriterion[]): string {
+  const dimensionSections = criteria.map((c, i) => {
+    const pct = Math.round(c.weight * 100);
+    return `### ${i + 1}. ${c.name} (0-100, weight ${pct}%)\n${c.description}`;
+  }).join('\n\n');
+
+  // Build dynamic JSON output keys from criteria names
+  const jsonKeys = criteria.map(c => {
+    const key = criterionToKey(c.name);
+    return `  "${key}": { "score": 82, "explanation": "..." }`;
+  }).join(',\n');
+
+  return `You are a brand content quality analyst. You evaluate marketing and brand content across the following dimensions.
+
+## SCORING DIMENSIONS
+
+${dimensionSections}
+
+## OUTPUT FORMAT
+Respond with ONLY a JSON object (no markdown fences):
+{
+${jsonKeys},
+  "summary": "A 1-2 sentence overall assessment"
+}
+
+Each explanation should be 1-2 sentences explaining the score. Be specific about what works and what doesn't.`;
+}
+
 // ─── Public API ────────────────────────────────────────────
 
 /**
@@ -87,9 +132,14 @@ export async function scoreContentQuality(
   contentType: string,
   deliverableTitle: string,
   workspaceId?: string,
+  deliverableTypeId?: string,
 ): Promise<QualityScoringResult> {
+  // Look up type-specific criteria if deliverableTypeId provided
+  const typeDefinition = deliverableTypeId ? getDeliverableTypeById(deliverableTypeId) : undefined;
+  const typeSpecificCriteria = typeDefinition?.qualityCriteria;
+
   if (!content || content.trim().length < 50) {
-    return createEmptyResult();
+    return createEmptyResult(typeSpecificCriteria);
   }
 
   const userPrompt = buildScoringUserPrompt(content, context, contentType, deliverableTitle);
@@ -99,19 +149,62 @@ export async function scoreContentQuality(
       ? await resolveFeatureModel(workspaceId, 'content-quality')
       : { provider: 'anthropic', model: 'claude-sonnet-4-5-20250929' };
 
+    // Use type-specific prompt and parser if criteria available
+    const systemPrompt = typeSpecificCriteria && typeSpecificCriteria.length > 0
+      ? buildTypeSpecificScoringPrompt(typeSpecificCriteria)
+      : DEFAULT_SCORING_SYSTEM_PROMPT;
+
     const response = await generateAIResponse(
       provider,
       model,
-      SCORING_SYSTEM_PROMPT,
+      systemPrompt,
       userPrompt,
       0.3,
       2000,
     );
 
-    return parseScoringResponse(response);
+    return typeSpecificCriteria && typeSpecificCriteria.length > 0
+      ? parseTypeSpecificResponse(response, typeSpecificCriteria)
+      : parseScoringResponse(response);
   } catch (error) {
     console.error('Quality scoring AI call failed:', error);
-    return createEmptyResult();
+    return createEmptyResult(typeSpecificCriteria);
+  }
+}
+
+// ─── Parsers ──────────────────────────────────────────────
+
+/**
+ * Parse type-specific AI scoring response with dynamic criteria.
+ */
+function parseTypeSpecificResponse(raw: string, criteria: QualityCriterion[]): QualityScoringResult {
+  try {
+    const cleaned = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const parsed = JSON.parse(cleaned) as Record<string, { score?: number; explanation?: string } | string>;
+
+    const dimensions: QualityDimension[] = criteria.map(c => {
+      const key = criterionToKey(c.name);
+      const dimData = parsed[key] as { score?: number; explanation?: string } | undefined;
+      return {
+        name: c.name,
+        score: clampScore(dimData?.score),
+        weight: c.weight,
+        explanation: dimData?.explanation || '',
+      };
+    });
+
+    const overall = Math.round(
+      dimensions.reduce((sum, d) => sum + d.score * d.weight, 0),
+    );
+
+    return {
+      overall,
+      dimensions,
+      summary: typeof parsed.summary === 'string' ? parsed.summary : '',
+    };
+  } catch {
+    console.error('Failed to parse type-specific quality scoring response');
+    return createEmptyResult(criteria);
   }
 }
 
@@ -196,15 +289,24 @@ function clampScore(score: number | undefined): number {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
-function createEmptyResult(): QualityScoringResult {
+function createEmptyResult(criteria?: QualityCriterion[]): QualityScoringResult {
+  const dims = criteria && criteria.length > 0
+    ? criteria.map(c => ({
+        name: c.name,
+        score: 0,
+        weight: c.weight,
+        explanation: 'No content to evaluate.',
+      }))
+    : DEFAULT_DIMENSIONS.map(d => ({
+        name: d.name,
+        score: 0,
+        weight: d.weight,
+        explanation: 'No content to evaluate.',
+      }));
+
   return {
     overall: 0,
-    dimensions: DIMENSIONS.map((d) => ({
-      name: d.name,
-      score: 0,
-      weight: d.weight,
-      explanation: 'No content to evaluate.',
-    })),
+    dimensions: dims,
     summary: 'No content available for scoring.',
   };
 }

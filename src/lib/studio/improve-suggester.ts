@@ -14,6 +14,7 @@
 
 import { generateAIResponse } from '@/lib/ai/exploration/ai-caller';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
+import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 import type { GenerationContext } from './context-builder';
 import type { QualityDimension } from './quality-scorer';
 
@@ -58,6 +59,8 @@ Generate 3-5 suggestions, sorted by impact (highest first).`;
 
 /**
  * Generate improvement suggestions based on content and quality scores.
+ * When a deliverableTypeId is provided, suggestions reference type-specific
+ * best practices and constraints (e.g. character limits, required sections).
  * Returns suggestions sorted by highest impact first.
  */
 export async function generateImproveSuggestions(
@@ -66,12 +69,15 @@ export async function generateImproveSuggestions(
   context: GenerationContext,
   contentType: string,
   workspaceId?: string,
+  deliverableTypeId?: string,
 ): Promise<SuggestionData[]> {
   if (!content || content.trim().length < 50 || dimensions.length === 0) {
     return [];
   }
 
-  const userPrompt = buildSuggestUserPrompt(content, dimensions, context, contentType);
+  const typeDef = deliverableTypeId ? getDeliverableTypeById(deliverableTypeId) : undefined;
+  const systemPrompt = buildTypeAwareSystemPrompt(deliverableTypeId, typeDef);
+  const userPrompt = buildSuggestUserPrompt(content, dimensions, context, contentType, typeDef);
 
   try {
     const { provider, model } = workspaceId
@@ -81,7 +87,7 @@ export async function generateImproveSuggestions(
     const response = await generateAIResponse(
       provider,
       model,
-      SUGGEST_SYSTEM_PROMPT,
+      systemPrompt,
       userPrompt,
       0.5,
       3000,
@@ -96,11 +102,62 @@ export async function generateImproveSuggestions(
 
 // ─── Helpers ──────────────────────────────────────────────
 
+/**
+ * Build a type-aware system prompt. When a type definition is found,
+ * inject quality criteria names and constraint awareness into the prompt
+ * so the AI generates type-specific suggestions.
+ */
+function buildTypeAwareSystemPrompt(
+  deliverableTypeId?: string,
+  typeDef?: ReturnType<typeof getDeliverableTypeById>,
+): string {
+  if (!deliverableTypeId) return SUGGEST_SYSTEM_PROMPT;
+
+  const resolvedTypeDef = typeDef ?? getDeliverableTypeById(deliverableTypeId);
+  if (!resolvedTypeDef) return SUGGEST_SYSTEM_PROMPT;
+
+  const typeSpecificParts: string[] = [];
+
+  // Inject quality criteria so the AI focuses on type-specific dimensions
+  if (resolvedTypeDef.qualityCriteria && resolvedTypeDef.qualityCriteria.length > 0) {
+    typeSpecificParts.push('## TYPE-SPECIFIC QUALITY CRITERIA');
+    typeSpecificParts.push(`This content is a "${resolvedTypeDef.name}". Focus suggestions on these specific quality criteria:`);
+    for (const criterion of resolvedTypeDef.qualityCriteria) {
+      typeSpecificParts.push(`- **${criterion.name}** (weight: ${Math.round(criterion.weight * 100)}%): ${criterion.description}`);
+    }
+    typeSpecificParts.push('Use these criteria names in the "metric" field of your suggestions when relevant.');
+    typeSpecificParts.push('');
+  }
+
+  // Inject constraint awareness into the system prompt
+  if (resolvedTypeDef.constraints) {
+    const c = resolvedTypeDef.constraints;
+    typeSpecificParts.push('## CONTENT TYPE CONSTRAINTS');
+    typeSpecificParts.push(`Ensure suggestions respect these "${resolvedTypeDef.name}" constraints:`);
+    if (c.maxChars) typeSpecificParts.push(`- Maximum ${c.maxChars} characters`);
+    if (c.minChars) typeSpecificParts.push(`- Minimum ${c.minChars} characters`);
+    if (c.maxWords) typeSpecificParts.push(`- Maximum ${c.maxWords} words`);
+    if (c.minWords) typeSpecificParts.push(`- Minimum ${c.minWords} words`);
+    if (c.maxHashtags) typeSpecificParts.push(`- Maximum ${c.maxHashtags} hashtags`);
+    if (c.maxSlides) typeSpecificParts.push(`- Maximum ${c.maxSlides} slides`);
+    if (c.requiredSections && c.requiredSections.length > 0) {
+      typeSpecificParts.push(`- Required sections: ${c.requiredSections.join(', ')}`);
+    }
+    typeSpecificParts.push('If the content violates any constraint, prioritize a suggestion to fix it.');
+    typeSpecificParts.push('');
+  }
+
+  if (typeSpecificParts.length === 0) return SUGGEST_SYSTEM_PROMPT;
+
+  return SUGGEST_SYSTEM_PROMPT + '\n\n' + typeSpecificParts.join('\n');
+}
+
 function buildSuggestUserPrompt(
   content: string,
   dimensions: QualityDimension[],
   context: GenerationContext,
   contentType: string,
+  typeDef?: ReturnType<typeof getDeliverableTypeById>,
 ): string {
   const parts: string[] = [];
 
@@ -125,6 +182,29 @@ function buildSuggestUserPrompt(
 
   parts.push(`## CONTENT TYPE: ${contentType}`);
   parts.push('');
+
+  // Add type-specific constraints to the user prompt for emphasis
+  if (typeDef?.constraints) {
+    const c = typeDef.constraints;
+    const constraintLines: string[] = [];
+    if (c.maxChars) constraintLines.push(`Maximum ${c.maxChars} characters per post`);
+    if (c.minChars) constraintLines.push(`Minimum ${c.minChars} characters`);
+    if (c.maxWords) constraintLines.push(`Maximum ${c.maxWords} words`);
+    if (c.minWords) constraintLines.push(`Minimum ${c.minWords} words`);
+    if (c.maxHashtags) constraintLines.push(`Maximum ${c.maxHashtags} hashtags`);
+    if (c.maxSlides) constraintLines.push(`Maximum ${c.maxSlides} slides`);
+    if (c.requiredSections && c.requiredSections.length > 0) {
+      constraintLines.push(`Required sections: ${c.requiredSections.join(', ')}`);
+    }
+    if (constraintLines.length > 0) {
+      parts.push('## CONTENT CONSTRAINTS');
+      for (const line of constraintLines) {
+        parts.push(`- ${line}`);
+      }
+      parts.push('');
+    }
+  }
+
   parts.push('## CONTENT TO IMPROVE');
   parts.push(content);
 
@@ -150,7 +230,7 @@ function parseSuggestionsResponse(raw: string): SuggestionData[] {
       .slice(0, 5)
       .map((s: Record<string, unknown>) => ({
         metric: String(s.metric),
-        impactPoints: clampImpact(s.impactPoints as number),
+        impactPoints: clampImpact(s.impactPoints),
         currentText: String(s.currentText),
         suggestedText: String(s.suggestedText),
         reason: String(s.reason || ''),
@@ -161,7 +241,8 @@ function parseSuggestionsResponse(raw: string): SuggestionData[] {
   }
 }
 
-function clampImpact(value: number | undefined): number {
-  if (value === undefined || isNaN(value)) return 5;
-  return Math.max(1, Math.min(15, Math.round(value)));
+function clampImpact(value: unknown): number {
+  const num = Number(value);
+  if (value === undefined || value === null || isNaN(num)) return 5;
+  return Math.max(2, Math.min(12, Math.round(num)));
 }

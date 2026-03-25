@@ -72,6 +72,7 @@ async function main() {
   await prisma.styleguideColor.deleteMany();
   await prisma.brandStyleguide.deleteMany();
   // S6: Campaigns + Content Studio
+  await prisma.mediumEnrichment.deleteMany();
   await prisma.improveSuggestion.deleteMany();
   await prisma.insertedInsight.deleteMany();
   await prisma.contentVersion.deleteMany();
@@ -2920,7 +2921,7 @@ async function main() {
       slug: "linkedin-product-update",
       type: campaignTypeQuick,
       status: campaignStatusActive,
-      contentType: "linkedin",
+      contentType: "linkedin-post",
       contentCategory: "Social",
       prompt: "Create a LinkedIn post announcing our new AI-powered brand analysis feature, emphasizing how it saves brand managers 10+ hours per week.",
       outputFormat: "Text",
@@ -2935,7 +2936,7 @@ async function main() {
       slug: "welcome-email-series",
       type: campaignTypeQuick,
       status: campaignStatusCompleted,
-      contentType: "welcome-email",
+      contentType: "welcome-sequence",
       contentCategory: "Email",
       prompt: "Design a 3-email welcome series for new Branddock users that guides them through setting up their brand foundation, creating their first persona, and running their first AI analysis.",
       outputFormat: "Text",
@@ -2994,7 +2995,7 @@ async function main() {
   const deliverable1_1 = await prisma.deliverable.create({
     data: {
       title: "Brand Refresh Guidelines",
-      contentType: "Blog Post",
+      contentType: "blog-post",
       status: deliverableStatusCompleted,
       progress: 100,
       assignedTo: "Erik Jager",
@@ -3014,7 +3015,7 @@ async function main() {
   await prisma.deliverable.create({
     data: {
       title: "Social Media Campaign Kit",
-      contentType: "Social Media Post",
+      contentType: "instagram-post",
       status: deliverableStatusInProgress,
       progress: 65,
       assignedTo: "Sarah Chen",
@@ -3025,7 +3026,7 @@ async function main() {
   await prisma.deliverable.create({
     data: {
       title: "Email Newsletter Announcement",
-      contentType: "Newsletter",
+      contentType: "newsletter",
       status: deliverableStatusInProgress,
       progress: 30,
       assignedTo: "Erik Jager",
@@ -3036,7 +3037,7 @@ async function main() {
   await prisma.deliverable.create({
     data: {
       title: "Landing Page Copy",
-      contentType: "Landing Page",
+      contentType: "landing-page",
       status: deliverableStatusNotStarted,
       progress: 0,
       campaignId: campaign1.id,
@@ -3047,7 +3048,7 @@ async function main() {
   const deliverable2_1 = await prisma.deliverable.create({
     data: {
       title: "Product Launch Blog Post",
-      contentType: "Blog Post",
+      contentType: "blog-post",
       status: deliverableStatusCompleted,
       progress: 100,
       assignedTo: "Erik Jager",
@@ -3061,7 +3062,7 @@ async function main() {
   await prisma.deliverable.create({
     data: {
       title: "Product Hunt Launch Copy",
-      contentType: "Landing Page",
+      contentType: "landing-page",
       status: deliverableStatusCompleted,
       progress: 100,
       assignedTo: "Sarah Chen",
@@ -3072,7 +3073,7 @@ async function main() {
   await prisma.deliverable.create({
     data: {
       title: "Feature Demo Video Script",
-      contentType: "Video Script",
+      contentType: "explainer-video",
       status: deliverableStatusInProgress,
       progress: 50,
       assignedTo: "Erik Jager",
@@ -3083,7 +3084,7 @@ async function main() {
   await prisma.deliverable.create({
     data: {
       title: "Onboarding Email Sequence",
-      contentType: "Email",
+      contentType: "promotional-email",
       status: deliverableStatusInProgress,
       progress: 40,
       campaignId: campaign2.id,
@@ -3093,7 +3094,7 @@ async function main() {
   await prisma.deliverable.create({
     data: {
       title: "LinkedIn Launch Announcement",
-      contentType: "LinkedIn Post",
+      contentType: "linkedin-post",
       status: deliverableStatusInProgress,
       progress: 80,
       assignedTo: "Sarah Chen",
@@ -3104,7 +3105,7 @@ async function main() {
   await prisma.deliverable.create({
     data: {
       title: "Case Study: Beta User Success",
-      contentType: "Case Study",
+      contentType: "case-study",
       status: deliverableStatusNotStarted,
       progress: 0,
       campaignId: campaign2.id,
@@ -3115,7 +3116,7 @@ async function main() {
   const deliverable3_1 = await prisma.deliverable.create({
     data: {
       title: "AI Trends in Brand Strategy",
-      contentType: "Blog Post",
+      contentType: "blog-post",
       status: deliverableStatusCompleted,
       progress: 100,
       assignedTo: "Erik Jager",
@@ -3135,7 +3136,7 @@ async function main() {
   await prisma.deliverable.create({
     data: {
       title: "Research-Backed Brand Building Whitepaper",
-      contentType: "Whitepaper",
+      contentType: "whitepaper",
       status: deliverableStatusCompleted,
       progress: 100,
       assignedTo: "Erik Jager",
@@ -3146,7 +3147,7 @@ async function main() {
   await prisma.deliverable.create({
     data: {
       title: "LinkedIn Article Series",
-      contentType: "LinkedIn Post",
+      contentType: "linkedin-article",
       status: deliverableStatusCompleted,
       progress: 100,
       assignedTo: "Sarah Chen",
@@ -3262,10 +3263,10 @@ async function main() {
       campaignGoalType: "BRAND_AWARENESS",
       knowledgePattern: { requiredTypes: ["Brand", "Persona", "Product"], minAssets: 3 },
       deliverableMix: [
-        { contentType: "Blog Post", quantity: 2 },
-        { contentType: "LinkedIn Post", quantity: 3 },
-        { contentType: "Infographic", quantity: 1 },
-        { contentType: "Newsletter", quantity: 1 },
+        { contentType: "blog-post", quantity: 2 },
+        { contentType: "linkedin-post", quantity: 3 },
+        { contentType: "social-carousel", quantity: 1 },
+        { contentType: "newsletter", quantity: 1 },
       ],
       workspaceId: workspace.id,
     },
@@ -4726,7 +4727,480 @@ Respond only with valid JSON.`,
     });
   }
 
-  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 11 brand assets (7 with frameworkData), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 3 competitors (1 linked product), 10 knowledge resources (2 featured), 8 detected trends, 1 research job, 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, 3 exploration configs, S9 Settings: 1 user profile, 1 email preference, 3 connected accounts, 3 plans, 1 subscription, 1 payment method, 4 invoices, 1 notification preference, 1 appearance preference, S9 Help: 6 help categories, 5 help articles, 6 video tutorials, 7 FAQ items, 5 feature requests");
+  // ============================================
+  // MEDIUM ENRICHMENT — System defaults (8 records)
+  // ============================================
+  const mediumEnrichmentData = [
+    {
+      platform: "linkedin",
+      format: "organic-post",
+      specs: { maxChars: { headline: 150, body: 3000 }, imageSize: { width: 1200, height: 627 }, videoMaxDuration: 600 },
+      componentTemplate: [
+        { type: "hook", required: true, maxLength: 150 },
+        { type: "body", required: true, maxLength: 3000 },
+        { type: "cta", required: false, maxLength: 100 },
+        { type: "hashtags", required: false, maxLength: 200 },
+        { type: "image", required: false },
+      ],
+      bestPractices: [
+        "Open with a bold statement or question in the first line",
+        "Use line breaks for readability — avoid walls of text",
+        "Include a clear CTA in the last line",
+        "Tag relevant people or companies for reach",
+        "Post between Tuesday-Thursday, 8-10 AM for best engagement",
+        "Use 3-5 relevant hashtags at the end",
+        "Personal stories outperform corporate announcements 3:1",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "thought-provoking", messageFrame: "industry challenge", ctaType: "learn-more", hookStrategy: "contrarian take or surprising stat", visualDirection: "data visualization or team photo" },
+        consideration: { toneShift: "educational", messageFrame: "how-we-solve-it", ctaType: "download-resource", hookStrategy: "case study teaser or framework introduction", visualDirection: "infographic or process diagram" },
+        decision: { toneShift: "confident", messageFrame: "proof-and-results", ctaType: "book-demo", hookStrategy: "customer quote or ROI metric", visualDirection: "testimonial card or comparison chart" },
+        retention: { toneShift: "celebratory", messageFrame: "customer-success", ctaType: "share-your-story", hookStrategy: "milestone or achievement spotlight", visualDirection: "customer spotlight or behind-the-scenes" },
+        advocacy: { toneShift: "collaborative", messageFrame: "community-building", ctaType: "refer-a-friend", hookStrategy: "user-generated content or community highlight", visualDirection: "community collage or co-created content" },
+      },
+      optimalPublishTimes: { dayOfWeek: [2, 3, 4], hourRange: [8, 10], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "linkedin",
+      format: "ad",
+      specs: { maxChars: { headline: 70, body: 150, description: 100 }, imageSize: { width: 1200, height: 627 }, carouselCards: { min: 2, max: 10 } },
+      componentTemplate: [
+        { type: "headline", required: true, maxLength: 70 },
+        { type: "body", required: true, maxLength: 150 },
+        { type: "description", required: false, maxLength: 100 },
+        { type: "cta-button", required: true },
+        { type: "image", required: true },
+      ],
+      bestPractices: [
+        "Lead with the value proposition, not the brand name",
+        "Use numbers and specifics in headlines (e.g., '3x faster')",
+        "Include social proof when possible",
+        "Test single image vs carousel — carousel often wins for B2B",
+        "Keep body copy under 100 characters for mobile readability",
+        "Use a clear, action-oriented CTA button text",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "curiosity-driven", messageFrame: "problem-awareness", ctaType: "Learn More", hookStrategy: "pain point headline", visualDirection: "attention-grabbing visual with minimal text" },
+        consideration: { toneShift: "authoritative", messageFrame: "solution-positioning", ctaType: "Download", hookStrategy: "comparison or framework", visualDirection: "product screenshot or demo preview" },
+        decision: { toneShift: "urgent", messageFrame: "offer-driven", ctaType: "Sign Up", hookStrategy: "limited offer or proof point", visualDirection: "testimonial or ROI stats" },
+        retention: { toneShift: "exclusive", messageFrame: "insider-value", ctaType: "Explore", hookStrategy: "new feature or upgrade", visualDirection: "product feature highlight" },
+        advocacy: { toneShift: "empowering", messageFrame: "success-story", ctaType: "Share", hookStrategy: "customer achievement", visualDirection: "customer spotlight" },
+      },
+      optimalPublishTimes: { dayOfWeek: [1, 2, 3, 4, 5], hourRange: [9, 17], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "instagram",
+      format: "feed-post",
+      specs: { maxChars: { caption: 2200 }, imageSize: { width: 1080, height: 1080 }, videoMaxDuration: 60 },
+      componentTemplate: [
+        { type: "hook-line", required: true, maxLength: 125 },
+        { type: "caption", required: true, maxLength: 2200 },
+        { type: "hashtags", required: false, maxLength: 500 },
+        { type: "image", required: true },
+      ],
+      bestPractices: [
+        "First line must hook — only 125 chars show before 'more'",
+        "Use storytelling and emotional language",
+        "Include a call-to-action in the caption",
+        "Mix branded and community hashtags (20-30 total)",
+        "Carousel posts get 1.4x more reach than single images",
+        "Use alt text for accessibility",
+        "Authentic, less polished content often outperforms studio shots",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "inspiring", messageFrame: "brand-world", ctaType: "save-this-post", hookStrategy: "visually striking image with curiosity-gap caption", visualDirection: "lifestyle photography or bold typography" },
+        consideration: { toneShift: "educational", messageFrame: "tips-and-how-to", ctaType: "link-in-bio", hookStrategy: "carousel with actionable steps", visualDirection: "infographic or step-by-step visual" },
+        decision: { toneShift: "authentic", messageFrame: "social-proof", ctaType: "dm-us", hookStrategy: "before/after or transformation", visualDirection: "real customer photo or unboxing" },
+        retention: { toneShift: "personal", messageFrame: "behind-the-scenes", ctaType: "comment-below", hookStrategy: "team spotlight or process reveal", visualDirection: "candid team photo or workspace shot" },
+        advocacy: { toneShift: "celebratory", messageFrame: "user-spotlight", ctaType: "tag-a-friend", hookStrategy: "repost user content or share win", visualDirection: "user-generated content with brand overlay" },
+      },
+      optimalPublishTimes: { dayOfWeek: [1, 3, 5], hourRange: [11, 13], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "instagram",
+      format: "carousel",
+      specs: { maxChars: { caption: 2200, slideText: 200 }, imageSize: { width: 1080, height: 1080 }, slides: { min: 2, max: 10 } },
+      componentTemplate: [
+        { type: "cover-slide", required: true },
+        { type: "content-slides", required: true, minCount: 2, maxCount: 9 },
+        { type: "cta-slide", required: true },
+        { type: "caption", required: true, maxLength: 2200 },
+        { type: "hashtags", required: false },
+      ],
+      bestPractices: [
+        "Cover slide must create scroll-stopping curiosity",
+        "Each slide should deliver one clear idea",
+        "Use consistent visual style and typography across all slides",
+        "End with a strong CTA slide (save, share, follow)",
+        "Aim for 7-10 slides for optimal engagement",
+        "Include text on slides — many watch without sound context",
+        "Number slides (1/8, 2/8) to encourage swiping",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "educational", messageFrame: "myth-busting or listicle", ctaType: "save-for-later", hookStrategy: "bold claim on cover + proof in slides", visualDirection: "clean typography, brand colors, minimal imagery" },
+        consideration: { toneShift: "detailed", messageFrame: "framework-or-process", ctaType: "link-in-bio", hookStrategy: "step-by-step guide or comparison", visualDirection: "diagram slides with clear hierarchy" },
+        decision: { toneShift: "persuasive", messageFrame: "case-study-story", ctaType: "dm-for-details", hookStrategy: "transformation story slide by slide", visualDirection: "before/after or timeline progression" },
+        retention: { toneShift: "insider", messageFrame: "tips-and-tricks", ctaType: "share-with-someone", hookStrategy: "advanced tips only for followers", visualDirection: "branded template with tips format" },
+        advocacy: { toneShift: "community", messageFrame: "user-stories", ctaType: "create-your-own", hookStrategy: "collection of community contributions", visualDirection: "diverse user photos with quotes" },
+      },
+      optimalPublishTimes: { dayOfWeek: [2, 4, 6], hourRange: [10, 12], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "email",
+      format: "newsletter",
+      specs: { maxChars: { subject: 60, preheader: 100, body: 5000 }, imageWidth: 600 },
+      componentTemplate: [
+        { type: "subject-line", required: true, maxLength: 60 },
+        { type: "preheader", required: true, maxLength: 100 },
+        { type: "hero-image", required: false },
+        { type: "headline", required: true, maxLength: 100 },
+        { type: "body", required: true, maxLength: 5000 },
+        { type: "cta-button", required: true },
+        { type: "footer", required: false },
+      ],
+      bestPractices: [
+        "Subject line under 50 characters for mobile display",
+        "Use preheader text to complement the subject line",
+        "Single primary CTA — avoid decision paralysis",
+        "Use the inverted pyramid: most important info first",
+        "Test send times — typically Tuesday-Thursday mornings perform best",
+        "Keep total width at 600px for email client compatibility",
+        "Include plain text alternative for accessibility",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "welcoming", messageFrame: "introduction-and-value", ctaType: "explore-resource", hookStrategy: "curiosity-gap subject line", visualDirection: "clean hero image, warm colors" },
+        consideration: { toneShift: "helpful", messageFrame: "educational-content", ctaType: "read-more", hookStrategy: "exclusive insight or data point", visualDirection: "infographic or chart in hero" },
+        decision: { toneShift: "compelling", messageFrame: "offer-or-trial", ctaType: "start-now", hookStrategy: "urgency or scarcity in subject", visualDirection: "product screenshot or pricing visual" },
+        retention: { toneShift: "appreciative", messageFrame: "insider-updates", ctaType: "check-it-out", hookStrategy: "personalized subject with name or behavior", visualDirection: "personalized recommendation or digest" },
+        advocacy: { toneShift: "grateful", messageFrame: "referral-program", ctaType: "invite-a-friend", hookStrategy: "reward or recognition in subject", visualDirection: "milestone or achievement visual" },
+      },
+      optimalPublishTimes: { dayOfWeek: [2, 3, 4], hourRange: [9, 11], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "web",
+      format: "landing-page",
+      specs: { maxChars: { headline: 80, subheadline: 150, body: 3000 }, heroImageSize: { width: 1440, height: 600 } },
+      componentTemplate: [
+        { type: "headline", required: true, maxLength: 80 },
+        { type: "subheadline", required: true, maxLength: 150 },
+        { type: "hero-image", required: false },
+        { type: "value-proposition", required: true },
+        { type: "benefits-list", required: true },
+        { type: "social-proof", required: false },
+        { type: "cta-primary", required: true },
+        { type: "cta-secondary", required: false },
+      ],
+      bestPractices: [
+        "One page, one goal — remove navigation distractions",
+        "Headline should communicate the primary benefit in under 10 words",
+        "Place CTA above the fold and repeat it after each section",
+        "Use social proof near the CTA (testimonials, logos, numbers)",
+        "Optimize for mobile first — 60%+ of traffic is mobile",
+        "Use directional cues (arrows, gaze direction) toward CTA",
+        "A/B test headlines — they affect conversion rate more than anything else",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "inspirational", messageFrame: "problem-solution", ctaType: "learn-more", hookStrategy: "bold headline addressing pain point", visualDirection: "hero image showing transformation" },
+        consideration: { toneShift: "informative", messageFrame: "feature-benefit", ctaType: "get-started-free", hookStrategy: "comparison or feature matrix", visualDirection: "product demo or screenshot" },
+        decision: { toneShift: "reassuring", messageFrame: "guarantee-and-proof", ctaType: "buy-now", hookStrategy: "risk reversal + social proof", visualDirection: "testimonial video or trust badges" },
+        retention: { toneShift: "exclusive", messageFrame: "upgrade-unlock", ctaType: "upgrade", hookStrategy: "loyalty benefit or new feature", visualDirection: "feature comparison or roadmap" },
+        advocacy: { toneShift: "empowering", messageFrame: "partner-program", ctaType: "become-partner", hookStrategy: "earning potential or impact metrics", visualDirection: "partner success stories" },
+      },
+      optimalPublishTimes: { dayOfWeek: [1, 2, 3, 4, 5], hourRange: [8, 18], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "web",
+      format: "blog-article",
+      specs: { maxChars: { title: 70, metaDescription: 160, body: 15000 }, heroImageSize: { width: 1200, height: 630 } },
+      componentTemplate: [
+        { type: "title", required: true, maxLength: 70 },
+        { type: "meta-description", required: true, maxLength: 160 },
+        { type: "hero-image", required: false },
+        { type: "introduction", required: true },
+        { type: "body-sections", required: true },
+        { type: "conclusion", required: true },
+        { type: "cta", required: false },
+      ],
+      bestPractices: [
+        "Title should include primary keyword and be under 60 characters for SEO",
+        "Write a compelling meta description (155 chars) with a value proposition",
+        "Use H2/H3 headers every 300 words for scannability",
+        "Include internal and external links (2-3 each per 1000 words)",
+        "Aim for 1500-2500 words for SEO performance",
+        "Add alt text to all images with relevant keywords",
+        "Include a clear next step or CTA at the end",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "informative", messageFrame: "problem-education", ctaType: "subscribe-newsletter", hookStrategy: "question or surprising statistic in title", visualDirection: "stock photo or custom illustration" },
+        consideration: { toneShift: "expert", messageFrame: "how-to-guide", ctaType: "download-guide", hookStrategy: "practical framework or methodology", visualDirection: "diagrams, screenshots, or process photos" },
+        decision: { toneShift: "persuasive", messageFrame: "comparison-review", ctaType: "try-free", hookStrategy: "versus comparison or buyer's guide format", visualDirection: "comparison tables or feature screenshots" },
+        retention: { toneShift: "insider", messageFrame: "advanced-tips", ctaType: "join-community", hookStrategy: "pro tips or advanced techniques", visualDirection: "detailed walkthroughs with annotated screenshots" },
+        advocacy: { toneShift: "collaborative", messageFrame: "guest-post-or-interview", ctaType: "contribute", hookStrategy: "expert interview or community roundup", visualDirection: "contributor photos or community event images" },
+      },
+      optimalPublishTimes: { dayOfWeek: [1, 2, 3], hourRange: [8, 10], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "tiktok",
+      format: "video",
+      specs: { maxChars: { caption: 2200, onScreenText: 100 }, videoSize: { width: 1080, height: 1920 }, videoDuration: { min: 15, max: 180, optimalRange: [30, 60] } },
+      componentTemplate: [
+        { type: "hook", required: true, maxLength: 50, timing: "0-3s" },
+        { type: "body-script", required: true, timing: "3-50s" },
+        { type: "cta", required: true, maxLength: 50, timing: "last-5s" },
+        { type: "on-screen-text", required: false },
+        { type: "caption", required: true, maxLength: 2200 },
+        { type: "hashtags", required: false },
+        { type: "sound", required: false },
+      ],
+      bestPractices: [
+        "Hook in the first 1-3 seconds — viewers decide to stay or scroll",
+        "Use on-screen text for key messages (many watch without sound)",
+        "Keep it between 30-60 seconds for optimal completion rate",
+        "Shoot vertically (9:16) — never repurpose horizontal video",
+        "Use trending sounds when relevant to your message",
+        "End with a question or CTA to drive comments",
+        "Post 1-3 times per day for algorithm favor",
+        "Show faces — videos with people get 2x more engagement",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "entertaining", messageFrame: "trend-riding", ctaType: "follow-for-more", hookStrategy: "trending format with brand twist", visualDirection: "fast-paced cuts, trending audio, bold text overlay" },
+        consideration: { toneShift: "educational", messageFrame: "quick-tutorial", ctaType: "link-in-bio", hookStrategy: "did-you-know or myth-busting format", visualDirection: "talking head with B-roll cutaways" },
+        decision: { toneShift: "authentic", messageFrame: "unboxing-or-demo", ctaType: "tap-to-shop", hookStrategy: "product reveal or transformation", visualDirection: "close-up product shots with natural lighting" },
+        retention: { toneShift: "personal", messageFrame: "behind-the-scenes", ctaType: "comment-what-you-think", hookStrategy: "day-in-the-life or process reveal", visualDirection: "casual, authentic filming style" },
+        advocacy: { toneShift: "community", messageFrame: "duet-or-stitch", ctaType: "stitch-this", hookStrategy: "challenge or duet invitation", visualDirection: "user-generated content compilation" },
+      },
+      optimalPublishTimes: { dayOfWeek: [2, 4, 6, 0], hourRange: [12, 15], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "tiktok",
+      format: "story",
+      specs: { maxChars: { caption: 300, onScreenText: 80 }, videoSize: { width: 1080, height: 1920 }, videoDuration: { min: 5, max: 60, optimalRange: [10, 15] } },
+      componentTemplate: [
+        { type: "hook", required: true, maxLength: 30, timing: "0-2s" },
+        { type: "body-script", required: true, timing: "2-12s" },
+        { type: "cta-sticker", required: false },
+        { type: "caption", required: false, maxLength: 300 },
+      ],
+      bestPractices: [
+        "Stories are ephemeral — create urgency with limited-time messages",
+        "Use stickers, polls, and questions for interaction",
+        "Keep it under 15 seconds for highest completion rate",
+        "Vertical only (9:16) — fill the screen completely",
+        "Tap-through rate drops after 3 stories in a row",
+        "Use music or voiceover — stories without audio underperform",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "playful", messageFrame: "quick-reveal", ctaType: "swipe-up", hookStrategy: "countdown or teaser", visualDirection: "bright, high-contrast, fast cuts" },
+        consideration: { toneShift: "informative", messageFrame: "quick-tip", ctaType: "tap-link", hookStrategy: "one-tip-per-story sequence", visualDirection: "talking head with text overlay" },
+        decision: { toneShift: "direct", messageFrame: "flash-offer", ctaType: "shop-now", hookStrategy: "limited-time reveal", visualDirection: "product close-up with price overlay" },
+        retention: { toneShift: "casual", messageFrame: "day-in-the-life", ctaType: "reply", hookStrategy: "behind-the-scenes moment", visualDirection: "raw, unedited footage" },
+        advocacy: { toneShift: "interactive", messageFrame: "poll-or-question", ctaType: "vote", hookStrategy: "this-or-that or quiz format", visualDirection: "interactive sticker overlays" },
+      },
+      optimalPublishTimes: { dayOfWeek: [1, 3, 5, 0], hourRange: [18, 21], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "youtube",
+      format: "short",
+      specs: { maxChars: { title: 100, description: 200 }, videoSize: { width: 1080, height: 1920 }, videoDuration: { min: 15, max: 60, optimalRange: [30, 45] } },
+      componentTemplate: [
+        { type: "hook", required: true, maxLength: 40, timing: "0-3s" },
+        { type: "body-script", required: true, timing: "3-55s" },
+        { type: "cta", required: true, timing: "last-5s" },
+        { type: "title", required: true, maxLength: 100 },
+        { type: "description", required: false, maxLength: 200 },
+        { type: "hashtags", required: false },
+      ],
+      bestPractices: [
+        "First 3 seconds decide if viewers stay — hook immediately",
+        "Optimal length is 30-45 seconds for the algorithm",
+        "Use on-screen text for key points (many watch muted)",
+        "Vertical format only (9:16) — never letterbox horizontal content",
+        "Loop-friendly endings boost replay and watch time",
+        "Post 3-5 Shorts per week for consistent algorithm push",
+        "End with a subscribe CTA or question to drive interaction",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "attention-grabbing", messageFrame: "surprising-fact", ctaType: "subscribe", hookStrategy: "bold claim or visual shock in first 2 seconds", visualDirection: "fast cuts, bold text, high energy" },
+        consideration: { toneShift: "educational", messageFrame: "quick-how-to", ctaType: "watch-full-video", hookStrategy: "numbered tips or one-minute explainer", visualDirection: "talking head with B-roll inserts" },
+        decision: { toneShift: "demonstrative", messageFrame: "product-in-action", ctaType: "link-in-description", hookStrategy: "transformation or before/after reveal", visualDirection: "close-up product demo" },
+        retention: { toneShift: "entertaining", messageFrame: "series-content", ctaType: "follow-for-part-2", hookStrategy: "cliffhanger or series hook", visualDirection: "branded series template" },
+        advocacy: { toneShift: "reactive", messageFrame: "reaction-or-reply", ctaType: "comment-your-take", hookStrategy: "respond to trending topic or comment", visualDirection: "reaction format with original content inset" },
+      },
+      optimalPublishTimes: { dayOfWeek: [1, 3, 5, 6], hourRange: [14, 17], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "youtube",
+      format: "video",
+      specs: { maxChars: { title: 100, description: 5000 }, videoSize: { width: 1920, height: 1080 }, videoDuration: { min: 60, max: 3600, optimalRange: [480, 900] } },
+      componentTemplate: [
+        { type: "hook", required: true, maxLength: 80, timing: "0-30s" },
+        { type: "intro", required: true, timing: "30-60s" },
+        { type: "body-sections", required: true },
+        { type: "cta-mid-roll", required: false },
+        { type: "conclusion", required: true, timing: "last-60s" },
+        { type: "title", required: true, maxLength: 100 },
+        { type: "description", required: true, maxLength: 5000 },
+        { type: "tags", required: false },
+        { type: "thumbnail-concept", required: true },
+      ],
+      bestPractices: [
+        "Thumbnail and title drive 90% of click-through rate",
+        "Hook viewers in the first 30 seconds — state the value promise",
+        "Optimal length is 8-15 minutes for monetization and algorithm",
+        "Use chapters (timestamps) for better SEO and viewer retention",
+        "Include cards and end screens to boost session time",
+        "Publish on a consistent schedule for subscriber retention",
+        "Description should include key timestamps, links, and keywords",
+        "Add subtitles/CC for accessibility and 15% longer watch time",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "authoritative", messageFrame: "deep-dive-explainer", ctaType: "subscribe-and-bell", hookStrategy: "promise a framework or revelation in the first 15s", visualDirection: "professional setup, B-roll, graphics package" },
+        consideration: { toneShift: "educational", messageFrame: "tutorial-or-review", ctaType: "download-template", hookStrategy: "show the end result first, then teach the process", visualDirection: "screen recording + talking head combo" },
+        decision: { toneShift: "transparent", messageFrame: "honest-review-or-comparison", ctaType: "try-link-below", hookStrategy: "head-to-head comparison or honest assessment", visualDirection: "split-screen comparison, data overlays" },
+        retention: { toneShift: "personal", messageFrame: "vlog-or-update", ctaType: "join-community", hookStrategy: "personal story or milestone", visualDirection: "cinematic B-roll, authentic moments" },
+        advocacy: { toneShift: "collaborative", messageFrame: "interview-or-collab", ctaType: "check-their-channel", hookStrategy: "guest expert or collab teaser", visualDirection: "dual-camera interview setup" },
+      },
+      optimalPublishTimes: { dayOfWeek: [4, 5, 6], hourRange: [14, 16], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "video",
+      format: "script",
+      specs: { maxChars: { title: 100, script: 10000 }, videoDuration: { min: 30, max: 600, optimalRange: [60, 180] } },
+      componentTemplate: [
+        { type: "title", required: true, maxLength: 100 },
+        { type: "hook", required: true, maxLength: 200 },
+        { type: "script-body", required: true, maxLength: 10000 },
+        { type: "visual-directions", required: false },
+        { type: "cta", required: true },
+        { type: "voiceover-notes", required: false },
+      ],
+      bestPractices: [
+        "Write for the ear, not the eye — read scripts aloud",
+        "Include visual direction notes alongside dialogue",
+        "Keep sentences short (10-15 words max) for natural delivery",
+        "Front-load the hook — attention drops after 8 seconds",
+        "Include B-roll suggestions to maintain visual interest",
+        "Mark emphasis and pause points for the narrator",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "cinematic", messageFrame: "story-driven", ctaType: "discover-more", hookStrategy: "open with a provocative question or scenario", visualDirection: "wide establishing shots, atmospheric" },
+        consideration: { toneShift: "informative", messageFrame: "explainer", ctaType: "learn-how", hookStrategy: "state the problem, tease the solution", visualDirection: "diagrams, animations, screen recordings" },
+        decision: { toneShift: "persuasive", messageFrame: "testimonial-driven", ctaType: "get-started", hookStrategy: "customer success story opening", visualDirection: "real people, real results footage" },
+        retention: { toneShift: "warm", messageFrame: "brand-story", ctaType: "stay-connected", hookStrategy: "nostalgic or emotional opening", visualDirection: "behind-the-scenes, team moments" },
+        advocacy: { toneShift: "inspiring", messageFrame: "impact-story", ctaType: "join-the-movement", hookStrategy: "community impact montage", visualDirection: "diverse faces, real-world impact" },
+      },
+      optimalPublishTimes: { dayOfWeek: [1, 2, 3, 4, 5], hourRange: [9, 17], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "video",
+      format: "storyboard",
+      specs: { scenes: { min: 4, max: 20 }, sceneDescription: { maxLength: 300 }, visualNotes: { maxLength: 200 } },
+      componentTemplate: [
+        { type: "scene", required: true, fields: ["sceneNumber", "visualDescription", "dialogue", "duration", "cameraAngle", "transition"] },
+        { type: "overall-concept", required: true, maxLength: 500 },
+        { type: "mood-board-direction", required: false },
+        { type: "music-sound-notes", required: false },
+      ],
+      bestPractices: [
+        "Each scene should serve the narrative — cut anything that doesn't advance the story",
+        "Include camera angles and transitions for the production team",
+        "Specify audio/music cues per scene for mood consistency",
+        "Keep scene descriptions visual — show, don't tell",
+        "Include rough timing per scene to hit the target duration",
+        "Leave room for improvisation — storyboards are guides, not scripts",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "dramatic", messageFrame: "brand-anthem", ctaType: "experience-the-brand", hookStrategy: "opening frame must be visually arresting", visualDirection: "cinematic, wide shots, emotional color grading" },
+        consideration: { toneShift: "clear", messageFrame: "product-walkthrough", ctaType: "see-how-it-works", hookStrategy: "problem→solution visual sequence", visualDirection: "clean, well-lit product shots, UI close-ups" },
+        decision: { toneShift: "dynamic", messageFrame: "case-study-visual", ctaType: "start-your-journey", hookStrategy: "before/after transformation sequence", visualDirection: "split-screen, progress montage" },
+        retention: { toneShift: "intimate", messageFrame: "founder-story", ctaType: "our-mission", hookStrategy: "personal moment or origin story", visualDirection: "close-ups, warm lighting, authentic settings" },
+        advocacy: { toneShift: "uplifting", messageFrame: "community-montage", ctaType: "be-part-of-it", hookStrategy: "diverse community members montage", visualDirection: "user-submitted footage, documentary style" },
+      },
+      optimalPublishTimes: { dayOfWeek: [1, 2, 3, 4, 5], hourRange: [9, 17], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "podcast",
+      format: "episode",
+      specs: { audioDuration: { min: 600, max: 5400, optimalRange: [1200, 2700] }, maxChars: { title: 100, description: 4000, showNotes: 5000 } },
+      componentTemplate: [
+        { type: "episode-title", required: true, maxLength: 100 },
+        { type: "episode-description", required: true, maxLength: 4000 },
+        { type: "intro-script", required: true, maxLength: 500 },
+        { type: "segment-outline", required: true },
+        { type: "interview-questions", required: false },
+        { type: "outro-script", required: true, maxLength: 300 },
+        { type: "show-notes", required: true, maxLength: 5000 },
+        { type: "chapter-markers", required: false },
+      ],
+      bestPractices: [
+        "Hook listeners in the first 60 seconds — tease the best moment or key insight",
+        "Optimal episode length is 20-45 minutes for most audiences",
+        "Use consistent intro/outro music for brand recognition",
+        "Include chapter markers for podcast apps that support them",
+        "Write compelling episode titles — they drive discovery",
+        "Show notes should include timestamps, links, and a summary",
+        "Publish on a consistent day/time — listeners expect reliability",
+        "Include a clear CTA once per episode (subscribe, review, visit site)",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "conversational", messageFrame: "trending-topic", ctaType: "subscribe", hookStrategy: "start with the most surprising insight from the episode", visualDirection: "n/a (audio) — use cover art and audiogram clips for promotion" },
+        consideration: { toneShift: "expert", messageFrame: "deep-dive", ctaType: "download-resource", hookStrategy: "promise actionable takeaways in the intro", visualDirection: "n/a — promote with quote cards and audiograms" },
+        decision: { toneShift: "testimonial", messageFrame: "customer-interview", ctaType: "try-it-yourself", hookStrategy: "customer success story teaser", visualDirection: "n/a — promote with guest headshot and key quote" },
+        retention: { toneShift: "intimate", messageFrame: "q-and-a", ctaType: "send-your-questions", hookStrategy: "answer listener questions", visualDirection: "n/a — promote with community engagement post" },
+        advocacy: { toneShift: "collaborative", messageFrame: "guest-expert", ctaType: "share-this-episode", hookStrategy: "notable guest introduction with credibility markers", visualDirection: "n/a — promote with guest cross-promotion" },
+      },
+      optimalPublishTimes: { dayOfWeek: [1, 2, 3], hourRange: [5, 7], timezone: "Europe/Amsterdam" },
+    },
+    {
+      platform: "podcast",
+      format: "show-notes",
+      specs: { maxChars: { title: 100, summary: 500, fullNotes: 5000 } },
+      componentTemplate: [
+        { type: "episode-title", required: true, maxLength: 100 },
+        { type: "episode-summary", required: true, maxLength: 500 },
+        { type: "key-takeaways", required: true },
+        { type: "timestamps", required: true },
+        { type: "resources-links", required: false },
+        { type: "guest-bio", required: false },
+        { type: "transcript-excerpt", required: false },
+      ],
+      bestPractices: [
+        "Start with a 2-3 sentence episode summary for SEO and discoverability",
+        "List 3-5 key takeaways as bullet points",
+        "Include timestamps for every major topic or segment",
+        "Link to all resources, tools, and books mentioned in the episode",
+        "Include guest social links and a short bio",
+        "Add a call-to-action for newsletter, community, or next episode",
+        "Repurpose show notes as blog posts for SEO value",
+      ],
+      phaseGuidance: {
+        awareness: { toneShift: "informative", messageFrame: "episode-overview", ctaType: "listen-now", hookStrategy: "highlight the most surprising or valuable takeaway", visualDirection: "n/a — text-based, formatted for podcast apps and web" },
+        consideration: { toneShift: "detailed", messageFrame: "resource-companion", ctaType: "get-the-template", hookStrategy: "position show notes as a standalone resource guide", visualDirection: "n/a — use headers and bullet points for scannability" },
+        decision: { toneShift: "actionable", messageFrame: "implementation-guide", ctaType: "start-implementing", hookStrategy: "turn episode insights into step-by-step actions", visualDirection: "n/a — numbered lists and action items" },
+        retention: { toneShift: "community-focused", messageFrame: "discussion-starter", ctaType: "join-the-conversation", hookStrategy: "pose discussion questions from the episode", visualDirection: "n/a — include community links and discussion prompts" },
+        advocacy: { toneShift: "shareable", messageFrame: "quotable-moments", ctaType: "share-this-insight", hookStrategy: "pull the best quotes for social sharing", visualDirection: "n/a — create shareable quote blocks" },
+      },
+      optimalPublishTimes: { dayOfWeek: [1, 2, 3], hourRange: [5, 7], timezone: "Europe/Amsterdam" },
+    },
+  ];
+
+  for (const me of mediumEnrichmentData) {
+    await prisma.mediumEnrichment.create({
+      data: {
+        platform: me.platform,
+        format: me.format,
+        specs: me.specs,
+        componentTemplate: me.componentTemplate,
+        bestPractices: me.bestPractices,
+        phaseGuidance: me.phaseGuidance,
+        optimalPublishTimes: me.optimalPublishTimes,
+        isDefault: true,
+        workspaceId: null,
+      },
+    });
+  }
+
+  console.log("Seed complete: 2 organizations, 2 workspaces, 4 users, 3 org members, 1 invitation, 15 notifications, 11 brand assets (7 with frameworkData), 1 AI session (10 messages, REPORT_READY), 52 research methods, 6 asset versions, 3 workshop bundles, 2 workshops, 20 question templates, 3 interviews, 3 strategies (7 objectives, 15 key results, 5 focus areas, 4 milestones), 1 styleguide (9 colors), 3 personas (12 research methods), 3 products (3 persona links), 3 competitors (1 linked product), 10 knowledge resources (2 featured), 8 detected trends, 1 research job, 1 alignment scan (6 module scores, 4 issues), 10 research bundles (6 Foundation + 4 Specialized), 3 research studies, 1 validation plan (2 assets, 3 methods), 6 campaigns (3 strategic + 3 quick), 12 knowledge assets, 13 deliverables, 3 content versions, 4 improve suggestions, 2 inserted insights, 1 campaign template, 1 persona chat config, 3 exploration configs, 15 medium enrichments, S9 Settings, S9 Help");
 }
 
 main()
