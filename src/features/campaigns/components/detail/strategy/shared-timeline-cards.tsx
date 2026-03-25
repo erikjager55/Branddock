@@ -7,6 +7,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
+  Trash2,
   Users,
   Zap,
 } from "lucide-react";
@@ -15,6 +16,8 @@ import type {
   AssetPlanDeliverable,
 } from "@/lib/campaigns/strategy-blueprint.types";
 import type { PersonaColorStyle } from "@/features/campaigns/lib/persona-colors";
+import { getChannelColor } from "@/features/campaigns/lib/channel-colors";
+import { normalizeChannel } from "@/features/campaigns/lib/channel-frequency";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -59,6 +62,7 @@ export function DeliverableCard({
   channel,
   personas,
   onBringToLife,
+  onDelete,
   onMove,
   canMoveLeft = false,
   canMoveRight = false,
@@ -70,6 +74,8 @@ export function DeliverableCard({
   channel?: string;
   personas?: CardPersonaInfo[];
   onBringToLife?: (title: string, contentType: string) => void;
+  /** Called when the user wants to delete this deliverable */
+  onDelete?: (title: string) => void;
   /** Called when the user wants to move this deliverable to a different week */
   onMove?: (direction: -1 | 1) => void;
   /** Whether the deliverable can be moved earlier (not at first beat) */
@@ -138,11 +144,17 @@ export function DeliverableCard({
               {statusStyle.label}
             </span>
           )}
-          {channel && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-[10px] font-medium text-gray-600">
-              {channel}
-            </span>
-          )}
+          {channel && (() => {
+            const ch = getChannelColor(normalizeChannel(channel));
+            return (
+              <span
+                className="inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-medium"
+                style={{ backgroundColor: ch.hex + '14', color: ch.hex, borderColor: ch.hex + '33' }}
+              >
+                {channel}
+              </span>
+            );
+          })()}
           {expanded ? (
             <ChevronDown className="w-3 h-3 text-gray-400" />
           ) : (
@@ -210,46 +222,63 @@ export function DeliverableCard({
                 <span className="text-gray-600">{deliverable.brief.toneDirection}</span>
               </div>
             )}
-            {onBringToLife && (
-              <div className="pt-1">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onBringToLife(deliverable.title, deliverable.contentType);
-                  }}
-                >
-                  <Zap className="h-3 w-3 mr-1" />
-                  Bring to Life
-                </Button>
+            {(onBringToLife || onDelete) && (
+              <div className="pt-1 flex items-center gap-2">
+                {onBringToLife && (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBringToLife(deliverable.title, deliverable.contentType);
+                    }}
+                  >
+                    <Zap className="h-3 w-3 mr-1" />
+                    Bring to Life
+                  </Button>
+                )}
+                {onDelete && (
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-red-600 transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(deliverable.title);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    Delete
+                  </button>
+                )}
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Move controls */}
-      {onMove && (
+      {/* Move controls — hidden when neither direction is available */}
+      {onMove && (canMoveLeft || canMoveRight) && (
         <div className="flex items-center justify-between px-3 py-1 border-t border-gray-100">
-          <button
-            type="button"
-            disabled={!canMoveLeft}
-            className="inline-flex items-center gap-0.5 text-[10px] font-medium text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            onClick={(e) => { e.stopPropagation(); onMove(-1); }}
-          >
-            <ChevronLeft className="w-3 h-3" />
-            Earlier
-          </button>
-          <button
-            type="button"
-            disabled={!canMoveRight}
-            className="inline-flex items-center gap-0.5 text-[10px] font-medium text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            onClick={(e) => { e.stopPropagation(); onMove(1); }}
-          >
-            Later
-            <ChevronRight className="w-3 h-3" />
-          </button>
+          {canMoveLeft ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-0.5 text-[10px] font-medium text-gray-400 hover:text-gray-700 transition-colors"
+              onClick={(e) => { e.stopPropagation(); onMove(-1); }}
+            >
+              <ChevronLeft className="w-3 h-3" />
+              Earlier
+            </button>
+          ) : <span />}
+          {canMoveRight ? (
+            <button
+              type="button"
+              className="inline-flex items-center gap-0.5 text-[10px] font-medium text-gray-400 hover:text-gray-700 transition-colors"
+              onClick={(e) => { e.stopPropagation(); onMove(1); }}
+            >
+              Later
+              <ChevronRight className="w-3 h-3" />
+            </button>
+          ) : <span />}
         </div>
       )}
     </div>

@@ -25,6 +25,7 @@ export function PageShell({ children, maxWidth = '7xl', className, noPadding = f
       <div className={cn(
         MAX_WIDTH_MAP[maxWidth],
         !noPadding && SPACING.page.padding,
+        'space-y-6',
         className
       )}>
         {children}

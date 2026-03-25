@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, Rocket } from "lucide-react";
+import { ArrowLeft, ArrowRight, Rocket, Map } from "lucide-react";
 import { Button } from "@/components/shared";
 import { PageShell } from '@/components/ui/layout';
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
@@ -29,6 +29,7 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   const prevStep = useCampaignWizardStore((s) => s.prevStep);
   const canProceedResult = useCampaignWizardStore((s) => s.canProceed());
   const resetWizard = useCampaignWizardStore((s) => s.resetWizard);
+  const strategyPhase = useCampaignWizardStore((s) => s.strategyPhase);
 
   // Launch state
   const name = useCampaignWizardStore((s) => s.name);
@@ -172,13 +173,17 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
         <Button
           data-testid="wizard-continue-button"
           variant="cta"
-          icon={isLastStep ? Rocket : ArrowRight}
+          icon={isLastStep ? Rocket : (currentStep === 4 && strategyPhase === "review_proposal") ? Map : ArrowRight}
           iconPosition={isLastStep ? "left" : "right"}
           onClick={handleContinue}
           disabled={!canProceedResult || launchCampaign.isPending}
           isLoading={launchCampaign.isPending}
         >
-          {isLastStep ? "Launch Campaign" : "Continue"}
+          {isLastStep
+            ? "Launch Campaign"
+            : currentStep === 4 && strategyPhase === "review_proposal"
+              ? "Elaborate Customer Journey"
+              : "Continue"}
         </Button>
       </div>
 

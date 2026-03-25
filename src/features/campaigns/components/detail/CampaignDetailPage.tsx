@@ -17,6 +17,7 @@ import {
   useGenerateCampaignStrategy,
   useDeliverables,
   useAddDeliverable,
+  useDeleteDeliverable,
 } from "../../hooks";
 import { useCampaignStore } from "../../stores/useCampaignStore";
 import { StrategyResultTab } from "./StrategyResultTab";
@@ -59,6 +60,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
   const { data: deliverables } = useDeliverables(campaignId);
   const generateStrategy = useGenerateCampaignStrategy(campaignId);
   const addDeliverable = useAddDeliverable(campaignId);
+  const deleteDeliverable = useDeleteDeliverable(campaignId);
   const activeSubTab = useCampaignStore((s) => s.activeStrategySubTab);
 
   // ── Add deliverable modal ──────────────────────────────────
@@ -135,6 +137,16 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
     setAddPriority(null);
     setAddObjective("");
     setAddError(null);
+  };
+
+  /** Delete a deliverable by matching its title to the DB record */
+  const handleDeleteDeliverable = (title: string) => {
+    if (!deliverables) return;
+    const match = deliverables.find(
+      (d) => d.title.trim().toLowerCase() === title.trim().toLowerCase(),
+    );
+    if (!match) return;
+    deleteDeliverable.mutate(match.id);
   };
 
   const handleAddDeliverable = async () => {
@@ -359,15 +371,10 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
                   onGenerate={() => generateStrategy.mutate()}
                   isGenerating={generateStrategy.isPending}
                   onBringToLife={onOpenInStudio ? handleBringToLife : undefined}
+                  onDeleteDeliverable={handleDeleteDeliverable}
                   onAddDeliverable={() => setShowAddModal(true)}
                   campaignStartDate={campaign?.startDate}
                   deliverables={deliverables}
-                />
-              )}
-              {activeSubTab === "timeline" && (
-                <DeliverablesTab
-                  deliverables={deliverables || campaign.deliverables || []}
-                  onOpenInStudio={visibility.showAITools ? (did) => handleOpenInStudio(campaignId, did) : undefined}
                 />
               )}
             </div>

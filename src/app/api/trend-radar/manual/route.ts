@@ -71,6 +71,9 @@ export async function POST(req: NextRequest) {
       sourceUrl: sourceUrl || null,
       imageUrl: imageUrl || null,
       detectionSource: 'MANUAL',
+      isActivated: true,
+      activatedAt: new Date(),
+      activatedById: session.user.id,
       workspaceId,
     },
     include: {

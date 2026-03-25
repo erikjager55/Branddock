@@ -197,6 +197,12 @@ export interface PersonaValidationResult {
   talkabilityScore?: number;
   /** One-line creative judgment */
   creativeVerdict?: string;
+  /** Per-hook score for Hook A (1-10) — used in hook review phase */
+  hookAScore?: number;
+  /** Per-hook score for Hook B (1-10) — used in hook review phase */
+  hookBScore?: number;
+  /** Per-hook score for Hook C (1-10) — used in hook review phase */
+  hookCScore?: number;
 }
 
 // ─── Complete Blueprint ─────────────────────────────────────
@@ -947,6 +953,9 @@ export const personaValidationSchema = z.object({
   culturalRelevanceScore: z.number().min(1).max(10).optional(),
   talkabilityScore: z.number().min(1).max(10).optional(),
   creativeVerdict: z.string().optional(),
+  hookAScore: z.number().min(1).max(10).optional(),
+  hookBScore: z.number().min(1).max(10).optional(),
+  hookCScore: z.number().min(1).max(10).optional(),
 });
 
 export const personaValidationArraySchema = z.array(personaValidationSchema);

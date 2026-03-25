@@ -106,6 +106,7 @@ export function useActivateTrend() {
       qc.invalidateQueries({ queryKey: trendRadarKeys.trends() });
       qc.invalidateQueries({ queryKey: trendRadarKeys.trendDetail(id) });
       qc.invalidateQueries({ queryKey: trendRadarKeys.stats() });
+      qc.invalidateQueries({ queryKey: ['dashboard', 'readiness'] });
     },
   });
 }

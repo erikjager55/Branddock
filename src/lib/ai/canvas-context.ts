@@ -15,6 +15,7 @@ import { prisma } from '@/lib/prisma';
 import { getBrandContext } from './brand-context';
 import type { BrandContextBlock } from './prompt-templates';
 import { detectJourneyPhase, type JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
+import { serializePersona } from './context/persona-serializer';
 
 // ─── Types ───────────────────────────────────────────────────
 
@@ -38,12 +39,41 @@ export interface MediumContext {
   optimalPublishTimes: Record<string, unknown> | null;
 }
 
+export interface PersonaContext {
+  id: string;
+  name: string;
+  serialized: string;
+}
+
+export interface BriefContext {
+  objective: string | null;
+  keyMessage: string | null;
+  toneDirection: string | null;
+  callToAction: string | null;
+  contentOutline: string[];
+}
+
+export interface ProductContext {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  pricingModel: string | null;
+  pricingDetails: string | null;
+  features: string[];
+  benefits: string[];
+  useCases: string[];
+}
+
 export interface CanvasContextStack {
   brand: BrandContextBlock;
   concept: ConceptContext | null;
   journeyPhase: JourneyPhaseContext | null;
   medium: MediumContext | null;
   deliverableTypeId: string | null;
+  personas: PersonaContext[];
+  brief: BriefContext | null;
+  products: ProductContext[];
 }
 
 // ─── Content Type → Platform/Format Mapping ──────────────────
@@ -173,6 +203,7 @@ export async function assembleCanvasContext(
   }
 
   const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
+  const settingsBrief = (settings.brief ?? {}) as Record<string, unknown>;
   const settingsPhase = (deliverable.journeyPhase ?? settings.phase ?? null) as string | null;
 
   // Layer 1: Brand context (cached, 5-min TTL)
@@ -200,5 +231,89 @@ export async function assembleCanvasContext(
     );
   }
 
-  return { brand, concept, journeyPhase, medium, deliverableTypeId: deliverable.contentType ?? null };
+  // Layer 5: Target personas
+  let targetPersonaIds: string[] = [];
+  if (Array.isArray(settings.targetPersonas)) {
+    targetPersonaIds = (settings.targetPersonas as unknown[]).filter((id): id is string => typeof id === 'string');
+  }
+
+  // Fallback: fetch persona IDs from campaign knowledge assets
+  if (targetPersonaIds.length === 0) {
+    const knowledgeAssets = await prisma.campaignKnowledgeAsset.findMany({
+      where: { campaignId: deliverable.campaignId, assetType: 'persona', personaId: { not: null } },
+      select: { personaId: true },
+    });
+    targetPersonaIds = knowledgeAssets
+      .map((ka) => ka.personaId)
+      .filter((id): id is string => id !== null);
+  }
+
+  const personas: PersonaContext[] = [];
+  if (targetPersonaIds.length > 0) {
+    const personaRecords = await prisma.persona.findMany({
+      where: { id: { in: targetPersonaIds }, workspaceId },
+    });
+    for (const p of personaRecords) {
+      const record = p as unknown as Record<string, unknown>;
+      personas.push({
+        id: p.id,
+        name: p.name,
+        serialized: serializePersona(record),
+      });
+    }
+  }
+
+  // Layer 6: Brief context from deliverable settings
+  const brief: BriefContext | null = (() => {
+    const objective = (settingsBrief.objective ?? null) as string | null;
+    const keyMessage = (settingsBrief.keyMessage ?? null) as string | null;
+    const toneDirection = (settingsBrief.toneDirection ?? null) as string | null;
+    const callToAction = (settingsBrief.callToAction ?? null) as string | null;
+    const contentOutline = Array.isArray(settingsBrief.contentOutline)
+      ? (settingsBrief.contentOutline as unknown[]).filter((s): s is string => typeof s === 'string')
+      : [];
+    if (!objective && !keyMessage && !toneDirection && !callToAction && contentOutline.length === 0) {
+      return null;
+    }
+    return { objective, keyMessage, toneDirection, callToAction, contentOutline };
+  })();
+
+  // Layer 7: Product context from campaign knowledge assets
+  let productIds: string[] = [];
+  const productAssets = await prisma.campaignKnowledgeAsset.findMany({
+    where: { campaignId: deliverable.campaignId, assetType: 'Product', productId: { not: null } },
+    select: { productId: true },
+  });
+  productIds = productAssets.map((a) => a.productId).filter((id): id is string => id !== null);
+
+  const products: ProductContext[] = [];
+  if (productIds.length > 0) {
+    const productRecords = await prisma.product.findMany({
+      where: { id: { in: productIds }, workspaceId },
+      select: {
+        id: true, name: true, description: true, category: true,
+        pricingModel: true, pricingDetails: true, features: true,
+        benefits: true, useCases: true,
+      },
+    });
+    for (const p of productRecords) {
+      products.push({
+        id: p.id,
+        name: p.name,
+        description: p.description,
+        category: p.category,
+        pricingModel: p.pricingModel,
+        pricingDetails: p.pricingDetails,
+        features: p.features,
+        benefits: p.benefits,
+        useCases: p.useCases,
+      });
+    }
+  }
+
+  return {
+    brand, concept, journeyPhase, medium,
+    deliverableTypeId: deliverable.contentType ?? null,
+    personas, brief, products,
+  };
 }

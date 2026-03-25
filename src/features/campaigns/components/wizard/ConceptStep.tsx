@@ -515,6 +515,17 @@ export function ConceptStep() {
     store.setStrategyPhase("complete");
   }, [elaborateResult, variantAScore, variantBScore, variantCScore]);
 
+  // ─── Wire wizard Continue button to elaborate when in review_proposal ─────
+  useEffect(() => {
+    const store = useCampaignWizardStore.getState();
+    if (strategyPhase === "review_proposal") {
+      store.setStepProceedOverride(handleElaborate);
+    } else {
+      store.setStepProceedOverride(null);
+    }
+    return () => { store.setStepProceedOverride(null); };
+  }, [strategyPhase, handleElaborate]);
+
   // ─── Render based on phase ─────────────────────────────
 
   // Entry: rationale_complete — auto-starts generation via useEffect above.

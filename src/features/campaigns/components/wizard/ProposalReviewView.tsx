@@ -12,8 +12,12 @@ import {
   Award,
   ChevronDown,
   ChevronUp,
+  Lightbulb,
+  Users,
+  Compass,
+  CheckCircle2,
 } from "lucide-react";
-import { Button, Badge } from "@/components/shared";
+import { Badge } from "@/components/shared";
 import type {
   StrategyLayer,
   ArchitectureLayer,
@@ -73,13 +77,41 @@ function Section({
   );
 }
 
+// ─── Strategy Field ──────────────────────────────────────
+
+function StrategyField({
+  icon: Icon,
+  iconColor,
+  label,
+  children,
+}: {
+  icon: React.ElementType;
+  iconColor: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-3 p-3 rounded-lg bg-white/60 border border-teal-100/60">
+      <div className="shrink-0 w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-teal-100 shadow-sm">
+        <Icon className={`w-4 h-4 ${iconColor}`} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-semibold text-teal-700 uppercase tracking-wide mb-0.5">
+          {label}
+        </p>
+        <div className="text-sm text-teal-900 break-words">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Component ─────────────────────────────────────
 
 export function ProposalReviewView({
   strategy,
   architecture,
   hookConcept,
-  onElaborate,
+  onElaborate: _onElaborate,
   errorMessage,
 }: ProposalReviewViewProps) {
   return (
@@ -95,54 +127,101 @@ export function ProposalReviewView({
         </p>
       </div>
 
+      {/* Campaign Strategy — visually rich, moved to top */}
+      <div className="bg-gradient-to-br from-teal-50 via-emerald-50 to-cyan-50 rounded-xl border border-teal-200 p-5">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-sm">
+            <Target className="w-5 h-5 text-white" />
+          </div>
+          <h4 className="text-base font-semibold text-teal-900">
+            Campaign Strategy
+          </h4>
+        </div>
+
+        <div className="space-y-2.5">
+          {strategy.campaignTheme && (
+            <StrategyField icon={Compass} iconColor="text-teal-500" label="Theme">
+              {strategy.campaignTheme}
+            </StrategyField>
+          )}
+          {strategy.positioningStatement && (
+            <StrategyField icon={Target} iconColor="text-emerald-500" label="Positioning">
+              {strategy.positioningStatement}
+            </StrategyField>
+          )}
+          {strategy.humanInsight && (
+            <StrategyField icon={Lightbulb} iconColor="text-amber-500" label="Human Insight">
+              {strategy.humanInsight}
+            </StrategyField>
+          )}
+          {strategy.creativePlatform && (
+            <StrategyField icon={Sparkles} iconColor="text-violet-500" label="Creative Platform">
+              {strategy.creativePlatform}
+            </StrategyField>
+          )}
+          {strategy.strategicChoices && strategy.strategicChoices.length > 0 && (
+            <StrategyField icon={CheckCircle2} iconColor="text-blue-500" label="Strategic Choices">
+              <ul className="space-y-1">
+                {strategy.strategicChoices.map((c, i) => (
+                  <li key={i} className="flex items-start gap-1.5">
+                    <span className="text-teal-400 mt-0.5 shrink-0">&bull;</span>
+                    <span>{getChoiceText(c)}</span>
+                  </li>
+                ))}
+              </ul>
+            </StrategyField>
+          )}
+        </div>
+      </div>
+
       {/* Hook Concept Highlight */}
-      <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl border border-violet-100 p-5">
+      <div className="bg-gradient-to-r from-violet-50 to-purple-50 rounded-xl border border-violet-100 p-5 overflow-hidden">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="w-5 h-5 text-violet-600" />
           <h4 className="text-base font-semibold text-violet-900">
             {hookConcept.hookTitle}
           </h4>
         </div>
-        <p className="text-sm text-violet-800 mb-3">{hookConcept.bigIdea}</p>
+        <p className="text-sm text-violet-800 mb-3 break-words">{hookConcept.bigIdea}</p>
         <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-start gap-2">
+          <div className="flex items-start gap-2 min-w-0">
             <Megaphone className="w-4 h-4 text-violet-400 mt-0.5 shrink-0" />
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-medium text-violet-600">
                 Campaign Line
               </p>
-              <p className="text-sm text-violet-800">
+              <p className="text-sm text-violet-800 break-words">
                 {hookConcept.campaignLine}
               </p>
             </div>
           </div>
-          <div className="flex items-start gap-2">
+          <div className="flex items-start gap-2 min-w-0">
             <Eye className="w-4 h-4 text-violet-400 mt-0.5 shrink-0" />
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-medium text-violet-600">
                 Visual Direction
               </p>
-              <p className="text-sm text-violet-800">
+              <p className="text-sm text-violet-800 break-words">
                 {hookConcept.visualDirection}
               </p>
             </div>
           </div>
-          <div className="flex items-start gap-2">
+          <div className="flex items-start gap-2 min-w-0">
             <Palette className="w-4 h-4 text-violet-400 mt-0.5 shrink-0" />
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-medium text-violet-600">Tone</p>
-              <p className="text-sm text-violet-800">
+              <p className="text-sm text-violet-800 break-words">
                 {hookConcept.toneOfVoice}
               </p>
             </div>
           </div>
-          <div className="flex items-start gap-2">
+          <div className="flex items-start gap-2 min-w-0">
             <Award className="w-4 h-4 text-violet-400 mt-0.5 shrink-0" />
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-medium text-violet-600">
                 Effie Rationale
               </p>
-              <p className="text-sm text-violet-800">
+              <p className="text-sm text-violet-800 break-words">
                 {hookConcept.effieRationale}
               </p>
             </div>
@@ -156,72 +235,13 @@ export function ProposalReviewView({
             <div className="flex flex-wrap gap-1.5">
               {hookConcept.extendability.map((e, i) => (
                 <Badge key={i} variant="default">
-                  {e}
+                  <span className="break-words">{e}</span>
                 </Badge>
               ))}
             </div>
           </div>
         )}
       </div>
-
-      {/* Strategy Overview */}
-      <Section
-        title="Campaign Strategy"
-        icon={Target}
-        iconColor="text-teal-500"
-        defaultOpen
-      >
-        {strategy.campaignTheme && (
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase mb-1">
-              Theme
-            </p>
-            <p className="text-sm text-gray-700">{strategy.campaignTheme}</p>
-          </div>
-        )}
-        {strategy.positioningStatement && (
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase mb-1">
-              Positioning
-            </p>
-            <p className="text-sm text-gray-700">
-              {strategy.positioningStatement}
-            </p>
-          </div>
-        )}
-        {strategy.humanInsight && (
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase mb-1">
-              Human Insight
-            </p>
-            <p className="text-sm text-gray-700">{strategy.humanInsight}</p>
-          </div>
-        )}
-        {strategy.creativePlatform && (
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase mb-1">
-              Creative Platform
-            </p>
-            <p className="text-sm text-gray-700">
-              {strategy.creativePlatform}
-            </p>
-          </div>
-        )}
-        {strategy.strategicChoices && strategy.strategicChoices.length > 0 && (
-          <div>
-            <p className="text-xs font-medium text-gray-500 uppercase mb-1">
-              Strategic Choices
-            </p>
-            <ul className="space-y-1">
-              {strategy.strategicChoices.map((c, i) => (
-                <li key={i} className="text-sm text-gray-600">
-                  &bull; {getChoiceText(c)}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </Section>
 
       {/* Architecture Preview */}
       <Section
@@ -234,7 +254,7 @@ export function ProposalReviewView({
             <p className="text-xs font-medium text-gray-500 uppercase mb-1">
               Campaign Type
             </p>
-            <p className="text-sm text-gray-700">{architecture.campaignType}</p>
+            <p className="text-sm text-gray-700 break-words">{architecture.campaignType}</p>
           </div>
         )}
         {architecture.journeyPhases && architecture.journeyPhases.length > 0 && (
@@ -253,7 +273,7 @@ export function ProposalReviewView({
                       {phase.name}
                     </span>
                     {phase.kpis && phase.kpis.length > 0 && (
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 shrink-0">
                         {phase.kpis.slice(0, 2).map((kpi, j) => (
                           <Badge key={j} variant="default">
                             {kpi}
@@ -263,7 +283,7 @@ export function ProposalReviewView({
                     )}
                   </div>
                   {phase.goal && (
-                    <p className="text-xs text-gray-500">{phase.goal}</p>
+                    <p className="text-xs text-gray-500 break-words">{phase.goal}</p>
                   )}
                 </div>
               ))}
@@ -284,7 +304,7 @@ export function ProposalReviewView({
               <p className="text-xs font-medium text-gray-500 uppercase mb-1">
                 Brand Message
               </p>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-gray-700 break-words">
                 {strategy.messagingHierarchy.brandMessage}
               </p>
             </div>
@@ -294,7 +314,7 @@ export function ProposalReviewView({
               <p className="text-xs font-medium text-gray-500 uppercase mb-1">
                 Campaign Message
               </p>
-              <p className="text-sm text-gray-700">
+              <p className="text-sm text-gray-700 break-words">
                 {strategy.messagingHierarchy.campaignMessage}
               </p>
             </div>
@@ -308,7 +328,7 @@ export function ProposalReviewView({
                 <ul className="space-y-1">
                   {strategy.messagingHierarchy.proofPoints.map(
                     (m, i) => (
-                      <li key={i} className="text-sm text-gray-600">
+                      <li key={i} className="text-sm text-gray-600 break-words">
                         &bull; {m}
                       </li>
                     ),
@@ -325,13 +345,6 @@ export function ProposalReviewView({
           {errorMessage}
         </div>
       )}
-
-      {/* Actions */}
-      <div className="flex items-center justify-center gap-3 pt-4 border-t border-gray-100">
-        <Button variant="primary" onClick={onElaborate}>
-          Elaborate Customer Journey
-        </Button>
-      </div>
     </div>
   );
 }

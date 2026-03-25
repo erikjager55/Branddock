@@ -81,6 +81,12 @@ const CREATIVE_SCORE_LABELS: { key: keyof PersonaValidationResult; label: string
   { key: "talkabilityScore", label: "Talkability" },
 ];
 
+const HOOK_SCORE_LABELS: { key: keyof PersonaValidationResult; label: string }[] = [
+  { key: "hookAScore", label: "Hook A" },
+  { key: "hookBScore", label: "Hook B" },
+  { key: "hookCScore", label: "Hook C" },
+];
+
 // ─── Creative Score Bar ─────────────────────────────────
 
 function CreativeScoreBar({ label, score }: { label: string; score: number }) {
@@ -127,7 +133,7 @@ function HookCard({
 
   return (
     <div
-      className={`rounded-xl border-2 p-5 transition-all cursor-pointer ${
+      className={`rounded-xl border-2 p-5 transition-all cursor-pointer overflow-hidden ${
         isSelected
           ? "border-teal-400 ring-2 ring-teal-100 bg-teal-50/30"
           : `${HOOK_COLORS[index] ?? "border-gray-200 bg-gray-50"} hover:border-gray-300`
@@ -236,13 +242,11 @@ function HookCard({
               <p className="text-xs font-medium text-gray-500 mb-1">
                 Extendability
               </p>
-              <div className="flex flex-wrap gap-1">
+              <ul className="list-disc list-inside space-y-0.5 text-xs text-gray-600">
                 {(hook.hookConcept?.extendability ?? []).map((e, i) => (
-                  <Badge key={i} variant="default">
-                    {toDisplayString(e)}
-                  </Badge>
+                  <li key={i}>{toDisplayString(e)}</li>
                 ))}
-              </div>
+              </ul>
             </div>
           )}
           <div className="text-xs text-gray-500 italic">
@@ -288,6 +292,10 @@ function PersonaCard({ pv, index }: { pv: PersonaValidationResult; index: number
     (s) => getCreativeScore(s.key) != null,
   );
 
+  const hasHookScores = HOOK_SCORE_LABELS.some(
+    (s) => getCreativeScore(s.key) != null,
+  );
+
   return (
     <div className={`rounded-lg border p-4 ${scoreBg(safeScore)}`}>
       {/* Header row */}
@@ -312,6 +320,18 @@ function PersonaCard({ pv, index }: { pv: PersonaValidationResult; index: number
         <p className="text-xs text-gray-600 mb-3 leading-relaxed">
           {pv.feedback}
         </p>
+      )}
+
+      {/* Per-hook scores */}
+      {hasHookScores && (
+        <div className="space-y-1 mb-3">
+          <p className="text-xs font-medium text-gray-500 mb-1">Per-Hook Scores</p>
+          {HOOK_SCORE_LABELS.map((s) => {
+            const val = getCreativeScore(s.key);
+            if (val == null) return null;
+            return <CreativeScoreBar key={s.key} label={s.label} score={val} />;
+          })}
+        </div>
       )}
 
       {/* Creative scores */}

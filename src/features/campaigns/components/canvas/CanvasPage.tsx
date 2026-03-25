@@ -11,6 +11,7 @@ import { FeedbackBar } from './FeedbackBar';
 import { PreviewPanel } from './PreviewPanel';
 import { ApprovalActionBar } from './ApprovalActionBar';
 import { DerivePlatformSelectorModal } from './DerivePlatformSelectorModal';
+import { CanvasContextSelector } from './CanvasContextSelector';
 import { Skeleton, SkeletonCard } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ArrowLeft } from 'lucide-react';
@@ -31,7 +32,7 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
   const { data: existingComponents, isLoading: componentsLoading } = useCanvasComponents(deliverableId);
   const { generate, regenerate, isGenerating, abort } = useCanvasOrchestration(deliverableId);
 
-  // Set deliverable in store on mount + load approval state
+  // Set deliverable in store on mount + load approval state + load context
   useEffect(() => {
     useCanvasStore.getState().setDeliverable(deliverableId, 'canvas');
 
@@ -54,6 +55,21 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
       .catch((err) => {
         if ((err as Error).name === 'AbortError') return;
         // Non-critical — approval state defaults to DRAFT
+      });
+
+    // Load context stack immediately (without triggering content generation)
+    fetch(`/api/studio/${deliverableId}/context`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data?.contextStack) return;
+        // Only set if no context was loaded yet (orchestrator may have beaten us)
+        if (!useCanvasStore.getState().contextStack) {
+          useCanvasStore.getState().setContextStack(data.contextStack);
+        }
+      })
+      .catch((err) => {
+        if ((err as Error).name === 'AbortError') return;
+        // Non-critical — context will still load when Generate is clicked
       });
 
     return () => {
@@ -166,6 +182,9 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
         {/* Right: Preview panel */}
         <PreviewPanel />
       </div>
+
+      {/* Knowledge context selector modal */}
+      <CanvasContextSelector />
 
       {/* Derive platform selector modal */}
       <DerivePlatformSelectorModal

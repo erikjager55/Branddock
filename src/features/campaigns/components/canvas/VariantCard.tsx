@@ -79,16 +79,18 @@ export function VariantCard({
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
+      <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-gray-100">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-gray-100 text-xs font-semibold text-gray-600 flex-shrink-0">
             {label}
           </span>
           {variant.tone && (
-            <Badge variant="default" size="sm">{variant.tone}</Badge>
+            <span className="min-w-0 overflow-hidden">
+              <Badge variant="default" size="sm"><span className="block truncate max-w-[200px]">{variant.tone}</span></Badge>
+            </span>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {isSelected && (
             <span className="flex items-center gap-1 text-xs text-teal-600">
               <Check className="h-3.5 w-3.5" />

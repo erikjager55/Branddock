@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useState } from "react";
 import {
   Sparkles,
   Target,
@@ -10,6 +10,8 @@ import {
   FileJson,
   Lightbulb,
   CalendarDays,
+  CalendarRange,
+  LayoutGrid,
   Plus,
 } from "lucide-react";
 import { Badge, Button, EmptyState, StatCard } from "@/components/shared";
@@ -17,6 +19,7 @@ import { useCampaignStore } from "../../stores/useCampaignStore";
 import { StrategySection } from "./strategy/StrategySection";
 import { ChannelPlanSection } from "./strategy/ChannelPlanSection";
 import { DeploymentTimelineSection } from "./strategy/DeploymentTimelineSection";
+import { DeploymentGridView } from "./strategy/DeploymentGridView";
 import { RegenerateSectionButton } from "./strategy/RegenerateSectionButton";
 import type { StrategyResponse, LegacyStrategyResponse, DeliverableResponse } from "@/types/campaign";
 import type { AssetPlanDeliverable, AssetPlanLayer } from "@/lib/campaigns/strategy-blueprint.types";
@@ -38,6 +41,8 @@ interface StrategyResultTabProps {
   isGenerating: boolean;
   /** Called when user clicks "Bring to Life" on an asset plan deliverable */
   onBringToLife?: (deliverableTitle: string, contentType: string) => void;
+  /** Called when user wants to delete a deliverable from the timeline */
+  onDeleteDeliverable?: (title: string) => void;
   /** Called when user clicks "Add Deliverable" in the timeline header */
   onAddDeliverable?: () => void;
   /** Optional campaign start date — enables week date labels in the timeline */
@@ -71,11 +76,12 @@ export function StrategyResultTab({
   onGenerate,
   isGenerating,
   onBringToLife,
+  onDeleteDeliverable,
   onAddDeliverable,
   campaignStartDate,
   deliverables,
 }: StrategyResultTabProps) {
-  const { activeStrategySubTab, setActiveStrategySubTab } = useCampaignStore();
+  const { activeStrategySubTab, setActiveStrategySubTab, timelineViewMode, setTimelineViewMode } = useCampaignStore();
 
   // Build deliverable title → status map from DB deliverables (case-insensitive + trimmed)
   const deliverableStatuses = React.useMemo(() => {
@@ -90,14 +96,32 @@ export function StrategyResultTab({
     return map;
   }, [deliverables]);
 
-  // ── Merge manually-added DB deliverables into the blueprint asset plan ──
+  // ── Merge DB deliverables with blueprint asset plan ──
+  // When DB deliverables exist (post-launch), they are the source of truth:
+  // only show blueprint items whose title matches a DB deliverable, plus any
+  // DB-only items (manually added via modal). This ensures items deselected
+  // before launch or deleted after launch disappear from the timeline.
   // NOTE: This useMemo MUST be before early returns to satisfy React Rules of Hooks
   const mergedAssetPlan: AssetPlanLayer | undefined = React.useMemo(() => {
     if (!strategy || isLegacyStrategy(strategy)) return undefined;
     const basePlan = strategy.blueprint.assetPlan;
-    if (!basePlan || !deliverables?.length) return basePlan;
+    if (!basePlan) return undefined;
+    // deliverables undefined = not yet loaded → show basePlan as-is
+    if (!deliverables) return basePlan;
+    // deliverables empty array = all deleted → return plan with empty deliverables
+    if (deliverables.length === 0) {
+      return { ...basePlan, deliverables: [], totalDeliverables: 0 };
+    }
 
     const baseDeliverables = basePlan.deliverables ?? [];
+    const dbTitles = new Set(deliverables.map((d) => d.title.trim().toLowerCase()));
+
+    // Keep only blueprint deliverables that still exist in DB
+    const filteredBlueprint = baseDeliverables.filter((d) =>
+      dbTitles.has(d.title.trim().toLowerCase()),
+    );
+
+    // Add DB-only deliverables (manually added, not in blueprint)
     const blueprintTitles = new Set(baseDeliverables.map((d) => d.title.trim().toLowerCase()));
     const manualDeliverables: AssetPlanDeliverable[] = deliverables
       .filter((d) => !blueprintTitles.has(d.title.trim().toLowerCase()))
@@ -119,14 +143,37 @@ export function StrategyResultTab({
         suggestedOrder: d.settings?.suggestedOrder,
       }));
 
-    if (manualDeliverables.length === 0) return basePlan;
+    const merged = [...filteredBlueprint, ...manualDeliverables];
 
     return {
       ...basePlan,
-      deliverables: [...baseDeliverables, ...manualDeliverables],
-      totalDeliverables: (basePlan.totalDeliverables ?? baseDeliverables.length) + manualDeliverables.length,
+      deliverables: merged,
+      totalDeliverables: merged.length,
     };
   }, [strategy, deliverables]);
+
+  // ── Local deletion tracking ──
+  // Tracks titles deleted in this session for immediate visual removal,
+  // regardless of whether the DB delete succeeds (handles undefined deliverables,
+  // title mismatches, or query failures gracefully).
+  const [deletedTitles, setDeletedTitles] = useState<Set<string>>(new Set());
+
+  const handleDeleteDeliverable = useCallback((title: string) => {
+    setDeletedTitles(prev => {
+      const next = new Set(prev);
+      next.add(title.trim().toLowerCase());
+      return next;
+    });
+    onDeleteDeliverable?.(title);
+  }, [onDeleteDeliverable]);
+
+  const effectiveAssetPlan = React.useMemo(() => {
+    if (!mergedAssetPlan || deletedTitles.size === 0) return mergedAssetPlan;
+    const filtered = (mergedAssetPlan.deliverables ?? []).filter(
+      d => !deletedTitles.has(d.title.trim().toLowerCase()),
+    );
+    return { ...mergedAssetPlan, deliverables: filtered, totalDeliverables: filtered.length };
+  }, [mergedAssetPlan, deletedTitles]);
 
   if (isLoading) {
     return (
@@ -165,7 +212,7 @@ export function StrategyResultTab({
       (sum: number, p: { touchpoints?: unknown[] }) => sum + (p.touchpoints?.length ?? 0), 0
     );
     const channelCount = blueprint.channelPlan?.channels?.length ?? 0;
-    const deliverableCount = mergedAssetPlan?.totalDeliverables ?? 0;
+    const deliverableCount = effectiveAssetPlan?.totalDeliverables ?? 0;
 
     return (
       <div className="space-y-6">
@@ -233,10 +280,39 @@ export function StrategyResultTab({
 
         {/* Campaign Timeline tab */}
         {currentTab === "timeline" && (
-          mergedAssetPlan && blueprint.architecture && blueprint.channelPlan ? (
+          effectiveAssetPlan && blueprint.architecture && blueprint.channelPlan ? (
             <div className="bg-white rounded-lg border p-4 space-y-4">
               <div className="flex items-center justify-between px-2">
-                <h3 className="text-lg font-semibold text-gray-900">Campaign Timeline</h3>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-semibold text-gray-900">Campaign Timeline</h3>
+                  {/* View mode toggle */}
+                  <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setTimelineViewMode("timeline")}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        timelineViewMode === "timeline"
+                          ? "bg-teal-50 text-teal-700 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      <CalendarRange className="w-3.5 h-3.5" />
+                      Timeline
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTimelineViewMode("grid")}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        timelineViewMode === "grid"
+                          ? "bg-teal-50 text-teal-700 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      <LayoutGrid className="w-3.5 h-3.5" />
+                      Grid
+                    </button>
+                  </div>
+                </div>
                 <div className="flex items-center gap-2">
                   <RegenerateSectionButton campaignId={campaignId} layer="architecture" label="Regenerate Journey" />
                   <RegenerateSectionButton campaignId={campaignId} layer="assetPlan" label="Regenerate Assets" />
@@ -247,14 +323,28 @@ export function StrategyResultTab({
                   )}
                 </div>
               </div>
-              <DeploymentTimelineSection
-                assetPlan={mergedAssetPlan}
-                architecture={blueprint.architecture}
-                channelPlan={blueprint.channelPlan}
-                onBringToLife={onBringToLife}
-                campaignStartDate={campaignStartDate}
-                deliverableStatuses={deliverableStatuses}
-              />
+
+              {timelineViewMode === "timeline" ? (
+                <DeploymentTimelineSection
+                  assetPlan={effectiveAssetPlan}
+                  architecture={blueprint.architecture}
+                  channelPlan={blueprint.channelPlan}
+                  onBringToLife={onBringToLife}
+                  onDeleteDeliverable={handleDeleteDeliverable}
+                  campaignStartDate={campaignStartDate}
+                  deliverableStatuses={deliverableStatuses}
+                />
+              ) : (
+                <DeploymentGridView
+                  assetPlan={effectiveAssetPlan}
+                  architecture={blueprint.architecture}
+                  channelPlan={blueprint.channelPlan}
+                  onBringToLife={onBringToLife}
+                  onDeleteDeliverable={handleDeleteDeliverable}
+                  campaignStartDate={campaignStartDate}
+                  deliverableStatuses={deliverableStatuses}
+                />
+              )}
             </div>
           ) : (
             <EmptyState

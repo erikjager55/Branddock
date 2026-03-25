@@ -240,10 +240,10 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
     <div data-testid="imagery-section" className="space-y-6">
       {/* Brand Images */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Camera className="w-4 h-4 text-gray-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Brand Images</h3>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <Camera className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <h3 className="text-sm font-semibold text-gray-900 truncate">Brand Images</h3>
             {brandImages.length > 0 && (
               <Badge variant="default">{brandImages.length}</Badge>
             )}
@@ -251,7 +251,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
           {canEdit && !isEditingImages && brandImages.length > 0 && (
             <button
               onClick={startEditImages}
-              className="p-1 text-gray-400 hover:text-teal-600 transition-colors"
+              className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
               title="Edit images"
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -320,12 +320,12 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
 
       {/* Photography */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-900">Photography Style</h3>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Photography Style</h3>
           {canEdit && !isEditingStyle && (
             <button
               onClick={startEditStyle}
-              className="p-1 text-gray-400 hover:text-teal-600 transition-colors"
+              className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
               title="Edit"
             >
               <Pencil className="w-3.5 h-3.5" />

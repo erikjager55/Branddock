@@ -11,6 +11,7 @@ import { STUDIO } from '@/lib/constants/design-tokens';
 
 /** Right panel: platform preview + validation + publish suggestion */
 export function PreviewPanel() {
+  const deliverableId = useCanvasStore((s) => s.deliverableId);
   const contextStack = useCanvasStore((s) => s.contextStack);
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const selections = useCanvasStore((s) => s.selections);
@@ -64,6 +65,7 @@ export function PreviewPanel() {
         <ValidationChecks
           previewContent={previewContent}
           medium={medium}
+          deliverableId={deliverableId}
         />
 
         {/* Section: Publish Suggestion */}

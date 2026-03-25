@@ -171,12 +171,12 @@ export function LogoSection({ styleguide, canEdit }: LogoSectionProps) {
     <div data-testid="logo-section" className="space-y-6">
       {/* Logo Variations */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-900">Logo Variations</h3>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Logo Variations</h3>
           {canEdit && !isEditingLogos && (
             <button
               onClick={startEditLogos}
-              className="p-1 text-gray-400 hover:text-teal-600 transition-colors"
+              className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
               title="Edit logos"
             >
               <Pencil className="w-3.5 h-3.5" />

@@ -387,13 +387,13 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
 
       {/* ─── Card 1: Graphic Elements ─── */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Shapes className="w-4 h-4 text-gray-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Graphic Elements</h3>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <Shapes className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <h3 className="text-sm font-semibold text-gray-900 truncate">Graphic Elements</h3>
           </div>
           {canEdit && !isEditingGraphic && (
-            <button onClick={startEditGraphic} className="p-1 text-gray-400 hover:text-teal-600 transition-colors" title="Edit">
+            <button onClick={startEditGraphic} className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0" title="Edit">
               <Pencil className="w-3.5 h-3.5" />
             </button>
           )}
@@ -480,13 +480,13 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
 
       {/* ─── Card 2: Patterns & Textures ─── */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-gray-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Patterns & Textures</h3>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <Layers className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <h3 className="text-sm font-semibold text-gray-900 truncate">Patterns & Textures</h3>
           </div>
           {canEdit && !isEditingPatterns && (
-            <button onClick={startEditPatterns} className="p-1 text-gray-400 hover:text-teal-600 transition-colors" title="Edit">
+            <button onClick={startEditPatterns} className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0" title="Edit">
               <Pencil className="w-3.5 h-3.5" />
             </button>
           )}
@@ -544,13 +544,13 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
 
       {/* ─── Card 3: Iconography ─── */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <PenTool className="w-4 h-4 text-gray-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Iconography</h3>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <PenTool className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <h3 className="text-sm font-semibold text-gray-900 truncate">Iconography</h3>
           </div>
           {canEdit && !isEditingIcon && (
-            <button onClick={startEditIcon} className="p-1 text-gray-400 hover:text-teal-600 transition-colors" title="Edit">
+            <button onClick={startEditIcon} className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0" title="Edit">
               <Pencil className="w-3.5 h-3.5" />
             </button>
           )}
@@ -680,14 +680,14 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
 
       {/* ─── Card 4: Gradients & Effects ─── */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Blend className="w-4 h-4 text-gray-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Gradients & Effects</h3>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <Blend className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <h3 className="text-sm font-semibold text-gray-900 truncate">Gradients & Effects</h3>
             {gradients.length > 0 && <Badge variant="default">{gradients.length}</Badge>}
           </div>
           {canEdit && !isEditingGradients && gradients.length > 0 && (
-            <button onClick={startEditGradients} className="p-1 text-gray-400 hover:text-teal-600 transition-colors" title="Edit">
+            <button onClick={startEditGradients} className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0" title="Edit">
               <Pencil className="w-3.5 h-3.5" />
             </button>
           )}
@@ -702,8 +702,8 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
                   style={{ background: gradientCss(g) }}
                 />
                 <div className="p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-900">{g.name}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium text-gray-900 truncate min-w-0">{g.name}</p>
                     <Badge variant="default">{g.type}</Badge>
                   </div>
                   <p className="text-xs text-gray-500 mt-0.5">{g.colors.join(" → ")}</p>
@@ -816,13 +816,13 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
 
       {/* ─── Card 5: Layout Principles ─── */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <LayoutGrid className="w-4 h-4 text-gray-500" />
-            <h3 className="text-sm font-semibold text-gray-900">Layout Principles</h3>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex items-center gap-2 min-w-0">
+            <LayoutGrid className="w-4 h-4 text-gray-500 flex-shrink-0" />
+            <h3 className="text-sm font-semibold text-gray-900 truncate">Layout Principles</h3>
           </div>
           {canEdit && !isEditingLayout && (
-            <button onClick={startEditLayout} className="p-1 text-gray-400 hover:text-teal-600 transition-colors" title="Edit">
+            <button onClick={startEditLayout} className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0" title="Edit">
               <Pencil className="w-3.5 h-3.5" />
             </button>
           )}

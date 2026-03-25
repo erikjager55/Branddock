@@ -12,7 +12,7 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
-import { assembleCanvasContext, type CanvasContextStack, type MediumContext } from './canvas-context';
+import { assembleCanvasContext, type CanvasContextStack, type MediumContext, type PersonaContext, type BriefContext, type ProductContext } from './canvas-context';
 import { createStructuredCompletion } from './exploration/ai-caller';
 import { resolveFeatureModel, assertProvider } from './feature-models.server';
 import { calculateOptimalPublishDate, type PublishSuggestion } from '@/lib/campaigns/publish-scheduler';
@@ -34,6 +34,7 @@ export interface OrchestrationOptions {
   instruction?: string;
   regenerateGroup?: string;
   userFeedback?: string;
+  additionalContextText?: string;
 }
 
 interface TextComponentGroup {
@@ -413,6 +414,7 @@ async function* handleRegeneration(
       existingComponents,
       group,
       feedback,
+      options,
     );
 
     const textModel = await resolveFeatureModel(workspaceId, 'canvas-text-generate');
@@ -513,10 +515,14 @@ function buildCanvasPrompt(
     '## Brand Context',
     formatBrandContext(stack.brand),
     '',
+    formatPersonaContext(stack.personas),
     stack.concept ? formatConceptContext(stack.concept) : '',
     stack.journeyPhase ? formatPhaseGuidance(stack.journeyPhase) : '',
+    stack.brief ? formatBriefContext(stack.brief) : '',
+    stack.products.length > 0 ? formatProductContext(stack.products) : '',
     medium ? formatMediumSpecs(medium) : '',
     stack.deliverableTypeId ? formatConstraintsForPrompt(stack.deliverableTypeId) : '',
+    options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
   ]
     .filter(Boolean)
     .join('\n');
@@ -566,6 +572,7 @@ function buildRegenerationPrompt(
   existingComponents: Array<{ variantGroup: string | null; generatedContent: string | null; variantIndex: number }>,
   group: string,
   feedback: string,
+  options?: OrchestrationOptions,
 ): { systemPrompt: string; userPrompt: string } {
   const groupComponents = existingComponents.filter((c) => c.variantGroup === group);
 
@@ -578,9 +585,13 @@ function buildRegenerationPrompt(
     '## Brand Context',
     formatBrandContext(stack.brand),
     '',
+    formatPersonaContext(stack.personas),
     stack.concept ? formatConceptContext(stack.concept) : '',
     stack.journeyPhase ? formatPhaseGuidance(stack.journeyPhase) : '',
+    stack.brief ? formatBriefContext(stack.brief) : '',
+    stack.products.length > 0 ? formatProductContext(stack.products) : '',
     stack.deliverableTypeId ? formatConstraintsForPrompt(stack.deliverableTypeId) : '',
+    options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
   ]
     .filter(Boolean)
     .join('\n');
@@ -684,6 +695,45 @@ function formatConstraintsForPrompt(contentType: string): string {
   if (parts.length === 1) return '';
   parts.push('');
   parts.push('IMPORTANT: Strictly adhere to these constraints. Do not exceed character or word limits.');
+  return parts.join('\n');
+}
+
+function formatPersonaContext(personas: PersonaContext[]): string {
+  if (personas.length === 0) return '';
+  const parts = ['## Target Personas', 'Adapt your content to resonate with these target personas:'];
+  for (const p of personas) {
+    parts.push(`\n### ${p.name}`);
+    parts.push(p.serialized);
+  }
+  return parts.join('\n');
+}
+
+function formatBriefContext(brief: BriefContext): string {
+  const parts: string[] = ['## Content Brief'];
+  if (brief.objective) parts.push(`Objective: ${brief.objective}`);
+  if (brief.keyMessage) parts.push(`Key Message: ${brief.keyMessage}`);
+  if (brief.toneDirection) parts.push(`Tone Direction: ${brief.toneDirection}`);
+  if (brief.callToAction) parts.push(`Call to Action: ${brief.callToAction}`);
+  if (brief.contentOutline.length > 0) {
+    parts.push(`Content Outline:\n${brief.contentOutline.map((item) => `- ${item}`).join('\n')}`);
+  }
+  if (parts.length === 1) return '';
+  return parts.join('\n');
+}
+
+function formatProductContext(products: ProductContext[]): string {
+  if (products.length === 0) return '';
+  const parts: string[] = ['## Product Context', 'Reference these products/services in your content where relevant:'];
+  for (const p of products) {
+    parts.push(`\n### ${p.name}`);
+    if (p.description) parts.push(`Description: ${p.description}`);
+    if (p.category) parts.push(`Category: ${p.category}`);
+    if (p.pricingModel) parts.push(`Pricing Model: ${p.pricingModel}`);
+    if (p.pricingDetails) parts.push(`Pricing Details: ${p.pricingDetails}`);
+    if (p.features.length > 0) parts.push(`Features:\n${p.features.map((f) => `- ${f}`).join('\n')}`);
+    if (p.benefits.length > 0) parts.push(`Benefits:\n${p.benefits.map((b) => `- ${b}`).join('\n')}`);
+    if (p.useCases.length > 0) parts.push(`Use Cases:\n${p.useCases.map((u) => `- ${u}`).join('\n')}`);
+  }
   return parts.join('\n');
 }
 

@@ -1234,12 +1234,15 @@ SCORING RULES:
 - Base scores on concrete persona attributes (occupation, goals, barriers, communication style), not generic assessments.
 
 Evaluation criteria per persona — ALL fields are MANDATORY:
-- overallScore: Score 1-10. Be critical — hooks that don't resonate with a persona's world should score low. Differentiate genuinely.
+- hookAScore: Score 1-10 for Hook A specifically. How well does Hook A resonate with THIS persona?
+- hookBScore: Score 1-10 for Hook B specifically. How well does Hook B resonate with THIS persona?
+- hookCScore: Score 1-10 for Hook C specifically. How well does Hook C resonate with THIS persona?
+- overallScore: The AVERAGE of hookAScore, hookBScore, and hookCScore for this persona.
+- preferredVariant: "A", "B", or "C" — the letter of the HIGHEST hookXScore for this persona.
 - feedback: MANDATORY: Write 2-3 specific sentences as the persona would naturally speak. Reference specific hook elements (title, big idea, visual direction, campaign line).
 - resonates: MANDATORY: At least 1 specific element from the hook that appeals to this persona.
 - concerns: MANDATORY: At least 1 specific concern or doubt about the hook.
 - suggestions: MANDATORY: At least 1 actionable suggestion to improve the hook for this persona.
-- preferredVariant: "A", "B", or "C" — which hook does this persona prefer?
 
 CREATIVE QUALITY EVALUATION — ALL scores are MANDATORY per persona:
 - originalityScore: 1-10. "Would this hook make me stop scrolling?"

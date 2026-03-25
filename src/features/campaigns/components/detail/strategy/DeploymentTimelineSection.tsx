@@ -3,13 +3,13 @@
 import { useCallback, useMemo, useRef, useState, type DragEvent } from "react";
 import {
   AlertTriangle,
-  ClipboardList,
+  Check,
   Minus,
   Plus,
   Maximize2,
   Info,
   Route,
-  X,
+  Trash2,
 } from "lucide-react";
 import type {
   AssetPlanLayer,
@@ -30,6 +30,7 @@ import {
   type PersonaLegendInfo,
   type CardPersonaInfo,
 } from "./shared-timeline-cards";
+import { TimelineFilterBar } from "./TimelineFilterBar";
 
 // ─── Zoom constants ─────────────────────────────────────────────
 
@@ -72,6 +73,8 @@ interface DeploymentTimelineSectionProps {
   architecture: ArchitectureLayer;
   channelPlan: ChannelPlanLayer;
   onBringToLife?: (deliverableTitle: string, contentType: string) => void;
+  /** Called when user deletes a deliverable from the timeline */
+  onDeleteDeliverable?: (title: string) => void;
   /** Optional campaign start date — enables week date labels in headers */
   campaignStartDate?: string | null;
   /** Deliverable title → status lookup (from DB deliverables) */
@@ -190,94 +193,6 @@ function GapWarnings({ gaps, personaNames }: { gaps: ContinuityGap[]; personaNam
   );
 }
 
-/** Filter bar for persona + channel filtering */
-function TimelineFilterBar({
-  personaLegendList,
-  channels,
-  selectedPersonaIds,
-  selectedChannels,
-  onTogglePersona,
-  onToggleChannel,
-  onClearFilters,
-}: {
-  personaLegendList: PersonaLegendInfo[];
-  channels: { normalized: string; label: string }[];
-  selectedPersonaIds: Set<string>;
-  selectedChannels: Set<string>;
-  onTogglePersona: (id: string) => void;
-  onToggleChannel: (normalized: string) => void;
-  onClearFilters: () => void;
-}) {
-  const hasActiveFilter = selectedPersonaIds.size > 0 || selectedChannels.size > 0;
-
-  return (
-    <div className="space-y-2">
-      {/* Persona filter pills */}
-      {personaLegendList.length > 0 && (
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Personas:</span>
-        {personaLegendList.map((p) => {
-          const color = getPersonaColor(p.colorIndex);
-          const isActive = selectedPersonaIds.has(p.personaId);
-          return (
-            <button
-              key={p.personaId}
-              type="button"
-              onClick={() => onTogglePersona(p.personaId)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors border"
-              style={isActive
-                ? { backgroundColor: color.activeHex, color: '#fff', borderColor: color.activeHex }
-                : { backgroundColor: '#fff', color: '#4b5563', borderColor: '#e5e7eb' }
-              }
-            >
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={isActive ? { backgroundColor: '#fff' } : { backgroundColor: color.activeHex }}
-              />
-              {p.personaName}
-            </button>
-          );
-        })}
-      </div>
-      )}
-
-      {/* Channel filter pills */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Channels:</span>
-        {channels.map((ch) => {
-          const isActive = selectedChannels.has(ch.normalized);
-          return (
-            <button
-              key={ch.normalized}
-              type="button"
-              onClick={() => onToggleChannel(ch.normalized)}
-              className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium transition-colors border"
-              style={isActive
-                ? { backgroundColor: '#1f2937', color: '#fff', borderColor: '#1f2937' }
-                : { backgroundColor: '#fff', color: '#4b5563', borderColor: '#e5e7eb' }
-              }
-            >
-              {ch.label}
-            </button>
-          );
-        })}
-
-        {/* Clear filters button */}
-        {hasActiveFilter && (
-          <button
-            type="button"
-            onClick={onClearFilters}
-            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-colors"
-          >
-            <X className="w-3 h-3" />
-            Clear filters
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ─── Phase color palette ────────────────────────────────────────
 
 const PHASE_COLORS = [
@@ -297,10 +212,11 @@ function getPhaseColor(phaseIdx: number) {
 
 const CELL_MIN_WIDTH = 240;
 
-/** Create a unique key for a scheduled deliverable (used for beat overrides).
- *  Includes the original beatIndex to disambiguate deliverables with identical title+channel. */
-function getItemKey(d: { title: string; channel: string }, originalBeatIndex: number): string {
-  return `${d.title}::${d.channel}::${originalBeatIndex}`;
+/** Create a stable key for a scheduled deliverable (used for beat overrides).
+ *  Uses phase instead of beatIndex so keys don't change when items are
+ *  removed and the scheduler recomputes beat assignments. */
+function getItemKey(d: { title: string; channel: string; phase?: string }): string {
+  return `${d.title}::${d.channel}::${d.phase ?? ''}`;
 }
 
 // ─── Main Component ─────────────────────────────────────────────
@@ -310,6 +226,7 @@ export function DeploymentTimelineSection({
   architecture,
   channelPlan,
   onBringToLife,
+  onDeleteDeliverable,
   campaignStartDate,
   deliverableStatuses,
 }: DeploymentTimelineSectionProps) {
@@ -319,6 +236,10 @@ export function DeploymentTimelineSection({
 
   // Manual beat position overrides: itemKey → new absolute beatIndex
   const [beatOverrides, setBeatOverrides] = useState<Map<string, number>>(new Map());
+
+  // Track previous effective beat positions to prevent scheduler redistribution
+  // after item deletion from shifting other items to different beats.
+  const prevItemBeatsRef = useRef<Map<string, number>>(new Map());
 
   const handleZoomIn = useCallback(() => setZoom((z) => Math.min(z + ZOOM_STEP, ZOOM_MAX)), []);
   const handleZoomOut = useCallback(() => setZoom((z) => Math.max(z - ZOOM_STEP, ZOOM_MIN)), []);
@@ -510,17 +431,72 @@ export function DeploymentTimelineSection({
   }, []);
 
   /** Move a deliverable to a different beat (week).
+   *  Beat -1 represents Week 0 (Preparation column).
    *  TODO: Recompute collisions/gaps after repositioning — currently they reflect the original schedule. */
-  const handleMoveBeat = useCallback((deliverable: { title: string; channel: string }, schedulerBeatIndex: number, currentBeat: number, direction: -1 | 1) => {
+  const handleMoveBeat = useCallback((deliverable: { title: string; channel: string; phase?: string }, currentBeat: number, direction: -1 | 1) => {
     const newBeat = currentBeat + direction;
-    if (newBeat < 0 || newBeat >= schedule.totalBeats) return;
-    const key = getItemKey(deliverable, schedulerBeatIndex);
+    if (newBeat < -1 || newBeat >= schedule.totalBeats) return;
+    const key = getItemKey(deliverable);
     setBeatOverrides((prev) => {
       const next = new Map(prev);
       next.set(key, newBeat);
       return next;
     });
   }, [schedule.totalBeats]);
+
+  // ─── Prep checklist state (two-phase animation) ────────────────
+  const [checkedPrep, setCheckedPrep] = useState<Set<number>>(new Set());
+  /** Items currently animating out (checkbox fills → card shrinks) */
+  const [dismissingPrep, setDismissingPrep] = useState<Set<number>>(new Set());
+  /** Permanently deleted prep items */
+  const [deletedPrep, setDeletedPrep] = useState<Set<number>>(new Set());
+  /** Index of the prep item currently showing a delete confirmation */
+  const [confirmDeleteIdx, setConfirmDeleteIdx] = useState<number | null>(null);
+
+  const togglePrepItem = useCallback((idx: number) => {
+    if (dismissingPrep.has(idx)) return; // animation in progress
+    // Phase 1: show checked state + start dismiss animation
+    setDismissingPrep((prev) => {
+      const next = new Set(prev);
+      next.add(idx);
+      return next;
+    });
+    // Phase 2: after animation, actually hide the item
+    setTimeout(() => {
+      setCheckedPrep((prev) => {
+        const next = new Set(prev);
+        next.add(idx);
+        return next;
+      });
+      setDismissingPrep((prev) => {
+        const next = new Set(prev);
+        next.delete(idx);
+        return next;
+      });
+    }, 500);
+  }, [dismissingPrep]);
+
+  const handleDeletePrep = useCallback((idx: number) => {
+    setConfirmDeleteIdx(null);
+    // Reuse dismiss animation then permanently delete
+    setDismissingPrep((prev) => {
+      const next = new Set(prev);
+      next.add(idx);
+      return next;
+    });
+    setTimeout(() => {
+      setDeletedPrep((prev) => {
+        const next = new Set(prev);
+        next.add(idx);
+        return next;
+      });
+      setDismissingPrep((prev) => {
+        const next = new Set(prev);
+        next.delete(idx);
+        return next;
+      });
+    }, 500);
+  }, []);
 
   // ─── Drag & drop state + handlers ──────────────────────────────
   const [dragOverBeat, setDragOverBeat] = useState<number | null>(null);
@@ -545,7 +521,7 @@ export function DeploymentTimelineSection({
       if (!raw) return;
       const data: DeliverableCardDragData = JSON.parse(raw);
       if (data.sourceBeat === targetBeat) return;
-      if (targetBeat < 0 || targetBeat >= schedule.totalBeats) return;
+      if (targetBeat < -1 || targetBeat >= schedule.totalBeats) return;
       setBeatOverrides((prev) => {
         const next = new Map(prev);
         next.set(data.itemKey, targetBeat);
@@ -576,9 +552,31 @@ export function DeploymentTimelineSection({
   // Items within each beat are sorted by priority (must-have first) then suggestedOrder.
   const cellLookup = useMemo(() => {
     const map = new Map<number, (ScheduledDeliverable & { schedulerBeatIndex: number })[]>();
+    const effectiveBeats = new Map<string, number>();
+
     for (const s of schedule.scheduled) {
-      const key = getItemKey(s.deliverable, s.beatIndex);
-      const beat = beatOverrides.get(key) ?? s.beatIndex;
+      const key = getItemKey(s.deliverable);
+
+      // Determine effective beat:
+      // 1. Explicit user override (drag/Earlier/Later) takes priority
+      // 2. If scheduler shifted this item (e.g. after a deletion changed maxOrder),
+      //    keep it at its previous effective position to prevent visual jumping
+      // 3. Otherwise use the scheduler's assigned beat
+      let beat: number;
+      const override = beatOverrides.get(key);
+      if (override !== undefined) {
+        beat = override;
+      } else {
+        const prevEffective = prevItemBeatsRef.current.get(key);
+        if (prevEffective !== undefined && prevEffective !== s.beatIndex) {
+          beat = prevEffective;
+        } else {
+          beat = s.beatIndex;
+        }
+      }
+
+      effectiveBeats.set(key, beat);
+
       // Remap duplicate persona IDs to canonical IDs
       const remappedPersonas = s.targetPersonas.map((id) => idRemapping.get(id) ?? id);
       const uniquePersonas = remappedPersonas.filter((id, i, arr) => arr.indexOf(id) === i);
@@ -586,6 +584,10 @@ export function DeploymentTimelineSection({
       if (!map.has(beat)) map.set(beat, []);
       map.get(beat)!.push(adjusted);
     }
+
+    // Update ref for next render so we can detect future scheduler shifts
+    prevItemBeatsRef.current = effectiveBeats;
+
     // Sort items within each beat by priority then suggestedOrder
     for (const items of map.values()) {
       items.sort((a, b) => {
@@ -771,11 +773,23 @@ export function DeploymentTimelineSection({
                 className="grid"
                 style={{ gridTemplateColumns, minWidth: gridMinWidth }}
               >
-                {/* Prep column persona lane cell */}
+                {/* Prep column persona lane cell — shows lanes for items moved to Week 0 (beat -1) */}
               <div className="flex flex-col gap-px py-1 px-1 border-r border-gray-100 bg-slate-50/30">
-                {personaLanes.map((lane) => (
-                  <div key={lane.personaId} className="h-1" />
-                ))}
+                {personaLanes.map((lane) => {
+                  const hasContent = lane.beats.has(-1);
+                  const isSelectedPersona = selectedPersonaIds.size > 0 && selectedPersonaIds.has(lane.personaId);
+                  const isDimmed = selectedPersonaIds.size > 0 && !isSelectedPersona;
+                  return (
+                    <div
+                      key={lane.personaId}
+                      className="h-1 rounded-full transition-opacity"
+                      style={hasContent ? {
+                        backgroundColor: lane.color.activeHex,
+                        opacity: isDimmed ? 0.08 : 1,
+                      } : undefined}
+                    />
+                  );
+                })}
               </div>
               {Array.from({ length: totalBeats }).map((_, beatIdx) => {
                   const phaseIdx = phaseBoundaries.findIndex(
@@ -824,45 +838,147 @@ export function DeploymentTimelineSection({
               className="grid"
               style={{ gridTemplateColumns, minWidth: gridMinWidth }}
             >
-              {/* Prep column content cell */}
+              {/* Prep column content cell (Week 0) — accepts drag & drop (beat -1) */}
               <div
-                className="border-b border-r border-gray-100 p-2 align-top bg-slate-50/20"
+                onDragOver={(e) => handleDragOver(e, -1)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, -1)}
+                className={`border-b border-r border-gray-100 p-2 align-top bg-slate-50/20 transition-colors ${
+                  dragOverBeat === -1 ? "ring-2 ring-inset ring-teal-400 bg-teal-50/30" : ""
+                }`}
                 style={{ minHeight: 64 }}
               >
-                {assetPlan.prepDeliverables?.length ? (
-                  <div className="space-y-1.5">
-                    {assetPlan.prepDeliverables.map((prep, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-white border border-slate-200 rounded-md px-2 py-1.5 shadow-sm break-words"
-                      >
-                        <div className="flex items-start gap-1.5">
-                          <ClipboardList className="w-3 h-3 text-slate-400 mt-0.5 flex-shrink-0" />
-                          <div className="min-w-0">
-                            <div className="text-[10px] font-medium text-slate-700 leading-tight truncate">
-                              {prep.title}
+                <div className="space-y-1.5">
+                  {/* Prep checklist items (checked items animate out then disappear) */}
+                  {assetPlan.prepDeliverables
+                    ?.map((prep, idx) => ({ prep, idx }))
+                    .filter(({ idx }) => !checkedPrep.has(idx) && !deletedPrep.has(idx))
+                    .map(({ prep, idx }) => {
+                      const isDismissing = dismissingPrep.has(idx);
+                      const isConfirming = confirmDeleteIdx === idx;
+                      return (
+                        <div
+                          key={`prep-${idx}`}
+                          className="w-full text-left bg-white border rounded-lg shadow-sm text-xs hover:shadow overflow-hidden"
+                          style={{
+                            borderColor: isDismissing ? "#0d9488" : "#e5e7eb",
+                            opacity: isDismissing ? 0 : 1,
+                            maxHeight: isDismissing ? 0 : 300,
+                            padding: isDismissing ? 0 : undefined,
+                            marginTop: isDismissing ? 0 : undefined,
+                            transition: isDismissing
+                              ? "opacity 250ms ease-out, max-height 250ms 200ms ease-out, padding 250ms 200ms ease-out, margin 250ms 200ms ease-out, border-color 150ms ease"
+                              : "box-shadow 150ms ease, border-color 150ms ease",
+                          }}
+                        >
+                          {/* Clickable checkbox area */}
+                          <button
+                            type="button"
+                            className="w-full text-left"
+                            onClick={() => togglePrepItem(idx)}
+                          >
+                            <div className="px-2.5 py-2">
+                              <div className="flex items-start gap-2">
+                                <div
+                                  className="h-5 w-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-px"
+                                  style={{
+                                    backgroundColor: isDismissing ? "#0d9488" : "#ffffff",
+                                    borderColor: isDismissing ? "#0d9488" : "#d1d5db",
+                                    transition: "background-color 150ms ease, border-color 150ms ease",
+                                  }}
+                                >
+                                  {isDismissing && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="font-medium text-[13px] leading-snug text-gray-800 break-words">
+                                    {prep.title}
+                                  </span>
+                                  <div className="flex items-center gap-1.5 mt-1">
+                                    <span className="text-[11px] text-gray-500">{prep.owner}</span>
+                                    <span className="text-gray-300">|</span>
+                                    <span className={`text-[11px] capitalize ${
+                                      prep.estimatedEffort === "high"
+                                        ? "text-red-500"
+                                        : prep.estimatedEffort === "medium"
+                                          ? "text-amber-500"
+                                          : "text-emerald-500"
+                                    }`}>
+                                      {prep.estimatedEffort}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-[9px] text-slate-400 leading-tight mt-0.5 line-clamp-2">
-                              {prep.description}
+                          </button>
+
+                          {/* Delete button + confirmation */}
+                          {!isDismissing && (
+                            <div className="px-2.5 pb-1.5">
+                              {isConfirming ? (
+                                <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-red-100 bg-red-50/50 -mx-2.5 px-2.5 pb-0.5 rounded-b-lg">
+                                  <span className="text-[11px] text-red-600 font-medium">Delete this item?</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      className="px-2.5 py-1 text-[11px] font-medium text-gray-600 hover:text-gray-800 bg-white border border-gray-200 rounded transition-colors cursor-pointer"
+                                      onClick={() => setConfirmDeleteIdx(null)}
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="px-2.5 py-1 text-[11px] font-medium text-white bg-red-500 hover:bg-red-600 rounded transition-colors cursor-pointer"
+                                      onClick={() => handleDeletePrep(idx)}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex justify-end pt-0.5">
+                                  <button
+                                    type="button"
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium text-red-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors cursor-pointer"
+                                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteIdx(idx); }}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
                             </div>
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <span className="text-[8px] text-slate-400 bg-slate-50 px-1 rounded">
-                                {prep.owner}
-                              </span>
-                              <span className="text-[8px] text-slate-400 bg-slate-50 px-1 rounded capitalize">
-                                {prep.estimatedEffort}
-                              </span>
-                            </div>
-                          </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <span className="text-[10px] text-slate-400 italic">No prep items</span>
-                  </div>
-                )}
+                      );
+                    })}
+
+                  {/* Deliverable cards moved to Week 0 (beat -1) */}
+                  {(filteredCellLookup.get(-1) ?? []).map((item, i) => (
+                    <DeliverableCard
+                      key={`d-prep-${item.deliverable.title}-${i}`}
+                      deliverable={item.deliverable}
+                      channel={getChannelLabel(item.normalizedChannel)}
+                      personas={resolvePersonas(item.targetPersonas)}
+                      onBringToLife={onBringToLife}
+                      onDelete={onDeleteDeliverable}
+                      onMove={(dir) => handleMoveBeat(item.deliverable, -1, dir)}
+                      canMoveLeft={false}
+                      canMoveRight={totalBeats > 0}
+                      dragData={{
+                        itemKey: getItemKey(item.deliverable),
+                        sourceBeat: -1,
+                      }}
+                      status={resolveDeliverableStatus(deliverableStatuses, item.deliverable.title)}
+                    />
+                  ))}
+
+                  {/* Empty state when no visible prep items and no deliverables in Week 0 */}
+                  {(!assetPlan.prepDeliverables?.length || assetPlan.prepDeliverables.every((_, idx) => checkedPrep.has(idx) || deletedPrep.has(idx))) && !(filteredCellLookup.get(-1)?.length) && (
+                    <div className="w-full flex items-center justify-center py-4">
+                      <span className="text-[10px] text-slate-400 italic">No prep items</span>
+                    </div>
+                  )}
+                </div>
               </div>
               {Array.from({ length: totalBeats }).map((_, beatIdx) => {
                 const items = filteredCellLookup.get(beatIdx) ?? [];
@@ -898,11 +1014,12 @@ export function DeploymentTimelineSection({
                             channel={getChannelLabel(item.normalizedChannel)}
                             personas={resolvePersonas(item.targetPersonas)}
                             onBringToLife={onBringToLife}
-                            onMove={(dir) => handleMoveBeat(item.deliverable, item.schedulerBeatIndex, beatIdx, dir)}
-                            canMoveLeft={beatIdx > 0}
+                            onDelete={onDeleteDeliverable}
+                            onMove={(dir) => handleMoveBeat(item.deliverable, beatIdx, dir)}
+                            canMoveLeft={beatIdx > -1}
                             canMoveRight={beatIdx < totalBeats - 1}
                             dragData={{
-                              itemKey: getItemKey(item.deliverable, item.schedulerBeatIndex),
+                              itemKey: getItemKey(item.deliverable),
                               sourceBeat: beatIdx,
                             }}
                             status={resolveDeliverableStatus(deliverableStatuses, item.deliverable.title)}

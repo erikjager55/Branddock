@@ -407,6 +407,9 @@ function normalizePersonaValidation(results: PersonaValidationResult[]): Persona
       concerns: Array.isArray(p.concerns) ? p.concerns.filter(Boolean) : [],
       suggestions: Array.isArray(p.suggestions) ? p.suggestions.filter(Boolean) : [],
       creativeVerdict: (typeof p.creativeVerdict === 'string') ? p.creativeVerdict : undefined,
+      hookAScore: clampScore(p.hookAScore, undefined),
+      hookBScore: clampScore(p.hookBScore, undefined),
+      hookCScore: clampScore(p.hookCScore, undefined),
     };
   });
 }
@@ -2163,15 +2166,23 @@ export async function generateCreativeHooks(
       validateOrWarn(personaValidationArraySchema, validationRaw, 'Phase 5 Hook Validation'),
     );
 
-    // Calculate per-hook scores from persona votes
+    // Calculate per-hook scores from per-hook persona scores (hookAScore/B/C)
     if (personaValidation.length > 0) {
-      const allScores = personaValidation.map(p => p.overallScore);
-      const avgScore = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+      const hookScoreKeys = ['hookAScore', 'hookBScore', 'hookCScore'] as const;
 
       for (let i = 0; i < 3; i++) {
-        const label = String.fromCharCode(65 + i);
-        const voters = personaValidation.filter(p => p.preferredVariant === label);
-        hookScores[i] = voters.length > 0 ? voters.reduce((s, p) => s + p.overallScore, 0) / voters.length : avgScore;
+        const key = hookScoreKeys[i];
+        const scores = personaValidation
+          .map(p => p[key])
+          .filter((s): s is number => typeof s === 'number' && !isNaN(s));
+
+        if (scores.length > 0) {
+          hookScores[i] = scores.reduce((a, b) => a + b, 0) / scores.length;
+        } else {
+          // Fallback: average of overallScores when per-hook scores are missing
+          const allScores = personaValidation.map(p => p.overallScore);
+          hookScores[i] = allScores.reduce((a, b) => a + b, 0) / allScores.length;
+        }
       }
     }
   }

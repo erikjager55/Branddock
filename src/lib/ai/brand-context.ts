@@ -341,7 +341,7 @@ function formatBrandArchetype(data: BrandArchetypeData): string {
   return parts.join('. ');
 }
 
-interface BrandPersonalityData {
+export interface BrandPersonalityData {
   dimensionScores?: Record<string, number>;
   primaryDimension?: string;
   secondaryDimension?: string;
@@ -384,7 +384,7 @@ const TONE_LABELS: Record<string, [string, string]> = {
 };
 
 /** Format Brand Personality frameworkData into a readable string for AI context */
-function formatBrandPersonality(data: BrandPersonalityData): string {
+export function formatBrandPersonality(data: BrandPersonalityData): string {
   const parts: string[] = [];
 
   // Primary/secondary dimension

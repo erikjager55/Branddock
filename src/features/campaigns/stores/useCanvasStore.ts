@@ -7,6 +7,12 @@ import type { CanvasVariant, CanvasImageVariant, ApprovalStatus } from '../types
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
 type GenerationStatus = 'idle' | 'generating' | 'complete' | 'error';
 
+export interface SelectedContextItem {
+  sourceType: string;
+  sourceId: string;
+  title: string;
+}
+
 interface CanvasStoreState {
   // ─── Context (loaded from server) ─────────────────────────
   contextStack: CanvasContextStack | null;
@@ -32,6 +38,10 @@ interface CanvasStoreState {
   // ─── Panel states ─────────────────────────────────────────
   contextPanelCollapsed: boolean;
 
+  // ─── Additional knowledge context ────────────────────────
+  additionalContextItems: Map<string, SelectedContextItem>;
+  contextSelectorOpen: boolean;
+
   // ─── Feedback ─────────────────────────────────────────────
   feedbackDraft: string;
   feedbackGroup: string | null;
@@ -55,6 +65,9 @@ interface CanvasStoreState {
   toggleContextPanel: () => void;
   setFeedbackDraft: (text: string) => void;
   setFeedbackGroup: (group: string | null) => void;
+  toggleContextSelector: () => void;
+  setAdditionalContextItems: (items: Map<string, SelectedContextItem>) => void;
+  removeContextItem: (key: string) => void;
   setApprovalState: (data: {
     approvalStatus: ApprovalStatus;
     approvalNote?: string | null;
@@ -76,6 +89,8 @@ const INITIAL_STATE = {
   imageVariants: [],
   publishSuggestion: null,
   contextPanelCollapsed: false,
+  additionalContextItems: new Map<string, SelectedContextItem>(),
+  contextSelectorOpen: false,
   feedbackDraft: '',
   feedbackGroup: null,
   approvalStatus: 'DRAFT' as ApprovalStatus,
@@ -131,6 +146,18 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
 
   setFeedbackGroup: (group) => set({ feedbackGroup: group }),
 
+  toggleContextSelector: () =>
+    set((state) => ({ contextSelectorOpen: !state.contextSelectorOpen })),
+
+  setAdditionalContextItems: (items) => set({ additionalContextItems: items }),
+
+  removeContextItem: (key) =>
+    set((state) => {
+      const next = new Map(state.additionalContextItems);
+      next.delete(key);
+      return { additionalContextItems: next };
+    }),
+
   setApprovalState: (data) =>
     set({
       approvalStatus: data.approvalStatus,
@@ -146,5 +173,6 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
     variantGroups: new Map(),
     selections: new Map(),
     generationStatus: new Map(),
+    additionalContextItems: new Map(),
   }),
 }));

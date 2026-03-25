@@ -127,12 +127,12 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
   return (
     <div data-testid="colors-section" className="space-y-6">
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-900">Color Palette</h3>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Color Palette</h3>
           {canEdit && (
             <button
               onClick={() => setIsEditingColors((v) => !v)}
-              className="p-1 text-gray-400 hover:text-teal-600 transition-colors"
+              className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
               title={isEditingColors ? "Done editing" : "Edit colors"}
             >
               {isEditingColors ? (

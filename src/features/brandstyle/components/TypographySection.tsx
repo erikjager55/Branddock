@@ -84,12 +84,12 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
     <div data-testid="typography-section" className="space-y-6">
       {/* Font Preview */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-900">Primary Font</h3>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Primary Font</h3>
           {canEdit && !isEditingFont && (
             <button
               onClick={startEditFont}
-              className="p-1 text-gray-400 hover:text-teal-600 transition-colors"
+              className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
               title="Edit"
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -156,12 +156,12 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
 
       {/* Type Scale */}
       <Card>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-900">Type Scale</h3>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Type Scale</h3>
           {canEdit && !isEditingScale && (
             <button
               onClick={startEditScale}
-              className="p-1 text-gray-400 hover:text-teal-600 transition-colors"
+              className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
               title="Edit type scale"
             >
               <Pencil className="w-3.5 h-3.5" />

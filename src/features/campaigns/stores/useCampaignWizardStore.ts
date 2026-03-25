@@ -381,6 +381,8 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
             && get().allRationaleRated();
         }
         case 4:
+          // Allow proceeding from proposal review (triggers journey elaboration via stepProceedOverride)
+          if (state.strategyPhase === 'review_proposal') return true;
           return state.strategyPhase === 'complete' && state.blueprintResult !== null
             && get().allConceptRated();
         case 5:

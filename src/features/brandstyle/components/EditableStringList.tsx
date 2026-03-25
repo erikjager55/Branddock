@@ -62,12 +62,12 @@ export function EditableStringList({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">{title}</h3>
         {canEdit && !isEditing && (
           <button
             onClick={startEdit}
-            className="p-1 text-gray-400 hover:text-teal-600 transition-colors"
+            className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
             title="Edit"
           >
             <Pencil className="w-3.5 h-3.5" />

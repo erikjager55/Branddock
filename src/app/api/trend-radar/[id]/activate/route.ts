@@ -52,6 +52,7 @@ export async function PATCH(_req: NextRequest, { params }: RouteParams) {
   });
 
   invalidateCache(cacheKeys.prefixes.trendRadar(workspaceId));
+  invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
   return NextResponse.json(trend);
 }

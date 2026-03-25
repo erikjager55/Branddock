@@ -69,11 +69,17 @@ export function useCanvasOrchestration(deliverableId: string | null) {
     abortRef.current = controller;
 
     try {
+      // Collect user-selected knowledge context items from the store
+      const contextItems = Array.from(store.additionalContextItems.values()).map(
+        ({ sourceType, sourceId }) => ({ sourceType, sourceId }),
+      );
+
       const res = await fetch(`/api/studio/${deliverableId}/orchestrate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           instruction: options?.instruction,
+          additionalContextItems: contextItems.length > 0 ? contextItems : undefined,
         }),
         signal: controller.signal,
       });
@@ -140,12 +146,18 @@ export function useCanvasOrchestration(deliverableId: string | null) {
       for (const group of groups) {
         if (controller.signal.aborted) break;
 
+        // Collect user-selected knowledge context items from the store
+        const contextItems = Array.from(
+          useCanvasStore.getState().additionalContextItems.values(),
+        ).map(({ sourceType, sourceId }) => ({ sourceType, sourceId }));
+
         const res = await fetch(`/api/studio/${deliverableId}/orchestrate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             regenerateGroup: group,
             userFeedback: feedback,
+            additionalContextItems: contextItems.length > 0 ? contextItems : undefined,
           }),
           signal: controller.signal,
         });

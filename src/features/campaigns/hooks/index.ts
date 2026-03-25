@@ -4,7 +4,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { UseMutationResult } from '@tanstack/react-query';
-import type { CampaignListParams } from '@/types/campaign';
+import type { CampaignListParams, DeliverableResponse } from '@/types/campaign';
 import type { CampaignBlueprint, RegenerateBlueprintBody } from '@/lib/campaigns/strategy-blueprint.types';
 import {
   fetchCampaigns,
@@ -224,7 +224,21 @@ export function useDeleteDeliverable(campaignId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (deliverableId: string) => deleteDeliverable(campaignId, deliverableId),
-    onSuccess: () => {
+    onMutate: async (deliverableId: string) => {
+      await qc.cancelQueries({ queryKey: campaignKeys.deliverables(campaignId) });
+      const previous = qc.getQueryData<DeliverableResponse[]>(campaignKeys.deliverables(campaignId));
+      qc.setQueryData<DeliverableResponse[]>(
+        campaignKeys.deliverables(campaignId),
+        (old) => old ? old.filter((d) => d.id !== deliverableId) : [],
+      );
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previous) {
+        qc.setQueryData(campaignKeys.deliverables(campaignId), context.previous);
+      }
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: campaignKeys.deliverables(campaignId) });
       qc.invalidateQueries({ queryKey: campaignKeys.all });
     },

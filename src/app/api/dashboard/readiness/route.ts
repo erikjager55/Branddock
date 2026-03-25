@@ -13,18 +13,12 @@ export async function GET() {
     const hit = cachedJson(cacheKeys.dashboard.readiness(workspaceId));
     if (hit) return hit;
 
-    const [allAssets, personaCount, personasWithExploration, productCount, activeCampaignCount, activatedTrends] = await Promise.all([
+    const [allAssets, personaCount, productCount, activeCampaignCount, activatedTrends] = await Promise.all([
       prisma.brandAsset.findMany({
         where: { workspaceId },
         select: { description: true, frameworkType: true, frameworkData: true },
       }),
       prisma.persona.count({ where: { workspaceId } }),
-      prisma.persona.count({
-        where: {
-          workspaceId,
-          researchMethods: { some: { method: 'AI_EXPLORATION', status: 'COMPLETED' } },
-        },
-      }),
       prisma.product.count({ where: { workspaceId } }),
       prisma.campaign.count({ where: { workspaceId, status: 'ACTIVE' } }),
       prisma.detectedTrend.count({ where: { workspaceId, isActivated: true } }),
@@ -41,9 +35,10 @@ export async function GET() {
     const notComplete = totalAssets - fullyComplete;
 
     // Per-module scores (0-100)
+    // Personas use count-based scoring (20% per persona, max 100%) consistent with products/campaigns
     const moduleScores = {
       brandAssets: totalAssets > 0 ? Math.round((fullyComplete / totalAssets) * 100) : 0,
-      personas: personaCount > 0 ? Math.round((personasWithExploration / personaCount) * 100) : 0,
+      personas: Math.min(100, personaCount * 20),
       products: Math.min(100, productCount * 20),
       campaigns: Math.min(100, activeCampaignCount * 25),
       trends: Math.min(100, activatedTrends * 10),

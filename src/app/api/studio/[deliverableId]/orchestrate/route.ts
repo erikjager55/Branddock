@@ -3,14 +3,21 @@ import { z } from 'zod';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
 import { orchestrateContentGeneration } from '@/lib/ai/canvas-orchestrator';
+import { serializeContextForPrompt } from '@/lib/ai/context/fetcher';
 
 // Allow up to 5 minutes for full generation pipeline (text + images)
 export const maxDuration = 300;
+
+const contextItemSchema = z.object({
+  sourceType: z.string().max(100),
+  sourceId: z.string().max(100),
+});
 
 const orchestrateBodySchema = z.object({
   instruction: z.string().max(2000).optional(),
   regenerateGroup: z.string().max(100).optional(),
   userFeedback: z.string().max(5000).optional(),
+  additionalContextItems: z.array(contextItemSchema).max(50).optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -91,6 +98,18 @@ export async function POST(
         }, 15_000);
 
         try {
+          // Serialize user-selected knowledge context items into prompt text
+          let additionalContextText: string | undefined;
+          if (body.additionalContextItems && body.additionalContextItems.length > 0) {
+            const serialized = await serializeContextForPrompt(
+              body.additionalContextItems,
+              workspaceId,
+            );
+            if (serialized) {
+              additionalContextText = serialized;
+            }
+          }
+
           const generator = orchestrateContentGeneration(
             deliverableId,
             workspaceId,
@@ -98,6 +117,7 @@ export async function POST(
               instruction: body.instruction,
               regenerateGroup: body.regenerateGroup,
               userFeedback: body.userFeedback,
+              additionalContextText,
             },
           );
 
