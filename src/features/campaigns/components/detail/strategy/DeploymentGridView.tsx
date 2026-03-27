@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CheckCircle2, Eye, LayoutGrid, Loader2, Trash2, Zap } from "lucide-react";
+import { CheckCircle2, LayoutGrid, Loader2, Trash2, Zap } from "lucide-react";
 import type {
   AssetPlanLayer,
   ArchitectureLayer,
@@ -266,7 +266,7 @@ export function DeploymentGridView({
                 const priorityHex = PRIORITY_HEX[s.priority];
                 const effortHex = EFFORT_HEX[s.deliverable.estimatedEffort];
                 const personas = resolvePersonas(s.targetPersonas);
-                const phaseName = phases[s.phaseIndex] ?? "";
+                const phaseName = phases[s.phaseIndex] || "";
                 const channelLabel = getChannelLabel(s.normalizedChannel);
                 const chColor = getChannelColor(s.normalizedChannel);
                 const status = resolveDeliverableStatus(deliverableStatuses, s.deliverable.title);
@@ -280,24 +280,24 @@ export function DeploymentGridView({
                   >
                     {/* Status pill + Title */}
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {/* Activate/status pill — always visible, before the title */}
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Activate/status button — always visible, before the title */}
                         {onBringToLife && (
                           isActivated ? (
                             <button
                               type="button"
                               onClick={() => onBringToLife(s.deliverable.title, s.deliverable.contentType)}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border flex-shrink-0 transition-colors"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium flex-shrink-0 transition-colors"
                               style={
                                 status === "COMPLETED"
-                                  ? { backgroundColor: "#ecfdf5", color: "#047857", borderColor: "#a7f3d0" }
-                                  : { backgroundColor: "#eff6ff", color: "#1d4ed8", borderColor: "#bfdbfe" }
+                                  ? { backgroundColor: "#ecfdf5", color: "#047857" }
+                                  : { backgroundColor: "#eff6ff", color: "#1d4ed8" }
                               }
                             >
                               {status === "COMPLETED" ? (
-                                <CheckCircle2 className="w-3 h-3" />
+                                <CheckCircle2 className="w-3.5 h-3.5" />
                               ) : (
-                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
                               )}
                               {status === "COMPLETED" ? "Done" : "Active"}
                             </button>
@@ -305,10 +305,10 @@ export function DeploymentGridView({
                             <button
                               type="button"
                               onClick={() => onBringToLife(s.deliverable.title, s.deliverable.contentType)}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium border flex-shrink-0 transition-colors hover:opacity-80"
-                              style={{ backgroundColor: "#f0fdfa", color: "#0f766e", borderColor: "#99f6e4" }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium flex-shrink-0 transition-all hover:shadow-sm"
+                              style={{ backgroundColor: "#0d9488", color: "#ffffff" }}
                             >
-                              <Zap className="w-3 h-3" />
+                              <Zap className="w-3.5 h-3.5" />
                               Activate
                             </button>
                           )
@@ -320,12 +320,13 @@ export function DeploymentGridView({
                       </div>
                     </td>
 
-                    {/* Channel color pill */}
+                    {/* Channel */}
                     <td className="px-4 py-3">
-                      <span
-                        className="inline-flex items-center px-2 py-0.5 rounded border text-xs font-medium"
-                        style={{ backgroundColor: chColor.hex + '14', color: chColor.hex, borderColor: chColor.hex + '33' }}
-                      >
+                      <span className="inline-flex items-center gap-1.5 text-xs text-gray-600">
+                        <span
+                          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: chColor.hex }}
+                        />
                         {channelLabel}
                       </span>
                     </td>
@@ -341,15 +342,9 @@ export function DeploymentGridView({
                       </div>
                     </td>
 
-                    {/* Priority pill */}
+                    {/* Priority */}
                     <td className="px-4 py-3">
-                      <span
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium"
-                        style={priorityHex
-                          ? { backgroundColor: priorityHex.bg, color: priorityHex.text, borderColor: priorityHex.border }
-                          : { backgroundColor: "#f9fafb", color: "#4b5563", borderColor: "#e5e7eb" }
-                        }
-                      >
+                      <span className="inline-flex items-center gap-1.5 text-xs text-gray-600">
                         <span
                           className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                           style={{ backgroundColor: priorityHex?.dot ?? "#d1d5db" }}
@@ -358,14 +353,11 @@ export function DeploymentGridView({
                       </span>
                     </td>
 
-                    {/* Effort pill */}
+                    {/* Effort */}
                     <td className="px-4 py-3">
                       <span
-                        className="inline-flex items-center px-2 py-0.5 rounded border text-xs font-medium"
-                        style={effortHex
-                          ? { backgroundColor: effortHex.bg, color: effortHex.text, borderColor: effortHex.border }
-                          : { backgroundColor: "#f9fafb", color: "#4b5563", borderColor: "#e5e7eb" }
-                        }
+                        className="text-xs"
+                        style={{ color: effortHex?.text ?? "#4b5563" }}
                       >
                         {effortHex?.label ?? EFFORT_LABEL[s.deliverable.estimatedEffort] ?? s.deliverable.estimatedEffort}
                       </span>
@@ -374,22 +366,21 @@ export function DeploymentGridView({
                     {/* Personas */}
                     <td className="px-4 py-3">
                       {personas.length > 0 ? (
-                        <div className="flex items-center gap-1 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
                           {personas.slice(0, 2).map((p) => (
                             <span
                               key={p.personaId}
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full border text-[10px] font-medium"
-                              style={{ backgroundColor: p.colorStyle.activeHex + '14', color: p.colorStyle.activeHex, borderColor: p.colorStyle.activeHex + '33' }}
+                              className="inline-flex items-center gap-1.5 text-xs text-gray-600"
                             >
                               <span
                                 className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                                 style={{ backgroundColor: p.colorStyle.activeHex }}
                               />
-                              {p.name}
+                              {p.name.split(' ')[0]}
                             </span>
                           ))}
                           {personas.length > 2 && (
-                            <span className="text-[10px] font-medium text-gray-500">
+                            <span className="text-xs text-gray-400">
                               +{personas.length - 2}
                             </span>
                           )}

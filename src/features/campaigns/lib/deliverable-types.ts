@@ -127,7 +127,18 @@ const PR_HR_DEFAULTS = {
   exportFormats: ['txt'],
 };
 
-// ─── Deliverable Types (47 total) ───────────────────────────
+const LINKEDIN_DEFAULTS = {
+  qualityCriteria: [
+    { name: 'Professional Tone', weight: 0.25, description: 'Business-appropriate language, industry credibility' },
+    { name: 'Platform Fit', weight: 0.25, description: 'LinkedIn-native formatting, optimal length, hashtag strategy' },
+    { name: 'Engagement Hooks', weight: 0.20, description: 'Opening line strength, question/CTA, share-worthiness' },
+    { name: 'Brand Voice', weight: 0.20, description: 'Tone consistency, thought leadership positioning' },
+    { name: 'Accessibility', weight: 0.10, description: 'Readability, inclusive language, alt text' },
+  ],
+  exportFormats: ['txt'],
+};
+
+// ─── Deliverable Types (53 total) ───────────────────────────
 
 export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
   // ─── Long-Form Content (7) ──────────────────────────────
@@ -216,7 +227,7 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     exportFormats: LONG_FORM_DEFAULTS.exportFormats,
   },
 
-  // ─── Social Media (7) ───────────────────────────────────
+  // ─── Social Media (13) ──────────────────────────────────
   {
     id: "linkedin-post",
     name: "LinkedIn Post",
@@ -240,6 +251,84 @@ export const DELIVERABLE_TYPES: DeliverableTypeDefinition[] = [
     constraints: { minWords: 500, maxWords: 3000, maxHashtags: 5 },
     qualityCriteria: LONG_FORM_DEFAULTS.qualityCriteria,
     exportFormats: ['txt', 'html'],
+  },
+  {
+    id: "linkedin-carousel",
+    name: "LinkedIn Carousel",
+    description: "Multi-slide educational or storytelling carousel for LinkedIn",
+    category: "Social Media",
+    funnelStage: "awareness",
+    outputFormats: ["Carousel"],
+    icon: "GalleryHorizontalEnd",
+    constraints: { maxSlides: 10, maxChars: 3000, maxHashtags: 5 },
+    qualityCriteria: LINKEDIN_DEFAULTS.qualityCriteria,
+    exportFormats: ['pdf', 'png'],
+  },
+  {
+    id: "linkedin-ad",
+    name: "LinkedIn Sponsored Post",
+    description: "Paid LinkedIn ad with intro text and creative",
+    category: "Social Media",
+    funnelStage: "conversion",
+    outputFormats: ["Text", "Image"],
+    icon: "Linkedin",
+    constraints: { maxChars: 600, maxWords: 150 },
+    qualityCriteria: [
+      { name: 'Conversion Focus', weight: 0.30, description: 'CTA strength, value proposition clarity' },
+      { name: 'Professional Tone', weight: 0.25, description: 'Business credibility, industry relevance' },
+      { name: 'Platform Compliance', weight: 0.20, description: 'LinkedIn ad policies, character limits' },
+      { name: 'Targeting Precision', weight: 0.15, description: 'Audience relevance, persona alignment' },
+      { name: 'Creative Impact', weight: 0.10, description: 'Visual-text synergy, stopping power' },
+    ],
+    exportFormats: LINKEDIN_DEFAULTS.exportFormats,
+  },
+  {
+    id: "linkedin-newsletter",
+    name: "LinkedIn Newsletter",
+    description: "Recurring LinkedIn newsletter edition for subscriber base",
+    category: "Social Media",
+    funnelStage: "awareness",
+    outputFormats: ["Text"],
+    icon: "Linkedin",
+    constraints: { minWords: 300, maxWords: 2000, maxHashtags: 5 },
+    qualityCriteria: LINKEDIN_DEFAULTS.qualityCriteria,
+    exportFormats: ['txt', 'html'],
+  },
+  {
+    id: "linkedin-video",
+    name: "LinkedIn Video Script",
+    description: "Script for native LinkedIn video (30s-5min)",
+    category: "Social Media",
+    funnelStage: "awareness",
+    outputFormats: ["Text"],
+    icon: "Film",
+    constraints: { minWords: 50, maxWords: 500 },
+    qualityCriteria: LINKEDIN_DEFAULTS.qualityCriteria,
+    exportFormats: ['txt', 'srt'],
+  },
+  {
+    id: "linkedin-event",
+    name: "LinkedIn Event Post",
+    description: "Event promotion post with details and registration CTA",
+    category: "Social Media",
+    funnelStage: "awareness",
+    outputFormats: ["Text", "Image"],
+    icon: "Linkedin",
+    constraints: { maxChars: 3000, maxHashtags: 5 },
+    qualityCriteria: LINKEDIN_DEFAULTS.qualityCriteria,
+    exportFormats: LINKEDIN_DEFAULTS.exportFormats,
+  },
+  {
+    id: "linkedin-poll",
+    name: "LinkedIn Poll",
+    description: "Engaging poll with context text to drive discussion",
+    category: "Social Media",
+    funnelStage: "awareness",
+    outputFormats: ["Text"],
+    icon: "Linkedin",
+    constraints: { maxChars: 140, maxHashtags: 3 },
+    qualityCriteria: LINKEDIN_DEFAULTS.qualityCriteria,
+    exportFormats: LINKEDIN_DEFAULTS.exportFormats,
   },
   {
     id: "instagram-post",

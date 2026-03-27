@@ -1,5 +1,5 @@
 /**
- * Goal → Framing Mapping — Maps each of the 15 campaign goal types to
+ * Goal → Framing Mapping — Maps each of the 16 campaign goal types to
  * Kahneman System 1/System 2 framing strategies with primary cognitive
  * principles and messaging frame recommendations.
  */
@@ -117,6 +117,19 @@ const GOAL_FRAMING_MAP: Record<string, GoalFramingMapping> = {
       { id: 'loss_aversion', applicationHint: 'Frame churn in terms of what they\'d lose, not what competitors offer' },
     ],
     messagingFrame: 'Investment protection framing. "Look how far you\'ve come with us." Make switching feel like throwing away progress.',
+  },
+
+  LINKEDIN_GROWTH: {
+    goalType: 'LINKEDIN_GROWTH',
+    systemTarget: 'mixed',
+    framingStrategy: 'System 1 for scroll-stopping hooks and emotional resonance, System 2 for credibility-building insights and frameworks that reward deliberate reading.',
+    primaryPrinciples: [
+      { id: 'availability_heuristic', applicationHint: 'Create memorable, shareable content formats (carousels, hot takes, frameworks) that come to mind when the audience thinks about the topic' },
+      { id: 'anchoring', applicationHint: 'Lead posts with a provocative data point, contrarian claim, or counterintuitive insight to anchor attention' },
+      { id: 'framing_effect', applicationHint: 'Frame professional insights as exclusive, insider knowledge — "What most people get wrong about X"' },
+      { id: 'peak_end_rule', applicationHint: 'Structure posts with a strong hook (peak) and a memorable closing CTA or insight (end) — the algorithm rewards saves and shares' },
+    ],
+    messagingFrame: 'Authority-through-generosity framing. Share valuable insights freely to build professional credibility. "I spent 10 years learning this — here it is in 2 minutes."',
   },
 
   EMPLOYER_BRANDING: {

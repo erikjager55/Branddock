@@ -1,5 +1,5 @@
 /**
- * Goal → Effectiveness Mapping — Maps each of the 15 campaign goal types to
+ * Goal → Effectiveness Mapping — Maps each of the 16 campaign goal types to
  * IPA-derived effectiveness parameters including brand/activation split,
  * emotional/rational balance, and strategic timeline guidance.
  */
@@ -103,6 +103,16 @@ const GOAL_EFFECTIVENESS_MAP: Record<string, GoalEffectivenessMapping> = {
     channelMultiplierTarget: 3,
     timeHorizon: 'long',
     strategicImplication: 'Balance emotional brand reinforcement with tangible activation rewards. Retention is a long game — consistent touch over dramatic gestures.',
+  },
+
+  LINKEDIN_GROWTH: {
+    goalType: 'LINKEDIN_GROWTH',
+    recommendedSplit: { brand: 60, activation: 40 },
+    emotionalRationalBalance: 'balanced',
+    fameOpportunity: 'medium',
+    channelMultiplierTarget: 2,
+    timeHorizon: 'medium',
+    strategicImplication: 'LinkedIn is a brand-building channel with activation upside. Emotional storytelling + rational expertise balance drives both follower growth and lead generation. Fame comes from virality — design for shareability. Focus on LinkedIn as primary channel with 1-2 supporting channels (newsletter, podcast).',
   },
 
   // ── Brand & Culture ────────────────────────────────────

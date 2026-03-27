@@ -4,15 +4,11 @@ import React, { useEffect, useState } from 'react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import { useCampaignStore } from '../../stores/useCampaignStore';
 import { useCanvasComponents } from '../../hooks/canvas.hooks';
-import { useCanvasOrchestration } from '../../hooks/useCanvasOrchestration';
-import { ContextPanel } from './ContextPanel';
-import { VariantWorkspace } from './VariantWorkspace';
-import { FeedbackBar } from './FeedbackBar';
-import { PreviewPanel } from './PreviewPanel';
 import { ApprovalActionBar } from './ApprovalActionBar';
+import { HorizontalAccordion } from './accordion/HorizontalAccordion';
 import { DerivePlatformSelectorModal } from './DerivePlatformSelectorModal';
 import { CanvasContextSelector } from './CanvasContextSelector';
-import { Skeleton, SkeletonCard } from '@/components/shared';
+import { Skeleton } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ArrowLeft } from 'lucide-react';
 import type { ApprovalStatus } from '../../types/canvas.types';
@@ -24,13 +20,11 @@ interface CanvasPageProps {
 }
 
 export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPageProps) {
-  const contextStack = useCanvasStore((s) => s.contextStack);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
 
   const [showDeriveModal, setShowDeriveModal] = useState(false);
 
   const { data: existingComponents, isLoading: componentsLoading } = useCanvasComponents(deliverableId);
-  const { generate, regenerate, isGenerating, abort } = useCanvasOrchestration(deliverableId);
 
   // Set deliverable in store on mount + load approval state + load context
   useEffect(() => {
@@ -115,19 +109,29 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           <Skeleton className="h-6 w-6 rounded" />
           <Skeleton className="h-5 w-48" />
         </div>
-        {/* Skeleton 3-panel layout */}
-        <div className="flex flex-1 overflow-hidden">
-          <div className={`${STUDIO.panel.left} flex-shrink-0 border-r border-gray-200 p-4`}>
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
+        {/* Skeleton horizontal accordion */}
+        <div className={`flex-1 ${STUDIO.canvas.bg} overflow-hidden flex`}>
+          {/* Skeleton vertical tabs */}
+          <div className="flex flex-shrink-0 border-r border-gray-200">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="w-16 flex flex-col items-center py-6 gap-4 bg-gray-100">
+                <Skeleton className="h-7 w-7 rounded-full" />
+                <Skeleton className="h-5 w-5 rounded" />
+                <Skeleton className="h-20 w-3 rounded" />
+              </div>
+            ))}
           </div>
-          <div className={`flex-1 ${STUDIO.canvas.bg} p-6`}>
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
-          <div className={`${STUDIO.panel.right} flex-shrink-0 border-l border-gray-200 p-4`}>
-            <SkeletonCard />
+          {/* Skeleton content panel */}
+          <div className="flex-1 p-8">
+            <div className="flex items-center gap-3 mb-8">
+              <Skeleton className="h-8 w-8 rounded" />
+              <Skeleton className="h-6 w-40" />
+            </div>
+            <div className="space-y-4">
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-32 w-full rounded-lg" />
+            </div>
           </div>
         </div>
       </div>
@@ -147,7 +151,7 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           <ArrowLeft className="h-5 w-5" />
         </button>
         <h1 className="text-lg font-semibold text-gray-900">Content Canvas</h1>
-        {isGenerating && (
+        {globalStatus === 'generating' && (
           <span className="text-sm text-teal-600 animate-pulse">Generating...</span>
         )}
         {globalStatus === 'complete' && (
@@ -165,22 +169,9 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
         </div>
       </div>
 
-      {/* 3-panel layout */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left: Context panel */}
-        <ContextPanel />
-
-        {/* Center: Variant workspace + feedback bar */}
-        <div className={`flex-1 flex flex-col ${STUDIO.canvas.bg} overflow-hidden`}>
-          <VariantWorkspace
-            deliverableId={deliverableId}
-            onGenerate={() => generate()}
-          />
-          <FeedbackBar onRegenerate={regenerate} onAbort={abort} />
-        </div>
-
-        {/* Right: Preview panel */}
-        <PreviewPanel />
+      {/* Accordion layout */}
+      <div className={`flex-1 ${STUDIO.canvas.bg} overflow-hidden`}>
+        <HorizontalAccordion deliverableId={deliverableId} />
       </div>
 
       {/* Knowledge context selector modal */}

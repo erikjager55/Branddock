@@ -1,13 +1,14 @@
 // =============================================================
-// Content Type Registry — 23 types in 5 categories
+// Content Type Registry — 26 types in 5 categories
 // =============================================================
 
 import type { LucideIcon } from 'lucide-react';
 import {
   FileText, BookOpen, Newspaper, Presentation, ScrollText,
   Linkedin, Instagram, Twitter, Facebook, MessageSquare,
+  GalleryHorizontalEnd, Film,
   Image, PenTool, BarChart3, Palette, Layout,
-  Video, Film, Clapperboard, MonitorPlay,
+  Video, Clapperboard, MonitorPlay,
   Mail, Send, Bell, Megaphone,
 } from 'lucide-react';
 
@@ -34,8 +35,11 @@ export const CONTENT_TYPES: ContentTypeDefinition[] = [
   { id: 'case-study', name: 'Case Study', description: 'Client success story', category: 'written', outputFormats: ['text', 'pdf'], icon: Presentation },
   { id: 'landing-page', name: 'Landing Page', description: 'Conversion-focused web copy', category: 'written', outputFormats: ['text', 'html'], icon: ScrollText },
 
-  // Social (5)
-  { id: 'linkedin', name: 'LinkedIn Post', description: 'Professional network post', category: 'social', outputFormats: ['text', 'image'], icon: Linkedin },
+  // Social (8)
+  { id: 'linkedin-post', name: 'LinkedIn Post', description: 'Professional network post', category: 'social', outputFormats: ['text', 'image'], icon: Linkedin },
+  { id: 'linkedin-carousel', name: 'LinkedIn Carousel', description: 'Multi-slide educational carousel', category: 'social', outputFormats: ['carousel'], icon: GalleryHorizontalEnd },
+  { id: 'linkedin-article', name: 'LinkedIn Article', description: 'Long-form LinkedIn native article', category: 'social', outputFormats: ['text'], icon: BookOpen },
+  { id: 'linkedin-video', name: 'LinkedIn Video', description: 'Native LinkedIn video script', category: 'social', outputFormats: ['text'], icon: Film },
   { id: 'instagram', name: 'Instagram Post', description: 'Visual social post', category: 'social', outputFormats: ['image', 'carousel'], icon: Instagram },
   { id: 'twitter', name: 'Twitter/X Thread', description: 'Short-form thread', category: 'social', outputFormats: ['text'], icon: Twitter },
   { id: 'facebook', name: 'Facebook Post', description: 'Social media post', category: 'social', outputFormats: ['text', 'image'], icon: Facebook },

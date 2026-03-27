@@ -1,5 +1,5 @@
 // =============================================================================
-// Campaign Goal Types — 15 types in 4 categories with time-binding behavior
+// Campaign Goal Types — 16 types in 4 categories with time-binding behavior
 // =============================================================================
 
 import type { CampaignGoalType } from '../types/campaign-wizard.types';
@@ -20,6 +20,7 @@ import {
   Target,
   Zap,
   CalendarDays,
+  Linkedin,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────
@@ -109,6 +110,13 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
         icon: Award,
         timeBinding: 'always-on',
       },
+      {
+        id: 'LINKEDIN_GROWTH',
+        label: 'LinkedIn Growth',
+        description: 'Grow your professional presence and authority on LinkedIn. Combines personal branding, company page strategy, employee advocacy, and LinkedIn-native formats (carousels, polls, articles) to build an engaged B2B audience.',
+        icon: Linkedin,
+        timeBinding: 'always-on',
+      },
     ],
   },
   {
@@ -176,14 +184,14 @@ export const GOAL_CATEGORIES: GoalCategory[] = [
 
 // ─── Derived Constants ────────────────────────────────────
 
-/** Flat array of all 15 goal type definitions */
+/** Flat array of all 16 goal type definitions */
 export const ALL_GOAL_TYPES: GoalTypeDefinition[] = GOAL_CATEGORIES.flatMap(
   (cat) => cat.types,
 );
 
 /** ID → label mapping (includes legacy IDs for backward compatibility) */
 export const GOAL_LABELS: Record<string, string> = {
-  // Current 15 types
+  // Current 16 types
   ...Object.fromEntries(ALL_GOAL_TYPES.map((t) => [t.id, t.label])),
   // Legacy IDs from before expansion
   BRAND: 'Brand Awareness',
@@ -237,6 +245,8 @@ export function getGoalTypeGuidance(id: string): string {
       'Drive immediate action with time-limited offers, promotions, or events. Use direct response messaging with clear CTAs. Measure ROAS, conversion rate, and revenue attribution.',
     EVENT_SEASONAL:
       'Build anticipation with a countdown approach: teaser, announcement, engagement, and follow-up phases. Align creative with the seasonal or event theme. Create urgency through limited-time messaging.',
+    LINKEDIN_GROWTH:
+      'Build an always-on LinkedIn presence combining personal branding and company page strategy. Leverage LinkedIn-native formats: carousel documents for educational content (highest engagement), polls for audience insights, long-form articles for thought leadership, and video for authenticity. Prioritize consistent posting cadence (3-5x/week), employee advocacy programs, and strategic commenting on industry conversations. Optimize for the LinkedIn algorithm: dwell time, meaningful comments, and saves over vanity metrics.',
     // Legacy mappings
     BRAND: 'Focus on broad reach and frequency. Prioritize top-of-funnel channels and memorable creative that builds mental availability.',
     PRODUCT: 'Structure the campaign around a clear launch timeline with pre-launch, launch moment, and post-launch sustain phases.',
@@ -269,7 +279,7 @@ export interface GoalTypeStrategicInsights {
 }
 
 /**
- * Returns hardcoded strategic insights for all 15 goal types.
+ * Returns hardcoded strategic insights for all 16 goal types.
  * Data informed by Binet & Field IPA effectiveness research,
  * Google HHH (Hero-Hub-Hygiene) framework, and Percy & Elliott campaign planning model.
  * Includes legacy mappings for backward compatibility.
@@ -698,6 +708,39 @@ export function getGoalTypeStrategicInsights(id: string): GoalTypeStrategicInsig
       ],
       timingConsiderations: 'Strictly time-bound with 4 phases: teaser (3-4 weeks out), build-up (1-2 weeks), event moment (concentrated 1-3 days), and follow-up/recap (1-2 weeks post-event).',
       funnelEmphasis: { awareness: 25, consideration: 25, conversion: 40, retention: 10 },
+    },
+
+    LINKEDIN_GROWTH: {
+      label: 'LinkedIn Growth',
+      recommendedKPIs: [
+        { name: 'Follower Growth Rate', description: 'Net new followers on company page and key personal profiles per month', benchmark: '+5-10% month-over-month, 1,000+ net new/month for established brands' },
+        { name: 'Post Engagement Rate', description: 'Reactions + comments + shares + clicks divided by impressions', benchmark: '2-4% (company page), 5-10% (personal profiles)' },
+        { name: 'Social Selling Index (SSI)', description: 'LinkedIn\'s proprietary score measuring professional brand, network, and engagement effectiveness', benchmark: '70+ out of 100 for key team members' },
+        { name: 'Content Impressions', description: 'Total organic reach across company page and employee advocate posts', benchmark: '50,000-200,000/month depending on network size' },
+        { name: 'Inbound Connection Requests', description: 'Qualified professionals requesting to connect after seeing content', benchmark: '50-200/month for active personal profiles' },
+      ],
+      pitfalls: [
+        'Posting only from the company page — LinkedIn\'s algorithm favors personal profiles 5-10x over company pages in organic reach.',
+        'Treating LinkedIn like other social media — the platform rewards professional depth and expertise over entertainment or virality.',
+        'Inconsistent posting cadence — the algorithm penalizes dormancy. 3-5 posts/week consistently outperforms daily bursts followed by silence.',
+        'Ignoring the first 60 minutes after posting — early engagement signals (especially meaningful comments) determine algorithmic distribution.',
+        'Over-relying on external links — LinkedIn deprioritizes posts with outbound URLs. Use native formats (carousels, polls, text posts) instead.',
+      ],
+      channelEmphasis: {
+        primary: ['LinkedIn personal profiles (executives, thought leaders)', 'LinkedIn company page', 'LinkedIn carousels & documents'],
+        secondary: ['LinkedIn Articles & newsletters', 'LinkedIn Live & Events', 'Employee advocacy program'],
+        avoid: ['Cross-posting identical content from other platforms', 'Automated bulk messaging (damages SSI score)', 'Engagement pods (algorithm detects and penalizes)'],
+      },
+      contentFormats: [
+        { format: 'LinkedIn carousel documents (PDF slides)', priority: 'high', rationale: 'Highest organic reach format on LinkedIn — dwell time from swiping signals value to the algorithm. Educational carousels get 2-3x the reach of text posts.' },
+        { format: 'Text-only thought leadership posts', priority: 'high', rationale: 'Personal stories, contrarian takes, and professional lessons drive comments and shares. The hook (first 2 lines) determines whether users click "...see more".' },
+        { format: 'LinkedIn polls', priority: 'medium', rationale: 'Algorithmic boost for polls due to inherent engagement. Use for audience research, opinion validation, and conversation starters.' },
+        { format: 'LinkedIn Articles & newsletter', priority: 'medium', rationale: 'Long-form authority building with subscriber notifications. Positions the brand/author as a go-to resource in the niche.' },
+        { format: 'Native video (60-90 seconds)', priority: 'medium', rationale: 'LinkedIn is investing in video — early adopters benefit from distribution boosts. Authentic talking-head outperforms polished production.' },
+        { format: 'Employee advocacy reposts with personal context', priority: 'medium', rationale: 'Amplifies company content through personal networks — each employee repost reaches unique 2nd/3rd degree connections.' },
+      ],
+      timingConsiderations: 'Always-on with a consistent weekly rhythm: 3-5 posts per week, posted Tuesday-Thursday 7-9 AM local time for maximum feed presence. Mix personal profiles (daily) with company page (2-3x/week). Plan monthly content themes aligned with industry events and quarterly business priorities.',
+      funnelEmphasis: { awareness: 40, consideration: 35, conversion: 15, retention: 10 },
     },
   };
 

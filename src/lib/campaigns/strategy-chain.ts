@@ -870,6 +870,8 @@ export async function elaborateJourney(
   // Step 6: Asset Planner
   onProgress?.({ step: 6, name: 'Asset Planner', status: 'running', label: 'Creating asset plan...' });
 
+  const phaseNames = (data.synthesizedArchitecture?.journeyPhases ?? []).map((p: { name: string }) => p.name);
+
   const step6Prompt = buildAssetPlannerPrompt({
     synthesizedStrategy: synthesizedStrategyJson,
     synthesizedArchitecture: synthesizedArchitectureJson,
@@ -878,6 +880,7 @@ export async function elaborateJourney(
     styleguideContext,
     goalType: campaignGoalType,
     goalGuidance,
+    journeyPhaseNames: phaseNames,
     cialdiniContext: journeyCialdiniContext,
     framingContext: journeyFramingContext,
     growthContext: journeyGrowthContext,
@@ -1239,6 +1242,8 @@ export async function generateCampaignBlueprint(
   // ─── Step 5: Asset Planner (Gemini Flash) — sequential so it receives channelPlan
   onProgress?.({ step: 5, name: 'Asset Planner', status: 'running', label: 'Creating asset plan...' });
 
+  const bpPhaseNames = (synthesizedArchitecture.journeyPhases ?? []).map((p: { name: string }) => p.name);
+
   const step5Prompt = buildAssetPlannerPrompt({
     synthesizedStrategy: synthesizedStrategyJson,
     synthesizedArchitecture: synthesizedArchitectureJson,
@@ -1247,6 +1252,7 @@ export async function generateCampaignBlueprint(
     styleguideContext,
     goalType: campaignGoalType,
     goalGuidance,
+    journeyPhaseNames: bpPhaseNames,
     cialdiniContext: bpCialdiniContext || undefined,
     framingContext: bpFramingContext || undefined,
     growthContext: bpGrowthContext || undefined,
@@ -1567,6 +1573,7 @@ export async function regenerateBlueprintLayer(
 
   const assetFeedback = layer === 'assetPlan' && feedback ? `\n\nUser feedback: ${feedback}` : '';
   const assetRegenGoalType = campaign.campaignGoalType || 'BRAND_AWARENESS';
+  const regenPhaseNames = (blueprint.architecture?.journeyPhases ?? []).map((p: { name: string }) => p.name);
   const assetPrompt = buildAssetPlannerPrompt({
     synthesizedStrategy: JSON.stringify(blueprint.strategy) + assetFeedback,
     synthesizedArchitecture: JSON.stringify(blueprint.architecture),
@@ -1575,6 +1582,7 @@ export async function regenerateBlueprintLayer(
     styleguideContext,
     goalType: assetRegenGoalType,
     goalGuidance: getGoalTypeGuidance(assetRegenGoalType),
+    journeyPhaseNames: regenPhaseNames,
     cialdiniContext: regenCialdiniContext,
     framingContext: regenFramingContext,
     growthContext: regenGrowthContext,

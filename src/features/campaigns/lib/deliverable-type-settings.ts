@@ -1,6 +1,6 @@
 // =============================================================
 // Deliverable Type Settings — Dynamic settings field definitions
-// for all 47 deliverable types across 8 categories.
+// for all 53 deliverable types across 8 categories.
 //
 // Each type gets 2-5 settings fields rendered by DynamicSettingsPanel.
 // Common fields: tone (always), length (long-form).
@@ -143,7 +143,7 @@ export const DELIVERABLE_TYPE_SETTINGS: Record<string, SettingsField[]> = {
     },
   ],
 
-  // ═══ Social Media (7) ════════════════════════════════════
+  // ═══ Social Media (13) ═══════════════════════════════════
   'linkedin-post': [
     TONE_FIELD,
     {
@@ -225,6 +225,64 @@ export const DELIVERABLE_TYPE_SETTINGS: Record<string, SettingsField[]> = {
       ],
       default: 'pattern-interrupt',
     },
+  ],
+  'linkedin-carousel': [
+    TONE_FIELD,
+    { key: 'slideCount', label: 'Slides', type: 'number', default: 5, min: 3, max: 10 },
+    {
+      key: 'carouselStyle',
+      label: 'Style',
+      type: 'pills',
+      options: [
+        { value: 'educational', label: 'Educational' },
+        { value: 'storytelling', label: 'Storytelling' },
+        { value: 'tips', label: 'Tips' },
+      ],
+      default: 'educational',
+    },
+    { key: 'includeHashtags', label: 'Include Hashtags', type: 'toggle', default: true },
+  ],
+  'linkedin-ad': [
+    TONE_FIELD,
+    {
+      key: 'objective',
+      label: 'Objective',
+      type: 'pills',
+      options: [
+        { value: 'awareness', label: 'Awareness' },
+        { value: 'traffic', label: 'Traffic' },
+        { value: 'conversions', label: 'Conversions' },
+      ],
+      default: 'awareness',
+    },
+    { key: 'includeImage', label: 'Include Image', type: 'toggle', default: true },
+  ],
+  'linkedin-newsletter': [
+    TONE_FIELD,
+    LENGTH_FIELD,
+    { key: 'sectionCount', label: 'Sections', type: 'number', default: 3, min: 2, max: 8 },
+  ],
+  'linkedin-video': [
+    TONE_FIELD,
+    {
+      key: 'duration',
+      label: 'Duration',
+      type: 'pills',
+      options: [
+        { value: '30s', label: '30s' },
+        { value: '60s', label: '60s' },
+        { value: '90s', label: '90s' },
+      ],
+      default: '60s',
+    },
+  ],
+  'linkedin-event': [
+    TONE_FIELD,
+    { key: 'includeHashtags', label: 'Include Hashtags', type: 'toggle', default: true },
+  ],
+  'linkedin-poll': [
+    TONE_FIELD,
+    { key: 'optionCount', label: 'Poll Options', type: 'number', default: 3, min: 2, max: 4 },
   ],
   'social-carousel': [
     TONE_FIELD,

@@ -808,6 +808,8 @@ export function buildAssetPlannerPrompt(params: {
   styleguideContext: string;
   goalType?: string;
   goalGuidance?: string;
+  /** Exact journey phase names from the architecture layer — deliverables MUST use these */
+  journeyPhaseNames?: string[];
   /** Cialdini's 7 persuasion principles mapped to goal type */
   cialdiniContext?: string;
   /** Kahneman System 1/System 2 framing principles mapped to goal type */
@@ -818,11 +820,18 @@ export function buildAssetPlannerPrompt(params: {
   eastChecklist?: string;
 }): { system: string; user: string } {
   const validTypes = DELIVERABLE_TYPE_IDS.join(', ');
+  const validPhases = params.journeyPhaseNames?.length
+    ? params.journeyPhaseNames.map((n) => `"${n}"`).join(', ')
+    : '';
 
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nSelect deliverable types that are most relevant for this goal type.`
     : '';
   const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
+
+  const phaseInstruction = validPhases
+    ? `- phase: MUST be one of these exact phase names: ${validPhases}. Do NOT invent phase names or use abbreviations — copy the phase name exactly as listed.`
+    : '- phase: Which journey phase this serves';
 
   const system = `You are a content strategist creating a deliverable plan for a campaign.
 
@@ -832,7 +841,7 @@ Requirements per deliverable:
 - title: Descriptive title (e.g., "LinkedIn Thought Leadership Article — AI in Brand Strategy")
 - contentType: MUST be one of these valid IDs: ${validTypes}
 - channel: Which channel this goes on
-- phase: Which journey phase this serves
+${phaseInstruction}
 - targetPersonas: Which persona IDs this targets
 - brief: Structured content brief with objective, key message, tone direction, CTA, and 3-5 bullet content outline
 - productionPriority: "must-have" (core deliverables), "should-have" (enhances campaign), "nice-to-have" (stretch goals)

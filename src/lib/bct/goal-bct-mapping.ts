@@ -1,5 +1,5 @@
 // =============================================================================
-// Goal → BCT Mapping — Maps each of the 15 campaign goal types to 3-5
+// Goal → BCT Mapping — Maps each of the 16 campaign goal types to 3-5
 // evidence-based Behavior Change Techniques from the HBCP BCT Taxonomy v1
 // =============================================================================
 
@@ -135,6 +135,19 @@ const GOAL_BCT_MAP: Record<string, GoalBctMapping> = {
       { id: 'BCT_10_3', name: 'Non-specific reward', description: BCT_TAXONOMY.BCT_10_3.description, applicationHint: 'Reward loyalty with exclusive access, early previews, or tier-based perks' },
       { id: 'BCT_8_3', name: 'Habit formation', description: BCT_TAXONOMY.BCT_8_3.description, applicationHint: 'Design daily/weekly touchpoints that keep the brand embedded in the customer routine' },
       { id: 'BCT_1_3', name: 'Goal setting (outcome)', description: BCT_TAXONOMY.BCT_1_3.description, applicationHint: 'Help customers set goals achievable through continued brand engagement' },
+    ],
+  },
+
+  LINKEDIN_GROWTH: {
+    goalType: 'LINKEDIN_GROWTH',
+    comBTarget: 'motivation',
+    behavioralBarrier: 'Content creation inertia — professionals know they should post but lack confidence, ideas, or a consistent habit',
+    desiredBehavior: 'Publish valuable LinkedIn content consistently and engage strategically with target audience',
+    primaryBCTs: [
+      { id: 'BCT_8_3', name: 'Habit formation', description: BCT_TAXONOMY.BCT_8_3.description, applicationHint: 'Establish a fixed weekly posting schedule (e.g., Tue/Thu/Sat) that builds content creation as a professional routine' },
+      { id: 'BCT_1_1', name: 'Goal setting (behavior)', description: BCT_TAXONOMY.BCT_1_1.description, applicationHint: 'Set specific LinkedIn goals: "3 posts per week, 10 meaningful comments, 1 carousel per month"' },
+      { id: 'BCT_6_2', name: 'Social comparison', description: BCT_TAXONOMY.BCT_6_2.description, applicationHint: 'Benchmark against peers and competitors — show what successful LinkedIn creators in the niche are doing differently' },
+      { id: 'BCT_2_2', name: 'Feedback on behavior', description: BCT_TAXONOMY.BCT_2_2.description, applicationHint: 'Track and visualize engagement metrics over time — impressions, profile views, connection requests, and content performance trends' },
     ],
   },
 

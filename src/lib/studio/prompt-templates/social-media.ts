@@ -1,7 +1,8 @@
 // =============================================================
-// Social Media Templates (7 types)
-// LinkedIn Post/Article, Instagram, X/Twitter Thread,
-// Facebook, TikTok/Reels Script, Social Carousel
+// Social Media Templates (13 types)
+// LinkedIn Post/Article/Carousel/Ad/Newsletter/Video/Event/Poll,
+// Instagram, X/Twitter Thread, Facebook, TikTok/Reels Script,
+// Social Carousel
 // =============================================================
 
 import type { PromptTemplate } from './helpers';
@@ -46,6 +47,130 @@ export const SOCIAL_MEDIA_TEMPLATES: Record<string, PromptTemplate> = {
         params.context,
         params.settings,
         'Platform: LinkedIn. Character limit: ~3000. Posts with images get 2x engagement. First 2 lines must hook the reader.',
+      ),
+  },
+
+  'linkedin-carousel': {
+    systemPrompt: buildBaseSystemPrompt(
+      `You are a LinkedIn carousel content strategist. Create multi-slide professional carousels that educate and drive engagement:
+- Slide 1 (Cover): Bold, curiosity-driving headline. Must make professionals swipe.
+- Slides 2-9: One key insight per slide. Short text (max 30 words per slide).
+- Final Slide: CTA (follow, save, share, or visit link)
+- Each slide should have a clear heading and 1-2 supporting sentences
+- Format each slide clearly as "Slide 1:", "Slide 2:", etc.
+- Maintain professional tone throughout
+- Suggest background themes or data visualizations per slide
+- Optimal: 5-10 slides
+- Add 3-5 relevant hashtags at the end`,
+    ),
+    buildUserPrompt: (params) =>
+      buildSocialUserPrompt(
+        params.userPrompt,
+        params.context,
+        params.settings,
+        'Platform: LinkedIn Carousel. Format each slide as "Slide 1:", "Slide 2:", etc. Max 10 slides, 30 words per slide. Professional tone.',
+      ),
+  },
+
+  'linkedin-ad': {
+    systemPrompt: buildBaseSystemPrompt(
+      `You are a LinkedIn advertising copywriter. Write sponsored post copy that drives conversions while maintaining professional credibility:
+- Compelling intro text (max 150 characters for mobile visibility)
+- Clear value proposition in the first line
+- Professional, benefit-driven language
+- Strong CTA aligned with campaign objective (awareness/traffic/conversions)
+- Avoid clickbait — LinkedIn audiences respond to substance
+- Include suggested image/visual direction
+- Optimal intro length: 50-150 characters`,
+    ),
+    buildUserPrompt: (params) =>
+      buildSocialUserPrompt(
+        params.userPrompt,
+        params.context,
+        params.settings,
+        'Platform: LinkedIn Sponsored Post. Intro text max 150 chars (visible on mobile). Include clear CTA and image direction.',
+      ),
+  },
+
+  'linkedin-newsletter': {
+    systemPrompt: buildBaseSystemPrompt(
+      `You are a LinkedIn newsletter writer. Create subscriber-worthy newsletter content that builds thought leadership:
+- Engaging subject line (under 60 characters)
+- Strong opening hook that rewards subscribers
+- Well-structured with H2 subheadings every 200-400 words
+- Mix of original insights, data, and actionable takeaways
+- Professional yet conversational — like writing to a trusted colleague
+- End with a discussion prompt to drive comments
+- Add 3-5 relevant hashtags
+- Optimal length: 500-2000 words`,
+    ),
+    buildUserPrompt: (params) =>
+      buildSocialUserPrompt(
+        params.userPrompt,
+        params.context,
+        params.settings,
+        'Platform: LinkedIn Newsletter. Include subject line, H2 subheadings, and a closing discussion prompt. 500-2000 words.',
+      ),
+  },
+
+  'linkedin-video': {
+    systemPrompt: buildBaseSystemPrompt(
+      `You are a LinkedIn video scriptwriter. Write scripts for professional video content that drives engagement:
+- Hook (0-5 seconds): Bold statement or question that stops the scroll
+- Body (5-50 seconds): Deliver value — insights, frameworks, or stories
+- CTA (last 5-10 seconds): Subscribe, follow, comment, or visit link
+- Write in a professional but conversational speaking style
+- Include [visual/action directions] in brackets
+- Suggest on-screen text/graphics
+- Optimal video length: 30-90 seconds`,
+    ),
+    buildUserPrompt: (params) =>
+      buildSocialUserPrompt(
+        params.userPrompt,
+        params.context,
+        params.settings,
+        'Platform: LinkedIn Video. Script format with [visual directions]. Professional speaking tone. 30-90 second video.',
+      ),
+  },
+
+  'linkedin-event': {
+    systemPrompt: buildBaseSystemPrompt(
+      `You are a LinkedIn event promotion specialist. Write compelling event announcement posts that drive registrations:
+- Attention-grabbing opening line about the event's value
+- Clear event details: what, when, why attend
+- Highlight key speakers, topics, or takeaways
+- Create urgency without being pushy (limited spots, early bird, etc.)
+- Include a clear CTA to register or RSVP
+- Add 3-5 relevant hashtags
+- Professional and enthusiastic tone
+- Optimal length: 100-300 words`,
+    ),
+    buildUserPrompt: (params) =>
+      buildSocialUserPrompt(
+        params.userPrompt,
+        params.context,
+        params.settings,
+        'Platform: LinkedIn Event Post. Include event details, key takeaways, and registration CTA. 100-300 words.',
+      ),
+  },
+
+  'linkedin-poll': {
+    systemPrompt: buildBaseSystemPrompt(
+      `You are a LinkedIn engagement specialist. Create polls that spark professional conversations and generate insights:
+- Compelling question that taps into professional debates or preferences
+- 2-4 clear, mutually exclusive answer options
+- Brief context paragraph (2-3 sentences) explaining why this matters
+- Each option should be concise (max 30 characters)
+- The question should invite diverse perspectives
+- Add 2-3 relevant hashtags
+- Suggest a follow-up comment to post after the poll`,
+    ),
+    buildUserPrompt: (params) =>
+      buildSocialUserPrompt(
+        params.userPrompt,
+        params.context,
+        params.settings,
+        'Platform: LinkedIn Poll. Question + 2-4 options (max 30 chars each). Include context paragraph and hashtags.',
       ),
   },
 

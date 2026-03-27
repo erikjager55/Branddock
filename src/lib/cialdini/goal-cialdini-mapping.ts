@@ -1,5 +1,5 @@
 /**
- * Goal → Cialdini Mapping — Maps each of the 15 campaign goal types to
+ * Goal → Cialdini Mapping — Maps each of the 16 campaign goal types to
  * 2-4 recommended Cialdini persuasion principles with application hints
  * and a persuasion strategy per goal.
  */
@@ -106,6 +106,17 @@ const GOAL_CIALDINI_MAP: Record<string, GoalCialdiniMapping> = {
       { id: 'unity', applicationHint: 'Make loyal customers feel like insiders with exclusive access and co-creation opportunities', intensity: 'medium' },
     ],
     persuasionStrategy: 'Leverage sunk investment through commitment/consistency. Reward loyalty genuinely through reciprocity. Deepen bonds through insider unity.',
+  },
+
+  LINKEDIN_GROWTH: {
+    goalType: 'LINKEDIN_GROWTH',
+    primaryPrinciples: [
+      { id: 'social_proof', applicationHint: 'Showcase follower growth, engagement metrics, and endorsements from industry peers to signal professional credibility', intensity: 'high' },
+      { id: 'authority', applicationHint: 'Share original insights, data, and frameworks that establish thought leadership in your niche', intensity: 'high' },
+      { id: 'commitment_consistency', applicationHint: 'Build a consistent posting cadence that trains the algorithm and audience to expect valuable content', intensity: 'medium' },
+      { id: 'reciprocity', applicationHint: 'Engage generously with others\' content — comment, share, and amplify before asking for attention in return', intensity: 'medium' },
+    ],
+    persuasionStrategy: 'Lead with authority through original professional insights. Amplify with social proof (engagement, endorsements). Build habit through consistent cadence and reciprocal engagement.',
   },
 
   // ── Brand & Culture ────────────────────────────────────

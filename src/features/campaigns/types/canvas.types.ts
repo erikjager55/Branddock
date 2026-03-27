@@ -4,6 +4,9 @@
 
 import type { ComponentType } from 'react';
 
+// Re-export accordion types for convenience
+export type { StepSummaryData, AccordionStepStatus, StepNumber } from './accordion.types';
+
 export interface CanvasVariant {
   index: number;
   content: string;

@@ -78,13 +78,40 @@ export function computeDeploymentSchedule(
     if (slug) phaseKeyToIndex.set(slug, pi);
   }
 
+  // Build lowercase phase names array for fuzzy matching fallback
+  const phaseNamesLower = phases.map((p) => p.name.toLowerCase());
+
   // Group deliverables by resolved phase index
   const byPhaseIndex = new Map<number, typeof deliverables>();
   const unmatched: typeof deliverables = [];
 
   for (const d of deliverables) {
-    const key = (d.phase ?? '').toLowerCase();
-    const pi = phaseKeyToIndex.get(key);
+    const key = (d.phase ?? '').toLowerCase().trim();
+    let pi = phaseKeyToIndex.get(key);
+
+    // Fuzzy fallback: substring match (e.g. "awareness" matches "Awareness & Discovery")
+    if (pi === undefined && key) {
+      for (let fi = 0; fi < phaseNamesLower.length; fi++) {
+        if (phaseNamesLower[fi].includes(key) || key.includes(phaseNamesLower[fi])) {
+          pi = fi;
+          break;
+        }
+      }
+    }
+
+    // Fuzzy fallback: match on first word (e.g. "conversion" matches "Conversion & Loyalty")
+    if (pi === undefined && key) {
+      const firstWord = key.split(/[\s&,/-]+/)[0];
+      if (firstWord && firstWord.length >= 3) {
+        for (let fi = 0; fi < phaseNamesLower.length; fi++) {
+          if (phaseNamesLower[fi].startsWith(firstWord) || phaseNamesLower[fi].includes(firstWord)) {
+            pi = fi;
+            break;
+          }
+        }
+      }
+    }
+
     if (pi !== undefined) {
       if (!byPhaseIndex.has(pi)) byPhaseIndex.set(pi, []);
       byPhaseIndex.get(pi)!.push(d);

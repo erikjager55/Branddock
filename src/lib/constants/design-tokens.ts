@@ -793,6 +793,29 @@ export const STUDIO = {
   },
 } as const;
 
+// ─── ACCORDION TOKENS ──────────────────────────────────────
+
+export const ACCORDION = {
+  tab: {
+    base: 'flex flex-col items-center w-16 py-6 cursor-pointer',
+    active: 'bg-teal-600 text-white',
+    completed: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+    locked: 'bg-gray-100 text-gray-400 cursor-not-allowed',
+  },
+  icon: {
+    active: 'text-white',
+    completed: 'text-emerald-600',
+    locked: 'text-gray-300',
+  },
+  content: {
+    panel: 'flex-1 overflow-y-auto p-8',
+    header: 'flex items-center gap-3 mb-8',
+    headerIcon: 'h-8 w-8 text-teal-600',
+    headerTitle: 'text-2xl font-bold text-gray-900',
+  },
+  transition: 'transition-all duration-300 ease-in-out',
+} as const;
+
 // ─── HELPER: cn() ──────────────────────────────────────────
 // Utility to merge multiple class strings (simple version)
 // For production: use clsx or tailwind-merge

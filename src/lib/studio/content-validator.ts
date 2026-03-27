@@ -258,7 +258,8 @@ function checkContentLength(content: string, contentType: string): ValidationWar
 
   // Flag excessively long content for short-form types
   const shortFormTypes = [
-    'linkedin-post', 'instagram-post', 'twitter-thread', 'facebook-post',
+    'linkedin-post', 'linkedin-ad', 'linkedin-video', 'linkedin-event', 'linkedin-poll',
+    'instagram-post', 'twitter-thread', 'facebook-post',
     'tiktok-script', 'search-ad', 'social-ad', 'display-ad',
   ];
   if (shortFormTypes.includes(contentType) && textLength > 3000) {

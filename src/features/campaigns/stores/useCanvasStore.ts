@@ -1,9 +1,10 @@
 // =============================================================
-// Canvas Store — Zustand (context + variants + selections + generation)
+// Canvas Store — Zustand (context + variants + selections + generation + accordion)
 // =============================================================
 
 import { create } from 'zustand';
 import type { CanvasVariant, CanvasImageVariant, ApprovalStatus } from '../types/canvas.types';
+import type { StepSummaryData, StepNumber } from '../types/accordion.types';
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
 type GenerationStatus = 'idle' | 'generating' | 'complete' | 'error';
 
@@ -53,6 +54,21 @@ interface CanvasStoreState {
   approvedAt: string | null;
   publishedAt: string | null;
 
+  // ─── Accordion navigation ─────────────────────────────────
+  activeStep: StepNumber;
+  completedSteps: Set<number>;
+  stepSummaries: Map<number, StepSummaryData>;
+
+  // ─── Step 3: medium generation ────────────────────────────
+  mediumGenerationStatus: 'idle' | 'generating' | 'complete' | 'error';
+  generatedMediumUrl: string | null;
+  mediumApproved: boolean;
+
+  // ─── Step 4: scheduling ───────────────────────────────────
+  scheduledDate: string | null;
+  scheduledTime: string | null;
+  isTimeBound: boolean;
+
   // ─── Actions ──────────────────────────────────────────────
   setContextStack: (stack: CanvasContextStack) => void;
   setDeliverable: (id: string, type: string) => void;
@@ -75,6 +91,18 @@ interface CanvasStoreState {
     approvedAt?: string | null;
     publishedAt?: string | null;
   }) => void;
+
+  // ─── Accordion actions ────────────────────────────────────
+  advanceToStep: (step: StepNumber) => void;
+  goToStep: (step: StepNumber) => void;
+  setStepSummary: (step: number, summary: StepSummaryData) => void;
+  setMediumGenerationStatus: (status: 'idle' | 'generating' | 'complete' | 'error') => void;
+  setGeneratedMediumUrl: (url: string | null) => void;
+  setMediumApproved: (approved: boolean) => void;
+  setScheduledDate: (date: string | null) => void;
+  setScheduledTime: (time: string | null) => void;
+  setIsTimeBound: (timeBound: boolean) => void;
+
   reset: () => void;
 }
 
@@ -98,6 +126,21 @@ const INITIAL_STATE = {
   approvedBy: null,
   approvedAt: null,
   publishedAt: null,
+
+  // Accordion
+  activeStep: 1 as StepNumber,
+  completedSteps: new Set<number>(),
+  stepSummaries: new Map<number, StepSummaryData>(),
+
+  // Step 3
+  mediumGenerationStatus: 'idle' as const,
+  generatedMediumUrl: null,
+  mediumApproved: false,
+
+  // Step 4
+  scheduledDate: null,
+  scheduledTime: null,
+  isTimeBound: false,
 };
 
 export const useCanvasStore = create<CanvasStoreState>((set) => ({
@@ -167,12 +210,54 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       publishedAt: data.publishedAt ?? null,
     }),
 
+  // ─── Accordion actions ────────────────────────────────────
+
+  advanceToStep: (step) =>
+    set((state) => {
+      const nextCompleted = new Set(state.completedSteps);
+      // Mark all previous steps as completed
+      for (let i = 1; i < step; i++) {
+        nextCompleted.add(i);
+      }
+      return { activeStep: step, completedSteps: nextCompleted };
+    }),
+
+  goToStep: (step) =>
+    set((state) => {
+      // Only allow navigating to completed steps (review mode) or current active
+      if (state.completedSteps.has(step) || step === state.activeStep) {
+        // Mark the previously active step as completed so user can navigate back
+        const nextCompleted = new Set(state.completedSteps);
+        if (step !== state.activeStep) {
+          nextCompleted.add(state.activeStep);
+        }
+        return { activeStep: step, completedSteps: nextCompleted };
+      }
+      return {};
+    }),
+
+  setStepSummary: (step, summary) =>
+    set((state) => {
+      const next = new Map(state.stepSummaries);
+      next.set(step, summary);
+      return { stepSummaries: next };
+    }),
+
+  setMediumGenerationStatus: (status) => set({ mediumGenerationStatus: status }),
+  setGeneratedMediumUrl: (url) => set({ generatedMediumUrl: url }),
+  setMediumApproved: (approved) => set({ mediumApproved: approved }),
+  setScheduledDate: (date) => set({ scheduledDate: date }),
+  setScheduledTime: (time) => set({ scheduledTime: time }),
+  setIsTimeBound: (timeBound) => set({ isTimeBound: timeBound }),
+
   reset: () => set({
     ...INITIAL_STATE,
-    // Create fresh Map instances on reset
+    // Create fresh instances on reset
     variantGroups: new Map(),
     selections: new Map(),
     generationStatus: new Map(),
     additionalContextItems: new Map(),
+    completedSteps: new Set(),
+    stepSummaries: new Map(),
   }),
 }));

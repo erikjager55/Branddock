@@ -1,7 +1,7 @@
 // =============================================================
 // Studio Prompt Template Registry
 //
-// Central registry of prompt templates for all 47 deliverable types.
+// Central registry of prompt templates for all 53 deliverable types.
 // Each template defines a system prompt and a user prompt builder
 // that combines context, settings, and user instructions.
 //

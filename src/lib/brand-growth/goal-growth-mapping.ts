@@ -1,5 +1,5 @@
 /**
- * Goal → Brand Growth Mapping — Maps each of the 15 campaign goal types to
+ * Goal → Brand Growth Mapping — Maps each of the 16 campaign goal types to
  * Byron Sharp / Ehrenberg-Bass growth principles with specific recommendations
  * for mental/physical availability, CEPs, and DBAs.
  */
@@ -97,6 +97,16 @@ const GOAL_GROWTH_MAP: Record<string, GoalGrowthMapping> = {
     dbaRecommendations: ['Reinforce DBAs in post-purchase touchpoints', 'Use packaging and product experience as DBA carriers', 'Loyalty program branded distinctively'],
     growthLever: 'frequency',
     strategicImplication: 'Per Sharp, loyalty follows penetration. Don\'t over-invest in retention at the expense of acquisition. But do maintain physical availability and CEP freshness.',
+  },
+
+  LINKEDIN_GROWTH: {
+    goalType: 'LINKEDIN_GROWTH',
+    mentalAvailabilityPriority: 'high',
+    physicalAvailabilityPriority: 'medium',
+    cepOpportunities: ['Professional knowledge-seeking moments', 'Industry trend discussions', 'Career development reflection', 'Peer recommendation and endorsement moments'],
+    dbaRecommendations: ['Consistent visual template for carousels and posts', 'Recognizable author voice and perspective', 'Distinctive content series or framework names', 'Branded hashtag or recurring content format'],
+    growthLever: 'both',
+    strategicImplication: 'LinkedIn growth requires building mental availability among a professional audience. Reach beyond existing followers through shareable content. Frequency matters — the algorithm rewards consistency. Create distinctive content assets (frameworks, series names) that become associated with the brand.',
   },
 
   EMPLOYER_BRANDING: {

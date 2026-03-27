@@ -535,7 +535,7 @@ function buildCanvasPrompt(
     .join('\n');
 
   const imageInstruction = hasImageComponent
-    ? '\n\nAlso generate 3 "imagePrompts" — detailed image generation prompts that match the brand visual identity. Each prompt should describe the image in detail including style, composition, and mood.'
+    ? '\n\nAlso generate 2 "imagePrompts" — detailed image generation prompts that match the brand visual identity. Each prompt should describe the image in detail including style, composition, and mood.'
     : '';
 
   const userInstruction = options?.instruction
@@ -543,7 +543,7 @@ function buildCanvasPrompt(
     : '';
 
   const userPrompt = [
-    'Generate exactly 3 variants for each of the following component groups:',
+    'Generate exactly 2 variants for each of the following component groups:',
     groupInstructions,
     imageInstruction,
     userInstruction,
@@ -558,7 +558,7 @@ function buildCanvasPrompt(
       : '',
     '}',
     '',
-    'Each group must have exactly 3 variants with different creative approaches.',
+    'Each group must have exactly 2 variants with different creative approaches.',
     'Ensure all content is on-brand and appropriate for the target platform.',
   ]
     .filter(Boolean)
@@ -608,12 +608,12 @@ function buildRegenerationPrompt(
     '',
     `User feedback: ${feedback}`,
     '',
-    'Generate 3 improved variants that address the feedback while staying on-brand.',
+    'Generate 2 improved variants that address the feedback while staying on-brand.',
     '',
     'Response schema:',
     '{',
     '  "components": [',
-    `    { "group": "${group}", "variants": [{ "content": "...", "tone": "..." }, { "content": "...", "tone": "..." }, { "content": "...", "tone": "..." }] }`,
+    `    { "group": "${group}", "variants": [{ "content": "...", "tone": "..." }, { "content": "...", "tone": "..." }] }`,
     '  ]',
     '}',
   ].join('\n');
