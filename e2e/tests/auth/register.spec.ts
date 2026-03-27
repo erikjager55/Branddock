@@ -84,7 +84,7 @@ test.describe('Registration', () => {
     await page.locator('[data-testid="register-password"]').fill('SecurePassword123!');
     await page.locator('[data-testid="register-submit"]').click();
 
-    await expect(page.locator('[data-testid="register-submit"]')).toContainText('Bezig...');
+    await expect(page.locator('[data-testid="register-submit"]')).toContainText('Creating...');
   });
 
   test('special characters in name are accepted', async ({ page }) => {

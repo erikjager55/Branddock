@@ -3,6 +3,10 @@
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 
+## PRIMAIRE ROADMAP
+Lees BRANDCLAW-ROADMAP.md voor de volledige fasevolgorde en specs.
+Dit document heeft hogere prioriteit dan TODO.md bij conflicten.
+
 > 📋 **TODO**: Zie `TODO.md` in project root voor de geprioriteerde development roadmap (8 fases, ~146 items). Raadpleeg dit bij het plannen van nieuwe werk.
 
 > Brand Assets: 12 assets met elk een eigen frameworkType (PURPOSE_WHEEL, GOLDEN_CIRCLE, BRAND_ESSENCE, BRAND_PROMISE, MISSION_STATEMENT, VISION_STATEMENT, BRAND_ARCHETYPE, TRANSFORMATIVE_GOALS, BRAND_PERSONALITY, BRAND_STORY, BRANDHOUSE_VALUES, ESG). Veldspecificaties per asset: zie `docs/brand-assets-field-specifications.md`
@@ -83,9 +87,13 @@ Dit is een **hybride Next.js SPA** — Next.js als framework, maar de UI is voll
 - **Fase A ✅ Done**: Login/register/session met emailAndPassword
 - **Fase B ✅ Done**: Organization plugin + multi-tenant (access control, schema merge, session-based workspace)
 - **Fase C ✅ Done**: Agency flows (organization switcher, workspace switching, invite flow, workspace creation)
+- **Fase D ✅ Done**: OAuth social login (Google/Microsoft/Apple) + token storage voor API gebruik
 
 ### Configuratie
-- `src/lib/auth.ts` — betterAuth() server config met prismaAdapter, emailAndPassword, organization plugin, nextCookies()
+- `src/lib/auth.ts` — betterAuth() server config met prismaAdapter, emailAndPassword, socialProviders (Google/Microsoft/Apple), organization plugin, databaseHooks (auto-provision org + sync OAuth tokens), nextCookies()
+- `src/lib/auth/oauth-config.ts` — getEnabledProviders() helper (leest env vars)
+- `src/app/api/auth/providers/route.ts` — GET endpoint: welke OAuth providers zijn enabled
+- `src/components/auth/SocialLoginButtons.tsx` — Google/Microsoft/Apple login knoppen (conditioneel op enabled providers)
 - `src/lib/auth-client.ts` — createAuthClient() uit `better-auth/react` + organizationClient() plugin
 - `src/lib/auth-server.ts` — getServerSession(), requireAuth(), resolveWorkspaceId() helpers voor API routes
 - `src/lib/auth-permissions.ts` — createAccessControl met 4 rollen (owner, admin, member, viewer)
@@ -105,6 +113,13 @@ OPENAI_API_KEY=           # Vereist voor AI features
 ANTHROPIC_API_KEY=        # Vereist voor AI Exploration + persona chat (Claude Sonnet 4.6)
 GEMINI_API_KEY=           # Vereist voor AI product analyse + foto generatie
 # BRANDDOCK_AI_MODEL=     # Default: gpt-4o (content gen), Claude Sonnet 4.6 (exploration/analysis)
+GOOGLE_CLIENT_ID=        # Optioneel: Google OAuth login
+GOOGLE_CLIENT_SECRET=    # Optioneel: Google OAuth login
+MICROSOFT_CLIENT_ID=     # Optioneel: Microsoft OAuth login
+MICROSOFT_CLIENT_SECRET= # Optioneel: Microsoft OAuth login
+MICROSOFT_TENANT_ID=     # Optioneel: default 'common'
+APPLE_CLIENT_ID=         # Optioneel: Apple OAuth login
+APPLE_CLIENT_SECRET=     # Optioneel: Apple OAuth login
 ARENA_API_TOKEN=         # Optioneel: Are.na culturele context enrichment
 EXA_API_KEY=             # Optioneel: Exa neural search (1000 gratis/maand)
 S2_API_KEY=              # Optioneel: Semantic Scholar (unauthenticated OK)
@@ -114,6 +129,7 @@ S2_API_KEY=              # Optioneel: Semantic Scholar (unauthenticated OK)
 - **Session** (@@map "session"): token, expiresAt, ipAddress, userAgent, userId, activeOrganizationId (Fase B)
 - **Account** (@@map "account"): accountId, providerId, password, accessToken, refreshToken, timestamps
 - **Verification** (@@map "verification"): identifier, value, expiresAt
+- **WorkspaceIntegration**: workspaceId + provider (unique), accessToken, refreshToken, tokenExpiry, scopes, accountEmail, isActive. Wordt automatisch gevuld na OAuth login via `syncOAuthTokensToWorkspace()` databaseHook.
 
 ### User model uitbreidingen
 - `emailVerified Boolean @default(false)`
@@ -1543,10 +1559,27 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 - Do NOT use inline styles, always use Tailwind classes — **uitzondering**: `min-h-0` en custom colors die niet in Tailwind safelist staan (zie Conventies)
 - Do NOT modify seed data without verifying migration compatibility
 
+## E2E Testing & Performance (Fase A — S11)
+
+### Playwright E2E
+- **Config**: `playwright.config.ts` — Chromium, 30s timeout, 2 retries, global setup runt `prisma db seed`
+- **Test data**: `e2e/fixtures/test-data.ts` — TEST_USERS, TEST_ORG, TEST_WORKSPACE (synced met seed)
+- **Helpers**: `e2e/helpers/navigation.ts` — navigateTo(), waitForSection(), clickSidebar()
+- **Kritieke flow test**: `e2e/tests/global/critical-flow.spec.ts` — login → dashboard → brand asset → AI exploration → campaigns
+- **Performance benchmarks**: `e2e/tests/global/performance.spec.ts` — CLS (<0.1), LCP (<2500ms), sidebar nav (<1000ms)
+- **Run**: `npm run test:e2e` (alle tests), `npm run test:e2e -- --grep "Performance"` (alleen benchmarks)
+- **Documentatie**: `PERFORMANCE.md` — targets, architectuurnotities, meetmethode
+
+### Opgeruimd in Fase A
+- Verwijderd: `e2e/tests/market-insights/` (3 bestanden, vervangen door trend-radar)
+- Verwijderd: `e2e/tests/brand-foundation/create-asset.spec.ts` (functionaliteit verwijderd in FBA)
+- Verwijderd: `e2e/tests/personas/duplicate.spec.ts`
+- Gefixed: Nederlandse tekst in auth tests (`'Bezig...'` → `'Signing in...'`/`'Creating...'`)
+
 ## Wat er NIET is
 - **Stripe billing** — niet geïmplementeerd (BILLING-01 t/m BILLING-04 in backlog)
 - **Server-side rendering** — alles is client-side
-- **OAuth** — alleen emailAndPassword, Google/Microsoft login nog niet (AUTH-05)
+- **OAuth productie-klaar** — Google/Microsoft/Apple login code is compleet, maar vereist credentials in env vars (Google Cloud Console / Azure AD setup)
 - **Email verzending** — invite flow maakt records aan maar stuurt nog geen echte emails
 
 ---
@@ -2072,7 +2105,7 @@ Gratis of goedkope publieke API's die bestaande modules verrijken:
 
 **S10-S12. Production Ready**
 - S10: Stripe Billing (checkout, webhooks, plan enforcement, agency model)
-- S11: OAuth (Google/Microsoft) + E2E testing (Playwright) + Performance
+- S11: ✅ Fase A Done — OAuth (Google/Microsoft/Apple) + E2E testing (Playwright) + Performance benchmarks
 - S12: Deployment (Vercel) + Monitoring (Sentry) + Analytics (PostHog)
 
 ### ❓ OPEN BESLISSINGEN

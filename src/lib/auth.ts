@@ -101,6 +101,74 @@ async function provisionNewUser(userId: string, userName: string) {
   });
 }
 
+// ─── Sync OAuth tokens to WorkspaceIntegration ─────────────
+// After OAuth login, Better Auth stores tokens in the Account table.
+// This function copies them to WorkspaceIntegration for external API usage
+// (e.g., Google Ads API). Uses upsert to handle re-authentication.
+
+async function syncOAuthTokensToWorkspace(account: {
+  userId: string;
+  providerId: string;
+  accessToken?: string | null;
+  refreshToken?: string | null;
+  accessTokenExpiresAt?: Date | null;
+  scope?: string | null;
+  accountId?: string | null;
+}) {
+  try {
+    // Find the user's most recent org membership + email in one query
+    const membership = await prisma.organizationMember.findFirst({
+      where: { userId: account.userId },
+      orderBy: { joinedAt: 'desc' },
+      select: {
+        user: { select: { email: true } },
+        organization: {
+          select: {
+            workspaces: { take: 1, orderBy: { createdAt: 'desc' } },
+          },
+        },
+      },
+    });
+
+    const workspace = membership?.organization?.workspaces?.[0];
+    if (!workspace) return;
+
+    const email = membership?.user?.email;
+
+    await prisma.workspaceIntegration.upsert({
+      where: {
+        workspaceId_provider: {
+          workspaceId: workspace.id,
+          provider: account.providerId,
+        },
+      },
+      create: {
+        workspaceId: workspace.id,
+        provider: account.providerId,
+        accessToken: account.accessToken,
+        refreshToken: account.refreshToken,
+        tokenExpiry: account.accessTokenExpiresAt,
+        scopes: account.scope,
+        accountEmail: email ?? account.accountId,
+        isActive: true,
+      },
+      update: {
+        accessToken: account.accessToken,
+        refreshToken: account.refreshToken,
+        tokenExpiry: account.accessTokenExpiresAt,
+        scopes: account.scope,
+        accountEmail: email ?? account.accountId,
+        isActive: true,
+      },
+    });
+
+    console.log(`[auth] Synced ${account.providerId} OAuth tokens to workspace ${workspace.id}`);
+  } catch (error) {
+    // Non-critical: don't block login if token sync fails
+    console.error('[auth] Failed to sync OAuth tokens to workspace:', error);
+  }
+}
+
 // ─── Better Auth server config ─────────────────────────────
 
 export const auth = betterAuth({
@@ -119,6 +187,15 @@ export const auth = betterAuth({
       create: {
         after: async (user) => {
           await provisionNewUser(user.id, user.name || user.email?.split('@')[0] || 'User');
+        },
+      },
+    },
+    account: {
+      create: {
+        after: async (account) => {
+          // After OAuth login, sync tokens to WorkspaceIntegration for API usage
+          if (account.providerId === 'credential') return;
+          await syncOAuthTokensToWorkspace(account);
         },
       },
     },

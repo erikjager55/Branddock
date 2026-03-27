@@ -194,6 +194,9 @@ model Workspace {
   websiteUrl                String?
   websiteScans              WebsiteScan[]
 
+  // OAuth integrations (token storage for external APIs)
+  integrations              WorkspaceIntegration[]
+
   @@index([organizationId])
 }
 
@@ -3297,5 +3300,28 @@ model WebsiteScan {
   workspace        Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdById      String
   createdBy        User                @relation(fields: [createdById], references: [id])
+  @@index([workspaceId])
+}
+
+// ─── S11: OAuth Integration Token Storage ─────────────────────
+// Stores OAuth access/refresh tokens per workspace for external API usage
+// (e.g., Google Ads API in Fase G). Separate from Better Auth's Account model
+// which stores authentication tokens — this stores API integration tokens.
+
+model WorkspaceIntegration {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  provider     String    // 'google', 'microsoft', 'apple'
+  accessToken  String?   @db.Text
+  refreshToken String?   @db.Text
+  tokenExpiry  DateTime?
+  scopes       String?   // comma-separated scopes
+  accountEmail String?   // linked account email
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([workspaceId, provider])
   @@index([workspaceId])
 }

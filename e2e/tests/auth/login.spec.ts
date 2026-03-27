@@ -123,7 +123,7 @@ test.describe('Login', () => {
     await page.locator('[data-testid="login-password"]').fill(TEST_USERS.owner.password);
     await page.locator('[data-testid="login-submit"]').click();
 
-    // Should show "Bezig..." text during loading
-    await expect(page.locator('[data-testid="login-submit"]')).toContainText('Bezig...');
+    // Should show "Signing in..." text during loading
+    await expect(page.locator('[data-testid="login-submit"]')).toContainText('Signing in...');
   });
 });
