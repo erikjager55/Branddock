@@ -287,6 +287,47 @@ export interface UpdateBrandVoiceBody {
   isDefault?: boolean;
 }
 
+// ─── Sound Effects ──────────────────────────────────────────
+
+export type SoundType = 'SFX' | 'JINGLE' | 'SOUND_LOGO' | 'AMBIENT' | 'MUSIC';
+
+export interface SoundEffectWithMeta {
+  id: string;
+  name: string;
+  soundType: SoundType;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  duration: number | null;
+  prompt: string | null;
+  promptInfluence: number | null;
+  isLooping: boolean;
+  source: 'UPLOAD' | 'AI_GENERATED';
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSoundEffectBody {
+  name: string;
+  soundType?: SoundType;
+}
+
+export interface GenerateSoundEffectBody {
+  name: string;
+  prompt: string;
+  soundType?: SoundType;
+  durationSeconds?: number;
+  promptInfluence?: number;
+}
+
+export interface UpdateSoundEffectBody {
+  name?: string;
+  soundType?: SoundType;
+  isDefault?: boolean;
+}
+
 // ─── Import ──────────────────────────────────────────────────
 
 export interface ImportUrlBody {

@@ -4,7 +4,7 @@ import type { MediaViewMode } from '../constants/media-constants';
 
 type UploadTab = 'upload' | 'import-url' | 'stock' | 'ai';
 type ActiveTab = 'library' | 'collections' | 'tags' | 'creative-hub';
-type CreativeHubTab = 'brand-models' | 'photography' | 'animation' | 'brand-voice';
+type CreativeHubTab = 'brand-models' | 'photography' | 'animation' | 'brand-voice' | 'sound-effects';
 
 interface MediaLibraryStore {
   // View

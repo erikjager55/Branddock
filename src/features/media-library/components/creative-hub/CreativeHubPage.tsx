@@ -5,6 +5,7 @@ import { BrandModelsTab } from './brand-models/BrandModelsTab';
 import { PhotographyStyleTab } from './photography-style/PhotographyStyleTab';
 import { AnimationStyleTab } from './animation-style/AnimationStyleTab';
 import { BrandVoiceTab } from './brand-voice/BrandVoiceTab';
+import { SoundEffectsTab } from './sound-effects/SoundEffectsTab';
 
 // ─── Sub-tab configuration ──────────────────────────────────
 
@@ -13,6 +14,7 @@ const CREATIVE_HUB_TABS = [
   { key: 'photography', label: 'Photography Styles' },
   { key: 'animation', label: 'Animation Styles' },
   { key: 'brand-voice', label: 'Brand Voice' },
+  { key: 'sound-effects', label: 'Sound Effects' },
 ] as const;
 
 // ─── Component ──────────────────────────────────────────────
@@ -57,6 +59,8 @@ export function CreativeHubPage() {
           <AnimationStyleTab />
         ) : creativeHubTab === 'brand-voice' ? (
           <BrandVoiceTab />
+        ) : creativeHubTab === 'sound-effects' ? (
+          <SoundEffectsTab />
         ) : null}
       </div>
     </div>

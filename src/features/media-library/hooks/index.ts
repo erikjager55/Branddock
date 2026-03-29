@@ -39,6 +39,12 @@ import {
   deleteBrandVoice,
   fetchElevenLabsVoices,
   generateBrandVoiceSample,
+  fetchSoundEffects,
+  fetchSoundEffectDetail,
+  uploadSoundEffect,
+  generateSoundEffectApi,
+  updateSoundEffect,
+  deleteSoundEffect,
 } from '../api/media.api';
 import type {
   MediaListParams,
@@ -55,6 +61,9 @@ import type {
   UpdateBrandVoiceBody,
   ImportStockBody,
   MediaAssetWithMeta,
+  CreateSoundEffectBody,
+  GenerateSoundEffectBody,
+  UpdateSoundEffectBody,
 } from '../types/media.types';
 
 // ─── Query Key Factory ──────────────────────────────────────
@@ -74,6 +83,8 @@ export const mediaKeys = {
   brandVoices: () => [...mediaKeys.all, 'brand-voices'] as const,
   brandVoiceDetail: (id: string) => [...mediaKeys.all, 'brand-voice', id] as const,
   elevenLabsVoices: () => [...mediaKeys.all, 'elevenlabs-voices'] as const,
+  soundEffects: () => [...mediaKeys.all, 'sound-effects'] as const,
+  soundEffectDetail: (id: string) => [...mediaKeys.all, 'sound-effect', id] as const,
 };
 
 // ─── Media Assets ────────────────────────────────────────────
@@ -488,6 +499,67 @@ export function useGenerateSample(voiceId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: mediaKeys.brandVoiceDetail(voiceId) });
       qc.invalidateQueries({ queryKey: mediaKeys.brandVoices() });
+    },
+  });
+}
+
+// ─── Sound Effects ──────────────────────────────────────────
+
+export function useSoundEffects() {
+  return useQuery({
+    queryKey: mediaKeys.soundEffects(),
+    queryFn: fetchSoundEffects,
+    staleTime: 30_000,
+  });
+}
+
+export function useSoundEffectDetail(id: string) {
+  return useQuery({
+    queryKey: mediaKeys.soundEffectDetail(id),
+    queryFn: () => fetchSoundEffectDetail(id),
+    enabled: !!id,
+    staleTime: 60_000,
+  });
+}
+
+export function useUploadSoundEffect() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, body }: { file: File; body: CreateSoundEffectBody }) =>
+      uploadSoundEffect(file, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: mediaKeys.soundEffects() });
+    },
+  });
+}
+
+export function useGenerateSoundEffect() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: GenerateSoundEffectBody) => generateSoundEffectApi(body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: mediaKeys.soundEffects() });
+    },
+  });
+}
+
+export function useUpdateSoundEffect(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateSoundEffectBody) => updateSoundEffect(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: mediaKeys.soundEffectDetail(id) });
+      qc.invalidateQueries({ queryKey: mediaKeys.soundEffects() });
+    },
+  });
+}
+
+export function useDeleteSoundEffect() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteSoundEffect(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: mediaKeys.soundEffects() });
     },
   });
 }

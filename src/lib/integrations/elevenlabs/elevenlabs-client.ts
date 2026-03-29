@@ -1,10 +1,11 @@
 // =============================================================
 // ElevenLabs Client Singleton
 //
-// Singleton pattern (matching openai-client.ts). Three methods:
-//  - listVoices()       → available voices from ElevenLabs library
-//  - generateSpeech()   → audio Buffer from text
-//  - getVoiceInfo()     → voice metadata
+// Singleton pattern (matching openai-client.ts). Four methods:
+//  - listVoices()          → available voices from ElevenLabs library
+//  - generateSpeech()      → audio Buffer from text
+//  - generateSoundEffect() → audio Buffer from text prompt (SFX)
+//  - getVoiceInfo()        → voice metadata
 //
 // Requires ELEVENLABS_API_KEY in environment.
 // =============================================================
@@ -26,6 +27,11 @@ export interface VoiceSettings {
   similarity_boost?: number;
   style?: number;
   use_speaker_boost?: boolean;
+}
+
+export interface SoundEffectOptions {
+  durationSeconds?: number;   // 0.5–22
+  promptInfluence?: number;   // 0–1, default 0.3
 }
 
 // ─── Singleton ─────────────────────────────────────────────
@@ -99,6 +105,29 @@ export async function generateSpeech(
   });
 
   // Collect the readable stream into a Buffer
+  const chunks: Uint8Array[] = [];
+  for await (const chunk of audioStream) {
+    chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+/**
+ * Generate a sound effect from a text prompt using ElevenLabs Sound Effects API.
+ * Returns a Buffer containing MP3 audio data.
+ */
+export async function generateSoundEffect(
+  text: string,
+  options?: SoundEffectOptions,
+): Promise<Buffer> {
+  const client = getClient();
+
+  const audioStream = await client.textToSoundEffects.convert({
+    text,
+    duration_seconds: options?.durationSeconds,
+    prompt_influence: options?.promptInfluence,
+  });
+
   const chunks: Uint8Array[] = [];
   for await (const chunk of audioStream) {
     chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);

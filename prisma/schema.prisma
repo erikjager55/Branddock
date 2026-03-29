@@ -203,6 +203,7 @@ model Workspace {
   mediaCollections          MediaCollection[]
   styleReferences           StyleReference[]
   brandVoices               BrandVoice[]
+  soundEffects              SoundEffect[]
 
   @@index([organizationId])
 }
@@ -282,6 +283,7 @@ model User {
 
   // Media Library
   uploadedMedia          MediaAsset[]    @relation("UploadedMedia")
+  createdSoundEffects    SoundEffect[]   @relation("CreatedSoundEffects")
 
   @@index([workspaceId])
 }
@@ -3540,6 +3542,32 @@ model BrandVoice {
 
   workspaceId     String
   workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([workspaceId])
+}
+
+model SoundEffect {
+  id              String    @id @default(cuid())
+  name            String
+  soundType       String    @default("SFX")     // SFX, JINGLE, SOUND_LOGO, AMBIENT, MUSIC
+  fileUrl         String
+  fileName        String
+  fileSize        Int                            // bytes
+  fileType        String                         // MIME: audio/mpeg, audio/wav
+  duration        Float?                         // seconds
+  prompt          String?   @db.Text             // AI generation prompt (null = upload)
+  promptInfluence Float?                          // 0–1
+  isLooping       Boolean   @default(false)
+  source          String    @default("UPLOAD")   // UPLOAD | AI_GENERATED
+  isDefault       Boolean   @default(false)
+
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById     String
+  createdBy       User      @relation("CreatedSoundEffects", fields: [createdById], references: [id])
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

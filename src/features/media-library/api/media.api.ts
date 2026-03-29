@@ -24,6 +24,10 @@ import type {
   ImportStockBody,
   MediaStats,
   ElevenLabsVoice,
+  SoundEffectWithMeta,
+  CreateSoundEffectBody,
+  GenerateSoundEffectBody,
+  UpdateSoundEffectBody,
 } from '../types/media.types';
 
 const BASE = '/api/media';
@@ -397,4 +401,62 @@ export async function generateBrandVoiceSample(
   });
   if (!res.ok) throw new Error('Failed to generate voice sample');
   return res.json();
+}
+
+// ─── Sound Effects ──────────────────────────────────────────
+
+export async function fetchSoundEffects(): Promise<SoundEffectWithMeta[]> {
+  const res = await fetch(`${BASE}/sound-effects`);
+  if (!res.ok) throw new Error('Failed to fetch sound effects');
+  const data = await res.json();
+  return data.soundEffects ?? data;
+}
+
+export async function fetchSoundEffectDetail(id: string): Promise<SoundEffectWithMeta> {
+  const res = await fetch(`${BASE}/sound-effects/${id}`);
+  if (!res.ok) throw new Error('Failed to fetch sound effect detail');
+  return res.json();
+}
+
+export async function uploadSoundEffect(
+  file: File,
+  body: CreateSoundEffectBody
+): Promise<SoundEffectWithMeta> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('name', body.name);
+  if (body.soundType) formData.append('soundType', body.soundType);
+  const res = await fetch(`${BASE}/sound-effects`, { method: 'POST', body: formData });
+  if (!res.ok) throw new Error('Failed to upload sound effect');
+  return res.json();
+}
+
+export async function generateSoundEffectApi(
+  body: GenerateSoundEffectBody
+): Promise<SoundEffectWithMeta> {
+  const res = await fetch(`${BASE}/sound-effects/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error('Failed to generate sound effect');
+  return res.json();
+}
+
+export async function updateSoundEffect(
+  id: string,
+  body: UpdateSoundEffectBody
+): Promise<SoundEffectWithMeta> {
+  const res = await fetch(`${BASE}/sound-effects/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error('Failed to update sound effect');
+  return res.json();
+}
+
+export async function deleteSoundEffect(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/sound-effects/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete sound effect');
 }

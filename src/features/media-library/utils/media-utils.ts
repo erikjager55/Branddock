@@ -37,6 +37,34 @@ export function mapBrandVoice(voice: Record<string, unknown>) {
   };
 }
 
+/** Safely convert a value to an ISO date string */
+function toISOString(value: unknown): string {
+  if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'string') return value;
+  return new Date().toISOString();
+}
+
+/** Map a SoundEffect record to a serializable response object */
+export function mapSoundEffect(sfx: Record<string, unknown>) {
+  return {
+    id: sfx.id,
+    name: sfx.name,
+    soundType: sfx.soundType,
+    fileUrl: sfx.fileUrl,
+    fileName: sfx.fileName,
+    fileSize: sfx.fileSize,
+    fileType: sfx.fileType,
+    duration: sfx.duration,
+    prompt: sfx.prompt,
+    promptInfluence: sfx.promptInfluence,
+    isLooping: sfx.isLooping,
+    source: sfx.source,
+    isDefault: sfx.isDefault,
+    createdAt: toISOString(sfx.createdAt),
+    updatedAt: toISOString(sfx.updatedAt),
+  };
+}
+
 /** Map a StyleReference record to a serializable response object */
 export function mapStyleReference(ref: Record<string, unknown>) {
   return {
