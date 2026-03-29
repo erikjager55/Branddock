@@ -97,7 +97,7 @@ export function ManualEntryTab({
           className={`w-full border rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-shadow resize-none ${
             errors.description
               ? "border-red-300 focus:ring-red-500"
-              : "border-gray-200 focus:ring-teal-500"
+              : "border-gray-200 focus:ring-primary-500"
           }`}
         />
         <div className="flex items-center justify-between mt-1.5">
@@ -138,7 +138,7 @@ export function ManualEntryTab({
           onChange={(e) => setFeatures(e.target.value)}
           placeholder="Enter one feature per line"
           rows={4}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow resize-none font-mono"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow resize-none font-mono"
         />
       </div>
 
@@ -152,7 +152,7 @@ export function ManualEntryTab({
           onChange={(e) => setBenefits(e.target.value)}
           placeholder="Enter one benefit per line"
           rows={4}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow resize-none font-mono"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow resize-none font-mono"
         />
       </div>
 
@@ -166,7 +166,7 @@ export function ManualEntryTab({
           onChange={(e) => setUseCases(e.target.value)}
           placeholder="Enter one use case per line"
           rows={4}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow resize-none font-mono"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-shadow resize-none font-mono"
         />
       </div>
 

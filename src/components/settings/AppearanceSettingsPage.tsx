@@ -86,7 +86,7 @@ const ACCENT_COLORS: {
     ring: "ring-orange-200",
   },
   { id: "PINK", label: "Pink", swatch: "bg-pink-500", ring: "ring-pink-200" },
-  { id: "TEAL", label: "Teal", swatch: "bg-primary", ring: "ring-teal-200" },
+  { id: "TEAL", label: "Teal", swatch: "bg-primary", ring: "ring-primary-200" },
 ];
 
 const FONT_SIZES: { id: FontSizeOption; label: string; iconSize: string }[] = [

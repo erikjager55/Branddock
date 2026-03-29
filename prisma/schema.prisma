@@ -197,6 +197,13 @@ model Workspace {
   // OAuth integrations (token storage for external APIs)
   integrations              WorkspaceIntegration[]
 
+  // Media Library
+  mediaAssets               MediaAsset[]
+  mediaTags                 MediaTag[]
+  mediaCollections          MediaCollection[]
+  styleReferences           StyleReference[]
+  brandVoices               BrandVoice[]
+
   @@index([organizationId])
 }
 
@@ -272,6 +279,9 @@ model User {
 
   // Website Scanner
   websiteScans           WebsiteScan[]
+
+  // Media Library
+  uploadedMedia          MediaAsset[]    @relation("UploadedMedia")
 
   @@index([workspaceId])
 }
@@ -1937,6 +1947,7 @@ model Product {
   linkedPersonas  ProductPersona[]
   images          ProductImage[]
   competitorLinks CompetitorProduct[]
+  mediaAssets     MediaAsset[]        @relation("ProductMedia")
 
   // Lock fields
   isLocked        Boolean         @default(false)
@@ -3323,5 +3334,215 @@ model WorkspaceIntegration {
   updatedAt    DateTime  @updatedAt
 
   @@unique([workspaceId, provider])
+  @@index([workspaceId])
+}
+
+// ─── Media Library ──────────────────────────────────────────
+
+enum MediaType {
+  IMAGE
+  DOCUMENT
+  VIDEO
+  AUDIO
+}
+
+enum MediaCategory {
+  LOGO
+  BRAND_MARK
+  ICON
+  ILLUSTRATION
+  PHOTOGRAPHY
+  LIFESTYLE
+  PRODUCT_PHOTO
+  TEAM_PHOTO
+  EVENT_PHOTO
+  HERO_IMAGE
+  BANNER
+  SOCIAL_MEDIA
+  ADVERTISEMENT
+  INFOGRAPHIC
+  PRESENTATION
+  VIDEO_CONTENT
+  ANIMATION
+  AUDIO_CONTENT
+  DOCUMENT_FILE
+  TEMPLATE
+  MOCKUP
+  TEXTURE
+  PATTERN
+  BACKGROUND
+  OTHER
+}
+
+enum MediaSource {
+  UPLOAD
+  URL_IMPORT
+  AI_GENERATED
+  SCRAPED
+  STOCK
+}
+
+enum StyleReferenceType {
+  BRAND_MODEL
+  PHOTOGRAPHY_STYLE
+  ANIMATION_STYLE
+}
+
+model MediaAsset {
+  id              String          @id @default(cuid())
+  name            String
+  slug            String
+  fileUrl         String
+  fileType        String          // MIME type (image/png, video/mp4, etc.)
+  fileSize        Int             // bytes
+  fileName        String
+  width           Int?
+  height          Int?
+  duration        Float?          // seconds, for video/audio
+  mediaType       MediaType
+  category        MediaCategory   @default(OTHER)
+  isFavorite      Boolean         @default(false)
+  isArchived      Boolean         @default(false)
+  isFeatured      Boolean         @default(false)
+  thumbnailUrl    String?
+  aiDescription   String?         @db.Text
+  aiTags          String[]
+  dominantColors  String[]        // hex values
+  source          MediaSource     @default(UPLOAD)
+  sourceUrl       String?
+  attribution     String?         // Pexels/Unsplash credits
+
+  workspaceId     String
+  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  uploadedById    String
+  uploadedBy      User            @relation("UploadedMedia", fields: [uploadedById], references: [id])
+
+  productId       String?
+  product         Product?        @relation("ProductMedia", fields: [productId], references: [id], onDelete: SetNull)
+
+  tags            MediaAssetTag[]
+  collections     MediaCollectionAsset[]
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+  @@index([workspaceId, mediaType])
+  @@index([workspaceId, category])
+  @@index([productId])
+}
+
+model MediaTag {
+  id          String          @id @default(cuid())
+  name        String
+  slug        String
+  color       String?         // hex color
+
+  workspaceId String
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  assets      MediaAssetTag[]
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+}
+
+model MediaAssetTag {
+  id          String     @id @default(cuid())
+  mediaAssetId String
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+  mediaTagId   String
+  mediaTag     MediaTag   @relation(fields: [mediaTagId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaAssetId, mediaTagId])
+  @@index([mediaAssetId])
+  @@index([mediaTagId])
+}
+
+model MediaCollection {
+  id              String               @id @default(cuid())
+  name            String
+  slug            String
+  description     String?              @db.Text
+  coverImageUrl   String?
+  color           String?              // hex color
+
+  parentId        String?
+  parent          MediaCollection?     @relation("CollectionNesting", fields: [parentId], references: [id], onDelete: SetNull)
+  children        MediaCollection[]    @relation("CollectionNesting")
+
+  workspaceId     String
+  workspace       Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  assets          MediaCollectionAsset[]
+
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+  @@index([parentId])
+}
+
+model MediaCollectionAsset {
+  id              String          @id @default(cuid())
+  sortOrder       Int             @default(0)
+
+  mediaAssetId    String
+  mediaAsset      MediaAsset      @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+  collectionId    String
+  collection      MediaCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaAssetId, collectionId])
+  @@index([collectionId])
+  @@index([mediaAssetId])
+}
+
+model StyleReference {
+  id                String              @id @default(cuid())
+  name              String
+  type              StyleReferenceType
+  stylePrompt       String?             @db.Text
+  negativePrompt    String?             @db.Text
+  generationParams  Json?
+  modelName         String?
+  modelDescription  String?             @db.Text
+  referenceImages   String[]            // URLs
+
+  workspaceId       String
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([workspaceId])
+  @@index([workspaceId, type])
+}
+
+model BrandVoice {
+  id              String    @id @default(cuid())
+  name            String
+  voiceGender     String?
+  voiceAge        String?
+  voiceTone       String?
+  voiceAccent     String?
+  speakingPace    String?
+  voicePrompt     String?   @db.Text
+  ttsProvider     String?   // ElevenLabs, OpenAI, Google
+  ttsVoiceId      String?
+  ttsSettings     Json?
+  sampleAudioUrl  String?
+  isDefault       Boolean   @default(false)
+
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
   @@index([workspaceId])
 }

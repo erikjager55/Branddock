@@ -99,7 +99,7 @@ export function ChatWithPersonaModal({ persona, isOpen, onClose }: ChatWithPerso
               height={40}
               className="w-10 h-10 rounded-full object-cover flex-shrink-0"
               fallback={
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-primary-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                   {initials}
                 </div>
               }

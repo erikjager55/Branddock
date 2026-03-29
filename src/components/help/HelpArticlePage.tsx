@@ -32,7 +32,7 @@ function ArticleBreadcrumb({
     <div className="flex items-center gap-2 text-sm">
       <button
         onClick={onBack}
-        className="flex items-center gap-1.5 text-gray-500 hover:text-teal-600 transition-colors"
+        className="flex items-center gap-1.5 text-gray-500 hover:text-primary transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
         Back to Help Center
@@ -108,7 +108,7 @@ function TableOfContents({ items }: { items: TocItem[] }) {
           <button
             key={item.id}
             onClick={() => handleClick(item.id)}
-            className={`block w-full text-left text-sm transition-colors hover:text-teal-600 ${
+            className={`block w-full text-left text-sm transition-colors hover:text-primary ${
               item.level === 3 ? "pl-4 text-gray-500" : "text-gray-700 font-medium"
             }`}
           >
@@ -253,7 +253,7 @@ function renderMarkdown(md: string): string {
         stepCounter = parseInt(stepMatch[1], 10);
         result.push(
           `<div class="flex items-start gap-3 mt-8 mb-3" id="${id}">
-            <span class="flex-shrink-0 w-8 h-8 rounded-full bg-teal-100 text-teal-700 flex items-center justify-center text-sm font-bold">${stepCounter}</span>
+            <span class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-sm font-bold">${stepCounter}</span>
             <h2 class="text-xl font-semibold text-gray-900 scroll-mt-20">${inlineFormat(title)}</h2>
           </div>`
         );
@@ -341,7 +341,7 @@ function inlineFormat(text: string): string {
   // Links
   out = out.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" class="text-teal-600 hover:text-teal-700 underline" target="_blank" rel="noopener noreferrer">$1</a>'
+    '<a href="$2" class="text-primary hover:text-primary-700 underline" target="_blank" rel="noopener noreferrer">$1</a>'
   );
   return out;
 }
@@ -445,7 +445,7 @@ function RelatedArticles({
             className="flex items-center justify-between w-full p-3 rounded-lg hover:bg-gray-50 transition-colors text-left group"
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 group-hover:text-teal-600 transition-colors truncate">
+              <p className="text-sm font-medium text-gray-900 group-hover:text-primary transition-colors truncate">
                 {article.title}
               </p>
               {article.subtitle && (
@@ -454,7 +454,7 @@ function RelatedArticles({
                 </p>
               )}
             </div>
-            <ChevronRight className="h-4 w-4 text-teal-500 flex-shrink-0 ml-2" />
+            <ChevronRight className="h-4 w-4 text-primary-500 flex-shrink-0 ml-2" />
           </button>
         ))}
       </div>

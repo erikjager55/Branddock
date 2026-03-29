@@ -161,7 +161,7 @@ function SelectField({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+        className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -194,7 +194,7 @@ function TextField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+        className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
       />
     </div>
   );
@@ -220,7 +220,7 @@ function ToggleField({
         aria-checked={value}
         onClick={() => onChange(!value)}
         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-          value ? "bg-teal-500" : "bg-gray-200"
+          value ? "bg-primary-500" : "bg-gray-200"
         }`}
       >
         <span

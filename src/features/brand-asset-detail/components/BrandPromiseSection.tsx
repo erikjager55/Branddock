@@ -92,8 +92,8 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
       {/* Card 1: Promise Statement */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start gap-3 mb-4">
-          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-            <Shield className="h-5 w-5 text-teal-600" />
+          <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+            <Shield className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">Brand Promise</h2>
@@ -110,7 +110,7 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
               <textarea
                 value={draft.promiseStatement}
                 onChange={(e) => handleChange('promiseStatement', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
                 rows={2}
                 placeholder="The core promise your brand makes..."
               />
@@ -123,7 +123,7 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
                 type="text"
                 value={draft.promiseOneLiner}
                 onChange={(e) => handleChange('promiseOneLiner', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-lg font-semibold text-gray-900 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-lg font-semibold text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                 placeholder="Distill to a single tagline..."
               />
             </div>
@@ -131,8 +131,8 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
         ) : d.promiseStatement || d.promiseOneLiner ? (
           <div className="space-y-3">
             {d.promiseOneLiner && (
-              <div className="bg-teal-50/50 border border-teal-100 rounded-xl px-5 py-4 text-center">
-                <p className="text-xl font-bold text-teal-700">{d.promiseOneLiner}</p>
+              <div className="bg-primary-50/50 border border-primary-100 rounded-xl px-5 py-4 text-center">
+                <p className="text-xl font-bold text-primary-700">{d.promiseOneLiner}</p>
               </div>
             )}
             {d.promiseStatement && (
@@ -247,7 +247,7 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
             <textarea
               value={draft.coreCustomerNeed}
               onChange={(e) => handleChange('coreCustomerNeed', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={3}
               placeholder="The deep underlying need your promise addresses..."
             />
@@ -294,7 +294,7 @@ export function BrandPromiseSection({ data, isEditing, onUpdate, companionData }
             <textarea
               value={draft.onlynessStatement}
               onChange={(e) => handleChange('onlynessStatement', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={2}
               placeholder="Only [brand] can... because..."
             />
@@ -384,7 +384,7 @@ function BenefitField({ icon: Icon, iconBg, iconColor, label, description, value
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
           rows={2}
           placeholder={placeholder}
         />
@@ -432,7 +432,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
             type="text"
             value={item}
             onChange={(e) => onUpdate(i, e.target.value)}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
             placeholder={placeholder}
           />
           <button
@@ -447,7 +447,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
       <button
         type="button"
         onClick={onAdd}
-        className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium"
+        className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium"
       >
         <Plus className="h-4 w-4" />
         Add item

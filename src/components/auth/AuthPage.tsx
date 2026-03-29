@@ -124,14 +124,14 @@ export function AuthPage() {
 
               {resetSent ? (
                 <div data-testid="reset-sent" className="text-center py-4">
-                  <CheckCircle className="w-10 h-10 text-teal-600 mx-auto mb-3" />
+                  <CheckCircle className="w-10 h-10 text-primary mx-auto mb-3" />
                   <p className="text-sm text-gray-700">
                     If an account exists with this email, you&apos;ll receive a reset link.
                   </p>
                   <button
                     type="button"
                     onClick={backToLogin}
-                    className="mt-4 text-sm text-teal-600 hover:text-teal-700 hover:underline font-medium"
+                    className="mt-4 text-sm text-primary hover:text-primary-700 hover:underline font-medium"
                   >
                     Back to login
                   </button>
@@ -249,7 +249,7 @@ export function AuthPage() {
                       <button
                         type="button"
                         onClick={showForgotPassword}
-                        className="text-sm text-teal-600 hover:text-teal-700 hover:underline cursor-pointer"
+                        className="text-sm text-primary hover:text-primary-700 hover:underline cursor-pointer"
                       >
                         Forgot password?
                       </button>

@@ -62,7 +62,7 @@ export function TrendActivationCard({ trend, onToggle, disabled }: TrendActivati
               className={`flex items-center gap-1.5 w-full justify-center px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                 disabled
                   ? 'text-gray-400 bg-gray-200 cursor-not-allowed'
-                  : 'text-white bg-teal-600 hover:bg-teal-700'
+                  : 'text-white bg-primary hover:bg-primary-700'
               }`}
             >
               <Zap className="w-3.5 h-3.5" /> Activate Trend

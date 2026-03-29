@@ -9,7 +9,7 @@ const ICON_MAP: Record<ResourceType, { icon: typeof BookOpen; color: string }> =
   BOOK: { icon: BookOpen, color: 'text-blue-600' },
   ARTICLE: { icon: FileText, color: 'text-gray-600' },
   RESEARCH: { icon: FileText, color: 'text-indigo-600' },
-  GUIDE: { icon: BookOpen, color: 'text-teal-600' },
+  GUIDE: { icon: BookOpen, color: 'text-primary' },
   TEMPLATE: { icon: FileText, color: 'text-orange-500' },
   CASE_STUDY: { icon: FileText, color: 'text-purple-600' },
   WORKSHOP_RESOURCE: { icon: Lightbulb, color: 'text-yellow-500' },

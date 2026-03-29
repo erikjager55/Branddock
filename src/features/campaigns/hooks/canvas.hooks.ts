@@ -7,6 +7,7 @@ import {
   publishDeliverable,
   deriveDeliverable,
 } from '../api/canvas.api';
+import { campaignKeys } from './index';
 import type { ApprovalStatus } from '../types/canvas.types';
 
 export const canvasKeys = {
@@ -47,25 +48,33 @@ export function useUpdateComponentContent(deliverableId: string) {
 }
 
 /** Update approval status (state machine transitions) */
-export function useUpdateApproval(deliverableId: string) {
+export function useUpdateApproval(deliverableId: string, campaignId?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ status, note }: { status: ApprovalStatus; note?: string }) =>
       updateApprovalStatus(deliverableId, status, note),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: canvasKeys.all });
+      if (campaignId) {
+        qc.invalidateQueries({ queryKey: campaignKeys.deliverables(campaignId) });
+        qc.invalidateQueries({ queryKey: campaignKeys.detail(campaignId) });
+      }
     },
   });
 }
 
 /** Publish an approved deliverable */
-export function usePublishDeliverable(deliverableId: string) {
+export function usePublishDeliverable(deliverableId: string, campaignId?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (scheduledPublishDate?: string) =>
       publishDeliverable(deliverableId, scheduledPublishDate),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: canvasKeys.all });
+      if (campaignId) {
+        qc.invalidateQueries({ queryKey: campaignKeys.deliverables(campaignId) });
+        qc.invalidateQueries({ queryKey: campaignKeys.detail(campaignId) });
+      }
     },
   });
 }

@@ -55,6 +55,7 @@ import {
   TrendDetailPage,
   WebsiteScannerPage,
   KnowledgeLibraryPage,
+  MediaLibraryPage,
   ResearchHubPage,
   ResearchBundlesPage,
   BundleDetailPage,
@@ -712,6 +713,8 @@ function AppContent() {
       }
       case 'knowledge':
         return <KnowledgeLibraryPage />;
+      case 'media-library':
+        return <MediaLibraryPage />;
       case 'research-validation':
         return <ResearchValidationPage />;
       

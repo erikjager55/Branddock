@@ -34,7 +34,7 @@ export function VerticalTab({
       className={cn(
         'flex flex-col items-center justify-center w-16 h-full relative cursor-pointer',
         ACCORDION.transition,
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-teal-400',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-400',
         isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-500',
         status === 'locked' ? 'cursor-not-allowed' : '',
       )}

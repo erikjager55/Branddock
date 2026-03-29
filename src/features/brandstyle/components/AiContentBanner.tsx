@@ -25,10 +25,10 @@ export function AiContentBanner({ section, savedForAi }: AiContentBannerProps) {
   }
 
   return (
-    <div data-testid="ai-content-banner" className="mt-6 flex items-center justify-between px-4 py-3 bg-teal-50 border border-teal-200 rounded-lg">
+    <div data-testid="ai-content-banner" className="mt-6 flex items-center justify-between px-4 py-3 bg-primary-50 border border-primary-200 rounded-lg">
       <div className="flex items-center gap-2">
-        <Sparkles className="w-4 h-4 text-teal-600" />
-        <span className="text-sm text-teal-700">
+        <Sparkles className="w-4 h-4 text-primary" />
+        <span className="text-sm text-primary-700">
           This section is used for AI content generation
         </span>
       </div>

@@ -55,7 +55,7 @@ export function PersonaDetailHeader({
                     className="w-full h-full object-cover blur-sm brightness-50"
                   />
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-                    <div className="w-8 h-8 border-2 border-teal-300/30 border-t-teal-300/90 rounded-full animate-spin" />
+                    <div className="w-8 h-8 border-2 border-primary-300/30 border-t-primary-300/90 rounded-full animate-spin" />
                     <span className="text-[8px] font-semibold uppercase tracking-widest text-white/85">
                       Regenerating
                     </span>

@@ -152,7 +152,7 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
         </button>
         <h1 className="text-lg font-semibold text-gray-900">Content Canvas</h1>
         {globalStatus === 'generating' && (
-          <span className="text-sm text-teal-600 animate-pulse">Generating...</span>
+          <span className="text-sm text-primary animate-pulse">Generating...</span>
         )}
         {globalStatus === 'complete' && (
           <span className="text-sm text-emerald-600">Generation complete</span>

@@ -44,7 +44,7 @@ export function KnowledgeContextPanel({ assets, confidence }: KnowledgeContextPa
           Knowledge Context
         </label>
         {confidence != null && (
-          <span className="flex items-center gap-1 text-xs font-medium text-teal-600">
+          <span className="flex items-center gap-1 text-xs font-medium text-primary">
             <Sparkles className="h-3 w-3" />
             {Math.round(confidence)}%
           </span>
@@ -52,11 +52,11 @@ export function KnowledgeContextPanel({ assets, confidence }: KnowledgeContextPa
       </div>
       {/* Campaign context indicator */}
       {campaignBlueprint && (
-        <div className="mb-2 px-2.5 py-1.5 rounded-md bg-teal-50 border border-teal-100">
-          <p className="text-xs font-medium text-teal-700">
+        <div className="mb-2 px-2.5 py-1.5 rounded-md bg-primary-50 border border-primary-100">
+          <p className="text-xs font-medium text-primary-700">
             Campaign: {campaignName}
           </p>
-          <p className="text-[10px] text-teal-600 mt-0.5">
+          <p className="text-[10px] text-primary mt-0.5">
             Strategy context will be injected into AI generation
           </p>
         </div>

@@ -18,7 +18,7 @@ export function AgendaTimeline({ agendaItems }: AgendaTimelineProps) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
-        <Clock className="w-5 h-5 text-teal-600" />
+        <Clock className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold text-gray-900">Agenda</h3>
       </div>
       <div className="space-y-2">

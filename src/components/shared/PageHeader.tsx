@@ -25,8 +25,8 @@ export function PageHeader({
   backLabel,
   onBack,
   icon: Icon,
-  iconBg = 'bg-teal-100',
-  iconColor = 'text-teal-600',
+  iconBg = 'bg-primary-100',
+  iconColor = 'text-primary',
   title,
   subtitle,
   primaryAction,
@@ -68,7 +68,7 @@ export function PageHeader({
             <button
               onClick={secondaryAction.onClick}
               disabled={secondaryAction.disabled}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-teal-600 border border-teal-200 rounded-xl text-sm font-medium hover:bg-teal-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-primary border border-primary-200 rounded-xl text-sm font-medium hover:bg-primary-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {secondaryAction.icon && <secondaryAction.icon className="w-4 h-4" />}
               {secondaryAction.label}
@@ -78,7 +78,7 @@ export function PageHeader({
             <button
               onClick={primaryAction.onClick}
               disabled={primaryAction.disabled}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-500 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-teal-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-500 text-white rounded-xl text-sm font-medium shadow-sm hover:bg-primary transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {primaryAction.icon && <primaryAction.icon className="w-4 h-4" />}
               {primaryAction.label}

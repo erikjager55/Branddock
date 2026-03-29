@@ -97,7 +97,7 @@ export function VisualBriefEditor({ component, onUpdate }: VisualBriefEditorProp
                   onChange={(e) => handleFieldChange(key, e.target.value)}
                   rows={rows}
                   placeholder={placeholder}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 disabled:bg-gray-50"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 disabled:bg-gray-50"
                   disabled={component.status === 'APPROVED'}
                 />
               </div>

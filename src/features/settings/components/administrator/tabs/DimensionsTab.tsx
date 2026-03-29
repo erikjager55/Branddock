@@ -125,7 +125,7 @@ export function DimensionsTab({
         <button
           type="button"
           onClick={addDimension}
-          className="flex items-center gap-1.5 text-xs text-teal-600 hover:text-teal-700 font-medium transition-colors"
+          className="flex items-center gap-1.5 text-xs text-primary hover:text-primary-700 font-medium transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
           Add dimension

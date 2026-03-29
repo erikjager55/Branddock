@@ -69,7 +69,7 @@ export function AIResearchModal() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="e.g. AI trends in brand strategy, sustainability in fashion retail..."
             rows={3}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 resize-none"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
           />
           <p className="text-xs text-gray-400 mt-1">Minimum 3 characters</p>
         </div>
@@ -80,11 +80,11 @@ export function AIResearchModal() {
             type="checkbox"
             checked={useBrandContext}
             onChange={(e) => setUseBrandContext(e.target.checked)}
-            className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary-500"
           />
           <div className="flex-1">
             <div className="flex items-center gap-1.5">
-              <Brain className="w-4 h-4 text-teal-600" />
+              <Brain className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-gray-700">Use brand context</span>
             </div>
             <p className="text-xs text-gray-500 mt-0.5">

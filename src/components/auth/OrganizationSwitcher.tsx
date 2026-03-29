@@ -187,7 +187,7 @@ export function OrganizationSwitcher() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors text-sm"
       >
-        <Building2 className="h-4 w-4 text-teal-600" />
+        <Building2 className="h-4 w-4 text-primary" />
         <div className="flex flex-col items-start">
           <span className="font-medium text-gray-900 truncate max-w-[160px]">
             {activeOrg?.name ?? 'Select organization'}
@@ -223,7 +223,7 @@ export function OrganizationSwitcher() {
                     </div>
                   </div>
                   {org.id === activeOrgId && (
-                    <Check className="h-4 w-4 text-teal-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-primary flex-shrink-0" />
                   )}
                 </button>
               ))}
@@ -251,7 +251,7 @@ export function OrganizationSwitcher() {
                     </div>
                   </div>
                   {ws.id === activeWorkspace?.id && (
-                    <Check className="h-4 w-4 text-teal-600 flex-shrink-0" />
+                    <Check className="h-4 w-4 text-primary flex-shrink-0" />
                   )}
                 </button>
               ))}
@@ -268,13 +268,13 @@ export function OrganizationSwitcher() {
                         onChange={(e) => setNewWorkspaceName(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleCreateWorkspace()}
                         placeholder="Workspace name..."
-                        className="flex-1 text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                        className="flex-1 text-sm border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         autoFocus
                       />
                       <button
                         onClick={handleCreateWorkspace}
                         disabled={isCreating || !newWorkspaceName.trim()}
-                        className="text-sm text-teal-600 hover:text-teal-700 font-medium disabled:opacity-50"
+                        className="text-sm text-primary hover:text-primary-700 font-medium disabled:opacity-50"
                       >
                         {isCreating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Add'}
                       </button>
@@ -283,7 +283,7 @@ export function OrganizationSwitcher() {
                     <button
                       data-testid="new-workspace-button"
                       onClick={() => setShowNewWorkspace(true)}
-                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors text-left text-sm text-teal-600"
+                      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors text-left text-sm text-primary"
                     >
                       <Plus className="h-4 w-4" />
                       <span>New workspace</span>

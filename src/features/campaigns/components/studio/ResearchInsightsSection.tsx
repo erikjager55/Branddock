@@ -39,7 +39,7 @@ export function ResearchInsightsSection({ deliverableId }: ResearchInsightsSecti
     <div className="space-y-3">
       {/* Section header */}
       <div className="flex items-center gap-2">
-        <Lightbulb className="w-4 h-4 text-teal-600" />
+        <Lightbulb className="w-4 h-4 text-primary" />
         <h3 className="text-sm font-semibold text-gray-900">Research Insights</h3>
       </div>
 

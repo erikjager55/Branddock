@@ -75,9 +75,9 @@ function TagEditor({
           onChange={(e) => setNewItem(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addItem(); } }}
           placeholder={placeholder}
-          className="flex-1 text-sm px-3 py-1.5 border border-dashed border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="flex-1 text-sm px-3 py-1.5 border border-dashed border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
-        <button type="button" onClick={addItem} className="p-1 text-gray-400 hover:text-teal-600">
+        <button type="button" onClick={addItem} className="p-1 text-gray-400 hover:text-primary">
           <Plus className="w-4 h-4" />
         </button>
       </div>
@@ -124,7 +124,7 @@ function IconSpecPreview({
   const isDuoTone = style === "duo-tone";
 
   const strokeColor = "#6b7280"; // gray-500
-  const fillColor = "#14b8a6"; // teal-500
+  const fillColor = "#14b8a6"; // primary-500
 
   const sharedStroke = {
     stroke: isFilled ? "none" : strokeColor,
@@ -211,7 +211,7 @@ function GridPreview({ gridSystem }: { gridSystem?: string }) {
     <div className="bg-gray-50 rounded-lg p-3 mb-3">
       <div className="flex gap-1 h-12">
         {Array.from({ length: safeColumns }, (_, i) => (
-          <div key={i} className="flex-1 bg-teal-100 rounded-sm" />
+          <div key={i} className="flex-1 bg-primary-100 rounded-sm" />
         ))}
       </div>
       <p className="text-[10px] text-gray-400 text-right mt-1.5">
@@ -393,7 +393,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
             <h3 className="text-sm font-semibold text-gray-900 truncate">Graphic Elements</h3>
           </div>
           {canEdit && !isEditingGraphic && (
-            <button onClick={startEditGraphic} className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0" title="Edit">
+            <button onClick={startEditGraphic} className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0" title="Edit">
               <Pencil className="w-3.5 h-3.5" />
             </button>
           )}
@@ -411,7 +411,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
                 onChange={(e) => setEditGraphic((p) => ({ ...p, usageNotes: e.target.value }))}
                 rows={2}
                 placeholder="How and when to use these elements..."
-                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div className="flex gap-2 pt-1">
@@ -486,7 +486,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
             <h3 className="text-sm font-semibold text-gray-900 truncate">Patterns & Textures</h3>
           </div>
           {canEdit && !isEditingPatterns && (
-            <button onClick={startEditPatterns} className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0" title="Edit">
+            <button onClick={startEditPatterns} className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0" title="Edit">
               <Pencil className="w-3.5 h-3.5" />
             </button>
           )}
@@ -504,7 +504,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
                 onChange={(e) => setEditPatterns((p) => ({ ...p, usageNotes: e.target.value }))}
                 rows={2}
                 placeholder="When and where to apply these..."
-                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div className="flex gap-2 pt-1">
@@ -550,7 +550,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
             <h3 className="text-sm font-semibold text-gray-900 truncate">Iconography</h3>
           </div>
           {canEdit && !isEditingIcon && (
-            <button onClick={startEditIcon} className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0" title="Edit">
+            <button onClick={startEditIcon} className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0" title="Edit">
               <Pencil className="w-3.5 h-3.5" />
             </button>
           )}
@@ -563,7 +563,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
               <select
                 value={editIcon.style ?? ""}
                 onChange={(e) => setEditIcon((p) => ({ ...p, style: e.target.value }))}
-                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="">Select a style...</option>
                 {ICON_STYLES.map((s) => (
@@ -574,26 +574,26 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium text-gray-500 mb-1 block">Stroke Weight</label>
-                <input value={editIcon.strokeWeight ?? ""} onChange={(e) => setEditIcon((p) => ({ ...p, strokeWeight: e.target.value }))} placeholder="e.g. 1.5px" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                <input value={editIcon.strokeWeight ?? ""} onChange={(e) => setEditIcon((p) => ({ ...p, strokeWeight: e.target.value }))} placeholder="e.g. 1.5px" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 mb-1 block">Corner Radius</label>
-                <input value={editIcon.cornerRadius ?? ""} onChange={(e) => setEditIcon((p) => ({ ...p, cornerRadius: e.target.value }))} placeholder="e.g. 2px" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                <input value={editIcon.cornerRadius ?? ""} onChange={(e) => setEditIcon((p) => ({ ...p, cornerRadius: e.target.value }))} placeholder="e.g. 2px" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium text-gray-500 mb-1 block">Sizing</label>
-                <input value={editIcon.sizing ?? ""} onChange={(e) => setEditIcon((p) => ({ ...p, sizing: e.target.value }))} placeholder="e.g. 16/20/24/32px" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                <input value={editIcon.sizing ?? ""} onChange={(e) => setEditIcon((p) => ({ ...p, sizing: e.target.value }))} placeholder="e.g. 16/20/24/32px" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
               <div>
                 <label className="text-xs font-medium text-gray-500 mb-1 block">Color Usage</label>
-                <input value={editIcon.colorUsage ?? ""} onChange={(e) => setEditIcon((p) => ({ ...p, colorUsage: e.target.value }))} placeholder="e.g. Single color, inherit text color" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                <input value={editIcon.colorUsage ?? ""} onChange={(e) => setEditIcon((p) => ({ ...p, colorUsage: e.target.value }))} placeholder="e.g. Single color, inherit text color" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" />
               </div>
             </div>
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Usage Notes</label>
-              <textarea value={editIcon.usageNotes ?? ""} onChange={(e) => setEditIcon((p) => ({ ...p, usageNotes: e.target.value }))} rows={2} placeholder="Icon usage guidelines..." className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              <textarea value={editIcon.usageNotes ?? ""} onChange={(e) => setEditIcon((p) => ({ ...p, usageNotes: e.target.value }))} rows={2} placeholder="Icon usage guidelines..." className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
             <div className="flex gap-2 pt-1">
               <Button variant="primary" size="sm" onClick={saveIcon} isLoading={updateSection.isPending}>Save</Button>
@@ -687,7 +687,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
             {gradients.length > 0 && <Badge variant="default">{gradients.length}</Badge>}
           </div>
           {canEdit && !isEditingGradients && gradients.length > 0 && (
-            <button onClick={startEditGradients} className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0" title="Edit">
+            <button onClick={startEditGradients} className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0" title="Edit">
               <Pencil className="w-3.5 h-3.5" />
             </button>
           )}
@@ -739,11 +739,11 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-medium text-gray-500 mb-1 block">Name</label>
-                    <input value={newGradient.name} onChange={(e) => setNewGradient((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. Primary CTA Gradient" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    <input value={newGradient.name} onChange={(e) => setNewGradient((p) => ({ ...p, name: e.target.value }))} placeholder="e.g. Primary CTA Gradient" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" />
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-500 mb-1 block">Type</label>
-                    <select value={newGradient.type} onChange={(e) => setNewGradient((p) => ({ ...p, type: e.target.value }))} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    <select value={newGradient.type} onChange={(e) => setNewGradient((p) => ({ ...p, type: e.target.value }))} className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500">
                       {GRADIENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                   </div>
@@ -766,7 +766,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
                   {newGradient.type === "linear" && (
                     <div>
                       <label className="text-xs font-medium text-gray-500 mb-1 block">Angle</label>
-                      <input value={newGradient.angle ?? ""} onChange={(e) => setNewGradient((p) => ({ ...p, angle: e.target.value }))} placeholder="90deg" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                      <input value={newGradient.angle ?? ""} onChange={(e) => setNewGradient((p) => ({ ...p, angle: e.target.value }))} placeholder="90deg" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" />
                     </div>
                   )}
                 </div>
@@ -775,7 +775,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
                 )}
                 <div>
                   <label className="text-xs font-medium text-gray-500 mb-1 block">Usage</label>
-                  <input value={newGradient.usage ?? ""} onChange={(e) => setNewGradient((p) => ({ ...p, usage: e.target.value }))} placeholder="e.g. CTA buttons, hero backgrounds" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                  <input value={newGradient.usage ?? ""} onChange={(e) => setNewGradient((p) => ({ ...p, usage: e.target.value }))} placeholder="e.g. CTA buttons, hero backgrounds" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" />
                 </div>
                 <div className="flex gap-2">
                   <Button variant="primary" size="sm" onClick={addGradient}>Add</Button>
@@ -786,7 +786,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
               <button
                 type="button"
                 onClick={() => setShowGradientForm(true)}
-                className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 transition-colors"
+                className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Add gradient
@@ -805,7 +805,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
             <button
               type="button"
               onClick={startEditGradients}
-              className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 transition-colors"
+              className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add gradients
@@ -822,7 +822,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
             <h3 className="text-sm font-semibold text-gray-900 truncate">Layout Principles</h3>
           </div>
           {canEdit && !isEditingLayout && (
-            <button onClick={startEditLayout} className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0" title="Edit">
+            <button onClick={startEditLayout} className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0" title="Edit">
               <Pencil className="w-3.5 h-3.5" />
             </button>
           )}
@@ -832,19 +832,19 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
           <div className="space-y-3">
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Grid System</label>
-              <input value={editLayout.gridSystem ?? ""} onChange={(e) => setEditLayout((p) => ({ ...p, gridSystem: e.target.value }))} placeholder="e.g. 12-column grid, 24px gutters" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              <input value={editLayout.gridSystem ?? ""} onChange={(e) => setEditLayout((p) => ({ ...p, gridSystem: e.target.value }))} placeholder="e.g. 12-column grid, 24px gutters" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Spacing Scale</label>
-              <input value={editLayout.spacingScale ?? ""} onChange={(e) => setEditLayout((p) => ({ ...p, spacingScale: e.target.value }))} placeholder="e.g. 4px base unit (4/8/12/16/24/32/48/64)" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              <input value={editLayout.spacingScale ?? ""} onChange={(e) => setEditLayout((p) => ({ ...p, spacingScale: e.target.value }))} placeholder="e.g. 4px base unit (4/8/12/16/24/32/48/64)" className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Whitespace Philosophy</label>
-              <textarea value={editLayout.whitespacePhilosophy ?? ""} onChange={(e) => setEditLayout((p) => ({ ...p, whitespacePhilosophy: e.target.value }))} rows={2} placeholder="e.g. Generous whitespace to convey premium feel..." className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              <textarea value={editLayout.whitespacePhilosophy ?? ""} onChange={(e) => setEditLayout((p) => ({ ...p, whitespacePhilosophy: e.target.value }))} rows={2} placeholder="e.g. Generous whitespace to convey premium feel..." className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
             <div>
               <label className="text-xs font-medium text-gray-500 mb-1 block">Usage Notes</label>
-              <textarea value={editLayout.usageNotes ?? ""} onChange={(e) => setEditLayout((p) => ({ ...p, usageNotes: e.target.value }))} rows={2} placeholder="Additional layout guidelines..." className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" />
+              <textarea value={editLayout.usageNotes ?? ""} onChange={(e) => setEditLayout((p) => ({ ...p, usageNotes: e.target.value }))} rows={2} placeholder="Additional layout guidelines..." className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500" />
             </div>
             <TagEditor
               label="Composition Rules"
@@ -886,7 +886,7 @@ export function DesignLanguageSection({ styleguide, canEdit }: DesignLanguageSec
                 <ul className="space-y-1.5">
                   {(layoutData.compositionRules ?? []).map((rule, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                      <span className="text-teal-500 mt-0.5">&#8226;</span>
+                      <span className="text-primary-500 mt-0.5">&#8226;</span>
                       {rule}
                     </li>
                   ))}

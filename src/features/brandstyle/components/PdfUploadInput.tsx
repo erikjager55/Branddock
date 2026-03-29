@@ -66,7 +66,7 @@ export function PdfUploadInput() {
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
               isDragging
-                ? "border-teal-400 bg-teal-50"
+                ? "border-primary-400 bg-primary-50"
                 : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
             }`}
           >
@@ -88,7 +88,7 @@ export function PdfUploadInput() {
           </div>
         ) : (
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-            <FileText className="w-5 h-5 text-teal-600" />
+            <FileText className="w-5 h-5 text-primary" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
                 {file.name}

@@ -335,7 +335,7 @@ function RingPanel({
               value={section.statement}
               onChange={(e) => onStatementChange(e.target.value)}
               rows={2}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               placeholder={`Enter your ${ring.label} statement...`}
             />
           </div>
@@ -347,7 +347,7 @@ function RingPanel({
               value={section.details}
               onChange={(e) => onDetailsChange(e.target.value)}
               rows={3}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               placeholder={`Elaborate on your ${ring.label}...`}
             />
           </div>

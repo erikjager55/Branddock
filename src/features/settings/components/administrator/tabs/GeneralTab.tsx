@@ -115,7 +115,7 @@ export function GeneralTab({
                   onItemTypeChange(e.target.value);
                   onItemSubTypeChange('');
                 }}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="persona">Persona</option>
                 <option value="brand_asset">Brand Asset</option>
@@ -130,7 +130,7 @@ export function GeneralTab({
                 <select
                   value={itemSubType}
                   onChange={(e) => onItemSubTypeChange(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                 >
                   <option value="">-- Base configuration --</option>
                   {subTypeOptions.map((opt) => (
@@ -149,7 +149,7 @@ export function GeneralTab({
                 value={label}
                 onChange={(e) => onLabelChange(e.target.value)}
                 placeholder="Display name"
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
           </div>
@@ -163,7 +163,7 @@ export function GeneralTab({
                 onChange={(e) => onIsActiveChange(e.target.checked)}
                 className="sr-only"
               />
-              <div className={`w-9 h-5 rounded-full transition-colors ${isActive ? 'bg-teal-500' : 'bg-gray-300'}`} />
+              <div className={`w-9 h-5 rounded-full transition-colors ${isActive ? 'bg-primary-500' : 'bg-gray-300'}`} />
               <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${isActive ? 'translate-x-4' : ''}`} />
             </div>
             <div>
@@ -189,7 +189,7 @@ export function GeneralTab({
               <select
                 value={provider}
                 onChange={(e) => handleProviderChange(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
               >
                 <option value="anthropic">Anthropic</option>
                 <option value="openai">OpenAI</option>
@@ -201,7 +201,7 @@ export function GeneralTab({
               <select
                 value={model}
                 onChange={(e) => onModelChange(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
               >
                 {filteredModels.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -212,7 +212,7 @@ export function GeneralTab({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Temperature: <span className="text-teal-600 font-semibold">{temperature.toFixed(1)}</span>
+                Temperature: <span className="text-primary font-semibold">{temperature.toFixed(1)}</span>
               </label>
               <input
                 type="range"
@@ -221,7 +221,7 @@ export function GeneralTab({
                 step={0.1}
                 value={temperature}
                 onChange={(e) => onTemperatureChange(parseFloat(e.target.value))}
-                className="w-full accent-teal-600"
+                className="w-full accent-primary"
               />
               <div className="flex justify-between text-[10px] text-gray-400 mt-1">
                 <span>Precise (0)</span>
@@ -240,7 +240,7 @@ export function GeneralTab({
                 min={256}
                 max={8192}
                 step={256}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
           </div>
@@ -262,7 +262,7 @@ export function GeneralTab({
                 key={source.key}
                 className={`flex items-start gap-3 p-3 rounded-lg cursor-pointer border transition-colors ${
                   contextSources.includes(source.key)
-                    ? 'border-teal-200 bg-teal-50/50'
+                    ? 'border-primary-200 bg-primary-50/50'
                     : 'border-gray-100 hover:border-gray-200'
                 }`}
               >
@@ -270,7 +270,7 @@ export function GeneralTab({
                   type="checkbox"
                   checked={contextSources.includes(source.key)}
                   onChange={() => toggleContextSource(source.key)}
-                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500 mt-0.5"
+                  className="rounded border-gray-300 text-primary focus:ring-primary-500 mt-0.5"
                 />
                 <div>
                   <span className="text-xs font-medium text-gray-700">{source.label}</span>

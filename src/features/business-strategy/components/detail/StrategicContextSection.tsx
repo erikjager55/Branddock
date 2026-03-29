@@ -93,7 +93,7 @@ export function StrategicContextSection({
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <ListChecks className="w-4 h-4 text-teal-500" />
+              <ListChecks className="w-4 h-4 text-primary-500" />
               <span className="text-sm font-medium text-gray-700">Key Assumptions</span>
             </div>
             {editingField !== 'assumptions' && (

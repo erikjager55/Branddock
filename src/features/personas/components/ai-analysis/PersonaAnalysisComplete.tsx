@@ -181,7 +181,7 @@ export function PersonaAnalysisComplete({
 
       {/* Sub-header */}
       <div className="flex items-center gap-3 pt-2">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-400 to-emerald-500 flex items-center justify-center">
           <Bot className="h-4 w-4 text-white" />
         </div>
         <div>
@@ -193,7 +193,7 @@ export function PersonaAnalysisComplete({
       {/* Executive Summary */}
       <div className="border border-gray-200 bg-white rounded-xl p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="h-5 w-5 text-teal-500" />
+          <Sparkles className="h-5 w-5 text-primary-500" />
           <h3 className="text-lg font-semibold text-gray-900">Executive Summary</h3>
         </div>
         <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
@@ -229,7 +229,7 @@ export function PersonaAnalysisComplete({
       {/* Recommendations */}
       <div className="border border-gray-200 bg-white rounded-xl p-6">
         <div className="flex items-center gap-2 mb-6">
-          <TrendingUp className="h-5 w-5 text-teal-500" />
+          <TrendingUp className="h-5 w-5 text-primary-500" />
           <h3 className="text-lg font-semibold text-gray-900">Strategic Recommendations</h3>
         </div>
         <div className="space-y-4">

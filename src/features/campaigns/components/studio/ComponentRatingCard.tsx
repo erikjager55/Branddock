@@ -76,7 +76,7 @@ export function ComponentRatingCard({ componentId, rating, feedbackText }: Compo
           onBlur={handleFeedbackBlur}
           rows={2}
           placeholder="What's good or could be improved..."
-          className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+          className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
         />
       )}
     </div>

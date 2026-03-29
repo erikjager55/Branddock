@@ -56,7 +56,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:border-gray-300 transition-colors bg-white w-full"
       >
-        <SelectedIcon className="w-4 h-4 text-teal-600" />
+        <SelectedIcon className="w-4 h-4 text-primary" />
         <span className="text-gray-700 truncate">{value || 'Choose icon'}</span>
       </button>
 
@@ -77,7 +77,7 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
                   }}
                   className={`p-2 rounded-lg transition-colors ${
                     isSelected
-                      ? 'bg-teal-50 text-teal-600 ring-1 ring-teal-200'
+                      ? 'bg-primary-50 text-primary ring-1 ring-primary-200'
                       : 'hover:bg-gray-50 text-gray-500 hover:text-gray-700'
                   }`}
                   title={name}

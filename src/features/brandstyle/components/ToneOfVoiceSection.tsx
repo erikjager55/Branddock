@@ -105,7 +105,7 @@ export function ToneOfVoiceSection({ styleguide, canEdit }: ToneOfVoiceSectionPr
                   const { prefix, content } = parseGuidelinePrefix(g);
                   return (
                     <li key={i} className="flex items-start gap-3 text-sm text-gray-600">
-                      <span className="w-5 h-5 rounded-full bg-teal-50 text-teal-600 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="w-5 h-5 rounded-full bg-primary-50 text-primary text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
                         {i + 1}
                       </span>
                       <div className="flex flex-col gap-1">
@@ -175,7 +175,7 @@ export function ToneOfVoiceSection({ styleguide, canEdit }: ToneOfVoiceSectionPr
                       value={e.text}
                       onChange={(ev) => updateExample(e.originalIndex, ev.target.value)}
                       placeholder="e.g. We're here to help you succeed."
-                      className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 italic"
+                      className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 italic"
                     />
                     <button
                       type="button"
@@ -190,7 +190,7 @@ export function ToneOfVoiceSection({ styleguide, canEdit }: ToneOfVoiceSectionPr
                 <button
                   type="button"
                   onClick={() => addExample("do")}
-                  className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 transition-colors mt-1"
+                  className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors mt-1"
                 >
                   <Plus className="w-4 h-4" />
                   Add &ldquo;do&rdquo;
@@ -209,7 +209,7 @@ export function ToneOfVoiceSection({ styleguide, canEdit }: ToneOfVoiceSectionPr
                       value={e.text}
                       onChange={(ev) => updateExample(e.originalIndex, ev.target.value)}
                       placeholder="e.g. Dear valued customer..."
-                      className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 italic"
+                      className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 italic"
                     />
                     <button
                       type="button"
@@ -224,7 +224,7 @@ export function ToneOfVoiceSection({ styleguide, canEdit }: ToneOfVoiceSectionPr
                 <button
                   type="button"
                   onClick={() => addExample("dont")}
-                  className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 transition-colors mt-1"
+                  className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors mt-1"
                 >
                   <Plus className="w-4 h-4" />
                   Add &ldquo;don&apos;t&rdquo;
@@ -250,7 +250,7 @@ export function ToneOfVoiceSection({ styleguide, canEdit }: ToneOfVoiceSectionPr
                 <div className="absolute top-3 right-3 z-10">
                   <button
                     onClick={startEditExamples}
-                    className="p-1 text-gray-400 hover:text-teal-600 transition-colors bg-white rounded"
+                    className="p-1 text-gray-400 hover:text-primary transition-colors bg-white rounded"
                     title="Edit examples"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -299,7 +299,7 @@ export function ToneOfVoiceSection({ styleguide, canEdit }: ToneOfVoiceSectionPr
                     ]);
                     setIsEditingExamples(true);
                   }}
-                  className="mt-2 inline-flex items-center gap-1.5 text-teal-600 hover:text-teal-700 transition-colors"
+                  className="mt-2 inline-flex items-center gap-1.5 text-primary hover:text-primary-700 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   Add examples

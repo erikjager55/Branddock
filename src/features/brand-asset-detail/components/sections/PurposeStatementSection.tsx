@@ -84,7 +84,7 @@ export function PurposeStatementSection({ data, isEditing, onUpdate }: PurposeSt
                   <textarea
                     value={value}
                     onChange={(e) => onUpdate({ ...data, [layer.key]: e.target.value })}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
                     rows={3}
                     placeholder={`Describe the '${layer.label.toLowerCase()}'...`}
                   />

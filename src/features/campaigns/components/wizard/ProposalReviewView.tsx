@@ -91,15 +91,15 @@ function StrategyField({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-3 p-3 rounded-lg bg-white/60 border border-teal-100/60">
-      <div className="shrink-0 w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-teal-100 shadow-sm">
+    <div className="flex items-start gap-3 p-3 rounded-lg bg-white/60 border border-primary-100/60">
+      <div className="shrink-0 w-8 h-8 rounded-lg bg-white flex items-center justify-center border border-primary-100 shadow-sm">
         <Icon className={`w-4 h-4 ${iconColor}`} />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold text-teal-700 uppercase tracking-wide mb-0.5">
+        <p className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-0.5">
           {label}
         </p>
-        <div className="text-sm text-teal-900 break-words">{children}</div>
+        <div className="text-sm text-primary-900 break-words">{children}</div>
       </div>
     </div>
   );
@@ -128,19 +128,19 @@ export function ProposalReviewView({
       </div>
 
       {/* Campaign Strategy — visually rich, moved to top */}
-      <div className="bg-gradient-to-br from-teal-50 via-emerald-50 to-cyan-50 rounded-xl border border-teal-200 p-5">
+      <div className="bg-gradient-to-br from-primary-50 via-emerald-50 to-cyan-50 rounded-xl border border-primary-200 p-5">
         <div className="flex items-center gap-2.5 mb-4">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-sm">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-500 to-emerald-500 flex items-center justify-center shadow-sm">
             <Target className="w-5 h-5 text-white" />
           </div>
-          <h4 className="text-base font-semibold text-teal-900">
+          <h4 className="text-base font-semibold text-primary-900">
             Campaign Strategy
           </h4>
         </div>
 
         <div className="space-y-2.5">
           {strategy.campaignTheme && (
-            <StrategyField icon={Compass} iconColor="text-teal-500" label="Theme">
+            <StrategyField icon={Compass} iconColor="text-primary-500" label="Theme">
               {strategy.campaignTheme}
             </StrategyField>
           )}
@@ -164,7 +164,7 @@ export function ProposalReviewView({
               <ul className="space-y-1">
                 {strategy.strategicChoices.map((c, i) => (
                   <li key={i} className="flex items-start gap-1.5">
-                    <span className="text-teal-400 mt-0.5 shrink-0">&bull;</span>
+                    <span className="text-primary-400 mt-0.5 shrink-0">&bull;</span>
                     <span>{getChoiceText(c)}</span>
                   </li>
                 ))}

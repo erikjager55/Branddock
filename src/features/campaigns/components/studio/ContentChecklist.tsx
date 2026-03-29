@@ -58,7 +58,7 @@ export function ContentChecklist({ deliverableId, contentType }: ContentChecklis
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CheckSquare className="w-4 h-4 text-teal-600" />
+          <CheckSquare className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-semibold text-gray-900">Content Checklist</h3>
         </div>
         <span className="text-xs font-medium text-gray-500">
@@ -77,7 +77,7 @@ export function ContentChecklist({ deliverableId, contentType }: ContentChecklis
               type="checkbox"
               checked={item.checked}
               onChange={() => toggleChecklistItem(index)}
-              className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+              className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary-500"
             />
             <span
               className={`text-sm ${

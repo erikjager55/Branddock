@@ -158,8 +158,14 @@ export async function PATCH(
       if (value !== undefined) updateData[key] = value;
     });
 
-    if (settings !== undefined)
-      updateData.settings = JSON.parse(JSON.stringify(settings));
+    if (settings !== undefined) {
+      // Shallow-merge with existing settings to avoid wiping unrelated keys
+      const existingSettings =
+        existing.settings && typeof existing.settings === 'object' && !Array.isArray(existing.settings)
+          ? (existing.settings as Record<string, unknown>)
+          : {};
+      updateData.settings = JSON.parse(JSON.stringify({ ...existingSettings, ...settings }));
+    }
     if (generatedSlides !== undefined)
       updateData.generatedSlides = JSON.parse(JSON.stringify(generatedSlides));
     if (checklistItems !== undefined)

@@ -41,8 +41,8 @@ export function ScanUrlInput() {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-8">
       <div className="text-center mb-8">
-        <div className="w-14 h-14 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-4">
-          <Globe className="h-7 w-7 text-teal-600" />
+        <div className="w-14 h-14 rounded-full bg-primary-50 flex items-center justify-center mx-auto mb-4">
+          <Globe className="h-7 w-7 text-primary" />
         </div>
         <h2 className="text-lg font-semibold text-gray-900 mb-1">
           Enter your website URL
@@ -60,7 +60,7 @@ export function ScanUrlInput() {
             value={url}
             onChange={(e) => { setUrl(e.target.value); setError(null); }}
             placeholder="www.your-company.com"
-            className={`w-full pl-10 pr-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+            className={`w-full pl-10 pr-4 py-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${
               error ? 'border-red-300' : 'border-gray-200'
             }`}
             autoFocus

@@ -111,8 +111,8 @@ export function DashboardStatsCards({ onNavigate }: DashboardStatsCardsProps) {
       icon: TrendingUp,
       value: data.trends,
       label: 'Activated Trends',
-      bgColor: 'bg-teal-50',
-      iconColor: 'text-teal-600',
+      bgColor: 'bg-primary-50',
+      iconColor: 'text-primary',
       section: 'trends',
     },
     {

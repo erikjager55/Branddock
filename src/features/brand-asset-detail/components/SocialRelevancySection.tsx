@@ -134,7 +134,7 @@ function PillarScoreSummary({ score, maxScore, color }: {
     red: 'bg-red-500',
     amber: 'bg-amber-500',
     emerald: 'bg-emerald-500',
-    teal: 'bg-teal-500',
+    teal: 'bg-primary-500',
   };
 
   return (
@@ -165,13 +165,13 @@ function GrandTotalBar({ data }: { data: SocialRelevancyFrameworkData }) {
     red: 'bg-red-100 text-red-700',
     amber: 'bg-amber-100 text-amber-700',
     emerald: 'bg-emerald-100 text-emerald-700',
-    teal: 'bg-teal-100 text-teal-700',
+    teal: 'bg-primary-100 text-primary-700',
   };
   const borderColor: Record<string, string> = {
     red: 'border-red-200',
     amber: 'border-amber-200',
     emerald: 'border-emerald-200',
-    teal: 'border-teal-200',
+    teal: 'border-primary-200',
   };
 
   if (total === 0) return null;
@@ -191,7 +191,7 @@ function GrandTotalBar({ data }: { data: SocialRelevancyFrameworkData }) {
             red: 'text-red-600',
             amber: 'text-amber-600',
             emerald: 'text-emerald-600',
-            teal: 'text-teal-600',
+            teal: 'text-primary',
           };
           return (
             <div key={s.label} className="text-center">
@@ -248,7 +248,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
             type="text"
             value={item}
             onChange={(e) => onUpdate(i, e.target.value)}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
             placeholder={placeholder}
           />
           <button type="button" onClick={() => onRemove(i)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
@@ -256,7 +256,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
           </button>
         </div>
       ))}
-      <button type="button" onClick={onAdd} className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium">
+      <button type="button" onClick={onAdd} className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium">
         <Plus className="h-4 w-4" /> Add item
       </button>
     </div>
@@ -306,7 +306,7 @@ function TagInput({ tags, isEditing, onAdd, onRemove, placeholder }: {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
         />
       )}
     </div>
@@ -316,11 +316,11 @@ function TagInput({ tags, isEditing, onAdd, onRemove, placeholder }: {
 // ─── Card Header (standalone to prevent re-mount) ──────────
 
 const CARD_BG_MAP: Record<string, string> = {
-  teal: 'bg-teal-50', emerald: 'bg-emerald-50', rose: 'bg-rose-50',
+  teal: 'bg-primary-50', emerald: 'bg-emerald-50', rose: 'bg-rose-50',
   blue: 'bg-blue-50', amber: 'bg-amber-50', violet: 'bg-violet-50',
 };
 const CARD_TEXT_MAP: Record<string, string> = {
-  teal: 'text-teal-600', emerald: 'text-emerald-600', rose: 'text-rose-600',
+  teal: 'text-primary', emerald: 'text-emerald-600', rose: 'text-rose-600',
   blue: 'text-blue-600', amber: 'text-amber-600', violet: 'text-violet-600',
 };
 
@@ -462,7 +462,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                 <textarea
                   value={draft.impactStatement}
                   onChange={(e) => handleChange('impactStatement', e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                   rows={2}
                   placeholder="One powerful sentence: why does this brand care about social impact?"
                 />
@@ -478,7 +478,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                 <textarea
                   value={draft.impactNarrative}
                   onChange={(e) => handleChange('impactNarrative', e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                   rows={4}
                   placeholder="The backstory: what was the trigger, founding moment, or evolution that led to this commitment?"
                 />
@@ -501,7 +501,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                       onClick={() => handleChange('activismLevel', draft.activismLevel === level.value ? '' : level.value)}
                       className={`text-left p-3 rounded-lg border transition-colors ${
                         draft.activismLevel === level.value
-                          ? 'border-teal-400 bg-teal-50'
+                          ? 'border-primary-400 bg-primary-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
@@ -514,7 +514,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                 <div>
                   {draft.activismLevel ? (
                     <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-1 rounded-full bg-teal-100 text-xs font-semibold text-teal-700">
+                      <span className="px-2.5 py-1 rounded-full bg-primary-100 text-xs font-semibold text-primary-700">
                         {draft.activismLevel}
                       </span>
                       <span className="text-xs text-gray-500">
@@ -613,7 +613,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                         <textarea
                           value={stmt.evidence}
                           onChange={(e) => handleStatementChange(pillarConfig.key, stmtIdx, 'evidence', e.target.value)}
-                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                           rows={2}
                           placeholder="Concrete evidence supporting this score..."
                         />
@@ -631,7 +631,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                             type="text"
                             value={stmt.target}
                             onChange={(e) => handleStatementChange(pillarConfig.key, stmtIdx, 'target', e.target.value)}
-                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                             placeholder="Specific goal..."
                           />
                         ) : (
@@ -645,7 +645,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                             type="text"
                             value={stmt.timeline}
                             onChange={(e) => handleStatementChange(pillarConfig.key, stmtIdx, 'timeline', e.target.value)}
-                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                             placeholder="e.g. Q4 2026"
                           />
                         ) : (
@@ -665,7 +665,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                     <textarea
                       value={pillarData.pillarReflection}
                       onChange={(e) => handlePillarReflection(pillarConfig.key, e.target.value)}
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                       rows={2}
                       placeholder={`Free reflection on your ${pillarConfig.label.toLowerCase()} impact as a whole...`}
                     />
@@ -774,7 +774,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                 <textarea
                   value={draft.antiGreenwashingStatement}
                   onChange={(e) => handleChange('antiGreenwashingStatement', e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                   rows={3}
                   placeholder="Where does the brand fall short? What are you honest about?"
                 />
@@ -898,7 +898,7 @@ export function SocialRelevancySection({ data, isEditing, onUpdate }: SocialRele
                 <textarea
                   value={draft.annualCommitment}
                   onChange={(e) => handleChange('annualCommitment', e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                   rows={2}
                   placeholder="Concrete, measurable commitment for this year..."
                 />

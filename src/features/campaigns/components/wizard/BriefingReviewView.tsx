@@ -272,7 +272,7 @@ export function BriefingReviewView({
                   onChange={(e) => handleFieldChange(field, e.target.value)}
                   disabled={isRevalidating}
                   rows={2}
-                  className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 focus:outline-none disabled:opacity-50 resize-none"
+                  className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 focus:outline-none disabled:opacity-50 resize-none"
                   placeholder={`Enter ${FIELD_LABELS[field].toLowerCase()}...`}
                 />
               </div>
@@ -360,7 +360,7 @@ export function BriefingReviewView({
                           type="button"
                           disabled={isApplied || isRevalidating}
                           onClick={() => handleApplyGap(i, gap.suggestion, targetField)}
-                          className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:text-teal-900 disabled:opacity-50 disabled:cursor-default"
+                          className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary-700 hover:text-primary-900 disabled:opacity-50 disabled:cursor-default"
                         >
                           {isApplied ? (
                             <>
@@ -420,7 +420,7 @@ export function BriefingReviewView({
                         type="button"
                         disabled={isApplied || isRevalidating}
                         onClick={() => handleApplySuggestion(i, s, targetField)}
-                        className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:text-teal-900 disabled:opacity-50 disabled:cursor-default"
+                        className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-primary-700 hover:text-primary-900 disabled:opacity-50 disabled:cursor-default"
                       >
                         {isApplied ? (
                           <>
@@ -457,9 +457,9 @@ export function BriefingReviewView({
 
       {/* Revalidation indicator */}
       {isRevalidating && (
-        <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-teal-50 border border-teal-200">
-          <Loader2 className="w-4 h-4 text-teal-600 animate-spin" />
-          <span className="text-sm font-medium text-teal-700">
+        <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-primary-50 border border-primary-200">
+          <Loader2 className="w-4 h-4 text-primary animate-spin" />
+          <span className="text-sm font-medium text-primary-700">
             Re-validating your briefing...
           </span>
         </div>

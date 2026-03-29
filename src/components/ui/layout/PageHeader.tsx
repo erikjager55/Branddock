@@ -14,7 +14,7 @@ import {
 import {
   LayoutDashboard, Building2, Target, Palette, Users, Package,
   Swords, Radar, BookOpen, Shield, Megaphone, FileText, FlaskConical,
-  Settings, HelpCircle,
+  Settings, HelpCircle, Image,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -34,6 +34,7 @@ const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
   'research': FlaskConical,
   'settings': Settings,
   'help': HelpCircle,
+  'media-library': Image,
 };
 
 interface PageHeaderProps {

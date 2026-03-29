@@ -52,9 +52,9 @@ const CHANNEL_COLORS: Record<string, ChannelColorStyle> = {
     hex: '#047857',
   },
   website: {
-    bg: 'bg-teal-50',
-    text: 'text-teal-700',
-    border: 'border-teal-200',
+    bg: 'bg-primary-50',
+    text: 'text-primary-700',
+    border: 'border-primary-200',
     hex: '#0f766e',
   },
   video: {

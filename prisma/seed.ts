@@ -5,10 +5,86 @@ import { DEFAULT_PERSONA_CHAT_PROMPT } from "./seed/persona-chat-config";
 import { CANONICAL_BRAND_ASSETS, RESEARCH_METHOD_TYPES } from "../src/lib/constants/canonical-brand-assets";
 import type { NotificationType, NotificationCategory, AssetCategory, AssetStatus, ResearchMethodType, ResearchMethodStatus, WorkshopStatus, InterviewStatus, InterviewQuestionType, StrategyType, StrategyStatus, ObjectiveStatus, KeyResultStatus, MilestoneStatus, MetricType, Priority, StyleguideStatus, StyleguideSource, AnalysisStatus, ColorCategory, PersonaAvatarSource, PersonaResearchMethodType, InsightCategory, InsightScope, ImpactLevel, InsightTimeframe, InsightSource, ScanStatus, AlignmentModule, IssueSeverity, IssueStatus, ResourceSource, ProductSource, ProductStatus, DifficultyLevel, BundleCategory, ValidationPlanStatus, StudyStatus, PurchaseStatus, CampaignType, CampaignStatus, DeliverableStatus, InsertFormat, SuggestionStatus, TicketCategory, TicketPriority, TicketStatus, FeatureRequestStatus, OAuthProvider, ConnectionStatus, BillingCycle, InvoiceStatus, Theme, AccentColor, FontSize, SidebarPosition, SubscriptionStatus, ProductImageCategory, TrendDetectionSource, TrendScanStatus, CompetitorTier, CompetitorStatus } from "@prisma/client";
 
+import { execSync } from "child_process";
+import fs from "fs";
+import path from "path";
+
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
+// ============================================
+// SEED SAFETY GUARDS
+// ============================================
+function checkSeedSafety(): void {
+  const dbUrl = process.env.DATABASE_URL ?? "";
+
+  // 1. Block production databases
+  if (process.env.NODE_ENV === "production") {
+    console.error("ERROR: Seed is blocked in production (NODE_ENV=production).");
+    process.exit(1);
+  }
+
+  const cloudHosts = [".neon.tech", ".supabase.co", ".amazonaws.com", ".render.com", ".railway.app", ".fly.dev", ".planetscale.com", ".cockroachlabs.cloud", ".digitalocean.com", ".azure.com"];
+  if (cloudHosts.some((host) => dbUrl.includes(host))) {
+    console.error(`ERROR: Seed is blocked for cloud databases. Detected cloud host in DATABASE_URL.`);
+    process.exit(1);
+  }
+
+  // 2. Test databases run freely (check only the database name portion of the URL)
+  try {
+    const dbName = new URL(dbUrl).pathname.replace(/^\//, "");
+    if (dbName.endsWith("_test") || dbName.includes("_test_")) {
+      console.log("Test database detected — seeding without confirmation.");
+      return;
+    }
+  } catch {
+    // If URL parsing fails, fall through to SEED_CONFIRM check
+  }
+
+  // 3. All other databases require SEED_CONFIRM=yes
+  if (process.env.SEED_CONFIRM !== "yes") {
+    console.error(
+      "ERROR: Seeding will DELETE ALL DATA in this database.\n" +
+      `  Database: ${dbUrl.replace(/\/\/.*?@/, "//***@")}\n` +
+      "  To confirm, run with: SEED_CONFIRM=yes npx prisma db seed\n" +
+      "  For test databases, use a URL containing '_test'."
+    );
+    process.exit(1);
+  }
+}
+
+function createPreSeedBackup(): void {
+  const dbUrl = process.env.DATABASE_URL ?? "";
+
+  // Skip backup for test databases
+  try {
+    const dbName = new URL(dbUrl).pathname.replace(/^\//, "");
+    if (dbName.endsWith("_test") || dbName.includes("_test_")) return;
+  } catch {
+    // If URL parsing fails, continue with backup (safe default)
+  }
+
+  try {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const backupDir = path.resolve(__dirname, "..", "backups");
+    const backupFile = path.join(backupDir, `db-pre-seed-${timestamp}.sql`);
+
+    fs.mkdirSync(backupDir, { recursive: true });
+    execSync(`pg_dump "${dbUrl}" -f "${backupFile}"`, {
+      timeout: 30_000,
+    });
+    console.log(`Pre-seed backup created: ${backupFile}`);
+  } catch (err) {
+    console.warn("WARNING: Could not create pre-seed backup:", (err as Error).message);
+    console.warn("Continuing with seed anyway...");
+  }
+}
+
 async function main() {
+  // Run safety checks before any destructive operations
+  checkSeedSafety();
+  createPreSeedBackup();
+
   // ============================================
   // FIXED IDs — declared early so cleanup can preserve demo user session
   // ============================================
@@ -5204,8 +5280,9 @@ Respond only with valid JSON.`,
 }
 
 main()
-  .catch((e) => {
+  .catch(async (e) => {
     console.error(e);
+    await prisma.$disconnect();
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

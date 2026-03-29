@@ -97,7 +97,7 @@ export function ColorDetailModal({ isOpen, onClose, color }: ColorDetailModalPro
                 {color.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="px-2 py-0.5 bg-teal-50 text-teal-700 text-xs rounded-full"
+                    className="px-2 py-0.5 bg-primary-50 text-primary-700 text-xs rounded-full"
                   >
                     {tag}
                   </span>

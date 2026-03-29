@@ -1,0 +1,340 @@
+// ─── Enums (mirroring Prisma) ────────────────────────────────
+
+export type MediaType = 'IMAGE' | 'DOCUMENT' | 'VIDEO' | 'AUDIO';
+
+export type MediaCategory =
+  | 'LOGO' | 'BRAND_MARK' | 'ICON' | 'ILLUSTRATION'
+  | 'PHOTOGRAPHY' | 'LIFESTYLE' | 'PRODUCT_PHOTO' | 'TEAM_PHOTO'
+  | 'EVENT_PHOTO' | 'HERO_IMAGE' | 'BANNER' | 'SOCIAL_MEDIA'
+  | 'ADVERTISEMENT' | 'INFOGRAPHIC' | 'PRESENTATION'
+  | 'VIDEO_CONTENT' | 'ANIMATION' | 'AUDIO_CONTENT'
+  | 'DOCUMENT_FILE' | 'TEMPLATE' | 'MOCKUP'
+  | 'TEXTURE' | 'PATTERN' | 'BACKGROUND' | 'OTHER';
+
+export type MediaSource = 'UPLOAD' | 'URL_IMPORT' | 'AI_GENERATED' | 'SCRAPED' | 'STOCK';
+
+export type StyleReferenceType = 'BRAND_MODEL' | 'PHOTOGRAPHY_STYLE' | 'ANIMATION_STYLE';
+
+// ─── Media Asset ─────────────────────────────────────────────
+
+export interface MediaTagInfo {
+  id: string;
+  name: string;
+  slug: string;
+  color: string | null;
+}
+
+export interface MediaAssetTag {
+  id: string;
+  mediaTag: MediaTagInfo;
+}
+
+export interface MediaUploader {
+  id: string;
+  name: string | null;
+  avatarUrl: string | null;
+}
+
+export interface MediaAssetWithMeta {
+  id: string;
+  name: string;
+  slug: string;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  fileName: string;
+  width: number | null;
+  height: number | null;
+  duration: number | null;
+  mediaType: MediaType;
+  category: MediaCategory;
+  isFavorite: boolean;
+  isArchived: boolean;
+  isFeatured: boolean;
+  thumbnailUrl: string | null;
+  aiDescription: string | null;
+  aiTags: string[];
+  dominantColors: string[];
+  source: MediaSource;
+  sourceUrl: string | null;
+  attribution: string | null;
+  productId: string | null;
+  tags: MediaAssetTag[];
+  uploadedBy: MediaUploader;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MediaAssetDetailResponse extends MediaAssetWithMeta {
+  collections: Array<{
+    id: string;
+    collection: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+  }>;
+}
+
+// ─── List / Filter ───────────────────────────────────────────
+
+export interface MediaListParams {
+  search?: string;
+  mediaType?: MediaType;
+  category?: MediaCategory;
+  source?: MediaSource;
+  tagId?: string;
+  collectionId?: string;
+  productId?: string;
+  isFavorite?: boolean;
+  isArchived?: boolean;
+  sortBy?: 'name' | 'createdAt' | 'fileSize' | 'mediaType';
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+}
+
+export interface MediaStats {
+  total: number;
+  images: number;
+  videos: number;
+  documents: number;
+  audio: number;
+  totalFileSize?: number;
+  favorites?: number;
+}
+
+export interface MediaListResponse {
+  assets: MediaAssetWithMeta[];
+  total: number;
+  stats: MediaStats;
+}
+
+// ─── Create / Update ─────────────────────────────────────────
+
+export interface CreateMediaBody {
+  name: string;
+  category?: MediaCategory;
+  source?: MediaSource;
+  sourceUrl?: string;
+  attribution?: string;
+  productId?: string;
+}
+
+export interface UpdateMediaBody {
+  name?: string;
+  category?: MediaCategory;
+  aiDescription?: string;
+  aiTags?: string[];
+  attribution?: string;
+  productId?: string | null;
+  tagIds?: string[];
+}
+
+// ─── Tags ────────────────────────────────────────────────────
+
+export interface MediaTagWithCount extends MediaTagInfo {
+  _count: { assets: number };
+  createdAt: string;
+}
+
+export interface CreateTagBody {
+  name: string;
+  color?: string;
+}
+
+export interface UpdateTagBody {
+  name?: string;
+  color?: string;
+}
+
+// ─── Collections ─────────────────────────────────────────────
+
+export interface MediaCollectionWithMeta {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  coverImageUrl: string | null;
+  color: string | null;
+  parentId: string | null;
+  _count: { assets: number; children: number };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MediaCollectionDetail extends MediaCollectionWithMeta {
+  assets: Array<{
+    id: string;
+    sortOrder: number;
+    mediaAsset: MediaAssetWithMeta;
+  }>;
+  children: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    _count: { assets: number };
+  }>;
+}
+
+export interface CreateCollectionBody {
+  name: string;
+  description?: string;
+  color?: string;
+  parentId?: string;
+}
+
+export interface UpdateCollectionBody {
+  name?: string;
+  description?: string;
+  coverImageUrl?: string;
+  color?: string;
+}
+
+// ─── Style References ────────────────────────────────────────
+
+export interface StyleReferenceWithMeta {
+  id: string;
+  name: string;
+  type: StyleReferenceType;
+  stylePrompt: string | null;
+  negativePrompt: string | null;
+  generationParams: Record<string, unknown> | null;
+  modelName: string | null;
+  modelDescription: string | null;
+  referenceImages: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateStyleReferenceBody {
+  name: string;
+  type: StyleReferenceType;
+  stylePrompt?: string;
+  negativePrompt?: string;
+  generationParams?: Record<string, unknown>;
+  modelName?: string;
+  modelDescription?: string;
+  referenceImages?: string[];
+}
+
+export interface UpdateStyleReferenceBody {
+  name?: string;
+  stylePrompt?: string;
+  negativePrompt?: string;
+  generationParams?: Record<string, unknown>;
+  modelName?: string;
+  modelDescription?: string;
+  referenceImages?: string[];
+}
+
+// ─── ElevenLabs ─────────────────────────────────────────────
+
+export interface ElevenLabsVoice {
+  voiceId: string;
+  name: string;
+  labels: Record<string, string>;
+  previewUrl: string | null;
+  category: string;
+}
+
+// ─── Brand Voice ─────────────────────────────────────────────
+
+export interface BrandVoiceWithMeta {
+  id: string;
+  name: string;
+  voiceGender: string | null;
+  voiceAge: string | null;
+  voiceTone: string | null;
+  voiceAccent: string | null;
+  speakingPace: string | null;
+  voicePrompt: string | null;
+  ttsProvider: string | null;
+  ttsVoiceId: string | null;
+  ttsSettings: Record<string, unknown> | null;
+  sampleAudioUrl: string | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateBrandVoiceBody {
+  name: string;
+  voiceGender?: string;
+  voiceAge?: string;
+  voiceTone?: string;
+  voiceAccent?: string;
+  speakingPace?: string;
+  voicePrompt?: string;
+  ttsProvider?: string;
+  ttsVoiceId?: string;
+  ttsSettings?: Record<string, unknown>;
+  isDefault?: boolean;
+}
+
+export interface UpdateBrandVoiceBody {
+  name?: string;
+  voiceGender?: string;
+  voiceAge?: string;
+  voiceTone?: string;
+  voiceAccent?: string;
+  speakingPace?: string;
+  voicePrompt?: string;
+  ttsProvider?: string;
+  ttsVoiceId?: string;
+  ttsSettings?: Record<string, unknown>;
+  sampleAudioUrl?: string;
+  isDefault?: boolean;
+}
+
+// ─── Import ──────────────────────────────────────────────────
+
+export interface ImportUrlBody {
+  url: string;
+  name?: string;
+  category?: MediaCategory;
+}
+
+export interface ImportUrlResponse {
+  asset: MediaAssetWithMeta;
+}
+
+// ─── Stock Photos ────────────────────────────────────────────
+
+export interface StockPhotoResult {
+  id: number;
+  width: number;
+  height: number;
+  url: string;
+  photographer: string;
+  photographer_url: string;
+  src: {
+    original: string;
+    large2x: string;
+    large: string;
+    medium: string;
+    small: string;
+    portrait: string;
+    landscape: string;
+    tiny: string;
+  };
+  alt: string;
+}
+
+export interface StockSearchResponse {
+  total_results: number;
+  page: number;
+  per_page: number;
+  photos: StockPhotoResult[];
+  next_page?: string;
+}
+
+export interface ImportStockBody {
+  photoUrl: string;
+  photographer: string;
+  photographerUrl: string;
+  pexelsUrl: string;
+  width: number;
+  height: number;
+  alt?: string;
+}

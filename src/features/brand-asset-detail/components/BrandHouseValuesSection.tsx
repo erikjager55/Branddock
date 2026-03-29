@@ -66,13 +66,13 @@ function ValueField({ label, value, isEditing, onChange, namePlaceholder, descri
           type="text"
           value={value.name}
           onChange={(e) => onChange({ ...value, name: e.target.value })}
-          className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+          className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
           placeholder={namePlaceholder}
         />
         <textarea
           value={value.description}
           onChange={(e) => onChange({ ...value, description: e.target.value })}
-          className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+          className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
           rows={2}
           placeholder={descriptionPlaceholder}
         />
@@ -131,8 +131,8 @@ export function BrandHouseValuesSection({ data, isEditing, onUpdate }: BrandHous
       {/* Card 1: Roots (Anchor Values) */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start gap-3 mb-4">
-          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-            <Anchor className="h-5 w-5 text-teal-600" />
+          <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+            <Anchor className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">
@@ -143,9 +143,9 @@ export function BrandHouseValuesSection({ data, isEditing, onUpdate }: BrandHous
           </div>
         </div>
 
-        <div className="bg-teal-50/30 border border-teal-100 rounded-xl p-3 mb-4 flex items-start gap-2">
-          <Info className="h-4 w-4 text-teal-600 mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-teal-600">
+        <div className="bg-primary-50/30 border border-primary-100 rounded-xl p-3 mb-4 flex items-start gap-2">
+          <Info className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-primary">
             Roots are the foundational principles of your organization. They are already embedded in how you operate today.
             Think of what your team would say when asked: &ldquo;What do we stand for, no matter what?&rdquo;
           </p>
@@ -290,7 +290,7 @@ export function BrandHouseValuesSection({ data, isEditing, onUpdate }: BrandHous
             <textarea
               value={draft.valueTension}
               onChange={(e) => handleChange('valueTension', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={3}
               placeholder="e.g. Our root of Reliability keeps our wing of Innovation grounded — we move fast but never ship anything we're not proud of..."
             />

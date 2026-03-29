@@ -34,7 +34,7 @@ interface ColorEntry {
 }
 
 const COLOR_PALETTE: ColorEntry[] = [
-  { color: 'teal',    bg: 'bg-teal-100',    text: 'text-teal-600' },
+  { color: 'teal',    bg: 'bg-primary-100',    text: 'text-primary' },
   { color: 'blue',    bg: 'bg-blue-100',    text: 'text-blue-600' },
   { color: 'emerald', bg: 'bg-emerald-100', text: 'text-emerald-600' },
   { color: 'purple',  bg: 'bg-purple-100',  text: 'text-purple-600' },

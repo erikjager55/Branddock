@@ -72,16 +72,16 @@ export function ImageSourceSelector({ component, onUpdate }: ImageSourceSelector
               disabled={component.status === 'APPROVED'}
               className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-colors ${
                 selectedSource === value
-                  ? 'border-teal-500 bg-teal-50 ring-1 ring-teal-500'
+                  ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500'
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Icon className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
-                selectedSource === value ? 'text-teal-600' : 'text-gray-400'
+                selectedSource === value ? 'text-primary' : 'text-gray-400'
               }`} />
               <div>
                 <span className={`text-sm font-medium ${
-                  selectedSource === value ? 'text-teal-900' : 'text-gray-900'
+                  selectedSource === value ? 'text-primary-900' : 'text-gray-900'
                 }`}>
                   {label}
                 </span>

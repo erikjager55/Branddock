@@ -63,7 +63,7 @@ export function VersionHistoryCard({ personaId, isLocked }: VersionHistoryCardPr
                 <div
                   className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold ${
                     index === 0
-                      ? 'bg-teal-100 text-teal-700'
+                      ? 'bg-primary-100 text-primary-700'
                       : 'bg-gray-100 text-gray-500'
                   }`}
                 >

@@ -148,19 +148,19 @@ function GoalInsightsPreview({ insights }: { insights: GoalTypeStrategicInsights
   ];
 
   return (
-    <div className="border border-teal-200 rounded-lg overflow-hidden">
+    <div className="border border-primary-200 rounded-lg overflow-hidden">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 w-full px-4 py-3 bg-teal-50/50 hover:bg-teal-50 transition-colors text-left"
+        className="flex items-center gap-2 w-full px-4 py-3 bg-primary-50/50 hover:bg-primary-50 transition-colors text-left"
       >
         {isOpen ? (
-          <ChevronDown className="w-4 h-4 text-teal-500" />
+          <ChevronDown className="w-4 h-4 text-primary-500" />
         ) : (
-          <ChevronRight className="w-4 h-4 text-teal-500" />
+          <ChevronRight className="w-4 h-4 text-primary-500" />
         )}
-        <BarChart3 className="w-4 h-4 text-teal-600" />
-        <span className="text-sm font-medium text-teal-900">
+        <BarChart3 className="w-4 h-4 text-primary" />
+        <span className="text-sm font-medium text-primary-900">
           Strategic Framework: {insights.label}
         </span>
       </button>
@@ -175,10 +175,10 @@ function GoalInsightsPreview({ insights }: { insights: GoalTypeStrategicInsights
               {insights.recommendedKPIs.map((kpi) => (
                 <span
                   key={kpi.name}
-                  className="inline-flex items-center px-2.5 py-1 bg-teal-50 border border-teal-200 rounded-full text-xs text-teal-700"
+                  className="inline-flex items-center px-2.5 py-1 bg-primary-50 border border-primary-200 rounded-full text-xs text-primary-700"
                   title={`${kpi.description}${kpi.benchmark ? ` — Benchmark: ${kpi.benchmark}` : ''}`}
                 >
-                  <TrendingUp className="w-3 h-3 mr-1 text-teal-500" />
+                  <TrendingUp className="w-3 h-3 mr-1 text-primary-500" />
                   {kpi.name}
                 </span>
               ))}
@@ -713,7 +713,7 @@ export function StrategyStep() {
   if (strategyPhase === "idle" && !isGenerating && !pipelineError) {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
-        <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-4">
+        <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-emerald-100 to-primary-100 flex items-center justify-center mb-4">
           <Sparkles className="w-8 h-8 text-emerald-500" />
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -891,7 +891,7 @@ export function StrategyStep() {
   if (strategyPhase === "rationale_complete") {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
-        <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-4">
+        <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-emerald-100 to-primary-100 flex items-center justify-center mb-4">
           <Target className="w-8 h-8 text-emerald-500" />
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">

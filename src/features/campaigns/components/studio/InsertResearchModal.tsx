@@ -133,7 +133,7 @@ export function InsertResearchModal({ deliverableId, insightTitle }: InsertResea
                 value="cursor"
                 checked={selectedLocation === 'cursor'}
                 onChange={() => setSelectedLocation('cursor')}
-                className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                className="w-4 h-4 text-primary focus:ring-primary-500"
               />
               <span className="text-sm text-gray-700">At Cursor</span>
             </label>
@@ -144,7 +144,7 @@ export function InsertResearchModal({ deliverableId, insightTitle }: InsertResea
                 value="ai"
                 checked={selectedLocation === 'ai'}
                 onChange={() => setSelectedLocation('ai')}
-                className="w-4 h-4 text-teal-600 focus:ring-teal-500"
+                className="w-4 h-4 text-primary focus:ring-primary-500"
               />
               <span className="text-sm text-gray-700">AI-Determined</span>
             </label>

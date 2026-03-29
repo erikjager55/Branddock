@@ -243,8 +243,8 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
       {/* ── Card 1: Massive Transformative Purpose ─────────────── */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start gap-3 mb-4">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-teal-50 to-emerald-50 flex items-center justify-center flex-shrink-0">
-            <Rocket className="h-5 w-5 text-teal-600" />
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center flex-shrink-0">
+            <Rocket className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">Massive Transformative Purpose</h2>
@@ -260,7 +260,7 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
                 type="text"
                 value={draft.massiveTransformativePurpose}
                 onChange={(e) => handleField('massiveTransformativePurpose', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-lg font-semibold text-gray-900 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-lg font-semibold text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                 placeholder="e.g. Accelerate the world's transition to sustainable energy"
                 maxLength={150}
               />
@@ -271,7 +271,7 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
               <textarea
                 value={draft.mtpNarrative}
                 onChange={(e) => handleField('mtpNarrative', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
                 rows={3}
                 placeholder="Why this purpose matters, who it serves, and what world you're building..."
               />
@@ -279,8 +279,8 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
           </div>
         ) : d.massiveTransformativePurpose ? (
           <div className="space-y-3">
-            <div className="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-100 rounded-xl px-5 py-4 text-center">
-              <p className="text-xl font-bold text-teal-700">{d.massiveTransformativePurpose}</p>
+            <div className="bg-gradient-to-r from-primary-50 to-emerald-50 border border-primary-100 rounded-xl px-5 py-4 text-center">
+              <p className="text-xl font-bold text-primary-700">{d.massiveTransformativePurpose}</p>
             </div>
             {d.mtpNarrative && (
               <p className="text-sm text-gray-600 leading-relaxed">{d.mtpNarrative}</p>
@@ -315,7 +315,7 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
             <p className="text-sm text-gray-500">Concrete, measurable commitments that operationalize your MTP</p>
           </div>
           {isEditing && draft.goals.length < 5 && (
-            <button onClick={addGoal} className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium">
+            <button onClick={addGoal} className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium">
               <Plus className="h-4 w-4" /> Add Goal
             </button>
           )}
@@ -431,7 +431,7 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
                       type="text"
                       value={si.role}
                       onChange={(e) => handleStakeholder(i, 'role', e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                       placeholder="e.g. Ambassadors & executors"
                     />
                   </div>
@@ -441,7 +441,7 @@ export function TransformativeGoalsSection({ data, isEditing, onUpdate }: Transf
                       type="text"
                       value={si.expectedImpact}
                       onChange={(e) => handleStakeholder(i, 'expectedImpact', e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                      className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                       placeholder="e.g. Culture, motivation, retention"
                     />
                   </div>
@@ -617,7 +617,7 @@ function GoalCard({
         {goal.currentProgress > 0 && (
           <div className="flex items-center gap-2 flex-shrink-0">
             <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-              <div className="h-full bg-teal-500 rounded-full" style={{ width: `${Math.min(goal.currentProgress, 100)}%` }} />
+              <div className="h-full bg-primary-500 rounded-full" style={{ width: `${Math.min(goal.currentProgress, 100)}%` }} />
             </div>
             <span className="text-xs text-gray-500">{goal.currentProgress}%</span>
           </div>
@@ -638,7 +638,7 @@ function GoalCard({
                     type="text"
                     value={goal.title}
                     onChange={(e) => onFieldChange('title', e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                     placeholder="e.g. Zero Waste Production"
                   />
                 </div>
@@ -647,7 +647,7 @@ function GoalCard({
                   <textarea
                     value={goal.description}
                     onChange={(e) => onFieldChange('description', e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm resize-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm resize-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                     rows={2}
                     placeholder="What this goal entails..."
                   />
@@ -686,13 +686,13 @@ function GoalCard({
                       type="text"
                       value={goal.timeframe}
                       onChange={(e) => onFieldChange('timeframe', e.target.value)}
-                      className="w-20 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                      className="w-20 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                       placeholder="2030"
                     />
                     <select
                       value={goal.timeframeHorizon}
                       onChange={(e) => onFieldChange('timeframeHorizon', e.target.value)}
-                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                      className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                     >
                       {TIMEFRAME_OPTIONS.map((t) => (
                         <option key={t.value} value={t.value}>{t.label} ({t.description})</option>
@@ -709,7 +709,7 @@ function GoalCard({
                   type="text"
                   value={goal.measurableCommitment}
                   onChange={(e) => onFieldChange('measurableCommitment', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                   placeholder="e.g. 99% of waste recycled by 2030"
                 />
               </div>
@@ -720,7 +720,7 @@ function GoalCard({
                 <textarea
                   value={goal.theoryOfChange}
                   onChange={(e) => onFieldChange('theoryOfChange', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm resize-none focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm resize-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                   rows={2}
                   placeholder="How brand activity creates this impact..."
                 />
@@ -735,7 +735,7 @@ function GoalCard({
                   max={100}
                   value={goal.currentProgress}
                   onChange={(e) => onFieldChange('currentProgress', parseInt(e.target.value))}
-                  className="mt-1 w-full accent-teal-500"
+                  className="mt-1 w-full accent-primary-500"
                 />
               </div>
 
@@ -743,7 +743,7 @@ function GoalCard({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-medium text-gray-500">Milestones</label>
-                  <button type="button" onClick={onMilestoneAdd} className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700">
+                  <button type="button" onClick={onMilestoneAdd} className="flex items-center gap-1 text-xs text-primary hover:text-primary-700">
                     <Plus className="h-3 w-3" /> Add
                   </button>
                 </div>
@@ -764,13 +764,13 @@ function GoalCard({
                         type="number"
                         value={ms.year}
                         onChange={(e) => onMilestoneUpdate(mi, 'year', parseInt(e.target.value, 10) || 0)}
-                        className="w-20 rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                        className="w-20 rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                       />
                       <input
                         type="text"
                         value={ms.target}
                         onChange={(e) => onMilestoneUpdate(mi, 'target', e.target.value)}
-                        className="flex-1 rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                        className="flex-1 rounded-lg border border-gray-200 px-2 py-1.5 text-sm focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                         placeholder="Milestone target..."
                       />
                       <button type="button" onClick={() => onMilestoneRemove(mi)} className="p-1 text-gray-400 hover:text-red-500">
@@ -846,7 +846,7 @@ function GoalCard({
                     <span className="text-xs font-medium text-gray-700">{goal.currentProgress}%</span>
                   </div>
                   <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-teal-500 rounded-full transition-all" style={{ width: `${Math.min(goal.currentProgress, 100)}%` }} />
+                    <div className="h-full bg-primary-500 rounded-full transition-all" style={{ width: `${Math.min(goal.currentProgress, 100)}%` }} />
                   </div>
                 </div>
               )}
@@ -932,7 +932,7 @@ function FieldBlock({ label, description, value, isEditing, onChange, placeholde
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
           rows={2}
           placeholder={placeholder}
         />
@@ -980,7 +980,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
             type="text"
             value={item}
             onChange={(e) => onUpdate(i, e.target.value)}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
             placeholder={placeholder}
           />
           <button type="button" onClick={() => onRemove(i)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
@@ -988,7 +988,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
           </button>
         </div>
       ))}
-      <button type="button" onClick={onAdd} className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium">
+      <button type="button" onClick={onAdd} className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium">
         <Plus className="h-4 w-4" /> Add item
       </button>
     </div>

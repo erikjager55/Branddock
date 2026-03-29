@@ -49,8 +49,8 @@ export const HELP_CATEGORIES: HelpCategoryConfig[] = [
     slug: "billing-plans",
     name: "Billing & Plans",
     icon: "CreditCard",
-    iconBg: "bg-teal-50",
-    iconColor: "text-teal-600",
+    iconBg: "bg-primary-50",
+    iconColor: "text-primary",
     description: "Subscription plans, invoices, and payment methods",
   },
   {

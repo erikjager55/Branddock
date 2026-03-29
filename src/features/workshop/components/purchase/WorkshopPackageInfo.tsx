@@ -49,7 +49,7 @@ export function WorkshopPackageInfo() {
             <div className="grid grid-cols-3 gap-4">
               {SPECS.map((spec) => (
                 <div key={spec.label} className="text-center">
-                  <spec.icon className="w-5 h-5 text-teal-600 mx-auto mb-1" />
+                  <spec.icon className="w-5 h-5 text-primary mx-auto mb-1" />
                   <p className="text-xs text-gray-500">{spec.label}</p>
                   <p className="text-sm font-medium text-gray-900">
                     {spec.value}

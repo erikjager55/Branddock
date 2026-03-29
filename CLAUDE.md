@@ -1,5 +1,5 @@
 # BRANDDOCK — Claude Code Context
-## Laatst bijgewerkt: 25 maart 2026 (Canvas Context Enrichment: Persona + Brief + Product)
+## Laatst bijgewerkt: 29 maart 2026 (Brand Voices ElevenLabs Integration — Fase I Sprint 1)
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 
@@ -117,6 +117,7 @@ GOOGLE_CLIENT_ID=        # Optioneel: Google OAuth login
 GOOGLE_CLIENT_SECRET=    # Optioneel: Google OAuth login
 MICROSOFT_CLIENT_ID=     # Optioneel: Microsoft OAuth login
 MICROSOFT_CLIENT_SECRET= # Optioneel: Microsoft OAuth login
+ELEVENLABS_API_KEY=      # Optioneel: ElevenLabs TTS (Brand Voice audio samples)
 MICROSOFT_TENANT_ID=     # Optioneel: default 'common'
 APPLE_CLIENT_ID=         # Optioneel: Apple OAuth login
 APPLE_CLIENT_SECRET=     # Optioneel: Apple OAuth login
@@ -1028,6 +1029,18 @@ src/
 │       └── types/
 │           ├── content-library.types.ts            ← ContentLibraryItem, stats, params
 │           └── campaign-wizard.types.ts            ← Wizard types (knowledge, strategy, launch)
+│   └── media-library/                                ← S10: Media Library + Creative Hub
+│       ├── components/
+│       │   └── creative-hub/brand-voice/
+│       │       ├── BrandVoiceTab.tsx              ← Brand Voice lijst + create modal trigger
+│       │       ├── BrandVoiceCard.tsx             ← Voice card (naam, gender, tone, default badge)
+│       │       ├── CreateBrandVoiceModal.tsx      ← Create modal (naam, gender, age, tone, accent, pace, prompt)
+│       │       ├── VoiceDetailPanel.tsx           ← Inline detail panel (characteristics, preview, generate sample, TTS settings)
+│       │       ├── VoicePreviewPlayer.tsx         ← Audio player (play/pause, progress bar, time display)
+│       │       └── TtsSettingsPanel.tsx           ← TTS config (provider selector, ElevenLabs voice browser, JSON settings)
+│       ├── hooks/index.ts                        ← 20 TanStack Query hooks + mediaKeys factory
+│       ├── api/media.api.ts                      ← 25 fetch functies (assets, tags, collections, stock, style refs, brand voices, ElevenLabs)
+│       └── types/media.types.ts                  ← 30+ interfaces (MediaAsset, Collection, StyleRef, BrandVoice, ElevenLabsVoice, Stock)
 │   └── settings/                                  ← S9: Settings + Admin
 │       └── components/
 │           └── administrator/
@@ -1526,6 +1539,30 @@ Directe klant (Organization type=DIRECT)
 | `/api/admin/exploration-configs/[id]/knowledge` | GET, POST | Knowledge items per config |
 | `/api/admin/exploration-configs/[id]/knowledge/[itemId]` | PUT, DELETE | CRUD single knowledge item |
 | `/api/versions` | GET | Universal version history (polymorphic ResourceVersion) |
+| `/api/media` | GET | Media assets lijst (filters: search, mediaType, category, source, tag, collection, product, favorite, archived, sort, pagination) |
+| `/api/media` | POST | Upload media asset (multipart/form-data) |
+| `/api/media/:id` | GET, PATCH, DELETE | Media asset CRUD |
+| `/api/media/:id/favorite` | PATCH | Toggle isFavorite |
+| `/api/media/:id/archive` | PATCH | Toggle isArchived |
+| `/api/media/:id/featured` | PATCH | Toggle isFeatured |
+| `/api/media/featured` | GET | Featured media assets |
+| `/api/media/stats` | GET | Media stats (totals per type + file size) |
+| `/api/media/bulk` | POST, DELETE | Bulk upload / bulk delete |
+| `/api/media/import-url` | POST | Import media from URL |
+| `/api/media/stock/search` | GET | Pexels stock photo search |
+| `/api/media/stock/import` | POST | Import stock photo to library |
+| `/api/media/tags` | GET, POST | Media tags CRUD |
+| `/api/media/tags/:id` | PATCH, DELETE | Tag update/delete |
+| `/api/media/collections` | GET, POST | Collections CRUD |
+| `/api/media/collections/:id` | GET, PATCH, DELETE | Collection detail/update/delete |
+| `/api/media/collections/:id/assets` | POST, PATCH | Add asset / reorder assets |
+| `/api/media/collections/:id/assets/:assetId` | DELETE | Remove asset from collection |
+| `/api/media/style-references` | GET, POST | Style references CRUD |
+| `/api/media/style-references/:id` | GET, PATCH, DELETE | Style reference detail/update/delete |
+| `/api/media/brand-voices` | GET, POST | Brand voices CRUD |
+| `/api/media/brand-voices/:id` | GET, PATCH, DELETE | Brand voice detail/update/delete |
+| `/api/media/brand-voices/voices` | GET | ElevenLabs voice library browse (5-min cache) |
+| `/api/media/brand-voices/:id/generate-sample` | POST | Generate TTS audio sample (ElevenLabs, max 500 chars) |
 
 Alle module-routes resolven workspaceId uit sessie via `resolveWorkspaceId()`.
 Geen env var fallback — sessie is verplicht voor workspace resolution.
@@ -1870,6 +1907,8 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 
 158. **CCE: Canvas Context Enrichment (Persona + Brief + Product) — compleet** — Tone checker en Content Canvas verrijkt met 4 extra context layers (brand personality, persona's, brief, producten). **(Part 1) Tone Checker Enrichment**: `tone-check/route.ts` haalt nu ook `BrandAsset` (frameworkType `BRAND_PERSONALITY`) op en formatteert via `formatBrandPersonality()`. Target persona IDs uit `deliverable.settings.targetPersonas`, volledige persona records opgehaald en geserialiseerd via `serializePersona()`. AI prompt verrijkt met `## Brand Personality` en `## Target Personas` secties. System prompt: "Score content against brand guidelines, brand personality, and target audience expectations." `formatBrandPersonality()` en `BrandPersonalityData` type geëxporteerd uit `brand-context.ts`. **(Part 2) Canvas Context Stack**: `canvas-context.ts` uitgebreid met 4 nieuwe interfaces (`PersonaContext`, `BriefContext`, `ProductContext`) en 3 nieuwe velden op `CanvasContextStack` (`personas: PersonaContext[]`, `brief: BriefContext | null`, `products: ProductContext[]`). `assembleCanvasContext()` haalt persona's op uit `deliverable.settings.targetPersonas` met fallback naar `CampaignKnowledgeAsset` (assetType `persona`, veld `personaId`). Brief geëxtraheerd uit `deliverable.settings.brief` (objective, keyMessage, toneDirection, callToAction, contentOutline). Producten opgehaald via `CampaignKnowledgeAsset` (assetType `Product`, veld `productId`). **(Part 3) Canvas Orchestrator**: `formatPersonaContext()`, `formatBriefContext()`, `formatProductContext()` functies toegevoegd aan `canvas-orchestrator.ts`. Alle drie geïnjecteerd in `buildCanvasPrompt()` en `buildRegenerationPrompt()` na `formatBrandContext(stack.brand)`. `additionalContextText` option support. 4 bestanden gewijzigd: `brand-context.ts`, `tone-check/route.ts`, `canvas-context.ts`, `canvas-orchestrator.ts`. TypeScript 0 errors.
 
+159. **BV-EL: Brand Voices ElevenLabs Integration (Fase I Sprint 1) — compleet** — ElevenLabs TTS SDK geïntegreerd in Brand Voices voor voice browsing, selectie en audio sample generatie. **(Stap 1) ElevenLabs Client**: `src/lib/integrations/elevenlabs/elevenlabs-client.ts` — singleton via `globalThis` (matching openai-client.ts pattern). `getElevenLabsClient()`, `isElevenLabsConfigured()`. 3 methoden: `listVoices()` (voice library), `generateSpeech()` (audio Buffer), `getVoiceInfo()` (metadata). `ElevenLabsVoiceInfo` en `VoiceSettings` interfaces. **(Stap 2) Voice Library Browse Endpoint**: `GET /api/media/brand-voices/voices` — retourneert ElevenLabs voice library met 5-min in-memory cache. Graceful fallback: `{ voices: [], error: "..." }` als API key ontbreekt. **(Stap 3) Generate Sample Endpoint**: `POST /api/media/brand-voices/:id/generate-sample` — Zod validated `{ text: string }` (max 500 chars), vereist `ttsVoiceId` op voice (400 als ontbreekt). Genereert audio via `generateSpeech()`, upload naar storage provider (mp3), update `sampleAudioUrl` op brand voice record. **(Stap 4) API Client + Hooks**: `fetchElevenLabsVoices()` en `generateBrandVoiceSample()` in `media.api.ts`. `useElevenLabsVoices()` (5-min staleTime) en `useGenerateSample()` (mutation, invalidates brandVoiceDetail + brandVoices) in hooks. `ElevenLabsVoice` interface + `elevenLabsVoices` query key in mediaKeys factory. **(Stap 5) TtsSettingsPanel**: "Coming Soon" banner verwijderd. Provider selector (ElevenLabs/OpenAI/Google Cloud TTS) behouden. ElevenLabs voice browser: doorzoekbare lijst met naam + labels (gender, accent, age), preview play/pause per voice via HTML5 Audio, selectie set `ttsVoiceId` + `ttsProvider: "elevenlabs"`. Fallback: handmatig Voice ID input als geen voices beschikbaar of voor niet-ElevenLabs providers. Advanced JSON settings editor behouden. **(Stap 6) VoiceDetailPanel Generate Sample**: Textarea (max 500 chars) + character count + "Generate Sample" button (disabled als geen ttsVoiceId, loading state). Error state met retry. Op success: VoicePreviewPlayer auto-update via query invalidation. 3 nieuwe bestanden, 6 gewijzigde bestanden. TypeScript 0 errors.
+
 ### ⚠️ TECHNISCHE SCHULD
 - **Adapter pattern** — tijdelijk, componenten moeten op termijn direct DB-model gebruiken
 - **mock-to-meta-adapter.ts** — reverse adapter (mock→API format) voor Brand Foundation. Verdwijnt wanneer context direct BrandAssetWithMeta levert.
@@ -2069,7 +2108,7 @@ Verkennend onderzoek afgerond naar 25+ externe applicaties. Hieronder de shortli
 - INT.14: 📋 **WordPress REST API** — One-click publishing vanuit Content Studio. Kosten: gratis.
 
 **Tier 3 — Bouwen bij vraag (hoge waarde, hogere inspanning of niche)**
-- INT.15: 📋 **ElevenLabs** (AI Audio) — Audio content type voor Content Studio (TTS, voice cloning, brand voice). Gratis 10K chars/maand. TypeScript SDK. Kosten: gratis-$99/maand.
+- INT.15: ✅ **ElevenLabs** (AI Audio) — Brand Voice TTS integratie (voice browsing, selectie, audio sample generatie). Gratis 10K chars/maand. TypeScript SDK. Kosten: gratis-$99/maand. **Geïmplementeerd in BV-EL (#159)**: singleton client, voice library browse (5-min cache), generate-sample endpoint, TtsSettingsPanel voice browser.
 - INT.16: 📋 **Marker API** (Document Parsing) — Betere PDF/DOCX/PPTX parsing dan `unpdf`. Self-hosted gratis (<$2M omzet). Kosten: $6/1K pagina's (cloud).
 - INT.17: 📋 **Visualping** (Website Monitoring) — Competitor website change detection met webhooks. Kosten: $100+/maand (API).
 - INT.18: 📋 **Meta Marketing API** (Ads) — Campaign deliverables als ad creatives, persona→audience targeting. Kosten: gratis.

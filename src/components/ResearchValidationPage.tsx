@@ -227,7 +227,7 @@ export function ResearchValidationPage() {
       <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border z-10">
         <div className="max-w-7xl mx-auto px-8 py-6">
           <div className="flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
+            <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-primary flex items-center justify-center">
               <FlaskConical className="h-6 w-6 text-white" />
             </div>
             <div>

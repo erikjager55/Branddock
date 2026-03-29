@@ -54,7 +54,7 @@ export function WebsiteUrlInput() {
                 if (e.key === "Enter" && url) handleAnalyze();
               }}
               placeholder="https://your-brand.com"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             />
             {error && (
               <p data-testid="error-message" className="mt-1.5 text-xs text-red-500">{error}</p>

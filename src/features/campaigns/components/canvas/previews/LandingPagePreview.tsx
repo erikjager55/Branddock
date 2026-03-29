@@ -62,7 +62,7 @@ export function LandingPagePreview({ previewContent, isGenerating }: PlatformPre
             if (isCta) {
               return (
                 <div key={group} className="text-center">
-                  <span className="inline-block px-4 py-1.5 rounded bg-teal-600 text-white text-xs font-medium">
+                  <span className="inline-block px-4 py-1.5 rounded bg-primary text-white text-xs font-medium">
                     {value.content}
                   </span>
                 </div>

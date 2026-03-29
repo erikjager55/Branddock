@@ -105,7 +105,7 @@ export function PromptEditor({
               key={v.variable}
               type="button"
               onClick={() => insertVariable(v.variable)}
-              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-mono font-medium bg-teal-50 text-teal-700 rounded-md hover:bg-teal-100 transition-colors"
+              className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-mono font-medium bg-primary-50 text-primary-700 rounded-md hover:bg-primary-100 transition-colors"
               title={v.description}
             >
               {v.variable}

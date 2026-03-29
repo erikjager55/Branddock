@@ -68,7 +68,7 @@ export function VariantCard({
     <div
       className={`relative rounded-lg border-2 transition-all cursor-pointer ${
         isSelected
-          ? 'border-teal-500 shadow-sm'
+          ? 'border-primary-500 shadow-sm'
           : 'bg-white border-gray-200 hover:border-gray-300'
       }`}
       style={isSelected ? { backgroundColor: '#f0fdfa', boxShadow: '0 0 0 3px rgba(20,184,166,0.15)' } : undefined}
@@ -80,9 +80,9 @@ export function VariantCard({
       }}
     >
       {/* Header */}
-      <div className={`flex items-center justify-between gap-3 px-3 py-2 border-b ${isSelected ? 'border-teal-200' : 'border-gray-100'}`}>
+      <div className={`flex items-center justify-between gap-3 px-3 py-2 border-b ${isSelected ? 'border-primary-200' : 'border-gray-100'}`}>
         <div className="flex items-center gap-2 min-w-0">
-          <span className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-semibold flex-shrink-0 ${isSelected ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
+          <span className={`inline-flex items-center justify-center h-6 w-6 rounded-full text-xs font-semibold flex-shrink-0 ${isSelected ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600'}`}>
             {label}
           </span>
           {variant.tone && (
@@ -93,7 +93,7 @@ export function VariantCard({
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {isSelected && (
-            <span className="flex items-center gap-1 text-xs text-teal-600">
+            <span className="flex items-center gap-1 text-xs text-primary">
               <Check className="h-3.5 w-3.5" />
               Selected
             </span>
@@ -175,7 +175,7 @@ export function VariantCard({
                   e.stopPropagation();
                   setExpanded(!expanded);
                 }}
-                className="mt-1 text-xs text-teal-600 hover:text-teal-700"
+                className="mt-1 text-xs text-primary hover:text-primary-700"
               >
                 {expanded ? 'Show less' : 'Show more'}
               </button>

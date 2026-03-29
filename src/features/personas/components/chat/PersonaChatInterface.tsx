@@ -151,12 +151,12 @@ export function PersonaChatInterface({
             {selectedContext.map((item) => (
               <span
                 key={item.id}
-                className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-teal-50 text-teal-700 rounded-full"
+                className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-primary-50 text-primary-700 rounded-full"
               >
                 {item.sourceName}
                 <button
                   onClick={() => removeContext(item.id)}
-                  className="text-teal-500 hover:text-teal-700 transition-colors"
+                  className="text-primary-500 hover:text-primary-700 transition-colors"
                   aria-label={`Remove ${item.sourceName}`}
                 >
                   <X className="w-3 h-3" />

@@ -51,7 +51,7 @@ export function MasterMessageCard({
       <Card>
         <div className="p-5">
           <div className="flex items-center gap-2 mb-3">
-            <MessageSquare className="h-5 w-5 text-teal-600" />
+            <MessageSquare className="h-5 w-5 text-primary" />
             <h3 className="font-semibold text-gray-900">Master Message</h3>
           </div>
           <p className="text-sm text-gray-500 mb-4">
@@ -81,7 +81,7 @@ export function MasterMessageCard({
   }
 
   const FIELDS: { key: keyof MasterMessage; label: string; color: string }[] = [
-    { key: 'coreClaim', label: 'Core Claim', color: 'text-teal-700' },
+    { key: 'coreClaim', label: 'Core Claim', color: 'text-primary-700' },
     { key: 'proofPoint', label: 'Proof Point', color: 'text-blue-700' },
     { key: 'emotionalHook', label: 'Emotional Hook', color: 'text-purple-700' },
     { key: 'primaryCta', label: 'Primary CTA', color: 'text-amber-700' },
@@ -92,7 +92,7 @@ export function MasterMessageCard({
       <div className="p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-teal-600" />
+            <MessageSquare className="h-5 w-5 text-primary" />
             <h3 className="font-semibold text-gray-900">Master Message</h3>
           </div>
           <div className="flex items-center gap-2">
@@ -131,7 +131,7 @@ export function MasterMessageCard({
               </span>
               {isEditing ? (
                 <textarea
-                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
                   rows={2}
                   value={editData[key]}
                   onChange={(e) => setEditData({ ...editData, [key]: e.target.value })}

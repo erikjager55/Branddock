@@ -114,7 +114,7 @@ export async function GET() {
         title: trend.title,
         description: `High relevance trend (${trend.relevanceScore}%) not activated`,
         icon: 'TrendingUp',
-        iconColor: 'text-teal-500',
+        iconColor: 'text-primary-500',
         actionType: 'take_action',
         actionLabel: 'Activate',
         actionHref: 'trend-detail',

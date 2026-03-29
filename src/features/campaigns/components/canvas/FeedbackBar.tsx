@@ -65,7 +65,7 @@ export function FeedbackBar({ onRegenerate, onAbort }: FeedbackBarProps) {
           }}
           placeholder="Give feedback to improve the variants..."
           maxLength={5000}
-          className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+          className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           disabled={isGenerating}
         />
 

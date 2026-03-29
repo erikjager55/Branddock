@@ -366,7 +366,7 @@ export function ConfigDetailView({
                   onClick={() => setActiveTab(tab.key)}
                   className={`relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${
                     isTabActive
-                      ? 'text-teal-600 border-b-2 border-teal-500'
+                      ? 'text-primary border-b-2 border-primary-500'
                       : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent'
                   }`}
                 >

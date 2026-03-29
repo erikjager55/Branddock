@@ -35,19 +35,19 @@ export function PublishSuggestion({ suggestion, isGenerating }: PublishSuggestio
         Publish Suggestion
       </h3>
 
-      <div className="p-3 rounded-lg bg-teal-50 border border-teal-100">
+      <div className="p-3 rounded-lg bg-primary-50 border border-primary-100">
         {/* Date */}
         <div className="flex items-center gap-2 mb-2">
-          <Calendar className="h-4 w-4 text-teal-600" />
-          <span className="text-sm font-semibold text-teal-800">
+          <Calendar className="h-4 w-4 text-primary" />
+          <span className="text-sm font-semibold text-primary-800">
             {formattedDate}
           </span>
         </div>
 
         {/* Reasoning */}
         <div className="flex items-start gap-1.5">
-          <Info className="h-3 w-3 text-teal-500 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-teal-700 leading-relaxed">
+          <Info className="h-3 w-3 text-primary-500 flex-shrink-0 mt-0.5" />
+          <p className="text-xs text-primary-700 leading-relaxed">
             {suggestion.reasoning}
           </p>
         </div>

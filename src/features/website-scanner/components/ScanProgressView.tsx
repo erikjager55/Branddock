@@ -59,7 +59,7 @@ export function ScanProgressView() {
         <div className="w-full bg-gray-100 rounded-full h-2">
           <div
             className={`h-2 rounded-full transition-all duration-500 ${
-              isFailed ? 'bg-red-500' : isCancelled ? 'bg-gray-400' : 'bg-teal-500'
+              isFailed ? 'bg-red-500' : isCancelled ? 'bg-gray-400' : 'bg-primary-500'
             }`}
             style={{ width: `${progress?.progress ?? 0}%` }}
           />
@@ -76,7 +76,7 @@ export function ScanProgressView() {
             <div key={phase.key} className="flex items-start gap-3">
               <div className="mt-0.5">
                 {state === 'done' && <CheckCircle className="h-5 w-5 text-emerald-500" />}
-                {state === 'active' && <Loader2 className="h-5 w-5 text-teal-600 animate-spin" />}
+                {state === 'active' && <Loader2 className="h-5 w-5 text-primary animate-spin" />}
                 {state === 'pending' && <Circle className="h-5 w-5 text-gray-300" />}
               </div>
               <div className="flex-1 min-w-0">
@@ -92,7 +92,7 @@ export function ScanProgressView() {
 
                 {/* Phase-specific details */}
                 {state === 'active' && phase.key === 'CRAWLING' && progress && (
-                  <div className="mt-2 text-xs text-teal-700">
+                  <div className="mt-2 text-xs text-primary-700">
                     {progress.pagesCrawled}/{progress.pagesDiscovered} pages crawled
                     {progress.currentPage && (
                       <span className="block text-gray-500 truncate mt-0.5">
@@ -102,7 +102,7 @@ export function ScanProgressView() {
                   </div>
                 )}
                 {state === 'active' && phase.key === 'ANALYZING' && progress && (
-                  <div className="mt-2 text-xs text-teal-700">
+                  <div className="mt-2 text-xs text-primary-700">
                     {progress.categoriesDone}/{progress.categoriesTotal} areas analyzed
                     {progress.currentCategory && (
                       <span className="block text-gray-500 mt-0.5">{progress.currentCategory}</span>
@@ -110,7 +110,7 @@ export function ScanProgressView() {
                   </div>
                 )}
                 {phase.key === 'STYLING' && progress?.brandstyleStatus && state === 'active' && (
-                  <div className="mt-2 text-xs text-teal-700">
+                  <div className="mt-2 text-xs text-primary-700">
                     {progress.brandstyleStatus}
                   </div>
                 )}

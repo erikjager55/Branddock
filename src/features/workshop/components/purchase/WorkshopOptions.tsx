@@ -55,7 +55,7 @@ export function WorkshopOptions({
               />
               <div>
                 <div className="flex items-center gap-2">
-                  <UserCheck className="w-4 h-4 text-teal-600" />
+                  <UserCheck className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium text-gray-900">
                     Add Professional Facilitator
                   </span>

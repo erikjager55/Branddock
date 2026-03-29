@@ -60,7 +60,7 @@ export function ProcessingProgress({ jobId, onComplete }: ProcessingProgressProp
             ) : step.status === "complete" ? (
               <CheckCircle className="w-5 h-5 text-emerald-500" />
             ) : step.status === "active" ? (
-              <Loader2 className="w-5 h-5 text-teal-500 animate-spin" />
+              <Loader2 className="w-5 h-5 text-primary-500 animate-spin" />
             ) : (
               <Circle className="w-5 h-5 text-gray-300" />
             )}
@@ -71,7 +71,7 @@ export function ProcessingProgress({ jobId, onComplete }: ProcessingProgressProp
                   : step.status === "complete"
                     ? "text-emerald-600 font-medium"
                     : step.status === "active"
-                      ? "text-teal-600 font-medium"
+                      ? "text-primary font-medium"
                       : "text-gray-400"
               }`}
             >

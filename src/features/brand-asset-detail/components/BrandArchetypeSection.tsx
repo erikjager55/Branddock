@@ -207,7 +207,7 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
             <select
               value={draft.subArchetype ?? ''}
               onChange={(e) => handleChange('subArchetype', e.target.value)}
-              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+              className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
             >
               <option value="">Select variant...</option>
               {subOptions.map((sub) => (
@@ -443,7 +443,7 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
                 <span key={i} className="text-xs bg-gray-100 text-gray-600 border border-gray-200 rounded-full px-2.5 py-0.5">{ex}</span>
               ))}
               {posOpt && (
-                <span className="text-xs bg-teal-50 text-teal-600 border border-teal-100 rounded-full px-2.5 py-0.5">{posOpt.label}</span>
+                <span className="text-xs bg-primary-50 text-primary border border-primary-100 rounded-full px-2.5 py-0.5">{posOpt.label}</span>
               )}
             </div>
           ) : null;
@@ -471,7 +471,7 @@ export function BrandArchetypeSection({ data, isEditing, onUpdate }: BrandArchet
                 <select
                   value={draft.positioningApproach ?? ''}
                   onChange={(e) => handleChange('positioningApproach', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm text-gray-900 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                 >
                   <option value="">Select approach...</option>
                   {POSITIONING_OPTIONS.map((opt) => (
@@ -579,7 +579,7 @@ function TextCard({ label, description, value, isEditing, onChange, placeholder,
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
           rows={2}
           placeholder={placeholder}
         />
@@ -680,7 +680,7 @@ function TagEditor({ items, isEditing, onAdd, onRemove, placeholder, emptyText, 
     }
   };
 
-  const tagBg = variant === 'danger' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-teal-50 border-teal-200 text-teal-700';
+  const tagBg = variant === 'danger' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-primary-50 border-primary-200 text-primary-700';
 
   if (!isEditing) {
     if (items.length === 0) {
@@ -715,13 +715,13 @@ function TagEditor({ items, isEditing, onAdd, onRemove, placeholder, emptyText, 
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+          className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
           placeholder={placeholder}
         />
         <button
           type="button"
           onClick={handleAdd}
-          className="flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 font-medium"
+          className="flex items-center gap-1 text-sm text-primary hover:text-primary-700 font-medium"
         >
           <Plus className="h-4 w-4" />
         </button>

@@ -188,7 +188,7 @@ export function ApprovalActionBar({ deliverableId, onDeriveClick }: ApprovalActi
               if (e.key === 'Escape') { setShowNoteInput(false); setNote(''); }
             }}
             placeholder="Describe what needs to change..."
-            className="text-sm border border-gray-300 rounded-md px-2 py-1 w-64 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            className="text-sm border border-gray-300 rounded-md px-2 py-1 w-64 focus:outline-none focus:ring-1 focus:ring-primary-500"
             autoFocus
           />
           <button

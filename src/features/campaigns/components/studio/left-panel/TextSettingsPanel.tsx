@@ -30,7 +30,7 @@ export function TextSettingsPanel() {
           value={textSettings.targetAudience}
           onChange={(e) => update({ targetAudience: e.target.value })}
           placeholder="e.g., Marketing professionals"
-          className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+          className="w-full rounded-md border border-gray-200 px-3 py-1.5 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
         />
       </div>
 
@@ -44,7 +44,7 @@ export function TextSettingsPanel() {
               onClick={() => update({ tone })}
               className={`flex-1 px-2 py-1 text-xs rounded-md capitalize transition-colors ${
                 textSettings.tone === tone
-                  ? "bg-teal-50 text-teal-700 border border-teal-200"
+                  ? "bg-primary-50 text-primary-700 border border-primary-200"
                   : "bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300"
               }`}
             >
@@ -64,7 +64,7 @@ export function TextSettingsPanel() {
               onClick={() => update({ length: len })}
               className={`flex-1 px-2 py-1 text-xs rounded-md capitalize transition-colors ${
                 textSettings.length === len
-                  ? "bg-teal-50 text-teal-700 border border-teal-200"
+                  ? "bg-primary-50 text-primary-700 border border-primary-200"
                   : "bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300"
               }`}
             >

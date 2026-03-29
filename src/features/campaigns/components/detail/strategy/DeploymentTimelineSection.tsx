@@ -844,7 +844,7 @@ export function DeploymentTimelineSection({
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, -1)}
                 className={`border-b border-r border-gray-100 p-2 align-top bg-slate-50/20 transition-colors ${
-                  dragOverBeat === -1 ? "ring-2 ring-inset ring-teal-400 bg-teal-50/30" : ""
+                  dragOverBeat === -1 ? "ring-2 ring-inset ring-primary-400 bg-primary-50/30" : ""
                 }`}
                 style={{ minHeight: 64 }}
               >
@@ -1001,7 +1001,7 @@ export function DeploymentTimelineSection({
                     className={`border-b border-r border-gray-100 p-2 align-top transition-colors ${
                       isPhaseStart ? `border-l-2 ${phaseColor?.border ?? "border-l-gray-300"}` : ""
                     } ${weekCollisions.length > 0 ? "bg-red-50/40" : phaseColor?.cell ?? ""} ${
-                      isDragOver ? "ring-2 ring-inset ring-teal-400 bg-teal-50/30" : ""
+                      isDragOver ? "ring-2 ring-inset ring-primary-400 bg-primary-50/30" : ""
                     }`}
                     style={items.length === 0 ? { minHeight: 64 } : undefined}
                   >

@@ -210,8 +210,8 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
       {/* ─── Card 1: Aaker Dimension Scores ─── */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start gap-3 mb-5">
-          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-            <User className="h-5 w-5 text-teal-600" />
+          <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+            <User className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">Brand Personality Dimensions</h2>
@@ -304,12 +304,12 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
 
         {/* Primary dimension highlight */}
         {primaryDim && primaryInfo && !isEditing && (
-          <div className="mt-4 bg-teal-50/50 border border-teal-100 rounded-xl p-4">
-            <p className="text-xs font-medium text-teal-600 uppercase tracking-wider mb-1">
+          <div className="mt-4 bg-primary-50/50 border border-primary-100 rounded-xl p-4">
+            <p className="text-xs font-medium text-primary uppercase tracking-wider mb-1">
               Dominant Personality
             </p>
-            <p className="text-sm font-semibold text-teal-800">{primaryInfo.label}</p>
-            <p className="text-xs text-teal-600 mt-0.5">{primaryInfo.description}</p>
+            <p className="text-sm font-semibold text-primary-800">{primaryInfo.label}</p>
+            <p className="text-xs text-primary mt-0.5">{primaryInfo.description}</p>
           </div>
         )}
       </div>
@@ -337,7 +337,7 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
                     type="text"
                     value={trait.name}
                     onChange={(e) => updateTrait(i, 'name', e.target.value)}
-                    className="text-sm font-semibold text-gray-900 bg-transparent border-b border-gray-300 focus:border-teal-400 outline-none pb-0.5 w-48"
+                    className="text-sm font-semibold text-gray-900 bg-transparent border-b border-gray-300 focus:border-primary-400 outline-none pb-0.5 w-48"
                     placeholder="Trait name..."
                   />
                   <button
@@ -351,7 +351,7 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
                 <textarea
                   value={trait.description}
                   onChange={(e) => updateTrait(i, 'description', e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none mb-2"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none mb-2"
                   rows={2}
                   placeholder="Describe this trait..."
                 />
@@ -383,7 +383,7 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
               <button
                 type="button"
                 onClick={addTrait}
-                className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium"
+                className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium"
               >
                 <Plus className="h-4 w-4" />
                 Add trait
@@ -458,12 +458,12 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
                         Number(e.target.value),
                       )
                     }
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-teal-600"
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
                   />
                 ) : (
                   <div className="relative h-2 bg-gray-200 rounded-full">
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-teal-500 border-2 border-white shadow-sm"
+                      className="absolute top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-primary-500 border-2 border-white shadow-sm"
                       style={{ left: `${((value - 1) / 6) * 100}%`, transform: 'translate(-50%, -50%)' }}
                     />
                   </div>
@@ -539,7 +539,7 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
             <textarea
               value={draft.brandVoiceDescription}
               onChange={(e) => handleFieldChange('brandVoiceDescription', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={3}
               placeholder="Describe how your brand sounds in writing and speech..."
             />
@@ -596,7 +596,7 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
             <textarea
               value={draft.writingSample}
               onChange={(e) => handleFieldChange('writingSample', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={4}
               placeholder="Write a sample paragraph in your brand's voice..."
             />
@@ -637,7 +637,7 @@ export function BrandPersonalitySection({ data, isEditing, onUpdate }: BrandPers
                   <textarea
                     value={value}
                     onChange={(e) => handleChannelChange(ch.key as keyof ChannelTones, e.target.value)}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
                     rows={2}
                     placeholder={ch.placeholder}
                   />
@@ -752,7 +752,7 @@ function VisualField({ icon: Icon, iconBg, iconColor, label, value, isEditing, o
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
           rows={2}
           placeholder={placeholder}
         />
@@ -804,7 +804,7 @@ function WordList({ words, isEditing, onAdd, onUpdate, onRemove, placeholder, em
             type="text"
             value={word}
             onChange={(e) => onUpdate(i, e.target.value)}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
             placeholder={placeholder}
           />
           <button
@@ -819,7 +819,7 @@ function WordList({ words, isEditing, onAdd, onUpdate, onRemove, placeholder, em
       <button
         type="button"
         onClick={onAdd}
-        className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 font-medium"
+        className="flex items-center gap-1 text-xs text-primary hover:text-primary-700 font-medium"
       >
         <Plus className="h-3.5 w-3.5" />
         Add

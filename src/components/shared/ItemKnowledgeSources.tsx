@@ -286,7 +286,7 @@ function AddKnowledgeSourceModal({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. Market Research Q1 2026"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
             maxLength={200}
           />
         </div>
@@ -300,7 +300,7 @@ function AddKnowledgeSourceModal({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Short description (optional)"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
             maxLength={500}
           />
         </div>
@@ -316,7 +316,7 @@ function AddKnowledgeSourceModal({
               onChange={(e) => setContent(e.target.value)}
               placeholder="Paste your text, notes, or knowledge source here..."
               rows={6}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none resize-y"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none resize-y"
               maxLength={50000}
             />
           </div>
@@ -332,7 +332,7 @@ function AddKnowledgeSourceModal({
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
             />
           </div>
         )}
@@ -342,7 +342,7 @@ function AddKnowledgeSourceModal({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               File *
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-teal-400 transition-colors">
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-400 transition-colors">
               {file ? (
                 <div className="flex items-center justify-center gap-2">
                   <FileText className="w-5 h-5 text-gray-500" />

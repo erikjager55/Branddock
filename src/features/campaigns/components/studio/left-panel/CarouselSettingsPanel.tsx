@@ -32,7 +32,7 @@ export function CarouselSettingsPanel() {
               onClick={() => update({ aspectRatio: ratio })}
               className={`flex-1 px-2 py-1 text-xs rounded-md transition-colors ${
                 carouselSettings.aspectRatio === ratio
-                  ? "bg-teal-50 text-teal-700 border border-teal-200"
+                  ? "bg-primary-50 text-primary-700 border border-primary-200"
                   : "bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300"
               }`}
             >
@@ -54,7 +54,7 @@ export function CarouselSettingsPanel() {
               onClick={() => update({ visualStyle: style })}
               className={`px-2 py-1 text-xs rounded-md capitalize transition-colors ${
                 carouselSettings.visualStyle === style
-                  ? "bg-teal-50 text-teal-700 border border-teal-200"
+                  ? "bg-primary-50 text-primary-700 border border-primary-200"
                   : "bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300"
               }`}
             >

@@ -144,8 +144,8 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
       {/* Card 1: Purpose Statement (hero) */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start gap-3 mb-4">
-          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-            <Target className="h-5 w-5 text-teal-600" />
+          <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+            <Target className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">Purpose Statement</h2>
@@ -157,12 +157,12 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
           <textarea
             value={draft.statement}
             onChange={(e) => handleChange('statement', e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-4 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none italic"
+            className="w-full rounded-lg border border-gray-200 px-4 py-3 text-base text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none italic"
             rows={3}
             placeholder="Define your purpose statement..."
           />
         ) : d.statement ? (
-          <div className="border-l-4 border-teal-400 pl-4 py-2">
+          <div className="border-l-4 border-primary-400 pl-4 py-2">
             <p className="text-lg italic text-gray-700 leading-relaxed">
               &ldquo;{d.statement}&rdquo;
             </p>
@@ -238,7 +238,7 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
             <textarea
               value={draft.impactDescription}
               onChange={(e) => handleChange('impactDescription', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={3}
               placeholder="Describe how this impact looks for your organization in practice..."
             />
@@ -308,7 +308,7 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
             <textarea
               value={draft.mechanism}
               onChange={(e) => handleChange('mechanism', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={3}
               placeholder="Describe through what unique means you achieve your impact..."
             />
@@ -351,7 +351,7 @@ export function PurposeWheelSection({ data, isEditing, onUpdate }: PurposeWheelS
           <textarea
             value={draft.pressureTest}
             onChange={(e) => handleChange('pressureTest', e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
             rows={4}
             placeholder="Answer the pressure test questions above..."
           />

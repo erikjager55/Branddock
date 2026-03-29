@@ -2,6 +2,10 @@ import type { Metadata } from 'next';
 import '../index.css';
 import { QueryProvider } from '@/providers/query-provider';
 import { Toaster } from 'sonner';
+import { validateEnv } from '@/lib/env-validation';
+
+// Validate environment variables at app start (server component)
+validateEnv();
 
 export const metadata: Metadata = {
   title: 'Branddock',

@@ -35,6 +35,7 @@ export interface OrchestrationOptions {
   regenerateGroup?: string;
   userFeedback?: string;
   additionalContextText?: string;
+  mediumConfig?: Record<string, unknown>;
 }
 
 interface TextComponentGroup {
@@ -521,6 +522,7 @@ function buildCanvasPrompt(
     stack.brief ? formatBriefContext(stack.brief) : '',
     stack.products.length > 0 ? formatProductContext(stack.products) : '',
     medium ? formatMediumSpecs(medium) : '',
+    options?.mediumConfig ? formatMediumConfig(options.mediumConfig) : '',
     stack.deliverableTypeId ? formatConstraintsForPrompt(stack.deliverableTypeId) : '',
     options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
   ]
@@ -590,6 +592,7 @@ function buildRegenerationPrompt(
     stack.journeyPhase ? formatPhaseGuidance(stack.journeyPhase) : '',
     stack.brief ? formatBriefContext(stack.brief) : '',
     stack.products.length > 0 ? formatProductContext(stack.products) : '',
+    options?.mediumConfig ? formatMediumConfig(options.mediumConfig) : '',
     stack.deliverableTypeId ? formatConstraintsForPrompt(stack.deliverableTypeId) : '',
     options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
   ]
@@ -674,6 +677,23 @@ function formatMediumSpecs(medium: MediumContext): string {
     }
   }
 
+  return parts.join('\n');
+}
+
+function formatMediumConfig(config: Record<string, unknown>): string {
+  const entries = Object.entries(config).filter(
+    ([, v]) => v !== undefined && v !== null && v !== '',
+  );
+  if (entries.length === 0) return '';
+
+  const parts: string[] = ['## Medium Configuration (User-Specified)'];
+  for (const [key, value] of entries) {
+    const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
+    const display = typeof value === 'object' ? JSON.stringify(value) : String(value);
+    parts.push(`- ${label}: ${display}`);
+  }
+  parts.push('');
+  parts.push('IMPORTANT: Adapt your content to match these medium configuration settings.');
   return parts.join('\n');
 }
 

@@ -20,6 +20,8 @@ import { StrategySection } from "./strategy/StrategySection";
 import { ChannelPlanSection } from "./strategy/ChannelPlanSection";
 import { DeploymentTimelineSection } from "./strategy/DeploymentTimelineSection";
 import { DeploymentGridView } from "./strategy/DeploymentGridView";
+import { CanvasStatsBar } from "./strategy/CanvasStatsBar";
+import { BulkActionBar } from "./strategy/BulkActionBar";
 import { RegenerateSectionButton } from "./strategy/RegenerateSectionButton";
 import type { StrategyResponse, LegacyStrategyResponse, DeliverableResponse } from "@/types/campaign";
 import type { AssetPlanDeliverable, AssetPlanLayer } from "@/lib/campaigns/strategy-blueprint.types";
@@ -282,6 +284,11 @@ export function StrategyResultTab({
         {currentTab === "timeline" && (
           effectiveAssetPlan && blueprint.architecture && blueprint.channelPlan ? (
             <div className="bg-white rounded-lg border p-4 space-y-4">
+              {/* Approval stats bar */}
+              {deliverables && deliverables.length > 0 && (
+                <CanvasStatsBar deliverables={deliverables} />
+              )}
+
               <div className="flex items-center justify-between px-2">
                 <div className="flex items-center gap-3">
                   <h3 className="text-lg font-semibold text-gray-900">Campaign Timeline</h3>
@@ -292,7 +299,7 @@ export function StrategyResultTab({
                       onClick={() => setTimelineViewMode("timeline")}
                       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                         timelineViewMode === "timeline"
-                          ? "bg-teal-50 text-teal-700 shadow-sm"
+                          ? "bg-primary-50 text-primary-700 shadow-sm"
                           : "text-gray-500 hover:text-gray-700"
                       }`}
                     >
@@ -304,7 +311,7 @@ export function StrategyResultTab({
                       onClick={() => setTimelineViewMode("grid")}
                       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                         timelineViewMode === "grid"
-                          ? "bg-teal-50 text-teal-700 shadow-sm"
+                          ? "bg-primary-50 text-primary-700 shadow-sm"
                           : "text-gray-500 hover:text-gray-700"
                       }`}
                     >
@@ -343,8 +350,13 @@ export function StrategyResultTab({
                   onDeleteDeliverable={handleDeleteDeliverable}
                   campaignStartDate={campaignStartDate}
                   deliverableStatuses={deliverableStatuses}
+                  deliverables={deliverables}
+                  campaignId={campaignId}
                 />
               )}
+
+              {/* Bulk action bar (visible when deliverables are selected) */}
+              <BulkActionBar campaignId={campaignId} deliverables={deliverables ?? []} />
             </div>
           ) : (
             <EmptyState
@@ -481,7 +493,7 @@ export function StrategyResultTab({
                 <ul className="space-y-2">
                   {strategy.keyMessages.map((msg, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                      <span className="h-5 w-5 rounded-full bg-teal-100 text-teal-700 text-xs font-medium flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="h-5 w-5 rounded-full bg-primary-100 text-primary-700 text-xs font-medium flex items-center justify-center flex-shrink-0 mt-0.5">
                         {i + 1}
                       </span>
                       {msg}

@@ -102,7 +102,7 @@ export function AddManualTrendModal() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe this trend and its relevance..."
             rows={3}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none"
           />
         </div>
 
@@ -146,7 +146,7 @@ export function AddManualTrendModal() {
             max={100}
             value={relevanceScore}
             onChange={(e) => setRelevanceScore(Number(e.target.value))}
-            className="w-full accent-teal-600"
+            className="w-full accent-primary"
           />
           <div className="flex items-center justify-between text-xs text-gray-400 mt-0.5">
             <span>0</span>

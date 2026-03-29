@@ -24,7 +24,7 @@ function getStepIndex(progress: number): number {
 function statusIcon(status: ScanStatus | undefined) {
   if (status === 'COMPLETED') return <CheckCircle className="w-5 h-5 text-emerald-500" />;
   if (status === 'FAILED') return <XCircle className="w-5 h-5 text-red-500" />;
-  return <Loader2 className="w-5 h-5 text-teal-500 animate-spin" />;
+  return <Loader2 className="w-5 h-5 text-primary-500 animate-spin" />;
 }
 
 function modalTitle(status: ScanStatus | undefined): string {

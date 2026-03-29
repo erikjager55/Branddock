@@ -25,7 +25,7 @@ export function InterviewsHeader({
       </button>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Users className="w-6 h-6 text-teal-600" />
+          <Users className="w-6 h-6 text-primary" />
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Interviews</h1>
             <p className="text-sm text-gray-500">

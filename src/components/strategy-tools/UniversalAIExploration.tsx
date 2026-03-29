@@ -1424,7 +1424,7 @@ export function UniversalAIExploration({ tool, onBack, onComplete }: UniversalAI
             >
               {/* Success Header */}
               <Card className="border-0 shadow-xl overflow-hidden">
-                <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-100 dark:from-green-950/20 dark:via-emerald-950/20 dark:to-teal-950/30 p-8">
+                <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-primary-100 dark:from-green-950/20 dark:via-emerald-950/20 dark:to-primary-950/30 p-8">
                   <div className="flex items-start gap-4">
                     <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg flex-shrink-0">
                       <Award className="h-7 w-7 text-white" />

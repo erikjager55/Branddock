@@ -658,7 +658,7 @@ export function ConceptStep() {
   if (strategyPhase === "complete") {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
-        <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center mb-4">
+        <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-emerald-100 to-primary-100 flex items-center justify-center mb-4">
           <CheckCircle2 className="w-8 h-8 text-emerald-500" />
         </div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">

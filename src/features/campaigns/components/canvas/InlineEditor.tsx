@@ -88,7 +88,7 @@ export function InlineEditor({ initialContent, onSave, onCancel }: InlineEditorP
 
   return (
     <div
-      className="rounded border border-teal-200 bg-white"
+      className="rounded border border-primary-200 bg-white"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Minimal toolbar */}
@@ -137,7 +137,7 @@ export function InlineEditor({ initialContent, onSave, onCancel }: InlineEditorP
               if (e.key === 'Escape') { setShowLinkInput(false); setLinkUrl(''); }
             }}
             placeholder="https://example.com"
-            className="flex-1 text-xs px-2 py-1 rounded border border-gray-200 focus:outline-none focus:border-teal-400"
+            className="flex-1 text-xs px-2 py-1 rounded border border-gray-200 focus:outline-none focus:border-primary-400"
           />
           <button
             type="button"

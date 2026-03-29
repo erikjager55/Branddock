@@ -166,7 +166,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                 type="date"
                 value={scheduledDate ?? ''}
                 onChange={(e) => useCanvasStore.getState().setScheduledDate(e.target.value || null)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
 
@@ -181,7 +181,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                 type="time"
                 value={scheduledTime ?? ''}
                 onChange={(e) => useCanvasStore.getState().setScheduledTime(e.target.value || null)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               />
             </div>
           </div>

@@ -222,7 +222,7 @@ interface CardConfig {
 const CARDS: CardConfig[] = [
   { number: 1, title: 'Origin & Belief', subtitle: 'The foundation — why the brand exists', Icon: BookOpen, colorBg: 'bg-amber-50', colorText: 'text-amber-600' },
   { number: 2, title: 'The World We See', subtitle: 'The tension — which problem does the brand solve?', Icon: Eye, colorBg: 'bg-rose-50', colorText: 'text-rose-600' },
-  { number: 3, title: 'The Brand as Guide', subtitle: 'The role — how the brand positions itself in the customer\'s story', Icon: Compass, colorBg: 'bg-teal-50', colorText: 'text-teal-600' },
+  { number: 3, title: 'The Brand as Guide', subtitle: 'The role — how the brand positions itself in the customer\'s story', Icon: Compass, colorBg: 'bg-primary-50', colorText: 'text-primary' },
   { number: 4, title: 'Transformation & Resolution', subtitle: 'The promise — life after the brand', Icon: Sparkles, colorBg: 'bg-emerald-50', colorText: 'text-emerald-600' },
   { number: 5, title: 'Narrative Toolkit', subtitle: 'The instruments — how the brand tells its story', Icon: MessageCircle, colorBg: 'bg-blue-50', colorText: 'text-blue-600' },
   { number: 6, title: 'Evidence & Milestones', subtitle: 'The proof — why the story is credible', Icon: Award, colorBg: 'bg-indigo-50', colorText: 'text-indigo-600' },
@@ -471,7 +471,7 @@ export function BrandStorySection({ data, isEditing, onUpdate }: BrandStorySecti
                     onClick={() => handleChange('brandRole', draft.brandRole === role.label ? '' : role.label)}
                     className={`text-left p-3 rounded-xl border transition-all ${
                       (isEditing ? draft.brandRole : d.brandRole) === role.label
-                        ? 'border-teal-300 bg-teal-50 ring-1 ring-teal-200'
+                        ? 'border-primary-300 bg-primary-50 ring-1 ring-primary-200'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >

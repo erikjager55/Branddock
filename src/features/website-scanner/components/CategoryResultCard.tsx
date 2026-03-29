@@ -36,7 +36,7 @@ function getConfidenceLabel(confidence: number): string {
 }
 
 const COLOR_MAP: Record<string, { bg: string; text: string; iconBg: string }> = {
-  teal: { bg: 'bg-teal-50', text: 'text-teal-700', iconBg: 'bg-teal-100' },
+  teal: { bg: 'bg-primary-50', text: 'text-primary-700', iconBg: 'bg-primary-100' },
   blue: { bg: 'bg-blue-50', text: 'text-blue-700', iconBg: 'bg-blue-100' },
   purple: { bg: 'bg-purple-50', text: 'text-purple-700', iconBg: 'bg-purple-100' },
   amber: { bg: 'bg-amber-50', text: 'text-amber-700', iconBg: 'bg-amber-100' },

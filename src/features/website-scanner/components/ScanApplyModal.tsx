@@ -86,7 +86,7 @@ export function ScanApplyModal({ onNavigate }: ScanApplyModalProps) {
                   isDisabled
                     ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
                     : isSelected
-                    ? 'border-teal-200 bg-teal-50'
+                    ? 'border-primary-200 bg-primary-50'
                     : 'border-gray-200 hover:bg-gray-50'
                 }`}
               >
@@ -95,7 +95,7 @@ export function ScanApplyModal({ onNavigate }: ScanApplyModalProps) {
                   checked={isSelected && !isDisabled}
                   onChange={() => !isDisabled && toggleCategory(key)}
                   disabled={isDisabled}
-                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  className="rounded border-gray-300 text-primary focus:ring-primary-500"
                 />
                 <Icon className="h-4 w-4 text-gray-500" />
                 <span className="text-sm font-medium text-gray-900 flex-1">{label}</span>

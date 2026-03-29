@@ -65,7 +65,7 @@ export function PersonaAnalysisChatInterface({
 
           return (
             <div key={msg.id} className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-emerald-500 flex items-center justify-center flex-shrink-0">
                 <Bot className="h-4 w-4 text-white" />
               </div>
               <div className="flex-1">
@@ -79,7 +79,7 @@ export function PersonaAnalysisChatInterface({
 
         {isAITyping && (
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-emerald-500 flex items-center justify-center flex-shrink-0">
               <Bot className="h-4 w-4 text-white" />
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl rounded-tl-sm p-4 border border-border/50">
@@ -99,11 +99,11 @@ export function PersonaAnalysisChatInterface({
         <div className="px-6 pt-4 pb-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
             <span className="font-medium">Progress</span>
-            <span className="font-semibold text-teal-600">{progressPercent}%</span>
+            <span className="font-semibold text-primary">{progressPercent}%</span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-teal-400 to-emerald-500 transition-all duration-500"
+              className="h-full bg-gradient-to-r from-primary-400 to-emerald-500 transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -118,7 +118,7 @@ export function PersonaAnalysisChatInterface({
             placeholder="Type your answer here..."
             disabled={isAITyping || isSubmitting}
             rows={3}
-            className="w-full p-4 rounded-xl border border-border bg-white dark:bg-gray-900 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none disabled:opacity-50"
+            className="w-full p-4 rounded-xl border border-border bg-white dark:bg-gray-900 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 outline-none disabled:opacity-50"
           />
         </div>
 
@@ -134,7 +134,7 @@ export function PersonaAnalysisChatInterface({
           <button
             onClick={onSubmit}
             disabled={!currentInput.trim() || isAITyping || isSubmitting}
-            className="flex items-center gap-2 text-sm font-medium rounded-lg px-6 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 text-sm font-medium rounded-lg px-6 py-2 bg-gradient-to-r from-primary-500 to-emerald-500 hover:from-primary hover:to-emerald-600 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
             {isLastDimension ? 'Generate Report' : 'Next'}
             <ArrowRight className="h-4 w-4" />

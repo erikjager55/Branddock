@@ -132,13 +132,13 @@ function AddImageForm({ onAdd, onCancel }: AddImageFormProps) {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://example.com/image.jpg"
-          className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
         />
         <select
           value={context}
           onChange={(e) => setContext(e.target.value as BrandImage['context'])}
-          className="text-sm px-2 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="text-sm px-2 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           <option value="hero">Hero</option>
           <option value="lifestyle">Lifestyle</option>
@@ -251,7 +251,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
           {canEdit && !isEditingImages && brandImages.length > 0 && (
             <button
               onClick={startEditImages}
-              className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
+              className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0"
               title="Edit images"
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -286,7 +286,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
               <button
                 type="button"
                 onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 transition-colors"
+                className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Add image
@@ -309,7 +309,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
             <button
               type="button"
               onClick={startEditImages}
-              className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 transition-colors"
+              className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add images manually
@@ -325,7 +325,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
           {canEdit && !isEditingStyle && (
             <button
               onClick={startEditStyle}
-              className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
+              className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0"
               title="Edit"
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -341,7 +341,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
                 value={editMood}
                 onChange={(e) => setEditMood(e.target.value)}
                 placeholder="e.g. Warm, inviting"
-                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div>
@@ -350,7 +350,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
                 value={editSubjects}
                 onChange={(e) => setEditSubjects(e.target.value)}
                 placeholder="e.g. People, products, environments"
-                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div>
@@ -359,7 +359,7 @@ export function ImagerySection({ styleguide, canEdit }: ImagerySectionProps) {
                 value={editComposition}
                 onChange={(e) => setEditComposition(e.target.value)}
                 placeholder="e.g. Rule of thirds, natural framing"
-                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div className="flex gap-2 pt-1">

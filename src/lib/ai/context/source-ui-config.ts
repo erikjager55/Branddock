@@ -56,7 +56,7 @@ export const SOURCE_TYPE_META: Record<
   deliverable: { label: 'Deliverable', icon: FileText, color: 'bg-sky-100 text-sky-700' },
   competitor: { label: 'Competitor', icon: Swords, color: 'bg-orange-100 text-orange-700' },
   business_strategy: { label: 'Strategy', icon: Target, color: 'bg-cyan-100 text-cyan-700' },
-  strategic_implication: { label: 'Implication', icon: TrendingUp, color: 'bg-teal-100 text-teal-700' },
+  strategic_implication: { label: 'Implication', icon: TrendingUp, color: 'bg-primary-100 text-primary-700' },
 };
 
 /** Default fallback icon for unknown source types */

@@ -56,7 +56,7 @@ export function ContentCardGrid({
             key={item.id}
             hoverable
             padding="none"
-            className={`flex flex-col ${isSelected ? "ring-2 ring-teal-500" : ""}`}
+            className={`flex flex-col ${isSelected ? "ring-2 ring-primary-500" : ""}`}
           >
             <div className="p-4 flex flex-col gap-3 flex-1">
               {/* Top row: checkbox + favorite */}
@@ -66,7 +66,7 @@ export function ContentCardGrid({
                     type="checkbox"
                     checked={isSelected}
                     onChange={() => toggleSelected(item.id)}
-                    className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary-500"
                   />
                   <Badge size="sm">{item.type}</Badge>
                 </label>

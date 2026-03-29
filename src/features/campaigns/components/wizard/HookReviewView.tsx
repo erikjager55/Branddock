@@ -135,7 +135,7 @@ function HookCard({
     <div
       className={`rounded-xl border-2 p-5 transition-all cursor-pointer overflow-hidden ${
         isSelected
-          ? "border-teal-400 ring-2 ring-teal-100 bg-teal-50/30"
+          ? "border-primary-400 ring-2 ring-primary-100 bg-primary-50/30"
           : `${HOOK_COLORS[index] ?? "border-gray-200 bg-gray-50"} hover:border-gray-300`
       }`}
       onClick={onSelect}
@@ -155,7 +155,7 @@ function HookCard({
           <span
             className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${
               isSelected
-                ? "bg-teal-600 text-white"
+                ? "bg-primary text-white"
                 : `bg-white border border-gray-200 ${HOOK_ACCENT[index] ?? "text-gray-700"}`
             }`}
           >
@@ -257,13 +257,13 @@ function HookCard({
 
       {/* Selection + Feedback */}
       {isSelected && (
-        <div className="mt-3 pt-3 border-t border-teal-200" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-1.5 text-xs font-medium text-teal-700 mb-2">
+        <div className="mt-3 pt-3 border-t border-primary-200" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-primary-700 mb-2">
             <CheckCircle2 className="w-3.5 h-3.5" />
             Selected for refinement
           </div>
           <textarea
-            className="w-full rounded-lg border border-teal-200 p-2 text-xs text-gray-700 placeholder:text-gray-400 focus:border-teal-300 focus:ring-1 focus:ring-teal-300"
+            className="w-full rounded-lg border border-primary-200 p-2 text-xs text-gray-700 placeholder:text-gray-400 focus:border-primary-300 focus:ring-1 focus:ring-primary-300"
             rows={2}
             placeholder="Feedback for refining this hook (optional)..."
             value={feedback}

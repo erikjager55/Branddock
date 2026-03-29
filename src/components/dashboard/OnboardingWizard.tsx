@@ -446,7 +446,7 @@ function Step2Content() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.15 + 0.2 }}
-            className="flex items-start gap-3 p-3.5 rounded-lg border-l-4 bg-teal-50"
+            className="flex items-start gap-3 p-3.5 rounded-lg border-l-4 bg-primary-50"
             style={{ borderLeftColor: '#14B8A6' }}
           >
             <div className="w-7 h-7 rounded-full text-white text-sm font-bold flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#0D9488' }}>
@@ -486,7 +486,7 @@ function Step3Content() {
             transition={{ delay: i * 0.15 + 0.2 }}
             className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/50"
           >
-            <div className="w-6 h-6 rounded-full bg-teal-100 text-teal-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+            <div className="w-6 h-6 rounded-full bg-primary-100 text-primary-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
               {i + 1}
             </div>
             <span className="text-sm text-gray-700">{item}</span>
@@ -503,7 +503,7 @@ function ScanWebsiteCTA({ onScan }: { onScan: () => void }) {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: 0.2 }}
-      className="w-full max-w-[280px] p-6 rounded-xl border-2 border-dashed border-teal-200 bg-teal-50/50 text-center space-y-4"
+      className="w-full max-w-[280px] p-6 rounded-xl border-2 border-dashed border-primary-200 bg-primary-50/50 text-center space-y-4"
     >
       <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center" style={{ backgroundColor: '#0D9488' }}>
         <Globe className="h-6 w-6 text-white" />

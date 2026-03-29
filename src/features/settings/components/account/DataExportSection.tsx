@@ -39,8 +39,8 @@ export function DataExportSection() {
   return (
     <div className="rounded-xl border border-gray-200 p-5">
       <div className="flex items-start gap-3">
-        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-teal-50">
-          <Download className="w-5 h-5 text-teal-600" />
+        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50">
+          <Download className="w-5 h-5 text-primary" />
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-semibold text-gray-900">Download All Data</h3>

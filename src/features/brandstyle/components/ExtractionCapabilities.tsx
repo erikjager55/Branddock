@@ -35,8 +35,8 @@ export function ExtractionCapabilities() {
       <div className="grid grid-cols-2 gap-4">
         {CAPABILITIES.map((cap) => (
           <div key={cap.title} data-testid="capability-item" className="flex gap-3">
-            <div className="w-8 h-8 rounded-md bg-teal-50 flex items-center justify-center flex-shrink-0">
-              <cap.icon className="w-4 h-4 text-teal-600" />
+            <div className="w-8 h-8 rounded-md bg-primary-50 flex items-center justify-center flex-shrink-0">
+              <cap.icon className="w-4 h-4 text-primary" />
             </div>
             <div>
               <p className="text-sm font-medium text-gray-900">{cap.title}</p>

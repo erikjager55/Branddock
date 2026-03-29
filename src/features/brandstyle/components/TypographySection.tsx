@@ -89,7 +89,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
           {canEdit && !isEditingFont && (
             <button
               onClick={startEditFont}
-              className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
+              className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0"
               title="Edit"
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -105,7 +105,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                 value={editFontName}
                 onChange={(e) => setEditFontName(e.target.value)}
                 placeholder="e.g. Inter"
-                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div>
@@ -114,7 +114,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                 value={editFontUrl}
                 onChange={(e) => setEditFontUrl(e.target.value)}
                 placeholder="https://fonts.google.com/..."
-                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
             </div>
             <div className="flex gap-2 pt-1">
@@ -137,7 +137,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                   href={styleguide.primaryFontUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-teal-600 hover:text-teal-700"
+                  className="text-sm text-primary hover:text-primary-700"
                 >
                   View font
                 </a>
@@ -161,7 +161,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
           {canEdit && !isEditingScale && (
             <button
               onClick={startEditScale}
-              className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
+              className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0"
               title="Edit type scale"
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -195,7 +195,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                             updateScaleRow(i, "level", val === "__custom__" ? "" : val);
                             if (val !== "__custom__") updateScaleRow(i, "name", val);
                           }}
-                          className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
+                          className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
                         >
                           {LEVEL_PRESETS.map((p) => (
                             <option key={p} value={p}>{p}</option>
@@ -210,7 +210,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                               updateScaleRow(i, "name", e.target.value);
                             }}
                             placeholder="Custom"
-                            className="w-full text-xs px-2 py-1 mt-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
+                            className="w-full text-xs px-2 py-1 mt-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
                           />
                         )}
                       </td>
@@ -219,7 +219,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                           value={row.size}
                           onChange={(e) => updateScaleRow(i, "size", e.target.value)}
                           placeholder="36px"
-                          className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-500 font-mono"
+                          className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono"
                         />
                       </td>
                       <td className="py-2 pr-2">
@@ -227,7 +227,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                           value={row.weight}
                           onChange={(e) => updateScaleRow(i, "weight", e.target.value)}
                           placeholder="bold"
-                          className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-500 font-mono"
+                          className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono"
                         />
                       </td>
                       <td className="py-2 pr-2">
@@ -235,7 +235,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                           value={row.lineHeight}
                           onChange={(e) => updateScaleRow(i, "lineHeight", e.target.value)}
                           placeholder="1.2"
-                          className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-500 font-mono"
+                          className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono"
                         />
                       </td>
                       <td className="py-2 pr-2">
@@ -243,7 +243,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                           value={row.color ?? ""}
                           onChange={(e) => updateScaleRow(i, "color", e.target.value)}
                           placeholder="#111827"
-                          className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-500 font-mono"
+                          className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 font-mono"
                         />
                       </td>
                       <td className="py-2 pr-2">
@@ -251,7 +251,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                           value={row.usage ?? ""}
                           onChange={(e) => updateScaleRow(i, "usage", e.target.value)}
                           placeholder="Page titles"
-                          className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-500"
+                          className="w-full text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                       </td>
                       <td className="py-2">
@@ -273,7 +273,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
             <button
               type="button"
               onClick={addScaleRow}
-              className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 transition-colors"
+              className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add level
@@ -350,7 +350,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                   setEditScale([createBlankLevel()]);
                   setIsEditingScale(true);
                 }}
-                className="mt-2 inline-flex items-center gap-1.5 text-teal-600 hover:text-teal-700 transition-colors"
+                className="mt-2 inline-flex items-center gap-1.5 text-primary hover:text-primary-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Add type scale

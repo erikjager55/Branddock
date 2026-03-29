@@ -44,14 +44,14 @@ export function AvatarGeneratingOverlay() {
       {/* Sparkle icon — subtle float */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div style={{ animation: 'avatarFloat 2s ease-in-out infinite' }}>
-          <Sparkles className="h-5 w-5 text-teal-300/70" />
+          <Sparkles className="h-5 w-5 text-primary-300/70" />
         </div>
       </div>
 
       {/* Bottom label */}
       <div className="absolute bottom-1.5 inset-x-0 text-center">
         <span
-          className="text-[8px] font-semibold uppercase tracking-widest text-teal-300/80"
+          className="text-[8px] font-semibold uppercase tracking-widest text-primary-300/80"
           style={{ animation: 'avatarPulse 2.5s ease-in-out infinite' }}
         >
           Generating

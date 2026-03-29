@@ -88,6 +88,12 @@ export interface DeliverableResponse {
   assignedTo: string | null;
   isFavorite: boolean;
   settings: DeliverableBriefSettings | null;
+  approvalStatus: string;
+  approvalNote: string | null;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  publishedAt: string | null;
+  derivedFromId: string | null;
   createdAt: string;
   updatedAt: string;
 }

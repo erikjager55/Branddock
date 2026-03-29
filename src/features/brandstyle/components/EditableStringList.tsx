@@ -67,7 +67,7 @@ export function EditableStringList({
         {canEdit && !isEditing && (
           <button
             onClick={startEdit}
-            className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
+            className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0"
             title="Edit"
           >
             <Pencil className="w-3.5 h-3.5" />
@@ -82,7 +82,7 @@ export function EditableStringList({
               <input
                 value={item}
                 onChange={(e) => updateItem(i, e.target.value)}
-                className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
               />
               <button
                 onClick={() => removeItem(i)}
@@ -103,11 +103,11 @@ export function EditableStringList({
                 }
               }}
               placeholder={placeholder}
-              className="flex-1 text-sm px-3 py-1.5 border border-dashed border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="flex-1 text-sm px-3 py-1.5 border border-dashed border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
             <button
               onClick={addItem}
-              className="p-1 text-gray-400 hover:text-teal-600"
+              className="p-1 text-gray-400 hover:text-primary"
             >
               <Plus className="w-4 h-4" />
             </button>

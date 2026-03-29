@@ -46,7 +46,7 @@ function AddColorForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Ocean Blue"
-            className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </div>
         <div>
@@ -57,7 +57,7 @@ function AddColorForm({
               onChange={(e) => setHex(e.target.value)}
               placeholder="#2563EB"
               maxLength={7}
-              className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 font-mono"
+              className="flex-1 text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             />
             <span
@@ -71,7 +71,7 @@ function AddColorForm({
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as StyleguideColor["category"])}
-            className="w-full text-sm px-2 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+            className="w-full text-sm px-2 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             {CATEGORY_OPTIONS.map((c) => (
               <option key={c} value={c}>
@@ -132,7 +132,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
           {canEdit && (
             <button
               onClick={() => setIsEditingColors((v) => !v)}
-              className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
+              className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0"
               title={isEditingColors ? "Done editing" : "Edit colors"}
             >
               {isEditingColors ? (
@@ -161,7 +161,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
                         disabled={isEditingColors}
                       >
                         <div
-                          className="w-16 h-16 rounded-lg border border-gray-200 group-hover:ring-2 group-hover:ring-teal-500 transition-all"
+                          className="w-16 h-16 rounded-lg border border-gray-200 group-hover:ring-2 group-hover:ring-primary-500 transition-all"
                           style={{ backgroundColor: color.hex }}
                         />
                         <div className="text-center">
@@ -202,7 +202,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
               <button
                 type="button"
                 onClick={() => setShowAddColorForm(true)}
-                className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 transition-colors"
+                className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Add color
@@ -220,7 +220,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
                 setIsEditingColors(true);
                 setShowAddColorForm(true);
               }}
-              className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 transition-colors"
+              className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add colors manually

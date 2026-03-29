@@ -68,7 +68,7 @@ export function PipelineNavigator() {
               onClick={() => setActiveComponent(component.id)}
               className={`w-full flex items-center gap-2.5 px-4 py-2 text-left transition-colors ${
                 isActive
-                  ? 'bg-teal-50 border-r-2 border-teal-500'
+                  ? 'bg-primary-50 border-r-2 border-primary-500'
                   : 'hover:bg-gray-50'
               }`}
             >
@@ -79,7 +79,7 @@ export function PipelineNavigator() {
               }`}>
                 {component.label}
               </span>
-              {isActive && <ChevronRight className="h-3.5 w-3.5 text-teal-500 flex-shrink-0" />}
+              {isActive && <ChevronRight className="h-3.5 w-3.5 text-primary-500 flex-shrink-0" />}
             </button>
           );
         })}

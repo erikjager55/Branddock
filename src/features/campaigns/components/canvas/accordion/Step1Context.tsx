@@ -156,7 +156,7 @@ export function Step1Context({ deliverableId }: Step1ContextProps) {
       <button
         type="button"
         onClick={() => useCanvasStore.getState().toggleContextSelector()}
-        className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 font-medium"
+        className="flex items-center gap-1 text-xs text-primary hover:text-primary-700 font-medium"
       >
         <Plus className="h-3 w-3" />
         {additionalContextItems.size > 0 ? 'Add more context' : 'Select knowledge context'}

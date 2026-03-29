@@ -6,6 +6,7 @@ import { create } from 'zustand';
 import type { CanvasVariant, CanvasImageVariant, ApprovalStatus } from '../types/canvas.types';
 import type { StepSummaryData, StepNumber } from '../types/accordion.types';
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
+import type { MediumCategory, MediumVariant } from '../types/medium-config.types';
 type GenerationStatus = 'idle' | 'generating' | 'complete' | 'error';
 
 export interface SelectedContextItem {
@@ -64,6 +65,13 @@ interface CanvasStoreState {
   generatedMediumUrl: string | null;
   mediumApproved: boolean;
 
+  // ─── Step 3: medium configuration ──────────────────────────
+  mediumCategory: MediumCategory | null;
+  mediumConfigValues: Record<string, unknown>;
+  mediumVariants: MediumVariant[];
+  selectedMediumVariantId: 'A' | 'B' | 'C';
+  variantsGenerated: boolean;
+
   // ─── Step 4: scheduling ───────────────────────────────────
   scheduledDate: string | null;
   scheduledTime: string | null;
@@ -99,6 +107,12 @@ interface CanvasStoreState {
   setMediumGenerationStatus: (status: 'idle' | 'generating' | 'complete' | 'error') => void;
   setGeneratedMediumUrl: (url: string | null) => void;
   setMediumApproved: (approved: boolean) => void;
+  setMediumCategory: (category: MediumCategory | null) => void;
+  setMediumConfigValue: (key: string, value: unknown) => void;
+  setMediumConfigValues: (values: Record<string, unknown>) => void;
+  setMediumVariants: (variants: MediumVariant[]) => void;
+  setSelectedMediumVariant: (id: 'A' | 'B' | 'C') => void;
+  setVariantsGenerated: (generated: boolean) => void;
   setScheduledDate: (date: string | null) => void;
   setScheduledTime: (time: string | null) => void;
   setIsTimeBound: (timeBound: boolean) => void;
@@ -136,6 +150,11 @@ const INITIAL_STATE = {
   mediumGenerationStatus: 'idle' as const,
   generatedMediumUrl: null,
   mediumApproved: false,
+  mediumCategory: null,
+  mediumConfigValues: {},
+  mediumVariants: [],
+  selectedMediumVariantId: 'B' as const,
+  variantsGenerated: false,
 
   // Step 4
   scheduledDate: null,
@@ -246,6 +265,15 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
   setMediumGenerationStatus: (status) => set({ mediumGenerationStatus: status }),
   setGeneratedMediumUrl: (url) => set({ generatedMediumUrl: url }),
   setMediumApproved: (approved) => set({ mediumApproved: approved }),
+  setMediumCategory: (category) => set({ mediumCategory: category }),
+  setMediumConfigValue: (key, value) =>
+    set((state) => ({
+      mediumConfigValues: { ...state.mediumConfigValues, [key]: value },
+    })),
+  setMediumConfigValues: (values) => set({ mediumConfigValues: values }),
+  setMediumVariants: (variants) => set({ mediumVariants: variants }),
+  setSelectedMediumVariant: (id) => set({ selectedMediumVariantId: id }),
+  setVariantsGenerated: (generated) => set({ variantsGenerated: generated }),
   setScheduledDate: (date) => set({ scheduledDate: date }),
   setScheduledTime: (time) => set({ scheduledTime: time }),
   setIsTimeBound: (timeBound) => set({ isTimeBound: timeBound }),

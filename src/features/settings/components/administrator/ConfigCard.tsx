@@ -49,9 +49,9 @@ export function ConfigCard({ config, onSelect, onDuplicate, onDelete }: ConfigCa
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-              config.isActive ? 'bg-teal-50' : 'bg-gray-100'
+              config.isActive ? 'bg-primary-50' : 'bg-gray-100'
             }`}>
-              <Bot className={`w-5 h-5 ${config.isActive ? 'text-teal-600' : 'text-gray-400'}`} />
+              <Bot className={`w-5 h-5 ${config.isActive ? 'text-primary' : 'text-gray-400'}`} />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-900 line-clamp-1">{displayLabel}</h3>

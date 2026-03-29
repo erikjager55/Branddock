@@ -124,18 +124,18 @@ export const COLORS = {
    * This is the brand color used throughout the platform.
    */
   primary: {
-    50: 'teal-50',               // #F0FDFA
-    100: 'teal-100',             // #CCFBF1
-    500: 'teal-500',             // #14B8A6
-    600: 'teal-600',             // #0D9488
-    700: 'teal-700',             // #0F766E
+    50: 'primary-50',               // #F0FDFA
+    100: 'primary-100',             // #CCFBF1
+    500: 'primary-500',             // #14B8A6
+    600: 'primary-600',             // #0D9488
+    700: 'primary-700',             // #0F766E
     // Direct class helpers
-    text: 'text-teal-600',
-    bg: 'bg-teal-600',
-    bgLight: 'bg-teal-50',
-    border: 'border-teal-200',
-    ring: 'ring-teal-500',
-    hover: 'hover:bg-teal-700',
+    text: 'text-primary',
+    bg: 'bg-primary',
+    bgLight: 'bg-primary-50',
+    border: 'border-primary-200',
+    ring: 'ring-primary',
+    hover: 'hover:bg-primary-700',
   },
 
   /**
@@ -208,7 +208,7 @@ export const COLORS = {
     DEFAULT: 'border-gray-200',   // #E5E7EB — default borders
     light: 'border-gray-100',     // #F3F4F6 — subtle borders
     dark: 'border-gray-300',      // #D1D5DB — emphasis borders
-    focus: 'border-teal-500',     // Focus state
+    focus: 'border-primary',     // Focus state
   },
 
   /** Text colors */
@@ -301,17 +301,17 @@ export const COMPONENTS = {
     info: 'bg-blue-50 text-blue-700',
     neutral: 'bg-gray-100 text-gray-600',
     purple: 'bg-purple-50 text-purple-700',
-    teal: 'bg-teal-50 text-teal-700',
+    teal: 'bg-primary-50 text-primary-700',
   },
 
   // ── Input fields ───────────────────────────────────────
   input: {
     /** Default text input */
-    base: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-shadow',
+    base: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow',
     /** Search input (with icon space on left) */
-    search: 'w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent',
+    search: 'w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
     /** Textarea */
-    textarea: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent',
+    textarea: 'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 min-h-[80px] resize-y focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent',
     /** Label above an input */
     label: 'block text-sm font-medium text-gray-700 mb-1.5',
     /** Error state */
@@ -343,7 +343,7 @@ export const COMPONENTS = {
     fill: 'h-2 rounded-full transition-all duration-500',
     /** Fill color variants */
     fillSuccess: 'bg-emerald-500',
-    fillGradient: 'bg-gradient-to-r from-emerald-400 to-teal-500',
+    fillGradient: 'bg-gradient-to-r from-emerald-400 to-primary-500',
     fillAnalysis: 'bg-gradient-to-r from-blue-500 to-purple-500',
   },
 
@@ -499,6 +499,7 @@ export const SIDEBAR_NAV: {
         { key: 'personas', label: 'Personas', icon: 'Users', href: '/knowledge/personas' },
         { key: 'products', label: 'Products & Services', icon: 'Package', href: '/knowledge/products' },
         { key: 'competitors', label: 'Competitors', icon: 'Swords', href: '/knowledge/competitors' },
+        { key: 'media-library', label: 'Media Library', icon: 'Images', href: '/knowledge/media' },
       ],
     },
     {
@@ -535,8 +536,9 @@ export const PAGE_ICONS: Record<string, { icon: string; bgColor: string; iconCol
   'personas':          { icon: 'Users',           bgColor: 'bg-violet-50',  iconColor: 'text-violet-500' },
   'products':          { icon: 'Package',         bgColor: 'bg-orange-50',  iconColor: 'text-orange-500' },
   'competitors':       { icon: 'Swords',           bgColor: 'bg-red-50',     iconColor: 'text-red-500' },
-  'trend-radar':       { icon: 'Radar',            bgColor: 'bg-teal-50',    iconColor: 'text-teal-500' },
+  'trend-radar':       { icon: 'Radar',            bgColor: 'bg-primary-50',    iconColor: 'text-primary-500' },
   'knowledge-library': { icon: 'BookOpen',         bgColor: 'bg-amber-50',   iconColor: 'text-amber-500' },
+  'media-library':     { icon: 'Images',           bgColor: 'bg-violet-50',  iconColor: 'text-violet-500' },
   'brand-alignment':   { icon: 'GitCompare',      bgColor: 'bg-rose-50',    iconColor: 'text-rose-500' },
   'research-hub':      { icon: 'FlaskConical',    bgColor: 'bg-lime-50',    iconColor: 'text-lime-600' },
   'research-bundles':  { icon: 'Boxes',            bgColor: 'bg-sky-50',     iconColor: 'text-sky-500' },
@@ -613,6 +615,12 @@ export const MODULE_META: Record<string, {
     subtitle: 'Your centralized brand knowledge base',
     phase: 'Phase 7',
     comingSoonDescription: 'A searchable library of all your brand knowledge: documents, research findings, brand guidelines, and AI-generated insights.',
+  },
+  'media-library': {
+    title: 'Media Library',
+    subtitle: 'Your central media platform for brand assets and creative content',
+    phase: 'Phase 12',
+    comingSoonDescription: 'A centralized media library with AI-powered creative tools, stock photo integration, collections, and brand voice management.',
   },
   'brand-alignment': {
     title: 'Brand Alignment',
@@ -751,8 +759,8 @@ export const STUDIO = {
   /** Toolbar active state (formatting buttons) */
   toolbar: {
     active: {
-      bg: 'bg-teal-50',
-      text: 'text-teal-700',
+      bg: 'bg-primary-50',
+      text: 'text-primary-700',
     },
     inactive: {
       text: 'text-gray-500',
@@ -772,16 +780,16 @@ export const STUDIO = {
 
   /** Active pill/chip in settings panels */
   pill: {
-    active: 'bg-teal-50 text-teal-700 border-teal-200',
+    active: 'bg-primary-50 text-primary-700 border-primary-200',
     inactive: 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50',
   },
 
   /** Generate button gradient */
-  generateButton: 'bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700',
+  generateButton: 'bg-gradient-to-r from-primary to-emerald-600 hover:from-primary-700 hover:to-emerald-700',
 
   /** Content type tabs */
   tab: {
-    active: 'text-teal-700 border-b-2 border-teal-600',
+    active: 'text-primary-700 border-b-2 border-primary',
     inactive: 'text-gray-500 hover:text-gray-700',
   },
 
@@ -798,7 +806,7 @@ export const STUDIO = {
 export const ACCORDION = {
   tab: {
     base: 'flex flex-col items-center w-16 py-6 cursor-pointer',
-    active: 'bg-teal-600 text-white',
+    active: 'bg-primary text-white',
     completed: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
     locked: 'bg-gray-100 text-gray-400 cursor-not-allowed',
   },
@@ -810,7 +818,7 @@ export const ACCORDION = {
   content: {
     panel: 'flex-1 overflow-y-auto p-8',
     header: 'flex items-center gap-3 mb-8',
-    headerIcon: 'h-8 w-8 text-teal-600',
+    headerIcon: 'h-8 w-8 text-primary',
     headerTitle: 'text-2xl font-bold text-gray-900',
   },
   transition: 'transition-all duration-300 ease-in-out',
@@ -837,7 +845,7 @@ export const MODULE_GRADIENTS = {
   'personas':          { from: 'from-[#5252E3]', to: 'to-[#1FD1B2]',   icon: 'Users' },
   'products':          { from: 'from-orange-500',  to: 'to-amber-600',    icon: 'Package' },
   'competitors':       { from: 'from-red-500',     to: 'to-rose-600',     icon: 'Swords' },
-  'trend-radar':       { from: 'from-teal-500',    to: 'to-emerald-600',  icon: 'Radar' },
+  'trend-radar':       { from: 'from-primary-500',    to: 'to-emerald-600',  icon: 'Radar' },
   'knowledge':         { from: 'from-blue-500',    to: 'to-indigo-600',   icon: 'BookOpen' },
   'brand-alignment':   { from: 'from-[#1FD1B2]', to: 'to-emerald-500',  icon: 'GitCompare' },
   'campaigns':         { from: 'from-[#5252E3]', to: 'to-purple-600',   icon: 'Megaphone' },
@@ -845,6 +853,7 @@ export const MODULE_GRADIENTS = {
   'research':          { from: 'from-green-500',   to: 'to-emerald-600',  icon: 'FlaskConical' },
   'settings':          { from: 'from-gray-500',    to: 'to-gray-600',     icon: 'Settings' },
   'help':              { from: 'from-blue-500',    to: 'to-indigo-600',   icon: 'HelpCircle' },
+  'media-library':     { from: 'from-violet-500',  to: 'to-purple-600',   icon: 'Image' },
 } as const;
 
 export type ModuleKey = keyof typeof MODULE_GRADIENTS;
@@ -980,7 +989,7 @@ export const FILTER_PATTERNS = {
 
 // --- HELPER: Get gradient classes for a module ---
 export function getModuleGradient(moduleKey: ModuleKey): string {
-  const gradient = MODULE_GRADIENTS[moduleKey];
+  const gradient = MODULE_GRADIENTS[moduleKey] ?? MODULE_GRADIENTS['dashboard'];
   return `bg-gradient-to-br ${gradient.from} ${gradient.to}`;
 }
 
@@ -1019,7 +1028,7 @@ export const SEVERITY_COLORS = {
 export const CONFIDENCE_COLORS = {
   low:         { badge: 'bg-red-50 text-red-700 border border-red-200' },
   medium:      { badge: 'bg-yellow-50 text-yellow-700 border border-yellow-200' },
-  'medium-high': { badge: 'bg-teal-50 text-teal-700 border border-teal-200' },
+  'medium-high': { badge: 'bg-primary-50 text-primary-700 border border-primary-200' },
   high:        { badge: 'bg-green-50 text-green-700 border border-green-200' },
 } as const;
 

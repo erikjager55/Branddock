@@ -67,7 +67,7 @@ export function ContentCardList({
           <div
             key={item.id}
             className={`grid grid-cols-[40px_1fr_100px_160px_100px_80px_80px_80px] gap-3 px-4 py-3 border-b border-gray-100 items-center hover:bg-gray-50 transition-colors ${
-              isSelected ? "bg-teal-50/50" : ""
+              isSelected ? "bg-primary-50/50" : ""
             }`}
           >
             {/* Checkbox */}
@@ -76,7 +76,7 @@ export function ContentCardList({
                 type="checkbox"
                 checked={isSelected}
                 onChange={() => toggleSelected(item.id)}
-                className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary-500"
               />
             </div>
 
@@ -142,7 +142,7 @@ export function ContentCardList({
               <button
                 type="button"
                 onClick={() => onOpenInStudio(item.id, item.campaignId)}
-                className="inline-flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 font-medium transition-colors"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary-700 font-medium transition-colors"
               >
                 <ExternalLink className="w-3 h-3" />
                 Studio

@@ -149,7 +149,7 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
                 {styleguide.sourceUrl && (
                   <>
                     <span>·</span>
-                    <span className="text-teal-600 truncate max-w-[200px]">
+                    <span className="text-primary truncate max-w-[200px]">
                       {styleguide.sourceUrl}
                     </span>
                   </>

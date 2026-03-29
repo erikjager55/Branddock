@@ -81,7 +81,7 @@ export function VideoPlayer() {
             }}
           >
             <div
-              className="h-full rounded-full transition-all bg-gradient-to-r from-teal-600 to-emerald-600"
+              className="h-full rounded-full transition-all bg-gradient-to-r from-primary to-emerald-600"
               style={{ width: `${progress}%` }}
             />
           </div>

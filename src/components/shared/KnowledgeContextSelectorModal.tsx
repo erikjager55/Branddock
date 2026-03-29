@@ -226,7 +226,7 @@ export function KnowledgeContextSelectorModal({
                   <div
                     className={`flex items-center justify-center h-5 w-5 rounded border flex-shrink-0 transition-colors ${
                       isItemSelected
-                        ? 'bg-teal-600 border-teal-600'
+                        ? 'bg-primary border-primary'
                         : 'bg-white border-gray-300'
                     }`}
                   >

@@ -21,6 +21,6 @@ export function getSeverityConfig(severity: IssueSeverity): { bg: string; text: 
     case 'WARNING':
       return { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Warning' };
     case 'SUGGESTION':
-      return { bg: 'bg-teal-100', text: 'text-teal-700', label: 'Suggestion' };
+      return { bg: 'bg-primary-100', text: 'text-primary-700', label: 'Suggestion' };
   }
 }

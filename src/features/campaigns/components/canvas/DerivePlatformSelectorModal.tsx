@@ -87,7 +87,7 @@ export function DerivePlatformSelectorModal({
                   }}
                   className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border text-sm transition-colors ${
                     isSelected
-                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700'
                       : 'border-gray-200 hover:border-gray-300 text-gray-600'
                   }`}
                 >
@@ -111,7 +111,7 @@ export function DerivePlatformSelectorModal({
                   onClick={() => setSelectedFormat(f)}
                   className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
                     selectedFormat === f
-                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      ? 'border-primary-500 bg-primary-50 text-primary-700'
                       : 'border-gray-200 hover:border-gray-300 text-gray-600'
                   }`}
                 >

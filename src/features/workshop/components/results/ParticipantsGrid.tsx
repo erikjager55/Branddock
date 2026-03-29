@@ -15,7 +15,7 @@ export function ParticipantsGrid({ participants }: ParticipantsGridProps) {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-3">
-        <Users className="w-5 h-5 text-teal-600" />
+        <Users className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold text-gray-900">Participants</h3>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

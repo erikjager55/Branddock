@@ -18,6 +18,7 @@ const orchestrateBodySchema = z.object({
   regenerateGroup: z.string().max(100).optional(),
   userFeedback: z.string().max(5000).optional(),
   additionalContextItems: z.array(contextItemSchema).max(50).optional(),
+  mediumConfig: z.record(z.string(), z.unknown()).optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -118,6 +119,7 @@ export async function POST(
               regenerateGroup: body.regenerateGroup,
               userFeedback: body.userFeedback,
               additionalContextText,
+              mediumConfig: body.mediumConfig,
             },
           );
 

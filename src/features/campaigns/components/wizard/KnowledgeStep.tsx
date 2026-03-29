@@ -313,7 +313,7 @@ export function KnowledgeStep() {
                         <Check className="w-3 h-3 text-white" strokeWidth={3} />
                       )}
                       {someGroupSelected && !allGroupSelected && (
-                        <Minus className="w-3 h-3 text-teal-700" strokeWidth={3} />
+                        <Minus className="w-3 h-3 text-primary-700" strokeWidth={3} />
                       )}
                     </div>
                   </div>

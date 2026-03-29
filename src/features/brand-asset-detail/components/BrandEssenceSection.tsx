@@ -120,8 +120,8 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
       {/* Card 1: Essence Core */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start gap-3 mb-4">
-          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-            <Diamond className="h-5 w-5 text-teal-600" />
+          <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+            <Diamond className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">Brand Essence</h2>
@@ -140,22 +140,22 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
                 type="text"
                 value={draft.essenceStatement}
                 onChange={(e) => handleChange('essenceStatement', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-lg font-semibold text-gray-900 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-lg font-semibold text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                 placeholder="e.g. Authentic Athletic Performance"
               />
             </div>
             <textarea
               value={draft.essenceNarrative}
               onChange={(e) => handleChange('essenceNarrative', e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+              className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
               rows={3}
               placeholder="Explain in 2-3 sentences what this essence means for your brand..."
             />
           </div>
         ) : d.essenceStatement ? (
           <div className="space-y-3">
-            <div className="bg-teal-50/50 border border-teal-100 rounded-xl px-5 py-4 text-center">
-              <p className="text-2xl font-bold text-teal-700">{d.essenceStatement}</p>
+            <div className="bg-primary-50/50 border border-primary-100 rounded-xl px-5 py-4 text-center">
+              <p className="text-2xl font-bold text-primary-700">{d.essenceStatement}</p>
             </div>
             {d.essenceNarrative && (
               <p className="text-sm text-gray-600 leading-relaxed">{d.essenceNarrative}</p>
@@ -259,7 +259,7 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
           <textarea
             value={draft.discriminator}
             onChange={(e) => handleChange('discriminator', e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+            className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
             rows={3}
             placeholder="Only [brand] can... because..."
           />
@@ -290,7 +290,7 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
           <textarea
             value={draft.audienceInsight}
             onChange={(e) => handleChange('audienceInsight', e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+            className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
             rows={3}
             placeholder="Describe the deep human truth that connects your brand to its audience..."
           />
@@ -348,14 +348,14 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
       {/* Card 6: Validation Scores (BrandSTOKE) */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start gap-3 mb-5">
-          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-            <CheckCircle className="h-5 w-5 text-teal-600" />
+          <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+            <CheckCircle className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-gray-900">Validation Score</h2>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-teal-700">{avg.toFixed(1)}</span>
+                <span className="text-sm font-semibold text-primary-700">{avg.toFixed(1)}</span>
                 <span className="text-xs text-gray-400">/ 5.0</span>
               </div>
             </div>
@@ -367,7 +367,7 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
         <div className="mb-5">
           <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
             <div
-              className="h-full rounded-full bg-teal-500 transition-all duration-300"
+              className="h-full rounded-full bg-primary-500 transition-all duration-300"
               style={{ width: `${(avg / 5) * 100}%` }}
             />
           </div>
@@ -396,12 +396,12 @@ export function BrandEssenceSection({ data, isEditing, onUpdate, companionData }
                     step={1}
                     value={value}
                     onChange={(e) => handleScoreChange(criterion.key, Number(e.target.value))}
-                    className="w-full h-2 rounded-full appearance-none bg-gray-200 accent-teal-500 cursor-pointer"
+                    className="w-full h-2 rounded-full appearance-none bg-gray-200 accent-primary-500 cursor-pointer"
                   />
                 ) : (
                   <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-teal-400 transition-all duration-300"
+                      className="h-full rounded-full bg-primary-400 transition-all duration-300"
                       style={{ width: `${(value / 5) * 100}%` }}
                     />
                   </div>
@@ -445,7 +445,7 @@ function BenefitField({ icon: Icon, iconBg, iconColor, label, description, value
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
           rows={2}
           placeholder={placeholder}
         />
@@ -493,7 +493,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
             type="text"
             value={item}
             onChange={(e) => onUpdate(i, e.target.value)}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
             placeholder={placeholder}
           />
           <button
@@ -508,7 +508,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
       <button
         type="button"
         onClick={onAdd}
-        className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium"
+        className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium"
       >
         <Plus className="h-4 w-4" />
         Add item

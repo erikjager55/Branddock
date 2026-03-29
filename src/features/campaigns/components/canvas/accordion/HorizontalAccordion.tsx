@@ -156,8 +156,8 @@ export function HorizontalAccordion({ deliverableId }: HorizontalAccordionProps)
         )}
         {activeStep === 3 && (
           <Step3GenerateMedium
-            deliverableId={deliverableId}
             onAdvance={() => handleAdvance(4)}
+            deliverableId={deliverableId}
           />
         )}
         {activeStep === 4 && (

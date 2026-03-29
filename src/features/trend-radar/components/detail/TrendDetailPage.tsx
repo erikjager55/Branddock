@@ -293,7 +293,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
                   type="text"
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="text-xl font-bold text-gray-900 border border-gray-300 rounded-lg px-3 py-1.5 w-full focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="text-xl font-bold text-gray-900 border border-gray-300 rounded-lg px-3 py-1.5 w-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               ) : (
                 <h1 className="text-xl font-bold text-gray-900">{trend.title}</h1>
@@ -500,7 +500,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
                       value={editImageUrl}
                       onChange={(e) => setEditImageUrl(e.target.value)}
                       placeholder="https://example.com/image.jpg"
-                      className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                     />
                     {editImageUrl && (
                       <button
@@ -536,7 +536,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   rows={4}
-                  className="w-full text-sm text-gray-600 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent resize-none"
+                  className="w-full text-sm text-gray-600 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                   placeholder="Describe this trend..."
                 />
               ) : (
@@ -574,7 +574,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
                     onChange={(e) => setNewIndustry(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addIndustry(); } }}
                     placeholder="Add industry..."
-                    className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                   <Button variant="ghost" size="sm" icon={Plus} onClick={addIndustry}>Add</Button>
                 </div>
@@ -609,7 +609,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
                     onChange={(e) => setNewTag(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } }}
                     placeholder="Add tag..."
-                    className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                   <Button variant="ghost" size="sm" icon={Plus} onClick={addTag}>Add</Button>
                 </div>
@@ -624,7 +624,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
               <ul className="space-y-1.5">
                 {(isEditing ? editHowToUse : trend.howToUse).map((tip, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-teal-100 text-teal-700 text-[10px] font-bold flex-shrink-0 mt-0.5">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 text-primary-700 text-[10px] font-bold flex-shrink-0 mt-0.5">
                       {i + 1}
                     </span>
                     <span className="flex-1">{tip}</span>
@@ -647,7 +647,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
                     onChange={(e) => setNewHowToUse(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addHowToUse(); } }}
                     placeholder="Add usage tip..."
-                    className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    className="text-sm border border-gray-300 rounded-lg px-3 py-1.5 flex-1 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                   <Button variant="ghost" size="sm" icon={Plus} onClick={addHowToUse}>Add</Button>
                 </div>
@@ -667,13 +667,13 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
           {trend.dataPoints && trend.dataPoints.length > 0 && (
             <Card>
               <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-1.5">
-                <BarChart3 className="w-4 h-4 text-teal-600" />
+                <BarChart3 className="w-4 h-4 text-primary" />
                 Key Data Points
               </h3>
               <ul className="space-y-1.5">
                 {trend.dataPoints.map((dp, i) => (
                   <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                    <span className="w-1.5 h-1.5 rounded-full bg-teal-400 mt-1.5 flex-shrink-0" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary-400 mt-1.5 flex-shrink-0" />
                     {dp}
                   </li>
                 ))}
@@ -768,7 +768,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
                       <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${
-                            item.value >= 70 ? 'bg-teal-500' : item.value >= 50 ? 'bg-amber-400' : 'bg-red-400'
+                            item.value >= 70 ? 'bg-primary-500' : item.value >= 50 ? 'bg-amber-400' : 'bg-red-400'
                           }`}
                           style={{ width: `${item.value}%` }}
                         />
@@ -829,7 +829,7 @@ export function TrendDetailPage({ onNavigate }: TrendDetailPageProps) {
               lockState.isLocked
                 ? 'text-gray-300 cursor-not-allowed'
                 : trend.isDismissed
-                  ? 'text-teal-600 hover:bg-teal-50'
+                  ? 'text-primary hover:bg-primary-50'
                   : 'text-gray-500 hover:bg-gray-50'
             }`}
           >

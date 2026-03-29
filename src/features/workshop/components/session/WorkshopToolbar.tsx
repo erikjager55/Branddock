@@ -34,7 +34,7 @@ export function WorkshopToolbar({
   return (
     <div data-testid="workshop-toolbar" className="flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-lg mb-6">
       <div className="flex items-center gap-3">
-        <button className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-teal-600 transition-colors">
+        <button className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary transition-colors">
           <Video className="w-4 h-4" />
           Video Guide
         </button>

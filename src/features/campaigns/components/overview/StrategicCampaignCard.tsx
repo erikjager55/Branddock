@@ -23,7 +23,7 @@ export function StrategicCampaignCard({ campaign, onClick, onArchive, onDelete }
     <div
       data-testid={`campaign-card-${campaign.id}`}
       onClick={onClick}
-      className="bg-white rounded-lg border p-5 hover:border-teal-300 hover:shadow-md transition-all cursor-pointer group"
+      className="bg-white rounded-lg border p-5 hover:border-primary-300 hover:shadow-md transition-all cursor-pointer group"
     >
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
@@ -42,7 +42,7 @@ export function StrategicCampaignCard({ campaign, onClick, onArchive, onDelete }
       </div>
 
       {/* Title */}
-      <h3 className="text-base font-semibold text-gray-900 mb-1 group-hover:text-teal-700 transition-colors">
+      <h3 className="text-base font-semibold text-gray-900 mb-1 group-hover:text-primary-700 transition-colors">
         {campaign.title}
       </h3>
       {campaign.description && (
@@ -80,7 +80,7 @@ export function StrategicCampaignCard({ campaign, onClick, onArchive, onDelete }
         <span className="text-xs text-gray-400">
           Updated {new Date(campaign.updatedAt).toLocaleDateString()}
         </span>
-        <span className="text-xs font-medium text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity">
+        <span className="text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">
           View Campaign →
         </span>
       </div>

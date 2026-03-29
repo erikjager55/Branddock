@@ -22,7 +22,7 @@ export function PromptTextarea({ value, onChange, suggestions }: PromptTextareaP
           if (e.target.value.length <= MAX_CHARS) onChange(e.target.value);
         }}
         placeholder="Describe what you want to create..."
-        className="w-full h-28 p-3 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+        className="w-full h-28 p-3 border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
       />
       <div className="flex items-center justify-between mt-1">
         <span className="text-xs text-gray-400">{value.length}/{MAX_CHARS}</span>

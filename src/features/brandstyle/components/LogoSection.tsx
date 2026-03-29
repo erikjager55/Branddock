@@ -92,19 +92,19 @@ function AddLogoForm({ onAdd, onCancel }: { onAdd: (logo: LogoVariation) => void
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Logo name"
-          className="text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
         <input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="https://example.com/logo.svg"
-          className="text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="text-sm px-3 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
         />
         <select
           value={type}
           onChange={(e) => setType(e.target.value)}
-          className="text-sm px-2 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+          className="text-sm px-2 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           {LOGO_TYPE_OPTIONS.map((t) => (
             <option key={t} value={t}>
@@ -176,7 +176,7 @@ export function LogoSection({ styleguide, canEdit }: LogoSectionProps) {
           {canEdit && !isEditingLogos && (
             <button
               onClick={startEditLogos}
-              className="p-1 text-gray-400 hover:text-teal-600 transition-colors flex-shrink-0"
+              className="p-1 text-gray-400 hover:text-primary transition-colors flex-shrink-0"
               title="Edit logos"
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -214,7 +214,7 @@ export function LogoSection({ styleguide, canEdit }: LogoSectionProps) {
               <button
                 type="button"
                 onClick={() => setShowAddLogoForm(true)}
-                className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 transition-colors"
+                className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Add logo
@@ -237,7 +237,7 @@ export function LogoSection({ styleguide, canEdit }: LogoSectionProps) {
             <button
               type="button"
               onClick={startEditLogos}
-              className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 transition-colors"
+              className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 transition-colors"
             >
               <Plus className="w-4 h-4" />
               Add logos manually

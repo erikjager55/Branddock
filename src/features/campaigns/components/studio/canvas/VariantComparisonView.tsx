@@ -65,7 +65,7 @@ export function VariantComparisonView({
                 key={component.id}
                 className={`rounded-lg border p-4 ${
                   isActive
-                    ? 'border-teal-500 ring-1 ring-teal-500'
+                    ? 'border-primary-500 ring-1 ring-primary-500'
                     : 'border-gray-200'
                 }`}
               >

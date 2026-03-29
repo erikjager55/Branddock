@@ -130,12 +130,12 @@ function LinkPopover({ editor, onClose }: { editor: Editor; onClose: () => void 
           if (e.key === "Escape") onClose();
         }}
         placeholder="https://example.com"
-        className={`w-56 px-2 py-1 text-sm border border-gray-200 rounded focus:border-teal-500 focus:ring-1 focus:ring-teal-500 outline-none`}
+        className={`w-56 px-2 py-1 text-sm border border-gray-200 rounded focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none`}
       />
       <button
         type="button"
         onClick={handleApply}
-        className={`p-1 rounded ${STUDIO.toolbar.active.text} hover:bg-teal-50`}
+        className={`p-1 rounded ${STUDIO.toolbar.active.text} hover:bg-primary-50`}
         title="Apply link"
       >
         <Check className="h-4 w-4" />
@@ -336,7 +336,7 @@ export function TipTapEditor({ isPreviewMode }: TipTapEditorProps) {
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
-          class: "text-teal-600 underline cursor-pointer",
+          class: "text-primary underline cursor-pointer",
         },
       }),
       TextAlign.configure({

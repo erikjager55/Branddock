@@ -41,7 +41,7 @@ function ReviewSection({
         <button
           type="button"
           onClick={onEdit}
-          className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+          className="text-xs text-primary hover:text-primary-700 font-medium"
         >
           Edit
         </button>
@@ -294,7 +294,7 @@ export function ReviewStep() {
               type="checkbox"
               checked={saveAsTemplate}
               onChange={(e) => setSaveAsTemplate(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+              className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary-500"
             />
             <span className="text-sm text-gray-700">
               Save this campaign configuration as a reusable template
@@ -320,7 +320,7 @@ export function ReviewStep() {
               </span>
             </div>
             <div className="flex items-center gap-2 text-sm">
-              <Clock className="w-4 h-4 text-teal-500" />
+              <Clock className="w-4 h-4 text-primary-500" />
               <span className="text-gray-700">
                 Estimated completion in{" "}
                 <span className="font-semibold text-gray-900">

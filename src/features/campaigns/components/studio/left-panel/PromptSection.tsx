@@ -53,7 +53,7 @@ export function PromptSection() {
         placeholder="Describe what you want to create..."
         maxLength={500}
         rows={4}
-        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 resize-none"
+        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 resize-none"
       />
       <div className="flex items-center justify-between mt-1">
         <span className="text-xs text-gray-400">{prompt.length}/500</span>
@@ -68,7 +68,7 @@ export function PromptSection() {
               const separator = prompt.length > 0 ? ". " : "";
               setPrompt((prompt + separator + chip).slice(0, 500));
             }}
-            className="px-2 py-1 text-xs rounded-full border border-gray-200 text-gray-600 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 transition-colors"
+            className="px-2 py-1 text-xs rounded-full border border-gray-200 text-gray-600 hover:bg-primary-50 hover:text-primary-700 hover:border-primary-200 transition-colors"
           >
             {chip}
           </button>

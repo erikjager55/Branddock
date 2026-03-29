@@ -91,13 +91,13 @@ export function ConfigListView({
                 onClick={() => setActiveTab(tab.key)}
                 className={`relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${
                   isActive
-                    ? 'text-teal-600 border-b-2 border-teal-500'
+                    ? 'text-primary border-b-2 border-primary-500'
                     : 'text-gray-500 hover:text-gray-700 border-b-2 border-transparent'
                 }`}
               >
                 {tab.label}
                 <span className={`text-[10px] font-semibold rounded-full px-1.5 py-0.5 ${
-                  isActive ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-500'
+                  isActive ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-500'
                 }`}>
                   {count}
                 </span>

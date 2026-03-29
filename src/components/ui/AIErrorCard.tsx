@@ -19,7 +19,7 @@ export function AIErrorCard({ message, onRetry, isRetrying }: AIErrorCardProps) 
             <button
               onClick={onRetry}
               disabled={isRetrying}
-              className="mt-2 text-sm font-medium text-teal-600 hover:text-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
+              className="mt-2 text-sm font-medium text-primary hover:text-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1.5"
             >
               {isRetrying ? (
                 <>

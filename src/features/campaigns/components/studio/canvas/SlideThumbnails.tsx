@@ -20,7 +20,7 @@ export function SlideThumbnails({ slides, activeSlide, onSelect }: SlideThumbnai
           key={i}
           onClick={() => onSelect(i)}
           className={`h-14 w-14 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-colors ${
-            i === activeSlide ? "border-teal-500" : "border-gray-200 hover:border-gray-300"
+            i === activeSlide ? "border-primary-500" : "border-gray-200 hover:border-gray-300"
           }`}
         >
           {slide.imageUrl ? (

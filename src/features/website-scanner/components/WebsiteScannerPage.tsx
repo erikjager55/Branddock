@@ -32,8 +32,8 @@ export function WebsiteScannerPage({ onNavigate }: WebsiteScannerPageProps) {
           Back to Dashboard
         </button>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-teal-100 flex items-center justify-center">
-            <Globe className="h-5 w-5 text-teal-700" />
+          <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
+            <Globe className="h-5 w-5 text-primary-700" />
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">Website Scanner</h1>

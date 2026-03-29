@@ -51,7 +51,7 @@ export function VersionHistory({ deliverableId }: VersionHistoryProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-teal-600" />
+          <Clock className="w-4 h-4 text-primary" />
           <h3 className="text-sm font-semibold text-gray-900">Version History</h3>
         </div>
         <Button

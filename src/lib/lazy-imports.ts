@@ -107,6 +107,11 @@ export const KnowledgeLibraryPage = lazy(() =>
   import('@/features/knowledge-library/components/KnowledgeLibraryPage').then(m => ({ default: m.KnowledgeLibraryPage }))
 );
 
+// ─── Media Library ────────────────────────────────────────
+export const MediaLibraryPage = lazy(() =>
+  import('@/features/media-library/components/MediaLibraryPage').then(m => ({ default: m.MediaLibraryPage }))
+);
+
 // ─── Research & Validation ─────────────────────────────────
 export const ResearchHubPage = lazy(() =>
   import('@/features/research/components/hub/ResearchHubPage').then(m => ({ default: m.ResearchHubPage }))
@@ -207,6 +212,7 @@ const moduleLoaders: Record<string, () => Promise<unknown>> = {
   'competitors': () => import('@/features/competitors/components/CompetitorsOverviewPage'),
   'trends': () => import('@/features/trend-radar/components/TrendRadarPage'),
   'knowledge': () => import('@/features/knowledge-library/components/KnowledgeLibraryPage'),
+  'media-library': () => import('@/features/media-library/components/MediaLibraryPage'),
   'research': () => import('@/features/research/components/hub/ResearchHubPage'),
   'active-campaigns': () => import('@/features/campaigns/components/overview/ActiveCampaignsPage'),
   'business-strategy': () => import('@/features/business-strategy/components/BusinessStrategyPage'),

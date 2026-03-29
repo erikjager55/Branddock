@@ -43,7 +43,7 @@ export function CreatePersonaPage({ onBack, onCreated }: CreatePersonaPageProps)
   return (
     <PageShell maxWidth="5xl">
       <div className="flex flex-col items-center justify-center py-32 gap-4">
-        <Loader2 className="h-8 w-8 text-teal-500 animate-spin" />
+        <Loader2 className="h-8 w-8 text-primary-500 animate-spin" />
         <p className="text-sm text-gray-500">Creating persona...</p>
       </div>
     </PageShell>

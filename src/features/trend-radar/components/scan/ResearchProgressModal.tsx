@@ -307,7 +307,7 @@ export function ResearchProgressModal() {
               <button
                 type="button"
                 onClick={toggleAll}
-                className="text-xs font-medium text-teal-600 hover:text-teal-700"
+                className="text-xs font-medium text-primary hover:text-primary-700"
               >
                 {allSelected ? 'Deselect All' : 'Select All'}
               </button>
@@ -330,7 +330,7 @@ export function ResearchProgressModal() {
                     onClick={() => toggleIndex(idx)}
                     className={`w-full text-left rounded-lg border p-3 transition-colors ${
                       isSelected
-                        ? 'border-teal-300 bg-teal-50/40'
+                        ? 'border-primary-300 bg-primary-50/40'
                         : 'border-gray-200 bg-white hover:bg-gray-50'
                     }`}
                   >
@@ -396,7 +396,7 @@ export function ResearchProgressModal() {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
-                              className="hover:text-teal-600 flex items-center gap-0.5"
+                              className="hover:text-primary flex items-center gap-0.5"
                             >
                               <ExternalLink className="w-3 h-3" />
                               Source

@@ -40,7 +40,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
             height={32}
             priority
           />
-          <Loader2 className="w-6 h-6 text-teal-600 animate-spin" />
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
         </div>
       </div>
     );

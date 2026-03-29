@@ -54,7 +54,7 @@ export function ReviewStep({ interview, onApprove, onEditResponses, isApproving 
           <p className="text-xs text-gray-500">Duration</p>
         </div>
         <div className="p-3 bg-gray-50 rounded-lg text-center">
-          <Layers className="w-5 h-5 text-teal-500 mx-auto mb-1" />
+          <Layers className="w-5 h-5 text-primary-500 mx-auto mb-1" />
           <p className="text-lg font-semibold text-gray-900">{interview.selectedAssets?.length ?? 0}</p>
           <p className="text-xs text-gray-500">Assets</p>
         </div>

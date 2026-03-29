@@ -74,12 +74,16 @@ export function useCanvasOrchestration(deliverableId: string | null) {
         ({ sourceType, sourceId }) => ({ sourceType, sourceId }),
       );
 
+      const mediumConfigValues = store.mediumConfigValues;
+      const hasMediumConfig = Object.keys(mediumConfigValues).length > 0;
+
       const res = await fetch(`/api/studio/${deliverableId}/orchestrate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           instruction: options?.instruction,
           additionalContextItems: contextItems.length > 0 ? contextItems : undefined,
+          mediumConfig: hasMediumConfig ? mediumConfigValues : undefined,
         }),
         signal: controller.signal,
       });
@@ -151,6 +155,9 @@ export function useCanvasOrchestration(deliverableId: string | null) {
           useCanvasStore.getState().additionalContextItems.values(),
         ).map(({ sourceType, sourceId }) => ({ sourceType, sourceId }));
 
+        const mediumConfigValues = useCanvasStore.getState().mediumConfigValues;
+        const hasMediumConfig = Object.keys(mediumConfigValues).length > 0;
+
         const res = await fetch(`/api/studio/${deliverableId}/orchestrate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -158,6 +165,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
             regenerateGroup: group,
             userFeedback: feedback,
             additionalContextItems: contextItems.length > 0 ? contextItems : undefined,
+            mediumConfig: hasMediumConfig ? mediumConfigValues : undefined,
           }),
           signal: controller.signal,
         });

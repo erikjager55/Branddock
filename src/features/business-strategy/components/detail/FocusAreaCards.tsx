@@ -49,7 +49,7 @@ function getColorClasses(color: string | null) {
     pink: { border: 'border-t-pink-500', bg: 'bg-pink-50', text: 'text-pink-600' },
     amber: { border: 'border-t-amber-500', bg: 'bg-amber-50', text: 'text-amber-600' },
     green: { border: 'border-t-green-500', bg: 'bg-green-50', text: 'text-green-600' },
-    teal: { border: 'border-t-teal-500', bg: 'bg-teal-50', text: 'text-teal-600' },
+    teal: { border: 'border-t-primary-500', bg: 'bg-primary-50', text: 'text-primary' },
     indigo: { border: 'border-t-indigo-500', bg: 'bg-indigo-50', text: 'text-indigo-600' },
     rose: { border: 'border-t-rose-500', bg: 'bg-rose-50', text: 'text-rose-600' },
     gray: { border: 'border-t-gray-400', bg: 'bg-gray-50', text: 'text-gray-500' },

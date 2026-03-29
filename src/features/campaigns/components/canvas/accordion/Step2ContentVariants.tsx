@@ -78,7 +78,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   if (isGenerating && !hasVariants) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-2 text-sm text-teal-600">
+        <div className="flex items-center gap-2 text-sm text-primary">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>Generating content variants...</span>
         </div>
@@ -118,7 +118,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
                   {group.replace(/_/g, ' ')}
                 </h3>
                 {groupStatus === 'generating' && (
-                  <span className="flex items-center gap-1 text-xs text-teal-600">
+                  <span className="flex items-center gap-1 text-xs text-primary">
                     <Loader2 className="h-3 w-3 animate-spin" />
                     Generating...
                   </span>
@@ -172,9 +172,9 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
                         selectImage();
                       }
                     }}
-                    className={`rounded-lg border-2 overflow-hidden cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 ${
+                    className={`rounded-lg border-2 overflow-hidden cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
                       img.isSelected
-                        ? 'border-teal-500 ring-1 ring-teal-200'
+                        ? 'border-primary-500 ring-1 ring-primary-200'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -222,7 +222,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
               <Badge variant="success" size="sm">Ready for review</Badge>
             )}
             {isGenerating && (
-              <span className="flex items-center gap-1 text-xs text-teal-600">
+              <span className="flex items-center gap-1 text-xs text-primary">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 Updating...
               </span>

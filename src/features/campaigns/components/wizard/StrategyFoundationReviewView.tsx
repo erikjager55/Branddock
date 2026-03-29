@@ -110,14 +110,14 @@ export function StrategyFoundationReviewView({
       </div>
 
       {/* Strategic Direction */}
-      <div className="bg-gradient-to-r from-teal-50 to-emerald-50 rounded-xl border border-teal-100 p-5">
+      <div className="bg-gradient-to-r from-primary-50 to-emerald-50 rounded-xl border border-primary-100 p-5">
         <div className="flex items-start gap-3">
-          <Compass className="w-5 h-5 text-teal-600 mt-0.5 shrink-0" />
+          <Compass className="w-5 h-5 text-primary mt-0.5 shrink-0" />
           <div>
-            <p className="text-sm font-medium text-teal-800 mb-1">
+            <p className="text-sm font-medium text-primary-800 mb-1">
               Strategic Direction
             </p>
-            <p className="text-sm text-teal-700">
+            <p className="text-sm text-primary-700">
               {toDisplayString(foundation.strategicDirection)}
             </p>
           </div>
@@ -149,7 +149,7 @@ export function StrategyFoundationReviewView({
         </label>
         <textarea
           id="strategy-feedback"
-          className="w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-300 focus:ring-1 focus:ring-teal-300"
+          className="w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-300 focus:ring-1 focus:ring-primary-300"
           rows={3}
           placeholder="Any strategic direction you want to emphasize, audiences to focus on, or approaches to avoid..."
           value={strategyFeedback}

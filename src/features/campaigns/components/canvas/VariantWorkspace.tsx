@@ -44,7 +44,7 @@ export function VariantWorkspace({ deliverableId, onGenerate }: VariantWorkspace
   if (isGenerating && !hasVariants) {
     return (
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
-        <div className="flex items-center gap-2 text-sm text-teal-600">
+        <div className="flex items-center gap-2 text-sm text-primary">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>Generating content variants...</span>
         </div>
@@ -71,7 +71,7 @@ export function VariantWorkspace({ deliverableId, onGenerate }: VariantWorkspace
                 {group.replace(/_/g, ' ')}
               </h3>
               {groupStatus === 'generating' && (
-                <span className="flex items-center gap-1 text-xs text-teal-600">
+                <span className="flex items-center gap-1 text-xs text-primary">
                   <Loader2 className="h-3 w-3 animate-spin" />
                   Generating...
                 </span>
@@ -129,7 +129,7 @@ export function VariantWorkspace({ deliverableId, onGenerate }: VariantWorkspace
                 }}
                 className={`rounded-lg border-2 overflow-hidden cursor-pointer transition-all ${
                   img.isSelected
-                    ? 'border-teal-500 ring-1 ring-teal-200'
+                    ? 'border-primary-500 ring-1 ring-primary-200'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >

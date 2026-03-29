@@ -286,7 +286,7 @@ function KnowledgeItemForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border border-teal-200 bg-teal-50/30 rounded-xl p-4 space-y-3">
+    <form onSubmit={handleSubmit} className="border border-primary-200 bg-primary-50/30 rounded-xl p-4 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold text-gray-700">
           {initialData ? 'Edit knowledge source' : 'New knowledge source'}
@@ -305,7 +305,7 @@ function KnowledgeItemForm({
             onChange={(e) => setTitle(e.target.value)}
             placeholder="E.g. Market Research Q1 2026"
             required
-            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
           />
         </div>
         <div>
@@ -313,7 +313,7 @@ function KnowledgeItemForm({
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500"
+            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
           >
             <option value="">No category</option>
             {CATEGORIES.map((cat) => (
@@ -332,7 +332,7 @@ function KnowledgeItemForm({
           required
           maxLength={10000}
           rows={8}
-          className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-500 focus:border-teal-500 resize-y"
+          className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 resize-y"
         />
         <div className="text-[10px] text-gray-400 text-right mt-1">{content.length} / 10,000</div>
       </div>

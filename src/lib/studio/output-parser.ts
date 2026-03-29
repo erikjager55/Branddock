@@ -136,7 +136,7 @@ function inlineFormat(text: string): string {
   // Links: [text](url)
   result = result.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" class="text-teal-600 underline cursor-pointer">$1</a>',
+    '<a href="$2" class="text-primary underline cursor-pointer">$1</a>',
   );
 
   // Bold + Italic: ***text*** or ___text___

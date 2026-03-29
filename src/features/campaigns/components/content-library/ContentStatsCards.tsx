@@ -57,7 +57,7 @@ export function ContentStatsCards({ stats, isLoading }: ContentStatsCardsProps) 
         label="Avg Quality"
         value={s.avgQuality > 0 ? `${s.avgQuality}/100` : "--"}
         icon={Star}
-        className="[&_div:first-child]:bg-teal-50 [&_svg]:text-teal-600"
+        className="[&_div:first-child]:bg-primary-50 [&_svg]:text-primary"
       />
     </div>
   );

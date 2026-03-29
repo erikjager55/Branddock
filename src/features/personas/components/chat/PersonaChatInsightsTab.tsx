@@ -252,7 +252,7 @@ export function PersonaChatInsightsTab({
                 {insight.messageId && (
                   <button
                     onClick={() => handleViewInChat(insight.messageId)}
-                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-teal-600 transition-colors"
+                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-primary transition-colors"
                   >
                     <MessageCircle className="w-3 h-3" />
                     View in chat

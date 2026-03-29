@@ -172,7 +172,7 @@ export const COLOR_CATEGORY_CONFIG: Record<
   ColorCategory,
   { label: string; color: string }
 > = {
-  PRIMARY: { label: "Primary", color: "bg-teal-100 text-teal-700" },
+  PRIMARY: { label: "Primary", color: "bg-primary-100 text-primary-700" },
   SECONDARY: { label: "Secondary", color: "bg-blue-100 text-blue-700" },
   ACCENT: { label: "Accent", color: "bg-purple-100 text-purple-700" },
   NEUTRAL: { label: "Neutral", color: "bg-gray-100 text-gray-600" },

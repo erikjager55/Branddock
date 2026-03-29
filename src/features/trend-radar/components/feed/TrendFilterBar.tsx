@@ -93,7 +93,7 @@ export function TrendFilterBar() {
         onClick={() => setShowDismissed(!showDismissed)}
         className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border transition-colors ${
           showDismissed
-            ? 'border-teal-300 bg-teal-50 text-teal-700'
+            ? 'border-primary-300 bg-primary-50 text-primary-700'
             : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
         }`}
         title={showDismissed ? 'Hide dismissed trends' : 'Show dismissed trends'}

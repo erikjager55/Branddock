@@ -18,7 +18,7 @@ export function ContentGroupToggle() {
       onClick={toggleGroupByCampaign}
       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
         groupByCampaign
-          ? "bg-teal-50 text-teal-700 border border-teal-200"
+          ? "bg-primary-50 text-primary-700 border border-primary-200"
           : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200"
       }`}
       title={groupByCampaign ? "Ungroup items" : "Group by campaign"}

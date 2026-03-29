@@ -65,7 +65,7 @@ export function PersonaChatBubble({
         avatar="sm"
         className="flex-shrink-0"
         fallback={
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-primary-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
             {initials}
           </div>
         }

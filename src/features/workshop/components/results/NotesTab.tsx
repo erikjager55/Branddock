@@ -40,7 +40,7 @@ export function NotesTab({ notes, onAddNote, isAdding }: NotesTabProps) {
     <div>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <StickyNote className="w-5 h-5 text-teal-600" />
+          <StickyNote className="w-5 h-5 text-primary" />
           <h3 className="text-lg font-semibold text-gray-900">
             Participant Notes
           </h3>

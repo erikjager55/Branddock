@@ -97,8 +97,8 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
       {/* Card 1: Mission Statement */}
       <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-start gap-3 mb-4">
-          <div className="h-10 w-10 rounded-xl bg-teal-50 flex items-center justify-center flex-shrink-0">
-            <Compass className="h-5 w-5 text-teal-600" />
+          <div className="h-10 w-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">
+            <Compass className="h-5 w-5 text-primary" />
           </div>
           <div>
             <h2 className="text-lg font-bold text-gray-900">Mission Statement</h2>
@@ -115,7 +115,7 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
               <textarea
                 value={draft.missionStatement}
                 onChange={(e) => handleChange('missionStatement', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
                 rows={3}
                 placeholder="Your full mission statement (1-3 sentences)..."
               />
@@ -128,7 +128,7 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
                 type="text"
                 value={draft.missionOneLiner}
                 onChange={(e) => handleChange('missionOneLiner', e.target.value)}
-                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-lg font-semibold text-gray-900 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-lg font-semibold text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                 placeholder="Fits on a T-shirt..."
               />
             </div>
@@ -136,8 +136,8 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
         ) : d.missionStatement || d.missionOneLiner ? (
           <div className="space-y-3">
             {d.missionOneLiner && (
-              <div className="bg-teal-50/50 border border-teal-100 rounded-xl px-5 py-4 text-center">
-                <p className="text-xl font-bold text-teal-700">{d.missionOneLiner}</p>
+              <div className="bg-primary-50/50 border border-primary-100 rounded-xl px-5 py-4 text-center">
+                <p className="text-xl font-bold text-primary-700">{d.missionOneLiner}</p>
               </div>
             )}
             {d.missionStatement && (
@@ -149,8 +149,8 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
         )}
 
         {/* Helper text */}
-        <div className="mt-3 bg-teal-50/30 border border-teal-100 rounded-xl p-3">
-          <p className="text-xs text-teal-600 italic">
+        <div className="mt-3 bg-primary-50/30 border border-primary-100 rounded-xl p-3">
+          <p className="text-xs text-primary italic">
             &ldquo;Peter Drucker: A mission must fit on a T-shirt.&rdquo;
           </p>
         </div>
@@ -247,7 +247,7 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
                 <textarea
                   value={draft.visionStatement}
                   onChange={(e) => handleChange('visionStatement', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
                   rows={3}
                   placeholder="Your aspirational future state (1-3 sentences)..."
                 />
@@ -259,7 +259,7 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
                 <select
                   value={draft.timeHorizon}
                   onChange={(e) => handleChange('timeHorizon', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
                 >
                   <option value="">Select a time horizon...</option>
                   {TIME_HORIZON_OPTIONS.map((opt) => (
@@ -276,7 +276,7 @@ export function MissionVisionSection({ data, isEditing, onUpdate }: MissionVisio
                 <textarea
                   value={draft.boldAspiration}
                   onChange={(e) => handleChange('boldAspiration', e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+                  className="mt-1 w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
                   rows={2}
                   placeholder="Big Hairy Audacious Goal (Collins & Porras)..."
                 />
@@ -450,7 +450,7 @@ function FieldBlock({ label, description, value, isEditing, onChange, placeholde
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-teal-400 focus:ring-1 focus:ring-teal-400 resize-none"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 bg-white focus:border-primary-400 focus:ring-1 focus:ring-primary-400 resize-none"
           rows={2}
           placeholder={placeholder}
         />
@@ -498,7 +498,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
             type="text"
             value={item}
             onChange={(e) => onUpdate(i, e.target.value)}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:ring-1 focus:ring-teal-400"
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400"
             placeholder={placeholder}
           />
           <button
@@ -513,7 +513,7 @@ function StringListEditor({ items, isEditing, onAdd, onUpdate, onRemove, placeho
       <button
         type="button"
         onClick={onAdd}
-        className="flex items-center gap-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium"
+        className="flex items-center gap-1.5 text-sm text-primary hover:text-primary-700 font-medium"
       >
         <Plus className="h-4 w-4" />
         Add indicator

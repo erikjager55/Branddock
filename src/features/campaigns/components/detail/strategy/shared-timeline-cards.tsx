@@ -48,6 +48,15 @@ export const EFFORT_LABEL: Record<string, string> = {
   high: "High effort",
 };
 
+/** Approval status hex colors (inline style, Tailwind 4 purge safe) */
+const APPROVAL_HEX: Record<string, { label: string; bg: string; text: string; border: string }> = {
+  DRAFT: { label: "Draft", bg: "#f9fafb", text: "#4b5563", border: "#e5e7eb" },
+  IN_REVIEW: { label: "In Review", bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" },
+  CHANGES_REQUESTED: { label: "Changes", bg: "#fff7ed", text: "#c2410c", border: "#fed7aa" },
+  APPROVED: { label: "Approved", bg: "#f0fdf4", text: "#15803d", border: "#bbf7d0" },
+  PUBLISHED: { label: "Published", bg: "#f0fdfa", text: "#0f766e", border: "#99f6e4" },
+};
+
 export const STATUS_STYLES: Record<string, { bg: string; text: string; border: string; icon: typeof CheckCircle2; label: string } | null> = {
   COMPLETED: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: CheckCircle2, label: 'Completed' },
   IN_PROGRESS: { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', icon: Loader2, label: 'In Progress' },
@@ -68,6 +77,7 @@ export function DeliverableCard({
   canMoveRight = false,
   dragData,
   status,
+  approvalStatus,
 }: {
   deliverable: AssetPlanDeliverable;
   /** Channel label to display on the card */
@@ -86,6 +96,8 @@ export function DeliverableCard({
   dragData?: DeliverableCardDragData;
   /** Deliverable status from DB */
   status?: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
+  /** Approval workflow status */
+  approvalStatus?: string;
 }) {
   const [expanded, setExpanded] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
@@ -142,6 +154,18 @@ export function DeliverableCard({
             <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border} text-[10px] font-medium`}>
               <statusStyle.icon className={`w-2.5 h-2.5 ${status === 'IN_PROGRESS' ? 'animate-spin' : ''}`} />
               {statusStyle.label}
+            </span>
+          )}
+          {approvalStatus && APPROVAL_HEX[approvalStatus] && (
+            <span
+              className="inline-flex items-center px-1.5 py-0.5 rounded border text-[10px] font-medium"
+              style={{
+                backgroundColor: APPROVAL_HEX[approvalStatus].bg,
+                color: APPROVAL_HEX[approvalStatus].text,
+                borderColor: APPROVAL_HEX[approvalStatus].border,
+              }}
+            >
+              {APPROVAL_HEX[approvalStatus].label}
             </span>
           )}
           {channel && (() => {

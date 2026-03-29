@@ -32,7 +32,7 @@ export function VideoSettingsPanel() {
               onClick={() => update({ duration: dur })}
               className={`flex-1 px-2 py-1 text-xs rounded-md transition-colors ${
                 videoSettings.duration === dur
-                  ? "bg-teal-50 text-teal-700 border border-teal-200"
+                  ? "bg-primary-50 text-primary-700 border border-primary-200"
                   : "bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300"
               }`}
             >
@@ -52,7 +52,7 @@ export function VideoSettingsPanel() {
               onClick={() => update({ style })}
               className={`px-2 py-1 text-xs rounded-md capitalize transition-colors ${
                 videoSettings.style === style
-                  ? "bg-teal-50 text-teal-700 border border-teal-200"
+                  ? "bg-primary-50 text-primary-700 border border-primary-200"
                   : "bg-gray-50 text-gray-600 border border-gray-200 hover:border-gray-300"
               }`}
             >
@@ -70,7 +70,7 @@ export function VideoSettingsPanel() {
         <button
           onClick={() => update({ backgroundMusic: !videoSettings.backgroundMusic })}
           className={`relative h-5 w-9 rounded-full transition-colors ${
-            videoSettings.backgroundMusic ? "bg-teal-600" : "bg-gray-300"
+            videoSettings.backgroundMusic ? "bg-primary" : "bg-gray-300"
           }`}
         >
           <span

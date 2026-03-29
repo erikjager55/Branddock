@@ -9,6 +9,8 @@ import type {
 } from "@/lib/campaigns/strategy-blueprint.types";
 import { usePersonas } from "@/features/personas/hooks";
 import type { PersonaWithMeta } from "@/features/personas/types/persona.types";
+import { useContentCanvasStore } from "@/features/campaigns/stores/useContentCanvasStore";
+import type { DeliverableResponse } from "@/types/campaign";
 import { computeDeploymentSchedule } from "@/features/campaigns/lib/deployment-scheduler";
 import { getChannelLabel } from "@/features/campaigns/lib/channel-frequency";
 import { getChannelColor } from "@/features/campaigns/lib/channel-colors";
@@ -55,6 +57,15 @@ function getPhaseDotHex(phaseName: string): string {
   return "#9ca3af";
 }
 
+/** Approval status hex colors (inline style, Tailwind 4 purge safe) */
+const APPROVAL_HEX: Record<string, { label: string; bg: string; text: string; border: string }> = {
+  DRAFT: { label: "Draft", bg: "#f9fafb", text: "#4b5563", border: "#e5e7eb" },
+  IN_REVIEW: { label: "In Review", bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" },
+  CHANGES_REQUESTED: { label: "Changes", bg: "#fff7ed", text: "#c2410c", border: "#fed7aa" },
+  APPROVED: { label: "Approved", bg: "#f0fdf4", text: "#15803d", border: "#bbf7d0" },
+  PUBLISHED: { label: "Published", bg: "#f0fdfa", text: "#0f766e", border: "#99f6e4" },
+};
+
 /** Validate and narrow a deliverable status string */
 function resolveDeliverableStatus(
   statuses: Map<string, string> | undefined,
@@ -74,6 +85,10 @@ interface DeploymentGridViewProps {
   onDeleteDeliverable?: (title: string) => void;
   campaignStartDate?: string | null;
   deliverableStatuses?: Map<string, string>;
+  /** DB deliverables for approval status + bulk selection */
+  deliverables?: DeliverableResponse[];
+  /** Campaign ID for bulk action API calls */
+  campaignId?: string;
 }
 
 // ─── Component ──────────────────────────────────────────────────
@@ -86,6 +101,8 @@ export function DeploymentGridView({
   onBringToLife,
   onDeleteDeliverable,
   deliverableStatuses,
+  deliverables,
+  campaignId,
 }: DeploymentGridViewProps) {
   // ── Persona data ──
   const { data: personasData } = usePersonas();
@@ -106,6 +123,19 @@ export function DeploymentGridView({
     });
     return map;
   }, [personasData]);
+
+  // ── Bulk selection store ──
+  const { selectedDeliverableIds, toggleSelection, selectAll, clearSelection } =
+    useContentCanvasStore();
+
+  // ── Title → DB deliverable lookup ──
+  const deliverableLookup = useMemo(() => {
+    const map = new Map<string, DeliverableResponse>();
+    for (const d of deliverables ?? []) {
+      map.set(d.title.trim().toLowerCase(), d);
+    }
+    return map;
+  }, [deliverables]);
 
   // ── Schedule computation ──
   const schedule = useMemo(
@@ -245,19 +275,39 @@ export function DeploymentGridView({
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '28%' }}>Title</th>
-              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '12%' }}>Channel</th>
-              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '14%' }}>Phase</th>
-              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '12%' }}>Priority</th>
-              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '10%' }}>Effort</th>
-              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '18%' }}>Personas</th>
+              {/* Checkbox — select all DB deliverables */}
+              <th className="w-10 px-2 py-2.5">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 accent-primary"
+                  checked={
+                    deliverableLookup.size > 0 &&
+                    [...deliverableLookup.values()].every((d) => selectedDeliverableIds.has(d.id))
+                  }
+                  onChange={() => {
+                    const allIds = [...deliverableLookup.values()].map((d) => d.id);
+                    if (allIds.every((id) => selectedDeliverableIds.has(id))) {
+                      clearSelection();
+                    } else {
+                      selectAll(allIds);
+                    }
+                  }}
+                />
+              </th>
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '24%' }}>Title</th>
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '11%' }}>Channel</th>
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '12%' }}>Phase</th>
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '10%' }}>Priority</th>
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '8%' }}>Effort</th>
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '10%' }}>Approval</th>
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '16%' }}>Personas</th>
               <th className="w-10" />
             </tr>
           </thead>
           <tbody className="bg-white">
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-400">
+                <td colSpan={9} className="px-4 py-8 text-center text-sm text-gray-400">
                   No deliverables match current filters.
                 </td>
               </tr>
@@ -273,11 +323,26 @@ export function DeploymentGridView({
                 const isActivated = status === "IN_PROGRESS" || status === "COMPLETED";
                 const phaseDotHex = getPhaseDotHex(phaseName);
 
+                const dbDel = deliverableLookup.get(s.deliverable.title.trim().toLowerCase());
+                const approvalStatus = dbDel?.approvalStatus || "DRAFT";
+                const approvalStyle = APPROVAL_HEX[approvalStatus];
+
                 return (
                   <tr
                     key={`${s.deliverable.title}-${s.normalizedChannel}-${idx}`}
                     className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors"
                   >
+                    {/* Checkbox */}
+                    <td className="px-2 py-3">
+                      {dbDel ? (
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-300 accent-primary"
+                          checked={selectedDeliverableIds.has(dbDel.id)}
+                          onChange={() => toggleSelection(dbDel.id)}
+                        />
+                      ) : null}
+                    </td>
                     {/* Status pill + Title */}
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3 min-w-0">
@@ -361,6 +426,22 @@ export function DeploymentGridView({
                       >
                         {effortHex?.label ?? EFFORT_LABEL[s.deliverable.estimatedEffort] ?? s.deliverable.estimatedEffort}
                       </span>
+                    </td>
+
+                    {/* Approval status */}
+                    <td className="px-4 py-3">
+                      {approvalStyle && (
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border"
+                          style={{
+                            backgroundColor: approvalStyle.bg,
+                            color: approvalStyle.text,
+                            borderColor: approvalStyle.border,
+                          }}
+                        >
+                          {approvalStyle.label}
+                        </span>
+                      )}
                     </td>
 
                     {/* Personas */}

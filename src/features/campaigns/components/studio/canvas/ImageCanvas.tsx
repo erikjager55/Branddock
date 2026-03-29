@@ -80,7 +80,7 @@ export function ImageCanvas({ isPreviewMode }: ImageCanvasProps) {
               key={i}
               onClick={() => setSelectedIndex(i)}
               className={`h-14 w-14 rounded-lg overflow-hidden border-2 transition-colors ${
-                i === selectedIndex ? "border-teal-500 ring-1 ring-teal-200" : "border-gray-200 hover:border-gray-300"
+                i === selectedIndex ? "border-primary-500 ring-1 ring-primary-200" : "border-gray-200 hover:border-gray-300"
               }`}
             >
               <img src={url} alt={`Thumbnail ${i + 1}`} className="w-full h-full object-cover" />
