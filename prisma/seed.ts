@@ -216,6 +216,8 @@ async function main() {
   await prisma.explorationKnowledgeItem.deleteMany();
   await prisma.explorationConfig.deleteMany();
   await prisma.itemKnowledgeSource.deleteMany();
+  await prisma.generatedVideo.deleteMany();
+  await prisma.generatedImage.deleteMany();
   await prisma.user.deleteMany({ where: { id: { not: DEMO_USER_ID } } });
   await prisma.workspace.deleteMany();
   await prisma.organization.deleteMany();

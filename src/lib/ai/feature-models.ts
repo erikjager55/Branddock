@@ -174,12 +174,12 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
   },
   {
     key: 'canvas-video-generate',
-    label: 'Canvas Video Generation',
-    description: 'Video generation for canvas visuals (placeholder for Runway/Kling)',
+    label: 'Video Generation',
+    description: 'AI video generation via Runway ML (gen4.5)',
     category: 'campaign-content',
-    defaultProvider: 'openai',
-    defaultModel: 'gpt-4o',
-    supportedProviders: ['openai'],
+    defaultProvider: 'google',
+    defaultModel: 'gen4.5',
+    supportedProviders: ['google'],
   },
   {
     key: 'canvas-audio-generate',

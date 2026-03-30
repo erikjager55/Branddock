@@ -3,15 +3,8 @@
 import { useCallback } from 'react';
 import { X, ImageIcon, Heart, Sparkles } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/shared';
+import { formatFileSize } from '@/features/media-library/constants/media-constants';
 import { useAiImageDetail, useUpdateAiImage } from '@/features/media-library/hooks';
-
-// ─── Helpers ────────────────────────────────────────────────
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 // ─── Types ──────────────────────────────────────────────────
 

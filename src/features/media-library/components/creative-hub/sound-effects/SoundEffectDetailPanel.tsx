@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { X, Music2, Star, Wand2 } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/shared';
+import { formatFileSize } from '@/features/media-library/constants/media-constants';
 import { useSoundEffectDetail, useUpdateSoundEffect } from '@/features/media-library/hooks';
 import { VoicePreviewPlayer } from '../brand-voice/VoicePreviewPlayer';
 
@@ -15,14 +16,6 @@ const SOUND_TYPE_LABELS: Record<string, string> = {
   AMBIENT: 'Ambient',
   MUSIC: 'Music',
 };
-
-// ─── Helpers ────────────────────────────────────────────────
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 function formatDuration(seconds: number | null): string {
   if (seconds == null || !isFinite(seconds)) return '—';

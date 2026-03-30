@@ -419,3 +419,41 @@ export interface UpdateGeneratedImageBody {
   name?: string;
   isFavorite?: boolean;
 }
+
+// ─── AI Videos ──────────────────────────────────────────────
+
+export type VideoProvider = 'RUNWAY' | 'KLING' | 'FAL';
+
+export interface GeneratedVideoWithMeta {
+  id: string;
+  name: string;
+  prompt: string;
+  provider: VideoProvider;
+  model: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  duration: number | null;
+  width: number | null;
+  height: number | null;
+  aspectRatio: string | null;
+  thumbnailUrl: string | null;
+  status: string;
+  isFavorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GenerateVideoBody {
+  name: string;
+  prompt: string;
+  provider: VideoProvider;
+  duration?: 5 | 10;
+  aspectRatio?: '16:9' | '9:16';
+}
+
+export interface UpdateGeneratedVideoBody {
+  name?: string;
+  isFavorite?: boolean;
+}

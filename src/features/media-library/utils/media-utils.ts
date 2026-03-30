@@ -89,6 +89,30 @@ export function mapGeneratedImage(img: Record<string, unknown>) {
   };
 }
 
+/** Map a GeneratedVideo record to a serializable response object */
+export function mapGeneratedVideo(vid: Record<string, unknown>) {
+  return {
+    id: vid.id,
+    name: vid.name,
+    prompt: vid.prompt,
+    provider: vid.provider,
+    model: vid.model,
+    fileUrl: vid.fileUrl,
+    fileName: vid.fileName,
+    fileSize: vid.fileSize,
+    fileType: vid.fileType,
+    duration: vid.duration,
+    width: vid.width,
+    height: vid.height,
+    aspectRatio: vid.aspectRatio,
+    thumbnailUrl: vid.thumbnailUrl,
+    status: vid.status,
+    isFavorite: vid.isFavorite,
+    createdAt: toISOString(vid.createdAt),
+    updatedAt: toISOString(vid.updatedAt),
+  };
+}
+
 /** Map a StyleReference record to a serializable response object */
 export function mapStyleReference(ref: Record<string, unknown>) {
   return {

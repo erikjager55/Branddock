@@ -1,15 +1,15 @@
 'use client';
 
 import React from 'react';
-import { ImageIcon, Heart, Trash2 } from 'lucide-react';
+import { Video, Heart, Trash2, Play } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
-import type { GeneratedImageWithMeta } from '@/features/media-library/types/media.types';
+import type { GeneratedVideoWithMeta } from '@/features/media-library/types/media.types';
 
 // ─── Types ──────────────────────────────────────────────────
 
-interface AiImageCardProps {
-  image: GeneratedImageWithMeta;
+interface AiVideoCardProps {
+  video: GeneratedVideoWithMeta;
   onClick: () => void;
   onDelete: (id: string) => void;
   onToggleFavorite: () => void;
@@ -17,13 +17,13 @@ interface AiImageCardProps {
 
 // ─── Component ──────────────────────────────────────────────
 
-/** Card component for individual AI-generated image entries in grid view. */
-export const AiImageCard = React.memo(function AiImageCard({
-  image,
+/** Card component for individual AI-generated video entries in grid view. */
+export const AiVideoCard = React.memo(function AiVideoCard({
+  video,
   onClick,
   onDelete,
   onToggleFavorite,
-}: AiImageCardProps) {
+}: AiVideoCardProps) {
   return (
     <div
       className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer group"
@@ -36,39 +36,52 @@ export const AiImageCard = React.memo(function AiImageCard({
           onClick();
         }
       }}
-      data-testid={`ai-image-card-${image.id}`}
+      data-testid={`ai-video-card-${video.id}`}
     >
-      {/* Image area */}
-      <div className="relative h-40 bg-gradient-to-br from-blue-50 to-violet-50 flex items-center justify-center">
-        {image.fileUrl ? (
+      {/* Thumbnail area */}
+      <div className="relative h-40 bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
+        {video.thumbnailUrl ? (
           <img
-            src={image.fileUrl}
-            alt={image.name}
+            src={video.thumbnailUrl}
+            alt={video.name}
             className="w-full h-full object-cover"
           />
         ) : (
-          <ImageIcon className="w-8 h-8 text-violet-400" />
+          <Video className="w-8 h-8 text-indigo-400" />
         )}
+
+        {/* Play icon overlay */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center">
+            <Play className="w-5 h-5 text-white fill-white ml-0.5" />
+          </div>
+        </div>
 
         {/* Provider badge */}
         <div className="absolute top-2 right-2">
-          <Badge
-            variant={image.provider === 'IMAGEN' ? 'info' : 'teal'}
-            size="sm"
-          >
-            {image.provider === 'IMAGEN' ? 'Imagen' : 'DALL-E'}
+          <Badge variant="info" size="sm">
+            {video.provider === 'RUNWAY' ? 'Runway' : video.provider}
           </Badge>
         </div>
+
+        {/* Duration badge */}
+        {video.duration != null && (
+          <div className="absolute bottom-2 left-2">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-black/60 text-[10px] font-medium text-white tabular-nums">
+              {video.duration.toFixed(1)}s
+            </span>
+          </div>
+        )}
 
         {/* Delete button */}
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            onDelete(image.id);
+            onDelete(video.id);
           }}
           className="absolute top-2 left-2 p-1 rounded-md bg-white/80 text-gray-400 hover:text-red-500 hover:bg-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
-          aria-label={`Delete ${image.name}`}
+          aria-label={`Delete ${video.name}`}
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -81,11 +94,11 @@ export const AiImageCard = React.memo(function AiImageCard({
             onToggleFavorite();
           }}
           className="absolute bottom-2 right-2 p-1 rounded-md bg-white/80 hover:bg-white transition-all"
-          aria-label={image.isFavorite ? `Unfavorite ${image.name}` : `Favorite ${image.name}`}
+          aria-label={video.isFavorite ? `Unfavorite ${video.name}` : `Favorite ${video.name}`}
         >
           <Heart
             className={`w-3.5 h-3.5 ${
-              image.isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400'
+              video.isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400'
             }`}
           />
         </button>
@@ -94,22 +107,22 @@ export const AiImageCard = React.memo(function AiImageCard({
       {/* Body */}
       <div className="p-3 space-y-1.5">
         <p className="text-sm font-semibold text-gray-900 line-clamp-1">
-          {image.name}
+          {video.name}
         </p>
 
         <p className="text-xs text-gray-500 line-clamp-2">
-          {image.prompt}
+          {video.prompt}
         </p>
 
         {/* Badge row */}
         <div className="flex flex-wrap items-center gap-1">
-          {image.aspectRatio && (
+          {video.aspectRatio && (
             <Badge variant="default" size="sm">
-              {image.aspectRatio}
+              {video.aspectRatio}
             </Badge>
           )}
           <span className="text-xs text-gray-400">
-            {formatFileSize(image.fileSize)}
+            {formatFileSize(video.fileSize)}
           </span>
         </div>
       </div>

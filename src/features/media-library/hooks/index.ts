@@ -50,6 +50,11 @@ import {
   generateAiImage,
   updateAiImage,
   deleteAiImage,
+  fetchAiVideos,
+  fetchAiVideoDetail,
+  generateAiVideo,
+  updateAiVideo,
+  deleteAiVideo,
 } from '../api/media.api';
 import type {
   MediaListParams,
@@ -71,6 +76,8 @@ import type {
   UpdateSoundEffectBody,
   GenerateImageBody,
   UpdateGeneratedImageBody,
+  GenerateVideoBody,
+  UpdateGeneratedVideoBody,
 } from '../types/media.types';
 
 // ─── Query Key Factory ──────────────────────────────────────
@@ -94,6 +101,8 @@ export const mediaKeys = {
   soundEffectDetail: (id: string) => [...mediaKeys.all, 'sound-effect', id] as const,
   aiImages: (favorite?: boolean) => [...mediaKeys.all, 'ai-images', favorite] as const,
   aiImageDetail: (id: string) => [...mediaKeys.all, 'ai-image', id] as const,
+  aiVideos: (favorite?: boolean) => [...mediaKeys.all, 'ai-videos', favorite] as const,
+  aiVideoDetail: (id: string) => [...mediaKeys.all, 'ai-video', id] as const,
 };
 
 // ─── Media Assets ────────────────────────────────────────────
@@ -619,6 +628,56 @@ export function useDeleteAiImage() {
     mutationFn: (id: string) => deleteAiImage(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [...mediaKeys.all, 'ai-images'] });
+    },
+  });
+}
+
+// ─── AI Videos ──────────────────────────────────────────────
+
+export function useAiVideos(favorite?: boolean) {
+  return useQuery({
+    queryKey: mediaKeys.aiVideos(favorite),
+    queryFn: () => fetchAiVideos(favorite),
+    staleTime: 30_000,
+  });
+}
+
+export function useAiVideoDetail(id: string) {
+  return useQuery({
+    queryKey: mediaKeys.aiVideoDetail(id),
+    queryFn: () => fetchAiVideoDetail(id),
+    enabled: !!id,
+    staleTime: 60_000,
+  });
+}
+
+export function useGenerateAiVideo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: GenerateVideoBody) => generateAiVideo(body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...mediaKeys.all, 'ai-videos'] });
+    },
+  });
+}
+
+export function useUpdateAiVideo(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateGeneratedVideoBody) => updateAiVideo(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: mediaKeys.aiVideoDetail(id) });
+      qc.invalidateQueries({ queryKey: [...mediaKeys.all, 'ai-videos'] });
+    },
+  });
+}
+
+export function useDeleteAiVideo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteAiVideo(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...mediaKeys.all, 'ai-videos'] });
     },
   });
 }

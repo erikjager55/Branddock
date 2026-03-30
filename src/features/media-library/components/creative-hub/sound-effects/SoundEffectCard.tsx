@@ -3,6 +3,7 @@
 import React from 'react';
 import { Music2, Star, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/shared';
+import { formatFileSize } from '@/features/media-library/constants/media-constants';
 import type { SoundEffectWithMeta } from '@/features/media-library/types/media.types';
 import { VoicePreviewPlayer } from '../brand-voice/VoicePreviewPlayer';
 
@@ -22,14 +23,6 @@ interface SoundEffectCardProps {
   effect: SoundEffectWithMeta;
   onClick: () => void;
   onDelete: (id: string) => void;
-}
-
-// ─── Helpers ────────────────────────────────────────────────
-
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function formatDuration(seconds: number | null): string | null {

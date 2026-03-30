@@ -205,6 +205,7 @@ model Workspace {
   brandVoices               BrandVoice[]
   soundEffects              SoundEffect[]
   generatedImages           GeneratedImage[]
+  generatedVideos           GeneratedVideo[]
 
   // Consistent AI Models (Fase I.4)
   consistentModels          ConsistentModel[]
@@ -290,6 +291,7 @@ model User {
   uploadedMedia          MediaAsset[]    @relation("UploadedMedia")
   createdSoundEffects    SoundEffect[]   @relation("CreatedSoundEffects")
   createdGeneratedImages GeneratedImage[] @relation("CreatedGeneratedImages")
+  createdGeneratedVideos GeneratedVideo[] @relation("CreatedGeneratedVideos")
 
   // Consistent AI Models (Fase I.4)
   consistentModels              ConsistentModel[]              @relation("CreatedConsistentModels")
@@ -3623,6 +3625,37 @@ model GeneratedImage {
   workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdById     String
   createdBy       User      @relation("CreatedGeneratedImages", fields: [createdById], references: [id])
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([workspaceId])
+}
+
+model GeneratedVideo {
+  id              String    @id @default(cuid())
+  name            String
+  prompt          String    @db.Text
+  provider        String                       // RUNWAY | KLING | FAL
+  model           String                       // gen4_turbo, gen4.5, etc.
+  fileUrl         String
+  fileName        String
+  fileSize        Int                          // bytes
+  fileType        String                       // MIME: video/mp4
+  duration        Float?                       // seconds
+  width           Int?
+  height          Int?
+  aspectRatio     String?                      // "16:9", "9:16", "1:1"
+  thumbnailUrl    String?                      // poster / first frame
+  status          String    @default("COMPLETED") // PENDING | PROCESSING | COMPLETED | FAILED
+  taskId          String?                      // Runway task ID for polling
+  errorMessage    String?
+  isFavorite      Boolean   @default(false)
+
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById     String
+  createdBy       User      @relation("CreatedGeneratedVideos", fields: [createdById], references: [id])
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

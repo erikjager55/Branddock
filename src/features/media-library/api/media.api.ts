@@ -31,6 +31,9 @@ import type {
   GeneratedImageWithMeta,
   GenerateImageBody,
   UpdateGeneratedImageBody,
+  GeneratedVideoWithMeta,
+  GenerateVideoBody,
+  UpdateGeneratedVideoBody,
 } from '../types/media.types';
 
 const BASE = '/api/media';
@@ -515,4 +518,57 @@ export async function updateAiImage(
 export async function deleteAiImage(id: string): Promise<void> {
   const res = await fetch(`${BASE}/ai-images/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete AI image');
+}
+
+// ─── AI Videos ──────────────────────────────────────────────
+
+export async function fetchAiVideos(
+  favorite?: boolean
+): Promise<GeneratedVideoWithMeta[]> {
+  const params = favorite ? '?favorite=true' : '';
+  const res = await fetch(`${BASE}/ai-videos${params}`);
+  if (!res.ok) throw new Error('Failed to fetch AI videos');
+  const data = await res.json();
+  return data.videos ?? data;
+}
+
+export async function fetchAiVideoDetail(
+  id: string
+): Promise<GeneratedVideoWithMeta> {
+  const res = await fetch(`${BASE}/ai-videos/${id}`);
+  if (!res.ok) throw new Error('Failed to fetch AI video');
+  return res.json();
+}
+
+export async function generateAiVideo(
+  body: GenerateVideoBody
+): Promise<GeneratedVideoWithMeta> {
+  const res = await fetch(`${BASE}/ai-videos/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to generate video');
+  }
+  return res.json();
+}
+
+export async function updateAiVideo(
+  id: string,
+  body: UpdateGeneratedVideoBody
+): Promise<GeneratedVideoWithMeta> {
+  const res = await fetch(`${BASE}/ai-videos/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error('Failed to update AI video');
+  return res.json();
+}
+
+export async function deleteAiVideo(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/ai-videos/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete AI video');
 }
