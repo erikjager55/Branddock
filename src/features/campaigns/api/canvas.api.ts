@@ -73,6 +73,25 @@ export async function publishDeliverable(
   return res.json();
 }
 
+/** Transform selected text using an AI action */
+export async function inlineTransform(
+  deliverableId: string,
+  selectedText: string,
+  action: 'shorter' | 'urgent' | 'brand_voice' | 'simplify',
+  fullContent?: string,
+): Promise<{ transformedText: string }> {
+  const res = await fetch(`/api/studio/${deliverableId}/inline-transform`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ selectedText, action, fullContent }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to transform text' }));
+    throw new Error(err.error ?? 'Failed to transform text');
+  }
+  return res.json();
+}
+
 /** Create a derivative deliverable for another platform */
 export async function deriveDeliverable(
   deliverableId: string,

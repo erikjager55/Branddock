@@ -6,6 +6,7 @@ import {
   updateApprovalStatus,
   publishDeliverable,
   deriveDeliverable,
+  inlineTransform,
 } from '../api/canvas.api';
 import { campaignKeys } from './index';
 import type { ApprovalStatus } from '../types/canvas.types';
@@ -75,6 +76,24 @@ export function usePublishDeliverable(deliverableId: string, campaignId?: string
         qc.invalidateQueries({ queryKey: campaignKeys.deliverables(campaignId) });
         qc.invalidateQueries({ queryKey: campaignKeys.detail(campaignId) });
       }
+    },
+  });
+}
+
+/** Transform selected text with an AI action (shorter, urgent, brand_voice, simplify) */
+export function useInlineTransform(deliverableId: string) {
+  return useMutation({
+    mutationFn: ({
+      selectedText,
+      action,
+      fullContent,
+    }: {
+      selectedText: string;
+      action: 'shorter' | 'urgent' | 'brand_voice' | 'simplify';
+      fullContent?: string;
+    }) => {
+      if (!deliverableId) return Promise.reject(new Error('No deliverableId'));
+      return inlineTransform(deliverableId, selectedText, action, fullContent);
     },
   });
 }

@@ -21,6 +21,8 @@ interface VariantCardProps {
   mediaType?: VariantMediaType;
   /** Duration in seconds for video/audio variants */
   duration?: number;
+  /** Deliverable ID — enables AI inline transform in the editor */
+  deliverableId?: string;
 }
 
 export function VariantCard({
@@ -30,6 +32,7 @@ export function VariantCard({
   isSelected,
   mediaType = 'text',
   duration,
+  deliverableId,
 }: VariantCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -119,6 +122,7 @@ export function VariantCard({
             initialContent={variant.content}
             onSave={handleSave}
             onCancel={() => setIsEditing(false)}
+            deliverableId={deliverableId}
           />
         ) : (
           <>

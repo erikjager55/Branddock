@@ -28,11 +28,11 @@
 
 > Afronden van de Media Assets Layer. I.1 (Brand Voices), I.3 (AI Images), I.4 (AI Videos) zijn af.
 
-### 1.1 Geluidsbibliotheek (I.2)
+### 1.1 Geluidsbibliotheek (I.2) ✅ DONE
 
-- [ ] ElevenLabs Sound Effects API integratie voor merkspecifieke geluiden
-- [ ] Bibliotheek-UI: upload eigen audio + AI-gegenereerde varianten
-- [ ] Creative Hub tab "Sound Effects" toevoegen (naast Brand Voices, AI Images, AI Videos)
+- [x] ElevenLabs Sound Effects API integratie voor merkspecifieke geluiden
+- [x] Bibliotheek-UI: upload eigen audio + AI-gegenereerde varianten
+- [x] Creative Hub tab "Sound Effects" toevoegen (naast Brand Voices, AI Images, AI Videos)
 
 ### 1.2 Video Generatie Uitgebreid (I.5) — conditioneel
 
@@ -42,27 +42,27 @@
 
 ---
 
-## Fase 2: Content Afronding (B-FIN)
+## Fase 2: Content Afronding (B-FIN) ✅ DONE
 
-> Afronden van Content Studio + Content Canvas. ~90% af, restpunten hieronder.
+> Afronden van Content Studio + Content Canvas. Alle items afgerond.
 
-### 2.1 Content Generatie naar Echte AI
+### 2.1 Content Generatie naar Echte AI ✅ DONE
 
-- [ ] Per content type een AI prompt template bouwen met brand context hiërarchie (8 lagen)
-- [ ] SSE streaming toepassen op Content Studio generatie (bestaand SSE patroon uit AI Exploration)
-- [ ] Na generatie automatisch type-specifieke quality scoring uitvoeren (infra staat al: `quality-scorer.ts`)
-- [ ] 3 varianten per generatie voor tekst-types (infra staat al)
+- [x] Per content type een AI prompt template bouwen met brand context hiërarchie (8 lagen)
+- [x] SSE streaming toepassen op Content Studio generatie (bestaand SSE patroon uit AI Exploration)
+- [x] Na generatie automatisch type-specifieke quality scoring uitvoeren (infra staat al: `quality-scorer.ts`)
+- [x] 3 varianten per generatie voor tekst-types (infra staat al)
 
-### 2.2 Canvas Restpunten
+### 2.2 Canvas Restpunten ✅ DONE
 
-- [ ] Board-weergave: Kanban board van alle campagne-deliverables per status
-- [ ] ZIP export: alle goedgekeurde deliverables als ZIP
-- [ ] Derive modal verbetering: nieuw deliverable afleiden van bestaand, openen in Studio
+- [x] Board-weergave: Kanban board van alle campagne-deliverables per status
+- [x] ZIP export: alle goedgekeurde deliverables als ZIP
+- [x] Derive modal verbetering: nieuw deliverable afleiden van bestaand, openen in Studio
 
-### 2.3 TipTap Inline Suggesties
+### 2.3 TipTap Inline Suggesties ✅ DONE
 
-- [ ] "Maak korter" / "Verhoog urgentie" / "Meer brand voice" acties
-- [ ] Implementatie via floating toolbar + AI call
+- [x] "Maak korter" / "Verhoog urgentie" / "Meer brand voice" acties
+- [x] Implementatie via floating toolbar + AI call
 
 ---
 

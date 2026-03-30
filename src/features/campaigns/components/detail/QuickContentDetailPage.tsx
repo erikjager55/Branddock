@@ -95,6 +95,7 @@ export function QuickContentDetailPage({
         {/* Deliverable */}
         <DeliverablesTab
           deliverables={deliverables || campaign.deliverables || []}
+          campaignId={campaignId}
           onOpenInStudio={(did) => onOpenInStudio?.(campaignId, did)}
         />
       </div>

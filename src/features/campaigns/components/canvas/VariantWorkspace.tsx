@@ -90,6 +90,7 @@ export function VariantWorkspace({ deliverableId, onGenerate }: VariantWorkspace
                   variant={variant}
                   variantIndex={idx}
                   isSelected={idx === selectedIndex}
+                  deliverableId={deliverableId}
                 />
               ))}
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { ArrowLeft, Megaphone, Zap } from "lucide-react";
+import React, { useState, useMemo, useCallback } from "react";
+import { ArrowLeft, Download, Megaphone, Zap } from "lucide-react";
 import { Badge, Button, Modal, Input, Select } from "@/components/shared";
 import { DELIVERABLE_TYPES } from "../../lib/deliverable-types";
 import { deriveBriefFromBlueprint } from "../../lib/derive-brief";
@@ -20,6 +20,7 @@ import {
   useDeleteDeliverable,
 } from "../../hooks";
 import { useCampaignStore } from "../../stores/useCampaignStore";
+import { exportApprovedDeliverablesZip } from "../../lib/export-zip";
 import { StrategyResultTab } from "./StrategyResultTab";
 import { DeliverablesTab } from "./DeliverablesTab";
 import type { BlueprintStrategyResponse, KnowledgeAssetResponse } from "@/types/campaign";
@@ -74,6 +75,24 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
   const [addObjective, setAddObjective] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
   const [bringToLifeError, setBringToLifeError] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const completedCount = useMemo(
+    () => (deliverables ?? []).filter((d) => d.status === "COMPLETED").length,
+    [deliverables],
+  );
+
+  const handleExportApproved = useCallback(async () => {
+    if (!campaign || !deliverables || completedCount === 0 || isExporting) return;
+    setIsExporting(true);
+    try {
+      await exportApprovedDeliverablesZip(campaign.title, deliverables);
+    } catch (err) {
+      console.error("[handleExportApproved]", err);
+    } finally {
+      setIsExporting(false);
+    }
+  }, [campaign, deliverables, completedCount, isExporting]);
 
   // Extract blueprint for dropdown options
   const blueprint: CampaignBlueprint | null = useMemo(() => {
@@ -333,6 +352,16 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Download}
+              onClick={handleExportApproved}
+              disabled={completedCount === 0 || isExporting}
+              isLoading={isExporting}
+            >
+              Export ({completedCount})
+            </Button>
             <LockShield
               isLocked={lock.isLocked}
               isToggling={lock.isToggling}
@@ -382,6 +411,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
             /* Quick Content shows deliverables directly */
             <DeliverablesTab
               deliverables={deliverables || campaign.deliverables || []}
+              campaignId={campaignId}
               onOpenInStudio={visibility.showAITools ? (did) => handleOpenInStudio(campaignId, did) : undefined}
             />
           )}

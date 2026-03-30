@@ -30,10 +30,12 @@ interface CampaignStoreState {
   selectedDeliverableId: string | null;
   activeStrategySubTab: 'core-concept' | 'channel-mix' | 'target-audience' | 'deliverables' | 'timeline' | 'strategy' | 'channel-plan';
   timelineViewMode: 'timeline' | 'grid';
+  deliverablesViewMode: 'list' | 'board';
   setSelectedCampaignId: (id: string | null) => void;
   setSelectedDeliverableId: (id: string | null) => void;
   setActiveStrategySubTab: (tab: CampaignStoreState['activeStrategySubTab']) => void;
   setTimelineViewMode: (mode: 'timeline' | 'grid') => void;
+  setDeliverablesViewMode: (mode: 'list' | 'board') => void;
 
   // ─── Convert Modal ────────────────────────────────────────
   isConvertModalOpen: boolean;
@@ -71,10 +73,12 @@ export const useCampaignStore = create<CampaignStoreState>((set) => ({
   selectedDeliverableId: null,
   activeStrategySubTab: 'timeline',
   timelineViewMode: 'timeline',
+  deliverablesViewMode: 'list',
   setSelectedCampaignId: (id) => set({ selectedCampaignId: id }),
   setSelectedDeliverableId: (id) => set({ selectedDeliverableId: id }),
   setActiveStrategySubTab: (tab) => set({ activeStrategySubTab: tab }),
   setTimelineViewMode: (mode) => set({ timelineViewMode: mode }),
+  setDeliverablesViewMode: (mode) => set({ deliverablesViewMode: mode }),
 
   // ─── Convert Modal defaults ────────────────────────────────
   isConvertModalOpen: false,
