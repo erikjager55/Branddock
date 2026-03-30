@@ -16,8 +16,6 @@ export interface RunwayVideoOptions {
   duration?: number;
   /** Aspect ratio. Default: '16:9' */
   ratio?: '16:9' | '9:16';
-  /** Whether to include a watermark. Default: false */
-  watermark?: boolean;
 }
 
 export interface RunwayVideoResult {
@@ -80,7 +78,6 @@ export async function generateVideo(
     promptText: prompt,
     duration,
     ratio,
-    watermark: options?.watermark ?? false,
   });
 
   // Poll until completion (max 180s)
