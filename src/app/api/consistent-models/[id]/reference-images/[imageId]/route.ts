@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { deleteFromR2 } from '@/lib/storage/r2-storage';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 
 type RouteContext = { params: Promise<{ id: string; imageId: string }> };
 
@@ -54,6 +56,8 @@ export async function DELETE(
 
     // Delete from database
     await prisma.referenceImage.delete({ where: { id: imageId } });
+
+    invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
 
     return NextResponse.json({ ok: true });
   } catch (error) {

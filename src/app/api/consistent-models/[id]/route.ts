@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
+import { deleteR2Prefix } from '@/lib/storage/r2-storage';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 import { z } from 'zod';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -11,6 +14,7 @@ const updateModelSchema = z.object({
   stylePrompt: z.string().trim().max(2000).nullable().optional(),
   negativePrompt: z.string().trim().max(2000).nullable().optional(),
   isDefault: z.boolean().optional(),
+  status: z.enum(['ARCHIVED']).optional(),
 });
 
 /** GET /api/consistent-models/:id — Model detail */
@@ -104,6 +108,9 @@ export async function PATCH(
       },
     });
 
+    invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error('PATCH /api/consistent-models/:id error:', error);
@@ -136,8 +143,18 @@ export async function DELETE(
       return NextResponse.json({ error: 'Model not found' }, { status: 404 });
     }
 
+    // Delete all R2 files (reference images + generations) — non-blocking
+    try {
+      await deleteR2Prefix(`ws_${workspaceId}/models/${id}/`);
+    } catch (storageError) {
+      console.error('Failed to delete R2 files for model:', storageError);
+    }
+
     // Cascade deletes reference images and generations via Prisma onDelete: Cascade
     await prisma.consistentModel.delete({ where: { id } });
+
+    invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { isAstriaConfigured } from '@/lib/integrations/astria/astria-client';
 import { startTraining } from '@/lib/consistent-models/training-pipeline';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 import { z } from 'zod';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -52,6 +54,8 @@ export async function POST(
     const callbackUrl = `${origin}/api/consistent-models/webhook`;
 
     const result = await startTraining(id, workspaceId, callbackUrl);
+
+    invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
 
     return NextResponse.json(result);
   } catch (error) {

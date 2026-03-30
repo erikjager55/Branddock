@@ -3,11 +3,12 @@
 import { Trash2, GripVertical, Image } from "lucide-react";
 import { Card, Badge } from "@/components/shared";
 import { ReferenceImageUploader } from "./ReferenceImageUploader";
-import { TRAINING_DEFAULTS } from "../../constants/model-constants";
-import type { ReferenceImageWithMeta } from "../../types/consistent-model.types";
+import { TRAINING_DEFAULTS, MIN_IMAGES_BY_TYPE } from "../../constants/model-constants";
+import type { ReferenceImageWithMeta, ConsistentModelType } from "../../types/consistent-model.types";
 
 interface ReferenceImagesSectionProps {
   images: ReferenceImageWithMeta[];
+  modelType: ConsistentModelType;
   onUpload: (files: File[]) => void;
   onDelete: (imageId: string) => void;
   isUploading: boolean;
@@ -17,13 +18,14 @@ interface ReferenceImagesSectionProps {
 /** Reference images grid with upload zone */
 export function ReferenceImagesSection({
   images,
+  modelType,
   onUpload,
   onDelete,
   isUploading,
   isDeleting,
 }: ReferenceImagesSectionProps) {
   const count = images.length;
-  const minRequired = TRAINING_DEFAULTS.minReferenceImages;
+  const minRequired = MIN_IMAGES_BY_TYPE[modelType];
   const maxAllowed = TRAINING_DEFAULTS.maxReferenceImages;
 
   return (

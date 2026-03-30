@@ -12,6 +12,7 @@ import { QuickActionsCard } from "./sidebar/QuickActionsCard";
 import {
   useConsistentModelDetail,
   useUpdateModel,
+  useDeleteModel,
   useUploadReferenceImages,
   useDeleteReferenceImage,
   useStartTraining,
@@ -34,6 +35,7 @@ export function ModelDetailPage({
   const { data: model, isLoading } = useConsistentModelDetail(modelId);
   const { data: generationsData } = useGenerations(modelId);
   const updateModel = useUpdateModel(modelId);
+  const deleteModel = useDeleteModel(modelId);
   const uploadImages = useUploadReferenceImages(modelId);
   const deleteImage = useDeleteReferenceImage(modelId);
   const startTraining = useStartTraining(modelId);
@@ -113,11 +115,25 @@ export function ModelDetailPage({
   };
 
   const handleArchive = () => {
-    updateModel.mutate({ name: model.name }); // placeholder — archive not yet in UpdateModelBody
+    const isArchived = model.status === "ARCHIVED";
+    if (isArchived) {
+      // Unarchive — set back to DRAFT (only ARCHIVED status is settable via PATCH)
+      // For now, this is a no-op since unarchive isn't in the Zod schema
+      return;
+    }
+    updateModel.mutate({ status: "ARCHIVED" as const });
   };
 
   const handleDelete = () => {
-    // TODO: confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${model.name}"? This will permanently remove the model, all reference images, and all generated images. This action cannot be undone.`
+    );
+    if (!confirmed) return;
+    deleteModel.mutate(undefined, {
+      onSuccess: () => {
+        onNavigateBack();
+      },
+    });
   };
 
   const handleRetrain = () => {
@@ -143,6 +159,7 @@ export function ModelDetailPage({
         <div className="space-y-6 md:col-span-8">
           <ReferenceImagesSection
             images={model.referenceImages}
+            modelType={model.type}
             onUpload={handleUpload}
             onDelete={handleDeleteImage}
             isUploading={uploadImages.isPending}

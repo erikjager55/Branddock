@@ -33,9 +33,10 @@ export interface ConsistentModelWithMeta {
   usageCount: number;
   isDefault: boolean;
   referenceImageCount: number;
+  generationCount: number;
   createdAt: string;
   updatedAt: string;
-  createdBy: { id: string; name: string | null };
+  createdBy: { id: string; name: string | null; image: string | null };
 }
 
 /** Model list response (GET /api/consistent-models) */
@@ -153,6 +154,7 @@ export interface ConsistentModelStats {
   total: number;
   ready: number;
   training: number;
+  draft: number;
   totalGenerations: number;
 }
 
@@ -175,6 +177,7 @@ export interface UpdateModelBody {
   stylePrompt?: string;
   negativePrompt?: string;
   isDefault?: boolean;
+  status?: 'ARCHIVED';
 }
 
 /** POST /api/consistent-models/:id/generate */

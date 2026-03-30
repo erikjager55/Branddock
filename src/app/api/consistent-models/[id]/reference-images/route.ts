@@ -4,6 +4,8 @@ import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { validateTrainingImage, stripExifData, MAX_REFERENCE_IMAGES } from '@/lib/storage/image-validator';
 import { generateThumbnail } from '@/lib/storage/thumbnail-generator';
 import { uploadToR2, buildModelStorageKey } from '@/lib/storage/r2-storage';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -148,6 +150,10 @@ export async function POST(
         const msg = fileError instanceof Error ? fileError.message : 'Upload failed';
         errors.push({ fileName: file.name, error: msg });
       }
+    }
+
+    if (uploaded.length > 0) {
+      invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
     }
 
     return NextResponse.json({

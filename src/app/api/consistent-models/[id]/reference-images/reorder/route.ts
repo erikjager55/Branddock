@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 import { z } from 'zod';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -63,6 +65,8 @@ export async function PATCH(
       where: { consistentModelId: id },
       orderBy: { sortOrder: 'asc' },
     });
+
+    invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
 
     return NextResponse.json({ images });
   } catch (error) {

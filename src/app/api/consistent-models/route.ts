@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
 import { z } from 'zod';
 
 const createModelSchema = z.object({
@@ -141,6 +143,9 @@ export async function POST(request: NextRequest) {
         createdBy: { select: { id: true, name: true, image: true } },
       },
     });
+
+    invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json({
       ...model,

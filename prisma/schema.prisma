@@ -3683,7 +3683,7 @@ model ConsistentModel {
   // Astria integration
   astriaModelId       String?               // Astria tune ID after training
   astriaModelUrl      String?               // Astria model URL
-  triggerWord         String?               // Trigger word (e.g. "sks person")
+  triggerWord         String?               // Trigger word (e.g. "ohwx person")
   baseModel           String?               // "flux-lora" | "sdxl-lora"
 
   // Training config

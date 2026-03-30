@@ -103,6 +103,24 @@ export const TRAINING_DEFAULTS = {
   supportedResolutions: [512, 768, 1024],
 };
 
+// ─── Trigger Words (single source of truth) ─────────────────
+
+export const TRIGGER_WORDS: Record<ConsistentModelType, string> = {
+  PERSON: "ohwx person",
+  PRODUCT: "ohwx product",
+  STYLE: "ohwx style",
+  OBJECT: "ohwx object",
+};
+
+// ─── Min Reference Images per Type ──────────────────────────
+
+export const MIN_IMAGES_BY_TYPE: Record<ConsistentModelType, number> = {
+  PERSON: 5,
+  PRODUCT: 5,
+  STYLE: 10,
+  OBJECT: 5,
+};
+
 // ─── Generation Defaults ────────────────────────────────────
 
 export const GENERATION_PRESETS = {

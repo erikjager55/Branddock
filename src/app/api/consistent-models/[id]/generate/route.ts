@@ -3,16 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { isAstriaConfigured, createPrompt } from '@/lib/integrations/astria/astria-client';
 import { uploadToR2, buildGenerationStorageKey } from '@/lib/storage/r2-storage';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
+import { TRIGGER_WORDS } from '@/features/consistent-models/constants/model-constants';
 import { z } from 'zod';
 
 type RouteContext = { params: Promise<{ id: string }> };
-
-const TRIGGER_WORDS: Record<string, string> = {
-  PERSON: 'ohwx person',
-  PRODUCT: 'ohwx product',
-  STYLE: 'ohwx style',
-  OBJECT: 'ohwx object',
-};
 
 const generateSchema = z.object({
   prompt: z.string().trim().min(1).max(2000),
@@ -152,6 +148,8 @@ export async function POST(
         data: { usageCount: { increment: generations.length } },
       });
     }
+
+    invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
 
     return NextResponse.json({ generations });
   } catch (error) {

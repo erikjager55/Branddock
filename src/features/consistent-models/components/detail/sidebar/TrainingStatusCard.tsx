@@ -1,7 +1,7 @@
 "use client";
 
 import { Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { Card, ProgressBar } from "@/components/shared";
+import { Card } from "@/components/shared";
 import type { ConsistentModelDetail } from "../../../types/consistent-model.types";
 
 interface TrainingStatusCardProps {
@@ -60,7 +60,22 @@ export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
           )}
         </div>
 
-        {isTraining && <ProgressBar value={50} color="amber" size="sm" />}
+        {isTraining && (
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-amber-100">
+            <div
+              className="h-full w-1/3 rounded-full bg-amber-400"
+              style={{
+                animation: "indeterminate 1.5s ease-in-out infinite",
+              }}
+            />
+            <style>{`
+              @keyframes indeterminate {
+                0% { transform: translateX(-100%); }
+                100% { transform: translateX(400%); }
+              }
+            `}</style>
+          </div>
+        )}
 
         {/* Timestamps */}
         <div className="space-y-2 text-sm">

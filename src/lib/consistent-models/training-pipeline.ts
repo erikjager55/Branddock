@@ -16,23 +16,12 @@ import {
   createPrompt,
   type CreateTuneParams,
 } from '@/lib/integrations/astria/astria-client';
+import { invalidateCache } from '@/lib/api/cache';
+import { cacheKeys } from '@/lib/api/cache-keys';
+import { TRIGGER_WORDS, MIN_IMAGES_BY_TYPE } from '@/features/consistent-models/constants/model-constants';
 import type { ConsistentModelType } from '@prisma/client';
 
 // ─── Constants ──────────────────────────────────────────────
-
-const TRIGGER_WORDS: Record<ConsistentModelType, string> = {
-  PERSON: 'ohwx person',
-  PRODUCT: 'ohwx product',
-  STYLE: 'ohwx style',
-  OBJECT: 'ohwx object',
-};
-
-const MIN_IMAGES: Record<ConsistentModelType, number> = {
-  PERSON: 5,
-  PRODUCT: 5,
-  STYLE: 10,
-  OBJECT: 5,
-};
 
 const DEFAULT_SAMPLE_PROMPTS: Record<ConsistentModelType, string> = {
   PERSON: 'A professional portrait photo of ohwx person, natural lighting, neutral background',
@@ -86,7 +75,7 @@ export async function startTraining(
     );
   }
 
-  const minRequired = MIN_IMAGES[model.type];
+  const minRequired = MIN_IMAGES_BY_TYPE[model.type];
   if (model.referenceImages.length < minRequired) {
     throw new Error(
       `Need at least ${minRequired} reference images for ${model.type} models. Got ${model.referenceImages.length}.`
@@ -170,6 +159,9 @@ export async function handleTrainingComplete(
       },
     });
 
+    invalidateCache(cacheKeys.prefixes.consistentModels(model.workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(model.workspaceId));
+
     return {
       success: false,
       modelId: model.id,
@@ -216,6 +208,9 @@ export async function handleTrainingComplete(
       sampleImageUrls: sampleUrls.length > 0 ? sampleUrls : undefined,
     },
   });
+
+  invalidateCache(cacheKeys.prefixes.consistentModels(model.workspaceId));
+  invalidateCache(cacheKeys.prefixes.dashboard(model.workspaceId));
 
   return {
     success: true,
