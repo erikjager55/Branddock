@@ -3,14 +3,12 @@ import type { MediaType, MediaCategory, MediaSource } from '../types/media.types
 import type { MediaViewMode } from '../constants/media-constants';
 
 type UploadTab = 'upload' | 'import-url' | 'stock' | 'ai';
-type ActiveTab = 'library' | 'collections' | 'tags' | 'creative-hub';
-type CreativeHubTab = 'brand-models' | 'photography' | 'animation' | 'brand-voice' | 'sound-effects' | 'ai-images' | 'ai-videos';
+type ActiveTab = 'library' | 'collections' | 'tags';
 
 interface MediaLibraryStore {
   // View
   viewMode: MediaViewMode;
   activeTab: ActiveTab;
-  creativeHubTab: CreativeHubTab;
 
   // Filters
   searchQuery: string;
@@ -50,7 +48,6 @@ interface MediaLibraryStore {
   // Actions
   setViewMode: (mode: MediaViewMode) => void;
   setActiveTab: (tab: ActiveTab) => void;
-  setCreativeHubTab: (tab: CreativeHubTab) => void;
   setSearchQuery: (q: string) => void;
   setMediaTypeFilter: (t: MediaType | null) => void;
   setCategoryFilter: (c: MediaCategory | null) => void;
@@ -77,7 +74,6 @@ interface MediaLibraryStore {
 export const useMediaLibraryStore = create<MediaLibraryStore>((set) => ({
   viewMode: 'grid',
   activeTab: 'library',
-  creativeHubTab: 'brand-models',
 
   searchQuery: '',
   mediaTypeFilter: null,
@@ -108,7 +104,6 @@ export const useMediaLibraryStore = create<MediaLibraryStore>((set) => ({
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setActiveTab: (tab) => set({ activeTab: tab }),
-  setCreativeHubTab: (tab) => set({ creativeHubTab: tab }),
   setSearchQuery: (q) => set({ searchQuery: q, page: 1 }),
   setMediaTypeFilter: (t) => set({ mediaTypeFilter: t, page: 1 }),
   setCategoryFilter: (c) => set({ categoryFilter: c, page: 1 }),

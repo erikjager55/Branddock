@@ -14,7 +14,8 @@ import {
 import {
   LayoutDashboard, Building2, Target, Palette, Users, Package,
   Swords, Radar, BookOpen, Shield, Megaphone, FileText, FlaskConical,
-  Settings, HelpCircle, Image,
+  Settings, HelpCircle, Image, ImagePlus, Video, User, Mic, Camera,
+  Clapperboard, Music, Cpu,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -35,6 +36,14 @@ const MODULE_ICONS: Record<ModuleKey, LucideIcon> = {
   'settings': Settings,
   'help': HelpCircle,
   'media-library': Image,
+  'consistent-models': Cpu,
+  'ai-images': ImagePlus,
+  'ai-videos': Video,
+  'brand-models': User,
+  'brand-voices': Mic,
+  'photography-styles': Camera,
+  'animation-styles': Clapperboard,
+  'sound-effects': Music,
 };
 
 interface PageHeaderProps {

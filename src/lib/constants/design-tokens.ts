@@ -499,8 +499,20 @@ export const SIDEBAR_NAV: {
         { key: 'personas', label: 'Personas', icon: 'Users', href: '/knowledge/personas' },
         { key: 'products', label: 'Products & Services', icon: 'Package', href: '/knowledge/products' },
         { key: 'competitors', label: 'Competitors', icon: 'Swords', href: '/knowledge/competitors' },
-        { key: 'consistent-models', label: 'AI Models', icon: 'Cpu', href: '/knowledge/ai-models' },
-        { key: 'media-library', label: 'Media Library', icon: 'Images', href: '/knowledge/media' },
+      ],
+    },
+    {
+      label: 'MEDIA',
+      items: [
+        { key: 'media-library', label: 'Media Library', icon: 'Images', href: '/media/library' },
+        { key: 'consistent-models', label: 'AI Models', icon: 'Cpu', href: '/media/ai-models' },
+        { key: 'ai-images', label: 'AI Images', icon: 'ImagePlus', href: '/media/ai-images' },
+        { key: 'ai-videos', label: 'AI Videos', icon: 'Video', href: '/media/ai-videos' },
+        { key: 'brand-models', label: 'Brand Models', icon: 'User', href: '/media/brand-models' },
+        { key: 'brand-voices', label: 'Brand Voices', icon: 'Mic', href: '/media/brand-voices' },
+        { key: 'photography-styles', label: 'Photography', icon: 'Camera', href: '/media/photography' },
+        { key: 'animation-styles', label: 'Animation', icon: 'Clapperboard', href: '/media/animation' },
+        { key: 'sound-effects', label: 'Sound Effects', icon: 'Music', href: '/media/sound-effects' },
       ],
     },
     {
@@ -546,6 +558,14 @@ export const PAGE_ICONS: Record<string, { icon: string; bgColor: string; iconCol
   'custom-validations':{ icon: 'Sparkles',        bgColor: 'bg-slate-50',   iconColor: 'text-slate-500' },
   'settings':          { icon: 'Settings',        bgColor: 'bg-gray-100',   iconColor: 'text-gray-500' },
   'help':              { icon: 'HelpCircle',      bgColor: 'bg-emerald-50', iconColor: 'text-emerald-500' },
+  'consistent-models': { icon: 'Cpu',              bgColor: 'bg-cyan-50',    iconColor: 'text-cyan-500' },
+  'ai-images':         { icon: 'ImagePlus',       bgColor: 'bg-violet-50',  iconColor: 'text-violet-500' },
+  'ai-videos':         { icon: 'Video',           bgColor: 'bg-purple-50',  iconColor: 'text-purple-500' },
+  'brand-models':      { icon: 'User',            bgColor: 'bg-teal-50',    iconColor: 'text-teal-500' },
+  'brand-voices':      { icon: 'Mic',             bgColor: 'bg-indigo-50',  iconColor: 'text-indigo-500' },
+  'photography-styles':{ icon: 'Camera',          bgColor: 'bg-rose-50',    iconColor: 'text-rose-500' },
+  'animation-styles':  { icon: 'Clapperboard',    bgColor: 'bg-amber-50',   iconColor: 'text-amber-500' },
+  'sound-effects':     { icon: 'Music',           bgColor: 'bg-sky-50',     iconColor: 'text-sky-500' },
 };
 
 // ─── MODULE METADATA ───────────────────────────────────────
@@ -658,6 +678,54 @@ export const MODULE_META: Record<string, {
     subtitle: 'Documentation, tutorials, and contact support',
     phase: 'Phase 12',
     comingSoonDescription: 'Browse help articles, watch tutorials, and contact our support team for assistance.',
+  },
+  'ai-images': {
+    title: 'AI Images',
+    subtitle: 'Generate and manage AI-created images for your brand',
+    phase: 'Phase 12',
+    comingSoonDescription: '',
+  },
+  'ai-videos': {
+    title: 'AI Videos',
+    subtitle: 'Generate and manage AI-created videos for your brand',
+    phase: 'Phase 12',
+    comingSoonDescription: '',
+  },
+  'brand-models': {
+    title: 'Brand Models',
+    subtitle: 'Manage consistent AI models trained on your brand',
+    phase: 'Phase 12',
+    comingSoonDescription: '',
+  },
+  'brand-voices': {
+    title: 'Brand Voices',
+    subtitle: 'Define and manage your brand voice profiles',
+    phase: 'Phase 12',
+    comingSoonDescription: '',
+  },
+  'photography-styles': {
+    title: 'Photography',
+    subtitle: 'Define your brand photography style guidelines',
+    phase: 'Phase 12',
+    comingSoonDescription: '',
+  },
+  'animation-styles': {
+    title: 'Animation',
+    subtitle: 'Define your brand animation style guidelines',
+    phase: 'Phase 12',
+    comingSoonDescription: '',
+  },
+  'sound-effects': {
+    title: 'Sound Effects',
+    subtitle: 'Manage sound effects and audio assets for your brand',
+    phase: 'Phase 12',
+    comingSoonDescription: '',
+  },
+  'consistent-models': {
+    title: 'AI Models',
+    subtitle: 'Train and manage consistent AI models for your brand',
+    phase: 'Phase 10',
+    comingSoonDescription: '',
   },
 };
 
@@ -855,6 +923,14 @@ export const MODULE_GRADIENTS = {
   'settings':          { from: 'from-gray-500',    to: 'to-gray-600',     icon: 'Settings' },
   'help':              { from: 'from-blue-500',    to: 'to-indigo-600',   icon: 'HelpCircle' },
   'media-library':     { from: 'from-violet-500',  to: 'to-purple-600',   icon: 'Image' },
+  'consistent-models': { from: 'from-cyan-500',    to: 'to-teal-600',    icon: 'Cpu' },
+  'ai-images':         { from: 'from-violet-500',  to: 'to-indigo-600',   icon: 'ImagePlus' },
+  'ai-videos':         { from: 'from-purple-500',  to: 'to-violet-600',   icon: 'Video' },
+  'brand-models':      { from: 'from-teal-500',    to: 'to-emerald-600',  icon: 'User' },
+  'brand-voices':      { from: 'from-indigo-500',  to: 'to-blue-600',     icon: 'Mic' },
+  'photography-styles':{ from: 'from-rose-500',     to: 'to-pink-600',     icon: 'Camera' },
+  'animation-styles':  { from: 'from-amber-500',   to: 'to-orange-600',   icon: 'Clapperboard' },
+  'sound-effects':     { from: 'from-sky-500',     to: 'to-blue-600',     icon: 'Music' },
 } as const;
 
 export type ModuleKey = keyof typeof MODULE_GRADIENTS;

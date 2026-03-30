@@ -57,6 +57,13 @@ import {
   WebsiteScannerPage,
   KnowledgeLibraryPage,
   MediaLibraryPage,
+  BrandModelsPage,
+  PhotographyStylePage,
+  AnimationStylePage,
+  BrandVoicePage,
+  SoundEffectsPage,
+  AiImagesPage,
+  AiVideosPage,
   ConsistentModelsPage,
   ModelDetailPage,
   ResearchHubPage,
@@ -720,6 +727,20 @@ function AppContent() {
         return <KnowledgeLibraryPage />;
       case 'media-library':
         return <MediaLibraryPage />;
+      case 'brand-models':
+        return <BrandModelsPage />;
+      case 'photography-styles':
+        return <PhotographyStylePage />;
+      case 'animation-styles':
+        return <AnimationStylePage />;
+      case 'brand-voices':
+        return <BrandVoicePage />;
+      case 'sound-effects':
+        return <SoundEffectsPage />;
+      case 'ai-images':
+        return <AiImagesPage />;
+      case 'ai-videos':
+        return <AiVideosPage />;
       case 'consistent-models':
         return (
           <ConsistentModelsPage

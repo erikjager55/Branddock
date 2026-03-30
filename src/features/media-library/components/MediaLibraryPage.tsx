@@ -24,13 +24,10 @@ import { CreateCollectionModal } from './collections/CreateCollectionModal';
 import { AddToCollectionModal } from './collections/AddToCollectionModal';
 import { TagFilterPills } from './tags/TagFilterPills';
 import { TagManagerModal } from './tags/TagManagerModal';
-import { CreativeHubPage } from './creative-hub/CreativeHubPage';
-
 const TABS = [
   { key: 'library', label: 'Library' },
   { key: 'collections', label: 'Collections' },
   { key: 'tags', label: 'Tags' },
-  { key: 'creative-hub', label: 'Creative Hub' },
 ] as const;
 
 /** Main orchestrator component for the Media Library feature. */
@@ -198,10 +195,6 @@ export function MediaLibraryPage() {
             <div data-testid="tags-tab" className="space-y-6">
               <TagFilterPills />
               <TagManagerModal />
-            </div>
-          ) : store.activeTab === 'creative-hub' ? (
-            <div data-testid="creative-hub-tab">
-              <CreativeHubPage />
             </div>
           ) : null}
         </div>
