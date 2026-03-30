@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Cpu, Plus, Sparkles } from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { Button, EmptyState, SkeletonCard } from "@/components/shared";
-import { PageHeader } from "@/components/shared";
 import { ModelStatsCards } from "./ModelStatsCards";
 import { ModelFilterBar } from "./ModelFilterBar";
 import { ModelCard } from "./ModelCard";
@@ -15,14 +14,14 @@ import type {
   ConsistentModelStatus,
 } from "../types/consistent-model.types";
 
-interface ConsistentModelsPageProps {
+interface ConsistentModelsContentProps {
   onNavigateToDetail: (id: string) => void;
 }
 
-/** Overview page for consistent AI models */
-export function ConsistentModelsPage({
+/** Content-only component for consistent AI models (used as tab in AiTrainerPage) */
+export function ConsistentModelsContent({
   onNavigateToDetail,
-}: ConsistentModelsPageProps) {
+}: ConsistentModelsContentProps) {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -46,20 +45,19 @@ export function ConsistentModelsPage({
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        icon={Cpu}
-        title="AI Models"
-        subtitle={
-          models.length > 0
-            ? `${models.length} model${models.length !== 1 ? "s" : ""}`
-            : undefined
-        }
-        primaryAction={{
-          label: "Create Model",
-          icon: Plus,
-          onClick: () => openCreateModal(),
-        }}
-      />
+      <div className="flex items-center justify-between">
+        <div>
+          {models.length > 0 && (
+            <p className="text-sm text-gray-500">
+              {models.length} model{models.length !== 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
+        <Button onClick={() => openCreateModal()} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Create Model
+        </Button>
+      </div>
 
       <ModelStatsCards stats={stats} isLoading={statsLoading} />
 

@@ -57,14 +57,8 @@ import {
   WebsiteScannerPage,
   KnowledgeLibraryPage,
   MediaLibraryPage,
-  BrandModelsPage,
-  PhotographyStylePage,
-  AnimationStylePage,
-  BrandVoicePage,
-  SoundEffectsPage,
-  AiImagesPage,
-  AiVideosPage,
-  ConsistentModelsPage,
+  AiTrainerPage,
+  AiStudioPage,
   ModelDetailPage,
   ResearchHubPage,
   ResearchBundlesPage,
@@ -334,7 +328,7 @@ function AppContent() {
     } else if (activeSection === 'ai-exploration-brand-asset' && !selectedAssetId) {
       redirectTo = 'brand';
     } else if (activeSection === 'consistent-model-detail' && !useConsistentModelStore.getState().selectedModelId) {
-      redirectTo = 'consistent-models';
+      redirectTo = 'ai-trainer';
     } else if (activeSection === 'content-studio') {
       const cs = useCampaignStore.getState();
       if (!cs.selectedCampaignId || !cs.selectedDeliverableId) {
@@ -727,36 +721,24 @@ function AppContent() {
         return <KnowledgeLibraryPage />;
       case 'media-library':
         return <MediaLibraryPage />;
-      case 'brand-models':
-        return <BrandModelsPage />;
-      case 'photography-styles':
-        return <PhotographyStylePage />;
-      case 'animation-styles':
-        return <AnimationStylePage />;
-      case 'brand-voices':
-        return <BrandVoicePage />;
-      case 'sound-effects':
-        return <SoundEffectsPage />;
-      case 'ai-images':
-        return <AiImagesPage />;
-      case 'ai-videos':
-        return <AiVideosPage />;
-      case 'consistent-models':
+      case 'ai-trainer':
         return (
-          <ConsistentModelsPage
-            onNavigateToDetail={(id) => {
+          <AiTrainerPage
+            onNavigateToModelDetail={(id) => {
               useConsistentModelStore.getState().setSelectedModel(id);
               handleSetActiveSection('consistent-model-detail');
             }}
           />
         );
+      case 'ai-studio':
+        return <AiStudioPage />;
       case 'consistent-model-detail': {
         const cmModelId = useConsistentModelStore.getState().selectedModelId;
         if (!cmModelId) return null;
         return (
           <ModelDetailPage
             modelId={cmModelId}
-            onNavigateBack={() => handleSetActiveSection('consistent-models')}
+            onNavigateBack={() => handleSetActiveSection('ai-trainer')}
           />
         );
       }

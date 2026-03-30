@@ -3,7 +3,7 @@
 // =============================================================
 
 // Overview
-export { ConsistentModelsPage } from "./ConsistentModelsPage";
+export { ConsistentModelsContent } from "./ConsistentModelsPage";
 export { ModelStatsCards } from "./ModelStatsCards";
 export { ModelFilterBar } from "./ModelFilterBar";
 export { ModelCard } from "./ModelCard";

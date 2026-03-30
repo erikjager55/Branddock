@@ -112,32 +112,14 @@ export const MediaLibraryPage = lazy(() =>
   import('@/features/media-library/components/MediaLibraryPage').then(m => ({ default: m.MediaLibraryPage }))
 );
 
-// ─── Media Creative Hub Pages ────────────────────────────
-export const BrandModelsPage = lazy(() =>
-  import('@/features/media-library/components/creative-hub/pages/BrandModelsPage').then(m => ({ default: m.BrandModelsPage }))
-);
-export const PhotographyStylePage = lazy(() =>
-  import('@/features/media-library/components/creative-hub/pages/PhotographyStylePage').then(m => ({ default: m.PhotographyStylePage }))
-);
-export const AnimationStylePage = lazy(() =>
-  import('@/features/media-library/components/creative-hub/pages/AnimationStylePage').then(m => ({ default: m.AnimationStylePage }))
-);
-export const BrandVoicePage = lazy(() =>
-  import('@/features/media-library/components/creative-hub/pages/BrandVoicePage').then(m => ({ default: m.BrandVoicePage }))
-);
-export const SoundEffectsPage = lazy(() =>
-  import('@/features/media-library/components/creative-hub/pages/SoundEffectsPage').then(m => ({ default: m.SoundEffectsPage }))
-);
-export const AiImagesPage = lazy(() =>
-  import('@/features/media-library/components/creative-hub/pages/AiImagesPage').then(m => ({ default: m.AiImagesPage }))
-);
-export const AiVideosPage = lazy(() =>
-  import('@/features/media-library/components/creative-hub/pages/AiVideosPage').then(m => ({ default: m.AiVideosPage }))
+// ─── AI Trainer ──────────────────────────────────────────
+export const AiTrainerPage = lazy(() =>
+  import('@/features/ai-trainer/components/AiTrainerPage').then(m => ({ default: m.AiTrainerPage }))
 );
 
-// ─── Consistent Models ───────────────────────────────────
-export const ConsistentModelsPage = lazy(() =>
-  import('@/features/consistent-models/components/ConsistentModelsPage').then(m => ({ default: m.ConsistentModelsPage }))
+// ─── AI Studio ───────────────────────────────────────────
+export const AiStudioPage = lazy(() =>
+  import('@/features/ai-studio/components/AiStudioPage').then(m => ({ default: m.AiStudioPage }))
 );
 export const ModelDetailPage = lazy(() =>
   import('@/features/consistent-models/components/detail/ModelDetailPage').then(m => ({ default: m.ModelDetailPage }))
@@ -244,14 +226,8 @@ const moduleLoaders: Record<string, () => Promise<unknown>> = {
   'trends': () => import('@/features/trend-radar/components/TrendRadarPage'),
   'knowledge': () => import('@/features/knowledge-library/components/KnowledgeLibraryPage'),
   'media-library': () => import('@/features/media-library/components/MediaLibraryPage'),
-  'consistent-models': () => import('@/features/consistent-models/components/ConsistentModelsPage'),
-  'brand-models': () => import('@/features/media-library/components/creative-hub/pages/BrandModelsPage'),
-  'photography-styles': () => import('@/features/media-library/components/creative-hub/pages/PhotographyStylePage'),
-  'animation-styles': () => import('@/features/media-library/components/creative-hub/pages/AnimationStylePage'),
-  'brand-voices': () => import('@/features/media-library/components/creative-hub/pages/BrandVoicePage'),
-  'sound-effects': () => import('@/features/media-library/components/creative-hub/pages/SoundEffectsPage'),
-  'ai-images': () => import('@/features/media-library/components/creative-hub/pages/AiImagesPage'),
-  'ai-videos': () => import('@/features/media-library/components/creative-hub/pages/AiVideosPage'),
+  'ai-trainer': () => import('@/features/ai-trainer/components/AiTrainerPage'),
+  'ai-studio': () => import('@/features/ai-studio/components/AiStudioPage'),
   'research': () => import('@/features/research/components/hub/ResearchHubPage'),
   'active-campaigns': () => import('@/features/campaigns/components/overview/ActiveCampaignsPage'),
   'business-strategy': () => import('@/features/business-strategy/components/BusinessStrategyPage'),
