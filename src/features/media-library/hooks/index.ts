@@ -27,11 +27,6 @@ import {
   reorderCollectionAssets,
   searchStockPhotos,
   importStockPhoto,
-  fetchStyleReferences,
-  fetchStyleReferenceDetail,
-  createStyleReference,
-  updateStyleReference,
-  deleteStyleReference,
   fetchBrandVoices,
   fetchBrandVoiceDetail,
   createBrandVoice,
@@ -65,8 +60,6 @@ import type {
   UpdateTagBody,
   CreateCollectionBody,
   UpdateCollectionBody,
-  CreateStyleReferenceBody,
-  UpdateStyleReferenceBody,
   CreateBrandVoiceBody,
   UpdateBrandVoiceBody,
   ImportStockBody,
@@ -92,8 +85,6 @@ export const mediaKeys = {
   collections: () => [...mediaKeys.all, 'collections'] as const,
   collectionDetail: (id: string) => [...mediaKeys.all, 'collection', id] as const,
   stockSearch: (query: string, page: number) => [...mediaKeys.all, 'stock', query, page] as const,
-  styleRefs: () => [...mediaKeys.all, 'style-refs'] as const,
-  styleRefDetail: (id: string) => [...mediaKeys.all, 'style-ref', id] as const,
   brandVoices: () => [...mediaKeys.all, 'brand-voices'] as const,
   brandVoiceDetail: (id: string) => [...mediaKeys.all, 'brand-voice', id] as const,
   elevenLabsVoices: () => [...mediaKeys.all, 'elevenlabs-voices'] as const,
@@ -396,56 +387,6 @@ export function useImportStockPhoto() {
     mutationFn: (body: ImportStockBody) => importStockPhoto(body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: mediaKeys.all });
-    },
-  });
-}
-
-// ─── Style References ────────────────────────────────────────
-
-export function useStyleReferences() {
-  return useQuery({
-    queryKey: mediaKeys.styleRefs(),
-    queryFn: fetchStyleReferences,
-    staleTime: 60_000,
-  });
-}
-
-export function useStyleReferenceDetail(id: string) {
-  return useQuery({
-    queryKey: mediaKeys.styleRefDetail(id),
-    queryFn: () => fetchStyleReferenceDetail(id),
-    enabled: !!id,
-    staleTime: 60_000,
-  });
-}
-
-export function useCreateStyleReference() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: CreateStyleReferenceBody) => createStyleReference(body),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: mediaKeys.styleRefs() });
-    },
-  });
-}
-
-export function useUpdateStyleReference(id: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: UpdateStyleReferenceBody) => updateStyleReference(id, body),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: mediaKeys.styleRefDetail(id) });
-      qc.invalidateQueries({ queryKey: mediaKeys.styleRefs() });
-    },
-  });
-}
-
-export function useDeleteStyleReference() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string) => deleteStyleReference(id),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: mediaKeys.styleRefs() });
     },
   });
 }

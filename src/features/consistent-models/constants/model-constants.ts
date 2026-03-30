@@ -48,6 +48,30 @@ export const TYPE_CONFIG: Record<ConsistentModelType, ModelTypeConfig> = {
     bgColor: "bg-amber-50",
     borderColor: "border-amber-200",
   },
+  BRAND_STYLE: {
+    label: "Brand Style",
+    description: "Define visual style references for brand imagery",
+    triggerWord: "",
+    color: "text-rose-700",
+    bgColor: "bg-rose-50",
+    borderColor: "border-rose-200",
+  },
+  PHOTOGRAPHY: {
+    label: "Photography",
+    description: "Define photography style guides",
+    triggerWord: "",
+    color: "text-cyan-700",
+    bgColor: "bg-cyan-50",
+    borderColor: "border-cyan-200",
+  },
+  ANIMATION: {
+    label: "Animation",
+    description: "Define animation style references",
+    triggerWord: "",
+    color: "text-orange-700",
+    bgColor: "bg-orange-50",
+    borderColor: "border-orange-200",
+  },
 };
 
 // ─── Status Config ──────────────────────────────────────────
@@ -110,6 +134,9 @@ export const TRIGGER_WORDS: Record<ConsistentModelType, string> = {
   PRODUCT: "ohwx product",
   STYLE: "ohwx style",
   OBJECT: "ohwx object",
+  BRAND_STYLE: "",
+  PHOTOGRAPHY: "",
+  ANIMATION: "",
 };
 
 // ─── Min Reference Images per Type ──────────────────────────
@@ -119,6 +146,9 @@ export const MIN_IMAGES_BY_TYPE: Record<ConsistentModelType, number> = {
   PRODUCT: 5,
   STYLE: 10,
   OBJECT: 5,
+  BRAND_STYLE: 0,
+  PHOTOGRAPHY: 0,
+  ANIMATION: 0,
 };
 
 // ─── Generation Defaults ────────────────────────────────────
@@ -150,3 +180,8 @@ export const STATUS_FILTER_OPTIONS = [
   { value: "READY", label: "Ready" },
   { value: "ARCHIVED", label: "Archived" },
 ];
+
+// ─── Trainable Types (require Astria training) ──────────
+
+/** Types that support AI training + generation. Non-trainable types are style guides only. */
+export const TRAINABLE_TYPES = new Set<ConsistentModelType>(['PERSON', 'PRODUCT', 'STYLE', 'OBJECT']);

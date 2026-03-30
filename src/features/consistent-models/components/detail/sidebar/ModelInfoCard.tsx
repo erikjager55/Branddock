@@ -5,6 +5,7 @@ import { Card } from "@/components/shared";
 import { ModelTypeBadge } from "../../shared/ModelTypeBadge";
 import { ModelStatusBadge } from "../../shared/ModelStatusBadge";
 import { TriggerWordDisplay } from "../../shared/TriggerWordDisplay";
+import { TRAINABLE_TYPES } from "../../../constants/model-constants";
 import type { ConsistentModelDetail } from "../../../types/consistent-model.types";
 
 interface ModelInfoCardProps {
@@ -19,6 +20,8 @@ export function ModelInfoCard({ model }: ModelInfoCardProps) {
     day: "numeric",
   });
 
+  const isTrainable = TRAINABLE_TYPES.has(model.type);
+
   return (
     <Card className="p-4">
       <h3 className="mb-3 text-sm font-semibold text-gray-900">Model Info</h3>
@@ -31,16 +34,28 @@ export function ModelInfoCard({ model }: ModelInfoCardProps) {
           <span className="text-sm text-gray-500">Type</span>
           <ModelTypeBadge type={model.type} size="sm" />
         </div>
-        {model.triggerWord && (
+        {isTrainable && model.triggerWord && (
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-500">Trigger</span>
             <TriggerWordDisplay triggerWord={model.triggerWord} />
           </div>
         )}
-        {model.baseModel && (
+        {isTrainable && model.baseModel && (
           <div className="flex items-center justify-between">
             <span className="text-sm text-gray-500">Base Model</span>
             <span className="text-sm text-gray-700">{model.baseModel}</span>
+          </div>
+        )}
+        {!isTrainable && model.modelName && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-500">Model Name</span>
+            <span className="text-sm text-gray-700 line-clamp-1">{model.modelName}</span>
+          </div>
+        )}
+        {!isTrainable && model.modelDescription && (
+          <div className="space-y-1">
+            <span className="text-sm text-gray-500">Description</span>
+            <p className="text-sm text-gray-700 line-clamp-3">{model.modelDescription}</p>
           </div>
         )}
         <div className="flex items-center justify-between">

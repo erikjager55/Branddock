@@ -6,6 +6,7 @@ import { Button } from "@/components/shared";
 import { ModelTypeBadge } from "../shared/ModelTypeBadge";
 import { ModelStatusBadge } from "../shared/ModelStatusBadge";
 import { TriggerWordDisplay } from "../shared/TriggerWordDisplay";
+import { TRAINABLE_TYPES } from "../../constants/model-constants";
 import type { ConsistentModelDetail } from "../../types/consistent-model.types";
 
 interface ModelDetailHeaderProps {
@@ -95,7 +96,7 @@ export function ModelDetailHeader({
           <div className="flex items-center gap-3">
             <ModelTypeBadge type={model.type} />
             <ModelStatusBadge status={model.status} />
-            {model.triggerWord && (
+            {TRAINABLE_TYPES.has(model.type) && model.triggerWord && (
               <TriggerWordDisplay triggerWord={model.triggerWord} />
             )}
           </div>

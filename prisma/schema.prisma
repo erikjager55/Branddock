@@ -201,7 +201,6 @@ model Workspace {
   mediaAssets               MediaAsset[]
   mediaTags                 MediaTag[]
   mediaCollections          MediaCollection[]
-  styleReferences           StyleReference[]
   brandVoices               BrandVoice[]
   soundEffects              SoundEffect[]
   generatedImages           GeneratedImage[]
@@ -3396,17 +3395,14 @@ enum MediaSource {
   STOCK
 }
 
-enum StyleReferenceType {
-  BRAND_MODEL
-  PHOTOGRAPHY_STYLE
-  ANIMATION_STYLE
-}
-
 enum ConsistentModelType {
   PERSON
   PRODUCT
   STYLE
   OBJECT
+  BRAND_STYLE
+  PHOTOGRAPHY
+  ANIMATION
 }
 
 enum ConsistentModelStatus {
@@ -3530,27 +3526,6 @@ model MediaCollectionAsset {
   @@unique([mediaAssetId, collectionId])
   @@index([collectionId])
   @@index([mediaAssetId])
-}
-
-model StyleReference {
-  id                String              @id @default(cuid())
-  name              String
-  type              StyleReferenceType
-  stylePrompt       String?             @db.Text
-  negativePrompt    String?             @db.Text
-  generationParams  Json?
-  modelName         String?
-  modelDescription  String?             @db.Text
-  referenceImages   String[]            // URLs
-
-  workspaceId       String
-  workspace         Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-
-  @@index([workspaceId])
-  @@index([workspaceId, type])
 }
 
 model BrandVoice {
@@ -3695,6 +3670,11 @@ model ConsistentModel {
   // Visual style context
   stylePrompt         String?               @db.Text
   negativePrompt      String?               @db.Text
+
+  // Style reference fields (for non-trainable types: BRAND_STYLE, PHOTOGRAPHY, ANIMATION)
+  modelName           String?               // Animation engine/tool name
+  modelDescription    String?               @db.Text   // Extended description
+  generationParams    Json?                 // Animation-specific params
 
   // Metadata
   thumbnailUrl        String?

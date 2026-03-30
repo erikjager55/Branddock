@@ -112,20 +112,3 @@ export function mapGeneratedVideo(vid: Record<string, unknown>) {
     updatedAt: toISOString(vid.updatedAt),
   };
 }
-
-/** Map a StyleReference record to a serializable response object */
-export function mapStyleReference(ref: Record<string, unknown>) {
-  return {
-    id: ref.id,
-    name: ref.name,
-    type: ref.type,
-    stylePrompt: ref.stylePrompt,
-    negativePrompt: ref.negativePrompt,
-    generationParams: ref.generationParams,
-    modelName: ref.modelName,
-    modelDescription: ref.modelDescription,
-    referenceImages: ref.referenceImages,
-    createdAt: (ref.createdAt as Date).toISOString(),
-    updatedAt: (ref.updatedAt as Date).toISOString(),
-  };
-}

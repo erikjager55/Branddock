@@ -4,7 +4,7 @@
 
 // ─── Enums ──────────────────────────────────────────────────
 
-export type ConsistentModelType = "PERSON" | "PRODUCT" | "STYLE" | "OBJECT";
+export type ConsistentModelType = "PERSON" | "PRODUCT" | "STYLE" | "OBJECT" | "BRAND_STYLE" | "PHOTOGRAPHY" | "ANIMATION";
 
 export type ConsistentModelStatus =
   | "DRAFT"
@@ -30,6 +30,9 @@ export interface ConsistentModelWithMeta {
   negativePrompt: string | null;
   thumbnailUrl: string | null;
   sampleImageUrls: string[] | null;
+  modelName: string | null;
+  modelDescription: string | null;
+  generationParams: unknown | null;
   usageCount: number;
   isDefault: boolean;
   referenceImageCount: number;
@@ -168,6 +171,9 @@ export interface CreateModelBody {
   baseModel?: string;
   stylePrompt?: string;
   negativePrompt?: string;
+  modelName?: string;
+  modelDescription?: string;
+  generationParams?: unknown;
 }
 
 /** PATCH /api/consistent-models/:id */
@@ -178,6 +184,9 @@ export interface UpdateModelBody {
   negativePrompt?: string;
   isDefault?: boolean;
   status?: 'ARCHIVED';
+  modelName?: string;
+  modelDescription?: string;
+  generationParams?: unknown;
 }
 
 /** POST /api/consistent-models/:id/generate */

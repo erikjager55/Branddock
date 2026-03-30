@@ -15,6 +15,9 @@ const updateModelSchema = z.object({
   negativePrompt: z.string().trim().max(2000).nullable().optional(),
   isDefault: z.boolean().optional(),
   status: z.enum(['ARCHIVED']).optional(),
+  modelName: z.string().trim().max(200).nullable().optional(),
+  modelDescription: z.string().trim().max(5000).nullable().optional(),
+  generationParams: z.unknown().optional(),
 });
 
 /** GET /api/consistent-models/:id — Model detail */
@@ -99,9 +102,13 @@ export async function PATCH(
       });
     }
 
+    const { generationParams, ...rest } = parsed.data;
     const updated = await prisma.consistentModel.update({
       where: { id },
-      data: parsed.data,
+      data: {
+        ...rest,
+        ...(generationParams !== undefined && { generationParams: generationParams as Parameters<typeof prisma.consistentModel.update>[0]['data']['generationParams'] }),
+      },
       include: {
         referenceImages: { orderBy: { sortOrder: 'asc' } },
         createdBy: { select: { id: true, name: true, image: true } },

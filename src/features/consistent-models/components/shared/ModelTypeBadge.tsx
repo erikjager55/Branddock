@@ -1,6 +1,6 @@
 "use client";
 
-import { User, Package, Palette, Box } from "lucide-react";
+import { User, Package, Palette, Box, Brush, Camera, Clapperboard } from "lucide-react";
 import { TYPE_CONFIG } from "../../constants/model-constants";
 import type { ConsistentModelType } from "../../types/consistent-model.types";
 
@@ -9,6 +9,9 @@ const TYPE_ICONS: Record<ConsistentModelType, React.ElementType> = {
   PRODUCT: Package,
   STYLE: Palette,
   OBJECT: Box,
+  BRAND_STYLE: Brush,
+  PHOTOGRAPHY: Camera,
+  ANIMATION: Clapperboard,
 };
 
 interface ModelTypeBadgeProps {

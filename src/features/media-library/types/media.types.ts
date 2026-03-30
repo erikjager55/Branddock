@@ -13,8 +13,6 @@ export type MediaCategory =
 
 export type MediaSource = 'UPLOAD' | 'URL_IMPORT' | 'AI_GENERATED' | 'SCRAPED' | 'STOCK';
 
-export type StyleReferenceType = 'BRAND_MODEL' | 'PHOTOGRAPHY_STYLE' | 'ANIMATION_STYLE';
-
 // ─── Media Asset ─────────────────────────────────────────────
 
 export interface MediaTagInfo {
@@ -189,43 +187,6 @@ export interface UpdateCollectionBody {
   description?: string;
   coverImageUrl?: string;
   color?: string;
-}
-
-// ─── Style References ────────────────────────────────────────
-
-export interface StyleReferenceWithMeta {
-  id: string;
-  name: string;
-  type: StyleReferenceType;
-  stylePrompt: string | null;
-  negativePrompt: string | null;
-  generationParams: Record<string, unknown> | null;
-  modelName: string | null;
-  modelDescription: string | null;
-  referenceImages: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface CreateStyleReferenceBody {
-  name: string;
-  type: StyleReferenceType;
-  stylePrompt?: string;
-  negativePrompt?: string;
-  generationParams?: Record<string, unknown>;
-  modelName?: string;
-  modelDescription?: string;
-  referenceImages?: string[];
-}
-
-export interface UpdateStyleReferenceBody {
-  name?: string;
-  stylePrompt?: string;
-  negativePrompt?: string;
-  generationParams?: Record<string, unknown>;
-  modelName?: string;
-  modelDescription?: string;
-  referenceImages?: string[];
 }
 
 // ─── ElevenLabs ─────────────────────────────────────────────

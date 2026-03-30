@@ -2,20 +2,14 @@
 
 import { useState } from 'react';
 import { PageShell, PageHeader } from '@/components/ui/layout';
-import { Cpu, User, Camera, Clapperboard, Mic, Music } from 'lucide-react';
+import { Cpu, Mic, Music } from 'lucide-react';
 import { ConsistentModelsContent } from '@/features/consistent-models/components/ConsistentModelsPage';
-import { BrandModelsTab } from '@/features/media-library/components/creative-hub/brand-models/BrandModelsTab';
-import { PhotographyStyleTab } from '@/features/media-library/components/creative-hub/photography-style/PhotographyStyleTab';
-import { AnimationStyleTab } from '@/features/media-library/components/creative-hub/animation-style/AnimationStyleTab';
 import { BrandVoiceTab } from '@/features/media-library/components/creative-hub/brand-voice/BrandVoiceTab';
 import { SoundEffectsTab } from '@/features/media-library/components/creative-hub/sound-effects/SoundEffectsTab';
 import type { LucideIcon } from 'lucide-react';
 
 const TABS = [
   { key: 'models', label: 'AI Models', icon: Cpu },
-  { key: 'brand-models', label: 'Brand Models', icon: User },
-  { key: 'photography', label: 'Photography', icon: Camera },
-  { key: 'animation', label: 'Animation', icon: Clapperboard },
   { key: 'voices', label: 'Voices', icon: Mic },
   { key: 'sound', label: 'Sound Effects', icon: Music },
 ] as const;
@@ -61,9 +55,6 @@ export function AiTrainerPage({ onNavigateToModelDetail }: AiTrainerPageProps) {
 
       <div className="space-y-6 px-8 pb-8">
         {activeTab === 'models' && <ConsistentModelsContent onNavigateToDetail={onNavigateToModelDetail} />}
-        {activeTab === 'brand-models' && <BrandModelsTab />}
-        {activeTab === 'photography' && <PhotographyStyleTab />}
-        {activeTab === 'animation' && <AnimationStyleTab />}
         {activeTab === 'voices' && <BrandVoiceTab />}
         {activeTab === 'sound' && <SoundEffectsTab />}
       </div>

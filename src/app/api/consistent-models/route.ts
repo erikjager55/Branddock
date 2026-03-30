@@ -7,10 +7,13 @@ import { z } from 'zod';
 
 const createModelSchema = z.object({
   name: z.string().trim().min(1).max(100),
-  type: z.enum(['PERSON', 'PRODUCT', 'STYLE', 'OBJECT']),
+  type: z.enum(['PERSON', 'PRODUCT', 'STYLE', 'OBJECT', 'BRAND_STYLE', 'PHOTOGRAPHY', 'ANIMATION']),
   description: z.string().trim().max(2000).optional(),
   stylePrompt: z.string().trim().max(2000).optional(),
   negativePrompt: z.string().trim().max(2000).optional(),
+  modelName: z.string().trim().max(200).optional(),
+  modelDescription: z.string().trim().max(5000).optional(),
+  generationParams: z.unknown().optional(),
 });
 
 function generateSlug(name: string): string {
@@ -116,7 +119,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, type, description, stylePrompt, negativePrompt } = parsed.data;
+    const { name, type, description, stylePrompt, negativePrompt, modelName, modelDescription, generationParams } = parsed.data;
 
     // Generate unique slug
     let slug = generateSlug(name);
@@ -137,6 +140,9 @@ export async function POST(request: NextRequest) {
         description: description ?? null,
         stylePrompt: stylePrompt ?? null,
         negativePrompt: negativePrompt ?? null,
+        modelName: modelName ?? null,
+        modelDescription: modelDescription ?? null,
+        generationParams: (generationParams ?? undefined) as Parameters<typeof prisma.consistentModel.create>[0]['data']['generationParams'],
       },
       include: {
         _count: { select: { referenceImages: true, generations: true } },

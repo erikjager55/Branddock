@@ -12,9 +12,6 @@ import type {
   MediaCollectionDetail,
   CreateCollectionBody,
   UpdateCollectionBody,
-  StyleReferenceWithMeta,
-  CreateStyleReferenceBody,
-  UpdateStyleReferenceBody,
   BrandVoiceWithMeta,
   CreateBrandVoiceBody,
   UpdateBrandVoiceBody,
@@ -298,51 +295,6 @@ export async function importStockPhoto(body: ImportStockBody): Promise<MediaAsse
   if (!res.ok) throw new Error('Failed to import stock photo');
   const data = await res.json();
   return data.asset ?? data;
-}
-
-// ─── Style References ────────────────────────────────────────
-
-export async function fetchStyleReferences(): Promise<StyleReferenceWithMeta[]> {
-  const res = await fetch(`${BASE}/style-references`);
-  if (!res.ok) throw new Error('Failed to fetch style references');
-  const data = await res.json();
-  return data.styleReferences ?? data;
-}
-
-export async function fetchStyleReferenceDetail(id: string): Promise<StyleReferenceWithMeta> {
-  const res = await fetch(`${BASE}/style-references/${id}`);
-  if (!res.ok) throw new Error('Failed to fetch style reference');
-  return res.json();
-}
-
-export async function createStyleReference(
-  body: CreateStyleReferenceBody
-): Promise<StyleReferenceWithMeta> {
-  const res = await fetch(`${BASE}/style-references`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error('Failed to create style reference');
-  return res.json();
-}
-
-export async function updateStyleReference(
-  id: string,
-  body: UpdateStyleReferenceBody
-): Promise<StyleReferenceWithMeta> {
-  const res = await fetch(`${BASE}/style-references/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error('Failed to update style reference');
-  return res.json();
-}
-
-export async function deleteStyleReference(id: string): Promise<void> {
-  const res = await fetch(`${BASE}/style-references/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Failed to delete style reference');
 }
 
 // ─── Brand Voices ────────────────────────────────────────────

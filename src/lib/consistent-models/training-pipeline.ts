@@ -28,6 +28,9 @@ const DEFAULT_SAMPLE_PROMPTS: Record<ConsistentModelType, string> = {
   PRODUCT: 'A clean product photo of ohwx product on a white background, studio lighting',
   STYLE: 'A photograph in the ohwx style, beautiful composition, high quality',
   OBJECT: 'A photo of ohwx object, clean background, professional lighting',
+  BRAND_STYLE: '',
+  PHOTOGRAPHY: '',
+  ANIMATION: '',
 };
 
 const NUM_SAMPLE_IMAGES = 3;
