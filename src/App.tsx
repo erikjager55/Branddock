@@ -20,6 +20,7 @@ import { useBusinessStrategyStore } from './features/business-strategy/stores/us
 import { usePersonaDetailStore } from './features/personas/stores/usePersonaDetailStore';
 import { useResearchStore } from './features/research/stores/useResearchStore';
 import { useCampaignStore } from './features/campaigns/stores/useCampaignStore';
+import { useConsistentModelStore } from './features/consistent-models/stores/useConsistentModelStore';
 import { useShellStore } from './stores/useShellStore';
 import { getResearchOptionId, ResearchMethodType } from './utils/research-method-helpers';
 import { logger } from './utils/logger';
@@ -56,6 +57,8 @@ import {
   WebsiteScannerPage,
   KnowledgeLibraryPage,
   MediaLibraryPage,
+  ConsistentModelsPage,
+  ModelDetailPage,
   ResearchHubPage,
   ResearchBundlesPage,
   BundleDetailPage,
@@ -323,6 +326,8 @@ function AppContent() {
       redirectTo = 'active-campaigns';
     } else if (activeSection === 'ai-exploration-brand-asset' && !selectedAssetId) {
       redirectTo = 'brand';
+    } else if (activeSection === 'consistent-model-detail' && !useConsistentModelStore.getState().selectedModelId) {
+      redirectTo = 'consistent-models';
     } else if (activeSection === 'content-studio') {
       const cs = useCampaignStore.getState();
       if (!cs.selectedCampaignId || !cs.selectedDeliverableId) {
@@ -715,6 +720,25 @@ function AppContent() {
         return <KnowledgeLibraryPage />;
       case 'media-library':
         return <MediaLibraryPage />;
+      case 'consistent-models':
+        return (
+          <ConsistentModelsPage
+            onNavigateToDetail={(id) => {
+              useConsistentModelStore.getState().setSelectedModel(id);
+              handleSetActiveSection('consistent-model-detail');
+            }}
+          />
+        );
+      case 'consistent-model-detail': {
+        const cmModelId = useConsistentModelStore.getState().selectedModelId;
+        if (!cmModelId) return null;
+        return (
+          <ModelDetailPage
+            modelId={cmModelId}
+            onNavigateBack={() => handleSetActiveSection('consistent-models')}
+          />
+        );
+      }
       case 'research-validation':
         return <ResearchValidationPage />;
       

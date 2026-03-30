@@ -204,6 +204,11 @@ model Workspace {
   styleReferences           StyleReference[]
   brandVoices               BrandVoice[]
   soundEffects              SoundEffect[]
+  generatedImages           GeneratedImage[]
+
+  // Consistent AI Models (Fase I.4)
+  consistentModels          ConsistentModel[]
+  consistentModelGenerations ConsistentModelGeneration[]
 
   @@index([organizationId])
 }
@@ -284,6 +289,11 @@ model User {
   // Media Library
   uploadedMedia          MediaAsset[]    @relation("UploadedMedia")
   createdSoundEffects    SoundEffect[]   @relation("CreatedSoundEffects")
+  createdGeneratedImages GeneratedImage[] @relation("CreatedGeneratedImages")
+
+  // Consistent AI Models (Fase I.4)
+  consistentModels              ConsistentModel[]              @relation("CreatedConsistentModels")
+  consistentModelGenerations    ConsistentModelGeneration[]    @relation("CreatedConsistentModelGenerations")
 
   @@index([workspaceId])
 }
@@ -3390,6 +3400,22 @@ enum StyleReferenceType {
   ANIMATION_STYLE
 }
 
+enum ConsistentModelType {
+  PERSON
+  PRODUCT
+  STYLE
+  OBJECT
+}
+
+enum ConsistentModelStatus {
+  DRAFT
+  UPLOADING
+  TRAINING
+  TRAINING_FAILED
+  READY
+  ARCHIVED
+}
+
 model MediaAsset {
   id              String          @id @default(cuid())
   name            String
@@ -3572,5 +3598,148 @@ model SoundEffect {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  @@index([workspaceId])
+}
+
+model GeneratedImage {
+  id              String    @id @default(cuid())
+  name            String
+  prompt          String    @db.Text
+  revisedPrompt   String?   @db.Text
+  provider        String                       // IMAGEN | DALLE
+  model           String                       // imagen-4.0-generate-001 | dall-e-3
+  fileUrl         String
+  fileName        String
+  fileSize        Int                          // bytes
+  fileType        String                       // MIME: image/png, image/jpeg
+  width           Int?
+  height          Int?
+  aspectRatio     String?                      // "1:1", "16:9", etc.
+  style           String?                      // DALL-E: "vivid" | "natural"
+  quality         String?                      // DALL-E: "standard" | "hd"
+  isFavorite      Boolean   @default(false)
+
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById     String
+  createdBy       User      @relation("CreatedGeneratedImages", fields: [createdById], references: [id])
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([workspaceId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Consistent AI Models (Fase I.4)
+// ─────────────────────────────────────────────────────────────
+
+model ConsistentModel {
+  id                  String                @id @default(cuid())
+  workspaceId         String
+  workspace           Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById         String
+  createdBy           User                  @relation("CreatedConsistentModels", fields: [createdById], references: [id])
+
+  name                String
+  slug                String
+  description         String?               @db.Text
+  type                ConsistentModelType
+  status              ConsistentModelStatus @default(DRAFT)
+
+  // Astria integration
+  astriaModelId       String?               // Astria tune ID after training
+  astriaModelUrl      String?               // Astria model URL
+  triggerWord         String?               // Trigger word (e.g. "sks person")
+  baseModel           String?               // "flux-lora" | "sdxl-lora"
+
+  // Training config
+  trainingConfig      Json?                 // { steps, learningRate, resolution, ... }
+  trainingStartedAt   DateTime?
+  trainingCompletedAt DateTime?
+  trainingError       String?               @db.Text
+
+  // Visual style context
+  stylePrompt         String?               @db.Text
+  negativePrompt      String?               @db.Text
+
+  // Metadata
+  thumbnailUrl        String?
+  sampleImageUrls     Json?                 // String[] — AI-generated samples after training
+  usageCount          Int                   @default(0)
+  isDefault           Boolean               @default(false)
+
+  referenceImages     ReferenceImage[]
+  generations         ConsistentModelGeneration[]
+
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId, type])
+  @@index([workspaceId, status])
+}
+
+model ReferenceImage {
+  id                  String           @id @default(cuid())
+  consistentModelId   String
+  consistentModel     ConsistentModel  @relation(fields: [consistentModelId], references: [id], onDelete: Cascade)
+
+  fileName            String
+  fileSize            Int              // bytes
+  mimeType            String           // image/jpeg, image/png, image/webp
+  width               Int?
+  height              Int?
+
+  // Storage (Cloudflare R2)
+  storageKey          String           // R2 key: ws_{id}/models/{modelId}/{uuid}.jpg
+  storageUrl          String           // Signed URL or CDN URL
+  thumbnailKey        String?
+  thumbnailUrl        String?
+
+  // Metadata
+  caption             String?
+  sortOrder           Int              @default(0)
+  isTrainingImage     Boolean          @default(true)
+
+  createdAt           DateTime         @default(now())
+
+  @@index([consistentModelId])
+}
+
+model ConsistentModelGeneration {
+  id                  String           @id @default(cuid())
+  consistentModelId   String
+  consistentModel     ConsistentModel  @relation(fields: [consistentModelId], references: [id], onDelete: Cascade)
+  workspaceId         String
+  workspace           Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById         String
+  createdBy           User             @relation("CreatedConsistentModelGenerations", fields: [createdById], references: [id])
+
+  // Generation params
+  prompt              String           @db.Text
+  negativePrompt      String?          @db.Text
+  seed                Int?
+  width               Int              @default(1024)
+  height              Int              @default(1024)
+  guidanceScale       Float?
+  numInferenceSteps   Int?
+
+  // Result
+  storageKey          String           // R2 key
+  storageUrl          String           // CDN/signed URL
+  thumbnailKey        String?
+  thumbnailUrl        String?
+
+  // Metadata
+  generationTimeMs    Int?
+  aiProvider          String           // "astria"
+  aiModel             String           // Astria model ID
+  cost                Float?           // Estimated cost in USD
+  mediaAssetId        String?          // Link to MediaAsset if saved to library
+
+  createdAt           DateTime         @default(now())
+
+  @@index([consistentModelId])
   @@index([workspaceId])
 }

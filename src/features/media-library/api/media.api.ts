@@ -28,6 +28,9 @@ import type {
   CreateSoundEffectBody,
   GenerateSoundEffectBody,
   UpdateSoundEffectBody,
+  GeneratedImageWithMeta,
+  GenerateImageBody,
+  UpdateGeneratedImageBody,
 } from '../types/media.types';
 
 const BASE = '/api/media';
@@ -459,4 +462,57 @@ export async function updateSoundEffect(
 export async function deleteSoundEffect(id: string): Promise<void> {
   const res = await fetch(`${BASE}/sound-effects/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete sound effect');
+}
+
+// ─── AI Images ──────────────────────────────────────────────
+
+export async function fetchAiImages(
+  favorite?: boolean
+): Promise<GeneratedImageWithMeta[]> {
+  const params = favorite ? '?favorite=true' : '';
+  const res = await fetch(`${BASE}/ai-images${params}`);
+  if (!res.ok) throw new Error('Failed to fetch AI images');
+  const data = await res.json();
+  return data.images ?? data;
+}
+
+export async function fetchAiImageDetail(
+  id: string
+): Promise<GeneratedImageWithMeta> {
+  const res = await fetch(`${BASE}/ai-images/${id}`);
+  if (!res.ok) throw new Error('Failed to fetch AI image');
+  return res.json();
+}
+
+export async function generateAiImage(
+  body: GenerateImageBody
+): Promise<GeneratedImageWithMeta> {
+  const res = await fetch(`${BASE}/ai-images/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to generate image');
+  }
+  return res.json();
+}
+
+export async function updateAiImage(
+  id: string,
+  body: UpdateGeneratedImageBody
+): Promise<GeneratedImageWithMeta> {
+  const res = await fetch(`${BASE}/ai-images/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error('Failed to update AI image');
+  return res.json();
+}
+
+export async function deleteAiImage(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/ai-images/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete AI image');
 }

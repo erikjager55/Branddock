@@ -41,6 +41,8 @@ export interface BrandContextBlock {
   productsOverview?: string;
   competitorAnalysis?: string;
   competitiveLandscape?: string;
+  // Consistent AI models
+  consistentModels?: string;
 }
 
 // ─── System prompt fragments ───────────────────────────────
@@ -113,6 +115,12 @@ export function formatBrandContext(ctx: BrandContextBlock): string {
   if (ctx.competitiveLandscape) {
     lines.push(`**Market Trends & Competitive Landscape:**`);
     lines.push(ctx.competitiveLandscape);
+  }
+
+  // Consistent AI models
+  if (ctx.consistentModels) {
+    lines.push(`**Consistent AI Models:**`);
+    lines.push(ctx.consistentModels);
   }
 
   return lines.join('\n');

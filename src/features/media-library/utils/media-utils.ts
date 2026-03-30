@@ -65,6 +65,30 @@ export function mapSoundEffect(sfx: Record<string, unknown>) {
   };
 }
 
+/** Map a GeneratedImage record to a serializable response object */
+export function mapGeneratedImage(img: Record<string, unknown>) {
+  return {
+    id: img.id,
+    name: img.name,
+    prompt: img.prompt,
+    revisedPrompt: img.revisedPrompt,
+    provider: img.provider,
+    model: img.model,
+    fileUrl: img.fileUrl,
+    fileName: img.fileName,
+    fileSize: img.fileSize,
+    fileType: img.fileType,
+    width: img.width,
+    height: img.height,
+    aspectRatio: img.aspectRatio,
+    style: img.style,
+    quality: img.quality,
+    isFavorite: img.isFavorite,
+    createdAt: toISOString(img.createdAt),
+    updatedAt: toISOString(img.updatedAt),
+  };
+}
+
 /** Map a StyleReference record to a serializable response object */
 export function mapStyleReference(ref: Record<string, unknown>) {
   return {

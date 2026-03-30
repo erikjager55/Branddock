@@ -379,3 +379,43 @@ export interface ImportStockBody {
   height: number;
   alt?: string;
 }
+
+// ─── AI Images ───────────────────────────────────────────────
+
+export type ImageProvider = 'IMAGEN' | 'DALLE';
+
+export interface GeneratedImageWithMeta {
+  id: string;
+  name: string;
+  prompt: string;
+  revisedPrompt: string | null;
+  provider: ImageProvider;
+  model: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize: number;
+  fileType: string;
+  width: number | null;
+  height: number | null;
+  aspectRatio: string | null;
+  style: string | null;
+  quality: string | null;
+  isFavorite: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GenerateImageBody {
+  name: string;
+  prompt: string;
+  provider: ImageProvider;
+  aspectRatio?: string;
+  size?: '1024x1024' | '1792x1024' | '1024x1792';
+  quality?: 'standard' | 'hd';
+  style?: 'vivid' | 'natural';
+}
+
+export interface UpdateGeneratedImageBody {
+  name?: string;
+  isFavorite?: boolean;
+}

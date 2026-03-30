@@ -112,6 +112,14 @@ export const MediaLibraryPage = lazy(() =>
   import('@/features/media-library/components/MediaLibraryPage').then(m => ({ default: m.MediaLibraryPage }))
 );
 
+// ─── Consistent Models ───────────────────────────────────
+export const ConsistentModelsPage = lazy(() =>
+  import('@/features/consistent-models/components/ConsistentModelsPage').then(m => ({ default: m.ConsistentModelsPage }))
+);
+export const ModelDetailPage = lazy(() =>
+  import('@/features/consistent-models/components/detail/ModelDetailPage').then(m => ({ default: m.ModelDetailPage }))
+);
+
 // ─── Research & Validation ─────────────────────────────────
 export const ResearchHubPage = lazy(() =>
   import('@/features/research/components/hub/ResearchHubPage').then(m => ({ default: m.ResearchHubPage }))
@@ -213,6 +221,7 @@ const moduleLoaders: Record<string, () => Promise<unknown>> = {
   'trends': () => import('@/features/trend-radar/components/TrendRadarPage'),
   'knowledge': () => import('@/features/knowledge-library/components/KnowledgeLibraryPage'),
   'media-library': () => import('@/features/media-library/components/MediaLibraryPage'),
+  'consistent-models': () => import('@/features/consistent-models/components/ConsistentModelsPage'),
   'research': () => import('@/features/research/components/hub/ResearchHubPage'),
   'active-campaigns': () => import('@/features/campaigns/components/overview/ActiveCampaignsPage'),
   'business-strategy': () => import('@/features/business-strategy/components/BusinessStrategyPage'),

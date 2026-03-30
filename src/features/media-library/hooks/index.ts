@@ -45,6 +45,11 @@ import {
   generateSoundEffectApi,
   updateSoundEffect,
   deleteSoundEffect,
+  fetchAiImages,
+  fetchAiImageDetail,
+  generateAiImage,
+  updateAiImage,
+  deleteAiImage,
 } from '../api/media.api';
 import type {
   MediaListParams,
@@ -64,6 +69,8 @@ import type {
   CreateSoundEffectBody,
   GenerateSoundEffectBody,
   UpdateSoundEffectBody,
+  GenerateImageBody,
+  UpdateGeneratedImageBody,
 } from '../types/media.types';
 
 // ─── Query Key Factory ──────────────────────────────────────
@@ -85,6 +92,8 @@ export const mediaKeys = {
   elevenLabsVoices: () => [...mediaKeys.all, 'elevenlabs-voices'] as const,
   soundEffects: () => [...mediaKeys.all, 'sound-effects'] as const,
   soundEffectDetail: (id: string) => [...mediaKeys.all, 'sound-effect', id] as const,
+  aiImages: (favorite?: boolean) => [...mediaKeys.all, 'ai-images', favorite] as const,
+  aiImageDetail: (id: string) => [...mediaKeys.all, 'ai-image', id] as const,
 };
 
 // ─── Media Assets ────────────────────────────────────────────
@@ -560,6 +569,56 @@ export function useDeleteSoundEffect() {
     mutationFn: (id: string) => deleteSoundEffect(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: mediaKeys.soundEffects() });
+    },
+  });
+}
+
+// ─── AI Images ──────────────────────────────────────────────
+
+export function useAiImages(favorite?: boolean) {
+  return useQuery({
+    queryKey: mediaKeys.aiImages(favorite),
+    queryFn: () => fetchAiImages(favorite),
+    staleTime: 30_000,
+  });
+}
+
+export function useAiImageDetail(id: string) {
+  return useQuery({
+    queryKey: mediaKeys.aiImageDetail(id),
+    queryFn: () => fetchAiImageDetail(id),
+    enabled: !!id,
+    staleTime: 60_000,
+  });
+}
+
+export function useGenerateAiImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: GenerateImageBody) => generateAiImage(body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...mediaKeys.all, 'ai-images'] });
+    },
+  });
+}
+
+export function useUpdateAiImage(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateGeneratedImageBody) => updateAiImage(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: mediaKeys.aiImageDetail(id) });
+      qc.invalidateQueries({ queryKey: [...mediaKeys.all, 'ai-images'] });
+    },
+  });
+}
+
+export function useDeleteAiImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteAiImage(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...mediaKeys.all, 'ai-images'] });
     },
   });
 }

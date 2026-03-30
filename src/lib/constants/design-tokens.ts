@@ -499,6 +499,7 @@ export const SIDEBAR_NAV: {
         { key: 'personas', label: 'Personas', icon: 'Users', href: '/knowledge/personas' },
         { key: 'products', label: 'Products & Services', icon: 'Package', href: '/knowledge/products' },
         { key: 'competitors', label: 'Competitors', icon: 'Swords', href: '/knowledge/competitors' },
+        { key: 'consistent-models', label: 'AI Models', icon: 'Cpu', href: '/knowledge/ai-models' },
         { key: 'media-library', label: 'Media Library', icon: 'Images', href: '/knowledge/media' },
       ],
     },

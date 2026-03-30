@@ -755,7 +755,7 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
   if (cached) return cached;
 
   // Fetch all sources in parallel
-  const [workspace, brandAssets, personas, products, activatedTrends, competitors, styleguide] = await Promise.all([
+  const [workspace, brandAssets, personas, products, activatedTrends, competitors, styleguide, consistentModels] = await Promise.all([
     prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { name: true },
@@ -850,6 +850,13 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         layoutPrinciples: true,
         designLanguageSavedForAi: true,
       },
+    }),
+
+    prisma.consistentModel.findMany({
+      where: { workspaceId, status: 'READY' },
+      select: { name: true, type: true, description: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 10,
     }),
   ]);
 
@@ -1203,6 +1210,13 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         }
         return parts.join('\n');
       })
+      .join('\n');
+  }
+
+  // Consistent AI models
+  if (consistentModels.length > 0) {
+    ctx.consistentModels = consistentModels
+      .map((m) => `- ${m.name} (${m.type})${m.description ? `: ${m.description}` : ''}`)
       .join('\n');
   }
 

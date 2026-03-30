@@ -74,6 +74,7 @@ export const cacheKeys = {
     styleRefs: (wsId: string) => `media:${wsId}:style-refs`,
     brandVoices: (wsId: string) => `media:${wsId}:brand-voices`,
     soundEffects: (wsId: string) => `media:${wsId}:sound-effects`,
+    aiImages: (wsId: string) => `media:${wsId}:ai-images`,
     stats: (wsId: string) => `media:${wsId}:stats`,
   },
   notifications: {

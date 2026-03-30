@@ -193,3 +193,36 @@ export const openaiClient = {
     return JSON.parse(content) as T;
   },
 };
+
+// ─── Image Generation (DALL-E 3) ────────────────────────────
+
+export interface DalleOptions {
+  size?: '1024x1024' | '1792x1024' | '1024x1792';
+  quality?: 'standard' | 'hd';
+  style?: 'vivid' | 'natural';
+}
+
+export async function generateDalleImage(
+  prompt: string,
+  options?: DalleOptions,
+): Promise<{ imageBytes: Buffer; mimeType: string; revisedPrompt?: string }> {
+  const client = getClient();
+  const response = await client.images.generate({
+    model: 'dall-e-3',
+    prompt,
+    n: 1,
+    size: options?.size ?? '1024x1024',
+    quality: options?.quality ?? 'standard',
+    style: options?.style ?? 'vivid',
+    response_format: 'b64_json',
+  });
+  if (!response.data?.length) {
+    throw new Error('No images returned by DALL-E');
+  }
+  const data = response.data[0];
+  return {
+    imageBytes: Buffer.from(data.b64_json!, 'base64'),
+    mimeType: 'image/png',
+    revisedPrompt: data.revised_prompt ?? undefined,
+  };
+}
