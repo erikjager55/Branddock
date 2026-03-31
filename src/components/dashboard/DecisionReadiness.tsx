@@ -13,13 +13,15 @@ const MODULE_LABELS: Record<keyof ModuleScores, string> = {
   trends: 'Trends',
 };
 
+const CARD_BG = { background: 'linear-gradient(to bottom right, #10b981, #1FD1B2)' };
+
 export function DecisionReadiness() {
   const { data, isLoading, isError } = useReadiness();
   const queryClient = useQueryClient();
 
   if (isLoading) {
     return (
-      <div className="bg-gradient-to-br from-emerald-500 to-primary rounded-xl p-6">
+      <div className="rounded-xl p-6" style={CARD_BG}>
         <Skeleton className="h-6 w-48 mb-4 bg-white/20" />
         <Skeleton className="h-12 w-24 mb-3 bg-white/20" />
         <Skeleton className="h-3 w-full mb-4 bg-white/20" />
@@ -34,7 +36,7 @@ export function DecisionReadiness() {
 
   if (isError) {
     return (
-      <div className="bg-gradient-to-br from-emerald-500 to-primary rounded-xl p-6">
+      <div className="rounded-xl p-6" style={CARD_BG}>
         <div className="flex items-center gap-2 text-white mb-2">
           <AlertTriangle className="h-4 w-4" />
           <span className="text-sm font-medium">Failed to load readiness</span>
@@ -54,7 +56,7 @@ export function DecisionReadiness() {
   const { percentage, breakdown, moduleScores } = data;
 
   return (
-    <div data-testid="decision-readiness" className="bg-gradient-to-br from-emerald-500 to-primary rounded-xl p-6 text-white">
+    <div data-testid="decision-readiness" className="rounded-xl p-6 text-white" style={CARD_BG}>
       <div className="flex items-center gap-2 mb-4">
         <ShieldCheck className="h-5 w-5 text-white" />
         <h2 className="text-sm font-semibold text-white">Decision Readiness</h2>

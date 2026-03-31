@@ -15,6 +15,7 @@ import { IllustrationStyleSection } from "./IllustrationStyleSection";
 import { ModelInfoCard } from "./sidebar/ModelInfoCard";
 import { TrainingStatusCard } from "./sidebar/TrainingStatusCard";
 import { QuickActionsCard } from "./sidebar/QuickActionsCard";
+import { BrandContextCard } from "./sidebar/BrandContextCard";
 import {
   useConsistentModelDetail,
   useUpdateModel,
@@ -406,6 +407,7 @@ export function ModelDetailPage({
         <div className="min-w-0">
           <div className="md:sticky md:top-6 space-y-4">
             <ModelInfoCard model={model} />
+            <BrandContextCard model={model} />
             {isTrainable && <TrainingStatusCard model={model} />}
             <QuickActionsCard
               model={model}

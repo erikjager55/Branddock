@@ -174,7 +174,18 @@ export async function generateImage(
   return handleResponse(res, "Failed to generate image");
 }
 
-// ─── 12. List Generations ───────────────────────────────────
+// ─── 12. Refresh Brand Context ─────────────────────────────
+
+export async function refreshBrandContext(
+  modelId: string,
+): Promise<ConsistentModelDetail> {
+  const res = await fetch(`${BASE}/${modelId}/refresh-context`, {
+    method: "POST",
+  });
+  return handleResponse(res, "Failed to refresh brand context");
+}
+
+// ─── 13. List Generations ───────────────────────────────────
 
 export async function fetchGenerations(
   modelId: string,

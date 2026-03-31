@@ -176,7 +176,20 @@ export function useGenerations(
   });
 }
 
-// ─── 13. useConsistentModelStats ────────────────────────────
+// ─── 13. useRefreshBrandContext ─────────────────────────────
+
+export function useRefreshBrandContext(modelId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.refreshBrandContext(modelId!),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: consistentModelKeys.detail(modelId!) });
+      qc.invalidateQueries({ queryKey: consistentModelKeys.list() });
+    },
+  });
+}
+
+// ─── 14. useConsistentModelStats ────────────────────────────
 
 export function useConsistentModelStats() {
   return useQuery({

@@ -28,12 +28,16 @@ function generateSlug(name: string): string {
 /** GET /api/consistent-models — List models + stats */
 export async function GET(request: NextRequest) {
   try {
+    console.log('[consistent-models] GET handler started');
+
     const session = await requireAuth();
+    console.log('[consistent-models] auth:', session ? 'OK' : 'null');
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const workspaceId = await resolveWorkspaceId();
+    console.log('[consistent-models] workspaceId:', workspaceId);
     if (!workspaceId) {
       return NextResponse.json({ error: 'No workspace' }, { status: 400 });
     }
@@ -53,6 +57,7 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    console.log('[consistent-models] querying models...');
     const [models, stats] = await Promise.all([
       prisma.consistentModel.findMany({
         where,
@@ -68,10 +73,12 @@ export async function GET(request: NextRequest) {
         _count: true,
       }),
     ]);
+    console.log('[consistent-models] models found:', models.length);
 
     const totalGenerations = await prisma.consistentModelGeneration.count({
       where: { workspaceId },
     });
+    console.log('[consistent-models] totalGenerations:', totalGenerations);
 
     const statsMap = Object.fromEntries(
       stats.map((s) => [s.status, s._count])
@@ -93,8 +100,9 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('GET /api/consistent-models error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('GET /api/consistent-models error:', message, error);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
