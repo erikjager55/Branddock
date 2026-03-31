@@ -142,7 +142,7 @@ export async function reorderReferenceImages(
 export async function startTraining(
   modelId: string,
   config?: StartTrainingBody,
-): Promise<{ status: string; astriaModelId: string | null }> {
+): Promise<{ status: string; replicateTrainingId: string | null }> {
   const res = await fetch(`${BASE}/${modelId}/train`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

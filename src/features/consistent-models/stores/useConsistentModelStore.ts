@@ -26,6 +26,9 @@ interface ConsistentModelStore {
   // Generation queue
   generationQueue: string[];
 
+  // Wizard step
+  wizardStep: number;
+
   // Actions — Selection
   setSelectedModel: (id: string | null) => void;
   setSelectedModelType: (type: ConsistentModelType | null) => void;
@@ -46,6 +49,12 @@ interface ConsistentModelStore {
   addToGenerationQueue: (id: string) => void;
   removeFromGenerationQueue: (id: string) => void;
   clearGenerationQueue: () => void;
+
+  // Actions — Wizard
+  setWizardStep: (step: number) => void;
+  nextWizardStep: () => void;
+  prevWizardStep: () => void;
+  resetWizardStep: () => void;
 }
 
 export const useConsistentModelStore = create<ConsistentModelStore>((set) => ({
@@ -57,6 +66,7 @@ export const useConsistentModelStore = create<ConsistentModelStore>((set) => ({
   isGenerateModalOpen: false,
   uploadProgress: new Map(),
   generationQueue: [],
+  wizardStep: 1,
 
   // Selection
   setSelectedModel: (id) => set({ selectedModelId: id }),
@@ -97,4 +107,12 @@ export const useConsistentModelStore = create<ConsistentModelStore>((set) => ({
       generationQueue: state.generationQueue.filter((qId) => qId !== id),
     })),
   clearGenerationQueue: () => set({ generationQueue: [] }),
+
+  // Wizard
+  setWizardStep: (step) => set({ wizardStep: step }),
+  nextWizardStep: () =>
+    set((s) => ({ wizardStep: Math.min(3, s.wizardStep + 1) })),
+  prevWizardStep: () =>
+    set((s) => ({ wizardStep: Math.max(1, s.wizardStep - 1) })),
+  resetWizardStep: () => set({ wizardStep: 1 }),
 }));

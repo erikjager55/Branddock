@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Modal, Button, Input } from "@/components/shared";
-import { TYPE_CONFIG, MODEL_TYPE_OPTIONS, TRAINABLE_TYPES } from "../constants/model-constants";
+import { Modal, Button, Input, Select } from "@/components/shared";
+import { TYPE_CONFIG, MODEL_TYPE_OPTIONS, TRAINABLE_TYPES, ILLUSTRATION_STYLE_OPTIONS } from "../constants/model-constants";
 import { useCreateModel } from "../hooks";
-import type { ConsistentModelType } from "../types/consistent-model.types";
+import type { ConsistentModelType, IllustrationStyleParams } from "../types/consistent-model.types";
 
 interface CreateModelModalProps {
   isOpen: boolean;
@@ -25,22 +25,37 @@ export function CreateModelModal({
   const [description, setDescription] = useState("");
   const [modelName, setModelName] = useState("");
   const [modelDescription, setModelDescription] = useState("");
-  const [generationParams, setGenerationParams] = useState("");
+  // Illustration-specific state
+  const [illustrationStyle, setIllustrationStyle] = useState<string | null>(null);
+  const [colorApproach, setColorApproach] = useState<string | null>(null);
+  const [lineQuality, setLineQuality] = useState<string | null>(null);
+  const [detailLevel, setDetailLevel] = useState<string | null>(null);
+  const [mood, setMood] = useState("");
   const createModel = useCreateModel();
 
   const isTrainable = TRAINABLE_TYPES.has(type);
+
+  const resetIllustrationFields = () => {
+    setIllustrationStyle(null);
+    setColorApproach(null);
+    setLineQuality(null);
+    setDetailLevel(null);
+    setMood("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    let parsedGenParams: unknown | undefined;
-    if (!isTrainable && type === "ANIMATION" && generationParams.trim()) {
-      try {
-        parsedGenParams = JSON.parse(generationParams.trim());
-      } catch {
-        return; // invalid JSON, don't submit
-      }
+    let generationParams: IllustrationStyleParams | undefined;
+    if (type === "ILLUSTRATION") {
+      generationParams = {
+        illustrationStyle: illustrationStyle || null,
+        colorApproach: colorApproach || null,
+        lineQuality: lineQuality || null,
+        detailLevel: detailLevel || null,
+        mood: mood.trim() || null,
+      };
     }
 
     const result = await createModel.mutateAsync({
@@ -50,7 +65,7 @@ export function CreateModelModal({
       ...(!isTrainable && {
         modelName: modelName.trim() || undefined,
         modelDescription: modelDescription.trim() || undefined,
-        ...(parsedGenParams !== undefined && { generationParams: parsedGenParams }),
+        ...(generationParams !== undefined && { generationParams }),
       }),
     });
 
@@ -58,7 +73,7 @@ export function CreateModelModal({
     setDescription("");
     setModelName("");
     setModelDescription("");
-    setGenerationParams("");
+    resetIllustrationFields();
     onClose();
     onCreated?.(result.id);
   };
@@ -68,7 +83,7 @@ export function CreateModelModal({
     setDescription("");
     setModelName("");
     setModelDescription("");
-    setGenerationParams("");
+    resetIllustrationFields();
     setType(initialType ?? "PERSON");
     onClose();
   };
@@ -99,13 +114,18 @@ export function CreateModelModal({
                   key={opt.value}
                   type="button"
                   onClick={() => setType(opt.value as ConsistentModelType)}
+                  style={isSelected ? {
+                    borderColor: config.borderHex,
+                    backgroundColor: config.bgHex,
+                  } : undefined}
                   className={`rounded-lg border-2 p-3 text-left transition-all ${
-                    isSelected
-                      ? `${config.borderColor} ${config.bgColor}`
-                      : "border-gray-200 hover:border-gray-300"
+                    isSelected ? "" : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
-                  <div className={`text-sm font-medium ${isSelected ? config.color : "text-gray-900"}`}>
+                  <div
+                    style={isSelected ? { color: config.colorHex } : undefined}
+                    className={`text-sm font-medium ${isSelected ? "" : "text-gray-900"}`}
+                  >
                     {config.label}
                   </div>
                   <div className="mt-0.5 text-xs text-gray-500">{config.description}</div>
@@ -150,17 +170,47 @@ export function CreateModelModal({
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
               />
             </div>
-            {type === "ANIMATION" && (
-              <div>
-                <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                  Generation Parameters <span className="font-normal text-gray-400">(JSON)</span>
-                </label>
-                <textarea
-                  value={generationParams}
-                  onChange={(e) => setGenerationParams(e.target.value)}
-                  placeholder='{"fps": 24, "duration": 5, "style": "cinematic"}'
-                  rows={4}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 font-mono text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+            {type === "ILLUSTRATION" && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Select
+                    label="Illustration Style"
+                    options={[...ILLUSTRATION_STYLE_OPTIONS.illustrationStyle]}
+                    value={illustrationStyle}
+                    onChange={setIllustrationStyle}
+                    placeholder="Select style..."
+                    allowClear
+                  />
+                  <Select
+                    label="Color Approach"
+                    options={[...ILLUSTRATION_STYLE_OPTIONS.colorApproach]}
+                    value={colorApproach}
+                    onChange={setColorApproach}
+                    placeholder="Select color..."
+                    allowClear
+                  />
+                  <Select
+                    label="Line Quality"
+                    options={[...ILLUSTRATION_STYLE_OPTIONS.lineQuality]}
+                    value={lineQuality}
+                    onChange={setLineQuality}
+                    placeholder="Select line quality..."
+                    allowClear
+                  />
+                  <Select
+                    label="Detail Level"
+                    options={[...ILLUSTRATION_STYLE_OPTIONS.detailLevel]}
+                    value={detailLevel}
+                    onChange={setDetailLevel}
+                    placeholder="Select detail..."
+                    allowClear
+                  />
+                </div>
+                <Input
+                  label="Mood / Atmosphere"
+                  value={mood}
+                  onChange={(e) => setMood(e.target.value)}
+                  placeholder="e.g. Playful, Corporate, Dreamy..."
                 />
               </div>
             )}

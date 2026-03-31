@@ -1,20 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { Plus } from 'lucide-react';
 import { PageShell, PageHeader } from '@/components/ui/layout';
-import { Cpu, Mic, Music } from 'lucide-react';
+import { Button } from '@/components/shared';
 import { ConsistentModelsContent } from '@/features/consistent-models/components/ConsistentModelsPage';
-import { BrandVoiceTab } from '@/features/media-library/components/creative-hub/brand-voice/BrandVoiceTab';
-import { SoundEffectsTab } from '@/features/media-library/components/creative-hub/sound-effects/SoundEffectsTab';
-import type { LucideIcon } from 'lucide-react';
-
-const TABS = [
-  { key: 'models', label: 'AI Models', icon: Cpu },
-  { key: 'voices', label: 'Voices', icon: Mic },
-  { key: 'sound', label: 'Sound Effects', icon: Music },
-] as const;
-
-type TrainerTab = (typeof TABS)[number]['key'];
+import { useConsistentModelStore } from '@/features/consistent-models/stores/useConsistentModelStore';
 
 interface AiTrainerPageProps {
   onNavigateToModelDetail: (id: string) => void;
@@ -22,7 +12,7 @@ interface AiTrainerPageProps {
 
 /** AI Trainer page — train models and define brand styles */
 export function AiTrainerPage({ onNavigateToModelDetail }: AiTrainerPageProps) {
-  const [activeTab, setActiveTab] = useState<TrainerTab>('models');
+  const { openCreateModal } = useConsistentModelStore();
 
   return (
     <PageShell>
@@ -30,33 +20,16 @@ export function AiTrainerPage({ onNavigateToModelDetail }: AiTrainerPageProps) {
         moduleKey="ai-trainer"
         title="AI Trainer"
         subtitle="Train models and define brand styles"
+        actions={
+          <Button onClick={() => openCreateModal()} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Create Model
+          </Button>
+        }
       />
 
-      <div className="px-8 pt-4 pb-2">
-        <div className="flex gap-2">
-          {TABS.map((tab) => {
-            const TabIcon: LucideIcon = tab.icon;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors
-                  ${activeTab === tab.key ? 'text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                style={activeTab === tab.key ? { backgroundColor: '#0D9488' } : undefined}
-              >
-                <TabIcon className="h-3.5 w-3.5" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       <div className="space-y-6 px-8 pb-8">
-        {activeTab === 'models' && <ConsistentModelsContent onNavigateToDetail={onNavigateToModelDetail} />}
-        {activeTab === 'voices' && <BrandVoiceTab />}
-        {activeTab === 'sound' && <SoundEffectsTab />}
+        <ConsistentModelsContent onNavigateToDetail={onNavigateToModelDetail} />
       </div>
     </PageShell>
   );

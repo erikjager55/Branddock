@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2, GripVertical, Image } from "lucide-react";
+import { Trash2, GripVertical } from "lucide-react";
 import { Card, Badge } from "@/components/shared";
 import { ReferenceImageUploader } from "./ReferenceImageUploader";
 import { TRAINING_DEFAULTS, MIN_IMAGES_BY_TYPE } from "../../constants/model-constants";
@@ -95,14 +95,6 @@ export function ReferenceImagesSection({
         </div>
       )}
 
-      {images.length === 0 && !isUploading && (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 py-8">
-          <Image className="h-8 w-8 text-gray-300" />
-          <p className="text-sm text-gray-500">
-            Upload reference images to train your model
-          </p>
-        </div>
-      )}
     </div>
   );
 }

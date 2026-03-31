@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { validateTrainingImage, stripExifData, MAX_REFERENCE_IMAGES } from '@/lib/storage/image-validator';
-import { generateThumbnail } from '@/lib/storage/thumbnail-generator';
-import { uploadToR2, buildModelStorageKey } from '@/lib/storage/r2-storage';
+import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 
@@ -116,30 +115,27 @@ export async function POST(
         // 2. Strip EXIF data
         const cleanBuffer = await stripExifData(buffer);
 
-        // 3. Generate thumbnail
-        const thumbBuffer = await generateThumbnail(cleanBuffer);
+        // 3. Upload via storage provider (handles thumbnail generation internally)
+        const storage = getStorageProvider();
+        const result = await storage.upload(cleanBuffer, {
+          workspaceId,
+          fileName: file.name,
+          contentType: validation.mimeType,
+        });
 
-        // 4. Upload original to R2
-        const storageKey = buildModelStorageKey(workspaceId, id, file.name);
-        const { url: storageUrl } = await uploadToR2(storageKey, cleanBuffer, validation.mimeType);
-
-        // 5. Upload thumbnail to R2
-        const thumbKey = buildModelStorageKey(workspaceId, id, file.name, true);
-        const { url: thumbnailUrl } = await uploadToR2(thumbKey, thumbBuffer, 'image/jpeg');
-
-        // 6. Create ReferenceImage record
+        // 4. Create ReferenceImage record
         const image = await prisma.referenceImage.create({
           data: {
             consistentModelId: id,
             fileName: file.name,
-            fileSize: cleanBuffer.length,
+            fileSize: result.fileSize,
             mimeType: validation.mimeType,
-            width: validation.width,
-            height: validation.height,
-            storageKey,
-            storageUrl,
-            thumbnailKey: thumbKey,
-            thumbnailUrl,
+            width: result.width ?? validation.width,
+            height: result.height ?? validation.height,
+            storageKey: result.url,
+            storageUrl: result.url,
+            thumbnailKey: result.thumbnailUrl ?? result.url,
+            thumbnailUrl: result.thumbnailUrl ?? result.url,
             sortOrder: currentCount + i,
             isTrainingImage: true,
           },

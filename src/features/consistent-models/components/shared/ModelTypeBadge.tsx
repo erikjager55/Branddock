@@ -1,6 +1,6 @@
 "use client";
 
-import { User, Package, Palette, Box, Brush, Camera, Clapperboard } from "lucide-react";
+import { User, Package, Palette, Box, Brush, Camera, Pencil, Mic, Volume2 } from "lucide-react";
 import { TYPE_CONFIG } from "../../constants/model-constants";
 import type { ConsistentModelType } from "../../types/consistent-model.types";
 
@@ -11,7 +11,9 @@ const TYPE_ICONS: Record<ConsistentModelType, React.ElementType> = {
   OBJECT: Box,
   BRAND_STYLE: Brush,
   PHOTOGRAPHY: Camera,
-  ANIMATION: Clapperboard,
+  ILLUSTRATION: Pencil,
+  VOICE: Mic,
+  SOUND_EFFECT: Volume2,
 };
 
 interface ModelTypeBadgeProps {
@@ -27,7 +29,11 @@ export function ModelTypeBadge({ type, size = "sm" }: ModelTypeBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full font-medium ${config.bgColor} ${config.color} ${
+      style={{
+        backgroundColor: config.bgHex,
+        color: config.colorHex,
+      }}
+      className={`inline-flex items-center gap-1 rounded-full font-medium ${
         isSmall ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-sm"
       }`}
     >

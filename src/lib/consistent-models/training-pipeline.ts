@@ -1,36 +1,44 @@
 // =============================================================
-// Training Pipeline — Orchestrates Astria fine-tuning
+// Training Pipeline — Orchestrates Replicate LoRA fine-tuning
 //
 // startTraining(modelId, workspaceId):
-//   Validates model, uploads images to Astria, starts training.
+//   Validates model, zips reference images, uploads to Replicate,
+//   creates a model, and starts training.
 //
-// handleTrainingComplete(astriaModelId, success, error?):
+// handleTrainingComplete(replicateTrainingId, success, error?, modelVersion?):
 //   Called by webhook/poller when training finishes.
 //   Generates sample images on success.
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
-import { getR2SignedUrl } from '@/lib/storage/r2-storage';
+import { readFile } from 'fs/promises';
+import path from 'path';
+import JSZip from 'jszip';
 import {
-  createTune,
-  createPrompt,
-  type CreateTuneParams,
-} from '@/lib/integrations/astria/astria-client';
+  createReplicateModel,
+  uploadTrainingFile,
+  startReplicateTraining,
+  runReplicatePrediction,
+} from '@/lib/integrations/replicate/replicate-client';
+import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { TRIGGER_WORDS, MIN_IMAGES_BY_TYPE } from '@/features/consistent-models/constants/model-constants';
 import type { ConsistentModelType } from '@prisma/client';
+import type { ModelBrandContext } from '@/features/consistent-models/types/consistent-model.types';
 
 // ─── Constants ──────────────────────────────────────────────
 
 const DEFAULT_SAMPLE_PROMPTS: Record<ConsistentModelType, string> = {
-  PERSON: 'A professional portrait photo of ohwx person, natural lighting, neutral background',
-  PRODUCT: 'A clean product photo of ohwx product on a white background, studio lighting',
-  STYLE: 'A photograph in the ohwx style, beautiful composition, high quality',
-  OBJECT: 'A photo of ohwx object, clean background, professional lighting',
+  PERSON: 'A professional portrait photo of TOK person, natural lighting, neutral background',
+  PRODUCT: 'A clean product photo of TOK product on a white background, studio lighting',
+  STYLE: 'A photograph in the TOK style, beautiful composition, high quality',
+  OBJECT: 'A photo of TOK object, clean background, professional lighting',
   BRAND_STYLE: '',
   PHOTOGRAPHY: '',
-  ANIMATION: '',
+  ILLUSTRATION: '',
+  VOICE: '',
+  SOUND_EFFECT: '',
 };
 
 const NUM_SAMPLE_IMAGES = 3;
@@ -38,7 +46,7 @@ const NUM_SAMPLE_IMAGES = 3;
 // ─── Types ──────────────────────────────────────────────────
 
 export interface StartTrainingResult {
-  astriaModelId: number;
+  replicateTrainingId: string;
   status: 'TRAINING';
 }
 
@@ -51,7 +59,7 @@ export interface TrainingCompleteResult {
 
 // ─── Start Training ─────────────────────────────────────────
 
-/** Validate and start Astria fine-tuning for a ConsistentModel */
+/** Validate and start Replicate LoRA fine-tuning for a ConsistentModel */
 export async function startTraining(
   modelId: string,
   workspaceId: string,
@@ -85,71 +93,94 @@ export async function startTraining(
     );
   }
 
-  // 2. Generate signed URLs for reference images
-  const imageUrls = await Promise.all(
-    model.referenceImages.map((img) => getR2SignedUrl(img.storageKey, 7200))
+  // 2. Create zip archive of reference images
+  const zip = new JSZip();
+
+  for (const img of model.referenceImages) {
+    // Reference images are stored via local storage provider
+    // storageUrl is a local path like /uploads/media/ws_xxx/2026/03/file.jpg
+    const localPath = path.join('public', img.storageUrl.replace(/^\//, ''));
+    const fileBuffer = await readFile(localPath);
+    zip.file(img.fileName, fileBuffer);
+  }
+
+  const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+
+  // 3. Upload zip to Replicate via Files API
+  const slugSafe = model.name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').slice(0, 50);
+  const uploadResult = await uploadTrainingFile(
+    zipBuffer,
+    `${slugSafe}-training-images.zip`
   );
 
-  // 3. Determine trigger word and training params
+  // 4. Create model on Replicate (idempotent — handles "already exists")
+  const replicateModel = await createReplicateModel(
+    slugSafe,
+    `Branddock fine-tuned model: ${model.name}`
+  );
+
+  // 5. Determine trigger word and training params
   const triggerWord = TRIGGER_WORDS[model.type];
   const trainingConfig = (model.trainingConfig as Record<string, unknown>) ?? {};
 
-  const tuneParams: CreateTuneParams = {
-    title: `${model.name} — ${model.workspaceId}`,
-    name: triggerWord.split(' ').pop() ?? 'subject',
-    imageUrls,
-    branch: 'flux1',
-    modelType: 'lora',
-    token: triggerWord.split(' ')[0] ?? 'ohwx',
-    steps: (trainingConfig.steps as number) ?? undefined,
-    callback: callbackUrl,
-    faceCrop: model.type === 'PERSON',
-    preset: model.type === 'PERSON' ? 'flux-lora-portrait' : null,
-  };
+  // 6. Start training on Replicate
+  const training = await startReplicateTraining(
+    replicateModel.owner,
+    replicateModel.name,
+    uploadResult.urls.get,
+    {
+      steps: (trainingConfig.steps as number) ?? undefined,
+      learningRate: (trainingConfig.learningRate as number) ?? undefined,
+      resolution: (trainingConfig.resolution as number) ?? undefined,
+      triggerWord: triggerWord || 'TOK',
+      autocaption: true,
+    },
+    callbackUrl
+  );
 
-  // 4. Create tune on Astria
-  const tune = await createTune(tuneParams);
-
-  // 5. Update model in DB
+  // 7. Update model in DB
   await prisma.consistentModel.update({
     where: { id: modelId },
     data: {
       status: 'TRAINING',
-      astriaModelId: String(tune.id),
-      astriaModelUrl: tune.url ?? null,
-      triggerWord,
+      replicateModelId: `${replicateModel.owner}/${replicateModel.name}`,
+      replicateModelVersion: null,
+      replicateTrainingId: training.id,
+      triggerWord: triggerWord || 'TOK',
       baseModel: 'flux-lora',
       trainingStartedAt: new Date(),
       trainingError: null,
       trainingConfig: {
         ...(trainingConfig as object),
-        astriaBranch: 'flux1',
-        astriaPreset: tuneParams.preset,
+        replicateTrainer: 'ostris/flux-dev-lora-trainer',
       },
     },
   });
 
+  invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
+
   return {
-    astriaModelId: tune.id,
+    replicateTrainingId: training.id,
     status: 'TRAINING',
   };
 }
 
 // ─── Handle Training Complete ───────────────────────────────
 
-/** Called when Astria reports training is done (via webhook or polling) */
+/** Called when Replicate reports training is done (via webhook or polling) */
 export async function handleTrainingComplete(
-  astriaModelId: string,
+  replicateTrainingId: string,
   success: boolean,
-  error?: string
+  error?: string,
+  modelVersion?: string
 ): Promise<TrainingCompleteResult> {
-  // 1. Find the model by Astria tune ID
+  // 1. Find the model by Replicate training ID
   const model = await prisma.consistentModel.findFirst({
-    where: { astriaModelId },
+    where: { replicateTrainingId },
   });
 
   if (!model) {
-    throw new Error(`No ConsistentModel found for Astria tune ID: ${astriaModelId}`);
+    throw new Error(`No ConsistentModel found for Replicate training ID: ${replicateTrainingId}`);
   }
 
   if (!success) {
@@ -158,7 +189,7 @@ export async function handleTrainingComplete(
       where: { id: model.id },
       data: {
         status: 'TRAINING_FAILED',
-        trainingError: error ?? 'Training failed — no details provided by Astria.',
+        trainingError: error ?? 'Training failed — no details provided by Replicate.',
       },
     });
 
@@ -172,32 +203,60 @@ export async function handleTrainingComplete(
     };
   }
 
-  // 2b. Training succeeded — generate sample images
+  // 2b. Training succeeded — store version and generate sample images
+  if (modelVersion) {
+    await prisma.consistentModel.update({
+      where: { id: model.id },
+      data: { replicateModelVersion: modelVersion },
+    });
+  }
+
   const sampleUrls: string[] = [];
+  const versionToUse = modelVersion ?? model.replicateModelVersion;
 
-  try {
-    const samplePrompt = DEFAULT_SAMPLE_PROMPTS[model.type];
-    const tuneId = parseInt(astriaModelId, 10);
+  if (versionToUse) {
+    try {
+      let samplePrompt = DEFAULT_SAMPLE_PROMPTS[model.type];
+      if (samplePrompt) {
+        // Enrich sample prompt with brand context if available
+        const brandContext = model.brandContext as ModelBrandContext | null;
+        if (brandContext?.contextSummary) {
+          samplePrompt = `${samplePrompt}. Brand context: ${brandContext.contextSummary}`;
+        }
 
-    // Generate sample images in parallel
-    const samplePromises = Array.from({ length: NUM_SAMPLE_IMAGES }, () =>
-      createPrompt(tuneId, {
-        text: samplePrompt,
-        numImages: 1,
-        aspectRatio: '1:1',
-      })
-    );
+        const prediction = await runReplicatePrediction(versionToUse, {
+          prompt: samplePrompt,
+          num_outputs: NUM_SAMPLE_IMAGES,
+          output_format: 'png',
+        });
 
-    const sampleResults = await Promise.all(samplePromises);
+        if (prediction.output && prediction.output.length > 0) {
+          const storage = getStorageProvider();
 
-    for (const result of sampleResults) {
-      if (result.images?.length > 0) {
-        sampleUrls.push(result.images[0]);
+          for (const imageUrl of prediction.output) {
+            try {
+              const response = await fetch(imageUrl);
+              if (!response.ok) continue;
+              const arrayBuffer = await response.arrayBuffer();
+              const buffer = Buffer.from(arrayBuffer);
+
+              const result = await storage.upload(buffer, {
+                workspaceId: model.workspaceId,
+                fileName: `sample-${Date.now()}.png`,
+                contentType: 'image/png',
+              });
+
+              sampleUrls.push(result.url);
+            } catch (downloadError) {
+              console.error('Failed to download sample image:', downloadError);
+            }
+          }
+        }
       }
+    } catch (sampleError) {
+      // Sample generation is non-critical — model is still READY
+      console.error('Failed to generate sample images:', sampleError);
     }
-  } catch (sampleError) {
-    // Sample generation is non-critical — model is still READY
-    console.error('Failed to generate sample images:', sampleError);
   }
 
   // 3. Update model to READY
@@ -207,6 +266,7 @@ export async function handleTrainingComplete(
       status: 'READY',
       trainingCompletedAt: new Date(),
       trainingError: null,
+      replicateModelVersion: versionToUse,
       thumbnailUrl: sampleUrls[0] ?? null,
       sampleImageUrls: sampleUrls.length > 0 ? sampleUrls : undefined,
     },

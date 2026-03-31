@@ -3402,7 +3402,9 @@ enum ConsistentModelType {
   OBJECT
   BRAND_STYLE
   PHOTOGRAPHY
-  ANIMATION
+  ILLUSTRATION
+  VOICE
+  SOUND_EFFECT
 }
 
 enum ConsistentModelStatus {
@@ -3655,11 +3657,12 @@ model ConsistentModel {
   type                ConsistentModelType
   status              ConsistentModelStatus @default(DRAFT)
 
-  // Astria integration
-  astriaModelId       String?               // Astria tune ID after training
-  astriaModelUrl      String?               // Astria model URL
-  triggerWord         String?               // Trigger word (e.g. "ohwx person")
-  baseModel           String?               // "flux-lora" | "sdxl-lora"
+  // Replicate integration
+  replicateModelId    String?               // Replicate model identifier (owner/name)
+  replicateModelVersion String?             // Trained model version string
+  replicateTrainingId String?               // Replicate training ID (for webhook matching)
+  triggerWord         String?               // Trigger word (e.g. "TOK")
+  baseModel           String?               // "flux-dev-lora" or similar
 
   // Training config
   trainingConfig      Json?                 // { steps, learningRate, resolution, ... }
@@ -3671,10 +3674,11 @@ model ConsistentModel {
   stylePrompt         String?               @db.Text
   negativePrompt      String?               @db.Text
 
-  // Style reference fields (for non-trainable types: BRAND_STYLE, PHOTOGRAPHY, ANIMATION)
-  modelName           String?               // Animation engine/tool name
+  // Style reference fields (for non-trainable types: BRAND_STYLE, PHOTOGRAPHY, ILLUSTRATION)
+  modelName           String?               // Illustration tool/style name
   modelDescription    String?               @db.Text   // Extended description
-  generationParams    Json?                 // Animation-specific params
+  generationParams    Json?                 // Illustration-specific params
+  brandContext        Json?                 // Snapshot of brand context at creation time
 
   // Metadata
   thumbnailUrl        String?
@@ -3746,8 +3750,8 @@ model ConsistentModelGeneration {
 
   // Metadata
   generationTimeMs    Int?
-  aiProvider          String           // "astria"
-  aiModel             String           // Astria model ID
+  aiProvider          String           // "replicate"
+  aiModel             String           // Replicate model version
   cost                Float?           // Estimated cost in USD
   mediaAssetId        String?          // Link to MediaAsset if saved to library
 

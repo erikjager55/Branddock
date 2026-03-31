@@ -13,40 +13,55 @@ export interface ModelTypeConfig {
   color: string;
   bgColor: string;
   borderColor: string;
+  colorHex: string;
+  bgHex: string;
+  borderHex: string;
 }
 
 export const TYPE_CONFIG: Record<ConsistentModelType, ModelTypeConfig> = {
   PERSON: {
-    label: "Person",
+    label: "Model",
     description: "Train on faces and people for consistent portrait generation",
-    triggerWord: "ohwx person",
+    triggerWord: "TOK person",
     color: "text-blue-700",
     bgColor: "bg-blue-50",
     borderColor: "border-blue-200",
+    colorHex: "#1d4ed8",
+    bgHex: "#eff6ff",
+    borderHex: "#bfdbfe",
   },
   PRODUCT: {
     label: "Product",
     description: "Train on product photos for consistent product imagery",
-    triggerWord: "ohwx product",
+    triggerWord: "TOK product",
     color: "text-emerald-700",
     bgColor: "bg-emerald-50",
     borderColor: "border-emerald-200",
+    colorHex: "#047857",
+    bgHex: "#ecfdf5",
+    borderHex: "#a7f3d0",
   },
   STYLE: {
     label: "Style",
     description: "Train on a visual style for consistent brand aesthetics",
-    triggerWord: "ohwx style",
+    triggerWord: "TOK style",
     color: "text-violet-700",
     bgColor: "bg-violet-50",
     borderColor: "border-violet-200",
+    colorHex: "#6d28d9",
+    bgHex: "#f5f3ff",
+    borderHex: "#ddd6fe",
   },
   OBJECT: {
     label: "Object",
     description: "Train on specific objects for consistent representation",
-    triggerWord: "ohwx object",
+    triggerWord: "TOK object",
     color: "text-amber-700",
     bgColor: "bg-amber-50",
     borderColor: "border-amber-200",
+    colorHex: "#b45309",
+    bgHex: "#fffbeb",
+    borderHex: "#fde68a",
   },
   BRAND_STYLE: {
     label: "Brand Style",
@@ -55,6 +70,9 @@ export const TYPE_CONFIG: Record<ConsistentModelType, ModelTypeConfig> = {
     color: "text-rose-700",
     bgColor: "bg-rose-50",
     borderColor: "border-rose-200",
+    colorHex: "#be123c",
+    bgHex: "#fff1f2",
+    borderHex: "#fecdd3",
   },
   PHOTOGRAPHY: {
     label: "Photography",
@@ -63,14 +81,42 @@ export const TYPE_CONFIG: Record<ConsistentModelType, ModelTypeConfig> = {
     color: "text-cyan-700",
     bgColor: "bg-cyan-50",
     borderColor: "border-cyan-200",
+    colorHex: "#0e7490",
+    bgHex: "#ecfeff",
+    borderHex: "#a5f3fc",
   },
-  ANIMATION: {
-    label: "Animation",
-    description: "Define animation style references",
+  ILLUSTRATION: {
+    label: "Illustration",
+    description: "Define illustration style references",
     triggerWord: "",
     color: "text-orange-700",
     bgColor: "bg-orange-50",
     borderColor: "border-orange-200",
+    colorHex: "#c2410c",
+    bgHex: "#fff7ed",
+    borderHex: "#fed7aa",
+  },
+  VOICE: {
+    label: "Voice",
+    description: "Define brand voice profiles for audio generation",
+    triggerWord: "",
+    color: "text-indigo-700",
+    bgColor: "bg-indigo-50",
+    borderColor: "border-indigo-200",
+    colorHex: "#4338ca",
+    bgHex: "#eef2ff",
+    borderHex: "#c7d2fe",
+  },
+  SOUND_EFFECT: {
+    label: "Sound Effect",
+    description: "Define sound effect presets for audio production",
+    triggerWord: "",
+    color: "text-pink-700",
+    bgColor: "bg-pink-50",
+    borderColor: "border-pink-200",
+    colorHex: "#be185d",
+    bgHex: "#fdf2f8",
+    borderHex: "#fbcfe8",
   },
 };
 
@@ -130,13 +176,15 @@ export const TRAINING_DEFAULTS = {
 // ─── Trigger Words (single source of truth) ─────────────────
 
 export const TRIGGER_WORDS: Record<ConsistentModelType, string> = {
-  PERSON: "ohwx person",
-  PRODUCT: "ohwx product",
-  STYLE: "ohwx style",
-  OBJECT: "ohwx object",
+  PERSON: "TOK person",
+  PRODUCT: "TOK product",
+  STYLE: "TOK style",
+  OBJECT: "TOK object",
   BRAND_STYLE: "",
   PHOTOGRAPHY: "",
-  ANIMATION: "",
+  ILLUSTRATION: "",
+  VOICE: "",
+  SOUND_EFFECT: "",
 };
 
 // ─── Min Reference Images per Type ──────────────────────────
@@ -148,7 +196,9 @@ export const MIN_IMAGES_BY_TYPE: Record<ConsistentModelType, number> = {
   OBJECT: 5,
   BRAND_STYLE: 0,
   PHOTOGRAPHY: 0,
-  ANIMATION: 0,
+  ILLUSTRATION: 0,
+  VOICE: 0,
+  SOUND_EFFECT: 0,
 };
 
 // ─── Generation Defaults ────────────────────────────────────
@@ -181,7 +231,49 @@ export const STATUS_FILTER_OPTIONS = [
   { value: "ARCHIVED", label: "Archived" },
 ];
 
-// ─── Trainable Types (require Astria training) ──────────
+// ─── Trainable Types (require Replicate training) ──────────
 
 /** Types that support AI training + generation. Non-trainable types are style guides only. */
 export const TRAINABLE_TYPES = new Set<ConsistentModelType>(['PERSON', 'PRODUCT', 'STYLE', 'OBJECT']);
+
+// ─── Wizard Steps ───────────────────────────────────────────
+
+export const WIZARD_STEPS_TRAINABLE = ["Reference Images", "Training", "Generate"] as const;
+export const WIZARD_STEPS_NON_TRAINABLE = ["Style Guide", "Reference Images", "Overview"] as const;
+export const WIZARD_STEPS_ILLUSTRATION = ["Illustration Style", "Reference Images", "Overview"] as const;
+
+export const ILLUSTRATION_STYLE_OPTIONS = {
+  illustrationStyle: [
+    { value: "flat", label: "Flat / Minimal" },
+    { value: "line-art", label: "Line Art" },
+    { value: "watercolor", label: "Watercolor" },
+    { value: "cartoon", label: "Cartoon" },
+    { value: "isometric", label: "Isometric" },
+    { value: "sketch", label: "Sketch" },
+    { value: "geometric", label: "Geometric" },
+    { value: "hand-drawn", label: "Hand-drawn" },
+    { value: "vector", label: "Vector" },
+    { value: "pixel-art", label: "Pixel Art" },
+  ],
+  colorApproach: [
+    { value: "full-color", label: "Full Color" },
+    { value: "limited-palette", label: "Limited Palette" },
+    { value: "monochrome", label: "Monochrome" },
+    { value: "pastel", label: "Pastel" },
+    { value: "vibrant", label: "Vibrant" },
+    { value: "earth-tones", label: "Earth Tones" },
+  ],
+  lineQuality: [
+    { value: "thin", label: "Thin" },
+    { value: "thick", label: "Thick" },
+    { value: "variable-weight", label: "Variable Weight" },
+    { value: "none", label: "None (Fills Only)" },
+    { value: "sketchy", label: "Sketchy" },
+    { value: "clean", label: "Clean" },
+  ],
+  detailLevel: [
+    { value: "minimal", label: "Minimal / Simple" },
+    { value: "moderate", label: "Moderate" },
+    { value: "highly-detailed", label: "Highly Detailed" },
+  ],
+} as const;

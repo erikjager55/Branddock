@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Sparkles } from "lucide-react";
-import { Button, EmptyState, SkeletonCard } from "@/components/shared";
+import { Sparkles } from "lucide-react";
+import { EmptyState, SkeletonCard } from "@/components/shared";
 import { ModelStatsCards } from "./ModelStatsCards";
 import { ModelFilterBar } from "./ModelFilterBar";
 import { ModelCard } from "./ModelCard";
@@ -45,20 +45,6 @@ export function ConsistentModelsContent({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          {models.length > 0 && (
-            <p className="text-sm text-gray-500">
-              {models.length} model{models.length !== 1 ? "s" : ""}
-            </p>
-          )}
-        </div>
-        <Button onClick={() => openCreateModal()} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Create Model
-        </Button>
-      </div>
-
       <ModelStatsCards stats={stats} isLoading={statsLoading} />
 
       <ModelFilterBar

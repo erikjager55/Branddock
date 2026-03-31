@@ -1,66 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleTrainingComplete } from '@/lib/consistent-models/training-pipeline';
-import crypto from 'crypto';
-
-/** Verify Astria webhook HMAC signature */
-function verifySignature(body: string, signature: string | null): boolean {
-  const secret = process.env.ASTRIA_WEBHOOK_SECRET;
-  if (!secret) {
-    // No secret configured — skip verification (development mode)
-    return true;
-  }
-
-  if (!signature) return false;
-
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(body)
-    .digest('hex');
-
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expected)
-  );
-}
+import { verifyReplicateWebhook } from '@/lib/integrations/replicate/replicate-client';
 
 /**
  * POST /api/consistent-models/webhook
  *
- * Astria calls this endpoint when a tune finishes training.
+ * Replicate calls this endpoint when a training finishes.
  * No workspace auth required (server-to-server).
+ * Uses svix-standard signature verification.
  */
 export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text();
-    const signature = request.headers.get('x-astria-signature');
 
-    if (!verifySignature(rawBody, signature)) {
+    // Verify webhook signature (svix standard headers)
+    const isValid = await verifyReplicateWebhook(rawBody, {
+      webhookId: request.headers.get('webhook-id'),
+      webhookTimestamp: request.headers.get('webhook-timestamp'),
+      webhookSignature: request.headers.get('webhook-signature'),
+    });
+
+    if (!isValid) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
     }
 
     const body = JSON.parse(rawBody) as {
-      tune_id?: number;
+      id?: string;
       status?: string;
-      error?: string;
+      output?: Record<string, unknown>;
+      error?: string | null;
+      version?: string;
     };
 
-    if (!body.tune_id) {
+    if (!body.id) {
       return NextResponse.json(
-        { error: 'Missing tune_id' },
+        { error: 'Missing training id' },
         { status: 400 }
       );
     }
 
-    const astriaModelId = String(body.tune_id);
     const success = body.status === 'succeeded';
     const error = body.error ?? undefined;
+    const modelVersion = body.version ?? undefined;
 
-    await handleTrainingComplete(astriaModelId, success, error);
+    await handleTrainingComplete(body.id, success, error, modelVersion);
 
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('Webhook error:', err);
-    // Return 200 to prevent Astria from retrying on application errors
+    // Return 200 to prevent Replicate from retrying on application errors
     return NextResponse.json({ ok: true, warning: 'Processed with errors' });
   }
 }

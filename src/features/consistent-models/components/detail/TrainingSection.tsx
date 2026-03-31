@@ -59,6 +59,9 @@ export function TrainingSection({
               </label>
               <span className="text-gray-500">{steps}</span>
             </div>
+            <p className="mt-0.5 text-xs text-gray-400">
+              More steps improve accuracy but take longer. 500 is a good balance for most models. Use fewer for quick tests, more for high-fidelity results.
+            </p>
             <input
               type="range"
               min={TRAINING_DEFAULTS.minSteps}
@@ -69,8 +72,8 @@ export function TrainingSection({
               className="mt-1 w-full accent-teal-600"
             />
             <div className="mt-0.5 flex justify-between text-xs text-gray-400">
-              <span>{TRAINING_DEFAULTS.minSteps}</span>
-              <span>{TRAINING_DEFAULTS.maxSteps}</span>
+              <span>{TRAINING_DEFAULTS.minSteps} (faster)</span>
+              <span>{TRAINING_DEFAULTS.maxSteps} (higher quality)</span>
             </div>
           </div>
 
@@ -79,6 +82,9 @@ export function TrainingSection({
             <label className="mb-1 block text-sm font-medium text-gray-700">
               Resolution
             </label>
+            <p className="mb-1.5 text-xs text-gray-400">
+              The output size of generated images. Higher resolution captures more detail but takes longer to generate.
+            </p>
             <div className="flex gap-2">
               {TRAINING_DEFAULTS.supportedResolutions.map((res) => (
                 <button

@@ -3,11 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { resolveModelBrandContext } from '@/lib/consistent-models/model-context-resolver';
 import { z } from 'zod';
 
 const createModelSchema = z.object({
   name: z.string().trim().min(1).max(100),
-  type: z.enum(['PERSON', 'PRODUCT', 'STYLE', 'OBJECT', 'BRAND_STYLE', 'PHOTOGRAPHY', 'ANIMATION']),
+  type: z.enum(['PERSON', 'PRODUCT', 'STYLE', 'OBJECT', 'BRAND_STYLE', 'PHOTOGRAPHY', 'ILLUSTRATION']),
   description: z.string().trim().max(2000).optional(),
   stylePrompt: z.string().trim().max(2000).optional(),
   negativePrompt: z.string().trim().max(2000).optional(),
@@ -130,6 +131,9 @@ export async function POST(request: NextRequest) {
       slug = `${slug}-${Date.now().toString(36)}`;
     }
 
+    // Resolve brand context snapshot for this model type
+    const brandContext = await resolveModelBrandContext(workspaceId, type);
+
     const model = await prisma.consistentModel.create({
       data: {
         workspaceId,
@@ -143,6 +147,7 @@ export async function POST(request: NextRequest) {
         modelName: modelName ?? null,
         modelDescription: modelDescription ?? null,
         generationParams: (generationParams ?? undefined) as Parameters<typeof prisma.consistentModel.create>[0]['data']['generationParams'],
+        brandContext: (brandContext ?? undefined) as Parameters<typeof prisma.consistentModel.create>[0]['data']['brandContext'],
       },
       include: {
         _count: { select: { referenceImages: true, generations: true } },

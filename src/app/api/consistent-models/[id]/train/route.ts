@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
-import { isAstriaConfigured } from '@/lib/integrations/astria/astria-client';
+import { isReplicateConfigured } from '@/lib/integrations/replicate/replicate-client';
 import { startTraining } from '@/lib/consistent-models/training-pipeline';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { MIN_IMAGES_BY_TYPE } from '@/features/consistent-models/constants/model-constants';
+import type { ConsistentModelType } from '@prisma/client';
 import { z } from 'zod';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 const trainSchema = z.object({
-  trainingConfig: z.object({
-    steps: z.number().int().min(100).max(4000).optional(),
-    learningRate: z.number().min(0.00001).max(0.01).optional(),
-    resolution: z.number().int().min(512).max(1536).optional(),
-  }).optional(),
+  steps: z.number().int().min(100).max(4000).optional(),
+  learningRate: z.number().min(0.00001).max(0.01).optional(),
+  resolution: z.number().int().min(512).max(1536).optional(),
 });
 
 /** POST /api/consistent-models/:id/train — Start fine-tuning */
@@ -32,13 +33,6 @@ export async function POST(
       return NextResponse.json({ error: 'No workspace' }, { status: 400 });
     }
 
-    if (!isAstriaConfigured()) {
-      return NextResponse.json(
-        { error: 'Astria API key not configured. Add ASTRIA_API_KEY to enable training.' },
-        { status: 503 }
-      );
-    }
-
     const { id } = await context.params;
     const body = await request.json().catch(() => ({}));
     const parsed = trainSchema.safeParse(body);
@@ -49,7 +43,44 @@ export async function POST(
       );
     }
 
-    // Build webhook callback URL
+    // ─── Validation ───────────────────────────────────────────
+    const model = await prisma.consistentModel.findFirst({
+      where: { id, workspaceId },
+      include: {
+        referenceImages: {
+          where: { isTrainingImage: true },
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!model) {
+      return NextResponse.json({ error: 'Model not found' }, { status: 404 });
+    }
+
+    if (model.status !== 'DRAFT' && model.status !== 'TRAINING_FAILED') {
+      return NextResponse.json(
+        { error: `Cannot start training: model status is ${model.status}. Must be DRAFT or TRAINING_FAILED.` },
+        { status: 400 }
+      );
+    }
+
+    const minRequired = MIN_IMAGES_BY_TYPE[model.type as ConsistentModelType] ?? 5;
+    if (model.referenceImages.length < minRequired) {
+      return NextResponse.json(
+        { error: `Need at least ${minRequired} reference images for ${model.type} models. Got ${model.referenceImages.length}.` },
+        { status: 400 }
+      );
+    }
+
+    // ─── Replicate training ───────────────────────────────────
+    if (!isReplicateConfigured()) {
+      return NextResponse.json(
+        { error: 'Replicate API token not configured. Add REPLICATE_API_TOKEN to environment.' },
+        { status: 503 }
+      );
+    }
+
     const origin = request.headers.get('origin') ?? process.env.BETTER_AUTH_URL ?? '';
     const callbackUrl = `${origin}/api/consistent-models/webhook`;
 
@@ -62,7 +93,6 @@ export async function POST(
     const message = error instanceof Error ? error.message : 'Internal server error';
     console.error('POST /api/consistent-models/:id/train error:', error);
 
-    // Return 400 for business logic errors
     if (message.includes('Cannot start') || message.includes('Need at least') || message.includes('not found')) {
       return NextResponse.json({ error: message }, { status: 400 });
     }

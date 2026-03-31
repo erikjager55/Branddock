@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
-import { isAstriaConfigured, createPrompt } from '@/lib/integrations/astria/astria-client';
-import { uploadToR2, buildGenerationStorageKey } from '@/lib/storage/r2-storage';
+import { isReplicateConfigured, runReplicatePrediction } from '@/lib/integrations/replicate/replicate-client';
+import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { TRIGGER_WORDS } from '@/features/consistent-models/constants/model-constants';
+import type { ConsistentModelType } from '@prisma/client';
+import type { ModelBrandContext } from '@/features/consistent-models/types/consistent-model.types';
 import { z } from 'zod';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -37,9 +39,9 @@ export async function POST(
       return NextResponse.json({ error: 'No workspace' }, { status: 400 });
     }
 
-    if (!isAstriaConfigured()) {
+    if (!isReplicateConfigured()) {
       return NextResponse.json(
-        { error: 'Astria API key not configured.' },
+        { error: 'Replicate API token not configured.' },
         { status: 503 }
       );
     }
@@ -71,9 +73,9 @@ export async function POST(
       );
     }
 
-    if (!model.astriaModelId) {
+    if (!model.replicateModelVersion) {
       return NextResponse.json(
-        { error: 'Model has no Astria model ID. Training may not have completed.' },
+        { error: 'Model has no trained version. Training may not have completed.' },
         { status: 400 }
       );
     }
@@ -81,39 +83,48 @@ export async function POST(
     const { prompt, negativePrompt, width, height, seed, guidanceScale, numImages } = parsed.data;
 
     // Inject trigger word if not present in prompt
-    const triggerWord = TRIGGER_WORDS[model.type] ?? 'ohwx';
+    const triggerWord = TRIGGER_WORDS[model.type as ConsistentModelType] ?? 'TOK';
     const finalPrompt = prompt.includes(triggerWord) ? prompt : `${triggerWord} ${prompt}`;
 
     // Combine with model-level style/negative prompts
-    const combinedNegative = [model.negativePrompt, negativePrompt].filter(Boolean).join(', ') || undefined;
+    let combinedPrompt = model.stylePrompt ? `${finalPrompt}, ${model.stylePrompt}` : finalPrompt;
 
-    // Call Astria to generate
-    const tuneId = parseInt(model.astriaModelId, 10);
-    const astriaResult = await createPrompt(tuneId, {
-      text: model.stylePrompt ? `${finalPrompt}, ${model.stylePrompt}` : finalPrompt,
-      negativePrompt: combinedNegative,
-      numImages: numImages ?? 1,
+    // Enrich prompt with brand context if available
+    const brandContext = model.brandContext as ModelBrandContext | null;
+    if (brandContext?.contextSummary) {
+      combinedPrompt = `${combinedPrompt}. Brand context: ${brandContext.contextSummary}`;
+    }
+
+    // Call Replicate to generate
+    const prediction = await runReplicatePrediction(model.replicateModelVersion, {
+      prompt: combinedPrompt,
+      num_outputs: numImages ?? 1,
+      guidance_scale: guidanceScale ?? 7.5,
+      output_format: 'png',
       seed,
-      width,
-      height,
-      cfgScale: guidanceScale,
+      width: width ?? 1024,
+      height: height ?? 1024,
     });
 
     // Process each generated image
     const generations = [];
     const startTime = Date.now();
+    const storage = getStorageProvider();
 
-    for (const imageUrl of astriaResult.images ?? []) {
+    for (const imageUrl of prediction.output ?? []) {
       try {
-        // Download the generated image from Astria
+        // Download the generated image from Replicate
         const imageResponse = await fetch(imageUrl);
         if (!imageResponse.ok) continue;
 
         const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
 
-        // Upload to R2
-        const storageKey = buildGenerationStorageKey(workspaceId, id);
-        const { url: storageUrl } = await uploadToR2(storageKey, imageBuffer, 'image/png');
+        // Upload via storage provider (local storage for now, R2 later)
+        const storageResult = await storage.upload(imageBuffer, {
+          workspaceId,
+          fileName: `generation-${Date.now()}.png`,
+          contentType: 'image/png',
+        });
 
         // Create generation record
         const generation = await prisma.consistentModelGeneration.create({
@@ -122,16 +133,16 @@ export async function POST(
             workspaceId,
             createdById: session.user.id,
             prompt: finalPrompt,
-            negativePrompt: combinedNegative ?? null,
-            seed: astriaResult.seed ?? seed ?? null,
+            negativePrompt: negativePrompt ?? null,
+            seed: seed ?? null,
             width: width ?? 1024,
             height: height ?? 1024,
             guidanceScale: guidanceScale ?? null,
-            storageKey,
-            storageUrl,
+            storageKey: storageResult.url,
+            storageUrl: storageResult.url,
             generationTimeMs: Date.now() - startTime,
-            aiProvider: 'astria',
-            aiModel: model.astriaModelId!,
+            aiProvider: 'replicate',
+            aiModel: model.replicateModelVersion!,
           },
         });
 

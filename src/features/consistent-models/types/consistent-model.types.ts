@@ -4,7 +4,7 @@
 
 // ─── Enums ──────────────────────────────────────────────────
 
-export type ConsistentModelType = "PERSON" | "PRODUCT" | "STYLE" | "OBJECT" | "BRAND_STYLE" | "PHOTOGRAPHY" | "ANIMATION";
+export type ConsistentModelType = "PERSON" | "PRODUCT" | "STYLE" | "OBJECT" | "BRAND_STYLE" | "PHOTOGRAPHY" | "ILLUSTRATION" | "VOICE" | "SOUND_EFFECT";
 
 export type ConsistentModelStatus =
   | "DRAFT"
@@ -61,12 +61,14 @@ export interface ConsistentModelListParams {
 
 /** Full model detail (GET /api/consistent-models/:id) */
 export interface ConsistentModelDetail extends ConsistentModelWithMeta {
-  astriaModelId: string | null;
-  astriaModelUrl: string | null;
+  replicateModelId: string | null;
+  replicateModelVersion: string | null;
+  replicateTrainingId: string | null;
   trainingConfig: TrainingConfig | null;
   trainingStartedAt: string | null;
   trainingCompletedAt: string | null;
   trainingError: string | null;
+  brandContext: ModelBrandContext | null;
   referenceImages: ReferenceImageWithMeta[];
 }
 
@@ -143,7 +145,8 @@ export interface GenerationsListParams {
 /** Training status polling response */
 export interface TrainingStatusResponse {
   status: ConsistentModelStatus;
-  astriaModelId: string | null;
+  replicateModelId: string | null;
+  replicateTrainingId: string | null;
   trainingStartedAt: string | null;
   trainingCompletedAt: string | null;
   trainingError: string | null;
@@ -161,7 +164,38 @@ export interface ConsistentModelStats {
   totalGenerations: number;
 }
 
+// ─── Brand Context ──────────────────────────────────────────
+
+/** Snapshot of brand context resolved at model creation time */
+export interface ModelBrandContext {
+  type: ConsistentModelType;
+  resolvedAt: string;
+  contextSummary: string;
+  brandName?: string;
+  brandColors?: { name: string; hex: string }[];
+  brandFonts?: string[];
+  brandPersonality?: string;
+  toneOfVoice?: string;
+  brandImageryStyle?: string;
+  brandDesignLanguage?: string;
+  brandStyle?: string;
+  targetPersonas?: { name: string; description: string }[];
+  productInfo?: { name: string; description: string }[];
+  competitors?: { name: string; notes: string }[];
+  trendInsights?: { title: string; summary: string }[];
+  moodKeywords?: string[];
+}
+
 // ─── Request Bodies ─────────────────────────────────────────
+
+/** Structured illustration style parameters stored in generationParams */
+export interface IllustrationStyleParams {
+  illustrationStyle?: string | null;
+  colorApproach?: string | null;
+  lineQuality?: string | null;
+  detailLevel?: string | null;
+  mood?: string | null;
+}
 
 /** POST /api/consistent-models */
 export interface CreateModelBody {

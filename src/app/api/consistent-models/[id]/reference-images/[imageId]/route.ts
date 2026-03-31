@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
-import { deleteFromR2 } from '@/lib/storage/r2-storage';
+import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 
@@ -44,14 +44,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Image not found' }, { status: 404 });
     }
 
-    // Delete from R2 (non-blocking — don't fail if storage delete fails)
+    // Delete from storage (non-blocking — don't fail if storage delete fails)
     try {
-      await deleteFromR2(image.storageKey);
-      if (image.thumbnailKey) {
-        await deleteFromR2(image.thumbnailKey);
+      const storage = getStorageProvider();
+      await storage.delete(image.storageUrl);
+      if (image.thumbnailUrl) {
+        await storage.delete(image.thumbnailUrl);
       }
     } catch (storageError) {
-      console.error('Failed to delete image from R2:', storageError);
+      console.error('Failed to delete image from storage:', storageError);
     }
 
     // Delete from database
