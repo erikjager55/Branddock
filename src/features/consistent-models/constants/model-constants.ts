@@ -65,8 +65,8 @@ export const TYPE_CONFIG: Record<ConsistentModelType, ModelTypeConfig> = {
   },
   BRAND_STYLE: {
     label: "Brand Style",
-    description: "Define visual style references for brand imagery",
-    triggerWord: "",
+    description: "Train on brand style references for consistent brand imagery",
+    triggerWord: "TOK brand_style",
     color: "text-rose-700",
     bgColor: "bg-rose-50",
     borderColor: "border-rose-200",
@@ -76,8 +76,8 @@ export const TYPE_CONFIG: Record<ConsistentModelType, ModelTypeConfig> = {
   },
   PHOTOGRAPHY: {
     label: "Photography",
-    description: "Define photography style guides",
-    triggerWord: "",
+    description: "Train on photography styles for consistent photo aesthetics",
+    triggerWord: "TOK photography",
     color: "text-cyan-700",
     bgColor: "bg-cyan-50",
     borderColor: "border-cyan-200",
@@ -87,8 +87,8 @@ export const TYPE_CONFIG: Record<ConsistentModelType, ModelTypeConfig> = {
   },
   ILLUSTRATION: {
     label: "Illustration",
-    description: "Define illustration style references",
-    triggerWord: "",
+    description: "Train on illustration styles for consistent visual language",
+    triggerWord: "TOK illustration",
     color: "text-orange-700",
     bgColor: "bg-orange-50",
     borderColor: "border-orange-200",
@@ -180,9 +180,9 @@ export const TRIGGER_WORDS: Record<ConsistentModelType, string> = {
   PRODUCT: "TOK product",
   STYLE: "TOK style",
   OBJECT: "TOK object",
-  BRAND_STYLE: "",
-  PHOTOGRAPHY: "",
-  ILLUSTRATION: "",
+  BRAND_STYLE: "TOK brand_style",
+  PHOTOGRAPHY: "TOK photography",
+  ILLUSTRATION: "TOK illustration",
   VOICE: "",
   SOUND_EFFECT: "",
 };
@@ -194,9 +194,9 @@ export const MIN_IMAGES_BY_TYPE: Record<ConsistentModelType, number> = {
   PRODUCT: 5,
   STYLE: 10,
   OBJECT: 5,
-  BRAND_STYLE: 0,
-  PHOTOGRAPHY: 0,
-  ILLUSTRATION: 0,
+  BRAND_STYLE: 10,
+  PHOTOGRAPHY: 10,
+  ILLUSTRATION: 10,
   VOICE: 0,
   SOUND_EFFECT: 0,
 };
@@ -234,11 +234,11 @@ export const STATUS_FILTER_OPTIONS = [
 // ─── Trainable Types (require Replicate training) ──────────
 
 /** Types that support AI training + generation. Non-trainable types are style guides only. */
-export const TRAINABLE_TYPES = new Set<ConsistentModelType>(['PERSON', 'PRODUCT', 'STYLE', 'OBJECT']);
+export const TRAINABLE_TYPES = new Set<ConsistentModelType>(['PERSON', 'PRODUCT', 'STYLE', 'OBJECT', 'BRAND_STYLE', 'PHOTOGRAPHY', 'ILLUSTRATION']);
 
 // ─── Wizard Steps ───────────────────────────────────────────
 
-export const WIZARD_STEPS_TRAINABLE = ["Reference Images", "Training", "Generate"] as const;
+export const WIZARD_STEPS_TRAINABLE = ["Generate References", "Curate & Upload", "Training", "Generate"] as const;
 export const WIZARD_STEPS_NON_TRAINABLE = ["Style Guide", "Reference Images", "Overview"] as const;
 export const WIZARD_STEPS_ILLUSTRATION = ["Illustration Style", "Reference Images", "Overview"] as const;
 

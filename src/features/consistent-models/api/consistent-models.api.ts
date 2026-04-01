@@ -185,7 +185,36 @@ export async function refreshBrandContext(
   return handleResponse(res, "Failed to refresh brand context");
 }
 
-// ─── 13. List Generations ───────────────────────────────────
+// ─── 13. Generate Reference Images ─────────────────────────
+
+export async function generateReferenceImages(
+  modelId: string,
+  options?: { provider?: "imagen" | "dalle"; count?: number },
+): Promise<{ images: ReferenceImageWithMeta[] }> {
+  const res = await fetch(`${BASE}/${modelId}/generate-references`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(options ?? {}),
+  });
+  return handleResponse(res, "Failed to generate reference images");
+}
+
+// ─── 14. Curate Reference Images ───────────────────────────
+
+export async function curateReferenceImages(
+  modelId: string,
+  selectedIds: string[],
+  deselectedIds: string[],
+): Promise<{ images: ReferenceImageWithMeta[]; trainingCount: number; total: number }> {
+  const res = await fetch(`${BASE}/${modelId}/curate-references`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ selectedIds, deselectedIds }),
+  });
+  return handleResponse(res, "Failed to curate reference images");
+}
+
+// ─── 15. List Generations ───────────────────────────────────
 
 export async function fetchGenerations(
   modelId: string,

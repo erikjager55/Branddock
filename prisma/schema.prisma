@@ -3416,6 +3416,11 @@ enum ConsistentModelStatus {
   ARCHIVED
 }
 
+enum ReferenceImageSource {
+  UPLOADED
+  AI_GENERATED
+}
+
 model MediaAsset {
   id              String          @id @default(cuid())
   name            String
@@ -3718,6 +3723,13 @@ model ReferenceImage {
   caption             String?
   sortOrder           Int              @default(0)
   isTrainingImage     Boolean          @default(true)
+
+  // Source tracking (AI-generated vs manual upload)
+  source              ReferenceImageSource @default(UPLOADED)
+  aiProvider          String?          // "imagen" or "dalle"
+  aiModel             String?          // specific model version used
+  aiPrompt            String?          @db.Text
+  generatedAt         DateTime?
 
   createdAt           DateTime         @default(now())
 

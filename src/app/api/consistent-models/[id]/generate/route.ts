@@ -7,7 +7,6 @@ import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { TRIGGER_WORDS } from '@/features/consistent-models/constants/model-constants';
 import type { ConsistentModelType } from '@prisma/client';
-import type { ModelBrandContext } from '@/features/consistent-models/types/consistent-model.types';
 import { z } from 'zod';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -87,13 +86,7 @@ export async function POST(
     const finalPrompt = prompt.includes(triggerWord) ? prompt : `${triggerWord} ${prompt}`;
 
     // Combine with model-level style/negative prompts
-    let combinedPrompt = model.stylePrompt ? `${finalPrompt}, ${model.stylePrompt}` : finalPrompt;
-
-    // Enrich prompt with brand context if available
-    const brandContext = model.brandContext as ModelBrandContext | null;
-    if (brandContext?.contextSummary) {
-      combinedPrompt = `${combinedPrompt}. Brand context: ${brandContext.contextSummary}`;
-    }
+    const combinedPrompt = model.stylePrompt ? `${finalPrompt}, ${model.stylePrompt}` : finalPrompt;
 
     // Call Replicate to generate
     const prediction = await runReplicatePrediction(model.replicateModelVersion, {

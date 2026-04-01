@@ -111,7 +111,7 @@ export const useConsistentModelStore = create<ConsistentModelStore>((set) => ({
   // Wizard
   setWizardStep: (step) => set({ wizardStep: step }),
   nextWizardStep: () =>
-    set((s) => ({ wizardStep: Math.min(3, s.wizardStep + 1) })),
+    set((s) => ({ wizardStep: Math.min(4, s.wizardStep + 1) })),
   prevWizardStep: () =>
     set((s) => ({ wizardStep: Math.max(1, s.wizardStep - 1) })),
   resetWizardStep: () => set({ wizardStep: 1 }),

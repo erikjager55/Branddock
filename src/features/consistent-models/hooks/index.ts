@@ -189,7 +189,35 @@ export function useRefreshBrandContext(modelId: string | undefined) {
   });
 }
 
-// ─── 14. useConsistentModelStats ────────────────────────────
+// ─── 14. useGenerateReferenceImages ─────────────────────────
+
+export function useGenerateReferenceImages(modelId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (options?: { provider?: "imagen" | "dalle"; count?: number }) =>
+      api.generateReferenceImages(modelId!, options),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: consistentModelKeys.detail(modelId!) });
+      qc.invalidateQueries({ queryKey: consistentModelKeys.list() });
+    },
+  });
+}
+
+// ─── 15. useCurateReferences ────────────────────────────────
+
+export function useCurateReferences(modelId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ selectedIds, deselectedIds }: { selectedIds: string[]; deselectedIds: string[] }) =>
+      api.curateReferenceImages(modelId!, selectedIds, deselectedIds),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: consistentModelKeys.detail(modelId!) });
+      qc.invalidateQueries({ queryKey: consistentModelKeys.list() });
+    },
+  });
+}
+
+// ─── 16. useConsistentModelStats ────────────────────────────
 
 export function useConsistentModelStats() {
   return useQuery({

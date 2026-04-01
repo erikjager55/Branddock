@@ -90,6 +90,13 @@ export function ReferenceImagesSection({
                   {img.width}x{img.height}
                 </div>
               )}
+
+              {/* AI badge for generated images */}
+              {img.source === "AI_GENERATED" && (
+                <div className="absolute right-1.5 top-1.5 rounded bg-teal-600/80 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                  AI
+                </div>
+              )}
             </div>
           ))}
         </div>

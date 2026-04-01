@@ -82,7 +82,9 @@ export async function POST(
     }
 
     const origin = request.headers.get('origin') ?? process.env.BETTER_AUTH_URL ?? '';
-    const callbackUrl = `${origin}/api/consistent-models/webhook`;
+    const rawCallbackUrl = `${origin}/api/consistent-models/webhook`;
+    // Replicate requires HTTPS for webhooks — skip in local dev, poller handles completion
+    const callbackUrl = rawCallbackUrl.startsWith('https://') ? rawCallbackUrl : undefined;
 
     const result = await startTraining(id, workspaceId, callbackUrl);
 
@@ -90,13 +92,14 @@ export async function POST(
 
     return NextResponse.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Internal server error';
-    console.error('POST /api/consistent-models/:id/train error:', error);
+    const message = error instanceof Error ? error.message : String(error);
+    const stack = error instanceof Error ? error.stack : undefined;
+    console.error('POST /api/consistent-models/:id/train error:', message, stack);
 
     if (message.includes('Cannot start') || message.includes('Need at least') || message.includes('not found')) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

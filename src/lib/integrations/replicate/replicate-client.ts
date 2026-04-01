@@ -18,7 +18,7 @@ import Replicate from 'replicate';
 // ─── Constants ──────────────────────────────────────────────
 
 const FLUX_TRAINER = 'ostris/flux-dev-lora-trainer' as const;
-const FLUX_TRAINER_VERSION = 'e440909d01824b3340c13e1090e1abe044365082a7e40692c5e0c5fc50f336cd';
+const FLUX_TRAINER_VERSION = '26dce37af90b9d997eeb970d92e47de3064d46c300504ae376c75bef6a9022d2';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -38,6 +38,7 @@ export interface ReplicateTrainingResult {
   output?: Record<string, unknown>;
   error?: string | null;
   urls?: { get: string; cancel: string };
+  logs?: string | null;
 }
 
 export interface ReplicatePredictionResult {
@@ -104,7 +105,7 @@ export async function createReplicateModel(
   try {
     const model = await client.models.create(owner, name, {
       visibility: 'private',
-      hardware: 'gpu-a40-large',
+      hardware: 'gpu-l40s',
       description: description ?? `Branddock fine-tuned model: ${name}`,
     });
 
@@ -172,7 +173,9 @@ export async function startReplicateTraining(
         input_images: inputImagesUrl,
         steps: config.steps ?? 1000,
         learning_rate: config.learningRate ?? 0.0004,
-        resolution: `${config.resolution ?? 512},${config.resolution ?? 512}`,
+        resolution: config.resolution
+          ? `${config.resolution}`
+          : '512,768,1024',
         trigger_word: config.triggerWord ?? 'TOK',
         autocaption: config.autocaption ?? true,
       },
@@ -210,6 +213,7 @@ export async function getReplicateTraining(
     output: training.output as Record<string, unknown> | undefined,
     error: (typeof training.error === 'string' ? training.error : null) as string | null,
     urls: training.urls,
+    logs: typeof training.logs === 'string' ? training.logs : null,
   };
 }
 

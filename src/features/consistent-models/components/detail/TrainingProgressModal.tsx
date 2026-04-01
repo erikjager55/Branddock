@@ -64,17 +64,26 @@ export function TrainingProgressModal({
 
   const getStepProgress = () => {
     if (isFailed) return 0;
-    const idx = STEPS.findIndex((s) => s.status === currentStatus);
     if (isComplete) return 100;
+    // Use real Replicate progress when training, scaled to the training step range (33-66%)
+    if (currentStatus === "TRAINING" && status?.progress != null) {
+      return 33 + (status.progress / 100) * 34;
+    }
+    const idx = STEPS.findIndex((s) => s.status === currentStatus);
     return Math.max(10, ((idx + 0.5) / STEPS.length) * 100);
   };
+
+  // Prevent closing while training is in progress
+  const isActive = !isComplete && !isFailed;
+  const handleClose = isActive ? () => {} : onClose;
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title={`Training: ${modelName}`}
       size="md"
+      showCloseButton={!isActive}
     >
       <div className="space-y-6 py-2">
         <ProgressBar value={getStepProgress()} color="teal" size="md" />
@@ -106,6 +115,9 @@ export function TrainingProgressModal({
                   }`}
                 >
                   {step.label}
+                  {isCurrent && step.status === "TRAINING" && status?.progress != null && (
+                    <span className="ml-2 text-teal-600">{status.progress}%</span>
+                  )}
                 </span>
               </div>
             );

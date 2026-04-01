@@ -82,6 +82,8 @@ export interface TrainingConfig {
 
 // ─── Reference Image ────────────────────────────────────────
 
+export type ReferenceImageSource = 'UPLOADED' | 'AI_GENERATED';
+
 /** Reference image record */
 export interface ReferenceImageWithMeta {
   id: string;
@@ -98,6 +100,10 @@ export interface ReferenceImageWithMeta {
   caption: string | null;
   sortOrder: number;
   isTrainingImage: boolean;
+  source: ReferenceImageSource;
+  aiProvider: string | null;
+  aiModel: string | null;
+  aiPrompt: string | null;
   createdAt: string;
 }
 
@@ -151,6 +157,8 @@ export interface TrainingStatusResponse {
   trainingCompletedAt: string | null;
   trainingError: string | null;
   sampleImageUrls: string[] | null;
+  /** Training progress percentage (0-100), parsed from Replicate logs */
+  progress?: number;
 }
 
 // ─── Stats ──────────────────────────────────────────────────

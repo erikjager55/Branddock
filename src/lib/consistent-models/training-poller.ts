@@ -9,11 +9,25 @@ import { prisma } from '@/lib/prisma';
 import { getReplicateTraining } from '@/lib/integrations/replicate/replicate-client';
 import { handleTrainingComplete } from './training-pipeline';
 
+/** Parse training progress percentage from Replicate training logs.
+ * Logs contain lines like: `flux_train_replicate: 52%|█████▏ | 517/1000` */
+function parseTrainingProgress(logs: string | null | undefined): number | undefined {
+  if (!logs) return undefined;
+  // Match the last occurrence of a percentage in the logs (e.g., "52%|")
+  const matches = logs.match(/(\d+)%\|/g);
+  if (!matches || matches.length === 0) return undefined;
+  const lastMatch = matches[matches.length - 1];
+  const pct = parseInt(lastMatch, 10);
+  return isNaN(pct) ? undefined : Math.min(pct, 100);
+}
+
 export interface PollResult {
   modelId: string;
   status: string;
   changed: boolean;
   error?: string;
+  /** Training progress percentage (0-100), parsed from Replicate logs */
+  progress?: number;
 }
 
 /** Poll Replicate for the current training status of a model */
@@ -76,11 +90,13 @@ export async function pollTrainingStatus(
       };
     }
 
-    // Still training (starting or processing) — no change
+    // Still training (starting or processing) — extract progress from logs
+    const progress = parseTrainingProgress(training.logs);
     return {
       modelId: model.id,
       status: 'TRAINING',
       changed: false,
+      progress,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

@@ -25,7 +25,6 @@ import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { TRIGGER_WORDS, MIN_IMAGES_BY_TYPE } from '@/features/consistent-models/constants/model-constants';
 import type { ConsistentModelType } from '@prisma/client';
-import type { ModelBrandContext } from '@/features/consistent-models/types/consistent-model.types';
 
 // ─── Constants ──────────────────────────────────────────────
 
@@ -34,9 +33,9 @@ const DEFAULT_SAMPLE_PROMPTS: Record<ConsistentModelType, string> = {
   PRODUCT: 'A clean product photo of TOK product on a white background, studio lighting',
   STYLE: 'A photograph in the TOK style, beautiful composition, high quality',
   OBJECT: 'A photo of TOK object, clean background, professional lighting',
-  BRAND_STYLE: '',
-  PHOTOGRAPHY: '',
-  ILLUSTRATION: '',
+  BRAND_STYLE: 'An image in the TOK brand_style, professional quality, brand consistent visual design',
+  PHOTOGRAPHY: 'A photograph in TOK photography style, beautiful composition, professional lighting',
+  ILLUSTRATION: 'An illustration in TOK illustration style, high quality, detailed artwork',
   VOICE: '',
   SOUND_EFFECT: '',
 };
@@ -94,36 +93,45 @@ export async function startTraining(
   }
 
   // 2. Create zip archive of reference images
+  console.log('[training-pipeline] Step 2: Creating zip of', model.referenceImages.length, 'images');
   const zip = new JSZip();
 
   for (const img of model.referenceImages) {
     // Reference images are stored via local storage provider
     // storageUrl is a local path like /uploads/media/ws_xxx/2026/03/file.jpg
     const localPath = path.join('public', img.storageUrl.replace(/^\//, ''));
+    console.log('[training-pipeline]   Reading:', localPath);
     const fileBuffer = await readFile(localPath);
     zip.file(img.fileName, fileBuffer);
   }
 
   const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+  console.log('[training-pipeline] Zip created:', (zipBuffer.length / 1024 / 1024).toFixed(2), 'MB');
 
   // 3. Upload zip to Replicate via Files API
   const slugSafe = model.name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').slice(0, 50);
+  console.log('[training-pipeline] Step 3: Uploading zip to Replicate Files API...');
   const uploadResult = await uploadTrainingFile(
     zipBuffer,
     `${slugSafe}-training-images.zip`
   );
+  console.log('[training-pipeline] Upload complete. File URL:', uploadResult.urls.get);
 
   // 4. Create model on Replicate (idempotent — handles "already exists")
+  console.log('[training-pipeline] Step 4: Creating/finding model on Replicate...');
   const replicateModel = await createReplicateModel(
     slugSafe,
     `Branddock fine-tuned model: ${model.name}`
   );
+  console.log('[training-pipeline] Model:', replicateModel.owner + '/' + replicateModel.name);
 
   // 5. Determine trigger word and training params
   const triggerWord = TRIGGER_WORDS[model.type];
   const trainingConfig = (model.trainingConfig as Record<string, unknown>) ?? {};
+  console.log('[training-pipeline] Step 5: Trigger word:', triggerWord || 'TOK', '| Config:', JSON.stringify(trainingConfig));
 
   // 6. Start training on Replicate
+  console.log('[training-pipeline] Step 6: Starting training... Callback URL:', callbackUrl ?? 'none');
   const training = await startReplicateTraining(
     replicateModel.owner,
     replicateModel.name,
@@ -137,6 +145,7 @@ export async function startTraining(
     },
     callbackUrl
   );
+  console.log('[training-pipeline] Training started! ID:', training.id, '| Status:', training.status);
 
   // 7. Update model in DB
   await prisma.consistentModel.update({
@@ -216,14 +225,8 @@ export async function handleTrainingComplete(
 
   if (versionToUse) {
     try {
-      let samplePrompt = DEFAULT_SAMPLE_PROMPTS[model.type];
+      const samplePrompt = DEFAULT_SAMPLE_PROMPTS[model.type];
       if (samplePrompt) {
-        // Enrich sample prompt with brand context if available
-        const brandContext = model.brandContext as ModelBrandContext | null;
-        if (brandContext?.contextSummary) {
-          samplePrompt = `${samplePrompt}. Brand context: ${brandContext.contextSummary}`;
-        }
-
         const prediction = await runReplicatePrediction(versionToUse, {
           prompt: samplePrompt,
           num_outputs: NUM_SAMPLE_IMAGES,

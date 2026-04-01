@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { pollTrainingStatus } from '@/lib/consistent-models/training-poller';
+import { prisma } from '@/lib/prisma';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -23,7 +24,31 @@ export async function GET(
     const { id } = await context.params;
 
     const result = await pollTrainingStatus(id, workspaceId);
-    return NextResponse.json(result);
+
+    // Enrich response with DB fields for the frontend
+    const model = await prisma.consistentModel.findFirst({
+      where: { id, workspaceId },
+      select: {
+        status: true,
+        replicateModelId: true,
+        replicateTrainingId: true,
+        trainingStartedAt: true,
+        trainingCompletedAt: true,
+        trainingError: true,
+        sampleImageUrls: true,
+      },
+    });
+
+    return NextResponse.json({
+      ...result,
+      status: model?.status ?? result.status,
+      replicateModelId: model?.replicateModelId ?? null,
+      replicateTrainingId: model?.replicateTrainingId ?? null,
+      trainingStartedAt: model?.trainingStartedAt?.toISOString() ?? null,
+      trainingCompletedAt: model?.trainingCompletedAt?.toISOString() ?? null,
+      trainingError: model?.trainingError ?? result.error ?? null,
+      sampleImageUrls: model?.sampleImageUrls ?? null,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Internal server error';
     console.error('GET /api/consistent-models/:id/training-status error:', error);

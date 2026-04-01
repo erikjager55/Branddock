@@ -10,6 +10,7 @@ import { ReferenceImagesSection } from "./ReferenceImagesSection";
 import { TrainingSection } from "./TrainingSection";
 import { TrainingProgressModal } from "./TrainingProgressModal";
 import { GenerateSection } from "./GenerateSection";
+import { GenerateReferencesSection } from "./GenerateReferencesSection";
 import { StyleGuideDetailsSection } from "./StyleGuideDetailsSection";
 import { IllustrationStyleSection } from "./IllustrationStyleSection";
 import { ModelInfoCard } from "./sidebar/ModelInfoCard";
@@ -105,10 +106,15 @@ export function ModelDetailPage({
   const canProceed = (() => {
     if (isTrainable) {
       if (wizardStep === 1) {
-        return model.referenceImages.length >= MIN_IMAGES_BY_TYPE[model.type];
+        // Generate References: always true (user can skip generation)
+        return true;
       }
-      // Step 2 (Training): always true — training config is optional
-      // Step 3 (Generate): no next button
+      if (wizardStep === 2) {
+        // Curate & Upload: need minimum training images
+        return model.referenceImages.filter((img) => img.isTrainingImage).length >= MIN_IMAGES_BY_TYPE[model.type];
+      }
+      // Step 3 (Training): always true — training config is optional
+      // Step 4 (Generate): no next button
       return true;
     }
     // Non-trainable: all steps allow proceeding (style guide & reference images are optional)
@@ -195,6 +201,10 @@ export function ModelDetailPage({
     switch (wizardStep) {
       case 1:
         return (
+          <GenerateReferencesSection model={model} modelId={modelId} />
+        );
+      case 2:
+        return (
           <ReferenceImagesSection
             images={model.referenceImages}
             modelType={model.type}
@@ -204,7 +214,7 @@ export function ModelDetailPage({
             isDeleting={deleteImage.isPending}
           />
         );
-      case 2:
+      case 3:
         return (
           <TrainingSection
             model={model}
@@ -212,7 +222,7 @@ export function ModelDetailPage({
             isStarting={startTraining.isPending}
           />
         );
-      case 3:
+      case 4:
         return isReady ? (
           <GenerateSection
             model={model}
@@ -390,7 +400,7 @@ export function ModelDetailPage({
             ) : (
               <div />
             )}
-            {wizardStep < 3 && (
+            {wizardStep < stepLabels.length && (
               <Button
                 variant="primary"
                 onClick={nextWizardStep}
@@ -412,7 +422,7 @@ export function ModelDetailPage({
             <QuickActionsCard
               model={model}
               onGenerate={() => {
-                setWizardStep(3);
+                setWizardStep(isTrainable ? 4 : 3);
               }}
               onRetrain={handleRetrain}
               onSetDefault={handleSetDefault}
