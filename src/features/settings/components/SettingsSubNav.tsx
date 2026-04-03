@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Users, CreditCard, Bell, Palette, Shield, Brain } from 'lucide-react';
+import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useSettingsStore, type SettingsTab } from '@/stores/useSettingsStore';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
@@ -14,6 +14,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'account', label: 'Account', icon: User },
   { id: 'team', label: 'Team', icon: Users },
+  { id: 'workspaces', label: 'Workspaces', icon: Briefcase },
   { id: 'billing', label: 'Billing', icon: CreditCard },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'appearance', label: 'Appearance', icon: Palette },

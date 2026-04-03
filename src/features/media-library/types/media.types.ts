@@ -343,7 +343,7 @@ export interface ImportStockBody {
 
 // ─── AI Images ───────────────────────────────────────────────
 
-export type ImageProvider = 'IMAGEN' | 'DALLE';
+export type ImageProvider = 'IMAGEN' | 'DALLE' | 'TRAINED_MODEL' | 'FLUX_PRO' | 'RECRAFT' | 'IDEOGRAM';
 
 export interface GeneratedImageWithMeta {
   id: string;
@@ -374,6 +374,10 @@ export interface GenerateImageBody {
   size?: '1024x1024' | '1792x1024' | '1024x1792';
   quality?: 'standard' | 'hd';
   style?: 'vivid' | 'natural';
+  /** For TRAINED_MODEL provider: single model ID (legacy) */
+  trainedModelId?: string;
+  /** For TRAINED_MODEL provider: combine multiple trained models (max 3) */
+  trainedModelIds?: string[];
 }
 
 export interface UpdateGeneratedImageBody {

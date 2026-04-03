@@ -9,7 +9,7 @@ import type { ConsistentModelWithMeta } from "../types/consistent-model.types";
 
 interface ModelCardProps {
   model: ConsistentModelWithMeta;
-  onClick: (id: string) => void;
+  onClick: (id: string, status?: string) => void;
 }
 
 /** Model card for the overview grid */
@@ -23,7 +23,7 @@ export function ModelCard({ model, onClick }: ModelCardProps) {
       className={`cursor-pointer transition-all ${
         isReady && isTrainable ? "ring-1 ring-emerald-200" : ""
       }`}
-      onClick={() => onClick(model.id)}
+      onClick={() => onClick(model.id, model.status)}
     >
       {/* Thumbnail */}
       <div className="relative h-40 overflow-hidden rounded-t-lg bg-gray-100">

@@ -7,7 +7,7 @@ import { ConsistentModelsContent } from '@/features/consistent-models/components
 import { useConsistentModelStore } from '@/features/consistent-models/stores/useConsistentModelStore';
 
 interface AiTrainerPageProps {
-  onNavigateToModelDetail: (id: string) => void;
+  onNavigateToModelDetail: (id: string, status?: string) => void;
 }
 
 /** AI Trainer page — train models and define brand styles */

@@ -37,17 +37,22 @@ export function TrainingProgressModal({
   const isComplete = currentStatus === "READY";
   const isFailed = currentStatus === "TRAINING_FAILED";
 
-  // Elapsed time counter
+  // Elapsed time — calculate from real trainingStartedAt timestamp
   useEffect(() => {
-    if (!isOpen) {
-      setElapsedSeconds(0);
-      return;
-    }
-    const interval = setInterval(() => {
-      setElapsedSeconds((s) => s + 1);
-    }, 1000);
+    if (!isOpen) return;
+
+    const tick = () => {
+      const startedAt = status?.trainingStartedAt;
+      if (startedAt) {
+        const started = new Date(startedAt).getTime();
+        setElapsedSeconds(Math.max(0, Math.floor((Date.now() - started) / 1000)));
+      }
+    };
+
+    tick(); // set immediately
+    const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [isOpen]);
+  }, [isOpen, status?.trainingStartedAt]);
 
   // Auto-close on completion
   useEffect(() => {
@@ -65,7 +70,7 @@ export function TrainingProgressModal({
   const getStepProgress = () => {
     if (isFailed) return 0;
     if (isComplete) return 100;
-    // Use real Replicate progress when training, scaled to the training step range (33-66%)
+    // Use real fal.ai progress when training, scaled to the training step range (33-66%)
     if (currentStatus === "TRAINING" && status?.progress != null) {
       return 33 + (status.progress / 100) * 34;
     }
@@ -73,20 +78,25 @@ export function TrainingProgressModal({
     return Math.max(10, ((idx + 0.5) / STEPS.length) * 100);
   };
 
-  // Prevent closing while training is in progress
   const isActive = !isComplete && !isFailed;
-  const handleClose = isActive ? () => {} : onClose;
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={onClose}
       title={`Training: ${modelName}`}
       size="md"
-      showCloseButton={!isActive}
+      showCloseButton={true}
     >
       <div className="space-y-6 py-2">
-        <ProgressBar value={getStepProgress()} color="teal" size="md" />
+        <div>
+          <ProgressBar value={getStepProgress()} color="teal" size="md" showLabel={false} />
+          {currentStatus === "TRAINING" && !isFailed && (
+            <p className="mt-1.5 text-center text-sm font-medium text-teal-600">
+              {status?.progress != null ? `${status.progress}%` : "Starting..."}
+            </p>
+          )}
+        </div>
 
         <div className="space-y-3">
           {STEPS.map((step, i) => {
@@ -129,6 +139,13 @@ export function TrainingProgressModal({
           <Clock className="h-4 w-4" />
           <span>Elapsed: {formatTime(elapsedSeconds)}</span>
         </div>
+
+        {/* Background training info */}
+        {isActive && (
+          <p className="text-center text-xs text-gray-400">
+            Training continues in the background if you close this window.
+          </p>
+        )}
 
         {/* Error state */}
         {isFailed && (

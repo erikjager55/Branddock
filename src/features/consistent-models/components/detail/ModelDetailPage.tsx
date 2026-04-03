@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PageShell } from "@/components/ui/layout";
 import { Button } from "@/components/shared";
@@ -11,12 +11,13 @@ import { TrainingSection } from "./TrainingSection";
 import { TrainingProgressModal } from "./TrainingProgressModal";
 import { GenerateSection } from "./GenerateSection";
 import { GenerateReferencesSection } from "./GenerateReferencesSection";
+import { TrainingModeChoice } from "./TrainingModeChoice";
 import { StyleGuideDetailsSection } from "./StyleGuideDetailsSection";
 import { IllustrationStyleSection } from "./IllustrationStyleSection";
 import { ModelInfoCard } from "./sidebar/ModelInfoCard";
 import { TrainingStatusCard } from "./sidebar/TrainingStatusCard";
 import { QuickActionsCard } from "./sidebar/QuickActionsCard";
-import { BrandContextCard } from "./sidebar/BrandContextCard";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useConsistentModelDetail,
   useUpdateModel,
@@ -26,12 +27,15 @@ import {
   useStartTraining,
   useGenerateImage,
   useGenerations,
+  useBackgroundTrainingPoll,
+  consistentModelKeys,
 } from "../../hooks";
 import { useConsistentModelStore } from "../../stores/useConsistentModelStore";
 import {
   TRAINING_DEFAULTS,
   TRAINABLE_TYPES,
-  WIZARD_STEPS_TRAINABLE,
+  WIZARD_STEPS_OWN_IMAGES,
+  WIZARD_STEPS_SYNTHETIC,
   WIZARD_STEPS_NON_TRAINABLE,
   WIZARD_STEPS_ILLUSTRATION,
   ILLUSTRATION_STYLE_OPTIONS,
@@ -42,12 +46,16 @@ import type { IllustrationStyleParams } from "../../types/consistent-model.types
 interface ModelDetailPageProps {
   modelId: string;
   onNavigateBack: () => void;
+  onViewShowcase?: () => void;
+  onNavigateToStudio?: () => void;
 }
 
 /** Detail page orchestrator — 2-column layout (8/4 split) with wizard stepper */
 export function ModelDetailPage({
   modelId,
   onNavigateBack,
+  onViewShowcase,
+  onNavigateToStudio,
 }: ModelDetailPageProps) {
   const { data: model, isLoading } = useConsistentModelDetail(modelId);
   const { data: generationsData } = useGenerations(modelId);
@@ -58,6 +66,23 @@ export function ModelDetailPage({
   const startTraining = useStartTraining(modelId);
   const generateImage = useGenerateImage(modelId);
 
+  const qc = useQueryClient();
+
+  // Background polling: polls fal.ai every 30s even when the modal is closed,
+  // so training completion is never missed.
+  const { data: bgTrainingStatus } = useBackgroundTrainingPoll(modelId, model?.status);
+
+  // When background poll detects training finished, refresh model data
+  useEffect(() => {
+    if (
+      bgTrainingStatus?.status === "READY" ||
+      bgTrainingStatus?.status === "TRAINING_FAILED"
+    ) {
+      qc.invalidateQueries({ queryKey: consistentModelKeys.detail(modelId) });
+      qc.invalidateQueries({ queryKey: consistentModelKeys.list() });
+    }
+  }, [bgTrainingStatus?.status, modelId, qc]);
+
   const {
     isTrainingModalOpen,
     openTrainingModal,
@@ -66,7 +91,43 @@ export function ModelDetailPage({
     setWizardStep,
     nextWizardStep,
     prevWizardStep,
+    trainingMode,
+    setTrainingMode,
   } = useConsistentModelStore();
+
+  // Auto-detect training mode from model state so we skip the choice screen
+  // when returning to a model that's already past the choice step.
+  useEffect(() => {
+    if (!model || !TRAINABLE_TYPES.has(model.type)) return;
+    if (trainingMode) return; // already chosen this session
+
+    const status = model.status;
+    if (status === "TRAINING" || status === "READY" || status === "TRAINING_FAILED") {
+      // Model has been trained or is training — infer mode from reference images
+      const hasAiImages = model.referenceImages.some((img) => img.source === "AI_GENERATED");
+      setTrainingMode(hasAiImages ? "synthetic" : "own");
+
+      // Jump to the correct step
+      if (status === "READY") {
+        setWizardStep(3); // Showcase
+      } else {
+        setWizardStep(2); // Training
+      }
+    } else if (model.referenceImages.length > 0) {
+      // Has uploaded images but not yet training — infer mode, stay on step 1
+      const hasAiImages = model.referenceImages.some((img) => img.source === "AI_GENERATED");
+      setTrainingMode(hasAiImages ? "synthetic" : "own");
+    }
+  }, [model, trainingMode, setTrainingMode, setWizardStep]);
+
+  // Auto-open training modal once on page load if model is training.
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (model?.status === "TRAINING" && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      openTrainingModal();
+    }
+  }, [model?.status, openTrainingModal]);
 
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -96,7 +157,11 @@ export function ModelDetailPage({
   const isTrainable = TRAINABLE_TYPES.has(model.type);
   const generations = generationsData?.generations ?? [];
   const stepLabels = isTrainable
-    ? WIZARD_STEPS_TRAINABLE
+    ? trainingMode === "own"
+      ? WIZARD_STEPS_OWN_IMAGES
+      : trainingMode === "synthetic"
+        ? WIZARD_STEPS_SYNTHETIC
+        : [] // no steps until mode is chosen
     : model.type === "ILLUSTRATION"
       ? WIZARD_STEPS_ILLUSTRATION
       : WIZARD_STEPS_NON_TRAINABLE;
@@ -105,16 +170,17 @@ export function ModelDetailPage({
 
   const canProceed = (() => {
     if (isTrainable) {
-      if (wizardStep === 1) {
-        // Generate References: always true (user can skip generation)
-        return true;
-      }
-      if (wizardStep === 2) {
-        // Curate & Upload: need minimum training images
+      if (!trainingMode) return false; // mode not chosen yet
+      if (trainingMode === "own" && wizardStep === 1) {
+        // Upload: need minimum training images
         return model.referenceImages.filter((img) => img.isTrainingImage).length >= MIN_IMAGES_BY_TYPE[model.type];
       }
-      // Step 3 (Training): always true — training config is optional
-      // Step 4 (Generate): no next button
+      if (trainingMode === "synthetic" && wizardStep === 1) {
+        // Generate References: need minimum training images selected from AI-generated set
+        return model.referenceImages.filter((img) => img.isTrainingImage).length >= MIN_IMAGES_BY_TYPE[model.type];
+      }
+      // Step 2 (Training): always true — training config is optional
+      // Step 3 (Showcase): no next button
       return true;
     }
     // Non-trainable: all steps allow proceeding (style guide & reference images are optional)
@@ -164,10 +230,6 @@ export function ModelDetailPage({
     });
   };
 
-  const handleSetDefault = () => {
-    updateModel.mutate({ isDefault: true });
-  };
-
   const handleArchive = () => {
     const isArchived = model.status === "ARCHIVED";
     if (isArchived) {
@@ -188,16 +250,57 @@ export function ModelDetailPage({
     });
   };
 
-  const handleRetrain = () => {
-    handleStartTraining({
-      steps: TRAINING_DEFAULTS.steps,
-      resolution: TRAINING_DEFAULTS.defaultResolution,
-    });
-  };
-
   // ─── Step content renderers ──────────────────────────────
 
   const renderTrainableStep = () => {
+    // Show choice screen if no training mode selected yet
+    if (!trainingMode) {
+      return <TrainingModeChoice />;
+    }
+
+    if (trainingMode === "own") {
+      switch (wizardStep) {
+        case 1:
+          return (
+            <ReferenceImagesSection
+              images={model.referenceImages}
+              modelType={model.type}
+              onUpload={handleUpload}
+              onDelete={handleDeleteImage}
+              isUploading={uploadImages.isPending}
+              isDeleting={deleteImage.isPending}
+            />
+          );
+        case 2:
+          return (
+            <TrainingSection
+              model={model}
+              onStartTraining={handleStartTraining}
+              isStarting={startTraining.isPending}
+              onViewShowcase={onViewShowcase}
+            />
+          );
+        case 3:
+          return isReady ? (
+            <GenerateSection
+              model={model}
+              generations={generations}
+              onGenerate={handleGenerate}
+              isGenerating={isGenerating}
+            />
+          ) : (
+            <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
+              <p className="text-sm text-gray-500">
+                Model is not ready yet. Complete training first to start generating images.
+              </p>
+            </div>
+          );
+        default:
+          return null;
+      }
+    }
+
+    // synthetic
     switch (wizardStep) {
       case 1:
         return (
@@ -205,24 +308,13 @@ export function ModelDetailPage({
         );
       case 2:
         return (
-          <ReferenceImagesSection
-            images={model.referenceImages}
-            modelType={model.type}
-            onUpload={handleUpload}
-            onDelete={handleDeleteImage}
-            isUploading={uploadImages.isPending}
-            isDeleting={deleteImage.isPending}
-          />
-        );
-      case 3:
-        return (
           <TrainingSection
             model={model}
             onStartTraining={handleStartTraining}
             isStarting={startTraining.isPending}
           />
         );
-      case 4:
+      case 3:
         return isReady ? (
           <GenerateSection
             model={model}
@@ -371,17 +463,20 @@ export function ModelDetailPage({
         model={model}
         onBack={onNavigateBack}
         onUpdateName={handleUpdateName}
+        onViewShowcase={onViewShowcase}
         isUpdating={updateModel.isPending}
       />
 
-      {/* Stepper — full width */}
-      <div className="bg-white border border-gray-200 rounded-lg p-6">
-        <ModelWizardStepper
-          labels={stepLabels}
-          currentStep={wizardStep}
-          onStepClick={setWizardStep}
-        />
-      </div>
+      {/* Stepper — full width (hidden when trainable mode not yet chosen) */}
+      {stepLabels.length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <ModelWizardStepper
+            labels={stepLabels}
+            currentStep={wizardStep}
+            onStepClick={setWizardStep}
+          />
+        </div>
+      )}
 
       {/* 2-column layout (matching BrandAssetDetailPage pattern) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -390,44 +485,55 @@ export function ModelDetailPage({
           {/* Step content */}
           {isTrainable ? renderTrainableStep() : renderNonTrainableStep()}
 
-          {/* Navigation buttons */}
-          <div className="flex justify-between">
-            {wizardStep > 1 ? (
-              <Button variant="secondary" onClick={prevWizardStep}>
-                <ChevronLeft className="mr-1 h-4 w-4" />
-                Back
-              </Button>
-            ) : (
-              <div />
-            )}
-            {wizardStep < stepLabels.length && (
-              <Button
-                variant="primary"
-                onClick={nextWizardStep}
-                disabled={!canProceed}
-              >
-                Continue
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Button>
-            )}
-          </div>
+          {/* Navigation buttons (hidden when trainable mode not yet chosen) */}
+          {(!isTrainable || trainingMode) && (
+            <div className="flex justify-between">
+              {wizardStep > 1 ? (
+                <Button variant="secondary" onClick={prevWizardStep}>
+                  <ChevronLeft className="mr-1 h-4 w-4" />
+                  Back
+                </Button>
+              ) : isTrainable && trainingMode ? (
+                <Button variant="secondary" onClick={() => setTrainingMode(null)}>
+                  <ChevronLeft className="mr-1 h-4 w-4" />
+                  Change method
+                </Button>
+              ) : (
+                <div />
+              )}
+              {/* Hide Continue when:
+                  - synthetic step 1: GenerateReferencesSection has "Use Selected & Continue"
+                  - training step (own=2, synthetic=2): TrainingSection has "Start Training", user proceeds after completion */}
+              {wizardStep < stepLabels.length &&
+                !(isTrainable && trainingMode === "synthetic" && wizardStep === 1) &&
+                !(isTrainable && trainingMode && wizardStep === 2 && model.status !== "READY") && (
+                <Button
+                  variant="primary"
+                  onClick={nextWizardStep}
+                  disabled={!canProceed}
+                >
+                  Continue
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Sidebar — right column (1/3), sticky */}
         <div className="min-w-0">
           <div className="md:sticky md:top-6 space-y-4">
             <ModelInfoCard model={model} />
-            <BrandContextCard model={model} />
             {isTrainable && <TrainingStatusCard model={model} />}
             <QuickActionsCard
               model={model}
-              onGenerate={() => {
-                setWizardStep(isTrainable ? 4 : 3);
-              }}
-              onRetrain={handleRetrain}
-              onSetDefault={handleSetDefault}
+              onGenerate={onNavigateToStudio ? () => {
+                useConsistentModelStore.getState().setGenerateInStudio(modelId);
+                onNavigateToStudio();
+              } : undefined}
               onArchive={handleArchive}
               onDelete={handleDelete}
+              onBack={onNavigateBack}
             />
           </div>
         </div>

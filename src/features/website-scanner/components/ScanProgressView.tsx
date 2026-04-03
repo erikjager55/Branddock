@@ -59,9 +59,12 @@ export function ScanProgressView() {
         <div className="w-full bg-gray-100 rounded-full h-2">
           <div
             className={`h-2 rounded-full transition-all duration-500 ${
-              isFailed ? 'bg-red-500' : isCancelled ? 'bg-gray-400' : 'bg-primary-500'
+              isFailed ? 'bg-red-500' : isCancelled ? 'bg-gray-400' : ''
             }`}
-            style={{ width: `${progress?.progress ?? 0}%` }}
+            style={{
+              width: `${progress?.progress ?? 0}%`,
+              ...(!isFailed && !isCancelled ? { backgroundColor: '#14B8A6' } : {}),
+            }}
           />
         </div>
       </div>

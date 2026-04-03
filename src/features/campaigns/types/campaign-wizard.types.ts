@@ -25,6 +25,23 @@ export type {
   AssetPlanLayer,
   PersonaValidationResult,
   FullVariant,
+  // ─── Multi-Agent Strategy Debate Types ─────────────────────
+  AgentCritique,
+  AgentDefense,
+  PersonaDebateResult,
+  AgentDebateState,
+  MultiAgentResult,
+  AgentRoundName,
+  AgentName,
+  DebateViewMode,
+  CritiquePoint,
+  CritiqueRisk,
+  DefensePoint,
+  RevisedElement,
+  VariantReaction,
+  // ─── Multi-Agent Zod Schemas ──────────────────────────────
+  agentCritiqueSchema,
+  personaDebateResultSchema,
   // ─── 9-Phase Architecture Types ──────────────────────────
   CasiDeterminant,
   CasiDeterminantScore,
@@ -193,8 +210,22 @@ export type EnrichmentEvent = {
 };
 
 /**
- * Discriminated union of all pipeline events (normal steps + enrichment).
- * This allows the strategy pipeline to emit both structured pipeline steps
- * and enrichment-specific events without unsafe type casts.
+ * Event emitted during multi-agent debate rounds.
+ * Allows the frontend to track agent activity in real-time.
  */
-export type PipelineEvent = import('@/lib/campaigns/strategy-blueprint.types').PipelineStep | EnrichmentEvent;
+export type AgentRoundEvent = {
+  type: 'agent_round';
+  round: import('@/lib/campaigns/strategy-blueprint.types').AgentRoundName;
+  agent: import('@/lib/campaigns/strategy-blueprint.types').AgentName;
+  status: 'running' | 'complete' | 'error';
+  label: string;
+  preview?: string;
+  data?: Record<string, unknown>;
+};
+
+/**
+ * Discriminated union of all pipeline events (normal steps + enrichment + agent rounds).
+ * This allows the strategy pipeline to emit structured pipeline steps,
+ * enrichment-specific events, and multi-agent debate events without unsafe type casts.
+ */
+export type PipelineEvent = import('@/lib/campaigns/strategy-blueprint.types').PipelineStep | EnrichmentEvent | AgentRoundEvent;

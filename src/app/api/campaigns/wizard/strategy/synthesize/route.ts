@@ -60,6 +60,7 @@ export async function POST(request: NextRequest) {
               variantCScore: body.variantCScore,
               wizardContext: body.wizardContext,
               strategicIntent: body.strategicIntent,
+              agentDebateContext: body.agentDebateContext,
             },
             (event: import('@/features/campaigns/types/campaign-wizard.types').PipelineEvent) => {
               sendEvent(event);

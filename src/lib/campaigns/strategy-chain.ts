@@ -15,6 +15,11 @@ import { calculateBlueprintConfidence } from './confidence-calculator';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
 import { getGoalTypeGuidance } from '@/features/campaigns/lib/goal-types';
 import {
+  buildCriticPrompt,
+  buildDefensePrompt,
+  buildPersonaPanelPrompt,
+} from '@/lib/ai/prompts/campaign-strategy-agents';
+import {
   buildFullVariantAPrompt,
   buildFullVariantBPrompt,
   buildFullVariantCPrompt,
@@ -85,7 +90,11 @@ import type {
   CuratorSelection,
   CreativeAngleSelection,
   CreativeEnrichmentBrief,
+  AgentCritique,
+  AgentDefense,
+  PersonaDebateResult,
 } from './strategy-blueprint.types';
+import { agentCritiqueSchema, personaDebateResultSchema } from './strategy-blueprint.types';
 import type { PipelineEvent } from '@/features/campaigns/types/campaign-wizard.types';
 
 // ─── Constants ──────────────────────────────────────────────
@@ -754,6 +763,8 @@ export async function synthesizeStrategy(
     variantCScore: number;
     wizardContext: WizardContext;
     strategicIntent?: StrategicIntent;
+    /** Multi-agent debate context — formatted markdown string with critique, defense and persona panel results */
+    agentDebateContext?: string;
   },
   onProgress?: ProgressCallback,
 ): Promise<SynthesisPhaseResult> {
@@ -780,6 +791,7 @@ export async function synthesizeStrategy(
     variantCScore: data.variantCScore,
     goalType: campaignGoalType,
     goalGuidance,
+    agentDebateContext: data.agentDebateContext,
   });
 
   const synthesizedRaw = await withStepContext('Step 4 (Strategy Synthesis — Opus)', 600, () =>
@@ -2299,4 +2311,255 @@ export async function refineSelectedHook(
   onProgress?.({ step: 4, name: 'Finalizing Proposal', status: 'complete', label: `Proposal ready — "${result.hookConcept.hookTitle}"` });
 
   return result;
+}
+
+// =============================================================================
+// Multi-Agent Strategy Debate — Critic, Defense & Persona Panel Rounds
+// =============================================================================
+
+/**
+ * Round 2: Critic Agent reviews both variants and identifies weaknesses.
+ * Uses Gemini 3.1 Pro (the model that would otherwise generate Variant C).
+ */
+export async function runCriticRound(
+  strategyA: StrategyLayer,
+  architectureA: ArchitectureLayer,
+  strategyB: StrategyLayer,
+  architectureB: ArchitectureLayer,
+  brandContext: string,
+  personaContext: string,
+  goalType: string,
+  workspaceId: string,
+  onProgress?: ProgressCallback,
+): Promise<{ critiqueOfA: AgentCritique; critiqueOfB: AgentCritique }> {
+  onProgress?.({ type: 'agent_round', round: 'critique', agent: 'critic', status: 'running', label: 'Critic Agent analyzing both variants...' });
+
+  const goalGuidance = getGoalTypeGuidance(goalType);
+  const prompt = buildCriticPrompt({
+    strategyA: JSON.stringify(strategyA),
+    architectureA: JSON.stringify(architectureA),
+    strategyB: JSON.stringify(strategyB),
+    architectureB: JSON.stringify(architectureB),
+    brandContext,
+    personaContext,
+    goalType,
+    goalGuidance,
+  });
+
+  // Resolve critic model — defaults to Gemini 3.1 Pro (campaign-strategy-c feature key)
+  const { model, provider } = await resolveFeatureModel(workspaceId, 'campaign-strategy-c');
+
+  const raw = await withStepContext('Critic Round', 180, () =>
+    createStructuredCompletion<{ critiqueOfA: AgentCritique; critiqueOfB: AgentCritique }>(
+      provider, model,
+      prompt.system, prompt.user,
+      { temperature: 0.4, maxTokens: 16000, timeoutMs: 180_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
+    ),
+  );
+
+  const critiqueOfA = validateOrWarn(agentCritiqueSchema, raw.critiqueOfA, 'Critic Round — Critique A') as AgentCritique;
+  const critiqueOfB = validateOrWarn(agentCritiqueSchema, raw.critiqueOfB, 'Critic Round — Critique B') as AgentCritique;
+
+  const weaknessCountA = critiqueOfA?.weaknesses?.length ?? 0;
+  const weaknessCountB = critiqueOfB?.weaknesses?.length ?? 0;
+  onProgress?.({
+    type: 'agent_round', round: 'critique', agent: 'critic', status: 'complete',
+    label: `Found ${weaknessCountA + weaknessCountB} weaknesses across both variants`,
+    preview: `A: ${weaknessCountA} weaknesses, B: ${weaknessCountB} weaknesses`,
+  });
+
+  return { critiqueOfA, critiqueOfB };
+}
+
+/**
+ * Round 3: Strategist and Creative defend/revise their work based on critique.
+ * Runs two defense calls in parallel (one per variant).
+ */
+export async function runDefenseRound(
+  strategyA: StrategyLayer,
+  architectureA: ArchitectureLayer,
+  critiqueOfA: AgentCritique,
+  strategyB: StrategyLayer,
+  architectureB: ArchitectureLayer,
+  critiqueOfB: AgentCritique,
+  brandContext: string,
+  personaContext: string,
+  goalType: string,
+  workspaceId: string,
+  onProgress?: ProgressCallback,
+): Promise<{ defenseA: AgentDefense; defenseB: AgentDefense }> {
+  onProgress?.({ type: 'agent_round', round: 'defense', agent: 'strategist', status: 'running', label: 'Strategist and Creative revising their work...' });
+
+  // Resolve models for each defender — A uses campaign-strategy (Claude), B uses campaign-strategy-b (GPT)
+  const [modelA, modelB] = await Promise.all([
+    resolveFeatureModel(workspaceId, 'campaign-strategy'),
+    resolveFeatureModel(workspaceId, 'campaign-strategy-b'),
+  ]);
+
+  const promptA = buildDefensePrompt({
+    originalStrategy: JSON.stringify(strategyA),
+    originalArchitecture: JSON.stringify(architectureA),
+    critique: JSON.stringify(critiqueOfA),
+    brandContext,
+    personaContext,
+    agentRole: 'strategist',
+    variant: 'A',
+    goalType,
+  });
+
+  const promptB = buildDefensePrompt({
+    originalStrategy: JSON.stringify(strategyB),
+    originalArchitecture: JSON.stringify(architectureB),
+    critique: JSON.stringify(critiqueOfB),
+    brandContext,
+    personaContext,
+    agentRole: 'creative',
+    variant: 'B',
+    goalType,
+  });
+
+  const [defenseARaw, defenseBRaw] = await Promise.all([
+    withStepContext('Defense Round — Variant A', 180, () =>
+      createStructuredCompletion<AgentDefense>(
+        modelA.provider, modelA.model,
+        promptA.system, promptA.user,
+        { temperature: 0.4, maxTokens: 24000, timeoutMs: 180_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
+      ),
+    ),
+    withStepContext('Defense Round — Variant B', 180, () =>
+      createStructuredCompletion<AgentDefense>(
+        modelB.provider, modelB.model,
+        promptB.system, promptB.user,
+        { temperature: 0.4, maxTokens: 24000, timeoutMs: 180_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
+      ),
+    ),
+  ]);
+
+  // Normalize revised architectures
+  const defenseA: AgentDefense = {
+    ...defenseARaw,
+    revisedArchitecture: normalizeArchitectureLayer(defenseARaw.revisedArchitecture),
+    revisedStrategy: validateOrWarn(strategyLayerSchema, defenseARaw.revisedStrategy, 'Defense A — Revised Strategy') as StrategyLayer,
+  };
+  const defenseB: AgentDefense = {
+    ...defenseBRaw,
+    revisedArchitecture: normalizeArchitectureLayer(defenseBRaw.revisedArchitecture),
+    revisedStrategy: validateOrWarn(strategyLayerSchema, defenseBRaw.revisedStrategy, 'Defense B — Revised Strategy') as StrategyLayer,
+  };
+
+  const changesA = defenseA.changeLog?.length ?? 0;
+  const changesB = defenseB.changeLog?.length ?? 0;
+  onProgress?.({
+    type: 'agent_round', round: 'defense', agent: 'strategist', status: 'complete',
+    label: `Variants revised — ${changesA + changesB} changes made`,
+    preview: `A: ${changesA} changes, B: ${changesB} changes`,
+  });
+
+  return { defenseA, defenseB };
+}
+
+/**
+ * Round 4: Persona Panel evaluates the revised variants with deep persona simulation.
+ * Uses Claude Sonnet for nuanced persona roleplay.
+ */
+export async function runPersonaPanelRound(
+  defenseA: AgentDefense,
+  defenseB: AgentDefense,
+  critiqueOfA: AgentCritique,
+  critiqueOfB: AgentCritique,
+  personaProfiles: Array<{ id: string; name: string; profile: string }>,
+  brandContext: string,
+  goalType: string,
+  workspaceId: string,
+  onProgress?: ProgressCallback,
+): Promise<PersonaDebateResult[]> {
+  if (personaProfiles.length === 0) return [];
+
+  onProgress?.({ type: 'agent_round', round: 'persona_panel', agent: 'persona_panel', status: 'running', label: `Simulating ${personaProfiles.length} persona reactions...` });
+
+  const personasText = personaProfiles.map(p => `### ${p.name} (ID: ${p.id})\n${p.profile}`).join('\n\n');
+
+  const prompt = buildPersonaPanelPrompt({
+    revisedStrategyA: JSON.stringify(defenseA.revisedStrategy),
+    revisedArchitectureA: JSON.stringify(defenseA.revisedArchitecture),
+    revisedStrategyB: JSON.stringify(defenseB.revisedStrategy),
+    revisedArchitectureB: JSON.stringify(defenseB.revisedArchitecture),
+    critiqueOfA: JSON.stringify(critiqueOfA),
+    critiqueOfB: JSON.stringify(critiqueOfB),
+    defenseA: JSON.stringify({ addressedWeaknesses: defenseA.addressedWeaknesses, changeLog: defenseA.changeLog }),
+    defenseB: JSON.stringify({ addressedWeaknesses: defenseB.addressedWeaknesses, changeLog: defenseB.changeLog }),
+    personas: personasText,
+    brandContext,
+    goalType,
+  });
+
+  // Use Claude Sonnet for nuanced persona simulation
+  const raw = await withStepContext('Persona Panel Round', 120, () =>
+    createClaudeStructuredCompletion<{ personaDebate: PersonaDebateResult[] }>(
+      prompt.system, prompt.user,
+      { model: 'claude-sonnet-4-6', temperature: 0.7, maxTokens: 16000, timeoutMs: 120_000, thinking: { budgetTokens: THINKING_CONFIG.anthropicValidation.budgetTokens } },
+    ),
+  );
+
+  const results = (raw.personaDebate ?? []).map(pd =>
+    validateOrWarn(personaDebateResultSchema, pd, `Persona Panel — ${pd?.personaName ?? 'unknown'}`) as PersonaDebateResult,
+  );
+
+  const preferA = results.filter(r => r.preferredVariant === 'A').length;
+  const preferB = results.filter(r => r.preferredVariant === 'B').length;
+  const dealbreakers = results.filter(r => r.dealbreaker).length;
+
+  onProgress?.({
+    type: 'agent_round', round: 'persona_panel', agent: 'persona_panel', status: 'complete',
+    label: `Personas voted: ${preferA} prefer A, ${preferB} prefer B${dealbreakers > 0 ? `, ${dealbreakers} dealbreaker(s)` : ''}`,
+    preview: results.map(r => `${r.personaName}: ${r.preferredVariant}`).join(', '),
+  });
+
+  return results;
+}
+
+/**
+ * Orchestrates the full multi-agent debate flow: Critic → Defense → Persona Panel.
+ * Called after initial variant generation (Round 1) when multiAgent is enabled.
+ * Returns enriched context for the Synthesizer.
+ */
+export async function runMultiAgentDebate(
+  strategyA: StrategyLayer,
+  architectureA: ArchitectureLayer,
+  strategyB: StrategyLayer,
+  architectureB: ArchitectureLayer,
+  ctx: PhaseContext,
+  brandContext: string,
+  personaContext: string,
+  personaProfiles: Array<{ id: string; name: string; profile: string }>,
+  onProgress?: ProgressCallback,
+): Promise<{
+  critiqueOfA: AgentCritique;
+  critiqueOfB: AgentCritique;
+  defenseA: AgentDefense;
+  defenseB: AgentDefense;
+  personaDebate: PersonaDebateResult[];
+}> {
+  const goalType = ctx.wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
+
+  // Round 2: Critic reviews both variants
+  const { critiqueOfA, critiqueOfB } = await runCriticRound(
+    strategyA, architectureA, strategyB, architectureB,
+    brandContext, personaContext, goalType, ctx.workspaceId, onProgress,
+  );
+
+  // Round 3: Strategist and Creative defend/revise
+  const { defenseA, defenseB } = await runDefenseRound(
+    strategyA, architectureA, critiqueOfA,
+    strategyB, architectureB, critiqueOfB,
+    brandContext, personaContext, goalType, ctx.workspaceId, onProgress,
+  );
+
+  // Round 4: Persona Panel evaluates revised variants
+  const personaDebate = await runPersonaPanelRound(
+    defenseA, defenseB, critiqueOfA, critiqueOfB,
+    personaProfiles, brandContext, goalType, ctx.workspaceId, onProgress,
+  );
+
+  return { critiqueOfA, critiqueOfB, defenseA, defenseB, personaDebate };
 }

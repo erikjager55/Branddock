@@ -1,13 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Wand2, AlertTriangle, ImageIcon, Heart } from 'lucide-react';
 import { Button, EmptyState, SkeletonCard } from '@/components/shared';
 import { useAiImages, useDeleteAiImage, useUpdateAiImage } from '@/features/media-library/hooks';
 import type { GeneratedImageWithMeta } from '@/features/media-library/types/media.types';
 import { AiImageCard } from './AiImageCard';
 import { GenerateImageModal } from './GenerateImageModal';
+import type { TrainedModelOption } from './GenerateImageModal';
 import { AiImageDetailPanel } from './AiImageDetailPanel';
+import { SendToLibraryModal } from './SendToLibraryModal';
 
 // ─── Wrapper — hooks must be called per-image, outside of the grid ──
 
@@ -16,10 +18,12 @@ function AiImageCardWithFavorite({
   image,
   onClick,
   onDelete,
+  onSendToLibrary,
 }: {
   image: GeneratedImageWithMeta;
   onClick: () => void;
   onDelete: (id: string) => void;
+  onSendToLibrary: () => void;
 }) {
   const updateImage = useUpdateAiImage(image.id);
   return (
@@ -30,19 +34,41 @@ function AiImageCardWithFavorite({
       onToggleFavorite={() =>
         updateImage.mutate({ isFavorite: !image.isFavorite })
       }
+      onSendToLibrary={onSendToLibrary}
     />
   );
 }
 
 // ─── Component ──────────────────────────────────────────────
 
+interface AiImagesTabProps {
+  /** Pre-select a trained model in the generate modal (from AI Trainer) */
+  preselectedModel?: TrainedModelOption | null;
+  /** Pre-select by ID (before model data loads) */
+  preselectedModelId?: string | null;
+  /** All available trained models */
+  trainedModels?: TrainedModelOption[];
+  /** Auto-open the generate modal on mount */
+  autoOpenGenerate?: boolean;
+}
+
 /** Tab component displaying a grid of AI-generated images. */
-export function AiImagesTab() {
+export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModels, autoOpenGenerate }: AiImagesTabProps = {}) {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const { data, isLoading, isError } = useAiImages(showFavoritesOnly || undefined);
   const deleteAiImage = useDeleteAiImage();
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const [sendToLibraryImage, setSendToLibraryImage] = useState<GeneratedImageWithMeta | null>(null);
+
+  // Auto-open generate modal when navigating from AI Trainer
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (autoOpenGenerate && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setIsGenerateModalOpen(true);
+    }
+  }, [autoOpenGenerate]);
 
   const images: GeneratedImageWithMeta[] = data ?? [];
 
@@ -134,6 +160,7 @@ export function AiImagesTab() {
               image={image}
               onClick={() => setSelectedImageId(image.id)}
               onDelete={handleDelete}
+              onSendToLibrary={() => setSendToLibraryImage(image)}
             />
           ))}
         </div>
@@ -159,6 +186,9 @@ export function AiImagesTab() {
       <GenerateImageModal
         isOpen={isGenerateModalOpen}
         onClose={() => setIsGenerateModalOpen(false)}
+        preselectedModel={preselectedModel}
+        preselectedModelId={preselectedModelId}
+        trainedModels={trainedModels}
       />
 
       {/* Detail Panel — inline detail when an image is selected */}
@@ -166,8 +196,19 @@ export function AiImagesTab() {
         <AiImageDetailPanel
           imageId={selectedImageId}
           onClose={() => setSelectedImageId(null)}
+          onSendToLibrary={() => {
+            const img = images.find((i) => i.id === selectedImageId);
+            if (img) setSendToLibraryImage(img);
+          }}
         />
       )}
+
+      {/* Send to Library Modal */}
+      <SendToLibraryModal
+        isOpen={!!sendToLibraryImage}
+        onClose={() => setSendToLibraryImage(null)}
+        image={sendToLibraryImage}
+      />
     </div>
   );
 }

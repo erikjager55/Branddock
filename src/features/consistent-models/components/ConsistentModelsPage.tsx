@@ -15,7 +15,7 @@ import type {
 } from "../types/consistent-model.types";
 
 interface ConsistentModelsContentProps {
-  onNavigateToDetail: (id: string) => void;
+  onNavigateToDetail: (id: string, status?: string) => void;
 }
 
 /** Content-only component for consistent AI models (used as tab in AiTrainerPage) */

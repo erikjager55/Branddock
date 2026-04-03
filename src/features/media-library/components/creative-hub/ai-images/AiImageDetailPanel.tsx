@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
-import { X, ImageIcon, Heart, Sparkles } from 'lucide-react';
+import { X, ImageIcon, Heart, Sparkles, FolderPlus, Package } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
 import { useAiImageDetail, useUpdateAiImage } from '@/features/media-library/hooks';
@@ -11,12 +11,13 @@ import { useAiImageDetail, useUpdateAiImage } from '@/features/media-library/hoo
 interface AiImageDetailPanelProps {
   imageId: string;
   onClose: () => void;
+  onSendToLibrary?: () => void;
 }
 
 // ─── Component ──────────────────────────────────────────────
 
 /** Inline detail panel shown when an AI-generated image is selected. */
-export function AiImageDetailPanel({ imageId, onClose }: AiImageDetailPanelProps) {
+export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImageDetailPanelProps) {
   const { data: image, isLoading, isError } = useAiImageDetail(imageId);
   const updateImage = useUpdateAiImage(imageId);
   const mutate = updateImage.mutate;
@@ -65,10 +66,10 @@ export function AiImageDetailPanel({ imageId, onClose }: AiImageDetailPanelProps
             <div className="flex items-center gap-2">
               <h3 className="text-base font-semibold text-gray-900">{image.name}</h3>
               <Badge
-                variant={image.provider === 'IMAGEN' ? 'info' : 'teal'}
+                variant={image.provider === 'TRAINED_MODEL' ? 'teal' : image.provider === 'IMAGEN' ? 'info' : 'default'}
                 size="sm"
               >
-                {image.provider === 'IMAGEN' ? 'Imagen 4' : 'DALL-E 3'}
+                {{ IMAGEN: 'Imagen 4', DALLE: 'DALL-E 3', FLUX_PRO: 'Flux Pro', RECRAFT: 'Recraft', IDEOGRAM: 'Ideogram', TRAINED_MODEL: 'Trained Model' }[image.provider] ?? image.provider}
               </Badge>
               {image.isFavorite && (
                 <Heart className="w-4 h-4 fill-red-500 text-red-500" />
@@ -109,7 +110,7 @@ export function AiImageDetailPanel({ imageId, onClose }: AiImageDetailPanelProps
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div>
             <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Provider</span>
-            <span className="text-sm text-gray-900">{image.provider === 'IMAGEN' ? 'Google Imagen 4' : 'OpenAI DALL-E 3'}</span>
+            <span className="text-sm text-gray-900">{{ IMAGEN: 'Google Imagen 4', DALLE: 'OpenAI DALL-E 3', FLUX_PRO: 'Flux Pro (fal.ai)', RECRAFT: 'Recraft V3 (fal.ai)', IDEOGRAM: 'Ideogram V2 (fal.ai)', TRAINED_MODEL: 'Trained Model (fal.ai)' }[image.provider] ?? image.provider}</span>
           </div>
           <div>
             <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Model</span>
@@ -171,6 +172,20 @@ export function AiImageDetailPanel({ imageId, onClose }: AiImageDetailPanelProps
           <p className="text-xs text-red-500" role="alert">
             Failed to update image. Please try again.
           </p>
+        )}
+
+        {/* Action buttons */}
+        {onSendToLibrary && (
+          <div className="flex gap-2 pt-3 border-t border-gray-100">
+            <Button
+              variant="secondary"
+              icon={FolderPlus}
+              onClick={onSendToLibrary}
+              className="flex-1"
+            >
+              Save to Library
+            </Button>
+          </div>
         )}
 
         {/* Favorite toggle */}

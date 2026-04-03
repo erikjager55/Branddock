@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
-import { isReplicateConfigured } from '@/lib/integrations/replicate/replicate-client';
+import { isFalConfigured } from '@/lib/integrations/fal/fal-client';
 import { startTraining } from '@/lib/consistent-models/training-pipeline';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
@@ -73,20 +73,15 @@ export async function POST(
       );
     }
 
-    // ─── Replicate training ───────────────────────────────────
-    if (!isReplicateConfigured()) {
+    // ─── fal.ai training ──────────────────────────────────────
+    if (!isFalConfigured()) {
       return NextResponse.json(
-        { error: 'Replicate API token not configured. Add REPLICATE_API_TOKEN to environment.' },
+        { error: 'fal.ai API key not configured. Add FAL_KEY to environment.' },
         { status: 503 }
       );
     }
 
-    const origin = request.headers.get('origin') ?? process.env.BETTER_AUTH_URL ?? '';
-    const rawCallbackUrl = `${origin}/api/consistent-models/webhook`;
-    // Replicate requires HTTPS for webhooks — skip in local dev, poller handles completion
-    const callbackUrl = rawCallbackUrl.startsWith('https://') ? rawCallbackUrl : undefined;
-
-    const result = await startTraining(id, workspaceId, callbackUrl);
+    const result = await startTraining(id, workspaceId);
 
     invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
 

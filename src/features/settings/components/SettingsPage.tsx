@@ -6,6 +6,7 @@ import { PageShell, PageHeader } from '@/components/ui/layout';
 import { SettingsSubNav } from './SettingsSubNav';
 import { AccountTab } from './account/AccountTab';
 import { TeamTab } from './team/TeamTab';
+import { WorkspacesTab } from './workspaces/WorkspacesTab';
 import { BillingTab } from './billing/BillingTab';
 import { AdministratorTab } from './administrator/AdministratorTab';
 import { AiModelsTab } from './ai-models/AiModelsTab';
@@ -46,6 +47,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
         return <AccountTab />;
       case 'team':
         return <TeamTab />;
+      case 'workspaces':
+        return <WorkspacesTab />;
       case 'billing':
         return <BillingTab />;
       case 'notifications':

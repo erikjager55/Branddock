@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ImageIcon, Heart, Trash2 } from 'lucide-react';
+import { ImageIcon, Heart, Trash2, FolderPlus } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
 import type { GeneratedImageWithMeta } from '@/features/media-library/types/media.types';
@@ -13,6 +13,7 @@ interface AiImageCardProps {
   onClick: () => void;
   onDelete: (id: string) => void;
   onToggleFavorite: () => void;
+  onSendToLibrary?: () => void;
 }
 
 // ─── Component ──────────────────────────────────────────────
@@ -23,6 +24,7 @@ export const AiImageCard = React.memo(function AiImageCard({
   onClick,
   onDelete,
   onToggleFavorite,
+  onSendToLibrary,
 }: AiImageCardProps) {
   return (
     <div
@@ -53,25 +55,40 @@ export const AiImageCard = React.memo(function AiImageCard({
         {/* Provider badge */}
         <div className="absolute top-2 right-2">
           <Badge
-            variant={image.provider === 'IMAGEN' ? 'info' : 'teal'}
+            variant={image.provider === 'TRAINED_MODEL' ? 'teal' : image.provider === 'IMAGEN' ? 'info' : 'default'}
             size="sm"
           >
-            {image.provider === 'IMAGEN' ? 'Imagen' : 'DALL-E'}
+            {{ IMAGEN: 'Imagen', DALLE: 'DALL-E 3', FLUX_PRO: 'Flux Pro', RECRAFT: 'Recraft', IDEOGRAM: 'Ideogram', TRAINED_MODEL: 'Trained Model' }[image.provider] ?? image.provider}
           </Badge>
         </div>
 
-        {/* Delete button */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(image.id);
-          }}
-          className="absolute top-2 left-2 p-1 rounded-md bg-white/80 text-gray-400 hover:text-red-500 hover:bg-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
-          aria-label={`Delete ${image.name}`}
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        {/* Action buttons (top-left) */}
+        <div className="absolute top-2 left-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(image.id);
+            }}
+            className="p-1 rounded-md bg-white/80 text-gray-400 hover:text-red-500 hover:bg-white transition-all"
+            aria-label={`Delete ${image.name}`}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+          {onSendToLibrary && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSendToLibrary();
+              }}
+              className="p-1 rounded-md bg-white/80 text-gray-400 hover:text-teal-600 hover:bg-white transition-all"
+              aria-label={`Save ${image.name} to Media Library`}
+            >
+              <FolderPlus className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
 
         {/* Favorite button */}
         <button

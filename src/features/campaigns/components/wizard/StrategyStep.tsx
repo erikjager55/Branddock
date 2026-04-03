@@ -28,6 +28,7 @@ import { VariantReviewView } from "./VariantReviewView";
 import { SynthesisReviewView } from "./SynthesisReviewView";
 import { BriefingReviewView } from "./BriefingReviewView";
 import { StrategyFoundationReviewView } from "./StrategyFoundationReviewView";
+import { AgentDebateView } from "./AgentDebateView";
 import { compileStructuredFeedback } from "../../lib/compile-structured-feedback";
 import { getGoalTypeStrategicInsights } from "../../lib/goal-types";
 import type { GoalTypeStrategicInsights } from "../../lib/goal-types";
@@ -274,6 +275,8 @@ export function StrategyStep() {
   const enrichmentBlockCount = useCampaignWizardStore((s) => s.enrichmentBlockCount);
   const enrichmentSources = useCampaignWizardStore((s) => s.enrichmentSources);
   const useExternalEnrichment = useCampaignWizardStore((s) => s.useExternalEnrichment);
+  const multiAgentEnabled = useCampaignWizardStore((s) => s.multiAgentEnabled);
+  const agentDebateRounds = useCampaignWizardStore((s) => s.agentDebateRounds);
 
   // 9-Phase state
   const briefingValidation = useCampaignWizardStore((s) => s.briefingValidation);
@@ -310,6 +313,7 @@ export function StrategyStep() {
 
   const abortRef = useRef<{ abort: () => void } | null>(null);
   const generationIdRef = useRef(0);
+  const strategyAutoStartedRef = useRef(false);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -317,6 +321,7 @@ export function StrategyStep() {
       abortRef.current?.abort();
     };
   }, []);
+
 
   const wizardContext = useMemo(() => ({
     campaignName: campaignName || "Untitled Campaign",
@@ -356,6 +361,7 @@ export function StrategyStep() {
         competitorIds: selectedContextIds.competitorIds,
         trendIds: selectedContextIds.trendIds,
         wizardContext,
+        multiAgent: useCampaignWizardStore.getState().multiAgentEnabled || undefined,
       },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
@@ -376,6 +382,15 @@ export function StrategyStep() {
           return;
         }
 
+        // Multi-agent debate round events
+        if (data.type === "agent_round") {
+          const s = useCampaignWizardStore.getState();
+          const round = data.round as import("@/lib/campaigns/strategy-blueprint.types").AgentRoundName;
+          const status = data.status as 'running' | 'complete' | 'error';
+          s.updateDebateRound({ round, status });
+          return;
+        }
+
         if (data.type === "complete" && data.result) {
           const result = data.result as {
             strategyLayerA: import("@/lib/campaigns/strategy-blueprint.types").StrategyLayer;
@@ -392,6 +407,23 @@ export function StrategyStep() {
           };
           const s = useCampaignWizardStore.getState();
           s.setVariantResults(result);
+
+          // Store multi-agent debate results if present
+          const agentDebate = (data.result as Record<string, unknown>).agentDebate as {
+            critiqueOfA?: import("@/lib/campaigns/strategy-blueprint.types").AgentCritique;
+            critiqueOfB?: import("@/lib/campaigns/strategy-blueprint.types").AgentCritique;
+            defenseA?: import("@/lib/campaigns/strategy-blueprint.types").AgentDefense;
+            defenseB?: import("@/lib/campaigns/strategy-blueprint.types").AgentDefense;
+            personaDebate?: import("@/lib/campaigns/strategy-blueprint.types").PersonaDebateResult[];
+          } | undefined;
+          if (agentDebate) {
+            if (agentDebate.critiqueOfA) s.setCritique('A', agentDebate.critiqueOfA);
+            if (agentDebate.critiqueOfB) s.setCritique('B', agentDebate.critiqueOfB);
+            if (agentDebate.defenseA) s.setDefense('A', agentDebate.defenseA);
+            if (agentDebate.defenseB) s.setDefense('B', agentDebate.defenseB);
+            if (agentDebate.personaDebate) s.setPersonaDebate(agentDebate.personaDebate);
+          }
+
           s.setIsGenerating(false);
           s.setStrategyPhase("review_variants");
           return;
@@ -583,6 +615,14 @@ export function StrategyStep() {
     abortRef.current = { abort };
   }, [strategicIntent, selectedContextIds, wizardContext]);
 
+  // Auto-start strategy generation when step 3 is reached
+  useEffect(() => {
+    if (strategyPhase === 'idle' && !isGenerating && !pipelineError && !strategyAutoStartedRef.current && campaignGoalType) {
+      strategyAutoStartedRef.current = true;
+      handleValidateBriefing();
+    }
+  }, [strategyPhase, isGenerating, pipelineError, campaignGoalType, handleValidateBriefing]);
+
   // ─── 9-Phase: Build Foundation ─────────────────────
 
   const handleBuildFoundation = useCallback(() => {
@@ -689,6 +729,7 @@ export function StrategyStep() {
     abortRef.current?.abort();
     abortRef.current = null;
     generationIdRef.current++;
+    strategyAutoStartedRef.current = false;
     const store = useCampaignWizardStore.getState();
     store.resetPipeline();
     store.setStrategyPhase("idle");
@@ -713,24 +754,10 @@ export function StrategyStep() {
   if (strategyPhase === "idle" && !isGenerating && !pipelineError) {
     return (
       <div className="max-w-lg mx-auto text-center py-12">
-        <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-emerald-100 to-primary-100 flex items-center justify-center mb-4">
-          <Sparkles className="w-8 h-8 text-emerald-500" />
+        <div className="w-12 h-12 mx-auto rounded-full bg-gray-100 flex items-center justify-center mb-3">
+          <Sparkles className="w-6 h-6 text-gray-400 animate-pulse" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Generate Campaign Strategy
-        </h3>
-        <p className="text-sm text-gray-500 mb-2 max-w-sm mx-auto">
-          Our AI will validate your briefing, build a behavioral science foundation,
-          generate creative hooks, and refine the best one into a production-ready strategy.
-        </p>
-        <p className="text-xs text-muted-foreground mb-6">
-          You&apos;ll review each phase and guide the AI towards an Effie-worthy campaign concept.
-        </p>
-        <div className="flex flex-col items-center gap-3">
-          <Button variant="cta" size="lg" icon={Sparkles} onClick={handleValidateBriefing}>
-            Start Strategy Generation
-          </Button>
-        </div>
+        <p className="text-sm text-gray-500">Starting strategy generation...</p>
       </div>
     );
   }
@@ -831,6 +858,7 @@ export function StrategyStep() {
           enrichmentBlockCount={enrichmentBlockCount}
           enrichmentSources={enrichmentSources}
         />
+        {multiAgentEnabled && agentDebateRounds.length > 0 && <AgentDebateView />}
         {goalInsights && <GoalInsightsPreview insights={goalInsights} />}
       </div>
     );
@@ -844,6 +872,7 @@ export function StrategyStep() {
         {arenaEnrichment && arenaEnrichment.totalBlocks > 0 && (
           <ArenaEnrichmentBadge totalBlocks={arenaEnrichment.totalBlocks} queriesUsed={arenaEnrichment.queries} />
         )}
+        {multiAgentEnabled && <AgentDebateView />}
         <VariantReviewView
           strategyLayerA={strategyLayerA}
           strategyLayerB={strategyLayerB}

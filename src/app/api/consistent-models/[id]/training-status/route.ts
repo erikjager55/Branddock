@@ -30,8 +30,8 @@ export async function GET(
       where: { id, workspaceId },
       select: {
         status: true,
-        replicateModelId: true,
-        replicateTrainingId: true,
+        falModelId: true,
+        falRequestId: true,
         trainingStartedAt: true,
         trainingCompletedAt: true,
         trainingError: true,
@@ -42,8 +42,8 @@ export async function GET(
     return NextResponse.json({
       ...result,
       status: model?.status ?? result.status,
-      replicateModelId: model?.replicateModelId ?? null,
-      replicateTrainingId: model?.replicateTrainingId ?? null,
+      falModelId: model?.falModelId ?? null,
+      falRequestId: model?.falRequestId ?? null,
       trainingStartedAt: model?.trainingStartedAt?.toISOString() ?? null,
       trainingCompletedAt: model?.trainingCompletedAt?.toISOString() ?? null,
       trainingError: model?.trainingError ?? result.error ?? null,

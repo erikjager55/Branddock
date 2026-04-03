@@ -148,6 +148,24 @@ export function useTrainingStatus(
   });
 }
 
+/** Background polling for models with TRAINING status.
+ * Polls every 30s even when the training modal is closed,
+ * so training completion is never missed. */
+export function useBackgroundTrainingPoll(
+  modelId: string | undefined,
+  modelStatus: string | undefined,
+) {
+  const isStillTraining = modelStatus === "TRAINING" || modelStatus === "UPLOADING";
+
+  return useQuery({
+    queryKey: consistentModelKeys.trainingStatus(modelId ?? ""),
+    queryFn: () => api.fetchTrainingStatus(modelId!),
+    enabled: !!modelId && isStillTraining,
+    refetchInterval: isStillTraining ? 30_000 : false,
+    staleTime: 10_000,
+  });
+}
+
 // ─── 11. useGenerateImage ───────────────────────────────────
 
 export function useGenerateImage(modelId: string | undefined) {
@@ -194,8 +212,12 @@ export function useRefreshBrandContext(modelId: string | undefined) {
 export function useGenerateReferenceImages(modelId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (options?: { provider?: "imagen" | "dalle"; count?: number }) =>
-      api.generateReferenceImages(modelId!, options),
+    mutationFn: (options: {
+      falModel: string;
+      count?: number;
+      brandTags: string[];
+      typeConfig: Record<string, string>;
+    }) => api.generateReferenceImages(modelId!, options),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: consistentModelKeys.detail(modelId!) });
       qc.invalidateQueries({ queryKey: consistentModelKeys.list() });

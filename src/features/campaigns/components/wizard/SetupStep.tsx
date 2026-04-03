@@ -1,6 +1,6 @@
 "use client";
 
-import { TrendingUp, Zap, Scale, MessageCircle } from "lucide-react";
+import { TrendingUp, Zap, Scale, MessageCircle, Users } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Input } from "@/components/shared";
 import { SelectionCard } from "@/components/ui/layout";
@@ -69,6 +69,8 @@ export function SetupStep() {
   const setBriefingTonePreference = useCampaignWizardStore((s) => s.setBriefingTonePreference);
   const briefingConstraints = useCampaignWizardStore((s) => s.briefingConstraints);
   const setBriefingConstraints = useCampaignWizardStore((s) => s.setBriefingConstraints);
+  const multiAgentEnabled = useCampaignWizardStore((s) => s.multiAgentEnabled);
+  const setMultiAgentEnabled = useCampaignWizardStore((s) => s.setMultiAgentEnabled);
 
   return (
     <div className="space-y-6">
@@ -266,6 +268,41 @@ export function SetupStep() {
             </div>
           );
         })()}
+
+        {/* Multi-Agent Strategy Debate Toggle */}
+        <button
+          type="button"
+          onClick={() => setMultiAgentEnabled(!multiAgentEnabled)}
+          className={`mt-4 w-full text-left p-4 rounded-lg border-2 transition-colors ${
+            multiAgentEnabled
+              ? 'border-teal-500 bg-teal-50/50'
+              : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div className={`mt-0.5 h-5 w-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+              multiAgentEnabled
+                ? 'bg-teal-600 border-teal-600'
+                : 'bg-white border-gray-300'
+            }`}>
+              {multiAgentEnabled && (
+                <svg className="h-3 w-3 text-white" viewBox="0 0 12 12" fill="none">
+                  <path d="M2 6L5 9L10 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <Users className={`h-4 w-4 ${multiAgentEnabled ? 'text-teal-600' : 'text-gray-400'}`} />
+                <span className="text-sm font-medium text-gray-900">Multi-Agent Strategy Debate</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                AI agents challenge each other's strategies before synthesis. A Critic finds weaknesses, the Strategist and Creative defend and revise, then personas evaluate the improved variants.
+              </p>
+              <p className="text-xs text-gray-400 mt-0.5">Takes ~2-3 min longer. Uses more AI credits.</p>
+            </div>
+          </div>
+        </button>
       </div>
     </div>
   );

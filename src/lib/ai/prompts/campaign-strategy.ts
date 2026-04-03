@@ -606,6 +606,8 @@ export function buildStrategySynthesizerPrompt(params: {
   variantCScore: number;
   goalType?: string;
   goalGuidance?: string;
+  /** Multi-agent debate context — injected when multiAgent is enabled */
+  agentDebateContext?: string;
 }): { system: string; user: string } {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nEnsure the synthesized blueprint optimally serves this goal type.`
@@ -743,7 +745,26 @@ ${params.strategyLayerC}
 ${params.variantC}
 
 ## Persona Validation Results
-${params.personaValidation}`;
+${params.personaValidation}${params.agentDebateContext ? `
+
+## Multi-Agent Strategy Debate Results
+
+The variants above were stress-tested through an adversarial review process:
+- A Critic Agent identified weaknesses and blind spots
+- The Strategist and Creative agents defended and revised their work
+- A Persona Panel evaluated the revised variants in-character
+
+Use this context to make better synthesis decisions:
+${params.agentDebateContext}
+
+SYNTHESIS GUIDANCE (with debate context):
+1. PREFER elements that SURVIVED the critic-defense cycle — they are battle-tested
+2. When the critic found a weakness that the defense ACCEPTED and FIXED, use the revised version
+3. When the critic found a weakness that the defense DEFENDED, evaluate both sides and decide
+4. Incorporate persona message rewrites where they improve resonance
+5. Address any remaining risks flagged by the critic that defense didn't fully resolve
+6. If a persona named a DEALBREAKER, the synthesized strategy MUST address it
+7. The effieRationale should reference that this strategy was stress-tested: "This strategy survived adversarial review and persona validation..."` : ''}`;
 
   return { system, user };
 }

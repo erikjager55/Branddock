@@ -61,9 +61,9 @@ export interface ConsistentModelListParams {
 
 /** Full model detail (GET /api/consistent-models/:id) */
 export interface ConsistentModelDetail extends ConsistentModelWithMeta {
-  replicateModelId: string | null;
-  replicateModelVersion: string | null;
-  replicateTrainingId: string | null;
+  falModelId: string | null;
+  falLoraUrl: string | null;
+  falRequestId: string | null;
   trainingConfig: TrainingConfig | null;
   trainingStartedAt: string | null;
   trainingCompletedAt: string | null;
@@ -151,13 +151,13 @@ export interface GenerationsListParams {
 /** Training status polling response */
 export interface TrainingStatusResponse {
   status: ConsistentModelStatus;
-  replicateModelId: string | null;
-  replicateTrainingId: string | null;
+  falModelId: string | null;
+  falRequestId: string | null;
   trainingStartedAt: string | null;
   trainingCompletedAt: string | null;
   trainingError: string | null;
   sampleImageUrls: string[] | null;
-  /** Training progress percentage (0-100), parsed from Replicate logs */
+  /** Training progress percentage (0-100), parsed from fal.ai logs */
   progress?: number;
 }
 

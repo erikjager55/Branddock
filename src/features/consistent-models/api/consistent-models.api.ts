@@ -142,7 +142,7 @@ export async function reorderReferenceImages(
 export async function startTraining(
   modelId: string,
   config?: StartTrainingBody,
-): Promise<{ status: string; replicateTrainingId: string | null }> {
+): Promise<{ status: string; falRequestId: string | null }> {
   const res = await fetch(`${BASE}/${modelId}/train`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -189,12 +189,17 @@ export async function refreshBrandContext(
 
 export async function generateReferenceImages(
   modelId: string,
-  options?: { provider?: "imagen" | "dalle"; count?: number },
+  options: {
+    falModel: string;
+    count?: number;
+    brandTags: string[];
+    typeConfig: Record<string, string>;
+  },
 ): Promise<{ images: ReferenceImageWithMeta[] }> {
   const res = await fetch(`${BASE}/${modelId}/generate-references`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(options ?? {}),
+    body: JSON.stringify(options),
   });
   return handleResponse(res, "Failed to generate reference images");
 }

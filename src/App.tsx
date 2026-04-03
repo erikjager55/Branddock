@@ -60,6 +60,7 @@ import {
   AiTrainerPage,
   AiStudioPage,
   ModelDetailPage,
+  ModelShowcasePage,
   ResearchHubPage,
   ResearchBundlesPage,
   BundleDetailPage,
@@ -328,6 +329,8 @@ function AppContent() {
     } else if (activeSection === 'ai-exploration-brand-asset' && !selectedAssetId) {
       redirectTo = 'brand';
     } else if (activeSection === 'consistent-model-detail' && !useConsistentModelStore.getState().selectedModelId) {
+      redirectTo = 'ai-trainer';
+    } else if (activeSection === 'consistent-model-showcase' && !useConsistentModelStore.getState().selectedModelId) {
       redirectTo = 'ai-trainer';
     } else if (activeSection === 'content-studio') {
       const cs = useCampaignStore.getState();
@@ -724,9 +727,12 @@ function AppContent() {
       case 'ai-trainer':
         return (
           <AiTrainerPage
-            onNavigateToModelDetail={(id) => {
+            onNavigateToModelDetail={(id, status) => {
               useConsistentModelStore.getState().setSelectedModel(id);
-              handleSetActiveSection('consistent-model-detail');
+              useConsistentModelStore.getState().resetWizardStep();
+              handleSetActiveSection(
+                status === 'READY' ? 'consistent-model-showcase' : 'consistent-model-detail'
+              );
             }}
           />
         );
@@ -739,6 +745,20 @@ function AppContent() {
           <ModelDetailPage
             modelId={cmModelId}
             onNavigateBack={() => handleSetActiveSection('ai-trainer')}
+            onViewShowcase={() => handleSetActiveSection('consistent-model-showcase')}
+            onNavigateToStudio={() => handleSetActiveSection('ai-studio')}
+          />
+        );
+      }
+      case 'consistent-model-showcase': {
+        const showcaseModelId = useConsistentModelStore.getState().selectedModelId;
+        if (!showcaseModelId) return null;
+        return (
+          <ModelShowcasePage
+            modelId={showcaseModelId}
+            onNavigateBack={() => handleSetActiveSection('ai-trainer')}
+            onNavigateToDetail={() => handleSetActiveSection('consistent-model-detail')}
+            onNavigateToStudio={() => handleSetActiveSection('ai-studio')}
           />
         );
       }

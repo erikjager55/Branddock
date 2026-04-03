@@ -1,12 +1,12 @@
 // =============================================================
-// Training Pipeline — Orchestrates Replicate LoRA fine-tuning
+// Training Pipeline — Orchestrates fal.ai LoRA fine-tuning
 //
 // startTraining(modelId, workspaceId):
-//   Validates model, zips reference images, uploads to Replicate,
-//   creates a model, and starts training.
+//   Validates model, zips reference images, uploads to fal.ai,
+//   and starts training.
 //
-// handleTrainingComplete(replicateTrainingId, success, error?, modelVersion?):
-//   Called by webhook/poller when training finishes.
+// handleTrainingComplete(falRequestId, success, error?, loraUrl?):
+//   Called by poller when training finishes.
 //   Generates sample images on success.
 // =============================================================
 
@@ -15,37 +15,86 @@ import { readFile } from 'fs/promises';
 import path from 'path';
 import JSZip from 'jszip';
 import {
-  createReplicateModel,
-  uploadTrainingFile,
-  startReplicateTraining,
-  runReplicatePrediction,
-} from '@/lib/integrations/replicate/replicate-client';
+  uploadTrainingImages,
+  startFalTraining,
+  runFalGeneration,
+} from '@/lib/integrations/fal/fal-client';
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
-import { TRIGGER_WORDS, MIN_IMAGES_BY_TYPE } from '@/features/consistent-models/constants/model-constants';
+import { TRIGGER_WORDS, MIN_IMAGES_BY_TYPE, FAL_MODEL_CONFIG, LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
 import type { ConsistentModelType } from '@prisma/client';
 
 // ─── Constants ──────────────────────────────────────────────
 
+const SHARED_STUDIO_SUFFIX = 'clean neutral gray seamless studio background, soft directional studio lighting, high-end brand photography, shot on medium format camera, 8K detail';
+
+/** Build PERSON showcase prompts (1 hero + 5 strip) using brand context.
+ * Each prompt starts with the trigger word for maximum LoRA activation. */
+function buildPersonShowcasePrompts(triggerWord: string, brandStyle: string, colorDirection: string): string[] {
+  const tw = triggerWord || 'TOK person';
+  const clothing = `wearing ${brandStyle} clothing in ${colorDirection} tones`;
+  return [
+    // Hero — close-up portrait (landscape)
+    `A photo of ${tw}, high-end studio portrait, extreme close-up from chest up, facing slightly to the left, neutral relaxed expression, visible skin texture and pores, sharp catchlights in the eyes, shallow depth of field, ${clothing}, ${SHARED_STUDIO_SUFFIX}, 85mm lens`,
+    // 1. Full body front
+    `A photo of ${tw}, full body studio portrait standing straight facing camera, relaxed confident posture, hands at sides, ${clothing}, ${SHARED_STUDIO_SUFFIX}, full length shot`,
+    // 2. Full body side profile
+    `A photo of ${tw}, full body side profile standing on a minimal platform, looking straight ahead, ${clothing}, ${SHARED_STUDIO_SUFFIX}, editorial brand photography, full length shot`,
+    // 3. Half body — arms crossed
+    `A photo of ${tw}, half body portrait from waist up, arms gently crossed, warm genuine smile, ${clothing}, ${SHARED_STUDIO_SUFFIX}, shot at 70mm`,
+    // 4. Full body back view
+    `A photo of ${tw}, full body rear view standing with weight slightly on one leg, looking slightly over the right shoulder, ${clothing}, ${SHARED_STUDIO_SUFFIX}, full length shot`,
+    // 5. Full body three-quarter
+    `A photo of ${tw}, full body three-quarter angle in a relaxed standing pose, one hand in pocket, soft smile, ${clothing}, ${SHARED_STUDIO_SUFFIX}, lifestyle brand photography, full length shot`,
+  ];
+}
+
+/** Extract brand style and color direction from model's brand context */
+function extractBrandStyling(brandContext: Record<string, unknown> | null): { brandStyle: string; colorDirection: string } {
+  if (!brandContext) {
+    return { brandStyle: 'modern professional', colorDirection: 'neutral charcoal and white' };
+  }
+
+  // Brand style from personality or tone
+  const personality = (brandContext.brandPersonality as string) ?? '';
+  const tone = (brandContext.toneOfVoice as string) ?? '';
+  const style = (brandContext.brandStyle as string) ?? '';
+  const combined = [personality, tone, style].filter(Boolean).join(', ');
+  const brandStyle = combined
+    ? combined.slice(0, 80) // Keep it concise for the prompt
+    : 'modern professional';
+
+  // Color direction from brand colors
+  const colors = (brandContext.brandColors as Array<{ name: string; hex: string }>) ?? [];
+  const colorDirection = colors.length > 0
+    ? colors.slice(0, 3).map((c) => c.name || c.hex).join(' and ')
+    : 'neutral charcoal and white';
+
+  return { brandStyle, colorDirection };
+}
+
+/** Default single-prompt fallback for non-PERSON types.
+ * Each uses the type-appropriate prefix matching LORA_QUALITY_CONFIG.triggerPrefix */
 const DEFAULT_SAMPLE_PROMPTS: Record<ConsistentModelType, string> = {
-  PERSON: 'A professional portrait photo of TOK person, natural lighting, neutral background',
-  PRODUCT: 'A clean product photo of TOK product on a white background, studio lighting',
-  STYLE: 'A photograph in the TOK style, beautiful composition, high quality',
-  OBJECT: 'A photo of TOK object, clean background, professional lighting',
-  BRAND_STYLE: 'An image in the TOK brand_style, professional quality, brand consistent visual design',
-  PHOTOGRAPHY: 'A photograph in TOK photography style, beautiful composition, professional lighting',
-  ILLUSTRATION: 'An illustration in TOK illustration style, high quality, detailed artwork',
+  PERSON: '', // Uses buildPersonShowcasePrompts instead
+  PRODUCT: 'A product photo of TOK product, clean white background, professional studio lighting, sharp detail, commercial photography',
+  STYLE: 'An image in the style of TOK style, beautiful composition, high quality, detailed',
+  OBJECT: 'A photo of TOK object, clean background, professional studio lighting, sharp detail',
+  BRAND_STYLE: 'A brand visual in the style of TOK brand_style, professional quality, brand consistent design, high detail',
+  PHOTOGRAPHY: 'A photograph in the style of TOK photography, beautiful composition, professional lighting, sharp detail, high quality',
+  ILLUSTRATION: 'An illustration in the style of TOK illustration, high quality, detailed artwork, clean lines, vibrant',
   VOICE: '',
   SOUND_EFFECT: '',
 };
 
-const NUM_SAMPLE_IMAGES = 3;
+const NUM_SAMPLE_IMAGES_DEFAULT = 3;
+const NUM_PERSON_SHOWCASE_IMAGES = 6;
 
 // ─── Types ──────────────────────────────────────────────────
 
 export interface StartTrainingResult {
-  replicateTrainingId: string;
+  falRequestId: string;
   status: 'TRAINING';
 }
 
@@ -58,11 +107,10 @@ export interface TrainingCompleteResult {
 
 // ─── Start Training ─────────────────────────────────────────
 
-/** Validate and start Replicate LoRA fine-tuning for a ConsistentModel */
+/** Validate and start fal.ai LoRA fine-tuning for a ConsistentModel */
 export async function startTraining(
   modelId: string,
-  workspaceId: string,
-  callbackUrl?: string
+  workspaceId: string
 ): Promise<StartTrainingResult> {
   // 1. Fetch model with reference images
   const model = await prisma.consistentModel.findFirst({
@@ -97,71 +145,73 @@ export async function startTraining(
   const zip = new JSZip();
 
   for (const img of model.referenceImages) {
-    // Reference images are stored via local storage provider
-    // storageUrl is a local path like /uploads/media/ws_xxx/2026/03/file.jpg
-    const localPath = path.join('public', img.storageUrl.replace(/^\//, ''));
-    console.log('[training-pipeline]   Reading:', localPath);
-    const fileBuffer = await readFile(localPath);
+    let fileBuffer: Buffer;
+
+    if (img.storageUrl.startsWith('http://') || img.storageUrl.startsWith('https://')) {
+      // Remote URL (e.g. AI-generated images stored in R2/cloud)
+      console.log('[training-pipeline]   Downloading:', img.storageUrl.slice(0, 80));
+      const resp = await fetch(img.storageUrl);
+      if (!resp.ok) {
+        console.error(`[training-pipeline]   Failed to download image ${img.fileName}: ${resp.status}`);
+        continue;
+      }
+      fileBuffer = Buffer.from(await resp.arrayBuffer());
+    } else {
+      // Local file path
+      const localPath = path.join('public', img.storageUrl.replace(/^\//, ''));
+      console.log('[training-pipeline]   Reading:', localPath);
+      fileBuffer = await readFile(localPath);
+    }
+
     zip.file(img.fileName, fileBuffer);
   }
 
   const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
   console.log('[training-pipeline] Zip created:', (zipBuffer.length / 1024 / 1024).toFixed(2), 'MB');
 
-  // 3. Upload zip to Replicate via Files API
+  // 3. Upload zip to fal.ai storage
   const slugSafe = model.name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').slice(0, 50);
-  console.log('[training-pipeline] Step 3: Uploading zip to Replicate Files API...');
-  const uploadResult = await uploadTrainingFile(
+  console.log('[training-pipeline] Step 3: Uploading zip to fal.ai storage...');
+  const imageUrl = await uploadTrainingImages(
     zipBuffer,
     `${slugSafe}-training-images.zip`
   );
-  console.log('[training-pipeline] Upload complete. File URL:', uploadResult.urls.get);
+  console.log('[training-pipeline] Upload complete. Image URL:', imageUrl);
 
-  // 4. Create model on Replicate (idempotent — handles "already exists")
-  console.log('[training-pipeline] Step 4: Creating/finding model on Replicate...');
-  const replicateModel = await createReplicateModel(
-    slugSafe,
-    `Branddock fine-tuned model: ${model.name}`
-  );
-  console.log('[training-pipeline] Model:', replicateModel.owner + '/' + replicateModel.name);
-
-  // 5. Determine trigger word and training params
+  // 4. Determine trigger word, trainer/generator per type, and training params
   const triggerWord = TRIGGER_WORDS[model.type];
+  const falConfig = FAL_MODEL_CONFIG[model.type];
   const trainingConfig = (model.trainingConfig as Record<string, unknown>) ?? {};
-  console.log('[training-pipeline] Step 5: Trigger word:', triggerWord || 'TOK', '| Config:', JSON.stringify(trainingConfig));
+  console.log('[training-pipeline] Step 4: Trigger word:', triggerWord || 'TOK', '| Trainer:', falConfig.label, '| Config:', JSON.stringify(trainingConfig));
 
-  // 6. Start training on Replicate
-  console.log('[training-pipeline] Step 6: Starting training... Callback URL:', callbackUrl ?? 'none');
-  const training = await startReplicateTraining(
-    replicateModel.owner,
-    replicateModel.name,
-    uploadResult.urls.get,
-    {
-      steps: (trainingConfig.steps as number) ?? undefined,
-      learningRate: (trainingConfig.learningRate as number) ?? undefined,
-      resolution: (trainingConfig.resolution as number) ?? undefined,
-      triggerWord: triggerWord || 'TOK',
-      autocaption: true,
-    },
-    callbackUrl
-  );
-  console.log('[training-pipeline] Training started! ID:', training.id, '| Status:', training.status);
+  // 5. Start training on fal.ai with type-specific trainer
+  console.log('[training-pipeline] Step 5: Starting fal.ai training with', falConfig.trainer, '...');
+  const { requestId } = await startFalTraining(imageUrl, {
+    steps: (trainingConfig.steps as number) ?? undefined,
+    learningRate: (trainingConfig.learningRate as number) ?? undefined,
+    resolution: (trainingConfig.resolution as number) ?? undefined,
+    triggerWord: triggerWord || 'TOK',
+    autocaption: true,
+  }, falConfig.trainer);
+  console.log('[training-pipeline] Training started! Request ID:', requestId);
 
-  // 7. Update model in DB
+  // 6. Update model in DB — store trainer+generator for polling and generation
   await prisma.consistentModel.update({
     where: { id: modelId },
     data: {
       status: 'TRAINING',
-      replicateModelId: `${replicateModel.owner}/${replicateModel.name}`,
-      replicateModelVersion: null,
-      replicateTrainingId: training.id,
+      falModelId: falConfig.trainer,
+      falLoraUrl: null,
+      falRequestId: requestId,
+      generatorEndpoint: falConfig.generator,
       triggerWord: triggerWord || 'TOK',
-      baseModel: 'flux-lora',
+      baseModel: falConfig.trainer.includes('flux-2') ? 'flux-2' : 'flux-lora',
       trainingStartedAt: new Date(),
       trainingError: null,
       trainingConfig: {
         ...(trainingConfig as object),
-        replicateTrainer: 'ostris/flux-dev-lora-trainer',
+        falTrainer: falConfig.trainer,
+        falGenerator: falConfig.generator,
       },
     },
   });
@@ -169,27 +219,27 @@ export async function startTraining(
   invalidateCache(cacheKeys.prefixes.consistentModels(workspaceId));
 
   return {
-    replicateTrainingId: training.id,
+    falRequestId: requestId,
     status: 'TRAINING',
   };
 }
 
 // ─── Handle Training Complete ───────────────────────────────
 
-/** Called when Replicate reports training is done (via webhook or polling) */
+/** Called by poller when fal.ai reports training is done */
 export async function handleTrainingComplete(
-  replicateTrainingId: string,
+  falRequestId: string,
   success: boolean,
   error?: string,
-  modelVersion?: string
+  loraUrl?: string
 ): Promise<TrainingCompleteResult> {
-  // 1. Find the model by Replicate training ID
+  // 1. Find the model by fal.ai request ID
   const model = await prisma.consistentModel.findFirst({
-    where: { replicateTrainingId },
+    where: { falRequestId },
   });
 
   if (!model) {
-    throw new Error(`No ConsistentModel found for Replicate training ID: ${replicateTrainingId}`);
+    throw new Error(`No ConsistentModel found for fal.ai request ID: ${falRequestId}`);
   }
 
   if (!success) {
@@ -198,7 +248,7 @@ export async function handleTrainingComplete(
       where: { id: model.id },
       data: {
         status: 'TRAINING_FAILED',
-        trainingError: error ?? 'Training failed — no details provided by Replicate.',
+        trainingError: error ?? 'Training failed — no details provided by fal.ai.',
       },
     });
 
@@ -212,46 +262,91 @@ export async function handleTrainingComplete(
     };
   }
 
-  // 2b. Training succeeded — store version and generate sample images
-  if (modelVersion) {
+  // 2b. Training succeeded — store LoRA URL and generate sample images
+  const loraToUse = loraUrl ?? model.falLoraUrl;
+
+  if (loraToUse) {
     await prisma.consistentModel.update({
       where: { id: model.id },
-      data: { replicateModelVersion: modelVersion },
+      data: { falLoraUrl: loraToUse },
     });
   }
 
   const sampleUrls: string[] = [];
-  const versionToUse = modelVersion ?? model.replicateModelVersion;
 
-  if (versionToUse) {
+  if (loraToUse) {
     try {
-      const samplePrompt = DEFAULT_SAMPLE_PROMPTS[model.type];
-      if (samplePrompt) {
-        const prediction = await runReplicatePrediction(versionToUse, {
-          prompt: samplePrompt,
-          num_outputs: NUM_SAMPLE_IMAGES,
-          output_format: 'png',
-        });
+      const generatorEndpoint = model.generatorEndpoint ?? 'fal-ai/flux-lora';
+      const storage = getStorageProvider();
 
-        if (prediction.output && prediction.output.length > 0) {
-          const storage = getStorageProvider();
+      if (model.type === 'PERSON') {
+        // PERSON: 6 diverse showcase images with brand-aware styling
+        const brandContext = model.brandContext as Record<string, unknown> | null;
+        const { brandStyle, colorDirection } = extractBrandStyling(brandContext);
+        const prompts = buildPersonShowcasePrompts(model.triggerWord ?? 'TOK person', brandStyle, colorDirection);
 
-          for (const imageUrl of prediction.output) {
-            try {
-              const response = await fetch(imageUrl);
+        console.log('[training-pipeline] Generating', prompts.length, 'PERSON showcase images with brand style:', brandStyle, '| colors:', colorDirection);
+
+        const qualityConfig = LORA_QUALITY_CONFIG[model.type];
+
+        // Generate one image per prompt (each is a unique pose/angle)
+        for (const prompt of prompts) {
+          try {
+            const result = await runFalGeneration(generatorEndpoint, {
+              prompt,
+              loras: [{ path: loraToUse, scale: qualityConfig.loraScale }],
+              num_images: 1,
+              num_inference_steps: qualityConfig.inferenceSteps,
+              guidance_scale: qualityConfig.guidanceScale,
+              output_format: 'png',
+              ...(qualityConfig.negativePrompt ? { negative_prompt: qualityConfig.negativePrompt } : {}),
+            });
+
+            if (result.images?.[0]) {
+              const response = await fetch(result.images[0].url);
               if (!response.ok) continue;
-              const arrayBuffer = await response.arrayBuffer();
-              const buffer = Buffer.from(arrayBuffer);
-
-              const result = await storage.upload(buffer, {
+              const buffer = Buffer.from(await response.arrayBuffer());
+              const uploaded = await storage.upload(buffer, {
                 workspaceId: model.workspaceId,
-                fileName: `sample-${Date.now()}.png`,
+                fileName: `sample-${Date.now()}-${sampleUrls.length}.png`,
                 contentType: 'image/png',
               });
+              sampleUrls.push(uploaded.url);
+            }
+          } catch (promptError) {
+            console.error('[training-pipeline] Failed to generate showcase image:', promptError);
+          }
+        }
+      } else {
+        // Non-PERSON types: 3 identical samples with default prompt
+        const samplePrompt = DEFAULT_SAMPLE_PROMPTS[model.type];
+        const qualityConfig = LORA_QUALITY_CONFIG[model.type];
+        if (samplePrompt) {
+          const result = await runFalGeneration(generatorEndpoint, {
+            prompt: samplePrompt,
+            loras: [{ path: loraToUse, scale: qualityConfig.loraScale }],
+            num_images: NUM_SAMPLE_IMAGES_DEFAULT,
+            num_inference_steps: qualityConfig.inferenceSteps,
+            guidance_scale: qualityConfig.guidanceScale,
+            output_format: 'png',
+            ...(qualityConfig.negativePrompt ? { negative_prompt: qualityConfig.negativePrompt } : {}),
+          });
 
-              sampleUrls.push(result.url);
-            } catch (downloadError) {
-              console.error('Failed to download sample image:', downloadError);
+          if (result.images && result.images.length > 0) {
+            for (const image of result.images) {
+              try {
+                const response = await fetch(image.url);
+                if (!response.ok) continue;
+                const buffer = Buffer.from(await response.arrayBuffer());
+                const uploaded = await storage.upload(buffer, {
+                  workspaceId: model.workspaceId,
+                  fileName: `sample-${Date.now()}.png`,
+                  contentType: 'image/png',
+                });
+                sampleUrls.push(uploaded.url);
+              } catch (downloadError) {
+                console.error('Failed to download sample image:', downloadError);
+              }
             }
           }
         }
@@ -269,7 +364,7 @@ export async function handleTrainingComplete(
       status: 'READY',
       trainingCompletedAt: new Date(),
       trainingError: null,
-      replicateModelVersion: versionToUse,
+      falLoraUrl: loraToUse,
       thumbnailUrl: sampleUrls[0] ?? null,
       sampleImageUrls: sampleUrls.length > 0 ? sampleUrls : undefined,
     },

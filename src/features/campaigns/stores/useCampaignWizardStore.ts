@@ -15,6 +15,13 @@ import type {
   PersonaValidationResult,
   ArenaEnrichmentTracking,
   EnrichmentSources,
+  // ─── Multi-Agent Strategy Debate Types ─────────────────────
+  AgentCritique,
+  AgentDefense,
+  PersonaDebateResult,
+  AgentDebateState,
+  AgentRoundName,
+  DebateViewMode,
   // ─── 9-Phase Architecture Types ──────────────────────────
   CreativeHook,
   BriefingValidation,
@@ -100,6 +107,16 @@ interface CampaignWizardState {
 
   // ─── External Enrichment Toggle ──────────────────────────────
   useExternalEnrichment: boolean;
+
+  // ─── Multi-Agent Strategy Debate ──────────────────────────────
+  multiAgentEnabled: boolean;
+  agentDebateRounds: AgentDebateState[];
+  critiqueOfA: AgentCritique | null;
+  critiqueOfB: AgentCritique | null;
+  defenseA: AgentDefense | null;
+  defenseB: AgentDefense | null;
+  personaDebate: PersonaDebateResult[] | null;
+  debateViewMode: DebateViewMode;
 
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: string[];
@@ -192,6 +209,14 @@ interface CampaignWizardState {
   // ─── External Enrichment Actions ─────────────────────────────
   setUseExternalEnrichment: (enabled: boolean) => void;
 
+  // ─── Multi-Agent Strategy Debate Actions ──────────────────────
+  setMultiAgentEnabled: (enabled: boolean) => void;
+  updateDebateRound: (round: AgentDebateState) => void;
+  setCritique: (variant: 'A' | 'B', critique: AgentCritique) => void;
+  setDefense: (variant: 'A' | 'B', defense: AgentDefense) => void;
+  setPersonaDebate: (results: PersonaDebateResult[]) => void;
+  setDebateViewMode: (mode: DebateViewMode) => void;
+
   // ─── Step Proceed Override ──────────────────────────────────
   /** When set, the wizard Continue button calls this instead of nextStep(). Cleared on step change. */
   stepProceedOverride: (() => void) | null;
@@ -279,6 +304,16 @@ const INITIAL_STATE = {
 
   // ─── External Enrichment (always enabled, auto-detected) ──────────────────────────────
   useExternalEnrichment: true,
+
+  // ─── Multi-Agent Strategy Debate ──────────────────────────────
+  multiAgentEnabled: false,
+  agentDebateRounds: [] as AgentDebateState[],
+  critiqueOfA: null as AgentCritique | null,
+  critiqueOfB: null as AgentCritique | null,
+  defenseA: null as AgentDefense | null,
+  defenseB: null as AgentDefense | null,
+  personaDebate: null as PersonaDebateResult[] | null,
+  debateViewMode: 'timeline' as DebateViewMode,
 
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: [] as string[],
@@ -533,6 +568,13 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         hookFeedback: {},
         selectedHookIndex: null,
         refinedHookConcept: null,
+        // Multi-agent debate fields
+        agentDebateRounds: [],
+        critiqueOfA: null,
+        critiqueOfB: null,
+        defenseA: null,
+        defenseB: null,
+        personaDebate: null,
         // Legacy variant fields
         variantA: null,
         variantB: null,
@@ -606,6 +648,26 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     setUseExternalEnrichment: (useExternalEnrichment) => set({ useExternalEnrichment }),
 
     // ─── Step Proceed Override ──────────────────────────────────
+    // ─── Multi-Agent Strategy Debate Actions ──────────────────────
+    setMultiAgentEnabled: (enabled) => set({ multiAgentEnabled: enabled }),
+    updateDebateRound: (round) =>
+      set((s) => {
+        const existing = s.agentDebateRounds.findIndex((r) => r.round === round.round);
+        const rounds = [...s.agentDebateRounds];
+        if (existing >= 0) {
+          rounds[existing] = round;
+        } else {
+          rounds.push(round);
+        }
+        return { agentDebateRounds: rounds };
+      }),
+    setCritique: (variant, critique) =>
+      set(variant === 'A' ? { critiqueOfA: critique } : { critiqueOfB: critique }),
+    setDefense: (variant, defense) =>
+      set(variant === 'A' ? { defenseA: defense } : { defenseB: defense }),
+    setPersonaDebate: (results) => set({ personaDebate: results }),
+    setDebateViewMode: (mode) => set({ debateViewMode: mode }),
+
     setStepProceedOverride: (fn) => set({ stepProceedOverride: fn }),
 
     // ─── Interactive Feedback Actions ─────────────────────────

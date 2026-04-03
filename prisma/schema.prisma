@@ -309,7 +309,7 @@ model DashboardPreference {
   quickStartDismissed  Boolean   @default(false)
   quickStartItems      Json?
   workspaceId          String
-  workspace            Workspace @relation(fields: [workspaceId], references: [id])
+  workspace            Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -329,7 +329,7 @@ model Notification {
   actorId     String?
   actorName   String?
   workspaceId String
-  workspace   Workspace            @relation(fields: [workspaceId], references: [id])
+  workspace   Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   userId      String
   createdAt   DateTime             @default(now())
 
@@ -389,7 +389,7 @@ model BrandAsset {
 
   // Relations
   workspaceId            String
-  workspace              Workspace     @relation(fields: [workspaceId], references: [id])
+  workspace              Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   versions               BrandAssetVersion[]
   researchMethods        BrandAssetResearchMethod[]
   workshops              Workshop[]
@@ -547,7 +547,7 @@ model Workshop {
   agendaItems       WorkshopAgendaItem[]
 
   workspaceId       String
-  workspace         Workspace         @relation(fields: [workspaceId], references: [id])
+  workspace         Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
@@ -568,7 +568,7 @@ model WorkshopBundle {
   finalPrice  Float
   workshops   Workshop[]
   workspaceId String
-  workspace   Workspace   @relation(fields: [workspaceId], references: [id])
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdAt   DateTime    @default(now())
 
   @@index([workspaceId])
@@ -729,7 +729,7 @@ model Interview {
   selectedAssets  InterviewAssetLink[]
 
   workspaceId     String
-  workspace       Workspace         @relation(fields: [workspaceId], references: [id])
+  workspace       Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdById     String
   createdBy       User              @relation("InterviewCreator", fields: [createdById], references: [id])
   createdAt       DateTime          @default(now())
@@ -868,7 +868,7 @@ model Campaign {
   objectiveLinks    CampaignObjective[]
 
   workspaceId       String
-  workspace         Workspace               @relation(fields: [workspaceId], references: [id])
+  workspace         Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdBy         String?
   createdAt         DateTime                @default(now())
   updatedAt         DateTime                @updatedAt
@@ -1104,7 +1104,7 @@ model CampaignTemplate {
   knowledgePattern  Json?
   deliverableMix    Json?
   workspaceId       String
-  workspace         Workspace @relation(fields: [workspaceId], references: [id])
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdAt         DateTime  @default(now())
   lastUsedAt        DateTime?
 
@@ -1198,7 +1198,7 @@ model BusinessStrategy {
   progressSnapshots   ProgressSnapshot[]
 
   workspaceId        String
-  workspace          Workspace         @relation(fields: [workspaceId], references: [id])
+  workspace          Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdById        String
   createdBy          User              @relation(fields: [createdById], references: [id])
   createdAt          DateTime          @default(now())
@@ -1445,7 +1445,7 @@ model BrandStyleguide {
   createdById           String
   createdBy             User              @relation(fields: [createdById], references: [id])
   workspaceId           String
-  workspace             Workspace         @relation(fields: [workspaceId], references: [id])
+  workspace             Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
 
@@ -1561,7 +1561,7 @@ model Persona {
 
   // Relations
   workspaceId           String
-  workspace             Workspace           @relation(fields: [workspaceId], references: [id])
+  workspace             Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdById           String
   createdBy             User                @relation(fields: [createdById], references: [id])
   researchMethods       PersonaResearchMethod[]
@@ -1628,7 +1628,7 @@ model AIPersonaAnalysisSession {
   personaId          String
   persona            Persona                  @relation(fields: [personaId], references: [id], onDelete: Cascade)
   workspaceId        String
-  workspace          Workspace                @relation(fields: [workspaceId], references: [id])
+  workspace          Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdById        String
   createdBy          User                     @relation(fields: [createdById], references: [id])
   messages           AIPersonaAnalysisMessage[]
@@ -1682,7 +1682,7 @@ model ExplorationSession {
   completedAt        DateTime?
 
   workspaceId        String
-  workspace          Workspace               @relation(fields: [workspaceId], references: [id])
+  workspace          Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdById        String
   createdBy          User                    @relation(fields: [createdById], references: [id])
   messages           ExplorationMessage[]
@@ -1760,7 +1760,7 @@ model ExplorationConfig {
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  workspace            Workspace @relation(fields: [workspaceId], references: [id])
+  workspace            Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   knowledgeItems       ExplorationKnowledgeItem[]
 
   @@unique([workspaceId, itemType, itemSubType])
@@ -1822,7 +1822,7 @@ model PersonaChatSession {
   personaId     String
   persona       Persona                 @relation(fields: [personaId], references: [id], onDelete: Cascade)
   workspaceId   String
-  workspace     Workspace               @relation(fields: [workspaceId], references: [id])
+  workspace     Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdById   String
   createdBy     User                    @relation(fields: [createdById], references: [id])
   messages      PersonaChatMessage[]
@@ -1933,7 +1933,7 @@ model PersonaChatConfig {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  workspace           Workspace @relation(fields: [workspaceId], references: [id])
+  workspace           Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@unique([workspaceId])
 }
@@ -1969,7 +1969,7 @@ model Product {
   lockedBy        User?           @relation("LockedProducts", fields: [lockedById], references: [id])
 
   workspaceId     String
-  workspace       Workspace       @relation(fields: [workspaceId], references: [id])
+  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   @@index([workspaceId])
@@ -2172,7 +2172,7 @@ model MarketInsight {
   useBrandContext   Boolean             @default(false)
 
   workspaceId       String
-  workspace         Workspace           @relation(fields: [workspaceId], references: [id])
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
@@ -2212,7 +2212,7 @@ model AlignmentScan {
   issues            AlignmentIssue[]
 
   workspaceId       String
-  workspace         Workspace           @relation(fields: [workspaceId], references: [id])
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
   @@index([status])
@@ -2452,7 +2452,7 @@ model ValidationPlan {
   purchasedAt     DateTime?
   completedAt     DateTime?
   workspaceId     String
-  workspace       Workspace             @relation(fields: [workspaceId], references: [id])
+  workspace       Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdBy       String?
   createdAt       DateTime              @default(now())
   updatedAt       DateTime              @updatedAt
@@ -2495,7 +2495,7 @@ model ResearchStudy {
   completedAt     DateTime?
   planId          String?
   workspaceId     String
-  workspace       Workspace          @relation(fields: [workspaceId], references: [id])
+  workspace       Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
   @@index([workspaceId])
@@ -3088,7 +3088,7 @@ model ResourceVersion {
   createdBy      User                 @relation(fields: [createdById], references: [id])
   createdAt      DateTime             @default(now())
   workspaceId    String
-  workspace      Workspace            @relation(fields: [workspaceId], references: [id])
+  workspace      Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([resourceType, resourceId])
   @@index([workspaceId])
@@ -3252,7 +3252,7 @@ model Competitor {
 
   // Relations
   workspaceId       String
-  workspace         Workspace         @relation(fields: [workspaceId], references: [id])
+  workspace         Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdById       String?
   createdBy         User?             @relation("CreatedCompetitors", fields: [createdById], references: [id])
   linkedProducts    CompetitorProduct[]
@@ -3662,10 +3662,11 @@ model ConsistentModel {
   type                ConsistentModelType
   status              ConsistentModelStatus @default(DRAFT)
 
-  // Replicate integration
-  replicateModelId    String?               // Replicate model identifier (owner/name)
-  replicateModelVersion String?             // Trained model version string
-  replicateTrainingId String?               // Replicate training ID (for webhook matching)
+  // fal.ai integration
+  falModelId          String?               // fal.ai model endpoint ID (e.g., "fal-ai/flux-lora")
+  falLoraUrl          String?               // Trained LoRA weights URL
+  falRequestId        String?               // fal.ai queue request ID
+  generatorEndpoint   String?               // Generator endpoint (e.g., "fal-ai/flux-lora", "fal-ai/flux-2-lora")
   triggerWord         String?               // Trigger word (e.g. "TOK")
   baseModel           String?               // "flux-dev-lora" or similar
 

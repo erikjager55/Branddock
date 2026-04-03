@@ -169,3 +169,91 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// DELETE /api/workspaces — delete a workspace (owner only)
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const activeOrgId = (session.session as Record<string, unknown>)
+      .activeOrganizationId as string | undefined;
+
+    if (!activeOrgId) {
+      return NextResponse.json(
+        { error: "No active organization" },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const { workspaceId } = body;
+
+    if (!workspaceId || typeof workspaceId !== "string") {
+      return NextResponse.json(
+        { error: "workspaceId is required" },
+        { status: 400 }
+      );
+    }
+
+    // Verify membership and owner role
+    const membership = await prisma.organizationMember.findUnique({
+      where: {
+        userId_organizationId: {
+          userId: session.user.id,
+          organizationId: activeOrgId,
+        },
+      },
+    });
+
+    if (!membership || membership.role !== "owner") {
+      return NextResponse.json(
+        { error: "Only owners can delete workspaces" },
+        { status: 403 }
+      );
+    }
+
+    // Verify workspace belongs to this organization
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { id: true, name: true, organizationId: true },
+    });
+
+    if (!workspace || workspace.organizationId !== activeOrgId) {
+      return NextResponse.json(
+        { error: "Workspace not found" },
+        { status: 404 }
+      );
+    }
+
+    // Prevent deleting the last workspace
+    const workspaceCount = await prisma.workspace.count({
+      where: { organizationId: activeOrgId },
+    });
+
+    if (workspaceCount <= 1) {
+      return NextResponse.json(
+        { error: "Cannot delete the last workspace" },
+        { status: 400 }
+      );
+    }
+
+    // Delete workspace (cascade deletes all related data)
+    await prisma.workspace.delete({
+      where: { id: workspaceId },
+    });
+
+    return NextResponse.json({
+      success: true,
+      deleted: { id: workspace.id, name: workspace.name },
+    });
+  } catch (error) {
+    console.error("[DELETE /api/workspaces]", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}

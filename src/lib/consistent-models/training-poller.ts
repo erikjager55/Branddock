@@ -1,16 +1,16 @@
 // =============================================================
-// Training Poller — Fallback for webhook-less environments
+// Training Poller — Polls fal.ai queue for training status
 //
-// Polls Replicate API to check if a training has finished.
-// Used during development or when webhooks are unreachable.
+// Polls fal.ai API to check if a training has finished.
+// Used by the training-status endpoint to report progress.
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
-import { getReplicateTraining } from '@/lib/integrations/replicate/replicate-client';
+import { getFalTrainingStatus, getFalTrainingResult } from '@/lib/integrations/fal/fal-client';
 import { handleTrainingComplete } from './training-pipeline';
 
-/** Parse training progress percentage from Replicate training logs.
- * Logs contain lines like: `flux_train_replicate: 52%|█████▏ | 517/1000` */
+/** Parse training progress percentage from fal.ai training logs.
+ * Logs contain lines like: `flux_train: 52%|█████▏ | 517/1000` */
 function parseTrainingProgress(logs: string | null | undefined): number | undefined {
   if (!logs) return undefined;
   // Match the last occurrence of a percentage in the logs (e.g., "52%|")
@@ -26,11 +26,11 @@ export interface PollResult {
   status: string;
   changed: boolean;
   error?: string;
-  /** Training progress percentage (0-100), parsed from Replicate logs */
+  /** Training progress percentage (0-100), parsed from fal.ai logs */
   progress?: number;
 }
 
-/** Poll Replicate for the current training status of a model */
+/** Poll fal.ai for the current training status of a model */
 export async function pollTrainingStatus(
   modelId: string,
   workspaceId: string
@@ -51,34 +51,51 @@ export async function pollTrainingStatus(
     };
   }
 
-  if (!model.replicateTrainingId) {
-    throw new Error('Model has no Replicate training ID');
+  if (!model.falRequestId) {
+    throw new Error('Model has no fal.ai training request ID');
   }
 
+  // Resolve the trainer endpoint from DB (stored during training start)
+  const trainingConfig = (model.trainingConfig as Record<string, unknown>) ?? {};
+  const trainerEndpoint = (trainingConfig.falTrainer as string) ?? undefined;
+
   try {
-    const training = await getReplicateTraining(model.replicateTrainingId);
+    const trainingStatus = await getFalTrainingStatus(model.falRequestId, trainerEndpoint);
 
     // Training succeeded
-    if (training.status === 'succeeded') {
-      const result = await handleTrainingComplete(
-        model.replicateTrainingId,
+    if (trainingStatus.status === 'COMPLETED') {
+      // Fetch the full result to get the LoRA weights URL
+      let loraUrl: string | undefined;
+      try {
+        const trainingResult = await getFalTrainingResult(model.falRequestId, trainerEndpoint);
+        loraUrl = trainingResult.loraUrl ?? undefined;
+      } catch (resultError) {
+        // Some completed trainings fail to return results (e.g. Unprocessable Entity)
+        console.error('[training-poller] Failed to fetch training result:', resultError);
+      }
+
+      // Fire-and-forget: run sample generation in background so the poll returns immediately
+      handleTrainingComplete(
+        model.falRequestId,
         true,
         undefined,
-        training.version ?? undefined
-      );
+        loraUrl
+      ).catch((err) => {
+        console.error('[training-poller] handleTrainingComplete failed:', err);
+      });
+
       return {
         modelId: model.id,
         status: 'READY',
         changed: true,
-        error: result.error,
       };
     }
 
-    // Training failed or canceled
-    if (training.status === 'failed' || training.status === 'canceled') {
-      const errorMessage = training.error ?? `Training ${training.status}`;
+    // Training failed
+    if (trainingStatus.status === 'FAILED') {
+      const errorMessage = trainingStatus.error ?? 'Training failed';
       await handleTrainingComplete(
-        model.replicateTrainingId,
+        model.falRequestId,
         false,
         errorMessage
       );
@@ -90,8 +107,8 @@ export async function pollTrainingStatus(
       };
     }
 
-    // Still training (starting or processing) — extract progress from logs
-    const progress = parseTrainingProgress(training.logs);
+    // Still training (IN_QUEUE or IN_PROGRESS) — extract progress from logs
+    const progress = parseTrainingProgress(trainingStatus.logs);
     return {
       modelId: model.id,
       status: 'TRAINING',
@@ -101,12 +118,12 @@ export async function pollTrainingStatus(
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-    // If Replicate returns a 404, the training was likely deleted
+    // If fal.ai returns a 404, the training was likely deleted
     if (errorMessage.includes('404') || errorMessage.includes('not found')) {
       await handleTrainingComplete(
-        model.replicateTrainingId,
+        model.falRequestId,
         false,
-        'Replicate training not found — it may have been deleted or expired.'
+        'fal.ai training not found — it may have been deleted or expired.'
       );
       return {
         modelId: model.id,

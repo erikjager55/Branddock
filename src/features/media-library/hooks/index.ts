@@ -45,6 +45,8 @@ import {
   generateAiImage,
   updateAiImage,
   deleteAiImage,
+  sendAiImageToLibrary,
+  linkAiImageToProduct,
   fetchAiVideos,
   fetchAiVideoDetail,
   generateAiVideo,
@@ -567,6 +569,29 @@ export function useDeleteAiImage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deleteAiImage(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...mediaKeys.all, 'ai-images'] });
+    },
+  });
+}
+
+export function useSendAiImageToLibrary() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body?: Parameters<typeof sendAiImageToLibrary>[1] }) =>
+      sendAiImageToLibrary(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...mediaKeys.all, 'ai-images'] });
+      qc.invalidateQueries({ queryKey: mediaKeys.all });
+    },
+  });
+}
+
+export function useLinkAiImageToProduct() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof linkAiImageToProduct>[1] }) =>
+      linkAiImageToProduct(id, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [...mediaKeys.all, 'ai-images'] });
     },

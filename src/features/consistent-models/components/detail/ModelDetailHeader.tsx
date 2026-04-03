@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Pencil, Check, X } from "lucide-react";
+import { ArrowLeft, Pencil, Check, X, Eye } from "lucide-react";
 import { Button } from "@/components/shared";
 import { ModelTypeBadge } from "../shared/ModelTypeBadge";
 import { ModelStatusBadge } from "../shared/ModelStatusBadge";
@@ -13,6 +13,7 @@ interface ModelDetailHeaderProps {
   model: ConsistentModelDetail;
   onBack: () => void;
   onUpdateName: (name: string) => void;
+  onViewShowcase?: () => void;
   isUpdating: boolean;
 }
 
@@ -21,6 +22,7 @@ export function ModelDetailHeader({
   model,
   onBack,
   onUpdateName,
+  onViewShowcase,
   isUpdating,
 }: ModelDetailHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -105,6 +107,17 @@ export function ModelDetailHeader({
             <p className="text-sm text-gray-500">{model.description}</p>
           )}
         </div>
+
+        {model.status === "READY" && onViewShowcase && (
+          <button
+            type="button"
+            onClick={onViewShowcase}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
+          >
+            <Eye className="h-4 w-4" />
+            View Showcase
+          </button>
+        )}
       </div>
     </div>
   );

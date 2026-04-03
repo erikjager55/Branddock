@@ -124,6 +124,9 @@ export const AiStudioPage = lazy(() =>
 export const ModelDetailPage = lazy(() =>
   import('@/features/consistent-models/components/detail/ModelDetailPage').then(m => ({ default: m.ModelDetailPage }))
 );
+export const ModelShowcasePage = lazy(() =>
+  import('@/features/consistent-models/components/detail/ModelShowcasePage').then(m => ({ default: m.ModelShowcasePage }))
+);
 
 // ─── Research & Validation ─────────────────────────────────
 export const ResearchHubPage = lazy(() =>

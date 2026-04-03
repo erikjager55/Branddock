@@ -649,24 +649,25 @@ export function ConceptStep() {
         strategy={synthesizedStrategy}
         architecture={synthesizedArchitecture}
         onApprove={handleApprove}
+        onRefine={() => {
+          // Re-elaborate with current feedback to refine the concept
+          setPhaseError(null);
+          handleElaborate();
+        }}
         errorMessage={phaseError}
       />
     );
   }
 
-  // Complete — concept approved
+  // Complete — concept approved, show brief confirmation
   if (strategyPhase === "complete") {
     return (
-      <div className="max-w-lg mx-auto text-center py-12">
-        <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-emerald-100 to-primary-100 flex items-center justify-center mb-4">
-          <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+      <div className="max-w-lg mx-auto text-center py-8">
+        <div className="flex items-center justify-center gap-2 text-emerald-600 mb-2">
+          <CheckCircle2 className="w-5 h-5" />
+          <span className="text-sm font-medium">Creative concept approved</span>
         </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Creative Concept Approved
-        </h3>
-        <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
-          Your creative concept has been finalized. Continue to select deliverables for your campaign.
-        </p>
+        <p className="text-xs text-gray-500">Click Continue to select deliverables for your campaign.</p>
       </div>
     );
   }

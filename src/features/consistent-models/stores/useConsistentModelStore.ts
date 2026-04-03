@@ -5,10 +5,7 @@
 import { create } from "zustand";
 import type { ConsistentModelType } from "../types/consistent-model.types";
 
-interface UploadProgress {
-  fileId: string;
-  progress: number;
-}
+export type TrainingMode = "own" | "synthetic" | null;
 
 interface ConsistentModelStore {
   // Selection
@@ -26,8 +23,12 @@ interface ConsistentModelStore {
   // Generation queue
   generationQueue: string[];
 
-  // Wizard step
+  // Wizard step + training mode
   wizardStep: number;
+  trainingMode: TrainingMode;
+
+  // Generate in AI Studio (cross-module navigation)
+  generateInStudioModelId: string | null;
 
   // Actions — Selection
   setSelectedModel: (id: string | null) => void;
@@ -50,11 +51,16 @@ interface ConsistentModelStore {
   removeFromGenerationQueue: (id: string) => void;
   clearGenerationQueue: () => void;
 
-  // Actions — Wizard
+  // Actions — Wizard + Training Mode
   setWizardStep: (step: number) => void;
   nextWizardStep: () => void;
   prevWizardStep: () => void;
   resetWizardStep: () => void;
+  setTrainingMode: (mode: TrainingMode) => void;
+
+  // Actions — Generate in AI Studio
+  setGenerateInStudio: (modelId: string) => void;
+  clearGenerateInStudio: () => void;
 }
 
 export const useConsistentModelStore = create<ConsistentModelStore>((set) => ({
@@ -67,6 +73,8 @@ export const useConsistentModelStore = create<ConsistentModelStore>((set) => ({
   uploadProgress: new Map(),
   generationQueue: [],
   wizardStep: 1,
+  trainingMode: null,
+  generateInStudioModelId: null,
 
   // Selection
   setSelectedModel: (id) => set({ selectedModelId: id }),
@@ -108,11 +116,16 @@ export const useConsistentModelStore = create<ConsistentModelStore>((set) => ({
     })),
   clearGenerationQueue: () => set({ generationQueue: [] }),
 
-  // Wizard
+  // Wizard + Training Mode
   setWizardStep: (step) => set({ wizardStep: step }),
   nextWizardStep: () =>
-    set((s) => ({ wizardStep: Math.min(4, s.wizardStep + 1) })),
+    set((s) => ({ wizardStep: Math.min(3, s.wizardStep + 1) })),
   prevWizardStep: () =>
     set((s) => ({ wizardStep: Math.max(1, s.wizardStep - 1) })),
-  resetWizardStep: () => set({ wizardStep: 1 }),
+  resetWizardStep: () => set({ wizardStep: 1, trainingMode: null }),
+  setTrainingMode: (mode) => set({ trainingMode: mode, wizardStep: 1 }),
+
+  // Generate in AI Studio
+  setGenerateInStudio: (modelId) => set({ generateInStudioModelId: modelId }),
+  clearGenerateInStudio: () => set({ generateInStudioModelId: null }),
 }));

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
-import { isReplicateConfigured, runReplicatePrediction } from '@/lib/integrations/replicate/replicate-client';
+import { isFalConfigured, runFalGeneration } from '@/lib/integrations/fal/fal-client';
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
@@ -38,9 +38,9 @@ export async function POST(
       return NextResponse.json({ error: 'No workspace' }, { status: 400 });
     }
 
-    if (!isReplicateConfigured()) {
+    if (!isFalConfigured()) {
       return NextResponse.json(
-        { error: 'Replicate API token not configured.' },
+        { error: 'fal.ai API key not configured. Add FAL_KEY to environment.' },
         { status: 503 }
       );
     }
@@ -72,9 +72,9 @@ export async function POST(
       );
     }
 
-    if (!model.replicateModelVersion) {
+    if (!model.falLoraUrl) {
       return NextResponse.json(
-        { error: 'Model has no trained version. Training may not have completed.' },
+        { error: 'Model has no trained LoRA weights. Training may not have completed.' },
         { status: 400 }
       );
     }
@@ -88,15 +88,16 @@ export async function POST(
     // Combine with model-level style/negative prompts
     const combinedPrompt = model.stylePrompt ? `${finalPrompt}, ${model.stylePrompt}` : finalPrompt;
 
-    // Call Replicate to generate
-    const prediction = await runReplicatePrediction(model.replicateModelVersion, {
+    // Call fal.ai to generate
+    const generatorEndpoint = model.generatorEndpoint ?? 'fal-ai/flux-lora';
+    const result = await runFalGeneration(generatorEndpoint, {
       prompt: combinedPrompt,
-      num_outputs: numImages ?? 1,
+      loras: [{ path: model.falLoraUrl!, scale: 1.0 }],
+      num_images: numImages ?? 1,
       guidance_scale: guidanceScale ?? 7.5,
-      output_format: 'png',
+      image_size: { width: width ?? 1024, height: height ?? 1024 },
       seed,
-      width: width ?? 1024,
-      height: height ?? 1024,
+      output_format: 'png',
     });
 
     // Process each generated image
@@ -104,10 +105,10 @@ export async function POST(
     const startTime = Date.now();
     const storage = getStorageProvider();
 
-    for (const imageUrl of prediction.output ?? []) {
+    for (const image of result.images ?? []) {
       try {
-        // Download the generated image from Replicate
-        const imageResponse = await fetch(imageUrl);
+        // Download the generated image from fal.ai
+        const imageResponse = await fetch(image.url);
         if (!imageResponse.ok) continue;
 
         const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
@@ -134,8 +135,8 @@ export async function POST(
             storageKey: storageResult.url,
             storageUrl: storageResult.url,
             generationTimeMs: Date.now() - startTime,
-            aiProvider: 'replicate',
-            aiModel: model.replicateModelVersion!,
+            aiProvider: 'fal',
+            aiModel: generatorEndpoint,
           },
         });
 

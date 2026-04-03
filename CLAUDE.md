@@ -125,9 +125,7 @@ ARENA_API_TOKEN=         # Optioneel: Are.na culturele context enrichment
 EXA_API_KEY=             # Optioneel: Exa neural search (1000 gratis/maand)
 S2_API_KEY=              # Optioneel: Semantic Scholar (unauthenticated OK)
 RUNWAYML_API_SECRET=     # Optioneel: Runway ML video generatie (AI Videos)
-REPLICATE_API_TOKEN=     # Optioneel: Replicate API (Consistent AI Models training + generation)
-REPLICATE_MODEL_OWNER=   # Optioneel: Replicate username (model creation)
-REPLICATE_WEBHOOK_SECRET=# Optioneel: Replicate webhook signature verification
+FAL_KEY=                 # Optioneel: fal.ai API (Consistent AI Models LoRA training + generation)
 ```
 
 ### Database tabellen (Better Auth)
@@ -2146,6 +2144,7 @@ Verkennend onderzoek afgerond naar 25+ externe applicaties. Hieronder de shortli
 - INT.20: 📋 **Shopify GraphQL** — Product catalog sync, AI productbeschrijvingen. Kosten: gratis (dev stores).
 - INT.21: 📋 **Asana / Linear** (Project Management) — Deliverables als taken, milestones sync. Kosten: gratis.
 - INT.22: 📋 **Audiense** (Audience Intelligence) — Persona verrijking met echte demographic/psychographic data. Kosten: ~$12K/jaar.
+- INT.41: 📋 **Apify** (Web Scraping & Automation) — Platform voor web scraping, data extraction en automation met 1600+ kant-en-klare Actors (scrapers). Use cases: competitor website monitoring (prijzen, messaging, content), brand mention tracking, review aggregatie, social media scraping (Instagram/LinkedIn/Google Maps), market research data collectie. Verrijkt Trend Radar (extra bronnen), Competitors (diepere scraping), Brand Alignment (externe signalen). TypeScript/JavaScript SDK, REST API, webhooks. Kosten: gratis tier (48 Actor compute units/maand), betaald vanaf $49/maand.
 
 **Tier 4 — Niet aanbevolen of uitgesteld**
 - INT.23: ⏸️ **Buffer** — API gesloten voor nieuwe applicaties. Ayrshare is superieur alternatief.

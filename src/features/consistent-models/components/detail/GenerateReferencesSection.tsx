@@ -1,18 +1,31 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Sparkles, Check, X, Loader2, ChevronRight, Info } from "lucide-react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import {
+  Sparkles,
+  Check,
+  X,
+  Loader2,
+  ChevronRight,
+  Plus,
+  Image as ImageIcon,
+} from "lucide-react";
 import { Button, Badge } from "@/components/shared";
 import { useGenerateReferenceImages, useCurateReferences } from "../../hooks";
 import { useConsistentModelStore } from "../../stores/useConsistentModelStore";
-import type { ConsistentModelDetail, ReferenceImageWithMeta } from "../../types/consistent-model.types";
+import { getFalProvidersForType, FAL_PROVIDERS, TYPE_GENERATION_FIELDS, MIN_IMAGES_BY_TYPE } from "../../constants/model-constants";
+import { extractBrandTags } from "@/lib/consistent-models/reference-prompt-builder";
+import type {
+  ConsistentModelDetail,
+  ReferenceImageWithMeta,
+} from "../../types/consistent-model.types";
 
 interface GenerateReferencesSectionProps {
   model: ConsistentModelDetail;
   modelId: string;
 }
 
-/** Step 1 — Generate AI reference images using brand context */
+/** Step 1 — Generate AI reference images using brand context + type-specific fields via fal.ai */
 export function GenerateReferencesSection({
   model,
   modelId,
@@ -21,16 +34,116 @@ export function GenerateReferencesSection({
   const curateRefs = useCurateReferences(modelId);
   const { nextWizardStep } = useConsistentModelStore();
 
-  const [provider, setProvider] = useState<"imagen" | "dalle">("imagen");
+  // Provider state — filtered by model type
+  const typeProviders = useMemo(() => getFalProvidersForType(model.type), [model.type]);
+  const [selectedProvider, setSelectedProvider] = useState<string>(
+    typeProviders[0]?.id ?? "fal-ai/flux-2-pro",
+  );
+
+  // Brand tag state
+  const initialTags = useMemo(
+    () => extractBrandTags(model.brandContext ?? null),
+    [model.brandContext],
+  );
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(
+    () => new Set(initialTags),
+  );
+  const [customTags, setCustomTags] = useState<string[]>([]);
+  const [newTagInput, setNewTagInput] = useState("");
+
+  // Type-specific field state
+  const [typeConfig, setTypeConfig] = useState<Record<string, string>>({});
+
+  // Generated image selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const allTags = useMemo(
+    () => [...initialTags, ...customTags],
+    [initialTags, customTags],
+  );
 
   const aiImages = useMemo(
     () => model.referenceImages.filter((img) => img.source === "AI_GENERATED"),
     [model.referenceImages],
   );
 
+  const typeFields = useMemo(
+    () =>
+      TYPE_GENERATION_FIELDS[
+        model.type as keyof typeof TYPE_GENERATION_FIELDS
+      ] ?? [],
+    [model.type],
+  );
+
+  const minImages = MIN_IMAGES_BY_TYPE[model.type] || 5;
+
+  // Generation progress tracking (estimated, ~8s per image)
+  const [generatingCount, setGeneratingCount] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const targetCount = 10;
+  const estimatedSecondsPerImage = 8;
+
+  useEffect(() => {
+    if (generateRefs.isPending) {
+      setGeneratingCount(0);
+      setElapsedSeconds(0);
+      timerRef.current = setInterval(() => {
+        setElapsedSeconds((prev) => {
+          const next = prev + 1;
+          setGeneratingCount(Math.min(Math.floor(next / estimatedSecondsPerImage), targetCount - 1));
+          return next;
+        });
+      }, 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      if (generatingCount > 0) {
+        setGeneratingCount(targetCount); // snap to complete
+      }
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [generateRefs.isPending]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Handlers ────────────────────────────────────────────
+
+  const toggleTag = useCallback((tag: string) => {
+    setSelectedTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) {
+        next.delete(tag);
+      } else {
+        next.add(tag);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleAddTag = useCallback(() => {
+    const trimmed = newTagInput.trim();
+    if (!trimmed) return;
+    if (!customTags.includes(trimmed) && !initialTags.includes(trimmed)) {
+      setCustomTags((prev) => [...prev, trimmed]);
+      setSelectedTags((prev) => new Set([...prev, trimmed]));
+    }
+    setNewTagInput("");
+  }, [newTagInput, customTags, initialTags]);
+
+  const handleTypeFieldChange = useCallback((key: string, value: string) => {
+    setTypeConfig((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
   const handleGenerate = () => {
-    generateRefs.mutate({ provider, count: 6 });
+    generateRefs.mutate({
+      falModel: selectedProvider,
+      brandTags: Array.from(selectedTags),
+      typeConfig,
+      count: 10,
+    });
   };
 
   const toggleImage = (id: string) => {
@@ -68,96 +181,266 @@ export function GenerateReferencesSection({
     );
   };
 
-  const contextSummary = model.brandContext?.contextSummary;
-
   return (
     <div className="space-y-6">
-      {/* Brand context summary */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5">
-        <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-teal-50 p-2">
-            <Info className="h-5 w-5 text-teal-600" />
+      {/* ─── Brand Context Tags ────────────────────────────── */}
+      <div
+        id="generate-section"
+        className="rounded-lg border border-gray-200 bg-white p-5"
+      >
+        <h3 className="text-sm font-semibold text-gray-900">
+          Brand Context Tags
+        </h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Select the brand keywords to include in the generation prompts.
+          Deselect tags you don&apos;t want to influence the output.
+        </p>
+
+        {allTags.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {allTags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleTag(tag)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  selectedTags.has(tag)
+                    ? "bg-teal-100 text-teal-700 border border-teal-300"
+                    : "bg-gray-100 text-gray-400 border border-gray-200"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
           </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold text-gray-900">Brand Context</h3>
-            {contextSummary ? (
-              <p className="mt-1 text-sm text-gray-600 leading-relaxed">
-                {contextSummary}
-              </p>
-            ) : (
-              <p className="mt-1 text-sm text-gray-400 italic">
-                No brand context available. Reference images will be generated with default prompts.
-              </p>
-            )}
-          </div>
+        ) : (
+          <p className="mt-3 text-sm text-gray-400 italic">
+            No brand context available. Reference images will be generated with
+            default prompts.
+          </p>
+        )}
+
+        {/* Add keyword */}
+        <div className="mt-3 flex items-center gap-2">
+          <input
+            type="text"
+            value={newTagInput}
+            onChange={(e) => setNewTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleAddTag();
+              }
+            }}
+            placeholder="Add keyword..."
+            className="rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+          />
+          <button
+            type="button"
+            onClick={handleAddTag}
+            disabled={!newTagInput.trim()}
+            className="flex items-center gap-1 rounded-md bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            <Plus className="h-3 w-3" />
+            Add
+          </button>
         </div>
       </div>
 
-      {/* Provider selector + generate button */}
+      {/* ─── Type-Specific Fields ──────────────────────────── */}
+      {typeFields.length > 0 && (
+        <div className="rounded-lg border border-gray-200 bg-white p-5">
+          <h3 className="text-sm font-semibold text-gray-900">
+            Model Details — {model.type.replace(/_/g, " ")}
+          </h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Provide details to get better reference images for this model type.
+          </p>
+
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {typeFields.map((field) => (
+              <div
+                key={field.key}
+                className={
+                  field.type === "textarea" ? "sm:col-span-2" : undefined
+                }
+              >
+                <label className="mb-1.5 block text-xs font-medium text-gray-700">
+                  {field.label}
+                </label>
+                {field.type === "select" && field.options ? (
+                  <select
+                    value={typeConfig[field.key] ?? ""}
+                    onChange={(e) =>
+                      handleTypeFieldChange(field.key, e.target.value)
+                    }
+                    className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                  >
+                    <option value="">{field.placeholder}</option>
+                    {field.options.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : field.type === "textarea" ? (
+                  <textarea
+                    value={typeConfig[field.key] ?? ""}
+                    onChange={(e) =>
+                      handleTypeFieldChange(field.key, e.target.value)
+                    }
+                    placeholder={field.placeholder}
+                    rows={2}
+                    className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 resize-none"
+                  />
+                ) : (
+                  <input
+                    type="text"
+                    value={typeConfig[field.key] ?? ""}
+                    onChange={(e) =>
+                      handleTypeFieldChange(field.key, e.target.value)
+                    }
+                    placeholder={field.placeholder}
+                    className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── fal.ai Provider Selector + Generate ───────────── */}
       <div className="rounded-lg border border-gray-200 bg-white p-5">
         <h3 className="text-sm font-semibold text-gray-900">
-          Generate Reference Images
+          AI Image Provider
         </h3>
         <p className="mt-1 text-sm text-gray-500">
-          Use AI to generate reference images based on your brand context. This step is optional — you can skip to manual upload.
+          Choose an AI model to generate reference images.
         </p>
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-medium text-gray-600">Provider:</label>
-            <div className="flex rounded-lg border border-gray-200">
-              <button
-                type="button"
-                onClick={() => setProvider("imagen")}
-                className={`px-3 py-1.5 text-xs font-medium rounded-l-lg transition-colors ${
-                  provider === "imagen"
-                    ? "bg-teal-50 text-teal-700 border-r border-gray-200"
-                    : "text-gray-500 hover:bg-gray-50 border-r border-gray-200"
-                }`}
-              >
-                Imagen 4
-              </button>
-              <button
-                type="button"
-                onClick={() => setProvider("dalle")}
-                className={`px-3 py-1.5 text-xs font-medium rounded-r-lg transition-colors ${
-                  provider === "dalle"
-                    ? "bg-teal-50 text-teal-700"
-                    : "text-gray-500 hover:bg-gray-50"
-                }`}
-              >
-                DALL-E 3
-              </button>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {typeProviders.map((provider) => (
+            <button
+              key={provider.id}
+              type="button"
+              onClick={() => setSelectedProvider(provider.id)}
+              className={`group overflow-hidden rounded-xl border-2 text-left transition-all ${
+                selectedProvider === provider.id
+                  ? "border-teal-500 ring-2 ring-teal-200"
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              {/* Preview image */}
+              <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
+                <img
+                  src={`/images/fal-providers/${provider.preview}`}
+                  alt={provider.label}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                />
+                {selectedProvider === provider.id && (
+                  <div className="absolute right-2 top-2 rounded-full bg-teal-500 p-1">
+                    <Check className="h-3 w-3 text-white" />
+                  </div>
+                )}
+              </div>
+              {/* Info */}
+              <div className="p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-900">
+                    {provider.label}
+                  </span>
+                  <span className="text-[10px] font-medium text-gray-400">
+                    {provider.cost}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                  {provider.description}
+                </p>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Generate button / Progress indicator */}
+        {generateRefs.isPending ? (
+          <div className="mt-5 rounded-lg border border-teal-200 bg-teal-50 p-5">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-teal-100">
+                <Loader2 className="h-5 w-5 animate-spin text-teal-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-sm font-semibold text-gray-900">
+                  Generating reference images...
+                </h4>
+                <p className="mt-0.5 text-xs text-gray-500">
+                  Creating {targetCount} images with AI — this takes about {Math.ceil(targetCount * estimatedSecondsPerImage / 60)} minutes
+                </p>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <span className="text-lg font-bold text-teal-700">
+                  {generatingCount}/{targetCount}
+                </span>
+                <p className="text-[10px] text-gray-400">
+                  {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, "0")} elapsed
+                </p>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-teal-100">
+              <div
+                className="h-full rounded-full bg-teal-500 transition-all duration-1000 ease-linear"
+                style={{ width: `${Math.max(5, (generatingCount / targetCount) * 100)}%` }}
+              />
+            </div>
+
+            {/* Placeholder grid */}
+            <div className="mt-4 grid grid-cols-5 gap-2">
+              {Array.from({ length: targetCount }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`aspect-square rounded-md flex items-center justify-center ${
+                    i < generatingCount
+                      ? "bg-teal-100 border border-teal-300"
+                      : "bg-gray-100 border border-gray-200"
+                  }`}
+                >
+                  {i < generatingCount ? (
+                    <Check className="h-4 w-4 text-teal-500" />
+                  ) : i === generatingCount ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+                  ) : (
+                    <ImageIcon className="h-4 w-4 text-gray-300" />
+                  )}
+                </div>
+              ))}
             </div>
           </div>
-
-          <Button
-            variant="primary"
-            onClick={handleGenerate}
-            disabled={generateRefs.isPending}
-          >
-            {generateRefs.isPending ? (
-              <>
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-1.5 h-4 w-4" />
-                Generate References
-              </>
-            )}
-          </Button>
-        </div>
+        ) : (
+          <div className="mt-4">
+            <Button
+              variant="primary"
+              onClick={handleGenerate}
+            >
+              <Sparkles className="mr-1.5 h-4 w-4" />
+              Generate {targetCount} References
+            </Button>
+          </div>
+        )}
 
         {generateRefs.isError && (
           <p className="mt-3 text-sm text-red-600">
-            {generateRefs.error?.message ?? "Failed to generate reference images."}
+            {generateRefs.error?.message ??
+              "Failed to generate reference images."}
           </p>
         )}
       </div>
 
-      {/* Generated images grid */}
+      {/* ─── Generated Images Grid ─────────────────────────── */}
       {aiImages.length > 0 && (
         <div className="rounded-lg border border-gray-200 bg-white p-5">
           <div className="flex items-center justify-between">
@@ -199,18 +482,14 @@ export function GenerateReferencesSection({
             ))}
           </div>
 
-          <div className="mt-5 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={nextWizardStep}
-              className="text-sm text-gray-500 hover:text-gray-700 underline"
-            >
-              Skip — go to manual upload
-            </button>
+          <div className="mt-8 flex items-center justify-between">
+            <p className="text-xs text-gray-500">
+              Select at least {minImages} images to continue
+            </p>
             <Button
               variant="primary"
               onClick={handleUseSelected}
-              disabled={selectedIds.size === 0 || curateRefs.isPending}
+              disabled={selectedIds.size < minImages || curateRefs.isPending}
             >
               {curateRefs.isPending ? (
                 <>
@@ -219,7 +498,7 @@ export function GenerateReferencesSection({
                 </>
               ) : (
                 <>
-                  Use Selected & Continue
+                  Use Selected & Continue ({selectedIds.size}/{minImages})
                   <ChevronRight className="ml-1 h-4 w-4" />
                 </>
               )}
@@ -228,18 +507,6 @@ export function GenerateReferencesSection({
         </div>
       )}
 
-      {/* Skip link when no images generated yet */}
-      {aiImages.length === 0 && !generateRefs.isPending && (
-        <div className="text-center">
-          <button
-            type="button"
-            onClick={nextWizardStep}
-            className="text-sm text-gray-500 hover:text-gray-700 underline"
-          >
-            Skip this step — go directly to manual upload
-          </button>
-        </div>
-      )}
     </div>
   );
 }
@@ -253,6 +520,12 @@ interface ImageSelectCardProps {
 }
 
 function ImageSelectCard({ image, isSelected, onToggle }: ImageSelectCardProps) {
+  const providerLabel = useMemo(() => {
+    if (!image.aiProvider) return null;
+    const provider = FAL_PROVIDERS.find((p) => p.id === image.aiProvider);
+    return provider?.label ?? image.aiProvider;
+  }, [image.aiProvider]);
+
   return (
     <button
       type="button"
@@ -289,9 +562,9 @@ function ImageSelectCard({ image, isSelected, onToggle }: ImageSelectCardProps) 
       </div>
 
       {/* Provider badge */}
-      {image.aiProvider && (
+      {providerLabel && (
         <div className="absolute right-1.5 top-1.5 rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white">
-          {image.aiProvider === "imagen" ? "Imagen" : "DALL-E"}
+          {providerLabel}
         </div>
       )}
     </button>

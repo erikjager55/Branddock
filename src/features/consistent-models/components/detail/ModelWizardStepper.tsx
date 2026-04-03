@@ -7,6 +7,7 @@ interface ModelWizardStepperProps {
   labels: readonly string[];
   currentStep: number;
   onStepClick?: (step: number) => void;
+  optionalSteps?: number[];
 }
 
 /** Horizontal numbered stepper with connecting lines — matches the campaign wizard stepper styling */
@@ -14,6 +15,7 @@ export function ModelWizardStepper({
   labels,
   currentStep,
   onStepClick,
+  optionalSteps = [],
 }: ModelWizardStepperProps) {
   return (
     <div className="flex items-center justify-center w-full">
@@ -45,17 +47,22 @@ export function ModelWizardStepper({
                   stepNumber
                 )}
               </div>
-              <span
-                className={`text-xs font-medium whitespace-nowrap ${
-                  isCurrent
-                    ? "text-primary"
-                    : isCompleted
-                      ? "text-gray-700"
-                      : "text-gray-400"
-                }`}
-              >
-                {label}
-              </span>
+              <div className="flex flex-col items-center">
+                <span
+                  className={`text-xs font-medium whitespace-nowrap ${
+                    isCurrent
+                      ? "text-primary"
+                      : isCompleted
+                        ? "text-gray-700"
+                        : "text-gray-400"
+                  }`}
+                >
+                  {label}
+                </span>
+                {optionalSteps.includes(stepNumber) && (
+                  <span className="text-[10px] text-gray-400">(optional)</span>
+                )}
+              </div>
             </div>
 
             {/* Connecting line */}

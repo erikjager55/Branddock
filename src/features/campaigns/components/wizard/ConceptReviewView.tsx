@@ -9,6 +9,8 @@ import {
   Lightbulb,
   MessageSquare,
   AlertCircle,
+  RefreshCw,
+  CheckCircle2,
 } from "lucide-react";
 import { Button, Badge } from "@/components/shared";
 import { ElementRatingCard } from "./ElementRatingCard";
@@ -33,6 +35,7 @@ interface ConceptReviewViewProps {
   strategy: StrategyLayer;
   architecture: ArchitectureLayer;
   onApprove: () => void;
+  onRefine?: () => void;
   errorMessage?: string | null;
 }
 
@@ -42,6 +45,7 @@ export function ConceptReviewView({
   strategy,
   architecture,
   onApprove,
+  onRefine,
   errorMessage,
 }: ConceptReviewViewProps) {
   const strategyRatings = useCampaignWizardStore((s) => s.strategyRatings);
@@ -219,15 +223,26 @@ export function ConceptReviewView({
           </p>
         )}
 
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-3">
+          {onRefine && (
+            <Button
+              variant="secondary"
+              size="lg"
+              icon={RefreshCw}
+              onClick={onRefine}
+              disabled={!allRated}
+            >
+              Refine Concept
+            </Button>
+          )}
           <Button
             variant="cta"
             size="lg"
-            icon={Sparkles}
+            icon={CheckCircle2}
             onClick={onApprove}
             disabled={!allRated}
           >
-            Approve Creative Concept
+            Approve Concept
           </Button>
         </div>
       </div>

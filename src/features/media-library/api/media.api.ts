@@ -472,6 +472,52 @@ export async function deleteAiImage(id: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete AI image');
 }
 
+export interface SendToLibraryBody {
+  category?: string;
+  tags?: string[];
+  collectionId?: string;
+  productId?: string;
+  productImageCategory?: string;
+}
+
+export async function sendAiImageToLibrary(
+  id: string,
+  body: SendToLibraryBody = {},
+): Promise<Record<string, unknown>> {
+  const res = await fetch(`${BASE}/ai-images/${id}/send-to-library`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to send image to library');
+  }
+  return res.json();
+}
+
+export interface LinkToProductBody {
+  productId: string;
+  category?: string;
+  altText?: string;
+}
+
+export async function linkAiImageToProduct(
+  id: string,
+  body: LinkToProductBody,
+): Promise<Record<string, unknown>> {
+  const res = await fetch(`${BASE}/ai-images/${id}/link-to-product`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to link image to product');
+  }
+  return res.json();
+}
+
 // ─── AI Videos ──────────────────────────────────────────────
 
 export async function fetchAiVideos(
