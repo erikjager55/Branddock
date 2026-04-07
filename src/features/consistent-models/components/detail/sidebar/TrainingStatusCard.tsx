@@ -1,18 +1,40 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Clock, CheckCircle2, XCircle, Loader2 } from "lucide-react";
-import { Card } from "@/components/shared";
+import { Card, ProgressBar } from "@/components/shared";
+import { useTrainingStatus } from "../../../hooks";
 import type { ConsistentModelDetail } from "../../../types/consistent-model.types";
 
 interface TrainingStatusCardProps {
   model: ConsistentModelDetail;
 }
 
-/** Sidebar card with training status details */
+/** Sidebar card with live training progress */
 export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
   const isTraining = model.status === "TRAINING" || model.status === "UPLOADING";
   const isFailed = model.status === "TRAINING_FAILED";
   const isReady = model.status === "READY";
+
+  const { data: pollData } = useTrainingStatus(model.id, isTraining);
+
+  const progress = pollData?.progress ?? undefined;
+  const inQueue = pollData?.inQueue ?? false;
+
+  // Elapsed time from trainingStartedAt
+  const [elapsed, setElapsed] = useState("");
+  useEffect(() => {
+    if (!isTraining || !model.trainingStartedAt) return;
+    const tick = () => {
+      const secs = Math.max(0, Math.floor((Date.now() - new Date(model.trainingStartedAt!).getTime()) / 1000));
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      setElapsed(`${m}:${s.toString().padStart(2, "0")}`);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [isTraining, model.trainingStartedAt]);
 
   if (model.status === "DRAFT") return null;
 
@@ -60,20 +82,30 @@ export function TrainingStatusCard({ model }: TrainingStatusCardProps) {
           )}
         </div>
 
+        {/* Progress bar with percentage */}
         {isTraining && (
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-amber-100">
-            <div
-              className="h-full w-1/3 rounded-full bg-amber-400"
-              style={{
-                animation: "indeterminate 1.5s ease-in-out infinite",
-              }}
+          <div>
+            <ProgressBar
+              value={progress ?? 0}
+              color={progress != null ? "teal" : "amber"}
+              size="md"
+              showLabel={false}
             />
-            <style>{`
-              @keyframes indeterminate {
-                0% { transform: translateX(-100%); }
-                100% { transform: translateX(400%); }
-              }
-            `}</style>
+            <div className="mt-1.5 flex items-center justify-between text-xs text-gray-500">
+              <span>
+                {inQueue
+                  ? "Waiting for GPU..."
+                  : progress != null
+                    ? `${progress}% complete`
+                    : "Starting..."}
+              </span>
+              {elapsed && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {elapsed}
+                </span>
+              )}
+            </div>
           </div>
         )}
 

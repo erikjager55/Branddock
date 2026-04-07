@@ -93,7 +93,11 @@ export function TrainingProgressModal({
           <ProgressBar value={getStepProgress()} color="teal" size="md" showLabel={false} />
           {currentStatus === "TRAINING" && !isFailed && (
             <p className="mt-1.5 text-center text-sm font-medium text-teal-600">
-              {status?.progress != null ? `${status.progress}%` : "Starting..."}
+              {status?.inQueue
+                ? "Waiting for GPU..."
+                : status?.progress != null
+                  ? `${status.progress}%`
+                  : "Starting..."}
             </p>
           )}
         </div>

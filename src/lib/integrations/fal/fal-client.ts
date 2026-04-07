@@ -26,6 +26,7 @@ export interface FalTrainingConfig {
   triggerWord?: string;
   resolution?: number;
   autocaption?: boolean;
+  autocaptionPrefix?: string;
 }
 
 export interface FalTrainingResult {
@@ -140,7 +141,10 @@ export async function startFalTraining(
       // flux-2-trainer requires default_caption instead of autocaption
       ...(isFlux2
         ? { default_caption: `a photo of ${triggerWord}` }
-        : config.autocaption != null ? { autocaption: config.autocaption } : {}),
+        : {
+            ...(config.autocaption != null ? { autocaption: config.autocaption } : {}),
+            ...(config.autocaptionPrefix ? { autocaption_prefix: config.autocaptionPrefix } : {}),
+          }),
     } as never,
   });
 

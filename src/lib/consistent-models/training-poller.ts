@@ -28,6 +28,8 @@ export interface PollResult {
   error?: string;
   /** Training progress percentage (0-100), parsed from fal.ai logs */
   progress?: number;
+  /** Whether the job is still waiting in fal.ai's queue */
+  inQueue?: boolean;
 }
 
 /** Poll fal.ai for the current training status of a model */
@@ -114,6 +116,7 @@ export async function pollTrainingStatus(
       status: 'TRAINING',
       changed: false,
       progress,
+      inQueue: trainingStatus.status === 'IN_QUEUE',
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

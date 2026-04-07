@@ -166,6 +166,8 @@ export interface TrainingStatusResponse {
   sampleImageUrls: string[] | null;
   /** Training progress percentage (0-100), parsed from fal.ai logs */
   progress?: number;
+  /** Whether the job is still waiting in fal.ai's queue for a GPU */
+  inQueue?: boolean;
 }
 
 // ─── Stats ──────────────────────────────────────────────────

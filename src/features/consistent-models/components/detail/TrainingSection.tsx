@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { Zap, Cpu, ChevronRight, CheckCircle2, Loader2 } from "lucide-react";
-import { Button, Card } from "@/components/shared";
+import { useState, useEffect, useRef } from "react";
+import { Zap, Cpu, Clock, ChevronRight, CheckCircle2, Loader2 } from "lucide-react";
+import { Button, Card, ProgressBar } from "@/components/shared";
+import { useTrainingStatus } from "../../hooks";
 import { TRAINING_DEFAULTS, FAL_MODEL_CONFIG, TRAINING_STEPS_BY_TYPE } from "../../constants/model-constants";
 import { SampleGallery } from "./SampleGallery";
 import { GenerateSection } from "./GenerateSection";
@@ -56,6 +57,25 @@ export function TrainingSection({
   const isReady = model.status === "READY";
   const isFailed = model.status === "TRAINING_FAILED";
 
+  const { data: pollData } = useTrainingStatus(model.id, isTraining);
+  const progress = pollData?.progress ?? undefined;
+  const inQueue = pollData?.inQueue ?? false;
+
+  // Elapsed timer
+  const [elapsed, setElapsed] = useState("");
+  useEffect(() => {
+    if (!isTraining || !model.trainingStartedAt) return;
+    const tick = () => {
+      const secs = Math.max(0, Math.floor((Date.now() - new Date(model.trainingStartedAt!).getTime()) / 1000));
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      setElapsed(`${m}:${s.toString().padStart(2, "0")}`);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [isTraining, model.trainingStartedAt]);
+
   return (
     <div className="space-y-6">
       {/* Training in progress */}
@@ -66,14 +86,43 @@ export function TrainingSection({
               <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-900">Training in progress...</h3>
+              <h3 className="text-sm font-semibold text-gray-900">
+                {inQueue ? "Waiting for GPU..." : "Training in progress..."}
+              </h3>
               <p className="mt-0.5 text-xs text-gray-500">
-                Training with {FAL_MODEL_CONFIG[model.type].label} at {defaultSteps} steps.
-                This typically takes 5-15 minutes.
+                {inQueue
+                  ? "Your training job is queued and waiting for an available GPU. This can take a few minutes."
+                  : `Training with ${FAL_MODEL_CONFIG[model.type].label} at ${defaultSteps} steps.`}
               </p>
             </div>
           </div>
-          <div className="mt-4 flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-500">
+
+          {/* Progress bar */}
+          <div className="mt-4">
+            <ProgressBar
+              value={inQueue ? 0 : (progress ?? 0)}
+              color="teal"
+              size="md"
+              showLabel={false}
+            />
+            <div className="mt-1.5 flex items-center justify-between text-xs text-gray-500">
+              <span>
+                {inQueue
+                  ? "Queued — waiting for GPU"
+                  : progress != null
+                    ? `${progress}% complete`
+                    : "Starting training..."}
+              </span>
+              {elapsed && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {elapsed}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-3 flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-500">
             <Cpu className="h-3.5 w-3.5 flex-shrink-0" />
             <span>{imageCount} reference images &middot; {defaultSteps} steps &middot; {defaultResolution}px resolution</span>
           </div>
