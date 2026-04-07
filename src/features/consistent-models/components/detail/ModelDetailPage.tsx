@@ -264,6 +264,7 @@ export function ModelDetailPage({
           return (
             <ReferenceImagesSection
               images={model.referenceImages}
+              modelId={model.id}
               modelType={model.type}
               onUpload={handleUpload}
               onDelete={handleDeleteImage}
@@ -278,22 +279,11 @@ export function ModelDetailPage({
               onStartTraining={handleStartTraining}
               isStarting={startTraining.isPending}
               onViewShowcase={onViewShowcase}
-            />
-          );
-        case 3:
-          return isReady ? (
-            <GenerateSection
-              model={model}
+              autoStart
               generations={generations}
               onGenerate={handleGenerate}
               isGenerating={isGenerating}
             />
-          ) : (
-            <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
-              <p className="text-sm text-gray-500">
-                Model is not ready yet. Complete training first to start generating images.
-              </p>
-            </div>
           );
         default:
           return null;
@@ -312,22 +302,11 @@ export function ModelDetailPage({
             model={model}
             onStartTraining={handleStartTraining}
             isStarting={startTraining.isPending}
-          />
-        );
-      case 3:
-        return isReady ? (
-          <GenerateSection
-            model={model}
+            autoStart
             generations={generations}
             onGenerate={handleGenerate}
             isGenerating={isGenerating}
           />
-        ) : (
-          <div className="rounded-lg border border-gray-200 bg-white p-8 text-center">
-            <p className="text-sm text-gray-500">
-              Model is not ready yet. Complete training first to start generating images.
-            </p>
-          </div>
         );
       default:
         return null;
@@ -352,6 +331,7 @@ export function ModelDetailPage({
         return (
           <ReferenceImagesSection
             images={model.referenceImages}
+            modelId={model.id}
             modelType={model.type}
             onUpload={handleUpload}
             onDelete={handleDeleteImage}

@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
     const source = searchParams.get("source") || "";
     const isFavorite = searchParams.get("isFavorite");
     const isArchived = searchParams.get("isArchived") === "true";
+    const collectionId = searchParams.get("collectionId") || "";
     const sortBy = searchParams.get("sortBy") || "createdAt";
     const sortOrder = (searchParams.get("sortOrder") || "desc") as "asc" | "desc";
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     // Cache unfiltered requests
     const isUnfiltered =
-      !search && !mediaType && !category && !source && isFavorite === null && !isArchived;
+      !search && !mediaType && !category && !source && !collectionId && isFavorite === null && !isArchived;
     if (isUnfiltered) {
       const cached = getCached(cacheKeys.media.list(workspaceId));
       if (cached) {
@@ -71,6 +72,12 @@ export async function GET(request: NextRequest) {
 
     if (source) {
       where.source = source;
+    }
+
+    if (collectionId) {
+      where.collections = {
+        some: { collectionId },
+      };
     }
 
     if (isFavorite === "true") {

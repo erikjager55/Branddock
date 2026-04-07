@@ -22,7 +22,7 @@ import {
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
-import { TRIGGER_WORDS, MIN_IMAGES_BY_TYPE, FAL_MODEL_CONFIG, LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
+import { TRIGGER_WORDS, MIN_IMAGES_BY_TYPE, FAL_MODEL_CONFIG, LORA_QUALITY_CONFIG, TRAINING_STEPS_BY_TYPE } from '@/features/consistent-models/constants/model-constants';
 import type { ConsistentModelType } from '@prisma/client';
 
 // ─── Constants ──────────────────────────────────────────────
@@ -186,8 +186,9 @@ export async function startTraining(
 
   // 5. Start training on fal.ai with type-specific trainer
   console.log('[training-pipeline] Step 5: Starting fal.ai training with', falConfig.trainer, '...');
+  const defaultSteps = TRAINING_STEPS_BY_TYPE[model.type] ?? 500;
   const { requestId } = await startFalTraining(imageUrl, {
-    steps: (trainingConfig.steps as number) ?? undefined,
+    steps: (trainingConfig.steps as number) ?? defaultSteps,
     learningRate: (trainingConfig.learningRate as number) ?? undefined,
     resolution: (trainingConfig.resolution as number) ?? undefined,
     triggerWord: triggerWord || 'TOK',

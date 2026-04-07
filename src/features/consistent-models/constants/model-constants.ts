@@ -173,6 +173,19 @@ export const TRAINING_DEFAULTS = {
   supportedResolutions: [512, 768, 1024],
 };
 
+/** Per-type training step defaults — fewer steps for style/illustration, more for faces */
+export const TRAINING_STEPS_BY_TYPE: Record<ConsistentModelType, number> = {
+  PERSON:       800,
+  PRODUCT:      600,
+  OBJECT:       500,
+  STYLE:        400,
+  BRAND_STYLE:  400,
+  PHOTOGRAPHY:  500,
+  ILLUSTRATION: 400,
+  VOICE:        0,
+  SOUND_EFFECT: 0,
+};
+
 // ─── Trigger Words (single source of truth) ─────────────────
 
 export const TRIGGER_WORDS: Record<ConsistentModelType, string> = {
@@ -334,8 +347,8 @@ export const FAL_MODEL_CONFIG: Record<ConsistentModelType, FalModelConfig> = {
 
 // ─── Wizard Steps ───────────────────────────────────────────
 
-export const WIZARD_STEPS_OWN_IMAGES = ["Upload", "Training", "Showcase"] as const;
-export const WIZARD_STEPS_SYNTHETIC = ["Generate References", "Training", "Showcase"] as const;
+export const WIZARD_STEPS_OWN_IMAGES = ["Upload", "Training & Showcase"] as const;
+export const WIZARD_STEPS_SYNTHETIC = ["Generate References", "Training & Showcase"] as const;
 export const WIZARD_STEPS_NON_TRAINABLE = ["Style Guide", "Reference Images", "Overview"] as const;
 export const WIZARD_STEPS_ILLUSTRATION = ["Illustration Style", "Reference Images", "Overview"] as const;
 
@@ -388,23 +401,23 @@ export interface FalProvider {
 
 /** All available generation providers (superset) */
 const ALL_FAL_PROVIDERS: Record<string, FalProvider> = {
-  "fal-ai/flux-2-pro":       { id: "fal-ai/flux-2-pro",       label: "FLUX.2 Pro",      description: "Highest fidelity — state-of-the-art photorealism and detail",     cost: "$0.03/MP",  preview: "flux-2-pro.svg" },
-  "fal-ai/recraft-v3":       { id: "fal-ai/recraft-v3",       label: "Recraft V3",      description: "Brand-grade design — best for logos, icons and illustrations",    cost: "$0.04/img", preview: "recraft-v3.svg" },
-  "fal-ai/seedream-v4-5":    { id: "fal-ai/seedream-v4-5",    label: "Seedream V4.5",   description: "Text rendering — embeds readable text into images",              cost: "$0.04/img", preview: "seedream-v4-5.svg" },
-  "fal-ai/flux-2":           { id: "fal-ai/flux-2",           label: "FLUX.2 Dev",      description: "Fast & accurate — strong prompt adherence at lower cost",        cost: "$0.025/MP", preview: "flux-2-dev.svg" },
-  "fal-ai/ideogram-v3":      { id: "fal-ai/ideogram-v3",      label: "Ideogram V3",     description: "Creative versatility — excels at typography and mixed styles",    cost: "$0.04/img", preview: "ideogram-v3.svg" },
-  "fal-ai/nanobanana-pro":   { id: "fal-ai/nanobanana-pro",   label: "Nanobanana Pro",  description: "Ultra-fast portraits — optimized for face detail and lighting",   cost: "$0.02/img", preview: "nanobanana-pro.svg" },
-  "fal-ai/phota":            { id: "fal-ai/phota",            label: "Phota",           description: "Photographic realism — natural skin tones and studio lighting",   cost: "$0.03/img", preview: "phota.svg" },
+  "fal-ai/flux-2-pro":       { id: "fal-ai/flux-2-pro",       label: "FLUX.2 Pro",      description: "Best overall quality. Excels at sharp details, realistic textures, and consistent lighting across diverse scenes.",           cost: "$0.03/MP",  preview: "flux-2-pro.svg" },
+  "fal-ai/recraft-v3":       { id: "fal-ai/recraft-v3",       label: "Recraft V3",      description: "Purpose-built for brand design. Produces clean logos, icons, illustrations, and marketing assets with precise color control.", cost: "$0.04/img", preview: "recraft-v3.svg" },
+  "fal-ai/seedream-v4-5":    { id: "fal-ai/seedream-v4-5",    label: "Seedream V4.5",   description: "Specialized in rendering readable text within images. Ideal for product labels, packaging, and signage.",                    cost: "$0.04/img", preview: "seedream-v4-5.svg" },
+  "fal-ai/flux-2":           { id: "fal-ai/flux-2",           label: "FLUX.2 Dev",      description: "Fast and cost-effective. Strong prompt adherence with good quality — suitable for high-volume reference generation.",          cost: "$0.025/MP", preview: "flux-2-dev.svg" },
+  "fal-ai/ideogram-v3":      { id: "fal-ai/ideogram-v3",      label: "Ideogram V3",     description: "Creative versatility with excellent typography. Handles mixed styles, complex compositions, and text-in-image well.",         cost: "$0.04/img", preview: "ideogram-v3.svg" },
+  "fal-ai/nano-banana-pro":  { id: "fal-ai/nano-banana-pro",  label: "Nano Banana Pro", description: "Optimized for portraits and people. Fast generation with strong face consistency, natural skin detail, and accurate lighting.", cost: "$0.02/img", preview: "nanobanana-pro.svg" },
+  "fal-ai/phota":            { id: "fal-ai/phota",            label: "Phota",           description: "Photographic realism specialist. Produces natural skin tones, studio-quality lighting, and authentic photographic depth.",      cost: "$0.03/img", preview: "phota.svg" },
 };
 
 /** Provider IDs per model type — only shows relevant models */
 const FAL_PROVIDERS_BY_TYPE: Record<ConsistentModelType, string[]> = {
-  PERSON:       ["fal-ai/flux-2-pro", "fal-ai/nanobanana-pro", "fal-ai/phota"],
+  PERSON:       ["fal-ai/flux-2-pro", "fal-ai/nano-banana-pro", "fal-ai/phota"],
   PRODUCT:      ["fal-ai/flux-2-pro", "fal-ai/flux-2", "fal-ai/seedream-v4-5"],
   OBJECT:       ["fal-ai/flux-2-pro", "fal-ai/flux-2", "fal-ai/seedream-v4-5"],
   STYLE:        ["fal-ai/flux-2-pro", "fal-ai/recraft-v3", "fal-ai/ideogram-v3", "fal-ai/flux-2"],
   BRAND_STYLE:  ["fal-ai/recraft-v3", "fal-ai/ideogram-v3", "fal-ai/flux-2-pro", "fal-ai/seedream-v4-5"],
-  PHOTOGRAPHY:  ["fal-ai/flux-2-pro", "fal-ai/flux-2"],
+  PHOTOGRAPHY:  ["fal-ai/flux-2-pro", "fal-ai/phota", "fal-ai/flux-2"],
   ILLUSTRATION: ["fal-ai/recraft-v3", "fal-ai/ideogram-v3", "fal-ai/flux-2-pro", "fal-ai/flux-2"],
   VOICE:        [],
   SOUND_EFFECT: [],
@@ -452,17 +465,27 @@ export const TYPE_GENERATION_FIELDS: Partial<Record<ConsistentModelType, TypeGen
       { value: "slim", label: "Slim" }, { value: "average", label: "Average" }, { value: "athletic", label: "Athletic" }, { value: "stocky", label: "Stocky / Broad" },
     ] },
     { key: "clothing", label: "Clothing Style", type: "text", placeholder: "e.g. business suit, casual shirt, turtleneck" },
-    { key: "avoid", label: "Don'ts", type: "textarea", placeholder: "What should not be shown (e.g. tattoos, glasses, piercings)" },
+    { key: "distinctiveFeatures", label: "Distinctive Features", type: "text", placeholder: "e.g. glasses, beard, freckles, dimples, scar on left cheek" },
+    { key: "expression", label: "Default Expression", type: "select", placeholder: "Select expression", options: [
+      { value: "neutral", label: "Neutral" }, { value: "friendly-smile", label: "Friendly smile" }, { value: "confident", label: "Confident / Serious" }, { value: "approachable", label: "Approachable / Warm" }, { value: "professional", label: "Professional / Composed" },
+    ] },
+    { key: "skinDetails", label: "Skin & Complexion", type: "text", placeholder: "e.g. fair skin, warm undertone, light tan, dark complexion" },
+    { key: "avoid", label: "Don'ts", type: "textarea", placeholder: "What should not be shown (e.g. tattoos, piercings, hats)" },
   ],
   PRODUCT: [
-    { key: "productDescription", label: "Product Description", type: "textarea", placeholder: "Describe the product (shape, material, color)" },
+    { key: "productDescription", label: "Product Description", type: "textarea", placeholder: "Describe the product (shape, material, color, dimensions)" },
+    { key: "textAndLabels", label: "Text & Labels on Product", type: "textarea", placeholder: "Exact text, brand name, or labels that must appear on the product (e.g. 'ACME Co' on front, nutrition label on back)" },
+    { key: "logoPlacement", label: "Logo Placement", type: "text", placeholder: "Where the logo appears (e.g. centered on front, top-left corner, embossed on lid)" },
+    { key: "materialTexture", label: "Material & Texture", type: "text", placeholder: "e.g. matte black aluminum, glossy glass, kraft paper, brushed steel" },
+    { key: "colorAccuracy", label: "Critical Colors", type: "text", placeholder: "Exact colors that must be accurate (e.g. Pantone 2925 C blue cap, white body)" },
     { key: "setting", label: "Setting", type: "select", placeholder: "Select a setting", options: [
       { value: "white-background", label: "White Background" }, { value: "lifestyle", label: "Lifestyle" }, { value: "in-use", label: "In Use" }, { value: "flatlay", label: "Flatlay" },
     ] },
     { key: "angles", label: "Angles", type: "select", placeholder: "Select an angle", options: [
       { value: "front", label: "Front View" }, { value: "45-degree", label: "45°" }, { value: "top-down", label: "Top Down" }, { value: "detail-closeup", label: "Detail Close-up" },
     ] },
-    { key: "avoid", label: "Don'ts", type: "textarea", placeholder: "What should not be visible" },
+    { key: "scaleReference", label: "Scale Reference", type: "text", placeholder: "Size context (e.g. fits in one hand, 30cm tall, desktop-sized)" },
+    { key: "avoid", label: "Don'ts", type: "textarea", placeholder: "What should not be visible (e.g. no competitor logos, no wrong color variants)" },
   ],
   STYLE: [
     { key: "styleDescription", label: "Style Description", type: "textarea", placeholder: "Describe the desired style (e.g. minimalist, retro, industrial)" },
@@ -470,16 +493,22 @@ export const TYPE_GENERATION_FIELDS: Partial<Record<ConsistentModelType, TypeGen
       { value: "photography", label: "Photography" }, { value: "illustration", label: "Illustration" }, { value: "3d-render", label: "3D Render" }, { value: "mixed-media", label: "Mixed Media" },
     ] },
     { key: "colorPalette", label: "Color Palette", type: "text", placeholder: "Dominant colors or color mood" },
+    { key: "textureFinish", label: "Texture & Finish", type: "text", placeholder: "e.g. grainy film, smooth gradient, paper texture, noise overlay" },
+    { key: "compositionRules", label: "Composition Rules", type: "text", placeholder: "e.g. rule of thirds, centered, asymmetric, lots of negative space" },
+    { key: "referenceArtists", label: "Reference Artists / Brands", type: "text", placeholder: "e.g. inspired by Dieter Rams, Apple aesthetic, Kinfolk magazine" },
     { key: "avoid", label: "Don'ts", type: "textarea", placeholder: "Unwanted style elements" },
   ],
   OBJECT: [
-    { key: "objectDescription", label: "Object Description", type: "textarea", placeholder: "Describe the object (shape, material, size)" },
+    { key: "objectDescription", label: "Object Description", type: "textarea", placeholder: "Describe the object (shape, material, size, weight)" },
+    { key: "surfaceDetails", label: "Surface Details", type: "text", placeholder: "e.g. engraved text, printed logo, embossed pattern, serial number" },
+    { key: "materialFinish", label: "Material & Finish", type: "text", placeholder: "e.g. polished chrome, raw wood, matte ceramic, transparent glass" },
     { key: "setting", label: "Setting", type: "select", placeholder: "Select a setting", options: [
       { value: "white-background", label: "White Background" }, { value: "in-context", label: "In Context" }, { value: "isolated", label: "Isolated" }, { value: "scale-reference", label: "Scale Reference" },
     ] },
     { key: "lighting", label: "Lighting", type: "select", placeholder: "Select lighting", options: [
       { value: "studio", label: "Studio" }, { value: "natural", label: "Natural" }, { value: "dramatic", label: "Dramatic" }, { value: "soft", label: "Soft" },
     ] },
+    { key: "scaleContext", label: "Scale Context", type: "text", placeholder: "e.g. palm-sized, desktop-sized, person-height, room-filling" },
     { key: "avoid", label: "Don'ts", type: "textarea", placeholder: "What should not be shown" },
   ],
   BRAND_STYLE: [
@@ -487,8 +516,11 @@ export const TYPE_GENERATION_FIELDS: Partial<Record<ConsistentModelType, TypeGen
     { key: "medium", label: "Medium", type: "select", placeholder: "Select a medium", options: [
       { value: "logo-style", label: "Logo Style" }, { value: "print", label: "Print" }, { value: "digital", label: "Digital" }, { value: "packaging", label: "Packaging" }, { value: "social-media", label: "Social Media" },
     ] },
-    { key: "colorPalette", label: "Color Palette", type: "text", placeholder: "Primary and secondary colors" },
-    { key: "avoid", label: "Don'ts", type: "textarea", placeholder: "Unwanted visual elements" },
+    { key: "colorPalette", label: "Color Palette", type: "text", placeholder: "Primary and secondary colors (e.g. #1FD1B2 teal, #0F172A navy)" },
+    { key: "typography", label: "Typography Style", type: "text", placeholder: "e.g. Inter for headings, serif for body, all-caps for CTAs" },
+    { key: "logoTreatment", label: "Logo Treatment", type: "text", placeholder: "How should the logo be represented (e.g. full logo, icon only, monochrome)" },
+    { key: "graphicElements", label: "Graphic Elements", type: "text", placeholder: "e.g. rounded corners, geometric patterns, gradient overlays, line art accents" },
+    { key: "avoid", label: "Don'ts", type: "textarea", placeholder: "Unwanted visual elements (e.g. no drop shadows, no stock-photo feel)" },
   ],
   PHOTOGRAPHY: [
     { key: "subject", label: "Subject", type: "textarea", placeholder: "Subject of the photos" },
@@ -498,7 +530,12 @@ export const TYPE_GENERATION_FIELDS: Partial<Record<ConsistentModelType, TypeGen
     { key: "lighting", label: "Lighting", type: "select", placeholder: "Select lighting", options: [
       { value: "natural", label: "Natural" }, { value: "studio", label: "Studio" }, { value: "golden-hour", label: "Golden Hour" }, { value: "high-key", label: "High-key" }, { value: "low-key", label: "Low-key" },
     ] },
-    { key: "avoid", label: "Don'ts", type: "textarea", placeholder: "What to avoid" },
+    { key: "colorGrading", label: "Color Grading", type: "text", placeholder: "e.g. warm tones, desaturated, high contrast, film emulation (Portra 400)" },
+    { key: "postProcessing", label: "Post-Processing Style", type: "text", placeholder: "e.g. grain, vignette, split toning, clean retouching" },
+    { key: "depthOfField", label: "Depth of Field", type: "select", placeholder: "Select depth of field", options: [
+      { value: "shallow", label: "Shallow (blurred background)" }, { value: "medium", label: "Medium" }, { value: "deep", label: "Deep (everything sharp)" },
+    ] },
+    { key: "avoid", label: "Don'ts", type: "textarea", placeholder: "What to avoid (e.g. no HDR look, no over-saturated colors)" },
   ],
   ILLUSTRATION: [
     { key: "illustrationStyle", label: "Illustration Style", type: "select", placeholder: "Select a style", options: ILLUSTRATION_STYLE_OPTIONS.illustrationStyle },
@@ -506,6 +543,11 @@ export const TYPE_GENERATION_FIELDS: Partial<Record<ConsistentModelType, TypeGen
     { key: "lineQuality", label: "Line Quality", type: "select", placeholder: "Select line quality", options: ILLUSTRATION_STYLE_OPTIONS.lineQuality },
     { key: "detailLevel", label: "Detail Level", type: "select", placeholder: "Select detail level", options: ILLUSTRATION_STYLE_OPTIONS.detailLevel },
     { key: "mood", label: "Mood", type: "text", placeholder: "Overall mood or feeling" },
-    { key: "avoid", label: "Don'ts", type: "textarea", placeholder: "Unwanted elements" },
+    { key: "characterStyle", label: "Character / Subject Style", type: "text", placeholder: "e.g. proportions (realistic, chibi, stylized), face style, limb style" },
+    { key: "referenceArtists", label: "Reference Artists", type: "text", placeholder: "e.g. inspired by Malika Favre, Charley Harper, Studio Ghibli" },
+    { key: "textIntegration", label: "Text Integration", type: "select", placeholder: "How text appears in illustrations", options: [
+      { value: "none", label: "No text" }, { value: "hand-lettered", label: "Hand-lettered" }, { value: "typographic", label: "Typographic / Clean" }, { value: "integrated", label: "Integrated into scene" },
+    ] },
+    { key: "avoid", label: "Don'ts", type: "textarea", placeholder: "Unwanted elements (e.g. no realistic faces, no 3D effects)" },
   ],
 };

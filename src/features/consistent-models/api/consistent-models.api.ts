@@ -123,6 +123,22 @@ export async function deleteReferenceImage(
   }
 }
 
+export async function updateReferenceImageCaption(
+  modelId: string,
+  imageId: string,
+  caption: string,
+): Promise<void> {
+  const res = await fetch(`${BASE}/${modelId}/reference-images/${imageId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ caption }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Failed to update caption (${res.status})`);
+  }
+}
+
 // ─── 8. Reorder Reference Images ────────────────────────────
 
 export async function reorderReferenceImages(
@@ -210,11 +226,12 @@ export async function curateReferenceImages(
   modelId: string,
   selectedIds: string[],
   deselectedIds: string[],
+  captions?: Record<string, string>,
 ): Promise<{ images: ReferenceImageWithMeta[]; trainingCount: number; total: number }> {
   const res = await fetch(`${BASE}/${modelId}/curate-references`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ selectedIds, deselectedIds }),
+    body: JSON.stringify({ selectedIds, deselectedIds, captions }),
   });
   return handleResponse(res, "Failed to curate reference images");
 }

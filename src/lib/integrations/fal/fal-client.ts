@@ -273,9 +273,27 @@ export interface FalStandaloneGenerationOptions {
   numImages?: number;
 }
 
+/** Models that use aspect_ratio + resolution instead of image_size */
+const ASPECT_RATIO_MODELS = new Set([
+  'fal-ai/nano-banana-pro',
+  'fal-ai/phota',
+]);
+
+/** Map image_size preset to aspect_ratio string */
+function toAspectRatio(imageSize: string): string {
+  const map: Record<string, string> = {
+    'square_hd': '1:1',
+    'landscape_16_9': '16:9',
+    'portrait_16_9': '9:16',
+    'landscape_4_3': '4:3',
+    'portrait_4_3': '3:4',
+  };
+  return map[imageSize] ?? '1:1';
+}
+
 /**
  * Generate images using any fal.ai model (not LoRA-based).
- * Used for AI reference image generation from models like flux-2-pro, recraft-v3, etc.
+ * Automatically adapts input format per model (image_size vs aspect_ratio).
  */
 export async function generateFalImage(
   modelId: string,
@@ -284,14 +302,19 @@ export async function generateFalImage(
 ): Promise<FalGenerationResult> {
   ensureConfigured();
 
-  const result = await fal.subscribe(modelId, {
-    input: {
-      prompt,
-      image_size: options?.imageSize ?? 'square_hd',
-      seed: options?.seed,
-      num_images: options?.numImages ?? 1,
-    },
-  });
+  const useAspectRatio = ASPECT_RATIO_MODELS.has(modelId);
+  const imageSize = options?.imageSize ?? 'square_hd';
+
+  const input: Record<string, unknown> = {
+    prompt,
+    num_images: options?.numImages ?? 1,
+    ...(options?.seed != null ? { seed: options.seed } : {}),
+    ...(useAspectRatio
+      ? { aspect_ratio: toAspectRatio(imageSize), resolution: '1K' }
+      : { image_size: imageSize }),
+  };
+
+  const result = await fal.subscribe(modelId, { input });
 
   const data = result.data as Record<string, unknown>;
   const images = (data?.images as FalGenerationImage[]) ?? [];

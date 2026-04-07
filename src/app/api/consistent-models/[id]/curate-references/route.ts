@@ -10,6 +10,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 const bodySchema = z.object({
   selectedIds: z.array(z.string()).min(1),
   deselectedIds: z.array(z.string()).default([]),
+  captions: z.record(z.string(), z.string()).optional(),
 });
 
 /** POST /api/consistent-models/:id/curate-references — Mark selected images as training images */
@@ -48,7 +49,7 @@ export async function POST(
       return NextResponse.json({ error: 'Model not found' }, { status: 404 });
     }
 
-    const { selectedIds, deselectedIds } = parsed.data;
+    const { selectedIds, deselectedIds, captions } = parsed.data;
 
     // ─── Update in a transaction ──────────────────────────────
     await prisma.$transaction(async (tx) => {
@@ -70,6 +71,17 @@ export async function POST(
           },
           data: { isTrainingImage: false },
         });
+      }
+
+      // Save per-image captions
+      if (captions) {
+        for (const [imageId, caption] of Object.entries(captions)) {
+          if (!caption.trim()) continue;
+          await tx.referenceImage.updateMany({
+            where: { id: imageId, consistentModelId: id },
+            data: { caption: caption.trim() },
+          });
+        }
       }
     });
 

@@ -13,7 +13,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 
 const bodySchema = z.object({
   falModel: z.string().min(1, 'falModel is required'),
-  count: z.number().int().min(1).max(12).optional(),
+  count: z.number().int().min(1).max(24).optional(),
   brandTags: z.array(z.string()),
   typeConfig: z.record(z.string(), z.string()),
 });
@@ -76,7 +76,7 @@ export async function POST(
     const modelType = model.type as ConsistentModelType;
     const { prompts: allPrompts } = buildReferencePrompts(brandTags, typeConfig, modelType);
 
-    const count = parsed.data.count ?? Math.min(allPrompts.length, 10);
+    const count = parsed.data.count ?? Math.min(allPrompts.length, 20);
     const prompts = allPrompts.slice(0, count);
 
     // ─── Generate images ──────────────────────────────────────
@@ -95,6 +95,7 @@ export async function POST(
       aiPrompt: string;
       aiProvider: string;
     }> = [];
+    let firstError: string | null = null;
 
     for (let i = 0; i < prompts.length; i++) {
       const prompt = prompts[i];
@@ -167,14 +168,16 @@ export async function POST(
           aiProvider: falModel,
         });
       } catch (err) {
-        console.error(`Failed to generate reference image ${i + 1}/${prompts.length}:`, err);
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.error(`Failed to generate reference image ${i + 1}/${prompts.length}:`, errMsg);
+        if (!firstError) firstError = errMsg;
         // Continue generating remaining images even if one fails
       }
     }
 
     if (results.length === 0) {
       return NextResponse.json(
-        { error: 'Failed to generate any reference images. Check fal.ai configuration (FAL_KEY).' },
+        { error: `Failed to generate reference images with ${falModel}. ${firstError ?? 'Check fal.ai configuration (FAL_KEY).'}` },
         { status: 500 }
       );
     }

@@ -79,7 +79,7 @@ export function FileDropzone() {
         setUploadError(errors.join(' '));
       }
 
-      // Upload valid files
+      // Upload valid files concurrently using mutateAsync
       const validEntries = entries.filter((e) => e.status === 'pending');
       for (const entry of validEntries) {
         setSelectedFiles((prev) =>
@@ -88,29 +88,26 @@ export function FileDropzone() {
           )
         );
 
-        uploadMedia.mutate(
-          { file: entry.file, body: { name: entry.file.name } },
-          {
-            onSuccess: () => {
-              setSelectedFiles((prev) =>
-                prev.map((f) =>
-                  f.file === entry.file ? { ...f, status: 'success' } : f
-                )
-              );
-            },
-            onError: (err) => {
-              const message =
-                err instanceof Error ? err.message : 'Upload failed';
-              setSelectedFiles((prev) =>
-                prev.map((f) =>
-                  f.file === entry.file
-                    ? { ...f, status: 'error', error: message }
-                    : f
-                )
-              );
-            },
-          }
-        );
+        uploadMedia
+          .mutateAsync({ file: entry.file, body: { name: entry.file.name } })
+          .then(() => {
+            setSelectedFiles((prev) =>
+              prev.map((f) =>
+                f.file === entry.file ? { ...f, status: 'success' } : f
+              )
+            );
+          })
+          .catch((err) => {
+            const message =
+              err instanceof Error ? err.message : 'Upload failed';
+            setSelectedFiles((prev) =>
+              prev.map((f) =>
+                f.file === entry.file
+                  ? { ...f, status: 'error', error: message }
+                  : f
+              )
+            );
+          });
       }
     },
     [validateFile, uploadMedia]

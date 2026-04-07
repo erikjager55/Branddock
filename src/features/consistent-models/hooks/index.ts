@@ -108,6 +108,17 @@ export function useDeleteReferenceImage(modelId: string | undefined) {
   });
 }
 
+export function useUpdateReferenceCaption(modelId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ imageId, caption }: { imageId: string; caption: string }) =>
+      api.updateReferenceImageCaption(modelId!, imageId, caption),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: consistentModelKeys.detail(modelId!) });
+    },
+  });
+}
+
 // ─── 8. useReorderReferenceImages ───────────────────────────
 
 export function useReorderReferenceImages(modelId: string | undefined) {
@@ -230,8 +241,8 @@ export function useGenerateReferenceImages(modelId: string | undefined) {
 export function useCurateReferences(modelId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ selectedIds, deselectedIds }: { selectedIds: string[]; deselectedIds: string[] }) =>
-      api.curateReferenceImages(modelId!, selectedIds, deselectedIds),
+    mutationFn: ({ selectedIds, deselectedIds, captions }: { selectedIds: string[]; deselectedIds: string[]; captions?: Record<string, string> }) =>
+      api.curateReferenceImages(modelId!, selectedIds, deselectedIds, captions),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: consistentModelKeys.detail(modelId!) });
       qc.invalidateQueries({ queryKey: consistentModelKeys.list() });
