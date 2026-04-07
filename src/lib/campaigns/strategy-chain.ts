@@ -139,6 +139,7 @@ interface WizardContext {
   campaignName: string;
   campaignDescription?: string;
   campaignGoalType?: string;
+  campaignType?: string;
   briefing?: CampaignBriefing;
   useExternalEnrichment?: boolean;
 }
@@ -526,6 +527,7 @@ export async function generateStrategyVariants(
   ]);
   const campaignDescription = wizardContext.campaignDescription ?? '';
   const campaignGoalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
+  const campaignType = wizardContext.campaignType;
 
   // Resolve persona IDs
   let personaIds = personaIdsOpt ?? [];
@@ -617,6 +619,7 @@ export async function generateStrategyVariants(
     campaignName,
     campaignDescription,
     goalType: campaignGoalType,
+    campaignType,
     strategicIntent,
     productContext,
     competitorContext,
@@ -708,6 +711,7 @@ export async function generateStrategyVariants(
       variantC: JSON.stringify(variantC),
       personas: personaProfiles,
       goalType: campaignGoalType,
+    campaignType,
       goalGuidance,
     });
 
@@ -771,6 +775,7 @@ export async function synthesizeStrategy(
   onProgress?: ProgressCallback,
 ): Promise<SynthesisPhaseResult> {
   const campaignGoalType = data.wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
+  const campaignType = data.wizardContext.campaignType;
   const goalGuidance = getGoalTypeGuidance(campaignGoalType);
 
   onProgress?.({ step: 4, name: 'Strategy Synthesis', status: 'running', label: 'Synthesizing optimal strategy with deep thinking...' });
@@ -792,6 +797,7 @@ export async function synthesizeStrategy(
     variantBScore: data.variantBScore,
     variantCScore: data.variantCScore,
     goalType: campaignGoalType,
+    campaignType,
     goalGuidance,
     agentDebateContext: data.agentDebateContext,
   });
@@ -836,6 +842,7 @@ export async function elaborateJourney(
   onProgress?: ProgressCallback,
 ): Promise<JourneyPhaseResult> {
   const campaignGoalType = data.wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
+  const campaignType = data.wizardContext.campaignType;
   const goalGuidance = getGoalTypeGuidance(campaignGoalType);
   const personaIds = data.personaIds ?? [];
   const productIds = data.productIds ?? [];
@@ -866,6 +873,7 @@ export async function elaborateJourney(
     synthesizedArchitecture: synthesizedArchitectureJson,
     personaChannelPrefs,
     goalType: campaignGoalType,
+    campaignType,
     goalGuidance,
     cialdiniContext: journeyCialdiniContext,
     framingContext: journeyFramingContext,
@@ -893,6 +901,7 @@ export async function elaborateJourney(
     productContext,
     styleguideContext,
     goalType: campaignGoalType,
+    campaignType,
     goalGuidance,
     journeyPhaseNames: phaseNames,
     cialdiniContext: journeyCialdiniContext,
@@ -941,12 +950,14 @@ export async function generateCampaignBlueprint(
   let campaignName: string;
   let campaignDescription: string;
   let campaignGoalType: string;
+  let campaignType: string | undefined;
   let knowledgeAssetCount: number;
 
   if (isWizardMode) {
     campaignName = options.wizardContext!.campaignName;
     campaignDescription = options.wizardContext!.campaignDescription ?? '';
     campaignGoalType = options.wizardContext!.campaignGoalType ?? 'BRAND_AWARENESS';
+    campaignType = options.wizardContext!.campaignType;
     // Count all explicitly selected knowledge items (personas + products + competitors + trends)
     // Brand assets are counted separately via brandAssetCount in the confidence calculator
     knowledgeAssetCount = (options.personaIds?.length ?? 0) + (options.productIds?.length ?? 0) + (options.competitorIds?.length ?? 0) + (options.trendIds?.length ?? 0);
@@ -1079,6 +1090,7 @@ export async function generateCampaignBlueprint(
     campaignName,
     campaignDescription,
     goalType: campaignGoalType,
+    campaignType,
     strategicIntent,
     productContext,
     competitorContext,
@@ -1154,6 +1166,7 @@ export async function generateCampaignBlueprint(
       variantC: JSON.stringify(variantC),
       personas: personaProfiles,
       goalType: campaignGoalType,
+    campaignType,
       goalGuidance,
     });
 
@@ -1203,6 +1216,7 @@ export async function generateCampaignBlueprint(
     variantBScore,
     variantCScore,
     goalType: campaignGoalType,
+    campaignType,
     goalGuidance,
   });
 
@@ -1235,6 +1249,7 @@ export async function generateCampaignBlueprint(
     synthesizedArchitecture: synthesizedArchitectureJson,
     personaChannelPrefs,
     goalType: campaignGoalType,
+    campaignType,
     goalGuidance,
     cialdiniContext: bpCialdiniContext || undefined,
     framingContext: bpFramingContext || undefined,
@@ -1265,6 +1280,7 @@ export async function generateCampaignBlueprint(
     productContext,
     styleguideContext,
     goalType: campaignGoalType,
+    campaignType,
     goalGuidance,
     journeyPhaseNames: bpPhaseNames,
     cialdiniContext: bpCialdiniContext || undefined,
@@ -1705,6 +1721,7 @@ export async function validateBriefing(
   const { workspaceId, wizardContext, strategicIntent: intentOpt } = ctx;
   const strategicIntent = intentOpt ?? 'hybrid';
   const campaignGoalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
+  const campaignType = wizardContext.campaignType;
 
   // Step 1: Gather brand context
   onProgress?.({ step: 1, name: 'Gathering Context', status: 'running', label: 'Gathering brand context...' });
@@ -1733,6 +1750,7 @@ export async function validateBriefing(
     campaignName: wizardContext.campaignName,
     campaignDescription: wizardContext.campaignDescription ?? '',
     goalType: campaignGoalType,
+    campaignType,
     strategicIntent,
     briefing: wizardContext.briefing,
     brandContext: formatBrandContext(brandContext),
@@ -1845,6 +1863,7 @@ export async function buildStrategyFoundation(
   const { workspaceId, wizardContext, strategicIntent: intentOpt } = ctx;
   const strategicIntent = intentOpt ?? 'hybrid';
   const campaignGoalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
+  const campaignType = wizardContext.campaignType;
 
   // Resolve persona IDs
   let personaIds = ctx.personaIds ?? [];
@@ -1941,6 +1960,7 @@ export async function buildStrategyFoundation(
     campaignName: wizardContext.campaignName,
     campaignDescription: wizardContext.campaignDescription ?? '',
     goalType: campaignGoalType,
+    campaignType,
     strategicIntent,
     briefing: wizardContext.briefing,
     brandContext: brandContextText,
@@ -2018,6 +2038,7 @@ export async function generateCreativeHooks(
   const { workspaceId, wizardContext, foundation, enrichmentContext, strategyFeedback } = ctx;
   const strategicIntent = ctx.strategicIntent ?? 'hybrid';
   const campaignGoalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
+  const campaignType = wizardContext.campaignType;
 
   // Resolve persona IDs
   let personaIds = ctx.personaIds ?? [];
@@ -2078,6 +2099,7 @@ export async function generateCreativeHooks(
     campaignName: wizardContext.campaignName,
     campaignDescription: wizardContext.campaignDescription ?? '',
     goalType: campaignGoalType,
+    campaignType,
     strategicIntent,
     briefing: wizardContext.briefing,
     brandContext: enrichmentContext.brandContext,
@@ -2173,6 +2195,7 @@ export async function generateCreativeHooks(
       })),
       personas: personaProfiles,
       goalType: campaignGoalType,
+    campaignType,
       goalGuidance,
     });
 
@@ -2234,6 +2257,7 @@ export async function refineSelectedHook(
   const { workspaceId, wizardContext, selectedHook, foundation, personaValidation, hookFeedback } = ctx;
   const strategicIntent = ctx.strategicIntent ?? 'hybrid';
   const campaignGoalType = wizardContext.campaignGoalType ?? 'BRAND_AWARENESS';
+  const campaignType = wizardContext.campaignType;
 
   // Resolve persona IDs
   let personaIds = ctx.personaIds ?? [];
@@ -2268,6 +2292,7 @@ export async function refineSelectedHook(
     campaignName: wizardContext.campaignName,
     campaignDescription: wizardContext.campaignDescription ?? '',
     goalType: campaignGoalType,
+    campaignType,
     strategicIntent,
     briefing: wizardContext.briefing,
     brandContext: formatBrandContext(brandContext),

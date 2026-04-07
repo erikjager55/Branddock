@@ -6,6 +6,7 @@ import { Input } from "@/components/shared";
 import { SelectionCard } from "@/components/ui/layout";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import { GOAL_CATEGORIES, getTimeBinding } from "../../lib/goal-types";
+import { CAMPAIGN_TYPES, getRecommendedCampaignType } from "../../lib/campaign-types";
 import type { StrategicIntent } from "../../types/campaign-wizard.types";
 
 // ─── Strategic Intent Cards ──────────────────────────────
@@ -48,9 +49,9 @@ export function SetupStep() {
   const description = useCampaignWizardStore((s) => s.description);
   const setDescription = useCampaignWizardStore((s) => s.setDescription);
   const campaignGoalType = useCampaignWizardStore((s) => s.campaignGoalType);
-  const setCampaignGoalType = useCampaignWizardStore(
-    (s) => s.setCampaignGoalType,
-  );
+  const setCampaignGoalType = useCampaignWizardStore((s) => s.setCampaignGoalType);
+  const campaignType = useCampaignWizardStore((s) => s.campaignType);
+  const setCampaignType = useCampaignWizardStore((s) => s.setCampaignType);
   const strategicIntent = useCampaignWizardStore((s) => s.strategicIntent);
   const setStrategicIntent = useCampaignWizardStore((s) => s.setStrategicIntent);
   const startDate = useCampaignWizardStore((s) => s.startDate);
@@ -172,6 +173,44 @@ export function SetupStep() {
           </div>
         </div>
 
+      </div>
+
+      {/* Campaign Type selector — 3 horizontal cards */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          <span className="text-red-500 mr-0.5">*</span>
+          Campaign Type
+        </label>
+        <p className="text-xs text-muted-foreground mb-3">
+          Determines the creative approach and deliverable focus. Based on Binet & Field IPA effectiveness research.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {CAMPAIGN_TYPES.map(({ id, label, description: desc, icon, creativeApproach, timeHorizon }) => {
+            const isRecommended = campaignGoalType ? getRecommendedCampaignType(campaignGoalType) === id : false;
+            return (
+              <SelectionCard
+                key={id}
+                icon={icon}
+                title={label}
+                subtitle={desc}
+                selected={campaignType === id}
+                onSelect={() => setCampaignType(id)}
+                badges={
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                      {creativeApproach}
+                    </span>
+                    {isRecommended && (
+                      <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-50 text-emerald-700">
+                        recommended
+                      </span>
+                    )}
+                  </span>
+                }
+              />
+            );
+          })}
+        </div>
       </div>
 
       {/* Goal type selector — 2-column category grid, full width */}

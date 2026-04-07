@@ -359,10 +359,13 @@ export function StrategyStep() {
   }, []);
 
 
+  const campaignType = useCampaignWizardStore((s) => s.campaignType);
+
   const wizardContext = useMemo(() => ({
     campaignName: campaignName || "Untitled Campaign",
     campaignDescription,
     campaignGoalType: campaignGoalType ?? undefined,
+    campaignType: campaignType ?? undefined,
     useExternalEnrichment,
     briefing: {
       occasion: briefingOccasion || undefined,
@@ -371,7 +374,7 @@ export function StrategyStep() {
       tonePreference: briefingTonePreference || undefined,
       constraints: briefingConstraints || undefined,
     },
-  }), [campaignName, campaignDescription, campaignGoalType, useExternalEnrichment, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints]);
+  }), [campaignName, campaignDescription, campaignGoalType, campaignType, useExternalEnrichment, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints]);
 
   // ─── Phase A: Generate Variants ──────────────────────
 

@@ -75,6 +75,8 @@ export type {
   ConceptVisualsResult,
 } from '@/lib/campaigns/strategy-blueprint.types';
 
+export type CampaignType = 'brand' | 'content' | 'activation';
+
 export type CampaignGoalType =
   | "BRAND_AWARENESS" | "PRODUCT_LAUNCH" | "MARKET_EXPANSION" | "REBRANDING"
   | "CONTENT_MARKETING" | "AUDIENCE_ENGAGEMENT" | "COMMUNITY_BUILDING" | "LOYALTY_RETENTION"

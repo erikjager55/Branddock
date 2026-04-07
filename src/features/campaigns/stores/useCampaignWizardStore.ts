@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { getTimeBinding } from "../lib/goal-types";
+import { getRecommendedCampaignType } from "../lib/campaign-types";
 import type {
+  CampaignType,
   CampaignGoalType,
   StrategyResultResponse,
   CampaignBlueprint,
@@ -42,6 +44,7 @@ interface CampaignWizardState {
   name: string;
   description: string;
   campaignGoalType: CampaignGoalType | null;
+  campaignType: CampaignType | null;
   startDate: string;
   endDate: string;
   selectedKnowledgeIds: string[];
@@ -143,6 +146,7 @@ interface CampaignWizardState {
   setName: (name: string) => void;
   setDescription: (desc: string) => void;
   setCampaignGoalType: (type: CampaignGoalType) => void;
+  setCampaignType: (type: CampaignType) => void;
   setStartDate: (date: string) => void;
   setEndDate: (date: string) => void;
   toggleKnowledgeId: (id: string) => void;
@@ -260,6 +264,7 @@ const INITIAL_STATE = {
   name: "",
   description: "",
   campaignGoalType: null as CampaignGoalType | null,
+  campaignType: null as CampaignType | null,
   startDate: "",
   endDate: "",
   selectedKnowledgeIds: [] as string[],
@@ -380,8 +385,13 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         updates.startDate = '';
         updates.endDate = '';
       }
+      // Auto-recommend campaign type if not manually set yet
+      if (get().campaignType === null) {
+        updates.campaignType = getRecommendedCampaignType(campaignGoalType);
+      }
       set(updates);
     },
+    setCampaignType: (campaignType) => set({ campaignType }),
     setStartDate: (startDate) => set({ startDate }),
     setEndDate: (endDate) => set({ endDate }),
 

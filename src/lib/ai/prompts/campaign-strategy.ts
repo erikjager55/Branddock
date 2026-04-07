@@ -16,6 +16,7 @@ import type {
 import type { CreativeAngleDefinition } from '@/lib/campaigns/creative-angles';
 import { DELIVERABLE_TYPE_IDS } from '@/features/campaigns/lib/deliverable-types';
 import { GOAL_LABELS, getGoalTypeGuidance, getGoalTypeStrategicInsights } from '@/features/campaigns/lib/goal-types';
+import { getCampaignTypeGuidance } from '@/features/campaigns/lib/campaign-types';
 
 // ─── Helpers ────────────────────────────────────────────────
 
@@ -46,6 +47,13 @@ function buildBriefingSection(briefing?: CampaignBriefing): string {
   if (briefing?.tonePreference) briefingLines.push(`Desired tone / creative direction: ${briefing.tonePreference}`);
   if (briefing?.constraints) briefingLines.push(`Constraints / mandatories: ${briefing.constraints}`);
   return briefingLines.length > 0 ? `\n\n## Creative Briefing\n${briefingLines.join('\n')}` : '';
+}
+
+/** Campaign type guidance section — injected into all prompt builders */
+function buildCampaignTypeSection(campaignType?: string): string {
+  if (!campaignType) return '';
+  const guidance = getCampaignTypeGuidance(campaignType);
+  return guidance ? `\n\n${guidance}` : '';
 }
 
 /**
@@ -134,6 +142,8 @@ interface FullVariantPromptParams {
   framingContext?: string;
   /** EAST (Easy, Attractive, Social, Timely) validation checklist */
   eastChecklist?: string;
+  /** Campaign type: brand, content, or activation */
+  campaignType?: string;
 }
 
 // ─── Marketing Framework Injection Helpers ──────────────────
@@ -228,6 +238,7 @@ const EFFIE_STRATEGY_JSON_SCHEMA = `
 export function buildFullVariantAPrompt(params: FullVariantPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
   const system = `You are a senior brand strategist who creates Effie Award-winning campaigns grounded in evidence-based strategy and behavioral science.
@@ -241,7 +252,7 @@ Academic frameworks to apply:
 - Christensen's Jobs-to-be-Done (JTBD) framework for audience framing
 - Fill's Marketing Communications Planning Framework (MCPF) with emphasis on Pull strategies
 - COM-B Model (Capability, Opportunity, Motivation → Behavior) for behavioral change
-- Behavior Change Technique (BCT) Taxonomy v1 for intervention design${goalContext}${goalInsights}${params.creativeAngleContext ? `
+- Behavior Change Technique (BCT) Taxonomy v1 for intervention design${goalContext}${campaignTypeContext}${goalInsights}${params.creativeAngleContext ? `
 
 ## Your Assigned Creative Angle
 ${params.creativeAngleContext}
@@ -324,6 +335,7 @@ ${params.bctContext}` : ''}${buildMarketingFrameworkSection({ effectivenessConte
 export function buildFullVariantBPrompt(params: FullVariantPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
   const system = `You are a creative provocateur who creates Cannes Lions-winning campaigns through cultural tensions, cross-industry analogies, and unexpected creative leaps.
@@ -337,7 +349,7 @@ Creative frameworks to apply:
 - Christensen's Jobs-to-be-Done (JTBD) framework for audience framing
 - Cultural tension identification (what unspoken tension can the brand own?)
 - Cross-industry analogy mapping (what can we learn from completely different industries?)
-- Distinctive brand assets creation (Byron Sharp's "How Brands Grow")${goalContext}${goalInsights}${params.creativeAngleContext ? `
+- Distinctive brand assets creation (Byron Sharp's "How Brands Grow")${goalContext}${campaignTypeContext}${goalInsights}${params.creativeAngleContext ? `
 
 ## Your Assigned Creative Angle
 ${params.creativeAngleContext}
@@ -414,6 +426,7 @@ ${params.exaContext}` : ''}${buildMarketingFrameworkSection({ effectivenessConte
 export function buildFullVariantCPrompt(params: FullVariantPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
   const system = `You are a data-driven innovation strategist who creates D&AD-winning campaigns at the intersection of behavioral science, cultural intelligence, and platform-native thinking.
@@ -427,7 +440,7 @@ Strategic frameworks to apply:
 - Byron Sharp's "How Brands Grow": maximize Category Entry Points (CEPs) and Mental Availability
 - Thaler & Sunstein's Nudge Architecture: design choice environments that guide behavior
 - MINDSPACE framework (Messenger, Incentives, Norms, Defaults, Salience, Priming, Affect, Commitments, Ego)
-- Platform-native content strategy: design content that feels native to each platform's culture${goalContext}${goalInsights}${params.creativeAngleContext ? `
+- Platform-native content strategy: design content that feels native to each platform's culture${goalContext}${campaignTypeContext}${goalInsights}${params.creativeAngleContext ? `
 
 ## Your Assigned Creative Angle
 ${params.creativeAngleContext}
@@ -520,10 +533,12 @@ export function buildPersonaValidatorPrompt(params: {
   personas: Array<{ id: string; name: string; profile: string }>;
   goalType?: string;
   goalGuidance?: string;
+  campaignType?: string;
 }): { system: string; user: string } {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${params.goalGuidance}\nEvaluate how well each variant serves this specific goal type from each persona's perspective.`
     : '';
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const system = `You are simulating target personas evaluating THREE complete campaign strategy variants.
@@ -533,7 +548,7 @@ Your role: For EACH persona, roleplay as that person and evaluate all three vari
 - Variant B: unexpected, creative provocations (cultural tensions, cross-industry analogies)
 - Variant C: data-driven innovation (CEP maximization, nudge architecture, platform-native)
 
-Each variant has its OWN strategic foundation AND campaign architecture.${goalContext}${goalInsights}
+Each variant has its OWN strategic foundation AND campaign architecture.${goalContext}${campaignTypeContext}${goalInsights}
 
 Evaluation criteria per persona — ALL fields are MANDATORY:
 - overallScore: Score 1-10. Be honest and critical — avoid giving every persona the same score. Differentiate based on how well the strategy truly fits each persona's unique situation.
@@ -608,10 +623,12 @@ export function buildStrategySynthesizerPrompt(params: {
   goalGuidance?: string;
   /** Multi-agent debate context — injected when multiAgent is enabled */
   agentDebateContext?: string;
+  campaignType?: string;
 }): { system: string; user: string } {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nEnsure the synthesized blueprint optimally serves this goal type.`
     : '';
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const system = `You are a chief strategy officer performing the final synthesis of a campaign blueprint.
@@ -624,7 +641,7 @@ You ARE identifying the single strongest creative platform and making it unstopp
 Your task: Elevate the BEST variant into an award-winning campaign, informed by persona feedback:
 - Variant A: evidence-based, proven methodologies (behavioral science frameworks)
 - Variant B: creative provocateur (cultural tensions, cross-industry analogies)
-- Variant C: data-driven innovation (CEP maximization, nudge architecture, platform-native)${goalContext}${goalInsights}
+- Variant C: data-driven innovation (CEP maximization, nudge architecture, platform-native)${goalContext}${campaignTypeContext}${goalInsights}
 
 STEP 1: IDENTIFY THE WINNER
 - Which variant has the most powerful human insight? (deepest truth, highest originalityScore from personas)
@@ -783,15 +800,18 @@ export function buildChannelPlannerPrompt(params: {
   framingContext?: string;
   /** EAST (Easy, Attractive, Social, Timely) validation checklist */
   eastChecklist?: string;
+  /** Campaign type: brand, content, or activation */
+  campaignType?: string;
 }): { system: string; user: string } {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nPrioritize channels that best serve this goal type.`
     : '';
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const system = `You are a media strategist creating a channel and media plan.
 
-Framework: Google's Hero-Hub-Hygiene (HHH) model for channel role assignment.${goalContext}${goalInsights}
+Framework: Google's Hero-Hub-Hygiene (HHH) model for channel role assignment.${goalContext}${campaignTypeContext}${goalInsights}
 
 Requirements:
 - channels: 4-8 channels with role (hero/hub/hygiene), objective, target personas, content mix
@@ -839,6 +859,8 @@ export function buildAssetPlannerPrompt(params: {
   growthContext?: string;
   /** EAST (Easy, Attractive, Social, Timely) validation checklist */
   eastChecklist?: string;
+  /** Campaign type: brand, content, or activation */
+  campaignType?: string;
 }): { system: string; user: string } {
   const validTypes = DELIVERABLE_TYPE_IDS.join(', ');
   const validPhases = params.journeyPhaseNames?.length
@@ -848,6 +870,7 @@ export function buildAssetPlannerPrompt(params: {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nSelect deliverable types that are most relevant for this goal type.`
     : '';
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const phaseInstruction = validPhases
@@ -856,7 +879,7 @@ export function buildAssetPlannerPrompt(params: {
 
   const system = `You are a content strategist creating a deliverable plan for a campaign.
 
-Your role: Based on the campaign strategy, architecture, and channel plan, define the specific content pieces (deliverables) that need to be produced.${goalContext}${goalInsights}
+Your role: Based on the campaign strategy, architecture, and channel plan, define the specific content pieces (deliverables) that need to be produced.${goalContext}${campaignTypeContext}${goalInsights}
 
 Requirements per deliverable:
 - title: Descriptive title (e.g., "LinkedIn Thought Leadership Article — AI in Brand Strategy")
@@ -926,6 +949,7 @@ interface BriefingValidationPromptParams {
   brandContext: string;
   personaContext: string;
   productContext: string;
+  campaignType?: string;
 }
 
 export function buildBriefingValidationPrompt(params: BriefingValidationPromptParams): { system: string; user: string } {
@@ -1000,10 +1024,13 @@ interface StrategyFoundationPromptParams {
   framingContext?: string;
   /** EAST (Easy, Attractive, Social, Timely) validation checklist */
   eastChecklist?: string;
+  /** Campaign type: brand, content, or activation */
+  campaignType?: string;
 }
 
 export function buildStrategyFoundationPrompt(params: StrategyFoundationPromptParams): { system: string; user: string } {
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}`;
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
   const system = `You are a behavioral scientist and senior strategist building the analytical foundation for a campaign strategy.
@@ -1046,7 +1073,7 @@ You must produce a COMPLETE StrategyFoundation with these sections:
 
 9. **targetBehaviors** (string[]): The 3-5 most important behaviors to target
 
-10. **audienceInsights** (array): Per persona — insight, TTM stage, top CASI barriers, recommended BCTs, ELM route${goalContext}${goalInsights}
+10. **audienceInsights** (array): Per persona — insight, TTM stage, top CASI barriers, recommended BCTs, ELM route${goalContext}${campaignTypeContext}${goalInsights}
 
 CRITICAL: Every field is MANDATORY. Do not skip any section. The creative teams depend on this analysis.
 
@@ -1123,11 +1150,14 @@ interface CreativeHookPromptParams {
   growthContext?: string;
   /** EAST (Easy, Attractive, Social, Timely) validation checklist */
   eastChecklist?: string;
+  /** Campaign type: brand, content, or activation */
+  campaignType?: string;
 }
 
 export function buildCreativeHookPrompt(params: CreativeHookPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}`;
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
   const sf = params.strategyFoundation;
 
@@ -1151,7 +1181,7 @@ Academic frameworks:
 - Binet & Field's effectiveness data: ${ratio.brand}% brand building / ${ratio.activation}% activation
 - Christensen's Jobs-to-be-Done (JTBD) framework
 - COM-B Model (Capability, Opportunity, Motivation → Behavior)
-- ELM route: ${sf.elmRouteRecommendation.primaryRoute} (${sf.elmRouteRecommendation.rationale})${goalContext}${goalInsights}
+- ELM route: ${sf.elmRouteRecommendation.primaryRoute} (${sf.elmRouteRecommendation.rationale})${goalContext}${campaignTypeContext}${goalInsights}
 ${ANTI_GENERIC_GUARDRAILS}
 
 Output a JSON object with THREE top-level keys:
@@ -1245,10 +1275,12 @@ export function buildHookPersonaValidatorPrompt(params: {
   personas: Array<{ id: string; name: string; profile: string }>;
   goalType?: string;
   goalGuidance?: string;
+  campaignType?: string;
 }): { system: string; user: string } {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${params.goalGuidance}\nEvaluate how well each hook serves this specific goal type from each persona's perspective.`
     : '';
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const system = `You are simulating target personas evaluating THREE creative campaign hooks.
@@ -1256,7 +1288,7 @@ export function buildHookPersonaValidatorPrompt(params: {
 IMPORTANT: All output MUST be in English, regardless of the language of the input context.
 
 Your role: For EACH persona, roleplay as that person and evaluate all three hooks.
-Each hook was generated from a different creative angle and represents a distinct campaign concept.${goalContext}${goalInsights}
+Each hook was generated from a different creative angle and represents a distinct campaign concept.${goalContext}${campaignTypeContext}${goalInsights}
 
 SCORING RULES:
 - You MUST use the FULL 1-10 range. A spread of less than 3 points across personas is unacceptable.
@@ -1343,11 +1375,14 @@ interface HookRefinementPromptParams {
   growthContext?: string;
   /** EAST (Easy, Attractive, Social, Timely) validation checklist */
   eastChecklist?: string;
+  /** Campaign type: brand, content, or activation */
+  campaignType?: string;
 }
 
 export function buildHookRefinementPrompt(params: HookRefinementPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${getGoalTypeGuidance(params.goalType)}`;
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
   const hook = params.selectedHook;
   const sf = params.strategyFoundation;
@@ -1371,7 +1406,7 @@ Refinement approach — ELEVATION, NOT OVERHAUL:
 Academic frameworks:
 - Binet & Field: ${ratio.brand}% brand building / ${ratio.activation}% activation
 - ELM route: ${sf.elmRouteRecommendation.primaryRoute}
-- COM-B primary target: ${sf.behavioralDiagnosis.comBMapping.primaryTarget}${goalContext}${goalInsights}
+- COM-B primary target: ${sf.behavioralDiagnosis.comBMapping.primaryTarget}${goalContext}${campaignTypeContext}${goalInsights}
 ${ANTI_GENERIC_GUARDRAILS}
 
 Output a JSON object with THREE top-level keys:
@@ -1719,6 +1754,7 @@ interface StrategyBuildPromptParams {
   eastChecklist?: string;
   cialdiniContext?: string;
   bctContext?: string;
+  campaignType?: string;
 }
 
 /**
@@ -1728,6 +1764,7 @@ interface StrategyBuildPromptParams {
 export function buildStrategyBuildPrompt(params: StrategyBuildPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalLabel = GOAL_LABELS[params.goalType] ?? params.goalType;
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
   const system = `You are a senior strategist building the execution plan for an ALREADY APPROVED creative concept.
