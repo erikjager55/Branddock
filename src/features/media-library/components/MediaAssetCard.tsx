@@ -63,7 +63,7 @@ export const MediaAssetCard = React.memo(function MediaAssetCard({
             e.stopPropagation();
             onFavorite();
           }}
-          className={`absolute top-2 right-2 p-1.5 rounded-full bg-white/80 backdrop-blur-sm transition ${
+          className={`absolute top-3 right-3 p-1.5 rounded-full bg-white/80 backdrop-blur-sm transition ${
             asset.isFavorite
               ? 'opacity-100'
               : 'opacity-0 group-hover:opacity-100'
@@ -80,7 +80,7 @@ export const MediaAssetCard = React.memo(function MediaAssetCard({
 
         {/* Media type badge - top left */}
         <span
-          className={`absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-white/80 backdrop-blur-sm ${typeConfig.color}`}
+          className={`absolute top-3 left-3 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-white/80 backdrop-blur-sm ${typeConfig.color}`}
         >
           <TypeIcon className="w-3 h-3" />
           {typeConfig.label}

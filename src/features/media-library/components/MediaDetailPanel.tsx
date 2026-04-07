@@ -7,9 +7,11 @@ import {
   Trash2,
   Download,
   Star,
+  FolderPlus,
 } from 'lucide-react';
 import { Skeleton } from '@/components/shared';
-import { useMediaAssetDetail } from '../hooks';
+import { useMediaAssetDetail, useUpdateMediaAsset } from '../hooks';
+import { useMediaLibraryStore } from '../stores/useMediaLibraryStore';
 import {
   MEDIA_TYPE_ICONS,
   MEDIA_CATEGORY_CONFIG,
@@ -17,6 +19,7 @@ import {
   formatDuration,
 } from '../constants/media-constants';
 import type { MediaAssetDetailResponse } from '../types/media.types';
+import { TagInput } from './tags/TagInput';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -110,8 +113,15 @@ export function MediaDetailPanel({
   onDelete,
 }: MediaDetailPanelProps) {
   const { data, isLoading } = useMediaAssetDetail(assetId ?? '');
+  const updateAsset = useUpdateMediaAsset(assetId ?? '');
+  const openAddToCollection = useMediaLibraryStore((s) => s.openAddToCollection);
 
   const asset = data as MediaAssetDetailResponse | undefined;
+
+  const handleTagsChange = (tagIds: string[]) => {
+    if (!assetId) return;
+    updateAsset.mutate({ tagIds });
+  };
 
   return (
     <>
@@ -197,26 +207,28 @@ export function MediaDetailPanel({
                 </div>
 
                 {/* Tags */}
-                {asset.tags.length > 0 && (
-                  <div className="px-4 pb-4">
-                    <p className="text-xs text-gray-500 mb-2">Tags</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {asset.tags.map((t) => (
-                        <span
-                          key={t.id}
-                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700"
-                        >
-                          {t.mediaTag.name}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                <div className="px-4 pb-4">
+                  <p className="text-xs text-gray-500 mb-2">Tags</p>
+                  <TagInput
+                    selectedTagIds={asset.tags.map((t) => t.mediaTag.id)}
+                    onChange={handleTagsChange}
+                  />
+                </div>
 
                 {/* Collections */}
-                {asset.collections.length > 0 && (
-                  <div className="px-4 pb-4">
-                    <p className="text-xs text-gray-500 mb-2">Collections</p>
+                <div className="px-4 pb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-gray-500">Collections</p>
+                    <button
+                      type="button"
+                      onClick={() => openAddToCollection(asset.id)}
+                      className="inline-flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 font-medium"
+                    >
+                      <FolderPlus className="w-3.5 h-3.5" />
+                      Add
+                    </button>
+                  </div>
+                  {asset.collections.length > 0 ? (
                     <div className="space-y-1">
                       {asset.collections.map((c) => (
                         <div
@@ -228,8 +240,10 @@ export function MediaDetailPanel({
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <p className="text-xs text-gray-400">No collections yet</p>
+                  )}
+                </div>
 
                 {/* Action Buttons */}
                 <div className="p-4 border-t border-gray-200 mt-auto flex-shrink-0 space-y-2">

@@ -305,15 +305,16 @@ function createPhaseSSE(
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: 'Failed to start phase' }));
-        onError(err.error || 'Failed to start phase');
+          onError(err.error || 'Failed to start phase');
         return;
       }
 
       const reader = res.body?.getReader();
       if (!reader) {
-        onError('No response stream');
+          onError('No response stream');
         return;
       }
+
 
       const decoder = new TextDecoder();
       let buffer = '';

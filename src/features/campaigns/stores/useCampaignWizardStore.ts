@@ -112,8 +112,7 @@ interface CampaignWizardState {
   // ─── External Enrichment Toggle ──────────────────────────────
   useExternalEnrichment: boolean;
 
-  // ─── Multi-Agent Strategy Debate ──────────────────────────────
-  multiAgentEnabled: boolean;
+  // ─── Multi-Agent Strategy Debate (used by creative-debate pipeline) ─────
   agentDebateRounds: AgentDebateState[];
   critiqueOfA: AgentCritique | null;
   critiqueOfB: AgentCritique | null;
@@ -225,8 +224,7 @@ interface CampaignWizardState {
   // ─── External Enrichment Actions ─────────────────────────────
   setUseExternalEnrichment: (enabled: boolean) => void;
 
-  // ─── Multi-Agent Strategy Debate Actions ──────────────────────
-  setMultiAgentEnabled: (enabled: boolean) => void;
+  // ─── Multi-Agent Strategy Debate Actions (used by creative-debate pipeline) ─────
   updateDebateRound: (round: AgentDebateState) => void;
   setCritique: (variant: 'A' | 'B', critique: AgentCritique) => void;
   setDefense: (variant: 'A' | 'B', defense: AgentDefense) => void;
@@ -332,8 +330,7 @@ const INITIAL_STATE = {
   // ─── External Enrichment (always enabled, auto-detected) ──────────────────────────────
   useExternalEnrichment: true,
 
-  // ─── Multi-Agent Strategy Debate ──────────────────────────────
-  multiAgentEnabled: false,
+  // ─── Multi-Agent Strategy Debate (used by creative-debate pipeline) ─────
   agentDebateRounds: [] as AgentDebateState[],
   critiqueOfA: null as AgentCritique | null,
   critiqueOfB: null as AgentCritique | null,
@@ -722,8 +719,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     setUseExternalEnrichment: (useExternalEnrichment) => set({ useExternalEnrichment }),
 
     // ─── Step Proceed Override ──────────────────────────────────
-    // ─── Multi-Agent Strategy Debate Actions ──────────────────────
-    setMultiAgentEnabled: (enabled) => set({ multiAgentEnabled: enabled }),
+    // ─── Multi-Agent Strategy Debate Actions (used by creative-debate pipeline) ─────
     updateDebateRound: (round) =>
       set((s) => {
         const existing = s.agentDebateRounds.findIndex((r) => r.round === round.round);
