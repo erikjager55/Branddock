@@ -261,3 +261,189 @@ For each persona, evaluate both revised variants. React in character, score hone
 
   return { system, user };
 }
+
+// =============================================================================
+// CREATIVE QUALITY DEBATE — Refocused on creative strength
+// =============================================================================
+
+interface CreativeCriticPromptParams {
+  conceptJson: string;
+  insightJson: string;
+  brandContext: string;
+  personaContext: string;
+  goalType: string;
+}
+
+/**
+ * Critic agent refocused on CREATIVE QUALITY — stickiness, bisociation, differentiation.
+ */
+export function buildCreativeCriticPrompt(params: CreativeCriticPromptParams): { system: string; user: string } {
+  const goalLabel = GOAL_LABELS[params.goalType] ?? params.goalType;
+
+  const system = `You are a creative quality auditor with 20+ years judging Cannes Lions, D&AD, and Effie Awards.
+
+Your job: Find the CREATIVE WEAKNESSES in this concept. Be ruthlessly honest.
+
+## Your Critical Framework
+
+1. **Stickiness Audit (SUCCESs — Heath & Heath)**
+   Re-score each criterion (1-10). The creator scored themselves — you verify:
+   - Simple: Can a 10-year-old get it?
+   - Unexpected: Does it genuinely violate a category norm?
+   - Concrete: Can you SEE it?
+   - Credible: Would a skeptical consumer believe this?
+   - Emotional: Does it trigger a SPECIFIC emotion?
+   - Story: Is there a character with a tension?
+
+2. **Bisociation Strength (Koestler)**
+   - Are the two frames genuinely incompatible? Or boringly adjacent?
+   - Does the connection CREATE surprise? Or feel forced?
+   - Is the visual world distinctive? Or could any brand claim it?
+
+3. **Campaign Line Test**
+   - Bar Test: Would a real person say this?
+   - T-Shirt Test: Would someone WEAR this?
+   - Opposite Test: Is the opposite interesting?
+   - Category Escape: Does it work beyond this product category?
+
+4. **Memorable Device Test**
+   - Is it INHERENT to the concept? Or bolted on?
+   - Could consumers PARTICIPATE? Or just witness it?
+   - Is it REPLICABLE across touchpoints?
+
+5. **Category Comparison**
+   - Have you seen something SIMILAR? Name it.
+   - What makes this genuinely different?
+
+## Output Format
+Return a JSON object:
+{
+  "stickinessAudit": {
+    "simple": { "score": N, "assessment": "..." },
+    "unexpected": { "score": N, "assessment": "..." },
+    "concrete": { "score": N, "assessment": "..." },
+    "credible": { "score": N, "assessment": "..." },
+    "emotional": { "score": N, "assessment": "..." },
+    "story": { "score": N, "assessment": "..." },
+    "totalScore": N,
+    "overallVerdict": "One-sentence stickiness judgment"
+  },
+  "bisociationStrength": {
+    "score": N,
+    "connectionQuality": "forced | adjacent | surprising | brilliant",
+    "assessment": "..."
+  },
+  "campaignLineVerdict": {
+    "barTest": { "passes": bool, "reasoning": "..." },
+    "tShirtTest": { "passes": bool, "reasoning": "..." },
+    "oppositeTest": { "passes": bool, "reasoning": "..." },
+    "categoryEscapeTest": { "passes": bool, "reasoning": "..." },
+    "overallLineScore": N
+  },
+  "memorableDeviceVerdict": {
+    "isInherent": bool,
+    "isParticipatory": bool,
+    "isReplicable": bool,
+    "score": N,
+    "assessment": "..."
+  },
+  "categoryComparison": {
+    "similarCampaigns": ["Campaign X by Brand Y — why similar"],
+    "differentiationScore": N
+  },
+  "topWeaknesses": ["Top 3 creative weaknesses"],
+  "topStrengths": ["Top 3 creative strengths"],
+  "overallCreativeScore": N,
+  "elevationSuggestions": ["3 specific creative improvements"]
+}
+
+Respond with valid JSON only.`;
+
+  const user = `Evaluate this creative concept for a "${goalLabel}" campaign.
+
+## The Human Insight
+${params.insightJson}
+
+## The Creative Concept
+${params.conceptJson}
+
+## Brand Context
+${params.brandContext}
+
+## Target Personas
+${params.personaContext}
+
+Be ruthlessly honest.`;
+
+  return { system, user };
+}
+
+interface CreativeDefensePromptParams {
+  conceptJson: string;
+  insightJson: string;
+  critiqueJson: string;
+  brandContext: string;
+  personaContext: string;
+  goalType: string;
+}
+
+/**
+ * Defense agent as Creative Director — defend or improve creative choices.
+ */
+export function buildCreativeDefensePrompt(params: CreativeDefensePromptParams): { system: string; user: string } {
+  const system = `You are the Creative Director who created this concept. A senior auditor found weaknesses.
+
+Your job:
+1. **Acknowledge valid criticism** — IMPROVE your concept where the auditor is right
+2. **Defend strong choices** — Explain WHY your creative choice is brilliant if the auditor missed it
+3. **Elevate** — For every weakness, provide a CONCRETE creative improvement
+
+## Rules
+- Return a COMPLETE revised concept, not patches
+- NEVER abandon your core bisociation or campaign line unless fatally flawed
+- REFINE and SHARPEN, don't restart
+- If campaign line fails 2+ tests, propose an alternative but keep the Big Idea
+- For each weakness: "accepted", "defended", or "partially_accepted"
+
+## Output Format
+Return a JSON object:
+{
+  "addressedWeaknesses": [{ "weakness": "...", "response": "accepted|defended|partially_accepted", "action": "..." }],
+  "revisedConcept": {
+    "campaignLine": "...",
+    "bigIdea": "...",
+    "goldenbergTemplate": "...",
+    "goldenbergApplication": "...",
+    "bisociationDomain": { "domain": "...", "connectionToInsight": "...", "visualPotential": "..." },
+    "visualWorld": "...",
+    "memorableDevice": "...",
+    "stickinessScore": { "simple": N, "unexpected": N, "concrete": N, "credible": N, "emotional": N, "story": N, "total": N },
+    "campaignLineTests": { "barTest": bool, "tShirtTest": bool, "parodyTest": bool, "tenYearTest": bool, "categoryEscapeTest": bool, "oppositeTest": bool },
+    "creativeTerritory": "...",
+    "extendability": [...]
+  },
+  "changeLog": ["What changed and why"],
+  "confidenceScore": N
+}
+
+Respond with valid JSON only.`;
+
+  const user = `## Your Original Concept
+${params.conceptJson}
+
+## The Original Insight
+${params.insightJson}
+
+## The Critic's Review
+${params.critiqueJson}
+
+## Brand Context
+${params.brandContext}
+
+## Target Personas
+${params.personaContext}
+
+Address each weakness. Return your improved concept.`;
+
+  return { system, user };
+}

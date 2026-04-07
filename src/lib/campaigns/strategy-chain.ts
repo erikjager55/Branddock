@@ -93,6 +93,8 @@ import type {
   AgentCritique,
   AgentDefense,
   PersonaDebateResult,
+  ConceptVisual,
+  ConceptVisualsResult,
 } from './strategy-blueprint.types';
 import { agentCritiqueSchema, personaDebateResultSchema } from './strategy-blueprint.types';
 import type { PipelineEvent } from '@/features/campaigns/types/campaign-wizard.types';
@@ -2562,4 +2564,581 @@ export async function runMultiAgentDebate(
   );
 
   return { critiqueOfA, critiqueOfB, defenseA, defenseB, personaDebate };
+}
+
+// =============================================================================
+// NEW CREATIVE QUALITY PIPELINE — Insight Mining → Creative Leap → Strategy Build
+// =============================================================================
+
+import {
+  buildInsightMiningPrompt,
+  buildCreativeLeapPrompt,
+  buildStrategyBuildPrompt,
+} from '@/lib/ai/prompts/campaign-strategy';
+import {
+  buildCreativeCriticPrompt,
+  buildCreativeDefensePrompt,
+} from '@/lib/ai/prompts/campaign-strategy-agents';
+import { selectTemplatesForGoal } from '@/lib/goldenberg/goldenberg-templates';
+import { selectDomainsForBrand } from '@/lib/goldenberg/bisociation-domains';
+import type { HumanInsight, CreativeConcept, InsightMiningResult, CreativeLeapResult } from './strategy-blueprint.types';
+
+/** Build provider-keyed thinking config from a provider string and budget */
+function thinkingFor(provider: string, budget: number): { anthropic?: { budgetTokens: number }; openai?: { reasoningEffort: 'high' }; google?: { thinkingBudget: number } } | undefined {
+  if (provider === 'anthropic') return { anthropic: { budgetTokens: budget } };
+  if (provider === 'openai') return { openai: { reasoningEffort: 'high' } };
+  if (provider === 'google') return { google: { thinkingBudget: budget } };
+  return undefined;
+}
+
+/** Shared context needed across new pipeline phases */
+interface CreativePipelineContext {
+  workspaceId: string;
+  brandContext: string;
+  personaContext: string;
+  productContext: string;
+  competitorContext: string;
+  trendContext: string;
+  goalType: string;
+  briefing?: CampaignBriefing;
+  strategicIntent: StrategicIntent;
+  personaIds: string[];
+  arenaContext?: string;
+  exaContext?: string;
+}
+
+/**
+ * Build the shared context object needed by all creative pipeline phases.
+ * Reuses existing context builders (brand, persona, product, competitor, trend).
+ */
+export async function buildCreativePipelineContext(
+  workspaceId: string,
+  opts: GenerateOptions,
+  onProgress?: ProgressCallback,
+): Promise<CreativePipelineContext> {
+  const wc = opts.wizardContext!;
+  const goalType = wc.campaignGoalType ?? 'BRAND_AWARENESS';
+
+  // Parallel context fetching
+  const [brandContextData, personaContext, productContext, competitorContext, trendContext] = await Promise.all([
+    getBrandContext(workspaceId),
+    buildSelectedPersonasContext(opts.personaIds ?? [], workspaceId),
+    buildProductContext(workspaceId, opts.productIds),
+    buildCompetitorContext(workspaceId, opts.competitorIds),
+    buildTrendContext(workspaceId, opts.trendIds),
+  ]);
+  const brandContext = formatBrandContext(brandContextData);
+
+  // Optional external enrichment (Are.na + Exa only — Scholar/BCT used in strategy build phase)
+  let arenaContext: string | undefined;
+  let exaContext: string | undefined;
+
+  if (wc.useExternalEnrichment) {
+    onProgress?.({ type: 'enrichment', status: 'running' } as PipelineEvent);
+
+    try {
+      const [arenaQueries, exaQueries] = await Promise.all([
+        buildArenaQueries({ workspaceId, campaignGoalType: goalType, personaIds: opts.personaIds ?? [] }).catch(() => []),
+        Promise.resolve(buildExaQueries({ campaignGoalType: goalType, brandName: brandContextData.brandName, brandValues: brandContextData.brandValues })),
+      ]);
+
+      const [arenaResult, exaResult] = await Promise.all([
+        fetchArenaContext(arenaQueries).catch(() => ({ contextText: '', meta: null })),
+        fetchExaContext(exaQueries).catch(() => ({ contextText: '', meta: null })),
+      ]);
+
+      if (arenaResult?.contextText) arenaContext = arenaResult.contextText;
+      if (exaResult?.contextText) exaContext = exaResult.contextText;
+    } catch { /* graceful failure — enrichment is optional */ }
+
+    onProgress?.({ type: 'enrichment', status: 'complete' } as PipelineEvent);
+  }
+
+  return {
+    workspaceId,
+    brandContext,
+    personaContext,
+    productContext,
+    competitorContext,
+    trendContext,
+    goalType,
+    briefing: wc.briefing,
+    strategicIntent: opts.strategicIntent ?? 'hybrid',
+    personaIds: opts.personaIds ?? [],
+    arenaContext,
+    exaContext,
+  };
+}
+
+// ─── Phase 1: Insight Mining ─────────────────────────────────
+
+/**
+ * Generates 3 human insights in parallel using 3 different LLMs,
+ * each with a different insight lens (empathy, tension, behavior).
+ */
+export async function generateInsights(
+  ctx: CreativePipelineContext,
+  onProgress?: ProgressCallback,
+): Promise<InsightMiningResult> {
+  onProgress?.({ type: 'step', step: 1, name: 'Insight Mining', status: 'running', label: 'Mining 3 human insights...' } as PipelineEvent);
+
+  const lenses: Array<{ role: 'empathy' | 'tension' | 'behavior'; provider: string; model: string }> = [
+    { role: 'empathy', provider: 'anthropic', model: CLAUDE_OPUS },
+    { role: 'tension', provider: 'openai', model: GPT_54 },
+    { role: 'behavior', provider: 'google', model: GEMINI_31_PRO },
+  ];
+
+  // Resolve workspace-level model overrides
+  const [modelA, modelB, modelC] = await Promise.all([
+    resolveFeatureModel(ctx.workspaceId, 'campaign-strategy'),
+    resolveFeatureModel(ctx.workspaceId, 'campaign-strategy-b'),
+    resolveFeatureModel(ctx.workspaceId, 'campaign-strategy-c'),
+  ]);
+
+  lenses[0].provider = modelA.provider;
+  lenses[0].model = modelA.model;
+  lenses[1].provider = modelB.provider;
+  lenses[1].model = modelB.model;
+  lenses[2].provider = modelC.provider;
+  lenses[2].model = modelC.model;
+
+  const insightPromises = lenses.map(async (lens) => {
+    const prompt = buildInsightMiningPrompt({
+      brandContext: ctx.brandContext,
+      personaContext: ctx.personaContext,
+      productContext: ctx.productContext,
+      competitorContext: ctx.competitorContext,
+      trendContext: ctx.trendContext,
+      goalType: ctx.goalType,
+      briefing: ctx.briefing,
+      providerRole: lens.role,
+    });
+
+    const result = await withStepContext(`Insight Mining (${lens.role})`, 120, () =>
+      createStructuredCompletion(
+        lens.provider as AiProvider,
+        lens.model,
+        prompt.system,
+        prompt.user,
+        { maxTokens: 16000, thinking: thinkingFor(lens.provider, 8000) },
+      ),
+    );
+
+    const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+    return {
+      ...parsed,
+      providerUsed: lens.provider,
+      modelUsed: lens.model,
+    } as HumanInsight;
+  });
+
+  const insights = await Promise.all(insightPromises);
+
+  onProgress?.({ type: 'step', step: 1, name: 'Insight Mining', status: 'complete', label: '3 insights generated' } as PipelineEvent);
+
+  return { insights, selectedInsightIndex: null };
+}
+
+// ─── Phase 2a: Creative Leap ────────────────────────────────
+
+/**
+ * Generates 3 creative concepts in parallel, each forced into a different
+ * Goldenberg template + bisociation domain, all building on the selected insight.
+ */
+export async function generateCreativeConcepts(
+  ctx: CreativePipelineContext,
+  selectedInsight: HumanInsight,
+  onProgress?: ProgressCallback,
+): Promise<CreativeLeapResult> {
+  onProgress?.({ type: 'step', step: 1, name: 'Creative Leap', status: 'running', label: 'Generating 3 creative concepts...' } as PipelineEvent);
+
+  // Select 3 diverse Goldenberg templates for this goal type
+  const templates = selectTemplatesForGoal(ctx.goalType);
+
+  // Extract brand industry from brand context (first line often has industry info)
+  const industryLine = ctx.brandContext.split('\n').find(l => l.toLowerCase().includes('industry') || l.toLowerCase().includes('sector'));
+  const brandIndustry = industryLine?.split(':').pop()?.trim() ?? 'general';
+
+  // Select 3 diverse bisociation domains avoiding the brand's own industry
+  const domains = selectDomainsForBrand(brandIndustry);
+
+  const insightText = `Insight: "${selectedInsight.insightStatement}"
+Underlying tension: ${selectedInsight.underlyingTension}
+Emotional territory: ${selectedInsight.emotionalTerritory}
+Category convention: ${selectedInsight.categoryConvention}
+Human truth: ${selectedInsight.humanTruth}`;
+
+  // Resolve models
+  const [modelA, modelB, modelC] = await Promise.all([
+    resolveFeatureModel(ctx.workspaceId, 'campaign-strategy'),
+    resolveFeatureModel(ctx.workspaceId, 'campaign-strategy-b'),
+    resolveFeatureModel(ctx.workspaceId, 'campaign-strategy-c'),
+  ]);
+
+  const assignments = [
+    { template: templates[0], domain: domains[0], provider: modelA.provider, model: modelA.model },
+    { template: templates[1], domain: domains[1], provider: modelB.provider, model: modelB.model },
+    { template: templates[2], domain: domains[2], provider: modelC.provider, model: modelC.model },
+  ];
+
+  const conceptPromises = assignments.map(async (a) => {
+    const prompt = buildCreativeLeapPrompt({
+      selectedInsight: insightText,
+      brandContext: ctx.brandContext,
+      personaContext: ctx.personaContext,
+      goalType: ctx.goalType,
+      goldenbergTemplate: {
+        name: a.template.name,
+        mechanism: a.template.mechanism,
+        examples: a.template.examples.map(e => `${e.brand}: ${e.howItApplied}`).join('; '),
+      },
+      bisociationDomain: {
+        name: a.domain.name,
+        visualMetaphors: a.domain.visualMetaphors.join(', '),
+        emotionalTerritories: a.domain.emotionalTerritories.join(', '),
+      },
+      briefing: ctx.briefing,
+      arenaContext: ctx.arenaContext,
+      exaContext: ctx.exaContext,
+    });
+
+    const result = await withStepContext(`Creative Leap (${a.template.name} × ${a.domain.name})`, 120, () =>
+      createStructuredCompletion(
+        a.provider as AiProvider,
+        a.model,
+        prompt.system,
+        prompt.user,
+        { maxTokens: 16000, thinking: thinkingFor(a.provider, 12_000) },
+      ),
+    );
+
+    const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+    return {
+      ...parsed,
+      providerUsed: a.provider,
+      modelUsed: a.model,
+    } as CreativeConcept;
+  });
+
+  const concepts = await Promise.all(conceptPromises);
+
+  onProgress?.({ type: 'step', step: 1, name: 'Creative Leap', status: 'complete', label: '3 concepts generated' } as PipelineEvent);
+
+  return { concepts, selectedConceptIndex: null, selectedInsight };
+}
+
+// ─── Phase 2b: Creative Debate ──────────────────────────────
+
+/**
+ * Runs the creative quality debate on a selected concept:
+ * 1. Creative Critic evaluates stickiness, bisociation, campaign line
+ * 2. Creative Director defends/improves the concept
+ * Returns the improved concept + critique data.
+ */
+export async function runCreativeDebate(
+  ctx: CreativePipelineContext,
+  selectedConcept: CreativeConcept,
+  selectedInsight: HumanInsight,
+  onProgress?: ProgressCallback,
+): Promise<{ critique: unknown; defense: unknown; improvedConcept: CreativeConcept }> {
+  const goalType = ctx.goalType;
+  const conceptJson = JSON.stringify(selectedConcept, null, 2);
+  const insightJson = JSON.stringify(selectedInsight, null, 2);
+
+  // Round 1: Creative Critic
+  onProgress?.({ type: 'step', step: 1, name: 'Creative Critic', status: 'running', label: 'Evaluating creative quality...' } as PipelineEvent);
+
+  const criticPrompt = buildCreativeCriticPrompt({
+    conceptJson,
+    insightJson,
+    brandContext: ctx.brandContext,
+    personaContext: ctx.personaContext,
+    goalType,
+  });
+
+  const { model: criticModel, provider: criticProvider } = await resolveFeatureModel(ctx.workspaceId, 'campaign-strategy');
+  const critiqueRaw = await withStepContext('Creative Critic', 120, () =>
+    createStructuredCompletion(
+      criticProvider as AiProvider,
+      criticModel,
+      criticPrompt.system,
+      criticPrompt.user,
+      { maxTokens: 16000, thinking: thinkingFor(criticProvider, 10_000) },
+    ),
+  );
+  const critique = typeof critiqueRaw === 'string' ? JSON.parse(critiqueRaw) : critiqueRaw;
+
+  onProgress?.({ type: 'step', step: 1, name: 'Creative Critic', status: 'complete', label: 'Creative audit complete' } as PipelineEvent);
+
+  // Round 2: Creative Defense
+  onProgress?.({ type: 'step', step: 2, name: 'Creative Defense', status: 'running', label: 'Creative Director improving concept...' } as PipelineEvent);
+
+  const defensePrompt = buildCreativeDefensePrompt({
+    conceptJson,
+    insightJson,
+    critiqueJson: JSON.stringify(critique, null, 2),
+    brandContext: ctx.brandContext,
+    personaContext: ctx.personaContext,
+    goalType,
+  });
+
+  const { model: defenseModel, provider: defenseProvider } = await resolveFeatureModel(ctx.workspaceId, 'campaign-strategy-b');
+  const defenseRaw = await withStepContext('Creative Defense', 120, () =>
+    createStructuredCompletion(
+      defenseProvider as AiProvider,
+      defenseModel,
+      defensePrompt.system,
+      defensePrompt.user,
+      { maxTokens: 16000, thinking: thinkingFor(defenseProvider, 12_000) },
+    ),
+  );
+  const defense = typeof defenseRaw === 'string' ? JSON.parse(defenseRaw) : defenseRaw;
+
+  onProgress?.({ type: 'step', step: 2, name: 'Creative Defense', status: 'complete', label: 'Concept improved' } as PipelineEvent);
+
+  // Extract the improved concept from the defense response
+  const improvedConcept: CreativeConcept = {
+    ...selectedConcept,
+    ...(defense.revisedConcept ?? {}),
+    providerUsed: defenseProvider,
+    modelUsed: defenseModel,
+  };
+
+  return { critique, defense, improvedConcept };
+}
+
+// ─── Phase 3: Strategy Build (concept-first) ────────────────
+
+/**
+ * Builds the full strategy + architecture ON TOP of an approved creative concept.
+ * Frameworks serve the concept, not the other way around.
+ */
+export async function buildConceptDrivenStrategy(
+  ctx: CreativePipelineContext,
+  approvedConcept: CreativeConcept,
+  approvedInsight: HumanInsight,
+  debateContext?: string,
+  onProgress?: ProgressCallback,
+): Promise<{ strategy: StrategyLayer; architecture: ArchitectureLayer }> {
+  onProgress?.({ type: 'step', step: 1, name: 'Strategy Build', status: 'running', label: 'Building strategy from approved concept...' } as PipelineEvent);
+
+  const goalType = ctx.goalType;
+
+  // Gather local marketing frameworks (synchronous, no API calls)
+  const bctContext = getBctContext(goalType);
+  const cialdiniContext = getCialdiniContext(goalType);
+  const effectivenessContext = getEffectivenessContext(goalType);
+  const growthContext = getGrowthContext(goalType);
+  const framingContext = getFramingContext(goalType);
+  const eastChecklist = formatEastForPrompt();
+
+  const insightText = `Insight: "${approvedInsight.insightStatement}"
+Underlying tension: ${approvedInsight.underlyingTension}
+Human truth: ${approvedInsight.humanTruth}`;
+
+  const conceptText = `Campaign Line: "${approvedConcept.campaignLine}"
+Big Idea: ${approvedConcept.bigIdea}
+Creative Territory: ${approvedConcept.creativeTerritory}
+Visual World: ${approvedConcept.visualWorld}
+Memorable Device: ${approvedConcept.memorableDevice}
+Goldenberg Template: ${approvedConcept.goldenbergTemplate} — ${approvedConcept.goldenbergApplication}
+Bisociation: ${approvedConcept.bisociationDomain.domain} — ${approvedConcept.bisociationDomain.connectionToInsight}`;
+
+  const prompt = buildStrategyBuildPrompt({
+    selectedInsight: insightText,
+    selectedConcept: conceptText,
+    brandContext: ctx.brandContext,
+    personaContext: ctx.personaContext,
+    productContext: ctx.productContext,
+    competitorContext: ctx.competitorContext,
+    trendContext: ctx.trendContext,
+    goalType,
+    strategicIntent: ctx.strategicIntent,
+    personaIds: ctx.personaIds,
+    briefing: ctx.briefing,
+    debateContext,
+    effectivenessContext,
+    growthContext,
+    framingContext,
+    eastChecklist,
+    cialdiniContext,
+    bctContext,
+  });
+
+  const { model, provider } = await resolveFeatureModel(ctx.workspaceId, 'campaign-strategy');
+
+  const result = await withStepContext('Strategy Build', 180, () =>
+    createStructuredCompletion(
+      provider as AiProvider,
+      model,
+      prompt.system,
+      prompt.user,
+      { maxTokens: 32000, thinking: thinkingFor(provider, 20_000) },
+    ),
+  );
+
+  const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+
+  // Ensure the concept fields are preserved on the strategy layer
+  const strategy: StrategyLayer = {
+    ...parsed.strategy,
+    humanInsight: approvedInsight.insightStatement,
+    creativePlatform: approvedConcept.bigIdea,
+    creativeTerritory: approvedConcept.creativeTerritory,
+    memorableDevice: approvedConcept.memorableDevice,
+    campaignTheme: approvedConcept.campaignLine,
+  };
+
+  const architecture: ArchitectureLayer = parsed.architecture ?? { campaignType: 'strategic', journeyPhases: [] };
+
+  onProgress?.({ type: 'step', step: 1, name: 'Strategy Build', status: 'complete', label: 'Strategy built on approved concept' } as PipelineEvent);
+
+  return { strategy, architecture };
+}
+
+// ─── Phase: Concept Visuals ─────────────────────────────────
+
+/** Words that indicate product-related content in a visual description */
+const PRODUCT_KEYWORDS = ['product', 'item', 'package', 'bottle', 'device', 'object', 'merchandise', 'goods', 'unboxing'];
+/** Words that indicate people-related content in a visual description */
+const PERSON_KEYWORDS = ['person', 'people', 'human', 'face', 'portrait', 'model', 'crowd', 'team', 'customer', 'audience', 'man', 'woman'];
+
+/**
+ * Generates 3 campaign mockup visuals (hero/square/story) for a selected creative concept.
+ * Automatically applies trained brand LoRA models when available.
+ */
+export async function generateConceptVisuals(
+  ctx: CreativePipelineContext,
+  concept: CreativeConcept,
+  onProgress?: ProgressCallback,
+): Promise<ConceptVisualsResult> {
+  onProgress?.({ type: 'step', step: 1, name: 'Concept Visuals', status: 'running', label: 'Generating campaign mockup visuals...' } as PipelineEvent);
+
+  // 1. Query workspace's READY ConsistentModel records with LoRA URLs (trainable types only)
+  const consistentModels = await prisma.consistentModel.findMany({
+    where: {
+      workspaceId: ctx.workspaceId,
+      status: 'READY',
+      falLoraUrl: { not: null },
+      type: { in: ['STYLE', 'PHOTOGRAPHY', 'PRODUCT', 'PERSON'] },
+    },
+    select: { id: true, name: true, type: true, falLoraUrl: true },
+  });
+
+  // 2. Determine which models are relevant based on concept content
+  const visualText = `${concept.visualWorld} ${concept.creativeTerritory}`.toLowerCase();
+
+  const relevantModels: Array<{ name: string; type: string; scale: number; loraUrl: string }> = [];
+  for (const model of consistentModels) {
+    const modelType = model.type as string;
+    if (modelType === 'STYLE') {
+      relevantModels.push({ name: model.name, type: modelType, scale: 0.8, loraUrl: model.falLoraUrl! });
+    } else if (modelType === 'PHOTOGRAPHY') {
+      relevantModels.push({ name: model.name, type: modelType, scale: 0.7, loraUrl: model.falLoraUrl! });
+    } else if (modelType === 'PRODUCT' && PRODUCT_KEYWORDS.some(kw => visualText.includes(kw))) {
+      relevantModels.push({ name: model.name, type: modelType, scale: 0.6, loraUrl: model.falLoraUrl! });
+    } else if (modelType === 'PERSON' && PERSON_KEYWORDS.some(kw => visualText.includes(kw))) {
+      relevantModels.push({ name: model.name, type: modelType, scale: 0.5, loraUrl: model.falLoraUrl! });
+    }
+  }
+
+  const hasLoras = relevantModels.length > 0;
+  const loraArray = relevantModels.map(m => ({ path: m.loraUrl, scale: m.scale }));
+  const appliedModelsInfo = relevantModels.map(m => ({ name: m.name, type: m.type, scale: m.scale }));
+
+  // 3. Build prompts for 3 formats
+  const noTextSuffix = ' --no text, no words, no letters, no typography';
+
+  const baseContext = `${concept.visualWorld}. Creative territory: ${concept.creativeTerritory}`;
+
+  const formats: Array<{
+    format: 'hero' | 'square' | 'story';
+    imageSize: string;
+    width: number;
+    height: number;
+    promptPrefix: string;
+  }> = [
+    {
+      format: 'hero',
+      imageSize: 'landscape_16_9',
+      width: 1344,
+      height: 768,
+      promptPrefix: 'Wide cinematic establishing shot,',
+    },
+    {
+      format: 'square',
+      imageSize: 'square_hd',
+      width: 1024,
+      height: 1024,
+      promptPrefix: 'Close-up detail shot for social media,',
+    },
+    {
+      format: 'story',
+      imageSize: 'portrait_9_16',
+      width: 768,
+      height: 1344,
+      promptPrefix: 'Vertical portrait action shot for stories/reels,',
+    },
+  ];
+
+  // Import fal client and storage dynamically to keep top-level imports clean
+  const { runFalGeneration, generateFalImage } = await import('@/lib/integrations/fal/fal-client');
+  const { getStorageProvider } = await import('@/lib/storage');
+
+  const storage = getStorageProvider();
+
+  // 4. Generate images in parallel
+  const visualPromises = formats.map(async (f) => {
+    const prompt = `${f.promptPrefix} ${baseContext}${noTextSuffix}`;
+
+    let imageUrl: string;
+
+    if (hasLoras) {
+      const result = await runFalGeneration('fal-ai/flux-lora', {
+        prompt,
+        loras: loraArray,
+        image_size: { width: f.width, height: f.height },
+        num_images: 1,
+      });
+      imageUrl = result.images[0]?.url ?? '';
+    } else {
+      const result = await runFalGeneration('fal-ai/flux-2-pro', {
+        prompt,
+        image_size: { width: f.width, height: f.height },
+        num_images: 1,
+      });
+      imageUrl = result.images[0]?.url ?? '';
+    }
+
+    if (!imageUrl) {
+      throw new Error(`Failed to generate ${f.format} image — no URL returned from fal.ai`);
+    }
+
+    // 5. Download from fal URL and upload to storage
+    const imgResponse = await fetch(imageUrl);
+    if (!imgResponse.ok) throw new Error(`Failed to download ${f.format} image from fal.ai`);
+    const imgBuffer = Buffer.from(await imgResponse.arrayBuffer());
+
+    const timestamp = Date.now();
+    const uploaded = await storage.upload(imgBuffer, {
+      workspaceId: ctx.workspaceId,
+      fileName: `concept-visual-${f.format}-${timestamp}.png`,
+      contentType: 'image/png',
+    });
+
+    return {
+      format: f.format,
+      imageUrl: uploaded.url,
+      prompt,
+      width: f.width,
+      height: f.height,
+      appliedModels: appliedModelsInfo,
+    } satisfies ConceptVisual;
+  });
+
+  const visuals = await Promise.all(visualPromises);
+
+  onProgress?.({ type: 'step', step: 1, name: 'Concept Visuals', status: 'complete', label: `${visuals.length} campaign visuals generated` } as PipelineEvent);
+
+  return { visuals, concept };
 }

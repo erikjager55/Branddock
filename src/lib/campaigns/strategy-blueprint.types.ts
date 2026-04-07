@@ -241,6 +241,12 @@ export interface CampaignBlueprint {
   modelsUsed: string[];
   /** Stores which context items were selected during generation (for regeneration) */
   contextSelection?: ContextSelection;
+  /** The human insight selected during insight mining (new pipeline) */
+  selectedInsight?: HumanInsight;
+  /** The creative concept selected during creative leap (new pipeline) */
+  selectedConcept?: CreativeConcept;
+  /** Campaign mockup visuals generated from the selected concept */
+  conceptVisuals?: ConceptVisual[];
   /** Multi-agent debate results — present when multiAgent was enabled during generation */
   agentDebate?: {
     enabled: boolean;
@@ -352,6 +358,123 @@ export interface PersonaDebateResult {
   culturalRelevanceScore: number;
   talkabilityScore: number;
   creativeVerdict: string;
+}
+
+// ─── Creative Quality Pipeline Types ──────────────────────────
+
+/** Goldenberg creativity template identifier */
+export type GoldenbergTemplate =
+  | 'unification' | 'activation' | 'metaphor' | 'subtraction'
+  | 'extreme_consequence' | 'absurd_alternative' | 'inversion' | 'extreme_effort';
+
+/** SUCCESs stickiness score (Heath & Heath "Made to Stick") */
+export interface StickinessScore {
+  simple: number;       // 1-10: Can a 10-year-old understand the core message?
+  unexpected: number;   // 1-10: Does it violate a category norm?
+  concrete: number;     // 1-10: Can you picture it? Is it sensory?
+  credible: number;     // 1-10: Would the audience believe it?
+  emotional: number;    // 1-10: Does it trigger a specific emotion?
+  story: number;        // 1-10: Is there character + tension + resolution?
+  total: number;        // Weighted average of above
+}
+
+/** Campaign line quality tests */
+export interface CampaignLineTests {
+  barTest: boolean;        // Would someone say this in a bar?
+  tShirtTest: boolean;     // Would someone wear this on a t-shirt?
+  parodyTest: boolean;     // Could people make their own versions?
+  tenYearTest: boolean;    // Will this still be relevant in a decade?
+  categoryEscapeTest: boolean; // Does it transcend the product category?
+  oppositeTest: boolean;   // Is the opposite also interesting? (if not, too generic)
+}
+
+/** Bisociation domain — the "other world" connected to the insight */
+export interface BisociationDomain {
+  domain: string;
+  connectionToInsight: string;
+  visualPotential: string;
+}
+
+/** Human Insight — output of Fase 1 Insight Mining */
+export interface HumanInsight {
+  /** The human truth in 1-2 sentences */
+  insightStatement: string;
+  /** What people say vs what they actually do/feel */
+  underlyingTension: string;
+  /** The emotional space this insight lives in */
+  emotionalTerritory: string;
+  /** Evidence: persona data, trends, cultural signals */
+  proofPoints: string[];
+  /** What the category currently assumes (the convention to break) */
+  categoryConvention: string;
+  /** The deeper truth beneath the convention */
+  humanTruth: string;
+  /** Which LLM provider generated this insight */
+  providerUsed: string;
+  /** Which model was used */
+  modelUsed: string;
+}
+
+/** Creative Concept — output of Fase 2a Creative Leap */
+export interface CreativeConcept {
+  /** The campaign line: 3-7 words, memorable, ownable */
+  campaignLine: string;
+  /** The Big Idea that lives across all touchpoints */
+  bigIdea: string;
+  /** Which Goldenberg template was applied */
+  goldenbergTemplate: GoldenbergTemplate;
+  /** How the template was specifically applied */
+  goldenbergApplication: string;
+  /** The bisociation domain — the "other world" connected to the insight */
+  bisociationDomain: BisociationDomain;
+  /** Concrete description of the visual/emotional world */
+  visualWorld: string;
+  /** The distinctive mechanism: a ritual, format, catchphrase, or visual motif */
+  memorableDevice: string;
+  /** SUCCESs stickiness scoring */
+  stickinessScore: StickinessScore;
+  /** Campaign line quality tests */
+  campaignLineTests: CampaignLineTests;
+  /** Description of the creative territory */
+  creativeTerritory: string;
+  /** How this concept can extend across touchpoints */
+  extendability: string[];
+  /** Which LLM provider generated this concept */
+  providerUsed: string;
+  /** Which model was used */
+  modelUsed: string;
+}
+
+/** Result of the Insight Mining phase */
+export interface InsightMiningResult {
+  insights: HumanInsight[];
+  selectedInsightIndex: number | null;
+}
+
+/** Result of the Creative Leap phase */
+export interface CreativeLeapResult {
+  concepts: CreativeConcept[];
+  selectedConceptIndex: number | null;
+  /** The insight that seeded these concepts */
+  selectedInsight: HumanInsight;
+}
+
+// ─── Concept Visuals ──────────────────────────────────────
+
+/** A single campaign mockup visual generated from a creative concept */
+export interface ConceptVisual {
+  format: 'hero' | 'square' | 'story';
+  imageUrl: string;
+  prompt: string;
+  width: number;
+  height: number;
+  appliedModels: Array<{ name: string; type: string; scale: number }>;
+}
+
+/** Result of the concept visuals generation phase */
+export interface ConceptVisualsResult {
+  visuals: ConceptVisual[];
+  concept: CreativeConcept;
 }
 
 /** Tracks the status of each debate round */
@@ -509,6 +632,17 @@ export type StrategyPhase =
   | 'generating_journey'       // Phase 7: Channel plan + asset plan
   | 'complete'                 // Phase 8: Done, timeline computed client-side
   | 'rationale_complete'       // Strategy rationale approved, ready for Concept step
+  // Creative quality pipeline phases
+  | 'mining_insights'          // Insight mining: LLMs generate human insights
+  | 'review_insights'          // User reviews and selects an insight
+  | 'generating_concepts'      // Creative leap: LLMs generate creative concepts
+  | 'review_concepts'          // User reviews and selects a concept
+  | 'creative_debate'          // Multi-agent debate on selected concept
+  | 'review_debate'            // User reviews debate outcome
+  | 'generating_visuals'       // Generating concept mockup visuals (hero/square/story)
+  | 'review_visuals'           // User reviews generated campaign visuals
+  | 'building_strategy'        // Final strategy assembly from all inputs
+  | 'review_final_strategy'    // User reviews the final assembled strategy
   // @deprecated — legacy phases, removed in Session 4 UI rewrite
   | 'generating_variants'
   | 'review_variants'

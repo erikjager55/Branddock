@@ -438,3 +438,50 @@ export function refineHookSSE(
 ): { abort: () => void } {
   return createPhaseSSE('/api/campaigns/wizard/strategy/refine-hook', body, onEvent, onError);
 }
+
+// ─── Creative Quality Pipeline SSE Functions ───────────────
+
+/** Mine 3 human insights via SSE */
+export function mineInsightsSSE(
+  body: { workspaceId: string; wizardContext: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string },
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  return createPhaseSSE('/api/campaigns/wizard/strategy/mine-insights', body, onEvent, onError);
+}
+
+/** Generate 3 creative concepts via SSE */
+export function generateConceptsSSE(
+  body: { workspaceId: string; wizardContext: object; selectedInsight: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string },
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  return createPhaseSSE('/api/campaigns/wizard/strategy/generate-concepts', body, onEvent, onError);
+}
+
+/** Run creative debate (critic + defense) via SSE */
+export function creativeDebateSSE(
+  body: { workspaceId: string; wizardContext: object; selectedConcept: object; selectedInsight: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string },
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  return createPhaseSSE('/api/campaigns/wizard/strategy/creative-debate', body, onEvent, onError);
+}
+
+/** Generate concept visuals (hero/square/story mockups) via SSE */
+export function generateVisualsSSE(
+  body: { workspaceId: string; wizardContext: object; selectedConcept: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string },
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  return createPhaseSSE('/api/campaigns/wizard/strategy/generate-visuals', body, onEvent, onError);
+}
+
+/** Build strategy from approved concept via SSE */
+export function buildStrategySSE(
+  body: { workspaceId: string; wizardContext: object; approvedConcept: object; approvedInsight: object; debateContext?: string; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string },
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  return createPhaseSSE('/api/campaigns/wizard/strategy/build-strategy', body, onEvent, onError);
+}

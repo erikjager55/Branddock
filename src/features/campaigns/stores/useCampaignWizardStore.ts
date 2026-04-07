@@ -29,6 +29,10 @@ import type {
   EnrichmentContext,
   CuratorSelection,
   HookConcept,
+  // ─── Creative Quality Pipeline Types ──────────────────────
+  HumanInsight,
+  CreativeConcept,
+  ConceptVisual,
 } from "../types/campaign-wizard.types";
 
 // ─── Types ────────────────────────────────────────────────
@@ -121,6 +125,18 @@ interface CampaignWizardState {
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: string[];
   strategyRatings: Record<string, { rating: 'up' | 'down'; comment?: string }>;
+
+  // ─── Creative Quality Pipeline ──────────────────────────────
+  insights: HumanInsight[];
+  selectedInsightIndex: number | null;
+  insightFeedback: string;
+  concepts: CreativeConcept[];
+  selectedConceptIndex: number | null;
+  conceptElementRatings: Record<string, { rating: 'up' | 'down'; comment?: string }>;
+  creativeDebateResult: { critique: unknown; defense: unknown; improvedConcept: CreativeConcept | null } | null;
+  conceptVisuals: ConceptVisual[];
+  finalStrategy: StrategyLayer | null;
+  finalArchitecture: ArchitectureLayer | null;
 
   setCurrentStep: (step: number) => void;
   nextStep: () => void;
@@ -226,6 +242,17 @@ interface CampaignWizardState {
   togglePersonaEndorsement: (personaId: string) => void;
   setStrategyRating: (key: string, rating: 'up' | 'down' | null) => void;
   setStrategyRatingComment: (key: string, comment: string) => void;
+
+  // ─── Creative Quality Pipeline Actions ─────────────────────
+  setInsightResults: (insights: HumanInsight[]) => void;
+  setSelectedInsight: (index: number | null) => void;
+  setInsightFeedback: (feedback: string) => void;
+  setConceptResults: (concepts: CreativeConcept[]) => void;
+  setSelectedConcept: (index: number | null) => void;
+  setConceptElementRating: (key: string, rating: 'up' | 'down', comment?: string) => void;
+  setCreativeDebateResult: (result: { critique: unknown; defense: unknown; improvedConcept: CreativeConcept | null }) => void;
+  setConceptVisuals: (visuals: ConceptVisual[]) => void;
+  setFinalStrategyResult: (data: { strategy: StrategyLayer; architecture: ArchitectureLayer }) => void;
 }
 
 // ─── Initial state ────────────────────────────────────────
@@ -321,6 +348,18 @@ const INITIAL_STATE = {
 
   // ─── Step Proceed Override ──────────────────────────────────
   stepProceedOverride: null as (() => void) | null,
+
+  // ─── Creative Quality Pipeline ──────────────────────────────
+  insights: [] as HumanInsight[],
+  selectedInsightIndex: null as number | null,
+  insightFeedback: "",
+  concepts: [] as CreativeConcept[],
+  selectedConceptIndex: null as number | null,
+  conceptElementRatings: {} as Record<string, { rating: 'up' | 'down'; comment?: string }>,
+  creativeDebateResult: null as { critique: unknown; defense: unknown; improvedConcept: CreativeConcept | null } | null,
+  conceptVisuals: [] as ConceptVisual[],
+  finalStrategy: null as StrategyLayer | null,
+  finalArchitecture: null as ArchitectureLayer | null,
 };
 
 // ─── Store ────────────────────────────────────────────────
@@ -411,6 +450,19 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
           // Allow proceeding from briefing review when score >= 80 (triggers foundation build)
           if (state.strategyPhase === 'review_briefing') {
             return (state.briefingValidation?.overallScore ?? 0) >= 80;
+          }
+          // Creative Quality Pipeline phases
+          if (state.strategyPhase === 'mining_insights') return false;
+          if (state.strategyPhase === 'review_insights') return state.selectedInsightIndex !== null;
+          if (state.strategyPhase === 'generating_concepts') return false;
+          if (state.strategyPhase === 'review_concepts') return state.selectedConceptIndex !== null;
+          if (state.strategyPhase === 'generating_visuals') return false;
+          if (state.strategyPhase === 'review_visuals') return state.conceptVisuals.length > 0;
+          if (state.strategyPhase === 'creative_debate') return false;
+          if (state.strategyPhase === 'review_debate') return true;
+          if (state.strategyPhase === 'building_strategy') return false;
+          if (state.strategyPhase === 'review_final_strategy') {
+            return state.finalStrategy !== null;
           }
           return (state.strategyPhase === 'rationale_complete' || state.strategyPhase === 'complete')
             && get().allRationaleRated();
@@ -536,6 +588,17 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         enrichmentBlockCount: 0,
         enrichmentQueries: [],
         enrichmentSources: {},
+        // Creative Quality Pipeline
+        insights: [],
+        selectedInsightIndex: null,
+        insightFeedback: "",
+        concepts: [],
+        selectedConceptIndex: null,
+        conceptElementRatings: {},
+        creativeDebateResult: null,
+        conceptVisuals: [],
+        finalStrategy: null,
+        finalArchitecture: null,
       }),
 
     // ─── Interactive Strategy Phase Actions ─────────────────
@@ -590,6 +653,17 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         conceptFeedback: "",
         // Concept step
         elaborateResult: null,
+        // Creative Quality Pipeline
+        insights: [],
+        selectedInsightIndex: null,
+        insightFeedback: "",
+        concepts: [],
+        selectedConceptIndex: null,
+        conceptElementRatings: {},
+        creativeDebateResult: null,
+        conceptVisuals: [],
+        finalStrategy: null,
+        finalArchitecture: null,
       }),
 
     // ─── 9-Phase Architecture Actions ─────────────────────────
@@ -669,6 +743,27 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     setDebateViewMode: (mode) => set({ debateViewMode: mode }),
 
     setStepProceedOverride: (fn) => set({ stepProceedOverride: fn }),
+
+    // ─── Creative Quality Pipeline Actions ─────────────────────
+    setInsightResults: (insights) => set({ insights }),
+    setSelectedInsight: (selectedInsightIndex) => set({ selectedInsightIndex }),
+    setInsightFeedback: (insightFeedback) => set({ insightFeedback }),
+    setConceptResults: (concepts) => set({ concepts }),
+    setSelectedConcept: (selectedConceptIndex) => set({ selectedConceptIndex }),
+    setConceptElementRating: (key, rating, comment) =>
+      set((s) => ({
+        conceptElementRatings: {
+          ...s.conceptElementRatings,
+          [key]: { rating, comment: comment || undefined },
+        },
+      })),
+    setCreativeDebateResult: (creativeDebateResult) => set({ creativeDebateResult }),
+    setConceptVisuals: (conceptVisuals) => set({ conceptVisuals }),
+    setFinalStrategyResult: (data) =>
+      set({
+        finalStrategy: data.strategy,
+        finalArchitecture: data.architecture,
+      }),
 
     // ─── Interactive Feedback Actions ─────────────────────────
     togglePersonaEndorsement: (personaId) =>

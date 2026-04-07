@@ -20,6 +20,11 @@ import {
   synthesizeStrategySSE,
   validateBriefingSSE,
   buildFoundationSSE,
+  mineInsightsSSE,
+  generateConceptsSSE,
+  creativeDebateSSE,
+  buildStrategySSE,
+  generateVisualsSSE,
 } from "../../api/campaigns.api";
 import type { PipelineStepStatus } from "../../types/campaign-wizard.types";
 import { PipelineProgressView } from "./PipelineProgressView";
@@ -32,6 +37,10 @@ import { AgentDebateView } from "./AgentDebateView";
 import { compileStructuredFeedback } from "../../lib/compile-structured-feedback";
 import { getGoalTypeStrategicInsights } from "../../lib/goal-types";
 import type { GoalTypeStrategicInsights } from "../../lib/goal-types";
+import { InsightReviewView } from "./InsightReviewView";
+import { ConceptSelectionView } from "./ConceptSelectionView";
+import { ConceptVisualsView } from "./ConceptVisualsView";
+import type { HumanInsight, CreativeConcept, ConceptVisual } from "@/lib/campaigns/strategy-blueprint.types";
 
 // ─── Pipeline Step Configs per Phase ────────────────────
 
@@ -107,6 +116,25 @@ const PHASE_FOUNDATION_STEPS: PipelineStepConfig[] = [
     label: "Synthesizing foundation insights...",
     description: "Validating results and packaging enrichment context for creative phases.",
   },
+];
+
+// ─── Creative Quality Pipeline Step Configs ─────────────────
+
+const PHASE_INSIGHT_STEPS: PipelineStepConfig[] = [
+  { step: 1, name: "Insight Mining", label: "Mining 3 human insights...", description: "Three AI models each mine a deep human truth from your brand context, personas, and market trends." },
+];
+
+const PHASE_CONCEPT_STEPS: PipelineStepConfig[] = [
+  { step: 1, name: "Creative Leap", label: "Generating 3 creative concepts...", description: "Each concept uses a different Goldenberg creativity template and connects to a different world via bisociation." },
+];
+
+const PHASE_DEBATE_STEPS: PipelineStepConfig[] = [
+  { step: 1, name: "Creative Critic", label: "Evaluating creative quality...", description: "A creative auditor evaluates stickiness, bisociation strength, and campaign line quality." },
+  { step: 2, name: "Creative Defense", label: "Creative Director improving concept...", description: "The creative director defends or improves the concept based on critique." },
+];
+
+const PHASE_BUILD_STRATEGY_STEPS: PipelineStepConfig[] = [
+  { step: 1, name: "Strategy Build", label: "Building strategy from approved concept...", description: "Constructing strategic infrastructure and campaign architecture on top of the approved creative concept." },
 ];
 
 // ─── Are.na Enrichment Indicator ────────────────────────────
@@ -737,16 +765,279 @@ export function StrategyStep() {
     store.clearPhaseData();
   }, []);
 
+  // ─── Creative Pipeline: Mine Insights ─────────────────
+
+  const handleMineInsights = useCallback(() => {
+    const currentGenId = ++generationIdRef.current;
+    const store = useCampaignWizardStore.getState();
+    store.setIsGenerating(true);
+    store.setStrategyPhase("mining_insights");
+    store.updateStepStatus({ step: 1, name: "Insight Mining", status: "pending", label: "Mining insights..." });
+
+    const { abort } = mineInsightsSSE(
+      { workspaceId: "", wizardContext, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent },
+      (event) => {
+        if (generationIdRef.current !== currentGenId) return;
+        const data = event as Record<string, unknown>;
+        if (data.type === "enrichment") {
+          const status = data.status as "running" | "complete" | "skipped";
+          useCampaignWizardStore.getState().setEnrichmentStatus(status, { totalBlocks: 0, queries: [], sources: {} });
+          return;
+        }
+        if (data.type === "complete" && data.result) {
+          const result = data.result as { insights: HumanInsight[] };
+          const s = useCampaignWizardStore.getState();
+          s.setInsightResults(result.insights);
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_insights");
+          return;
+        }
+        if (data.type === "error") {
+          const s = useCampaignWizardStore.getState();
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_strategy");
+          setPhaseError("Insight mining failed. Please try again.");
+          return;
+        }
+        if (data.step && data.name && data.status && data.label) {
+          useCampaignWizardStore.getState().updateStepStatus({ step: data.step as number, name: data.name as string, status: data.status as PipelineStepStatus, label: data.label as string });
+        }
+      },
+      () => {
+        if (generationIdRef.current !== currentGenId) return;
+        const s = useCampaignWizardStore.getState();
+        s.setIsGenerating(false);
+        s.setStrategyPhase("review_strategy");
+        setPhaseError("Insight mining failed due to a network error.");
+      },
+    );
+    abortRef.current = { abort };
+  }, [wizardContext, selectedContextIds, strategicIntent]);
+
+  // ─── Creative Pipeline: Generate Concepts ─────────────
+
+  const handleGenerateConcepts = useCallback(() => {
+    const store = useCampaignWizardStore.getState();
+    const idx = store.selectedInsightIndex;
+    if (idx === null) return;
+    const selectedInsight = store.insights[idx];
+    if (!selectedInsight) return;
+
+    const currentGenId = ++generationIdRef.current;
+    store.setIsGenerating(true);
+    store.setStrategyPhase("generating_concepts");
+    store.updateStepStatus({ step: 1, name: "Creative Leap", status: "pending", label: "Generating concepts..." });
+
+    const { abort } = generateConceptsSSE(
+      { workspaceId: "", wizardContext, selectedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent },
+      (event) => {
+        if (generationIdRef.current !== currentGenId) return;
+        const data = event as Record<string, unknown>;
+        if (data.type === "complete" && data.result) {
+          const result = data.result as { concepts: CreativeConcept[] };
+          const s = useCampaignWizardStore.getState();
+          s.setConceptResults(result.concepts);
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_concepts");
+          return;
+        }
+        if (data.type === "error") {
+          const s = useCampaignWizardStore.getState();
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_insights");
+          setPhaseError("Concept generation failed. Please try again.");
+          return;
+        }
+        if (data.step && data.name && data.status && data.label) {
+          useCampaignWizardStore.getState().updateStepStatus({ step: data.step as number, name: data.name as string, status: data.status as PipelineStepStatus, label: data.label as string });
+        }
+      },
+      () => {
+        if (generationIdRef.current !== currentGenId) return;
+        const s = useCampaignWizardStore.getState();
+        s.setIsGenerating(false);
+        s.setStrategyPhase("review_insights");
+        setPhaseError("Concept generation failed due to a network error.");
+      },
+    );
+    abortRef.current = { abort };
+  }, [wizardContext, selectedContextIds, strategicIntent]);
+
+  // ─── Creative Pipeline: Generate Concept Visuals ────────
+
+  const handleGenerateVisuals = useCallback(() => {
+    const store = useCampaignWizardStore.getState();
+    const conceptIdx = store.selectedConceptIndex;
+    if (conceptIdx === null) return;
+    const selectedConcept = store.concepts[conceptIdx];
+    if (!selectedConcept) return;
+
+    const currentGenId = ++generationIdRef.current;
+    store.setIsGenerating(true);
+    store.setStrategyPhase("generating_visuals");
+    store.updateStepStatus({ step: 1, name: "Concept Visuals", status: "running", label: "Generating campaign mockup visuals..." });
+
+    const { abort } = generateVisualsSSE(
+      { workspaceId: "", wizardContext, selectedConcept, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent },
+      (event) => {
+        if (generationIdRef.current !== currentGenId) return;
+        const data = event as Record<string, unknown>;
+        if (data.type === "complete" && data.result) {
+          const result = data.result as { visuals: ConceptVisual[] };
+          const s = useCampaignWizardStore.getState();
+          s.setConceptVisuals(result.visuals);
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_visuals");
+          return;
+        }
+        if (data.type === "error") {
+          const s = useCampaignWizardStore.getState();
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_concepts");
+          setPhaseError("Visual generation failed. Please try again.");
+          return;
+        }
+        if (data.step && data.name && data.status && data.label) {
+          useCampaignWizardStore.getState().updateStepStatus({ step: data.step as number, name: data.name as string, status: data.status as PipelineStepStatus, label: data.label as string });
+        }
+      },
+      () => {
+        if (generationIdRef.current !== currentGenId) return;
+        const s = useCampaignWizardStore.getState();
+        s.setIsGenerating(false);
+        s.setStrategyPhase("review_concepts");
+        setPhaseError("Visual generation failed due to a network error.");
+      },
+    );
+    abortRef.current = { abort };
+  }, [wizardContext, selectedContextIds, strategicIntent]);
+
+  // ─── Creative Pipeline: Creative Debate ────────────────
+
+  const handleCreativeDebate = useCallback(() => {
+    const store = useCampaignWizardStore.getState();
+    const insightIdx = store.selectedInsightIndex;
+    const conceptIdx = store.selectedConceptIndex;
+    if (insightIdx === null || conceptIdx === null) return;
+    const selectedInsight = store.insights[insightIdx];
+    const selectedConcept = store.concepts[conceptIdx];
+    if (!selectedInsight || !selectedConcept) return;
+
+    const currentGenId = ++generationIdRef.current;
+    store.setIsGenerating(true);
+    store.setStrategyPhase("creative_debate");
+
+    for (const step of PHASE_DEBATE_STEPS) {
+      store.updateStepStatus({ step: step.step, name: step.name, status: "pending", label: step.label });
+    }
+
+    const { abort } = creativeDebateSSE(
+      { workspaceId: "", wizardContext, selectedConcept, selectedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent },
+      (event) => {
+        if (generationIdRef.current !== currentGenId) return;
+        const data = event as Record<string, unknown>;
+        if (data.type === "complete" && data.result) {
+          const result = data.result as { critique: unknown; defense: unknown; improvedConcept: CreativeConcept };
+          const s = useCampaignWizardStore.getState();
+          s.setCreativeDebateResult(result);
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_debate");
+          return;
+        }
+        if (data.type === "error") {
+          const s = useCampaignWizardStore.getState();
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_concepts");
+          setPhaseError("Creative debate failed. Please try again.");
+          return;
+        }
+        if (data.step && data.name && data.status && data.label) {
+          useCampaignWizardStore.getState().updateStepStatus({ step: data.step as number, name: data.name as string, status: data.status as PipelineStepStatus, label: data.label as string });
+        }
+      },
+      () => {
+        if (generationIdRef.current !== currentGenId) return;
+        const s = useCampaignWizardStore.getState();
+        s.setIsGenerating(false);
+        s.setStrategyPhase("review_concepts");
+        setPhaseError("Creative debate failed due to a network error.");
+      },
+    );
+    abortRef.current = { abort };
+  }, [wizardContext, selectedContextIds, strategicIntent]);
+
+  // ─── Creative Pipeline: Build Strategy from Concept ─────
+
+  const handleBuildStrategyFromConcept = useCallback(() => {
+    const store = useCampaignWizardStore.getState();
+    const insightIdx = store.selectedInsightIndex;
+    const conceptIdx = store.selectedConceptIndex;
+    if (insightIdx === null || conceptIdx === null) return;
+
+    // Use improved concept from debate if available, otherwise use selected concept
+    const debateResult = store.creativeDebateResult;
+    const approvedConcept = debateResult?.improvedConcept ?? store.concepts[conceptIdx];
+    const approvedInsight = store.insights[insightIdx];
+    if (!approvedConcept || !approvedInsight) return;
+
+    const currentGenId = ++generationIdRef.current;
+    store.setIsGenerating(true);
+    store.setStrategyPhase("building_strategy");
+    store.updateStepStatus({ step: 1, name: "Strategy Build", status: "pending", label: "Building strategy..." });
+
+    const { abort } = buildStrategySSE(
+      { workspaceId: "", wizardContext, approvedConcept, approvedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent },
+      (event) => {
+        if (generationIdRef.current !== currentGenId) return;
+        const data = event as Record<string, unknown>;
+        if (data.type === "complete" && data.result) {
+          const result = data.result as { strategy: import("@/lib/campaigns/strategy-blueprint.types").StrategyLayer; architecture: import("@/lib/campaigns/strategy-blueprint.types").ArchitectureLayer };
+          const s = useCampaignWizardStore.getState();
+          s.setFinalStrategyResult(result);
+          s.setIsGenerating(false);
+          s.setStrategyPhase("rationale_complete");
+          return;
+        }
+        if (data.type === "error") {
+          const s = useCampaignWizardStore.getState();
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_debate");
+          setPhaseError("Strategy build failed. Please try again.");
+          return;
+        }
+        if (data.step && data.name && data.status && data.label) {
+          useCampaignWizardStore.getState().updateStepStatus({ step: data.step as number, name: data.name as string, status: data.status as PipelineStepStatus, label: data.label as string });
+        }
+      },
+      () => {
+        if (generationIdRef.current !== currentGenId) return;
+        const s = useCampaignWizardStore.getState();
+        s.setIsGenerating(false);
+        s.setStrategyPhase("review_debate");
+        setPhaseError("Strategy build failed due to a network error.");
+      },
+    );
+    abortRef.current = { abort };
+  }, [wizardContext, selectedContextIds, strategicIntent]);
+
   // ─── Set wizard Continue override for briefing review ────
   React.useEffect(() => {
     const store = useCampaignWizardStore.getState();
     if (strategyPhase === "review_briefing") {
       store.setStepProceedOverride(handleBuildFoundation);
+    } else if (strategyPhase === "review_insights") {
+      store.setStepProceedOverride(handleGenerateConcepts);
+    } else if (strategyPhase === "review_concepts") {
+      store.setStepProceedOverride(handleGenerateVisuals);
+    } else if (strategyPhase === "review_visuals") {
+      store.setStepProceedOverride(handleBuildStrategyFromConcept);
+    } else if (strategyPhase === "review_debate") {
+      store.setStepProceedOverride(handleBuildStrategyFromConcept);
     } else {
       store.setStepProceedOverride(null);
     }
     return () => { store.setStepProceedOverride(null); };
-  }, [strategyPhase, handleBuildFoundation]);
+  }, [strategyPhase, handleBuildFoundation, handleGenerateConcepts, handleGenerateVisuals, handleCreativeDebate, handleBuildStrategyFromConcept]);
 
   // ─── Render based on phase ───────────────────────────
 
@@ -833,20 +1124,153 @@ export function StrategyStep() {
     );
   }
 
-  // 9-Phase: Review Strategy Foundation
+  // 9-Phase: Review Strategy Foundation → triggers insight mining
   if (strategyPhase === "review_strategy" && strategyFoundation) {
     return (
       <StrategyFoundationReviewView
         foundation={strategyFoundation}
         onProceed={() => {
-          useCampaignWizardStore.getState().setStrategyPhase("rationale_complete");
+          // Instead of going directly to rationale_complete, start insight mining
+          handleMineInsights();
         }}
         errorMessage={phaseError}
       />
     );
   }
 
-  // Phase A: Generating variants
+  // ─── Creative Quality Pipeline Render Cases ─────────────
+
+  // Mining insights (spinner)
+  if (strategyPhase === "mining_insights" && isGenerating) {
+    return (
+      <PipelineProgressView
+        title="Mining Human Insights"
+        steps={PHASE_INSIGHT_STEPS}
+        pipelineSteps={pipelineSteps}
+        enrichmentStatus={enrichmentStatus}
+        enrichmentBlockCount={enrichmentBlockCount}
+        enrichmentSources={enrichmentSources}
+      />
+    );
+  }
+
+  // Review insights (Vote 1)
+  if (strategyPhase === "review_insights") {
+    return (
+      <InsightReviewView
+        onRegenerate={handleMineInsights}
+        isRegenerating={isGenerating}
+      />
+    );
+  }
+
+  // Generating concepts (spinner)
+  if (strategyPhase === "generating_concepts" && isGenerating) {
+    return (
+      <PipelineProgressView
+        title="Generating Creative Concepts"
+        steps={PHASE_CONCEPT_STEPS}
+        pipelineSteps={pipelineSteps}
+      />
+    );
+  }
+
+  // Review concepts (Vote 2)
+  if (strategyPhase === "review_concepts") {
+    return (
+      <ConceptSelectionView
+        onRegenerate={handleGenerateConcepts}
+        isRegenerating={isGenerating}
+      />
+    );
+  }
+
+  // Generating visuals (spinner)
+  if (strategyPhase === "generating_visuals" && isGenerating) {
+    return (
+      <PipelineProgressView
+        title="Generating Campaign Visuals"
+        steps={[{ step: 1, name: "Concept Visuals", label: "Generating 3 campaign mockups...", description: "Creating hero, square, and story format visuals from your creative concept using AI image generation." }]}
+        pipelineSteps={pipelineSteps}
+      />
+    );
+  }
+
+  // Review visuals
+  if (strategyPhase === "review_visuals") {
+    return (
+      <ConceptVisualsView />
+    );
+  }
+
+  // Creative debate (spinner)
+  if (strategyPhase === "creative_debate" && isGenerating) {
+    return (
+      <PipelineProgressView
+        title="Creative Quality Debate"
+        steps={PHASE_DEBATE_STEPS}
+        pipelineSteps={pipelineSteps}
+      />
+    );
+  }
+
+  // Review debate results (Vote 3)
+  if (strategyPhase === "review_debate") {
+    const store = useCampaignWizardStore.getState();
+    const debateResult = store.creativeDebateResult;
+    const originalIdx = store.selectedConceptIndex;
+    const original = originalIdx !== null ? store.concepts[originalIdx] : null;
+    const improved = debateResult?.improvedConcept;
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center flex-shrink-0">
+            <Sparkles className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Creative Debate Complete</h3>
+            <p className="text-sm text-gray-500 mt-0.5">
+              A creative critic reviewed your concept and a creative director improved it. Review the changes and proceed.
+            </p>
+          </div>
+        </div>
+
+        {/* Before/After comparison */}
+        {original && improved && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="border border-gray-200 rounded-lg p-4">
+              <Badge variant="default" className="mb-2">Original</Badge>
+              <h4 className="text-lg font-bold text-gray-700">&ldquo;{original.campaignLine}&rdquo;</h4>
+              <p className="text-sm text-gray-500 mt-1">{original.memorableDevice}</p>
+            </div>
+            <div className="border-2 border-teal-400 rounded-lg p-4 bg-teal-50/30">
+              <Badge variant="teal" className="mb-2">Improved</Badge>
+              <h4 className="text-lg font-bold text-gray-900">&ldquo;{improved.campaignLine}&rdquo;</h4>
+              <p className="text-sm text-gray-700 mt-1">{improved.memorableDevice}</p>
+            </div>
+          </div>
+        )}
+
+        {phaseError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">{phaseError}</div>
+        )}
+      </div>
+    );
+  }
+
+  // Building strategy from concept (spinner)
+  if (strategyPhase === "building_strategy" && isGenerating) {
+    return (
+      <PipelineProgressView
+        title="Building Strategy from Concept"
+        steps={PHASE_BUILD_STRATEGY_STEPS}
+        pipelineSteps={pipelineSteps}
+      />
+    );
+  }
+
+  // Phase A: Generating variants (legacy)
   if (strategyPhase === "generating_variants" && isGenerating) {
     return (
       <div className="space-y-4">

@@ -1453,3 +1453,362 @@ ${params.hookFeedback}` : ''}`;
 
   return { system, user };
 }
+
+// =============================================================================
+// NEW CREATIVE QUALITY PIPELINE — Insight Mining + Creative Leap + Strategy Build
+// =============================================================================
+
+// ─── Insight Mining Prompt ──────────────────────────────────────
+
+interface InsightMiningPromptParams {
+  brandContext: string;
+  personaContext: string;
+  productContext: string;
+  competitorContext: string;
+  trendContext: string;
+  goalType: string;
+  briefing?: CampaignBriefing;
+  /** Provider identity for differentiated perspectives */
+  providerRole: 'empathy' | 'tension' | 'behavior';
+}
+
+/**
+ * Generates a prompt for mining ONE deep human insight.
+ * Each provider gets a different lens (empathy vs cultural tension vs behavioral).
+ * The AI must NOT generate strategy, positioning, or taglines — only the raw insight.
+ */
+export function buildInsightMiningPrompt(params: InsightMiningPromptParams): { system: string; user: string } {
+  const goalLabel = GOAL_LABELS[params.goalType] ?? params.goalType;
+
+  const roleLens = {
+    empathy: `You approach insight through EMPATHY — deep emotional understanding. You look for the unspoken feelings, the private moments, the things people think but never say aloud. Your insights sound like diary entries, not research reports.`,
+    tension: `You approach insight through CULTURAL TENSION — the gap between how the world works and how people wish it worked. You look for contradictions in society, hypocrisies in categories, and the things brands pretend aren't true. Your insights sound like uncomfortable truths.`,
+    behavior: `You approach insight through BEHAVIORAL OBSERVATION — what people actually DO vs. what they SAY they do. You look for the gap between intention and action, between aspiration and reality. Your insights sound like "I noticed that people always..." discoveries.`,
+  };
+
+  const system = `You are an insight miner. You are NOT a strategist, NOT a copywriter, NOT a brand consultant.
+
+Your ONLY job is to find ONE deep human truth that could power a campaign for a "${goalLabel}" goal.
+
+## Your Lens
+${roleLens[params.providerRole]}
+
+## What a Human Insight IS
+An insight is an unspoken truth that triggers RECOGNITION. When the target audience reads it, they think: "Yes, exactly — that's how it feels."
+
+Examples of great insights:
+- "We post the best version of our lives online, but feel most seen when someone knows the real story" (Dove)
+- "Nobody thinks about milk until they don't have it" (Got Milk?)
+- "The gap between who we are and who we want to be is where motivation lives" (Nike)
+- "People don't buy things — they buy the moments those things enable" (MasterCard)
+
+## What a Human Insight is NOT
+- A fact: "People use social media" ❌
+- A category observation: "Consumers value quality" ❌
+- A brand benefit: "Our product saves time" ❌
+- A positioning statement: "We are the premium choice" ❌
+- A demographic trait: "Millennials care about sustainability" ❌
+
+## The "Three Levels" Test
+Your insight must be Level 3:
+- Level 1 (Category Truth): "Coffee gives energy" — any brand can say this
+- Level 2 (Brand Truth): "We've been brewing since 1850" — specific but not emotional
+- Level 3 (Human Truth): "The first sip isn't about caffeine — it's the only moment of silence before the day takes over" — UNIVERSAL, EMOTIONAL, UNSPOKEN
+
+## Output Format
+Return a JSON object with EXACTLY these fields:
+{
+  "insightStatement": "The insight in 1-2 sentences (max 40 words)",
+  "underlyingTension": "What people say/believe vs what they actually do/feel",
+  "emotionalTerritory": "The feeling space (e.g., 'quiet vulnerability', 'performative confidence', 'aspirational guilt')",
+  "proofPoints": ["Evidence from persona data, trends, or cultural signals (3-5 items)"],
+  "categoryConvention": "What the category currently assumes or takes for granted",
+  "humanTruth": "The deeper truth beneath the convention — the thing nobody in this category is saying"
+}
+
+CRITICAL RULES:
+- Do NOT propose solutions, strategies, taglines, or campaigns
+- Do NOT mention the brand name in the insight itself — the insight is about PEOPLE, not the brand
+- The insight must be SPECIFIC enough to spark creative ideas, not so broad it could apply to anything
+- If your insight could be true for any brand in any category, it's too generic — dig deeper
+
+Respond with valid JSON only.`;
+
+  const user = `Find ONE deep human insight for a "${goalLabel}" campaign.
+
+## Brand Context
+${params.brandContext}
+
+## Target Personas
+${params.personaContext || 'No personas available — mine the insight from cultural trends and category dynamics.'}
+
+## Products & Services
+${params.productContext || 'No products defined.'}
+
+## Competitive Landscape
+${params.competitorContext || 'No competitors defined.'}
+
+## Market Trends
+${params.trendContext || 'No trends defined.'}${params.briefing?.occasion ? `
+
+## Campaign Occasion
+${params.briefing.occasion}` : ''}${params.briefing?.audienceObjective ? `
+
+## Audience Objective
+${params.briefing.audienceObjective}` : ''}
+
+Dig deep. The best insight is hiding in plain sight — obvious once articulated, but nobody in this category is saying it.`;
+
+  return { system, user };
+}
+
+// ─── Creative Leap Prompt ───────────────────────────────────────
+
+interface CreativeLeapPromptParams {
+  selectedInsight: string;
+  brandContext: string;
+  personaContext: string;
+  goalType: string;
+  /** The Goldenberg template this concept MUST use */
+  goldenbergTemplate: { name: string; mechanism: string; examples: string };
+  /** The bisociation domain this concept MUST connect to */
+  bisociationDomain: { name: string; visualMetaphors: string; emotionalTerritories: string };
+  briefing?: CampaignBriefing;
+  arenaContext?: string;
+  exaContext?: string;
+}
+
+/**
+ * Generates a prompt for creating ONE creative concept using a forced Goldenberg template
+ * and bisociation domain. The concept is built on top of the selected human insight.
+ */
+export function buildCreativeLeapPrompt(params: CreativeLeapPromptParams): { system: string; user: string } {
+  const goalLabel = GOAL_LABELS[params.goalType] ?? params.goalType;
+
+  const system = `You are a creative director at a Cannes Lions-winning agency. You have ONE job: transform a human insight into a brilliant creative concept using a SPECIFIC structural creativity template.
+
+## Your Assignment
+- Human Insight: provided below
+- Creativity Template: ${params.goldenbergTemplate.name}
+- Bisociation Domain: ${params.bisociationDomain.name}
+
+## The Goldenberg Template You MUST Use: ${params.goldenbergTemplate.name}
+Mechanism: ${params.goldenbergTemplate.mechanism}
+Examples: ${params.goldenbergTemplate.examples}
+
+## The Bisociation Domain You MUST Connect To: ${params.bisociationDomain.name}
+Visual metaphors available: ${params.bisociationDomain.visualMetaphors}
+Emotional territories: ${params.bisociationDomain.emotionalTerritories}
+
+## How Bisociation Works (Koestler)
+Connect TWO incompatible frames of reference to create something new:
+- Frame 1: The human insight (the truth about people)
+- Frame 2: The bisociation domain (${params.bisociationDomain.name})
+The creative leap happens where these two frames COLLIDE.
+
+Examples of bisociation in famous campaigns:
+- Nike: "intention vs action" (insight) × "heroic mythology" (domain) = "Just Do It"
+- Dove: "beauty standards harm" (insight) × "social activism" (domain) = "Real Beauty"
+- Old Spice: "women buy men's soap" (insight) × "absurdist action comedy" (domain) = "The Man Your Man Could Smell Like"
+
+## Campaign Line Rules
+Your campaign line must be 3-7 words and pass ALL these tests:
+1. Bar Test: Would someone say this in a bar? (natural language)
+2. T-Shirt Test: Would someone wear this? (identity-worthy)
+3. Parody Test: Could people make their own versions? (cultural penetration)
+4. 10-Year Test: Still relevant in a decade? (timeless)
+5. Category Escape Test: Transcends the product category? (universal truth)
+6. Opposite Test: Is the opposite interesting? If not, your line is too generic.
+
+## Memorable Device (REQUIRED)
+Every great campaign has a distinctive mechanism:
+- A RITUAL (Share a Coke: finding your name)
+- A FORMAT (MasterCard: price, price, price... Priceless)
+- A CATCHPHRASE (Old Spice: "Look at your man, now back to me")
+- A VISUAL MOTIF (Apple: white earbuds, silhouette dancing)
+- A CHALLENGE (ALS Ice Bucket Challenge)
+The device must be inherent to the concept, not bolted on.
+
+## SUCCESs Scoring (Heath & Heath "Made to Stick")
+Score your concept honestly (1-10 each):
+- Simple: Can a 10-year-old understand the core message?
+- Unexpected: Does it violate a category norm?
+- Concrete: Can you picture it? Is it sensory?
+- Credible: Would the audience believe it?
+- Emotional: Does it trigger a specific, nameable emotion?
+- Story: Is there character + tension + resolution?
+Calculate total as: (simple + unexpected + concrete + credible + emotional + story) / 6 × 10
+
+## Output Format
+Return a JSON object:
+{
+  "campaignLine": "3-7 word campaign line",
+  "bigIdea": "The organizing principle in 2-3 sentences",
+  "goldenbergTemplate": "${params.goldenbergTemplate.name.toLowerCase().replace(/ /g, '_')}",
+  "goldenbergApplication": "How you specifically applied the template",
+  "bisociationDomain": {
+    "domain": "${params.bisociationDomain.name}",
+    "connectionToInsight": "How the domain connects to the insight",
+    "visualPotential": "What visual world this connection creates"
+  },
+  "visualWorld": "What this campaign LOOKS like — colors, settings, imagery (3-4 sentences)",
+  "memorableDevice": "The specific ritual/format/catchphrase/motif (1-2 sentences)",
+  "stickinessScore": { "simple": N, "unexpected": N, "concrete": N, "credible": N, "emotional": N, "story": N, "total": N },
+  "campaignLineTests": { "barTest": bool, "tShirtTest": bool, "parodyTest": bool, "tenYearTest": bool, "categoryEscapeTest": bool, "oppositeTest": bool },
+  "creativeTerritory": "The emotional/visual world in 2-3 sentences",
+  "extendability": ["How extends to social", "How extends to OOH", "How extends to experiential", ...]
+}
+
+CRITICAL RULES:
+- You MUST use the assigned Goldenberg template — don't switch to a different one
+- You MUST connect to the assigned bisociation domain
+- Campaign line MUST be 3-7 words
+- If your concept scores below 6 on ANY stickiness criterion, rethink it
+- The concept must be OWNABLE — only this brand could say this
+
+Respond with valid JSON only.`;
+
+  const user = `Create a creative concept for a "${goalLabel}" campaign.
+
+## The Human Insight to Build On
+${params.selectedInsight}
+
+## Brand Context
+${params.brandContext}
+
+## Target Personas
+${params.personaContext || 'No personas available.'}${params.briefing?.tonePreference ? `
+
+## Desired Tone
+${params.briefing.tonePreference}` : ''}${params.arenaContext ? `
+
+## Associative Inspiration (Are.na)
+${params.arenaContext}` : ''}${params.exaContext ? `
+
+## Cross-Industry Patterns (Exa)
+${params.exaContext}` : ''}
+
+Create a concept that:
+1. Is rooted in the insight above
+2. Uses the ${params.goldenbergTemplate.name} template as its structural mechanism
+3. Connects to the world of ${params.bisociationDomain.name} (bisociation)
+4. Has a campaign line of 3-7 words
+5. Has a memorable device that people will talk about`;
+
+  return { system, user };
+}
+
+// ─── Strategy Build Prompt (concept-first) ──────────────────────
+
+interface StrategyBuildPromptParams {
+  selectedInsight: string;
+  selectedConcept: string;
+  brandContext: string;
+  personaContext: string;
+  productContext: string;
+  competitorContext: string;
+  trendContext: string;
+  goalType: string;
+  strategicIntent: StrategicIntent;
+  personaIds: string[];
+  briefing?: CampaignBriefing;
+  debateContext?: string;
+  effectivenessContext?: string;
+  growthContext?: string;
+  framingContext?: string;
+  eastChecklist?: string;
+  cialdiniContext?: string;
+  bctContext?: string;
+}
+
+/**
+ * Builds a full strategy + architecture ON TOP of an approved creative concept.
+ * Frameworks SERVE the concept, not the other way around.
+ */
+export function buildStrategyBuildPrompt(params: StrategyBuildPromptParams): { system: string; user: string } {
+  const ratio = intentRatio(params.strategicIntent);
+  const goalLabel = GOAL_LABELS[params.goalType] ?? params.goalType;
+  const goalInsights = buildGoalInsightsPromptSection(params.goalType);
+
+  const system = `You are a senior strategist building the execution plan for an ALREADY APPROVED creative concept.
+
+THE CONCEPT IS LOCKED. Your job is to make it WORK, not to change it.
+
+## Your Role
+You receive:
+1. A human insight (approved by the client)
+2. A creative concept with campaign line, visual world, and memorable device (approved by the client)
+3. Optional debate feedback (from critic, creative director, and persona panel)
+
+Build the strategic infrastructure to bring this concept to life:
+- Strategic foundation (intent, messaging, JTBD)
+- Campaign architecture (journey phases, touchpoints)
+- All persona-specific adaptations
+
+## Key Principle: Frameworks SERVE the Concept
+Apply these frameworks to SUPPORT the creative concept:
+- Binet & Field: ${ratio.brand}% brand / ${ratio.activation}% activation budget split
+- JTBD: Frame the job-to-be-done through the lens of the concept's insight
+- Percy & Elliott: Design stimulus→processing→response for each touchpoint${goalInsights}
+
+## Output Format
+Return a JSON object with TWO top-level keys:
+
+${EFFIE_STRATEGY_JSON_SCHEMA}
+
+IMPORTANT for the strategy layer:
+- campaignTheme MUST match the approved concept's campaign line (do NOT invent a new one)
+- humanInsight MUST match the approved insight (do NOT rewrite it)
+- creativePlatform, creativeTerritory, memorableDevice MUST match the approved concept
+- You CAN add strategic depth to positioningStatement, messagingHierarchy, jtbdFraming, strategicChoices
+
+"architecture": {
+  campaignType: Choose the type that best fits,
+  journeyPhases: Array of phases, each with:
+    id, name, description, orderIndex, goal, kpis,
+    personaPhaseData: [{ personaId, personaName, needs, painPoints, mindset, keyQuestion, triggers }],
+    touchpoints: [{ channel, contentType, message, role ("primary"|"supporting"),
+      personaRelevance: [{ personaId, relevance, messagingAngle }] }]
+}
+
+Every touchpoint message must EXPRESS the creative concept.
+Use persona IDs from the provided list.
+
+Respond with valid JSON.`;
+
+  const user = `Build the full strategy + architecture for this approved creative concept.
+
+## The Approved Human Insight
+${params.selectedInsight}
+
+## The Approved Creative Concept
+${params.selectedConcept}
+
+## Campaign Brief
+Goal: ${goalLabel}
+Strategic Intent: ${intentDescription(params.strategicIntent)}${buildBriefingSection(params.briefing)}${params.debateContext ? `
+
+## Creative Debate Feedback
+${params.debateContext}` : ''}
+
+## Brand Context
+${params.brandContext}
+
+## Target Personas
+${params.personaContext || 'No personas available.'}
+Persona IDs: ${JSON.stringify(params.personaIds)}
+
+## Products & Services
+${params.productContext || 'No products defined.'}
+
+## Competitive Landscape
+${params.competitorContext || 'No competitors defined.'}
+
+## Market Trends
+${params.trendContext || 'No trends defined.'}${buildMarketingFrameworkSection({ effectivenessContext: params.effectivenessContext, growthContext: params.growthContext, framingContext: params.framingContext, eastChecklist: params.eastChecklist, cialdiniContext: params.cialdiniContext })}${params.bctContext ? `
+
+## Behavioral Science
+${params.bctContext}` : ''}`;
+
+  return { system, user };
+}

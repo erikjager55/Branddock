@@ -69,6 +69,10 @@ export type {
   EnrichmentContext,
   HookPhaseResult,
   ProposalPhaseResult,
+  HumanInsight,
+  CreativeConcept,
+  ConceptVisual,
+  ConceptVisualsResult,
 } from '@/lib/campaigns/strategy-blueprint.types';
 
 export type CampaignGoalType =
