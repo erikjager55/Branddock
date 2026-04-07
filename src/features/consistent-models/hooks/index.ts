@@ -250,7 +250,20 @@ export function useCurateReferences(modelId: string | undefined) {
   });
 }
 
-// ─── 16. useConsistentModelStats ────────────────────────────
+// ─── 16. useAnalyzeStyle ───────────────────────────────────
+
+export function useAnalyzeStyle(modelId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.analyzeModelStyle(modelId!),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: consistentModelKeys.detail(modelId!) });
+      qc.invalidateQueries({ queryKey: consistentModelKeys.list() });
+    },
+  });
+}
+
+// ─── 17. useConsistentModelStats ────────────────────────────
 
 export function useConsistentModelStats() {
   return useQuery({

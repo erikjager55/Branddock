@@ -9,6 +9,7 @@ const SECTION_FIELD_MAP: Record<string, string> = {
   "tone-of-voice": "toneSavedForAi",
   imagery: "imagerySavedForAi",
   "design-language": "designLanguageSavedForAi",
+  "visual-language": "visualLanguageSavedForAi",
 };
 
 // =============================================================

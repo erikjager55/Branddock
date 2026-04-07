@@ -236,7 +236,18 @@ export async function curateReferenceImages(
   return handleResponse(res, "Failed to curate reference images");
 }
 
-// ─── 15. List Generations ───────────────────────────────────
+// ─── 15. Analyze Illustration Style ────────────────────────
+
+export async function analyzeModelStyle(
+  modelId: string,
+): Promise<{ profile: import("@/lib/consistent-models/style-profile.types").IllustrationStyleProfile }> {
+  const res = await fetch(`${BASE}/${modelId}/analyze-style`, {
+    method: "POST",
+  });
+  return handleResponse(res, "Failed to analyze illustration style");
+}
+
+// ─── 16. List Generations ───────────────────────────────────
 
 export async function fetchGenerations(
   modelId: string,

@@ -1,6 +1,6 @@
 "use client";
 
-import { Image, Palette, Type, MessageCircle, Camera, Shapes } from "lucide-react";
+import { Image, Palette, Type, MessageCircle, Camera, Shapes, Layers } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { StyleguideTab } from "../types/brandstyle.types";
 
@@ -17,6 +17,7 @@ const TABS: Tab[] = [
   { id: "tone_of_voice", label: "Tone of Voice", icon: MessageCircle },
   { id: "imagery", label: "Imagery", icon: Camera },
   { id: "design_language", label: "Design Language", icon: Shapes },
+  { id: "visual_language", label: "Visual Language", icon: Layers },
 ];
 
 interface StyleguideTabNavProps {

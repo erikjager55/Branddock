@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Clock, Maximize2 } from "lucide-react";
+import { Download, Clock, Maximize2, ShieldCheck } from "lucide-react";
 import type { GeneratedImageWithMeta } from "../../types/consistent-model.types";
 
 interface GenerationResultCardProps {
@@ -21,6 +21,27 @@ export function GenerationResultCard({
   return (
     <>
       <div className="group relative overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+        {/* Style validation badge */}
+        {generation.styleValidationScore != null && (
+          <div
+            className={`absolute top-1.5 left-1.5 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+              generation.styleValidationScore >= 0.85
+                ? "bg-emerald-100 text-emerald-800"
+                : generation.styleValidationScore >= 0.7
+                  ? "bg-amber-100 text-amber-800"
+                  : "bg-red-100 text-red-800"
+            }`}
+            title={
+              generation.styleValidationDetails?.deviations?.length
+                ? `Deviations: ${(generation.styleValidationDetails.deviations as string[]).join('; ')}`
+                : "Style match score"
+            }
+          >
+            <ShieldCheck className="h-3 w-3" />
+            {Math.round(generation.styleValidationScore * 100)}%
+          </div>
+        )}
+
         <div className="aspect-square">
           <img
             src={generation.thumbnailUrl ?? generation.storageUrl}

@@ -2,6 +2,8 @@
 // Consistent Model Types
 // =============================================================
 
+import type { IllustrationStyleProfile } from "@/lib/consistent-models/style-profile.types";
+
 // ─── Enums ──────────────────────────────────────────────────
 
 export type ConsistentModelType = "PERSON" | "PRODUCT" | "STYLE" | "OBJECT" | "BRAND_STYLE" | "PHOTOGRAPHY" | "ILLUSTRATION" | "VOICE" | "SOUND_EFFECT";
@@ -69,6 +71,9 @@ export interface ConsistentModelDetail extends ConsistentModelWithMeta {
   trainingCompletedAt: string | null;
   trainingError: string | null;
   brandContext: ModelBrandContext | null;
+  styleProfile: IllustrationStyleProfile | null;
+  styleProfileVersion: number;
+  styleAnalysisStatus: string | null;
   referenceImages: ReferenceImageWithMeta[];
 }
 
@@ -128,6 +133,8 @@ export interface GeneratedImageWithMeta {
   aiProvider: string;
   aiModel: string;
   cost: number | null;
+  styleValidationScore: number | null;
+  styleValidationDetails: import("@/lib/consistent-models/style-profile.types").StyleValidationResult | null;
   createdAt: string;
   createdBy: { id: string; name: string | null; image: string | null };
 }

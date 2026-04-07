@@ -19,6 +19,7 @@ import { TypographySection } from "./TypographySection";
 import { ToneOfVoiceSection } from "./ToneOfVoiceSection";
 import { ImagerySection } from "./ImagerySection";
 import { DesignLanguageSection } from "./DesignLanguageSection";
+import { VisualLanguageSection } from "./VisualLanguageSection";
 
 interface BrandStyleguidePageProps {
   onNavigateToAnalyzer: () => void;
@@ -238,6 +239,7 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
           {activeTab === "tone_of_voice" && <ToneOfVoiceSection styleguide={styleguide} canEdit={canEdit} />}
           {activeTab === "imagery" && <ImagerySection styleguide={styleguide} canEdit={canEdit} />}
           {activeTab === "design_language" && <DesignLanguageSection styleguide={styleguide} canEdit={canEdit} />}
+          {activeTab === "visual_language" && <VisualLanguageSection styleguide={styleguide} canEdit={canEdit} />}
         </LockOverlay>
 
         {/* Color detail modal */}

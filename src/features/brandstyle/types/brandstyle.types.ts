@@ -153,6 +153,10 @@ export interface BrandStyleguide {
   layoutPrinciples: LayoutPrinciplesData | null;
   designLanguageSavedForAi: boolean;
 
+  // Visual Language
+  visualLanguage: unknown | null;
+  visualLanguageSavedForAi: boolean;
+
   // Lock
   isLocked: boolean;
   lockedAt: string | null;
@@ -219,6 +223,6 @@ export interface AiContextResponse {
   context: Record<string, unknown> | null;
 }
 
-export type StyleguideTab = "logo" | "colors" | "typography" | "tone_of_voice" | "imagery" | "design_language";
+export type StyleguideTab = "logo" | "colors" | "typography" | "tone_of_voice" | "imagery" | "design_language" | "visual_language";
 
-export type SaveForAiSection = "logo" | "colors" | "typography" | "tone-of-voice" | "imagery" | "design-language";
+export type SaveForAiSection = "logo" | "colors" | "typography" | "tone-of-voice" | "imagery" | "design-language" | "visual-language";

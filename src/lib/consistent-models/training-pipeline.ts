@@ -185,6 +185,18 @@ export async function startTraining(
   console.log('[training-pipeline] Step 4: Trigger word:', triggerWord || 'TOK', '| Trainer:', falConfig.label, '| Config:', JSON.stringify(trainingConfig));
 
   // 5. Start training on fal.ai with type-specific trainer
+  // For ILLUSTRATION models with a style profile, inject the style caption suffix
+  // so that autocaptioned training images include style descriptors
+  let autocaptionPrefix: string | undefined;
+  if (model.type === 'ILLUSTRATION' && model.styleProfile) {
+    const profile = model.styleProfile as Record<string, unknown>;
+    const generatedPrompts = profile.generatedPrompts as { trainingCaptionSuffix?: string } | undefined;
+    if (generatedPrompts?.trainingCaptionSuffix) {
+      autocaptionPrefix = `${triggerWord || 'TOK illustration'}, ${generatedPrompts.trainingCaptionSuffix}`;
+      console.log('[training-pipeline] ILLUSTRATION caption prefix:', autocaptionPrefix);
+    }
+  }
+
   console.log('[training-pipeline] Step 5: Starting fal.ai training with', falConfig.trainer, '...');
   const defaultSteps = TRAINING_STEPS_BY_TYPE[model.type] ?? 500;
   const { requestId } = await startFalTraining(imageUrl, {
@@ -193,6 +205,7 @@ export async function startTraining(
     resolution: (trainingConfig.resolution as number) ?? undefined,
     triggerWord: triggerWord || 'TOK',
     autocaption: true,
+    autocaptionPrefix,
   }, falConfig.trainer);
   console.log('[training-pipeline] Training started! Request ID:', requestId);
 
@@ -318,8 +331,55 @@ export async function handleTrainingComplete(
             console.error('[training-pipeline] Failed to generate showcase image:', promptError);
           }
         }
+      } else if (model.type === 'ILLUSTRATION' && model.styleProfile) {
+        // ILLUSTRATION with style profile: diverse samples using analyzed style
+        const profile = model.styleProfile as Record<string, unknown>;
+        const generatedPrompts = profile.generatedPrompts as { stylePrompt?: string; negativePrompt?: string } | undefined;
+        const stylePrompt = generatedPrompts?.stylePrompt ?? '';
+        const styleNegative = generatedPrompts?.negativePrompt ?? '';
+        const qualityConfig = LORA_QUALITY_CONFIG[model.type];
+        const triggerWord = model.triggerWord ?? 'TOK illustration';
+
+        const illustrationSamplePrompts = [
+          `${triggerWord}, illustration of two people collaborating in an office, ${stylePrompt}`,
+          `${triggerWord}, illustration of a person using a laptop, modern workspace, ${stylePrompt}`,
+          `${triggerWord}, abstract concept illustration showing growth and innovation, ${stylePrompt}`,
+          `${triggerWord}, illustration of a customer service interaction, friendly mood, ${stylePrompt}`,
+          `${triggerWord}, hero illustration for a product feature, wide composition, ${stylePrompt}`,
+          `${triggerWord}, spot illustration of a lightbulb idea concept, iconic, ${stylePrompt}`,
+        ];
+
+        console.log('[training-pipeline] Generating', illustrationSamplePrompts.length, 'ILLUSTRATION showcase images with style profile');
+
+        for (const prompt of illustrationSamplePrompts) {
+          try {
+            const result = await runFalGeneration(generatorEndpoint, {
+              prompt,
+              loras: [{ path: loraToUse, scale: qualityConfig.loraScale }],
+              num_images: 1,
+              num_inference_steps: qualityConfig.inferenceSteps,
+              guidance_scale: qualityConfig.guidanceScale,
+              output_format: 'png',
+              ...(styleNegative ? { negative_prompt: `${qualityConfig.negativePrompt}, ${styleNegative}` } : { negative_prompt: qualityConfig.negativePrompt }),
+            });
+
+            if (result.images?.[0]) {
+              const response = await fetch(result.images[0].url);
+              if (!response.ok) continue;
+              const buffer = Buffer.from(await response.arrayBuffer());
+              const uploaded = await storage.upload(buffer, {
+                workspaceId: model.workspaceId,
+                fileName: `sample-${Date.now()}-${sampleUrls.length}.png`,
+                contentType: 'image/png',
+              });
+              sampleUrls.push(uploaded.url);
+            }
+          } catch (promptError) {
+            console.error('[training-pipeline] Failed to generate illustration showcase image:', promptError);
+          }
+        }
       } else {
-        // Non-PERSON types: 3 identical samples with default prompt
+        // Non-PERSON types (without style profile): 3 identical samples with default prompt
         const samplePrompt = DEFAULT_SAMPLE_PROMPTS[model.type];
         const qualityConfig = LORA_QUALITY_CONFIG[model.type];
         if (samplePrompt) {

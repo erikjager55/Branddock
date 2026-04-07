@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, requireAuth } from '@/lib/auth-server';
 import { generateFalImage } from '@/lib/integrations/fal/fal-client';
 import { getStorageProvider } from '@/lib/storage';
-import { buildReferencePrompts } from '@/lib/consistent-models/reference-prompt-builder';
+import { buildReferencePromptsWithProfile } from '@/lib/consistent-models/reference-prompt-builder';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import type { ConsistentModelType } from '@prisma/client';
@@ -53,6 +53,7 @@ export async function POST(
         id: true,
         type: true,
         status: true,
+        styleProfile: true,
         referenceImages: {
           select: { id: true },
           orderBy: { sortOrder: 'desc' },
@@ -74,7 +75,8 @@ export async function POST(
 
     // ─── Build prompts ────────────────────────────────────────
     const modelType = model.type as ConsistentModelType;
-    const { prompts: allPrompts } = buildReferencePrompts(brandTags, typeConfig, modelType);
+    const styleProfile = model.styleProfile as import('@/lib/consistent-models/style-profile.types').IllustrationStyleProfile | null;
+    const { prompts: allPrompts } = buildReferencePromptsWithProfile(brandTags, typeConfig, modelType, styleProfile);
 
     const count = parsed.data.count ?? Math.min(allPrompts.length, 20);
     const prompts = allPrompts.slice(0, count);

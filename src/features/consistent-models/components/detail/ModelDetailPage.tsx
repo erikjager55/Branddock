@@ -38,6 +38,7 @@ import {
   WIZARD_STEPS_SYNTHETIC,
   WIZARD_STEPS_NON_TRAINABLE,
   WIZARD_STEPS_ILLUSTRATION,
+  WIZARD_STEPS_ILLUSTRATION_TRAINABLE,
   ILLUSTRATION_STYLE_OPTIONS,
   MIN_IMAGES_BY_TYPE,
 } from "../../constants/model-constants";
@@ -97,8 +98,9 @@ export function ModelDetailPage({
 
   // Auto-detect training mode from model state so we skip the choice screen
   // when returning to a model that's already past the choice step.
+  // ILLUSTRATION has its own flow — skip this logic.
   useEffect(() => {
-    if (!model || !TRAINABLE_TYPES.has(model.type)) return;
+    if (!model || !TRAINABLE_TYPES.has(model.type) || model.type === "ILLUSTRATION") return;
     if (trainingMode) return; // already chosen this session
 
     const status = model.status;
@@ -119,6 +121,25 @@ export function ModelDetailPage({
       setTrainingMode(hasAiImages ? "synthetic" : "own");
     }
   }, [model, trainingMode, setTrainingMode, setWizardStep]);
+
+  // Auto-detect step for ILLUSTRATION models returning to an in-progress or completed model.
+  const illustrationStepDetectedRef = useRef(false);
+  useEffect(() => {
+    if (!model || model.type !== "ILLUSTRATION" || illustrationStepDetectedRef.current) return;
+    illustrationStepDetectedRef.current = true;
+
+    const status = model.status;
+    if (status === "READY") {
+      setWizardStep(3); // Training & Showcase (completed)
+    } else if (status === "TRAINING" || status === "TRAINING_FAILED") {
+      setWizardStep(3); // Training step
+    } else if (model.styleAnalysisStatus === "COMPLETE") {
+      setWizardStep(2); // AI Style Analysis (already analyzed, can review + proceed)
+    } else if (model.referenceImages.length > 0) {
+      setWizardStep(1); // Upload & Curate (has images, not yet analyzed)
+    }
+    // Otherwise stays at step 1 (Upload & Curate)
+  }, [model, setWizardStep]);
 
   // Auto-open training modal once on page load if model is training.
   const autoOpenedRef = useRef(false);
@@ -154,21 +175,36 @@ export function ModelDetailPage({
   if (!model) return null;
 
   const isReady = model.status === "READY";
-  const isTrainable = TRAINABLE_TYPES.has(model.type);
+  const isIllustration = model.type === "ILLUSTRATION";
+  const isTrainable = TRAINABLE_TYPES.has(model.type) && !isIllustration; // ILLUSTRATION has its own flow
   const generations = generationsData?.generations ?? [];
-  const stepLabels = isTrainable
-    ? trainingMode === "own"
-      ? WIZARD_STEPS_OWN_IMAGES
-      : trainingMode === "synthetic"
-        ? WIZARD_STEPS_SYNTHETIC
-        : [] // no steps until mode is chosen
-    : model.type === "ILLUSTRATION"
-      ? WIZARD_STEPS_ILLUSTRATION
-      : WIZARD_STEPS_NON_TRAINABLE;
+  const stepLabels = isIllustration
+    ? WIZARD_STEPS_ILLUSTRATION_TRAINABLE
+    : isTrainable
+      ? trainingMode === "own"
+        ? WIZARD_STEPS_OWN_IMAGES
+        : trainingMode === "synthetic"
+          ? WIZARD_STEPS_SYNTHETIC
+          : [] // no steps until mode is chosen
+      : model.type === "ILLUSTRATION"
+        ? WIZARD_STEPS_ILLUSTRATION
+        : WIZARD_STEPS_NON_TRAINABLE;
 
   // ─── canProceed logic ────────────────────────────────────
 
   const canProceed = (() => {
+    if (isIllustration) {
+      // Step 1 (Upload & Curate): need minimum training images
+      if (wizardStep === 1) {
+        return model.referenceImages.filter((img) => img.isTrainingImage).length >= MIN_IMAGES_BY_TYPE[model.type];
+      }
+      // Step 2 (AI Style Analysis): need completed analysis to proceed to training
+      if (wizardStep === 2) {
+        return model.styleAnalysisStatus === "COMPLETE";
+      }
+      // Step 3 (Training & Showcase): no next button needed
+      return true;
+    }
     if (isTrainable) {
       if (!trainingMode) return false; // mode not chosen yet
       if (trainingMode === "own" && wizardStep === 1) {
@@ -252,6 +288,45 @@ export function ModelDetailPage({
 
   // ─── Step content renderers ──────────────────────────────
 
+  const renderIllustrationStep = () => {
+    switch (wizardStep) {
+      case 1:
+        // Step 1: Upload & Curate — upload reference illustrations
+        return (
+          <ReferenceImagesSection
+            images={model.referenceImages}
+            modelId={model.id}
+            modelType={model.type}
+            onUpload={handleUpload}
+            onDelete={handleDeleteImage}
+            isUploading={uploadImages.isPending}
+            isDeleting={deleteImage.isPending}
+          />
+        );
+      case 2:
+        // Step 2: AI Style Analysis — analyze + review style profile
+        return (
+          <IllustrationStyleSection model={model} />
+        );
+      case 3:
+        // Step 3: Training & Showcase
+        return (
+          <TrainingSection
+            model={model}
+            onStartTraining={handleStartTraining}
+            isStarting={startTraining.isPending}
+            onViewShowcase={onViewShowcase}
+            autoStart
+            generations={generations}
+            onGenerate={handleGenerate}
+            isGenerating={isGenerating}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   const renderTrainableStep = () => {
     // Show choice screen if no training mode selected yet
     if (!trainingMode) {
@@ -317,10 +392,7 @@ export function ModelDetailPage({
     switch (wizardStep) {
       case 1:
         return model.type === "ILLUSTRATION" ? (
-          <IllustrationStyleSection
-            model={model}
-            updateModel={updateModel}
-          />
+          <IllustrationStyleSection model={model} />
         ) : (
           <StyleGuideDetailsSection
             model={model}
@@ -463,10 +535,14 @@ export function ModelDetailPage({
         {/* Main content — left column (2/3) */}
         <div className="md:col-span-2 min-w-0 space-y-6">
           {/* Step content */}
-          {isTrainable ? renderTrainableStep() : renderNonTrainableStep()}
+          {isIllustration
+            ? renderIllustrationStep()
+            : isTrainable
+              ? renderTrainableStep()
+              : renderNonTrainableStep()}
 
           {/* Navigation buttons (hidden when trainable mode not yet chosen) */}
-          {(!isTrainable || trainingMode) && (
+          {(isIllustration || !isTrainable || trainingMode) && (
             <div className="flex justify-between">
               {wizardStep > 1 ? (
                 <Button variant="secondary" onClick={prevWizardStep}>
@@ -483,10 +559,12 @@ export function ModelDetailPage({
               )}
               {/* Hide Continue when:
                   - synthetic step 1: GenerateReferencesSection has "Use Selected & Continue"
-                  - training step (own=2, synthetic=2): TrainingSection has "Start Training", user proceeds after completion */}
+                  - training step (own=2, synthetic=2): TrainingSection has "Start Training", user proceeds after completion
+                  - illustration step 3: TrainingSection handles its own flow */}
               {wizardStep < stepLabels.length &&
                 !(isTrainable && trainingMode === "synthetic" && wizardStep === 1) &&
-                !(isTrainable && trainingMode && wizardStep === 2 && model.status !== "READY") && (
+                !(isTrainable && trainingMode && wizardStep === 2 && model.status !== "READY") &&
+                !(isIllustration && wizardStep === 3) && (
                 <Button
                   variant="primary"
                   onClick={nextWizardStep}
@@ -504,7 +582,7 @@ export function ModelDetailPage({
         <div className="min-w-0">
           <div className="md:sticky md:top-6 space-y-4">
             <ModelInfoCard model={model} />
-            {isTrainable && <TrainingStatusCard model={model} />}
+            {(isTrainable || isIllustration) && <TrainingStatusCard model={model} />}
             <QuickActionsCard
               model={model}
               onGenerate={onNavigateToStudio ? () => {

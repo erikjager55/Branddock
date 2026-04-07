@@ -35,6 +35,7 @@ export interface BrandContextBlock {
   brandToneOfVoice?: string;
   brandImageryStyle?: string;
   brandDesignLanguage?: string;
+  brandVisualLanguage?: string;
   // External context
   targetAudience?: string;
   industry?: string;
@@ -103,6 +104,7 @@ export function formatBrandContext(ctx: BrandContextBlock): string {
   if (ctx.brandToneOfVoice) lines.push(`**Tone of Voice:** ${ctx.brandToneOfVoice}`);
   if (ctx.brandImageryStyle) lines.push(`**Imagery Style:** ${ctx.brandImageryStyle}`);
   if (ctx.brandDesignLanguage) lines.push(`**Design Language:** ${ctx.brandDesignLanguage}`);
+  if (ctx.brandVisualLanguage) lines.push(`**Visual Language (Vormentaal):** ${ctx.brandVisualLanguage}`);
 
   // External context
   if (ctx.targetAudience) lines.push(`**Target Audience:** ${ctx.targetAudience}`);

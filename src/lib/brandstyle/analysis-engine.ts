@@ -132,6 +132,7 @@ type AnalysisStatus =
   | 'EXTRACTING_COLORS'
   | 'ANALYZING_TYPOGRAPHY'
   | 'DETECTING_COMPONENTS'
+  | 'ANALYZING_VISUAL_LANGUAGE'
   | 'GENERATING_STYLEGUIDE'
   | 'COMPLETE'
   | 'ERROR';
@@ -240,10 +241,44 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       console.warn(`[brandstyle-analysis] Design language phase failed (non-critical): ${err instanceof Error ? err.message : String(err)}`);
     }
 
+    // Step 5b: AI Call 4 — Visual Language (Vormentaal)
+    let visualLanguageResult: import('./visual-language.types').VisualLanguageProfile | null = null;
+    if (scraped.visualHeuristics) {
+      try {
+        await updateStatus(styleguideId, 'ANALYZING_VISUAL_LANGUAGE');
+        const { analyzeVisualLanguage } = await import('./visual-language-analyzer');
+        visualLanguageResult = await analyzeVisualLanguage(
+          scraped.visualHeuristics,
+          {
+            colors: processed.colorGroups.fromVariables?.map((c: { hex: string }) => c.hex)
+              ?? processed.colorGroups.byFrequency?.map((c: { hex: string }) => c.hex)
+              ?? [],
+            fonts: processed.fonts ?? [],
+            photographyStyle: voiceResult.photographyStyle?.mood ?? undefined,
+            designLanguageSummary: designResult?.layoutPrinciples?.usageNotes ?? undefined,
+          },
+          scraped.url,
+        );
+      } catch (err) {
+        // Visual language is non-critical — log and continue
+        console.warn(`[brandstyle-analysis] Visual language phase failed (non-critical): ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+
     // Step 6: Write to DB
     await updateStatus(styleguideId, 'GENERATING_STYLEGUIDE');
     const combined: CombinedResult = { ...visualResult, ...voiceResult, ...(designResult ?? {}) };
     await writeResultToDb(styleguideId, combined, processed.logoUrls, processed.brandImages);
+
+    // Write visual language separately (Json field, not part of CombinedResult)
+    if (visualLanguageResult) {
+      await prisma.brandStyleguide.update({
+        where: { id: styleguideId },
+        data: {
+          visualLanguage: JSON.parse(JSON.stringify(visualLanguageResult)),
+        },
+      });
+    }
 
     // Done — clear any stale errorMessage from previous failed runs
     await prisma.brandStyleguide.update({

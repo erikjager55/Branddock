@@ -8,6 +8,7 @@
 
 import type { ModelBrandContext } from '@/features/consistent-models/types/consistent-model.types';
 import type { ConsistentModelType } from '@prisma/client';
+import type { IllustrationStyleProfile } from './style-profile.types';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -368,6 +369,117 @@ function buildIllustrationPrompts(brand: string, tc: Record<string, string>): st
     `Technical blueprint illustration. ${style} Schematic quality, white-on-blue, precise measurements and annotations. ${brand} ${ctx} ${dos} ${avoid}`.trim(),
     `Decorative border illustration. ${style} Frame or ornamental element, repeated motifs, versatile for layouts. ${brand} ${ctx} ${dos} ${avoid}`.trim(),
   ];
+}
+
+// ─── Profile-Aware Illustration Prompts ────────────────────
+
+/**
+ * Build illustration prompts informed by the AI style profile.
+ * Uses exact colors, line weights, shading types, and shape language
+ * from the analyzed profile for much higher style fidelity.
+ */
+function buildIllustrationPromptsFromProfile(
+  brand: string,
+  tc: Record<string, string>,
+  profile: IllustrationStyleProfile,
+): string[] {
+  const dos = dosClause(tc);
+  const avoid = avoidClause(tc);
+  const sp = profile.generatedPrompts.stylePrompt;
+  const neg = profile.generatedPrompts.negativePrompt;
+
+  // Build a compact color reference from the profile
+  const topColors = profile.color.palette
+    .slice(0, 5)
+    .map((c) => c.hex)
+    .join(', ');
+  const colorRef = topColors ? `Color palette: ${topColors}.` : '';
+
+  // Build line reference
+  const lineRef = profile.line.hasOutlines
+    ? `${profile.line.weight} ${profile.line.consistency} outlines in ${profile.line.strokeColor}.`
+    : 'No outlines.';
+
+  // Core style descriptor (compact, used in every prompt)
+  const coreStyle = `${sp}. ${colorRef} ${lineRef}`.trim();
+
+  // Negative prompt addition
+  const negSuffix = neg ? `Do NOT include: ${neg}.` : '';
+
+  // Scene prompts tailored to the detected style category
+  const scenes = getScenesByStyle(profile.classification.primaryStyle);
+
+  return scenes.map((scene) =>
+    `${scene.prefix}. ${coreStyle} ${brand} ${scene.detail} ${dos} ${avoid} ${negSuffix}`.trim(),
+  );
+}
+
+/** Scene templates adapted per illustration style category */
+function getScenesByStyle(primaryStyle: string): { prefix: string; detail: string }[] {
+  const base: { prefix: string; detail: string }[] = [
+    { prefix: 'Brand illustration of two people collaborating', detail: 'Office or workspace setting, teamwork theme.' },
+    { prefix: 'Illustration of a person using a mobile device', detail: 'Modern technology context, focused engagement.' },
+    { prefix: 'Abstract concept illustration showing growth', detail: 'Upward movement, plants or charts metaphor.' },
+    { prefix: 'Illustration of a customer service interaction', detail: 'Friendly, supportive mood, communication tools.' },
+    { prefix: 'Hero illustration for a product launch', detail: 'Wide composition, product at center, celebratory energy.' },
+    { prefix: 'Illustration of a person at a desk working', detail: 'Focused, productive, laptop/monitor visible.' },
+    { prefix: 'Scene illustration of a team meeting', detail: 'Multiple people, presentation board or screen, discussion.' },
+    { prefix: 'Spot illustration of a lightbulb/idea concept', detail: 'Small, iconic, innovation metaphor.' },
+    { prefix: 'Illustration of data analytics dashboard', detail: 'Charts, graphs, insights visualization.' },
+    { prefix: 'Illustration of a person celebrating achievement', detail: 'Confetti, trophy, or success gesture.' },
+    { prefix: 'Brand mascot or character illustration', detail: 'Friendly, approachable, brand personality embodied.' },
+    { prefix: 'Illustration of a delivery or shipping process', detail: 'Package, vehicle, movement from A to B.' },
+    { prefix: 'Illustration of secure data protection', detail: 'Shield, lock, security metaphor.' },
+    { prefix: 'Illustration of global connectivity', detail: 'Globe, network lines, diverse people connected.' },
+    { prefix: 'Onboarding illustration welcoming a new user', detail: 'Open door, welcome gesture, first-step metaphor.' },
+    { prefix: 'Illustration of brainstorming with sticky notes', detail: 'Colorful notes, whiteboard, creative energy.' },
+    { prefix: 'Illustration of a payment or checkout flow', detail: 'Credit card, receipt, confirmation check.' },
+    { prefix: 'Illustration of cloud computing infrastructure', detail: 'Cloud shapes, server icons, connected devices.' },
+    { prefix: 'Error state illustration (404 or empty state)', detail: 'Lost character, magnifying glass, question mark.' },
+    { prefix: 'Illustration of sustainable/eco-friendly practices', detail: 'Leaves, recycling, green energy, nature integration.' },
+    { prefix: 'Illustration of a calendar or scheduling tool', detail: 'Calendar grid, time blocks, productivity.' },
+  ];
+
+  // For flat-vector or minimal styles, use simpler scene descriptions
+  if (primaryStyle.includes('flat') || primaryStyle.includes('minimal') || primaryStyle.includes('vector')) {
+    return base.map((s) => ({
+      ...s,
+      detail: `${s.detail} Clean, minimal composition. Simple shapes, limited elements.`,
+    }));
+  }
+
+  // For isometric styles, add perspective note
+  if (primaryStyle.includes('isometric')) {
+    return base.map((s) => ({
+      ...s,
+      detail: `${s.detail} Isometric 30-degree perspective. Consistent angle throughout.`,
+    }));
+  }
+
+  return base;
+}
+
+/**
+ * Build reference prompts using the style profile when available.
+ * Falls back to generic prompts when no profile exists.
+ */
+export function buildReferencePromptsWithProfile(
+  brandTags: string[],
+  typeConfig: Record<string, string>,
+  modelType: ConsistentModelType,
+  styleProfile: IllustrationStyleProfile | null,
+): ReferencePromptResult {
+  if (modelType === 'ILLUSTRATION' && styleProfile) {
+    const brandEssence = brandTags.length > 0
+      ? `Brand essence: ${brandTags.join(', ')}.`
+      : '';
+    return {
+      prompts: buildIllustrationPromptsFromProfile(brandEssence, typeConfig, styleProfile),
+    };
+  }
+
+  // Fallback to generic builder for all other types or when no profile
+  return buildReferencePrompts(brandTags, typeConfig, modelType);
 }
 
 // ─── Builder Registry ───────────────────────────────────────

@@ -6,6 +6,8 @@ import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { TRIGGER_WORDS } from '@/features/consistent-models/constants/model-constants';
+import { validateGeneratedImage } from '@/lib/consistent-models/style-validator';
+import type { IllustrationStyleProfile } from '@/lib/consistent-models/style-profile.types';
 import type { ConsistentModelType } from '@prisma/client';
 import { z } from 'zod';
 
@@ -88,16 +90,34 @@ export async function POST(
     // Combine with model-level style/negative prompts
     const combinedPrompt = model.stylePrompt ? `${finalPrompt}, ${model.stylePrompt}` : finalPrompt;
 
+    // Style profile-aware LoRA scale and negative prompt
+    const styleProfile = model.styleProfile as Record<string, unknown> | null;
+    const profilePrompts = styleProfile?.generatedPrompts as { negativePrompt?: string } | undefined;
+    const profileNegative = profilePrompts?.negativePrompt;
+
+    // Higher LoRA scale for styles with strong analysis (more specific = stronger enforcement)
+    const baseLoraScale = model.type === 'ILLUSTRATION' && styleProfile ? 1.1 : 1.0;
+
+    // Merge negative prompts: user > style profile > model default
+    const mergedNegative = [
+      negativePrompt,
+      profileNegative,
+      model.negativePrompt,
+    ]
+      .filter(Boolean)
+      .join(', ') || undefined;
+
     // Call fal.ai to generate
     const generatorEndpoint = model.generatorEndpoint ?? 'fal-ai/flux-lora';
     const result = await runFalGeneration(generatorEndpoint, {
       prompt: combinedPrompt,
-      loras: [{ path: model.falLoraUrl!, scale: 1.0 }],
+      loras: [{ path: model.falLoraUrl!, scale: guidanceScale ? 1.0 : baseLoraScale }],
       num_images: numImages ?? 1,
       guidance_scale: guidanceScale ?? 7.5,
       image_size: { width: width ?? 1024, height: height ?? 1024 },
       seed,
       output_format: 'png',
+      ...(mergedNegative ? { negative_prompt: mergedNegative } : {}),
     });
 
     // Process each generated image
@@ -120,6 +140,23 @@ export async function POST(
           contentType: 'image/png',
         });
 
+        // Run style validation if ILLUSTRATION model has a style profile
+        let validationScore: number | null = null;
+        let validationDetails: Record<string, unknown> | null = null;
+
+        if (model.type === 'ILLUSTRATION' && styleProfile) {
+          try {
+            const validation = await validateGeneratedImage(
+              imageBuffer,
+              styleProfile as unknown as IllustrationStyleProfile,
+            );
+            validationScore = validation.overallScore;
+            validationDetails = validation as unknown as Record<string, unknown>;
+          } catch (valError) {
+            console.error('[generate] Style validation failed (non-blocking):', valError);
+          }
+        }
+
         // Create generation record
         const generation = await prisma.consistentModelGeneration.create({
           data: {
@@ -137,6 +174,8 @@ export async function POST(
             generationTimeMs: Date.now() - startTime,
             aiProvider: 'fal',
             aiModel: generatorEndpoint,
+            styleValidationScore: validationScore,
+            styleValidationDetails: validationDetails ? JSON.parse(JSON.stringify(validationDetails)) : undefined,
           },
         });
 

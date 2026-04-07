@@ -228,12 +228,17 @@ export type GenerationPreset = keyof typeof GENERATION_PRESETS;
 
 // ─── Model Type Options (for dropdowns) ─────────────────────
 
+/** Types that can no longer be created — their functionality moved to Brandstyle */
+const HIDDEN_CREATE_TYPES = new Set<ConsistentModelType>(["BRAND_STYLE", "STYLE"]);
+
 export const MODEL_TYPE_OPTIONS = (
   Object.entries(TYPE_CONFIG) as [ConsistentModelType, ModelTypeConfig][]
-).map(([value, config]) => ({
-  value,
-  label: config.label,
-}));
+)
+  .filter(([value]) => !HIDDEN_CREATE_TYPES.has(value))
+  .map(([value, config]) => ({
+    value,
+    label: config.label,
+  }));
 
 // ─── Status Filter Options ──────────────────────────────────
 
@@ -351,6 +356,7 @@ export const WIZARD_STEPS_OWN_IMAGES = ["Upload", "Training & Showcase"] as cons
 export const WIZARD_STEPS_SYNTHETIC = ["Generate References", "Training & Showcase"] as const;
 export const WIZARD_STEPS_NON_TRAINABLE = ["Style Guide", "Reference Images", "Overview"] as const;
 export const WIZARD_STEPS_ILLUSTRATION = ["Illustration Style", "Reference Images", "Overview"] as const;
+export const WIZARD_STEPS_ILLUSTRATION_TRAINABLE = ["Upload & Curate", "AI Style Analysis", "Training & Showcase"] as const;
 
 export const ILLUSTRATION_STYLE_OPTIONS = {
   illustrationStyle: [

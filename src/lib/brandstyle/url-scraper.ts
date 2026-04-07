@@ -58,6 +58,7 @@ export interface ScrapedData {
   fontSizes: FontSizeEntry[];
   linkedStylesheetCount: number;
   brandImages: ScrapedBrandImage[];
+  visualHeuristics?: import('./visual-language.types').CssVisualHeuristics;
 }
 
 // Chrome-like User-Agent to avoid bot blocking
@@ -164,6 +165,10 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
   const colorFrequency = analyzeColorFrequency(allCss);
   const fontSizes = extractFontSizes(allCss);
 
+  // Extract visual language heuristics from CSS
+  const { extractVisualLanguageHeuristics } = await import('./css-visual-heuristics');
+  const visualHeuristics = extractVisualLanguageHeuristics(allCss);
+
   // Find logo candidates
   const logoUrls = findLogoUrls($, baseUrl);
 
@@ -190,6 +195,7 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
     fontSizes,
     linkedStylesheetCount: cssLinks.length,
     brandImages,
+    visualHeuristics,
   };
 }
 

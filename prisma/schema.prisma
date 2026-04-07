@@ -1437,6 +1437,10 @@ model BrandStyleguide {
   layoutPrinciples      Json?
   designLanguageSavedForAi Boolean        @default(false)
 
+  // Visual Language (Vormentaal)
+  visualLanguage        Json?
+  visualLanguageSavedForAi Boolean        @default(false)
+
   isLocked              Boolean           @default(false)
   lockedAt              DateTime?
   lockedById            String?
@@ -1495,6 +1499,7 @@ enum AnalysisStatus {
   EXTRACTING_COLORS
   ANALYZING_TYPOGRAPHY
   DETECTING_COMPONENTS
+  ANALYZING_VISUAL_LANGUAGE
   GENERATING_STYLEGUIDE
   COMPLETE
   ERROR
@@ -3686,6 +3691,11 @@ model ConsistentModel {
   generationParams    Json?                 // Illustration-specific params
   brandContext        Json?                 // Snapshot of brand context at creation time
 
+  // Illustration style analysis
+  styleProfile        Json?                 // IllustrationStyleProfile (50+ params from AI analysis)
+  styleProfileVersion Int                   @default(0)
+  styleAnalysisStatus String?               // PENDING | ANALYZING | COMPLETE | FAILED
+
   // Metadata
   thumbnailUrl        String?
   sampleImageUrls     Json?                 // String[] — AI-generated samples after training
@@ -3767,6 +3777,10 @@ model ConsistentModelGeneration {
   aiModel             String           // Replicate model version
   cost                Float?           // Estimated cost in USD
   mediaAssetId        String?          // Link to MediaAsset if saved to library
+
+  // Style validation (Illustration models)
+  styleValidationScore   Float?        // 0-1 overall style match score
+  styleValidationDetails Json?         // StyleValidationResult details
 
   createdAt           DateTime         @default(now())
 

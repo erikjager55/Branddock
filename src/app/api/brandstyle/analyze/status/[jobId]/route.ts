@@ -48,6 +48,7 @@ const ANALYSIS_STEPS = [
   "Extracting color palette",
   "Analyzing typography",
   "Detecting component styles",
+  "Analyzing visual language",
   "Generating styleguide",
 ];
 
@@ -57,8 +58,9 @@ const STATUS_TO_STEP: Record<string, number> = {
   EXTRACTING_COLORS: 2,
   ANALYZING_TYPOGRAPHY: 3,
   DETECTING_COMPONENTS: 4,
-  GENERATING_STYLEGUIDE: 5,
-  COMPLETE: 5,
+  ANALYZING_VISUAL_LANGUAGE: 5,
+  GENERATING_STYLEGUIDE: 6,
+  COMPLETE: 6,
   ERROR: -1,
 };
 
@@ -106,7 +108,7 @@ export async function GET(
       jobId,
       status: styleguide.analysisStatus,
       currentStep: currentStepIndex,
-      totalSteps: 5,
+      totalSteps: 6,
       steps,
       ...(isError && { error: sanitizeErrorMessage(styleguide.errorMessage) }),
     });

@@ -849,6 +849,8 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         gradientsEffects: true,
         layoutPrinciples: true,
         designLanguageSavedForAi: true,
+        visualLanguage: true,
+        visualLanguageSavedForAi: true,
       },
     }),
 
@@ -1166,6 +1168,16 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         if (layout.usageNotes) dlParts.push(`Layout usage: ${layout.usageNotes}`);
       }
       if (dlParts.length > 0) ctx.brandDesignLanguage = dlParts.join('. ');
+    }
+
+    // Visual Language (Vormentaal) — the brand's visual DNA
+    if (styleguide.visualLanguageSavedForAi && styleguide.visualLanguage) {
+      const vl = styleguide.visualLanguage as { promptFragment?: string; summary?: string };
+      if (vl.promptFragment) {
+        ctx.brandVisualLanguage = vl.promptFragment;
+      } else if (vl.summary) {
+        ctx.brandVisualLanguage = vl.summary;
+      }
     }
   }
 
