@@ -300,8 +300,8 @@ export function BriefingReviewView({
                   value={briefing[field]}
                   onChange={(e) => handleFieldChange(field, e.target.value)}
                   disabled={isRevalidating}
-                  rows={2}
-                  className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 focus:outline-none disabled:opacity-50 resize-none"
+                  rows={4}
+                  className="w-full rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary-400 focus:ring-1 focus:ring-primary-400 focus:outline-none disabled:opacity-50 resize-y"
                   placeholder={`Enter ${FIELD_LABELS[field].toLowerCase()}...`}
                 />
               </div>

@@ -2,6 +2,14 @@
 
 Lessons learned from past mistakes. Read this at the start of every session.
 
+## 2026-04-07: Next.js wizard vs [id] route conflict
+**What went wrong**: `/api/campaigns/wizard/strategy/validate-briefing` was silently intercepted by `/api/campaigns/[id]/strategy/validate-briefing` (Next.js matched "wizard" as the `[id]` param). The wrong route was executed.
+**Rule**: Never create overlapping static (`/wizard/`) and dynamic (`/[id]/`) route segments at the same level. If both exist, the dynamic route can swallow the static one.
+
+## 2026-04-07: React 19 dev-mode double-invoke aborts SSE fetches
+**What went wrong**: `useEffect` cleanup called `abortRef.current?.abort()` which killed the SSE fetch during React 19's `doubleInvokeEffectsInDEV` (mount→cleanup→mount cycle). The fetch was aborted before the server could respond.
+**Rule**: For long-lived requests (SSE, WebSocket), don't abort in useEffect cleanup directly. Use a deferred abort (`setTimeout` + `isMountedRef` check) to survive React 19 dev-mode double-invoke.
+
 ## 2026-03-20: AI prompt ↔ TypeScript interface mismatch (Website Scanner)
 
 **What went wrong:** The AI prompts in `website-scanner.ts` defined response keys (`purposeWheel`, `brandHouseValues`) and inner structure (`{ confidence, frameworkData }`) that didn't match the TypeScript interfaces (`purposeStatement`, `coreValues`, `{ data, confidence }`). Since `createClaudeStructuredCompletion` doesn't validate against the TS type at runtime, the data came back with the AI's keys but the mapper tried to read the type's keys → everything was `undefined`.

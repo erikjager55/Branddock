@@ -33,7 +33,6 @@ import { VariantReviewView } from "./VariantReviewView";
 import { SynthesisReviewView } from "./SynthesisReviewView";
 import { BriefingReviewView } from "./BriefingReviewView";
 import { StrategyFoundationReviewView } from "./StrategyFoundationReviewView";
-import { AgentDebateView } from "./AgentDebateView";
 import { compileStructuredFeedback } from "../../lib/compile-structured-feedback";
 import { getGoalTypeStrategicInsights } from "../../lib/goal-types";
 import type { GoalTypeStrategicInsights } from "../../lib/goal-types";
@@ -303,9 +302,6 @@ export function StrategyStep() {
   const enrichmentBlockCount = useCampaignWizardStore((s) => s.enrichmentBlockCount);
   const enrichmentSources = useCampaignWizardStore((s) => s.enrichmentSources);
   const useExternalEnrichment = useCampaignWizardStore((s) => s.useExternalEnrichment);
-  const multiAgentEnabled = useCampaignWizardStore((s) => s.multiAgentEnabled);
-  const agentDebateRounds = useCampaignWizardStore((s) => s.agentDebateRounds);
-
   // 9-Phase state
   const briefingValidation = useCampaignWizardStore((s) => s.briefingValidation);
   const strategyFoundation = useCampaignWizardStore((s) => s.strategyFoundation);
@@ -343,10 +339,22 @@ export function StrategyStep() {
   const generationIdRef = useRef(0);
   const strategyAutoStartedRef = useRef(false);
 
-  // Cleanup on unmount
+  // Cleanup on unmount — only abort if component is truly unmounting, not during
+  // React 19 dev-mode double-invoke (mount→unmount→mount).  We use a flag to
+  // distinguish the two: the flag is set on every mount and cleared in the
+  // cleanup.  React's double-invoke calls cleanup synchronously before the
+  // second mount, so by the time the second mount runs the flag is false.
+  const isMountedRef = useRef(false);
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
-      abortRef.current?.abort();
+      isMountedRef.current = false;
+      // Defer the abort so the second mount (dev double-invoke) can claim the ref
+      setTimeout(() => {
+        if (!isMountedRef.current) {
+          abortRef.current?.abort();
+        }
+      }, 50);
     };
   }, []);
 
@@ -389,7 +397,6 @@ export function StrategyStep() {
         competitorIds: selectedContextIds.competitorIds,
         trendIds: selectedContextIds.trendIds,
         wizardContext,
-        multiAgent: useCampaignWizardStore.getState().multiAgentEnabled || undefined,
       },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
@@ -410,15 +417,6 @@ export function StrategyStep() {
           return;
         }
 
-        // Multi-agent debate round events
-        if (data.type === "agent_round") {
-          const s = useCampaignWizardStore.getState();
-          const round = data.round as import("@/lib/campaigns/strategy-blueprint.types").AgentRoundName;
-          const status = data.status as 'running' | 'complete' | 'error';
-          s.updateDebateRound({ round, status });
-          return;
-        }
-
         if (data.type === "complete" && data.result) {
           const result = data.result as {
             strategyLayerA: import("@/lib/campaigns/strategy-blueprint.types").StrategyLayer;
@@ -435,22 +433,6 @@ export function StrategyStep() {
           };
           const s = useCampaignWizardStore.getState();
           s.setVariantResults(result);
-
-          // Store multi-agent debate results if present
-          const agentDebate = (data.result as Record<string, unknown>).agentDebate as {
-            critiqueOfA?: import("@/lib/campaigns/strategy-blueprint.types").AgentCritique;
-            critiqueOfB?: import("@/lib/campaigns/strategy-blueprint.types").AgentCritique;
-            defenseA?: import("@/lib/campaigns/strategy-blueprint.types").AgentDefense;
-            defenseB?: import("@/lib/campaigns/strategy-blueprint.types").AgentDefense;
-            personaDebate?: import("@/lib/campaigns/strategy-blueprint.types").PersonaDebateResult[];
-          } | undefined;
-          if (agentDebate) {
-            if (agentDebate.critiqueOfA) s.setCritique('A', agentDebate.critiqueOfA);
-            if (agentDebate.critiqueOfB) s.setCritique('B', agentDebate.critiqueOfB);
-            if (agentDebate.defenseA) s.setDefense('A', agentDebate.defenseA);
-            if (agentDebate.defenseB) s.setDefense('B', agentDebate.defenseB);
-            if (agentDebate.personaDebate) s.setPersonaDebate(agentDebate.personaDebate);
-          }
 
           s.setIsGenerating(false);
           s.setStrategyPhase("review_variants");
@@ -647,6 +629,7 @@ export function StrategyStep() {
   useEffect(() => {
     if (strategyPhase === 'idle' && !isGenerating && !pipelineError && !strategyAutoStartedRef.current && campaignGoalType) {
       strategyAutoStartedRef.current = true;
+      console.log('[StrategyStep] Auto-starting handleValidateBriefing NOW');
       handleValidateBriefing();
     }
   }, [strategyPhase, isGenerating, pipelineError, campaignGoalType, handleValidateBriefing]);
@@ -1282,7 +1265,6 @@ export function StrategyStep() {
           enrichmentBlockCount={enrichmentBlockCount}
           enrichmentSources={enrichmentSources}
         />
-        {multiAgentEnabled && agentDebateRounds.length > 0 && <AgentDebateView />}
         {goalInsights && <GoalInsightsPreview insights={goalInsights} />}
       </div>
     );
@@ -1296,7 +1278,6 @@ export function StrategyStep() {
         {arenaEnrichment && arenaEnrichment.totalBlocks > 0 && (
           <ArenaEnrichmentBadge totalBlocks={arenaEnrichment.totalBlocks} queriesUsed={arenaEnrichment.queries} />
         )}
-        {multiAgentEnabled && <AgentDebateView />}
         <VariantReviewView
           strategyLayerA={strategyLayerA}
           strategyLayerB={strategyLayerB}
