@@ -33,7 +33,7 @@ SEO ON-PAGE CHECKLIST (apply to every blog post):
 
 ## STRUCTURE SKELETON (1000-1500 words)
 - **Title with primary keyword** (max 60 characters)
-- **Meta description** (155 characters, includes primary keyword and a compelling reason to click)
+- **Meta description** (under 160 characters, includes primary keyword and a compelling reason to click)
 - **Hook paragraph** (50-80 words) — Must acknowledge the reader's specific problem or desire
 - **Section 1: Problem/context** (150-200 words, H2) — Why this matters now, what is at stake
 - **Section 2: Framework/solution** (200-300 words, H2) — Your core method, includes a numbered list or visual framework

@@ -631,7 +631,7 @@ Instagram algorithm priorities (2025-2026): Saves are the #1 ranking signal (a s
 - **Value or lesson** (20-40 words): The takeaway. What should the reader remember or do differently?
 - **CTA** (10-20 words): Specific action — "Save this for later", "Share with your business bestie", "Drop a fire emoji if you agree", "Comment your biggest challenge below."
 - **Line break**
-- **Hashtags** (20-30): Place in a separate block below the caption, separated by a line break. Mix: 5 broad hashtags (1M+ posts), 10 mid-range (100K-1M), 10 niche (10K-100K), and 5 hyper-niche (under 10K). The niche hashtags are where you rank and get discovered.
+- **Hashtags** (3-5): Place in a separate block below the caption, separated by a line break. Mix: 1 broad hashtag (1M+ posts), 2 mid-range (100K-1M), and 1-2 niche (10K-100K). Instagram's algorithm now favors fewer, highly relevant hashtags over volume.
 - **Image/visual direction** (2-3 sentences): Suggest what the accompanying image or graphic should depict, including mood, composition, and color palette.
 - **Optimal caption length**: 125-300 words (longer captions drive more saves).
 
@@ -691,7 +691,7 @@ Before outputting, verify:
         params.userPrompt,
         params.context,
         params.settings,
-        'Platform: Instagram. Caption limit: 2200 chars. First line must hook before the "...more" fold. Include image direction suggestion and hashtag block (20-30, grouped by reach).',
+        'Platform: Instagram. Caption limit: 2200 chars. First line must hook before the "...more" fold. Include image direction suggestion and hashtag block (3-5 highly relevant).',
       ),
   },
 

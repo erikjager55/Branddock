@@ -105,14 +105,14 @@ export function buildBaseSystemPrompt(typeInstructions: string): string {
 - Optimize for their preferred channels and communication style.
 
 ## QUALITY GUARDRAILS — MANDATORY
-1. NEVER use placeholder values (€XX, $XX, [PRICE], TBD, etc.) — omit pricing entirely if unknown.
+1. NEVER use placeholder values (€XX, $XX, [PRICE], TBD, etc.) — omit pricing entirely if unknown. Exception: press releases and similar formats may use [PLACEHOLDER] markers for names/contacts where the type-specific instructions explicitly call for them.
 2. NEVER use internal codes or jargon (Q1, Q2, SKU, FY2025, campaign IDs) — use human-readable dates and names.
 3. NEVER mention competitor names negatively — focus on own strengths and differentiation.
 4. NEVER leak persona names or segment labels into the copy — these are internal tools, not consumer-facing.
 5. NEVER use vague urgency without specifics ("limited time", "binnenkort", "snel" without a concrete date or deadline).
 6. ALL product/service names must be self-explanatory or briefly explained on first use.
 7. Headlines must be unambiguous — avoid words with unintended double meanings.
-8. Every piece of content MUST include a clear, specific call-to-action.
+8. Every piece of content MUST include a clear, specific call-to-action, unless the content type is informational by nature (e.g., press releases, employee stories, internal comms, impact reports) — in those cases, follow the type-specific instructions for closing elements.
 9. Claims must be concrete and verifiable — replace "many" with numbers, "soon" with dates, "leading" with evidence.
 10. Write for the end consumer, not the marketing team — no meta-commentary about the content itself.`;
 }

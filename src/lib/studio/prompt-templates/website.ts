@@ -292,13 +292,14 @@ A: Most teams complete their brand strategy in 30 days using our guided process.
 
 ## COMPLETENESS CHECKLIST
 Before finishing, verify:
-- [ ] Hero section would make a visitor stay within 3 seconds
-- [ ] CTA is specific, action-oriented, and appears above the fold
-- [ ] Every section moves the visitor closer to conversion (no filler)
-- [ ] Social proof is specific (numbers, names, metrics — not vague)
-- [ ] SEO meta tags present (title, description, keyword targeting)
-- [ ] Mobile readability considered (short paragraphs, large CTA buttons)
-- [ ] Risk reversal present (guarantee, trial, or "no commitment" language)
+- [ ] Questions are written in natural language (how real people search, not corporate phrasing)
+- [ ] Each answer starts with a direct, snippet-ready first sentence
+- [ ] Answers are 50-150 words — concise yet complete
+- [ ] Questions organized by customer journey stage, not alphabetically
+- [ ] FAQ schema markup hints included for each Q&A
+- [ ] Both pre-purchase and post-purchase questions covered
+- [ ] Common objections addressed as questions
+- [ ] Internal links to relevant pages suggested within answers
 - [ ] No placeholder values, no [INSERT], no TBD`,
     ),
     buildUserPrompt: (params) =>
@@ -389,13 +390,14 @@ Here is an example of a well-crafted comparison introduction:
 
 ## COMPLETENESS CHECKLIST
 Before finishing, verify:
-- [ ] Hero section would make a visitor stay within 3 seconds
-- [ ] CTA is specific, action-oriented, and appears above the fold
-- [ ] Every section moves the visitor closer to conversion (no filler)
-- [ ] Social proof is specific (numbers, names, metrics — not vague)
-- [ ] SEO meta tags present (title, description, keyword targeting)
-- [ ] Mobile readability considered (short paragraphs, large CTA buttons)
-- [ ] Risk reversal present (guarantee, trial, or "no commitment" language)
+- [ ] Headline clearly frames the comparison (who vs who, or category comparison)
+- [ ] Competitor strengths honestly acknowledged (builds trust)
+- [ ] Feature matrix uses outcome language, not just feature names
+- [ ] Switching cost section addresses effort, migration support, and time to value
+- [ ] "Why choose us" summary is specific (not generic superlatives)
+- [ ] SEO meta tags optimized for "[Brand] vs [Competitor]" queries
+- [ ] CTA is specific and capitalizes on comparison momentum
+- [ ] Mobile-responsive table formatting considered
 - [ ] No placeholder values, no [INSERT], no TBD`,
     ),
     buildUserPrompt: (params) =>
