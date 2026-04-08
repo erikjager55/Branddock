@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { scrapeProductUrl } from "@/lib/products/url-scraper";
+import { scrapeUrlViaGemini } from "@/lib/products/gemini-url-fallback";
 import { createStructuredCompletion } from "@/lib/ai/exploration/ai-caller";
 import { resolveFeatureModel } from "@/lib/ai/feature-models.server";
 import { getBrandContext } from "@/lib/ai/brand-context";
@@ -38,18 +39,24 @@ export async function POST(request: NextRequest) {
     const { url } = parsed.data;
     console.log("[analyze/url] Starting analysis for:", url);
 
-    // 1. Scrape the URL
+    // 1. Scrape the URL (direct fetch, fallback to Gemini if blocked)
     let scraped;
     try {
       scraped = await scrapeProductUrl(url);
       console.log("[analyze/url] Scraped OK, body length:", scraped.bodyText.length, "images:", scraped.images.length);
     } catch (scrapeError) {
-      console.error("[analyze/url] Scrape failed:", scrapeError);
-      const message = scrapeError instanceof Error ? scrapeError.message : "Failed to fetch URL";
-      return NextResponse.json(
-        { error: `Could not access the URL: ${message}` },
-        { status: 422 },
-      );
+      console.warn("[analyze/url] Direct scrape failed, trying Gemini fallback:", scrapeError);
+      try {
+        scraped = await scrapeUrlViaGemini(url);
+        console.log("[analyze/url] Gemini fallback OK, body length:", scraped.bodyText.length);
+      } catch (fallbackError) {
+        console.error("[analyze/url] Gemini fallback also failed:", fallbackError);
+        const message = scrapeError instanceof Error ? scrapeError.message : "Failed to fetch URL";
+        return NextResponse.json(
+          { error: `Could not access the URL: ${message}` },
+          { status: 422 },
+        );
+      }
     }
 
     if (!scraped.bodyText || scraped.bodyText.length < 50) {

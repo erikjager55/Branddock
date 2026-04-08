@@ -25,6 +25,22 @@ export interface ScrapedProductData {
   images: ScrapedImage[];
 }
 
+/** Browser-like headers to avoid 403 bot detection on target websites. */
+const BROWSER_HEADERS: Record<string, string> = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9,nl;q=0.8',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'DNT': '1',
+  'Connection': 'keep-alive',
+  'Upgrade-Insecure-Requests': '1',
+  'Sec-Fetch-Dest': 'document',
+  'Sec-Fetch-Mode': 'navigate',
+  'Sec-Fetch-Site': 'none',
+  'Sec-Fetch-User': '?1',
+  'Cache-Control': 'max-age=0',
+};
+
 /**
  * Find product-relevant images from a parsed HTML page.
  * Pattern inspired by brandstyle url-scraper findLogoUrls.
@@ -177,11 +193,7 @@ export async function scrapeProductUrl(url: string): Promise<ScrapedProductData>
   }
 
   const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.9',
-    },
+    headers: BROWSER_HEADERS,
     signal: AbortSignal.timeout(15000),
     redirect: 'follow',
   });
@@ -265,11 +277,7 @@ export async function fetchAndParse(url: string): Promise<{
   }
 
   const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.9',
-    },
+    headers: BROWSER_HEADERS,
     signal: AbortSignal.timeout(15000),
     redirect: 'follow',
   });

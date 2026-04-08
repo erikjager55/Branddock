@@ -5,6 +5,7 @@ import {
   Sparkles,
   AlertCircle,
   Target,
+  Check,
   ChevronDown,
   ChevronRight,
   Palette,
@@ -24,7 +25,6 @@ import {
   generateConceptsSSE,
   creativeDebateSSE,
   buildStrategySSE,
-  generateVisualsSSE,
 } from "../../api/campaigns.api";
 import type { PipelineStepStatus } from "../../types/campaign-wizard.types";
 import { PipelineProgressView } from "./PipelineProgressView";
@@ -38,8 +38,7 @@ import { getGoalTypeStrategicInsights } from "../../lib/goal-types";
 import type { GoalTypeStrategicInsights } from "../../lib/goal-types";
 import { InsightReviewView } from "./InsightReviewView";
 import { ConceptSelectionView } from "./ConceptSelectionView";
-import { ConceptVisualsView } from "./ConceptVisualsView";
-import type { HumanInsight, CreativeConcept, ConceptVisual } from "@/lib/campaigns/strategy-blueprint.types";
+import type { HumanInsight, CreativeConcept } from "@/lib/campaigns/strategy-blueprint.types";
 
 // ─── Pipeline Step Configs per Phase ────────────────────
 
@@ -360,12 +359,15 @@ export function StrategyStep() {
 
 
   const campaignType = useCampaignWizardStore((s) => s.campaignType);
+  const wizardMode = useCampaignWizardStore((s) => s.wizardMode);
+  const selectedContentType = useCampaignWizardStore((s) => s.selectedContentType);
 
   const wizardContext = useMemo(() => ({
     campaignName: campaignName || "Untitled Campaign",
     campaignDescription,
     campaignGoalType: campaignGoalType ?? undefined,
-    campaignType: campaignType ?? undefined,
+    campaignType: wizardMode === 'content' ? 'content' as const : (campaignType ?? undefined),
+    selectedContentType: selectedContentType ?? undefined,
     useExternalEnrichment,
     briefing: {
       occasion: briefingOccasion || undefined,
@@ -374,7 +376,7 @@ export function StrategyStep() {
       tonePreference: briefingTonePreference || undefined,
       constraints: briefingConstraints || undefined,
     },
-  }), [campaignName, campaignDescription, campaignGoalType, campaignType, useExternalEnrichment, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints]);
+  }), [campaignName, campaignDescription, campaignGoalType, campaignType, wizardMode, selectedContentType, useExternalEnrichment, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints]);
 
   // ─── Phase A: Generate Variants ──────────────────────
 
@@ -629,13 +631,14 @@ export function StrategyStep() {
   }, [strategicIntent, selectedContextIds, wizardContext]);
 
   // Auto-start strategy generation when step 3 is reached
+  // In content mode, selectedContentType replaces campaignGoalType as the trigger
+  const canAutoStart = wizardMode === 'content' ? !!selectedContentType : !!campaignGoalType;
   useEffect(() => {
-    if (strategyPhase === 'idle' && !isGenerating && !pipelineError && !strategyAutoStartedRef.current && campaignGoalType) {
+    if (strategyPhase === 'idle' && !isGenerating && !pipelineError && !strategyAutoStartedRef.current && canAutoStart) {
       strategyAutoStartedRef.current = true;
-      console.log('[StrategyStep] Auto-starting handleValidateBriefing NOW');
       handleValidateBriefing();
     }
-  }, [strategyPhase, isGenerating, pipelineError, campaignGoalType, handleValidateBriefing]);
+  }, [strategyPhase, isGenerating, pipelineError, canAutoStart, handleValidateBriefing]);
 
   // ─── 9-Phase: Build Foundation ─────────────────────
 
@@ -849,55 +852,6 @@ export function StrategyStep() {
     abortRef.current = { abort };
   }, [wizardContext, selectedContextIds, strategicIntent]);
 
-  // ─── Creative Pipeline: Generate Concept Visuals ────────
-
-  const handleGenerateVisuals = useCallback(() => {
-    const store = useCampaignWizardStore.getState();
-    const conceptIdx = store.selectedConceptIndex;
-    if (conceptIdx === null) return;
-    const selectedConcept = store.concepts[conceptIdx];
-    if (!selectedConcept) return;
-
-    const currentGenId = ++generationIdRef.current;
-    store.setIsGenerating(true);
-    store.setStrategyPhase("generating_visuals");
-    store.updateStepStatus({ step: 1, name: "Concept Visuals", status: "running", label: "Generating campaign mockup visuals..." });
-
-    const { abort } = generateVisualsSSE(
-      { workspaceId: "", wizardContext, selectedConcept, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent },
-      (event) => {
-        if (generationIdRef.current !== currentGenId) return;
-        const data = event as Record<string, unknown>;
-        if (data.type === "complete" && data.result) {
-          const result = data.result as { visuals: ConceptVisual[] };
-          const s = useCampaignWizardStore.getState();
-          s.setConceptVisuals(result.visuals);
-          s.setIsGenerating(false);
-          s.setStrategyPhase("review_visuals");
-          return;
-        }
-        if (data.type === "error") {
-          const s = useCampaignWizardStore.getState();
-          s.setIsGenerating(false);
-          s.setStrategyPhase("review_concepts");
-          setPhaseError("Visual generation failed. Please try again.");
-          return;
-        }
-        if (data.step && data.name && data.status && data.label) {
-          useCampaignWizardStore.getState().updateStepStatus({ step: data.step as number, name: data.name as string, status: data.status as PipelineStepStatus, label: data.label as string });
-        }
-      },
-      () => {
-        if (generationIdRef.current !== currentGenId) return;
-        const s = useCampaignWizardStore.getState();
-        s.setIsGenerating(false);
-        s.setStrategyPhase("review_concepts");
-        setPhaseError("Visual generation failed due to a network error.");
-      },
-    );
-    abortRef.current = { abort };
-  }, [wizardContext, selectedContextIds, strategicIntent]);
-
   // ─── Creative Pipeline: Creative Debate ────────────────
 
   const handleCreativeDebate = useCallback(() => {
@@ -1006,24 +960,16 @@ export function StrategyStep() {
     abortRef.current = { abort };
   }, [wizardContext, selectedContextIds, strategicIntent]);
 
-  // ─── Set wizard Continue override for briefing review ────
+  // ─── Set wizard Continue override for strategy step phases ────
   React.useEffect(() => {
     const store = useCampaignWizardStore.getState();
     if (strategyPhase === "review_briefing") {
       store.setStepProceedOverride(handleBuildFoundation);
-    } else if (strategyPhase === "review_insights") {
-      store.setStepProceedOverride(handleGenerateConcepts);
-    } else if (strategyPhase === "review_concepts") {
-      store.setStepProceedOverride(handleGenerateVisuals);
-    } else if (strategyPhase === "review_visuals") {
-      store.setStepProceedOverride(handleBuildStrategyFromConcept);
-    } else if (strategyPhase === "review_debate") {
-      store.setStepProceedOverride(handleBuildStrategyFromConcept);
     } else {
       store.setStepProceedOverride(null);
     }
     return () => { store.setStepProceedOverride(null); };
-  }, [strategyPhase, handleBuildFoundation, handleGenerateConcepts, handleGenerateVisuals, handleCreativeDebate, handleBuildStrategyFromConcept]);
+  }, [strategyPhase, handleBuildFoundation]);
 
   // ─── Render based on phase ───────────────────────────
 
@@ -1110,21 +1056,33 @@ export function StrategyStep() {
     );
   }
 
-  // 9-Phase: Review Strategy Foundation → triggers insight mining
+  // 9-Phase: Review Strategy Foundation → proceed to concept step
   if (strategyPhase === "review_strategy" && strategyFoundation) {
     return (
       <StrategyFoundationReviewView
         foundation={strategyFoundation}
         onProceed={() => {
-          // Instead of going directly to rationale_complete, start insight mining
-          handleMineInsights();
+          useCampaignWizardStore.getState().setStrategyPhase("rationale_complete");
         }}
         errorMessage={phaseError}
       />
     );
   }
 
-  // ─── Creative Quality Pipeline Render Cases ─────────────
+  // Strategy step complete — waiting for user to click Continue to go to Concept step
+  if (strategyPhase === "rationale_complete") {
+    return (
+      <div className="max-w-lg mx-auto text-center py-12">
+        <div className="w-12 h-12 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-3">
+          <Check className="w-6 h-6 text-emerald-600" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Strategy Foundation Complete</h3>
+        <p className="text-sm text-gray-500">Click Continue to develop the creative concept.</p>
+      </div>
+    );
+  }
+
+  // ─── Legacy Pipeline Render Cases (kept for backward compat) ─────────────
 
   // Mining insights (spinner)
   if (strategyPhase === "mining_insights" && isGenerating) {
@@ -1168,24 +1126,6 @@ export function StrategyStep() {
         onRegenerate={handleGenerateConcepts}
         isRegenerating={isGenerating}
       />
-    );
-  }
-
-  // Generating visuals (spinner)
-  if (strategyPhase === "generating_visuals" && isGenerating) {
-    return (
-      <PipelineProgressView
-        title="Generating Campaign Visuals"
-        steps={[{ step: 1, name: "Concept Visuals", label: "Generating 3 campaign mockups...", description: "Creating hero, square, and story format visuals from your creative concept using AI image generation." }]}
-        pipelineSteps={pipelineSteps}
-      />
-    );
-  }
-
-  // Review visuals
-  if (strategyPhase === "review_visuals") {
-    return (
-      <ConceptVisualsView />
     );
   }
 
@@ -1321,28 +1261,6 @@ export function StrategyStep() {
         }}
         errorMessage={phaseError}
       />
-    );
-  }
-
-  // Rationale approved — confirmation screen
-  if (strategyPhase === "rationale_complete") {
-    return (
-      <div className="max-w-lg mx-auto text-center py-12">
-        <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-emerald-100 to-primary-100 flex items-center justify-center mb-4">
-          <Target className="w-8 h-8 text-emerald-500" />
-        </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Strategic Rationale Approved
-        </h3>
-        <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
-          Your strategic rationale has been reviewed and approved. Continue to the Concept step to develop the creative concept.
-        </p>
-        <div className="flex flex-col items-center gap-3">
-          <Button variant="ghost" size="sm" icon={Sparkles} onClick={handleRestart}>
-            Start Over
-          </Button>
-        </div>
-      </div>
     );
   }
 

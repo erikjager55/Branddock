@@ -489,9 +489,23 @@ export function getAnglesByFamily(family: InsightFamily): CreativeAngleDefinitio
 }
 
 export function getTopAnglesForGoal(goalType: string, count = 5): CreativeAngleDefinition[] {
-  return Object.values(CREATIVE_ANGLES)
-    .sort((a, b) => (b.suitabilityByGoal[goalType] ?? 0) - (a.suitabilityByGoal[goalType] ?? 0))
-    .slice(0, count);
+  const all = Object.values(CREATIVE_ANGLES);
+
+  // Group into tiers by suitability score so we can randomize within each tier
+  const scored = all.map((a) => ({ angle: a, score: a.suitabilityByGoal[goalType] ?? 0 }));
+  scored.sort((a, b) => b.score - a.score);
+
+  // Take a larger pool (top 2x count) and shuffle within it to ensure variety
+  const poolSize = Math.min(count * 2, scored.length);
+  const pool = scored.slice(0, poolSize);
+
+  // Fisher-Yates shuffle the pool
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  return pool.slice(0, count).map((p) => p.angle);
 }
 
 /**

@@ -457,22 +457,20 @@ export function selectDomainsForBrand(
   // If exclusion left fewer than 3, use all domains
   const pool = candidates.length >= 3 ? candidates : BISOCIATION_DOMAINS;
 
-  // Use a simple deterministic hash of the industry string to select
-  let hash = 0;
-  for (let i = 0; i < normalized.length; i++) {
-    hash = (hash * 31 + normalized.charCodeAt(i)) | 0;
+  // Shuffle the pool randomly (Fisher-Yates) so each generation gets different domains
+  const shuffled = [...pool];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  hash = Math.abs(hash);
 
   // Select 3 with maximum emotional distance
   const selected: BisociationDomainDefinition[] = [];
   const usedTerritories = new Set<string>();
 
   // First pass: pick domains whose primary emotional territory is unique
-  const startIdx = hash % pool.length;
-  for (let i = 0; i < pool.length && selected.length < 3; i++) {
-    const idx = (startIdx + i) % pool.length;
-    const domain = pool[idx];
+  for (let i = 0; i < shuffled.length && selected.length < 3; i++) {
+    const domain = shuffled[i];
     const primaryTerritory = domain.emotionalTerritories[0];
 
     if (!usedTerritories.has(primaryTerritory)) {
@@ -484,9 +482,8 @@ export function selectDomainsForBrand(
   }
 
   // Second pass: fill remaining slots if needed
-  for (let i = 0; i < pool.length && selected.length < 3; i++) {
-    const idx = (startIdx + i) % pool.length;
-    const domain = pool[idx];
+  for (let i = 0; i < shuffled.length && selected.length < 3; i++) {
+    const domain = shuffled[i];
     if (!selected.includes(domain)) {
       selected.push(domain);
     }
