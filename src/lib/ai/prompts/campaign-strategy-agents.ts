@@ -3,7 +3,7 @@
 // Extends the 3-variant pipeline with adversarial debate rounds.
 // =============================================================================
 
-import type { StrategyLayer, ArchitectureLayer, AgentCritique } from '@/lib/campaigns/strategy-blueprint.types';
+import type { StrategyLayer, ArchitectureLayer } from '@/lib/campaigns/strategy-blueprint.types';
 import { GOAL_LABELS, getGoalTypeGuidance } from '@/features/campaigns/lib/goal-types';
 
 // ─── Critic Agent Prompt ──────────────────────────────────────

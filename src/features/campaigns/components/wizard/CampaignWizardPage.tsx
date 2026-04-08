@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { ArrowLeft, ArrowRight, Rocket, Map } from "lucide-react";
+import { ArrowLeft, ArrowRight, Rocket } from "lucide-react";
 import { Button } from "@/components/shared";
 import { PageShell } from '@/components/ui/layout';
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import { useLaunchCampaign } from "../../hooks";
+import { useCampaignStore } from "../../stores/useCampaignStore";
+import { getStepsForMode } from "../../lib/wizard-steps";
 import { WizardStepper } from "./WizardStepper";
 import { SetupStep } from "./SetupStep";
 import { KnowledgeStep } from "./KnowledgeStep";
@@ -15,6 +17,15 @@ import { DeliverablesStep } from "./DeliverablesStep";
 import { ReviewStep } from "./ReviewStep";
 import { CampaignSuccessModal } from "./CampaignSuccessModal";
 
+const STEP_COMPONENTS: Record<string, React.ComponentType> = {
+  setup: SetupStep,
+  knowledge: KnowledgeStep,
+  strategy: StrategyStep,
+  concept: ConceptStep,
+  deliverables: DeliverablesStep,
+  review: ReviewStep,
+};
+
 // ─── Types ────────────────────────────────────────────────
 
 interface CampaignWizardPageProps {
@@ -22,8 +33,6 @@ interface CampaignWizardPageProps {
 }
 
 // ─── Component ────────────────────────────────────────────
-
-const CONTENT_STEP_LABELS = ['Setup', 'Knowledge', 'Strategy', 'Concept'];
 
 export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   const wizardMode = useCampaignWizardStore((s) => s.wizardMode);
@@ -62,7 +71,8 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   // Do NOT reset on unmount — the user may navigate away and come back.
   // Reset happens only on explicit actions: successful launch or "Back to Campaigns" click.
 
-  const totalSteps = isContentMode ? 4 : 6;
+  const steps = getStepsForMode(wizardMode);
+  const totalSteps = steps.length;
   const isLastStep = currentStep === totalSteps;
 
   const selectedContentType = useCampaignWizardStore((s) => s.selectedContentType);
@@ -97,26 +107,24 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   };
 
   const handleContentLaunch = () => {
-    if (!selectedContentType || !blueprintResult) return;
+    if (!selectedContentType) return;
 
     // In content mode: launch with the single selected content type as the only deliverable
     launchCampaign.mutate(
       {
-        name,
+        name: name || 'Untitled Content',
         description,
         goalType: campaignGoalType ?? 'CONTENT_MARKETING',
         startDate: startDate || undefined,
         endDate: endDate || undefined,
         knowledgeIds: selectedKnowledgeIds,
-        strategy: blueprintResult,
+        strategy: blueprintResult ?? undefined,
         deliverables: [{ type: selectedContentType, quantity: 1 }],
         saveAsTemplate: false,
       },
       {
         onSuccess: (result) => {
           resetWizard();
-          // Navigate to content canvas with the new campaign
-          const { useCampaignStore } = require('../../stores/useCampaignStore');
           useCampaignStore.getState().setSelectedCampaignId(result.campaignId);
           onNavigate('campaign-detail');
         },
@@ -127,10 +135,8 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   const stepProceedOverride = useCampaignWizardStore((s) => s.stepProceedOverride);
 
   const handleContinue = () => {
-    if (isLastStep && isContentMode) {
-      handleContentLaunch();
-    } else if (isLastStep) {
-      handleLaunch();
+    if (isLastStep) {
+      isContentMode ? handleContentLaunch() : handleLaunch();
     } else if (stepProceedOverride) {
       stepProceedOverride();
     } else {
@@ -138,25 +144,8 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
     }
   };
 
-  // Render step content
-  const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return <SetupStep />;
-      case 2:
-        return <KnowledgeStep />;
-      case 3:
-        return <StrategyStep />;
-      case 4:
-        return <ConceptStep />;
-      case 5:
-        return <DeliverablesStep />;
-      case 6:
-        return <ReviewStep />;
-      default:
-        return <SetupStep />;
-    }
-  };
+  // Render step content from registry
+  const CurrentStepComponent = STEP_COMPONENTS[steps[currentStep - 1]?.key] ?? SetupStep;
 
   return (
     <PageShell>
@@ -188,13 +177,13 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
       <div data-testid="wizard-stepper" className="bg-white border border-gray-200 rounded-lg p-6">
         <WizardStepper
           currentStep={currentStep}
-          stepLabels={isContentMode ? CONTENT_STEP_LABELS : undefined}
+          stepLabels={steps.map(s => s.label)}
         />
       </div>
 
       {/* Step content */}
       <div data-testid="wizard-step-content" className="bg-white border border-gray-200 rounded-lg p-6 min-h-[400px]">
-        {renderStep()}
+        <CurrentStepComponent />
       </div>
 
       {/* Navigation */}
@@ -209,17 +198,13 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
         <Button
           data-testid="wizard-continue-button"
           variant="cta"
-          icon={isLastStep ? Rocket : (currentStep === 4 && strategyPhase === "review_proposal") ? Map : ArrowRight}
+          icon={isLastStep ? Rocket : ArrowRight}
           iconPosition={isLastStep ? "left" : "right"}
           onClick={handleContinue}
           disabled={!canProceedResult || launchCampaign.isPending}
           isLoading={launchCampaign.isPending}
         >
-          {isLastStep
-            ? "Launch Campaign"
-            : currentStep === 4 && strategyPhase === "review_proposal"
-              ? "Elaborate Customer Journey"
-              : "Continue"}
+          {isLastStep ? "Launch Campaign" : "Continue"}
         </Button>
       </div>
 

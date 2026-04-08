@@ -19,6 +19,7 @@ interface ContentLibraryState {
   setSort: (s: string) => void;
   setViewMode: (m: "grid" | "list") => void;
   toggleGroupByCampaign: () => void;
+  setShowFavorites: (v: boolean) => void;
   toggleShowFavorites: () => void;
   toggleSelected: (id: string) => void;
   clearSelection: () => void;
@@ -46,6 +47,7 @@ export const useContentLibraryStore = create<ContentLibraryState>((set) => ({
   setViewMode: (viewMode) => set({ viewMode }),
   toggleGroupByCampaign: () =>
     set((s) => ({ groupByCampaign: !s.groupByCampaign })),
+  setShowFavorites: (showFavorites) => set({ showFavorites }),
   toggleShowFavorites: () =>
     set((s) => ({ showFavorites: !s.showFavorites })),
   toggleSelected: (id) =>

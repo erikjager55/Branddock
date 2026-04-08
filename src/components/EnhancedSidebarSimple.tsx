@@ -7,7 +7,6 @@ import {
   PanelLeftClose,
   Settings,
   HelpCircle,
-  Plus,
 } from 'lucide-react';
 import { SIDEBAR_NAV } from '../lib/constants/design-tokens';
 import { ResearchMethodType } from '../types/brand-asset';
@@ -20,7 +19,6 @@ interface EnhancedSidebarSimpleProps {
   onMethodClick?: (assetId: string, methodType: ResearchMethodType) => void;
   collapsed: boolean;
   onToggleCollapse: () => void;
-  onCreateContent?: () => void;
 }
 
 function getIcon(iconName: string): React.ComponentType<{ className?: string }> {
@@ -32,7 +30,6 @@ export function EnhancedSidebarSimple({
   setActiveSection,
   collapsed,
   onToggleCollapse,
-  onCreateContent,
 }: EnhancedSidebarSimpleProps) {
   // All nav items flat for collapsed mode
   const allNavItems = useMemo(() => {
@@ -112,14 +109,6 @@ export function EnhancedSidebarSimple({
           </Button>
         </div>
 
-        {/* + Create Content Button */}
-        <button
-          onClick={onCreateContent}
-          className="w-full flex items-center justify-center gap-2 h-9 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Create Content
-        </button>
       </div>
 
       {/* Scrollable Navigation */}

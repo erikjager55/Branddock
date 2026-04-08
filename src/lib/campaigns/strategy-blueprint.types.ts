@@ -247,118 +247,8 @@ export interface CampaignBlueprint {
   selectedConcept?: CreativeConcept;
   /** Campaign mockup visuals generated from the selected concept */
   conceptVisuals?: ConceptVisual[];
-  /** Multi-agent debate results — present when multiAgent was enabled during generation */
-  agentDebate?: {
-    enabled: boolean;
-    critiqueOfA?: AgentCritique;
-    critiqueOfB?: AgentCritique;
-    defenseA?: AgentDefense;
-    defenseB?: AgentDefense;
-    personaDebate?: PersonaDebateResult[];
-    generationTimeMs: number;
-  };
 }
 
-// ─── Multi-Agent Strategy Debate Types ──────────────────────
-
-export type CritiqueSeverity = 'critical' | 'moderate' | 'minor';
-export type RiskLikelihood = 'high' | 'medium' | 'low';
-export type DefenseResponse = 'accepted' | 'defended' | 'partially_accepted';
-export type PreferenceStrength = 'strong' | 'slight' | 'indifferent';
-export type AgentRoundName = 'generation' | 'critique' | 'defense' | 'persona_panel' | 'synthesis';
-export type AgentName = 'strategist' | 'creative' | 'critic' | 'persona_panel' | 'synthesizer';
-export type DebateViewMode = 'timeline' | 'comparison';
-
-/** A single observation from the Critic Agent about a specific strategy element */
-export interface CritiquePoint {
-  /** Strategy element key, e.g. "humanInsight", "creativePlatform" */
-  element: string;
-  observation: string;
-  /** Evidence from brand context or persona data supporting the observation */
-  evidence: string;
-  severity: CritiqueSeverity;
-}
-
-/** A strategic risk identified by the Critic Agent */
-export interface CritiqueRisk {
-  risk: string;
-  likelihood: RiskLikelihood;
-  impact: string;
-  mitigation: string;
-}
-
-/** The Critic Agent's full review of one variant */
-export interface AgentCritique {
-  targetVariant: 'A' | 'B';
-  strengths: CritiquePoint[];
-  weaknesses: CritiquePoint[];
-  blindSpots: string[];
-  risks: CritiqueRisk[];
-  /** Where Variant A and B overlap too much */
-  differentiationGap: string;
-  overallAssessment: string;
-  /** How confident the critic is in this review (1-10) */
-  confidenceScore: number;
-}
-
-/** How the Strategist/Creative responded to a specific weakness */
-export interface DefensePoint {
-  originalWeakness: string;
-  response: DefenseResponse;
-  reasoning: string;
-  action: string;
-}
-
-/** A specific element that was revised after the critique */
-export interface RevisedElement {
-  field: string;
-  before: string;
-  after: string;
-  reason: string;
-}
-
-/** The Strategist/Creative Agent's defense and revision after critique */
-export interface AgentDefense {
-  variant: 'A' | 'B';
-  addressedWeaknesses: DefensePoint[];
-  addressedBlindSpots: string[];
-  revisedElements: RevisedElement[];
-  revisedStrategy: StrategyLayer;
-  revisedArchitecture: ArchitectureLayer;
-  /** What changed and why — human-readable log */
-  changeLog: string[];
-}
-
-/** A single persona's reaction to one variant during the Persona Panel round */
-export interface VariantReaction {
-  variant: 'A' | 'B';
-  firstImpression: string;
-  wouldEngage: boolean;
-  engagementReason: string;
-  emotionalResponse: string;
-  barriers: string[];
-  triggers: string[];
-  channelPreference: string;
-  /** How the persona would rewrite the core message in their own words */
-  messageRewrite: string;
-}
-
-/** Deep persona evaluation from the Persona Panel round */
-export interface PersonaDebateResult {
-  personaId: string;
-  personaName: string;
-  variantReactions: VariantReaction[];
-  preferredVariant: 'A' | 'B';
-  preferenceStrength: PreferenceStrength;
-  /** If present, this is a hard blocker that would make the persona disengage */
-  dealbreaker: string | null;
-  // Creative scores (backwards compatible with PersonaValidationResult)
-  originalityScore: number;
-  memorabilityScore: number;
-  culturalRelevanceScore: number;
-  talkabilityScore: number;
-  creativeVerdict: string;
-}
 
 // ─── Creative Quality Pipeline Types ──────────────────────────
 
@@ -477,102 +367,6 @@ export interface ConceptVisualsResult {
   concept: CreativeConcept;
 }
 
-/** Tracks the status of each debate round */
-export interface AgentDebateState {
-  round: AgentRoundName;
-  status: 'pending' | 'running' | 'complete' | 'error';
-  startedAt?: string;
-  completedAt?: string;
-}
-
-/** Complete result of the multi-agent debate process */
-export interface MultiAgentResult {
-  // Round 1 — Generation
-  originalStrategyA: StrategyLayer;
-  originalArchitectureA: ArchitectureLayer;
-  originalStrategyB: StrategyLayer;
-  originalArchitectureB: ArchitectureLayer;
-  // Round 2 — Critique
-  critiqueOfA: AgentCritique;
-  critiqueOfB: AgentCritique;
-  // Round 3 — Defense & Revision
-  defenseA: AgentDefense;
-  defenseB: AgentDefense;
-  // Round 4 — Persona Panel
-  personaDebate: PersonaDebateResult[];
-  // Round 5 — Synthesis
-  synthesizedStrategy: StrategyLayer;
-  synthesizedArchitecture: ArchitectureLayer;
-  generationTimeMs: number;
-}
-
-// ─── Multi-Agent Zod Schemas ────────────────────────────────
-
-export const critiquePointSchema = z.object({
-  element: z.string(),
-  observation: z.string(),
-  evidence: z.string(),
-  severity: z.enum(['critical', 'moderate', 'minor']),
-});
-
-export const critiqueRiskSchema = z.object({
-  risk: z.string(),
-  likelihood: z.enum(['high', 'medium', 'low']),
-  impact: z.string(),
-  mitigation: z.string(),
-});
-
-export const agentCritiqueSchema = z.object({
-  targetVariant: z.enum(['A', 'B']),
-  strengths: z.array(critiquePointSchema),
-  weaknesses: z.array(critiquePointSchema),
-  blindSpots: z.array(z.string()),
-  risks: z.array(critiqueRiskSchema),
-  differentiationGap: z.string(),
-  overallAssessment: z.string(),
-  confidenceScore: z.number().min(1).max(10),
-});
-
-export const defensePointSchema = z.object({
-  originalWeakness: z.string(),
-  response: z.enum(['accepted', 'defended', 'partially_accepted']),
-  reasoning: z.string(),
-  action: z.string(),
-});
-
-export const revisedElementSchema = z.object({
-  field: z.string(),
-  before: z.string(),
-  after: z.string(),
-  reason: z.string(),
-});
-
-export const variantReactionSchema = z.object({
-  variant: z.enum(['A', 'B']),
-  firstImpression: z.string(),
-  wouldEngage: z.boolean(),
-  engagementReason: z.string(),
-  emotionalResponse: z.string(),
-  barriers: z.array(z.string()),
-  triggers: z.array(z.string()),
-  channelPreference: z.string(),
-  messageRewrite: z.string(),
-});
-
-export const personaDebateResultSchema = z.object({
-  personaId: z.string(),
-  personaName: z.string(),
-  variantReactions: z.array(variantReactionSchema),
-  preferredVariant: z.enum(['A', 'B']),
-  preferenceStrength: z.enum(['strong', 'slight', 'indifferent']),
-  dealbreaker: z.string().nullable(),
-  originalityScore: z.number().min(1).max(10),
-  memorabilityScore: z.number().min(1).max(10),
-  culturalRelevanceScore: z.number().min(1).max(10),
-  talkabilityScore: z.number().min(1).max(10),
-  creativeVerdict: z.string(),
-});
-
 // ─── Deployment Timeline Types ───────────────────────────────
 
 /** A deliverable placed on the deployment timeline */
@@ -625,12 +419,6 @@ export type StrategyPhase =
   | 'review_briefing'          // Phase 1b: User reviews validation
   | 'building_foundation'      // Phase 2: Enrichment + behavioral strategy development
   | 'review_strategy'          // Phase 3: User reviews/validates developed strategy
-  | 'generating_hooks'         // Phase 4: 3 parallel LLM calls (creative hooks)
-  | 'review_hooks'             // Phase 5: User reviews 3 hooks, selects preferred
-  | 'generating_proposal'      // Phase 6: Refine selected hook into definitive proposal
-  | 'review_proposal'          // Phase 6b: User reviews proposal
-  | 'generating_journey'       // Phase 7: Channel plan + asset plan
-  | 'complete'                 // Phase 8: Done, timeline computed client-side
   | 'rationale_complete'       // Strategy rationale approved, ready for Concept step
   // Creative quality pipeline phases
   | 'mining_insights'          // Insight mining: LLMs generate human insights
@@ -639,15 +427,10 @@ export type StrategyPhase =
   | 'review_concepts'          // User reviews and selects a concept
   | 'creative_debate'          // Multi-agent debate on selected concept
   | 'review_debate'            // User reviews debate outcome
-  | 'generating_visuals'       // Generating concept mockup visuals (hero/square/story)
-  | 'review_visuals'           // User reviews generated campaign visuals
   | 'building_strategy'        // Final strategy assembly from all inputs
   | 'review_final_strategy'    // User reviews the final assembled strategy
-  // @deprecated — legacy phases, removed in Session 4 UI rewrite
-  | 'generating_variants'
-  | 'review_variants'
-  | 'generating_synthesis'
-  | 'review_synthesis';
+  | 'generating_journey'       // Phase 7: Channel plan + asset plan
+  | 'complete';                // Done, timeline computed client-side
 
 /** @deprecated Use CreativeHook instead — kept for backward compatibility */
 export interface FullVariant {
@@ -807,12 +590,6 @@ export interface CreativeAngleSelection {
   insightFamily: InsightFamily;
 }
 
-export interface CuratorSelection {
-  selectedAngles: CreativeAngleSelection[];
-  rationale: string;
-  diversificationCheck: string;
-}
-
 // ─── Creative Enrichment Brief ─────────────────────────────
 
 export interface CreativeEnrichmentBrief {
@@ -866,21 +643,6 @@ export interface EnrichmentContext {
   styleguideContext: string;
 }
 
-// ─── Phase Result Types (updated) ──────────────────────────
-
-export interface HookPhaseResult {
-  hooks: CreativeHook[];
-  curatorSelection: CuratorSelection;
-  personaValidation: PersonaValidationResult[];
-  hookScores: number[];
-}
-
-export interface ProposalPhaseResult {
-  strategy: StrategyLayer;
-  architecture: ArchitectureLayer;
-  hookConcept: HookConcept;
-}
-
 /** Are.na enrichment tracking metadata — re-exported from arena-client for convenience */
 export type ArenaEnrichmentTracking = ArenaEnrichmentMeta;
 
@@ -910,35 +672,6 @@ export interface SynthesisPhaseResult {
 export interface JourneyPhaseResult {
   channelPlan: ChannelPlanLayer;
   assetPlan: AssetPlanLayer;
-}
-
-/** Body for the synthesize endpoint */
-export interface SynthesizeStrategyBody {
-  variantFeedback: string;
-  strategyLayerA: StrategyLayer;
-  strategyLayerB: StrategyLayer;
-  strategyLayerC: StrategyLayer;
-  variantA: ArchitectureLayer;
-  variantB: ArchitectureLayer;
-  variantC: ArchitectureLayer;
-  personaValidation: PersonaValidationResult[];
-  variantAScore: number;
-  variantBScore: number;
-  variantCScore: number;
-  wizardContext: {
-    campaignName: string;
-    campaignDescription?: string;
-    campaignGoalType?: string;
-    briefing?: CampaignBriefing;
-    useExternalEnrichment?: boolean;
-  };
-  personaIds?: string[];
-  productIds?: string[];
-  competitorIds?: string[];
-  trendIds?: string[];
-  strategicIntent?: StrategicIntent;
-  /** Multi-agent debate context — formatted markdown with critique, defense and persona panel results */
-  agentDebateContext?: string;
 }
 
 /** Body for the elaborate endpoint */

@@ -7,25 +7,14 @@ import { Check } from "lucide-react";
 
 interface WizardStepperProps {
   currentStep: number;
-  stepLabels?: string[];
+  stepLabels: string[];
 }
-
-// ─── Step Labels ──────────────────────────────────────────
-
-const DEFAULT_STEP_LABELS = [
-  "Setup",
-  "Knowledge",
-  "Strategy",
-  "Concept",
-  "Deliverables",
-  "Review",
-];
 
 // ─── Component ────────────────────────────────────────────
 
 export function WizardStepper({
   currentStep,
-  stepLabels = DEFAULT_STEP_LABELS,
+  stepLabels,
 }: WizardStepperProps) {
   const steps = stepLabels;
 

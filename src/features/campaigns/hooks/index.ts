@@ -26,7 +26,6 @@ import {
   updateDeliverable,
   deleteDeliverable,
   fetchStrategy,
-  generateStrategy,
   regenerateBlueprintLayer,
 } from '../api/campaigns.api';
 
@@ -255,17 +254,6 @@ export function useStrategy(campaignId: string) {
   });
 }
 
-export function useGenerateCampaignStrategy(campaignId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: () => generateStrategy(campaignId),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: campaignKeys.strategy(campaignId) });
-      qc.invalidateQueries({ queryKey: campaignKeys.detail(campaignId) });
-    },
-  });
-}
-
 // =============================================================
 // Content Library hooks
 // =============================================================
@@ -277,8 +265,6 @@ import type {
 } from '../types/content-library.types';
 import type {
   WizardKnowledgeResponse,
-  StrategyResultResponse,
-  GenerateStrategyBody,
   DeliverableTypeOption,
   LaunchCampaignBody,
   LaunchCampaignResponse,
@@ -348,30 +334,6 @@ async function fetchWizardKnowledge(): Promise<WizardKnowledgeResponse> {
   return res.json();
 }
 
-async function generateWizardStrategy(
-  body: GenerateStrategyBody,
-): Promise<StrategyResultResponse> {
-  const res = await fetch('/api/campaigns/wizard/strategy', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error('Failed to generate strategy');
-  return res.json();
-}
-
-async function regenerateWizardStrategy(
-  body: GenerateStrategyBody,
-): Promise<StrategyResultResponse> {
-  const res = await fetch('/api/campaigns/wizard/strategy/regenerate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error('Failed to regenerate strategy');
-  return res.json();
-}
-
 async function fetchDeliverableTypes(): Promise<DeliverableTypeOption[]> {
   const res = await fetch('/api/campaigns/wizard/deliverable-types');
   if (!res.ok) throw new Error('Failed to fetch deliverable types');
@@ -432,26 +394,6 @@ export function useWizardKnowledge() {
   return useQuery({
     queryKey: campaignWizardKeys.knowledge(),
     queryFn: fetchWizardKnowledge,
-  });
-}
-
-export function useGenerateStrategy(): UseMutationResult<
-  StrategyResultResponse,
-  Error,
-  GenerateStrategyBody
-> {
-  return useMutation({
-    mutationFn: generateWizardStrategy,
-  });
-}
-
-export function useRegenerateStrategy(): UseMutationResult<
-  StrategyResultResponse,
-  Error,
-  GenerateStrategyBody
-> {
-  return useMutation({
-    mutationFn: regenerateWizardStrategy,
   });
 }
 

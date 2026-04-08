@@ -14,7 +14,6 @@ import {
   useCampaignDetail,
   useKnowledgeAssets,
   useStrategy,
-  useGenerateCampaignStrategy,
   useDeliverables,
   useAddDeliverable,
   useDeleteDeliverable,
@@ -59,7 +58,6 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
   const assets: KnowledgeAssetResponse[] = Array.isArray(rawAssets) ? rawAssets : (rawAssets as any)?.assets ?? [];
   const { data: strategy, isLoading: strategyLoading } = useStrategy(campaignId);
   const { data: deliverables } = useDeliverables(campaignId);
-  const generateStrategy = useGenerateCampaignStrategy(campaignId);
   const addDeliverable = useAddDeliverable(campaignId);
   const deleteDeliverable = useDeleteDeliverable(campaignId);
   const activeSubTab = useCampaignStore((s) => s.activeStrategySubTab);
@@ -397,8 +395,6 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
                   campaignName={campaign.title}
                   campaignGoalType={campaign.campaignGoalType ?? undefined}
                   isLoading={strategyLoading}
-                  onGenerate={() => generateStrategy.mutate()}
-                  isGenerating={generateStrategy.isPending}
                   onBringToLife={onOpenInStudio ? handleBringToLife : undefined}
                   onDeleteDeliverable={handleDeleteDeliverable}
                   onAddDeliverable={() => setShowAddModal(true)}

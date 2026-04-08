@@ -177,12 +177,6 @@ export async function fetchStrategy(campaignId: string): Promise<StrategyRespons
   return res.json();
 }
 
-export async function generateStrategy(campaignId: string): Promise<CampaignDetail> {
-  const res = await fetch(`/api/campaigns/${campaignId}/strategy/generate`, { method: 'POST' });
-  if (!res.ok) throw new Error('Failed to generate strategy');
-  return res.json();
-}
-
 /**
  * Generate campaign blueprint via SSE stream.
  * Calls onEvent for each SSE data event (progress, complete, error).
@@ -361,23 +355,6 @@ function createPhaseSSE(
   return { abort: () => controller.abort() };
 }
 
-/** Phase A: Generate strategy variants via SSE stream */
-export function generateVariantsSSE(
-  body: import('@/lib/campaigns/strategy-blueprint.types').GenerateBlueprintBody,
-  onEvent: (event: unknown) => void,
-  onError: (error: string) => void,
-): { abort: () => void } {
-  return createPhaseSSE('/api/campaigns/wizard/strategy/generate-variants', body, onEvent, onError);
-}
-
-/** Phase B: Synthesize strategy via SSE stream */
-export function synthesizeStrategySSE(
-  body: import('@/lib/campaigns/strategy-blueprint.types').SynthesizeStrategyBody,
-  onEvent: (event: unknown) => void,
-  onError: (error: string) => void,
-): { abort: () => void } {
-  return createPhaseSSE('/api/campaigns/wizard/strategy/synthesize', body, onEvent, onError);
-}
 
 /** Phase C: Elaborate journey (channel + asset plan) via SSE stream */
 export function elaborateJourneySSE(
@@ -422,23 +399,6 @@ export function buildFoundationSSE(
   return createPhaseSSE('/api/campaigns/wizard/strategy/build-foundation', body, onEvent, onError);
 }
 
-/** Phase 4+5: Generate creative hooks + persona validation via SSE stream */
-export function generateHooksSSE(
-  body: import('@/lib/campaigns/strategy-blueprint.types').GenerateHooksBody,
-  onEvent: (event: unknown) => void,
-  onError: (error: string) => void,
-): { abort: () => void } {
-  return createPhaseSSE('/api/campaigns/wizard/strategy/generate-hooks', body, onEvent, onError);
-}
-
-/** Phase 6: Refine selected hook into production-ready proposal via SSE stream */
-export function refineHookSSE(
-  body: import('@/lib/campaigns/strategy-blueprint.types').RefineHookBody,
-  onEvent: (event: unknown) => void,
-  onError: (error: string) => void,
-): { abort: () => void } {
-  return createPhaseSSE('/api/campaigns/wizard/strategy/refine-hook', body, onEvent, onError);
-}
 
 // ─── Creative Quality Pipeline SSE Functions ───────────────
 
@@ -467,15 +427,6 @@ export function creativeDebateSSE(
   onError: (error: string) => void,
 ): { abort: () => void } {
   return createPhaseSSE('/api/campaigns/wizard/strategy/creative-debate', body, onEvent, onError);
-}
-
-/** Generate concept visuals (hero/square/story mockups) via SSE */
-export function generateVisualsSSE(
-  body: { workspaceId: string; wizardContext: object; selectedConcept: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string },
-  onEvent: (event: unknown) => void,
-  onError: (error: string) => void,
-): { abort: () => void } {
-  return createPhaseSSE('/api/campaigns/wizard/strategy/generate-visuals', body, onEvent, onError);
 }
 
 /** Build strategy from approved concept via SSE */

@@ -15,8 +15,6 @@ import {
   generateConceptsSSE,
   buildStrategySSE,
   elaborateJourneySSE,
-  generateHooksSSE,
-  refineHookSSE,
 } from "../../api/campaigns.api";
 import type { PipelineStepStatus } from "../../types/campaign-wizard.types";
 import type {
@@ -24,7 +22,6 @@ import type {
   ArchitectureLayer,
   ChannelPlanLayer,
   AssetPlanLayer,
-  HookConcept,
   CampaignBlueprint,
   HumanInsight,
   CreativeConcept,
@@ -33,54 +30,10 @@ import { PipelineProgressView } from "./PipelineProgressView";
 import type { PipelineStepConfig } from "./PipelineProgressView";
 import { InsightReviewView } from "./InsightReviewView";
 import { ConceptSelectionView } from "./ConceptSelectionView";
-import { HookReviewView } from "./HookReviewView";
-import { ProposalReviewView } from "./ProposalReviewView";
 import { ConceptReviewView } from "./ConceptReviewView";
 import { compileStructuredFeedback } from "../../lib/compile-structured-feedback";
 
 // ─── Pipeline Step Configs per Concept Phase ──────────────
-
-const HOOKS_STEPS: PipelineStepConfig[] = [
-  {
-    step: 1,
-    name: "Creative Hook Generator",
-    label: "Generating creative hooks...",
-    description: "AI generates multiple creative hooks based on your strategy foundation, then validates each with personas.",
-  },
-  {
-    step: 2,
-    name: "Persona Validator",
-    label: "Validating hooks with personas...",
-    description: "Each persona evaluates the creative hooks on originality, memorability, and cultural relevance.",
-  },
-];
-
-const PROPOSAL_STEPS: PipelineStepConfig[] = [
-  {
-    step: 1,
-    name: "Gathering Context",
-    label: "Gathering brand & audience context...",
-    description: "Loading brand assets, personas, products, and selected hook data for refinement.",
-  },
-  {
-    step: 2,
-    name: "Applying Frameworks",
-    label: "Applying marketing frameworks...",
-    description: "Enriching with Cialdini persuasion principles, Kahneman framing, Byron Sharp growth laws, and EAST behavioral checklist.",
-  },
-  {
-    step: 3,
-    name: "Deep Hook Refinement",
-    label: "Refining hook with deep thinking...",
-    description: "AI uses extended thinking to elevate the selected hook into a production-ready campaign strategy and architecture.",
-  },
-  {
-    step: 4,
-    name: "Finalizing Proposal",
-    label: "Packaging proposal...",
-    description: "Validating strategy layers, normalizing architecture, and assembling the final campaign proposal.",
-  },
-];
 
 const ELABORATE_STEPS: PipelineStepConfig[] = [
   {
@@ -114,24 +67,13 @@ export function ConceptStep() {
   const synthesizedArchitecture = useCampaignWizardStore((s) => s.synthesizedArchitecture);
   const personaValidation = useCampaignWizardStore((s) => s.personaValidation);
 
-  // 9-Phase data
-  const strategyFoundation = useCampaignWizardStore((s) => s.strategyFoundation);
-  const enrichmentContext = useCampaignWizardStore((s) => s.enrichmentContext);
-  const hooks = useCampaignWizardStore((s) => s.hooks);
-  const hookScores = useCampaignWizardStore((s) => s.hookScores);
-  const selectedHookIndex = useCampaignWizardStore((s) => s.selectedHookIndex);
-  const refinedHookConcept = useCampaignWizardStore((s) => s.refinedHookConcept);
-
   // Enrichment indicators
   const enrichmentStatus = useCampaignWizardStore((s) => s.enrichmentStatus);
   const enrichmentBlockCount = useCampaignWizardStore((s) => s.enrichmentBlockCount);
   const enrichmentSources = useCampaignWizardStore((s) => s.enrichmentSources);
   const useExternalEnrichment = useCampaignWizardStore((s) => s.useExternalEnrichment);
 
-  // Legacy variant scores (for blueprint assembly)
-  const variantAScore = useCampaignWizardStore((s) => s.variantAScore);
-  const variantBScore = useCampaignWizardStore((s) => s.variantBScore);
-  const variantCScore = useCampaignWizardStore((s) => s.variantCScore);
+
 
   // Briefing fields
   const briefingOccasion = useCampaignWizardStore((s) => s.briefingOccasion);
@@ -191,9 +133,6 @@ export function ConceptStep() {
       }, 50);
     };
   }, []);
-
-  // Detect which pipeline to use
-  const is9Phase = strategyFoundation !== null && enrichmentContext !== null;
 
   // ─── Creative Pipeline: Mine Insights ─────────────────
 
@@ -317,7 +256,7 @@ export function ConceptStep() {
           const s = useCampaignWizardStore.getState();
           s.setFinalStrategyResult(result);
           s.setIsGenerating(false);
-          // After building strategy from concept, go to hooks
+          // After building strategy from concept, go to strategy review
           s.setStrategyPhase("review_final_strategy");
           return;
         }
@@ -342,184 +281,7 @@ export function ConceptStep() {
     abortRef.current = { abort };
   }, [wizardContext, selectedContextIds, strategicIntent]);
 
-  // ─── 9-Phase: Generate Hooks ──────────────────────────
-
-  const handleGenerateHooks = useCallback(() => {
-    if (!strategyFoundation || !enrichmentContext) return;
-    const currentGenId = ++generationIdRef.current;
-    setPhaseError(null);
-
-    const store = useCampaignWizardStore.getState();
-    store.resetPipeline();
-    store.setIsGenerating(true);
-    store.setStrategyPhase("generating_hooks");
-
-    for (const step of HOOKS_STEPS) {
-      store.updateStepStatus({ step: step.step, name: step.name, status: "pending", label: step.label });
-    }
-
-    const { strategyFeedback } = useCampaignWizardStore.getState();
-
-    const { abort } = generateHooksSSE(
-      {
-        strategicIntent,
-        personaIds: selectedContextIds.personaIds,
-        productIds: selectedContextIds.productIds,
-        competitorIds: selectedContextIds.competitorIds,
-        trendIds: selectedContextIds.trendIds,
-        wizardContext,
-        foundation: strategyFoundation,
-        enrichmentContext,
-        strategyFeedback: strategyFeedback || undefined,
-      },
-      (event) => {
-        if (generationIdRef.current !== currentGenId) return;
-        const data = event as Record<string, unknown>;
-
-        // Enrichment events
-        if (data.type === "enrichment") {
-          const status = data.status;
-          if (status !== "running" && status !== "complete" && status !== "skipped") return;
-          useCampaignWizardStore.getState().setEnrichmentStatus(
-            status,
-            {
-              totalBlocks: typeof data.totalBlocks === "number" ? data.totalBlocks : 0,
-              queries: Array.isArray(data.queries) ? (data.queries as string[]) : [],
-              sources: (data.sources && typeof data.sources === "object" ? data.sources : {}) as { arena?: number; exa?: number; scholar?: number; bct?: boolean },
-            },
-          );
-          return;
-        }
-
-        if (data.type === "complete" && data.result) {
-          const result = data.result as {
-            hooks: import("@/lib/campaigns/strategy-blueprint.types").CreativeHook[];
-            curatorSelection: import("@/lib/campaigns/strategy-blueprint.types").CuratorSelection;
-            personaValidation: import("@/lib/campaigns/strategy-blueprint.types").PersonaValidationResult[];
-            hookScores: number[];
-          };
-          const s = useCampaignWizardStore.getState();
-          s.setHookResults(result);
-          s.setIsGenerating(false);
-          s.setStrategyPhase("review_hooks");
-          return;
-        }
-
-        if (data.type === "error") {
-          const s = useCampaignWizardStore.getState();
-          s.setPipelineError(null);
-          s.setIsGenerating(false);
-          s.setStrategyPhase("rationale_complete");
-          setPhaseError("Hook generation failed. Please try again.");
-          return;
-        }
-
-        // Step progress
-        if (data.step && data.name && data.status && data.label) {
-          useCampaignWizardStore.getState().updateStepStatus({
-            step: data.step as number,
-            name: data.name as string,
-            status: data.status as PipelineStepStatus,
-            label: data.label as string,
-            preview: data.preview as string | undefined,
-            error: data.error as string | undefined,
-          });
-        }
-      },
-      (error) => {
-        if (generationIdRef.current !== currentGenId) return;
-        const s = useCampaignWizardStore.getState();
-        s.setPipelineError(null);
-        s.setIsGenerating(false);
-        s.setStrategyPhase("rationale_complete");
-        setPhaseError("Hook generation failed due to a network error. Please try again.");
-      },
-    );
-    abortRef.current = { abort };
-  }, [strategyFoundation, enrichmentContext, strategicIntent, selectedContextIds, wizardContext]);
-
-  // ─── 9-Phase: Refine Selected Hook ─────────────────────
-
-  const handleRefineHook = useCallback(() => {
-    const { selectedHookIndex: hookIdx, hooks: allHooks, personaValidation: pv, hookFeedback } = useCampaignWizardStore.getState();
-    if (hookIdx === null || !allHooks[hookIdx] || !strategyFoundation || !pv) return;
-    const currentGenId = ++generationIdRef.current;
-    setPhaseError(null);
-
-    const store = useCampaignWizardStore.getState();
-    store.resetPipeline();
-    store.setIsGenerating(true);
-    store.setStrategyPhase("generating_proposal");
-
-    for (const step of PROPOSAL_STEPS) {
-      store.updateStepStatus({ step: step.step, name: step.name, status: "pending", label: step.label });
-    }
-
-    const { abort } = refineHookSSE(
-      {
-        strategicIntent,
-        personaIds: selectedContextIds.personaIds,
-        productIds: selectedContextIds.productIds,
-        competitorIds: selectedContextIds.competitorIds,
-        trendIds: selectedContextIds.trendIds,
-        wizardContext,
-        selectedHook: allHooks[hookIdx],
-        foundation: strategyFoundation,
-        personaValidation: pv,
-        hookFeedback: hookFeedback[hookIdx] || undefined,
-      },
-      (event) => {
-        if (generationIdRef.current !== currentGenId) return;
-        const data = event as Record<string, unknown>;
-
-        if (data.type === "complete" && data.result) {
-          const result = data.result as {
-            strategy: StrategyLayer;
-            architecture: ArchitectureLayer;
-            hookConcept: HookConcept;
-          };
-          const s = useCampaignWizardStore.getState();
-          // Converge: store strategy+architecture so both pipelines share the same data before elaborate
-          s.setSynthesisResult({ strategy: result.strategy, architecture: result.architecture });
-          s.setRefinedHookConcept(result.hookConcept);
-          s.setIsGenerating(false);
-          s.setStrategyPhase("review_proposal");
-          return;
-        }
-
-        if (data.type === "error") {
-          const s = useCampaignWizardStore.getState();
-          s.setPipelineError(null);
-          s.setIsGenerating(false);
-          s.setStrategyPhase("review_hooks");
-          setPhaseError("Hook refinement failed. Please select a different hook or try again.");
-          return;
-        }
-
-        if (data.step && data.name && data.status && data.label) {
-          useCampaignWizardStore.getState().updateStepStatus({
-            step: data.step as number,
-            name: data.name as string,
-            status: data.status as PipelineStepStatus,
-            label: data.label as string,
-            preview: data.preview as string | undefined,
-            error: data.error as string | undefined,
-          });
-        }
-      },
-      (error) => {
-        if (generationIdRef.current !== currentGenId) return;
-        const s = useCampaignWizardStore.getState();
-        s.setPipelineError(null);
-        s.setIsGenerating(false);
-        s.setStrategyPhase("review_hooks");
-        setPhaseError("Hook refinement failed due to a network error. Please try again.");
-      },
-    );
-    abortRef.current = { abort };
-  }, [strategyFoundation, strategicIntent, selectedContextIds, wizardContext]);
-
-  // ─── Both Pipelines: Elaborate Journey ──────────────────
+  // ─── Elaborate Journey ──────────────────────────────────
 
   const handleElaborate = useCallback(() => {
     const { synthesizedStrategy: strat, synthesizedArchitecture: arch, personaValidation: pv } = useCampaignWizardStore.getState();
@@ -594,12 +356,7 @@ export function ConceptStep() {
           const s = useCampaignWizardStore.getState();
           s.setPipelineError(null);
           s.setIsGenerating(false);
-          // Fall back to the appropriate review phase
-          if (is9Phase) {
-            s.setStrategyPhase("review_proposal");
-          } else {
-            s.setStrategyPhase("rationale_complete");
-          }
+          s.setStrategyPhase("review_final_strategy");
           setPhaseError("Journey elaboration failed. Please try again.");
           return;
         }
@@ -620,16 +377,12 @@ export function ConceptStep() {
         const s = useCampaignWizardStore.getState();
         s.setPipelineError(null);
         s.setIsGenerating(false);
-        if (is9Phase) {
-          s.setStrategyPhase("review_proposal");
-        } else {
-          s.setStrategyPhase("rationale_complete");
-        }
+        s.setStrategyPhase("review_final_strategy");
         setPhaseError("Journey elaboration failed due to a network error. Please try again.");
       },
     );
     abortRef.current = { abort };
-  }, [strategicIntent, selectedContextIds, wizardContext, is9Phase]);
+  }, [strategicIntent, selectedContextIds, wizardContext]);
 
   // ─── Auto-start creative pipeline when entering step 4 ──
   useEffect(() => {
@@ -660,9 +413,9 @@ export function ConceptStep() {
       confidence: 0,
       confidenceBreakdown: {},
       generatedAt: new Date().toISOString(),
-      variantAScore,
-      variantBScore,
-      variantCScore,
+      variantAScore: 0,
+      variantBScore: 0,
+      variantCScore: 0,
       pipelineDuration: 0,
       modelsUsed: [],
     };
@@ -670,7 +423,7 @@ export function ConceptStep() {
     const store = useCampaignWizardStore.getState();
     store.setBlueprintResult(blueprint);
     store.setStrategyPhase("complete");
-  }, [elaborateResult, variantAScore, variantBScore, variantCScore]);
+  }, [elaborateResult]);
 
   // ─── Wire wizard Continue button for concept step phases ─────
   useEffect(() => {
@@ -680,14 +433,12 @@ export function ConceptStep() {
     } else if (strategyPhase === "review_concepts") {
       store.setStepProceedOverride(handleBuildStrategyFromConcept);
     } else if (strategyPhase === "review_final_strategy") {
-      store.setStepProceedOverride(handleGenerateHooks);
-    } else if (strategyPhase === "review_proposal") {
       store.setStepProceedOverride(handleElaborate);
     } else {
       store.setStepProceedOverride(null);
     }
     return () => { store.setStepProceedOverride(null); };
-  }, [strategyPhase, handleGenerateConcepts, handleBuildStrategyFromConcept, handleGenerateHooks, handleElaborate]);
+  }, [strategyPhase, handleGenerateConcepts, handleBuildStrategyFromConcept, handleElaborate]);
 
   // ─── Render based on phase ─────────────────────────────
 
@@ -766,7 +517,7 @@ export function ConceptStep() {
     );
   }
 
-  // Review final strategy (leads to hooks)
+  // Review final strategy (leads to elaborate)
   if (strategyPhase === "review_final_strategy") {
     const store = useCampaignWizardStore.getState();
     const fs = store.finalStrategy;
@@ -776,65 +527,14 @@ export function ConceptStep() {
         <ConceptReviewView
           strategy={fs}
           architecture={fa}
-          onApprove={() => handleGenerateHooks()}
+          onApprove={() => handleElaborate()}
           errorMessage={phaseError}
         />
       );
     }
   }
 
-  // 9-Phase: Generating hooks
-  if (strategyPhase === "generating_hooks" && isGenerating) {
-    return (
-      <PipelineProgressView
-        title="Generating Creative Hooks"
-        steps={HOOKS_STEPS}
-        pipelineSteps={pipelineSteps}
-        enrichmentStatus={enrichmentStatus}
-        enrichmentBlockCount={enrichmentBlockCount}
-        enrichmentSources={enrichmentSources}
-      />
-    );
-  }
-
-  // 9-Phase: Review hooks
-  if (strategyPhase === "review_hooks" && hooks.length > 0) {
-    return (
-      <HookReviewView
-        hooks={hooks}
-        hookScores={hookScores}
-        personaValidation={personaValidation ?? []}
-        onSelectAndRefine={handleRefineHook}
-        errorMessage={phaseError}
-      />
-    );
-  }
-
-  // 9-Phase: Generating proposal
-  if (strategyPhase === "generating_proposal" && isGenerating) {
-    return (
-      <PipelineProgressView
-        title="Refining Hook into Campaign Proposal"
-        steps={PROPOSAL_STEPS}
-        pipelineSteps={pipelineSteps}
-      />
-    );
-  }
-
-  // 9-Phase: Review proposal
-  if (strategyPhase === "review_proposal" && synthesizedStrategy && synthesizedArchitecture && refinedHookConcept) {
-    return (
-      <ProposalReviewView
-        strategy={synthesizedStrategy}
-        architecture={synthesizedArchitecture}
-        hookConcept={refinedHookConcept}
-        onElaborate={handleElaborate}
-        errorMessage={phaseError}
-      />
-    );
-  }
-
-  // Both pipelines: Generating journey (elaborate)
+  // Generating journey (elaborate)
   if (strategyPhase === "generating_journey" && isGenerating) {
     return (
       <PipelineProgressView
@@ -848,7 +548,7 @@ export function ConceptStep() {
     );
   }
 
-  // Both pipelines: Concept review (elaborate complete, not yet approved)
+  // Concept review (elaborate complete, not yet approved)
   if (elaborateResult && !isGenerating && synthesizedStrategy && synthesizedArchitecture && strategyPhase !== "complete") {
     return (
       <ConceptReviewView

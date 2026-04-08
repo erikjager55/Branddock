@@ -484,10 +484,10 @@ export const SIDEBAR_NAV: {
       ],
     },
     {
-      label: 'STRATEGY',
+      label: 'CREATE',
       items: [
         { key: 'active-campaigns', label: 'Campaigns', icon: 'Megaphone', href: '/strategy/campaigns' },
-        { key: 'content-library', label: 'Content Library', icon: 'FileText', href: '/strategy/content-library' },
+        { key: 'content-library', label: 'Content', icon: 'FileText', href: '/strategy/content-library' },
       ],
     },
     {

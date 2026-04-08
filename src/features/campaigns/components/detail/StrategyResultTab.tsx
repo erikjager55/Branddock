@@ -39,8 +39,6 @@ interface StrategyResultTabProps {
   campaignName?: string;
   campaignGoalType?: string;
   isLoading: boolean;
-  onGenerate: () => void;
-  isGenerating: boolean;
   /** Called when user clicks "Bring to Life" on an asset plan deliverable */
   onBringToLife?: (deliverableTitle: string, contentType: string) => void;
   /** Called when user wants to delete a deliverable from the timeline */
@@ -75,8 +73,6 @@ export function StrategyResultTab({
   campaignName,
   campaignGoalType,
   isLoading,
-  onGenerate,
-  isGenerating,
   onBringToLife,
   onDeleteDeliverable,
   onAddDeliverable,
@@ -193,8 +189,7 @@ export function StrategyResultTab({
       <EmptyState
         icon={Sparkles}
         title="Strategy not generated yet"
-        description="Generate an AI-powered strategy based on your knowledge assets."
-        action={{ label: "Generate Strategy", onClick: onGenerate }}
+        description="Use the Campaign Wizard to generate an AI-powered strategy."
       />
     );
   }
@@ -414,8 +409,7 @@ export function StrategyResultTab({
       <EmptyState
         icon={Sparkles}
         title="Strategy not generated yet"
-        description="Generate an AI-powered strategy based on your knowledge assets."
-        action={{ label: "Generate Strategy", onClick: onGenerate }}
+        description="Use the Campaign Wizard to generate an AI-powered strategy."
       />
     );
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Library, Plus } from "lucide-react";
+import { Library, Plus, Zap } from "lucide-react";
 import { EmptyState, SkeletonCard, Button } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
 import { useContentLibrary } from "../../hooks";
@@ -174,13 +174,19 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
     <PageShell>
       <PageHeader
         moduleKey="content-library"
-        title="Content Library"
-        subtitle="All your campaign content in one place"
+        title="Content"
+        subtitle="Browse and manage all your generated content"
         actions={
-          <Button data-testid="create-content-button" onClick={() => onNavigate('campaign-wizard')} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create Content
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="secondary" onClick={() => onNavigate('active-campaigns')} className="gap-2">
+              <Zap className="h-4 w-4" />
+              View Campaigns
+            </Button>
+            <Button data-testid="create-content-button" onClick={() => onNavigate('campaign-wizard')} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create Content
+            </Button>
+          </div>
         }
       />
 

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { getTimeBinding } from "../lib/goal-types";
 import { getRecommendedCampaignType } from "../lib/campaign-types";
+import { getStepsForMode } from "../lib/wizard-steps";
 import type {
   CampaignType,
   CampaignGoalType,
@@ -17,24 +18,13 @@ import type {
   PersonaValidationResult,
   ArenaEnrichmentTracking,
   EnrichmentSources,
-  // ─── Multi-Agent Strategy Debate Types ─────────────────────
-  AgentCritique,
-  AgentDefense,
-  PersonaDebateResult,
-  AgentDebateState,
-  AgentRoundName,
-  DebateViewMode,
   // ─── 9-Phase Architecture Types ──────────────────────────
-  CreativeHook,
   BriefingValidation,
   StrategyFoundation,
   EnrichmentContext,
-  CuratorSelection,
-  HookConcept,
   // ─── Creative Quality Pipeline Types ──────────────────────
   HumanInsight,
   CreativeConcept,
-  ConceptVisual,
 } from "../types/campaign-wizard.types";
 
 // ─── Types ────────────────────────────────────────────────
@@ -87,25 +77,6 @@ interface CampaignWizardState {
   strategyFoundation: StrategyFoundation | null;
   strategyFeedback: string;
   enrichmentContext: EnrichmentContext | null;
-  curatorSelection: CuratorSelection | null;
-  hooks: CreativeHook[];
-  hookScores: number[];
-  hookFeedback: Record<number, string>;
-  selectedHookIndex: number | null;
-  refinedHookConcept: HookConcept | null;
-
-  // @deprecated — legacy variant fields, removed in Session 4 UI rewrite
-  variantA: ArchitectureLayer | null;
-  variantB: ArchitectureLayer | null;
-  variantC: ArchitectureLayer | null;
-  variantAScore: number;
-  variantBScore: number;
-  variantCScore: number;
-  strategyLayerA: StrategyLayer | null;
-  strategyLayerB: StrategyLayer | null;
-  strategyLayerC: StrategyLayer | null;
-  variantFeedback: string;
-  synthesisFeedback: string;
   conceptFeedback: string;
 
   // ─── Enrichment Status (real-time feedback for all sources) ─────────
@@ -120,15 +91,6 @@ interface CampaignWizardState {
   // ─── External Enrichment Toggle ──────────────────────────────
   useExternalEnrichment: boolean;
 
-  // ─── Multi-Agent Strategy Debate (used by creative-debate pipeline) ─────
-  agentDebateRounds: AgentDebateState[];
-  critiqueOfA: AgentCritique | null;
-  critiqueOfB: AgentCritique | null;
-  defenseA: AgentDefense | null;
-  defenseB: AgentDefense | null;
-  personaDebate: PersonaDebateResult[] | null;
-  debateViewMode: DebateViewMode;
-
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: string[];
   strategyRatings: Record<string, { rating: 'up' | 'down'; comment?: string }>;
@@ -141,7 +103,6 @@ interface CampaignWizardState {
   selectedConceptIndex: number | null;
   conceptElementRatings: Record<string, { rating: 'up' | 'down'; comment?: string }>;
   creativeDebateResult: { critique: unknown; defense: unknown; improvedConcept: CreativeConcept | null } | null;
-  conceptVisuals: ConceptVisual[];
   finalStrategy: StrategyLayer | null;
   finalArchitecture: ArchitectureLayer | null;
 
@@ -196,37 +157,9 @@ interface CampaignWizardState {
   setStrategyFoundation: (foundation: StrategyFoundation | null) => void;
   setStrategyFeedback: (feedback: string) => void;
   setEnrichmentContext: (context: EnrichmentContext | null) => void;
-  setCuratorSelection: (selection: CuratorSelection | null) => void;
-  setHookResults: (data: {
-    hooks: CreativeHook[];
-    personaValidation: PersonaValidationResult[];
-    hookScores: number[];
-    curatorSelection: CuratorSelection;
-    arenaEnrichment?: ArenaEnrichmentTracking | null;
-  }) => void;
-  setHookFeedback: (hookIndex: number, feedback: string) => void;
-  setSelectedHook: (index: number | null) => void;
-  setRefinedHookConcept: (concept: HookConcept | null) => void;
-
   // ─── Enrichment Status Actions ──────────────────────────────
   setEnrichmentStatus: (status: 'idle' | 'running' | 'complete' | 'skipped', meta?: { totalBlocks?: number; queries?: string[]; sources?: EnrichmentSources }) => void;
 
-  // @deprecated — legacy variant actions, removed in Session 4 UI rewrite
-  setVariantResults: (data: {
-    strategyLayerA: StrategyLayer;
-    strategyLayerB: StrategyLayer;
-    strategyLayerC: StrategyLayer;
-    variantA: ArchitectureLayer;
-    variantB: ArchitectureLayer;
-    variantC: ArchitectureLayer;
-    personaValidation: PersonaValidationResult[];
-    variantAScore: number;
-    variantBScore: number;
-    variantCScore: number;
-    arenaEnrichment?: ArenaEnrichmentTracking | null;
-  }) => void;
-  setVariantFeedback: (feedback: string) => void;
-  setSynthesisFeedback: (feedback: string) => void;
   setConceptFeedback: (feedback: string) => void;
 
   // ─── Concept Step Actions ─────────────────────────────────
@@ -234,13 +167,6 @@ interface CampaignWizardState {
 
   // ─── External Enrichment Actions ─────────────────────────────
   setUseExternalEnrichment: (enabled: boolean) => void;
-
-  // ─── Multi-Agent Strategy Debate Actions (used by creative-debate pipeline) ─────
-  updateDebateRound: (round: AgentDebateState) => void;
-  setCritique: (variant: 'A' | 'B', critique: AgentCritique) => void;
-  setDefense: (variant: 'A' | 'B', defense: AgentDefense) => void;
-  setPersonaDebate: (results: PersonaDebateResult[]) => void;
-  setDebateViewMode: (mode: DebateViewMode) => void;
 
   // ─── Step Proceed Override ──────────────────────────────────
   /** When set, the wizard Continue button calls this instead of nextStep(). Cleared on step change. */
@@ -260,7 +186,6 @@ interface CampaignWizardState {
   setSelectedConcept: (index: number | null) => void;
   setConceptElementRating: (key: string, rating: 'up' | 'down', comment?: string) => void;
   setCreativeDebateResult: (result: { critique: unknown; defense: unknown; improvedConcept: CreativeConcept | null }) => void;
-  setConceptVisuals: (visuals: ConceptVisual[]) => void;
   setFinalStrategyResult: (data: { strategy: StrategyLayer; architecture: ArchitectureLayer }) => void;
 }
 
@@ -311,25 +236,6 @@ const INITIAL_STATE = {
   strategyFoundation: null as StrategyFoundation | null,
   strategyFeedback: "",
   enrichmentContext: null as EnrichmentContext | null,
-  curatorSelection: null as CuratorSelection | null,
-  hooks: [] as CreativeHook[],
-  hookScores: [] as number[],
-  hookFeedback: {} as Record<number, string>,
-  selectedHookIndex: null as number | null,
-  refinedHookConcept: null as HookConcept | null,
-
-  // @deprecated — legacy variant fields
-  variantA: null as ArchitectureLayer | null,
-  variantB: null as ArchitectureLayer | null,
-  variantC: null as ArchitectureLayer | null,
-  variantAScore: 0,
-  variantBScore: 0,
-  variantCScore: 0,
-  strategyLayerA: null as StrategyLayer | null,
-  strategyLayerB: null as StrategyLayer | null,
-  strategyLayerC: null as StrategyLayer | null,
-  variantFeedback: "",
-  synthesisFeedback: "",
   conceptFeedback: "",
 
   // ─── Enrichment Status ──────────────────────────────────────
@@ -343,15 +249,6 @@ const INITIAL_STATE = {
 
   // ─── External Enrichment (always enabled, auto-detected) ──────────────────────────────
   useExternalEnrichment: true,
-
-  // ─── Multi-Agent Strategy Debate (used by creative-debate pipeline) ─────
-  agentDebateRounds: [] as AgentDebateState[],
-  critiqueOfA: null as AgentCritique | null,
-  critiqueOfB: null as AgentCritique | null,
-  defenseA: null as AgentDefense | null,
-  defenseB: null as AgentDefense | null,
-  personaDebate: null as PersonaDebateResult[] | null,
-  debateViewMode: 'timeline' as DebateViewMode,
 
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: [] as string[],
@@ -368,7 +265,6 @@ const INITIAL_STATE = {
   selectedConceptIndex: null as number | null,
   conceptElementRatings: {} as Record<string, { rating: 'up' | 'down'; comment?: string }>,
   creativeDebateResult: null as { critique: unknown; defense: unknown; improvedConcept: CreativeConcept | null } | null,
-  conceptVisuals: [] as ConceptVisual[],
   finalStrategy: null as StrategyLayer | null,
   finalArchitecture: null as ArchitectureLayer | null,
 };
@@ -383,7 +279,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     setWizardMode: (wizardMode) => set({ wizardMode }),
     nextStep: () =>
       set((s) => {
-        const maxStep = s.wizardMode === 'content' ? 4 : 6;
+        const maxStep = getStepsForMode(s.wizardMode).length;
         return { currentStep: Math.min(maxStep, s.currentStep + 1) };
       }),
     prevStep: () =>
@@ -454,104 +350,14 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
 
     canProceed: () => {
       const state = get();
-      const isContent = state.wizardMode === 'content';
-      switch (state.currentStep) {
-        case 1: {
-          const hasName = state.name.trim().length > 0;
-          if (isContent) {
-            return hasName && state.selectedContentType !== null;
-          }
-          const hasGoal = state.campaignGoalType !== null;
-          if (!hasName || !hasGoal) return false;
-          // Time-bound goals require both dates, and end must be >= start
-          if (state.campaignGoalType && getTimeBinding(state.campaignGoalType) === 'time-bound') {
-            return state.startDate.length > 0 && state.endDate.length > 0 && state.endDate >= state.startDate;
-          }
-          return true;
-        }
-        case 2:
-          return state.selectedKnowledgeIds.length > 0;
-        case 3: {
-          // Allow proceeding from briefing review when score >= 80 (triggers foundation build)
-          if (state.strategyPhase === 'review_briefing') {
-            return (state.briefingValidation?.overallScore ?? 0) >= 80;
-          }
-          // Strategy foundation building in progress
-          if (state.strategyPhase === 'building_foundation') return false;
-          if (state.strategyPhase === 'validating_briefing') return false;
-          if (state.strategyPhase === 'review_strategy') return false; // user must click "Approve" in the review view
-          // Strategy complete — can proceed to Concept step
-          return state.strategyPhase === 'rationale_complete';
-        }
-        case 4: {
-          // Creative Quality Pipeline phases (insight mining → concepts → hooks → journey)
-          if (state.strategyPhase === 'mining_insights') return false;
-          if (state.strategyPhase === 'review_insights') return state.selectedInsightIndex !== null;
-          if (state.strategyPhase === 'generating_concepts') return false;
-          if (state.strategyPhase === 'review_concepts') return state.selectedConceptIndex !== null;
-          if (state.strategyPhase === 'building_strategy') return false;
-          if (state.strategyPhase === 'review_final_strategy') return state.finalStrategy !== null;
-          if (state.strategyPhase === 'creative_debate') return false;
-          if (state.strategyPhase === 'review_debate') return true;
-          // Hook/proposal/journey phases
-          if (state.strategyPhase === 'generating_hooks') return false;
-          if (state.strategyPhase === 'review_hooks') return false; // handled by stepProceedOverride
-          if (state.strategyPhase === 'generating_proposal') return false;
-          if (state.strategyPhase === 'review_proposal') return true;
-          // Complete
-          return state.strategyPhase === 'complete' && state.blueprintResult !== null;
-        }
-        case 5:
-          return state.selectedDeliverables.length > 0;
-        case 6:
-          return true;
-        default:
-          return false;
-      }
+      const steps = getStepsForMode(state.wizardMode);
+      const stepDef = steps[state.currentStep - 1];
+      if (!stepDef) return false;
+      return stepDef.canProceed(state);
     },
 
     allRationaleRated: () => {
-      const state = get();
-      const { strategyRatings } = state;
-
-      // 9-Phase pipeline: no element-level ratings in foundation review
-      // Detection aligned with ConceptStep's is9Phase check
-      if (state.strategyFoundation !== null && state.enrichmentContext !== null) {
-        return true;
-      }
-
-      // Legacy pipeline: check all 3 variant strategy layers
-      const variants = [
-        { key: 'A', layer: state.strategyLayerA },
-        { key: 'B', layer: state.strategyLayerB },
-        { key: 'C', layer: state.strategyLayerC },
-      ] as const;
-
-      const presentVariants = variants.filter((v): v is typeof v & { layer: StrategyLayer } => v.layer !== null);
-      if (presentVariants.length === 0) return false;
-
-      for (const { key, layer } of presentVariants) {
-        // Always-present fields
-        const keys: string[] = [
-          `${key}.theme`,
-          `${key}.positioning`,
-        ];
-        // Optional keys (only if the field has content)
-        if (layer.humanInsight) keys.push(`${key}.humanInsight`);
-        if (layer.culturalTension) keys.push(`${key}.culturalTension`);
-        const mh = layer.messagingHierarchy ?? { brandMessage: '', campaignMessage: '', proofPoints: [] };
-        if (mh.brandMessage) keys.push(`${key}.messaging.brand`);
-        if (mh.campaignMessage) keys.push(`${key}.messaging.campaign`);
-        if (mh.proofPoints?.length > 0) keys.push(`${key}.messaging.proofPoints`);
-        const jtbd = layer.jtbdFraming ?? { jobStatement: '', functionalJob: '', emotionalJob: '', socialJob: '' };
-        if (jtbd.jobStatement) keys.push(`${key}.jtbd.statement`);
-        // Dynamic keys (strategic choices)
-        const choices = layer.strategicChoices ?? [];
-        choices.forEach((_, i) => keys.push(`${key}.choice.${i}`));
-
-        if (!keys.every((k) => !!strategyRatings[k])) return false;
-      }
-
+      // CQP pipeline: no element-level ratings in foundation review
       return true;
     },
 
@@ -625,7 +431,6 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         selectedConceptIndex: null,
         conceptElementRatings: {},
         creativeDebateResult: null,
-        conceptVisuals: [],
         finalStrategy: null,
         finalArchitecture: null,
       }),
@@ -654,31 +459,6 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         strategyFoundation: null,
         strategyFeedback: "",
         enrichmentContext: null,
-        curatorSelection: null,
-        hooks: [],
-        hookScores: [],
-        hookFeedback: {},
-        selectedHookIndex: null,
-        refinedHookConcept: null,
-        // Multi-agent debate fields
-        agentDebateRounds: [],
-        critiqueOfA: null,
-        critiqueOfB: null,
-        defenseA: null,
-        defenseB: null,
-        personaDebate: null,
-        // Legacy variant fields
-        variantA: null,
-        variantB: null,
-        variantC: null,
-        variantAScore: 0,
-        variantBScore: 0,
-        variantCScore: 0,
-        strategyLayerA: null,
-        strategyLayerB: null,
-        strategyLayerC: null,
-        variantFeedback: "",
-        synthesisFeedback: "",
         conceptFeedback: "",
         // Concept step
         elaborateResult: null,
@@ -690,7 +470,6 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         selectedConceptIndex: null,
         conceptElementRatings: {},
         creativeDebateResult: null,
-        conceptVisuals: [],
         finalStrategy: null,
         finalArchitecture: null,
       }),
@@ -700,22 +479,6 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     setStrategyFoundation: (strategyFoundation) => set({ strategyFoundation }),
     setStrategyFeedback: (strategyFeedback) => set({ strategyFeedback }),
     setEnrichmentContext: (enrichmentContext) => set({ enrichmentContext }),
-    setCuratorSelection: (curatorSelection) => set({ curatorSelection }),
-    setHookResults: (data) =>
-      set({
-        hooks: data.hooks,
-        personaValidation: data.personaValidation,
-        hookScores: data.hookScores,
-        curatorSelection: data.curatorSelection,
-        arenaEnrichment: data.arenaEnrichment ?? null,
-      }),
-    setHookFeedback: (hookIndex, feedback) =>
-      set((s) => ({
-        hookFeedback: { ...s.hookFeedback, [hookIndex]: feedback },
-      })),
-    setSelectedHook: (selectedHookIndex) => set({ selectedHookIndex }),
-    setRefinedHookConcept: (refinedHookConcept) => set({ refinedHookConcept }),
-
     // ─── Enrichment Status Actions ──────────────────────────────
     setEnrichmentStatus: (status, meta) =>
       set({
@@ -725,23 +488,6 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         enrichmentSources: meta?.sources ?? {},
       }),
 
-    // @deprecated — legacy variant actions, removed in Session 4 UI rewrite
-    setVariantResults: (data) =>
-      set({
-        variantA: data.variantA,
-        variantB: data.variantB,
-        variantC: data.variantC,
-        personaValidation: data.personaValidation,
-        variantAScore: data.variantAScore,
-        variantBScore: data.variantBScore,
-        variantCScore: data.variantCScore,
-        strategyLayerA: data.strategyLayerA,
-        strategyLayerB: data.strategyLayerB,
-        strategyLayerC: data.strategyLayerC,
-        arenaEnrichment: data.arenaEnrichment ?? null,
-      }),
-    setVariantFeedback: (variantFeedback) => set({ variantFeedback }),
-    setSynthesisFeedback: (synthesisFeedback) => set({ synthesisFeedback }),
     setConceptFeedback: (conceptFeedback) => set({ conceptFeedback }),
 
     // ─── Concept Step Actions ─────────────────────────────────
@@ -751,25 +497,6 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     setUseExternalEnrichment: (useExternalEnrichment) => set({ useExternalEnrichment }),
 
     // ─── Step Proceed Override ──────────────────────────────────
-    // ─── Multi-Agent Strategy Debate Actions (used by creative-debate pipeline) ─────
-    updateDebateRound: (round) =>
-      set((s) => {
-        const existing = s.agentDebateRounds.findIndex((r) => r.round === round.round);
-        const rounds = [...s.agentDebateRounds];
-        if (existing >= 0) {
-          rounds[existing] = round;
-        } else {
-          rounds.push(round);
-        }
-        return { agentDebateRounds: rounds };
-      }),
-    setCritique: (variant, critique) =>
-      set(variant === 'A' ? { critiqueOfA: critique } : { critiqueOfB: critique }),
-    setDefense: (variant, defense) =>
-      set(variant === 'A' ? { defenseA: defense } : { defenseB: defense }),
-    setPersonaDebate: (results) => set({ personaDebate: results }),
-    setDebateViewMode: (mode) => set({ debateViewMode: mode }),
-
     setStepProceedOverride: (fn) => set({ stepProceedOverride: fn }),
 
     // ─── Creative Quality Pipeline Actions ─────────────────────
@@ -786,7 +513,6 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         },
       })),
     setCreativeDebateResult: (creativeDebateResult) => set({ creativeDebateResult }),
-    setConceptVisuals: (conceptVisuals) => set({ conceptVisuals }),
     setFinalStrategyResult: (data) =>
       set({
         finalStrategy: data.strategy,

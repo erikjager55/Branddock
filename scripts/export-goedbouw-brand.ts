@@ -407,7 +407,7 @@ function formatSocialRelevancy(d: Record<string, unknown>): string {
     const stmts = arr(p.statements);
     if (stmts.length === 0 && !p.pillarReflection) return;
 
-    const total = stmts.reduce((sum, st) => sum + (Number((obj(st) as Record<string, unknown>).score) || 0), 0);
+    const total = stmts.reduce((sum: number, st) => sum + (Number((obj(st) as Record<string, unknown>).score) || 0), 0);
     lines.push(`#### ${label} (Score: ${total}/15)`);
 
     for (const st of stmts) {
