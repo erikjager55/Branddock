@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { ArrowLeft, ArrowRight, Rocket, Map } from "lucide-react";
 import { Button } from "@/components/shared";
 import { PageShell } from '@/components/ui/layout';
@@ -23,13 +23,17 @@ interface CampaignWizardPageProps {
 
 // ─── Component ────────────────────────────────────────────
 
+const CONTENT_STEP_LABELS = ['Setup', 'Knowledge', 'Strategy', 'Concept'];
+
 export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
+  const wizardMode = useCampaignWizardStore((s) => s.wizardMode);
   const currentStep = useCampaignWizardStore((s) => s.currentStep);
   const nextStep = useCampaignWizardStore((s) => s.nextStep);
   const prevStep = useCampaignWizardStore((s) => s.prevStep);
   const canProceedResult = useCampaignWizardStore((s) => s.canProceed());
   const resetWizard = useCampaignWizardStore((s) => s.resetWizard);
   const strategyPhase = useCampaignWizardStore((s) => s.strategyPhase);
+  const isContentMode = wizardMode === 'content';
 
   // Launch state
   const name = useCampaignWizardStore((s) => s.name);
@@ -55,17 +59,13 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
     deliverableCount: number;
   } | null>(null);
 
-  // Reset wizard when leaving the page (unmount only).
-  // Do NOT reset on mount — remounts (React strict mode, ErrorBoundary
-  // recovery, Suspense) would destroy in-progress wizard state.
-  useEffect(() => {
-    return () => {
-      resetWizard();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Do NOT reset on unmount — the user may navigate away and come back.
+  // Reset happens only on explicit actions: successful launch or "Back to Campaigns" click.
 
-  const isLastStep = currentStep === 6;
+  const totalSteps = isContentMode ? 4 : 6;
+  const isLastStep = currentStep === totalSteps;
+
+  const selectedContentType = useCampaignWizardStore((s) => s.selectedContentType);
 
   const handleLaunch = () => {
     if (!campaignGoalType || !blueprintResult) return;
@@ -90,6 +90,35 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
             deliverableCount: result.deliverableCount,
           });
           setShowSuccess(true);
+          resetWizard();
+        },
+      },
+    );
+  };
+
+  const handleContentLaunch = () => {
+    if (!selectedContentType || !blueprintResult) return;
+
+    // In content mode: launch with the single selected content type as the only deliverable
+    launchCampaign.mutate(
+      {
+        name,
+        description,
+        goalType: campaignGoalType ?? 'CONTENT_MARKETING',
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        knowledgeIds: selectedKnowledgeIds,
+        strategy: blueprintResult,
+        deliverables: [{ type: selectedContentType, quantity: 1 }],
+        saveAsTemplate: false,
+      },
+      {
+        onSuccess: (result) => {
+          resetWizard();
+          // Navigate to content canvas with the new campaign
+          const { useCampaignStore } = require('../../stores/useCampaignStore');
+          useCampaignStore.getState().setSelectedCampaignId(result.campaignId);
+          onNavigate('campaign-detail');
         },
       },
     );
@@ -98,7 +127,9 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   const stepProceedOverride = useCampaignWizardStore((s) => s.stepProceedOverride);
 
   const handleContinue = () => {
-    if (isLastStep) {
+    if (isLastStep && isContentMode) {
+      handleContentLaunch();
+    } else if (isLastStep) {
       handleLaunch();
     } else if (stepProceedOverride) {
       stepProceedOverride();
@@ -144,16 +175,21 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
-          Create Strategic Campaign
+          {isContentMode ? 'Create Content' : 'Create Strategic Campaign'}
         </h1>
         <p className="text-sm text-gray-500 mt-1">
-          Build a comprehensive campaign with AI-powered strategy
+          {isContentMode
+            ? 'Generate a single content piece with AI-powered strategy'
+            : 'Build a comprehensive campaign with AI-powered strategy'}
         </p>
       </div>
 
       {/* Stepper */}
       <div data-testid="wizard-stepper" className="bg-white border border-gray-200 rounded-lg p-6">
-        <WizardStepper currentStep={currentStep} />
+        <WizardStepper
+          currentStep={currentStep}
+          stepLabels={isContentMode ? CONTENT_STEP_LABELS : undefined}
+        />
       </div>
 
       {/* Step content */}

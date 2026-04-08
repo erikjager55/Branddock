@@ -50,10 +50,16 @@ function buildBriefingSection(briefing?: CampaignBriefing): string {
 }
 
 /** Campaign type guidance section — injected into all prompt builders */
-function buildCampaignTypeSection(campaignType?: string): string {
-  if (!campaignType) return '';
-  const guidance = getCampaignTypeGuidance(campaignType);
-  return guidance ? `\n\n${guidance}` : '';
+function buildCampaignTypeSection(campaignType?: string, selectedContentType?: string): string {
+  const parts: string[] = [];
+  if (campaignType) {
+    const guidance = getCampaignTypeGuidance(campaignType);
+    if (guidance) parts.push(guidance);
+  }
+  if (selectedContentType) {
+    parts.push(`\n## Single Content Focus: ${selectedContentType}\nThis strategy is for a SINGLE content piece (${selectedContentType}). Focus ALL strategic recommendations on making this one deliverable as effective as possible. Do not plan multiple deliverables or a broad campaign — concentrate on depth and quality for this specific format.`);
+  }
+  return parts.length > 0 ? `\n\n${parts.join('\n')}` : '';
 }
 
 /**
@@ -144,6 +150,8 @@ interface FullVariantPromptParams {
   eastChecklist?: string;
   /** Campaign type: brand, content, or activation */
   campaignType?: string;
+  /** In content mode: the specific content type being generated */
+  selectedContentType?: string;
 }
 
 // ─── Marketing Framework Injection Helpers ──────────────────
@@ -238,7 +246,7 @@ const EFFIE_STRATEGY_JSON_SCHEMA = `
 export function buildFullVariantAPrompt(params: FullVariantPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
-  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
   const system = `You are a senior brand strategist who creates Effie Award-winning campaigns grounded in evidence-based strategy and behavioral science.
@@ -335,7 +343,7 @@ ${params.bctContext}` : ''}${buildMarketingFrameworkSection({ effectivenessConte
 export function buildFullVariantBPrompt(params: FullVariantPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
-  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
   const system = `You are a creative provocateur who creates Cannes Lions-winning campaigns through cultural tensions, cross-industry analogies, and unexpected creative leaps.
@@ -426,7 +434,7 @@ ${params.exaContext}` : ''}${buildMarketingFrameworkSection({ effectivenessConte
 export function buildFullVariantCPrompt(params: FullVariantPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}\nAdapt strategy and channel selection to this specific goal type.`;
-  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
   const system = `You are a data-driven innovation strategist who creates D&AD-winning campaigns at the intersection of behavioral science, cultural intelligence, and platform-native thinking.
@@ -534,11 +542,12 @@ export function buildPersonaValidatorPrompt(params: {
   goalType?: string;
   goalGuidance?: string;
   campaignType?: string;
+  selectedContentType?: string;
 }): { system: string; user: string } {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${params.goalGuidance}\nEvaluate how well each variant serves this specific goal type from each persona's perspective.`
     : '';
-  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const system = `You are simulating target personas evaluating THREE complete campaign strategy variants.
@@ -624,11 +633,12 @@ export function buildStrategySynthesizerPrompt(params: {
   /** Multi-agent debate context — injected when multiAgent is enabled */
   agentDebateContext?: string;
   campaignType?: string;
+  selectedContentType?: string;
 }): { system: string; user: string } {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nEnsure the synthesized blueprint optimally serves this goal type.`
     : '';
-  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const system = `You are a chief strategy officer performing the final synthesis of a campaign blueprint.
@@ -802,11 +812,13 @@ export function buildChannelPlannerPrompt(params: {
   eastChecklist?: string;
   /** Campaign type: brand, content, or activation */
   campaignType?: string;
+  /** In content mode: the specific content type being generated */
+  selectedContentType?: string;
 }): { system: string; user: string } {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nPrioritize channels that best serve this goal type.`
     : '';
-  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const system = `You are a media strategist creating a channel and media plan.
@@ -861,6 +873,8 @@ export function buildAssetPlannerPrompt(params: {
   eastChecklist?: string;
   /** Campaign type: brand, content, or activation */
   campaignType?: string;
+  /** In content mode: the specific content type being generated */
+  selectedContentType?: string;
 }): { system: string; user: string } {
   const validTypes = DELIVERABLE_TYPE_IDS.join(', ');
   const validPhases = params.journeyPhaseNames?.length
@@ -870,7 +884,7 @@ export function buildAssetPlannerPrompt(params: {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${params.goalGuidance}\nSelect deliverable types that are most relevant for this goal type.`
     : '';
-  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const phaseInstruction = validPhases
@@ -950,6 +964,7 @@ interface BriefingValidationPromptParams {
   personaContext: string;
   productContext: string;
   campaignType?: string;
+  selectedContentType?: string;
 }
 
 export function buildBriefingValidationPrompt(params: BriefingValidationPromptParams): { system: string; user: string } {
@@ -1026,11 +1041,13 @@ interface StrategyFoundationPromptParams {
   eastChecklist?: string;
   /** Campaign type: brand, content, or activation */
   campaignType?: string;
+  /** In content mode: the specific content type being generated */
+  selectedContentType?: string;
 }
 
 export function buildStrategyFoundationPrompt(params: StrategyFoundationPromptParams): { system: string; user: string } {
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}`;
-  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
   const system = `You are a behavioral scientist and senior strategist building the analytical foundation for a campaign strategy.
@@ -1152,12 +1169,14 @@ interface CreativeHookPromptParams {
   eastChecklist?: string;
   /** Campaign type: brand, content, or activation */
   campaignType?: string;
+  /** In content mode: the specific content type being generated */
+  selectedContentType?: string;
 }
 
 export function buildCreativeHookPrompt(params: CreativeHookPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${getGoalTypeGuidance(params.goalType)}`;
-  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
   const sf = params.strategyFoundation;
 
@@ -1276,11 +1295,12 @@ export function buildHookPersonaValidatorPrompt(params: {
   goalType?: string;
   goalGuidance?: string;
   campaignType?: string;
+  selectedContentType?: string;
 }): { system: string; user: string } {
   const goalContext = params.goalType && params.goalGuidance
     ? `\n\nCampaign Goal Context: This is a "${GOAL_LABELS[params.goalType] ?? params.goalType}" campaign. ${params.goalGuidance}\nEvaluate how well each hook serves this specific goal type from each persona's perspective.`
     : '';
-  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType ?? '');
 
   const system = `You are simulating target personas evaluating THREE creative campaign hooks.
@@ -1377,12 +1397,14 @@ interface HookRefinementPromptParams {
   eastChecklist?: string;
   /** Campaign type: brand, content, or activation */
   campaignType?: string;
+  /** In content mode: the specific content type being generated */
+  selectedContentType?: string;
 }
 
 export function buildHookRefinementPrompt(params: HookRefinementPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalContext = `\n\nCampaign Goal: "${GOAL_LABELS[params.goalType] ?? params.goalType}". ${getGoalTypeGuidance(params.goalType)}`;
-  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
   const hook = params.selectedHook;
   const sf = params.strategyFoundation;
@@ -1755,6 +1777,7 @@ interface StrategyBuildPromptParams {
   cialdiniContext?: string;
   bctContext?: string;
   campaignType?: string;
+  selectedContentType?: string;
 }
 
 /**
@@ -1764,7 +1787,7 @@ interface StrategyBuildPromptParams {
 export function buildStrategyBuildPrompt(params: StrategyBuildPromptParams): { system: string; user: string } {
   const ratio = intentRatio(params.strategicIntent);
   const goalLabel = GOAL_LABELS[params.goalType] ?? params.goalType;
-  const campaignTypeContext = buildCampaignTypeSection(params.campaignType);
+  const campaignTypeContext = buildCampaignTypeSection(params.campaignType, params.selectedContentType);
   const goalInsights = buildGoalInsightsPromptSection(params.goalType);
 
   const system = `You are a senior strategist building the execution plan for an ALREADY APPROVED creative concept.

@@ -39,12 +39,17 @@ import type {
 
 // ─── Types ────────────────────────────────────────────────
 
+type WizardMode = 'campaign' | 'content';
+
 interface CampaignWizardState {
+  wizardMode: WizardMode;
   currentStep: number;
   name: string;
   description: string;
   campaignGoalType: CampaignGoalType | null;
   campaignType: CampaignType | null;
+  /** In content mode: the selected deliverable type ID (e.g. 'linkedin-post') */
+  selectedContentType: string | null;
   startDate: string;
   endDate: string;
   selectedKnowledgeIds: string[];
@@ -140,6 +145,7 @@ interface CampaignWizardState {
   finalStrategy: StrategyLayer | null;
   finalArchitecture: ArchitectureLayer | null;
 
+  setWizardMode: (mode: WizardMode) => void;
   setCurrentStep: (step: number) => void;
   nextStep: () => void;
   prevStep: () => void;
@@ -147,6 +153,7 @@ interface CampaignWizardState {
   setDescription: (desc: string) => void;
   setCampaignGoalType: (type: CampaignGoalType) => void;
   setCampaignType: (type: CampaignType) => void;
+  setSelectedContentType: (typeId: string) => void;
   setStartDate: (date: string) => void;
   setEndDate: (date: string) => void;
   toggleKnowledgeId: (id: string) => void;
@@ -260,11 +267,13 @@ interface CampaignWizardState {
 // ─── Initial state ────────────────────────────────────────
 
 const INITIAL_STATE = {
+  wizardMode: 'campaign' as WizardMode,
   currentStep: 1,
   name: "",
   description: "",
   campaignGoalType: null as CampaignGoalType | null,
   campaignType: null as CampaignType | null,
+  selectedContentType: null as string | null,
   startDate: "",
   endDate: "",
   selectedKnowledgeIds: [] as string[],
@@ -371,8 +380,12 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     ...INITIAL_STATE,
 
     setCurrentStep: (step) => set({ currentStep: step }),
+    setWizardMode: (wizardMode) => set({ wizardMode }),
     nextStep: () =>
-      set((s) => ({ currentStep: Math.min(6, s.currentStep + 1) })),
+      set((s) => {
+        const maxStep = s.wizardMode === 'content' ? 4 : 6;
+        return { currentStep: Math.min(maxStep, s.currentStep + 1) };
+      }),
     prevStep: () =>
       set((s) => ({ currentStep: Math.max(1, s.currentStep - 1) })),
 
@@ -392,6 +405,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
       set(updates);
     },
     setCampaignType: (campaignType) => set({ campaignType }),
+    setSelectedContentType: (selectedContentType) => set({ selectedContentType }),
     setStartDate: (startDate) => set({ startDate }),
     setEndDate: (endDate) => set({ endDate }),
 
@@ -440,9 +454,13 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
 
     canProceed: () => {
       const state = get();
+      const isContent = state.wizardMode === 'content';
       switch (state.currentStep) {
         case 1: {
           const hasName = state.name.trim().length > 0;
+          if (isContent) {
+            return hasName && state.selectedContentType !== null;
+          }
           const hasGoal = state.campaignGoalType !== null;
           if (!hasName || !hasGoal) return false;
           // Time-bound goals require both dates, and end must be >= start
@@ -458,27 +476,31 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
           if (state.strategyPhase === 'review_briefing') {
             return (state.briefingValidation?.overallScore ?? 0) >= 80;
           }
-          // Creative Quality Pipeline phases
+          // Strategy foundation building in progress
+          if (state.strategyPhase === 'building_foundation') return false;
+          if (state.strategyPhase === 'validating_briefing') return false;
+          if (state.strategyPhase === 'review_strategy') return false; // user must click "Approve" in the review view
+          // Strategy complete — can proceed to Concept step
+          return state.strategyPhase === 'rationale_complete';
+        }
+        case 4: {
+          // Creative Quality Pipeline phases (insight mining → concepts → hooks → journey)
           if (state.strategyPhase === 'mining_insights') return false;
           if (state.strategyPhase === 'review_insights') return state.selectedInsightIndex !== null;
           if (state.strategyPhase === 'generating_concepts') return false;
           if (state.strategyPhase === 'review_concepts') return state.selectedConceptIndex !== null;
-          if (state.strategyPhase === 'generating_visuals') return false;
-          if (state.strategyPhase === 'review_visuals') return state.conceptVisuals.length > 0;
+          if (state.strategyPhase === 'building_strategy') return false;
+          if (state.strategyPhase === 'review_final_strategy') return state.finalStrategy !== null;
           if (state.strategyPhase === 'creative_debate') return false;
           if (state.strategyPhase === 'review_debate') return true;
-          if (state.strategyPhase === 'building_strategy') return false;
-          if (state.strategyPhase === 'review_final_strategy') {
-            return state.finalStrategy !== null;
-          }
-          return (state.strategyPhase === 'rationale_complete' || state.strategyPhase === 'complete')
-            && get().allRationaleRated();
-        }
-        case 4:
-          // Allow proceeding from proposal review (triggers journey elaboration via stepProceedOverride)
+          // Hook/proposal/journey phases
+          if (state.strategyPhase === 'generating_hooks') return false;
+          if (state.strategyPhase === 'review_hooks') return false; // handled by stepProceedOverride
+          if (state.strategyPhase === 'generating_proposal') return false;
           if (state.strategyPhase === 'review_proposal') return true;
-          return state.strategyPhase === 'complete' && state.blueprintResult !== null
-            && get().allConceptRated();
+          // Complete
+          return state.strategyPhase === 'complete' && state.blueprintResult !== null;
+        }
         case 5:
           return state.selectedDeliverables.length > 0;
         case 6:

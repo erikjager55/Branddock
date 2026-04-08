@@ -274,7 +274,7 @@ export function CompetitorDetailPage({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left column — content sections */}
           <div className="md:col-span-2 min-w-0 space-y-6">
-            <LockOverlay isLocked={lock.isLocked}>
+            <LockOverlay isLocked={lock.isLocked} className="space-y-6">
               {/* Tier selector in edit mode */}
               {isEditing && (
                 <div className="mb-6 max-w-xs">

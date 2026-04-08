@@ -6,7 +6,6 @@ import { TopNavigationBar } from './components/TopNavigationBar';
 import { EnhancedSidebarSimple } from './components/EnhancedSidebarSimple';
 import { ActivityFeed } from './components/ActivityFeed';
 import { FloatingChatWidget } from './features/help/components/FloatingChatWidget';
-import { QuickContentModal } from './features/campaigns/components';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TooltipProvider } from './components/ui/tooltip';
 import { LazyWrapper } from './components/shared';
@@ -20,6 +19,7 @@ import { useBusinessStrategyStore } from './features/business-strategy/stores/us
 import { usePersonaDetailStore } from './features/personas/stores/usePersonaDetailStore';
 import { useResearchStore } from './features/research/stores/useResearchStore';
 import { useCampaignStore } from './features/campaigns/stores/useCampaignStore';
+import { useCampaignWizardStore } from './features/campaigns/stores/useCampaignWizardStore';
 import { useConsistentModelStore } from './features/consistent-models/stores/useConsistentModelStore';
 import { useShellStore } from './stores/useShellStore';
 import { getResearchOptionId, ResearchMethodType } from './utils/research-method-helpers';
@@ -196,8 +196,17 @@ function AppContent() {
 
   // Wrapper for setActiveSection to reset asset states when needed
   const handleSetActiveSection = (section: string) => {
+    // "Create Content" sidebar item → open campaign wizard in content mode
+    if (section === 'create-content') {
+      const ws = useCampaignWizardStore.getState();
+      ws.resetWizard();
+      ws.setWizardMode('content');
+      setActiveSectionRaw('campaign-wizard');
+      return;
+    }
+
     setActiveSectionRaw(section);
-    
+
     // If navigating away from brand assets, reset asset-related states
     const isAssetRelated = section.startsWith('brand-')
       || section === 'brand'
@@ -666,7 +675,19 @@ function AppContent() {
               useCampaignStore.getState().setSelectedCampaignId(campaignId);
               handleSetActiveSection('quick-content-detail');
             }}
-            onNavigateToWizard={() => handleSetActiveSection('campaign-wizard')}
+            onNavigateToWizard={() => {
+              const ws = useCampaignWizardStore.getState();
+              ws.resetWizard();
+              ws.setWizardMode('campaign');
+              handleSetActiveSection('campaign-wizard');
+            }}
+            onNavigateToContentWizard={() => {
+              const ws = useCampaignWizardStore.getState();
+              ws.resetWizard();
+              ws.setWizardMode('content');
+              handleSetActiveSection('campaign-wizard');
+            }}
+            onResumeWizard={() => handleSetActiveSection('campaign-wizard')}
           />
         );
       case 'campaign-detail': {
@@ -974,7 +995,12 @@ function AppContent() {
         <TopNavigationBar
           breadcrumbs={breadcrumbs}
           onNavigate={handleSetActiveSection}
-          onQuickContent={() => useCampaignStore.getState().openQuickModal()}
+          onQuickContent={() => {
+            const ws = useCampaignWizardStore.getState();
+            ws.resetWizard();
+            ws.setWizardMode('content');
+            handleSetActiveSection('campaign-wizard');
+          }}
         />
 
         {/* Main Layout */}
@@ -986,7 +1012,6 @@ function AppContent() {
             onMethodClick={(assetId, methodType) => handleNavigateToResearchMethod(assetId, methodType, 'work')}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-            onCreateContent={() => useCampaignStore.getState().openQuickModal()}
           />
           <main className="flex-1 overflow-y-auto bg-background">
             <LazyWrapper>
@@ -1006,13 +1031,6 @@ function AppContent() {
         }}
       />
 
-      {/* Quick Content Modal (global — opened from header) */}
-      <QuickContentModal
-        onCreated={(campaignId) => {
-          useCampaignStore.getState().setSelectedCampaignId(campaignId);
-          handleSetActiveSection('quick-content-detail');
-        }}
-      />
       <FloatingChatWidget />
     </WorkflowEnhancer>
   );

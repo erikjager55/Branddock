@@ -9,28 +9,31 @@ import { CampaignStatsCards } from "./CampaignStatsCards";
 import { CampaignFilterBar } from "./CampaignFilterBar";
 import { CampaignGrid } from "./CampaignGrid";
 import { CampaignList } from "./CampaignList";
-import { QuickContentModal } from "../quick/QuickContentModal";
 import { useCampaigns, useDeleteCampaign, useArchiveCampaign } from "../../hooks";
 import { useCampaignStore } from "../../stores/useCampaignStore";
+import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import type { CampaignListParams, CampaignSummary } from "@/types/campaign";
 
 interface ActiveCampaignsPageProps {
   onNavigateToCampaign: (campaignId: string) => void;
   onNavigateToQuickDetail?: (campaignId: string) => void;
   onNavigateToWizard?: () => void;
+  onNavigateToContentWizard?: () => void;
+  onResumeWizard?: () => void;
 }
 
 export function ActiveCampaignsPage({
   onNavigateToCampaign,
   onNavigateToQuickDetail,
   onNavigateToWizard,
+  onNavigateToContentWizard,
+  onResumeWizard,
 }: ActiveCampaignsPageProps) {
   const { setActiveSection } = useUIState();
   const {
     filterTab,
     searchQuery,
     viewMode,
-    openQuickModal,
   } = useCampaignStore();
 
   // Build API params from store state
@@ -67,13 +70,6 @@ export function ActiveCampaignsPage({
     }
   };
 
-  const handleQuickCreated = (campaignId: string) => {
-    if (onNavigateToQuickDetail) {
-      onNavigateToQuickDetail(campaignId);
-    } else {
-      onNavigateToCampaign(campaignId);
-    }
-  };
 
   return (
     <PageShell>
@@ -83,9 +79,9 @@ export function ActiveCampaignsPage({
         subtitle="Plan, create, and manage your campaigns"
         actions={
           <div className="flex items-center gap-3">
-            <Button data-testid="quick-content-button" variant="secondary" onClick={openQuickModal} className="gap-2">
+            <Button data-testid="create-content-button" variant="secondary" onClick={() => onNavigateToContentWizard?.()} className="gap-2">
               <Zap className="h-4 w-4" />
-              Quick Content
+              Create Content
             </Button>
             <Button data-testid="new-campaign-button" onClick={() => onNavigateToWizard?.()} className="gap-2">
               <Plus className="h-4 w-4" />
@@ -96,6 +92,9 @@ export function ActiveCampaignsPage({
       />
 
       <div className="space-y-6">
+        {/* Draft campaign banner */}
+        <DraftCampaignBanner onResume={() => onResumeWizard?.()} />
+
         {/* Stats */}
         <CampaignStatsCards stats={stats} isLoading={isLoading} />
 
@@ -124,8 +123,54 @@ export function ActiveCampaignsPage({
         )}
       </div>
 
-      {/* Quick Content Modal */}
-      <QuickContentModal onCreated={handleQuickCreated} />
     </PageShell>
+  );
+}
+
+// ─── Draft Campaign Banner ─────────────────────────────────
+
+import { ArrowRight, FileEdit, X } from "lucide-react";
+
+function DraftCampaignBanner({ onResume }: { onResume: () => void }) {
+  const name = useCampaignWizardStore((s) => s.name);
+  const currentStep = useCampaignWizardStore((s) => s.currentStep);
+  const resetWizard = useCampaignWizardStore((s) => s.resetWizard);
+
+  // Only show if there's an in-progress wizard (name filled in or past step 1)
+  if (!name && currentStep <= 1) return null;
+
+  const STEP_LABELS = ['Setup', 'Knowledge', 'Strategy', 'Concept', 'Deliverables', 'Review'];
+  const stepLabel = STEP_LABELS[currentStep - 1] ?? `Step ${currentStep}`;
+
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+      <div className="flex items-center gap-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+          <FileEdit className="h-4 w-4 text-primary" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-gray-900">
+            Draft in progress: {name || 'Untitled Campaign'}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Currently at step {currentStep} ({stepLabel})
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={resetWizard}
+          className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+        >
+          <X className="h-3.5 w-3.5" />
+          Discard
+        </button>
+        <Button size="sm" onClick={onResume} className="gap-1.5">
+          Continue
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
   );
 }
