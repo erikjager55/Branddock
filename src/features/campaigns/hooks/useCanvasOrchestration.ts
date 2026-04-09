@@ -121,7 +121,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
       console.error('[useCanvasOrchestration] Error:', err);
-      useCanvasStore.getState().setGlobalStatus('error');
+      useCanvasStore.getState().setGlobalStatus('error', (err as Error).message ?? 'Generation failed');
     } finally {
       isGeneratingRef.current = false;
       abortRef.current = null;
@@ -305,7 +305,7 @@ function routeEvent(eventName: string, rawData: string) {
 
     case 'error':
       console.error('[Canvas Orchestration] Error event:', data.message);
-      store.setGlobalStatus('error');
+      store.setGlobalStatus('error', (data.message as string) ?? 'Content generation failed');
       break;
 
     default:

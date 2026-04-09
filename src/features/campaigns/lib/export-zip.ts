@@ -1,7 +1,12 @@
 import JSZip from 'jszip';
-import { fetchStudioState } from '../api/studio.api';
 import { sanitizeFilename } from '@/lib/studio/export-studio-content';
 import type { DeliverableResponse } from '@/types/campaign';
+
+async function fetchDeliverableContent(deliverableId: string): Promise<{ generatedText?: string }> {
+  const res = await fetch(`/api/studio/${deliverableId}`);
+  if (!res.ok) return {};
+  return res.json();
+}
 
 interface ExportProgress {
   current: number;
@@ -31,7 +36,7 @@ export async function exportApprovedDeliverablesZip(
 
     let textContent = '';
     try {
-      const studio = await fetchStudioState(d.id);
+      const studio = await fetchDeliverableContent(d.id);
       textContent = studio.generatedText ?? '';
     } catch {
       textContent = '<p>Content could not be loaded.</p>';

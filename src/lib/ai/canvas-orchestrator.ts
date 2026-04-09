@@ -21,6 +21,7 @@ import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import type { JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
+import { getPromptTemplate } from '@/lib/studio/prompt-templates';
 import OpenAI from 'openai';
 
 // ─── Types ────────────────────────────────────────────────
@@ -507,11 +508,14 @@ function buildCanvasPrompt(
     (t) => t.type === 'image' || t.type === 'hero-image',
   );
 
+  // Use type-specific prompt template if available (expert persona, methodology, anti-patterns)
+  const contentType = stack.deliverableTypeId ?? '';
+  const typeTemplate = getPromptTemplate(contentType);
+
   const systemPrompt = [
-    'You are an expert content strategist and copywriter for brand marketing.',
-    'Generate content components based on the provided brand context, campaign strategy, and platform specifications.',
+    typeTemplate.systemPrompt,
     '',
-    'IMPORTANT: Respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.',
+    'IMPORTANT: In addition to the type-specific instructions above, respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.',
     '',
     '## Brand Context',
     formatBrandContext(stack.brand),
@@ -523,7 +527,7 @@ function buildCanvasPrompt(
     stack.products.length > 0 ? formatProductContext(stack.products) : '',
     medium ? formatMediumSpecs(medium) : '',
     options?.mediumConfig ? formatMediumConfig(options.mediumConfig) : '',
-    stack.deliverableTypeId ? formatConstraintsForPrompt(stack.deliverableTypeId) : '',
+    contentType ? formatConstraintsForPrompt(contentType) : '',
     options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
   ]
     .filter(Boolean)
@@ -578,11 +582,15 @@ function buildRegenerationPrompt(
 ): { systemPrompt: string; userPrompt: string } {
   const groupComponents = existingComponents.filter((c) => c.variantGroup === group);
 
+  const regenContentType = stack.deliverableTypeId ?? '';
+  const regenTemplate = getPromptTemplate(regenContentType);
+
   const systemPrompt = [
-    'You are an expert content strategist and copywriter for brand marketing.',
+    regenTemplate.systemPrompt,
+    '',
     'You are regenerating a specific content component group based on user feedback.',
     '',
-    'IMPORTANT: Respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.',
+    'IMPORTANT: In addition to the type-specific instructions above, respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.',
     '',
     '## Brand Context',
     formatBrandContext(stack.brand),
@@ -593,7 +601,7 @@ function buildRegenerationPrompt(
     stack.brief ? formatBriefContext(stack.brief) : '',
     stack.products.length > 0 ? formatProductContext(stack.products) : '',
     options?.mediumConfig ? formatMediumConfig(options.mediumConfig) : '',
-    stack.deliverableTypeId ? formatConstraintsForPrompt(stack.deliverableTypeId) : '',
+    regenContentType ? formatConstraintsForPrompt(regenContentType) : '',
     options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
   ]
     .filter(Boolean)

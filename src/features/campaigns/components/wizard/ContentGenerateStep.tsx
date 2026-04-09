@@ -36,6 +36,7 @@ export function ContentGenerateStep() {
   // ─── Canvas store subscriptions ────────────────────────────
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
+  const globalErrorMessage = useCanvasStore((s) => s.globalErrorMessage);
   const selections = useCanvasStore((s) => s.selections);
   const imageVariants = useCanvasStore((s) => s.imageVariants);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
@@ -74,6 +75,13 @@ export function ContentGenerateStep() {
         strategy: store.blueprintResult ?? undefined,
         deliverables: [{ type: store.selectedContentType!, quantity: 1 }],
         saveAsTemplate: false,
+        briefing: {
+          occasion: store.briefingOccasion || undefined,
+          audienceObjective: store.briefingAudienceObjective || undefined,
+          coreMessage: store.briefingCoreMessage || undefined,
+          tonePreference: store.briefingTonePreference || undefined,
+          constraints: store.briefingConstraints || undefined,
+        },
       },
       {
         onSuccess: (result) => {
@@ -173,7 +181,10 @@ export function ContentGenerateStep() {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-4">
         <AlertCircle className="h-8 w-8 text-red-500" />
-        <p className="text-sm text-gray-700">Content generation failed</p>
+        <p className="text-sm font-medium text-gray-900">Content generation failed</p>
+        {globalErrorMessage && (
+          <p className="text-sm text-red-600 max-w-md text-center">{globalErrorMessage}</p>
+        )}
         <Button variant="secondary" icon={RefreshCw} onClick={handleRetry}>
           Try Again
         </Button>

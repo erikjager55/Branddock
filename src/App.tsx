@@ -71,7 +71,6 @@ import {
   ActiveCampaignsPage,
   CampaignDetailPage,
   QuickContentDetailPage,
-  ContentStudioPage,
   CanvasPage,
   ContentLibraryPage,
   CampaignWizardPage,
@@ -936,24 +935,7 @@ function AppContent() {
           />
         );
 
-      case 'content-studio': {
-        const csCampaignId = useCampaignStore.getState().selectedCampaignId;
-        const csDeliverableId = useCampaignStore.getState().selectedDeliverableId;
-        if (!csCampaignId || !csDeliverableId) {
-          return null; // useEffect redirect handles navigation
-        }
-        return (
-          <ContentStudioPage
-            deliverableId={csDeliverableId}
-            campaignId={csCampaignId}
-            onBack={() => {
-              useCampaignStore.getState().setSelectedDeliverableId(null);
-              handleSetActiveSection('campaign-detail');
-            }}
-          />
-        );
-      }
-
+      case 'content-studio': // fallthrough — redirects to content-canvas
       case 'content-canvas': {
         const ccCampaignId = useCampaignStore.getState().selectedCampaignId;
         const ccDeliverableId = useCampaignStore.getState().selectedDeliverableId;

@@ -33,5 +33,3 @@ export { ContentLibraryPage } from "./content-library/ContentLibraryPage";
 // Campaign Wizard
 export { CampaignWizardPage } from "./wizard/CampaignWizardPage";
 
-// Content Studio
-export { ContentStudioPage } from "./studio/ContentStudioPage";

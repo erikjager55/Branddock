@@ -30,6 +30,7 @@ interface CanvasStoreState {
   // ─── Generation status — Map<group, status> ───────────────
   generationStatus: Map<string, GenerationStatus>;
   globalStatus: GenerationStatus;
+  globalErrorMessage: string | null;
 
   // ─── Image variants ───────────────────────────────────────
   imageVariants: CanvasImageVariant[];
@@ -83,7 +84,7 @@ interface CanvasStoreState {
   addVariantGroup: (group: string, variants: CanvasVariant[]) => void;
   setSelection: (group: string, index: number) => void;
   setGenerationStatus: (group: string, status: GenerationStatus) => void;
-  setGlobalStatus: (status: GenerationStatus) => void;
+  setGlobalStatus: (status: GenerationStatus, errorMessage?: string) => void;
   setImageVariants: (variants: CanvasImageVariant[]) => void;
   setPublishSuggestion: (suggestion: { suggestedDate: string; reasoning: string } | null) => void;
   toggleContextPanel: () => void;
@@ -128,6 +129,7 @@ const INITIAL_STATE = {
   selections: new Map<string, number>(),
   generationStatus: new Map<string, GenerationStatus>(),
   globalStatus: 'idle' as GenerationStatus,
+  globalErrorMessage: null as string | null,
   imageVariants: [],
   publishSuggestion: null,
   contextPanelCollapsed: false,
@@ -195,7 +197,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       return { generationStatus: next };
     }),
 
-  setGlobalStatus: (status) => set({ globalStatus: status }),
+  setGlobalStatus: (status, errorMessage) => set({ globalStatus: status, globalErrorMessage: errorMessage ?? (status === 'error' ? 'An unknown error occurred' : null) }),
 
   setImageVariants: (variants) => set({ imageVariants: variants }),
 

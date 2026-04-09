@@ -15,6 +15,13 @@ const launchSchema = z.object({
   knowledgeIds: z.array(z.string()).optional(),
   strategy: z.record(z.string(), z.unknown()).optional(),
   deliverables: z.array(z.record(z.string(), z.unknown())).optional(),
+  briefing: z.object({
+    occasion: z.string().optional(),
+    audienceObjective: z.string().optional(),
+    coreMessage: z.string().optional(),
+    tonePreference: z.string().optional(),
+    constraints: z.string().optional(),
+  }).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -33,7 +40,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, type, goalType, knowledgeIds, strategy, deliverables } = parsed.data;
+    const { name, type, goalType, knowledgeIds, strategy, deliverables, briefing } = parsed.data;
 
     const slug = name
       .toLowerCase()
@@ -80,7 +87,15 @@ export async function POST(request: NextRequest) {
     if (assetPlanDeliverables && assetPlanDeliverables.length > 0) {
       await createDeliverablesFromBlueprint(campaign.id, assetPlanDeliverables);
     } else if (deliverables && deliverables.length > 0) {
-      // Fallback: use wizard-provided deliverables (title+type only)
+      // Fallback: use wizard-provided deliverables with briefing from wizard
+      const briefSettings = briefing ? {
+        brief: {
+          objective: briefing.occasion || briefing.audienceObjective || undefined,
+          keyMessage: briefing.coreMessage || undefined,
+          toneDirection: briefing.tonePreference || undefined,
+        },
+      } : undefined;
+
       for (const d of deliverables) {
         await prisma.deliverable.create({
           data: {
@@ -88,6 +103,7 @@ export async function POST(request: NextRequest) {
             title: (d.title as string) ?? (d.type as string) ?? "Untitled",
             contentType: (d.type as string) ?? "blog-article",
             status: "NOT_STARTED",
+            settings: briefSettings ? JSON.parse(JSON.stringify(briefSettings)) : undefined,
           },
         });
       }
