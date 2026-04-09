@@ -413,7 +413,7 @@ export function mineInsightsSSE(
 
 /** Generate 3 creative concepts via SSE */
 export function generateConceptsSSE(
-  body: { workspaceId: string; wizardContext: object; selectedInsight: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string },
+  body: { workspaceId: string; wizardContext: object; selectedInsight: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string; regenerationContext?: { feedback: string; failedConcepts: Array<{ campaignLine: string; whyItFailed: string }> } },
   onEvent: (event: unknown) => void,
   onError: (error: string) => void,
 ): { abort: () => void } {

@@ -19,6 +19,11 @@ import { Button, Badge } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import type { CreativeConcept, StickinessScore } from "@/lib/campaigns/strategy-blueprint.types";
 
+/** Safely extract pass value from both boolean and evidence-based test result formats */
+function tp(val: boolean | { pass: boolean; evidence?: string }): boolean {
+  return typeof val === 'object' && val !== null ? val.pass : Boolean(val);
+}
+
 // ─── Stickiness Score Display ──────────────────────────────
 
 const STICKINESS_LABELS: Array<{ key: keyof Omit<StickinessScore, 'total'>; label: string; shortLabel: string }> = [
@@ -55,12 +60,12 @@ function StickinessBar({ score }: { score: StickinessScore }) {
 function CampaignLineTestBadges({ tests }: { tests: CreativeConcept["campaignLineTests"] }) {
   if (!tests) return null;
   const items = [
-    { key: "barTest", label: "Bar", passes: tests.barTest },
-    { key: "tShirtTest", label: "T-Shirt", passes: tests.tShirtTest },
-    { key: "parodyTest", label: "Parody", passes: tests.parodyTest },
-    { key: "tenYearTest", label: "10-Year", passes: tests.tenYearTest },
-    { key: "categoryEscapeTest", label: "Category Escape", passes: tests.categoryEscapeTest },
-    { key: "oppositeTest", label: "Opposite", passes: tests.oppositeTest },
+    { key: "barTest", label: "Bar", passes: tp(tests.barTest) },
+    { key: "tShirtTest", label: "T-Shirt", passes: tp(tests.tShirtTest) },
+    { key: "parodyTest", label: "Parody", passes: tp(tests.parodyTest) },
+    { key: "tenYearTest", label: "10-Year", passes: tp(tests.tenYearTest) },
+    { key: "categoryEscapeTest", label: "Category Escape", passes: tp(tests.categoryEscapeTest) },
+    { key: "oppositeTest", label: "Opposite", passes: tp(tests.oppositeTest) },
   ];
   return (
     <div className="flex flex-wrap gap-1">

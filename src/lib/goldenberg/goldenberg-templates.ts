@@ -378,3 +378,31 @@ export function selectTemplatesForGoal(
 
   return selected;
 }
+
+// ─── Insight Affinity ────────────────────────────────────────
+
+/** Affinity scores mapping each template to insight lens types */
+export const TEMPLATE_INSIGHT_AFFINITY: Record<GoldenbergTemplate, Record<'empathy' | 'tension' | 'behavior', number>> = {
+  extreme_consequence: { empathy: 6, tension: 9, behavior: 8 },
+  absurd_alternative: { empathy: 7, tension: 8, behavior: 5 },
+  inversion: { empathy: 5, tension: 10, behavior: 6 },
+  metaphor: { empathy: 9, tension: 6, behavior: 5 },
+  activation: { empathy: 7, tension: 5, behavior: 10 },
+  subtraction: { empathy: 8, tension: 7, behavior: 4 },
+  unification: { empathy: 6, tension: 5, behavior: 7 },
+  extreme_effort: { empathy: 5, tension: 7, behavior: 9 },
+};
+
+/**
+ * Returns the top N templates sorted by affinity for a specific insight lens.
+ */
+export function getTemplatesByInsightAffinity(
+  lens: 'empathy' | 'tension' | 'behavior',
+  count = 3,
+): GoldenbergTemplateDefinition[] {
+  return Object.entries(TEMPLATE_INSIGHT_AFFINITY)
+    .sort(([, a], [, b]) => b[lens] - a[lens])
+    .slice(0, count)
+    .map(([id]) => GOLDENBERG_TEMPLATES.find(t => t.id === id)!)
+    .filter(Boolean);
+}

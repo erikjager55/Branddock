@@ -272,6 +272,7 @@ interface CreativeCriticPromptParams {
   brandContext: string;
   personaContext: string;
   goalType: string;
+  previousRoundContext?: string;
 }
 
 /**
@@ -360,7 +361,7 @@ Return a JSON object:
 Respond with valid JSON only.`;
 
   const user = `Evaluate this creative concept for a "${goalLabel}" campaign.
-
+${params.previousRoundContext ? `\n## Previous Round Context\n${params.previousRoundContext}\n` : ''}
 ## The Human Insight
 ${params.insightJson}
 
@@ -385,6 +386,7 @@ interface CreativeDefensePromptParams {
   brandContext: string;
   personaContext: string;
   goalType: string;
+  roundContext?: string;
 }
 
 /**
@@ -418,7 +420,7 @@ Return a JSON object:
     "visualWorld": "...",
     "memorableDevice": "...",
     "stickinessScore": { "simple": N, "unexpected": N, "concrete": N, "credible": N, "emotional": N, "story": N, "total": N },
-    "campaignLineTests": { "barTest": bool, "tShirtTest": bool, "parodyTest": bool, "tenYearTest": bool, "categoryEscapeTest": bool, "oppositeTest": bool },
+    "campaignLineTests": { "barTest": { "pass": bool, "evidence": "why" }, "tShirtTest": { "pass": bool, "evidence": "why" }, "parodyTest": { "pass": bool, "evidence": "why" }, "tenYearTest": { "pass": bool, "evidence": "why" }, "categoryEscapeTest": { "pass": bool, "evidence": "why" }, "oppositeTest": { "pass": bool, "evidence": "why" }, "passCount": N },
     "creativeTerritory": "...",
     "extendability": [...]
   },
@@ -436,7 +438,7 @@ ${params.insightJson}
 
 ## The Critic's Review
 ${params.critiqueJson}
-
+${params.roundContext ? `\n## Round Context\n${params.roundContext}\n` : ''}
 ## Brand Context
 ${params.brandContext}
 

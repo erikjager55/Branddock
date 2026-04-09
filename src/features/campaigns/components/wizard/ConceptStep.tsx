@@ -29,7 +29,7 @@ import type {
 import { PipelineProgressView } from "./PipelineProgressView";
 import type { PipelineStepConfig } from "./PipelineProgressView";
 import { InsightReviewView } from "./InsightReviewView";
-import { ConceptSelectionView } from "./ConceptSelectionView";
+import ConceptComparisonView from "./ConceptComparisonView";
 import { ConceptReviewView } from "./ConceptReviewView";
 import { compileStructuredFeedback } from "../../lib/compile-structured-feedback";
 
@@ -61,6 +61,9 @@ export function ConceptStep() {
   const pipelineSteps = useCampaignWizardStore((s) => s.pipelineSteps);
   const selectedKnowledgeIds = useCampaignWizardStore((s) => s.selectedKnowledgeIds);
   const strategyPhase = useCampaignWizardStore((s) => s.strategyPhase);
+  const concepts = useCampaignWizardStore((s) => s.concepts);
+  const selectedConceptIndex = useCampaignWizardStore((s) => s.selectedConceptIndex);
+  const setSelectedConcept = useCampaignWizardStore((s) => s.setSelectedConcept);
 
   // Strategy data (used by both pipelines after convergence)
   const synthesizedStrategy = useCampaignWizardStore((s) => s.synthesizedStrategy);
@@ -72,6 +75,7 @@ export function ConceptStep() {
   const enrichmentBlockCount = useCampaignWizardStore((s) => s.enrichmentBlockCount);
   const enrichmentSources = useCampaignWizardStore((s) => s.enrichmentSources);
   const useExternalEnrichment = useCampaignWizardStore((s) => s.useExternalEnrichment);
+  const pipelineDepth = useCampaignWizardStore((s) => s.pipelineDepth);
 
 
 
@@ -196,8 +200,12 @@ export function ConceptStep() {
     store.setStrategyPhase("generating_concepts");
     store.updateStepStatus({ step: 1, name: "Creative Leap", status: "pending", label: "Generating concepts..." });
 
+    // Include regeneration context if concepts were previously rejected
+    const { failedConcepts: fc, regenerationBrief: rb } = useCampaignWizardStore.getState();
+    const regenCtx = fc.length > 0 ? { feedback: rb, failedConcepts: fc } : undefined;
+
     const { abort } = generateConceptsSSE(
-      { workspaceId: "", wizardContext, selectedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent },
+      { workspaceId: "", wizardContext, selectedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, regenerationContext: regenCtx },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
         const data = event as Record<string, unknown>;
@@ -388,10 +396,32 @@ export function ConceptStep() {
   useEffect(() => {
     if (strategyPhase === "rationale_complete" && !isGenerating && !autoStartedRef.current) {
       autoStartedRef.current = true;
-      // Start with insight mining (creative quality pipeline)
-      handleMineInsights();
+      if (pipelineDepth === 'quick') {
+        // Quick mode: skip insight mining, go directly to concept generation
+        // Use the strategy foundation as implicit insight and generate a single concept
+        handleGenerateConcepts();
+      } else {
+        // Full mode: start with insight mining (creative quality pipeline)
+        handleMineInsights();
+      }
     }
-  }, [strategyPhase, isGenerating, handleMineInsights]);
+  }, [strategyPhase, isGenerating, handleMineInsights, handleGenerateConcepts, pipelineDepth]);
+
+  // ─── Regenerate Concepts with Feedback ──────────────────
+  const handleRegenerateConcepts = useCallback(async () => {
+    const st = useCampaignWizardStore.getState();
+    const { concepts: curConcepts, pipelineAttempt } = st;
+    if (pipelineAttempt >= 2) return; // Max 2 attempts
+    const feedback = curConcepts.map((c) =>
+      `Concept "${c.campaignLine}" (${c.goldenbergTemplate}): stickiness ${c.stickinessScore?.total ?? 'N/A'}/10`
+    ).join('\n');
+    st.setPipelineAttempt(pipelineAttempt + 1);
+    st.setRegenerationBrief(feedback);
+    curConcepts.forEach(c => {
+      st.addFailedConcept(c.campaignLine, 'Low stickiness score, not selected by user');
+    });
+    handleGenerateConcepts();
+  }, [handleGenerateConcepts]);
 
   // ─── Approve Concept → Assemble Blueprint ──────────────
 
@@ -432,13 +462,16 @@ export function ConceptStep() {
       store.setStepProceedOverride(handleGenerateConcepts);
     } else if (strategyPhase === "review_concepts") {
       store.setStepProceedOverride(handleBuildStrategyFromConcept);
+    } else if (strategyPhase === "review_final_strategy" && elaborateResult) {
+      // Blueprint assembly, not re-elaboration
+      store.setStepProceedOverride(handleApprove);
     } else if (strategyPhase === "review_final_strategy") {
       store.setStepProceedOverride(handleElaborate);
     } else {
       store.setStepProceedOverride(null);
     }
     return () => { store.setStepProceedOverride(null); };
-  }, [strategyPhase, handleGenerateConcepts, handleBuildStrategyFromConcept, handleElaborate]);
+  }, [strategyPhase, handleGenerateConcepts, handleBuildStrategyFromConcept, handleElaborate, handleApprove, elaborateResult]);
 
   // ─── Render based on phase ─────────────────────────────
 
@@ -503,7 +536,17 @@ export function ConceptStep() {
 
   // Review concepts (VOTE 2)
   if (strategyPhase === "review_concepts") {
-    return <ConceptSelectionView />;
+    return (
+      <>
+        <ConceptComparisonView
+          concepts={concepts}
+          selectedIndex={selectedConceptIndex}
+          onSelect={(index) => setSelectedConcept(index)}
+          onRegenerate={handleRegenerateConcepts}
+          isRegenerating={isGenerating}
+        />
+      </>
+    );
   }
 
   // Building strategy from concept (spinner)

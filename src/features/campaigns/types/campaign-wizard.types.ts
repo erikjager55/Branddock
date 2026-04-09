@@ -50,6 +50,7 @@ export type {
   EnrichmentContext,
   HumanInsight,
   CreativeConcept,
+  DebateRound,
   ConceptVisual,
   ConceptVisualsResult,
 } from '@/lib/campaigns/strategy-blueprint.types';
@@ -122,6 +123,13 @@ export interface LaunchCampaignBody {
   deliverables: { type: string; quantity: number }[];
   saveAsTemplate: boolean;
   templateName?: string;
+  briefing?: {
+    occasion?: string;
+    audienceObjective?: string;
+    coreMessage?: string;
+    tonePreference?: string;
+    constraints?: string;
+  };
 }
 
 export interface LaunchCampaignResponse {

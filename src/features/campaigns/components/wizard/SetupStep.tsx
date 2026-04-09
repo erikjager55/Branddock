@@ -1,6 +1,6 @@
 "use client";
 
-import { TrendingUp, Zap, Scale, MessageCircle } from "lucide-react";
+import { TrendingUp, Zap, Scale, MessageCircle, Layers } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Input } from "@/components/shared";
 import { SelectionCard } from "@/components/ui/layout";
@@ -75,6 +75,8 @@ export function SetupStep() {
   const setBriefingTonePreference = useCampaignWizardStore((s) => s.setBriefingTonePreference);
   const briefingConstraints = useCampaignWizardStore((s) => s.briefingConstraints);
   const setBriefingConstraints = useCampaignWizardStore((s) => s.setBriefingConstraints);
+  const pipelineDepth = useCampaignWizardStore((s) => s.pipelineDepth);
+  const setPipelineDepth = useCampaignWizardStore((s) => s.setPipelineDepth);
   return (
     <div className="space-y-6">
       {/* Campaign name */}
@@ -277,6 +279,41 @@ export function SetupStep() {
           ))}
         </div>
       </div>}
+
+      {/* Pipeline Depth */}
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <Layers className="h-4 w-4 text-gray-500" />
+          <label className="text-sm font-medium text-gray-700">Pipeline Depth</label>
+        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          Full runs a multi-stage creative pipeline with debate rounds. Quick generates a concept in a single pass.
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setPipelineDepth('full')}
+            className={`flex-1 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+              pipelineDepth === 'full'
+                ? 'border-primary bg-primary/5 text-primary ring-1 ring-primary'
+                : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Full Pipeline
+          </button>
+          <button
+            type="button"
+            onClick={() => setPipelineDepth('quick')}
+            className={`flex-1 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+              pipelineDepth === 'quick'
+                ? 'border-primary bg-primary/5 text-primary ring-1 ring-primary'
+                : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            Quick Concept
+          </button>
+        </div>
+      </div>
 
       {/* Date fields — 2-column layout */}
       {(() => {

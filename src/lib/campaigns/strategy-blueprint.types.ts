@@ -197,6 +197,8 @@ export interface PersonaValidationResult {
   talkabilityScore?: number;
   /** One-line creative judgment */
   creativeVerdict?: string;
+  /** If any hook scores below 4, the ONE thing that makes this persona reject it. Null if all hooks score 4+. */
+  dealbreaker?: string;
   /** Per-hook score for Hook A (1-10) — used in hook review phase */
   hookAScore?: number;
   /** Per-hook score for Hook B (1-10) — used in hook review phase */
@@ -269,13 +271,22 @@ export interface StickinessScore {
 }
 
 /** Campaign line quality tests */
+/** Campaign line quality test result with evidence */
+export interface CampaignLineTestResult {
+  pass: boolean;
+  evidence: string;
+}
+
+/** Campaign line quality tests — evaluated by independent Critic agent, NOT by the concept generator */
 export interface CampaignLineTests {
-  barTest: boolean;        // Would someone say this in a bar?
-  tShirtTest: boolean;     // Would someone wear this on a t-shirt?
-  parodyTest: boolean;     // Could people make their own versions?
-  tenYearTest: boolean;    // Will this still be relevant in a decade?
-  categoryEscapeTest: boolean; // Does it transcend the product category?
-  oppositeTest: boolean;   // Is the opposite also interesting? (if not, too generic)
+  barTest: CampaignLineTestResult;
+  tShirtTest: CampaignLineTestResult;
+  parodyTest: CampaignLineTestResult;
+  tenYearTest: CampaignLineTestResult;
+  categoryEscapeTest: CampaignLineTestResult;
+  oppositeTest: CampaignLineTestResult;
+  /** Number of tests passed (0-6) */
+  passCount: number;
 }
 
 /** Bisociation domain — the "other world" connected to the insight */
@@ -303,6 +314,15 @@ export interface HumanInsight {
   providerUsed: string;
   /** Which model was used */
   modelUsed: string;
+}
+
+/** A single round in the multi-round creative debate */
+export interface DebateRound {
+  round: number;
+  critique: unknown;
+  defense: unknown;
+  score: number;
+  conceptSnapshot: CreativeConcept;
 }
 
 /** Creative Concept — output of Fase 2a Creative Leap */
@@ -623,6 +643,10 @@ export interface CreativeHook {
   curatorSelection: CreativeAngleSelection;
   modelUsed: string;
   providerUsed: string;
+  /** Original insight that seeded this hook — preserved for refinement traceability */
+  originalInsight?: HumanInsight;
+  /** Original creative concept — preserved for refinement traceability */
+  originalConcept?: CreativeConcept;
 }
 
 // ─── Enrichment Context (stored in Zustand for reuse) ──────

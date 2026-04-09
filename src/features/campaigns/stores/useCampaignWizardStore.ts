@@ -25,6 +25,7 @@ import type {
   // ─── Creative Quality Pipeline Types ──────────────────────
   HumanInsight,
   CreativeConcept,
+  DebateRound,
 } from "../types/campaign-wizard.types";
 
 // ─── Types ────────────────────────────────────────────────
@@ -91,6 +92,9 @@ interface CampaignWizardState {
   // ─── External Enrichment Toggle ──────────────────────────────
   useExternalEnrichment: boolean;
 
+  // ─── Pipeline Depth Toggle ──────────────────────────────────
+  pipelineDepth: 'full' | 'quick';
+
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: string[];
   strategyRatings: Record<string, { rating: 'up' | 'down'; comment?: string }>;
@@ -108,9 +112,14 @@ interface CampaignWizardState {
   concepts: CreativeConcept[];
   selectedConceptIndex: number | null;
   conceptElementRatings: Record<string, { rating: 'up' | 'down'; comment?: string }>;
-  creativeDebateResult: { critique: unknown; defense: unknown; improvedConcept: CreativeConcept | null } | null;
+  creativeDebateResult: { critique: unknown; defense: unknown; improvedConcept: CreativeConcept | null; rounds?: DebateRound[]; finalScore?: number } | null;
   finalStrategy: StrategyLayer | null;
   finalArchitecture: ArchitectureLayer | null;
+
+  // ─── Concept Regeneration ──────────────────────────────────
+  pipelineAttempt: number;
+  failedConcepts: Array<{ campaignLine: string; whyItFailed: string }>;
+  regenerationBrief: string;
 
   setWizardMode: (mode: WizardMode) => void;
   setCurrentStep: (step: number) => void;
@@ -174,6 +183,9 @@ interface CampaignWizardState {
   // ─── External Enrichment Actions ─────────────────────────────
   setUseExternalEnrichment: (enabled: boolean) => void;
 
+  // ─── Pipeline Depth Actions ──────────────────────────────────
+  setPipelineDepth: (depth: 'full' | 'quick') => void;
+
   // ─── Step Proceed Override ──────────────────────────────────
   /** When set, the wizard Continue button calls this instead of nextStep(). Cleared on step change. */
   stepProceedOverride: (() => void) | null;
@@ -191,13 +203,18 @@ interface CampaignWizardState {
   setConceptResults: (concepts: CreativeConcept[]) => void;
   setSelectedConcept: (index: number | null) => void;
   setConceptElementRating: (key: string, rating: 'up' | 'down', comment?: string) => void;
-  setCreativeDebateResult: (result: { critique: unknown; defense: unknown; improvedConcept: CreativeConcept | null }) => void;
+  setCreativeDebateResult: (result: { critique: unknown; defense: unknown; improvedConcept: CreativeConcept | null; rounds?: DebateRound[]; finalScore?: number }) => void;
   setFinalStrategyResult: (data: { strategy: StrategyLayer; architecture: ArchitectureLayer }) => void;
 
   // ─── Content Generation Step Actions ─────────────────────────
   setContentGenPhase: (phase: 'idle' | 'launching' | 'generating' | 'complete' | 'error') => void;
   setGeneratedIds: (campaignId: string, deliverableId: string) => void;
   setHasSelectedVariant: (v: boolean) => void;
+
+  // ─── Concept Regeneration Actions ─────────────────────────
+  setPipelineAttempt: (attempt: number) => void;
+  addFailedConcept: (campaignLine: string, whyItFailed: string) => void;
+  setRegenerationBrief: (brief: string) => void;
 }
 
 // ─── Initial state ────────────────────────────────────────
@@ -261,6 +278,9 @@ const INITIAL_STATE = {
   // ─── External Enrichment (always enabled, auto-detected) ──────────────────────────────
   useExternalEnrichment: true,
 
+  // ─── Pipeline Depth ──────────────────────────────────────────
+  pipelineDepth: 'full' as 'full' | 'quick',
+
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: [] as string[],
   strategyRatings: {} as Record<string, { rating: 'up' | 'down'; comment?: string }>,
@@ -278,6 +298,11 @@ const INITIAL_STATE = {
   creativeDebateResult: null as { critique: unknown; defense: unknown; improvedConcept: CreativeConcept | null } | null,
   finalStrategy: null as StrategyLayer | null,
   finalArchitecture: null as ArchitectureLayer | null,
+
+  // ─── Concept Regeneration ─────────────────────────────────
+  pipelineAttempt: 1,
+  failedConcepts: [] as Array<{ campaignLine: string; whyItFailed: string }>,
+  regenerationBrief: '',
 
   // ─── Content Generation Step ─────────────────────────────────
   contentGenPhase: 'idle' as 'idle' | 'launching' | 'generating' | 'complete' | 'error',
@@ -450,6 +475,10 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         creativeDebateResult: null,
         finalStrategy: null,
         finalArchitecture: null,
+        // Concept Regeneration
+        pipelineAttempt: 1,
+        failedConcepts: [],
+        regenerationBrief: '',
       }),
 
     // ─── Interactive Strategy Phase Actions ─────────────────
@@ -489,6 +518,10 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         creativeDebateResult: null,
         finalStrategy: null,
         finalArchitecture: null,
+        // Concept Regeneration
+        pipelineAttempt: 1,
+        failedConcepts: [],
+        regenerationBrief: '',
         // Content generation step
         contentGenPhase: 'idle',
         generatedCampaignId: null,
@@ -518,6 +551,9 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     // ─── External Enrichment Actions ─────────────────────────────
     setUseExternalEnrichment: (useExternalEnrichment) => set({ useExternalEnrichment }),
 
+    // ─── Pipeline Depth Actions ──────────────────────────────────
+    setPipelineDepth: (pipelineDepth) => set({ pipelineDepth }),
+
     // ─── Step Proceed Override ──────────────────────────────────
     setStepProceedOverride: (fn) => set({ stepProceedOverride: fn }),
 
@@ -526,6 +562,14 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
     setGeneratedIds: (generatedCampaignId, generatedDeliverableId) =>
       set({ generatedCampaignId, generatedDeliverableId }),
     setHasSelectedVariant: (hasSelectedVariant) => set({ hasSelectedVariant }),
+
+    // ─── Concept Regeneration Actions ─────────────────────────
+    setPipelineAttempt: (attempt) => set({ pipelineAttempt: attempt }),
+    addFailedConcept: (campaignLine, whyItFailed) =>
+      set((s) => ({
+        failedConcepts: [...s.failedConcepts, { campaignLine, whyItFailed }],
+      })),
+    setRegenerationBrief: (brief) => set({ regenerationBrief: brief }),
 
     // ─── Creative Quality Pipeline Actions ─────────────────────
     setInsightResults: (insights) => set({ insights }),

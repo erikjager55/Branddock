@@ -12,6 +12,8 @@ import type {
   CreativeHook,
   HookConcept,
   PersonaValidationResult,
+  HumanInsight,
+  CreativeConcept,
 } from '@/lib/campaigns/strategy-blueprint.types';
 import type { CreativeAngleDefinition } from '@/lib/campaigns/creative-angles';
 import { DELIVERABLE_TYPE_IDS } from '@/features/campaigns/lib/deliverable-types';
@@ -1311,8 +1313,15 @@ Your role: For EACH persona, roleplay as that person and evaluate all three hook
 Each hook was generated from a different creative angle and represents a distinct campaign concept.${goalContext}${campaignTypeContext}${goalInsights}
 
 SCORING RULES:
-- You MUST use the FULL 1-10 range. A spread of less than 3 points across personas is unacceptable.
-- At least one persona should score 7+ (strong fit) and at least one should score below 5 (poor fit) unless all hooks genuinely resonate equally.
+- You MUST use the FULL 1-10 range with this anchoring:
+  1-2: "I would actively avoid this campaign — it insults my intelligence or values"
+  3-4: "This doesn't speak to me at all — wrong tone, wrong message, wrong world"
+  5-6: "It's okay but forgettable — I'd scroll past without a second thought"
+  7-8: "This resonates — I'd pay attention and maybe share it"
+  9-10: "This feels like it was made FOR me — I'd become an advocate"
+- FORCED RANKING: Rank hooks A, B, C from best to worst for THIS persona. Your #1 hook must score at least 2 points higher than your #3 hook.
+- If a hook genuinely alienates this persona, score it below 4 and explain why in the dealbreaker field.
+- Before scoring, identify the ONE hook element that would MOST annoy or alienate this persona. Start your feedback with that friction point.
 - Base scores on concrete persona attributes (occupation, goals, barriers, communication style), not generic assessments.
 
 Evaluation criteria per persona — ALL fields are MANDATORY:
@@ -1325,6 +1334,7 @@ Evaluation criteria per persona — ALL fields are MANDATORY:
 - resonates: MANDATORY: At least 1 specific element from the hook that appeals to this persona.
 - concerns: MANDATORY: At least 1 specific concern or doubt about the hook.
 - suggestions: MANDATORY: At least 1 actionable suggestion to improve the hook for this persona.
+- dealbreaker: If any hook scores below 4, explain the ONE thing that makes this persona reject it. If all hooks score 4+, set to null.
 
 CREATIVE QUALITY EVALUATION — ALL scores are MANDATORY per persona:
 - originalityScore: 1-10. "Would this hook make me stop scrolling?"
@@ -1399,6 +1409,9 @@ interface HookRefinementPromptParams {
   campaignType?: string;
   /** In content mode: the specific content type being generated */
   selectedContentType?: string;
+  originalInsight?: HumanInsight;
+  originalConcept?: CreativeConcept;
+  criticFindings?: unknown;
 }
 
 export function buildHookRefinementPrompt(params: HookRefinementPromptParams): { system: string; user: string } {
@@ -1502,7 +1515,21 @@ ${params.personaContext || 'No personas available.'}
 Persona IDs: ${JSON.stringify(params.personaIds)}
 
 ## Products & Services
-${params.productContext || 'No products defined.'}${buildMarketingFrameworkSection({ cialdiniContext: params.cialdiniContext, framingContext: params.framingContext, growthContext: params.growthContext, eastChecklist: params.eastChecklist })}${params.hookFeedback ? `
+${params.productContext || 'No products defined.'}${buildMarketingFrameworkSection({ cialdiniContext: params.cialdiniContext, framingContext: params.framingContext, growthContext: params.growthContext, eastChecklist: params.eastChecklist })}${params.originalInsight ? `\n\n## Creative DNA — DO NOT LOSE THESE
+This hook was born from:
+- Insight: "${params.originalInsight.insightStatement}"
+- Tension: ${params.originalInsight.underlyingTension}
+- Human Truth: ${params.originalInsight.humanTruth}
+${params.originalConcept ? `- Goldenberg Template: ${params.originalConcept.goldenbergTemplate} (${params.originalConcept.goldenbergApplication})
+- Bisociation: ${params.originalConcept.bisociationDomain.domain} — ${params.originalConcept.bisociationDomain.connectionToInsight}
+- Memorable Device: ${params.originalConcept.memorableDevice}
+- Visual World: ${params.originalConcept.visualWorld}` : ''}
+
+REFINEMENT RULES:
+1. The memorable device must SURVIVE refinement — evolve it, don't replace it
+2. The bisociation connection must remain visible in the final hook
+3. Persona feedback should sharpen the concept, not dilute it
+4. If persona concerns conflict with the creative DNA, explain the tradeoff in tradeoffsMade` : ''}${params.hookFeedback ? `
 
 ## User Feedback on Selected Hook
 The user reviewed the hooks and provided this feedback. Incorporate their direction:
@@ -1633,6 +1660,7 @@ interface CreativeLeapPromptParams {
   briefing?: CampaignBriefing;
   arenaContext?: string;
   exaContext?: string;
+  regenerationContext?: string;
 }
 
 /**
@@ -1711,7 +1739,7 @@ Return a JSON object:
   "visualWorld": "What this campaign LOOKS like — colors, settings, imagery (3-4 sentences)",
   "memorableDevice": "The specific ritual/format/catchphrase/motif (1-2 sentences)",
   "stickinessScore": { "simple": N, "unexpected": N, "concrete": N, "credible": N, "emotional": N, "story": N, "total": N },
-  "campaignLineTests": { "barTest": bool, "tShirtTest": bool, "parodyTest": bool, "tenYearTest": bool, "categoryEscapeTest": bool, "oppositeTest": bool },
+  "campaignLineTests": { "barTest": { "pass": bool, "evidence": "why" }, "tShirtTest": { "pass": bool, "evidence": "why" }, "parodyTest": { "pass": bool, "evidence": "why" }, "tenYearTest": { "pass": bool, "evidence": "why" }, "categoryEscapeTest": { "pass": bool, "evidence": "why" }, "oppositeTest": { "pass": bool, "evidence": "why" }, "passCount": N },
   "creativeTerritory": "The emotional/visual world in 2-3 sentences",
   "extendability": ["How extends to social", "How extends to OOH", "How extends to experiential", ...]
 }
@@ -1750,7 +1778,7 @@ Create a concept that:
 2. Uses the ${params.goldenbergTemplate.name} template as its structural mechanism
 3. Connects to the world of ${params.bisociationDomain.name} (bisociation)
 4. Has a campaign line of 3-7 words
-5. Has a memorable device that people will talk about`;
+5. Has a memorable device that people will talk about${params.regenerationContext ? `\n\n## Previous Attempt Learnings\n${params.regenerationContext}` : ''}`;
 
   return { system, user };
 }
@@ -1869,6 +1897,45 @@ ${params.trendContext || 'No trends defined.'}${buildMarketingFrameworkSection({
 
 ## Behavioral Science
 ${params.bctContext}` : ''}`;
+
+  return { system, user };
+}
+
+// ─── Quick Concept Prompt (Light Mode) ──────────────────────
+
+interface QuickConceptPromptParams {
+  brandContext: string;
+  personaContext: string;
+  productContext: string;
+  competitorContext: string;
+  goalType: string;
+  briefing?: CampaignBriefing;
+}
+
+export function buildQuickConceptPrompt(params: QuickConceptPromptParams): { system: string; user: string } {
+  const goalLabel = GOAL_LABELS[params.goalType] ?? params.goalType;
+  const system = `You are a creative strategist generating a campaign concept in a single pass.
+IMPORTANT: All output MUST be in English.
+Your task: Discover ONE human insight and build ONE creative concept on top of it.
+Use a Goldenberg creativity template (extreme_consequence, absurd_alternative, inversion, metaphor, activation, subtraction, unification, extreme_effort).
+Connect to an unrelated domain (bisociation) for creative surprise.
+Score using SUCCESs (Simple, Unexpected, Concrete, Credible, Emotional, Story — each 1-10).
+Evaluate campaign line tests as objects: { pass: boolean, evidence: string } plus passCount.
+Respond with a single JSON object containing:
+insightStatement, underlyingTension, emotionalTerritory, proofPoints (array), categoryConvention, humanTruth,
+campaignLine, bigIdea, goldenbergTemplate, goldenbergApplication, bisociationDomain (object with domain, connectionToInsight, visualPotential), visualWorld, memorableDevice, stickinessScore, campaignLineTests, creativeTerritory, extendability (array)`;
+
+  const user = `Generate a campaign concept for:
+## Campaign Goal: ${goalLabel}
+## Brand Context
+${params.brandContext}
+## Target Audience
+${params.personaContext || 'General audience'}
+## Products
+${params.productContext || 'No products defined'}
+## Competitors
+${params.competitorContext || 'No competitors defined'}
+${params.briefing ? buildBriefingSection(params.briefing) : ''}`;
 
   return { system, user };
 }

@@ -1181,7 +1181,9 @@ import {
   buildCreativeDefensePrompt,
 } from '@/lib/ai/prompts/campaign-strategy-agents';
 import { selectCreativeMaterials } from '@/lib/campaigns/ai-creative-selector';
-import type { HumanInsight, CreativeConcept, InsightMiningResult, CreativeLeapResult } from './strategy-blueprint.types';
+import type { HumanInsight, CreativeConcept, InsightMiningResult, CreativeLeapResult, DebateRound, StickinessScore, CampaignLineTests, BisociationDomain } from './strategy-blueprint.types';
+import type { GoldenbergTemplate } from '@/lib/goldenberg/goldenberg-templates';
+import { buildQuickConceptPrompt } from '@/lib/ai/prompts/campaign-strategy';
 
 /** Build provider-keyed thinking config from a provider string and budget */
 function thinkingFor(provider: string, budget: number): { anthropic?: { budgetTokens: number }; openai?: { reasoningEffort: 'high' }; google?: { thinkingBudget: number } } | undefined {
@@ -1324,9 +1326,14 @@ export async function generateInsights(
       ),
     );
 
-    const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+    let parsed: unknown;
+    try {
+      parsed = typeof result === 'string' ? JSON.parse(result) : result;
+    } catch {
+      throw new Error(`Insight mining (${lens.role}) returned invalid JSON`);
+    }
     return {
-      ...parsed,
+      ...(parsed as Record<string, unknown>),
       providerUsed: lens.provider,
       modelUsed: lens.model,
     } as HumanInsight;
@@ -1349,6 +1356,7 @@ export async function generateCreativeConcepts(
   ctx: CreativePipelineContext,
   selectedInsight: HumanInsight,
   onProgress?: ProgressCallback,
+  regenerationContext?: { feedback: string; failedConcepts: Array<{ campaignLine: string; whyItFailed: string }> },
 ): Promise<CreativeLeapResult> {
   onProgress?.({ type: 'step', step: 1, name: 'Creative Leap', status: 'running', label: 'Selecting best creative frameworks for this campaign...' } as PipelineEvent);
 
@@ -1403,6 +1411,14 @@ Human truth: ${selectedInsight.humanTruth}`;
       briefing: ctx.briefing,
       arenaContext: ctx.arenaContext,
       exaContext: ctx.exaContext,
+      regenerationContext: regenerationContext ? `
+LEARNINGS FROM PREVIOUS ATTEMPT:
+${regenerationContext.feedback}
+
+FAILED CONCEPTS (do NOT repeat these approaches):
+${regenerationContext.failedConcepts.map(fc => `- "${fc.campaignLine}" — failed because: ${fc.whyItFailed}`).join('\n')}
+
+Generate DIFFERENT concepts that address these failures.` : undefined,
     });
 
     const result = await withStepContext(`Creative Leap (${a.template.name} × ${a.domain.name})`, 120, () =>
@@ -1415,9 +1431,14 @@ Human truth: ${selectedInsight.humanTruth}`;
       ),
     );
 
-    const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+    let parsed: unknown;
+    try {
+      parsed = typeof result === 'string' ? JSON.parse(result) : result;
+    } catch {
+      throw new Error('Concept generation returned invalid JSON');
+    }
     return {
-      ...parsed,
+      ...(parsed as Record<string, unknown>),
       providerUsed: a.provider,
       modelUsed: a.model,
     } as CreativeConcept;
@@ -1430,84 +1451,212 @@ Human truth: ${selectedInsight.humanTruth}`;
   return { concepts, selectedConceptIndex: null, selectedInsight };
 }
 
-// ─── Phase 2b: Creative Debate ──────────────────────────────
+// ─── Phase 2b: Creative Debate (Multi-Round) ────────────────
+
+const MAX_DEBATE_ROUNDS = 3;
+const DEBATE_QUALITY_GATE = 75;
+
+/** Thinking budgets per debate round (decreasing) */
+const DEBATE_THINKING_BUDGETS: Array<{ critic: number; defense: number }> = [
+  { critic: 10_000, defense: 12_000 },
+  { critic: 6_000, defense: 8_000 },
+  { critic: 4_000, defense: 6_000 },
+];
 
 /**
- * Runs the creative quality debate on a selected concept:
- * 1. Creative Critic evaluates stickiness, bisociation, campaign line
- * 2. Creative Director defends/improves the concept
- * Returns the improved concept + critique data.
+ * Runs a multi-round creative quality debate on a selected concept.
+ * Up to 3 rounds with decreasing thinking budgets.
+ * Stops early if the critic scores overallCreativeScore >= 75.
+ * Returns the improved concept, all rounds, and final score.
  */
 export async function runCreativeDebate(
   ctx: CreativePipelineContext,
   selectedConcept: CreativeConcept,
   selectedInsight: HumanInsight,
   onProgress?: ProgressCallback,
-): Promise<{ critique: unknown; defense: unknown; improvedConcept: CreativeConcept }> {
+): Promise<{ critique: unknown; defense: unknown; improvedConcept: CreativeConcept; rounds: DebateRound[]; finalScore: number }> {
   const goalType = ctx.goalType;
-  const conceptJson = JSON.stringify(selectedConcept, null, 2);
   const insightJson = JSON.stringify(selectedInsight, null, 2);
+  const rounds: DebateRound[] = [];
+  let currentConcept = selectedConcept;
+  let latestCritique: unknown = null;
+  let latestDefense: unknown = null;
+  let finalScore = 0;
 
-  // Round 1: Creative Critic
-  onProgress?.({ type: 'step', step: 1, name: 'Creative Critic', status: 'running', label: 'Evaluating creative quality...' } as PipelineEvent);
+  for (let round = 0; round < MAX_DEBATE_ROUNDS; round++) {
+    const roundNum = round + 1;
+    const budgets = DEBATE_THINKING_BUDGETS[round] ?? DEBATE_THINKING_BUDGETS[DEBATE_THINKING_BUDGETS.length - 1];
+    const conceptJson = JSON.stringify(currentConcept, null, 2);
+    const previousRoundContext = round > 0
+      ? `This is round ${roundNum}. Previous round score: ${finalScore}/100. Previous critique: ${JSON.stringify(latestCritique, null, 2).slice(0, 2000)}`
+      : undefined;
 
-  const criticPrompt = buildCreativeCriticPrompt({
-    conceptJson,
-    insightJson,
+    // Critic
+    onProgress?.({ type: 'step', step: round * 2 + 1, name: `Creative Critic (Round ${roundNum})`, status: 'running', label: `Round ${roundNum}: Evaluating creative quality...` } as PipelineEvent);
+
+    const criticPrompt = buildCreativeCriticPrompt({
+      conceptJson,
+      insightJson,
+      brandContext: ctx.brandContext,
+      personaContext: ctx.personaContext,
+      goalType,
+      previousRoundContext,
+    });
+
+    const { model: criticModel, provider: criticProvider } = await resolveFeatureModel(ctx.workspaceId, 'campaign-strategy');
+    const critiqueRaw = await withStepContext(`Creative Critic (Round ${roundNum})`, 120, () =>
+      createStructuredCompletion(
+        criticProvider as AiProvider,
+        criticModel,
+        criticPrompt.system,
+        criticPrompt.user,
+        { maxTokens: 16000, thinking: thinkingFor(criticProvider, budgets.critic) },
+      ),
+    );
+    let critique: unknown;
+    try {
+      critique = typeof critiqueRaw === 'string' ? JSON.parse(critiqueRaw) : critiqueRaw;
+    } catch {
+      throw new Error(`Creative Critic (Round ${roundNum}) returned invalid JSON`);
+    }
+    latestCritique = critique;
+
+    const critiqueScore = typeof (critique as Record<string, unknown>)?.overallCreativeScore === 'number'
+      ? (critique as Record<string, unknown>).overallCreativeScore as number
+      : 0;
+    finalScore = critiqueScore;
+
+    onProgress?.({ type: 'step', step: round * 2 + 1, name: `Creative Critic (Round ${roundNum})`, status: 'complete', label: `Round ${roundNum}: Score ${critiqueScore}/100` } as PipelineEvent);
+
+    // Quality gate: if score is high enough, stop debating
+    if (critiqueScore >= DEBATE_QUALITY_GATE) {
+      rounds.push({ round: roundNum, critique, defense: null, score: critiqueScore, conceptSnapshot: { ...currentConcept } });
+      break;
+    }
+
+    // Defense
+    const roundContext = round > 0
+      ? `This is round ${roundNum} of the debate. The concept has been through ${round} previous round(s). Focus on the remaining weaknesses.`
+      : undefined;
+
+    onProgress?.({ type: 'step', step: round * 2 + 2, name: `Creative Defense (Round ${roundNum})`, status: 'running', label: `Round ${roundNum}: Creative Director improving concept...` } as PipelineEvent);
+
+    const defensePrompt = buildCreativeDefensePrompt({
+      conceptJson,
+      insightJson,
+      critiqueJson: JSON.stringify(critique, null, 2),
+      brandContext: ctx.brandContext,
+      personaContext: ctx.personaContext,
+      goalType,
+      roundContext,
+    });
+
+    const { model: defenseModel, provider: defenseProvider } = await resolveFeatureModel(ctx.workspaceId, 'campaign-strategy-b');
+    const defenseRaw = await withStepContext(`Creative Defense (Round ${roundNum})`, 120, () =>
+      createStructuredCompletion(
+        defenseProvider as AiProvider,
+        defenseModel,
+        defensePrompt.system,
+        defensePrompt.user,
+        { maxTokens: 16000, thinking: thinkingFor(defenseProvider, budgets.defense) },
+      ),
+    );
+    let defense: unknown;
+    try {
+      defense = typeof defenseRaw === 'string' ? JSON.parse(defenseRaw) : defenseRaw;
+    } catch {
+      throw new Error(`Creative Defense (Round ${roundNum}) returned invalid JSON`);
+    }
+    latestDefense = defense;
+
+    onProgress?.({ type: 'step', step: round * 2 + 2, name: `Creative Defense (Round ${roundNum})`, status: 'complete', label: `Round ${roundNum}: Concept improved` } as PipelineEvent);
+
+    // Update concept from defense
+    currentConcept = {
+      ...currentConcept,
+      ...((defense as Record<string, unknown>).revisedConcept as Record<string, unknown> ?? {}),
+      providerUsed: defenseProvider,
+      modelUsed: defenseModel,
+    };
+
+    rounds.push({ round: roundNum, critique, defense, score: critiqueScore, conceptSnapshot: { ...currentConcept } });
+  }
+
+  return { critique: latestCritique, defense: latestDefense, improvedConcept: currentConcept, rounds, finalScore };
+}
+
+// ─── Quick Concept (Light Mode) ─────────────────────────────
+
+/**
+ * Generates a quick concept in a single Gemini Flash call (insight + concept combined).
+ * Used when pipelineDepth is 'quick' — skips multi-round debate and deep thinking.
+ */
+export async function generateQuickConcept(
+  ctx: CreativePipelineContext,
+  onProgress?: ProgressCallback,
+): Promise<{ insight: HumanInsight; concept: CreativeConcept; personaValidation: PersonaValidationResult[] }> {
+  onProgress?.({ type: 'step', step: 1, name: 'Quick Concept', status: 'running', label: 'Generating insight and concept...' } as PipelineEvent);
+
+  const quickPrompt = buildQuickConceptPrompt({
     brandContext: ctx.brandContext,
     personaContext: ctx.personaContext,
-    goalType,
+    productContext: ctx.productContext,
+    competitorContext: ctx.competitorContext,
+    goalType: ctx.goalType,
+    briefing: ctx.briefing,
   });
 
-  const { model: criticModel, provider: criticProvider } = await resolveFeatureModel(ctx.workspaceId, 'campaign-strategy');
-  const critiqueRaw = await withStepContext('Creative Critic', 120, () =>
+  const result = await withStepContext('Quick Concept Generation', 60, () =>
     createStructuredCompletion(
-      criticProvider as AiProvider,
-      criticModel,
-      criticPrompt.system,
-      criticPrompt.user,
-      { maxTokens: 16000, thinking: thinkingFor(criticProvider, 10_000) },
+      'google' as AiProvider,
+      GEMINI_FLASH,
+      quickPrompt.system,
+      quickPrompt.user,
+      { maxTokens: 8000 },
     ),
   );
-  const critique = typeof critiqueRaw === 'string' ? JSON.parse(critiqueRaw) : critiqueRaw;
 
-  onProgress?.({ type: 'step', step: 1, name: 'Creative Critic', status: 'complete', label: 'Creative audit complete' } as PipelineEvent);
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = typeof result === 'string' ? JSON.parse(result) : result;
+  } catch {
+    throw new Error('Quick concept generation returned invalid JSON');
+  }
 
-  // Round 2: Creative Defense
-  onProgress?.({ type: 'step', step: 2, name: 'Creative Defense', status: 'running', label: 'Creative Director improving concept...' } as PipelineEvent);
-
-  const defensePrompt = buildCreativeDefensePrompt({
-    conceptJson,
-    insightJson,
-    critiqueJson: JSON.stringify(critique, null, 2),
-    brandContext: ctx.brandContext,
-    personaContext: ctx.personaContext,
-    goalType,
-  });
-
-  const { model: defenseModel, provider: defenseProvider } = await resolveFeatureModel(ctx.workspaceId, 'campaign-strategy-b');
-  const defenseRaw = await withStepContext('Creative Defense', 120, () =>
-    createStructuredCompletion(
-      defenseProvider as AiProvider,
-      defenseModel,
-      defensePrompt.system,
-      defensePrompt.user,
-      { maxTokens: 16000, thinking: thinkingFor(defenseProvider, 12_000) },
-    ),
-  );
-  const defense = typeof defenseRaw === 'string' ? JSON.parse(defenseRaw) : defenseRaw;
-
-  onProgress?.({ type: 'step', step: 2, name: 'Creative Defense', status: 'complete', label: 'Concept improved' } as PipelineEvent);
-
-  // Extract the improved concept from the defense response
-  const improvedConcept: CreativeConcept = {
-    ...selectedConcept,
-    ...(defense.revisedConcept ?? {}),
-    providerUsed: defenseProvider,
-    modelUsed: defenseModel,
+  const insight: HumanInsight = {
+    insightStatement: (parsed.insightStatement as string) ?? '',
+    underlyingTension: (parsed.underlyingTension as string) ?? '',
+    emotionalTerritory: (parsed.emotionalTerritory as string) ?? '',
+    proofPoints: (parsed.proofPoints as string[]) ?? [],
+    categoryConvention: (parsed.categoryConvention as string) ?? '',
+    humanTruth: (parsed.humanTruth as string) ?? '',
+    providerUsed: 'google',
+    modelUsed: GEMINI_FLASH,
   };
 
-  return { critique, defense, improvedConcept };
+  const concept: CreativeConcept = {
+    campaignLine: (parsed.campaignLine as string) ?? '',
+    bigIdea: (parsed.bigIdea as string) ?? '',
+    goldenbergTemplate: (parsed.goldenbergTemplate as GoldenbergTemplate) ?? 'metaphor',
+    goldenbergApplication: (parsed.goldenbergApplication as string) ?? '',
+    bisociationDomain: (parsed.bisociationDomain as BisociationDomain) ?? { domain: '', connectionToInsight: '', visualPotential: '' },
+    visualWorld: (parsed.visualWorld as string) ?? '',
+    memorableDevice: (parsed.memorableDevice as string) ?? '',
+    stickinessScore: (parsed.stickinessScore as StickinessScore) ?? { simple: 5, unexpected: 5, concrete: 5, credible: 5, emotional: 5, story: 5, total: 5 },
+    campaignLineTests: (parsed.campaignLineTests as CampaignLineTests) ?? {
+      barTest: { pass: false, evidence: '' }, tShirtTest: { pass: false, evidence: '' },
+      parodyTest: { pass: false, evidence: '' }, tenYearTest: { pass: false, evidence: '' },
+      categoryEscapeTest: { pass: false, evidence: '' }, oppositeTest: { pass: false, evidence: '' },
+      passCount: 0,
+    },
+    creativeTerritory: (parsed.creativeTerritory as string) ?? '',
+    extendability: (parsed.extendability as string[]) ?? [],
+    providerUsed: 'google',
+    modelUsed: GEMINI_FLASH,
+  };
+
+  onProgress?.({ type: 'step', step: 1, name: 'Quick Concept', status: 'complete', label: 'Concept generated' } as PipelineEvent);
+  return { insight, concept, personaValidation: [] };
 }
 
 // ─── Phase 3: Strategy Build (concept-first) ────────────────
@@ -1580,19 +1729,24 @@ Bisociation: ${approvedConcept.bisociationDomain.domain} — ${approvedConcept.b
     ),
   );
 
-  const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = typeof result === 'string' ? JSON.parse(result) : (result as Record<string, unknown>);
+  } catch {
+    throw new Error('Strategy build returned invalid JSON');
+  }
 
   // Ensure the concept fields are preserved on the strategy layer
-  const strategy: StrategyLayer = {
-    ...parsed.strategy,
+  const strategy = {
+    ...(parsed.strategy as Record<string, unknown>),
     humanInsight: approvedInsight.insightStatement,
     creativePlatform: approvedConcept.bigIdea,
     creativeTerritory: approvedConcept.creativeTerritory,
     memorableDevice: approvedConcept.memorableDevice,
     campaignTheme: approvedConcept.campaignLine,
-  };
+  } as StrategyLayer;
 
-  const architecture: ArchitectureLayer = parsed.architecture ?? { campaignType: 'strategic', journeyPhases: [] };
+  const architecture = (parsed.architecture ?? { campaignType: 'strategic', journeyPhases: [] }) as ArchitectureLayer;
 
   onProgress?.({ type: 'step', step: 1, name: 'Strategy Build', status: 'complete', label: 'Strategy built on approved concept' } as PipelineEvent);
 

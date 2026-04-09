@@ -361,6 +361,14 @@ export function StrategyStep() {
     return () => { store.setStepProceedOverride(null); };
   }, [strategyPhase, handleBuildFoundation]);
 
+  // Strategy step complete — auto-advance to Concept step
+  // NOTE: This useEffect MUST be before any conditional returns (React hooks rule)
+  useEffect(() => {
+    if (strategyPhase === "rationale_complete") {
+      useCampaignWizardStore.getState().nextStep();
+    }
+  }, [strategyPhase]);
+
   // ─── Render based on phase ───────────────────────────
 
   // Pre-generation CTA
@@ -458,13 +466,6 @@ export function StrategyStep() {
       />
     );
   }
-
-  // Strategy step complete — auto-advance to Concept step
-  useEffect(() => {
-    if (strategyPhase === "rationale_complete") {
-      useCampaignWizardStore.getState().nextStep();
-    }
-  }, [strategyPhase]);
 
   // Fallback — redirect to idle state to prevent blank screen
   return (

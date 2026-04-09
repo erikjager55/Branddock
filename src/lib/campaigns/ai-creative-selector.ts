@@ -13,9 +13,22 @@
  */
 
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
-import { GOLDENBERG_TEMPLATES, type GoldenbergTemplateDefinition } from '@/lib/goldenberg/goldenberg-templates';
+import { GOLDENBERG_TEMPLATES, TEMPLATE_INSIGHT_AFFINITY, type GoldenbergTemplateDefinition } from '@/lib/goldenberg/goldenberg-templates';
 import { BISOCIATION_DOMAINS, type BisociationDomainDefinition } from '@/lib/goldenberg/bisociation-domains';
 import type { HumanInsight } from './strategy-blueprint.types';
+
+// ─── Insight Lens Detection ─────────────────────────────────
+
+function detectInsightLens(insight: HumanInsight): 'empathy' | 'tension' | 'behavior' {
+  const text = `${insight.insightStatement} ${insight.underlyingTension} ${insight.emotionalTerritory}`.toLowerCase();
+  const tensionWords = ['tension', 'conflict', 'paradox', 'contradiction', 'versus', 'but', 'however', 'despite'];
+  const behaviorWords = ['behavior', 'habit', 'routine', 'choice', 'decision', 'action', 'barrier', 'trigger'];
+  const tensionScore = tensionWords.filter(w => text.includes(w)).length;
+  const behaviorScore = behaviorWords.filter(w => text.includes(w)).length;
+  if (tensionScore > behaviorScore && tensionScore > 1) return 'tension';
+  if (behaviorScore > tensionScore && behaviorScore > 1) return 'behavior';
+  return 'empathy';
+}
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -46,6 +59,13 @@ function formatDomainCatalog(): string {
   ).join('\n');
 }
 
+function formatAffinityHints(insight: HumanInsight): string {
+  const lens = detectInsightLens(insight);
+  const sorted = Object.entries(TEMPLATE_INSIGHT_AFFINITY)
+    .sort(([, a], [, b]) => b[lens] - a[lens]);
+  return `Detected insight lens: **${lens}**. Template affinity ranking for this lens:\n${sorted.map(([id, scores]) => `- ${id}: ${scores[lens]}/10`).join('\n')}`;
+}
+
 // ─── AI Selection ─────────────────────────────────────────
 
 /**
@@ -71,6 +91,9 @@ Given the brand context, target audience, campaign goal, and human insight below
 - Avoid domains too close to the brand's own industry (e.g., don't pick "sports" for a fitness brand)
 - Ensure DIVERSITY: pick 3 domains from DIFFERENT emotional territories
 - Consider what would STAND OUT in this brand's competitive landscape
+
+## Template-Insight Affinity Hints
+${formatAffinityHints(ctx.insight)}
 
 ## Available Goldenberg Templates
 ${formatTemplateCatalog()}
@@ -125,7 +148,7 @@ Now select the 3 best templates and 3 best domains for THIS specific campaign.`;
     return fillGaps(templates, domains);
   } catch (error) {
     console.warn('[ai-creative-selector] AI selection failed, using fallback:', error);
-    return fallbackSelection();
+    return fallbackSelection(ctx.insight);
   }
 }
 
@@ -169,7 +192,19 @@ function fillGaps(
   return { templates, domains };
 }
 
-function fallbackSelection(): CreativeSelectionResult {
+function fallbackSelection(insight?: HumanInsight): CreativeSelectionResult {
+  // Weighted random selection based on insight affinity
+  if (insight) {
+    const lens = detectInsightLens(insight);
+    const weighted = GOLDENBERG_TEMPLATES.map(t => ({
+      template: t,
+      weight: TEMPLATE_INSIGHT_AFFINITY[t.id]?.[lens] ?? 5,
+    }));
+    const selected = weightedRandomPick(weighted, 3);
+    const domains = [...BISOCIATION_DOMAINS];
+    shuffle(domains);
+    return { templates: selected, domains: domains.slice(0, 3) };
+  }
   const templates = [...GOLDENBERG_TEMPLATES];
   const domains = [...BISOCIATION_DOMAINS];
   shuffle(templates);
@@ -178,6 +213,26 @@ function fallbackSelection(): CreativeSelectionResult {
     templates: templates.slice(0, 3),
     domains: domains.slice(0, 3),
   };
+}
+
+function weightedRandomPick(
+  items: Array<{ template: GoldenbergTemplateDefinition; weight: number }>,
+  count: number,
+): GoldenbergTemplateDefinition[] {
+  const remaining = [...items];
+  const result: GoldenbergTemplateDefinition[] = [];
+  for (let i = 0; i < count && remaining.length > 0; i++) {
+    const totalWeight = remaining.reduce((sum, item) => sum + item.weight, 0);
+    let rand = Math.random() * totalWeight;
+    let picked = remaining[0];
+    for (const item of remaining) {
+      rand -= item.weight;
+      if (rand <= 0) { picked = item; break; }
+    }
+    result.push(picked.template);
+    remaining.splice(remaining.indexOf(picked), 1);
+  }
+  return result;
 }
 
 function shuffle<T>(arr: T[]): void {

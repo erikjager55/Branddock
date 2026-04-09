@@ -30,6 +30,13 @@ const requestSchema = z.object({
     providerUsed: z.string(),
     modelUsed: z.string(),
   }).passthrough(),
+  regenerationContext: z.object({
+    feedback: z.string(),
+    failedConcepts: z.array(z.object({
+      campaignLine: z.string(),
+      whyItFailed: z.string(),
+    })),
+  }).optional(),
 });
 
 /**
@@ -67,7 +74,7 @@ export async function POST(request: NextRequest) {
             wizardContext: body.wizardContext,
           });
 
-          const result = await generateCreativeConcepts(ctx, body.selectedInsight as unknown as HumanInsight, (event) => sendEvent(event as Record<string, unknown>));
+          const result = await generateCreativeConcepts(ctx, body.selectedInsight as unknown as HumanInsight, (event) => sendEvent(event as Record<string, unknown>), body.regenerationContext);
 
           sendEvent({ type: 'complete', result });
         } catch (error) {
