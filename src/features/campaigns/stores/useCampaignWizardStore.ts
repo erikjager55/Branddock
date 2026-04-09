@@ -95,6 +95,12 @@ interface CampaignWizardState {
   endorsedPersonaIds: string[];
   strategyRatings: Record<string, { rating: 'up' | 'down'; comment?: string }>;
 
+  // ─── Content Generation Step (content mode) ─────────────────
+  contentGenPhase: 'idle' | 'launching' | 'generating' | 'complete' | 'error';
+  generatedCampaignId: string | null;
+  generatedDeliverableId: string | null;
+  hasSelectedVariant: boolean;
+
   // ─── Creative Quality Pipeline ──────────────────────────────
   insights: HumanInsight[];
   selectedInsightIndex: number | null;
@@ -187,6 +193,11 @@ interface CampaignWizardState {
   setConceptElementRating: (key: string, rating: 'up' | 'down', comment?: string) => void;
   setCreativeDebateResult: (result: { critique: unknown; defense: unknown; improvedConcept: CreativeConcept | null }) => void;
   setFinalStrategyResult: (data: { strategy: StrategyLayer; architecture: ArchitectureLayer }) => void;
+
+  // ─── Content Generation Step Actions ─────────────────────────
+  setContentGenPhase: (phase: 'idle' | 'launching' | 'generating' | 'complete' | 'error') => void;
+  setGeneratedIds: (campaignId: string, deliverableId: string) => void;
+  setHasSelectedVariant: (v: boolean) => void;
 }
 
 // ─── Initial state ────────────────────────────────────────
@@ -267,6 +278,12 @@ const INITIAL_STATE = {
   creativeDebateResult: null as { critique: unknown; defense: unknown; improvedConcept: CreativeConcept | null } | null,
   finalStrategy: null as StrategyLayer | null,
   finalArchitecture: null as ArchitectureLayer | null,
+
+  // ─── Content Generation Step ─────────────────────────────────
+  contentGenPhase: 'idle' as 'idle' | 'launching' | 'generating' | 'complete' | 'error',
+  generatedCampaignId: null as string | null,
+  generatedDeliverableId: null as string | null,
+  hasSelectedVariant: false,
 };
 
 // ─── Store ────────────────────────────────────────────────
@@ -472,6 +489,11 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         creativeDebateResult: null,
         finalStrategy: null,
         finalArchitecture: null,
+        // Content generation step
+        contentGenPhase: 'idle',
+        generatedCampaignId: null,
+        generatedDeliverableId: null,
+        hasSelectedVariant: false,
       }),
 
     // ─── 9-Phase Architecture Actions ─────────────────────────
@@ -498,6 +520,12 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
 
     // ─── Step Proceed Override ──────────────────────────────────
     setStepProceedOverride: (fn) => set({ stepProceedOverride: fn }),
+
+    // ─── Content Generation Step Actions ─────────────────────────
+    setContentGenPhase: (contentGenPhase) => set({ contentGenPhase }),
+    setGeneratedIds: (generatedCampaignId, generatedDeliverableId) =>
+      set({ generatedCampaignId, generatedDeliverableId }),
+    setHasSelectedVariant: (hasSelectedVariant) => set({ hasSelectedVariant }),
 
     // ─── Creative Quality Pipeline Actions ─────────────────────
     setInsightResults: (insights) => set({ insights }),

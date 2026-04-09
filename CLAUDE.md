@@ -1,5 +1,5 @@
 # BRANDDOCK — Claude Code Context
-## Laatst bijgewerkt: 9 april 2026 (Content/Campaign type split + Strategy step UX + Agent Roadmap)
+## Laatst bijgewerkt: 9 april 2026 (Content Generation Step + Content Studio Removal)
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 
@@ -309,7 +309,7 @@ dashboard→DashboardPage, brand→BrandFoundationPage, brand-asset-detail→Bra
 
 **ComingSoonPage:** help
 
-**Campaigns module:** active-campaigns→ActiveCampaignsPage (features/campaigns), campaign-detail→CampaignDetailPage (useCampaignStore.selectedCampaignId), quick-content-detail→QuickContentDetailPage (useCampaignStore.selectedCampaignId), content-studio→ContentStudioPage (useCampaignStore.selectedCampaignId+selectedDeliverableId), content-canvas→CanvasPage (useCampaignStore.selectedCampaignId+selectedDeliverableId), content-library→ContentLibraryPage, campaign-wizard→CampaignWizardPage
+**Campaigns module:** active-campaigns→ActiveCampaignsPage (features/campaigns), campaign-detail→CampaignDetailPage (useCampaignStore.selectedCampaignId), quick-content-detail→QuickContentDetailPage (useCampaignStore.selectedCampaignId), content-canvas→CanvasPage (useCampaignStore.selectedCampaignId+selectedDeliverableId), content-library→ContentLibraryPage, campaign-wizard→CampaignWizardPage (content mode: 5 stappen incl. Content Generation Step)
 
 **Competitors module:** competitors→CompetitorsOverviewPage, competitor-analyzer→CompetitorAnalyzerPage, competitor-detail→CompetitorDetailPage (useCompetitorsStore.selectedCompetitorId)
 
@@ -1980,6 +1980,8 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 190. **CTS: Content/Campaign Type Split — compleet** — Content items werden als `STRATEGIC` aangemaakt en verschenen in de campaigns lijst. Fix: `CONTENT` toegevoegd aan `CampaignType` Prisma enum. Launch route (`wizard/launch/route.ts`) accepteert optioneel `type` veld (default `STRATEGIC`). `ContentGenerateStep.tsx` stuurt `type: 'CONTENT'` mee. Campaigns GET API filtert `CONTENT` standaard uit (`where.type = { not: "CONTENT" }`). `LaunchCampaignBody` type uitgebreid met `type?: 'STRATEGIC' | 'CONTENT'`. Content items verschijnen nu alleen in content library, niet in campaigns overview. 5 bestanden gewijzigd. TypeScript 0 errors.
 
 191. **SFC: Strategy Foundation Complete Tusscherm Verwijderd — compleet** — Het "Strategy Foundation Complete — Click Continue to develop the creative concept" tusscherm in `StrategyStep.tsx` was een overbodige extra klik. Vervangen door `useEffect` die automatisch `nextStep()` aanroept zodra `strategyPhase === 'rationale_complete'`. Ongebruikte `Check` icon import verwijderd. Strategy stap blijft in beide steppers (campaign + content), maar loopt nu naadloos door naar Concept. 1 bestand gewijzigd. TypeScript 0 errors.
+
+192. **CGS: Content Generation Step + Content Studio Removal — compleet** — Content mode wizard uitgebreid van 4→5 stappen (Setup → Knowledge → Strategy → Concept → **Content**). Nieuwe `ContentGenerateStep.tsx` component: auto-create campaign+deliverable via launch API, auto-generate content via canvas orchestrator SSE (3 tekstvarianten + beelden), variant selectie + inline TipTap editing, "Open in Canvas" knop navigeert naar Content Canvas. **Store**: `contentGenPhase`, `generatedCampaignId`, `generatedDeliverableId`, `hasSelectedVariant` + 3 actions + clearPhaseData reset. **wizard-steps.ts**: `CONTENT_GENERATE_STEP` met canProceed gating. **Launch API**: `firstDeliverableId` toegevoegd aan response. **Content Studio verwijderd (~48 bestanden)**: `src/features/campaigns/components/studio/` (30 componenten), `studio.hooks.ts` (18 hooks), `studio.api.ts` (18 functies), 10 Studio-only API routes (auto-save, brief-context, cost-estimate, export, generate, improve, insights, quality, regenerate, versions). Canvas-gebruikte routes behouden (orchestrate, tone-check, approval, publish, inline-transform, components, derive, context, route.ts). Referenties opgeruimd: App.tsx routing, lazy-imports, barrel export, breadcrumbs, ContentLibraryPage navigatie→content-canvas, export-zip.ts fetchStudioState inline. **Review**: 3 rondes met telkens 2 onafhankelijke review-agents (6 agents totaal). Ronde 1: 4 WARNING (getState() in render, stale label, redundant casts, missing clearPhaseData reset). Ronde 2: linter had wijzigingen gereset → opnieuw toegepast. Ronde 3: ALL CLEAR. ~12 gewijzigde bestanden, ~48 verwijderde bestanden, 1 nieuw bestand. TypeScript 0 errors.
 
 ### ⚠️ TECHNISCHE SCHULD
 - **Adapter pattern** — tijdelijk, componenten moeten op termijn direct DB-model gebruiken

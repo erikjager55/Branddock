@@ -37,6 +37,8 @@ export function ContentGenerateStep() {
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
   const selections = useCanvasStore((s) => s.selections);
+  const imageVariants = useCanvasStore((s) => s.imageVariants);
+  const setImageVariants = useCanvasStore((s) => s.setImageVariants);
 
   // Find the first text variant group
   const firstGroupKey = variantGroups.size > 0 ? Array.from(variantGroups.keys())[0] : null;
@@ -214,23 +216,22 @@ export function ContentGenerateStep() {
       </div>
 
       {/* Image variants if any */}
-      {useCanvasStore.getState().imageVariants.length > 0 && (
+      {imageVariants.length > 0 && (
         <div>
           <h3 className="text-sm font-medium text-gray-700 mb-3">Generated Images</h3>
           <div className="grid grid-cols-3 gap-3">
-            {useCanvasStore.getState().imageVariants.map((img, idx) => (
+            {imageVariants.map((img, idx) => (
               <div
                 key={idx}
                 className={`relative rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
                   img.isSelected ? 'border-primary-500' : 'border-gray-200 hover:border-gray-300'
                 }`}
                 onClick={() => {
-                  const store = useCanvasStore.getState();
-                  const updated = store.imageVariants.map((v, i) => ({
+                  const updated = imageVariants.map((v, i) => ({
                     ...v,
                     isSelected: i === idx,
                   }));
-                  store.setImageVariants(updated);
+                  setImageVariants(updated);
                 }}
               >
                 <img

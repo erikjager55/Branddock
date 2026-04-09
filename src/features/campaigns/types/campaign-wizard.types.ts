@@ -50,7 +50,6 @@ export type {
   EnrichmentContext,
   HumanInsight,
   CreativeConcept,
-  DebateRound,
   ConceptVisual,
   ConceptVisualsResult,
 } from '@/lib/campaigns/strategy-blueprint.types';

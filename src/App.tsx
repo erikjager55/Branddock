@@ -705,7 +705,7 @@ function AppContent() {
             onOpenInStudio={(campaignId, deliverableId) => {
               useCampaignStore.getState().setSelectedCampaignId(campaignId);
               useCampaignStore.getState().setSelectedDeliverableId(deliverableId);
-              handleSetActiveSection('content-studio');
+              handleSetActiveSection('content-canvas');
             }}
             onOpenInCanvas={(campaignId, deliverableId) => {
               useCampaignStore.getState().setSelectedCampaignId(campaignId);

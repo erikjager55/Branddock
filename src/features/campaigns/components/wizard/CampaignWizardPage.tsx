@@ -13,6 +13,7 @@ import { SetupStep } from "./SetupStep";
 import { KnowledgeStep } from "./KnowledgeStep";
 import { StrategyStep } from "./StrategyStep";
 import { ConceptStep } from "./ConceptStep";
+import { ContentGenerateStep } from "./ContentGenerateStep";
 import { DeliverablesStep } from "./DeliverablesStep";
 import { ReviewStep } from "./ReviewStep";
 import { CampaignSuccessModal } from "./CampaignSuccessModal";
@@ -22,6 +23,7 @@ const STEP_COMPONENTS: Record<string, React.ComponentType> = {
   knowledge: KnowledgeStep,
   strategy: StrategyStep,
   concept: ConceptStep,
+  'content-generate': ContentGenerateStep,
   deliverables: DeliverablesStep,
   review: ReviewStep,
 };
@@ -106,37 +108,24 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
     );
   };
 
-  const handleContentLaunch = () => {
-    if (!selectedContentType) return;
+  const generatedCampaignId = useCampaignWizardStore((s) => s.generatedCampaignId);
+  const generatedDeliverableId = useCampaignWizardStore((s) => s.generatedDeliverableId);
 
-    // In content mode: launch with the single selected content type as the only deliverable
-    launchCampaign.mutate(
-      {
-        name: name || 'Untitled Content',
-        description,
-        goalType: campaignGoalType ?? 'CONTENT_MARKETING',
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-        knowledgeIds: selectedKnowledgeIds,
-        strategy: blueprintResult ?? undefined,
-        deliverables: [{ type: selectedContentType, quantity: 1 }],
-        saveAsTemplate: false,
-      },
-      {
-        onSuccess: (result) => {
-          resetWizard();
-          useCampaignStore.getState().setSelectedCampaignId(result.campaignId);
-          onNavigate('campaign-detail');
-        },
-      },
-    );
+  const handleContentFinish = () => {
+    if (!generatedCampaignId || !generatedDeliverableId) return;
+
+    const campaignStore = useCampaignStore.getState();
+    campaignStore.setSelectedCampaignId(generatedCampaignId);
+    campaignStore.setSelectedDeliverableId(generatedDeliverableId);
+    resetWizard();
+    onNavigate('content-canvas');
   };
 
   const stepProceedOverride = useCampaignWizardStore((s) => s.stepProceedOverride);
 
   const handleContinue = () => {
     if (isLastStep) {
-      isContentMode ? handleContentLaunch() : handleLaunch();
+      isContentMode ? handleContentFinish() : handleLaunch();
     } else if (stepProceedOverride) {
       stepProceedOverride();
     } else {
@@ -204,7 +193,9 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
           disabled={!canProceedResult || launchCampaign.isPending}
           isLoading={launchCampaign.isPending}
         >
-          {isLastStep ? "Launch Campaign" : "Continue"}
+          {isLastStep
+            ? (isContentMode ? "Open in Canvas" : "Launch Campaign")
+            : "Continue"}
         </Button>
       </div>
 

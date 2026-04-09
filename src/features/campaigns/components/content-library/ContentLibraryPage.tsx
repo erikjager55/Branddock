@@ -78,7 +78,7 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
   const handleOpenInStudio = (deliverableId: string, campaignId: string) => {
     useCampaignStore.getState().setSelectedCampaignId(campaignId);
     useCampaignStore.getState().setSelectedDeliverableId(deliverableId);
-    onNavigate("content-studio");
+    onNavigate("content-canvas");
   };
 
   const handleToggleFavorite = (id: string) => {

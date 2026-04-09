@@ -28,6 +28,8 @@ export interface WizardStepState {
   selectedInsightIndex: number | null;
   selectedConceptIndex: number | null;
   finalStrategy: unknown | null;
+  contentGenPhase?: string;
+  hasSelectedVariant?: boolean;
 }
 
 export interface StepDefinition {
@@ -94,6 +96,14 @@ export const CONCEPT_STEP: StepDefinition = {
   },
 };
 
+export const CONTENT_GENERATE_STEP: StepDefinition = {
+  key: 'content-generate',
+  label: 'Content',
+  canProceed: (s) => {
+    return s.contentGenPhase === 'complete' && s.hasSelectedVariant === true;
+  },
+};
+
 export const DELIVERABLES_STEP: StepDefinition = {
   key: 'deliverables',
   label: 'Deliverables',
@@ -122,6 +132,7 @@ export const CONTENT_STEPS: StepDefinition[] = [
   KNOWLEDGE_STEP,
   STRATEGY_STEP,
   CONCEPT_STEP,
+  CONTENT_GENERATE_STEP,
 ];
 
 // ─── Helper ──────────────────────────────────────────────
