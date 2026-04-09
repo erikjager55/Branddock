@@ -1115,6 +1115,7 @@ model CampaignTemplate {
 enum CampaignType {
   STRATEGIC
   QUICK
+  CONTENT
 }
 
 enum CampaignStatus {

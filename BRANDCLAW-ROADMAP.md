@@ -174,7 +174,8 @@ DONE    Fase C:  S13 — Visual Regression Fix
 NEXT    Fase B-FIN:  Content Studio + Canvas restpunten
 BLOCKER Fase D:      Deployment + Billing + Agent-Fundament Infrastructure
         Fase D-AGT:  Agent Foundation (pgvector, BullMQ, webhooks)
-        Fase F:      Brandclaw Agent Core (eerste autonome loop)
+        Fase E-AGT:  Agent Capability Layer (4 agents — chat hub, research, onboarding, monitor)
+        Fase F:      Brandclaw Agent Core (marketing loop, F.2 backend only — UI via E-AGT.1)
         Fase G:      Brandclaw Channel Activation (Google Ads + Reporting)
         Fase H:      Brandclaw Full Platform (Meta + Social + CRM)
         Fase I-FIN:  Media Assets restpunten (I.2, I.5)
@@ -366,6 +367,255 @@ commercieel is op de dag van launch.
   middleware check `src/lib/middleware/plan-gate.ts`
 - Subscription management in Settings > Billing
 - **NB**: Settings > Billing UI is al gebouwd (S9) maar verbindt nog niet met Stripe
+
+---
+
+## FASE E-AGT: AGENT CAPABILITY LAYER
+
+> **Nieuwe capability laag bovenop bestaande modules.**
+> Agents voegen waarde toe waar de stappen NIET vooraf bekend zijn.
+> Bouwt op Fase D-AGT fundament (pgvector, BullMQ, webhooks).
+>
+> Laatst bijgewerkt: 9 april 2026
+
+### E-AGT.1 Brand Chat + Agent Hub
+
+**Doel**: Eén UI-laag die zowel input (chat/prompts/uploads) als output
+(agent activity, approvals, rapportages) combineert. De chat is de
+universele trigger-laag voor alle agents en modules.
+
+> **Combineert**: Chat Assistant + F.2 Agent Activity Dashboard.
+> F.2 wordt hiermee onderdeel van E-AGT.1 — het dashboard is de
+> output-kant van dezelfde interface.
+
+**Chat als input-laag**:
+- Persistente sidebar of modale view, altijd bereikbaar
+- Gebruiker kan typen, links plakken, bestanden uploaden (PDF/afbeeldingen)
+- Agent herkent intentie en routeert naar juiste module:
+  - "Hier is onze nieuwe brandguide PDF" → Brandstyle Analyzer
+  - "Wat vind je van deze tagline?" → Brand Promise advies
+  - "Analyseer concurrent X" → Competitor Analyzer
+  - "Genereer een LinkedIn post over product Y" → Content Studio
+  - "Hoe staat het met onze brand alignment?" → Alignment rapport
+  - "Onderzoek merk X" → Brand Research Agent (E-AGT.2)
+  - "Onboard klant Y" → Client Onboarding Agent (E-AGT.3)
+  - "Verbeter mijn merk score" → Brand Alignment scan→fix→rescan loop
+  - "Genereer alle content voor campagne Z" → batch content generatie
+- Context-aware: agent heeft toegang tot volledige brand context
+- Resultaten worden automatisch opgeslagen in de juiste module
+
+**Agent Hub als output-laag** (vervangt F.2 Agent Activity Dashboard):
+- Feed van recente agent-acties (wat heeft de agent gedaan?)
+- Openstaande goedkeuringsverzoeken (approvals vanuit alle agents)
+- Performance summary (wat heeft het opgeleverd?)
+- Autonomieniveau configuratie per taaktype (Autonomy Dial)
+- Agent memory browser (wat heeft de agent geleerd?)
+
+**Technisch**:
+- Bestandslocatie: `src/features/brand-chat/` (chat) + `src/features/agent-hub/` (dashboard)
+- Claude Sonnet/Opus als backbone met function calling
+- Tool definitions voor elke Branddock-module (brand assets, personas, products,
+  competitors, campaigns, brandstyle, trends, alignment)
+- Upload parsing: PDF via `unpdf`, afbeeldingen via Claude Vision
+- Chat history: hergebruik bestaand `ExplorationSession` + `ExplorationMessage` patroon
+- SSE streaming voor responses
+- Agent Hub leest uit `AgentJob` + `AgentApproval` + `AgentMemory` (Fase D-AGT modellen)
+
+**Impact op Fase F.2**:
+F.2 (Human-in-the-Loop Infrastructuur) behoudt de backend-componenten
+(ApprovalWorkflowEngine, AgentApproval model, notificatie flow, Autonomy Dial config)
+maar de UI verschuift naar E-AGT.1 Agent Hub. F.2 hoeft geen apart dashboard
+meer te bouwen.
+
+---
+
+### E-AGT.2 Open-ended Brand Research Agent
+
+**Doel**: Autonome merkonderzoeker die zelfstandig een compleet beeld opbouwt
+van een merk in een specifieke markt. Dit kan Branddock nu niet — de stappen
+zijn NIET vooraf bekend.
+
+> **Relatie met bestaande modules**: Hergebruikt infra uit Trend Radar (scraping,
+> content-differ), Competitor Analyzer (URL analyse, Gemini), en enrichment
+> bronnen (Exa, Gemini grounding). Maar de agent is fundamenteel anders:
+> hij bepaalt ZELF welke stappen nodig zijn en wanneer genoeg data is.
+> De bestaande modules zijn deterministische pipelines; deze agent is adaptief.
+
+**Trigger**: Via Brand Chat ("Onderzoek merk X in de Nederlandse markt") of
+dedicated knop in dashboard.
+
+**Wat de agent autonoom doet**:
+1. Websites van het merk scrapen (hoofdsite, socials, vacatures)
+2. Concurrenten ontdekken via AI search (Exa/Perplexity)
+3. Social media signalen oppikken (mentions, sentiment, tone of voice)
+4. Nieuws en persberichten analyseren (NewsAPI, GNews)
+5. Merkregistraties checken (Markerapi)
+6. Visuele identiteit analyseren (kleuren, fonts, beeldtaal via Claude Vision)
+7. **Zelf beslissen wanneer genoeg data is** (confidence scoring per dimensie)
+8. Een gestructureerd rapport opleveren met:
+   - Brand positioning map
+   - Competitor landscape
+   - Tone of voice analyse
+   - Visuele identiteit profiel
+   - Kansen en bedreigingen
+   - Aanbevelingen
+
+**Technisch**:
+- Bestandslocatie: `src/lib/agents/brand-researcher/`
+- LangGraph.js state machine met dynamische node-selectie
+- Agent memory: opslaan van onderzoeksresultaten per stap in `AgentMemory`
+- Confidence scoring: per dimensie (0-100%) bijhouden hoeveel data is verzameld
+- Termination condition: alle dimensies > 70% confidence OF max 15 minuten
+- Hergebruik bestaande infra:
+  - `url-scraper.ts` (bestaand) voor website scraping
+  - Exa API (bestaand) voor semantisch zoeken
+  - Gemini grounding (bestaand) voor web search
+  - `content-differ.ts` (bestaand) voor change detection
+  - NewsAPI/GNews (nieuw, INT.33/INT.34) voor nieuws
+  - Brandfetch API (nieuw, INT.4) voor merkdata
+- Output: `BrandResearchReport` JSON opgeslagen als `KnowledgeResource`
+- Optioneel: automatisch brand assets pre-fillen op basis van onderzoek
+  (deelt dan `fillAssetFromResearch()` helper met E-AGT.3)
+
+**Wat dit oplevert voor de gebruiker**:
+- Progressie-indicatoren per onderzoeksdimensie
+- Live feed van ontdekte informatie
+- Eindrapport om te reviewen en goed te keuren
+- One-click import van resultaten naar relevante modules
+
+---
+
+### E-AGT.3 Client Onboarding Agent
+
+**Doel**: "Hier is de website van mijn klant, vul het complete merkprofiel in."
+Agent scrapet de website, vult alle 12 brand assets, genereert personas,
+analyseert producten — volledig autonoom.
+
+> **Relatie met E-AGT.2**: Deelt scraping- en analyse-infra, maar verschilt
+> fundamenteel in OUTPUT: E-AGT.2 levert een rapport, E-AGT.3 schrijft
+> direct naar de database (12 brand assets, brandstyle, personas, producten).
+> Gedeelde helper: `fillAssetFromResearch()` voor asset-invulling vanuit
+> geanalyseerde data.
+
+**Trigger**: Via Brand Chat ("Onboard klant X, website: ...") of knop in
+Client Management (agency flow).
+
+**Wat de agent autonoom doet**:
+1. Website scrapen (alle pagina's: home, about, products, team, blog)
+2. Visuele identiteit extraheren → Brandstyle vullen (kleuren, fonts, logo's, beeldtaal, vormentaal)
+3. Brand assets invullen:
+   - Purpose/Mission/Vision uit about/over-ons pagina
+   - Brand Personality uit tone of voice analyse
+   - Brand Archetype uit merkpositionering
+   - Brand Story uit about/historie
+   - Brand Essence uit tagline + positionering
+   - Brand Promise uit USPs/value propositions
+   - Core Values uit bedrijfscultuur/kernwaarden pagina
+   - Social Relevancy uit MVO/duurzaamheid pagina
+   - Transformative Goals uit visie/strategie
+   - Golden Circle uit why/how/what structuur
+4. Personas genereren op basis van doelgroepinformatie
+5. Producten/diensten analyseren en aanmaken
+6. Concurrenten identificeren en eerste analyse
+7. Trend Radar bronnen voorstellen op basis van industrie
+
+**Technisch**:
+- Bestandslocatie: `src/lib/agents/client-onboarder/`
+- LangGraph.js state machine: scrape → analyze → fill → validate → report
+- Per brand asset: AI Exploration-achtige analyse maar dan automatisch (geen Q&A)
+- Hergebruik bestaande infra:
+  - `url-scraper.ts` voor website scraping
+  - `visual-language-analyzer.ts` voor vormentaal
+  - `css-visual-heuristics.ts` voor CSS extractie
+  - `brand-context.ts` voor context assembly
+  - Brandstyle analyzer pipeline voor kleuren/fonts
+  - Competitor analyzer voor concurrenten
+  - Product analyzer voor producten
+- Output per stap opslaan in AgentJob.result
+- Human review stap: gebruiker ziet alle ingevulde data en kan goedkeuren/aanpassen
+
+**Wat dit oplevert voor de gebruiker**:
+- Progressie-indicatoren per module (12 assets + brandstyle + personas + products)
+- Resultaat om te reviewen: per asset een diff/preview
+- One-click goedkeuring of per-asset aanpassing
+- Van "lege workspace" naar "volledig merkprofiel" in 5-10 minuten
+
+---
+
+### E-AGT.4 Continuous Brand Monitor
+
+**Doel**: Periodieke agent die zowel concurrenten monitort als de eigen
+brand alignment bewaakt. Eén geautomatiseerde waakhond voor alles
+wat verandert — extern en intern.
+
+> **Combineert**: Competitor Monitoring + Brand Score Optimizer +
+> Trend Radar cron infra. Draait op dezelfde BullMQ repeatable jobs
+> als Trend Radar scanning. Hergebruikt bestaande pipelines:
+> - Competitor: `url-scraper.ts` + `content-differ.ts` + Gemini analyse (bestaand)
+> - Brand Alignment: `scanner.ts` + `fix-generator.ts` + `score-calculator.ts` (bestaand)
+> - Trend Radar: cron job patroon + `researcher.ts` (bestaand)
+
+**Trigger**: Toggle per concurrent ("Monitor"), toggle in Brand Alignment
+("Auto-optimize"), of via Brand Chat.
+
+**Wat de agent periodiek doet** (dagelijks/wekelijks configureerbaar):
+
+**Externe monitoring (concurrenten)**:
+1. Websites van gemonitorde concurrenten opnieuw scrapen
+2. Vergelijken met vorige versie (`content-differ.ts`, bestaand)
+3. Veranderingen classificeren (pricing, producten, positionering, visueel, content)
+4. Impact assessment: hoe relevant is deze verandering voor ons merk?
+5. Notificatie genereren met samenvatting en aanbeveling
+
+**Interne monitoring (eigen merk)**:
+1. Brand Alignment scan uitvoeren (8-stap AI analyse, bestaand)
+2. Issues prioriteren op impact (CRITICAL → WARNING → SUGGESTION)
+3. Bij auto-optimize AAN:
+   - Fix-opties genereren (A/B/C, bestaand)
+   - Beste fix selecteren op basis van brand context + agent memory
+   - Fix toepassen (DB write-back, bestaand)
+   - Opnieuw scannen om resultaat te valideren
+   - Itereren tot target OF max 5 iteraties OF geen fixable issues
+4. Bij auto-optimize UIT: alleen rapporteren, gebruiker past handmatig aan
+
+**Technisch**:
+- Bestandslocatie: `src/lib/agents/brand-monitor/`
+- Cron-based via BullMQ repeatable jobs (Fase D-AGT, zelfde infra als Trend Radar)
+- Prisma modellen:
+  - `MonitorConfig` (workspaceId, monitorType COMPETITOR|ALIGNMENT, frequency,
+    isActive, autoOptimize, targetScore, lastRunAt)
+  - `MonitorEvent` (configId, eventType, changeData Json, impactScore,
+    recommendation, isRead, createdAt)
+- Hergebruik:
+  - Competitor: `content-differ.ts` (sha256), `url-scraper.ts`, Gemini analyse,
+    bestaande competitor refresh endpoint
+  - Alignment: `scanner.ts`, `fix-generator.ts`, `score-calculator.ts`
+  - Notificatie: bestaand `Notification` systeem + Resend e-mail
+- Human approval: bij CRITICAL alignment fixes altijd vragen, bij WARNING configureerbaar
+
+**Wat de gebruiker ziet**:
+- Unified change feed in Agent Hub (E-AGT.1): concurrentwijzigingen en
+  alignment-issues in één tijdlijn
+- Per concurrent: change log met diff-weergave + impact score
+- Brand Alignment: score stijgt in real-time bij auto-optimize, per-iteratie
+  overzicht van gefikte issues
+- Notificaties: "Concurrent X heeft pricing gewijzigd" /
+  "Brand Alignment verbeterd van 72% naar 85% (4 issues gefixt)"
+
+---
+
+### Succesvereisten na Fase E-AGT
+
+1. Brand Chat + Agent Hub werkend met minimaal 5 module-integraties als trigger
+2. Agent Hub toont agent activity feed + openstaande approvals
+3. Brand Research Agent levert gestructureerd rapport voor minimaal 3 test-merken
+4. Client Onboarding Agent vult alle 12 brand assets + brandstyle voor een test-website
+5. Continuous Brand Monitor stuurt correcte competitor-alerts bij gesimuleerde
+   website-veranderingen EN verbetert alignment score met minimaal 10pp in test-workspace
+6. Alle agents loggen naar AgentJob + AgentMemory
+7. Human approval flow werkend voor high-impact acties (CRITICAL alignment fixes,
+   budget-gerelateerde competitor-aanbevelingen)
+8. Gedeelde `fillAssetFromResearch()` helper werkt vanuit zowel E-AGT.2 als E-AGT.3
 
 ---
 

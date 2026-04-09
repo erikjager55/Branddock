@@ -22,7 +22,12 @@ export async function GET(request: NextRequest) {
     const isArchived = isArchivedParam === "true" ? true : false; // default false
 
     const where: Record<string, unknown> = { workspaceId, isArchived };
-    if (type) where.type = type;
+    if (type) {
+      where.type = type;
+    } else {
+      // By default exclude CONTENT items — they show in the content library
+      where.type = { not: "CONTENT" };
+    }
     if (status) where.status = status;
     if (search) {
       where.OR = [

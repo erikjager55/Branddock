@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Sparkles,
   AlertCircle,
-  Check,
 } from "lucide-react";
 import { Button } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
@@ -460,18 +459,12 @@ export function StrategyStep() {
     );
   }
 
-  // Strategy step complete — waiting for user to click Continue to go to Concept step
-  if (strategyPhase === "rationale_complete") {
-    return (
-      <div className="max-w-lg mx-auto text-center py-12">
-        <div className="w-12 h-12 mx-auto rounded-full bg-emerald-100 flex items-center justify-center mb-3">
-          <Check className="w-6 h-6 text-emerald-600" />
-        </div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Strategy Foundation Complete</h3>
-        <p className="text-sm text-gray-500">Click Continue to develop the creative concept.</p>
-      </div>
-    );
-  }
+  // Strategy step complete — auto-advance to Concept step
+  useEffect(() => {
+    if (strategyPhase === "rationale_complete") {
+      useCampaignWizardStore.getState().nextStep();
+    }
+  }, [strategyPhase]);
 
   // Fallback — redirect to idle state to prevent blank screen
   return (

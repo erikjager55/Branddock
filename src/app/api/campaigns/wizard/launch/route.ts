@@ -10,6 +10,7 @@ import { z } from "zod";
 // POST /api/campaigns/wizard/launch — Launch a campaign from the wizard
 const launchSchema = z.object({
   name: z.string().min(1, "name is required"),
+  type: z.enum(["STRATEGIC", "QUICK", "CONTENT"]).optional(),
   goalType: z.string().optional(),
   knowledgeIds: z.array(z.string()).optional(),
   strategy: z.record(z.string(), z.unknown()).optional(),
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, goalType, knowledgeIds, strategy, deliverables } = parsed.data;
+    const { name, type, goalType, knowledgeIds, strategy, deliverables } = parsed.data;
 
     const slug = name
       .toLowerCase()
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
       data: {
         title: name,
         slug,
-        type: "STRATEGIC",
+        type: type ?? "STRATEGIC",
         status: "ACTIVE",
         workspaceId,
         campaignGoalType: goalType ?? null,
@@ -98,10 +99,18 @@ export async function POST(request: NextRequest) {
 
     const deliverableCount = deliverables?.length ?? 0;
 
+    // Fetch first deliverable ID for content mode (needs it to start generation)
+    const firstDeliverable = await prisma.deliverable.findFirst({
+      where: { campaignId: campaign.id },
+      select: { id: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
     return NextResponse.json({
       campaignId: campaign.id,
       campaignSlug: campaign.slug,
       deliverableCount,
+      firstDeliverableId: firstDeliverable?.id ?? null,
     }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/campaigns/wizard/launch]", error);
