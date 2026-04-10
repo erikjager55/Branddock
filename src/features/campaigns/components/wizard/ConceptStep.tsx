@@ -675,6 +675,13 @@ export function ConceptStep() {
     const store = useCampaignWizardStore.getState();
     store.setBlueprintResult(blueprint);
     store.setStrategyPhase("complete");
+
+    // Content mode: skip the "Creative concept approved / Click Continue"
+    // confirmation screen entirely and advance straight to the Content
+    // step. One less click, no dead intermediate state.
+    if (mode === 'content') {
+      store.nextStep();
+    }
   }, [elaborateResult]);
 
   // Keep the forward-ref in sync so handleConceptProceed (content mode)

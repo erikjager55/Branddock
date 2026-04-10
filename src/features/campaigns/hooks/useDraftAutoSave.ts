@@ -120,6 +120,13 @@ export function useDraftAutoSave() {
       // Don't create a server draft until the user has advanced past step 1
       if (state.currentStep < 2 && !state.draftCampaignId) return;
 
+      // Content mode: once the content step kicks off a launch, the draft
+      // row is being promoted to an ACTIVE campaign. Any PATCH after that
+      // would 404 (loadDraftOrError requires status=DRAFT), and any fresh
+      // POST would create an orphan draft with the post-launch state.
+      // Freeze auto-save while contentGenPhase is anything but idle.
+      if (state.wizardMode === 'content' && state.contentGenPhase !== 'idle') return;
+
       const snapshot = buildServerSnapshot(state);
       const fingerprint = computeFingerprint(snapshot);
 
