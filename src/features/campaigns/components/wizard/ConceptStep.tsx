@@ -78,6 +78,7 @@ export function ConceptStep() {
   const enrichmentSources = useCampaignWizardStore((s) => s.enrichmentSources);
   const useExternalEnrichment = useCampaignWizardStore((s) => s.useExternalEnrichment);
   const pipelineConfig = useCampaignWizardStore((s) => s.pipelineConfig);
+  const wizardMode = useCampaignWizardStore((s) => s.wizardMode);
 
 
 
@@ -548,13 +549,25 @@ export function ConceptStep() {
     abortRef.current = { abort };
   }, [strategicIntent, selectedContextIds, wizardContext, pipelineConfig]);
 
+  // Forward-ref to handleApprove — it's declared below handleConceptProceed
+  // but content mode's dispatch path needs it. Same pattern as buildStrategyRef.
+  const approveRef = useRef<() => void>(() => {});
+
   // Dispatch handler for the review_concepts Continue button:
-  // - single mode: strategy is already pre-built by handleQuickConcept,
-  //   so skip handleBuildStrategyFromConcept entirely and go straight
-  //   to handleElaborate. One less spinner for the user.
+  // - content mode: the concept IS the content direction. Skip elaborate
+  //   entirely (no journey/channel/asset planning needed for one content
+  //   item) and go straight to handleApprove which assembles a minimal
+  //   blueprint. Saves 30-60s of AI work per content item.
+  // - single mode (campaign): strategy is already pre-built by
+  //   handleQuickConcept, so skip handleBuildStrategyFromConcept entirely
+  //   and go straight to handleElaborate.
   // - critiqued mode: run the creative debate first, then build-strategy.
   // - multi-variant mode: build-strategy (standard path).
   const handleConceptProceed = useCallback(() => {
+    if (wizardMode === 'content') {
+      approveRef.current();
+      return;
+    }
     if (pipelineConfig.creativeRange === 'single') {
       // Strategy was built inline in quick-concept route — skip build phase.
       handleElaborate();
@@ -568,7 +581,7 @@ export function ConceptStep() {
       }
     }
     handleBuildStrategyFromConcept();
-  }, [pipelineConfig.creativeRange, handleCreativeDebate, handleBuildStrategyFromConcept, handleElaborate]);
+  }, [wizardMode, pipelineConfig.creativeRange, handleCreativeDebate, handleBuildStrategyFromConcept, handleElaborate]);
 
   // ─── Auto-start creative pipeline when entering step 4 ──
   useEffect(() => {
@@ -614,21 +627,40 @@ export function ConceptStep() {
   }, [pipelineConfig.creativeRange, handleQuickConcept, handleGenerateConcepts]);
 
   // ─── Approve Concept → Assemble Blueprint ──────────────
+  //
+  // Campaign mode: requires elaborateResult (journey + channel + asset plan)
+  //   from handleElaborate. The blueprint feeds the full launch flow.
+  // Content mode: skips elaborate entirely and assembles a minimal blueprint
+  //   with empty channel/asset plans. The single-content launch path doesn't
+  //   need them — it creates one deliverable from selectedContentType.
 
   const handleApprove = useCallback(() => {
     const {
       synthesizedStrategy: strat,
       synthesizedArchitecture: arch,
       personaValidation: pv,
+      wizardMode: mode,
     } = useCampaignWizardStore.getState();
 
-    if (!strat || !arch || !elaborateResult) return;
+    if (!strat || !arch) return;
+    if (mode === 'campaign' && !elaborateResult) return;
+
+    const channelPlan = elaborateResult?.channelPlan ?? {
+      channels: [],
+      timingStrategy: '',
+      phaseDurations: [],
+    };
+    const assetPlan = elaborateResult?.assetPlan ?? {
+      deliverables: [],
+      totalDeliverables: 0,
+      prioritySummary: '',
+    };
 
     const blueprint: CampaignBlueprint = {
       strategy: strat,
       architecture: arch,
-      channelPlan: elaborateResult.channelPlan,
-      assetPlan: elaborateResult.assetPlan,
+      channelPlan,
+      assetPlan,
       personaValidation: pv ?? [],
       confidence: 0,
       confidenceBreakdown: {},
@@ -644,6 +676,12 @@ export function ConceptStep() {
     store.setBlueprintResult(blueprint);
     store.setStrategyPhase("complete");
   }, [elaborateResult]);
+
+  // Keep the forward-ref in sync so handleConceptProceed (content mode)
+  // always dispatches to the latest handleApprove closure.
+  useEffect(() => {
+    approveRef.current = handleApprove;
+  }, [handleApprove]);
 
   // ─── Wire wizard Continue button for concept step phases ─────
   useEffect(() => {
@@ -883,7 +921,11 @@ export function ConceptStep() {
           <CheckCircle2 className="w-5 h-5" />
           <span className="text-sm font-medium">Creative concept approved</span>
         </div>
-        <p className="text-xs text-gray-500">Click Continue to select deliverables for your campaign.</p>
+        <p className="text-xs text-gray-500">
+          {wizardMode === 'content'
+            ? 'Click Continue to generate your content.'
+            : 'Click Continue to select deliverables for your campaign.'}
+        </p>
       </div>
     );
   }

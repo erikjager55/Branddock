@@ -63,6 +63,15 @@ export function ContentGenerateStep() {
     // Reset canvas store for clean slate
     useCanvasStore.getState().reset();
 
+    // Content mode sends a MINIMAL launch body:
+    // - No strategy/blueprint (server would try to create N deliverables
+    //   from assetPlan.deliverables, but we want exactly ONE).
+    // - deliverables: [{ type: selectedContentType }] forces the server
+    //   fallback path to create a single deliverable of the right type.
+    // - draftCampaignId promotes the existing DRAFT in place so no
+    //   orphaned draft is left behind.
+    const draftCampaignId = store.draftCampaignId ?? undefined;
+
     launchCampaign.mutate(
       {
         name: store.name || 'Untitled Content',
@@ -72,7 +81,6 @@ export function ContentGenerateStep() {
         startDate: store.startDate || undefined,
         endDate: store.endDate || undefined,
         knowledgeIds: store.selectedKnowledgeIds,
-        strategy: store.blueprintResult ?? undefined,
         deliverables: [{ type: store.selectedContentType!, quantity: 1 }],
         saveAsTemplate: false,
         briefing: {
@@ -82,27 +90,56 @@ export function ContentGenerateStep() {
           tonePreference: store.briefingTonePreference || undefined,
           constraints: store.briefingConstraints || undefined,
         },
+        draftCampaignId,
       },
       {
         onSuccess: (result) => {
           if (result.firstDeliverableId) {
             setGeneratedIds(result.campaignId, result.firstDeliverableId);
+            // Draft has been promoted to an ACTIVE campaign; clear the
+            // local draft link so the auto-save loop won't PATCH a row
+            // that's no longer in DRAFT status.
+            useCampaignWizardStore.getState().setDraftCampaignId(null);
           } else {
-            console.error('[ContentGenerateStep] No deliverable ID returned');
+            console.error('[ContentGenerateStep] Launch returned no deliverable ID', result);
             setContentGenPhase('error');
+            useCanvasStore.getState().setGlobalStatus(
+              'error',
+              'Launch succeeded but no deliverable was created. Please try again.',
+            );
           }
         },
-        onError: () => {
+        onError: (error) => {
+          const message = error instanceof Error ? error.message : 'Unknown launch error';
+          console.error('[ContentGenerateStep] Launch failed:', error);
           setContentGenPhase('error');
+          useCanvasStore.getState().setGlobalStatus('error', message);
           launchStartedRef.current = false;
         },
       },
     );
   }, [launchCampaign, setContentGenPhase, setGeneratedIds]);
 
-  // Auto-launch on mount when idle
+  // Auto-launch on mount when idle.
+  //
+  // Defensive reset: generatedCampaignId/generatedDeliverableId are persisted
+  // to localStorage, so a previous content session can leave stale values
+  // around. If we enter the step in 'idle' phase, we're starting fresh — wipe
+  // them before the launch so Phase 2's auto-generate doesn't fire against
+  // a dead deliverable.
   useEffect(() => {
     if (contentGenPhase === 'idle') {
+      const store = useCampaignWizardStore.getState();
+      if (store.generatedCampaignId || store.generatedDeliverableId) {
+        store.setGeneratedIds('', '');
+        // setGeneratedIds sets both fields; using '' is equivalent to clearing
+        // for our null-check gates in Phase 2. Follow up with a true null set
+        // via direct state for cleanliness.
+        useCampaignWizardStore.setState({
+          generatedCampaignId: null,
+          generatedDeliverableId: null,
+        });
+      }
       handleLaunch();
     }
   }, [contentGenPhase, handleLaunch]);
@@ -133,16 +170,28 @@ export function ContentGenerateStep() {
     }
   }, [globalStatus, contentGenPhase, setContentGenPhase]);
 
-  // Cleanup: abort generation on unmount (deferred for React 19 double-invoke)
+  // Cleanup: abort generation on real unmount.
+  //
+  // `abort` changes reference whenever `generatedDeliverableId` changes
+  // (useCanvasOrchestration rebuilds its useCallback). Using [abort] as deps
+  // would re-run the cleanup on every such change, aborting the in-flight
+  // SSE right after it starts. Ref pattern keeps the cleanup bound to the
+  // component's lifetime instead.
+  const isMountedRef = useRef(true);
+  const abortRef = useRef(abort);
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    return () => {
-      timer = setTimeout(() => {
-        abort();
-      }, 50);
-      // Note: timer cleanup happens naturally when component re-mounts in dev strict mode
-    };
+    abortRef.current = abort;
   }, [abort]);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      // Deferred to survive React 19 dev strict-mode double-invoke.
+      setTimeout(() => {
+        if (!isMountedRef.current) abortRef.current();
+      }, 50);
+    };
+  }, []);
 
   // ─── Retry handler ──────────────────────────────────────────
   const handleRetry = () => {
