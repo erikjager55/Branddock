@@ -6,6 +6,7 @@ import { Button } from "@/components/shared";
 import { PageShell } from '@/components/ui/layout';
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import { useEnsureWizardWorkspace } from "../../hooks/useEnsureWizardWorkspace";
+import { useDraftAutoSave } from "../../hooks/useDraftAutoSave";
 import { useLaunchCampaign } from "../../hooks";
 import { useCampaignStore } from "../../stores/useCampaignStore";
 import { getStepsForMode } from "../../lib/wizard-steps";
@@ -18,6 +19,7 @@ import { ContentGenerateStep } from "./ContentGenerateStep";
 import { DeliverablesStep } from "./DeliverablesStep";
 import { ReviewStep } from "./ReviewStep";
 import { CampaignSuccessModal } from "./CampaignSuccessModal";
+import { DraftSaveIndicator } from "./DraftSaveIndicator";
 
 const STEP_COMPONENTS: Record<string, React.ComponentType> = {
   setup: SetupStep,
@@ -41,6 +43,11 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   // Reset wizard state if persisted localStorage belongs to a different workspace
   // (defense-in-depth alongside clearAllStorage on workspace switch).
   useEnsureWizardWorkspace();
+
+  // Auto-save wizard state to the DB via /api/campaigns/wizard/drafts.
+  // Debounced 1500ms per change, POSTs on first save (step 2+), PATCHes thereafter.
+  // DraftSaveIndicator (below) reflects status from the store.
+  useDraftAutoSave();
 
   const wizardMode = useCampaignWizardStore((s) => s.wizardMode);
   const currentStep = useCampaignWizardStore((s) => s.currentStep);
@@ -87,6 +94,11 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   const handleLaunch = () => {
     if (!campaignGoalType || !blueprintResult) return;
 
+    // If a DB-backed draft exists, promote it in place (update the existing
+    // Campaign row) instead of creating a new one. resetWizard() below clears
+    // draftCampaignId locally so the store and DB stay in sync.
+    const draftCampaignId = useCampaignWizardStore.getState().draftCampaignId ?? undefined;
+
     launchCampaign.mutate(
       {
         name,
@@ -99,6 +111,7 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
         deliverables: selectedDeliverables,
         saveAsTemplate,
         templateName: saveAsTemplate ? templateName : undefined,
+        draftCampaignId,
       },
       {
         onSuccess: (result) => {
@@ -167,12 +180,19 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
         </p>
       </div>
 
-      {/* Stepper */}
+      {/* Stepper + save indicator */}
       <div data-testid="wizard-stepper" className="bg-white border border-gray-200 rounded-lg p-6">
-        <WizardStepper
-          currentStep={currentStep}
-          stepLabels={steps.map(s => s.label)}
-        />
+        <div className="flex items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <WizardStepper
+              currentStep={currentStep}
+              stepLabels={steps.map(s => s.label)}
+            />
+          </div>
+          <div className="flex-shrink-0">
+            <DraftSaveIndicator />
+          </div>
+        </div>
       </div>
 
       {/* Step content */}

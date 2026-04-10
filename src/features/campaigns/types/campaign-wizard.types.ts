@@ -130,6 +130,11 @@ export interface LaunchCampaignBody {
     tonePreference?: string;
     constraints?: string;
   };
+  /**
+   * If present, promote the existing DRAFT campaign in place instead of
+   * creating a new Campaign row. See POST /api/campaigns/wizard/launch.
+   */
+  draftCampaignId?: string;
 }
 
 export interface LaunchCampaignResponse {

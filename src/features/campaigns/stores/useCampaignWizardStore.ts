@@ -41,6 +41,18 @@ interface CampaignWizardState {
    * leaking drafts across workspace boundaries (data isolation).
    */
   workspaceId: string | null;
+  /**
+   * DB-backed draft ID (Fase 2). Null when no server draft exists yet;
+   * set on first auto-save (POST) and reused for subsequent PATCH calls.
+   * Cleared when the draft is promoted to an ACTIVE campaign via launch.
+   */
+  draftCampaignId: string | null;
+  /** Live status of the auto-save loop. Not persisted — resets to 'idle' on reload. */
+  draftSaveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  /** ISO timestamp of the most recent successful save. */
+  draftLastSavedAt: string | null;
+  /** Last error message from auto-save, if any. Cleared on next successful save. */
+  draftSaveError: string | null;
   wizardMode: WizardMode;
   currentStep: number;
   name: string;
@@ -131,6 +143,18 @@ interface CampaignWizardState {
 
   /** Set the workspace fingerprint. Called by useEnsureWizardWorkspace on mount. */
   setWorkspaceId: (id: string | null) => void;
+  /** Set the DB-backed draft ID after first POST. Called by useDraftAutoSave. */
+  setDraftCampaignId: (id: string | null) => void;
+  /** Update the auto-save loop status. Called by useDraftAutoSave. */
+  setDraftSaveStatus: (status: 'idle' | 'saving' | 'saved' | 'error', error?: string | null) => void;
+  /** Update the last saved timestamp after a successful save. */
+  setDraftLastSavedAt: (ts: string | null) => void;
+  /**
+   * Hydrate the wizard from a server draft payload. Used by the "Resume draft"
+   * flow. Resets all ephemeral fields, merges the persisted snapshot into state,
+   * and marks the draft as linked (draftCampaignId set, status 'saved').
+   */
+  loadDraft: (payload: { campaignId: string; wizardState: Record<string, unknown>; wizardStep: number; lastSavedAt: string | null }) => void;
   setWizardMode: (mode: WizardMode) => void;
   setCurrentStep: (step: number) => void;
   nextStep: () => void;
@@ -231,6 +255,10 @@ interface CampaignWizardState {
 
 const INITIAL_STATE = {
   workspaceId: null as string | null,
+  draftCampaignId: null as string | null,
+  draftSaveStatus: 'idle' as 'idle' | 'saving' | 'saved' | 'error',
+  draftLastSavedAt: null as string | null,
+  draftSaveError: null as string | null,
   wizardMode: 'campaign' as WizardMode,
   currentStep: 1,
   name: "",
@@ -330,6 +358,27 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
     ...INITIAL_STATE,
 
     setWorkspaceId: (workspaceId) => set({ workspaceId }),
+    setDraftCampaignId: (draftCampaignId) => set({ draftCampaignId }),
+    setDraftSaveStatus: (draftSaveStatus, error = null) =>
+      set({
+        draftSaveStatus,
+        draftSaveError: draftSaveStatus === 'error' ? error : null,
+      }),
+    setDraftLastSavedAt: (draftLastSavedAt) => set({ draftLastSavedAt }),
+    loadDraft: ({ campaignId, wizardState, wizardStep, lastSavedAt }) => {
+      // Merge server snapshot into store. Reset ephemeral flags, stamp the draft link.
+      set({
+        ...INITIAL_STATE,
+        ...(wizardState as Partial<CampaignWizardState>),
+        draftCampaignId: campaignId,
+        currentStep: wizardStep,
+        draftSaveStatus: 'saved',
+        draftLastSavedAt: lastSavedAt,
+        draftSaveError: null,
+        // Defensive: clear non-serializable field (must be null after load)
+        stepProceedOverride: null,
+      });
+    },
     setCurrentStep: (step) => set({ currentStep: step }),
     setWizardMode: (wizardMode) => set({ wizardMode }),
     nextStep: () =>
@@ -645,6 +694,11 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
         // Workspace fingerprint — first field so it's always loaded before any
         // mismatch check can run. See useEnsureWizardWorkspace hook.
         workspaceId: state.workspaceId,
+        // DB-backed draft link (Fase 2). Persisted so the link survives refresh
+        // and the auto-save loop continues with PATCH instead of POSTing a new draft.
+        // Note: draftSaveStatus / draftLastSavedAt / draftSaveError are transient
+        // and intentionally fall back to INITIAL_STATE on rehydrate.
+        draftCampaignId: state.draftCampaignId,
         wizardMode: state.wizardMode,
         currentStep: state.currentStep,
         name: state.name,
