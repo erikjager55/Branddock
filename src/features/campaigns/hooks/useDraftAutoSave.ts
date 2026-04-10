@@ -128,7 +128,11 @@ export function useDraftAutoSave() {
 
       const name = state.name?.trim() || "Untitled draft";
       const wizardStep = state.currentStep;
-      const body = JSON.stringify({ name, wizardState: snapshot, wizardStep });
+      // Tag the draft's stored type from wizardMode so the right overview
+      // page picks it up (STRATEGIC → Campaigns, CONTENT → Content Library).
+      const type: "STRATEGIC" | "CONTENT" =
+        state.wizardMode === "content" ? "CONTENT" : "STRATEGIC";
+      const body = JSON.stringify({ name, wizardState: snapshot, wizardStep, type });
 
       useCampaignWizardStore.getState().setDraftSaveStatus("saving");
 

@@ -44,7 +44,8 @@ export const campaignKeys = {
   deliverables: (id: string) => ['campaigns', id, 'deliverables'] as const,
   strategy: (id: string) => ['campaigns', id, 'strategy'] as const,
   promptSuggestions: () => ['campaigns', 'quick', 'prompts'] as const,
-  drafts: () => ['campaigns', 'drafts'] as const,
+  drafts: (type?: 'STRATEGIC' | 'CONTENT') =>
+    type ? (['campaigns', 'drafts', type] as const) : (['campaigns', 'drafts'] as const),
 };
 
 // ─── List + Stats ──────────────────────────────────────────
@@ -119,21 +120,26 @@ export function useArchiveCampaign() {
 
 // ─── Drafts (Fase 2 — DB-backed wizard drafts) ─────────────
 
-/** List the current user's drafts in the active workspace. */
-export function useDraftCampaigns() {
+/**
+ * List the current user's drafts in the active workspace. Pass a `type` to
+ * restrict to just one kind — the Campaigns page passes 'STRATEGIC', the
+ * Content Library passes 'CONTENT'.
+ */
+export function useDraftCampaigns(type?: 'STRATEGIC' | 'CONTENT') {
   return useQuery({
-    queryKey: campaignKeys.drafts(),
-    queryFn: fetchDrafts,
+    queryKey: campaignKeys.drafts(type),
+    queryFn: () => fetchDrafts(type),
   });
 }
 
-/** Soft-delete a draft. Invalidates the drafts list on success. */
+/** Soft-delete a draft. Invalidates all drafts queries on success. */
 export function useArchiveDraft() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => archiveDraft(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: campaignKeys.drafts() });
+      // Invalidate the base drafts key so all type-filtered variants refetch.
+      qc.invalidateQueries({ queryKey: ['campaigns', 'drafts'] });
       // Archived drafts stay out of /api/campaigns (filtered by status+isArchived),
       // but the archived view reads from the same key so invalidate that too.
       qc.invalidateQueries({ queryKey: campaignKeys.all });

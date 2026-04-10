@@ -92,6 +92,12 @@ const updateDraftSchema = z.object({
   name: z.string().optional(),
   wizardState: z.record(z.string(), z.unknown()).optional(),
   wizardStep: z.number().int().min(1).max(6).optional(),
+  /**
+   * Allow re-tagging the draft's type on save. Used to migrate legacy
+   * content drafts that were incorrectly stored as STRATEGIC before the
+   * wizardMode→type split was in place.
+   */
+  type: z.enum(["STRATEGIC", "CONTENT"]).optional(),
 });
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
@@ -109,7 +115,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const { name, wizardState, wizardStep } = parsed.data;
+    const { name, wizardState, wizardStep, type } = parsed.data;
 
     const now = new Date();
     const updated = await prisma.campaign.update({
@@ -118,6 +124,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         ...(name !== undefined && { title: name.trim() || "Untitled draft" }),
         ...(wizardState !== undefined && { wizardState: wizardState as object }),
         ...(wizardStep !== undefined && { wizardStep }),
+        ...(type !== undefined && { type }),
         wizardLastSavedAt: now,
       },
       select: { workspaceId: true },

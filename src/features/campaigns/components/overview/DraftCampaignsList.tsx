@@ -2,12 +2,25 @@
 
 import { ArrowRight, FileEdit, Archive } from "lucide-react";
 import { Button } from "@/components/shared";
-import type { DraftSummary } from "../../types/campaign-wizard.types";
+import type { DraftSummary, DraftType } from "../../types/campaign-wizard.types";
 
-// Step labels match the campaign wizard flow. Content-mode drafts (5 steps)
-// may show a slightly generic label at step 5, which is acceptable for an
-// at-a-glance summary.
-const STEP_LABELS = ["Setup", "Knowledge", "Strategy", "Concept", "Deliverables", "Review"];
+// Step labels per wizard mode. Campaign = 6 steps, Content = 5 steps.
+// The backend stores `type` on each draft so the row can label its step
+// correctly. When `type` is missing (legacy payloads) we fall back to the
+// campaign labels, which is a safe default for mixed lists.
+const CAMPAIGN_STEP_LABELS = [
+  "Setup",
+  "Knowledge",
+  "Strategy",
+  "Concept",
+  "Deliverables",
+  "Review",
+];
+const CONTENT_STEP_LABELS = ["Setup", "Knowledge", "Strategy", "Concept", "Content"];
+
+function stepLabelsForType(type: DraftType | undefined): string[] {
+  return type === "CONTENT" ? CONTENT_STEP_LABELS : CAMPAIGN_STEP_LABELS;
+}
 
 function formatRelativeTime(iso: string | null): string {
   if (!iso) return "just now";
@@ -82,7 +95,8 @@ interface DraftRowProps {
 }
 
 function DraftRow({ draft, onResume, onArchive, isBusy }: DraftRowProps) {
-  const stepLabel = STEP_LABELS[draft.wizardStep - 1] ?? `Step ${draft.wizardStep}`;
+  const labels = stepLabelsForType(draft.type);
+  const stepLabel = labels[draft.wizardStep - 1] ?? `Step ${draft.wizardStep}`;
   const savedTime = formatRelativeTime(draft.wizardLastSavedAt);
 
   return (
@@ -94,7 +108,7 @@ function DraftRow({ draft, onResume, onArchive, isBusy }: DraftRowProps) {
         <div className="min-w-0">
           <p className="text-sm font-medium text-gray-900 truncate">{draft.name}</p>
           <p className="text-xs text-muted-foreground">
-            Step {draft.wizardStep} of 6 ({stepLabel}) · saved {savedTime}
+            Step {draft.wizardStep} of {labels.length} ({stepLabel}) · saved {savedTime}
           </p>
         </div>
       </div>

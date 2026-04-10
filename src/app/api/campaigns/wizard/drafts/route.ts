@@ -15,6 +15,12 @@ const createDraftSchema = z.object({
   name: z.string().optional(),
   wizardState: z.record(z.string(), z.unknown()),
   wizardStep: z.number().int().min(1).max(6).optional(),
+  /**
+   * STRATEGIC = full campaign wizard. CONTENT = single-content wizard.
+   * Determines which overview page displays the draft (Campaigns vs Content
+   * Library). Defaults to STRATEGIC for backwards compatibility.
+   */
+  type: z.enum(["STRATEGIC", "CONTENT"]).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -61,7 +67,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, wizardState, wizardStep } = parsed.data;
+    const { name, wizardState, wizardStep, type } = parsed.data;
 
     // Collision-free slug (regenerated on promotion to ACTIVE in wizard/launch)
     const slug = `draft-${randomUUID().slice(0, 8)}-${Date.now()}`;
@@ -70,7 +76,7 @@ export async function POST(request: NextRequest) {
       data: {
         title: name?.trim() || "Untitled draft",
         slug,
-        type: "STRATEGIC",
+        type: type ?? "STRATEGIC",
         status: "DRAFT",
         workspaceId,
         createdBy: userId,
@@ -100,8 +106,12 @@ export async function POST(request: NextRequest) {
 
 // ---------------------------------------------------------------------------
 // GET /api/campaigns/wizard/drafts — List drafts for current user in workspace
+//
+// Optional `?type=STRATEGIC|CONTENT` query param filters to just one kind.
+// Without the param, all drafts are returned. Callers (Campaigns page, Content
+// Library) pass the param so only their own drafts show up.
 // ---------------------------------------------------------------------------
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession();
     if (!session) {
@@ -114,17 +124,23 @@ export async function GET() {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
+    const typeParam = request.nextUrl.searchParams.get("type");
+    const typeFilter =
+      typeParam === "CONTENT" || typeParam === "STRATEGIC" ? typeParam : undefined;
+
     const drafts = await prisma.campaign.findMany({
       where: {
         workspaceId,
         status: "DRAFT",
         wizardOwnerId: userId,
         isArchived: false,
+        ...(typeFilter && { type: typeFilter }),
       },
       orderBy: { wizardLastSavedAt: "desc" },
       select: {
         id: true,
         title: true,
+        type: true,
         wizardStep: true,
         wizardLastSavedAt: true,
         createdAt: true,
@@ -135,6 +151,7 @@ export async function GET() {
       drafts: drafts.map((d) => ({
         id: d.id,
         name: d.title,
+        type: d.type,
         wizardStep: d.wizardStep ?? 1,
         wizardLastSavedAt: d.wizardLastSavedAt?.toISOString() ?? null,
         createdAt: d.createdAt.toISOString(),

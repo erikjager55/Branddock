@@ -42,8 +42,9 @@ export function ActiveCampaignsPage({
   // Defense-in-depth alongside clearAllStorage on workspace switch.
   useEnsureWizardWorkspace();
 
-  // DB-backed drafts (Fase 2)
-  const { data: draftsData } = useDraftCampaigns();
+  // DB-backed drafts (Fase 2) — STRATEGIC only. CONTENT drafts belong to
+  // the Content Library page; see ContentLibraryPage for that list.
+  const { data: draftsData } = useDraftCampaigns('STRATEGIC');
   const archiveDraftMutation = useArchiveDraft();
   const drafts = draftsData?.drafts ?? [];
   const draftLimit = draftsData?.limit ?? 5;

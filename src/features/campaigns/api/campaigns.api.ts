@@ -82,11 +82,19 @@ export async function archiveCampaign(id: string): Promise<CampaignDetail> {
 import type {
   DraftListResponse,
   DraftDetail,
+  DraftType,
 } from '../types/campaign-wizard.types';
 
-/** List the current user's drafts in the active workspace. */
-export async function fetchDrafts(): Promise<DraftListResponse> {
-  const res = await fetch('/api/campaigns/wizard/drafts');
+/**
+ * List the current user's drafts in the active workspace. Pass a `type` to
+ * get only STRATEGIC (campaign wizard) or CONTENT (single-content wizard)
+ * drafts — without it, all drafts are returned.
+ */
+export async function fetchDrafts(type?: DraftType): Promise<DraftListResponse> {
+  const url = type
+    ? `/api/campaigns/wizard/drafts?type=${type}`
+    : '/api/campaigns/wizard/drafts';
+  const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch drafts');
   return res.json();
 }

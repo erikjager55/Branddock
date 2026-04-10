@@ -7,8 +7,14 @@ import { PageShell, PageHeader } from "@/components/ui/layout";
 import { useContentLibrary } from "../../hooks";
 import { useContentLibraryStats } from "../../hooks";
 import { useToggleContentFavorite } from "../../hooks";
+import {
+  useDraftCampaigns,
+  useArchiveDraft,
+  loadDraftForResume,
+} from "../../hooks";
 import { useContentLibraryStore } from "../../stores/useContentLibraryStore";
 import { useCampaignStore } from "../../stores/useCampaignStore";
+import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import { groupByCampaign } from "../../lib/group-by-campaign";
 import type { ContentLibraryParams } from "../../types/content-library.types";
 import { ContentStatsCards } from "./ContentStatsCards";
@@ -16,6 +22,7 @@ import { ContentFilterBar } from "./ContentFilterBar";
 import { ContentCardGrid } from "./ContentCardGrid";
 import { ContentCardList } from "./ContentCardList";
 import { ContentGroupHeader } from "./ContentGroupHeader";
+import { DraftCampaignsList } from "../overview/DraftCampaignsList";
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -26,6 +33,38 @@ interface ContentLibraryPageProps {
 // ─── Component ────────────────────────────────────────────
 
 export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
+  // DB-backed drafts — CONTENT only. STRATEGIC drafts belong to the
+  // Campaigns page (see ActiveCampaignsPage for that list).
+  const { data: draftsData } = useDraftCampaigns("CONTENT");
+  const archiveDraftMutation = useArchiveDraft();
+  const drafts = draftsData?.drafts ?? [];
+  const draftLimit = draftsData?.limit ?? 5;
+  const [busyDraftId, setBusyDraftId] = useState<string | null>(null);
+
+  const handleResumeDraft = async (id: string) => {
+    setBusyDraftId(id);
+    try {
+      const data = await loadDraftForResume(id);
+      useCampaignWizardStore.getState().loadDraft({
+        campaignId: data.campaignId,
+        wizardState: data.wizardState,
+        wizardStep: data.wizardStep,
+        lastSavedAt: data.wizardLastSavedAt,
+      });
+      // loadDraft restores wizardMode from the snapshot, so the wizard
+      // opens in the content stepper automatically.
+      onNavigate("campaign-wizard");
+    } catch (error) {
+      console.error("[ContentLibraryPage] failed to resume draft:", error);
+    } finally {
+      setBusyDraftId(null);
+    }
+  };
+
+  const handleArchiveDraft = (id: string) => {
+    archiveDraftMutation.mutate(id);
+  };
+
   const search = useContentLibraryStore((s) => s.search);
   const typeFilter = useContentLibraryStore((s) => s.typeFilter);
   const campaignFilter = useContentLibraryStore((s) => s.campaignFilter);
@@ -191,6 +230,15 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
       />
 
       <div className="space-y-6">
+        {/* Draft content list — DB-backed (Fase 2), CONTENT-typed only */}
+        <DraftCampaignsList
+          drafts={drafts}
+          limit={draftLimit}
+          onResume={handleResumeDraft}
+          onArchive={handleArchiveDraft}
+          busyDraftId={busyDraftId}
+        />
+
         <ContentStatsCards stats={stats} isLoading={isStatsLoading} />
 
         <ContentFilterBar />

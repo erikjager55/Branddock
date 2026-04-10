@@ -146,10 +146,22 @@ export interface LaunchCampaignResponse {
 
 // ─── Draft Persistence (Fase 2) ──────────────────────────
 
+/**
+ * Whether a draft belongs to the full campaign wizard or the single-content
+ * wizard. Backend stores this on the Campaign row; frontend uses it to route
+ * each draft to the correct overview page (Campaigns vs Content Library).
+ */
+export type DraftType = 'STRATEGIC' | 'CONTENT';
+
 /** Summary row in `GET /api/campaigns/wizard/drafts`. */
 export interface DraftSummary {
   id: string;
   name: string;
+  /**
+   * Returned by the API since the wizardMode→type split. May be missing on
+   * payloads from older API versions — treat as STRATEGIC in that case.
+   */
+  type?: DraftType;
   wizardStep: number;
   wizardLastSavedAt: string | null;
   createdAt: string;
