@@ -589,6 +589,11 @@ export function ConceptStep() {
   }, [strategyPhase, isGenerating, handleMineInsights, handleQuickConcept, pipelineConfig.creativeRange]);
 
   // ─── Regenerate Concepts with Feedback ──────────────────
+  //
+  // Mode-aware regenerate: each creativeRange has its own concept generator,
+  // so the regenerate button must dispatch to the matching one. Routing through
+  // handleGenerateConcepts (multi-variant) in single mode caused the
+  // "1 concept setting → 2x3 concepts shown" bug.
   const handleRegenerateConcepts = useCallback(async () => {
     const st = useCampaignWizardStore.getState();
     const { concepts: curConcepts, pipelineAttempt } = st;
@@ -601,8 +606,12 @@ export function ConceptStep() {
     curConcepts.forEach(c => {
       st.addFailedConcept(c.campaignLine, 'Low stickiness score, not selected by user');
     });
-    handleGenerateConcepts();
-  }, [handleGenerateConcepts]);
+    if (pipelineConfig.creativeRange === 'single') {
+      handleQuickConcept();
+    } else {
+      handleGenerateConcepts();
+    }
+  }, [pipelineConfig.creativeRange, handleQuickConcept, handleGenerateConcepts]);
 
   // ─── Approve Concept → Assemble Blueprint ──────────────
 
@@ -725,10 +734,14 @@ export function ConceptStep() {
     );
   }
 
-  // Review concepts — in Single mode (1 concept) show a simpler single-card
-  // view; in Multi-variant / Critiqued mode show the side-by-side comparison.
+  // Review concepts — in Single mode always render the single-card view
+  // (regardless of concepts.length, in case stale state from a prior
+  // multi-variant run leaked extra entries). In Multi-variant / Critiqued
+  // mode show the side-by-side comparison.
   if (strategyPhase === "review_concepts") {
-    if (pipelineConfig.creativeRange === 'single' && concepts.length === 1) {
+    if (pipelineConfig.creativeRange === 'single' && concepts.length > 0) {
+      // Always show the first concept in single mode — it's the only one
+      // the quick-concept route ever produces.
       const c = concepts[0];
       return (
         <div className="max-w-2xl mx-auto space-y-6">

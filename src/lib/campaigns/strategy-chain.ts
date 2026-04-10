@@ -1054,11 +1054,11 @@ ${validation.strengths.map(s => `- ${s}`).join('\n') || 'None'}
 
 Rewrite all 5 briefing fields, addressing every gap and applying the suggestions. Preserve what's already strong. Make the briefing score-worthy of 90+/100.`;
 
-  const result = await withStepContext('Phase 1c (Improve Briefing)', 30, () =>
+  const result = await withStepContext('Phase 1c (Improve Briefing)', 60, () =>
     createStructuredCompletion<ImprovedBriefing>(
       'google', GEMINI_FLASH,
       systemPrompt, userPrompt,
-      { temperature: 0.5, maxTokens: 4096, timeoutMs: 30_000 },
+      { temperature: 0.5, maxTokens: 8192, timeoutMs: 60_000 },
     ),
   );
 
@@ -1815,7 +1815,7 @@ Bisociation: ${approvedConcept.bisociationDomain.domain} — ${approvedConcept.b
       model,
       prompt.system,
       prompt.user,
-      { maxTokens: 32000, thinking: thinkingForRigor(provider, 20_000, rigor) },
+      { maxTokens: 16000, thinking: thinkingForRigor(provider, 12_000, rigor) },
     ),
   );
 

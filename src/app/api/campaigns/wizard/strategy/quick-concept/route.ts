@@ -1,8 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveWorkspaceId } from '@/lib/auth-server';
-import { buildCreativePipelineContext, generateQuickConcept, buildConceptDrivenStrategy } from '@/lib/campaigns/strategy-chain';
-import type { StrategicIntent } from '@/lib/campaigns/strategy-blueprint.types';
+import { buildCreativePipelineContext, generateQuickConcept } from '@/lib/campaigns/strategy-chain';
+import type {
+  StrategicIntent,
+  StrategyLayer,
+  ArchitectureLayer,
+  HumanInsight,
+  CreativeConcept,
+} from '@/lib/campaigns/strategy-blueprint.types';
 import { z } from 'zod';
+
+/**
+ * Build a minimal but valid StrategyLayer + ArchitectureLayer directly from
+ * the approved concept + insight, without running the heavy
+ * buildConceptDrivenStrategy LLM call. Quick mode trades depth for speed —
+ * downstream elaborate/content phases will fill in the missing pieces.
+ */
+function buildMinimalStrategyFromConcept(
+  insight: HumanInsight,
+  concept: CreativeConcept,
+  strategicIntent: StrategicIntent,
+): { strategy: StrategyLayer; architecture: ArchitectureLayer } {
+  const intentRatio =
+    strategicIntent === 'brand_building'
+      ? { brand: 80, activation: 20 }
+      : strategicIntent === 'sales_activation'
+        ? { brand: 20, activation: 80 }
+        : { brand: 50, activation: 50 };
+
+  const strategy: StrategyLayer = {
+    strategicIntent,
+    intentRatio,
+    campaignTheme: concept.campaignLine,
+    positioningStatement: concept.bigIdea,
+    messagingHierarchy: {
+      brandMessage: concept.bigIdea,
+      campaignMessage: concept.campaignLine,
+      proofPoints: insight.proofPoints ?? [],
+    },
+    jtbdFraming: {
+      jobStatement: insight.humanTruth,
+      functionalJob: '',
+      emotionalJob: insight.emotionalTerritory,
+      socialJob: '',
+    },
+    strategicChoices: [],
+    humanInsight: insight.insightStatement,
+    culturalTension: insight.underlyingTension,
+    creativePlatform: concept.bigIdea,
+    creativeTerritory: concept.creativeTerritory,
+    brandRole: concept.goldenbergApplication,
+    memorableDevice: concept.memorableDevice,
+  };
+
+  const architecture: ArchitectureLayer = {
+    campaignType: 'strategic',
+    journeyPhases: [],
+  };
+
+  return { strategy, architecture };
+}
 
 export const maxDuration = 120;
 
@@ -32,19 +89,13 @@ const requestSchema = z.object({
 /**
  * POST /api/campaigns/wizard/strategy/quick-concept
  *
- * Atomic fast path for creativeRange === 'single'. Runs TWO things back-to-back
- * in a single SSE call so the client sees one phase instead of three:
+ * Atomic fast path for creativeRange === 'single'. Runs ONE Gemini Flash
+ * call (~30-60s) to produce both an insight and a creative concept, then
+ * synthesizes a minimal StrategyLayer + ArchitectureLayer inline (no LLM).
  *
- *   1. generateQuickConcept  — Gemini Flash, ~30-60s
- *      Produces both an insight and a creative concept in one shot.
- *
- *   2. buildConceptDrivenStrategy — rigor-scoped model, ~30-90s (Flash tier)
- *      Builds the full strategy + architecture on top of that concept so
- *      downstream elaborate/content phases have something to work with.
- *
- * Returns the combined result so the ConceptStep client can land directly
- * on review_concepts with the pre-built strategy in store — no separate
- * "Strategy Build" spinner. Users see ONE atomic concept-generation phase.
+ * Quick mode skips the heavy buildConceptDrivenStrategy step (which used
+ * to time out at 180s with 32k maxTokens) — downstream elaborate/content
+ * phases will fill in journey/channel/asset detail when needed.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -83,17 +134,13 @@ export async function POST(request: NextRequest) {
             (event) => sendEvent(event as Record<string, unknown>),
           );
 
-          // Phase 2: Build the full strategy + architecture on top of the
-          // concept. Runs with the rigor tier chosen by the user — Fast
-          // means Flash here too (~30-60s). The client consumes this as
-          // part of the SAME "generating_concepts" phase so there's no
-          // intermediate UI spinner.
-          const { strategy, architecture } = await buildConceptDrivenStrategy(
-            ctx,
-            concept,
+          // Phase 2: Synthesize a minimal strategy + architecture inline
+          // from the approved concept (no LLM call). Downstream phases
+          // (elaborate/content) will enrich journey/channel/asset detail.
+          const { strategy, architecture } = buildMinimalStrategyFromConcept(
             insight,
-            undefined, // no debate context in Single mode
-            (event) => sendEvent(event as Record<string, unknown>),
+            concept,
+            (body.strategicIntent as StrategicIntent | undefined) ?? 'hybrid',
           );
 
           sendEvent({
