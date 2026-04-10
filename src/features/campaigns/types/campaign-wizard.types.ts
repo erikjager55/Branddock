@@ -144,6 +144,33 @@ export interface LaunchCampaignResponse {
   firstDeliverableId: string | null;
 }
 
+// ─── Draft Persistence (Fase 2) ──────────────────────────
+
+/** Summary row in `GET /api/campaigns/wizard/drafts`. */
+export interface DraftSummary {
+  id: string;
+  name: string;
+  wizardStep: number;
+  wizardLastSavedAt: string | null;
+  createdAt: string;
+}
+
+/** Wrapper for the list endpoint. */
+export interface DraftListResponse {
+  drafts: DraftSummary[];
+  limit: number;
+  current: number;
+}
+
+/** Full draft payload from `GET /api/campaigns/wizard/drafts/[id]`. */
+export interface DraftDetail {
+  campaignId: string;
+  name: string;
+  wizardState: Record<string, unknown>;
+  wizardStep: number;
+  wizardLastSavedAt: string | null;
+}
+
 export interface CampaignTemplateItem {
   id: string;
   name: string;

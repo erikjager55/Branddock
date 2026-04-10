@@ -366,10 +366,15 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
       }),
     setDraftLastSavedAt: (draftLastSavedAt) => set({ draftLastSavedAt }),
     loadDraft: ({ campaignId, wizardState, wizardStep, lastSavedAt }) => {
-      // Merge server snapshot into store. Reset ephemeral flags, stamp the draft link.
+      // Preserve the current workspace fingerprint — the server snapshot
+      // excludes workspaceId (it's implicit in the session cookie), and
+      // useEnsureWizardWorkspace won't re-stamp after mount unless the
+      // workspace selector itself changes.
+      const currentWorkspaceId = get().workspaceId;
       set({
         ...INITIAL_STATE,
         ...(wizardState as Partial<CampaignWizardState>),
+        workspaceId: currentWorkspaceId,
         draftCampaignId: campaignId,
         currentStep: wizardStep,
         draftSaveStatus: 'saved',

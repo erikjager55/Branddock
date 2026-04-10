@@ -77,6 +77,33 @@ export async function archiveCampaign(id: string): Promise<CampaignDetail> {
   return res.json();
 }
 
+// ─── Drafts (Fase 2 — DB-backed wizard drafts) ─────────────
+
+import type {
+  DraftListResponse,
+  DraftDetail,
+} from '../types/campaign-wizard.types';
+
+/** List the current user's drafts in the active workspace. */
+export async function fetchDrafts(): Promise<DraftListResponse> {
+  const res = await fetch('/api/campaigns/wizard/drafts');
+  if (!res.ok) throw new Error('Failed to fetch drafts');
+  return res.json();
+}
+
+/** Load a single draft's full state — used by the Resume flow. */
+export async function fetchDraftDetail(id: string): Promise<DraftDetail> {
+  const res = await fetch(`/api/campaigns/wizard/drafts/${id}`);
+  if (!res.ok) throw new Error('Failed to fetch draft detail');
+  return res.json();
+}
+
+/** Soft-delete a draft (sets isArchived=true on the Campaign row). */
+export async function archiveDraft(id: string): Promise<void> {
+  const res = await fetch(`/api/campaigns/wizard/drafts/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to archive draft');
+}
+
 // ─── Quick Content ─────────────────────────────────────────
 
 export async function createQuickContent(body: CreateQuickContentBody): Promise<CampaignDetail> {

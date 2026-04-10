@@ -1,19 +1,27 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Plus, Zap } from "lucide-react";
 import { PageShell, PageHeader } from "@/components/ui/layout";
 import { Button } from "@/components/shared";
-import { useUIState } from "@/contexts/UIStateContext";
 import { CampaignStatsCards } from "./CampaignStatsCards";
 import { CampaignFilterBar } from "./CampaignFilterBar";
 import { CampaignGrid } from "./CampaignGrid";
 import { CampaignList } from "./CampaignList";
-import { useCampaigns, useDeleteCampaign, useArchiveCampaign } from "../../hooks";
+import { DraftCampaignsList } from "./DraftCampaignsList";
+import { DraftPickerModal } from "./DraftPickerModal";
+import {
+  useCampaigns,
+  useDeleteCampaign,
+  useArchiveCampaign,
+  useDraftCampaigns,
+  useArchiveDraft,
+  loadDraftForResume,
+} from "../../hooks";
 import { useCampaignStore } from "../../stores/useCampaignStore";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import { useEnsureWizardWorkspace } from "../../hooks/useEnsureWizardWorkspace";
-import type { CampaignListParams, CampaignSummary } from "@/types/campaign";
+import type { CampaignListParams } from "@/types/campaign";
 
 interface ActiveCampaignsPageProps {
   onNavigateToCampaign: (campaignId: string) => void;
@@ -31,11 +39,19 @@ export function ActiveCampaignsPage({
   onResumeWizard,
 }: ActiveCampaignsPageProps) {
   // Reset persisted wizard state if it belongs to a different workspace.
-  // The DraftCampaignBanner reads name + currentStep from the wizard store, so
-  // without this check it would render a draft from a previously active workspace.
+  // Defense-in-depth alongside clearAllStorage on workspace switch.
   useEnsureWizardWorkspace();
 
-  const { setActiveSection } = useUIState();
+  // DB-backed drafts (Fase 2)
+  const { data: draftsData } = useDraftCampaigns();
+  const archiveDraftMutation = useArchiveDraft();
+  const drafts = draftsData?.drafts ?? [];
+  const draftLimit = draftsData?.limit ?? 5;
+  const draftCount = drafts.length;
+
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [busyDraftId, setBusyDraftId] = useState<string | null>(null);
+
   const {
     filterTab,
     searchQuery,
@@ -76,6 +92,52 @@ export function ActiveCampaignsPage({
     }
   };
 
+  // ─── Draft handlers ───────────────────────────────────────
+
+  /**
+   * Loads a draft's full state from the server, hydrates the wizard store,
+   * and navigates to the wizard. Used by both the inline DraftCampaignsList
+   * (direct click) and the DraftPickerModal (when user came via New Campaign).
+   */
+  const handleResumeDraft = async (id: string) => {
+    setBusyDraftId(id);
+    try {
+      const data = await loadDraftForResume(id);
+      useCampaignWizardStore.getState().loadDraft({
+        campaignId: data.campaignId,
+        wizardState: data.wizardState,
+        wizardStep: data.wizardStep,
+        lastSavedAt: data.wizardLastSavedAt,
+      });
+      setPickerOpen(false);
+      onResumeWizard?.();
+    } catch (error) {
+      console.error("[handleResumeDraft] failed to resume draft:", error);
+      // Leave the user on the overview; they can try again. A toast system
+      // would be a nice enhancement but is out of scope for this sprint.
+    } finally {
+      setBusyDraftId(null);
+    }
+  };
+
+  const handleArchiveDraft = (id: string) => {
+    archiveDraftMutation.mutate(id);
+  };
+
+  const handleStartNewCampaign = () => {
+    setPickerOpen(false);
+    onNavigateToWizard?.();
+  };
+
+  const handleNewCampaignClick = () => {
+    if (draftCount === 0) {
+      // No drafts — start fresh directly, skip the picker.
+      onNavigateToWizard?.();
+      return;
+    }
+    setPickerOpen(true);
+  };
+
 
   return (
     <PageShell>
@@ -89,17 +151,28 @@ export function ActiveCampaignsPage({
               <Zap className="h-4 w-4" />
               Create Content
             </Button>
-            <Button data-testid="new-campaign-button" onClick={() => onNavigateToWizard?.()} className="gap-2">
+            <Button data-testid="new-campaign-button" onClick={handleNewCampaignClick} className="gap-2">
               <Plus className="h-4 w-4" />
               New Campaign
+              {draftCount > 0 && (
+                <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-white/20 px-1.5 text-xs font-semibold">
+                  {draftCount}
+                </span>
+              )}
             </Button>
           </div>
         }
       />
 
       <div className="space-y-6">
-        {/* Draft campaign banner */}
-        <DraftCampaignBanner onResume={() => onResumeWizard?.()} />
+        {/* Draft campaigns list — DB-backed (Fase 2) */}
+        <DraftCampaignsList
+          drafts={drafts}
+          limit={draftLimit}
+          onResume={handleResumeDraft}
+          onArchive={handleArchiveDraft}
+          busyDraftId={busyDraftId}
+        />
 
         {/* Stats */}
         <CampaignStatsCards stats={stats} isLoading={isLoading} />
@@ -129,54 +202,16 @@ export function ActiveCampaignsPage({
         )}
       </div>
 
+      <DraftPickerModal
+        isOpen={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        drafts={drafts}
+        limit={draftLimit}
+        onResume={handleResumeDraft}
+        onArchive={handleArchiveDraft}
+        onStartNew={handleStartNewCampaign}
+        busyDraftId={busyDraftId}
+      />
     </PageShell>
-  );
-}
-
-// ─── Draft Campaign Banner ─────────────────────────────────
-
-import { ArrowRight, FileEdit, X } from "lucide-react";
-
-function DraftCampaignBanner({ onResume }: { onResume: () => void }) {
-  const name = useCampaignWizardStore((s) => s.name);
-  const currentStep = useCampaignWizardStore((s) => s.currentStep);
-  const resetWizard = useCampaignWizardStore((s) => s.resetWizard);
-
-  // Only show if there's an in-progress wizard (name filled in or past step 1)
-  if (!name && currentStep <= 1) return null;
-
-  const STEP_LABELS = ['Setup', 'Knowledge', 'Strategy', 'Concept', 'Deliverables', 'Review'];
-  const stepLabel = STEP_LABELS[currentStep - 1] ?? `Step ${currentStep}`;
-
-  return (
-    <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
-      <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-          <FileEdit className="h-4 w-4 text-primary" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-gray-900">
-            Draft in progress: {name || 'Untitled Campaign'}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Currently at step {currentStep} ({stepLabel})
-          </p>
-        </div>
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={resetWizard}
-          className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
-        >
-          <X className="h-3.5 w-3.5" />
-          Discard
-        </button>
-        <Button size="sm" onClick={onResume} className="gap-1.5">
-          Continue
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-    </div>
   );
 }

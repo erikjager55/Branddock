@@ -27,6 +27,9 @@ import {
   deleteDeliverable,
   fetchStrategy,
   regenerateBlueprintLayer,
+  fetchDrafts,
+  fetchDraftDetail,
+  archiveDraft,
 } from '../api/campaigns.api';
 
 // ─── Query Keys ────────────────────────────────────────────
@@ -41,6 +44,7 @@ export const campaignKeys = {
   deliverables: (id: string) => ['campaigns', id, 'deliverables'] as const,
   strategy: (id: string) => ['campaigns', id, 'strategy'] as const,
   promptSuggestions: () => ['campaigns', 'quick', 'prompts'] as const,
+  drafts: () => ['campaigns', 'drafts'] as const,
 };
 
 // ─── List + Stats ──────────────────────────────────────────
@@ -111,6 +115,39 @@ export function useArchiveCampaign() {
       qc.invalidateQueries({ queryKey: campaignKeys.all });
     },
   });
+}
+
+// ─── Drafts (Fase 2 — DB-backed wizard drafts) ─────────────
+
+/** List the current user's drafts in the active workspace. */
+export function useDraftCampaigns() {
+  return useQuery({
+    queryKey: campaignKeys.drafts(),
+    queryFn: fetchDrafts,
+  });
+}
+
+/** Soft-delete a draft. Invalidates the drafts list on success. */
+export function useArchiveDraft() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => archiveDraft(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: campaignKeys.drafts() });
+      // Archived drafts stay out of /api/campaigns (filtered by status+isArchived),
+      // but the archived view reads from the same key so invalidate that too.
+      qc.invalidateQueries({ queryKey: campaignKeys.all });
+    },
+  });
+}
+
+/**
+ * Loads a single draft's full state for the Resume flow. Used imperatively
+ * (not via hook state) because we need to wait for the detail before
+ * calling loadDraft() + navigate.
+ */
+export async function loadDraftForResume(id: string) {
+  return fetchDraftDetail(id);
 }
 
 // ─── Quick Content ─────────────────────────────────────────
