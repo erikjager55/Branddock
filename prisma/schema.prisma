@@ -246,6 +246,7 @@ model User {
   lockedPersonas         Persona[]                    @relation("LockedPersonas")
   lockedProducts         Product[]                    @relation("LockedProducts")
   lockedCampaigns        Campaign[]                   @relation("LockedCampaigns")
+  draftCampaigns         Campaign[]                   @relation("CampaignWizardOwner")
   lockedStrategies       BusinessStrategy[]            @relation("LockedStrategies")
   lockedStyleguides      BrandStyleguide[]             @relation("LockedStyleguides")
   createdPersonas        Persona[]
@@ -867,6 +868,13 @@ model Campaign {
   strategyLinks     CampaignStrategy[]
   objectiveLinks    CampaignObjective[]
 
+  // Draft persistence (Fase 2 — DB-backed wizard state)
+  wizardState        Json?                  // Snapshot of useCampaignWizardStore (partialize shape)
+  wizardStep         Int?                   // Last completed step (1-6) — for "Resume from step X" UI
+  wizardLastSavedAt  DateTime?
+  wizardOwnerId      String?                // Drafts are per-user, not per-workspace
+  wizardOwner        User?                  @relation("CampaignWizardOwner", fields: [wizardOwnerId], references: [id], onDelete: SetNull)
+
   workspaceId       String
   workspace         Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   createdBy         String?
@@ -879,6 +887,7 @@ model Campaign {
   @@index([workspaceId, status])
   @@index([workspaceId, type])
   @@index([workspaceId, isArchived])
+  @@index([workspaceId, status, wizardOwnerId, isArchived, wizardLastSavedAt])  // Draft lookups
   @@unique([workspaceId, slug])
 }
 
@@ -1119,9 +1128,10 @@ enum CampaignType {
 }
 
 enum CampaignStatus {
+  DRAFT       // Wizard in progress, not yet launched (Fase 2 — DB-backed drafts)
   ACTIVE
   COMPLETED
-  ARCHIVED
+  ARCHIVED    // Unused in application code — soft delete uses isArchived boolean instead
 }
 
 enum DeliverableStatus {

@@ -28,7 +28,12 @@ export async function GET(request: NextRequest) {
       // By default exclude CONTENT items — they show in the content library
       where.type = { not: "CONTENT" };
     }
-    if (status) where.status = status;
+    if (status) {
+      where.status = status;
+    } else {
+      // By default exclude DRAFT campaigns — they show in the wizard's drafts panel
+      where.status = { not: "DRAFT" };
+    }
     if (search) {
       where.OR = [
         { title: { contains: search, mode: "insensitive" } },

@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { resolveWorkspaceId } from "@/lib/auth-server";
+import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { createDeliverablesFromBlueprint } from "@/lib/campaigns/strategy-chain";
 import type { AssetPlanDeliverable } from "@/lib/campaigns/strategy-blueprint.types";
 import { z } from "zod";
 
-// POST /api/campaigns/wizard/launch — Launch a campaign from the wizard
+// POST /api/campaigns/wizard/launch — Launch a campaign from the wizard.
+//
+// If `draftCampaignId` is provided, the existing DRAFT Campaign row is
+// promoted to ACTIVE (title/slug/strategy/goalType updated, wizard fields
+// cleared). Otherwise a new Campaign is created. Knowledge assets and
+// deliverables are attached in both paths using the same downstream logic.
 const launchSchema = z.object({
   name: z.string().min(1, "name is required"),
   type: z.enum(["STRATEGIC", "QUICK", "CONTENT"]).optional(),
@@ -22,6 +28,7 @@ const launchSchema = z.object({
     tonePreference: z.string().optional(),
     constraints: z.string().optional(),
   }).optional(),
+  draftCampaignId: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -40,7 +47,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, type, goalType, knowledgeIds, strategy, deliverables, briefing } = parsed.data;
+    const { name, type, goalType, knowledgeIds, strategy, deliverables, briefing, draftCampaignId } = parsed.data;
 
     const slug = name
       .toLowerCase()
@@ -48,17 +55,72 @@ export async function POST(request: NextRequest) {
       .replace(/(^-|-$)/g, "")
       + `-${Date.now()}`;
 
-    const campaign = await prisma.campaign.create({
-      data: {
-        title: name,
-        slug,
-        type: type ?? "STRATEGIC",
-        status: "ACTIVE",
-        workspaceId,
-        campaignGoalType: goalType ?? null,
-        strategy: strategy ? JSON.parse(JSON.stringify(strategy)) : undefined,
-      },
-    });
+    let campaign: { id: string; slug: string };
+
+    if (draftCampaignId) {
+      // Promotion path: verify ownership of the draft, then update in place.
+      const session = await getServerSession();
+      if (!session) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      const userId = session.user.id;
+
+      const draft = await prisma.campaign.findUnique({
+        where: { id: draftCampaignId },
+        select: {
+          id: true,
+          workspaceId: true,
+          wizardOwnerId: true,
+          status: true,
+          isArchived: true,
+        },
+      });
+
+      if (
+        !draft ||
+        draft.workspaceId !== workspaceId ||
+        draft.wizardOwnerId !== userId ||
+        draft.status !== "DRAFT" ||
+        draft.isArchived
+      ) {
+        return NextResponse.json({ error: "Draft not found" }, { status: 404 });
+      }
+
+      campaign = await prisma.campaign.update({
+        where: { id: draftCampaignId },
+        data: {
+          title: name,
+          slug,
+          type: type ?? "STRATEGIC",
+          status: "ACTIVE",
+          campaignGoalType: goalType ?? null,
+          strategy: strategy ? JSON.parse(JSON.stringify(strategy)) : undefined,
+          // Clear draft persistence fields on promotion.
+          // DbNull (not JsonNull) ensures the column is SQL NULL so IS NULL
+          // predicates on the draft index evaluate correctly.
+          wizardState: Prisma.DbNull,
+          wizardStep: null,
+          wizardLastSavedAt: null,
+          wizardOwnerId: null,
+        },
+        select: { id: true, slug: true },
+      });
+    } else {
+      // Legacy path: no draft, create a fresh Campaign.
+      const created = await prisma.campaign.create({
+        data: {
+          title: name,
+          slug,
+          type: type ?? "STRATEGIC",
+          status: "ACTIVE",
+          workspaceId,
+          campaignGoalType: goalType ?? null,
+          strategy: strategy ? JSON.parse(JSON.stringify(strategy)) : undefined,
+        },
+        select: { id: true, slug: true },
+      });
+      campaign = created;
+    }
 
     // Link knowledge assets if provided
     if (knowledgeIds && knowledgeIds.length > 0) {
