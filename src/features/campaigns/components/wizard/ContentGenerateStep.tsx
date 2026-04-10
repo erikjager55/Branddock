@@ -30,8 +30,24 @@ export function ContentGenerateStep() {
   const launchCampaign = useLaunchCampaign();
   const { generate, isGenerating, abort } = useCanvasOrchestration(generatedDeliverableId);
 
+  // Render-level diagnostic — logs on every render so we can see what
+  // React Query mutation state actually reaches the component.
+  console.log('[ContentGenerateStep render]', {
+    mutationStatus: launchCampaign.status,
+    hasData: !!launchCampaign.data,
+    hasError: !!launchCampaign.error,
+    contentGenPhase,
+    generatedDeliverableId,
+  });
+
   const launchStartedRef = useRef(false);
   const generateStartedRef = useRef(false);
+
+  // Log mount/unmount so we can detect if StrictMode is causing remounts
+  useEffect(() => {
+    console.log('[ContentGenerateStep mount]');
+    return () => console.log('[ContentGenerateStep unmount]');
+  }, []);
 
   // ─── Canvas store subscriptions ────────────────────────────
   const variantGroups = useCanvasStore((s) => s.variantGroups);
@@ -53,7 +69,15 @@ export function ContentGenerateStep() {
   }, [variants.length, setHasSelectedVariant]);
 
   // ─── Phase 1: Auto-launch campaign + deliverable ───────────
-  const handleLaunch = useCallback(() => {
+  //
+  // Uses `mutateAsync()` + await so success/error handling runs inline
+  // with the promise resolution, NOT via React Query mutation state
+  // propagation or per-call callbacks. This is the only path that's
+  // resilient to React 19 StrictMode double-invoke: the awaited promise
+  // chain continues on the event loop regardless of which component
+  // instance is mounted, and all state updates go through Zustand
+  // (getState()) which is global and not tied to any React lifecycle.
+  const handleLaunch = useCallback(async () => {
     if (launchStartedRef.current) {
       console.log('[ContentGenerateStep] handleLaunch skipped — already started');
       return;
@@ -67,7 +91,7 @@ export function ContentGenerateStep() {
       draftCampaignId: store.draftCampaignId,
       wizardMode: store.wizardMode,
     });
-    setContentGenPhase('launching');
+    store.setContentGenPhase('launching');
 
     // Reset canvas store for clean slate
     useCanvasStore.getState().reset();
@@ -81,66 +105,55 @@ export function ContentGenerateStep() {
     //   orphaned draft is left behind.
     const draftCampaignId = store.draftCampaignId ?? undefined;
 
-    // NOTE: No per-call onSuccess/onError callbacks — React Query v5 drops
-    // those when the calling component unmounts before the mutation settles,
-    // and React 19 StrictMode double-mount triggers exactly that. We watch
-    // `launchCampaign.data` / `launchCampaign.error` via useEffect instead
-    // (see the two effects below handleLaunch).
-    launchCampaign.mutate({
-      name: store.name || 'Untitled Content',
-      description: store.description,
-      type: 'CONTENT',
-      goalType: store.campaignGoalType ?? 'CONTENT_MARKETING',
-      startDate: store.startDate || undefined,
-      endDate: store.endDate || undefined,
-      knowledgeIds: store.selectedKnowledgeIds,
-      deliverables: [{ type: store.selectedContentType!, quantity: 1 }],
-      saveAsTemplate: false,
-      briefing: {
-        occasion: store.briefingOccasion || undefined,
-        audienceObjective: store.briefingAudienceObjective || undefined,
-        coreMessage: store.briefingCoreMessage || undefined,
-        tonePreference: store.briefingTonePreference || undefined,
-        constraints: store.briefingConstraints || undefined,
-      },
-      draftCampaignId,
-    });
-  }, [launchCampaign, setContentGenPhase]);
+    try {
+      const result = await launchCampaign.mutateAsync({
+        name: store.name || 'Untitled Content',
+        description: store.description,
+        type: 'CONTENT',
+        goalType: store.campaignGoalType ?? 'CONTENT_MARKETING',
+        startDate: store.startDate || undefined,
+        endDate: store.endDate || undefined,
+        knowledgeIds: store.selectedKnowledgeIds,
+        deliverables: [{ type: store.selectedContentType!, quantity: 1 }],
+        saveAsTemplate: false,
+        briefing: {
+          occasion: store.briefingOccasion || undefined,
+          audienceObjective: store.briefingAudienceObjective || undefined,
+          coreMessage: store.briefingCoreMessage || undefined,
+          tonePreference: store.briefingTonePreference || undefined,
+          constraints: store.briefingConstraints || undefined,
+        },
+        draftCampaignId,
+      });
 
-  // React to mutation state via useEffect so success/error handling survives
-  // React 19 StrictMode double-mount. Per-call { onSuccess } callbacks are
-  // tied to the first mount instance and silently dropped on unmount.
-  const launchData = launchCampaign.data;
-  const launchError = launchCampaign.error;
+      console.log('[ContentGenerateStep] mutateAsync resolved', result);
 
-  useEffect(() => {
-    if (!launchData) return;
-    console.log('[ContentGenerateStep] useEffect detected launch success', launchData);
-    if (launchData.firstDeliverableId) {
-      setGeneratedIds(launchData.campaignId, launchData.firstDeliverableId);
-      // Draft has been promoted to an ACTIVE campaign; clear the local
-      // draft link so the auto-save loop won't PATCH a row that's no
-      // longer in DRAFT status.
-      useCampaignWizardStore.getState().setDraftCampaignId(null);
-      console.log('[ContentGenerateStep] generatedIds set, waiting for Phase 2 to fire generate()');
-    } else {
-      console.error('[ContentGenerateStep] Launch returned no deliverable ID', launchData);
-      setContentGenPhase('error');
-      useCanvasStore.getState().setGlobalStatus(
-        'error',
-        'Launch succeeded but no deliverable was created. Please try again.',
-      );
+      // Write results directly to Zustand store. getState() works even
+      // if the originating component has unmounted — the store is global.
+      const s = useCampaignWizardStore.getState();
+      if (result.firstDeliverableId) {
+        s.setGeneratedIds(result.campaignId, result.firstDeliverableId);
+        // Draft has been promoted to an ACTIVE campaign; clear the local
+        // draft link so the auto-save loop won't PATCH a row that's no
+        // longer in DRAFT status.
+        s.setDraftCampaignId(null);
+        console.log('[ContentGenerateStep] generatedIds set, Phase 2 should fire generate()');
+      } else {
+        console.error('[ContentGenerateStep] Launch returned no deliverable ID', result);
+        s.setContentGenPhase('error');
+        useCanvasStore.getState().setGlobalStatus(
+          'error',
+          'Launch succeeded but no deliverable was created. Please try again.',
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown launch error';
+      console.error('[ContentGenerateStep] mutateAsync rejected:', error);
+      useCampaignWizardStore.getState().setContentGenPhase('error');
+      useCanvasStore.getState().setGlobalStatus('error', message);
+      launchStartedRef.current = false;
     }
-  }, [launchData, setGeneratedIds, setContentGenPhase]);
-
-  useEffect(() => {
-    if (!launchError) return;
-    const message = launchError instanceof Error ? launchError.message : 'Unknown launch error';
-    console.error('[ContentGenerateStep] useEffect detected launch error:', launchError);
-    setContentGenPhase('error');
-    useCanvasStore.getState().setGlobalStatus('error', message);
-    launchStartedRef.current = false;
-  }, [launchError, setContentGenPhase]);
+  }, [launchCampaign]);
 
   // Auto-launch on mount when idle.
   //
