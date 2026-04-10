@@ -432,6 +432,20 @@ export function buildFoundationSSE(
 /** Shared pipeline config body shape — see features/campaigns/lib/pipeline-config.ts */
 type PipelineConfigBody = import('@/lib/campaigns/strategy-blueprint.types').PipelineConfigBody;
 
+/**
+ * Quick concept via SSE — single Gemini Flash call that produces an
+ * insight + concept in one shot. Used when pipelineConfig.creativeRange
+ * is 'single' (Quick preset). Returns the same shape as
+ * generateConceptsSSE so the client can handle both paths uniformly.
+ */
+export function quickConceptSSE(
+  body: { workspaceId: string; wizardContext: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string; pipelineConfig?: PipelineConfigBody },
+  onEvent: (event: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  return createPhaseSSE('/api/campaigns/wizard/strategy/quick-concept', body, onEvent, onError);
+}
+
 /** Mine 3 human insights via SSE */
 export function mineInsightsSSE(
   body: { workspaceId: string; wizardContext: object; personaIds?: string[]; productIds?: string[]; competitorIds?: string[]; trendIds?: string[]; strategicIntent?: string; pipelineConfig?: PipelineConfigBody },

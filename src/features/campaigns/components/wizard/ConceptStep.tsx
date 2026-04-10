@@ -15,6 +15,7 @@ import {
   generateConceptsSSE,
   buildStrategySSE,
   creativeDebateSSE,
+  quickConceptSSE,
   elaborateJourneySSE,
 } from "../../api/campaigns.api";
 import type { PipelineStepStatus } from "../../types/campaign-wizard.types";
@@ -187,12 +188,74 @@ export function ConceptStep() {
     abortRef.current = { abort };
   }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig]);
 
+  // ─── Creative Pipeline: Quick Concept (single mode) ────
+  //
+  // Fast path for creativeRange === 'single'. Calls the quick-concept SSE
+  // route which runs a single Gemini Flash call (~30-60s) that produces
+  // both an insight and a concept in one shot. Lands directly on
+  // review_concepts phase with the single concept pre-selected.
+
+  const handleQuickConcept = useCallback(() => {
+    const currentGenId = ++generationIdRef.current;
+    const store = useCampaignWizardStore.getState();
+    store.setIsGenerating(true);
+    store.setStrategyPhase("generating_concepts");
+    store.updateStepStatus({ step: 1, name: "Quick Concept", status: "pending", label: "Generating insight and concept..." });
+
+    const { abort } = quickConceptSSE(
+      { workspaceId: "", wizardContext, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, pipelineConfig },
+      (event) => {
+        if (generationIdRef.current !== currentGenId) return;
+        const data = event as Record<string, unknown>;
+        if (data.type === "complete" && data.result) {
+          const result = data.result as { insights: HumanInsight[]; concepts: CreativeConcept[]; selectedInsightIndex: number; selectedConceptIndex: number };
+          const s = useCampaignWizardStore.getState();
+          // Populate BOTH insights and concepts with the single-item results,
+          // and auto-select index 0 so the downstream build-strategy path
+          // (which reads selectedInsightIndex + selectedConceptIndex) works.
+          s.setInsightResults(result.insights);
+          s.setSelectedInsight(result.selectedInsightIndex);
+          s.setConceptResults(result.concepts);
+          s.setSelectedConcept(result.selectedConceptIndex);
+          s.setIsGenerating(false);
+          s.setStrategyPhase("review_concepts");
+          return;
+        }
+        if (data.type === "error") {
+          const s = useCampaignWizardStore.getState();
+          s.setIsGenerating(false);
+          s.setStrategyPhase("rationale_complete");
+          setPhaseError((data.error as string) || "Quick concept generation failed. Please try again.");
+          return;
+        }
+        if (data.step && data.name && data.status && data.label) {
+          useCampaignWizardStore.getState().updateStepStatus({ step: data.step as number, name: data.name as string, status: data.status as PipelineStepStatus, label: data.label as string });
+        }
+      },
+      () => {
+        if (generationIdRef.current !== currentGenId) return;
+        useCampaignWizardStore.getState().setIsGenerating(false);
+        useCampaignWizardStore.getState().setStrategyPhase("rationale_complete");
+        setPhaseError("Quick concept generation failed due to a network error.");
+      },
+    );
+    abortRef.current = { abort };
+  }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig]);
+
   // ─── Creative Pipeline: Generate Concepts ─────────────
 
   const handleGenerateConcepts = useCallback(() => {
     const store = useCampaignWizardStore.getState();
     const idx = store.selectedInsightIndex;
-    if (idx === null) return;
+    if (idx === null) {
+      // This should never be reached in normal flow — the Continue button
+      // on review_insights is the only path and it gates on selectedInsightIndex.
+      // If it IS reached, something upstream is wiring wrong: the caller
+      // probably wanted handleQuickConcept (single mode) instead.
+      console.warn("[ConceptStep] handleGenerateConcepts called without a selected insight — did you mean handleQuickConcept?");
+      setPhaseError("No insight selected. Please pick one before generating concepts.");
+      return;
+    }
     const selectedInsight = store.insights[idx];
     if (!selectedInsight) return;
 
@@ -474,17 +537,19 @@ export function ConceptStep() {
   useEffect(() => {
     if (strategyPhase === "rationale_complete" && !isGenerating && !autoStartedRef.current) {
       autoStartedRef.current = true;
-      // creativeRange 'single' skips insight mining and goes directly to a
-      // lightweight single concept. 'multi-variant' and 'critiqued' both
-      // start with insight mining; 'critiqued' additionally runs the debate
-      // rounds after concept selection (handled by handleBuildStrategy).
+      // creativeRange 'single' uses the quick-concept fast path (single
+      // Gemini Flash call, ~30-60s) that generates insight + concept in
+      // one shot — no insight review checkpoint.
+      // 'multi-variant' and 'critiqued' both start with full insight mining;
+      // 'critiqued' additionally runs debate rounds after concept selection
+      // (handled by handleBuildStrategy).
       if (pipelineConfig.creativeRange === 'single') {
-        handleGenerateConcepts();
+        handleQuickConcept();
       } else {
         handleMineInsights();
       }
     }
-  }, [strategyPhase, isGenerating, handleMineInsights, handleGenerateConcepts, pipelineConfig.creativeRange]);
+  }, [strategyPhase, isGenerating, handleMineInsights, handleQuickConcept, pipelineConfig.creativeRange]);
 
   // ─── Regenerate Concepts with Feedback ──────────────────
   const handleRegenerateConcepts = useCallback(async () => {
@@ -604,12 +669,20 @@ export function ConceptStep() {
     return <InsightReviewView />;
   }
 
-  // Generating concepts (spinner)
+  // Generating concepts (spinner) — label depends on creativeRange
   if (strategyPhase === "generating_concepts" && isGenerating) {
+    const isSingle = pipelineConfig.creativeRange === 'single';
     return (
       <PipelineProgressView
-        title="Generating Creative Concepts"
-        steps={[{ step: 1, name: "Creative Leap", label: "Generating creative concepts...", description: "Creating 3 distinctive campaign concepts using Goldenberg creativity templates and cross-domain bisociation." }]}
+        title={isSingle ? "Generating Quick Concept" : "Generating Creative Concepts"}
+        steps={[{
+          step: 1,
+          name: isSingle ? "Quick Concept" : "Creative Leap",
+          label: isSingle ? "Generating insight and concept..." : "Generating creative concepts...",
+          description: isSingle
+            ? "Single Gemini Flash pass — produces an insight and a creative concept in one call."
+            : "Creating 3 distinctive campaign concepts using Goldenberg creativity templates and cross-domain bisociation.",
+        }]}
         pipelineSteps={pipelineSteps}
       />
     );
