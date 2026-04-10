@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Rocket } from "lucide-react";
 import { Button } from "@/components/shared";
 import { PageShell } from '@/components/ui/layout';
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
+import { useEnsureWizardWorkspace } from "../../hooks/useEnsureWizardWorkspace";
 import { useLaunchCampaign } from "../../hooks";
 import { useCampaignStore } from "../../stores/useCampaignStore";
 import { getStepsForMode } from "../../lib/wizard-steps";
@@ -37,6 +38,10 @@ interface CampaignWizardPageProps {
 // ─── Component ────────────────────────────────────────────
 
 export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
+  // Reset wizard state if persisted localStorage belongs to a different workspace
+  // (defense-in-depth alongside clearAllStorage on workspace switch).
+  useEnsureWizardWorkspace();
+
   const wizardMode = useCampaignWizardStore((s) => s.wizardMode);
   const currentStep = useCampaignWizardStore((s) => s.currentStep);
   const nextStep = useCampaignWizardStore((s) => s.nextStep);

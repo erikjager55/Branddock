@@ -34,6 +34,13 @@ import type {
 type WizardMode = 'campaign' | 'content';
 
 interface CampaignWizardState {
+  /**
+   * Workspace fingerprint. Persisted alongside wizard state to detect when
+   * the user has switched workspace/organization since this state was saved.
+   * If a mismatch is detected on mount, the wizard state is reset to prevent
+   * leaking drafts across workspace boundaries (data isolation).
+   */
+  workspaceId: string | null;
   wizardMode: WizardMode;
   currentStep: number;
   name: string;
@@ -122,6 +129,8 @@ interface CampaignWizardState {
   failedConcepts: Array<{ campaignLine: string; whyItFailed: string }>;
   regenerationBrief: string;
 
+  /** Set the workspace fingerprint. Called by useEnsureWizardWorkspace on mount. */
+  setWorkspaceId: (id: string | null) => void;
   setWizardMode: (mode: WizardMode) => void;
   setCurrentStep: (step: number) => void;
   nextStep: () => void;
@@ -221,6 +230,7 @@ interface CampaignWizardState {
 // ─── Initial state ────────────────────────────────────────
 
 const INITIAL_STATE = {
+  workspaceId: null as string | null,
   wizardMode: 'campaign' as WizardMode,
   currentStep: 1,
   name: "",
@@ -319,6 +329,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
     (set, get) => ({
     ...INITIAL_STATE,
 
+    setWorkspaceId: (workspaceId) => set({ workspaceId }),
     setCurrentStep: (step) => set({ currentStep: step }),
     setWizardMode: (wizardMode) => set({ wizardMode }),
     nextStep: () =>
@@ -631,6 +642,9 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
       // pipelineSteps, enrichmentStatus, contentGenPhase) and non-serializable
       // fields (stepProceedOverride function) fall back to INITIAL_STATE on rehydrate.
       partialize: (state) => ({
+        // Workspace fingerprint — first field so it's always loaded before any
+        // mismatch check can run. See useEnsureWizardWorkspace hook.
+        workspaceId: state.workspaceId,
         wizardMode: state.wizardMode,
         currentStep: state.currentStep,
         name: state.name,

@@ -19,6 +19,9 @@ export const StorageKeys = {
   UI_STATE: `${STORAGE_PREFIX}ui_state`,
   VERSION: `${STORAGE_PREFIX}version`,
   CHANGE_IMPACT: 'change-impact-store',
+  // Zustand persist middleware key (useCampaignWizardStore). Must be cleared
+  // on workspace/org switch to prevent draft state from leaking across workspaces.
+  CAMPAIGN_WIZARD: 'branddock-campaign-wizard-v1',
 } as const;
 
 /**

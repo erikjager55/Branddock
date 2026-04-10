@@ -12,6 +12,7 @@ import { CampaignList } from "./CampaignList";
 import { useCampaigns, useDeleteCampaign, useArchiveCampaign } from "../../hooks";
 import { useCampaignStore } from "../../stores/useCampaignStore";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
+import { useEnsureWizardWorkspace } from "../../hooks/useEnsureWizardWorkspace";
 import type { CampaignListParams, CampaignSummary } from "@/types/campaign";
 
 interface ActiveCampaignsPageProps {
@@ -29,6 +30,11 @@ export function ActiveCampaignsPage({
   onNavigateToContentWizard,
   onResumeWizard,
 }: ActiveCampaignsPageProps) {
+  // Reset persisted wizard state if it belongs to a different workspace.
+  // The DraftCampaignBanner reads name + currentStep from the wizard store, so
+  // without this check it would render a draft from a previously active workspace.
+  useEnsureWizardWorkspace();
+
   const { setActiveSection } = useUIState();
   const {
     filterTab,
