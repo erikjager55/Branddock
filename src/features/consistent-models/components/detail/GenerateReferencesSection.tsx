@@ -11,7 +11,13 @@ import {
   Image as ImageIcon,
   Maximize2,
 } from "lucide-react";
-import { Button, Badge } from "@/components/shared";
+import {
+  Button,
+  Badge,
+  ImageProviderGrid,
+  BrandContextTagsEditor,
+  StyleGuidelinesEditor,
+} from "@/components/shared";
 import { useGenerateReferenceImages, useCurateReferences } from "../../hooks";
 import { useConsistentModelStore } from "../../stores/useConsistentModelStore";
 import { getFalProvidersForType, FAL_PROVIDERS, TYPE_GENERATION_FIELDS, MIN_IMAGES_BY_TYPE } from "../../constants/model-constants";
@@ -50,7 +56,6 @@ export function GenerateReferencesSection({
     () => new Set(initialTags),
   );
   const [customTags, setCustomTags] = useState<string[]>([]);
-  const [newTagInput, setNewTagInput] = useState("");
 
   // Type-specific field state
   const [typeConfig, setTypeConfig] = useState<Record<string, string>>({});
@@ -63,11 +68,6 @@ export function GenerateReferencesSection({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [imageCaptions, setImageCaptions] = useState<Record<string, string>>({});
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
-
-  const allTags = useMemo(
-    () => [...initialTags, ...customTags],
-    [initialTags, customTags],
-  );
 
   const aiImages = useMemo(
     () => model.referenceImages.filter((img) => img.source === "AI_GENERATED"),
@@ -132,16 +132,6 @@ export function GenerateReferencesSection({
       return next;
     });
   }, []);
-
-  const handleAddTag = useCallback(() => {
-    const trimmed = newTagInput.trim();
-    if (!trimmed) return;
-    if (!customTags.includes(trimmed) && !initialTags.includes(trimmed)) {
-      setCustomTags((prev) => [...prev, trimmed]);
-      setSelectedTags((prev) => new Set([...prev, trimmed]));
-    }
-    setNewTagInput("");
-  }, [newTagInput, customTags, initialTags]);
 
   const handleTypeFieldChange = useCallback((key: string, value: string) => {
     setTypeConfig((prev) => ({ ...prev, [key]: value }));
@@ -222,67 +212,19 @@ export function GenerateReferencesSection({
   return (
     <div className="space-y-6">
       {/* ─── Brand Context Tags ────────────────────────────── */}
-      <div
-        id="generate-section"
-        className="rounded-lg border border-gray-200 bg-white p-5"
-      >
-        <h3 className="text-sm font-semibold text-gray-900">
-          Brand Context Tags
-        </h3>
-        <p className="mt-1 text-sm text-gray-500">
-          Select the brand keywords to include in the generation prompts.
-          Deselect tags you don&apos;t want to influence the output.
-        </p>
-
-        {allTags.length > 0 ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {allTags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => toggleTag(tag)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  selectedTags.has(tag)
-                    ? "bg-teal-100 text-teal-700 border border-teal-300"
-                    : "bg-gray-100 text-gray-400 border border-gray-200"
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-3 text-sm text-gray-400 italic">
-            No brand context available. Reference images will be generated with
-            default prompts.
-          </p>
-        )}
-
-        {/* Add keyword */}
-        <div className="mt-3 flex items-center gap-2">
-          <input
-            type="text"
-            value={newTagInput}
-            onChange={(e) => setNewTagInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                handleAddTag();
-              }
-            }}
-            placeholder="Add keyword..."
-            className="rounded-md border border-gray-200 px-3 py-1.5 text-xs text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400"
-          />
-          <button
-            type="button"
-            onClick={handleAddTag}
-            disabled={!newTagInput.trim()}
-            className="flex items-center gap-1 rounded-md bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-          >
-            <Plus className="h-3 w-3" />
-            Add
-          </button>
-        </div>
+      <div id="generate-section">
+        <BrandContextTagsEditor
+          initialTags={initialTags}
+          customTags={customTags}
+          selectedTags={selectedTags}
+          onToggleTag={toggleTag}
+          onAddCustomTag={(tag) => {
+            if (!customTags.includes(tag) && !initialTags.includes(tag)) {
+              setCustomTags((prev) => [...prev, tag]);
+              setSelectedTags((prev) => new Set([...prev, tag]));
+            }
+          }}
+        />
       </div>
 
       {/* ─── Type-Specific Fields ──────────────────────────── */}
@@ -349,43 +291,12 @@ export function GenerateReferencesSection({
       )}
 
       {/* ─── Do's & Don'ts ──────────────────────────────────── */}
-      <div className="rounded-lg border border-gray-200 bg-white p-5">
-        <h3 className="text-sm font-semibold text-gray-900">
-          Style Guidelines
-        </h3>
-        <p className="mt-1 text-sm text-gray-500">
-          Describe what the generated images should and should not include.
-        </p>
-
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-700">
-              <Check className="h-3.5 w-3.5 text-emerald-500" />
-              Do&apos;s
-            </label>
-            <textarea
-              value={dos}
-              onChange={(e) => setDos(e.target.value)}
-              placeholder="e.g. Natural lighting, warm tones, eye contact with camera, professional attire..."
-              rows={3}
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 resize-none"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-700">
-              <X className="h-3.5 w-3.5 text-red-500" />
-              Don&apos;ts
-            </label>
-            <textarea
-              value={donts}
-              onChange={(e) => setDonts(e.target.value)}
-              placeholder="e.g. No sunglasses, no hats, no busy backgrounds, no text overlays..."
-              rows={3}
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-700 placeholder:text-gray-400 focus:border-teal-400 focus:outline-none focus:ring-1 focus:ring-teal-400 resize-none"
-            />
-          </div>
-        </div>
-      </div>
+      <StyleGuidelinesEditor
+        dos={dos}
+        donts={donts}
+        onDosChange={setDos}
+        onDontsChange={setDonts}
+      />
 
       {/* ─── fal.ai Provider Selector + Generate ───────────── */}
       <div className="rounded-lg border border-gray-200 bg-white p-5">
@@ -396,50 +307,12 @@ export function GenerateReferencesSection({
           Choose an AI model to generate reference images.
         </p>
 
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {typeProviders.map((provider) => (
-            <button
-              key={provider.id}
-              type="button"
-              onClick={() => setSelectedProvider(provider.id)}
-              className={`group overflow-hidden rounded-xl border-2 text-left transition-all ${
-                selectedProvider === provider.id
-                  ? "border-teal-500 ring-2 ring-teal-200"
-                  : "border-gray-200 hover:border-gray-300"
-              }`}
-            >
-              {/* Preview image */}
-              <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
-                <img
-                  src={`/images/fal-providers/${provider.preview}`}
-                  alt={provider.label}
-                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = "none";
-                  }}
-                />
-                {selectedProvider === provider.id && (
-                  <div className="absolute right-2 top-2 rounded-full bg-teal-500 p-1">
-                    <Check className="h-3 w-3 text-white" />
-                  </div>
-                )}
-              </div>
-              {/* Info */}
-              <div className="p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-gray-900">
-                    {provider.label}
-                  </span>
-                  <span className="text-[10px] font-medium text-gray-400">
-                    {provider.cost}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs leading-relaxed text-gray-500">
-                  {provider.description}
-                </p>
-              </div>
-            </button>
-          ))}
+        <div className="mt-4">
+          <ImageProviderGrid
+            providers={typeProviders}
+            selectedId={selectedProvider}
+            onSelect={setSelectedProvider}
+          />
         </div>
 
         {/* Generate button / Progress indicator */}
@@ -633,6 +506,7 @@ interface ImageSelectCardProps {
 }
 
 function ImageSelectCard({ image, isSelected, onToggle, caption, onCaptionChange, onEnlarge }: ImageSelectCardProps) {
+  const [imageFailed, setImageFailed] = useState(false);
   const providerLabel = useMemo(() => {
     if (!image.aiProvider) return null;
     const provider = FAL_PROVIDERS.find((p) => p.id === image.aiProvider);
@@ -652,12 +526,20 @@ function ImageSelectCard({ image, isSelected, onToggle, caption, onCaptionChange
         onClick={onToggle}
         className="relative w-full overflow-hidden"
       >
-        <div className="aspect-square">
-          <img
-            src={image.storageUrl}
-            alt={image.caption ?? image.fileName}
-            className="h-full w-full object-cover"
-          />
+        <div className="aspect-square bg-gray-100">
+          {imageFailed ? (
+            <div className="flex h-full w-full items-center justify-center text-gray-400">
+              <ImageIcon className="h-8 w-8" />
+            </div>
+          ) : (
+            <img
+              src={image.storageUrl}
+              alt={image.caption ?? image.fileName}
+              loading="lazy"
+              className="h-full w-full object-cover"
+              onError={() => setImageFailed(true)}
+            />
+          )}
         </div>
 
         {/* Selection overlay — scoped to image area */}

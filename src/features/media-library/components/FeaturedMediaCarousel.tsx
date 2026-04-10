@@ -4,6 +4,7 @@ import React from 'react';
 import type { MediaAssetWithMeta } from '../types/media.types';
 import { MEDIA_TYPE_ICONS } from '../constants/media-constants';
 import { formatFileSize } from '../constants/media-constants';
+import { getPreviewImageUrl } from '../utils/preview-url';
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -24,6 +25,7 @@ export function FeaturedMediaCarousel({ assets }: FeaturedMediaCarouselProps) {
         {assets.map((asset) => {
           const typeConfig = MEDIA_TYPE_ICONS[asset.mediaType];
           const TypeIcon = typeConfig.icon;
+          const previewUrl = getPreviewImageUrl(asset);
 
           return (
             <div
@@ -33,10 +35,11 @@ export function FeaturedMediaCarousel({ assets }: FeaturedMediaCarouselProps) {
             >
               {/* Thumbnail area */}
               <div className="h-36 bg-gray-50 flex items-center justify-center overflow-hidden">
-                {asset.thumbnailUrl ? (
+                {previewUrl ? (
                   <img
-                    src={asset.thumbnailUrl}
+                    src={previewUrl}
                     alt={asset.name}
+                    loading="lazy"
                     className="w-full h-full object-cover"
                   />
                 ) : (

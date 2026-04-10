@@ -3,6 +3,7 @@
 import { Heart, Trash2, Image, FileText, Video, Music } from 'lucide-react';
 import { MEDIA_TYPE_ICONS, MEDIA_CATEGORY_CONFIG, formatFileSize } from '../constants/media-constants';
 import type { MediaAssetWithMeta } from '../types/media.types';
+import { getPreviewImageUrl } from '../utils/preview-url';
 
 interface MediaCardListProps {
   assets: MediaAssetWithMeta[];
@@ -65,17 +66,21 @@ export function MediaCardList({ assets, onSelect, onFavorite, onDelete }: MediaC
           >
             {/* Name */}
             <div className="col-span-4 flex items-center gap-3 min-w-0">
-              {asset.thumbnailUrl ? (
-                <img
-                  src={asset.thumbnailUrl}
-                  alt={asset.name}
-                  className="h-10 w-10 rounded object-cover flex-shrink-0"
-                />
-              ) : (
-                <div className="h-10 w-10 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
-                  <FallbackIcon className={`w-5 h-5 ${typeConfig.color}`} />
-                </div>
-              )}
+              {(() => {
+                const previewUrl = getPreviewImageUrl(asset);
+                return previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt={asset.name}
+                    loading="lazy"
+                    className="h-10 w-10 rounded object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <FallbackIcon className={`w-5 h-5 ${typeConfig.color}`} />
+                  </div>
+                );
+              })()}
               <span className="text-sm font-medium text-gray-900 truncate">{asset.name}</span>
             </div>
 

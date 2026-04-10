@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Clock, Maximize2, ShieldCheck } from "lucide-react";
+import { Download, Clock, Maximize2, ShieldCheck, ImageOff } from "lucide-react";
 import type { GeneratedImageWithMeta } from "../../types/consistent-model.types";
 
 interface GenerationResultCardProps {
@@ -13,6 +13,8 @@ export function GenerationResultCard({
   generation,
 }: GenerationResultCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+  const previewUrl = generation.thumbnailUrl ?? generation.storageUrl;
 
   const formattedTime = generation.generationTimeMs
     ? `${(generation.generationTimeMs / 1000).toFixed(1)}s`
@@ -42,12 +44,20 @@ export function GenerationResultCard({
           </div>
         )}
 
-        <div className="aspect-square">
-          <img
-            src={generation.thumbnailUrl ?? generation.storageUrl}
-            alt={generation.prompt}
-            className="h-full w-full object-cover"
-          />
+        <div className="aspect-square bg-gray-100">
+          {imageFailed || !previewUrl ? (
+            <div className="flex h-full w-full items-center justify-center text-gray-400">
+              <ImageOff className="h-8 w-8" />
+            </div>
+          ) : (
+            <img
+              src={previewUrl}
+              alt={generation.prompt}
+              loading="lazy"
+              className="h-full w-full object-cover"
+              onError={() => setImageFailed(true)}
+            />
+          )}
         </div>
 
         {/* Overlay */}

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Video, Heart, Trash2, Play } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
@@ -24,6 +24,8 @@ export const AiVideoCard = React.memo(function AiVideoCard({
   onDelete,
   onToggleFavorite,
 }: AiVideoCardProps) {
+  const [thumbFailed, setThumbFailed] = useState(false);
+
   return (
     <div
       className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer group"
@@ -40,10 +42,19 @@ export const AiVideoCard = React.memo(function AiVideoCard({
     >
       {/* Thumbnail area */}
       <div className="relative h-40 bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center">
-        {video.thumbnailUrl ? (
+        {video.thumbnailUrl && !thumbFailed ? (
           <img
             src={video.thumbnailUrl}
             alt={video.name}
+            loading="lazy"
+            className="w-full h-full object-cover"
+            onError={() => setThumbFailed(true)}
+          />
+        ) : video.fileUrl ? (
+          <video
+            src={video.fileUrl}
+            muted
+            preload="metadata"
             className="w-full h-full object-cover"
           />
         ) : (

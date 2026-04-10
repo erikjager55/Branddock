@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Heart, Play } from 'lucide-react';
 import type { MediaAssetWithMeta } from '../types/media.types';
 import {
@@ -9,6 +9,7 @@ import {
   formatFileSize,
   formatDuration,
 } from '../constants/media-constants';
+import { getPreviewImageUrl, isPreviewableImage } from '../utils/preview-url';
 
 interface MediaAssetCardProps {
   asset: MediaAssetWithMeta;
@@ -26,6 +27,9 @@ export const MediaAssetCard = React.memo(function MediaAssetCard({
   const typeConfig = MEDIA_TYPE_ICONS[asset.mediaType];
   const categoryConfig = MEDIA_CATEGORY_CONFIG[asset.category];
   const TypeIcon = typeConfig.icon;
+  const [imageFailed, setImageFailed] = useState(false);
+  const previewUrl = getPreviewImageUrl(asset);
+  const showImagePreview = isPreviewableImage(asset) && previewUrl && !imageFailed;
 
   return (
     <div
@@ -34,11 +38,13 @@ export const MediaAssetCard = React.memo(function MediaAssetCard({
     >
       {/* Thumbnail area */}
       <div className="relative h-44">
-        {asset.mediaType === 'IMAGE' && asset.thumbnailUrl ? (
+        {showImagePreview ? (
           <img
-            src={asset.thumbnailUrl}
+            src={previewUrl}
             alt={asset.name}
+            loading="lazy"
             className="w-full h-full object-cover"
+            onError={() => setImageFailed(true)}
           />
         ) : asset.mediaType === 'VIDEO' ? (
           <div className="w-full h-full bg-gray-900 flex items-center justify-center">

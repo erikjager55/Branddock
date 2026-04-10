@@ -1,6 +1,7 @@
 "use client";
 
-import { Image, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { Image as ImageIcon, Sparkles } from "lucide-react";
 import { Card } from "@/components/shared";
 import { ModelTypeBadge } from "./shared/ModelTypeBadge";
 import { ModelStatusBadge } from "./shared/ModelStatusBadge";
@@ -16,6 +17,7 @@ interface ModelCardProps {
 export function ModelCard({ model, onClick }: ModelCardProps) {
   const isReady = model.status === "READY";
   const isTrainable = TRAINABLE_TYPES.has(model.type);
+  const [thumbFailed, setThumbFailed] = useState(false);
 
   return (
     <Card
@@ -27,11 +29,13 @@ export function ModelCard({ model, onClick }: ModelCardProps) {
     >
       {/* Thumbnail */}
       <div className="relative h-40 overflow-hidden rounded-t-lg bg-gray-100">
-        {model.thumbnailUrl ? (
+        {model.thumbnailUrl && !thumbFailed ? (
           <img
             src={model.thumbnailUrl}
             alt={model.name}
+            loading="lazy"
             className="h-full w-full object-cover"
+            onError={() => setThumbFailed(true)}
           />
         ) : (
           <div className="flex h-full items-center justify-center">
@@ -60,7 +64,7 @@ export function ModelCard({ model, onClick }: ModelCardProps) {
           <ModelTypeBadge type={model.type} />
           <div className="flex items-center gap-3 text-xs text-gray-400">
             <span className="flex items-center gap-1">
-              <Image className="h-3 w-3" />
+              <ImageIcon className="h-3 w-3" />
               {model.referenceImageCount}
             </span>
             <span className="flex items-center gap-1">

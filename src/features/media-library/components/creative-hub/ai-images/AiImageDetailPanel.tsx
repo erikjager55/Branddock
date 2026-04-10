@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { X, ImageIcon, Heart, Sparkles, FolderPlus, Package } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
 import { useAiImageDetail, useUpdateAiImage } from '@/features/media-library/hooks';
+import { getProviderShortLabel, getProviderFullLabel } from '@/features/media-library/lib/provider-labels';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
   const { data: image, isLoading, isError } = useAiImageDetail(imageId);
   const updateImage = useUpdateAiImage(imageId);
   const mutate = updateImage.mutate;
+  const [imageFailed, setImageFailed] = useState(false);
 
   const handleToggleFavorite = useCallback(() => {
     if (!image) return;
@@ -69,7 +71,7 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
                 variant={image.provider === 'TRAINED_MODEL' ? 'teal' : image.provider === 'IMAGEN' ? 'info' : 'default'}
                 size="sm"
               >
-                {{ IMAGEN: 'Imagen 4', DALLE: 'DALL-E 3', FLUX_PRO: 'Flux Pro', RECRAFT: 'Recraft', IDEOGRAM: 'Ideogram', TRAINED_MODEL: 'Trained Model' }[image.provider] ?? image.provider}
+                {getProviderShortLabel(image.provider)}
               </Badge>
               {image.isFavorite && (
                 <Heart className="w-4 h-4 fill-red-500 text-red-500" />
@@ -93,11 +95,12 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
       <div className="p-5 space-y-5">
         {/* Full-size image preview */}
         <div className="flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
-          {image.fileUrl ? (
+          {image.fileUrl && !imageFailed ? (
             <img
               src={image.fileUrl}
               alt={image.name}
               className="max-h-[400px] object-contain"
+              onError={() => setImageFailed(true)}
             />
           ) : (
             <div className="py-16">
@@ -110,7 +113,7 @@ export function AiImageDetailPanel({ imageId, onClose, onSendToLibrary }: AiImag
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div>
             <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Provider</span>
-            <span className="text-sm text-gray-900">{{ IMAGEN: 'Google Imagen 4', DALLE: 'OpenAI DALL-E 3', FLUX_PRO: 'Flux Pro (fal.ai)', RECRAFT: 'Recraft V3 (fal.ai)', IDEOGRAM: 'Ideogram V2 (fal.ai)', TRAINED_MODEL: 'Trained Model (fal.ai)' }[image.provider] ?? image.provider}</span>
+            <span className="text-sm text-gray-900">{getProviderFullLabel(image.provider)}</span>
           </div>
           <div>
             <span className="block text-[10px] uppercase tracking-wider text-gray-400 mb-0.5">Model</span>

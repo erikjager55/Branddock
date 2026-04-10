@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Trash2, Maximize2 } from "lucide-react";
+import { Trash2, Maximize2, ImageOff } from "lucide-react";
 import { Card, Badge } from "@/components/shared";
 import { ReferenceImageUploader } from "./ReferenceImageUploader";
 import { TRAINING_DEFAULTS, MIN_IMAGES_BY_TYPE } from "../../constants/model-constants";
@@ -122,6 +122,7 @@ function ReferenceImageCard({
 }) {
   const [caption, setCaption] = useState(image.caption ?? "");
   const [saved, setSaved] = useState(true);
+  const [imageFailed, setImageFailed] = useState(false);
 
   const handleBlur = useCallback(() => {
     const trimmed = caption.trim();
@@ -136,12 +137,20 @@ function ReferenceImageCard({
   return (
     <div className="group relative overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
       <div className="relative">
-        <div className="aspect-square">
-          <img
-            src={image.storageUrl}
-            alt={image.caption ?? image.fileName}
-            className="h-full w-full object-cover"
-          />
+        <div className="aspect-square bg-gray-100">
+          {imageFailed ? (
+            <div className="flex h-full w-full items-center justify-center text-gray-400">
+              <ImageOff className="h-8 w-8" />
+            </div>
+          ) : (
+            <img
+              src={image.storageUrl}
+              alt={image.caption ?? image.fileName}
+              loading="lazy"
+              className="h-full w-full object-cover"
+              onError={() => setImageFailed(true)}
+            />
+          )}
         </div>
 
         {/* Hover overlay */}

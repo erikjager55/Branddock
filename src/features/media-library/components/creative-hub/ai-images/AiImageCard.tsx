@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ImageIcon, Heart, Trash2, FolderPlus } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
+import { getProviderShortLabel } from '@/features/media-library/lib/provider-labels';
 import type { GeneratedImageWithMeta } from '@/features/media-library/types/media.types';
 
 // ─── Types ──────────────────────────────────────────────────
@@ -26,6 +27,9 @@ export const AiImageCard = React.memo(function AiImageCard({
   onToggleFavorite,
   onSendToLibrary,
 }: AiImageCardProps) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const previewUrl = image.fileUrl;
+
   return (
     <div
       className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer group"
@@ -42,11 +46,13 @@ export const AiImageCard = React.memo(function AiImageCard({
     >
       {/* Image area */}
       <div className="relative h-40 bg-gradient-to-br from-blue-50 to-violet-50 flex items-center justify-center">
-        {image.fileUrl ? (
+        {previewUrl && !imageFailed ? (
           <img
-            src={image.fileUrl}
+            src={previewUrl}
             alt={image.name}
+            loading="lazy"
             className="w-full h-full object-cover"
+            onError={() => setImageFailed(true)}
           />
         ) : (
           <ImageIcon className="w-8 h-8 text-violet-400" />
@@ -58,7 +64,7 @@ export const AiImageCard = React.memo(function AiImageCard({
             variant={image.provider === 'TRAINED_MODEL' ? 'teal' : image.provider === 'IMAGEN' ? 'info' : 'default'}
             size="sm"
           >
-            {{ IMAGEN: 'Imagen', DALLE: 'DALL-E 3', FLUX_PRO: 'Flux Pro', RECRAFT: 'Recraft', IDEOGRAM: 'Ideogram', TRAINED_MODEL: 'Trained Model' }[image.provider] ?? image.provider}
+            {getProviderShortLabel(image.provider)}
           </Badge>
         </div>
 
