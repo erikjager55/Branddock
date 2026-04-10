@@ -72,7 +72,10 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
     };
   }, [deliverableId]);
 
-  // Load existing components into variant groups on fetch (only if store is empty)
+  // Load existing components into variant groups on fetch (only if store is empty).
+  // If components exist, we also auto-advance to step 2 so the user lands on
+  // the existing content review instead of the "Generate Content" button —
+  // which would otherwise look like the generation still needs to happen.
   useEffect(() => {
     if (!existingComponents || existingComponents.length === 0) return;
     const storeState = useCanvasStore.getState();
@@ -94,6 +97,12 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
         isSelected: c.isSelected,
       }));
       storeState.addVariantGroup(group, variants);
+    }
+
+    // Content already exists — jump straight to step 2 so the user sees
+    // their variants instead of a regeneration prompt.
+    if (groups.size > 0 && storeState.activeStep === 1) {
+      storeState.advanceToStep(2);
     }
   }, [existingComponents]);
 

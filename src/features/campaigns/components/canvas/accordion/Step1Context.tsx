@@ -16,7 +16,19 @@ export function Step1Context({ deliverableId }: Step1ContextProps) {
   const contextStack = useCanvasStore((s) => s.contextStack);
   const additionalContextItems = useCanvasStore((s) => s.additionalContextItems);
   const removeContextItem = useCanvasStore((s) => s.removeContextItem);
+  const variantGroups = useCanvasStore((s) => s.variantGroups);
   const { generate, isGenerating } = useCanvasOrchestration(deliverableId);
+
+  // When content has already been generated (variants exist in the store,
+  // loaded either from a wizard session or from persisted DeliverableComponent
+  // records), the CTA should take the user forward to review the variants,
+  // not re-run the expensive generation pipeline. The user can still trigger
+  // a fresh generation via the secondary "Regenerate" link.
+  const hasExistingContent = variantGroups.size > 0;
+
+  const handleContinue = () => {
+    useCanvasStore.getState().advanceToStep(2);
+  };
 
   const handleGenerate = async () => {
     try {
@@ -162,18 +174,40 @@ export function Step1Context({ deliverableId }: Step1ContextProps) {
         {additionalContextItems.size > 0 ? 'Add more context' : 'Select knowledge context'}
       </button>
 
-      {/* Generate Content button */}
-      <div className="pt-2">
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={isGenerating}
-          aria-busy={isGenerating}
-          className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
-        >
-          <Sparkles className="h-4 w-4" />
-          {isGenerating ? 'Generating...' : 'Generate Content'}
-        </button>
+      {/* Primary CTA — Continue (if content exists) or Generate (first time) */}
+      <div className="pt-2 space-y-2">
+        {hasExistingContent ? (
+          <>
+            <button
+              type="button"
+              onClick={handleContinue}
+              className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
+            >
+              <Sparkles className="h-4 w-4" />
+              Continue to Variants
+            </button>
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              aria-busy={isGenerating}
+              className="w-full text-xs text-gray-500 hover:text-gray-700 underline disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGenerating ? 'Regenerating...' : 'Regenerate from scratch'}
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={isGenerating}
+            aria-busy={isGenerating}
+            className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            <Sparkles className="h-4 w-4" />
+            {isGenerating ? 'Generating...' : 'Generate Content'}
+          </button>
+        )}
       </div>
     </div>
   );
