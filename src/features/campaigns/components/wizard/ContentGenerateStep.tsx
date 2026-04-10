@@ -28,7 +28,7 @@ export function ContentGenerateStep() {
   const selectedContentType = useCampaignWizardStore((s) => s.selectedContentType);
 
   const launchCampaign = useLaunchCampaign();
-  const { generate, isGenerating, abort } = useCanvasOrchestration(generatedDeliverableId);
+  const { generate, isGenerating } = useCanvasOrchestration(generatedDeliverableId);
 
   // Render-level diagnostic — logs on every render so we can see what
   // React Query mutation state actually reaches the component.
@@ -223,28 +223,21 @@ export function ContentGenerateStep() {
     }
   }, [globalStatus, contentGenPhase, setContentGenPhase]);
 
-  // Cleanup: abort generation on real unmount.
+  // NOTE: Unmount abort intentionally removed.
   //
-  // `abort` changes reference whenever `generatedDeliverableId` changes
-  // (useCanvasOrchestration rebuilds its useCallback). Using [abort] as deps
-  // would re-run the cleanup on every such change, aborting the in-flight
-  // SSE right after it starts. Ref pattern keeps the cleanup bound to the
-  // component's lifetime instead.
-  const isMountedRef = useRef(true);
-  const abortRef = useRef(abort);
-  useEffect(() => {
-    abortRef.current = abort;
-  }, [abort]);
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      // Deferred to survive React 19 dev strict-mode double-invoke.
-      setTimeout(() => {
-        if (!isMountedRef.current) abortRef.current();
-      }, 50);
-    };
-  }, []);
+  // Previous versions of this component aborted the canvas orchestration
+  // on unmount to free the SSE connection. In React 19 dev StrictMode the
+  // synthetic mount → unmount → remount cycle caused the deferred abort
+  // scheduled by mount A's cleanup to fire AFTER mount B had already
+  // started a fresh orchestration — cancelling B's in-flight fetch and
+  // surfacing as "Content generation failed — Request was aborted" on the
+  // server (Claude SDK throws AbortError when the HTTP connection closes).
+  //
+  // The cost of NOT aborting on unmount: if the user navigates away
+  // mid-generation, the SSE stream continues server-side until it
+  // completes naturally. That's a few extra seconds of server work in an
+  // edge case, which is acceptable. The user's selected variant still
+  // lands in the deliverable row, so no work is lost.
 
   // ─── Retry handler ──────────────────────────────────────────
   const handleRetry = () => {
