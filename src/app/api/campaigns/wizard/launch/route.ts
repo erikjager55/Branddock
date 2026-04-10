@@ -34,10 +34,7 @@ const launchSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const started = Date.now();
   try {
-    console.log("[POST /api/campaigns/wizard/launch] start");
-
     const workspaceId = await resolveWorkspaceId();
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
@@ -46,7 +43,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const parsed = launchSchema.safeParse(body);
     if (!parsed.success) {
-      console.error("[POST /api/campaigns/wizard/launch] Zod validation failed", parsed.error.flatten());
       return NextResponse.json(
         { error: "Validation failed", details: parsed.error.flatten() },
         { status: 400 },
@@ -54,13 +50,6 @@ export async function POST(request: NextRequest) {
     }
 
     const { name, type, goalType, knowledgeIds, strategy, deliverables, briefing, draftCampaignId } = parsed.data;
-    console.log("[POST /api/campaigns/wizard/launch] parsed", {
-      name,
-      type,
-      draftCampaignId,
-      deliverablesCount: deliverables?.length,
-      hasStrategy: !!strategy,
-    });
 
     const slug = name
       .toLowerCase()
@@ -197,12 +186,6 @@ export async function POST(request: NextRequest) {
       orderBy: { createdAt: 'asc' },
     });
 
-    console.log("[POST /api/campaigns/wizard/launch] done", {
-      campaignId: campaign.id,
-      firstDeliverableId: firstDeliverable?.id ?? null,
-      durationMs: Date.now() - started,
-    });
-
     return NextResponse.json({
       campaignId: campaign.id,
       campaignSlug: campaign.slug,
@@ -210,7 +193,7 @@ export async function POST(request: NextRequest) {
       firstDeliverableId: firstDeliverable?.id ?? null,
     }, { status: 201 });
   } catch (error) {
-    console.error("[POST /api/campaigns/wizard/launch] error after", Date.now() - started, "ms:", error);
+    console.error("[POST /api/campaigns/wizard/launch]", error);
     const message = error instanceof Error ? error.message : "Internal server error";
     return NextResponse.json(
       { error: message },

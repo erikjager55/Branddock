@@ -30,24 +30,8 @@ export function ContentGenerateStep() {
   const launchCampaign = useLaunchCampaign();
   const { generate, isGenerating } = useCanvasOrchestration(generatedDeliverableId);
 
-  // Render-level diagnostic — logs on every render so we can see what
-  // React Query mutation state actually reaches the component.
-  console.log('[ContentGenerateStep render]', {
-    mutationStatus: launchCampaign.status,
-    hasData: !!launchCampaign.data,
-    hasError: !!launchCampaign.error,
-    contentGenPhase,
-    generatedDeliverableId,
-  });
-
   const launchStartedRef = useRef(false);
   const generateStartedRef = useRef(false);
-
-  // Log mount/unmount so we can detect if StrictMode is causing remounts
-  useEffect(() => {
-    console.log('[ContentGenerateStep mount]');
-    return () => console.log('[ContentGenerateStep unmount]');
-  }, []);
 
   // ─── Canvas store subscriptions ────────────────────────────
   const variantGroups = useCanvasStore((s) => s.variantGroups);
@@ -78,19 +62,10 @@ export function ContentGenerateStep() {
   // instance is mounted, and all state updates go through Zustand
   // (getState()) which is global and not tied to any React lifecycle.
   const handleLaunch = useCallback(async () => {
-    if (launchStartedRef.current) {
-      console.log('[ContentGenerateStep] handleLaunch skipped — already started');
-      return;
-    }
+    if (launchStartedRef.current) return;
     launchStartedRef.current = true;
 
     const store = useCampaignWizardStore.getState();
-    console.log('[ContentGenerateStep] handleLaunch starting', {
-      name: store.name,
-      selectedContentType: store.selectedContentType,
-      draftCampaignId: store.draftCampaignId,
-      wizardMode: store.wizardMode,
-    });
     store.setContentGenPhase('launching');
 
     // Reset canvas store for clean slate
@@ -126,8 +101,6 @@ export function ContentGenerateStep() {
         draftCampaignId,
       });
 
-      console.log('[ContentGenerateStep] mutateAsync resolved', result);
-
       // Write results directly to Zustand store. getState() works even
       // if the originating component has unmounted — the store is global.
       const s = useCampaignWizardStore.getState();
@@ -137,7 +110,6 @@ export function ContentGenerateStep() {
         // draft link so the auto-save loop won't PATCH a row that's no
         // longer in DRAFT status.
         s.setDraftCampaignId(null);
-        console.log('[ContentGenerateStep] generatedIds set, Phase 2 should fire generate()');
       } else {
         console.error('[ContentGenerateStep] Launch returned no deliverable ID', result);
         s.setContentGenPhase('error');
@@ -148,7 +120,7 @@ export function ContentGenerateStep() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown launch error';
-      console.error('[ContentGenerateStep] mutateAsync rejected:', error);
+      console.error('[ContentGenerateStep] Launch failed:', error);
       useCampaignWizardStore.getState().setContentGenPhase('error');
       useCanvasStore.getState().setGlobalStatus('error', message);
       launchStartedRef.current = false;
@@ -198,17 +170,10 @@ export function ContentGenerateStep() {
 
   useEffect(() => {
     if (!generatedDeliverableId || generateStartedRef.current) return;
-
-    console.log('[ContentGenerateStep] Phase 2 firing — deliverable ready', {
-      generatedDeliverableId,
-    });
-
     generateStartedRef.current = true;
     setContentGenPhase('generating');
-
     // Call via ref so we get the freshest generate callback (bound to
     // the latest deliverableId) without adding `generate` to the deps.
-    console.log('[ContentGenerateStep] calling generate()');
     generateRef.current();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generatedDeliverableId]);
