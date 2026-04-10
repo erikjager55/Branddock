@@ -180,26 +180,38 @@ export function ContentGenerateStep() {
   }, [contentGenPhase, handleLaunch]);
 
   // ─── Phase 2: Auto-generate content when deliverable is ready ─
+  //
+  // Fires exactly once when generatedDeliverableId transitions from null
+  // to a real id. Deliberately does NOT depend on contentGenPhase or
+  // generate — including either would re-run the effect when they change
+  // and the previous run's cleanup would clear any pending timer. The
+  // ref guard handles the re-run protection.
+  //
+  // The 100ms setTimeout is gone for the same reason: it was getting
+  // cancelled by the effect's own cleanup before it could fire. Instead,
+  // we read `generate` fresh off a ref that's always up to date with the
+  // latest useCanvasOrchestration callback and call it synchronously.
+  const generateRef = useRef(generate);
+  useEffect(() => {
+    generateRef.current = generate;
+  }, [generate]);
+
   useEffect(() => {
     if (!generatedDeliverableId || generateStartedRef.current) return;
-    if (contentGenPhase === 'error' || contentGenPhase === 'complete') return;
 
     console.log('[ContentGenerateStep] Phase 2 firing — deliverable ready', {
       generatedDeliverableId,
-      contentGenPhase,
     });
 
     generateStartedRef.current = true;
     setContentGenPhase('generating');
 
-    // Small delay to ensure hook has picked up the new deliverableId
-    const timer = setTimeout(() => {
-      console.log('[ContentGenerateStep] calling generate()');
-      generate();
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [generatedDeliverableId, contentGenPhase, setContentGenPhase, generate]);
+    // Call via ref so we get the freshest generate callback (bound to
+    // the latest deliverableId) without adding `generate` to the deps.
+    console.log('[ContentGenerateStep] calling generate()');
+    generateRef.current();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generatedDeliverableId]);
 
   // Watch canvas globalStatus to update wizard phase
   useEffect(() => {
