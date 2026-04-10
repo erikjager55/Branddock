@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import { getTimeBinding } from "../lib/goal-types";
 import { getRecommendedCampaignType } from "../lib/campaign-types";
 import { getStepsForMode } from "../lib/wizard-steps";
@@ -313,8 +314,9 @@ const INITIAL_STATE = {
 
 // ─── Store ────────────────────────────────────────────────
 
-export const useCampaignWizardStore = create<CampaignWizardState>(
-  (set, get) => ({
+export const useCampaignWizardStore = create<CampaignWizardState>()(
+  persist(
+    (set, get) => ({
     ...INITIAL_STATE,
 
     setCurrentStep: (step) => set({ currentStep: step }),
@@ -621,4 +623,94 @@ export const useCampaignWizardStore = create<CampaignWizardState>(
         };
       }),
   }),
+    {
+      name: "branddock-campaign-wizard-v1",
+      version: 1,
+      storage: createJSONStorage(() => localStorage),
+      // Only persist user-meaningful wizard data. Transient flags (isGenerating,
+      // pipelineSteps, enrichmentStatus, contentGenPhase) and non-serializable
+      // fields (stepProceedOverride function) fall back to INITIAL_STATE on rehydrate.
+      partialize: (state) => ({
+        wizardMode: state.wizardMode,
+        currentStep: state.currentStep,
+        name: state.name,
+        description: state.description,
+        campaignGoalType: state.campaignGoalType,
+        campaignType: state.campaignType,
+        selectedContentType: state.selectedContentType,
+        startDate: state.startDate,
+        endDate: state.endDate,
+        selectedKnowledgeIds: state.selectedKnowledgeIds,
+        strategyResult: state.strategyResult,
+        selectedDeliverables: state.selectedDeliverables,
+        activeDeliverableTab: state.activeDeliverableTab,
+        saveAsTemplate: state.saveAsTemplate,
+        templateName: state.templateName,
+        briefingOccasion: state.briefingOccasion,
+        briefingAudienceObjective: state.briefingAudienceObjective,
+        briefingCoreMessage: state.briefingCoreMessage,
+        briefingTonePreference: state.briefingTonePreference,
+        briefingConstraints: state.briefingConstraints,
+        strategicIntent: state.strategicIntent,
+        blueprintResult: state.blueprintResult,
+        strategyPhase: state.strategyPhase,
+        personaValidation: state.personaValidation,
+        synthesizedStrategy: state.synthesizedStrategy,
+        synthesizedArchitecture: state.synthesizedArchitecture,
+        arenaEnrichment: state.arenaEnrichment,
+        briefingValidation: state.briefingValidation,
+        strategyFoundation: state.strategyFoundation,
+        strategyFeedback: state.strategyFeedback,
+        enrichmentContext: state.enrichmentContext,
+        conceptFeedback: state.conceptFeedback,
+        elaborateResult: state.elaborateResult,
+        useExternalEnrichment: state.useExternalEnrichment,
+        pipelineDepth: state.pipelineDepth,
+        endorsedPersonaIds: state.endorsedPersonaIds,
+        strategyRatings: state.strategyRatings,
+        generatedCampaignId: state.generatedCampaignId,
+        generatedDeliverableId: state.generatedDeliverableId,
+        hasSelectedVariant: state.hasSelectedVariant,
+        insights: state.insights,
+        selectedInsightIndex: state.selectedInsightIndex,
+        insightFeedback: state.insightFeedback,
+        concepts: state.concepts,
+        selectedConceptIndex: state.selectedConceptIndex,
+        conceptElementRatings: state.conceptElementRatings,
+        creativeDebateResult: state.creativeDebateResult,
+        finalStrategy: state.finalStrategy,
+        finalArchitecture: state.finalArchitecture,
+        pipelineAttempt: state.pipelineAttempt,
+        failedConcepts: state.failedConcepts,
+        regenerationBrief: state.regenerationBrief,
+      }),
+      // Recover from in-flight pipeline phases. Without this, refreshing during
+      // e.g. mining_insights would leave the UI in a "spinner without isGenerating"
+      // dead state because isGenerating is excluded from partialize.
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        switch (state.strategyPhase) {
+          case 'validating_briefing':
+            state.strategyPhase = 'idle';
+            break;
+          case 'building_foundation':
+            state.strategyPhase = state.briefingValidation ? 'review_briefing' : 'idle';
+            break;
+          case 'mining_insights':
+            state.strategyPhase = state.insights.length > 0 ? 'review_insights' : 'rationale_complete';
+            break;
+          case 'generating_concepts':
+            state.strategyPhase = state.concepts.length > 0 ? 'review_concepts' : 'review_insights';
+            break;
+          case 'creative_debate':
+          case 'building_strategy':
+            state.strategyPhase = 'review_concepts';
+            break;
+          case 'generating_journey':
+            state.strategyPhase = state.synthesizedStrategy ? 'review_final_strategy' : 'review_concepts';
+            break;
+        }
+      },
+    },
+  ),
 );
