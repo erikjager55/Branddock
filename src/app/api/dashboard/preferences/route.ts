@@ -8,7 +8,7 @@ const DEFAULT_QUICK_START_ITEMS = [
   { key: 'brand_asset', label: 'Create your first brand asset', completed: false, href: 'brand' },
   { key: 'persona', label: 'Define your target persona', completed: false, href: 'personas' },
   { key: 'research', label: 'Plan your first research session', completed: false, href: 'research' },
-  { key: 'campaign', label: 'Generate your first campaign strategy', completed: false, href: 'campaign-wizard' },
+  { key: 'campaign', label: 'Generate your first campaign strategy', completed: false, href: 'new-campaign' },
 ];
 
 export async function GET() {

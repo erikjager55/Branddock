@@ -91,7 +91,7 @@ export function ActiveCampaignsPreview({ onNavigate }: ActiveCampaignsPreviewPro
       )}
 
       <button
-        onClick={() => onNavigate('campaign-wizard')}
+        onClick={() => onNavigate('new-campaign')}
         className="mt-4 w-full flex items-center justify-center gap-2 py-2 border border-emerald-200 text-emerald-600 text-sm font-medium rounded-lg hover:bg-emerald-50 transition-colors"
       >
         <Plus className="h-4 w-4" />

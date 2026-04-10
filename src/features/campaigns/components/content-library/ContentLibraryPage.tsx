@@ -106,7 +106,7 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
           description="Create a campaign to start generating content, or adjust your filters."
           action={{
             label: "Create Campaign",
-            onClick: () => onNavigate("campaign-wizard"),
+            onClick: () => onNavigate("new-campaign"),
           }}
         />
       );
@@ -182,7 +182,7 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
               <Zap className="h-4 w-4" />
               View Campaigns
             </Button>
-            <Button data-testid="create-content-button" onClick={() => onNavigate('campaign-wizard')} className="gap-2">
+            <Button data-testid="create-content-button" onClick={() => onNavigate('create-content')} className="gap-2">
               <Plus className="h-4 w-4" />
               Create Content
             </Button>

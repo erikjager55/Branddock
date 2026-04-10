@@ -195,11 +195,19 @@ function AppContent() {
 
   // Wrapper for setActiveSection to reset asset states when needed
   const handleSetActiveSection = (section: string) => {
-    // "Create Content" sidebar item → open campaign wizard in content mode
+    // Mode-aware wizard shortcuts — callers that can't import the store
+    // directly use these section names to open the wizard in the right mode.
     if (section === 'create-content') {
       const ws = useCampaignWizardStore.getState();
       ws.resetWizard();
       ws.setWizardMode('content');
+      setActiveSectionRaw('campaign-wizard');
+      return;
+    }
+    if (section === 'new-campaign') {
+      const ws = useCampaignWizardStore.getState();
+      ws.resetWizard();
+      ws.setWizardMode('campaign');
       setActiveSectionRaw('campaign-wizard');
       return;
     }
