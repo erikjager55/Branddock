@@ -303,10 +303,20 @@ function routeEvent(eventName: string, rawData: string) {
       store.setGlobalStatus('complete');
       break;
 
-    case 'error':
-      console.error('[Canvas Orchestration] Error event:', data.message);
-      store.setGlobalStatus('error', (data.message as string) ?? 'Content generation failed');
+    case 'error': {
+      // Respect the server's recoverable flag — image generation failure
+      // is non-fatal (text variants still stream + persist), so we log
+      // the warning and let the 'complete' event that comes after it
+      // flip the status. Only hard errors (recoverable: false) halt the UI.
+      const recoverable = data.recoverable === true;
+      if (recoverable) {
+        console.warn('[Canvas Orchestration] Recoverable warning:', data.message);
+      } else {
+        console.error('[Canvas Orchestration] Error event:', data.message);
+        store.setGlobalStatus('error', (data.message as string) ?? 'Content generation failed');
+      }
       break;
+    }
 
     default:
       // Unknown event — ignore gracefully
