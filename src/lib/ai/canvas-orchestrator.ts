@@ -15,6 +15,7 @@ import { prisma } from '@/lib/prisma';
 import { assembleCanvasContext, type CanvasContextStack, type MediumContext, type PersonaContext, type BriefContext, type ProductContext } from './canvas-context';
 import { createStructuredCompletion } from './exploration/ai-caller';
 import { resolveFeatureModel, assertProvider } from './feature-models.server';
+import { getFeatureDefinition, type AiProvider } from './feature-models';
 import { calculateOptimalPublishDate, type PublishSuggestion } from '@/lib/campaigns/publish-scheduler';
 import { formatBrandContext, type BrandContextBlock } from './prompt-templates';
 import { invalidateCache } from '@/lib/api/cache';
@@ -130,12 +131,16 @@ export async function* orchestrateContentGeneration(
     yield { event: 'text_generating', data: { group, status: 'generating' } };
   }
 
-  const textResult = await createStructuredCompletion<TextGenerationResult>(
+  // Try primary provider first, fall back to other supported providers if
+  // it errors out (Anthropic has intermittent 500s on claude-sonnet-4-5).
+  // The order is: user's configured provider → remaining supported providers
+  // so the configured choice is always attempted first.
+  const textResult = await generateTextWithFallback(
+    workspaceId,
     textModel.provider,
     textModel.model,
     systemPrompt,
     userPrompt,
-    { temperature: 0.7, maxTokens: 8000 },
   );
 
   // Validate AI response
@@ -313,6 +318,75 @@ export async function* orchestrateContentGeneration(
     event: 'complete',
     data: { totalDuration, componentCount },
   };
+}
+
+// ─── Text Generation with Provider Fallback ──────────────
+//
+// Anthropic's Claude API has intermittent 500s (seen in production as
+// `{"type":"api_error","message":"Internal server error"}` after the
+// ai-caller's built-in retry loop has already exhausted). When that
+// happens, fall back to the next supported provider so content
+// generation doesn't fail user-visibly. Order: primary → OpenAI → Google.
+
+const FALLBACK_MODELS: Record<AiProvider, string> = {
+  anthropic: 'claude-sonnet-4-6',
+  openai: 'gpt-5.4',
+  google: 'gemini-3.1-pro-preview',
+};
+
+async function generateTextWithFallback(
+  workspaceId: string,
+  primaryProvider: AiProvider,
+  primaryModel: string,
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<TextGenerationResult> {
+  // Build the ordered list of providers to try. Primary first, then the
+  // feature's other supportedProviders (from the feature registry).
+  const feature = getFeatureDefinition('canvas-text-generate');
+  const supported = feature?.supportedProviders ?? ['anthropic', 'openai', 'google'];
+  const ordered: AiProvider[] = [
+    primaryProvider,
+    ...supported.filter((p) => p !== primaryProvider),
+  ];
+
+  let lastError: unknown;
+  for (let i = 0; i < ordered.length; i++) {
+    const provider = ordered[i];
+    const model = i === 0 ? primaryModel : FALLBACK_MODELS[provider];
+    try {
+      console.log(
+        `[canvas-orchestrator] attempting text generation with ${provider}/${model}` +
+          (i === 0 ? ' (primary)' : ' (fallback)'),
+      );
+      const result = await createStructuredCompletion<TextGenerationResult>(
+        provider,
+        model,
+        systemPrompt,
+        userPrompt,
+        { temperature: 0.7, maxTokens: 8000 },
+      );
+      if (i > 0) {
+        console.warn(
+          `[canvas-orchestrator] recovered via fallback provider ${provider}/${model} after primary failure`,
+        );
+      }
+      return result;
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(
+        `[canvas-orchestrator] text generation failed on ${provider}/${model}:`,
+        message.slice(0, 300),
+      );
+      // Continue to next provider
+    }
+  }
+
+  // All providers failed — surface the last error
+  throw lastError instanceof Error
+    ? lastError
+    : new Error('Text generation failed on all supported providers');
 }
 
 // ─── Regeneration Handler ─────────────────────────────────
