@@ -54,10 +54,19 @@ export function ContentGenerateStep() {
 
   // ─── Phase 1: Auto-launch campaign + deliverable ───────────
   const handleLaunch = useCallback(() => {
-    if (launchStartedRef.current) return;
+    if (launchStartedRef.current) {
+      console.log('[ContentGenerateStep] handleLaunch skipped — already started');
+      return;
+    }
     launchStartedRef.current = true;
 
     const store = useCampaignWizardStore.getState();
+    console.log('[ContentGenerateStep] handleLaunch starting', {
+      name: store.name,
+      selectedContentType: store.selectedContentType,
+      draftCampaignId: store.draftCampaignId,
+      wizardMode: store.wizardMode,
+    });
     setContentGenPhase('launching');
 
     // Reset canvas store for clean slate
@@ -94,12 +103,14 @@ export function ContentGenerateStep() {
       },
       {
         onSuccess: (result) => {
+          console.log('[ContentGenerateStep] launch onSuccess', result);
           if (result.firstDeliverableId) {
             setGeneratedIds(result.campaignId, result.firstDeliverableId);
             // Draft has been promoted to an ACTIVE campaign; clear the
             // local draft link so the auto-save loop won't PATCH a row
             // that's no longer in DRAFT status.
             useCampaignWizardStore.getState().setDraftCampaignId(null);
+            console.log('[ContentGenerateStep] generatedIds set, waiting for Phase 2 to fire generate()');
           } else {
             console.error('[ContentGenerateStep] Launch returned no deliverable ID', result);
             setContentGenPhase('error');
@@ -149,11 +160,17 @@ export function ContentGenerateStep() {
     if (!generatedDeliverableId || generateStartedRef.current) return;
     if (contentGenPhase === 'error' || contentGenPhase === 'complete') return;
 
+    console.log('[ContentGenerateStep] Phase 2 firing — deliverable ready', {
+      generatedDeliverableId,
+      contentGenPhase,
+    });
+
     generateStartedRef.current = true;
     setContentGenPhase('generating');
 
     // Small delay to ensure hook has picked up the new deliverableId
     const timer = setTimeout(() => {
+      console.log('[ContentGenerateStep] calling generate()');
       generate();
     }, 100);
 

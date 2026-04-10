@@ -386,13 +386,45 @@ async function fetchDeliverableTypes(): Promise<DeliverableTypeOption[]> {
 async function launchCampaign(
   body: LaunchCampaignBody,
 ): Promise<LaunchCampaignResponse> {
-  const res = await fetch('/api/campaigns/wizard/launch', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+  console.log('[launchCampaign] POST /api/campaigns/wizard/launch', {
+    type: body.type,
+    draftCampaignId: body.draftCampaignId,
+    hasStrategy: !!body.strategy,
+    deliverables: body.deliverables?.length,
   });
-  if (!res.ok) throw new Error('Failed to launch campaign');
-  return res.json();
+
+  // Hard client-side timeout — if the server hasn't responded in 60s we
+  // abort and surface a clear error to the user instead of hanging forever.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60_000);
+
+  try {
+    const res = await fetch('/api/campaigns/wizard/launch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    console.log('[launchCampaign] response', res.status, res.ok);
+
+    if (!res.ok) {
+      const errorBody = await res.text().catch(() => '(unreadable body)');
+      console.error('[launchCampaign] failed', res.status, errorBody);
+      throw new Error(`Launch failed: ${res.status} ${errorBody.slice(0, 200)}`);
+    }
+
+    const data = await res.json();
+    console.log('[launchCampaign] success', data);
+    return data;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Launch timed out after 60s — the server did not respond. Check your dev server logs.');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 async function fetchEstimateTimeline(): Promise<EstimateTimelineResponse> {
