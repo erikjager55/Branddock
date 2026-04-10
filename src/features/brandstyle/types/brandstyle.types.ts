@@ -126,6 +126,7 @@ export interface BrandStyleguide {
   // Typography
   primaryFontName: string | null;
   primaryFontUrl: string | null;
+  additionalFonts: string[];
   typeScale: TypeScaleLevel[] | null;
   typographySavedForAi: boolean;
 
@@ -141,6 +142,7 @@ export interface BrandStyleguide {
   illustrationGuidelines: string[];
   imageryDonts: string[];
   imagerySavedForAi: boolean;
+  /** @deprecated Scraped images are now routed to the Media Library. */
   brandImages: BrandImage[] | null;
 
   // Design Language
@@ -199,6 +201,7 @@ export interface ColorsSection {
 export interface TypographySection {
   primaryFontName: string | null;
   primaryFontUrl: string | null;
+  additionalFonts: string[];
   typeScale: TypeScaleLevel[] | null;
   typographySavedForAi: boolean;
 }

@@ -18,6 +18,7 @@ export async function GET() {
       select: {
         primaryFontName: true,
         primaryFontUrl: true,
+        additionalFonts: true,
         typeScale: true,
         typographySavedForAi: true,
       },
@@ -40,6 +41,7 @@ export async function GET() {
 const updateTypographySchema = z.object({
   primaryFontName: z.string().optional(),
   primaryFontUrl: z.string().optional(),
+  additionalFonts: z.array(z.string()).optional(),
   typeScale: z.any().optional(),
 });
 
@@ -62,6 +64,7 @@ export async function PATCH(request: NextRequest) {
       select: {
         primaryFontName: true,
         primaryFontUrl: true,
+        additionalFonts: true,
         typeScale: true,
         typographySavedForAi: true,
       },

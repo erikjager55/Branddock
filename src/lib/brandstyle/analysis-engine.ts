@@ -20,7 +20,6 @@ import {
   type ScrapedData,
   type CssVariable,
   type ColorFrequency,
-  type ScrapedBrandImage,
 } from './url-scraper';
 import { parsePdf, type ParsedPdfData } from './pdf-parser';
 import {
@@ -34,6 +33,7 @@ import {
   PDF_ANALYSIS_SYSTEM_PROMPT,
   type ProcessedData,
   type ProcessedColorGroup,
+  type AuthoritativeColor,
 } from './analysis-prompts';
 import {
   hexToRgb,
@@ -43,6 +43,7 @@ import {
   contrastWithWhite,
   contrastWithBlack,
 } from '@/features/brandstyle/utils/color-utils';
+import { importScrapedImagesToMediaLibrary } from '@/lib/media/import-scraped-image';
 
 // ─── Types ────────────────────────────────────────────
 
@@ -68,6 +69,19 @@ interface VisualIdentityResult {
   logoGuidelines: string[];
   logoDonts: string[];
   colorDonts: string[];
+}
+
+/**
+ * A color that will actually be written to the DB.
+ * Hex is always the authoritative hex from scraping; name/category/tags
+ * come from AI annotation (merged by hex match) with deterministic fallbacks.
+ */
+interface ResolvedColor {
+  hex: string;
+  name: string;
+  category: 'PRIMARY' | 'SECONDARY' | 'ACCENT' | 'NEUTRAL' | 'SEMANTIC';
+  tags: string[];
+  notes: string | null;
 }
 
 interface VoiceImageryResult {
@@ -175,6 +189,17 @@ async function markError(styleguideId: string, errorMessage: string): Promise<vo
  */
 export async function analyzeUrl(styleguideId: string, url: string): Promise<void> {
   try {
+    // Load styleguide ownership info up-front — we need workspaceId + createdById
+    // for routing scraped images into the Media Library.
+    const styleguideMeta = await prisma.brandStyleguide.findUnique({
+      where: { id: styleguideId },
+      select: { workspaceId: true, createdById: true },
+    });
+    if (!styleguideMeta) {
+      console.error(`[brandstyle-analysis] Styleguide ${styleguideId} not found`);
+      return;
+    }
+
     // Step 1: Scrape + preprocess
     await updateStatus(styleguideId, 'SCANNING_STRUCTURE');
     let scraped: ScrapedData;
@@ -268,7 +293,42 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     // Step 6: Write to DB
     await updateStatus(styleguideId, 'GENERATING_STYLEGUIDE');
     const combined: CombinedResult = { ...visualResult, ...voiceResult, ...(designResult ?? {}) };
-    await writeResultToDb(styleguideId, combined, processed.logoUrls, processed.brandImages);
+    // Resolve the authoritative palette with AI annotations merged in
+    const resolvedColors = resolveColors(processed.authoritativeColors, visualResult.colors);
+    await writeResultToDb(
+      styleguideId,
+      combined,
+      resolvedColors,
+      processed.fonts,
+      processed.logoUrls,
+    );
+
+    // Route scraped brand images into the Media Library instead of persisting
+    // them on the styleguide. Fire-and-forget — failures are swallowed inside.
+    if (processed.brandImages && processed.brandImages.length > 0) {
+      try {
+        const result = await importScrapedImagesToMediaLibrary(
+          processed.brandImages.map((img) => ({
+            url: img.url,
+            alt: img.alt,
+            context: img.context,
+          })),
+          {
+            workspaceId: styleguideMeta.workspaceId,
+            uploadedById: styleguideMeta.createdById,
+            sourceUrl: scraped.url,
+          },
+        );
+        console.log(
+          `[brandstyle-analysis] Imported ${result.imported} scraped images to media library (${result.failed} failed)`,
+        );
+      } catch (err) {
+        console.warn(
+          '[brandstyle-analysis] Failed to import scraped images to media library:',
+          err instanceof Error ? err.message : String(err),
+        );
+      }
+    }
 
     // Write visual language separately (Json field, not part of CombinedResult)
     if (visualLanguageResult) {
@@ -356,7 +416,23 @@ export async function analyzePdf(
 
     // Step 5: Write to DB
     await updateStatus(styleguideId, 'GENERATING_STYLEGUIDE');
-    await writeResultToDb(styleguideId, result);
+    // For PDFs the AI output IS the authoritative source (no scraped palette to pin),
+    // so we pass the AI colors through directly as ResolvedColor[].
+    const pdfResolvedColors: ResolvedColor[] = (result.colors || [])
+      .slice(0, 12)
+      .map((c, i): ResolvedColor | null => {
+        const hex = normalizeHex(c.hex?.trim());
+        if (!hex) return null;
+        return {
+          hex,
+          name: c.name || `Color ${i + 1}`,
+          category: validateCategory(c.category),
+          tags: c.tags ?? [],
+          notes: c.notes ?? null,
+        };
+      })
+      .filter((c): c is ResolvedColor => c !== null);
+    await writeResultToDb(styleguideId, result, pdfResolvedColors, [], []);
 
     // Done — clear any stale errorMessage from previous failed runs
     await prisma.brandStyleguide.update({
@@ -388,6 +464,10 @@ function preprocessScrapeData(scraped: ScrapedData): ProcessedData {
     scraped.cssColors ?? [],
   );
 
+  // Build the authoritative palette — this is what we will write to the DB,
+  // regardless of what the AI returns. AI is only allowed to annotate.
+  const authoritativeColors = buildAuthoritativePalette(colorGroups);
+
   // Deduplicate and sort fonts by likely importance
   const fonts = deduplicateFonts(scraped.cssFonts ?? []);
 
@@ -397,12 +477,55 @@ function preprocessScrapeData(scraped: ScrapedData): ProcessedData {
     description: scraped.description,
     bodyText: scraped.bodyText ?? '',
     colorGroups,
+    authoritativeColors,
     fonts,
     fontSizes: scraped.fontSizes ?? [],
     logoUrls: scraped.logoUrls ?? [],
     cssVariables: scraped.cssVariables ?? [],
     brandImages: scraped.brandImages ?? [],
+    visualHeuristics: scraped.visualHeuristics,
   };
+}
+
+/**
+ * Pick the authoritative brand palette from the grouped scraper data.
+ * Priority: CSS variables → frequency-ranked colors → other.
+ * Max 12 entries total.
+ */
+function buildAuthoritativePalette(groups: ProcessedColorGroup): AuthoritativeColor[] {
+  const MAX = 12;
+  const out: AuthoritativeColor[] = [];
+  const seen = new Set<string>();
+
+  const push = (entry: AuthoritativeColor) => {
+    if (out.length >= MAX) return;
+    const key = entry.hex.toUpperCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ ...entry, hex: key });
+  };
+
+  // 1. CSS variables come first — highest confidence
+  for (const v of groups.fromVariables) {
+    push({ hex: v.hex, source: 'css-variable', variableName: v.name });
+  }
+
+  // 2. Frequency-ranked next
+  for (const f of groups.byFrequency) {
+    push({
+      hex: f.hex,
+      source: 'frequency',
+      frequency: f.count,
+      contexts: f.contexts,
+    });
+  }
+
+  // 3. Fill remaining slots with other detected colors
+  for (const hex of groups.other) {
+    push({ hex, source: 'other' });
+  }
+
+  return out;
 }
 
 /**
@@ -554,6 +677,82 @@ function deduplicateFonts(fonts: string[]): string[] {
   return result;
 }
 
+// ─── Color Resolution ─────────────────────────────────
+
+/**
+ * Merge AI annotations onto the authoritative palette.
+ * - Hex values come from the authoritative palette (never altered).
+ * - Name / category / tags / notes come from AI if it returned a matching hex.
+ * - If AI skipped a hex we fall back to deterministic defaults so the color
+ *   still appears in the styleguide with its exact original hex.
+ */
+function resolveColors(
+  authoritative: AuthoritativeColor[],
+  aiColors: AnalyzedColor[] | undefined | null,
+): ResolvedColor[] {
+  // Index AI responses by normalized hex
+  const aiByHex = new Map<string, AnalyzedColor>();
+  for (const ai of aiColors ?? []) {
+    const hex = normalizeHex(ai.hex?.trim());
+    if (hex) aiByHex.set(hex, ai);
+  }
+
+  const resolved: ResolvedColor[] = [];
+  authoritative.forEach((entry, index) => {
+    const hex = normalizeHex(entry.hex);
+    if (!hex) return;
+
+    const ai = aiByHex.get(hex);
+    resolved.push({
+      hex,
+      name: ai?.name?.trim() || defaultColorName(entry, index),
+      category: ai ? validateCategory(ai.category) : defaultCategory(entry, index),
+      tags: ai?.tags ?? [],
+      notes: ai?.notes?.trim() || defaultColorNotes(entry),
+    });
+  });
+
+  return resolved;
+}
+
+function defaultColorName(entry: AuthoritativeColor, index: number): string {
+  if (entry.variableName) {
+    // Turn --primary-500 into "Primary 500"
+    return entry.variableName
+      .replace(/^--/, '')
+      .replace(/[-_]+/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  return `Color ${index + 1}`;
+}
+
+function defaultCategory(entry: AuthoritativeColor, index: number): ResolvedColor['category'] {
+  // If the variable name hints at the role, use that
+  const name = entry.variableName?.toLowerCase() ?? '';
+  if (/primary|brand/.test(name)) return 'PRIMARY';
+  if (/secondary/.test(name)) return 'SECONDARY';
+  if (/accent|highlight|cta/.test(name)) return 'ACCENT';
+  if (/success|warning|error|danger|info/.test(name)) return 'SEMANTIC';
+  if (/neutral|gray|grey|text|bg|background|surface|muted/.test(name)) return 'NEUTRAL';
+  // Fallback: first entry is primary, next two secondary/accent, rest neutral
+  if (index === 0) return 'PRIMARY';
+  if (index === 1) return 'SECONDARY';
+  if (index === 2) return 'ACCENT';
+  return 'NEUTRAL';
+}
+
+function defaultColorNotes(entry: AuthoritativeColor): string | null {
+  const bits: string[] = [];
+  if (entry.variableName) bits.push(`CSS variable ${entry.variableName}`);
+  if (typeof entry.frequency === 'number' && entry.frequency > 0) {
+    bits.push(`used ${entry.frequency}×`);
+  }
+  if (entry.contexts && entry.contexts.length > 0) {
+    bits.push(`in ${entry.contexts.slice(0, 3).join(', ')}`);
+  }
+  return bits.length > 0 ? bits.join(', ') : null;
+}
+
 // ─── DB Write ─────────────────────────────────────────
 
 /**
@@ -563,11 +762,18 @@ function deduplicateFonts(fonts: string[]): string[] {
 async function writeResultToDb(
   styleguideId: string,
   result: CombinedResult,
+  resolvedColors: ResolvedColor[],
+  detectedFonts: string[],
   logoUrls?: string[],
-  brandImages?: ScrapedBrandImage[],
 ): Promise<void> {
   // Delete existing colors before creating new ones
   await prisma.styleguideColor.deleteMany({ where: { styleguideId } });
+
+  // ── Typography: force the primary font to the first scraped font verbatim.
+  // If the scraper did not find any fonts, fall back to the AI's suggestion.
+  const [firstFont, ...restFonts] = detectedFonts;
+  const primaryFontName = firstFont ?? result.primaryFontName ?? null;
+  const additionalFonts = restFonts.slice(0, 5);
 
   // Update styleguide fields
   await prisma.brandStyleguide.update({
@@ -586,9 +792,10 @@ async function writeResultToDb(
       logoGuidelines: result.logoGuidelines || [],
       logoDonts: result.logoDonts || [],
 
-      // Typography
-      primaryFontName: result.primaryFontName || null,
+      // Typography — primaryFontName pinned to scraped value
+      primaryFontName,
       primaryFontUrl: result.primaryFontUrl || null,
+      additionalFonts,
       typeScale: result.typeScale || null,
 
       // Tone of Voice
@@ -605,10 +812,8 @@ async function writeResultToDb(
       imageryDonts: result.imageryDonts || [],
       colorDonts: result.colorDonts || [],
 
-      // Brand images from scraping
-      brandImages: brandImages && brandImages.length > 0
-        ? (brandImages as unknown as Prisma.InputJsonValue)
-        : Prisma.JsonNull,
+      // Brand images now live in the Media Library — clear the legacy field.
+      brandImages: Prisma.JsonNull,
 
       // Design Language
       graphicElements: isNonEmptyObject(result.graphicElements)
@@ -632,24 +837,21 @@ async function writeResultToDb(
   });
 
   // Create color records with computed values (RGB, HSL, CMYK, contrast)
-  const colors = (result.colors || []).slice(0, 12);
-  for (let i = 0; i < colors.length; i++) {
-    const color = colors[i];
-    const hex = normalizeHex(color.hex?.trim());
-    if (!hex) continue;
-
+  // Uses the RESOLVED palette — exact hexes from scraping with AI names merged in.
+  for (let i = 0; i < resolvedColors.length; i++) {
+    const color = resolvedColors[i];
     await prisma.styleguideColor.create({
       data: {
-        name: color.name || `Color ${i + 1}`,
-        hex,
-        rgb: hexToRgbString(hex) || null,
-        hsl: hexToHslString(hex) || null,
-        cmyk: hexToCmykString(hex) || null,
-        category: validateCategory(color.category),
-        tags: color.tags || [],
-        notes: color.notes || null,
-        contrastWhite: contrastWithWhite(hex),
-        contrastBlack: contrastWithBlack(hex),
+        name: color.name,
+        hex: color.hex,
+        rgb: hexToRgbString(color.hex) || null,
+        hsl: hexToHslString(color.hex) || null,
+        cmyk: hexToCmykString(color.hex) || null,
+        category: color.category,
+        tags: color.tags,
+        notes: color.notes,
+        contrastWhite: contrastWithWhite(color.hex),
+        contrastBlack: contrastWithBlack(color.hex),
         sortOrder: i,
         styleguideId,
       },

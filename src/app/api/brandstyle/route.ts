@@ -83,6 +83,7 @@ const updateSchema = z.object({
   colorDonts: z.array(z.string()).optional(),
   primaryFontName: z.string().optional(),
   primaryFontUrl: z.string().optional(),
+  additionalFonts: z.array(z.string()).optional(),
   typeScale: z.any().optional(),
   contentGuidelines: z.array(z.string()).optional(),
   writingGuidelines: z.array(z.string()).optional(),

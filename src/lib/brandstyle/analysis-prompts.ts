@@ -7,6 +7,7 @@
 // =============================================================
 
 import type { CssVariable, ColorFrequency, FontSizeEntry, ScrapedBrandImage } from './url-scraper';
+import type { CssVisualHeuristics } from './visual-language.types';
 
 // ─── Processed Data Interface ─────────────────────────
 
@@ -19,17 +20,37 @@ export interface ProcessedColorGroup {
   other: string[];
 }
 
+/**
+ * Authoritative palette entry — the exact hex that will be written
+ * to the database. The AI is only allowed to annotate these entries
+ * (name / category / tags / notes), it cannot change the hex value
+ * nor drop or add colors.
+ */
+export interface AuthoritativeColor {
+  hex: string;
+  source: 'css-variable' | 'frequency' | 'other';
+  /** CSS variable name if available, e.g. `--primary-500` */
+  variableName?: string;
+  /** Number of occurrences across scraped CSS, if known */
+  frequency?: number;
+  /** CSS properties where this color was seen, e.g. ['background-color'] */
+  contexts?: string[];
+}
+
 export interface ProcessedData {
   url?: string;
   title: string | null;
   description: string | null;
   bodyText: string;
   colorGroups: ProcessedColorGroup;
+  /** Authoritative palette — exact hex values, capped at 12 */
+  authoritativeColors: AuthoritativeColor[];
   fonts: string[];
   fontSizes: FontSizeEntry[];
   logoUrls: string[];
   cssVariables: CssVariable[];
   brandImages?: ScrapedBrandImage[];
+  visualHeuristics?: CssVisualHeuristics;
   isPdf?: boolean;
   pdfFileName?: string;
   pdfMetadata?: { title: string | null; author: string | null };
@@ -37,58 +58,45 @@ export interface ProcessedData {
 
 // ─── Visual Identity Prompt (Call 1) ──────────────────
 
-const VISUAL_IDENTITY_SYSTEM_PROMPT = `You are an expert brand designer specializing in visual identity systems. Analyze the extracted website/document data and produce structured color, typography, and logo guidelines.
+const VISUAL_IDENTITY_SYSTEM_PROMPT = `You are an expert brand designer specializing in visual identity systems. You are annotating a fixed palette of colors that were extracted from a website/document. You do not choose colors — you describe the ones you are given.
 
 CRITICAL RULES:
-1. For COLORS: Prioritize CSS variables (highest confidence of being intentional brand colors). Frequency data shows how often colors appear — higher frequency = more important.
-2. For COLORS: Categorize as PRIMARY (main brand color, 1-2 max), SECONDARY (supporting color), ACCENT (CTAs/highlights), NEUTRAL (grays/backgrounds, MAX 2-3), or SEMANTIC (success/error/warning states).
-3. For COLORS: Give each color a descriptive name (e.g., "Ocean Blue", "Warm Coral") — never just the hex code.
-4a. For COLORS: STRONGLY LIMIT neutral/gray colors. Only include neutrals that are intentionally branded (e.g., a specific dark gray used for body text). Do NOT include generic grays, near-white backgrounds (#F5F5F5, #FAFAFA), or near-black text (#111, #222, #333). Focus on distinctive brand colors.
-4. For TYPOGRAPHY: ONLY report font sizes that are actually found in the extracted data. If no font sizes were extracted, set typeScale to an EMPTY array []. Never invent or hallucinate font sizes.
-5. For LOGOS: Base guidelines on the logo URLs found. If no logos were found, state that and suggest the brand add visible logo markup.
-6. Return ONLY valid JSON. No markdown, no explanation.`;
+1. For COLORS: You are given an AUTHORITATIVE PALETTE list of exact hex values. You MUST return an entry for EVERY hex in that list, with the EXACT same hex (uppercase, 6 digits). You may not add colors, drop colors, merge colors, or change any hex value — not even by a single digit.
+2. For COLORS: For each hex, choose a category that best describes its role — PRIMARY (main brand color), SECONDARY (supporting), ACCENT (CTA/highlight), NEUTRAL (grays/backgrounds/text), or SEMANTIC (success/error/warning). Use the provided usage contexts (CSS variable name, property usage, frequency) to decide.
+3. For COLORS: Give each color a short, human-friendly name (e.g., "Ocean Blue", "Warm Coral"). Never use the hex string as the name.
+4. For COLORS: If the palette contains neutrals (grays / near-black / near-white), categorize them as NEUTRAL — do not refuse them. Preserving the exact scraped palette is more important than aesthetic curation.
+5. For TYPOGRAPHY: You are given a FONT LIST detected from CSS. Set \`primaryFontName\` to the FIRST font in that list verbatim. Do not rename, pretty-print, or substitute. If the list is empty, return null.
+6. For TYPOGRAPHY: Set \`primaryFontUrl\` to the Google Fonts URL for that font if it is a known Google Font (e.g., "https://fonts.google.com/specimen/Inter"), otherwise null.
+7. For TYPOGRAPHY: ONLY report font sizes that are actually found in the extracted data. If no font sizes were extracted, set typeScale to an EMPTY array []. Never invent or hallucinate font sizes.
+8. For LOGOS: Base guidelines on the logo URLs found. If no logos were found, state that and suggest the brand add visible logo markup.
+9. Return ONLY valid JSON. No markdown, no explanation.`;
 
 /**
  * Build the Visual Identity prompt (colors + typography + logo).
  * Input: structured color groups, fonts, sizes, logos.
  */
 export function buildVisualIdentityPrompt(data: ProcessedData): string {
-  const { fonts, fontSizes, logoUrls, cssVariables } = data;
-  // Defensive: ensure colorGroups and sub-arrays are always valid
-  const colorGroups: ProcessedColorGroup = {
-    fromVariables: data.colorGroups?.fromVariables ?? [],
-    byFrequency: data.colorGroups?.byFrequency ?? [],
-    other: data.colorGroups?.other ?? [],
-  };
+  const { fonts, fontSizes, logoUrls, authoritativeColors } = data;
 
-  // Format CSS variables (highest confidence brand colors)
-  const varsSection = (cssVariables ?? []).length > 0
-    ? cssVariables
-      .filter((v) => v.context === 'root' && /^#[0-9A-Fa-f]{3,6}$/i.test(v.value))
-      .map((v) => `  ${v.name}: ${v.value}`)
-      .join('\n') || 'None with resolved hex values'
-    : 'No CSS variables found';
+  // Build the AUTHORITATIVE palette section — this is what the AI must echo back verbatim.
+  const paletteSection = authoritativeColors.length > 0
+    ? authoritativeColors
+        .map((c, i) => {
+          const parts: string[] = [];
+          parts.push(`  ${i + 1}. ${c.hex}`);
+          if (c.variableName) parts.push(`var: ${c.variableName}`);
+          if (typeof c.frequency === 'number' && c.frequency > 0) parts.push(`${c.frequency}×`);
+          if (c.contexts && c.contexts.length > 0) parts.push(`in ${c.contexts.join(', ')}`);
+          parts.push(`(source: ${c.source})`);
+          return parts.join(' — ');
+        })
+        .join('\n')
+    : '  (no colors detected)';
 
-  // Format from-variables colors
-  const fromVarsSection = colorGroups.fromVariables.length > 0
-    ? colorGroups.fromVariables.map((c) => `  ${c.name} → ${c.hex}`).join('\n')
-    : 'None';
-
-  // Format frequency colors (top 20)
-  const freqSection = colorGroups.byFrequency.length > 0
-    ? colorGroups.byFrequency
-      .slice(0, 20)
-      .map((c) => `  ${c.hex} (${c.count}× in ${c.contexts.join(', ')})`)
-      .join('\n')
-    : 'No color frequency data';
-
-  // Format other colors
-  const otherSection = colorGroups.other.length > 0
-    ? colorGroups.other.slice(0, 15).join(', ')
-    : 'None';
-
-  // Format fonts
-  const fontsSection = fonts.length > 0 ? fonts.join(', ') : 'No fonts detected';
+  // Format fonts — the first one is PINNED as primary
+  const fontsSection = fonts.length > 0
+    ? fonts.map((f, i) => `  ${i === 0 ? '→ PRIMARY:' : '  additional:'} ${f}`).join('\n')
+    : '  (no fonts detected)';
 
   // Format font sizes
   const fontSizesSection = fontSizes.length > 0
@@ -105,24 +113,15 @@ export function buildVisualIdentityPrompt(data: ProcessedData): string {
     ? `File: ${data.pdfFileName || 'Unknown'}\nTitle: ${data.pdfMetadata?.title || 'Unknown'}\nAuthor: ${data.pdfMetadata?.author || 'Unknown'}`
     : `URL: ${data.url || 'Unknown'}\nTitle: ${data.title || 'Unknown'}\nDescription: ${data.description || 'No description'}`;
 
-  return `Analyze this data and generate a Visual Identity styleguide.
+  return `Annotate this brand's visual identity. You MUST preserve every hex value and the primary font exactly as given.
 
 ## Source
 ${source}
 
-## CSS Custom Properties (HIGHEST CONFIDENCE — these are intentional brand colors)
-${varsSection}
+## AUTHORITATIVE COLOR PALETTE (${authoritativeColors.length} colors — ANNOTATE EVERY ENTRY, NEVER CHANGE A HEX)
+${paletteSection}
 
-## Colors Resolved from Variables
-${fromVarsSection}
-
-## Color Frequency Analysis (framework colors already filtered out)
-${freqSection}
-
-## Other Extracted Colors
-${otherSection}
-
-## Detected Fonts
+## Detected Fonts (order matters — first is primary)
 ${fontsSection}
 
 ## Observed Font Sizes from CSS
@@ -137,15 +136,15 @@ Return a JSON object with this exact structure:
 {
   "colors": [
     {
+      "hex": "#RRGGBB",  // MUST match an entry from the AUTHORITATIVE COLOR PALETTE above, character-for-character
       "name": "Descriptive Color Name",
-      "hex": "#RRGGBB",
       "category": "PRIMARY|SECONDARY|ACCENT|NEUTRAL|SEMANTIC",
       "tags": ["tag1", "tag2"],
       "notes": "How this color is used on the site"
     }
   ],
-  "primaryFontName": "Font Name or null",
-  "primaryFontUrl": "Google Fonts URL or null",
+  "primaryFontName": "First font from the Detected Fonts list, verbatim",
+  "primaryFontUrl": "https://fonts.google.com/specimen/<Font> or null if not a Google Font",
   "typeScale": [],
   "logoGuidelines": ["guideline 1", "guideline 2"],
   "logoDonts": ["don't 1", "don't 2"],
@@ -153,10 +152,10 @@ Return a JSON object with this exact structure:
 }
 
 IMPORTANT:
-- Maximum 10 colors total. At most 2-3 NEUTRAL colors (only if they are distinctive branded grays). Focus on PRIMARY, SECONDARY, and ACCENT colors that define the brand. Prioritize CSS variable colors, then high-frequency colors, then others.
+- You MUST return ${authoritativeColors.length} color entries — one for EVERY hex in the palette above, in the same order, with the EXACT SAME hex value (6-digit, uppercase, prefixed with '#'). Do not drop, add, merge, or alter hex values.
+- For primaryFontName: copy the first font from "Detected Fonts" verbatim. Do not rename or substitute. If no fonts detected, return null.
 - For typeScale: ONLY populate with font sizes from the "Observed Font Sizes" section above. Map observed sizes to their semantic level (H1, H2, H3, Body, Small, Caption) based on the selector context and size. If no font sizes were extracted, return an EMPTY array [].
 - Each typeScale entry: { "level": "H1", "name": "Heading 1", "size": "36px", "lineHeight": "calculated", "weight": "estimated", "color": "#333333" }
-- For color in typeScale: Extract the actual text color used for that level from the CSS (e.g., headings might use #1A1A1A, body text #333333). If not found, use the most common text color.
 - For logo guidelines: if no logos found, say "No logo elements detected — consider adding structured logo markup (JSON-LD, og:image, or img with alt='logo')"`;
 }
 
@@ -346,17 +345,15 @@ IMPORTANT:
 
 // ─── Design Language Prompt (Call 3) ─────────────────
 
-const DESIGN_LANGUAGE_SYSTEM_PROMPT = `You are an expert brand designer specializing in design systems and visual design language. Analyze the extracted website/document data and produce structured design language guidelines covering graphic elements, patterns, iconography, gradients, and layout principles.
+const DESIGN_LANGUAGE_SYSTEM_PROMPT = `You are an expert brand designer specializing in design systems and visual design language. You are analysing a set of OBSERVED CSS values (border-radius samples, box-shadow samples, spacing values, gradient strings, border data). Your output must be grounded in those values — never invent numbers that contradict the data.
 
 CRITICAL RULES:
-1. Base analysis on the ACTUAL CSS, HTML structure, and visual patterns found in the data.
-2. For GRADIENTS: Extract real CSS gradients if found. Include the exact colors and angles.
-3. For ICONOGRAPHY: Determine icon style from icon libraries detected (e.g., Lucide, FontAwesome, Material Icons, Heroicons) or SVG patterns.
-4. For LAYOUT: Extract actual spacing values, grid patterns, and border-radius values from CSS.
-5. For GRAPHIC ELEMENTS: Identify decorative shapes, dividers, overlays, or recurring visual motifs.
-6. For PATTERNS: Identify background patterns, textures, or surface treatments.
-7. If something is NOT detected, you may RECOMMEND based on the brand's existing visual identity (colors, typography, tone). Prefix with "RECOMMENDED:".
-8. Return ONLY valid JSON. No markdown, no explanation.`;
+1. Base EVERY field on the observed CSS values provided. If the data says "most common border-radius: 12px", the iconographyStyle.cornerRadius MUST be "12px" — not "2px" or "4px".
+2. For GRADIENTS: If the "Gradients — observed from CSS" section lists real gradient strings, extract the colors and angles from those exact strings. Do NOT invent new gradients when real ones are observed. If no gradients are observed, you may propose 1-2 RECOMMENDED gradients using the Brand Color Palette — label them with "RECOMMENDED:" in the usage field.
+3. For ICONOGRAPHY: strokeWeight must come from observed border widths. cornerRadius must come from the observed border-radius median. Sizing must be a numeric CSS value chain like "16/20/24/32px".
+4. For LAYOUT: spacingScale must be derived from the observed grid base and spacing samples (e.g., "4px base unit: 4, 8, 12, 16, 24, 32, 48"). gridSystem MUST include the word "column" with a count.
+5. For GRAPHIC ELEMENTS and PATTERNS: Identify recurring visual motifs supported by the evidence (rounded cards, soft shadows, etc.). If no evidence, provide a single concise RECOMMENDED entry. Never list generic advice that could apply to any brand.
+6. Return ONLY valid JSON. No markdown, no explanation.`;
 
 /**
  * Build the Design Language prompt (graphic elements + patterns + iconography + gradients + layout).
@@ -376,10 +373,61 @@ export function buildDesignLanguagePrompt(data: ProcessedData): string {
   // Font info for consistency reference
   const fontsSection = data.fonts.length > 0 ? data.fonts.join(', ') : 'No fonts detected';
 
-  return `Analyze this data and generate Design Language guidelines.
+  // Brand palette (authoritative) — gives AI the real colors to reference in gradients
+  const paletteSection = data.authoritativeColors.length > 0
+    ? data.authoritativeColors.slice(0, 10).map((c) => `  ${c.hex}`).join('\n')
+    : '  (none)';
+
+  // ─── CSS Visual Heuristics (real observed values, not guesses) ───
+  const heuristics = data.visualHeuristics;
+
+  const borderRadiusSection = heuristics?.borderRadius
+    ? `  count: ${heuristics.borderRadius.values.length}\n` +
+      `  median: ${heuristics.borderRadius.median}px\n` +
+      `  most common: ${heuristics.borderRadius.mostCommon}px\n` +
+      `  has variation: ${heuristics.borderRadius.hasVariation}\n` +
+      `  samples: ${heuristics.borderRadius.values.slice(0, 10).join(', ')}px`
+    : '  (no border-radius data)';
+
+  const boxShadowSection = heuristics?.boxShadow
+    ? `  count: ${heuristics.boxShadow.count}\n` +
+      `  subtle: ${heuristics.boxShadow.hasSubtle}, bold: ${heuristics.boxShadow.hasBold}, colored: ${heuristics.boxShadow.hasColored}\n` +
+      (heuristics.boxShadow.samples.length > 0
+        ? `  samples:\n${heuristics.boxShadow.samples.map((s) => `    - ${s}`).join('\n')}`
+        : '  samples: (none)')
+    : '  (no box-shadow data)';
+
+  const bordersSection = heuristics?.borders
+    ? `  count: ${heuristics.borders.count}\n` +
+      `  median width: ${heuristics.borders.medianWidth}px\n` +
+      (heuristics.borders.colors.length > 0
+        ? `  colors: ${heuristics.borders.colors.join(', ')}`
+        : '  colors: (none)')
+    : '  (no border data)';
+
+  const spacingSection = heuristics?.spacing
+    ? `  grid base: ${heuristics.spacing.gridBase ?? 'unknown'}px\n` +
+      `  median: ${heuristics.spacing.median}px\n` +
+      `  samples: ${heuristics.spacing.values.slice(0, 20).join(', ')}px`
+    : '  (no spacing data)';
+
+  const gradientsSection = heuristics?.gradients && heuristics.gradients.count > 0
+    ? `  count: ${heuristics.gradients.count}\n` +
+      `  samples:\n${heuristics.gradients.samples.map((s) => `    - ${s}`).join('\n')}`
+    : '  (no gradients observed in CSS)';
+
+  const glassmorphismSection = heuristics?.glassmorphism
+    ? `  detected: ${heuristics.glassmorphism.detected}\n` +
+      `  backdrop-filter: ${heuristics.glassmorphism.backdropFilter}, semi-transparent bg: ${heuristics.glassmorphism.semiTransparentBg}`
+    : '  (not analyzed)';
+
+  return `Analyze this data and generate Design Language guidelines. BASE EVERY FIELD ON THE REAL CSS DATA BELOW — do not invent values that aren't supported by the evidence.
 
 ## Source
 ${source}
+
+## Brand Color Palette (use these hex values for gradient descriptions)
+${paletteSection}
 
 ## CSS Design Variables (spacing, radius, grid, shadow, gradient)
 ${designVars}
@@ -387,8 +435,23 @@ ${designVars}
 ## Detected Fonts (for icon style consistency)
 ${fontsSection}
 
-## Number of Brand Colors Available
-${data.colorGroups?.fromVariables?.length ?? 0} from CSS variables, ${data.colorGroups?.byFrequency?.length ?? 0} by frequency
+## Border Radius — observed from CSS
+${borderRadiusSection}
+
+## Box Shadow — observed from CSS
+${boxShadowSection}
+
+## Borders — observed from CSS
+${bordersSection}
+
+## Spacing (padding / margin / gap) — observed from CSS
+${spacingSection}
+
+## Gradients — observed from CSS (use these exact values in the gradientsEffects output)
+${gradientsSection}
+
+## Glassmorphism (backdrop-filter + semi-transparent backgrounds)
+${glassmorphismSection}
 
 ---
 

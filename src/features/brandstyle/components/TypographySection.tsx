@@ -85,7 +85,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
       {/* Font Preview */}
       <Card>
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Primary Font</h3>
+          <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">Brand Fonts</h3>
           {canEdit && !isEditingFont && (
             <button
               onClick={startEditFont}
@@ -128,24 +128,47 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="flex items-baseline gap-4">
-              <span className="text-3xl font-bold text-gray-900">
-                {styleguide.primaryFontName ?? "Not set"}
-              </span>
-              {styleguide.primaryFontUrl && (
-                <a
-                  href={styleguide.primaryFontUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary hover:text-primary-700"
+            <div>
+              <p className="text-xs font-medium text-gray-500 uppercase mb-1">Primary</p>
+              <div className="flex items-baseline gap-4">
+                <span
+                  className="text-3xl font-bold text-gray-900"
+                  style={styleguide.primaryFontName ? { fontFamily: styleguide.primaryFontName } : undefined}
                 >
-                  View font
-                </a>
-              )}
+                  {styleguide.primaryFontName ?? "Not set"}
+                </span>
+                {styleguide.primaryFontUrl && (
+                  <a
+                    href={styleguide.primaryFontUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-primary hover:text-primary-700"
+                  >
+                    View font
+                  </a>
+                )}
+              </div>
             </div>
 
+            {(styleguide.additionalFonts?.length ?? 0) > 0 && (
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase mb-1.5">Additional detected fonts</p>
+                <div className="flex flex-wrap gap-2">
+                  {styleguide.additionalFonts.map((f) => (
+                    <span
+                      key={f}
+                      className="inline-flex items-center px-2.5 py-1 rounded-full text-sm bg-gray-100 text-gray-800"
+                      style={{ fontFamily: f }}
+                    >
+                      {f}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Alphabet preview */}
-            <div className="p-4 bg-gray-50 rounded-lg space-y-2">
+            <div className="p-4 bg-gray-50 rounded-lg space-y-2" style={styleguide.primaryFontName ? { fontFamily: styleguide.primaryFontName } : undefined}>
               <p className="text-lg text-gray-800">ABCDEFGHIJKLMNOPQRSTUVWXYZ</p>
               <p className="text-lg text-gray-800">abcdefghijklmnopqrstuvwxyz</p>
               <p className="text-lg text-gray-800">0123456789 !@#$%&</p>
