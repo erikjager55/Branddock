@@ -12,7 +12,6 @@ interface CampaignListProps {
   onCampaignClick: (id: string) => void;
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
-  onConvert: (id: string) => void;
 }
 
 export function CampaignList({
@@ -21,7 +20,6 @@ export function CampaignList({
   onCampaignClick,
   onArchive,
   onDelete,
-  onConvert,
 }: CampaignListProps) {
   const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
 

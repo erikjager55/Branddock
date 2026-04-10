@@ -14,9 +14,6 @@ import {
   updateCampaign,
   deleteCampaign,
   archiveCampaign,
-  createQuickContent,
-  fetchPromptSuggestions,
-  convertToCampaign,
   fetchKnowledgeAssets,
   addKnowledgeAsset,
   removeKnowledgeAsset,
@@ -43,7 +40,6 @@ export const campaignKeys = {
   coverage: (id: string) => ['campaigns', id, 'coverage'] as const,
   deliverables: (id: string) => ['campaigns', id, 'deliverables'] as const,
   strategy: (id: string) => ['campaigns', id, 'strategy'] as const,
-  promptSuggestions: () => ['campaigns', 'quick', 'prompts'] as const,
   drafts: (type?: 'STRATEGIC' | 'CONTENT') =>
     type ? (['campaigns', 'drafts', type] as const) : (['campaigns', 'drafts'] as const),
 };
@@ -154,39 +150,6 @@ export function useArchiveDraft() {
  */
 export async function loadDraftForResume(id: string) {
   return fetchDraftDetail(id);
-}
-
-// ─── Quick Content ─────────────────────────────────────────
-
-export function useCreateQuickContent() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: createQuickContent,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: campaignKeys.all });
-    },
-  });
-}
-
-export function usePromptSuggestions() {
-  return useQuery({
-    queryKey: campaignKeys.promptSuggestions(),
-    queryFn: fetchPromptSuggestions,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60_000,
-  });
-}
-
-export function useConvertToCampaign() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof convertToCampaign>[1] }) =>
-      convertToCampaign(id, body),
-    onSuccess: (_data, { id }) => {
-      qc.invalidateQueries({ queryKey: campaignKeys.detail(id) });
-      qc.invalidateQueries({ queryKey: campaignKeys.all });
-    },
-  });
 }
 
 // ─── Knowledge Assets ──────────────────────────────────────

@@ -177,7 +177,7 @@ export function useBreadcrumbs(
     }
 
     // Campaigns
-    else if (activeSection === 'active-campaigns' || activeSection === 'campaign-detail' || activeSection === 'quick-content-detail' || activeSection === 'campaign-wizard') {
+    else if (activeSection === 'active-campaigns' || activeSection === 'campaign-detail' || activeSection === 'campaign-wizard') {
       breadcrumbs.push({
         id: 'active-campaigns',
         label: 'Campaigns',

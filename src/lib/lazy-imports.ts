@@ -158,9 +158,6 @@ export const ActiveCampaignsPage = lazy(() =>
 export const CampaignDetailPage = lazy(() =>
   import('@/features/campaigns/components/detail/CampaignDetailPage').then(m => ({ default: m.CampaignDetailPage }))
 );
-export const QuickContentDetailPage = lazy(() =>
-  import('@/features/campaigns/components/detail/QuickContentDetailPage').then(m => ({ default: m.QuickContentDetailPage }))
-);
 export const CanvasPage = lazy(() =>
   import('@/features/campaigns/components/canvas/CanvasPage').then(m => ({ default: m.CanvasPage }))
 );

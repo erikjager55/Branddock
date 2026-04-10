@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Zap, ArrowRight } from "lucide-react";
+import { Zap } from "lucide-react";
 import { Badge } from "@/components/shared";
 import { CardLockIndicator } from "@/components/lock";
 import { CampaignOverflowMenu } from "./CampaignOverflowMenu";
@@ -11,11 +11,10 @@ import type { CampaignSummary } from "@/types/campaign";
 interface QuickContentCardProps {
   campaign: CampaignSummary;
   onClick: () => void;
-  onConvert: () => void;
   onDelete: () => void;
 }
 
-export function QuickContentCard({ campaign, onClick, onConvert, onDelete }: QuickContentCardProps) {
+export function QuickContentCard({ campaign, onClick, onDelete }: QuickContentCardProps) {
   const contentType = campaign.contentType ? getContentTypeById(campaign.contentType) : null;
   const ContentIcon = contentType?.icon;
 
@@ -81,13 +80,7 @@ export function QuickContentCard({ campaign, onClick, onConvert, onDelete }: Qui
       )}
 
       {/* Footer */}
-      <div className="mt-3 pt-3 border-t flex items-center justify-between">
-        <button
-          onClick={(e) => { e.stopPropagation(); onConvert(); }}
-          className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1"
-        >
-          Convert to Campaign <ArrowRight className="h-3 w-3" />
-        </button>
+      <div className="mt-3 pt-3 border-t flex items-center justify-end">
         <span className="text-xs font-medium text-purple-600 opacity-0 group-hover:opacity-100 transition-opacity">
           Open →
         </span>

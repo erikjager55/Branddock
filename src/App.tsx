@@ -70,7 +70,6 @@ import {
   ResearchValidationPage,
   ActiveCampaignsPage,
   CampaignDetailPage,
-  QuickContentDetailPage,
   CanvasPage,
   ContentLibraryPage,
   CampaignWizardPage,
@@ -339,8 +338,6 @@ function AppContent() {
     } else if (activeSection === 'persona-ai-analysis' && !usePersonaDetailStore.getState().selectedPersonaId) {
       redirectTo = 'personas';
     } else if (activeSection === 'campaign-detail' && !useCampaignStore.getState().selectedCampaignId) {
-      redirectTo = 'active-campaigns';
-    } else if (activeSection === 'quick-content-detail' && !useCampaignStore.getState().selectedCampaignId) {
       redirectTo = 'active-campaigns';
     } else if (activeSection === 'ai-exploration-brand-asset' && !selectedAssetId) {
       redirectTo = 'brand';
@@ -678,10 +675,6 @@ function AppContent() {
               useCampaignStore.getState().setSelectedCampaignId(campaignId);
               handleSetActiveSection('campaign-detail');
             }}
-            onNavigateToQuickDetail={(campaignId) => {
-              useCampaignStore.getState().setSelectedCampaignId(campaignId);
-              handleSetActiveSection('quick-content-detail');
-            }}
             onNavigateToWizard={() => {
               const ws = useCampaignWizardStore.getState();
               ws.resetWizard();
@@ -718,25 +711,6 @@ function AppContent() {
               useCampaignStore.getState().setSelectedCampaignId(campaignId);
               useCampaignStore.getState().setSelectedDeliverableId(deliverableId);
               handleSetActiveSection('content-canvas');
-            }}
-          />
-        );
-      }
-      case 'quick-content-detail': {
-        const qcCampaignId = useCampaignStore.getState().selectedCampaignId;
-        if (!qcCampaignId) {
-          return null; // useEffect redirect handles navigation
-        }
-        return (
-          <QuickContentDetailPage
-            campaignId={qcCampaignId}
-            onBack={() => {
-              useCampaignStore.getState().setSelectedCampaignId(null);
-              handleSetActiveSection('active-campaigns');
-            }}
-            onConverted={(campaignId) => {
-              useCampaignStore.getState().setSelectedCampaignId(campaignId);
-              handleSetActiveSection('campaign-detail');
             }}
           />
         );

@@ -25,7 +25,6 @@ import type { CampaignListParams } from "@/types/campaign";
 
 interface ActiveCampaignsPageProps {
   onNavigateToCampaign: (campaignId: string) => void;
-  onNavigateToQuickDetail?: (campaignId: string) => void;
   onNavigateToWizard?: () => void;
   onNavigateToContentWizard?: () => void;
   onResumeWizard?: () => void;
@@ -33,7 +32,6 @@ interface ActiveCampaignsPageProps {
 
 export function ActiveCampaignsPage({
   onNavigateToCampaign,
-  onNavigateToQuickDetail,
   onNavigateToWizard,
   onNavigateToContentWizard,
   onResumeWizard,
@@ -77,20 +75,7 @@ export function ActiveCampaignsPage({
   const stats = data?.stats;
 
   const handleCampaignClick = (id: string) => {
-    const campaign = campaigns.find((c) => c.id === id);
-    if (campaign?.type === "QUICK" && onNavigateToQuickDetail) {
-      onNavigateToQuickDetail(id);
-    } else {
-      onNavigateToCampaign(id);
-    }
-  };
-
-  const handleConvert = (id: string) => {
-    const campaign = campaigns.find((c) => c.id === id);
-    if (campaign) {
-      useCampaignStore.getState().openConvertModal();
-      useCampaignStore.getState().setSelectedCampaignId(id);
-    }
+    onNavigateToCampaign(id);
   };
 
   // ─── Draft handlers ───────────────────────────────────────
@@ -189,7 +174,6 @@ export function ActiveCampaignsPage({
             onCampaignClick={handleCampaignClick}
             onArchive={(id) => archiveCampaign.mutate(id)}
             onDelete={(id) => deleteCampaign.mutate(id)}
-            onConvert={handleConvert}
           />
         ) : (
           <CampaignList
@@ -198,7 +182,6 @@ export function ActiveCampaignsPage({
             onCampaignClick={handleCampaignClick}
             onArchive={(id) => archiveCampaign.mutate(id)}
             onDelete={(id) => deleteCampaign.mutate(id)}
-            onConvert={handleConvert}
           />
         )}
       </div>

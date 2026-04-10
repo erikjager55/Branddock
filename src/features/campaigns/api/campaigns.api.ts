@@ -11,11 +11,8 @@ import type {
   DeliverableResponse,
   CoverageResponse,
   StrategyResponse,
-  PromptSuggestionsResponse,
   CreateCampaignBody,
   UpdateCampaignBody,
-  CreateQuickContentBody,
-  ConvertToCampaignBody,
   AddKnowledgeAssetBody,
   CreateDeliverableBody,
   UpdateDeliverableBody,
@@ -110,34 +107,6 @@ export async function fetchDraftDetail(id: string): Promise<DraftDetail> {
 export async function archiveDraft(id: string): Promise<void> {
   const res = await fetch(`/api/campaigns/wizard/drafts/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to archive draft');
-}
-
-// ─── Quick Content ─────────────────────────────────────────
-
-export async function createQuickContent(body: CreateQuickContentBody): Promise<CampaignDetail> {
-  const res = await fetch('/api/campaigns/quick', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error('Failed to create quick content');
-  return res.json();
-}
-
-export async function fetchPromptSuggestions(): Promise<PromptSuggestionsResponse> {
-  const res = await fetch('/api/campaigns/quick/prompt-suggestions');
-  if (!res.ok) throw new Error('Failed to fetch prompt suggestions');
-  return res.json();
-}
-
-export async function convertToCampaign(id: string, body: ConvertToCampaignBody): Promise<CampaignDetail> {
-  const res = await fetch(`/api/campaigns/quick/${id}/convert`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new Error('Failed to convert to campaign');
-  return res.json();
 }
 
 // ─── Knowledge Assets ──────────────────────────────────────

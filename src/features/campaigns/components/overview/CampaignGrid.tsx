@@ -13,7 +13,6 @@ interface CampaignGridProps {
   onCampaignClick: (id: string) => void;
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
-  onConvert: (id: string) => void;
 }
 
 export function CampaignGrid({
@@ -22,7 +21,6 @@ export function CampaignGrid({
   onCampaignClick,
   onArchive,
   onDelete,
-  onConvert,
 }: CampaignGridProps) {
   const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
 
@@ -62,7 +60,6 @@ export function CampaignGrid({
             key={campaign.id}
             campaign={campaign}
             onClick={() => onCampaignClick(campaign.id)}
-            onConvert={() => onConvert(campaign.id)}
             onDelete={() => onDelete(campaign.id)}
           />
         )
