@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveWorkspaceId } from '@/lib/auth-server';
-import { buildCreativePipelineContext, generateQuickConcept } from '@/lib/campaigns/strategy-chain';
+import { buildCreativePipelineContext, generateQuickConcept, buildConceptDrivenStrategy } from '@/lib/campaigns/strategy-chain';
 import type { StrategicIntent } from '@/lib/campaigns/strategy-blueprint.types';
 import { z } from 'zod';
 
@@ -32,15 +32,19 @@ const requestSchema = z.object({
 /**
  * POST /api/campaigns/wizard/strategy/quick-concept
  *
- * Fast path for creativeRange === 'single' in the Pipeline Config sliders.
- * Runs generateQuickConcept (single Gemini Flash call, ~30-60s) which
- * produces BOTH an insight and a creative concept in one shot, skipping
- * the full insight mining + creative leap phases.
+ * Atomic fast path for creativeRange === 'single'. Runs TWO things back-to-back
+ * in a single SSE call so the client sees one phase instead of three:
  *
- * Returns { insight, concept } wrapped in the CreativeLeapResult shape
- * (concepts array + auto-selected index + selectedInsight) so the client's
- * existing concept-review flow can pick up the result without knowing about
- * the fast path.
+ *   1. generateQuickConcept  — Gemini Flash, ~30-60s
+ *      Produces both an insight and a creative concept in one shot.
+ *
+ *   2. buildConceptDrivenStrategy — rigor-scoped model, ~30-90s (Flash tier)
+ *      Builds the full strategy + architecture on top of that concept so
+ *      downstream elaborate/content phases have something to work with.
+ *
+ * Returns the combined result so the ConceptStep client can land directly
+ * on review_concepts with the pre-built strategy in store — no separate
+ * "Strategy Build" spinner. Users see ONE atomic concept-generation phase.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -73,13 +77,25 @@ export async function POST(request: NextRequest) {
             pipelineConfig: body.pipelineConfig,
           });
 
+          // Phase 1: Generate the insight + concept in one Flash call.
           const { insight, concept } = await generateQuickConcept(
             ctx,
             (event) => sendEvent(event as Record<string, unknown>),
           );
 
-          // Return in the same shape as generate-concepts so the client
-          // can handle both paths uniformly in ConceptStep.
+          // Phase 2: Build the full strategy + architecture on top of the
+          // concept. Runs with the rigor tier chosen by the user — Fast
+          // means Flash here too (~30-60s). The client consumes this as
+          // part of the SAME "generating_concepts" phase so there's no
+          // intermediate UI spinner.
+          const { strategy, architecture } = await buildConceptDrivenStrategy(
+            ctx,
+            concept,
+            insight,
+            undefined, // no debate context in Single mode
+            (event) => sendEvent(event as Record<string, unknown>),
+          );
+
           sendEvent({
             type: 'complete',
             result: {
@@ -88,6 +104,8 @@ export async function POST(request: NextRequest) {
               selectedInsightIndex: 0,
               selectedConceptIndex: 0,
               selectedInsight: insight,
+              strategy,
+              architecture,
             },
           });
         } catch (error) {

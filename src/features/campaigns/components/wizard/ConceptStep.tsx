@@ -144,6 +144,9 @@ export function ConceptStep() {
 
   const handleMineInsights = useCallback(() => {
     const currentGenId = ++generationIdRef.current;
+    // Clear stale pipelineSteps from previous phases so the progress
+    // counter doesn't over-count ("2 of 1 steps completed" bug).
+    useCampaignWizardStore.setState({ pipelineSteps: [] });
     const store = useCampaignWizardStore.getState();
     store.setIsGenerating(true);
     store.setStrategyPhase("mining_insights");
@@ -190,17 +193,25 @@ export function ConceptStep() {
 
   // ─── Creative Pipeline: Quick Concept (single mode) ────
   //
-  // Fast path for creativeRange === 'single'. Calls the quick-concept SSE
-  // route which runs a single Gemini Flash call (~30-60s) that produces
-  // both an insight and a concept in one shot. Lands directly on
-  // review_concepts phase with the single concept pre-selected.
+  // Atomic fast path for creativeRange === 'single'. Calls the quick-concept
+  // SSE route which runs generateQuickConcept AND buildConceptDrivenStrategy
+  // back-to-back in ONE server call (~60-120s). The client sees a single
+  // "generating_concepts" phase, then lands on review_concepts with BOTH
+  // the concept AND the pre-built strategy already in store.
+  //
+  // Because the strategy is pre-built, handleConceptProceed can skip
+  // handleBuildStrategyFromConcept entirely in single mode and go straight
+  // to elaborate (campaign mode) or next step (content mode).
 
   const handleQuickConcept = useCallback(() => {
     const currentGenId = ++generationIdRef.current;
+    // Clear stale pipelineSteps from previous phases (prevents "2 of 1" bug
+    // where old entries leak into the progress counter).
+    useCampaignWizardStore.setState({ pipelineSteps: [] });
     const store = useCampaignWizardStore.getState();
     store.setIsGenerating(true);
     store.setStrategyPhase("generating_concepts");
-    store.updateStepStatus({ step: 1, name: "Quick Concept", status: "pending", label: "Generating insight and concept..." });
+    store.updateStepStatus({ step: 1, name: "Quick Concept", status: "pending", label: "Generating concept and strategy..." });
 
     const { abort } = quickConceptSSE(
       { workspaceId: "", wizardContext, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, pipelineConfig },
@@ -208,15 +219,25 @@ export function ConceptStep() {
         if (generationIdRef.current !== currentGenId) return;
         const data = event as Record<string, unknown>;
         if (data.type === "complete" && data.result) {
-          const result = data.result as { insights: HumanInsight[]; concepts: CreativeConcept[]; selectedInsightIndex: number; selectedConceptIndex: number };
+          const result = data.result as {
+            insights: HumanInsight[];
+            concepts: CreativeConcept[];
+            selectedInsightIndex: number;
+            selectedConceptIndex: number;
+            strategy: StrategyLayer;
+            architecture: ArchitectureLayer;
+          };
           const s = useCampaignWizardStore.getState();
-          // Populate BOTH insights and concepts with the single-item results,
-          // and auto-select index 0 so the downstream build-strategy path
-          // (which reads selectedInsightIndex + selectedConceptIndex) works.
+          // Store the concept AND the pre-built strategy. Setting both
+          // finalStrategyResult and synthesizedStrategy/Architecture lets
+          // downstream handlers (handleConceptProceed → handleElaborate)
+          // skip buildConceptDrivenStrategy since it's already done.
           s.setInsightResults(result.insights);
           s.setSelectedInsight(result.selectedInsightIndex);
           s.setConceptResults(result.concepts);
           s.setSelectedConcept(result.selectedConceptIndex);
+          s.setFinalStrategyResult({ strategy: result.strategy, architecture: result.architecture });
+          s.setSynthesisResult({ strategy: result.strategy, architecture: result.architecture });
           s.setIsGenerating(false);
           s.setStrategyPhase("review_concepts");
           return;
@@ -228,7 +249,9 @@ export function ConceptStep() {
           setPhaseError((data.error as string) || "Quick concept generation failed. Please try again.");
           return;
         }
-        if (data.step && data.name && data.status && data.label) {
+        // Only accept step events tagged with type='step' so we don't
+        // accidentally create duplicate entries from other event shapes.
+        if (data.type === 'step' && data.step && data.name && data.status && data.label) {
           useCampaignWizardStore.getState().updateStepStatus({ step: data.step as number, name: data.name as string, status: data.status as PipelineStepStatus, label: data.label as string });
         }
       },
@@ -260,6 +283,8 @@ export function ConceptStep() {
     if (!selectedInsight) return;
 
     const currentGenId = ++generationIdRef.current;
+    // Clear stale pipelineSteps from previous phases (2 of 1 bug fix).
+    useCampaignWizardStore.setState({ pipelineSteps: [] });
     store.setIsGenerating(true);
     store.setStrategyPhase("generating_concepts");
     store.updateStepStatus({ step: 1, name: "Creative Leap", status: "pending", label: "Generating concepts..." });
@@ -314,6 +339,8 @@ export function ConceptStep() {
     if (!approvedConcept || !approvedInsight) return;
 
     const currentGenId = ++generationIdRef.current;
+    // Clear stale pipelineSteps from previous phases (2 of 1 bug fix).
+    useCampaignWizardStore.setState({ pipelineSteps: [] });
     store.setIsGenerating(true);
     store.setStrategyPhase("building_strategy");
     store.updateStepStatus({ step: 1, name: "Strategy Build", status: "pending", label: "Building strategy..." });
@@ -378,6 +405,8 @@ export function ConceptStep() {
     if (!selectedConcept || !selectedInsight) return;
 
     const currentGenId = ++generationIdRef.current;
+    // Clear stale pipelineSteps from previous phases (2 of 1 bug fix).
+    useCampaignWizardStore.setState({ pipelineSteps: [] });
     store.setIsGenerating(true);
     store.setStrategyPhase("creative_debate");
     store.updateStepStatus({ step: 1, name: "Creative Debate", status: "pending", label: "AI critic and defender refining concept..." });
@@ -414,20 +443,6 @@ export function ConceptStep() {
     );
     abortRef.current = { abort };
   }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig]);
-
-  // Dispatch handler for the review_concepts Continue button:
-  // - critiqued mode runs the debate first (then chains to build-strategy)
-  // - all other modes go straight to build-strategy
-  const handleConceptProceed = useCallback(() => {
-    if (pipelineConfig.creativeRange === 'critiqued') {
-      const hasDebate = useCampaignWizardStore.getState().creativeDebateResult !== null;
-      if (!hasDebate) {
-        handleCreativeDebate();
-        return;
-      }
-    }
-    handleBuildStrategyFromConcept();
-  }, [pipelineConfig.creativeRange, handleCreativeDebate, handleBuildStrategyFromConcept]);
 
   // ─── Elaborate Journey ──────────────────────────────────
 
@@ -532,6 +547,28 @@ export function ConceptStep() {
     );
     abortRef.current = { abort };
   }, [strategicIntent, selectedContextIds, wizardContext, pipelineConfig]);
+
+  // Dispatch handler for the review_concepts Continue button:
+  // - single mode: strategy is already pre-built by handleQuickConcept,
+  //   so skip handleBuildStrategyFromConcept entirely and go straight
+  //   to handleElaborate. One less spinner for the user.
+  // - critiqued mode: run the creative debate first, then build-strategy.
+  // - multi-variant mode: build-strategy (standard path).
+  const handleConceptProceed = useCallback(() => {
+    if (pipelineConfig.creativeRange === 'single') {
+      // Strategy was built inline in quick-concept route — skip build phase.
+      handleElaborate();
+      return;
+    }
+    if (pipelineConfig.creativeRange === 'critiqued') {
+      const hasDebate = useCampaignWizardStore.getState().creativeDebateResult !== null;
+      if (!hasDebate) {
+        handleCreativeDebate();
+        return;
+      }
+    }
+    handleBuildStrategyFromConcept();
+  }, [pipelineConfig.creativeRange, handleCreativeDebate, handleBuildStrategyFromConcept, handleElaborate]);
 
   // ─── Auto-start creative pipeline when entering step 4 ──
   useEffect(() => {
@@ -688,18 +725,81 @@ export function ConceptStep() {
     );
   }
 
-  // Review concepts (VOTE 2)
+  // Review concepts — in Single mode (1 concept) show a simpler single-card
+  // view; in Multi-variant / Critiqued mode show the side-by-side comparison.
   if (strategyPhase === "review_concepts") {
+    if (pipelineConfig.creativeRange === 'single' && concepts.length === 1) {
+      const c = concepts[0];
+      return (
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto rounded-full bg-gradient-to-br from-violet-100 to-fuchsia-100 flex items-center justify-center mb-3">
+              <Sparkles className="w-5 h-5 text-violet-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">Your Creative Concept</h3>
+            <p className="text-sm text-muted-foreground">
+              Review the concept before we build your content. Click Continue to proceed, or regenerate if it doesn&apos;t fit.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-emerald-50 p-6 space-y-4">
+            <div>
+              <div className="text-xs uppercase tracking-wider text-primary-700 font-semibold mb-1">Campaign Line</div>
+              <div className="text-xl font-bold text-gray-900">{c.campaignLine || 'Untitled concept'}</div>
+            </div>
+
+            {c.bigIdea && (
+              <div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Big Idea</div>
+                <div className="text-sm text-gray-700">{c.bigIdea}</div>
+              </div>
+            )}
+
+            {c.creativeTerritory && (
+              <div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Creative Territory</div>
+                <div className="text-sm text-gray-700">{c.creativeTerritory}</div>
+              </div>
+            )}
+
+            {c.memorableDevice && (
+              <div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Memorable Device</div>
+                <div className="text-sm text-gray-700">{c.memorableDevice}</div>
+              </div>
+            )}
+
+            {c.visualWorld && (
+              <div>
+                <div className="text-xs uppercase tracking-wider text-gray-500 font-semibold mb-1">Visual World</div>
+                <div className="text-sm text-gray-700">{c.visualWorld}</div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRegenerateConcepts}
+              disabled={isGenerating}
+              icon={Sparkles}
+            >
+              Regenerate concept
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
-      <>
-        <ConceptComparisonView
-          concepts={concepts}
-          selectedIndex={selectedConceptIndex}
-          onSelect={(index) => setSelectedConcept(index)}
-          onRegenerate={handleRegenerateConcepts}
-          isRegenerating={isGenerating}
-        />
-      </>
+      <ConceptComparisonView
+        concepts={concepts}
+        selectedIndex={selectedConceptIndex}
+        onSelect={(index) => setSelectedConcept(index)}
+        onRegenerate={handleRegenerateConcepts}
+        isRegenerating={isGenerating}
+      />
     );
   }
 
