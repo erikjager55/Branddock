@@ -37,6 +37,11 @@ const requestSchema = z.object({
       whyItFailed: z.string(),
     })),
   }).optional(),
+  pipelineConfig: z.object({
+    strategyDepth: z.enum(['basic', 'grounded', 'research-backed']),
+    creativeRange: z.enum(['single', 'multi-variant', 'critiqued']),
+    modelRigor: z.enum(['fast', 'balanced', 'deliberate']),
+  }).optional(),
 });
 
 /**
@@ -72,6 +77,7 @@ export async function POST(request: NextRequest) {
             trendIds: body.trendIds,
             strategicIntent: body.strategicIntent as StrategicIntent | undefined,
             wizardContext: body.wizardContext,
+            pipelineConfig: body.pipelineConfig,
           });
 
           const result = await generateCreativeConcepts(ctx, body.selectedInsight as unknown as HumanInsight, (event) => sendEvent(event as Record<string, unknown>), body.regenerationContext);

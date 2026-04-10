@@ -6,6 +6,12 @@ import { z } from 'zod';
 
 export const maxDuration = 600;
 
+const pipelineConfigSchema = z.object({
+  strategyDepth: z.enum(['basic', 'grounded', 'research-backed']),
+  creativeRange: z.enum(['single', 'multi-variant', 'critiqued']),
+  modelRigor: z.enum(['fast', 'balanced', 'deliberate']),
+}).optional();
+
 const requestSchema = z.object({
   workspaceId: z.string().optional(),
   wizardContext: z.object({
@@ -20,6 +26,7 @@ const requestSchema = z.object({
   competitorIds: z.array(z.string()).optional(),
   trendIds: z.array(z.string()).optional(),
   strategicIntent: z.string().optional(),
+  pipelineConfig: pipelineConfigSchema,
 });
 
 /**
@@ -55,6 +62,7 @@ export async function POST(request: NextRequest) {
             trendIds: body.trendIds,
             strategicIntent: body.strategicIntent as StrategicIntent | undefined,
             wizardContext: body.wizardContext,
+            pipelineConfig: body.pipelineConfig,
           });
 
           const result = await generateInsights(ctx, (event) => sendEvent(event as Record<string, unknown>));

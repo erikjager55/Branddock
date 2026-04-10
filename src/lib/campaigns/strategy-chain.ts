@@ -69,6 +69,7 @@ import type {
   EnrichmentContext,
 } from './strategy-blueprint.types';
 import type { PipelineEvent } from '@/features/campaigns/types/campaign-wizard.types';
+import type { PipelineConfig, ModelRigor } from '@/features/campaigns/lib/pipeline-config';
 
 // ─── Constants ──────────────────────────────────────────────
 
@@ -87,6 +88,75 @@ const THINKING_CONFIG = {
   /** Synthesis uses the most thinking budget (Effie-level elevation) */
   anthropicSynthesis: { budgetTokens: 20_000 },
 };
+
+// ─── Model Rigor helpers ─────────────────────────────────────
+// Maps the user-facing ModelRigor dial to concrete model IDs and thinking
+// budgets per phase. Called by every LLM-heavy chain function.
+
+/** Multiplier applied to base thinking budgets by rigor tier. */
+const RIGOR_THINKING_MULTIPLIER: Record<ModelRigor, number> = {
+  fast: 0,         // no extended thinking
+  balanced: 0.4,   // ~40% of the 'deliberate' budget
+  deliberate: 1.0, // full budget
+};
+
+/**
+ * Fast-tier fallbacks per provider. Used when ModelRigor === 'fast'.
+ * These override whatever the user has set in Settings > AI Models for
+ * the strategy feature keys — fast is always fast.
+ */
+const FAST_TIER_MODELS: Record<AiProvider, string> = {
+  anthropic: 'claude-haiku-4-5-20251001',
+  openai: 'gpt-5.4-mini',
+  google: GEMINI_FLASH,
+};
+
+/**
+ * Balanced-tier fallbacks per provider. Used when ModelRigor === 'balanced'.
+ */
+const BALANCED_TIER_MODELS: Record<AiProvider, string> = {
+  anthropic: 'claude-sonnet-4-6',
+  openai: GPT_54,
+  google: 'gemini-3.1-flash-lite-preview',
+};
+
+/**
+ * Resolve model + provider for a given feature and rigor tier.
+ * - 'deliberate' respects workspace AI Models settings (user's choice wins)
+ * - 'balanced' downgrades to the balanced tier fallback for the provider
+ * - 'fast' forces the fast tier fallback
+ */
+async function resolveModelForRigor(
+  workspaceId: string,
+  featureKey: Parameters<typeof resolveFeatureModel>[1],
+  rigor: ModelRigor,
+): Promise<{ provider: AiProvider; model: string }> {
+  const base = await resolveFeatureModel(workspaceId, featureKey);
+  if (rigor === 'deliberate') return base;
+  const table = rigor === 'fast' ? FAST_TIER_MODELS : BALANCED_TIER_MODELS;
+  return { provider: base.provider, model: table[base.provider] };
+}
+
+/**
+ * Build a provider-keyed thinking config scaled by rigor tier.
+ * At 'fast' tier returns undefined (no thinking at all).
+ */
+function thinkingForRigor(
+  provider: string,
+  baseBudget: number,
+  rigor: ModelRigor,
+): { anthropic?: { budgetTokens: number }; openai?: { reasoningEffort: 'low' | 'medium' | 'high' }; google?: { thinkingBudget: number } } | undefined {
+  const multiplier = RIGOR_THINKING_MULTIPLIER[rigor];
+  if (multiplier === 0) return undefined;
+  const budget = Math.round(baseBudget * multiplier);
+  if (provider === 'anthropic') return { anthropic: { budgetTokens: budget } };
+  if (provider === 'openai') {
+    // OpenAI uses reasoning_effort enum, map our numeric rigor
+    return { openai: { reasoningEffort: rigor === 'deliberate' ? 'high' : 'medium' } };
+  }
+  if (provider === 'google') return { google: { thinkingBudget: budget } };
+  return undefined;
+}
 
 /** Wraps an AI call with step-specific error context for better debugging */
 async function withStepContext<T>(stepLabel: string, timeoutSec: number, fn: () => Promise<T>): Promise<T> {
@@ -124,6 +194,8 @@ interface GenerateOptions {
   strategicIntent?: StrategicIntent;
   /** When provided, the pipeline runs without a DB campaign lookup */
   wizardContext?: WizardContext;
+  /** Pipeline configuration (strategy depth / creative range / model rigor) */
+  pipelineConfig?: PipelineConfig;
 }
 
 // ─── Context Builders ───────────────────────────────────────
@@ -414,6 +486,12 @@ interface PhaseContext {
   trendIds?: string[];
   strategicIntent?: StrategicIntent;
   wizardContext: WizardContext;
+  /**
+   * Pipeline configuration dictating strategy depth, creative range and
+   * model rigor. When undefined the phase defaults to the equivalent of
+   * the "Standard" preset (grounded / multi-variant / balanced).
+   */
+  pipelineConfig?: PipelineConfig;
 }
 
 
@@ -1096,8 +1174,11 @@ export async function buildStrategyFoundation(
 
   const brandContextText = formatBrandContext(brandContext);
 
-  // Resolve Claude Opus for strategy foundation
-  const { model: resolvedModel, provider: resolvedProvider } = await resolveFeatureModel(workspaceId, 'campaign-strategy');
+  // Resolve strategy foundation model scaled by ModelRigor.
+  // 'deliberate' keeps the workspace's configured model (default: Opus),
+  // 'balanced' downgrades to Sonnet tier, 'fast' forces Haiku/Flash.
+  const rigor = ctx.pipelineConfig?.modelRigor ?? 'balanced';
+  const { model: resolvedModel, provider: resolvedProvider } = await resolveModelForRigor(workspaceId, 'campaign-strategy', rigor);
 
   // Step 3: Deep AI analysis (the long one)
   onProgress?.({ step: 3, name: 'Deep Analysis', status: 'running', label: 'Building behavioral analysis...' });
@@ -1129,11 +1210,15 @@ export async function buildStrategyFoundation(
     eastChecklist: sfEastChecklist,
   });
 
+  // Scale thinking budget by rigor. Base 16k maps to Deliberate's full 16k;
+  // Balanced gets ~6k; Fast skips thinking entirely (rigor multiplier 0).
+  const foundationThinking = thinkingForRigor(resolvedProvider, 16_000, rigor);
+
   const raw = await withStepContext('Phase 2 (Strategy Foundation)', 600, () =>
     createStructuredCompletion<StrategyFoundation>(
       resolvedProvider, resolvedModel,
       prompt.system, prompt.user,
-      { temperature: 0.4, maxTokens: 24000, timeoutMs: 600_000, thinking: { anthropic: THINKING_CONFIG.anthropic, openai: THINKING_CONFIG.openai, google: THINKING_CONFIG.google } },
+      { temperature: 0.4, maxTokens: 24000, timeoutMs: 600_000, thinking: foundationThinking },
     ),
   );
 
@@ -1185,14 +1270,6 @@ import type { HumanInsight, CreativeConcept, InsightMiningResult, CreativeLeapRe
 import type { GoldenbergTemplate } from '@/lib/goldenberg/goldenberg-templates';
 import { buildQuickConceptPrompt } from '@/lib/ai/prompts/campaign-strategy';
 
-/** Build provider-keyed thinking config from a provider string and budget */
-function thinkingFor(provider: string, budget: number): { anthropic?: { budgetTokens: number }; openai?: { reasoningEffort: 'high' }; google?: { thinkingBudget: number } } | undefined {
-  if (provider === 'anthropic') return { anthropic: { budgetTokens: budget } };
-  if (provider === 'openai') return { openai: { reasoningEffort: 'high' } };
-  if (provider === 'google') return { google: { thinkingBudget: budget } };
-  return undefined;
-}
-
 /** Shared context needed across new pipeline phases */
 interface CreativePipelineContext {
   workspaceId: string;
@@ -1207,6 +1284,11 @@ interface CreativePipelineContext {
   personaIds: string[];
   arenaContext?: string;
   exaContext?: string;
+  /**
+   * Pipeline configuration from the wizard. Determines which phases run
+   * and how deeply. Defaults to the Standard preset if omitted.
+   */
+  pipelineConfig: PipelineConfig;
 }
 
 /**
@@ -1220,6 +1302,12 @@ export async function buildCreativePipelineContext(
 ): Promise<CreativePipelineContext> {
   const wc = opts.wizardContext!;
   const goalType = wc.campaignGoalType ?? 'BRAND_AWARENESS';
+  // Default to Standard preset if no config is passed.
+  const pipelineConfig: PipelineConfig = opts.pipelineConfig ?? {
+    strategyDepth: 'grounded',
+    creativeRange: 'multi-variant',
+    modelRigor: 'balanced',
+  };
 
   // Parallel context fetching
   const [brandContextData, personaContext, productContext, competitorContext, trendContext] = await Promise.all([
@@ -1231,11 +1319,14 @@ export async function buildCreativePipelineContext(
   ]);
   const brandContext = formatBrandContext(brandContextData);
 
-  // Optional external enrichment (Are.na + Exa only — Scholar/BCT used in strategy build phase)
+  // External enrichment (Are.na + Exa only — Scholar runs in strategy foundation phase).
+  // Only fetched when strategyDepth is 'research-backed'. Users on Basic/Grounded
+  // get a faster, cheaper run without external API calls.
   let arenaContext: string | undefined;
   let exaContext: string | undefined;
 
-  if (wc.useExternalEnrichment) {
+  const shouldEnrich = pipelineConfig.strategyDepth === 'research-backed' && wc.useExternalEnrichment;
+  if (shouldEnrich) {
     onProgress?.({ type: 'enrichment', status: 'running' } as PipelineEvent);
 
     try {
@@ -1269,6 +1360,7 @@ export async function buildCreativePipelineContext(
     personaIds: opts.personaIds ?? [],
     arenaContext,
     exaContext,
+    pipelineConfig,
   };
 }
 
@@ -1284,25 +1376,20 @@ export async function generateInsights(
 ): Promise<InsightMiningResult> {
   onProgress?.({ type: 'step', step: 1, name: 'Insight Mining', status: 'running', label: 'Mining 3 human insights...' } as PipelineEvent);
 
-  const lenses: Array<{ role: 'empathy' | 'tension' | 'behavior'; provider: string; model: string }> = [
-    { role: 'empathy', provider: 'anthropic', model: CLAUDE_OPUS },
-    { role: 'tension', provider: 'openai', model: GPT_54 },
-    { role: 'behavior', provider: 'google', model: GEMINI_31_PRO },
-  ];
+  const rigor = ctx.pipelineConfig.modelRigor;
 
-  // Resolve workspace-level model overrides
+  // Resolve model tier per variant, scaled by ModelRigor.
   const [modelA, modelB, modelC] = await Promise.all([
-    resolveFeatureModel(ctx.workspaceId, 'campaign-strategy'),
-    resolveFeatureModel(ctx.workspaceId, 'campaign-strategy-b'),
-    resolveFeatureModel(ctx.workspaceId, 'campaign-strategy-c'),
+    resolveModelForRigor(ctx.workspaceId, 'campaign-strategy', rigor),
+    resolveModelForRigor(ctx.workspaceId, 'campaign-strategy-b', rigor),
+    resolveModelForRigor(ctx.workspaceId, 'campaign-strategy-c', rigor),
   ]);
 
-  lenses[0].provider = modelA.provider;
-  lenses[0].model = modelA.model;
-  lenses[1].provider = modelB.provider;
-  lenses[1].model = modelB.model;
-  lenses[2].provider = modelC.provider;
-  lenses[2].model = modelC.model;
+  const lenses: Array<{ role: 'empathy' | 'tension' | 'behavior'; provider: AiProvider; model: string }> = [
+    { role: 'empathy', provider: modelA.provider, model: modelA.model },
+    { role: 'tension', provider: modelB.provider, model: modelB.model },
+    { role: 'behavior', provider: modelC.provider, model: modelC.model },
+  ];
 
   const insightPromises = lenses.map(async (lens) => {
     const prompt = buildInsightMiningPrompt({
@@ -1318,11 +1405,11 @@ export async function generateInsights(
 
     const result = await withStepContext(`Insight Mining (${lens.role})`, 120, () =>
       createStructuredCompletion(
-        lens.provider as AiProvider,
+        lens.provider,
         lens.model,
         prompt.system,
         prompt.user,
-        { maxTokens: 16000, thinking: thinkingFor(lens.provider, 8000) },
+        { maxTokens: 16000, thinking: thinkingForRigor(lens.provider, 8000, rigor) },
       ),
     );
 
@@ -1379,11 +1466,12 @@ Emotional territory: ${selectedInsight.emotionalTerritory}
 Category convention: ${selectedInsight.categoryConvention}
 Human truth: ${selectedInsight.humanTruth}`;
 
-  // Resolve models
+  // Resolve models scaled by ModelRigor
+  const rigor = ctx.pipelineConfig.modelRigor;
   const [modelA, modelB, modelC] = await Promise.all([
-    resolveFeatureModel(ctx.workspaceId, 'campaign-strategy'),
-    resolveFeatureModel(ctx.workspaceId, 'campaign-strategy-b'),
-    resolveFeatureModel(ctx.workspaceId, 'campaign-strategy-c'),
+    resolveModelForRigor(ctx.workspaceId, 'campaign-strategy', rigor),
+    resolveModelForRigor(ctx.workspaceId, 'campaign-strategy-b', rigor),
+    resolveModelForRigor(ctx.workspaceId, 'campaign-strategy-c', rigor),
   ]);
 
   const assignments = [
@@ -1423,11 +1511,11 @@ Generate DIFFERENT concepts that address these failures.` : undefined,
 
     const result = await withStepContext(`Creative Leap (${a.template.name} × ${a.domain.name})`, 120, () =>
       createStructuredCompletion(
-        a.provider as AiProvider,
+        a.provider,
         a.model,
         prompt.system,
         prompt.user,
-        { maxTokens: 16000, thinking: thinkingFor(a.provider, 12_000) },
+        { maxTokens: 16000, thinking: thinkingForRigor(a.provider, 12_000, rigor) },
       ),
     );
 
@@ -1503,14 +1591,15 @@ export async function runCreativeDebate(
       previousRoundContext,
     });
 
-    const { model: criticModel, provider: criticProvider } = await resolveFeatureModel(ctx.workspaceId, 'campaign-strategy');
+    const rigor = ctx.pipelineConfig.modelRigor;
+    const { model: criticModel, provider: criticProvider } = await resolveModelForRigor(ctx.workspaceId, 'campaign-strategy', rigor);
     const critiqueRaw = await withStepContext(`Creative Critic (Round ${roundNum})`, 120, () =>
       createStructuredCompletion(
-        criticProvider as AiProvider,
+        criticProvider,
         criticModel,
         criticPrompt.system,
         criticPrompt.user,
-        { maxTokens: 16000, thinking: thinkingFor(criticProvider, budgets.critic) },
+        { maxTokens: 16000, thinking: thinkingForRigor(criticProvider, budgets.critic, rigor) },
       ),
     );
     let critique: unknown;
@@ -1551,14 +1640,14 @@ export async function runCreativeDebate(
       roundContext,
     });
 
-    const { model: defenseModel, provider: defenseProvider } = await resolveFeatureModel(ctx.workspaceId, 'campaign-strategy-b');
+    const { model: defenseModel, provider: defenseProvider } = await resolveModelForRigor(ctx.workspaceId, 'campaign-strategy-b', rigor);
     const defenseRaw = await withStepContext(`Creative Defense (Round ${roundNum})`, 120, () =>
       createStructuredCompletion(
-        defenseProvider as AiProvider,
+        defenseProvider,
         defenseModel,
         defensePrompt.system,
         defensePrompt.user,
-        { maxTokens: 16000, thinking: thinkingFor(defenseProvider, budgets.defense) },
+        { maxTokens: 16000, thinking: thinkingForRigor(defenseProvider, budgets.defense, rigor) },
       ),
     );
     let defense: unknown;
@@ -1717,15 +1806,16 @@ Bisociation: ${approvedConcept.bisociationDomain.domain} — ${approvedConcept.b
     bctContext,
   });
 
-  const { model, provider } = await resolveFeatureModel(ctx.workspaceId, 'campaign-strategy');
+  const rigor = ctx.pipelineConfig.modelRigor;
+  const { model, provider } = await resolveModelForRigor(ctx.workspaceId, 'campaign-strategy', rigor);
 
   const result = await withStepContext('Strategy Build', 180, () =>
     createStructuredCompletion(
-      provider as AiProvider,
+      provider,
       model,
       prompt.system,
       prompt.user,
-      { maxTokens: 32000, thinking: thinkingFor(provider, 20_000) },
+      { maxTokens: 32000, thinking: thinkingForRigor(provider, 20_000, rigor) },
     ),
   );
 

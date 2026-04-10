@@ -87,6 +87,7 @@ export function StrategyStep() {
   const enrichmentBlockCount = useCampaignWizardStore((s) => s.enrichmentBlockCount);
   const enrichmentSources = useCampaignWizardStore((s) => s.enrichmentSources);
   const useExternalEnrichment = useCampaignWizardStore((s) => s.useExternalEnrichment);
+  const pipelineConfig = useCampaignWizardStore((s) => s.pipelineConfig);
   // 9-Phase state
   const briefingValidation = useCampaignWizardStore((s) => s.briefingValidation);
   const strategyFoundation = useCampaignWizardStore((s) => s.strategyFoundation);
@@ -182,6 +183,7 @@ export function StrategyStep() {
         competitorIds: selectedContextIds.competitorIds,
         trendIds: selectedContextIds.trendIds,
         wizardContext,
+        pipelineConfig,
       },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
@@ -224,7 +226,7 @@ export function StrategyStep() {
       },
     );
     abortRef.current = { abort };
-  }, [strategicIntent, selectedContextIds, wizardContext]);
+  }, [strategicIntent, selectedContextIds, wizardContext, pipelineConfig]);
 
   // Auto-start strategy generation when step 3 is reached
   // In content mode, selectedContentType replaces campaignGoalType as the trigger
@@ -259,6 +261,7 @@ export function StrategyStep() {
         competitorIds: selectedContextIds.competitorIds,
         trendIds: selectedContextIds.trendIds,
         wizardContext,
+        pipelineConfig,
       },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
@@ -321,7 +324,7 @@ export function StrategyStep() {
       },
     );
     abortRef.current = { abort };
-  }, [strategicIntent, selectedContextIds, wizardContext]);
+  }, [strategicIntent, selectedContextIds, wizardContext, pipelineConfig]);
 
   // ─── Edit Briefing Manually ─────────────────────────
 
@@ -350,16 +353,29 @@ export function StrategyStep() {
     store.clearPhaseData();
   }, []);
 
+  // In Basic strategy mode we skip straight from briefing review to
+  // rationale_complete — no foundation building, no strategy review.
+  // This is the 'Quick' preset's fast path through the Strategy step.
+  const handleSkipFoundation = useCallback(() => {
+    const store = useCampaignWizardStore.getState();
+    store.setStrategyPhase("rationale_complete");
+  }, []);
+
   // ─── Set wizard Continue override for strategy step phases ────
   React.useEffect(() => {
     const store = useCampaignWizardStore.getState();
     if (strategyPhase === "review_briefing") {
-      store.setStepProceedOverride(handleBuildFoundation);
+      // Basic strategy depth skips the foundation phase entirely
+      if (pipelineConfig.strategyDepth === 'basic') {
+        store.setStepProceedOverride(handleSkipFoundation);
+      } else {
+        store.setStepProceedOverride(handleBuildFoundation);
+      }
     } else {
       store.setStepProceedOverride(null);
     }
     return () => { store.setStepProceedOverride(null); };
-  }, [strategyPhase, handleBuildFoundation]);
+  }, [strategyPhase, handleBuildFoundation, handleSkipFoundation, pipelineConfig.strategyDepth]);
 
   // Strategy step complete — auto-advance to Concept step
   // NOTE: This useEffect MUST be before any conditional returns (React hooks rule)

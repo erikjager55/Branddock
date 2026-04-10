@@ -54,7 +54,7 @@ function buildServerSnapshot(state: StoreState): DraftSnapshot {
     conceptFeedback: state.conceptFeedback,
     elaborateResult: state.elaborateResult,
     useExternalEnrichment: state.useExternalEnrichment,
-    pipelineDepth: state.pipelineDepth,
+    pipelineConfig: state.pipelineConfig,
     endorsedPersonaIds: state.endorsedPersonaIds,
     strategyRatings: state.strategyRatings,
     insights: state.insights,

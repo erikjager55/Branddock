@@ -716,6 +716,7 @@ export interface ElaborateJourneyBody {
   competitorIds?: string[];
   trendIds?: string[];
   strategicIntent?: StrategicIntent;
+  pipelineConfig?: PipelineConfigBody;
 }
 
 // ─── Pipeline Types ─────────────────────────────────────────
@@ -772,6 +773,18 @@ export interface RegenerateBlueprintBody {
 
 // ─── Phase-Based Pipeline Bodies ────────────────────────────
 
+/**
+ * Shared pipeline configuration shape for SSE request bodies. Duplicated
+ * here (instead of imported from features/campaigns/lib/pipeline-config)
+ * because this types file must stay dependency-free for use in both
+ * server and client contexts.
+ */
+export interface PipelineConfigBody {
+  strategyDepth: 'basic' | 'grounded' | 'research-backed';
+  creativeRange: 'single' | 'multi-variant' | 'critiqued';
+  modelRigor: 'fast' | 'balanced' | 'deliberate';
+}
+
 export interface ValidateBriefingBody {
   personaIds?: string[];
   productIds?: string[];
@@ -785,6 +798,7 @@ export interface ValidateBriefingBody {
     briefing?: CampaignBriefing;
     useExternalEnrichment?: boolean;
   };
+  pipelineConfig?: PipelineConfigBody;
 }
 
 export interface ImproveBriefingBody {
@@ -820,6 +834,7 @@ export interface BuildFoundationBody {
     briefing?: CampaignBriefing;
     useExternalEnrichment?: boolean;
   };
+  pipelineConfig?: PipelineConfigBody;
 }
 
 export interface GenerateHooksBody {

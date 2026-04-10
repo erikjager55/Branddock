@@ -3,6 +3,14 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { getTimeBinding } from "../lib/goal-types";
 import { getRecommendedCampaignType } from "../lib/campaign-types";
 import { getStepsForMode } from "../lib/wizard-steps";
+import {
+  PIPELINE_PRESETS,
+  getDefaultPresetForMode,
+  type PipelineConfig,
+  type StrategyDepth,
+  type CreativeRange,
+  type ModelRigor,
+} from "../lib/pipeline-config";
 import type {
   CampaignType,
   CampaignGoalType,
@@ -112,8 +120,12 @@ interface CampaignWizardState {
   // ─── External Enrichment Toggle ──────────────────────────────
   useExternalEnrichment: boolean;
 
-  // ─── Pipeline Depth Toggle ──────────────────────────────────
-  pipelineDepth: 'full' | 'quick';
+  // ─── Pipeline Configuration ──────────────────────────────────
+  /**
+   * Controls the depth, breadth and rigor of the generation pipeline.
+   * Replaces the old binary pipelineDepth toggle. See pipeline-config.ts.
+   */
+  pipelineConfig: PipelineConfig;
 
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: string[];
@@ -217,8 +229,16 @@ interface CampaignWizardState {
   // ─── External Enrichment Actions ─────────────────────────────
   setUseExternalEnrichment: (enabled: boolean) => void;
 
-  // ─── Pipeline Depth Actions ──────────────────────────────────
-  setPipelineDepth: (depth: 'full' | 'quick') => void;
+  // ─── Pipeline Configuration Actions ──────────────────────────
+  setPipelineConfig: (config: PipelineConfig) => void;
+  setStrategyDepth: (depth: StrategyDepth) => void;
+  setCreativeRange: (range: CreativeRange) => void;
+  setModelRigor: (rigor: ModelRigor) => void;
+  /**
+   * Snap all three parameters to a named preset's values. Pass 'quick',
+   * 'standard' or 'award-grade'. Use this from preset buttons.
+   */
+  applyPipelinePreset: (preset: 'quick' | 'standard' | 'award-grade') => void;
 
   // ─── Step Proceed Override ──────────────────────────────────
   /** When set, the wizard Continue button calls this instead of nextStep(). Cleared on step change. */
@@ -317,8 +337,10 @@ const INITIAL_STATE = {
   // ─── External Enrichment (always enabled, auto-detected) ──────────────────────────────
   useExternalEnrichment: true,
 
-  // ─── Pipeline Depth ──────────────────────────────────────────
-  pipelineDepth: 'full' as 'full' | 'quick',
+  // ─── Pipeline Configuration ──────────────────────────────────
+  // Defaults to Standard (campaign mode default). Overridden to Quick by
+  // App.tsx onNavigateToContentWizard when content mode is chosen.
+  pipelineConfig: PIPELINE_PRESETS.standard as PipelineConfig,
 
   // ─── Interactive Feedback (Hook Review) ──────────────────────
   endorsedPersonaIds: [] as string[],
@@ -385,7 +407,13 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
       });
     },
     setCurrentStep: (step) => set({ currentStep: step }),
-    setWizardMode: (wizardMode) => set({ wizardMode }),
+    setWizardMode: (wizardMode) =>
+      set({
+        wizardMode,
+        // Reset to the mode's default pipeline preset on mode switch.
+        // Users who want a custom config can still tweak the sliders after.
+        pipelineConfig: getDefaultPresetForMode(wizardMode),
+      }),
     nextStep: () =>
       set((s) => {
         const maxStep = getStepsForMode(s.wizardMode).length;
@@ -618,8 +646,16 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
     // ─── External Enrichment Actions ─────────────────────────────
     setUseExternalEnrichment: (useExternalEnrichment) => set({ useExternalEnrichment }),
 
-    // ─── Pipeline Depth Actions ──────────────────────────────────
-    setPipelineDepth: (pipelineDepth) => set({ pipelineDepth }),
+    // ─── Pipeline Configuration Actions ──────────────────────────
+    setPipelineConfig: (pipelineConfig) => set({ pipelineConfig }),
+    setStrategyDepth: (strategyDepth) =>
+      set((s) => ({ pipelineConfig: { ...s.pipelineConfig, strategyDepth } })),
+    setCreativeRange: (creativeRange) =>
+      set((s) => ({ pipelineConfig: { ...s.pipelineConfig, creativeRange } })),
+    setModelRigor: (modelRigor) =>
+      set((s) => ({ pipelineConfig: { ...s.pipelineConfig, modelRigor } })),
+    applyPipelinePreset: (preset) =>
+      set({ pipelineConfig: { ...PIPELINE_PRESETS[preset] } }),
 
     // ─── Step Proceed Override ──────────────────────────────────
     setStepProceedOverride: (fn) => set({ stepProceedOverride: fn }),
@@ -738,7 +774,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
         conceptFeedback: state.conceptFeedback,
         elaborateResult: state.elaborateResult,
         useExternalEnrichment: state.useExternalEnrichment,
-        pipelineDepth: state.pipelineDepth,
+        pipelineConfig: state.pipelineConfig,
         endorsedPersonaIds: state.endorsedPersonaIds,
         strategyRatings: state.strategyRatings,
         generatedCampaignId: state.generatedCampaignId,

@@ -105,7 +105,7 @@ export function StrategyFoundationReviewView({
         </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
           AI has built a behavioral science-driven strategy foundation. Review
-          the insights and provide feedback before creative hook generation.
+          the insights and provide feedback before creative concept generation.
         </p>
       </div>
 
@@ -420,7 +420,7 @@ export function StrategyFoundationReviewView({
       {/* Actions */}
       <div className="flex items-center justify-center gap-3 pt-4 border-t border-gray-100">
         <Button variant="primary" onClick={onProceed}>
-          Generate Creative Hooks
+          Develop Creative Concept
         </Button>
       </div>
     </div>

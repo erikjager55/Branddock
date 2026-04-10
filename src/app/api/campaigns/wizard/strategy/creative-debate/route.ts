@@ -22,6 +22,11 @@ const requestSchema = z.object({
   strategicIntent: z.string().optional(),
   selectedConcept: z.object({}).passthrough(),
   selectedInsight: z.object({}).passthrough(),
+  pipelineConfig: z.object({
+    strategyDepth: z.enum(['basic', 'grounded', 'research-backed']),
+    creativeRange: z.enum(['single', 'multi-variant', 'critiqued']),
+    modelRigor: z.enum(['fast', 'balanced', 'deliberate']),
+  }).optional(),
 });
 
 /**
@@ -57,6 +62,7 @@ export async function POST(request: NextRequest) {
             trendIds: body.trendIds,
             strategicIntent: body.strategicIntent as StrategicIntent | undefined,
             wizardContext: body.wizardContext,
+            pipelineConfig: body.pipelineConfig,
           });
 
           const result = await runCreativeDebate(ctx, body.selectedConcept as unknown as CreativeConcept, body.selectedInsight as unknown as HumanInsight, (event) => sendEvent(event as Record<string, unknown>));

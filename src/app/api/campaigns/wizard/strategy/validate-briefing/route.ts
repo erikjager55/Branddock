@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
               trendIds: body.trendIds,
               strategicIntent: body.strategicIntent,
               wizardContext: body.wizardContext,
+              pipelineConfig: body.pipelineConfig,
             },
             (event) => sendEvent(event),
           );

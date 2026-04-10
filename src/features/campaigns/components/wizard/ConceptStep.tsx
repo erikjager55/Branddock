@@ -14,6 +14,7 @@ import {
   mineInsightsSSE,
   generateConceptsSSE,
   buildStrategySSE,
+  creativeDebateSSE,
   elaborateJourneySSE,
 } from "../../api/campaigns.api";
 import type { PipelineStepStatus } from "../../types/campaign-wizard.types";
@@ -75,7 +76,7 @@ export function ConceptStep() {
   const enrichmentBlockCount = useCampaignWizardStore((s) => s.enrichmentBlockCount);
   const enrichmentSources = useCampaignWizardStore((s) => s.enrichmentSources);
   const useExternalEnrichment = useCampaignWizardStore((s) => s.useExternalEnrichment);
-  const pipelineDepth = useCampaignWizardStore((s) => s.pipelineDepth);
+  const pipelineConfig = useCampaignWizardStore((s) => s.pipelineConfig);
 
 
 
@@ -148,7 +149,7 @@ export function ConceptStep() {
     store.updateStepStatus({ step: 1, name: "Insight Mining", status: "pending", label: "Mining insights..." });
 
     const { abort } = mineInsightsSSE(
-      { workspaceId: "", wizardContext, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent },
+      { workspaceId: "", wizardContext, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, pipelineConfig },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
         const data = event as Record<string, unknown>;
@@ -184,7 +185,7 @@ export function ConceptStep() {
       },
     );
     abortRef.current = { abort };
-  }, [wizardContext, selectedContextIds, strategicIntent]);
+  }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig]);
 
   // ─── Creative Pipeline: Generate Concepts ─────────────
 
@@ -205,7 +206,7 @@ export function ConceptStep() {
     const regenCtx = fc.length > 0 ? { feedback: rb, failedConcepts: fc } : undefined;
 
     const { abort } = generateConceptsSSE(
-      { workspaceId: "", wizardContext, selectedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, regenerationContext: regenCtx },
+      { workspaceId: "", wizardContext, selectedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, regenerationContext: regenCtx, pipelineConfig },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
         const data = event as Record<string, unknown>;
@@ -236,7 +237,7 @@ export function ConceptStep() {
       },
     );
     abortRef.current = { abort };
-  }, [wizardContext, selectedContextIds, strategicIntent]);
+  }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig]);
 
   // ─── Creative Pipeline: Build Strategy from Concept ─────
 
@@ -255,7 +256,7 @@ export function ConceptStep() {
     store.updateStepStatus({ step: 1, name: "Strategy Build", status: "pending", label: "Building strategy..." });
 
     const { abort } = buildStrategySSE(
-      { workspaceId: "", wizardContext, approvedConcept, approvedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent },
+      { workspaceId: "", wizardContext, approvedConcept, approvedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, pipelineConfig },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
         const data = event as Record<string, unknown>;
@@ -287,7 +288,83 @@ export function ConceptStep() {
       },
     );
     abortRef.current = { abort };
-  }, [wizardContext, selectedContextIds, strategicIntent]);
+  }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig]);
+
+  // ─── Creative Pipeline: Debate (critiqued mode only) ────
+  //
+  // When creativeRange === 'critiqued', the review_concepts Continue flow
+  // runs a multi-round creative debate BEFORE building the final strategy.
+  // On completion, the debate result is stored and handleBuildStrategyFromConcept
+  // picks it up via store.creativeDebateResult?.improvedConcept.
+  //
+  // buildStrategyRef is used to avoid a circular useCallback dep between
+  // debate and build-strategy. It always points to the latest version.
+
+  const buildStrategyRef = useRef(handleBuildStrategyFromConcept);
+  useEffect(() => {
+    buildStrategyRef.current = handleBuildStrategyFromConcept;
+  }, [handleBuildStrategyFromConcept]);
+
+  const handleCreativeDebate = useCallback(() => {
+    const store = useCampaignWizardStore.getState();
+    const insightIdx = store.selectedInsightIndex;
+    const conceptIdx = store.selectedConceptIndex;
+    if (insightIdx === null || conceptIdx === null) return;
+    const selectedConcept = store.concepts[conceptIdx];
+    const selectedInsight = store.insights[insightIdx];
+    if (!selectedConcept || !selectedInsight) return;
+
+    const currentGenId = ++generationIdRef.current;
+    store.setIsGenerating(true);
+    store.setStrategyPhase("creative_debate");
+    store.updateStepStatus({ step: 1, name: "Creative Debate", status: "pending", label: "AI critic and defender refining concept..." });
+
+    const { abort } = creativeDebateSSE(
+      { workspaceId: "", wizardContext, selectedConcept, selectedInsight, personaIds: selectedContextIds.personaIds, productIds: selectedContextIds.productIds, competitorIds: selectedContextIds.competitorIds, trendIds: selectedContextIds.trendIds, strategicIntent, pipelineConfig },
+      (event) => {
+        if (generationIdRef.current !== currentGenId) return;
+        const data = event as Record<string, unknown>;
+        if (data.type === "complete" && data.result) {
+          const s = useCampaignWizardStore.getState();
+          s.setCreativeDebateResult(data.result as Parameters<typeof s.setCreativeDebateResult>[0]);
+          // Chain into build-strategy which will pick up improvedConcept
+          buildStrategyRef.current();
+          return;
+        }
+        if (data.type === "error") {
+          // Fall back to building strategy without debate refinement
+          const s = useCampaignWizardStore.getState();
+          s.setIsGenerating(false);
+          buildStrategyRef.current();
+          return;
+        }
+        if (data.step && data.name && data.status && data.label) {
+          useCampaignWizardStore.getState().updateStepStatus({ step: data.step as number, name: data.name as string, status: data.status as PipelineStepStatus, label: data.label as string });
+        }
+      },
+      () => {
+        if (generationIdRef.current !== currentGenId) return;
+        // Network error — fall through to build-strategy without debate
+        useCampaignWizardStore.getState().setIsGenerating(false);
+        buildStrategyRef.current();
+      },
+    );
+    abortRef.current = { abort };
+  }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig]);
+
+  // Dispatch handler for the review_concepts Continue button:
+  // - critiqued mode runs the debate first (then chains to build-strategy)
+  // - all other modes go straight to build-strategy
+  const handleConceptProceed = useCallback(() => {
+    if (pipelineConfig.creativeRange === 'critiqued') {
+      const hasDebate = useCampaignWizardStore.getState().creativeDebateResult !== null;
+      if (!hasDebate) {
+        handleCreativeDebate();
+        return;
+      }
+    }
+    handleBuildStrategyFromConcept();
+  }, [pipelineConfig.creativeRange, handleCreativeDebate, handleBuildStrategyFromConcept]);
 
   // ─── Elaborate Journey ──────────────────────────────────
 
@@ -326,6 +403,7 @@ export function ConceptStep() {
         competitorIds: selectedContextIds.competitorIds,
         trendIds: selectedContextIds.trendIds,
         strategicIntent,
+        pipelineConfig,
       },
       (event) => {
         if (generationIdRef.current !== currentGenId) return;
@@ -390,22 +468,23 @@ export function ConceptStep() {
       },
     );
     abortRef.current = { abort };
-  }, [strategicIntent, selectedContextIds, wizardContext]);
+  }, [strategicIntent, selectedContextIds, wizardContext, pipelineConfig]);
 
   // ─── Auto-start creative pipeline when entering step 4 ──
   useEffect(() => {
     if (strategyPhase === "rationale_complete" && !isGenerating && !autoStartedRef.current) {
       autoStartedRef.current = true;
-      if (pipelineDepth === 'quick') {
-        // Quick mode: skip insight mining, go directly to concept generation
-        // Use the strategy foundation as implicit insight and generate a single concept
+      // creativeRange 'single' skips insight mining and goes directly to a
+      // lightweight single concept. 'multi-variant' and 'critiqued' both
+      // start with insight mining; 'critiqued' additionally runs the debate
+      // rounds after concept selection (handled by handleBuildStrategy).
+      if (pipelineConfig.creativeRange === 'single') {
         handleGenerateConcepts();
       } else {
-        // Full mode: start with insight mining (creative quality pipeline)
         handleMineInsights();
       }
     }
-  }, [strategyPhase, isGenerating, handleMineInsights, handleGenerateConcepts, pipelineDepth]);
+  }, [strategyPhase, isGenerating, handleMineInsights, handleGenerateConcepts, pipelineConfig.creativeRange]);
 
   // ─── Regenerate Concepts with Feedback ──────────────────
   const handleRegenerateConcepts = useCallback(async () => {
@@ -461,7 +540,9 @@ export function ConceptStep() {
     if (strategyPhase === "review_insights") {
       store.setStepProceedOverride(handleGenerateConcepts);
     } else if (strategyPhase === "review_concepts") {
-      store.setStepProceedOverride(handleBuildStrategyFromConcept);
+      // Dispatch handler routes to creative debate first when critiqued,
+      // or straight to build-strategy otherwise.
+      store.setStepProceedOverride(handleConceptProceed);
     } else if (strategyPhase === "review_final_strategy" && elaborateResult) {
       // Blueprint assembly, not re-elaboration
       store.setStepProceedOverride(handleApprove);
@@ -471,7 +552,7 @@ export function ConceptStep() {
       store.setStepProceedOverride(null);
     }
     return () => { store.setStepProceedOverride(null); };
-  }, [strategyPhase, handleGenerateConcepts, handleBuildStrategyFromConcept, handleElaborate, handleApprove, elaborateResult]);
+  }, [strategyPhase, handleGenerateConcepts, handleConceptProceed, handleElaborate, handleApprove, elaborateResult]);
 
   // ─── Render based on phase ─────────────────────────────
 
