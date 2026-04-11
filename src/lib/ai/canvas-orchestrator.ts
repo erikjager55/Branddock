@@ -183,50 +183,19 @@ export async function* orchestrateContentGeneration(
     };
   }
 
-  // ── Step 3: Generate images ───────────────────────────
-  let imageResults: Array<ImageResult | null> = [];
-  let imageDurationMs = 0;
-
-  if (hasImageComponent && textResult.imagePrompts?.length) {
-    yield {
-      event: 'image_prompt_ready',
-      data: {
-        prompts: textResult.imagePrompts.map((p) => p.description),
-      },
-    };
-
-    yield {
-      event: 'image_generating',
-      data: { status: 'generating', count: textResult.imagePrompts.length },
-    };
-
-    const imageGenStart = Date.now();
-    imageResults = await generateImages(
-      textResult.imagePrompts.map((p) => p.description),
-      stack.brand,
-      workspaceId,
-    );
-    imageDurationMs = Date.now() - imageGenStart;
-
-    const successfulImages = imageResults.filter((r): r is ImageResult => r !== null);
-    if (successfulImages.length > 0) {
-      yield {
-        event: 'image_complete',
-        data: {
-          variants: successfulImages.map((r, i) => ({
-            index: i,
-            url: r.url,
-            prompt: r.prompt,
-          })),
-        },
-      };
-    } else {
-      yield {
-        event: 'error',
-        data: { message: 'All image generations failed', recoverable: true },
-      };
-    }
-  }
+  // ── Step 3: Image generation is now manual ────────────
+  //
+  // Images are no longer auto-generated during the orchestrator run.
+  // The user selects or generates images explicitly in Step 3 (Medium)
+  // of the Content Canvas, via the InsertImageModal which offers four
+  // sources: Upload / Import URL / Stock Photos (Pexels) / Generate
+  // Image (AI Studio flow). This keeps text generation fast (~15-30s
+  // instead of ~30-60s) and gives the user control over visual choice.
+  //
+  // The `hasImageComponent` flag and `textResult.imagePrompts` are kept
+  // for backward compatibility but no longer trigger anything server-side.
+  const imageResults: Array<ImageResult | null> = [];
+  const imageDurationMs = 0;
 
   // ── Step 4: Calculate publish suggestion ──────────────
   let publishSuggestion: PublishSuggestion | null = null;
