@@ -38,6 +38,35 @@ export async function updateComponentContent(
   if (!res.ok) throw new Error('Failed to update component content');
 }
 
+/**
+ * Set or replace the hero image of a deliverable. Upserts a single
+ * DeliverableComponent row with variantGroup='hero-image'.
+ */
+export async function setHeroImage(
+  deliverableId: string,
+  body: {
+    imageUrl: string;
+    imageSource?: 'library' | 'url-import' | 'stock' | 'ai-generated' | 'upload';
+    mediaAssetId?: string | null;
+    alt?: string | null;
+  },
+): Promise<void> {
+  const res = await fetch(`/api/studio/${deliverableId}/hero-image`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error('Failed to save hero image');
+}
+
+/** Remove the hero image of a deliverable. */
+export async function clearHeroImage(deliverableId: string): Promise<void> {
+  const res = await fetch(`/api/studio/${deliverableId}/hero-image`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to clear hero image');
+}
+
 /** Update approval status for a deliverable */
 export async function updateApprovalStatus(
   deliverableId: string,

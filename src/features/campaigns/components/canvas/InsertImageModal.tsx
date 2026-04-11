@@ -3,7 +3,10 @@
 import React, { useState } from 'react';
 import { Library, Link as LinkIcon, Images, Wand2 } from 'lucide-react';
 import { Modal } from '@/components/shared';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCanvasStore } from '../../stores/useCanvasStore';
+import { setHeroImage as persistHeroImage } from '../../api/canvas.api';
+import { canvasKeys } from '../../hooks/canvas.hooks';
 import { LibraryTab } from './insert-image/LibraryTab';
 import { UrlImportTab } from './insert-image/UrlImportTab';
 import { StockPhotosTab } from './insert-image/StockPhotosTab';
@@ -36,16 +39,45 @@ export function InsertImageModal() {
   const isOpen = useCanvasStore((s) => s.insertImageModalOpen);
   const setOpen = useCanvasStore((s) => s.setInsertImageModalOpen);
   const setHeroImage = useCanvasStore((s) => s.setHeroImage);
+  const deliverableId = useCanvasStore((s) => s.deliverableId);
+  const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<InsertImageTab>('library');
 
-  const handleSelected = (selection: InsertImageSelection) => {
+  const handleSelected = async (selection: InsertImageSelection) => {
+    // Optimistic update — image appears in the preview immediately.
     setHeroImage({
       url: selection.url,
       mediaAssetId: selection.mediaAssetId,
       alt: selection.alt,
     });
     setOpen(false);
+
+    // Persist to the deliverable as a DeliverableComponent (hero-image
+    // variantGroup). Best-effort — if it fails the user still sees the
+    // image locally; the next save attempt will retry.
+    if (deliverableId) {
+      try {
+        await persistHeroImage(deliverableId, {
+          imageUrl: selection.url,
+          imageSource:
+            activeTab === 'library'
+              ? 'library'
+              : activeTab === 'url'
+                ? 'url-import'
+                : activeTab === 'stock'
+                  ? 'stock'
+                  : 'ai-generated',
+          mediaAssetId: selection.mediaAssetId,
+          alt: selection.alt ?? null,
+        });
+        // Invalidate the canvas components query so a fresh load picks
+        // up the persisted hero image (e.g. after refresh or remount).
+        queryClient.invalidateQueries({ queryKey: canvasKeys.components(deliverableId) });
+      } catch (err) {
+        console.error('[InsertImageModal] Failed to persist hero image:', err);
+      }
+    }
   };
 
   return (

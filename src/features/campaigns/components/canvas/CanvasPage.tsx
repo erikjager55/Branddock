@@ -77,14 +77,43 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
   // If components exist, we also auto-advance to step 2 so the user lands on
   // the existing content review instead of the "Generate Content" button —
   // which would otherwise look like the generation still needs to happen.
+  //
+  // Hero image (variantGroup === 'hero-image') is treated separately and
+  // populates canvasStore.heroImage instead of variantGroups, since it's
+  // a single image not a text variant group.
   useEffect(() => {
     if (!existingComponents || existingComponents.length === 0) return;
     const storeState = useCanvasStore.getState();
+
+    // Hero image — always reload (even if heroImage is already set, the
+    // server is the source of truth on mount).
+    const heroComp = existingComponents.find(
+      (c) => c.variantGroup === 'hero-image' && c.imageUrl,
+    );
+    if (heroComp?.imageUrl) {
+      // imageSource is stored as "<source>:<mediaAssetId>" or just "<source>"
+      const sourceTag = heroComp.imageSource ?? '';
+      const colonIdx = sourceTag.indexOf(':');
+      const mediaAssetId = colonIdx >= 0 ? sourceTag.slice(colonIdx + 1) : null;
+      storeState.setHeroImage({
+        url: heroComp.imageUrl,
+        mediaAssetId: mediaAssetId || null,
+        alt: heroComp.visualBrief ?? undefined,
+      });
+    } else if (storeState.heroImage) {
+      // Server has no hero image — clear any stale local state from a
+      // previous deliverable in the same canvas store.
+      storeState.setHeroImage(null);
+    }
+
+    // Text variants — only load if store is empty (avoid clobbering an
+    // in-flight orchestration).
     if (storeState.variantGroups.size > 0) return;
 
     const groups = new Map<string, typeof existingComponents>();
     for (const comp of existingComponents) {
-      if (!comp.variantGroup) continue;
+      // Skip the hero image — handled above
+      if (!comp.variantGroup || comp.variantGroup === 'hero-image') continue;
       const existing = groups.get(comp.variantGroup) ?? [];
       existing.push(comp);
       groups.set(comp.variantGroup, existing);
