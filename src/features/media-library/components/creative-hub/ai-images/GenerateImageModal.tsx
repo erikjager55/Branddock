@@ -11,7 +11,7 @@ import {
   PROVIDER_REGISTRY,
   recommendProviders,
 } from '@/features/media-library/lib/recommend-provider';
-import type { ImageProvider } from '@/features/media-library/types/media.types';
+import type { ImageProvider, GeneratedImageWithMeta } from '@/features/media-library/types/media.types';
 import type {
   ImageKind,
   ImagePurpose,
@@ -63,6 +63,14 @@ interface GenerateImageModalProps {
   preselectedModel?: TrainedModelOption | null;
   preselectedModelId?: string | null;
   trainedModels?: TrainedModelOption[];
+  /**
+   * Optional callback fired AFTER a successful generation, BEFORE the
+   * modal closes itself. Receives the freshly created GeneratedImage so
+   * the caller can hand it off (e.g. send-to-library + link to a canvas
+   * deliverable). When provided, the consumer is responsible for any
+   * post-success UX.
+   */
+  onGenerated?: (image: GeneratedImageWithMeta) => void | Promise<void>;
 }
 
 // ─── Sub-components ─────────────────────────────────────────
@@ -172,6 +180,7 @@ export function GenerateImageModal({
   preselectedModel,
   preselectedModelId,
   trainedModels = [],
+  onGenerated,
 }: GenerateImageModalProps) {
   const generateImage = useGenerateAiImage();
 
@@ -284,7 +293,21 @@ export function GenerateImageModal({
             ? { size: dalleSize, quality: dalleQuality, style: dalleStyle }
             : { aspectRatio }),
       },
-      { onSuccess: handleClose },
+      {
+        onSuccess: async (image) => {
+          // If a consumer wants to do something with the result (e.g. the
+          // canvas Insert Image flow which sends-to-library + links to
+          // the deliverable), give it a chance before we reset/close.
+          if (onGenerated) {
+            try {
+              await onGenerated(image);
+            } catch (err) {
+              console.error('[GenerateImageModal] onGenerated failed:', err);
+            }
+          }
+          handleClose();
+        },
+      },
     );
   };
 
