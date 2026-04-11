@@ -3,15 +3,15 @@
 import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { PreviewFrame } from './PreviewFrame';
+import { HeroImageSlot } from './HeroImageSlot';
 import { ThumbsUp, MessageCircle, Repeat2, Send, Globe } from 'lucide-react';
 
 const LINKEDIN_BLUE = '#0A66C2';
 
 /** LinkedIn organic post mockup */
-export function LinkedInPostPreview({ previewContent, imageVariants, isGenerating }: PlatformPreviewProps) {
+export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, onAddImage }: PlatformPreviewProps) {
   const body = previewContent.body?.content ?? previewContent.caption?.content ?? '';
   const headline = previewContent.headline?.content ?? '';
-  const selectedImage = imageVariants.find((img) => img.isSelected);
 
   if (isGenerating) {
     return (
@@ -59,14 +59,10 @@ export function LinkedInPostPreview({ previewContent, imageVariants, isGeneratin
         </p>
       )}
 
-      {/* Image */}
-      {selectedImage && (
-        <img
-          src={selectedImage.url}
-          alt={selectedImage.prompt}
-          className="w-full rounded object-cover max-h-48"
-        />
-      )}
+      {/* Hero image slot */}
+      <div className="mt-1 mb-1">
+        <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[1.91/1]" />
+      </div>
 
       {/* Engagement bar */}
       <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">

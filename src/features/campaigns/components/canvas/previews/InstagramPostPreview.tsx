@@ -3,14 +3,14 @@
 import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { PreviewFrame } from './PreviewFrame';
+import { HeroImageSlot } from './HeroImageSlot';
 import { Heart, MessageCircle, Send, Bookmark } from 'lucide-react';
 
 const INSTAGRAM_GRADIENT = '#E1306C';
 
 /** Instagram feed post mockup */
-export function InstagramPostPreview({ previewContent, imageVariants, isGenerating }: PlatformPreviewProps) {
+export function InstagramPostPreview({ previewContent, isGenerating, heroImage, onAddImage }: PlatformPreviewProps) {
   const caption = previewContent.caption?.content ?? previewContent.body?.content ?? '';
-  const selectedImage = imageVariants.find((img) => img.isSelected);
 
   if (isGenerating) {
     return (
@@ -37,18 +37,10 @@ export function InstagramPostPreview({ previewContent, imageVariants, isGenerati
         <p className="text-xs font-semibold text-gray-900">brandname</p>
       </div>
 
-      {/* Image (square) */}
-      {selectedImage ? (
-        <img
-          src={selectedImage.url}
-          alt={selectedImage.prompt}
-          className="w-full aspect-square rounded object-cover mb-3"
-        />
-      ) : (
-        <div className="w-full aspect-square rounded bg-gray-100 flex items-center justify-center mb-3">
-          <span className="text-xs text-gray-400">Image will appear here</span>
-        </div>
-      )}
+      {/* Hero image slot — square for Instagram feed */}
+      <div className="mb-3">
+        <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-square" />
+      </div>
 
       {/* Action bar */}
       <div className="flex items-center justify-between mb-2">

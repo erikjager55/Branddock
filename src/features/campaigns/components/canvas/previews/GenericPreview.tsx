@@ -3,9 +3,10 @@
 import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { FileText, Copy, Check } from 'lucide-react';
+import { HeroImageSlot } from './HeroImageSlot';
 
 /** Fallback preview for unmapped platform/format combinations */
-export function GenericPreview({ previewContent, isGenerating }: PlatformPreviewProps) {
+export function GenericPreview({ previewContent, isGenerating, heroImage, onAddImage }: PlatformPreviewProps) {
   const [copied, setCopied] = React.useState(false);
 
   const textEntries = Object.entries(previewContent).filter(
@@ -71,6 +72,13 @@ export function GenericPreview({ previewContent, isGenerating }: PlatformPreview
           )}
         </button>
       </div>
+
+      {/* Hero image (blog header position) */}
+      {onAddImage !== undefined && (
+        <div className="px-3 pt-3">
+          <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[16/9]" />
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-3 space-y-3">

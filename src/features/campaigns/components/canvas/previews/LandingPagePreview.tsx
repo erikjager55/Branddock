@@ -3,10 +3,11 @@
 import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { PreviewFrame } from './PreviewFrame';
+import { HeroImageSlot } from './HeroImageSlot';
 import { Globe, ExternalLink } from 'lucide-react';
 
 /** Preview for landing page content — shows structured page sections */
-export function LandingPagePreview({ previewContent, isGenerating }: PlatformPreviewProps) {
+export function LandingPagePreview({ previewContent, isGenerating, heroImage, onAddImage }: PlatformPreviewProps) {
   const textEntries = Object.entries(previewContent).filter(
     ([, v]) => v.type === 'text' && v.content,
   );
@@ -51,6 +52,11 @@ export function LandingPagePreview({ previewContent, isGenerating }: PlatformPre
             <span className="text-[10px] text-gray-400 truncate">yoursite.com/campaign</span>
           </div>
           <ExternalLink className="h-3 w-3 text-gray-400" />
+        </div>
+
+        {/* Hero image (above-the-fold) */}
+        <div className="bg-white">
+          <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[2/1]" rounded="rounded-none" />
         </div>
 
         {/* Page content sections */}

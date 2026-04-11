@@ -23,6 +23,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const globalStatus = useCanvasStore((s) => s.globalStatus);
   const imageVariants = useCanvasStore((s) => s.imageVariants);
   const contextStack = useCanvasStore((s) => s.contextStack);
+  const heroImage = useCanvasStore((s) => s.heroImage);
   const { regenerate, abort } = useCanvasOrchestration(deliverableId);
 
   const hasVariants = variantGroups.size > 0;
@@ -233,6 +234,10 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
               previewContent={previewContent}
               imageVariants={imageVariants}
               isGenerating={isGenerating}
+              heroImage={heroImage}
+              // No onAddImage here — image picking is a Step 3 task. The
+              // placeholder still renders (read-only) so users see WHERE
+              // an image will go, but they can't open the modal from here.
             />
           </div>
         </div>

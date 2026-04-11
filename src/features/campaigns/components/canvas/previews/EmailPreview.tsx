@@ -3,16 +3,16 @@
 import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { PreviewFrame } from './PreviewFrame';
+import { HeroImageSlot } from './HeroImageSlot';
 
 const EMAIL_COLOR = '#6B7280';
 
 /** Email client mockup (newsletter / promotional) */
-export function EmailPreview({ previewContent, imageVariants, isGenerating }: PlatformPreviewProps) {
+export function EmailPreview({ previewContent, isGenerating, heroImage, onAddImage }: PlatformPreviewProps) {
   const subject = previewContent.subject?.content ?? previewContent.headline?.content ?? '';
   const preheader = previewContent.preheader?.content ?? '';
   const body = previewContent.body?.content ?? '';
   const cta = previewContent.cta?.content ?? '';
-  const selectedImage = imageVariants.find((img) => img.isSelected);
 
   if (isGenerating) {
     return (
@@ -45,14 +45,10 @@ export function EmailPreview({ previewContent, imageVariants, isGenerating }: Pl
         )}
       </div>
 
-      {/* Hero image */}
-      {selectedImage && (
-        <img
-          src={selectedImage.url}
-          alt={selectedImage.prompt}
-          className="w-full rounded object-cover max-h-36 mb-3"
-        />
-      )}
+      {/* Hero image (header banner) */}
+      <div className="mb-3">
+        <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[3/1]" />
+      </div>
 
       {/* Body */}
       {body && (

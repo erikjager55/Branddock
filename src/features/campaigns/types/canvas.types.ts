@@ -64,11 +64,26 @@ export interface PreviewContent {
   };
 }
 
+/**
+ * The hero image picked by the user via InsertImageModal in Step 3.
+ * Null when nothing has been selected yet — preview components render
+ * a placeholder in that case.
+ */
+export interface CanvasHeroImage {
+  url: string;
+  mediaAssetId: string | null;
+  alt?: string;
+}
+
 /** Props shared by all platform preview components */
 export interface PlatformPreviewProps {
   previewContent: PreviewContent;
   imageVariants: CanvasImageVariant[];
   isGenerating: boolean;
+  /** Hero image selected via InsertImageModal (Step 3 Medium). */
+  heroImage?: CanvasHeroImage | null;
+  /** Click handler for the placeholder slot — opens InsertImageModal. */
+  onAddImage?: () => void;
 }
 
 /** Registry entry for platform previews */

@@ -23,6 +23,8 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
   const mediumVariants = useCanvasStore((s) => s.mediumVariants);
   const selectedMediumVariantId = useCanvasStore((s) => s.selectedMediumVariantId);
   const variantsGenerated = useCanvasStore((s) => s.variantsGenerated);
+  const heroImage = useCanvasStore((s) => s.heroImage);
+  const setInsertImageModalOpen = useCanvasStore((s) => s.setInsertImageModalOpen);
 
   const platform = contextStack?.medium?.platform ?? null;
   const format = contextStack?.medium?.format ?? null;
@@ -119,11 +121,13 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
       {/* Platform preview placeholder */}
       <div className="rounded-lg border border-gray-200 bg-white p-3 overflow-hidden">
         <p className="text-xs font-medium text-gray-500 mb-2">{previewEntry.label} Preview</p>
-        <div className="max-h-48 overflow-hidden rounded-md bg-gray-50">
+        <div className="overflow-hidden rounded-md bg-gray-50">
           <PreviewComponent
             previewContent={previewContent}
             imageVariants={imageVariants}
             isGenerating={false}
+            heroImage={heroImage}
+            onAddImage={() => setInsertImageModalOpen(true)}
           />
         </div>
       </div>
