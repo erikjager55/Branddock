@@ -38,8 +38,6 @@ export function ContentGenerateStep() {
   const globalStatus = useCanvasStore((s) => s.globalStatus);
   const globalErrorMessage = useCanvasStore((s) => s.globalErrorMessage);
   const selections = useCanvasStore((s) => s.selections);
-  const imageVariants = useCanvasStore((s) => s.imageVariants);
-  const setImageVariants = useCanvasStore((s) => s.setImageVariants);
 
   // Find the first text variant group
   const firstGroupKey = variantGroups.size > 0 ? Array.from(variantGroups.keys())[0] : null;
@@ -286,35 +284,9 @@ export function ContentGenerateStep() {
         ))}
       </div>
 
-      {/* Image variants if any */}
-      {imageVariants.length > 0 && (
-        <div>
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Generated Images</h3>
-          <div className="grid grid-cols-3 gap-3">
-            {imageVariants.map((img, idx) => (
-              <div
-                key={idx}
-                className={`relative rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${
-                  img.isSelected ? 'border-primary-500' : 'border-gray-200 hover:border-gray-300'
-                }`}
-                onClick={() => {
-                  const updated = imageVariants.map((v, i) => ({
-                    ...v,
-                    isSelected: i === idx,
-                  }));
-                  setImageVariants(updated);
-                }}
-              >
-                <img
-                  src={img.url}
-                  alt={`Generated image ${idx + 1}`}
-                  className="w-full aspect-square object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Note: image generation is no longer part of the content wizard.
+          Users select or generate images explicitly in Step 3 (Medium) of
+          the Content Canvas after opening it via "Open in Canvas". */}
     </div>
   );
 }
