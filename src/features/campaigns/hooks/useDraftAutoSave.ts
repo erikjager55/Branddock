@@ -40,6 +40,7 @@ function buildServerSnapshot(state: StoreState): DraftSnapshot {
     briefingCoreMessage: state.briefingCoreMessage,
     briefingTonePreference: state.briefingTonePreference,
     briefingConstraints: state.briefingConstraints,
+    briefingSources: state.briefingSources,
     strategicIntent: state.strategicIntent,
     blueprintResult: state.blueprintResult,
     strategyPhase: state.strategyPhase,

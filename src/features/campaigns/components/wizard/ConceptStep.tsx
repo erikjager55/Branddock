@@ -88,6 +88,7 @@ export function ConceptStep() {
   const briefingCoreMessage = useCampaignWizardStore((s) => s.briefingCoreMessage);
   const briefingTonePreference = useCampaignWizardStore((s) => s.briefingTonePreference);
   const briefingConstraints = useCampaignWizardStore((s) => s.briefingConstraints);
+  const briefingSources = useCampaignWizardStore((s) => s.briefingSources);
 
   // Elaborate result from Zustand store (survives unmount/remount)
   const elaborateResult = useCampaignWizardStore((s) => s.elaborateResult);
@@ -119,8 +120,17 @@ export function ConceptStep() {
       coreMessage: briefingCoreMessage || undefined,
       tonePreference: briefingTonePreference || undefined,
       constraints: briefingConstraints || undefined,
+      sources: briefingSources
+        .filter((s) => s.status === 'ready' && s.extractedText)
+        .map((s) => ({
+          type: s.type,
+          url: s.url,
+          fileName: s.fileName,
+          title: s.title,
+          extractedText: s.extractedText,
+        })),
     },
-  }), [campaignName, campaignDescription, campaignGoalType, useExternalEnrichment, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints]);
+  }), [campaignName, campaignDescription, campaignGoalType, useExternalEnrichment, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints, briefingSources]);
 
   const abortRef = useRef<{ abort: () => void } | null>(null);
   const generationIdRef = useRef(0);

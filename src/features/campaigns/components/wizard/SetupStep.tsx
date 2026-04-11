@@ -10,6 +10,7 @@ import { CAMPAIGN_TYPES, getRecommendedCampaignType } from "../../lib/campaign-t
 import { DELIVERABLE_CATEGORIES, getDeliverablesByCategory } from "../../lib/deliverable-types";
 import type { StrategicIntent } from "../../types/campaign-wizard.types";
 import { PipelineConfigCard } from "./PipelineConfigCard";
+import { BriefingSourcesField } from "./BriefingSourcesField";
 
 // ─── Strategic Intent Cards ──────────────────────────────
 
@@ -175,6 +176,9 @@ export function SetupStep() {
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-y bg-white"
           />
         </div>
+
+        {/* Reference materials — optional briefing sources (URL or PDF) */}
+        <BriefingSourcesField />
       </div>
 
       {/* Content Type selector — content mode only */}

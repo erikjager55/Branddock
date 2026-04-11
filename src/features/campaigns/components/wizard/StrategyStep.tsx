@@ -98,6 +98,7 @@ export function StrategyStep() {
   const briefingCoreMessage = useCampaignWizardStore((s) => s.briefingCoreMessage);
   const briefingTonePreference = useCampaignWizardStore((s) => s.briefingTonePreference);
   const briefingConstraints = useCampaignWizardStore((s) => s.briefingConstraints);
+  const briefingSources = useCampaignWizardStore((s) => s.briefingSources);
 
   const [phaseError, setPhaseError] = useState<string | null>(null);
 
@@ -157,8 +158,18 @@ export function StrategyStep() {
       coreMessage: briefingCoreMessage || undefined,
       tonePreference: briefingTonePreference || undefined,
       constraints: briefingConstraints || undefined,
+      // Include only sources that have been successfully parsed.
+      sources: briefingSources
+        .filter((s) => s.status === 'ready' && s.extractedText)
+        .map((s) => ({
+          type: s.type,
+          url: s.url,
+          fileName: s.fileName,
+          title: s.title,
+          extractedText: s.extractedText,
+        })),
     },
-  }), [campaignName, campaignDescription, campaignGoalType, campaignType, wizardMode, selectedContentType, useExternalEnrichment, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints]);
+  }), [campaignName, campaignDescription, campaignGoalType, campaignType, wizardMode, selectedContentType, useExternalEnrichment, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints, briefingSources]);
 
   // ─── 9-Phase: Validate Briefing ─────────────────────
 

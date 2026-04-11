@@ -19,6 +19,7 @@ import type {
   PipelineStep,
   StrategicIntent,
   CampaignBriefing,
+  BriefingSource,
   StrategyPhase,
   StrategyLayer,
   ArchitectureLayer,
@@ -86,6 +87,13 @@ interface CampaignWizardState {
   briefingCoreMessage: string;
   briefingTonePreference: string;
   briefingConstraints: string;
+  /**
+   * External reference materials attached to the briefing — web pages,
+   * blog posts, social media URLs, or PDF documents. Each is parsed
+   * server-side into plain text and injected into AI prompts as
+   * additional context. Optional.
+   */
+  briefingSources: BriefingSource[];
 
   // ─── Blueprint Pipeline ──────────────────────────────────
   strategicIntent: StrategicIntent;
@@ -200,6 +208,9 @@ interface CampaignWizardState {
   setBriefingCoreMessage: (v: string) => void;
   setBriefingTonePreference: (v: string) => void;
   setBriefingConstraints: (v: string) => void;
+  addBriefingSource: (source: BriefingSource) => void;
+  updateBriefingSource: (id: string, patch: Partial<BriefingSource>) => void;
+  removeBriefingSource: (id: string) => void;
 
   // ─── Blueprint Pipeline Actions ──────────────────────────
   setStrategicIntent: (intent: StrategicIntent) => void;
@@ -303,6 +314,7 @@ const INITIAL_STATE = {
   briefingCoreMessage: "",
   briefingTonePreference: "",
   briefingConstraints: "",
+  briefingSources: [] as BriefingSource[],
 
   // ─── Blueprint Pipeline ──────────────────────────────────
   strategicIntent: "hybrid" as StrategicIntent,
@@ -530,6 +542,18 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
       set({ briefingTonePreference }),
     setBriefingConstraints: (briefingConstraints) =>
       set({ briefingConstraints }),
+    addBriefingSource: (source) =>
+      set((s) => ({ briefingSources: [...s.briefingSources, source] })),
+    updateBriefingSource: (id, patch) =>
+      set((s) => ({
+        briefingSources: s.briefingSources.map((src) =>
+          src.id === id ? { ...src, ...patch } : src,
+        ),
+      })),
+    removeBriefingSource: (id) =>
+      set((s) => ({
+        briefingSources: s.briefingSources.filter((src) => src.id !== id),
+      })),
 
     // ─── Blueprint Pipeline Actions ──────────────────────────
     setStrategicIntent: (strategicIntent) => set({ strategicIntent }),
@@ -760,6 +784,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
         briefingCoreMessage: state.briefingCoreMessage,
         briefingTonePreference: state.briefingTonePreference,
         briefingConstraints: state.briefingConstraints,
+        briefingSources: state.briefingSources,
         strategicIntent: state.strategicIntent,
         blueprintResult: state.blueprintResult,
         strategyPhase: state.strategyPhase,

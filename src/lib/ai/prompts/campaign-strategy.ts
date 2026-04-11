@@ -46,7 +46,30 @@ function buildBriefingSection(briefing?: CampaignBriefing): string {
   if (briefing?.coreMessage) briefingLines.push(`Core message: ${briefing.coreMessage}`);
   if (briefing?.tonePreference) briefingLines.push(`Desired tone / creative direction: ${briefing.tonePreference}`);
   if (briefing?.constraints) briefingLines.push(`Constraints / mandatories: ${briefing.constraints}`);
-  return briefingLines.length > 0 ? `\n\n## Creative Briefing\n${briefingLines.join('\n')}` : '';
+
+  let section = briefingLines.length > 0 ? `\n\n## Creative Briefing\n${briefingLines.join('\n')}` : '';
+
+  // Reference materials — external sources attached to the briefing
+  // (web pages, PDFs). Each source's extracted text is injected as a
+  // separate sub-block so the model can quote / paraphrase / build on it.
+  const readySources = (briefing?.sources ?? []).filter(
+    (s) => s.extractedText && s.extractedText.trim().length > 0,
+  );
+  if (readySources.length > 0) {
+    const sourceBlocks = readySources.map((source, idx) => {
+      const label = source.title || source.url || source.fileName || `Source ${idx + 1}`;
+      const origin = source.url ?? source.fileName ?? 'attachment';
+      // Cap each source at 4000 chars in the prompt to leave room for
+      // brand context, persona context, and the actual instructions.
+      const text = source.extractedText!.length > 4000
+        ? source.extractedText!.slice(0, 4000) + '\n[…truncated]'
+        : source.extractedText!;
+      return `### Source ${idx + 1}: ${label}\n(${source.type === 'url' ? 'URL' : 'PDF'}: ${origin})\n${text}`;
+    });
+    section += `\n\n## Reference Materials\nThe user attached the following sources to the briefing. Treat them as authoritative context — quote, paraphrase, and build on them where relevant. Do not contradict facts they contain.\n\n${sourceBlocks.join('\n\n')}`;
+  }
+
+  return section;
 }
 
 /** Campaign type guidance section — injected into all prompt builders */

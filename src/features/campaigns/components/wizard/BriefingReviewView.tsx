@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { Button, Badge } from "@/components/shared";
 import type { BriefingValidation } from "../../types/campaign-wizard.types";
-import type { CampaignBriefing } from "@/lib/campaigns/strategy-blueprint.types";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
 import { improveBriefingApi } from "../../api/campaigns.api";
 
@@ -33,7 +32,7 @@ interface BriefingReviewViewProps {
     tonePreference: string;
     constraints: string;
   };
-  onBriefingChange: (field: keyof CampaignBriefing, value: string) => void;
+  onBriefingChange: (field: BriefingField, value: string) => void;
   onRevalidate: () => void;
   isRevalidating?: boolean;
 }
@@ -48,7 +47,15 @@ const SEVERITY_CONFIG = {
 
 // ─── Field mapping ──────────────────────────────────────
 
-type BriefingField = keyof CampaignBriefing;
+// Only the editable text fields — `sources` is an array of attached
+// references handled separately in BriefingSourcesField, not in the
+// per-field validation/score logic below.
+type BriefingField =
+  | 'occasion'
+  | 'audienceObjective'
+  | 'coreMessage'
+  | 'tonePreference'
+  | 'constraints';
 
 const FIELD_KEYWORDS: { keywords: string[]; field: BriefingField }[] = [
   { keywords: ["occasion", "why now", "trigger"], field: "occasion" },

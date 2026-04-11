@@ -734,6 +734,20 @@ export interface PipelineStep {
 
 export type RegenerateLayer = 'strategy' | 'architecture' | 'channelPlan' | 'assetPlan';
 
+/**
+ * A single external reference attached to the briefing — a parsed web page,
+ * blog post, social media URL, or PDF. The `extractedText` is plain text
+ * pulled server-side at attachment time and gets injected into AI prompts
+ * as additional context.
+ */
+export interface CampaignBriefingSource {
+  type: 'url' | 'pdf';
+  url?: string;
+  fileName?: string;
+  title?: string;
+  extractedText?: string;
+}
+
 /** Strategic briefing fields that guide the AI toward a specific, actionable strategy */
 export interface CampaignBriefing {
   /** Why communicate now? What's the trigger or occasion? */
@@ -746,6 +760,12 @@ export interface CampaignBriefing {
   tonePreference?: string;
   /** Constraints, mandatories, or requirements that must be respected */
   constraints?: string;
+  /**
+   * External reference materials (web pages, PDFs) attached to the briefing.
+   * Optional — when present, formatted into a "Reference Materials" block
+   * in every AI prompt that consumes the briefing.
+   */
+  sources?: CampaignBriefingSource[];
 }
 
 export interface GenerateBlueprintBody {

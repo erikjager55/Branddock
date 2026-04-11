@@ -57,6 +57,35 @@ export type {
 
 export type CampaignType = 'brand' | 'content' | 'activation';
 
+// ─── Briefing Sources ────────────────────────────────────
+//
+// External reference materials attached to the campaign briefing.
+// Parsed server-side into plain text and injected into AI prompts as
+// additional context. Optional — users can create campaigns without any.
+
+export type BriefingSourceType = 'url' | 'pdf';
+
+export type BriefingSourceStatus = 'pending' | 'processing' | 'ready' | 'error';
+
+export interface BriefingSource {
+  /** Local UUID, generated client-side. Not persisted to a separate DB row. */
+  id: string;
+  type: BriefingSourceType;
+  /** Original URL when type='url'. */
+  url?: string;
+  /** Original filename when type='pdf'. */
+  fileName?: string;
+  /** Stored URL of the uploaded PDF file (after upload). */
+  fileUrl?: string;
+  /** Auto-detected page/document title (best-effort). */
+  title?: string;
+  /** Plain-text content extracted from the source. Capped server-side. */
+  extractedText?: string;
+  status: BriefingSourceStatus;
+  /** Error message if status === 'error'. */
+  errorMessage?: string;
+}
+
 export type CampaignGoalType =
   | "BRAND_AWARENESS" | "PRODUCT_LAUNCH" | "MARKET_EXPANSION" | "REBRANDING"
   | "CONTENT_MARKETING" | "AUDIENCE_ENGAGEMENT" | "COMMUNITY_BUILDING" | "LOYALTY_RETENTION"
