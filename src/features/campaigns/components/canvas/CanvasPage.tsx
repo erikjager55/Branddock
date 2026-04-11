@@ -8,6 +8,7 @@ import { ApprovalActionBar } from './ApprovalActionBar';
 import { HorizontalAccordion } from './accordion/HorizontalAccordion';
 import { DerivePlatformSelectorModal } from './DerivePlatformSelectorModal';
 import { CanvasContextSelector } from './CanvasContextSelector';
+import { InsertImageModal } from './InsertImageModal';
 import { Skeleton } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ArrowLeft } from 'lucide-react';
@@ -185,6 +186,9 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
 
       {/* Knowledge context selector modal */}
       <CanvasContextSelector />
+
+      {/* Insert image modal (Step 3 hero image picker) */}
+      <InsertImageModal />
 
       {/* Derive platform selector modal */}
       <DerivePlatformSelectorModal

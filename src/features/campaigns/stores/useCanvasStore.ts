@@ -66,6 +66,10 @@ interface CanvasStoreState {
   generatedMediumUrl: string | null;
   mediumApproved: boolean;
 
+  // ─── Step 3: hero image (selected via InsertImageModal) ───
+  heroImage: { url: string; mediaAssetId: string | null; alt?: string } | null;
+  insertImageModalOpen: boolean;
+
   // ─── Step 3: medium configuration ──────────────────────────
   mediumCategory: MediumCategory | null;
   mediumConfigValues: Record<string, unknown>;
@@ -108,6 +112,8 @@ interface CanvasStoreState {
   setMediumGenerationStatus: (status: 'idle' | 'generating' | 'complete' | 'error') => void;
   setGeneratedMediumUrl: (url: string | null) => void;
   setMediumApproved: (approved: boolean) => void;
+  setHeroImage: (image: { url: string; mediaAssetId: string | null; alt?: string } | null) => void;
+  setInsertImageModalOpen: (open: boolean) => void;
   setMediumCategory: (category: MediumCategory | null) => void;
   setMediumConfigValue: (key: string, value: unknown) => void;
   setMediumConfigValues: (values: Record<string, unknown>) => void;
@@ -157,6 +163,8 @@ const INITIAL_STATE = {
   mediumVariants: [],
   selectedMediumVariantId: 'B' as const,
   variantsGenerated: false,
+  heroImage: null as { url: string; mediaAssetId: string | null; alt?: string } | null,
+  insertImageModalOpen: false,
 
   // Step 4
   scheduledDate: null,
@@ -267,6 +275,8 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
   setMediumGenerationStatus: (status) => set({ mediumGenerationStatus: status }),
   setGeneratedMediumUrl: (url) => set({ generatedMediumUrl: url }),
   setMediumApproved: (approved) => set({ mediumApproved: approved }),
+  setHeroImage: (heroImage) => set({ heroImage }),
+  setInsertImageModalOpen: (insertImageModalOpen) => set({ insertImageModalOpen }),
   setMediumCategory: (category) => set({ mediumCategory: category }),
   setMediumConfigValue: (key, value) =>
     set((state) => ({
