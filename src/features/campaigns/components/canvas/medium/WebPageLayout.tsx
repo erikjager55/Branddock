@@ -77,25 +77,27 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
           )}
         </div>
 
-        {/* Hero image — full width */}
-        <button
-          type="button"
-          onClick={() => setInsertImageModalOpen(true)}
-          className="w-full bg-gray-100 hover:bg-gray-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          {heroImage?.url ? (
-            <img
-              src={heroImage.url}
-              alt={heroImage.alt ?? ''}
-              className="w-full h-48 object-cover"
-            />
-          ) : (
-            <div className="w-full h-48 flex flex-col items-center justify-center gap-2 text-gray-400">
-              <ImagePlus className="h-8 w-8" />
-              <span className="text-sm font-medium">Click to add a hero image</span>
-            </div>
-          )}
-        </button>
+        {/* Hero image — full width, landscape aspect ratio */}
+        <div className="px-6 py-5">
+          <button
+            type="button"
+            onClick={() => setInsertImageModalOpen(true)}
+            className="w-full rounded-lg overflow-hidden bg-gray-100 hover:bg-gray-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            {heroImage?.url ? (
+              <img
+                src={heroImage.url}
+                alt={heroImage.alt ?? ''}
+                className="w-full aspect-[16/9] object-cover"
+              />
+            ) : (
+              <div className="w-full aspect-[16/9] flex flex-col items-center justify-center gap-2 text-gray-400">
+                <ImagePlus className="h-8 w-8" />
+                <span className="text-sm font-medium">Click to add a hero image</span>
+              </div>
+            )}
+          </button>
+        </div>
 
         {/* Article body */}
         <div className="px-6 py-5 max-w-3xl mx-auto">
