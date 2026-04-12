@@ -224,12 +224,13 @@ export function ContentGenerateStep() {
   if (contentGenPhase === 'generating' && variants.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-4">
-        <div className="relative">
-          <Sparkles className="h-8 w-8 text-primary" />
-          <Loader2 className="h-4 w-4 text-primary animate-spin absolute -bottom-1 -right-1" />
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+          <Loader2 className="h-7 w-7 text-primary animate-spin" />
         </div>
-        <p className="text-sm text-gray-500">Generating {selectedContentType?.replace(/-/g, ' ') ?? 'content'} variants...</p>
-        <p className="text-xs text-gray-400">This may take 15-30 seconds</p>
+        <div className="text-center">
+          <p className="text-sm font-medium text-gray-700">Generating {selectedContentType?.replace(/-/g, ' ') ?? 'content'} variants...</p>
+          <p className="text-xs text-gray-400 mt-1">This may take 15-30 seconds</p>
+        </div>
       </div>
     );
   }
