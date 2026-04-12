@@ -85,9 +85,9 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
         <div className="text-center">
           <p className="text-base font-semibold text-gray-800">Generating content variants</p>
           <p className="text-sm text-gray-500 mt-1">
-            Creating 3 unique variants based on your strategy and briefing...
+            Creating 2 unique variants based on your strategy and briefing...
           </p>
-          <p className="text-xs text-gray-400 mt-2">This usually takes 10-20 seconds</p>
+          <p className="text-xs text-gray-400 mt-2">This usually takes 20-40 seconds</p>
         </div>
       </div>
     );
