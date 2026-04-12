@@ -100,7 +100,10 @@ export const CONTENT_GENERATE_STEP: StepDefinition = {
   key: 'content-generate',
   label: 'Content',
   canProceed: (s) => {
-    return s.contentGenPhase === 'complete' && s.hasSelectedVariant === true;
+    // Content generation no longer happens in the wizard — it happens in
+    // the Canvas after the user reviews context. The wizard only needs the
+    // launch to have succeeded (deliverable created) to allow "Open in Canvas".
+    return s.contentGenPhase === 'complete';
   },
 };
 
