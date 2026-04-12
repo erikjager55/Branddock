@@ -8,11 +8,15 @@ import { HeroImageSlot } from './HeroImageSlot';
 const EMAIL_COLOR = '#6B7280';
 
 /** Email client mockup (newsletter / promotional) */
-export function EmailPreview({ previewContent, isGenerating, heroImage, onAddImage }: PlatformPreviewProps) {
+export function EmailPreview({ previewContent, isGenerating, heroImage, onAddImage, mediumConfig }: PlatformPreviewProps) {
   const subject = previewContent.subject?.content ?? previewContent.headline?.content ?? '';
   const preheader = previewContent.preheader?.content ?? '';
   const body = previewContent.body?.content ?? '';
   const cta = previewContent.cta?.content ?? '';
+  const templateStyle = (mediumConfig?.templateStyle as string) ?? 'minimal';
+  const headerType = (mediumConfig?.headerType as string) ?? 'logo-bar';
+  const ctaPlacement = (mediumConfig?.ctaPlacement as string) ?? 'bottom';
+  const personalize = (mediumConfig?.personalize as boolean) ?? false;
 
   if (isGenerating) {
     return (
@@ -50,6 +54,20 @@ export function EmailPreview({ previewContent, isGenerating, heroImage, onAddIma
         <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[3/1]" />
       </div>
 
+      {/* Personalization */}
+      {personalize && (
+        <p className="text-xs text-gray-500 italic mb-2">Hi {'{{firstName}}'},</p>
+      )}
+
+      {/* CTA (top placement) */}
+      {ctaPlacement === 'top' && cta && (
+        <div className="text-center mb-3">
+          <span className={`inline-block px-5 py-2 text-xs font-semibold text-white rounded ${templateStyle === 'branded' ? 'bg-teal-600' : 'bg-gray-800'}`}>
+            {cta}
+          </span>
+        </div>
+      )}
+
       {/* Body */}
       {body && (
         <p className="text-xs text-gray-700 whitespace-pre-wrap line-clamp-8 mb-3">
@@ -57,10 +75,10 @@ export function EmailPreview({ previewContent, isGenerating, heroImage, onAddIma
         </p>
       )}
 
-      {/* CTA */}
-      {cta && (
+      {/* CTA (bottom placement — default) */}
+      {ctaPlacement !== 'top' && cta && (
         <div className="text-center">
-          <span className="inline-block px-5 py-2 text-xs font-semibold text-white bg-gray-800 rounded">
+          <span className={`inline-block px-5 py-2 text-xs font-semibold text-white rounded ${templateStyle === 'branded' ? 'bg-teal-600' : 'bg-gray-800'}`}>
             {cta}
           </span>
         </div>

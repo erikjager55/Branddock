@@ -9,9 +9,14 @@ import { ThumbsUp, MessageCircle, Repeat2, Send, Globe } from 'lucide-react';
 const LINKEDIN_BLUE = '#0A66C2';
 
 /** LinkedIn organic post mockup */
-export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, onAddImage }: PlatformPreviewProps) {
+export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, onAddImage, mediumConfig }: PlatformPreviewProps) {
   const body = previewContent.body?.content ?? previewContent.caption?.content ?? '';
   const headline = previewContent.headline?.content ?? '';
+  const hashtags = previewContent.hashtags?.content ?? '';
+  const tone = (mediumConfig?.tone as string) ?? '';
+  const hashtagStrategy = (mediumConfig?.hashtagStrategy as string) ?? 'moderate';
+  const ctaStyle = (mediumConfig?.ctaStyle as string) ?? '';
+  const includeEmoji = (mediumConfig?.includeEmoji as boolean) ?? false;
 
   if (isGenerating) {
     return (
@@ -63,6 +68,28 @@ export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, o
       <div className="mt-1 mb-1">
         <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[1.91/1]" />
       </div>
+
+      {/* CTA */}
+      {ctaStyle && ctaStyle !== 'none' && (
+        <div className="mt-2 mb-1">
+          <span className="inline-block px-3 py-1 text-xs font-medium rounded bg-blue-600 text-white">
+            {ctaStyle === 'learn-more' ? 'Learn More' : ctaStyle === 'sign-up' ? 'Sign Up' : ctaStyle === 'contact-us' ? 'Contact Us' : 'Learn More'}
+          </span>
+        </div>
+      )}
+
+      {/* Hashtags */}
+      {hashtagStrategy !== 'none' && hashtags && (
+        <p className="text-xs text-blue-600 mt-2">{hashtags}</p>
+      )}
+
+      {/* Tone + emoji indicator */}
+      {(tone || includeEmoji) && (
+        <div className="flex items-center gap-2 mt-2">
+          {tone && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{tone}</span>}
+          {includeEmoji && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">Emoji enabled</span>}
+        </div>
+      )}
 
       {/* Engagement bar */}
       <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">

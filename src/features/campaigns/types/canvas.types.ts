@@ -84,6 +84,8 @@ export interface PlatformPreviewProps {
   heroImage?: CanvasHeroImage | null;
   /** Click handler for the placeholder slot — opens InsertImageModal. */
   onAddImage?: () => void;
+  /** Medium config values from the Step 3 config panel. */
+  mediumConfig?: Record<string, unknown>;
 }
 
 /** Registry entry for platform previews */

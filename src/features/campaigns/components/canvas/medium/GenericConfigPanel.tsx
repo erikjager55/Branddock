@@ -53,23 +53,15 @@ export function GenericConfigPanel({ category, onAdvance, deliverableId }: Gener
     }
   }, [category]); // eslint-disable-line react-hooks/exhaustive-deps -- config is derived from category
 
-  // Web-page category gets a special layout: config blocks side by side
-  // at top, full-width article preview below.
+  // Web-page has its own layout with article-specific rendering (hero
+  // styles, layout modes, CTA). All other categories use the unified
+  // MediumConfigLayout (config top, preview bottom).
   const Layout = category === 'web-page' ? WebPageLayout : MediumConfigLayout;
 
   return (
     <Layout onAdvance={onAdvance} deliverableId={deliverableId}>
-      {category !== 'web-page' && (
-        <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-800">{config.label} Configuration</h3>
-          <p className="text-sm text-gray-500 mt-1">
-            Configure the settings for your {config.label.toLowerCase()} content.
-          </p>
-        </div>
-      )}
-
       {config.sections.map((section) => (
-        <ConfigSection key={section.id} title={section.title} defaultOpen={category !== 'web-page'}>
+        <ConfigSection key={section.id} title={section.title}>
           {section.fields.map((field) => (
             <ConfigFieldRenderer key={field.key} field={field} />
           ))}

@@ -81,24 +81,43 @@ export function GenericPreview({ previewContent, isGenerating, heroImage, onAddI
         </div>
       )}
 
-      {/* Content */}
+      {/* Content — all variant groups rendered with role-appropriate styling */}
       <div className="p-3 space-y-3">
         {textEntries.map(([group, value]) => {
-          const isTitle = group.toLowerCase() === 'title';
-          const isMeta = group.toLowerCase().includes('meta');
+          const g = group.toLowerCase();
+          const isTitle = g === 'title' || g === 'headline';
+          const isMeta = g.includes('meta');
+          const isSubject = g === 'subject' || g === 'subject-line';
+          const isCta = g === 'cta' || g === 'call-to-action';
+          const isHashtags = g === 'hashtags';
+          const isCaption = g === 'caption';
+
           return (
             <div key={group}>
-              {!isTitle && (
+              {/* Group label — hidden for visually obvious roles */}
+              {!isTitle && !isSubject && (
                 <p className="text-xs font-medium text-gray-400 uppercase mb-1">
-                  {group.replace(/_/g, ' ')}
+                  {group.replace(/[-_]/g, ' ')}
                 </p>
               )}
-              {isTitle ? (
+
+              {/* Role-specific rendering */}
+              {(isTitle || isSubject) ? (
                 <h1 className="text-xl font-bold text-gray-900 leading-tight">
                   {value.content}
                 </h1>
               ) : isMeta ? (
                 <p className="text-sm text-gray-500 italic">{value.content}</p>
+              ) : isCta ? (
+                <div className="pt-1">
+                  <span className="inline-block px-4 py-1.5 rounded bg-teal-600 text-white text-xs font-medium">
+                    {value.content}
+                  </span>
+                </div>
+              ) : isHashtags ? (
+                <p className="text-xs text-blue-600">{value.content}</p>
+              ) : isCaption ? (
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{value.content}</p>
               ) : (
                 <SimpleMarkdown text={value.content ?? ''} />
               )}

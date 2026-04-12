@@ -780,8 +780,103 @@ function formatMediumConfig(config: Record<string, unknown>): string {
     if (seoFocus === true) {
       parts.push('- SEO optimized: Use the primary keyword in the title, first paragraph, and at least 2 section headings. Write a compelling meta description (max 155 characters). Use a clear heading hierarchy (H2 for sections, H3 for sub-sections).');
     }
-  } else {
-    // Generic fallback for non-web configs
+  }
+
+  // ── Social Post ────────────────────────────────────────
+  const tone = config.tone as string | undefined;
+  const hashtagStrategy = config.hashtagStrategy as string | undefined;
+  const ctaStyleSocial = config.ctaStyle as string | undefined;
+  const includeEmoji = config.includeEmoji as boolean | undefined;
+  const visualStyle = config.visualStyle as string | undefined;
+
+  if (tone || hashtagStrategy || ctaStyleSocial) {
+    if (tone) parts.push(`- Tone: Write in a ${tone} voice.`);
+    if (visualStyle) parts.push(`- Visual style: ${visualStyle}.`);
+    if (hashtagStrategy) {
+      const hMap: Record<string, string> = {
+        none: 'Do NOT include hashtags.',
+        minimal: 'Include 1-3 relevant hashtags at the end.',
+        moderate: 'Include 3-5 hashtags. Mix branded + industry tags.',
+        aggressive: 'Include 5-10 hashtags for maximum reach.',
+      };
+      parts.push(`- Hashtags: ${hMap[hashtagStrategy] ?? hashtagStrategy}`);
+    }
+    if (ctaStyleSocial && ctaStyleSocial !== 'none') {
+      parts.push(`- CTA: End with a clear "${ctaStyleSocial.replace(/-/g, ' ')}" call-to-action.`);
+    }
+    if (includeEmoji) parts.push('- Use emoji naturally throughout the post to increase engagement.');
+  }
+
+  // ── Carousel ───────────────────────────────────────────
+  const slideCount = config.slideCount as number | undefined;
+  const slideFormat = config.slideFormat as string | undefined;
+  const includeCtaSlide = config.includeCtaSlide as boolean | undefined;
+
+  if (slideCount || slideFormat) {
+    if (slideCount) parts.push(`- Slides: Create exactly ${slideCount} slides. Each slide should have a clear heading and 1-2 key points.`);
+    if (slideFormat) parts.push(`- Slide format: ${slideFormat}.`);
+    if (includeCtaSlide) parts.push('- Final slide: Include a dedicated CTA slide with a clear action for the reader.');
+  }
+
+  // ── Email ──────────────────────────────────────────────
+  const templateStyle = config.templateStyle as string | undefined;
+  const headerType = config.headerType as string | undefined;
+  const emailCtaPlacement = config.ctaPlacement as string | undefined;
+  const personalize = config.personalize as boolean | undefined;
+  const previewTextLength = config.previewTextLength as string | undefined;
+
+  if (templateStyle || headerType || personalize !== undefined) {
+    if (templateStyle) parts.push(`- Email template: ${templateStyle} style.`);
+    if (headerType) parts.push(`- Header: ${headerType.replace(/-/g, ' ')}.`);
+    if (emailCtaPlacement) parts.push(`- CTA placement: ${emailCtaPlacement} of the email body.`);
+    if (personalize) parts.push('- Personalization: Include {{firstName}} placeholder in the greeting.');
+    if (previewTextLength) parts.push(`- Preview text: ${previewTextLength} length (shown in inbox before opening).`);
+  }
+
+  // ── Podcast ────────────────────────────────────────────
+  const episodeFormat = config.episodeFormat as string | undefined;
+  const duration = config.duration as number | undefined;
+  const segmentCount = config.segmentCount as number | undefined;
+  const introStyle = config.introStyle as string | undefined;
+  const includeShowNotes = config.includeShowNotes as boolean | undefined;
+  const includeTranscript = config.includeTranscript as boolean | undefined;
+
+  if (episodeFormat || duration) {
+    if (episodeFormat) parts.push(`- Episode format: ${episodeFormat}. Structure the script accordingly.`);
+    if (duration) parts.push(`- Target duration: ${duration} minutes.`);
+    if (segmentCount) parts.push(`- Segments: Structure into ${segmentCount} distinct segments with transitions.`);
+    if (introStyle) parts.push(`- Intro style: ${introStyle}.`);
+    if (includeShowNotes) parts.push('- Include show notes with timestamps and key takeaways.');
+    if (includeTranscript) parts.push('- Format as a full transcript with speaker labels.');
+  }
+
+  // ── Advertising ────────────────────────────────────────
+  const adFormat = config.adFormat as string | undefined;
+  const urgencyLevel = config.urgencyLevel as string | undefined;
+  const socialProof = config.socialProof as boolean | undefined;
+
+  if (adFormat || urgencyLevel) {
+    if (adFormat) parts.push(`- Ad format: ${adFormat}. Follow platform best practices for this format.`);
+    if (config.ctaType && !ctaType) parts.push(`- CTA: ${config.ctaType as string}.`);
+    if (urgencyLevel && urgencyLevel !== 'none') parts.push(`- Urgency level: ${urgencyLevel}. ${urgencyLevel === 'high' ? 'Use time-limited language and scarcity.' : 'Suggest value without pressure.'}`);
+    if (socialProof) parts.push('- Include social proof (numbers, testimonials, or trust signals).');
+  }
+
+  // ── Video ──────────────────────────────────────────────
+  const videoDuration = config.duration as number | undefined;
+  const aspectRatio = config.aspectRatio as string | undefined;
+  const footageType = config.footageType as string | undefined;
+  const textOverlay = config.textOverlay as boolean | undefined;
+
+  if (aspectRatio || footageType) {
+    if (videoDuration) parts.push(`- Video duration: ${videoDuration} seconds.`);
+    if (aspectRatio) parts.push(`- Aspect ratio: ${aspectRatio}.`);
+    if (footageType) parts.push(`- Footage type: ${footageType}.`);
+    if (textOverlay) parts.push('- Include text overlay directions for key moments.');
+  }
+
+  // If no category-specific rules matched, fall back to generic
+  if (parts.length === 1) {
     for (const [key, value] of entries) {
       const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
       const display = typeof value === 'object' ? JSON.stringify(value) : String(value);
