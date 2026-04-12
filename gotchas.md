@@ -77,3 +77,7 @@ useEffect(() => {
 **What went wrong:** `HookCard` had an `onKeyDown` handler on the outer div that called `e.preventDefault()` on space key for radio button accessibility. A `<textarea>` nested inside this div had its space key events bubble up to the card handler, preventing users from typing spaces.
 
 **Rule:** When nesting interactive elements (textarea, input) inside keyboard-accessible containers (role="radio", role="button"), add `onKeyDown={(e) => e.stopPropagation()}` on the nested element to prevent event bubbling.
+
+## 2026-04-12: Incomplete phase removal broke error paths
+**What went wrong**: Removed the `review_insights` render block and its stepProceedOverride, but didn't update the 2 error handlers in `handleGenerateConcepts` that fell back to `review_insights` on failure. Any concept generation error → phase set to a phase with no render → fallback "Something went wrong". Also: `setIsGenerating(false)` before chaining to the next handler created a one-frame render gap where no condition matched.
+**Rule**: When removing a strategy phase from the render tree, ALWAYS grep for ALL references to that phase name across the entire file. Update every error handler, guard, and state transition that references it. Test the error path, not just the happy path.
