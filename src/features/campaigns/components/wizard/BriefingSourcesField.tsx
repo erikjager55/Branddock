@@ -176,9 +176,9 @@ export function BriefingSourcesField() {
   return (
     <div>
       <label className="block text-xs font-medium text-gray-600 mb-1">
-        Reference materials
+        Additional context
         <span className="text-gray-400 font-normal ml-1">
-          (optional — web pages, blog posts, PDFs, or free text the AI should read)
+          (optional — add a URL, PDF, or free text to enrich the briefing)
         </span>
       </label>
 
