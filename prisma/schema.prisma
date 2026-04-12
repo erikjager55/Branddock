@@ -210,6 +210,10 @@ model Workspace {
   consistentModels          ConsistentModel[]
   consistentModelGenerations ConsistentModelGeneration[]
 
+  // Publishing Channels (platform connections for auto-publishing)
+  publishChannels           PublishChannel[]
+  publishLogs               PublishLog[]
+
   @@index([organizationId])
 }
 
@@ -858,6 +862,12 @@ model Campaign {
   lockedById        String?
   lockedBy          User?                   @relation("LockedCampaigns", fields: [lockedById], references: [id])
 
+  // ─── Campaign Launch & Metrics ──────────────────────
+  launchStatus      String?                 // in_progress | all_ready | launched
+  launchDate        DateTime?
+  targetMetrics     Json?                   // { reach: 10000, engagement: 500, conversions: 50 }
+  actualMetrics     Json?                   // post-launch tracking, same shape as targetMetrics
+
   // Shared
   isArchived        Boolean                 @default(false)
   knowledgeAssets   CampaignKnowledgeAsset[]
@@ -956,6 +966,12 @@ model Deliverable {
   approvalNote          String?           @db.Text
   approvedBy            String?
   approvedAt            DateTime?
+
+  // ─── Publishing ────────────────────────────────────
+  publishedUrl          String?           // Link to the published post/page
+  publishChannelId      String?           // Which PublishChannel was used
+  publishChannel        PublishChannel?   @relation(fields: [publishChannelId], references: [id], onDelete: SetNull)
+  publishLogs           PublishLog[]
 
   // ─── Canvas: State & Derivation ────────────────────
   canvasState           Json?
@@ -1118,6 +1134,86 @@ model CampaignTemplate {
   lastUsedAt        DateTime?
 
   @@index([workspaceId])
+}
+
+// ─── Publishing Infrastructure ──────────────────────────────
+
+/**
+ * Workspace-level connection to an external publishing platform.
+ * One channel per platform per workspace. Credentials are stored
+ * encrypted (managed by the integration layer).
+ */
+model PublishChannel {
+  id              String    @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  platform        String    // linkedin | instagram | facebook | tiktok | email | wordpress | youtube
+  provider        String    // ayrshare | resend | wordpress-rest | youtube-api | direct
+  label           String?   // User-friendly name, e.g. "Company LinkedIn Page"
+  isActive        Boolean   @default(true)
+
+  // Credentials — stored as encrypted JSON. Shape depends on provider:
+  // ayrshare:  { profileKey: "..." }
+  // resend:    { apiKey: "...", audienceId: "..." }
+  // wordpress: { siteUrl: "...", username: "...", appPassword: "..." }
+  // youtube:   { refreshToken: "..." }
+  credentials     Json?
+
+  // Provider-specific settings
+  // ayrshare:  { defaultHashtags: [...] }
+  // resend:    { fromName: "...", fromEmail: "...", replyTo: "..." }
+  // wordpress: { defaultCategory: 1, defaultStatus: "draft" }
+  settings        Json?
+
+  lastPublishedAt DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  publishLogs     PublishLog[]
+  deliverables    Deliverable[]
+
+  @@unique([workspaceId, platform])
+  @@index([workspaceId])
+}
+
+/**
+ * Per-deliverable publication tracking log. Records every publish
+ * attempt (success or failure) so the user has a full audit trail.
+ * Also used for campaign-level progress tracking.
+ */
+model PublishLog {
+  id              String    @id @default(cuid())
+  deliverableId   String
+  deliverable     Deliverable @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  channelId       String
+  channel         PublishChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  status          String    // pending | publishing | published | failed | scheduled
+  scheduledFor    DateTime? // When this publication is/was scheduled
+  publishedAt     DateTime? // Actual publish timestamp
+
+  // External platform references
+  externalId      String?   // Platform-specific post/page ID
+  externalUrl     String?   // Public URL of the published content
+
+  // Error tracking
+  errorMessage    String?   @db.Text
+  retryCount      Int       @default(0)
+
+  // Engagement metrics (populated via webhooks or polling)
+  metrics         Json?     // { views: 0, likes: 0, comments: 0, shares: 0, clicks: 0 }
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([deliverableId])
+  @@index([channelId])
+  @@index([workspaceId, status])
+  @@index([scheduledFor])
 }
 
 // S6 Enums
