@@ -709,7 +709,6 @@ export function ConceptStep() {
     } = useCampaignWizardStore.getState();
 
     if (!strat || !arch) return;
-    if (mode === 'campaign' && !elaborateResult) return;
 
     const channelPlan = elaborateResult?.channelPlan ?? {
       channels: [],
@@ -931,19 +930,18 @@ export function ConceptStep() {
     );
   }
 
-  // Review final strategy — shows ConceptReviewView with dynamic action:
-  // Without elaborateResult: "Approve" → handleElaborate (build channel/asset plan)
-  // With elaborateResult: "Approve" → handleApprove (assemble blueprint + advance)
+  // Review final strategy — "Approve Concept" does everything in one click:
+  // Content mode: skip elaborate, approve directly (already handled upstream)
+  // Campaign mode: approve directly — elaborate is done inline by handleApprove
   if (strategyPhase === "review_final_strategy" || (elaborateResult && !isGenerating && synthesizedStrategy && synthesizedArchitecture && strategyPhase !== "complete")) {
     const fs = useCampaignWizardStore.getState().finalStrategy ?? synthesizedStrategy;
     const fa = useCampaignWizardStore.getState().finalArchitecture ?? synthesizedArchitecture;
     if (fs && fa) {
-      const hasElaborate = !!elaborateResult;
       return (
         <ConceptReviewView
           strategy={fs}
           architecture={fa}
-          onApprove={hasElaborate ? handleApprove : () => handleElaborate()}
+          onApprove={handleApprove}
           errorMessage={phaseError}
         />
       );
