@@ -333,7 +333,7 @@ async function generateTextWithFallback(
         model,
         systemPrompt,
         userPrompt,
-        { temperature: 0.7, maxTokens: 8000 },
+        { temperature: 0.7, maxTokens: 4000 },
       );
       if (i > 0) {
         console.warn(

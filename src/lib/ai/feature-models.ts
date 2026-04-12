@@ -159,8 +159,8 @@ export const AI_FEATURES: AiFeatureDefinition[] = [
     label: 'Canvas Text Generation',
     description: 'Text generation for canvas content items (copy, headlines, CTAs)',
     category: 'campaign-content',
-    defaultProvider: 'anthropic',
-    defaultModel: 'claude-sonnet-4-5-20250929',
+    defaultProvider: 'google',
+    defaultModel: 'gemini-2.5-flash',
     supportedProviders: ['anthropic', 'openai', 'google'],
   },
   {

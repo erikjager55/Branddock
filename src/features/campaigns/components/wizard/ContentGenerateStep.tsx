@@ -229,7 +229,7 @@ export function ContentGenerateStep() {
         </div>
         <div className="text-center">
           <p className="text-sm font-medium text-gray-700">Generating {selectedContentType?.replace(/-/g, ' ') ?? 'content'} variants...</p>
-          <p className="text-xs text-gray-400 mt-1">This may take 15-30 seconds</p>
+          <p className="text-xs text-gray-400 mt-1">This may take 10-20 seconds</p>
         </div>
       </div>
     );
