@@ -10,9 +10,13 @@ import {
   AlertCircle,
   CheckCircle2,
   Paperclip,
+  PenLine,
+  Globe,
 } from 'lucide-react';
 import { useCampaignWizardStore } from '../../stores/useCampaignWizardStore';
 import type { BriefingSource } from '../../types/campaign-wizard.types';
+
+type AddSourceTab = 'url' | 'pdf' | 'text';
 
 /**
  * Briefing Sources field used in SetupStep (both content and campaign mode).
@@ -32,7 +36,10 @@ export function BriefingSourcesField() {
   const removeSource = useCampaignWizardStore((s) => s.removeBriefingSource);
 
   const [showInput, setShowInput] = useState(false);
+  const [activeTab, setActiveTab] = useState<AddSourceTab>('url');
   const [urlInput, setUrlInput] = useState('');
+  const [manualTitle, setManualTitle] = useState('');
+  const [manualText, setManualText] = useState('');
   const [urlError, setUrlError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -139,12 +146,39 @@ export function BriefingSourcesField() {
     }
   };
 
+  // ─── Manual text handler ──────────────────────────────────
+  const handleAddManualText = () => {
+    const text = manualText.trim();
+    if (!text) {
+      setUrlError('Please enter some text');
+      return;
+    }
+    setUrlError(null);
+    const id = crypto.randomUUID();
+    addSource({
+      id,
+      type: 'text',
+      title: manualTitle.trim() || 'Manual entry',
+      extractedText: text,
+      status: 'ready',
+    });
+    setManualTitle('');
+    setManualText('');
+    setShowInput(false);
+  };
+
+  const TAB_CONFIG: { id: AddSourceTab; label: string; icon: typeof Globe }[] = [
+    { id: 'url', label: 'Website URL', icon: Globe },
+    { id: 'pdf', label: 'PDF Upload', icon: FileText },
+    { id: 'text', label: 'Manual Entry', icon: PenLine },
+  ];
+
   return (
     <div>
       <label className="block text-xs font-medium text-gray-600 mb-1">
         Reference materials
         <span className="text-gray-400 font-normal ml-1">
-          (optional — web pages, blog posts, PDFs the AI should read)
+          (optional — web pages, blog posts, PDFs, or free text the AI should read)
         </span>
       </label>
 
@@ -173,75 +207,129 @@ export function BriefingSourcesField() {
       )}
 
       {showInput && (
-        <div className="mt-1 space-y-2 rounded-lg border border-gray-200 bg-white p-3">
-          {/* URL input */}
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <LinkIcon className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                <input
-                  type="url"
-                  value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddUrl()}
-                  placeholder="https://example.com/article"
-                  className="block w-full rounded-md border border-gray-200 bg-white py-1.5 pl-8 pr-2 text-xs placeholder:text-gray-400 focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none"
-                />
-              </div>
+        <div className="mt-1 rounded-lg border border-gray-200 bg-white overflow-hidden">
+          {/* Tab bar */}
+          <div className="flex items-center border-b border-gray-200">
+            {TAB_CONFIG.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => { setActiveTab(tab.id); setUrlError(null); }}
+                  className={`relative flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
+                    isActive ? 'text-primary' : 'text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {tab.label}
+                  {isActive && (
+                    <span className="absolute inset-x-1 -bottom-px h-0.5 rounded-full bg-primary" />
+                  )}
+                </button>
+              );
+            })}
+            <div className="ml-auto pr-2">
               <button
                 type="button"
-                onClick={handleAddUrl}
-                disabled={!urlInput.trim()}
-                className="rounded-md bg-primary hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1.5 text-xs font-medium"
+                onClick={() => {
+                  setShowInput(false);
+                  setUrlInput('');
+                  setManualTitle('');
+                  setManualText('');
+                  setUrlError(null);
+                }}
+                className="p-1 text-gray-400 hover:text-gray-600 rounded"
               >
-                Add URL
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
           </div>
 
-          {/* OR divider */}
-          <div className="flex items-center gap-2 text-[10px] uppercase text-gray-400">
-            <div className="flex-1 h-px bg-gray-200" />
-            or
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
+          {/* Tab content */}
+          <div className="p-3 space-y-2">
+            {/* Website URL tab */}
+            {activeTab === 'url' && (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <LinkIcon className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                    <input
+                      type="url"
+                      value={urlInput}
+                      onChange={(e) => setUrlInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddUrl()}
+                      placeholder="https://example.com/article"
+                      className="block w-full rounded-md border border-gray-200 bg-white py-1.5 pl-8 pr-2 text-xs placeholder:text-gray-400 focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddUrl}
+                    disabled={!urlInput.trim()}
+                    className="rounded-md bg-primary hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1.5 text-xs font-medium"
+                  >
+                    Add URL
+                  </button>
+                </div>
+              </>
+            )}
 
-          {/* PDF upload */}
-          <div className="flex items-center gap-2">
-            <label className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-md border border-dashed border-gray-300 hover:border-gray-400 px-3 py-2 text-xs text-gray-600 cursor-pointer transition-colors">
-              <Paperclip className="h-3.5 w-3.5" />
-              {isUploading ? 'Uploading...' : 'Upload PDF'}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="application/pdf"
-                disabled={isUploading}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileSelected(file);
-                }}
-                className="hidden"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() => {
-                setShowInput(false);
-                setUrlInput('');
-                setUrlError(null);
-              }}
-              className="text-xs text-gray-500 hover:text-gray-700"
-            >
-              Cancel
-            </button>
-          </div>
+            {/* PDF Upload tab */}
+            {activeTab === 'pdf' && (
+              <label className="flex items-center justify-center gap-1.5 rounded-md border border-dashed border-gray-300 hover:border-gray-400 px-3 py-4 text-xs text-gray-600 cursor-pointer transition-colors">
+                <Paperclip className="h-3.5 w-3.5" />
+                {isUploading ? 'Uploading...' : 'Click to upload PDF (max 20 MB)'}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf"
+                  disabled={isUploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileSelected(file);
+                  }}
+                  className="hidden"
+                />
+              </label>
+            )}
 
-          {urlError && (
-            <p className="flex items-center gap-1 text-xs text-red-600">
-              <AlertCircle className="h-3 w-3" />
-              {urlError}
-            </p>
-          )}
+            {/* Manual Entry tab */}
+            {activeTab === 'text' && (
+              <>
+                <input
+                  type="text"
+                  value={manualTitle}
+                  onChange={(e) => setManualTitle(e.target.value)}
+                  placeholder="Title (optional)"
+                  className="block w-full rounded-md border border-gray-200 bg-white py-1.5 px-2.5 text-xs placeholder:text-gray-400 focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none"
+                />
+                <textarea
+                  value={manualText}
+                  onChange={(e) => setManualText(e.target.value)}
+                  placeholder="Paste or type reference text here..."
+                  rows={5}
+                  className="block w-full rounded-md border border-gray-200 bg-white py-1.5 px-2.5 text-xs placeholder:text-gray-400 focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none resize-y"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddManualText}
+                  disabled={!manualText.trim()}
+                  className="rounded-md bg-primary hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1.5 text-xs font-medium"
+                >
+                  Add text
+                </button>
+              </>
+            )}
+
+            {urlError && (
+              <p className="flex items-center gap-1 text-xs text-red-600">
+                <AlertCircle className="h-3 w-3" />
+                {urlError}
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -251,12 +339,14 @@ export function BriefingSourcesField() {
 // ─── Sub-components ───────────────────────────────────────────
 
 function SourceRow({ source, onRemove }: { source: BriefingSource; onRemove: () => void }) {
-  const Icon = source.type === 'pdf' ? FileText : LinkIcon;
-  const label = source.title || source.url || source.fileName || 'Untitled source';
+  const Icon = source.type === 'pdf' ? FileText : source.type === 'text' ? PenLine : LinkIcon;
+  const label = source.title || source.url || source.fileName || 'Manual entry';
   const subline =
     source.type === 'url'
       ? source.url
-      : source.fileName;
+      : source.type === 'pdf'
+        ? source.fileName
+        : undefined;
 
   return (
     <li className="flex items-start gap-2 rounded-md border border-gray-200 bg-white px-2.5 py-1.5">

@@ -741,7 +741,7 @@ export type RegenerateLayer = 'strategy' | 'architecture' | 'channelPlan' | 'ass
  * as additional context.
  */
 export interface CampaignBriefingSource {
-  type: 'url' | 'pdf';
+  type: 'url' | 'pdf' | 'text';
   url?: string;
   fileName?: string;
   title?: string;

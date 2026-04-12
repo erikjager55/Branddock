@@ -63,7 +63,7 @@ export type CampaignType = 'brand' | 'content' | 'activation';
 // Parsed server-side into plain text and injected into AI prompts as
 // additional context. Optional — users can create campaigns without any.
 
-export type BriefingSourceType = 'url' | 'pdf';
+export type BriefingSourceType = 'url' | 'pdf' | 'text';
 
 export type BriefingSourceStatus = 'pending' | 'processing' | 'ready' | 'error';
 
