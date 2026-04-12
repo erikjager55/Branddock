@@ -1428,9 +1428,30 @@ export async function generateInsights(
 
   const insights = await Promise.all(insightPromises);
 
-  onProgress?.({ type: 'step', step: 1, name: 'Insight Mining', status: 'complete', label: '3 insights generated' } as PipelineEvent);
+  // Auto-select the strongest insight based on specificity + emotional depth.
+  // Each insight has proofPoints (more = more grounded), underlyingTension
+  // (longer = more developed), and humanTruth (more specific = better).
+  // Simple heuristic: score by combined field richness.
+  let bestIdx = 0;
+  let bestScore = 0;
+  for (let i = 0; i < insights.length; i++) {
+    const ins = insights[i];
+    const score =
+      (ins.insightStatement?.length ?? 0) * 2 +
+      (ins.underlyingTension?.length ?? 0) * 1.5 +
+      (ins.humanTruth?.length ?? 0) * 2 +
+      (ins.emotionalTerritory?.length ?? 0) +
+      (ins.proofPoints?.length ?? 0) * 20 +
+      (ins.categoryConvention?.length ?? 0);
+    if (score > bestScore) {
+      bestScore = score;
+      bestIdx = i;
+    }
+  }
 
-  return { insights, selectedInsightIndex: null };
+  onProgress?.({ type: 'step', step: 1, name: 'Insight Mining', status: 'complete', label: 'Best insight auto-selected' } as PipelineEvent);
+
+  return { insights, selectedInsightIndex: bestIdx };
 }
 
 // ─── Phase 2a: Creative Leap ────────────────────────────────

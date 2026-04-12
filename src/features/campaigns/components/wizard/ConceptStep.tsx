@@ -30,7 +30,6 @@ import type {
 } from "@/lib/campaigns/strategy-blueprint.types";
 import { PipelineProgressView } from "./PipelineProgressView";
 import type { PipelineStepConfig } from "./PipelineProgressView";
-import { InsightReviewView } from "./InsightReviewView";
 import ConceptComparisonView from "./ConceptComparisonView";
 import { ConceptReviewView } from "./ConceptReviewView";
 import { compileStructuredFeedback } from "../../lib/compile-structured-feedback";
@@ -135,6 +134,10 @@ export function ConceptStep() {
   const abortRef = useRef<{ abort: () => void } | null>(null);
   const generationIdRef = useRef(0);
   const autoStartedRef = useRef(false);
+  // Forward-ref to handleGenerateConcepts — needed in the insight mining
+  // onComplete handler to chain directly from insight → concept generation
+  // without going through review_insights.
+  const generateConceptsRef = useRef<() => void>(() => {});
 
   // Cleanup SSE on unmount — deferred abort to survive React 19 dev double-invoke
   const isMountedRef = useRef(false);
@@ -174,11 +177,16 @@ export function ConceptStep() {
           return;
         }
         if (data.type === "complete" && data.result) {
-          const result = data.result as { insights: HumanInsight[] };
+          const result = data.result as { insights: HumanInsight[]; selectedInsightIndex?: number };
           const s = useCampaignWizardStore.getState();
           s.setInsightResults(result.insights);
+          // Auto-select the best insight (server already ranked them)
+          const bestIdx = result.selectedInsightIndex ?? 0;
+          s.setSelectedInsight(bestIdx);
           s.setIsGenerating(false);
-          s.setStrategyPhase("review_insights");
+          // Skip review_insights — chain directly to concept generation
+          // The user no longer has to manually pick between empathy/tension/behavior
+          generateConceptsRef.current();
           return;
         }
         if (data.type === "error") {
@@ -337,6 +345,11 @@ export function ConceptStep() {
     );
     abortRef.current = { abort };
   }, [wizardContext, selectedContextIds, strategicIntent, pipelineConfig]);
+
+  // Keep ref in sync for the insight→concept chain
+  useEffect(() => {
+    generateConceptsRef.current = handleGenerateConcepts;
+  }, [handleGenerateConcepts]);
 
   // ─── Creative Pipeline: Build Strategy from Concept ─────
 
@@ -703,9 +716,7 @@ export function ConceptStep() {
   // ─── Wire wizard Continue button for concept step phases ─────
   useEffect(() => {
     const store = useCampaignWizardStore.getState();
-    if (strategyPhase === "review_insights") {
-      store.setStepProceedOverride(handleGenerateConcepts);
-    } else if (strategyPhase === "review_concepts") {
+    if (strategyPhase === "review_concepts") {
       // Dispatch handler routes to creative debate first when critiqued,
       // or straight to build-strategy otherwise.
       store.setStepProceedOverride(handleConceptProceed);
@@ -751,23 +762,18 @@ export function ConceptStep() {
 
   // ─── Creative Quality Pipeline Phases (moved from StrategyStep) ─────
 
-  // Mining insights (spinner)
-  if (strategyPhase === "mining_insights" && isGenerating) {
+  // Mining insights + auto-selecting best (spinner)
+  if ((strategyPhase === "mining_insights" || strategyPhase === "review_insights") && isGenerating) {
     return (
       <PipelineProgressView
-        title="Mining Human Insights"
-        steps={[{ step: 1, name: "Insight Mining", label: "Mining insights from 3 AI perspectives...", description: "Three AI models analyze your brand, audience, and market from empathy, tension, and behavioral lenses." }]}
+        title="Finding the Best Insight"
+        steps={[{ step: 1, name: "Insight Mining", label: "Mining insights and selecting the strongest one...", description: "Three AI models analyze your brand from different angles. The richest insight is auto-selected for concept generation." }]}
         pipelineSteps={pipelineSteps}
         enrichmentStatus={enrichmentStatus}
         enrichmentBlockCount={enrichmentBlockCount}
         enrichmentSources={enrichmentSources}
       />
     );
-  }
-
-  // Review insights (VOTE 1)
-  if (strategyPhase === "review_insights") {
-    return <InsightReviewView />;
   }
 
   // Generating concepts (spinner) — label depends on creativeRange

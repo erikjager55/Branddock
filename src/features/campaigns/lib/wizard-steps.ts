@@ -85,7 +85,7 @@ export const CONCEPT_STEP: StepDefinition = {
   label: 'Concept',
   canProceed: (s) => {
     if (s.strategyPhase === 'mining_insights') return false;
-    if (s.strategyPhase === 'review_insights') return s.selectedInsightIndex !== null;
+    if (s.strategyPhase === 'review_insights') return false; // transient — chains to concepts
     if (s.strategyPhase === 'generating_concepts') return false;
     if (s.strategyPhase === 'review_concepts') return s.selectedConceptIndex !== null;
     if (s.strategyPhase === 'building_strategy') return false;
