@@ -5,6 +5,7 @@ import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { MEDIUM_CATEGORY_CONFIGS } from '../../../constants/medium-config-registry';
 import type { MediumCategory } from '../../../types/medium-config.types';
 import { MediumConfigLayout } from './MediumConfigLayout';
+import { WebPageLayout } from './WebPageLayout';
 import { ConfigSection } from './ConfigSection';
 import { ConfigFieldRenderer } from './ConfigFieldRenderer';
 
@@ -52,22 +53,28 @@ export function GenericConfigPanel({ category, onAdvance, deliverableId }: Gener
     }
   }, [category]); // eslint-disable-line react-hooks/exhaustive-deps -- config is derived from category
 
+  // Web-page category gets a special layout: config blocks side by side
+  // at top, full-width article preview below.
+  const Layout = category === 'web-page' ? WebPageLayout : MediumConfigLayout;
+
   return (
-    <MediumConfigLayout onAdvance={onAdvance} deliverableId={deliverableId}>
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">{config.label} Configuration</h3>
-        <p className="text-sm text-gray-500 mt-1">
-          Configure the settings for your {config.label.toLowerCase()} content.
-        </p>
-      </div>
+    <Layout onAdvance={onAdvance} deliverableId={deliverableId}>
+      {category !== 'web-page' && (
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-800">{config.label} Configuration</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            Configure the settings for your {config.label.toLowerCase()} content.
+          </p>
+        </div>
+      )}
 
       {config.sections.map((section) => (
-        <ConfigSection key={section.id} title={section.title}>
+        <ConfigSection key={section.id} title={section.title} defaultOpen={category !== 'web-page'}>
           {section.fields.map((field) => (
             <ConfigFieldRenderer key={field.key} field={field} />
           ))}
         </ConfigSection>
       ))}
-    </MediumConfigLayout>
+    </Layout>
   );
 }
