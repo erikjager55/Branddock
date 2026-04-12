@@ -2,94 +2,119 @@
 
 import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
-import { PreviewFrame } from './PreviewFrame';
 import { HeroImageSlot } from './HeroImageSlot';
+import { SimpleMarkdown } from './SimpleMarkdown';
 
-const EMAIL_COLOR = '#6B7280';
-
-/** Email client mockup (newsletter / promotional) */
+/**
+ * Email client mockup — styled like a real email template rendering.
+ */
 export function EmailPreview({ previewContent, isGenerating, heroImage, onAddImage, mediumConfig }: PlatformPreviewProps) {
   const subject = previewContent.subject?.content ?? previewContent.headline?.content ?? '';
   const preheader = previewContent.preheader?.content ?? '';
   const body = previewContent.body?.content ?? '';
   const cta = previewContent.cta?.content ?? '';
   const templateStyle = (mediumConfig?.templateStyle as string) ?? 'minimal';
-  const headerType = (mediumConfig?.headerType as string) ?? 'logo-bar';
   const ctaPlacement = (mediumConfig?.ctaPlacement as string) ?? 'bottom';
   const personalize = (mediumConfig?.personalize as boolean) ?? false;
+  const isBranded = templateStyle === 'branded';
+  const accentColor = isBranded ? '#0d9488' : '#1f2937';
 
   if (isGenerating) {
     return (
-      <PreviewFrame platformLabel="Email" platformColor={EMAIL_COLOR}>
-        <div className="animate-pulse space-y-3">
+      <div className="bg-white rounded-lg border border-gray-200">
+        <div className="animate-pulse p-4 space-y-3">
           <div className="h-4 w-2/3 rounded bg-gray-200" />
           <div className="h-3 w-full rounded bg-gray-200" />
           <div className="h-32 rounded bg-gray-200" />
-          <div className="h-3 w-full rounded bg-gray-200" />
-          <div className="h-3 w-4/5 rounded bg-gray-200" />
-          <div className="h-8 w-28 rounded bg-gray-200" />
+          <div className="h-8 w-28 rounded bg-gray-200 mx-auto" />
         </div>
-      </PreviewFrame>
+      </div>
     );
   }
 
   return (
-    <PreviewFrame platformLabel="Email" platformColor={EMAIL_COLOR}>
-      {/* Email header */}
-      <div className="border-b border-gray-100 pb-2 mb-3">
-        <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-          <span className="font-medium text-gray-700">From:</span>
-          <span>Brand Name &lt;hello@brand.com&gt;</span>
+    <div className="bg-gray-100 rounded-lg border border-gray-200 overflow-hidden">
+      {/* Email client chrome */}
+      <div className="bg-white border-b border-gray-200 px-4 py-2">
+        <div className="flex items-center gap-1.5 mb-2">
+          <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
+          <div className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+          <div className="h-2.5 w-2.5 rounded-full bg-green-400" />
         </div>
-        {subject && (
-          <p className="text-sm font-semibold text-gray-900">{subject}</p>
-        )}
-        {preheader && (
-          <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{preheader}</p>
-        )}
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-gray-400 w-10">From:</span>
+            <span className="text-gray-700 font-medium">Brand Name &lt;hello@brand.com&gt;</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-gray-400 w-10">To:</span>
+            <span className="text-gray-700">{personalize ? '{{firstName}} {{lastName}}' : 'subscriber@email.com'}</span>
+          </div>
+          {subject && (
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-gray-400 w-10">Subject:</span>
+              <span className="text-gray-900 font-semibold">{subject}</span>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Hero image (header banner) */}
-      <div className="mb-3">
-        <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[3/1]" />
-      </div>
+      {/* Email body — centered card on gray background */}
+      <div className="p-4">
+        <div className="bg-white rounded-lg shadow-sm max-w-lg mx-auto overflow-hidden">
+          {/* Brand header bar */}
+          <div className="h-1.5" style={{ backgroundColor: accentColor }} />
 
-      {/* Personalization */}
-      {personalize && (
-        <p className="text-xs text-gray-500 italic mb-2">Hi {'{{firstName}}'},</p>
-      )}
+          {/* Hero image */}
+          <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[3/1]" rounded="rounded-none" />
 
-      {/* CTA (top placement) */}
-      {ctaPlacement === 'top' && cta && (
-        <div className="text-center mb-3">
-          <span className={`inline-block px-5 py-2 text-xs font-semibold text-white rounded ${templateStyle === 'branded' ? 'bg-teal-600' : 'bg-gray-800'}`}>
-            {cta}
-          </span>
+          {/* Content */}
+          <div className="px-6 py-5 space-y-4">
+            {/* Greeting */}
+            {personalize && (
+              <p className="text-sm text-gray-700">Hi {'{{firstName}}'},</p>
+            )}
+
+            {/* Preheader / preview text */}
+            {preheader && (
+              <p className="text-xs text-gray-400 italic">{preheader}</p>
+            )}
+
+            {/* CTA top placement */}
+            {ctaPlacement === 'top' && cta && (
+              <div className="text-center py-2">
+                <span className="inline-block px-6 py-2.5 text-sm font-semibold text-white rounded-md" style={{ backgroundColor: accentColor }}>
+                  {cta}
+                </span>
+              </div>
+            )}
+
+            {/* Body */}
+            {body && (
+              <div className="text-sm text-gray-700 leading-relaxed">
+                <SimpleMarkdown text={body} />
+              </div>
+            )}
+
+            {/* CTA bottom placement */}
+            {ctaPlacement !== 'top' && cta && (
+              <div className="text-center py-2">
+                <span className="inline-block px-6 py-2.5 text-sm font-semibold text-white rounded-md" style={{ backgroundColor: accentColor }}>
+                  {cta}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="border-t border-gray-100 px-6 py-3 bg-gray-50">
+            <p className="text-[10px] text-gray-400 text-center leading-relaxed">
+              Brand Name · 123 Street · City, Country<br />
+              <span className="underline">Unsubscribe</span> · <span className="underline">View in browser</span>
+            </p>
+          </div>
         </div>
-      )}
-
-      {/* Body */}
-      {body && (
-        <p className="text-xs text-gray-700 whitespace-pre-wrap line-clamp-8 mb-3">
-          {body}
-        </p>
-      )}
-
-      {/* CTA (bottom placement — default) */}
-      {ctaPlacement !== 'top' && cta && (
-        <div className="text-center">
-          <span className={`inline-block px-5 py-2 text-xs font-semibold text-white rounded ${templateStyle === 'branded' ? 'bg-teal-600' : 'bg-gray-800'}`}>
-            {cta}
-          </span>
-        </div>
-      )}
-
-      {/* Footer */}
-      <div className="mt-4 pt-2 border-t border-gray-100">
-        <p className="text-[10px] text-gray-400 text-center">
-          Unsubscribe · View in browser
-        </p>
       </div>
-    </PreviewFrame>
+    </div>
   );
 }

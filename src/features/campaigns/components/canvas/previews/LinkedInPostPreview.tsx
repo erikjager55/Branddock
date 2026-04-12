@@ -2,110 +2,124 @@
 
 import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
-import { PreviewFrame } from './PreviewFrame';
 import { HeroImageSlot } from './HeroImageSlot';
-import { ThumbsUp, MessageCircle, Repeat2, Send, Globe } from 'lucide-react';
+import { SimpleMarkdown } from './SimpleMarkdown';
+import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, MoreHorizontal } from 'lucide-react';
 
-const LINKEDIN_BLUE = '#0A66C2';
-
-/** LinkedIn organic post mockup */
+/**
+ * LinkedIn organic post mockup — styled to match the real LinkedIn feed.
+ * Uses LinkedIn's actual font sizes, spacing, and color palette.
+ */
 export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, onAddImage, mediumConfig }: PlatformPreviewProps) {
   const body = previewContent.body?.content ?? previewContent.caption?.content ?? '';
   const headline = previewContent.headline?.content ?? '';
   const hashtags = previewContent.hashtags?.content ?? '';
-  const tone = (mediumConfig?.tone as string) ?? '';
-  const hashtagStrategy = (mediumConfig?.hashtagStrategy as string) ?? 'moderate';
   const ctaStyle = (mediumConfig?.ctaStyle as string) ?? '';
-  const includeEmoji = (mediumConfig?.includeEmoji as boolean) ?? false;
+  const hashtagStrategy = (mediumConfig?.hashtagStrategy as string) ?? 'moderate';
 
   if (isGenerating) {
     return (
-      <PreviewFrame platformLabel="LinkedIn Post" platformColor={LINKEDIN_BLUE}>
-        <div className="animate-pulse space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="h-10 w-10 rounded-full bg-gray-200" />
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className="p-4 animate-pulse space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-full bg-gray-200" />
             <div className="space-y-1.5">
-              <div className="h-3 w-24 rounded bg-gray-200" />
-              <div className="h-2 w-16 rounded bg-gray-200" />
+              <div className="h-3.5 w-28 rounded bg-gray-200" />
+              <div className="h-2.5 w-20 rounded bg-gray-200" />
             </div>
           </div>
           <div className="h-3 w-full rounded bg-gray-200" />
           <div className="h-3 w-4/5 rounded bg-gray-200" />
-          <div className="h-40 rounded bg-gray-200" />
+          <div className="h-48 rounded bg-gray-200" />
         </div>
-      </PreviewFrame>
+      </div>
     );
   }
 
   return (
-    <PreviewFrame platformLabel="LinkedIn Post" platformColor={LINKEDIN_BLUE}>
-      {/* Author header */}
-      <div className="flex items-center gap-2 mb-3">
-        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-          <span className="text-sm font-semibold text-blue-700">B</span>
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-gray-900">Brand Name</p>
-          <p className="text-xs text-gray-500 flex items-center gap-1">
-            Just now · <Globe className="h-3 w-3" />
-          </p>
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      {/* Post header — LinkedIn style */}
+      <div className="px-4 pt-3 pb-2">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#dbeafe' }}>
+              <span className="text-sm font-bold" style={{ color: '#1d4ed8' }}>B</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-gray-900 leading-tight">Brand Name</p>
+              <p className="text-xs text-gray-500 leading-tight">Brand tagline or description</p>
+              <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                Just now · <Globe className="h-2.5 w-2.5" />
+              </p>
+            </div>
+          </div>
+          <MoreHorizontal className="h-5 w-5 text-gray-400" />
         </div>
       </div>
 
-      {/* Headline */}
-      {headline && (
-        <p className="text-sm font-semibold text-gray-900 mb-1">{headline}</p>
-      )}
-
-      {/* Body text */}
-      {body && (
-        <p className="text-sm text-gray-800 whitespace-pre-wrap line-clamp-6 mb-3">
-          {body}
-        </p>
-      )}
-
-      {/* Hero image slot */}
-      <div className="mt-1 mb-1">
-        <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[1.91/1]" />
+      {/* Post content */}
+      <div className="px-4 pb-2">
+        {headline && (
+          <p className="text-sm font-semibold text-gray-900 mb-1.5">{headline}</p>
+        )}
+        {body && (
+          <div className="text-sm text-gray-800 leading-relaxed">
+            <SimpleMarkdown text={body} />
+          </div>
+        )}
+        {hashtagStrategy !== 'none' && hashtags && (
+          <p className="text-sm mt-2" style={{ color: '#0A66C2' }}>{hashtags}</p>
+        )}
       </div>
 
-      {/* CTA */}
+      {/* Image */}
+      <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[1.91/1]" rounded="rounded-none" />
+
+      {/* CTA button (if configured) */}
       {ctaStyle && ctaStyle !== 'none' && (
-        <div className="mt-2 mb-1">
-          <span className="inline-block px-3 py-1 text-xs font-medium rounded bg-blue-600 text-white">
-            {ctaStyle === 'learn-more' ? 'Learn More' : ctaStyle === 'sign-up' ? 'Sign Up' : ctaStyle === 'contact-us' ? 'Contact Us' : 'Learn More'}
-          </span>
+        <div className="px-4 py-2 border-t border-gray-100">
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Learn more about this</p>
+              <p className="text-xs text-gray-500">brand.com</p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold border border-blue-700" style={{ color: '#0A66C2' }}>
+              {ctaStyle === 'learn-more' ? 'Learn More' : ctaStyle === 'sign-up' ? 'Sign Up' : 'Learn More'}
+            </span>
+          </div>
         </div>
       )}
 
-      {/* Hashtags */}
-      {hashtagStrategy !== 'none' && hashtags && (
-        <p className="text-xs text-blue-600 mt-2">{hashtags}</p>
-      )}
-
-      {/* Tone + emoji indicator */}
-      {(tone || includeEmoji) && (
-        <div className="flex items-center gap-2 mt-2">
-          {tone && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{tone}</span>}
-          {includeEmoji && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">Emoji enabled</span>}
+      {/* Engagement counts */}
+      <div className="px-4 py-1.5">
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <div className="flex items-center gap-1">
+            <span className="flex -space-x-1">
+              <span className="h-4 w-4 rounded-full bg-blue-500 border border-white flex items-center justify-center">
+                <ThumbsUp className="h-2 w-2 text-white" />
+              </span>
+              <span className="h-4 w-4 rounded-full bg-red-400 border border-white flex items-center justify-center text-[8px] text-white">❤</span>
+            </span>
+            <span>24</span>
+          </div>
+          <span>3 comments · 1 repost</span>
         </div>
-      )}
-
-      {/* Engagement bar */}
-      <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">
-        <button type="button" className="flex items-center gap-1 text-xs text-gray-500">
-          <ThumbsUp className="h-3.5 w-3.5" /> Like
-        </button>
-        <button type="button" className="flex items-center gap-1 text-xs text-gray-500">
-          <MessageCircle className="h-3.5 w-3.5" /> Comment
-        </button>
-        <button type="button" className="flex items-center gap-1 text-xs text-gray-500">
-          <Repeat2 className="h-3.5 w-3.5" /> Repost
-        </button>
-        <button type="button" className="flex items-center gap-1 text-xs text-gray-500">
-          <Send className="h-3.5 w-3.5" /> Send
-        </button>
       </div>
-    </PreviewFrame>
+
+      {/* Action bar — LinkedIn's four buttons */}
+      <div className="border-t border-gray-200 px-2 py-1 flex items-center justify-around">
+        {[
+          { icon: ThumbsUp, label: 'Like' },
+          { icon: MessageCircle, label: 'Comment' },
+          { icon: Repeat2, label: 'Repost' },
+          { icon: Send, label: 'Send' },
+        ].map(({ icon: Icon, label }) => (
+          <div key={label} className="flex items-center gap-1.5 px-3 py-2 rounded hover:bg-gray-100 text-xs font-medium text-gray-600">
+            <Icon className="h-4 w-4" />
+            <span>{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
