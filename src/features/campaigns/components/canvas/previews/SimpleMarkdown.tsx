@@ -27,7 +27,7 @@ export function SimpleMarkdown({ text, className = '' }: { text: string; classNa
         // Heading 2
         if (trimmed.startsWith('## ')) {
           return (
-            <h2 key={blockIdx} className="text-base font-bold text-gray-900 mt-4 mb-1">
+            <h2 key={blockIdx} className="text-lg font-bold text-gray-900 mt-5 mb-2">
               {renderInline(trimmed.slice(3))}
             </h2>
           );
@@ -36,7 +36,7 @@ export function SimpleMarkdown({ text, className = '' }: { text: string; classNa
         // Heading 3
         if (trimmed.startsWith('### ')) {
           return (
-            <h3 key={blockIdx} className="text-sm font-semibold text-gray-800 mt-3 mb-1">
+            <h3 key={blockIdx} className="text-base font-semibold text-gray-800 mt-4 mb-1">
               {renderInline(trimmed.slice(4))}
             </h3>
           );
