@@ -89,11 +89,6 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
           </p>
           <p className="text-xs text-gray-400 mt-2">This usually takes 10-20 seconds</p>
         </div>
-        <div className="w-full max-w-md space-y-3 mt-4">
-          <SkeletonVariantGroup />
-          <SkeletonVariantGroup />
-          <SkeletonVariantGroup />
-        </div>
       </div>
     );
   }
