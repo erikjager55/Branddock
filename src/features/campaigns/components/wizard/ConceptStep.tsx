@@ -588,6 +588,45 @@ export function ConceptStep() {
   // - multi-variant mode: build-strategy (standard path).
   const handleConceptProceed = useCallback(() => {
     if (wizardMode === 'content') {
+      // Content mode skips the heavy strategy build + elaborate phases.
+      // But synthesizedStrategy must exist for handleApprove to assemble
+      // the blueprint. In single mode it was pre-built by quick-concept;
+      // in multi-variant mode we build a minimal strategy inline here.
+      const store = useCampaignWizardStore.getState();
+      if (!store.synthesizedStrategy) {
+        const conceptIdx = store.selectedConceptIndex ?? 0;
+        const concept = store.concepts[conceptIdx];
+        const insightIdx = store.selectedInsightIndex ?? 0;
+        const insight = store.insights[insightIdx];
+        if (concept) {
+          const minimalStrategy = {
+            strategicIntent: store.strategicIntent ?? 'hybrid',
+            intentRatio: { brand: 50, activation: 50 },
+            campaignTheme: concept.campaignLine ?? '',
+            positioningStatement: concept.bigIdea ?? '',
+            messagingHierarchy: {
+              brandMessage: concept.bigIdea ?? '',
+              campaignMessage: concept.campaignLine ?? '',
+              proofPoints: insight?.proofPoints ?? [],
+            },
+            jtbdFraming: {
+              jobStatement: insight?.humanTruth ?? '',
+              functionalJob: '',
+              emotionalJob: insight?.emotionalTerritory ?? '',
+              socialJob: '',
+            },
+            strategicChoices: [],
+            humanInsight: insight?.insightStatement,
+            creativePlatform: concept.bigIdea,
+            creativeTerritory: concept.creativeTerritory,
+            memorableDevice: concept.memorableDevice,
+          };
+          store.setSynthesisResult({
+            strategy: minimalStrategy as import("@/lib/campaigns/strategy-blueprint.types").StrategyLayer,
+            architecture: { campaignType: 'strategic', journeyPhases: [] },
+          });
+        }
+      }
       approveRef.current();
       return;
     }
