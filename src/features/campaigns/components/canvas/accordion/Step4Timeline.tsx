@@ -9,7 +9,7 @@ import {
   getExportFormats,
   CHAR_LIMITS,
 } from '../../../lib/publish-timing';
-import { SimpleMarkdown } from '../previews/SimpleMarkdown';
+import { usePublishChannels } from '@/features/settings/hooks/use-publish-channels';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { PreviewContent } from '../../../types/canvas.types';
 import {
@@ -19,6 +19,7 @@ import {
   Circle,
   Send,
   AlertCircle,
+  Plug,
   Sparkles,
   Copy,
   FileText,
@@ -45,8 +46,11 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
   const approvalStatus = useCanvasStore((s) => s.approvalStatus);
   const mediumConfigValues = useCanvasStore((s) => s.mediumConfigValues);
 
+  const { data: channels } = usePublishChannels();
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -386,7 +390,105 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         </div>
       )}
 
-      {/* ── Section 4: Export ──────────────────────────────────── */}
+      {/* ── Section 4: Publish to Channel ────────────────────── */}
+      {!isPublished && channels && channels.length > 0 && (
+        <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-gray-700">Publish to Platform</h3>
+          <div className="space-y-2">
+            {channels.filter((ch) => ch.isActive).map((ch) => {
+              const isSelected = selectedChannelId === ch.id;
+              const COLORS: Record<string, string> = {
+                linkedin: 'border-blue-400 bg-blue-50',
+                instagram: 'border-pink-400 bg-pink-50',
+                facebook: 'border-blue-500 bg-blue-50',
+                tiktok: 'border-gray-800 bg-gray-50',
+                email: 'border-gray-400 bg-gray-50',
+                wordpress: 'border-blue-600 bg-blue-50',
+                youtube: 'border-red-400 bg-red-50',
+              };
+              return (
+                <button
+                  key={ch.id}
+                  type="button"
+                  onClick={() => setSelectedChannelId(isSelected ? null : ch.id)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-colors ${
+                    isSelected ? (COLORS[ch.platform] ?? 'border-teal-400 bg-teal-50') : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <CheckCircle2 className={`h-4 w-4 flex-shrink-0 ${isSelected ? 'text-teal-600' : 'text-gray-300'}`} />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{ch.label ?? ch.platform}</p>
+                    <p className="text-xs text-gray-500">{ch.provider}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {selectedChannelId && (
+            <button
+              type="button"
+              onClick={async () => {
+                setIsSubmitting(true);
+                setError(null);
+                try {
+                  const body: Record<string, unknown> = { channelId: selectedChannelId };
+                  const store = useCanvasStore.getState();
+                  if (store.scheduledDate) {
+                    const dt = store.scheduledTime
+                      ? `${store.scheduledDate}T${store.scheduledTime}:00Z`
+                      : `${store.scheduledDate}T09:00:00Z`;
+                    body.scheduledFor = dt;
+                  } else {
+                    body.publishNow = true;
+                  }
+                  const res = await fetch(`/api/studio/${deliverableId}/publish-to-channel`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                  });
+                  if (!res.ok) throw new Error('Publish failed');
+                  const data = await res.json();
+                  setPublishSuccess(`${data.status === 'published' ? 'Published' : 'Scheduled'} to ${data.channelPlatform}`);
+                  useCanvasStore.getState().setApprovalState({
+                    approvalStatus: data.status === 'published' ? 'PUBLISHED' : 'APPROVED',
+                    publishedAt: data.status === 'published' ? new Date().toISOString() : undefined,
+                  });
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Publish failed');
+                } finally {
+                  setIsSubmitting(false);
+                }
+              }}
+              disabled={isSubmitting || !requiredPassed}
+              className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <Send className="h-4 w-4" />
+              {isSubmitting ? 'Publishing...' : scheduledDate ? 'Schedule to Platform' : 'Publish Now'}
+            </button>
+          )}
+
+          {publishSuccess && (
+            <p className="text-sm text-emerald-600 flex items-center gap-1">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {publishSuccess}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* No channels connected hint */}
+      {!isPublished && channels && channels.length === 0 && (
+        <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-center">
+          <Plug className="h-5 w-5 text-gray-400 mx-auto mb-2" />
+          <p className="text-sm text-gray-600 font-medium">No publishing platforms connected</p>
+          <p className="text-xs text-gray-400 mt-1">
+            Go to Settings → Integrations to connect LinkedIn, Instagram, Email, WordPress and more.
+          </p>
+        </div>
+      )}
+
+      {/* ── Section 5: Export ──────────────────────────────────── */}
       <div className="rounded-lg border border-gray-200 bg-white p-4">
         <h3 className="text-sm font-semibold text-gray-700 mb-3">Export</h3>
         <div className="flex flex-wrap gap-2">

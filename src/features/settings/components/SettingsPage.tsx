@@ -8,6 +8,7 @@ import { AccountTab } from './account/AccountTab';
 import { TeamTab } from './team/TeamTab';
 import { WorkspacesTab } from './workspaces/WorkspacesTab';
 import { BillingTab } from './billing/BillingTab';
+import { IntegrationsTab } from './integrations/IntegrationsTab';
 import { AdministratorTab } from './administrator/AdministratorTab';
 import { AiModelsTab } from './ai-models/AiModelsTab';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
@@ -63,6 +64,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
             Appearance settings coming soon
           </div>
         );
+      case 'integrations':
+        return <IntegrationsTab />;
       case 'administrator':
         return <AdministratorTab />;
       case 'ai-models':
