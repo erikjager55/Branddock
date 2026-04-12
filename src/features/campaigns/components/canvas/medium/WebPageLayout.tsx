@@ -58,8 +58,9 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
 
   return (
     <div className="space-y-6">
-      {/* Config sections — rendered side by side via CSS grid */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Config sections — rendered side by side, items-start so collapsed
+          sections don't stretch to match the height of expanded ones */}
+      <div className="grid grid-cols-2 gap-4 items-start">
         {children}
       </div>
 
@@ -104,11 +105,23 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
             </p>
           ) : (
             <div className="space-y-4">
-              {textEntries.map(([group, value]) => (
-                <div key={group}>
-                  <SimpleMarkdown text={value.content ?? ''} />
-                </div>
-              ))}
+              {textEntries.map(([group, value]) => {
+                const isTitle = group.toLowerCase() === 'title';
+                const isMeta = group.toLowerCase().includes('meta');
+                return (
+                  <div key={group}>
+                    {isTitle ? (
+                      <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+                        {value.content}
+                      </h1>
+                    ) : isMeta ? (
+                      <p className="text-sm text-gray-500 italic">{value.content}</p>
+                    ) : (
+                      <SimpleMarkdown text={value.content ?? ''} />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
