@@ -183,9 +183,11 @@ export function ConceptStep() {
           // Auto-select the best insight (server already ranked them)
           const bestIdx = result.selectedInsightIndex ?? 0;
           s.setSelectedInsight(bestIdx);
-          s.setIsGenerating(false);
-          // Skip review_insights — chain directly to concept generation
-          // The user no longer has to manually pick between empathy/tension/behavior
+          // DO NOT set isGenerating=false here — handleGenerateConcepts
+          // will keep the spinner visible by setting phase to
+          // 'generating_concepts'. If we set false first, there's a
+          // one-frame gap where no render condition matches → fallback.
+          s.setStrategyPhase("generating_concepts");
           generateConceptsRef.current();
           return;
         }
