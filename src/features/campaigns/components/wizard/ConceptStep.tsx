@@ -931,17 +931,19 @@ export function ConceptStep() {
     );
   }
 
-  // Review final strategy (leads to elaborate)
-  if (strategyPhase === "review_final_strategy") {
-    const store = useCampaignWizardStore.getState();
-    const fs = store.finalStrategy;
-    const fa = store.finalArchitecture;
+  // Review final strategy — shows ConceptReviewView with dynamic action:
+  // Without elaborateResult: "Approve" → handleElaborate (build channel/asset plan)
+  // With elaborateResult: "Approve" → handleApprove (assemble blueprint + advance)
+  if (strategyPhase === "review_final_strategy" || (elaborateResult && !isGenerating && synthesizedStrategy && synthesizedArchitecture && strategyPhase !== "complete")) {
+    const fs = useCampaignWizardStore.getState().finalStrategy ?? synthesizedStrategy;
+    const fa = useCampaignWizardStore.getState().finalArchitecture ?? synthesizedArchitecture;
     if (fs && fa) {
+      const hasElaborate = !!elaborateResult;
       return (
         <ConceptReviewView
           strategy={fs}
           architecture={fa}
-          onApprove={() => handleElaborate()}
+          onApprove={hasElaborate ? handleApprove : () => handleElaborate()}
           errorMessage={phaseError}
         />
       );
@@ -958,23 +960,6 @@ export function ConceptStep() {
         enrichmentStatus={enrichmentStatus}
         enrichmentBlockCount={enrichmentBlockCount}
         enrichmentSources={enrichmentSources}
-      />
-    );
-  }
-
-  // Concept review (elaborate complete, not yet approved)
-  if (elaborateResult && !isGenerating && synthesizedStrategy && synthesizedArchitecture && strategyPhase !== "complete") {
-    return (
-      <ConceptReviewView
-        strategy={synthesizedStrategy}
-        architecture={synthesizedArchitecture}
-        onApprove={handleApprove}
-        onRefine={() => {
-          // Re-elaborate with current feedback to refine the concept
-          setPhaseError(null);
-          handleElaborate();
-        }}
-        errorMessage={phaseError}
       />
     );
   }
