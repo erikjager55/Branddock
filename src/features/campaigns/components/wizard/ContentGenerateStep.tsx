@@ -34,6 +34,24 @@ export function ContentGenerateStep() {
 
     const draftCampaignId = store.draftCampaignId ?? undefined;
 
+    // Send the strategy layer (concept data) so the Canvas can display
+    // the Campaign Concept card. Strip assetPlan.deliverables so the
+    // launch route uses the fallback deliverables path (creates exactly
+    // one deliverable of the selected content type).
+    // Preserve the blueprint so the Canvas can read campaign concept,
+    // strategy direction, etc. — but empty the assetPlan deliverables
+    // array so the launch route's server-side doesn't create N content
+    // items from it (we want exactly ONE from the `deliverables` param).
+    const strategyForLaunch = store.blueprintResult
+      ? {
+          ...store.blueprintResult,
+          assetPlan: {
+            ...store.blueprintResult.assetPlan,
+            deliverables: [],
+          },
+        }
+      : undefined;
+
     try {
       const result = await launchCampaign.mutateAsync({
         name: store.name || 'Untitled Content',
@@ -43,6 +61,7 @@ export function ContentGenerateStep() {
         startDate: store.startDate || undefined,
         endDate: store.endDate || undefined,
         knowledgeIds: store.selectedKnowledgeIds,
+        strategy: strategyForLaunch,
         deliverables: [{ type: store.selectedContentType!, quantity: 1 }],
         saveAsTemplate: false,
         briefing: {
