@@ -1,132 +1,234 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
-import { PublishSuggestion } from '../previews/PublishSuggestion';
+import { resolvePreviewComponent } from '../previews/preview-map';
+import {
+  getSuggestedPublishTime,
+  getChecklistForPlatform,
+  getExportFormats,
+  CHAR_LIMITS,
+} from '../../../lib/publish-timing';
+import { SimpleMarkdown } from '../previews/SimpleMarkdown';
 import { STUDIO } from '@/lib/constants/design-tokens';
-import { Calendar, Clock, CheckCircle2, Send, AlertCircle } from 'lucide-react';
+import type { PreviewContent } from '../../../types/canvas.types';
+import {
+  Calendar,
+  Clock,
+  CheckCircle2,
+  Circle,
+  Send,
+  AlertCircle,
+  Sparkles,
+  Copy,
+  FileText,
+  Code,
+  FileDown,
+  ChevronDown,
+  ChevronRight,
+  AlertTriangle,
+  ExternalLink,
+} from 'lucide-react';
 
 interface Step4TimelineProps {
   deliverableId: string;
 }
 
 export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
+  const contextStack = useCanvasStore((s) => s.contextStack);
+  const variantGroups = useCanvasStore((s) => s.variantGroups);
+  const selections = useCanvasStore((s) => s.selections);
+  const imageVariants = useCanvasStore((s) => s.imageVariants);
+  const heroImage = useCanvasStore((s) => s.heroImage);
   const scheduledDate = useCanvasStore((s) => s.scheduledDate);
   const scheduledTime = useCanvasStore((s) => s.scheduledTime);
-  const isTimeBound = useCanvasStore((s) => s.isTimeBound);
-  const publishSuggestion = useCanvasStore((s) => s.publishSuggestion);
   const approvalStatus = useCanvasStore((s) => s.approvalStatus);
+  const mediumConfigValues = useCanvasStore((s) => s.mediumConfigValues);
+
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isSubmittingRef = useRef(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    return () => { abortControllerRef.current?.abort(); };
-  }, []);
+  const platform = contextStack?.medium?.platform ?? null;
+  const format = contextStack?.medium?.format ?? null;
 
-  const handleSchedule = useCallback(async () => {
-    if (isSubmittingRef.current) return;
-    isSubmittingRef.current = true;
+  // Build preview content from selected variants
+  const previewContent = useMemo<PreviewContent>(() => {
+    const content: PreviewContent = {};
+    for (const [group, variants] of variantGroups) {
+      const selectedIdx = selections.get(group) ?? 0;
+      const selected = variants[selectedIdx];
+      if (selected) {
+        content[group] = { content: selected.content, type: 'text' };
+      }
+    }
+    return content;
+  }, [variantGroups, selections]);
+
+  const allText = useMemo(() => {
+    return Object.values(previewContent)
+      .filter((v) => v.type === 'text' && v.content)
+      .map((v) => v.content)
+      .join('\n\n');
+  }, [previewContent]);
+
+  const previewEntry = useMemo(
+    () => resolvePreviewComponent(platform, format),
+    [platform, format],
+  );
+
+  // Optimal timing suggestion
+  const timingSuggestion = useMemo(
+    () => getSuggestedPublishTime(platform),
+    [platform],
+  );
+
+  // Publication checklist
+  const checklist = useMemo(
+    () => getChecklistForPlatform(platform, format),
+    [platform, format],
+  );
+
+  const checklistResults = useMemo(() => {
+    const textGroups = Object.keys(previewContent);
+    const charCount = allText.length;
+    const charLimit = platform ? CHAR_LIMITS[platform] : null;
+
+    return checklist.map((item) => {
+      let passed = false;
+      switch (item.id) {
+        case 'has-title':
+          passed = textGroups.some((g) => g === 'title' || g === 'headline' || g === 'subject');
+          break;
+        case 'has-body':
+          passed = textGroups.some((g) => g === 'body' || g === 'caption' || g === 'introduction' || g === 'body-sections');
+          break;
+        case 'has-image':
+          passed = !!heroImage?.url;
+          break;
+        case 'has-hashtags':
+          passed = textGroups.some((g) => g === 'hashtags');
+          break;
+        case 'has-subject':
+          passed = textGroups.some((g) => g === 'subject' || g === 'subject-line');
+          break;
+        case 'has-cta':
+          passed = textGroups.some((g) => g === 'cta' || g === 'call-to-action');
+          break;
+        case 'has-meta':
+          passed = textGroups.some((g) => g.includes('meta'));
+          break;
+        case 'has-shownotes':
+          passed = textGroups.some((g) => g.includes('show') || g.includes('notes'));
+          break;
+        case 'char-limit':
+          passed = !charLimit || charCount <= charLimit;
+          break;
+        default:
+          passed = false;
+      }
+      return { ...item, passed };
+    });
+  }, [checklist, previewContent, allText, heroImage, platform]);
+
+  const requiredPassed = checklistResults.filter((c) => c.required).every((c) => c.passed);
+  const allPassed = checklistResults.every((c) => c.passed);
+
+  // Export formats
+  const exportFormats = useMemo(() => getExportFormats(platform), [platform]);
+
+  const handleCopyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(allText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard may not be available */ }
+  };
+
+  const handleDownload = (formatId: string) => {
+    let content = allText;
+    let ext = 'txt';
+    let mime = 'text/plain';
+
+    if (formatId === 'html') {
+      content = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${previewContent.title?.content ?? 'Content'}</title></head><body>${allText.replace(/\n/g, '<br>')}</body></html>`;
+      ext = 'html';
+      mime = 'text/html';
+    } else if (formatId === 'markdown') {
+      ext = 'md';
+      mime = 'text/markdown';
+    }
+
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `content.${ext}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Apply suggestion
+  const handleApplySuggestion = () => {
+    if (!timingSuggestion) return;
+    const date = timingSuggestion.nextOccurrence.split('T')[0];
+    useCanvasStore.getState().setScheduledDate(date);
+    useCanvasStore.getState().setScheduledTime(timingSuggestion.time);
+  };
+
+  // Schedule / Approve
+  const handlePublish = useCallback(async (action: 'approve' | 'schedule') => {
     setIsSubmitting(true);
     setError(null);
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
 
     const store = useCanvasStore.getState();
-    const date = store.scheduledDate;
-    const time = store.scheduledTime;
-
-    // Build scheduled datetime
-    let scheduledAt: string | null = null;
-    if (date) {
-      scheduledAt = time ? `${date}T${time}:00` : `${date}T09:00:00`;
-    }
 
     try {
-      // Save scheduled date to deliverable
-      const patchRes = await fetch(`/api/campaigns/deliverables/${deliverableId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scheduledPublishDate: scheduledAt }),
-        signal: controller.signal,
-      });
-      if (!patchRes.ok) throw new Error('Failed to save scheduled date');
+      if (action === 'schedule' && store.scheduledDate) {
+        const scheduledAt = store.scheduledTime
+          ? `${store.scheduledDate}T${store.scheduledTime}:00`
+          : `${store.scheduledDate}T09:00:00`;
 
-      // Trigger publish
-      const pubRes = await fetch(`/api/studio/${deliverableId}/publish`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scheduledPublishDate: scheduledAt }),
-        signal: controller.signal,
-      });
-      if (!pubRes.ok) throw new Error('Failed to publish');
+        const res = await fetch(`/api/studio/${deliverableId}/publish`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scheduledPublishDate: scheduledAt }),
+        });
+        if (!res.ok) throw new Error('Failed to schedule');
 
-      store.setApprovalState({
-        approvalStatus: 'PUBLISHED',
-        publishedAt: new Date().toISOString(),
-      });
+        store.setApprovalState({ approvalStatus: 'PUBLISHED', publishedAt: new Date().toISOString() });
+        store.setStepSummary(4, {
+          label: `Scheduled: ${formatDateDisplay(store.scheduledDate)}${store.scheduledTime ? ` at ${store.scheduledTime}` : ''}`,
+        });
+      } else {
+        const res = await fetch(`/api/studio/${deliverableId}/approval`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'approve' }),
+        });
+        if (!res.ok) throw new Error('Failed to approve');
 
-      store.setStepSummary(4, {
-        label: scheduledAt
-          ? `Scheduled: ${formatDate(date!)}${time ? ` at ${time}` : ''}`
-          : 'Ready for publishing',
-      });
+        store.setApprovalState({ approvalStatus: 'APPROVED' });
+        store.setStepSummary(4, { label: 'Ready for publishing' });
+      }
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      console.error('[Step4Timeline] Failed to schedule:', err);
-      setError('Failed to schedule publication. Please try again.');
+      setError(err instanceof Error ? err.message : 'Action failed');
     } finally {
-      isSubmittingRef.current = false;
-      setIsSubmitting(false);
-    }
-  }, [deliverableId]);
-
-  const handleReadyToPublish = useCallback(async () => {
-    if (isSubmittingRef.current) return;
-    isSubmittingRef.current = true;
-    setIsSubmitting(true);
-    setError(null);
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    try {
-      const res = await fetch(`/api/studio/${deliverableId}/approval`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'approve' }),
-        signal: controller.signal,
-      });
-      if (!res.ok) throw new Error('Failed to approve');
-
-      const store = useCanvasStore.getState();
-      store.setApprovalState({ approvalStatus: 'APPROVED' });
-      store.setStepSummary(4, { label: 'Ready for publishing' });
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return;
-      console.error('[Step4Timeline] Failed to approve:', err);
-      setError('Failed to approve content. Please try again.');
-    } finally {
-      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   }, [deliverableId]);
 
   const isPublished = approvalStatus === 'PUBLISHED';
   const isApproved = approvalStatus === 'APPROVED';
+  const PreviewComponent = previewEntry.component;
+
+  const ICON_MAP: Record<string, typeof Copy> = {
+    Copy, FileText, Code, FileDown,
+  };
 
   return (
     <div className="space-y-6">
-      {/* Error feedback */}
-      {error && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700" role="alert">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          {error}
-        </div>
-      )}
-
       {/* Success state */}
       {(isPublished || isApproved) && (
         <div className="flex items-center gap-3 p-4 rounded-lg bg-emerald-50 border border-emerald-200">
@@ -137,25 +239,101 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
             </p>
             {scheduledDate && (
               <p className="text-xs text-emerald-600 mt-0.5">
-                {formatDate(scheduledDate)}{scheduledTime ? ` at ${scheduledTime}` : ''}
+                {formatDateDisplay(scheduledDate)}{scheduledTime ? ` at ${scheduledTime}` : ''}
               </p>
             )}
           </div>
         </div>
       )}
 
-      {/* Publish suggestion from AI */}
-      {!isPublished && !isApproved && (
-        <PublishSuggestion suggestion={publishSuggestion} isGenerating={false} />
+      {/* Error */}
+      {error && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700" role="alert">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          {error}
+        </div>
       )}
 
-      {/* Time-bound scheduling */}
-      {!isPublished && !isApproved && isTimeBound && (
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium text-gray-700">Schedule Publication</h3>
+      {/* ── Section 1: Content Review ─────────────────────────── */}
+      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowPreview(!showPreview)}
+          className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+        >
+          <div className="flex items-center gap-2">
+            <span>Content Review</span>
+            <Badge platform={platform} label={previewEntry.label} />
+          </div>
+          {showPreview ? <ChevronDown className="h-4 w-4 text-gray-400" /> : <ChevronRight className="h-4 w-4 text-gray-400" />}
+        </button>
+        {showPreview && (
+          <div className="border-t border-gray-200 p-4">
+            <PreviewComponent
+              previewContent={previewContent}
+              imageVariants={imageVariants}
+              isGenerating={false}
+              heroImage={heroImage}
+              mediumConfig={mediumConfigValues}
+            />
+          </div>
+        )}
+      </div>
 
+      {/* ── Section 2: Publication Checklist ───────────────────── */}
+      <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Publication Checklist</h3>
+        <div className="space-y-2">
+          {checklistResults.map((item) => (
+            <div key={item.id} className="flex items-center gap-2.5">
+              {item.passed ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+              ) : item.required ? (
+                <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+              ) : (
+                <Circle className="h-4 w-4 text-gray-300 flex-shrink-0" />
+              )}
+              <span className={`text-sm ${item.passed ? 'text-gray-700' : item.required ? 'text-amber-700 font-medium' : 'text-gray-500'}`}>
+                {item.label}
+              </span>
+              {!item.required && !item.passed && (
+                <span className="text-[10px] text-gray-400 ml-auto">optional</span>
+              )}
+            </div>
+          ))}
+        </div>
+        {!requiredPassed && (
+          <p className="text-xs text-amber-600 mt-3 flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            Complete all required items before publishing
+          </p>
+        )}
+      </div>
+
+      {/* ── Section 3: Scheduling ─────────────────────────────── */}
+      {!isPublished && !isApproved && (
+        <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-700">Schedule Publication</h3>
+
+          {/* AI timing suggestion */}
+          {timingSuggestion && (
+            <button
+              type="button"
+              onClick={handleApplySuggestion}
+              className="w-full flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors text-left"
+            >
+              <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-gray-800">
+                  Suggested: {timingSuggestion.day} at {timingSuggestion.time}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">{timingSuggestion.reason}</p>
+              </div>
+            </button>
+          )}
+
+          {/* Date + time pickers */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Date picker */}
             <div>
               <label htmlFor="schedule-date" className="block text-xs font-medium text-gray-600 mb-1">
                 <Calendar className="h-3.5 w-3.5 inline mr-1" />
@@ -166,11 +344,9 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                 type="date"
                 value={scheduledDate ?? ''}
                 onChange={(e) => useCanvasStore.getState().setScheduledDate(e.target.value || null)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
-
-            {/* Time picker */}
             <div>
               <label htmlFor="schedule-time" className="block text-xs font-medium text-gray-600 mb-1">
                 <Clock className="h-3.5 w-3.5 inline mr-1" />
@@ -181,66 +357,99 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                 type="time"
                 value={scheduledTime ?? ''}
                 onChange={(e) => useCanvasStore.getState().setScheduledTime(e.target.value || null)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
           </div>
 
-          {/* Schedule button */}
-          <button
-            type="button"
-            onClick={handleSchedule}
-            disabled={!scheduledDate || isSubmitting}
-            className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            <Send className="h-4 w-4" />
-            {scheduledDate ? 'Schedule Publication' : 'Select a date to schedule'}
-          </button>
-        </div>
-      )}
-
-      {/* Not time-bound — ready to publish */}
-      {!isPublished && !isApproved && !isTimeBound && (
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            This content is ready for publishing. You can set it as ready or schedule it for a specific date.
-          </p>
-
+          {/* Action buttons */}
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={() => useCanvasStore.getState().setIsTimeBound(true)}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-gray-700 font-medium border border-gray-200 hover:bg-gray-50"
-            >
-              <Calendar className="h-4 w-4" />
-              Schedule for Later
-            </button>
-
-            <button
-              type="button"
-              onClick={handleReadyToPublish}
-              disabled={isSubmitting}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
+              onClick={() => handlePublish('approve')}
+              disabled={!requiredPassed || isSubmitting}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-gray-700 font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <CheckCircle2 className="h-4 w-4" />
-              Ready for Publishing
+              Mark as Ready
+            </button>
+            <button
+              type="button"
+              onClick={() => handlePublish('schedule')}
+              disabled={!scheduledDate || !requiredPassed || isSubmitting}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <Send className="h-4 w-4" />
+              {scheduledDate ? 'Schedule' : 'Pick a date'}
             </button>
           </div>
         </div>
       )}
+
+      {/* ── Section 4: Export ──────────────────────────────────── */}
+      <div className="rounded-lg border border-gray-200 bg-white p-4">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">Export</h3>
+        <div className="flex flex-wrap gap-2">
+          {exportFormats.map((fmt) => {
+            const Icon = ICON_MAP[fmt.icon] ?? FileText;
+            if (fmt.id === 'clipboard') {
+              return (
+                <button
+                  key={fmt.id}
+                  type="button"
+                  onClick={handleCopyToClipboard}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {copied ? 'Copied!' : fmt.label}
+                </button>
+              );
+            }
+            return (
+              <button
+                key={fmt.id}
+                type="button"
+                onClick={() => handleDownload(fmt.id)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {fmt.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
 
-function formatDate(dateStr: string): string {
+// ─── Helpers ────────────────────────────────────────────────
+
+function Badge({ platform, label }: { platform: string | null; label: string }) {
+  const colors: Record<string, string> = {
+    linkedin: 'bg-blue-100 text-blue-700',
+    instagram: 'bg-pink-100 text-pink-700',
+    facebook: 'bg-blue-100 text-blue-800',
+    tiktok: 'bg-gray-900 text-white',
+    youtube: 'bg-red-100 text-red-700',
+    email: 'bg-gray-100 text-gray-700',
+    web: 'bg-teal-100 text-teal-700',
+    podcast: 'bg-purple-100 text-purple-700',
+  };
+  const cls = platform ? (colors[platform] ?? 'bg-gray-100 text-gray-600') : 'bg-gray-100 text-gray-600';
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
+function formatDateDisplay(dateStr: string): string {
   try {
     const date = new Date(dateStr + 'T00:00:00');
     if (isNaN(date.getTime())) return dateStr;
     return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
   } catch {
     return dateStr;
