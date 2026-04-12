@@ -1,21 +1,50 @@
 /**
- * AI-Driven Creative Selection — Uses a fast LLM call to select the best
- * Goldenberg templates and bisociation domains for a specific campaign context.
+ * AI-Driven Creative Selection — Uses a fast LLM call to select
+ * Goldenberg templates AND generate context-specific creative angles.
  *
- * Instead of deterministic hash-based selection, the AI considers:
- * - Brand identity, values, and industry
- * - Target audience (personas)
- * - Campaign goal and briefing
- * - The selected human insight
- * - Emotional fit between domains and the brand
+ * Previous version picked from a fixed list of 22 "bisociation domains"
+ * (mythology, architecture, cartography, etc.) which produced repetitive,
+ * abstract results. This version lets the AI propose creative territories
+ * that are unexpected BUT relevant for the specific brand + insight.
  *
- * Falls back to deterministic selection if the AI call fails.
+ * What stays: Goldenberg creativity templates (8 proven structural patterns).
+ * What's replaced: fixed bisociation domains → AI-generated creative angles.
  */
 
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
 import { GOLDENBERG_TEMPLATES, TEMPLATE_INSIGHT_AFFINITY, type GoldenbergTemplateDefinition } from '@/lib/goldenberg/goldenberg-templates';
-import { BISOCIATION_DOMAINS, type BisociationDomainDefinition } from '@/lib/goldenberg/bisociation-domains';
 import type { HumanInsight } from './strategy-blueprint.types';
+
+// ─── Types ────────────────────────────────────────────────
+
+export interface CreativeSelectionContext {
+  brandContext: string;
+  personaContext: string;
+  goalType: string;
+  insight: HumanInsight;
+  briefing?: { occasion?: string; audienceObjective?: string; coreMessage?: string };
+}
+
+/**
+ * AI-generated creative angle — replaces the fixed bisociation domain.
+ * Each angle is a specific metaphor world that the AI found to be
+ * emotionally resonant with the brand + insight combination.
+ */
+export interface CreativeAngle {
+  /** Short name (e.g. "Japanese Joinery", "Haute Couture Detailing") */
+  name: string;
+  /** Why this angle works for THIS brand + insight (1-2 sentences) */
+  connectionToInsight: string;
+  /** Concrete visual/narrative possibilities (1-2 sentences) */
+  visualPotential: string;
+  /** Emotional territory this angle opens up */
+  emotionalTerritory: string;
+}
+
+export interface CreativeSelectionResult {
+  templates: GoldenbergTemplateDefinition[];
+  angles: CreativeAngle[];
+}
 
 // ─── Insight Lens Detection ─────────────────────────────────
 
@@ -30,22 +59,7 @@ function detectInsightLens(insight: HumanInsight): 'empathy' | 'tension' | 'beha
   return 'empathy';
 }
 
-// ─── Types ────────────────────────────────────────────────
-
-export interface CreativeSelectionContext {
-  brandContext: string;
-  personaContext: string;
-  goalType: string;
-  insight: HumanInsight;
-  briefing?: { occasion?: string; audienceObjective?: string; coreMessage?: string };
-}
-
-export interface CreativeSelectionResult {
-  templates: GoldenbergTemplateDefinition[];
-  domains: BisociationDomainDefinition[];
-}
-
-// ─── Catalog Formatters ──────────────────────────────────
+// ─── Template Catalog ──────────────────────────────────────
 
 function formatTemplateCatalog(): string {
   return GOLDENBERG_TEMPLATES.map((t) =>
@@ -53,106 +67,98 @@ function formatTemplateCatalog(): string {
   ).join('\n');
 }
 
-function formatDomainCatalog(): string {
-  return BISOCIATION_DOMAINS.map((d) =>
-    `- **${d.id}**: ${d.name} — metaphors: ${d.visualMetaphors.slice(0, 2).join(', ')}; emotions: ${d.emotionalTerritories.join(', ')}`
-  ).join('\n');
-}
-
 function formatAffinityHints(insight: HumanInsight): string {
   const lens = detectInsightLens(insight);
   const sorted = Object.entries(TEMPLATE_INSIGHT_AFFINITY)
     .sort(([, a], [, b]) => b[lens] - a[lens]);
-  return `Detected insight lens: **${lens}**. Template affinity ranking for this lens:\n${sorted.map(([id, scores]) => `- ${id}: ${scores[lens]}/10`).join('\n')}`;
+  return `Detected insight lens: **${lens}**. Template affinity:\n${sorted.slice(0, 4).map(([id, scores]) => `- ${id}: ${scores[lens]}/10`).join('\n')}`;
 }
 
-// ─── AI Selection ─────────────────────────────────────────
+// ─── Main Selection ────────────────────────────────────────
 
 /**
- * Uses a fast LLM (Gemini Flash) to select 3 Goldenberg templates and
- * 3 bisociation domains that best fit the campaign context.
- *
- * The AI considers emotional resonance with the insight, brand personality fit,
- * audience relevance, and creative potential for the goal type.
+ * Uses Gemini Flash to select 3 Goldenberg templates AND generate
+ * 3 context-specific creative angles that are unexpected but relevant.
  */
 export async function selectCreativeMaterials(
   ctx: CreativeSelectionContext,
 ): Promise<CreativeSelectionResult> {
   try {
-    const systemPrompt = `You are a creative strategist selecting the best creative frameworks for a campaign.
+    const systemPrompt = `You are an award-winning creative director who finds unexpected but powerful connections between brands and metaphor worlds.
 
-Given the brand context, target audience, campaign goal, and human insight below, select:
-1. **3 Goldenberg creativity templates** — the structural patterns that best amplify this insight for this brand and audience
-2. **3 bisociation domains** — the cross-domain metaphor sources that create the strongest emotional connection between the insight and the brand
+Your task: select 3 Goldenberg creativity templates AND invent 3 creative angles for a campaign.
 
-## Selection Criteria
-- Templates: Which structural pattern would make this insight most MEMORABLE and SURPRISING for this specific audience?
-- Domains: Which metaphor world would create the most EMOTIONALLY RESONANT connection with this brand's personality and the audience's world?
-- Avoid domains too close to the brand's own industry (e.g., don't pick "sports" for a fitness brand)
-- Ensure DIVERSITY: pick 3 domains from DIFFERENT emotional territories
-- Consider what would STAND OUT in this brand's competitive landscape
+## CRITICAL RULES FOR CREATIVE ANGLES
+- Each angle must come from a DIFFERENT domain of human experience
+- Angles must be UNEXPECTED for this industry — avoid the obvious
+- Angles must be EMOTIONALLY RESONANT with the insight and audience
+- Angles must have strong VISUAL/NARRATIVE potential for advertising
+- DO NOT use generic abstract domains like "mythology", "architecture", "cartography", "astronomy", "oceanography" — these are overused and lazy
+- Instead, find SPECIFIC, VIVID metaphor worlds from:
+  - Specific crafts, professions, or skills (e.g. "Watchmaking precision", "Jazz improvisation", "Surgical confidence")
+  - Cultural practices or rituals (e.g. "Japanese tea ceremony", "Italian piazza culture", "Scandinavian hygge")
+  - Natural phenomena or processes (e.g. "Tidal rhythms", "Mycelium networks", "Crystal formation")
+  - Art movements or techniques (e.g. "Bauhaus functionalism", "Kintsugi repair", "Trompe l'oeil")
+  - Human experiences or transitions (e.g. "First steps", "Coming home", "That moment of silence before applause")
 
-## Template-Insight Affinity Hints
+## Template Affinity Hints
 ${formatAffinityHints(ctx.insight)}
 
 ## Available Goldenberg Templates
 ${formatTemplateCatalog()}
 
-## Available Bisociation Domains
-${formatDomainCatalog()}
+Return JSON with:
+- templateIds: array of exactly 3 template IDs from the list
+- angles: array of exactly 3 objects, each with: name (string, 2-4 words), connectionToInsight (string, 1-2 sentences), visualPotential (string, 1-2 sentences), emotionalTerritory (string, 1-2 words)`;
 
-Return a JSON object with:
-- templateIds: array of exactly 3 template IDs from the list above
-- domainIds: array of exactly 3 domain IDs from the list above
-- reasoning: one sentence explaining why this combination works for this specific campaign`;
-
-    const userPrompt = `## Brand Context
+    const userPrompt = `## Brand
 ${ctx.brandContext.slice(0, 2000)}
 
 ## Target Audience
 ${ctx.personaContext.slice(0, 1000)}
 
-## Campaign Goal
-${ctx.goalType}
-${ctx.briefing?.occasion ? `Occasion: ${ctx.briefing.occasion}` : ''}
-${ctx.briefing?.audienceObjective ? `Audience objective: ${ctx.briefing.audienceObjective}` : ''}
+## Campaign Goal: ${ctx.goalType}
+${ctx.briefing?.occasion ? `Why now: ${ctx.briefing.occasion}` : ''}
 ${ctx.briefing?.coreMessage ? `Core message: ${ctx.briefing.coreMessage}` : ''}
 
-## Selected Human Insight
+## Human Insight
 "${ctx.insight.insightStatement}"
 Tension: ${ctx.insight.underlyingTension}
 Emotional territory: ${ctx.insight.emotionalTerritory}
 Human truth: ${ctx.insight.humanTruth}
 
-Now select the 3 best templates and 3 best domains for THIS specific campaign.`;
+Find 3 Goldenberg templates and 3 creative angles that would make THIS specific brand + insight combination unforgettable.`;
 
     const result = await createGeminiStructuredCompletion<{
       templateIds: string[];
-      domainIds: string[];
-      reasoning: string;
+      angles: CreativeAngle[];
+      reasoning?: string;
     }>(
       systemPrompt,
       userPrompt,
-      { model: 'gemini-2.5-flash', temperature: 0.7 },
+      { model: 'gemini-2.5-flash', temperature: 0.9 },
     );
 
-    // Resolve IDs back to definitions
-    const templates = resolveTemplates(result.templateIds);
-    const domains = resolveDomains(result.domainIds);
+    const templates = resolveTemplates(result.templateIds ?? []);
+    const angles = (result.angles ?? []).filter(
+      (a) => a.name && a.connectionToInsight && a.visualPotential,
+    ).slice(0, 3);
 
-    if (templates.length === 3 && domains.length === 3) {
-      return { templates, domains };
+    if (templates.length >= 2 && angles.length >= 2) {
+      return {
+        templates: templates.slice(0, 3),
+        angles: fillAngles(angles, 3),
+      };
     }
 
-    // Partial match — fill gaps with fallback
-    return fillGaps(templates, domains);
+    return fallbackSelection(ctx.insight);
   } catch (error) {
     console.warn('[ai-creative-selector] AI selection failed, using fallback:', error);
     return fallbackSelection(ctx.insight);
   }
 }
 
-// ─── Resolution Helpers ──────────────────────────────────
+// ─── Helpers ────────────────────────────────────────────────
 
 function resolveTemplates(ids: string[]): GoldenbergTemplateDefinition[] {
   const result: GoldenbergTemplateDefinition[] = [];
@@ -163,56 +169,39 @@ function resolveTemplates(ids: string[]): GoldenbergTemplateDefinition[] {
   return result;
 }
 
-function resolveDomains(ids: string[]): BisociationDomainDefinition[] {
-  const result: BisociationDomainDefinition[] = [];
-  for (const id of ids) {
-    const found = BISOCIATION_DOMAINS.find((d) => d.id === id);
-    if (found && !result.includes(found)) result.push(found);
+/** Pad angles to target count with generic fallbacks if AI returned fewer */
+function fillAngles(angles: CreativeAngle[], target: number): CreativeAngle[] {
+  const fallbacks: CreativeAngle[] = [
+    { name: 'Hidden craftsmanship', connectionToInsight: 'The best work is invisible — it just feels right.', visualPotential: 'Close-up details, behind-the-scenes processes, maker hands.', emotionalTerritory: 'pride' },
+    { name: 'Threshold moments', connectionToInsight: 'Every meaningful change starts with crossing a boundary.', visualPotential: 'Doorways, transitions, before/after contrasts.', emotionalTerritory: 'anticipation' },
+    { name: 'Quiet confidence', connectionToInsight: 'True quality doesn\'t need to shout.', visualPotential: 'Understated elegance, negative space, whispered strength.', emotionalTerritory: 'trust' },
+  ];
+  const result = [...angles];
+  let i = 0;
+  while (result.length < target && i < fallbacks.length) {
+    if (!result.some((a) => a.name === fallbacks[i].name)) {
+      result.push(fallbacks[i]);
+    }
+    i++;
   }
   return result;
 }
 
-function fillGaps(
-  templates: GoldenbergTemplateDefinition[],
-  domains: BisociationDomainDefinition[],
-): CreativeSelectionResult {
-  // Shuffle remaining options and fill
-  const remainingTemplates = GOLDENBERG_TEMPLATES.filter((t) => !templates.includes(t));
-  const remainingDomains = BISOCIATION_DOMAINS.filter((d) => !domains.includes(d));
-  shuffle(remainingTemplates);
-  shuffle(remainingDomains);
-
-  while (templates.length < 3 && remainingTemplates.length > 0) {
-    templates.push(remainingTemplates.pop()!);
-  }
-  while (domains.length < 3 && remainingDomains.length > 0) {
-    domains.push(remainingDomains.pop()!);
-  }
-
-  return { templates, domains };
-}
-
 function fallbackSelection(insight?: HumanInsight): CreativeSelectionResult {
-  // Weighted random selection based on insight affinity
-  if (insight) {
-    const lens = detectInsightLens(insight);
-    const weighted = GOLDENBERG_TEMPLATES.map(t => ({
-      template: t,
-      weight: TEMPLATE_INSIGHT_AFFINITY[t.id]?.[lens] ?? 5,
-    }));
-    const selected = weightedRandomPick(weighted, 3);
-    const domains = [...BISOCIATION_DOMAINS];
-    shuffle(domains);
-    return { templates: selected, domains: domains.slice(0, 3) };
-  }
-  const templates = [...GOLDENBERG_TEMPLATES];
-  const domains = [...BISOCIATION_DOMAINS];
-  shuffle(templates);
-  shuffle(domains);
-  return {
-    templates: templates.slice(0, 3),
-    domains: domains.slice(0, 3),
-  };
+  const lens = insight ? detectInsightLens(insight) : 'empathy';
+  const weighted = GOLDENBERG_TEMPLATES.map(t => ({
+    template: t,
+    weight: TEMPLATE_INSIGHT_AFFINITY[t.id]?.[lens] ?? 5,
+  }));
+  const templates = weightedRandomPick(weighted, 3);
+
+  const fallbackAngles: CreativeAngle[] = [
+    { name: 'Hidden craftsmanship', connectionToInsight: 'The best work is invisible — it just feels right.', visualPotential: 'Close-up details, behind-the-scenes processes, maker hands.', emotionalTerritory: 'pride' },
+    { name: 'Threshold moments', connectionToInsight: 'Every meaningful change starts with crossing a boundary.', visualPotential: 'Doorways, transitions, before/after contrasts.', emotionalTerritory: 'anticipation' },
+    { name: 'Quiet confidence', connectionToInsight: 'True quality doesn\'t need to shout.', visualPotential: 'Understated elegance, negative space, whispered strength.', emotionalTerritory: 'trust' },
+  ];
+
+  return { templates, angles: fallbackAngles };
 }
 
 function weightedRandomPick(
@@ -233,11 +222,4 @@ function weightedRandomPick(
     remaining.splice(remaining.indexOf(picked), 1);
   }
   return result;
-}
-
-function shuffle<T>(arr: T[]): void {
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
 }

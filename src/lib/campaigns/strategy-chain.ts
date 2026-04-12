@@ -1447,8 +1447,8 @@ export async function generateCreativeConcepts(
 ): Promise<CreativeLeapResult> {
   onProgress?.({ type: 'step', step: 1, name: 'Creative Leap', status: 'running', label: 'Selecting best creative frameworks for this campaign...' } as PipelineEvent);
 
-  // AI-driven selection: pick templates & domains based on brand, audience, goal, and insight
-  const { templates, domains } = await selectCreativeMaterials({
+  // AI-driven selection: pick templates & generate context-specific creative angles
+  const { templates, angles } = await selectCreativeMaterials({
     brandContext: ctx.brandContext,
     personaContext: ctx.personaContext,
     goalType: ctx.goalType,
@@ -1475,9 +1475,9 @@ Human truth: ${selectedInsight.humanTruth}`;
   ]);
 
   const assignments = [
-    { template: templates[0], domain: domains[0], provider: modelA.provider, model: modelA.model },
-    { template: templates[1], domain: domains[1], provider: modelB.provider, model: modelB.model },
-    { template: templates[2], domain: domains[2], provider: modelC.provider, model: modelC.model },
+    { template: templates[0], angle: angles[0], provider: modelA.provider, model: modelA.model },
+    { template: templates[1], angle: angles[1], provider: modelB.provider, model: modelB.model },
+    { template: templates[2], angle: angles[2], provider: modelC.provider, model: modelC.model },
   ];
 
   const conceptPromises = assignments.map(async (a) => {
@@ -1492,9 +1492,9 @@ Human truth: ${selectedInsight.humanTruth}`;
         examples: a.template.examples.map(e => `${e.brand}: ${e.howItApplied}`).join('; '),
       },
       bisociationDomain: {
-        name: a.domain.name,
-        visualMetaphors: a.domain.visualMetaphors.join(', '),
-        emotionalTerritories: a.domain.emotionalTerritories.join(', '),
+        name: a.angle.name,
+        visualMetaphors: a.angle.visualPotential,
+        emotionalTerritories: a.angle.emotionalTerritory,
       },
       briefing: ctx.briefing,
       arenaContext: ctx.arenaContext,
@@ -1509,7 +1509,7 @@ ${regenerationContext.failedConcepts.map(fc => `- "${fc.campaignLine}" — faile
 Generate DIFFERENT concepts that address these failures.` : undefined,
     });
 
-    const result = await withStepContext(`Creative Leap (${a.template.name} × ${a.domain.name})`, 120, () =>
+    const result = await withStepContext(`Creative Leap (${a.template.name} × ${a.angle.name})`, 120, () =>
       createStructuredCompletion(
         a.provider,
         a.model,
