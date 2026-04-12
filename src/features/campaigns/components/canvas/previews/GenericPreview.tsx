@@ -83,14 +83,28 @@ export function GenericPreview({ previewContent, isGenerating, heroImage, onAddI
 
       {/* Content */}
       <div className="p-3 space-y-3">
-        {textEntries.map(([group, value]) => (
-          <div key={group}>
-            <p className="text-xs font-medium text-gray-400 uppercase mb-1">
-              {group.replace(/_/g, ' ')}
-            </p>
-            <SimpleMarkdown text={value.content ?? ''} />
-          </div>
-        ))}
+        {textEntries.map(([group, value]) => {
+          const isTitle = group.toLowerCase() === 'title';
+          const isMeta = group.toLowerCase().includes('meta');
+          return (
+            <div key={group}>
+              {!isTitle && (
+                <p className="text-xs font-medium text-gray-400 uppercase mb-1">
+                  {group.replace(/_/g, ' ')}
+                </p>
+              )}
+              {isTitle ? (
+                <h1 className="text-xl font-bold text-gray-900 leading-tight">
+                  {value.content}
+                </h1>
+              ) : isMeta ? (
+                <p className="text-sm text-gray-500 italic">{value.content}</p>
+              ) : (
+                <SimpleMarkdown text={value.content ?? ''} />
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
