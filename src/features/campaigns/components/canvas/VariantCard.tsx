@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import DOMPurify from 'dompurify';
+import React, { useState } from 'react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
 import { InlineEditor } from './InlineEditor';
+import { SimpleMarkdown } from './previews/SimpleMarkdown';
 import { Badge } from '@/components/shared';
 import { Check, Pencil, Play, Mic, Clock } from 'lucide-react';
 import type { CanvasVariant } from '../../types/canvas.types';
@@ -57,10 +57,6 @@ export function VariantCard({
   };
 
   const label = VARIANT_LABELS[variantIndex] ?? String(variantIndex + 1);
-  const sanitizedHtml = useMemo(
-    () => DOMPurify.sanitize(variant.content),
-    [variant.content],
-  );
   const plainContent = variant.content.replace(/<[^>]*>/g, '');
   const isLong = plainContent.length > 200;
   const truncatedPlain = isLong && !expanded
@@ -165,12 +161,9 @@ export function VariantCard({
             )}
 
             {truncatedPlain ? (
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{truncatedPlain}</p>
+              <SimpleMarkdown text={truncatedPlain} />
             ) : (
-              <div
-                className="text-sm text-gray-700 prose prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
-              />
+              <SimpleMarkdown text={plainContent} />
             )}
             {isLong && (
               <button

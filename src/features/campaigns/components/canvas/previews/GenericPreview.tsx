@@ -4,6 +4,7 @@ import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { FileText, Copy, Check } from 'lucide-react';
 import { HeroImageSlot } from './HeroImageSlot';
+import { SimpleMarkdown } from './SimpleMarkdown';
 
 /** Fallback preview for unmapped platform/format combinations */
 export function GenericPreview({ previewContent, isGenerating, heroImage, onAddImage }: PlatformPreviewProps) {
@@ -87,9 +88,7 @@ export function GenericPreview({ previewContent, isGenerating, heroImage, onAddI
             <p className="text-xs font-medium text-gray-400 uppercase mb-1">
               {group.replace(/_/g, ' ')}
             </p>
-            <p className="text-sm text-gray-800 whitespace-pre-wrap">
-              {value.content}
-            </p>
+            <SimpleMarkdown text={value.content ?? ''} />
           </div>
         ))}
       </div>

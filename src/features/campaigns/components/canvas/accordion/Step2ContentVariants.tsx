@@ -108,8 +108,8 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const groups = Array.from(variantGroups.entries());
 
   return (
-    <div className={showPreview ? 'grid gap-6' : ''} style={showPreview ? { gridTemplateColumns: '2fr 1fr' } : undefined}>
-      {/* Left column: variants + feedback + advance (~2/3) */}
+    <div className={showPreview ? 'grid gap-6' : ''} style={showPreview ? { gridTemplateColumns: '1fr 1fr' } : undefined}>
+      {/* Left column: variants + feedback + advance */}
       <div className="space-y-6" style={{ minWidth: 0, overflow: 'hidden' }}>
         {/* Variant groups */}
         {groups.map(([group, variants]) => {
