@@ -320,6 +320,11 @@ export function ConceptStep() {
           const result = data.result as { concepts: CreativeConcept[] };
           const s = useCampaignWizardStore.getState();
           s.setConceptResults(result.concepts);
+          // Auto-select the first concept so Continue button is immediately
+          // enabled. The user can still switch by clicking another concept.
+          if (result.concepts.length > 0) {
+            s.setSelectedConcept(0);
+          }
           s.setIsGenerating(false);
           s.setStrategyPhase("review_concepts");
           return;
