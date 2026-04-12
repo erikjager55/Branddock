@@ -738,13 +738,59 @@ function formatMediumConfig(config: Record<string, unknown>): string {
   if (entries.length === 0) return '';
 
   const parts: string[] = ['## Medium Configuration (User-Specified)'];
-  for (const [key, value] of entries) {
-    const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
-    const display = typeof value === 'object' ? JSON.stringify(value) : String(value);
-    parts.push(`- ${label}: ${display}`);
+
+  // Web-page specific: provide detailed, actionable instructions
+  const pageLayout = config.pageLayout as string | undefined;
+  const heroStyle = config.heroStyle as string | undefined;
+  const sectionCount = config.sectionCount as number | undefined;
+  const ctaType = config.ctaType as string | undefined;
+  const seoFocus = config.seoFocus as boolean | undefined;
+
+  if (pageLayout || heroStyle || sectionCount || ctaType) {
+    if (pageLayout) {
+      const layoutMap: Record<string, string> = {
+        'single-column': 'Single-column article layout — focused, sequential reading flow.',
+        'two-column': 'Two-column layout — main content on the left, sidebar on the right with table of contents and related links. Structure the content with clear section headings that work as anchor links.',
+        'magazine': 'Magazine-style layout — wider format with a prominent pull-quote from the opening paragraph. Use vivid, editorial language.',
+      };
+      parts.push(`- Page layout: ${layoutMap[pageLayout] ?? pageLayout}`);
+    }
+    if (heroStyle) {
+      const heroMap: Record<string, string> = {
+        'full-bleed-image': 'Full-bleed hero image above the title.',
+        'split-content': 'Split hero — title and intro text on the left, image on the right. Write a compelling short intro (2-3 sentences) that works alongside the hero image.',
+        'video-hero': 'Video hero section — reference a video embed in the opening.',
+        'text-only': 'Text-only hero — no image. The headline must be strong enough to stand on its own.',
+        'animated': 'Animated/gradient hero background — keep the title concise and high-impact.',
+      };
+      parts.push(`- Hero style: ${heroMap[heroStyle] ?? heroStyle}`);
+    }
+    if (sectionCount) {
+      parts.push(`- Target section count: ${sectionCount} content sections. Each section should have a clear ## heading.`);
+    }
+    if (ctaType) {
+      const ctaMap: Record<string, string> = {
+        'button': 'End with a clear call-to-action button text (e.g. "Get Started", "Learn More").',
+        'form': 'End with a sign-up/newsletter CTA section — include a compelling reason to subscribe.',
+        'calendar': 'End with a "Book a Demo" CTA — include a brief value proposition for the meeting.',
+        'download': 'End with a download CTA — describe what the reader will get (guide, whitepaper, checklist).',
+      };
+      parts.push(`- CTA type: ${ctaMap[ctaType] ?? ctaType}`);
+    }
+    if (seoFocus === true) {
+      parts.push('- SEO optimized: Use the primary keyword in the title, first paragraph, and at least 2 section headings. Write a compelling meta description (max 155 characters). Use a clear heading hierarchy (H2 for sections, H3 for sub-sections).');
+    }
+  } else {
+    // Generic fallback for non-web configs
+    for (const [key, value] of entries) {
+      const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
+      const display = typeof value === 'object' ? JSON.stringify(value) : String(value);
+      parts.push(`- ${label}: ${display}`);
+    }
   }
+
   parts.push('');
-  parts.push('IMPORTANT: Adapt your content to match these medium configuration settings.');
+  parts.push('IMPORTANT: Adapt your content structure, tone, and format to match these medium configuration settings.');
   return parts.join('\n');
 }
 
