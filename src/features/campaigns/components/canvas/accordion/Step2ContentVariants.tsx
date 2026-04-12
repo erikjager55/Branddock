@@ -75,16 +75,25 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
     onAdvance();
   };
 
-  // Still generating, no variants yet — show skeleton
+  // Still generating, no variants yet — prominent loading state
   if (isGenerating && !hasVariants) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-2 text-sm text-primary">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Generating content variants...</span>
+      <div className="flex flex-col items-center justify-center py-16 gap-5">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <Loader2 className="h-8 w-8 text-primary animate-spin" />
         </div>
-        <SkeletonVariantGroup />
-        <SkeletonVariantGroup />
+        <div className="text-center">
+          <p className="text-base font-semibold text-gray-800">Generating content variants</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Creating 3 unique variants based on your strategy and briefing...
+          </p>
+          <p className="text-xs text-gray-400 mt-2">This usually takes 10-20 seconds</p>
+        </div>
+        <div className="w-full max-w-md space-y-3 mt-4">
+          <SkeletonVariantGroup />
+          <SkeletonVariantGroup />
+          <SkeletonVariantGroup />
+        </div>
       </div>
     );
   }
