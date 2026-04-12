@@ -9,6 +9,7 @@ import {
   Plus,
   Trash2,
   ExternalLink,
+  Building2,
 } from 'lucide-react';
 import { Button, Modal, Input } from '@/components/shared';
 import {
@@ -135,16 +136,21 @@ export function IntegrationsTab() {
   const [connectingPlatform, setConnectingPlatform] = useState<PlatformDef | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [formLabel, setFormLabel] = useState('');
+  const [formAccountName, setFormAccountName] = useState('');
 
-  const connectedMap = new Map<string, PublishChannelSummary>();
+  // Group channels by platform for multi-account display
+  const channelsByPlatform = new Map<string, PublishChannelSummary[]>();
   for (const ch of channels ?? []) {
-    connectedMap.set(ch.platform, ch);
+    const list = channelsByPlatform.get(ch.platform) ?? [];
+    list.push(ch);
+    channelsByPlatform.set(ch.platform, list);
   }
 
   const handleConnect = (platform: PlatformDef) => {
     setConnectingPlatform(platform);
     setFormValues({});
     setFormLabel('');
+    setFormAccountName('');
   };
 
   const handleSave = async () => {
@@ -168,6 +174,7 @@ export function IntegrationsTab() {
       platform: connectingPlatform.id,
       provider: connectingPlatform.provider,
       label: formLabel.trim() || undefined,
+      accountName: formAccountName.trim() || undefined,
       credentials: Object.keys(credentials).length > 0 ? credentials : undefined,
       settings: Object.keys(settings).length > 0 ? settings : undefined,
     };
@@ -200,39 +207,41 @@ export function IntegrationsTab() {
         <p className="text-sm text-gray-500 mt-1">
           Connect your publishing platforms to schedule and publish content directly from Branddock.
         </p>
+        <div className="flex items-center gap-2 mt-2 px-3 py-2 rounded-md bg-blue-50 border border-blue-100">
+          <Building2 className="h-4 w-4 text-blue-600 flex-shrink-0" />
+          <p className="text-xs text-blue-700">
+            These integrations are workspace-specific. Switch workspace to configure a different client.
+          </p>
+        </div>
       </div>
 
       {/* Platform cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {PLATFORMS.map((platform) => {
-          const channel = connectedMap.get(platform.id);
-          const isConnected = !!channel && channel.isActive;
+          const platformChannels = channelsByPlatform.get(platform.id) ?? [];
+          const hasChannels = platformChannels.length > 0;
 
           return (
             <div
               key={platform.id}
               className={`rounded-lg border p-4 ${
-                isConnected ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-200 bg-white'
+                hasChannels ? 'border-emerald-200 bg-emerald-50/30' : 'border-gray-200 bg-white'
               }`}
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-3">
-                  <div
-                    className={`h-10 w-10 rounded-lg flex items-center justify-center ${platform.bgColor}`}
-                  >
-                    <span className="text-sm font-bold" style={{ color: platform.color }}>
-                      {platform.icon}
-                    </span>
+                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${platform.bgColor}`}>
+                    <span className="text-sm font-bold" style={{ color: platform.color }}>{platform.icon}</span>
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900">{platform.label}</h3>
                     <p className="text-xs text-gray-500">{platform.provider}</p>
                   </div>
                 </div>
-                {isConnected ? (
+                {hasChannels ? (
                   <span className="flex items-center gap-1 text-xs text-emerald-600 font-medium">
                     <CheckCircle2 className="h-3.5 w-3.5" />
-                    Connected
+                    {platformChannels.length} account{platformChannels.length > 1 ? 's' : ''}
                   </span>
                 ) : (
                   <span className="flex items-center gap-1 text-xs text-gray-400">
@@ -244,40 +253,43 @@ export function IntegrationsTab() {
 
               <p className="text-xs text-gray-500 mb-3">{platform.description}</p>
 
+              {/* Connected accounts list */}
+              {platformChannels.length > 0 && (
+                <div className="space-y-2 mb-3">
+                  {platformChannels.map((ch) => (
+                    <div key={ch.id} className="flex items-center justify-between rounded-md bg-white border border-gray-100 px-3 py-2">
+                      <div>
+                        <p className="text-xs font-medium text-gray-800">
+                          {ch.accountName ?? ch.label}
+                        </p>
+                        {ch.accountName && ch.label && ch.label !== ch.accountName && (
+                          <p className="text-[10px] text-gray-400">{ch.label}</p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDisconnect(ch.id)}
+                        className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="flex items-center gap-2">
-                {isConnected ? (
-                  <>
-                    {channel.lastPublishedAt && (
-                      <span className="text-[10px] text-gray-400">
-                        Last published: {new Date(channel.lastPublishedAt).toLocaleDateString()}
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => handleDisconnect(channel.id)}
-                      className="ml-auto text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                      Disconnect
-                    </button>
-                  </>
-                ) : (
-                  <Button
-                    size="sm"
-                    onClick={() => handleConnect(platform)}
-                    icon={Plus}
-                    className="ml-auto"
-                  >
-                    Connect
-                  </Button>
-                )}
+                <Button
+                  size="sm"
+                  variant={hasChannels ? 'ghost' : 'primary'}
+                  onClick={() => handleConnect(platform)}
+                  icon={Plus}
+                  className="ml-auto"
+                >
+                  {hasChannels ? 'Add account' : 'Connect'}
+                </Button>
                 {platform.docsUrl && (
-                  <a
-                    href={platform.docsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-gray-400 hover:text-gray-600"
-                  >
+                  <a href={platform.docsUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:text-gray-600">
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
@@ -299,10 +311,17 @@ export function IntegrationsTab() {
             <p className="text-sm text-gray-600">{connectingPlatform.description}</p>
 
             <Input
+              label="Account name"
+              value={formAccountName}
+              onChange={(e) => setFormAccountName(e.target.value)}
+              placeholder="e.g. Company Page, CEO Profile, Marketing Team..."
+            />
+
+            <Input
               label="Label (optional)"
               value={formLabel}
               onChange={(e) => setFormLabel(e.target.value)}
-              placeholder={`e.g. Company ${connectingPlatform.label} Page`}
+              placeholder={`e.g. Primary ${connectingPlatform.label} account`}
             />
 
             {connectingPlatform.credentialFields.map((field) => (

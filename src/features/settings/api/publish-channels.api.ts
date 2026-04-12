@@ -7,6 +7,7 @@ export interface PublishChannelSummary {
   platform: string;
   provider: string;
   label: string | null;
+  accountName: string | null;
   isActive: boolean;
   lastPublishedAt: string | null;
   settings: Record<string, unknown> | null;
@@ -21,6 +22,7 @@ export interface CreateChannelBody {
   platform: string;
   provider: string;
   label?: string;
+  accountName?: string;
   credentials?: Record<string, unknown>;
   settings?: Record<string, unknown>;
 }

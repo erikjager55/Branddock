@@ -19,6 +19,7 @@ export async function GET() {
         platform: true,
         provider: true,
         label: true,
+        accountName: true,
         isActive: true,
         lastPublishedAt: true,
         settings: true,
@@ -41,6 +42,7 @@ const createSchema = z.object({
   platform: z.enum(['linkedin', 'instagram', 'facebook', 'tiktok', 'email', 'wordpress', 'youtube']),
   provider: z.enum(['ayrshare', 'resend', 'wordpress-rest', 'youtube-api', 'direct']),
   label: z.string().max(200).optional(),
+  accountName: z.string().max(200).optional(),
   credentials: z.record(z.string(), z.unknown()).optional(),
   settings: z.record(z.string(), z.unknown()).optional(),
 });
@@ -56,18 +58,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Validation failed', details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { platform, provider, label, credentials, settings } = parsed.data;
-
-    // Check for existing channel on same platform
-    const existing = await prisma.publishChannel.findUnique({
-      where: { workspaceId_platform: { workspaceId, platform } },
-    });
-    if (existing) {
-      return NextResponse.json(
-        { error: `A ${platform} channel already exists. Update or delete it first.` },
-        { status: 409 },
-      );
-    }
+    const { platform, provider, label, accountName, credentials, settings } = parsed.data;
 
     const channel = await prisma.publishChannel.create({
       data: {
@@ -75,6 +66,7 @@ export async function POST(request: NextRequest) {
         platform,
         provider,
         label: label ?? `${platform.charAt(0).toUpperCase() + platform.slice(1)} Channel`,
+        accountName: accountName ?? null,
         credentials: credentials as object ?? undefined,
         settings: settings as object ?? undefined,
       },

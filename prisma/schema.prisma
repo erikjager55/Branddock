@@ -1150,11 +1150,12 @@ model PublishChannel {
 
   platform        String    // linkedin | instagram | facebook | tiktok | email | wordpress | youtube
   provider        String    // ayrshare | resend | wordpress-rest | youtube-api | direct
-  label           String?   // User-friendly name, e.g. "Company LinkedIn Page"
+  label           String    @default("Default")  // User-friendly name, e.g. "Company LinkedIn Page"
+  accountName     String?   // Distinguishes multiple accounts on same platform, e.g. "CEO Profile", "Company Page"
   isActive        Boolean   @default(true)
 
   // Credentials — stored as encrypted JSON. Shape depends on provider:
-  // ayrshare:  { profileKey: "..." }
+  // ayrshare:  { profileKey: "..." }  (master API key from env var)
   // resend:    { apiKey: "...", audienceId: "..." }
   // wordpress: { siteUrl: "...", username: "...", appPassword: "..." }
   // youtube:   { refreshToken: "..." }
@@ -1174,8 +1175,11 @@ model PublishChannel {
   publishLogs     PublishLog[]
   deliverables    Deliverable[]
 
-  @@unique([workspaceId, platform])
+  // No unique constraint on (workspaceId, platform) — a workspace can
+  // have multiple channels on the same platform (e.g. company page +
+  // CEO personal profile on LinkedIn).
   @@index([workspaceId])
+  @@index([workspaceId, platform])
 }
 
 /**

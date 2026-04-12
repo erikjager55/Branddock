@@ -5,11 +5,34 @@
 // Facebook, TikTok, Twitter/X, Pinterest, YouTube, and more.
 // Docs: https://docs.ayrshare.com
 //
-// Each workspace has its own Ayrshare Profile Key stored in the
-// PublishChannel.credentials JSON.
+// Two auth modes:
+// 1. Agency: AYRSHARE_API_KEY env var = master key.
+//    Per-workspace profileKey in PublishChannel.credentials scopes
+//    to that workspace's connected social accounts.
+// 2. Direct: no env var. profileKey IS the full API key.
 // =============================================================
 
 const AYRSHARE_BASE = 'https://app.ayrshare.com/api';
+
+/**
+ * Build headers for Ayrshare API calls. In agency mode (env var set),
+ * the master key goes in Authorization and the profile key goes in
+ * the Profile-Key header. In direct mode, profileKey IS the API key.
+ */
+function buildHeaders(profileKey: string): Record<string, string> {
+  const masterKey = process.env.AYRSHARE_API_KEY;
+  if (masterKey) {
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${masterKey}`,
+      'Profile-Key': profileKey,
+    };
+  }
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${profileKey}`,
+  };
+}
 
 export interface AyrsharePostBody {
   /** Text content of the post */
@@ -60,10 +83,7 @@ export async function publishToAyrshare(
 ): Promise<AyrsharePostResponse> {
   const response = await fetch(`${AYRSHARE_BASE}/post`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${profileKey}`,
-    },
+    headers: buildHeaders(profileKey),
     body: JSON.stringify({
       post: body.post,
       platforms: body.platforms,
@@ -93,9 +113,7 @@ export async function deleteFromAyrshare(
 ): Promise<void> {
   const response = await fetch(`${AYRSHARE_BASE}/post/${postId}`, {
     method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${profileKey}`,
-    },
+    headers: buildHeaders(profileKey),
     signal: AbortSignal.timeout(15_000),
   });
 
@@ -113,10 +131,7 @@ export async function getAyrshareAnalytics(
 ): Promise<Record<string, unknown>> {
   const response = await fetch(`${AYRSHARE_BASE}/analytics/post`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${profileKey}`,
-    },
+    headers: buildHeaders(profileKey),
     body: JSON.stringify({ id: postId }),
     signal: AbortSignal.timeout(15_000),
   });
