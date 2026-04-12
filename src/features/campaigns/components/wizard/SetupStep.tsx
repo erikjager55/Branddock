@@ -287,8 +287,9 @@ export function SetupStep() {
       <PipelineConfigCard />
 
 
-      {/* Date fields — 2-column layout */}
+      {/* Date fields — campaign mode only, hidden for content mode */}
       {(() => {
+        if (isContentMode) return null;
         const tb = campaignGoalType ? getTimeBinding(campaignGoalType) : 'hybrid';
         if (tb === 'always-on') return null;
         const dateLabel = tb === 'time-bound' ? '(required)' : '(optional)';
