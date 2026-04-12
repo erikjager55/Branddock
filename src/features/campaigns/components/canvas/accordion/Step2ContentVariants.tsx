@@ -1,25 +1,29 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { resolvePreviewComponent } from '../previews/preview-map';
-import { VariantCard } from '../VariantCard';
 import { FeedbackBar } from '../FeedbackBar';
-import { Badge, Skeleton } from '@/components/shared';
+import { Badge } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { PreviewContent } from '../../../types/canvas.types';
-import { Loader2, Sparkles, ArrowRight } from 'lucide-react';
+import { Loader2, Sparkles, ArrowRight, Check } from 'lucide-react';
 
 interface Step2ContentVariantsProps {
   deliverableId: string;
   onAdvance: () => void;
 }
 
+/**
+ * Step 2 — Content Variants. Shows full composed previews in the actual
+ * medium format (LinkedIn card, email template, blog article, etc.)
+ * instead of fragmented variant-group cards. The user picks the complete
+ * variant (A or B) rather than mixing individual components.
+ */
 export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentVariantsProps) {
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const selections = useCanvasStore((s) => s.selections);
-  const generationStatus = useCanvasStore((s) => s.generationStatus);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
   const imageVariants = useCanvasStore((s) => s.imageVariants);
   const contextStack = useCanvasStore((s) => s.contextStack);
@@ -29,7 +33,6 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const hasVariants = variantGroups.size > 0;
   const isGenerating = globalStatus === 'generating';
 
-  // Resolve preview component for this platform/format
   const platform = contextStack?.medium?.platform ?? null;
   const format = contextStack?.medium?.format ?? null;
   const previewEntry = useMemo(
@@ -37,45 +40,56 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
     [platform, format],
   );
 
-  // Build preview content from selected variants
-  const previewContent = useMemo<PreviewContent>(() => {
-    const content: PreviewContent = {};
-    for (const [group, variants] of variantGroups) {
-      const selectedIdx = selections.get(group) ?? 0;
-      const selected = variants[selectedIdx];
-      if (selected) {
-        content[group] = {
-          content: selected.content,
-          type: 'text',
-        };
-      }
+  // Determine the max variant count across all groups (typically 2)
+  const variantCount = useMemo(() => {
+    let max = 0;
+    for (const [, variants] of variantGroups) {
+      if (variants.length > max) max = variants.length;
     }
-    return content;
+    return max;
+  }, [variantGroups]);
+
+  // Build a full PreviewContent for each variant index (A=0, B=1, etc.)
+  const composedVariants = useMemo(() => {
+    const result: PreviewContent[] = [];
+    for (let i = 0; i < variantCount; i++) {
+      const content: PreviewContent = {};
+      for (const [group, variants] of variantGroups) {
+        const variant = variants[i] ?? variants[0];
+        if (variant) {
+          content[group] = { content: variant.content, type: 'text' };
+        }
+      }
+      result.push(content);
+    }
+    return result;
+  }, [variantGroups, variantCount]);
+
+  // Currently selected variant = all groups at the same index
+  const selectedVariantIndex = useMemo(() => {
+    const firstGroup = variantGroups.keys().next().value;
+    if (!firstGroup) return 0;
+    return selections.get(firstGroup) ?? 0;
   }, [variantGroups, selections]);
 
-  const PreviewComponent = previewEntry.component;
-  const showPreview = Object.keys(previewContent).length > 0;
-
-  const handleAdvance = () => {
+  const selectVariant = useCallback((idx: number) => {
     const store = useCanvasStore.getState();
-    const groups = Array.from(store.variantGroups.entries());
-
-    // Build summary
-    const summaryParts: string[] = [];
-    for (const [group, variants] of groups) {
-      const selectedIdx = store.selections.get(group) ?? 0;
-      const label = group.replace(/_/g, ' ');
-      summaryParts.push(`${label}: variant ${String.fromCharCode(65 + selectedIdx)}`);
+    for (const group of store.variantGroups.keys()) {
+      store.setSelection(group, idx);
     }
+  }, []);
 
-    store.setStepSummary(2, {
-      label: summaryParts.join(' | ') || 'Variants selected',
-    });
-
+  const handleAdvance = useCallback(() => {
+    const store = useCanvasStore.getState();
+    const label = `Variant ${String.fromCharCode(65 + selectedVariantIndex)} selected`;
+    store.setStepSummary(2, { label });
     onAdvance();
-  };
+  }, [onAdvance, selectedVariantIndex]);
 
-  // Still generating, no variants yet — prominent loading state
+  const PreviewComponent = previewEntry.component;
+  const VARIANT_LABELS = ['A', 'B', 'C', 'D'];
+
+  // ─── Generating state ──────────────────────────────────────
   if (isGenerating && !hasVariants) {
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-5">
@@ -93,7 +107,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
     );
   }
 
-  // No variants and not generating — waiting for step 1
+  // ─── Empty state ───────────────────────────────────────────
   if (!hasVariants && !isGenerating) {
     return (
       <div className="text-center py-8">
@@ -105,159 +119,99 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
     );
   }
 
-  const groups = Array.from(variantGroups.entries());
-
+  // ─── Variants ready ────────────────────────────────────────
   return (
-    <div className={showPreview ? 'grid gap-6' : ''} style={showPreview ? { gridTemplateColumns: '1fr 1fr' } : undefined}>
-      {/* Left column: variants + feedback + advance */}
-      <div className="space-y-6" style={{ minWidth: 0, overflow: 'hidden' }}>
-        {/* Variant groups */}
-        {groups.map(([group, variants]) => {
-          const groupStatus = generationStatus.get(group) ?? 'idle';
-          const selectedIndex = selections.get(group) ?? 0;
+    <div className="space-y-6">
+      {/* Still streaming indicator */}
+      {isGenerating && (
+        <div className="flex items-center gap-2 text-sm text-primary">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Generating more variants...
+        </div>
+      )}
 
+      {/* Variant selector tabs */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium text-gray-700">Select variant:</span>
+        {composedVariants.map((_, idx) => {
+          const isSelected = idx === selectedVariantIndex;
           return (
-            <div key={group}>
-              <div className="flex items-center gap-3 mb-3">
-                <h3 className="text-sm font-semibold text-gray-700 capitalize">
-                  {group.replace(/_/g, ' ')}
-                </h3>
-                {groupStatus === 'generating' && (
-                  <span className="flex items-center gap-1 text-xs text-primary">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Generating...
-                  </span>
-                )}
-                {groupStatus === 'complete' && (
-                  <Badge variant="success" size="sm">Complete</Badge>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {variants.map((variant, idx) => (
-                  <VariantCard
-                    key={`${group}-${idx}`}
-                    group={group}
-                    variant={variant}
-                    variantIndex={idx}
-                    isSelected={idx === selectedIndex}
-                  />
-                ))}
-              </div>
-            </div>
+            <button
+              key={idx}
+              type="button"
+              onClick={() => selectVariant(idx)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                isSelected
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {isSelected && <Check className="h-3 w-3" />}
+              Variant {VARIANT_LABELS[idx] ?? idx + 1}
+            </button>
           );
         })}
-
-        {/* Image variants */}
-        {imageVariants.length > 0 && (
-          <div>
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Images</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {imageVariants.map((img, idx) => {
-                const selectImage = () => {
-                  const store = useCanvasStore.getState();
-                  const updated = store.imageVariants.map((v, i) => ({
-                    ...v,
-                    isSelected: i === idx,
-                  }));
-                  store.setImageVariants(updated);
-                };
-
-                return (
-                  <div
-                    key={idx}
-                    role="button"
-                    tabIndex={0}
-                    aria-pressed={img.isSelected}
-                    aria-label={`Select image variant ${idx + 1}: ${img.prompt}`}
-                    onClick={selectImage}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        selectImage();
-                      }
-                    }}
-                    className={`rounded-lg border-2 overflow-hidden cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 ${
-                      img.isSelected
-                        ? 'border-primary-500 ring-1 ring-primary-200'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <img
-                      src={img.url}
-                      alt={img.prompt}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="p-2">
-                      <p className="text-xs text-gray-500 line-clamp-2">{img.prompt}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Feedback bar */}
-        <div className="border-t border-gray-200 pt-4">
-          <FeedbackBar onRegenerate={regenerate} onAbort={abort} />
-        </div>
-
-        {/* Advance button */}
-        {hasVariants && !isGenerating && (
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={handleAdvance}
-              className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              <ArrowRight className="h-4 w-4" />
-              Confirm & Continue
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* Right column: composed preview (~1/3) */}
-      {showPreview && (
-        <div className="border-l border-gray-200 pl-6" style={{ minWidth: 0, overflow: 'hidden' }}>
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="text-sm font-semibold text-gray-700">{previewEntry.label}</h3>
-            {!isGenerating && (
-              <Badge variant="success" size="sm">Ready for review</Badge>
-            )}
-            {isGenerating && (
-              <span className="flex items-center gap-1 text-xs text-primary">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Updating...
-              </span>
-            )}
-          </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-4 overflow-hidden">
-            <PreviewComponent
-              previewContent={previewContent}
-              imageVariants={imageVariants}
-              isGenerating={isGenerating}
-              heroImage={heroImage}
-              // No onAddImage here — image picking is a Step 3 task. The
-              // placeholder still renders (read-only) so users see WHERE
-              // an image will go, but they can't open the modal from here.
-            />
-          </div>
+      {/* Full composed previews — each variant in the actual medium format */}
+      <div className={`grid gap-4 ${composedVariants.length === 2 ? 'grid-cols-2' : composedVariants.length >= 3 ? 'grid-cols-3' : ''}`}>
+        {composedVariants.map((content, idx) => {
+          const isSelected = idx === selectedVariantIndex;
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => selectVariant(idx)}
+              className={`text-left rounded-xl border-2 overflow-hidden transition-all ${
+                isSelected
+                  ? 'border-teal-500 ring-2 ring-teal-200'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              {/* Variant label header */}
+              <div className={`flex items-center justify-between px-3 py-2 text-xs font-semibold ${
+                isSelected ? 'bg-teal-50 text-teal-700' : 'bg-gray-50 text-gray-600'
+              }`}>
+                <span>Variant {VARIANT_LABELS[idx] ?? idx + 1}</span>
+                {isSelected && (
+                  <Badge variant="success" size="sm">Selected</Badge>
+                )}
+              </div>
+
+              {/* Medium-formatted preview */}
+              <div className="p-3">
+                <PreviewComponent
+                  previewContent={content}
+                  imageVariants={imageVariants}
+                  isGenerating={false}
+                  heroImage={heroImage}
+                />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Feedback bar */}
+      <div className="border-t border-gray-200 pt-4">
+        <FeedbackBar onRegenerate={regenerate} onAbort={abort} />
+      </div>
+
+      {/* Advance button */}
+      {hasVariants && !isGenerating && (
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={handleAdvance}
+            className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
+          >
+            <ArrowRight className="h-4 w-4" />
+            Confirm & Continue
+          </button>
         </div>
       )}
     </div>
   );
 }
 
-function SkeletonVariantGroup() {
-  return (
-    <div>
-      <Skeleton className="h-4 w-32 mb-3" />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <Skeleton className="h-48 rounded-lg" />
-        <Skeleton className="h-48 rounded-lg" />
-      </div>
-    </div>
-  );
-}
+export default Step2ContentVariants;
