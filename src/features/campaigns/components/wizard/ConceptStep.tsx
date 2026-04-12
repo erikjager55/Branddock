@@ -291,17 +291,14 @@ export function ConceptStep() {
   const handleGenerateConcepts = useCallback(() => {
     const store = useCampaignWizardStore.getState();
     const idx = store.selectedInsightIndex;
-    if (idx === null) {
-      // This should never be reached in normal flow — the Continue button
-      // on review_insights is the only path and it gates on selectedInsightIndex.
-      // If it IS reached, something upstream is wiring wrong: the caller
-      // probably wanted handleQuickConcept (single mode) instead.
-      console.warn("[ConceptStep] handleGenerateConcepts called without a selected insight — did you mean handleQuickConcept?");
-      setPhaseError("No insight selected. Please pick one before generating concepts.");
+    if (idx === null || !store.insights[idx]) {
+      console.error("[ConceptStep] handleGenerateConcepts: no valid insight at index", idx, "insights count:", store.insights.length);
+      store.setIsGenerating(false);
+      store.setStrategyPhase("rationale_complete");
+      setPhaseError("No insight available. Please try again.");
       return;
     }
     const selectedInsight = store.insights[idx];
-    if (!selectedInsight) return;
 
     const currentGenId = ++generationIdRef.current;
     // Clear stale pipelineSteps from previous phases (2 of 1 bug fix).
@@ -330,7 +327,7 @@ export function ConceptStep() {
         if (data.type === "error") {
           const s = useCampaignWizardStore.getState();
           s.setIsGenerating(false);
-          s.setStrategyPhase("review_insights");
+          s.setStrategyPhase("rationale_complete");
           setPhaseError("Concept generation failed. Please try again.");
           return;
         }
@@ -341,7 +338,7 @@ export function ConceptStep() {
       () => {
         if (generationIdRef.current !== currentGenId) return;
         useCampaignWizardStore.getState().setIsGenerating(false);
-        useCampaignWizardStore.getState().setStrategyPhase("review_insights");
+        useCampaignWizardStore.getState().setStrategyPhase("rationale_complete");
         setPhaseError("Concept generation failed due to a network error.");
       },
     );
