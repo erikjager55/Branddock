@@ -226,14 +226,12 @@ function ToggleField({
         aria-checked={value}
         aria-label={field.label}
         onClick={() => onChange(!value)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-          value ? 'bg-primary' : 'bg-gray-200'
-        }`}
+        className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+        style={{ backgroundColor: value ? '#0d9488' : '#e5e7eb' }}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            value ? 'translate-x-6' : 'translate-x-1'
-          }`}
+          className="inline-block h-4 w-4 rounded-full bg-white transition-transform"
+          style={{ transform: value ? 'translateX(22px)' : 'translateX(4px)' }}
         />
       </button>
     </div>

@@ -4,25 +4,21 @@ import React, { useMemo, useCallback } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { resolvePreviewComponent } from '../previews/preview-map';
 import { STUDIO } from '@/lib/constants/design-tokens';
-import { Sparkles, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import type { PreviewContent } from '../../../types/canvas.types';
-import type { MediumVariant } from '../../../types/medium-config.types';
 
 interface MediumPreviewPanelProps {
   onAdvance: () => void;
   deliverableId?: string;
 }
 
-/** Shared preview panel: pre-generation placeholder OR post-generation variant cards */
+/** Preview panel for Step 3: shows the content preview + Confirm button */
 export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPanelProps) {
   const contextStack = useCanvasStore((s) => s.contextStack);
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const selections = useCanvasStore((s) => s.selections);
   const imageVariants = useCanvasStore((s) => s.imageVariants);
   const mediumConfigValues = useCanvasStore((s) => s.mediumConfigValues);
-  const mediumVariants = useCanvasStore((s) => s.mediumVariants);
-  const selectedMediumVariantId = useCanvasStore((s) => s.selectedMediumVariantId);
-  const variantsGenerated = useCanvasStore((s) => s.variantsGenerated);
   const heroImage = useCanvasStore((s) => s.heroImage);
   const setInsertImageModalOpen = useCanvasStore((s) => s.setInsertImageModalOpen);
 
@@ -57,36 +53,7 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
       });
   }, [mediumConfigValues]);
 
-  const handleGenerateVariants = useCallback(() => {
-    const store = useCanvasStore.getState();
-
-    const mockVariants: MediumVariant[] = [
-      {
-        id: 'A',
-        title: 'Variant A — Bold Approach',
-        description: 'A high-impact version with strong visual emphasis and direct messaging.',
-        configSnapshot: { ...store.mediumConfigValues },
-      },
-      {
-        id: 'B',
-        title: 'Variant B — Balanced',
-        description: 'A balanced version that combines clarity with brand-aligned aesthetics.',
-        configSnapshot: { ...store.mediumConfigValues },
-      },
-      {
-        id: 'C',
-        title: 'Variant C — Subtle',
-        description: 'A refined, understated version that leads with storytelling.',
-        configSnapshot: { ...store.mediumConfigValues },
-      },
-    ];
-
-    store.setMediumVariants(mockVariants);
-    store.setVariantsGenerated(true);
-    store.setMediumGenerationStatus('complete');
-  }, []);
-
-  const handleConfirmSelection = useCallback(async () => {
+  const handleConfirm = useCallback(async () => {
     const store = useCanvasStore.getState();
     store.setMediumApproved(true);
 
@@ -101,16 +68,12 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
           }),
         });
       } catch {
-        // Non-blocking — config is in memory, persistence is best-effort
+        // Non-blocking
       }
     }
 
     const label = previewEntry.label ?? 'Medium';
-    const variantLabel = store.selectedMediumVariantId;
-    store.setStepSummary(3, {
-      label: `${label} configured | Variant ${variantLabel} selected`,
-    });
-
+    store.setStepSummary(3, { label: `${label} configured` });
     onAdvance();
   }, [onAdvance, previewEntry.label, deliverableId]);
 
@@ -118,7 +81,7 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
 
   return (
     <div className="space-y-4">
-      {/* Platform preview placeholder */}
+      {/* Platform preview */}
       <div className="rounded-lg border border-gray-200 bg-white p-3 overflow-hidden">
         <p className="text-xs font-medium text-gray-500 mb-2">{previewEntry.label} Preview</p>
         <div className="overflow-hidden rounded-md bg-gray-50">
@@ -146,70 +109,15 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
         </div>
       )}
 
-      {/* Pre-generation: Generate button */}
-      {!variantsGenerated && (
-        <button
-          type="button"
-          onClick={handleGenerateVariants}
-          className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
-        >
-          <Sparkles className="h-4 w-4" />
-          Generate 3 Variants
-        </button>
-      )}
-
-      {/* Post-generation: Variant cards */}
-      {variantsGenerated && mediumVariants.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-xs font-medium text-gray-500">Select a Variant</p>
-          <div role="radiogroup" aria-label="Select a Variant" className="space-y-3">
-          {mediumVariants.map((variant) => {
-            const isSelected = selectedMediumVariantId === variant.id;
-            return (
-              <button
-                key={variant.id}
-                type="button"
-                role="radio"
-                aria-checked={isSelected}
-                onClick={() =>
-                  useCanvasStore.getState().setSelectedMediumVariant(variant.id)
-                }
-                className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                  isSelected
-                    ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-                    : 'border-gray-200 bg-white hover:bg-gray-50'
-                }`}
-              >
-                <div className="flex items-center gap-2 mb-1">
-                  <div
-                    className={`h-3 w-3 rounded-full border-2 flex items-center justify-center ${
-                      isSelected ? 'border-primary' : 'border-gray-300'
-                    }`}
-                  >
-                    {isSelected && (
-                      <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                    )}
-                  </div>
-                  <span className="text-sm font-semibold text-gray-800">
-                    {variant.title}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 ml-5">{variant.description}</p>
-              </button>
-            );
-          })}
-          </div>
-
-          <button
-            type="button"
-            onClick={handleConfirmSelection}
-            className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            Confirm Selection
-          </button>
-        </div>
-      )}
+      {/* Confirm button */}
+      <button
+        type="button"
+        onClick={handleConfirm}
+        className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
+      >
+        <CheckCircle2 className="h-4 w-4" />
+        Confirm & Continue
+      </button>
     </div>
   );
 }
