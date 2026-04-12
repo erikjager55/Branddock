@@ -76,7 +76,7 @@ export function GenericPreview({ previewContent, isGenerating, heroImage, onAddI
 
       {/* Hero image (blog header position) */}
       {onAddImage !== undefined && (
-        <div className="px-3 pt-3">
+        <div className="px-3 py-4">
           <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[16/9]" />
         </div>
       )}
