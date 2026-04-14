@@ -2,15 +2,21 @@
 // POST /api/studio/[deliverableId]/publish-to-channel
 //
 // Routes the deliverable's content to the specified publish channel.
-// Dispatches to the correct provider (Ayrshare, Resend, WordPress)
-// based on the channel's provider field. Creates a PublishLog record.
+// Dispatches to the correct provider based on the channel's provider
+// field. Creates a PublishLog record.
+//
+// Supported providers:
+// - linkedin-direct: Direct LinkedIn Community Management API
+// - resend: Email via Resend
+// - wordpress-rest: WordPress REST API
 // =============================================================
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
-import { publishToAyrshare, type AyrsharePostBody } from '@/lib/integrations/ayrshare/ayrshare-client';
+import { publishToLinkedIn } from '@/lib/integrations/linkedin/linkedin-client';
+import { refreshTokenIfNeeded, type StoredCredentials } from '@/lib/integrations/social-oauth/token-refresh';
 import { sendViaResend, contentToEmailHtml } from '@/lib/integrations/resend/resend-publish';
 import { createWordPressPost, uploadWordPressImage, contentToWordPressHtml } from '@/lib/integrations/wordpress/wordpress-client';
 
@@ -99,25 +105,24 @@ export async function POST(request: Request, { params }: RouteParams) {
     try {
       // ─── Provider dispatch ──────────────────────────────────
       switch (channel.provider) {
-        case 'ayrshare': {
-          const profileKey = credentials.profileKey;
-          if (!profileKey) throw new Error('Ayrshare profile key not configured');
+        case 'linkedin-direct': {
+          // Refresh token if needed
+          const storedCreds = credentials as unknown as StoredCredentials;
+          const freshCreds = await refreshTokenIfNeeded(channel.id, channel.provider, storedCreds);
 
-          const postBody: AyrsharePostBody = {
-            post: fullText,
-            platforms: [channel.platform],
-            mediaUrls: heroImageUrl ? [heroImageUrl] : undefined,
-            scheduleDate: scheduledFor,
-          };
+          const isPage = freshCreds.profileType === 'page';
+          const authorUrn = isPage
+            ? `urn:li:organization:${freshCreds.pageId}`
+            : `urn:li:person:${freshCreds.userId}`;
 
-          if (channel.platform === 'linkedin') {
-            postBody.linkedInOptions = { title, visibility: 'anyone' };
-          }
+          const result = await publishToLinkedIn(freshCreds.accessToken, authorUrn, {
+            text: fullText,
+            mediaUrl: heroImageUrl ?? undefined,
+            articleTitle: title,
+          });
 
-          const result = await publishToAyrshare(profileKey, postBody);
-          const platformResult = result.postIds?.[0];
-          externalId = platformResult?.postId ?? result.id;
-          externalUrl = platformResult?.postUrl ?? null;
+          externalId = result.postId;
+          externalUrl = result.postUrl;
           break;
         }
 

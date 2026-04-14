@@ -40,7 +40,7 @@ export async function GET() {
 // ---------------------------------------------------------------------------
 const createSchema = z.object({
   platform: z.enum(['linkedin', 'instagram', 'facebook', 'tiktok', 'email', 'wordpress', 'youtube']),
-  provider: z.enum(['ayrshare', 'resend', 'wordpress-rest', 'youtube-api', 'direct']),
+  provider: z.enum(['linkedin-direct', 'instagram-direct', 'facebook-direct', 'tiktok-direct', 'resend', 'wordpress-rest', 'youtube-api', 'direct']),
   label: z.string().max(200).optional(),
   accountName: z.string().max(200).optional(),
   credentials: z.record(z.string(), z.unknown()).optional(),

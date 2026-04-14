@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Plug,
   CheckCircle2,
@@ -10,6 +10,8 @@ import {
   Trash2,
   ExternalLink,
   Building2,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { Button, Modal, Input } from '@/components/shared';
 import {
@@ -18,6 +20,7 @@ import {
   useDeleteChannel,
 } from '../../hooks/use-publish-channels';
 import type { PublishChannelSummary, CreateChannelBody } from '../../api/publish-channels.api';
+import { SocialProfileSelector } from './SocialProfileSelector';
 
 // ─── Platform Definitions ──────────────────────────────────
 
@@ -29,6 +32,9 @@ interface PlatformDef {
   color: string;
   bgColor: string;
   description: string;
+  /** If true, uses OAuth flow instead of manual credential entry */
+  oauthConnect: boolean;
+  /** Manual credential fields (only used when oauthConnect is false) */
   credentialFields: { key: string; label: string; type: 'text' | 'password'; placeholder: string }[];
   docsUrl?: string;
 }
@@ -37,51 +43,46 @@ const PLATFORMS: PlatformDef[] = [
   {
     id: 'linkedin',
     label: 'LinkedIn',
-    provider: 'ayrshare',
+    provider: 'linkedin-direct',
     icon: 'in',
     color: '#0A66C2',
     bgColor: 'bg-blue-50',
-    description: 'Publish posts directly to your LinkedIn company page or profile.',
-    credentialFields: [
-      { key: 'profileKey', label: 'Ayrshare Profile Key', type: 'password', placeholder: 'Enter your Ayrshare profile key...' },
-    ],
-    docsUrl: 'https://www.ayrshare.com/docs',
+    description: 'Publish posts to your LinkedIn personal profile or company pages.',
+    oauthConnect: true,
+    credentialFields: [],
   },
   {
     id: 'instagram',
     label: 'Instagram',
-    provider: 'ayrshare',
+    provider: 'instagram-direct',
     icon: 'ig',
     color: '#E1306C',
     bgColor: 'bg-pink-50',
-    description: 'Publish posts to your Instagram business account via Ayrshare.',
-    credentialFields: [
-      { key: 'profileKey', label: 'Ayrshare Profile Key', type: 'password', placeholder: 'Enter your Ayrshare profile key...' },
-    ],
+    description: 'Publish posts to your Instagram business account.',
+    oauthConnect: true,
+    credentialFields: [],
   },
   {
     id: 'facebook',
     label: 'Facebook',
-    provider: 'ayrshare',
+    provider: 'facebook-direct',
     icon: 'fb',
     color: '#1877F2',
     bgColor: 'bg-blue-50',
-    description: 'Publish posts to your Facebook page via Ayrshare.',
-    credentialFields: [
-      { key: 'profileKey', label: 'Ayrshare Profile Key', type: 'password', placeholder: 'Enter your Ayrshare profile key...' },
-    ],
+    description: 'Publish posts to your Facebook pages.',
+    oauthConnect: true,
+    credentialFields: [],
   },
   {
     id: 'tiktok',
     label: 'TikTok',
-    provider: 'ayrshare',
+    provider: 'tiktok-direct',
     icon: 'tt',
     color: '#000000',
     bgColor: 'bg-gray-100',
-    description: 'Publish videos to TikTok via Ayrshare.',
-    credentialFields: [
-      { key: 'profileKey', label: 'Ayrshare Profile Key', type: 'password', placeholder: 'Enter your Ayrshare profile key...' },
-    ],
+    description: 'Publish videos to TikTok.',
+    oauthConnect: true,
+    credentialFields: [],
   },
   {
     id: 'email',
@@ -91,6 +92,7 @@ const PLATFORMS: PlatformDef[] = [
     color: '#000000',
     bgColor: 'bg-gray-100',
     description: 'Send email newsletters and promotional emails via Resend.',
+    oauthConnect: false,
     credentialFields: [
       { key: 'apiKey', label: 'Resend API Key', type: 'password', placeholder: 're_...' },
       { key: 'fromEmail', label: 'From Email', type: 'text', placeholder: 'hello@yourdomain.com' },
@@ -105,6 +107,7 @@ const PLATFORMS: PlatformDef[] = [
     color: '#21759B',
     bgColor: 'bg-blue-50',
     description: 'Publish blog posts and pages to your WordPress site.',
+    oauthConnect: false,
     credentialFields: [
       { key: 'siteUrl', label: 'WordPress Site URL', type: 'text', placeholder: 'https://yourdomain.com' },
       { key: 'username', label: 'Username', type: 'text', placeholder: 'admin' },
@@ -112,19 +115,23 @@ const PLATFORMS: PlatformDef[] = [
     ],
     docsUrl: 'https://developer.wordpress.org/rest-api/',
   },
-  {
-    id: 'youtube',
-    label: 'YouTube',
-    provider: 'youtube-api',
-    icon: 'yt',
-    color: '#FF0000',
-    bgColor: 'bg-red-50',
-    description: 'Upload videos to your YouTube channel.',
-    credentialFields: [
-      { key: 'refreshToken', label: 'OAuth Refresh Token', type: 'password', placeholder: 'OAuth token from Google' },
-    ],
-  },
 ];
+
+// ─── Token Health ──────────────────────────────────────────
+
+function getTokenHealth(channel: PublishChannelSummary): 'valid' | 'expiring' | 'expired' | 'unknown' {
+  const settings = channel.settings as Record<string, unknown> | null;
+  const tokenExpiry = (settings as Record<string, unknown> | null)?.tokenExpiry as string | undefined;
+
+  // For OAuth channels, check credentials (not in summary for security)
+  // We rely on a tokenHealth field set by the backend in settings
+  const health = settings?.tokenHealth as string | undefined;
+  if (health === 'valid' || health === 'expiring' || health === 'expired') return health;
+
+  // If no health info available, check lastPublishedAt as a proxy
+  if (!channel.lastPublishedAt) return 'unknown';
+  return 'unknown';
+}
 
 // ─── Component ─────────────────────────────────────────────
 
@@ -133,10 +140,38 @@ export function IntegrationsTab() {
   const createChannel = useCreateChannel();
   const deleteChannel = useDeleteChannel();
 
+  // Manual credential modal state
   const [connectingPlatform, setConnectingPlatform] = useState<PlatformDef | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [formLabel, setFormLabel] = useState('');
   const [formAccountName, setFormAccountName] = useState('');
+
+  // OAuth profile selector state
+  const [oauthSession, setOauthSession] = useState<{ platform: string; sessionId: string } | null>(null);
+
+  // Check for OAuth callback params in URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get('social_connect_session');
+    const platform = params.get('social_connect_platform');
+    const error = params.get('social_connect_error');
+
+    if (error) {
+      // Clean up URL params
+      const url = new URL(window.location.href);
+      url.searchParams.delete('social_connect_error');
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    if (sessionId && platform) {
+      setOauthSession({ platform, sessionId });
+      // Clean up URL params
+      const url = new URL(window.location.href);
+      url.searchParams.delete('social_connect_session');
+      url.searchParams.delete('social_connect_platform');
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, []);
 
   // Group channels by platform for multi-account display
   const channelsByPlatform = new Map<string, PublishChannelSummary[]>();
@@ -147,10 +182,16 @@ export function IntegrationsTab() {
   }
 
   const handleConnect = (platform: PlatformDef) => {
-    setConnectingPlatform(platform);
-    setFormValues({});
-    setFormLabel('');
-    setFormAccountName('');
+    if (platform.oauthConnect) {
+      // Redirect to OAuth authorize endpoint
+      window.location.href = `/api/social-connect/${platform.id}/authorize`;
+    } else {
+      // Open manual credential modal
+      setConnectingPlatform(platform);
+      setFormValues({});
+      setFormLabel('');
+      setFormAccountName('');
+    }
   };
 
   const handleSave = async () => {
@@ -162,7 +203,6 @@ export function IntegrationsTab() {
     for (const field of connectingPlatform.credentialFields) {
       const val = formValues[field.key]?.trim();
       if (!val) continue;
-      // Route email settings to settings, rest to credentials
       if (field.key === 'fromEmail' || field.key === 'fromName') {
         settings[field.key] = val;
       } else {
@@ -190,6 +230,10 @@ export function IntegrationsTab() {
   const handleDisconnect = async (channelId: string) => {
     if (!window.confirm('Disconnect this platform? Published content will remain online.')) return;
     deleteChannel.mutate(channelId);
+  };
+
+  const handleReconnect = (platform: PlatformDef) => {
+    window.location.href = `/api/social-connect/${platform.id}/authorize`;
   };
 
   if (isLoading) {
@@ -235,7 +279,9 @@ export function IntegrationsTab() {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900">{platform.label}</h3>
-                    <p className="text-xs text-gray-500">{platform.provider}</p>
+                    <p className="text-xs text-gray-500">
+                      {platform.oauthConnect ? 'Direct connection' : platform.provider}
+                    </p>
                   </div>
                 </div>
                 {hasChannels ? (
@@ -256,25 +302,51 @@ export function IntegrationsTab() {
               {/* Connected accounts list */}
               {platformChannels.length > 0 && (
                 <div className="space-y-2 mb-3">
-                  {platformChannels.map((ch) => (
-                    <div key={ch.id} className="flex items-center justify-between rounded-md bg-white border border-gray-100 px-3 py-2">
-                      <div>
-                        <p className="text-xs font-medium text-gray-800">
-                          {ch.accountName ?? ch.label}
-                        </p>
-                        {ch.accountName && ch.label && ch.label !== ch.accountName && (
-                          <p className="text-[10px] text-gray-400">{ch.label}</p>
-                        )}
+                  {platformChannels.map((ch) => {
+                    const health = getTokenHealth(ch);
+                    const isOAuth = platform.oauthConnect;
+
+                    return (
+                      <div key={ch.id} className="flex items-center justify-between rounded-md bg-white border border-gray-100 px-3 py-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {/* Token health indicator for OAuth channels */}
+                          {isOAuth && health === 'expiring' && (
+                            <span title="Token expiring soon"><AlertCircle className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" /></span>
+                          )}
+                          {isOAuth && health === 'expired' && (
+                            <span title="Token expired"><AlertCircle className="h-3.5 w-3.5 text-red-500 flex-shrink-0" /></span>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-gray-800 truncate">
+                              {ch.accountName ?? ch.label}
+                            </p>
+                            {ch.accountName && ch.label && ch.label !== ch.accountName && (
+                              <p className="text-[10px] text-gray-400 truncate">{ch.label}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {isOAuth && health === 'expired' && (
+                            <button
+                              type="button"
+                              onClick={() => handleReconnect(platform)}
+                              className="text-xs text-amber-600 hover:text-amber-700 flex items-center gap-1 mr-1"
+                              title="Reconnect"
+                            >
+                              <RefreshCw className="h-3 w-3" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleDisconnect(ch.id)}
+                            className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => handleDisconnect(ch.id)}
-                        className="text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -299,7 +371,7 @@ export function IntegrationsTab() {
         })}
       </div>
 
-      {/* Connect modal */}
+      {/* Manual credential modal (Email, WordPress) */}
       <Modal
         isOpen={!!connectingPlatform}
         onClose={() => setConnectingPlatform(null)}
@@ -314,7 +386,7 @@ export function IntegrationsTab() {
               label="Account name"
               value={formAccountName}
               onChange={(e) => setFormAccountName(e.target.value)}
-              placeholder="e.g. Company Page, CEO Profile, Marketing Team..."
+              placeholder="e.g. Company Newsletter, Marketing Blog..."
             />
 
             <Input
@@ -356,6 +428,15 @@ export function IntegrationsTab() {
           </div>
         )}
       </Modal>
+
+      {/* OAuth profile selector modal */}
+      {oauthSession && (
+        <SocialProfileSelector
+          platform={oauthSession.platform}
+          sessionId={oauthSession.sessionId}
+          onClose={() => setOauthSession(null)}
+        />
+      )}
     </div>
   );
 }
