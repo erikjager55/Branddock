@@ -92,18 +92,6 @@ const OUTPUT_FORMAT_INSTRUCTIONS = `
 export function buildBaseSystemPrompt(typeInstructions: string): string {
   return `${typeInstructions}${OUTPUT_FORMAT_INSTRUCTIONS}
 
-## BRAND ALIGNMENT
-- Use the brand context to align your writing with the brand's voice, personality, and values.
-- If a brand personality or tone of voice is provided, match it precisely.
-- Incorporate brand messaging hierarchy where relevant.
-- Ensure the content reinforces the brand's positioning and promise.
-
-## PERSONA TARGETING
-- If persona context is provided, tailor the content specifically for that audience.
-- Address their goals, frustrations, and motivations.
-- Use language and references they would resonate with.
-- Optimize for their preferred channels and communication style.
-
 ## QUALITY GUARDRAILS — MANDATORY
 1. NEVER use placeholder values (€XX, $XX, [PRICE], TBD, etc.) — omit pricing entirely if unknown. Exception: press releases and similar formats may use [PLACEHOLDER] markers for names/contacts where the type-specific instructions explicitly call for them.
 2. NEVER use internal codes or jargon (Q1, Q2, SKU, FY2025, campaign IDs) — use human-readable dates and names.

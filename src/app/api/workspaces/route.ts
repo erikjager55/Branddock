@@ -22,7 +22,7 @@ export async function GET() {
       prisma.workspace.findMany({
         where: { organizationId: activeOrgId },
         orderBy: { name: "asc" },
-        select: { id: true, name: true, slug: true, createdAt: true },
+        select: { id: true, name: true, slug: true, createdAt: true, contentLanguage: true },
       }),
       resolveWorkspaceId(),
     ]);
@@ -167,6 +167,79 @@ export async function POST(request: NextRequest) {
       { error: "Internal server error" },
       { status: 500 }
     );
+  }
+}
+
+// PATCH /api/workspaces — update workspace settings (owner/admin)
+export async function PATCH(request: NextRequest) {
+  try {
+    const session = await getServerSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const activeOrgId = (session.session as Record<string, unknown>)
+      .activeOrganizationId as string | undefined;
+
+    if (!activeOrgId) {
+      return NextResponse.json({ error: "No active organization" }, { status: 400 });
+    }
+
+    const body = await request.json();
+    const { workspaceId, contentLanguage } = body;
+
+    if (!workspaceId || typeof workspaceId !== "string") {
+      return NextResponse.json({ error: "workspaceId is required" }, { status: 400 });
+    }
+
+    // Verify membership and role
+    const membership = await prisma.organizationMember.findUnique({
+      where: {
+        userId_organizationId: {
+          userId: session.user.id,
+          organizationId: activeOrgId,
+        },
+      },
+    });
+
+    if (!membership || !["owner", "admin"].includes(membership.role)) {
+      return NextResponse.json({ error: "Only owners and admins can update workspace settings" }, { status: 403 });
+    }
+
+    // Verify workspace belongs to this organization
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { id: true, organizationId: true },
+    });
+
+    if (!workspace || workspace.organizationId !== activeOrgId) {
+      return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
+    }
+
+    // Build update data
+    const VALID_LANGUAGES = new Set(["en", "nl", "de", "fr", "es", "pt", "it"]);
+    const updateData: Record<string, unknown> = {};
+    if (typeof contentLanguage === "string") {
+      if (!VALID_LANGUAGES.has(contentLanguage)) {
+        return NextResponse.json({ error: "Invalid language code" }, { status: 400 });
+      }
+      updateData.contentLanguage = contentLanguage;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+    }
+
+    const updated = await prisma.workspace.update({
+      where: { id: workspaceId },
+      data: updateData,
+      select: { id: true, name: true, contentLanguage: true },
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error("[PATCH /api/workspaces]", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

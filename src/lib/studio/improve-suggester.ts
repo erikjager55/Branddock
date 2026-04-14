@@ -15,6 +15,7 @@
 import { generateAIResponse } from '@/lib/ai/exploration/ai-caller';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
+import { buildBrandVoiceDirective } from './brand-voice-directive';
 import type { GenerationContext } from './context-builder';
 import type { QualityDimension } from './quality-scorer';
 
@@ -40,6 +41,7 @@ const SUGGEST_SYSTEM_PROMPT = `You are a content improvement specialist. Given a
 5. Each suggestion's currentText must be a verbatim excerpt from the content (at least 10 characters).
 6. If suggesting additions, set currentText to the sentence AFTER which the addition should go, and include the original sentence + new text in suggestedText.
 7. Estimate impact in points (2-12 range). Higher impact for changes that address major weaknesses.
+8. Suggestions must maintain the brand's voice identity. If content deviates from the BRAND VOICE DIRECTIVE, prioritize voice-correcting suggestions (wrong language, wrong tone, missing brand name, prohibited words).
 
 ## OUTPUT FORMAT
 Respond with ONLY a JSON array (no markdown fences):
@@ -76,7 +78,13 @@ export async function generateImproveSuggestions(
   }
 
   const typeDef = deliverableTypeId ? getDeliverableTypeById(deliverableTypeId) : undefined;
-  const systemPrompt = buildTypeAwareSystemPrompt(deliverableTypeId, typeDef);
+
+  // Build brand voice directive for voice-aware suggestions
+  const voiceDirective = workspaceId
+    ? await buildBrandVoiceDirective(workspaceId, { deliverableTypeId })
+    : '';
+
+  const systemPrompt = buildTypeAwareSystemPrompt(deliverableTypeId, typeDef, voiceDirective);
   const userPrompt = buildSuggestUserPrompt(content, dimensions, context, contentType, typeDef);
 
   try {
@@ -110,11 +118,16 @@ export async function generateImproveSuggestions(
 function buildTypeAwareSystemPrompt(
   deliverableTypeId?: string,
   typeDef?: ReturnType<typeof getDeliverableTypeById>,
+  voiceDirective?: string,
 ): string {
-  if (!deliverableTypeId) return SUGGEST_SYSTEM_PROMPT;
+  const basePrompt = voiceDirective
+    ? `${voiceDirective}\n\n${SUGGEST_SYSTEM_PROMPT}`
+    : SUGGEST_SYSTEM_PROMPT;
+
+  if (!deliverableTypeId) return basePrompt;
 
   const resolvedTypeDef = typeDef ?? getDeliverableTypeById(deliverableTypeId);
-  if (!resolvedTypeDef) return SUGGEST_SYSTEM_PROMPT;
+  if (!resolvedTypeDef) return basePrompt;
 
   const typeSpecificParts: string[] = [];
 
@@ -147,9 +160,9 @@ function buildTypeAwareSystemPrompt(
     typeSpecificParts.push('');
   }
 
-  if (typeSpecificParts.length === 0) return SUGGEST_SYSTEM_PROMPT;
+  if (typeSpecificParts.length === 0) return basePrompt;
 
-  return SUGGEST_SYSTEM_PROMPT + '\n\n' + typeSpecificParts.join('\n');
+  return basePrompt + '\n\n' + typeSpecificParts.join('\n');
 }
 
 function buildSuggestUserPrompt(

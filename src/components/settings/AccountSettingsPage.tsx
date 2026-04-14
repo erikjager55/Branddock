@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../ui/button';
 import { Card } from '../ui/card';
 import { Input } from '../ui/input';
@@ -12,10 +12,59 @@ import {
   Save,
   Shield,
   Globe,
-  Bell,
+  Languages,
+  Check,
 } from 'lucide-react';
+import { useWorkspace } from '@/hooks/use-workspace';
+
+const CONTENT_LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'nl', label: 'Nederlands' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'fr', label: 'Français' },
+  { code: 'es', label: 'Español' },
+  { code: 'pt', label: 'Português' },
+  { code: 'it', label: 'Italiano' },
+] as const;
 
 export function AccountSettingsPage() {
+  const { workspaceId } = useWorkspace();
+  const [contentLanguage, setContentLanguage] = useState('en');
+  const [languageSaved, setLanguageSaved] = useState(false);
+  const [isSavingLanguage, setIsSavingLanguage] = useState(false);
+
+  // Fetch current workspace language
+  useEffect(() => {
+    if (!workspaceId) return;
+    fetch('/api/workspaces')
+      .then((r) => r.json())
+      .then((data) => {
+        const ws = data.workspaces?.find((w: { id: string }) => w.id === workspaceId);
+        if (ws?.contentLanguage) setContentLanguage(ws.contentLanguage);
+      })
+      .catch(() => {});
+  }, [workspaceId]);
+
+  const handleSaveLanguage = useCallback(async () => {
+    if (!workspaceId) return;
+    setIsSavingLanguage(true);
+    try {
+      const res = await fetch('/api/workspaces', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ workspaceId, contentLanguage }),
+      });
+      if (res.ok) {
+        setLanguageSaved(true);
+        setTimeout(() => setLanguageSaved(false), 2000);
+      }
+    } catch {
+      // network error — leave button in default state
+    } finally {
+      setIsSavingLanguage(false);
+    }
+  }, [workspaceId, contentLanguage]);
+
   const [isSaving, setIsSaving] = useState(false);
   const [profile, setProfile] = useState({
     name: 'Sarah Johnson',
@@ -156,6 +205,44 @@ export function AccountSettingsPage() {
               rows={3}
               placeholder="Tell us a bit about yourself..."
             />
+          </div>
+        </Card>
+
+        {/* Workspace Content Language */}
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold mb-1">Content Language</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            All AI-generated content for this workspace will be written in this language.
+          </p>
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-xs">
+              <Languages className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <select
+                value={contentLanguage}
+                onChange={(e) => { setContentLanguage(e.target.value); setLanguageSaved(false); }}
+                className="w-full h-10 pl-9 pr-3 border border-border rounded-md bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                {CONTENT_LANGUAGES.map((lang) => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button
+              onClick={handleSaveLanguage}
+              disabled={isSavingLanguage || languageSaved}
+              size="sm"
+              className="gap-1.5"
+            >
+              {languageSaved ? (
+                <><Check className="h-4 w-4" /> Saved</>
+              ) : isSavingLanguage ? (
+                'Saving...'
+              ) : (
+                <><Save className="h-4 w-4" /> Save</>
+              )}
+            </Button>
           </div>
         </Card>
 

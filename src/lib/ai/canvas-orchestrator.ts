@@ -23,6 +23,7 @@ import { cacheKeys } from '@/lib/api/cache-keys';
 import type { JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 import { getPromptTemplate } from '@/lib/studio/prompt-templates';
+import { buildBrandVoiceDirectiveFromContext } from '@/lib/studio/brand-voice-directive';
 import OpenAI from 'openai';
 
 // ─── Types ────────────────────────────────────────────────
@@ -117,14 +118,19 @@ export async function* orchestrateContentGeneration(
     (t) => t.type === 'image' || t.type === 'hero-image',
   );
 
+  // ── Build brand voice directive ────────────────────────
+  const voiceDirective = buildBrandVoiceDirectiveFromContext(stack.brand, {
+    deliverableTypeId: stack.deliverableTypeId ?? undefined,
+  });
+
   // ── Regeneration path ─────────────────────────────────
   if (options?.regenerateGroup) {
-    yield* handleRegeneration(deliverableId, workspaceId, stack, options, startTime);
+    yield* handleRegeneration(deliverableId, workspaceId, stack, options, startTime, voiceDirective);
     return;
   }
 
   // ── Step 2: Generate text components ──────────────────
-  const { systemPrompt, userPrompt } = buildCanvasPrompt(stack, stack.medium, options);
+  const { systemPrompt, userPrompt } = buildCanvasPrompt(stack, stack.medium, options, voiceDirective);
   const textModel = await resolveFeatureModel(workspaceId, 'canvas-text-generate');
 
   for (const group of textGroups) {
@@ -366,6 +372,7 @@ async function* handleRegeneration(
   stack: CanvasContextStack,
   options: OrchestrationOptions,
   startTime: number,
+  voiceDirective?: string,
 ): AsyncGenerator<OrchestrationEvent> {
   const group = options.regenerateGroup!;
   const feedback = options.userFeedback ?? '';
@@ -460,6 +467,7 @@ async function* handleRegeneration(
       group,
       feedback,
       options,
+      voiceDirective,
     );
 
     const textModel = await resolveFeatureModel(workspaceId, 'canvas-text-generate');
@@ -538,6 +546,7 @@ function buildCanvasPrompt(
   stack: CanvasContextStack,
   medium: MediumContext | null,
   options?: OrchestrationOptions,
+  voiceDirective?: string,
 ): { systemPrompt: string; userPrompt: string } {
   const componentTemplate = (medium?.componentTemplate ?? []) as ComponentTemplateItem[];
   const textGroups = componentTemplate
@@ -556,6 +565,7 @@ function buildCanvasPrompt(
   const typeTemplate = getPromptTemplate(contentType);
 
   const systemPrompt = [
+    voiceDirective || '',
     typeTemplate.systemPrompt,
     '',
     'IMPORTANT: In addition to the type-specific instructions above, respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.',
@@ -622,6 +632,7 @@ function buildRegenerationPrompt(
   group: string,
   feedback: string,
   options?: OrchestrationOptions,
+  voiceDirective?: string,
 ): { systemPrompt: string; userPrompt: string } {
   const groupComponents = existingComponents.filter((c) => c.variantGroup === group);
 
@@ -629,6 +640,7 @@ function buildRegenerationPrompt(
   const regenTemplate = getPromptTemplate(regenContentType);
 
   const systemPrompt = [
+    voiceDirective || '',
     regenTemplate.systemPrompt,
     '',
     'You are regenerating a specific content component group based on user feedback.',

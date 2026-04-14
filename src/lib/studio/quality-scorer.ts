@@ -3,8 +3,9 @@
 //
 // Evaluates generated content against brand context using AI.
 // Uses type-specific quality criteria from the deliverable type
-// registry when available, with fallback to 3 default dimensions:
-//  - Brand Alignment (35%), Engagement (35%), Clarity (30%)
+// registry when available, with fallback to 4 default dimensions:
+//  - Brand Voice Adherence (25%), Brand Strategy Alignment (15%),
+//    Engagement (35%), Clarity (25%)
 //
 // Scoring via resolveFeatureModel('content-quality') AI caller.
 // =============================================================
@@ -12,6 +13,7 @@
 import { generateAIResponse } from '@/lib/ai/exploration/ai-caller';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
 import { getDeliverableTypeById, type QualityCriterion } from '@/features/campaigns/lib/deliverable-types';
+import { buildBrandVoiceDirective } from './brand-voice-directive';
 import type { GenerationContext } from './context-builder';
 
 // ─── Types ─────────────────────────────────────────────────
@@ -32,24 +34,32 @@ export interface QualityScoringResult {
 // ─── Constants ────────────────────────────────────────────
 
 const DEFAULT_DIMENSIONS = [
-  { name: 'Brand Alignment', weight: 0.35 },
+  { name: 'Brand Voice Adherence', weight: 0.25 },
+  { name: 'Brand Strategy Alignment', weight: 0.15 },
   { name: 'Engagement', weight: 0.35 },
-  { name: 'Clarity', weight: 0.30 },
+  { name: 'Clarity', weight: 0.25 },
 ] as const;
 
-const DEFAULT_SCORING_SYSTEM_PROMPT = `You are a brand content quality analyst. You evaluate marketing and brand content across three dimensions.
+const DEFAULT_SCORING_SYSTEM_PROMPT = `You are a brand content quality analyst. You evaluate marketing and brand content across four dimensions.
 
 ## SCORING DIMENSIONS
 
-### 1. Brand Alignment (0-100)
-Evaluate how well the content aligns with the brand's voice, personality, values, and messaging hierarchy.
-- Does the tone match the brand personality?
+### 1. Brand Voice Adherence (0-100)
+Evaluate how well the content matches the brand's personality, tone of voice, and language.
+- Is the content written in the correct language as specified in the brand voice directive?
+- Does the tone match the brand personality traits and spectrum positioning?
+- Are "words we use" incorporated and "words we avoid" absent?
+- Does the writing style match the brand's reference writing sample?
+- Is the brand name used naturally (not just generic "we")?
+- Does the channel-specific tone match the communication style?
+
+### 2. Brand Strategy Alignment (0-100)
+Evaluate how well the content reinforces the brand's strategic positioning.
 - Are core brand values communicated or reflected?
 - Does the content follow the strategic messaging hierarchy?
-- Is brand-specific terminology used consistently?
 - Does it reinforce the brand's positioning and promise?
 
-### 2. Engagement (0-100)
+### 3. Engagement (0-100)
 Evaluate how compelling and engaging the content is for the target audience.
 - Is the opening hook strong and attention-grabbing?
 - Is there a clear call-to-action?
@@ -57,7 +67,7 @@ Evaluate how compelling and engaging the content is for the target audience.
 - Does it use active voice and direct address?
 - Does it resonate with the audience's pain points and goals?
 
-### 3. Clarity (0-100)
+### 4. Clarity (0-100)
 Evaluate the structural quality and clarity of communication.
 - Is there a logical structure (intro, body, conclusion)?
 - Is the content concise without filler or repetition?
@@ -67,9 +77,10 @@ Evaluate the structural quality and clarity of communication.
 ## OUTPUT FORMAT
 Respond with ONLY a JSON object (no markdown fences):
 {
-  "brandAlignment": { "score": 82, "explanation": "..." },
-  "engagement": { "score": 74, "explanation": "..." },
-  "clarity": { "score": 88, "explanation": "..." },
+  "brandVoiceAdherence": { "score": 82, "explanation": "..." },
+  "brandStrategyAlignment": { "score": 74, "explanation": "..." },
+  "engagement": { "score": 88, "explanation": "..." },
+  "clarity": { "score": 80, "explanation": "..." },
   "summary": "A 1-2 sentence overall assessment"
 }
 
@@ -142,6 +153,11 @@ export async function scoreContentQuality(
     return createEmptyResult(typeSpecificCriteria);
   }
 
+  // Build brand voice directive for voice-aware scoring
+  const voiceDirective = workspaceId
+    ? await buildBrandVoiceDirective(workspaceId, { deliverableTypeId })
+    : '';
+
   const userPrompt = buildScoringUserPrompt(content, context, contentType, deliverableTitle);
 
   try {
@@ -150,9 +166,12 @@ export async function scoreContentQuality(
       : { provider: 'anthropic', model: 'claude-sonnet-4-5-20250929' };
 
     // Use type-specific prompt and parser if criteria available
-    const systemPrompt = typeSpecificCriteria && typeSpecificCriteria.length > 0
+    const baseScoringPrompt = typeSpecificCriteria && typeSpecificCriteria.length > 0
       ? buildTypeSpecificScoringPrompt(typeSpecificCriteria)
       : DEFAULT_SCORING_SYSTEM_PROMPT;
+    const systemPrompt = voiceDirective
+      ? `${voiceDirective}\n\n${baseScoringPrompt}`
+      : baseScoringPrompt;
 
     const response = await generateAIResponse(
       provider,
@@ -242,7 +261,8 @@ function parseScoringResponse(raw: string): QualityScoringResult {
     // Strip markdown fences if present
     const cleaned = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
     const parsed = JSON.parse(cleaned) as {
-      brandAlignment?: { score?: number; explanation?: string };
+      brandVoiceAdherence?: { score?: number; explanation?: string };
+      brandStrategyAlignment?: { score?: number; explanation?: string };
       engagement?: { score?: number; explanation?: string };
       clarity?: { score?: number; explanation?: string };
       summary?: string;
@@ -250,10 +270,16 @@ function parseScoringResponse(raw: string): QualityScoringResult {
 
     const dimensions: QualityDimension[] = [
       {
-        name: 'Brand Alignment',
-        score: clampScore(parsed.brandAlignment?.score),
-        weight: 0.35,
-        explanation: parsed.brandAlignment?.explanation || '',
+        name: 'Brand Voice Adherence',
+        score: clampScore(parsed.brandVoiceAdherence?.score),
+        weight: 0.25,
+        explanation: parsed.brandVoiceAdherence?.explanation || '',
+      },
+      {
+        name: 'Brand Strategy Alignment',
+        score: clampScore(parsed.brandStrategyAlignment?.score),
+        weight: 0.15,
+        explanation: parsed.brandStrategyAlignment?.explanation || '',
       },
       {
         name: 'Engagement',
@@ -264,7 +290,7 @@ function parseScoringResponse(raw: string): QualityScoringResult {
       {
         name: 'Clarity',
         score: clampScore(parsed.clarity?.score),
-        weight: 0.30,
+        weight: 0.25,
         explanation: parsed.clarity?.explanation || '',
       },
     ];

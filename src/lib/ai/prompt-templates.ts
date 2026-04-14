@@ -44,6 +44,8 @@ export interface BrandContextBlock {
   competitiveLandscape?: string;
   // Consistent AI models
   consistentModels?: string;
+  // Workspace language preference
+  contentLanguage?: string;
 }
 
 // ─── System prompt fragments ───────────────────────────────
@@ -60,8 +62,7 @@ Guidelines:
 - Be concise and actionable — prioritise practical advice over theory
 - Use the brand context provided to give personalised recommendations
 - When analysing, be honest about weaknesses without being discouraging
-- Format responses with clear headings and bullet points where appropriate
-- Write in the same language as the user's input`;
+- Format responses with clear headings and bullet points where appropriate`;
 
 export const ANALYSIS_INSTRUCTIONS = `Provide your analysis in the following structure:
 1. **Summary** — 2-3 sentence overview

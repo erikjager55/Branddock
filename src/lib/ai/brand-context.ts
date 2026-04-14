@@ -758,7 +758,7 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
   const [workspace, brandAssets, personas, products, activatedTrends, competitors, styleguide, consistentModels] = await Promise.all([
     prisma.workspace.findUnique({
       where: { id: workspaceId },
-      select: { name: true },
+      select: { name: true, contentLanguage: true },
     }),
 
     prisma.brandAsset.findMany({
@@ -871,6 +871,7 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
   // Build context block
   const ctx: BrandContextBlock = {
     brandName: workspace?.name,
+    contentLanguage: workspace?.contentLanguage ?? 'en',
   };
 
   // ─── Map brand assets by slug to context fields ──────────

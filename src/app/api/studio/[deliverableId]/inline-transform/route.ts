@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
 import { createStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import { checkRateLimit } from '@/lib/ai/rate-limiter';
-import { formatBrandPersonality, type BrandPersonalityData } from '@/lib/ai/brand-context';
+import { buildBrandVoiceDirective } from '@/lib/studio/brand-voice-directive';
 
 // ---------------------------------------------------------------------------
 // POST /api/studio/[deliverableId]/inline-transform
@@ -93,60 +93,19 @@ export async function POST(
       return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
     }
 
-    // Fetch brand personality + styleguide for brand_voice action (parallel)
-    let personalityContext = '';
-    if (action === 'brand_voice') {
-      const [personalityAsset, styleguide] = await Promise.all([
-        prisma.brandAsset.findFirst({
-          where: { workspaceId, frameworkType: 'BRAND_PERSONALITY' },
-          select: { frameworkData: true },
-        }),
-        prisma.brandStyleguide.findFirst({
-          where: { workspaceId },
-          select: {
-            contentGuidelines: true,
-            writingGuidelines: true,
-          },
-        }),
-      ]);
-
-      if (personalityAsset?.frameworkData && typeof personalityAsset.frameworkData === 'object') {
-        personalityContext = formatBrandPersonality(
-          personalityAsset.frameworkData as BrandPersonalityData,
-        );
-      }
-
-      if (styleguide) {
-        const guidelines = [
-          ...(styleguide.contentGuidelines ?? []),
-          ...(styleguide.writingGuidelines ?? []),
-        ]
-          .filter(Boolean)
-          .map((g) => `- ${g}`)
-          .join('\n');
-        if (guidelines) {
-          personalityContext += `\n\nBrand Writing Guidelines:\n${guidelines}`;
-        }
-      }
-
-      // Cap personality context to prevent prompt overflow (truncate at last newline)
-      if (personalityContext.length > 4000) {
-        const truncated = personalityContext.slice(0, 4000);
-        const lastNewline = truncated.lastIndexOf('\n');
-        personalityContext = lastNewline > 0 ? truncated.slice(0, lastNewline) : truncated;
-      }
-    }
+    // Build brand voice directive (used for all actions — ensures correct language and tone)
+    const voiceDirective = await buildBrandVoiceDirective(workspaceId);
 
     const transformAction = action as TransformAction;
 
-    const systemPrompt =
-      'You are an expert content editor. Transform the provided text according to the given instructions. Return valid JSON with a single field "transformedText" containing ONLY the rewritten plain text — no explanations, no preamble, no HTML tags.';
+    const systemPromptParts = [
+      voiceDirective,
+      'You are an expert content editor. Transform the provided text according to the given instructions. Return valid JSON with a single field "transformedText" containing ONLY the rewritten plain text — no explanations, no preamble, no HTML tags.',
+    ];
+    const systemPrompt = systemPromptParts.filter(Boolean).join('\n\n');
 
     const userPromptParts = [
       `## Instruction\n${ACTION_INSTRUCTIONS[transformAction]}`,
-      personalityContext
-        ? `## Brand Context\n${personalityContext}`
-        : '',
       fullContent
         ? `## Surrounding Content (for context only — do NOT rewrite this)\n${fullContent.slice(0, 2000)}`
         : '',

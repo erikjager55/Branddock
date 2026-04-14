@@ -110,8 +110,9 @@ model Workspace {
   id        String   @id @default(cuid())
   name      String
   slug      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  contentLanguage String   @default("en") // ISO 639-1: "en", "nl", "de", "fr", etc.
 
   // Organization koppeling
   organizationId String
@@ -214,6 +215,9 @@ model Workspace {
   publishChannels           PublishChannel[]
   publishLogs               PublishLog[]
 
+  // Claw AI Assistant
+  clawConversations         ClawConversation[]
+
   @@index([organizationId])
 }
 
@@ -300,6 +304,9 @@ model User {
   // Consistent AI Models (Fase I.4)
   consistentModels              ConsistentModel[]              @relation("CreatedConsistentModels")
   consistentModelGenerations    ConsistentModelGeneration[]    @relation("CreatedConsistentModelGenerations")
+
+  // Claw AI Assistant
+  clawConversations             ClawConversation[]
 
   @@index([workspaceId])
 }
@@ -3898,4 +3905,29 @@ model ConsistentModelGeneration {
 
   @@index([consistentModelId])
   @@index([workspaceId])
+}
+
+// ============================================
+// CLAW — AI Assistant
+// ============================================
+
+model ClawConversation {
+  id          String   @id @default(cuid())
+  title       String?  // Auto-generated from first message
+  messages    Json     @default("[]") // ClawMessage[]
+  contextSelection Json? // ContextSelection — which modules/entities selected
+  attachments Json?    // Attachment metadata (text snippets, parsed file content, scraped URLs)
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([updatedAt])
 }
