@@ -578,6 +578,12 @@ export interface StrategyFoundation {
   suggestedApproach: string;
   targetBehaviors: string[];
   audienceInsights: AudienceInsight[];
+  /** Core campaign message — the single most compelling thing to communicate */
+  coreMessage?: string;
+  /** Supporting proof points that substantiate the core message */
+  proofPoints?: string[];
+  /** Why this message matters now — urgency or timeliness argument */
+  reasonToAct?: string;
 }
 
 // ─── Briefing Validation ───────────────────────────────────

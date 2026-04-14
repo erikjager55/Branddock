@@ -141,6 +141,45 @@ export function StrategyFoundationReviewView({
               </div>
             </div>
           </div>
+
+          {/* Core Message + Proof Points (read-only in concept flow) */}
+          {foundation.coreMessage && (
+            <div className="bg-amber-50 rounded-xl border border-amber-100 p-5">
+              <div className="flex items-start gap-3">
+                <Target className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-amber-800 mb-1">Core Message</p>
+                  <p className="text-sm text-amber-700">{toDisplayString(foundation.coreMessage)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          {(foundation.proofPoints ?? []).length > 0 && (
+            <div className="bg-gray-50 rounded-xl border border-gray-200 p-5">
+              <div className="flex items-start gap-3">
+                <Lightbulb className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-800 mb-2">Proof Points</p>
+                  <ul className="space-y-1">
+                    {(foundation.proofPoints ?? []).map((p, i) => (
+                      <li key={i} className="text-sm text-gray-600">&bull; {toDisplayString(p)}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+          {foundation.reasonToAct && (
+            <div className="bg-rose-50 rounded-xl border border-rose-100 p-5">
+              <div className="flex items-start gap-3">
+                <Sparkles className="w-5 h-5 text-rose-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-rose-800 mb-1">Reason to Act Now</p>
+                  <p className="text-sm text-rose-700">{toDisplayString(foundation.reasonToAct)}</p>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -166,6 +205,32 @@ export function StrategyFoundationReviewView({
             highlighted
             highlightBg="bg-blue-50"
           />
+          {foundation.coreMessage && (
+            <ElementRatingCard
+              label="Core Message"
+              value={toDisplayString(foundation.coreMessage)}
+              ratingKey="coreMessage"
+              icon={Target}
+              highlighted
+              highlightBg="bg-amber-50"
+            />
+          )}
+          {(foundation.proofPoints ?? []).length > 0 && (
+            <ElementRatingCard
+              label="Proof Points"
+              value={(foundation.proofPoints ?? []).map((p, i) => `${i + 1}. ${toDisplayString(p)}`).join('\n')}
+              ratingKey="proofPoints"
+              icon={Lightbulb}
+            />
+          )}
+          {foundation.reasonToAct && (
+            <ElementRatingCard
+              label="Reason to Act Now"
+              value={toDisplayString(foundation.reasonToAct)}
+              ratingKey="reasonToAct"
+              icon={Sparkles}
+            />
+          )}
           {foundation.behavioralStrategy?.summary && (
             <ElementRatingCard
               label="Behavioral Strategy"
@@ -463,12 +528,7 @@ export function StrategyFoundationReviewView({
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex items-center justify-center gap-3 pt-4 border-t border-gray-100">
-        <Button variant="primary" onClick={onProceed}>
-          {skipConceptStep ? 'Build Deployment Plan' : 'Develop Creative Concept'}
-        </Button>
-      </div>
+      {/* Actions removed — the wizard Continue button handles progression */}
     </div>
   );
 }

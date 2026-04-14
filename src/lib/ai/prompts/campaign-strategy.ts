@@ -1129,7 +1129,13 @@ You must produce a COMPLETE StrategyFoundation with these sections:
 
 9. **targetBehaviors** (string[]): The 3-5 most important behaviors to target
 
-10. **audienceInsights** (array): Per persona — insight, TTM stage, top CASI barriers, recommended BCTs, ELM route${goalContext}${campaignTypeContext}${goalInsights}
+10. **audienceInsights** (array): Per persona — insight, TTM stage, top CASI barriers, recommended BCTs, ELM route
+
+11. **coreMessage** (string): The single most compelling campaign message — one sentence that captures what the audience should think, feel, or do. This is NOT a tagline. It is the strategic core message that all communications should reinforce. Derive it from the strategic direction, behavioral diagnosis, and audience insights.
+
+12. **proofPoints** (string[]): 3-5 concrete evidence points that substantiate the core message. These can be: product truths, brand credentials, data points, customer outcomes, third-party endorsements, or behavioral evidence. Each proof point should be specific and verifiable — not generic claims.
+
+13. **reasonToAct** (string): Why this message matters RIGHT NOW. What makes the timing relevant? This could be: a market shift, a competitive gap, a cultural moment, a behavioral window, or a seasonal opportunity. If the briefing mentions an occasion, connect to it.${goalContext}${campaignTypeContext}${goalInsights}
 
 CRITICAL: Every field is MANDATORY. Do not skip any section. The creative teams depend on this analysis.
 

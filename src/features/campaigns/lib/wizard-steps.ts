@@ -76,7 +76,7 @@ export const STRATEGY_STEP: StepDefinition = {
     }
     if (s.strategyPhase === 'building_foundation') return false;
     if (s.strategyPhase === 'validating_briefing') return false;
-    if (s.strategyPhase === 'review_strategy') return false;
+    if (s.strategyPhase === 'review_strategy') return true; // Continue approves the foundation
     return s.strategyPhase === 'rationale_complete';
   },
 };

@@ -158,11 +158,13 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
         {composedVariants.map((content, idx) => {
           const isSelected = idx === selectedVariantIndex;
           return (
-            <button
+            <div
               key={idx}
-              type="button"
+              role="button"
+              tabIndex={0}
               onClick={() => selectVariant(idx)}
-              className={`text-left rounded-xl border-2 overflow-hidden transition-all ${
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectVariant(idx); } }}
+              className={`text-left rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${
                 isSelected
                   ? 'border-teal-500 ring-2 ring-teal-200'
                   : 'border-gray-200 hover:border-gray-300'
@@ -187,7 +189,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
                   heroImage={heroImage}
                 />
               </div>
-            </button>
+            </div>
           );
         })}
       </div>

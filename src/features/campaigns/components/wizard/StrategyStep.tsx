@@ -374,6 +374,10 @@ export function StrategyStep() {
   }, []);
 
   // ─── Set wizard Continue override for strategy step phases ────
+  const handleApproveFoundation = useCallback(() => {
+    useCampaignWizardStore.getState().setStrategyPhase("rationale_complete");
+  }, []);
+
   React.useEffect(() => {
     const store = useCampaignWizardStore.getState();
     if (strategyPhase === "review_briefing") {
@@ -383,11 +387,14 @@ export function StrategyStep() {
       } else {
         store.setStepProceedOverride(handleBuildFoundation);
       }
+    } else if (strategyPhase === "review_strategy") {
+      // Continue button approves the strategy foundation
+      store.setStepProceedOverride(handleApproveFoundation);
     } else {
       store.setStepProceedOverride(null);
     }
     return () => { store.setStepProceedOverride(null); };
-  }, [strategyPhase, handleBuildFoundation, handleSkipFoundation, pipelineConfig.strategyDepth]);
+  }, [strategyPhase, handleBuildFoundation, handleSkipFoundation, handleApproveFoundation, pipelineConfig.strategyDepth]);
 
   // Strategy step complete — auto-advance to next step
   // When concept is skipped: trigger elaborate journey to build blueprint, then advance.
@@ -448,8 +455,33 @@ export function StrategyStep() {
           const channelPlan = evt.result.channelPlan;
           const assetPlan = evt.result.assetPlan;
           s.setElaborateResult({ channelPlan, assetPlan } as Parameters<typeof s.setElaborateResult>[0]);
+
+          // Build a messaging framework from strategy foundation + briefing
+          // so all deliverables share consistent direction via extractConceptContext()
+          const foundation = s.strategyFoundation;
+          const briefing = s.briefingOccasion || s.briefingCoreMessage || s.briefingAudienceObjective;
+          // Build key messages from core message + proof points + briefing
+          const keyMessages: string[] = [];
+          if (foundation?.coreMessage) keyMessages.push(foundation.coreMessage);
+          else if (s.briefingCoreMessage) keyMessages.push(s.briefingCoreMessage);
+          if (foundation?.proofPoints) keyMessages.push(...foundation.proofPoints.slice(0, 3));
+          if (foundation?.targetBehaviors && keyMessages.length < 5) keyMessages.push(...foundation.targetBehaviors.slice(0, 2));
+
+          const strategyWithMessaging = {
+            ...(s.synthesizedStrategy ?? s.strategyFoundation ?? {}),
+            // Fields that extractConceptContext() reads for consistent messaging:
+            campaignTheme: foundation?.strategicDirection ?? s.name ?? 'Campaign',
+            positioningStatement: foundation?.suggestedApproach ?? null,
+            strategicApproach: foundation?.strategicDirection ?? null,
+            keyMessages,
+            targetAudienceInsights: foundation?.audienceInsights?.[0]?.insight ?? (briefing ? s.briefingAudienceObjective : null),
+            humanInsight: foundation?.coreMessage ?? foundation?.keyInsights?.[0]?.insight ?? null,
+            // Pass through the new foundation fields for richer context
+            reasonToAct: foundation?.reasonToAct ?? null,
+          };
+
           s.setBlueprintResult({
-            strategy: s.synthesizedStrategy ?? s.strategyFoundation ?? {},
+            strategy: strategyWithMessaging,
             architecture: s.synthesizedArchitecture ?? { journeyPhases: [] },
             channelPlan,
             assetPlan,
