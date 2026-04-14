@@ -328,3 +328,21 @@ export interface CampaignWithMeta {
   deliverables: CampaignDeliverable[];
   modifiedBy: string | null;
 }
+
+// ─── Bulk Generate Types ─────────────────────────────────
+
+export interface BulkGenerateProgressEvent {
+  deliverableId: string;
+  title: string;
+  status: 'generating' | 'complete' | 'error';
+  message?: string;
+  index: number;
+  total: number;
+}
+
+export interface BulkGenerateCompleteEvent {
+  generated: number;
+  failed: number;
+  total: number;
+  duration: number;
+}

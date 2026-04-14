@@ -450,6 +450,7 @@ export type StrategyPhase =
   | 'building_strategy'        // Final strategy assembly from all inputs
   | 'review_final_strategy'    // User reviews the final assembled strategy
   | 'generating_journey'       // Phase 7: Channel plan + asset plan
+  | 'elaborating_direct'       // Skip concept: building channel + asset plan directly from strategy
   | 'complete';                // Done, timeline computed client-side
 
 /** @deprecated Use CreativeHook instead — kept for backward compatibility */

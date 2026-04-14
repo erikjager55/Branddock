@@ -88,7 +88,7 @@ export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModel
         <div>
           <h3 className="text-lg font-semibold text-gray-900">AI Images</h3>
           <p className="text-sm text-gray-500 mt-0.5">
-            Generate images with AI — powered by Imagen 4 and DALL-E 3.
+            Generate images with AI — powered by Imagen 4, DALL-E 3, Flux Pro, Recraft V3, and Ideogram V2.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -141,7 +141,7 @@ export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModel
           description={
             showFavoritesOnly
               ? 'Mark images as favorites to see them here.'
-              : 'Generate your first image with Imagen 4 or DALL-E 3.'
+              : 'Generate your first image with one of our 5 AI models.'
           }
           action={
             showFavoritesOnly

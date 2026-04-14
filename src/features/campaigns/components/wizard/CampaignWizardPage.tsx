@@ -85,7 +85,8 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   // Do NOT reset on unmount — the user may navigate away and come back.
   // Reset happens only on explicit actions: successful launch or "Back to Campaigns" click.
 
-  const steps = getStepsForMode(wizardMode);
+  const skipConceptStep = useCampaignWizardStore((s) => s.skipConceptStep);
+  const steps = getStepsForMode(wizardMode, skipConceptStep);
   const totalSteps = steps.length;
   const isLastStep = currentStep === totalSteps;
 

@@ -35,7 +35,8 @@ export function PipelineConfigCard() {
   const applyPipelinePreset = useCampaignWizardStore((s) => s.applyPipelinePreset);
 
   const activePreset = computePresetFromConfig(pipelineConfig);
-  const estimatedSeconds = estimatePipelineTimeSeconds(pipelineConfig, wizardMode);
+  const skipConceptStep = useCampaignWizardStore((s) => s.skipConceptStep);
+  const estimatedSeconds = estimatePipelineTimeSeconds(pipelineConfig, wizardMode, skipConceptStep);
   const estimatedLabel = formatEstimatedTime(estimatedSeconds);
 
   return (

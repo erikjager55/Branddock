@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from "react";
-import { ArrowLeft, Download, Megaphone, Zap } from "lucide-react";
+import React, { useState, useRef, useMemo, useCallback } from "react";
+import { ArrowLeft, Download, Megaphone, Zap, Pencil, Check, X, Sparkles, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { Badge, Button, Modal, Input, Select } from "@/components/shared";
 import { DELIVERABLE_TYPES } from "../../lib/deliverable-types";
 import { deriveBriefFromBlueprint } from "../../lib/derive-brief";
@@ -12,12 +12,14 @@ import { useLockVisibility } from "@/hooks/useLockVisibility";
 import { useContentStudioStore } from "@/stores/useContentStudioStore";
 import {
   useCampaignDetail,
+  useUpdateCampaign,
   useKnowledgeAssets,
   useStrategy,
   useDeliverables,
   useAddDeliverable,
   useDeleteDeliverable,
 } from "../../hooks";
+import { useBulkGenerate } from "../../hooks/useBulkGenerate";
 import { useCampaignStore } from "../../stores/useCampaignStore";
 import { exportApprovedDeliverablesZip } from "../../lib/export-zip";
 import { StrategyResultTab } from "./StrategyResultTab";
@@ -60,7 +62,45 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
   const { data: deliverables } = useDeliverables(campaignId);
   const addDeliverable = useAddDeliverable(campaignId);
   const deleteDeliverable = useDeleteDeliverable(campaignId);
+  const updateCampaign = useUpdateCampaign(campaignId);
+  const bulkGenerate = useBulkGenerate(campaignId);
   const activeSubTab = useCampaignStore((s) => s.activeStrategySubTab);
+
+  const notStartedCount = useMemo(
+    () => (deliverables ?? []).filter((d) => d.status === "NOT_STARTED").length,
+    [deliverables],
+  );
+
+  // ── Inline title/description editing ───────────────────────
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  const handleStartEditTitle = useCallback(() => {
+    if (lock.isLocked || !campaign) return;
+    setEditTitle(campaign.title);
+    setEditDescription(campaign.description ?? "");
+    setIsEditingTitle(true);
+    setTimeout(() => titleInputRef.current?.focus(), 0);
+  }, [campaign, lock.isLocked]);
+
+  const handleSaveTitle = useCallback(() => {
+    const trimmed = editTitle.trim();
+    if (!trimmed || !campaign) return;
+    if (trimmed === campaign.title && editDescription.trim() === (campaign.description ?? "")) {
+      setIsEditingTitle(false);
+      return;
+    }
+    updateCampaign.mutate(
+      { title: trimmed, description: editDescription.trim() || undefined },
+      { onSuccess: () => setIsEditingTitle(false) },
+    );
+  }, [editTitle, editDescription, campaign, updateCampaign]);
+
+  const handleCancelEditTitle = useCallback(() => {
+    setIsEditingTitle(false);
+  }, []);
 
   // ── Add deliverable modal ──────────────────────────────────
   const [showAddModal, setShowAddModal] = useState(false);
@@ -344,12 +384,61 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
                 {campaign.status}
               </Badge>
             </div>
-            <h1 data-testid="campaign-detail-title" className="text-2xl font-bold text-gray-900">{campaign.title}</h1>
-            {campaign.description && (
-              <p className="text-sm text-gray-500 mt-1">{campaign.description}</p>
+            {isEditingTitle ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    ref={titleInputRef}
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveTitle();
+                      if (e.key === "Escape") handleCancelEditTitle();
+                    }}
+                    className="text-2xl font-bold text-gray-900 border-b-2 border-teal-500 bg-transparent outline-none w-full"
+                    maxLength={200}
+                  />
+                  <button onClick={handleSaveTitle} className="p-1 text-teal-600 hover:text-teal-700" title="Save">
+                    <Check className="h-5 w-5" />
+                  </button>
+                  <button onClick={handleCancelEditTitle} className="p-1 text-gray-400 hover:text-gray-600" title="Cancel">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Add a description..."
+                  rows={2}
+                  className="text-sm text-gray-600 border border-gray-300 rounded-md px-2 py-1 outline-none focus:border-teal-500 resize-y"
+                  maxLength={500}
+                />
+              </div>
+            ) : (
+              <div className="group cursor-pointer" onClick={handleStartEditTitle}>
+                <div className="flex items-center gap-2">
+                  <h1 data-testid="campaign-detail-title" className="text-2xl font-bold text-gray-900">{campaign.title}</h1>
+                  {!lock.isLocked && (
+                    <Pencil className="h-4 w-4 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
+                </div>
+                {campaign.description && (
+                  <p className="text-sm text-gray-500 mt-1">{campaign.description}</p>
+                )}
+              </div>
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Sparkles}
+              onClick={() => bulkGenerate.start()}
+              disabled={notStartedCount === 0 || bulkGenerate.isGenerating || lock.isLocked}
+              isLoading={bulkGenerate.isGenerating}
+            >
+              Generate Drafts ({notStartedCount})
+            </Button>
             <Button
               variant="secondary"
               size="sm"
@@ -378,6 +467,36 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
       {/* Lock Banner */}
       <LockBanner isLocked={lock.isLocked} onUnlock={lock.requestToggle} />
 
+      {/* Bulk Generate Progress */}
+      {(bulkGenerate.isGenerating || bulkGenerate.result) && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-gray-700">
+              {bulkGenerate.isGenerating ? 'Generating drafts...' : 'Draft generation complete'}
+            </span>
+            {bulkGenerate.result && (
+              <span className="text-xs text-gray-500">
+                {bulkGenerate.result.generated} generated, {bulkGenerate.result.failed} failed
+              </span>
+            )}
+          </div>
+          <div className="space-y-1">
+            {Array.from(bulkGenerate.progress.entries()).map(([id, item]) => (
+              <div key={id} className="flex items-center gap-2 text-xs">
+                {item.status === 'generating' && <Loader2 className="h-3 w-3 text-teal-500 animate-spin" />}
+                {item.status === 'complete' && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
+                {item.status === 'error' && <AlertCircle className="h-3 w-3 text-red-500" />}
+                {item.status === 'pending' && <div className="h-3 w-3 rounded-full border border-gray-300" />}
+                <span className={item.status === 'error' ? 'text-red-600' : 'text-gray-600'}>
+                  {item.title}
+                  {item.message && <span className="text-red-400 ml-1">— {item.message}</span>}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <LockOverlay isLocked={lock.isLocked}>
         <div>
@@ -388,20 +507,40 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
                   {bringToLifeError}
                 </div>
               )}
-              {visibility.showAITools && (
-                <StrategyResultTab
-                  strategy={strategy}
-                  campaignId={campaignId}
-                  campaignName={campaign.title}
-                  campaignGoalType={campaign.campaignGoalType ?? undefined}
-                  isLoading={strategyLoading}
-                  onBringToLife={onOpenInStudio ? handleBringToLife : undefined}
-                  onDeleteDeliverable={handleDeleteDeliverable}
-                  onAddDeliverable={() => setShowAddModal(true)}
-                  campaignStartDate={campaign?.startDate}
-                  deliverables={deliverables}
-                />
-              )}
+              {(() => {
+                // Strategy may be an empty object {} from the API when no blueprint exists
+                const hasStrategy = strategy && typeof strategy === 'object' && Object.keys(strategy).length > 1;
+                const safeDeliverables = deliverables || campaign.deliverables || [];
+
+                if (hasStrategy && visibility.showAITools) {
+                  return (
+                    <StrategyResultTab
+                      strategy={strategy}
+                      campaignId={campaignId}
+                      campaignName={campaign.title}
+                      campaignGoalType={campaign.campaignGoalType ?? undefined}
+                      isLoading={strategyLoading}
+                      onBringToLife={onOpenInStudio ? handleBringToLife : undefined}
+                      onDeleteDeliverable={handleDeleteDeliverable}
+                      onAddDeliverable={() => setShowAddModal(true)}
+                      campaignStartDate={campaign?.startDate}
+                      deliverables={deliverables}
+                    />
+                  );
+                }
+
+                if (!strategyLoading && safeDeliverables.length > 0) {
+                  return (
+                    <DeliverablesTab
+                      deliverables={safeDeliverables}
+                      campaignId={campaignId}
+                      onOpenInStudio={visibility.showAITools ? (did) => handleOpenInStudio(campaignId, did) : undefined}
+                    />
+                  );
+                }
+
+                return null;
+              })()}
             </div>
           ) : (
             /* Quick Content shows deliverables directly */

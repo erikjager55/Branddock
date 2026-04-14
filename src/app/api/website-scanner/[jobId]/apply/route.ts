@@ -109,13 +109,13 @@ export async function POST(
         }
       }
 
-      // 2. Personas — create new
+      // 2. Personas — create new (skip if name already exists in workspace)
       if (shouldApply('personas') && results.personas?.length > 0) {
         for (const persona of results.personas) {
-          const slug = persona.name
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-|-$/g, '');
+          const existing = await tx.persona.findFirst({
+            where: { workspaceId, name: persona.name },
+          });
+          if (existing) continue;
 
           await tx.persona.create({
             data: {
@@ -171,13 +171,23 @@ export async function POST(
         }
       }
 
-      // 4. Competitors — create new
+      // 4. Competitors — create new (skip if slug already exists in workspace)
       if (shouldApply('competitors') && results.competitors?.length > 0) {
         for (const competitor of results.competitors) {
-          const slug = competitor.name
+          let slug = competitor.name
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/^-|-$/g, '');
+
+          if (!slug) {
+            slug = `competitor-${Date.now()}`;
+          }
+
+          // Check for slug collision and skip if already exists
+          const existingCompetitor = await tx.competitor.findFirst({
+            where: { workspaceId, slug },
+          });
+          if (existingCompetitor) continue;
 
           await tx.competitor.create({
             data: {

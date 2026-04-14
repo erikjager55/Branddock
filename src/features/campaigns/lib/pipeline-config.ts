@@ -114,7 +114,7 @@ export function getDefaultPresetForMode(mode: WizardMode): PipelineConfig {
  * Model rigor multipliers come from OpenAI's reasoning_effort benchmarks
  * (each step ~3x the previous) and our own Claude extended thinking data.
  */
-export function estimatePipelineTimeSeconds(config: PipelineConfig, mode: WizardMode): number {
+export function estimatePipelineTimeSeconds(config: PipelineConfig, mode: WizardMode, skipConcept?: boolean): number {
   // Base times per phase at 'balanced' model rigor
   const baseTimes = {
     validateBriefing: 30,
@@ -147,19 +147,21 @@ export function estimatePipelineTimeSeconds(config: PipelineConfig, mode: Wizard
     }
   }
 
-  // Phase 2: Concept step
-  if (config.creativeRange === 'single') {
-    // Quick path: single concept via Flash, then concept-driven strategy
-    total += baseTimes.quickConcept;
-    total += baseTimes.buildConceptStrategy * rigorMultiplier;
-  } else {
-    // Multi-variant path: insights + concepts + strategy build
-    total += baseTimes.generateInsights * rigorMultiplier;
-    total += baseTimes.generateConcepts * rigorMultiplier;
-    if (config.creativeRange === 'critiqued') {
-      total += baseTimes.creativeDebate * rigorMultiplier;
+  // Phase 2: Concept step (skipped entirely when skipConcept is true)
+  if (!skipConcept) {
+    if (config.creativeRange === 'single') {
+      // Quick path: single concept via Flash, then concept-driven strategy
+      total += baseTimes.quickConcept;
+      total += baseTimes.buildConceptStrategy * rigorMultiplier;
+    } else {
+      // Multi-variant path: insights + concepts + strategy build
+      total += baseTimes.generateInsights * rigorMultiplier;
+      total += baseTimes.generateConcepts * rigorMultiplier;
+      if (config.creativeRange === 'critiqued') {
+        total += baseTimes.creativeDebate * rigorMultiplier;
+      }
+      total += baseTimes.buildConceptStrategy * rigorMultiplier;
     }
-    total += baseTimes.buildConceptStrategy * rigorMultiplier;
   }
 
   // Phase 3: Elaborate or Content Generate

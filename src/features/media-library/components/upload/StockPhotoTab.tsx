@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Loader2, AlertCircle, Download, User, ImageIcon } from 'lucide-react';
+import { Search, Loader2, AlertCircle, Download, User, ImageIcon, Settings } from 'lucide-react';
 import { useStockSearch, useImportStockPhoto } from '../../hooks';
+import { StockSearchError } from '../../api/media.api';
 import type { StockPhotoResult, ImportStockBody } from '../../types/media.types';
 
 type StockSize = 'small' | 'medium' | 'large' | 'original';
@@ -50,7 +51,12 @@ export function StockPhotoTab() {
     data: searchResults,
     isLoading,
     isError,
+    error: searchError,
   } = useStockSearch(debouncedQuery, page, debouncedQuery.length > 0);
+
+  // Service unavailable (PEXELS_API_KEY missing) → show config-aware empty state.
+  const isServiceUnconfigured =
+    searchError instanceof StockSearchError && searchError.status === 503;
 
   const photos = searchResults?.photos ?? [];
   const totalResults = searchResults?.total_results ?? 0;
@@ -110,9 +116,7 @@ export function StockPhotoTab() {
     <div className="space-y-4">
       {/* Search input */}
       <div className="relative">
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-          <Search className="h-4 w-4 text-gray-400" />
-        </div>
+        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
         <input
           type="text"
           value={searchInput}
@@ -143,12 +147,40 @@ export function StockPhotoTab() {
         </div>
       )}
 
-      {/* Error state */}
-      {isError && (
+      {/* Service not configured (503) — gentle config hint */}
+      {isError && isServiceUnconfigured && (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50">
+            <Settings className="h-6 w-6 text-amber-600" />
+          </div>
+          <p className="mt-3 text-sm font-medium text-gray-900">
+            Stock photo service is not configured
+          </p>
+          <p className="mt-1 max-w-sm text-xs text-gray-500">
+            Add a <code className="rounded bg-gray-100 px-1 py-0.5 text-[11px] font-mono text-gray-700">PEXELS_API_KEY</code>{' '}
+            to your environment variables to enable Pexels stock photo search.
+            Get a free key at{' '}
+            <a
+              href="https://www.pexels.com/api/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-teal-600 hover:underline"
+            >
+              pexels.com/api
+            </a>
+            .
+          </p>
+        </div>
+      )}
+
+      {/* Generic error state (timeout / 500 / network) */}
+      {isError && !isServiceUnconfigured && (
         <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3" role="alert">
           <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
           <p className="text-sm text-red-700">
-            Failed to search stock photos. Please try again.
+            {searchError instanceof Error
+              ? searchError.message
+              : 'Failed to search stock photos. Please try again.'}
           </p>
         </div>
       )}

@@ -395,48 +395,14 @@ export const ILLUSTRATION_STYLE_OPTIONS = {
 } as const;
 
 // ─── fal.ai Provider Options ────────────────────────────────
+// Moved to src/lib/integrations/fal/fal-providers.ts — re-exported here for backward compat.
 
-export interface FalProvider {
-  id: string;
-  label: string;
-  description: string;
-  cost: string;
-  /** Preview image path (relative to /images/fal-providers/) */
-  preview: string;
-}
-
-/** All available generation providers (superset) */
-const ALL_FAL_PROVIDERS: Record<string, FalProvider> = {
-  "fal-ai/flux-2-pro":       { id: "fal-ai/flux-2-pro",       label: "FLUX.2 Pro",      description: "Best overall quality. Excels at sharp details, realistic textures, and consistent lighting across diverse scenes.",           cost: "$0.03/MP",  preview: "flux-2-pro.svg" },
-  "fal-ai/recraft-v3":       { id: "fal-ai/recraft-v3",       label: "Recraft V3",      description: "Purpose-built for brand design. Produces clean logos, icons, illustrations, and marketing assets with precise color control.", cost: "$0.04/img", preview: "recraft-v3.svg" },
-  "fal-ai/seedream-v4-5":    { id: "fal-ai/seedream-v4-5",    label: "Seedream V4.5",   description: "Specialized in rendering readable text within images. Ideal for product labels, packaging, and signage.",                    cost: "$0.04/img", preview: "seedream-v4-5.svg" },
-  "fal-ai/flux-2":           { id: "fal-ai/flux-2",           label: "FLUX.2 Dev",      description: "Fast and cost-effective. Strong prompt adherence with good quality — suitable for high-volume reference generation.",          cost: "$0.025/MP", preview: "flux-2-dev.svg" },
-  "fal-ai/ideogram-v3":      { id: "fal-ai/ideogram-v3",      label: "Ideogram V3",     description: "Creative versatility with excellent typography. Handles mixed styles, complex compositions, and text-in-image well.",         cost: "$0.04/img", preview: "ideogram-v3.svg" },
-  "fal-ai/nano-banana-pro":  { id: "fal-ai/nano-banana-pro",  label: "Nano Banana Pro", description: "Optimized for portraits and people. Fast generation with strong face consistency, natural skin detail, and accurate lighting.", cost: "$0.02/img", preview: "nanobanana-pro.svg" },
-  "fal-ai/phota":            { id: "fal-ai/phota",            label: "Phota",           description: "Photographic realism specialist. Produces natural skin tones, studio-quality lighting, and authentic photographic depth.",      cost: "$0.03/img", preview: "phota.svg" },
-};
-
-/** Provider IDs per model type — only shows relevant models */
-const FAL_PROVIDERS_BY_TYPE: Record<ConsistentModelType, string[]> = {
-  PERSON:       ["fal-ai/flux-2-pro", "fal-ai/nano-banana-pro", "fal-ai/phota"],
-  PRODUCT:      ["fal-ai/flux-2-pro", "fal-ai/flux-2", "fal-ai/seedream-v4-5"],
-  OBJECT:       ["fal-ai/flux-2-pro", "fal-ai/flux-2", "fal-ai/seedream-v4-5"],
-  STYLE:        ["fal-ai/flux-2-pro", "fal-ai/recraft-v3", "fal-ai/ideogram-v3", "fal-ai/flux-2"],
-  BRAND_STYLE:  ["fal-ai/recraft-v3", "fal-ai/ideogram-v3", "fal-ai/flux-2-pro", "fal-ai/seedream-v4-5"],
-  PHOTOGRAPHY:  ["fal-ai/flux-2-pro", "fal-ai/phota", "fal-ai/flux-2"],
-  ILLUSTRATION: ["fal-ai/recraft-v3", "fal-ai/ideogram-v3", "fal-ai/flux-2-pro", "fal-ai/flux-2"],
-  VOICE:        [],
-  SOUND_EFFECT: [],
-};
-
-/** Get the relevant providers for a model type (ordered by relevance) */
-export function getFalProvidersForType(type: ConsistentModelType): FalProvider[] {
-  const ids = FAL_PROVIDERS_BY_TYPE[type] ?? Object.keys(ALL_FAL_PROVIDERS);
-  return ids.map((id) => ALL_FAL_PROVIDERS[id]).filter(Boolean);
-}
-
-/** Flat list of all providers (for API validation) */
-export const FAL_PROVIDERS = Object.values(ALL_FAL_PROVIDERS);
+export {
+  FAL_PROVIDERS,
+  getFalProvidersForType,
+  getFalProviderById,
+} from '@/lib/integrations/fal/fal-providers';
+export type { FalProvider } from '@/lib/integrations/fal/fal-providers';
 
 export type FalProviderId = string;
 

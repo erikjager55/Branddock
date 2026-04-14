@@ -11,6 +11,7 @@ import { useWizardKnowledge } from "../../hooks";
 import {
   validateBriefingSSE,
   buildFoundationSSE,
+  elaborateJourneySSE,
 } from "../../api/campaigns.api";
 import type { PipelineStepStatus } from "../../types/campaign-wizard.types";
 import { PipelineProgressView } from "./PipelineProgressView";
@@ -388,15 +389,144 @@ export function StrategyStep() {
     return () => { store.setStepProceedOverride(null); };
   }, [strategyPhase, handleBuildFoundation, handleSkipFoundation, pipelineConfig.strategyDepth]);
 
-  // Strategy step complete — auto-advance to Concept step
+  // Strategy step complete — auto-advance to next step
+  // When concept is skipped: trigger elaborate journey to build blueprint, then advance.
+  // When concept is NOT skipped: advance immediately to Concept step.
   // NOTE: This useEffect MUST be before any conditional returns (React hooks rule)
+  const skipConceptStep = useCampaignWizardStore((s) => s.skipConceptStep);
+  const elaborateStartedRef = useRef(false);
+  const [directBuildSteps, setDirectBuildSteps] = useState<Array<{ name: string; status: 'pending' | 'running' | 'complete'; label: string; preview?: string }>>([
+    { name: 'Channel Planner', status: 'pending', label: 'Planning channels and journey phases...' },
+    { name: 'Asset Planner', status: 'pending', label: 'Creating deliverable plan...' },
+  ]);
+
   useEffect(() => {
-    if (strategyPhase === "rationale_complete") {
+    if (strategyPhase !== "rationale_complete") return;
+
+    if (!skipConceptStep) {
       useCampaignWizardStore.getState().nextStep();
+      return;
     }
-  }, [strategyPhase]);
+
+    // Skip concept: build channel plan + asset plan directly from strategy foundation
+    if (elaborateStartedRef.current) return;
+    elaborateStartedRef.current = true;
+
+    const store = useCampaignWizardStore.getState();
+    store.setIsGenerating(true);
+    store.setStrategyPhase("elaborating_direct");
+
+    const { abort } = elaborateJourneySSE(
+      {
+        synthesisFeedback: '',
+        synthesizedStrategy: (store.synthesizedStrategy ?? store.strategyFoundation ?? {}) as import('@/lib/campaigns/strategy-blueprint.types').StrategyLayer,
+        synthesizedArchitecture: (store.synthesizedArchitecture ?? { journeyPhases: [] }) as import('@/lib/campaigns/strategy-blueprint.types').ArchitectureLayer,
+        personaValidation: store.personaValidation ?? [],
+        wizardContext,
+        personaIds: selectedContextIds.personaIds,
+        productIds: selectedContextIds.productIds,
+        competitorIds: selectedContextIds.competitorIds,
+        trendIds: selectedContextIds.trendIds,
+        strategicIntent,
+      },
+      (event: unknown) => {
+        const evt = event as { type?: string; step?: number; name?: string; status?: string; label?: string; preview?: string; result?: { channelPlan: unknown; assetPlan: unknown } };
+
+        // Update step progress indicators
+        if (evt.step && evt.name && evt.status) {
+          setDirectBuildSteps((prev) =>
+            prev.map((s) =>
+              s.name === evt.name
+                ? { ...s, status: evt.status as 'running' | 'complete', label: evt.label ?? s.label, preview: evt.preview }
+                : s
+            ),
+          );
+        }
+
+        if (evt.type === 'complete' && evt.result) {
+          const s = useCampaignWizardStore.getState();
+          const channelPlan = evt.result.channelPlan;
+          const assetPlan = evt.result.assetPlan;
+          s.setElaborateResult({ channelPlan, assetPlan } as Parameters<typeof s.setElaborateResult>[0]);
+          s.setBlueprintResult({
+            strategy: s.synthesizedStrategy ?? s.strategyFoundation ?? {},
+            architecture: s.synthesizedArchitecture ?? { journeyPhases: [] },
+            channelPlan,
+            assetPlan,
+            personaValidation: s.personaValidation ?? [],
+            confidence: 0,
+            confidenceBreakdown: {},
+            generatedAt: new Date().toISOString(),
+            variantAScore: 0,
+            variantBScore: 0,
+            variantCScore: 0,
+            pipelineDuration: 0,
+            modelsUsed: [],
+          } as unknown as import('@/lib/campaigns/strategy-blueprint.types').CampaignBlueprint);
+          s.setStrategyPhase("complete");
+          s.setIsGenerating(false);
+          s.nextStep();
+        }
+      },
+      (error: string) => {
+        setPhaseError(error);
+        useCampaignWizardStore.getState().setIsGenerating(false);
+        elaborateStartedRef.current = false;
+      },
+    );
+
+    // Cleanup: deferred abort to avoid React 19 double-invoke
+    return () => {
+      setTimeout(() => {
+        if (!elaborateStartedRef.current) abort();
+      }, 50);
+    };
+  }, [strategyPhase, skipConceptStep, wizardContext, selectedContextIds, strategicIntent]);
 
   // ─── Render based on phase ───────────────────────────
+
+  // Elaborating direct (skip concept — building deployment plan)
+  if (strategyPhase === "elaborating_direct") {
+    return (
+      <div className="max-w-lg mx-auto py-12 space-y-6">
+        <div className="text-center">
+          <div className="w-12 h-12 mx-auto rounded-full bg-teal-50 flex items-center justify-center mb-3">
+            <Sparkles className="w-6 h-6 text-teal-500 animate-pulse" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">Building Deployment Plan</h3>
+          <p className="text-sm text-gray-500">Translating strategy into channel plan and deliverables...</p>
+        </div>
+
+        {/* Process status */}
+        <div className="space-y-3">
+          {directBuildSteps.map((step) => (
+            <div key={step.name} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-100 bg-white">
+              {step.status === 'pending' && <div className="w-5 h-5 rounded-full border-2 border-gray-200" />}
+              {step.status === 'running' && (
+                <div className="w-5 h-5 rounded-full border-2 border-teal-500 border-t-transparent animate-spin" />
+              )}
+              {step.status === 'complete' && (
+                <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm font-medium ${step.status === 'complete' ? 'text-teal-700' : step.status === 'running' ? 'text-gray-900' : 'text-gray-400'}`}>
+                  {step.name}
+                </p>
+                <p className="text-xs text-gray-500">{step.label}</p>
+              </div>
+              {step.preview && (
+                <span className="text-xs text-teal-600 font-medium">{step.preview}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   // Pre-generation CTA
   if (strategyPhase === "idle" && !isGenerating && !pipelineError) {

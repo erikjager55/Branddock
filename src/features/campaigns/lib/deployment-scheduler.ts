@@ -120,6 +120,36 @@ export function computeDeploymentSchedule(
     }
   }
 
+  // ── 2a. Redistribute if AI clustered everything into one phase ──
+  // If >70% of deliverables land in a single phase while other phases
+  // have room, redistribute excess deliverables across empty phases.
+  if (phaseBoundaries.length > 1 && deliverables.length > 0) {
+    const totalAssigned = deliverables.length - unmatched.length;
+    if (totalAssigned > 0) {
+      for (const [pi, items] of byPhaseIndex) {
+        const ratio = items.length / totalAssigned;
+        if (ratio > 0.7 && items.length > 3) {
+          // This phase has too many — redistribute excess to empty phases
+          const emptyPhases = Array.from({ length: phaseBoundaries.length }, (_, i) => i)
+            .filter(i => !byPhaseIndex.has(i) || (byPhaseIndex.get(i)?.length ?? 0) === 0);
+
+          if (emptyPhases.length > 0) {
+            // Keep first few in the original phase, move rest round-robin to empty phases
+            const keep = Math.max(2, Math.ceil(items.length / phaseBoundaries.length));
+            const excess = items.splice(keep);
+            for (let ei = 0; ei < excess.length; ei++) {
+              const targetPhase = emptyPhases[ei % emptyPhases.length];
+              if (!byPhaseIndex.has(targetPhase)) byPhaseIndex.set(targetPhase, []);
+              // Update the deliverable's phase to match the target
+              excess[ei] = { ...excess[ei], phase: phases[targetPhase]?.name ?? excess[ei].phase, suggestedOrder: ei + 1 };
+              byPhaseIndex.get(targetPhase)!.push(excess[ei]);
+            }
+          }
+        }
+      }
+    }
+  }
+
   const scheduled: ScheduledDeliverable[] = [];
 
   for (let pi = 0; pi < phaseBoundaries.length; pi++) {

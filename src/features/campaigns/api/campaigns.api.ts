@@ -360,6 +360,66 @@ function createPhaseSSE(
 }
 
 
+/** Bulk generate content drafts for multiple deliverables via SSE stream */
+export function bulkGenerateSSE(
+  campaignId: string,
+  deliverableIds: string[] | undefined,
+  onEvent: (eventType: string, data: unknown) => void,
+  onError: (error: string) => void,
+): { abort: () => void } {
+  const controller = new AbortController();
+
+  (async () => {
+    try {
+      const res = await fetch(`/api/campaigns/${campaignId}/bulk-generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'text/event-stream' },
+        body: JSON.stringify(deliverableIds ? { deliverableIds } : {}),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Failed to start bulk generation' }));
+        onError(err.error || 'Failed to start bulk generation');
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) { onError('No response stream'); return; }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        let currentEvent = 'message';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              onEvent(currentEvent, data);
+            } catch { /* skip */ }
+            currentEvent = 'message';
+          }
+        }
+      }
+    } catch (err) {
+      if (controller.signal.aborted) return;
+      onError(err instanceof Error ? err.message : 'Unknown error');
+    }
+  })();
+
+  return { abort: () => controller.abort() };
+}
+
 /** Phase C: Elaborate journey (channel + asset plan) via SSE stream */
 export function elaborateJourneySSE(
   body: import('@/lib/campaigns/strategy-blueprint.types').ElaborateJourneyBody,

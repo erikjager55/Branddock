@@ -94,7 +94,7 @@ const cacheRules: CacheRule[] = [
   },
 ];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Start with a next() response so we can add headers

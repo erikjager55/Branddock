@@ -66,6 +66,10 @@ export function SetupStep() {
   const endDate = useCampaignWizardStore((s) => s.endDate);
   const setEndDate = useCampaignWizardStore((s) => s.setEndDate);
 
+  // Skip concept toggle
+  const skipConceptStep = useCampaignWizardStore((s) => s.skipConceptStep);
+  const setSkipConceptStep = useCampaignWizardStore((s) => s.setSkipConceptStep);
+
   // Briefing fields
   const briefingOccasion = useCampaignWizardStore((s) => s.briefingOccasion);
   const setBriefingOccasion = useCampaignWizardStore((s) => s.setBriefingOccasion);
@@ -286,6 +290,23 @@ export function SetupStep() {
       {/* Pipeline Configuration (sliders + presets) */}
       <PipelineConfigCard />
 
+      {/* Skip Creative Concept toggle */}
+      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={skipConceptStep}
+            onChange={(e) => setSkipConceptStep(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+          />
+          <div>
+            <span className="text-sm font-medium text-gray-700">Skip Creative Concept</span>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Go directly from strategy to deliverables. The AI translates your strategy into a core message for your target audience, without creative concept development (insight mining, concept generation, debate).
+            </p>
+          </div>
+        </label>
+      </div>
 
       {/* Date fields — campaign mode only, hidden for content mode */}
       {(() => {

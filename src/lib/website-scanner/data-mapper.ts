@@ -27,9 +27,13 @@ const PRODUCT_FIELDS = new Set([
 const COMPETITOR_FIELDS = new Set([
   'description', 'tagline', 'websiteUrl', 'foundingYear', 'headquarters', 'employeeRange',
   'logoUrl', 'valueProposition', 'targetAudience', 'differentiators', 'mainOfferings',
-  'pricingModel', 'pricingDetails', 'toneOfVoice', 'messagingThemes', 'visualStyle',
+  'pricingModel', 'pricingDetails', 'toneOfVoice', 'messagingThemes', 'visualStyleNotes',
   'strengths', 'weaknesses', 'competitiveScore', 'tier',
 ]);
+
+const COMPETITOR_FIELD_RENAMES: Record<string, string> = {
+  visualStyle: 'visualStyleNotes',
+};
 
 const VALID_COMPETITOR_TIERS = new Set(['DIRECT', 'INDIRECT', 'ASPIRATIONAL']);
 
@@ -178,7 +182,7 @@ export function mapResultsToModels(
   // Map Strategy & Competition
   if (analysis.strategyCompetition) {
     for (const c of analysis.strategyCompetition.competitors ?? []) {
-      const sanitized = sanitizeFields(c.fields, COMPETITOR_FIELDS);
+      const sanitized = sanitizeFields(c.fields, COMPETITOR_FIELDS, COMPETITOR_FIELD_RENAMES);
       // Validate tier enum value
       if (sanitized.tier && !VALID_COMPETITOR_TIERS.has(sanitized.tier as string)) {
         delete sanitized.tier;

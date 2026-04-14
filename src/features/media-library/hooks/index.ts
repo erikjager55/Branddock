@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useWorkspace } from '@/hooks/use-workspace';
 import {
   fetchMediaAssets,
   fetchMediaAssetDetail,
@@ -42,6 +43,7 @@ import {
   deleteSoundEffect,
   fetchAiImages,
   fetchAiImageDetail,
+  fetchWorkspaceBrandContext,
   generateAiImage,
   updateAiImage,
   deleteAiImage,
@@ -94,6 +96,8 @@ export const mediaKeys = {
   soundEffectDetail: (id: string) => [...mediaKeys.all, 'sound-effect', id] as const,
   aiImages: (favorite?: boolean) => [...mediaKeys.all, 'ai-images', favorite] as const,
   aiImageDetail: (id: string) => [...mediaKeys.all, 'ai-image', id] as const,
+  workspaceBrandContext: (workspaceId: string | null) =>
+    [...mediaKeys.all, 'workspace-brand-context', workspaceId] as const,
   aiVideos: (favorite?: boolean) => [...mediaKeys.all, 'ai-videos', favorite] as const,
   aiVideoDetail: (id: string) => [...mediaKeys.all, 'ai-video', id] as const,
 };
@@ -532,6 +536,23 @@ export function useAiImages(favorite?: boolean) {
     queryKey: mediaKeys.aiImages(favorite),
     queryFn: () => fetchAiImages(favorite),
     staleTime: 30_000,
+  });
+}
+
+/**
+ * Workspace-level brand context (tags + summary) for the AI Studio generator.
+ *
+ * The query key includes the active workspace id so cached data cannot leak
+ * across workspace switches. Disabled until the workspace id is resolved
+ * (prevents an initial fetch with the wrong tenant).
+ */
+export function useWorkspaceBrandContext() {
+  const { workspaceId, isLoading: wsLoading } = useWorkspace();
+  return useQuery({
+    queryKey: mediaKeys.workspaceBrandContext(workspaceId),
+    queryFn: fetchWorkspaceBrandContext,
+    staleTime: 5 * 60_000, // 5 min
+    enabled: !wsLoading && !!workspaceId,
   });
 }
 

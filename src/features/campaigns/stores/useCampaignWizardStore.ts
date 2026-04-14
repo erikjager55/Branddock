@@ -125,6 +125,9 @@ interface CampaignWizardState {
   // ─── Concept Step (elaborate result before blueprint assembly) ────
   elaborateResult: { channelPlan: ChannelPlanLayer; assetPlan: AssetPlanLayer } | null;
 
+  // ─── Skip Concept Step ──────────────────────────────────────
+  skipConceptStep: boolean;
+
   // ─── External Enrichment Toggle ──────────────────────────────
   useExternalEnrichment: boolean;
 
@@ -237,6 +240,9 @@ interface CampaignWizardState {
   // ─── Concept Step Actions ─────────────────────────────────
   setElaborateResult: (result: { channelPlan: ChannelPlanLayer; assetPlan: AssetPlanLayer } | null) => void;
 
+  // ─── Skip Concept Step Actions ──────────────────────────────
+  setSkipConceptStep: (skip: boolean) => void;
+
   // ─── External Enrichment Actions ─────────────────────────────
   setUseExternalEnrichment: (enabled: boolean) => void;
 
@@ -345,6 +351,9 @@ const INITIAL_STATE = {
 
   // ─── Concept Step ─────────────────────────────────────────────
   elaborateResult: null as { channelPlan: ChannelPlanLayer; assetPlan: AssetPlanLayer } | null,
+
+  // ─── Skip Concept Step ──────────────────────────────────────
+  skipConceptStep: false,
 
   // ─── External Enrichment (always enabled, auto-detected) ──────────────────────────────
   useExternalEnrichment: true,
@@ -668,6 +677,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
     setElaborateResult: (elaborateResult) => set({ elaborateResult }),
 
     // ─── External Enrichment Actions ─────────────────────────────
+    setSkipConceptStep: (skipConceptStep) => set({ skipConceptStep }),
     setUseExternalEnrichment: (useExternalEnrichment) => set({ useExternalEnrichment }),
 
     // ─── Pipeline Configuration Actions ──────────────────────────

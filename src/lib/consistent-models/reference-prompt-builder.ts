@@ -20,28 +20,26 @@ export interface ReferencePromptResult {
 
 /**
  * Extract deduplicated brand keywords from a ModelBrandContext snapshot.
- * Returns 10-30 tags drawn from personality, tone, mood, colors,
- * design language, and imagery style fields.
+ *
+ * Only returns tags that are usable as *visual* prompt modifiers — short
+ * noun/adjective phrases. Full sentences, tone-of-voice writing fragments,
+ * and label-prefixed values ("Primary: ...") are filtered out.
  */
 export function extractBrandTags(ctx: ModelBrandContext | null): string[] {
   if (!ctx) return [];
 
   const raw: string[] = [];
 
-  // brandPersonality — comma/newline separated phrases
-  if (ctx.brandPersonality) {
-    raw.push(...splitField(ctx.brandPersonality));
-  }
+  // Personality / tone / design language / imagery are often long-form prose;
+  // split aggressively on sentence-level punctuation so individual phrases
+  // can be evaluated independently.
+  if (ctx.brandPersonality) raw.push(...splitField(ctx.brandPersonality));
+  if (ctx.toneOfVoice) raw.push(...splitField(ctx.toneOfVoice));
+  if (ctx.brandDesignLanguage) raw.push(...splitField(ctx.brandDesignLanguage));
+  if (ctx.brandImageryStyle) raw.push(...splitField(ctx.brandImageryStyle));
 
-  // toneOfVoice — comma/newline separated
-  if (ctx.toneOfVoice) {
-    raw.push(...splitField(ctx.toneOfVoice));
-  }
-
-  // moodKeywords — already an array
-  if (ctx.moodKeywords?.length) {
-    raw.push(...ctx.moodKeywords);
-  }
+  // moodKeywords — already individual words/phrases
+  if (ctx.moodKeywords?.length) raw.push(...ctx.moodKeywords);
 
   // brandColors — map to descriptive labels
   if (ctx.brandColors?.length) {
@@ -50,33 +48,79 @@ export function extractBrandTags(ctx: ModelBrandContext | null): string[] {
     }
   }
 
-  // brandDesignLanguage — comma/newline separated
-  if (ctx.brandDesignLanguage) {
-    raw.push(...splitField(ctx.brandDesignLanguage));
-  }
-
-  // brandImageryStyle — comma/newline separated
-  if (ctx.brandImageryStyle) {
-    raw.push(...splitField(ctx.brandImageryStyle));
-  }
-
-  // Deduplicate (case-insensitive), trim, filter empties, sort
+  // Deduplicate (case-insensitive), trim, filter to visual-safe tags, sort
   const seen = new Set<string>();
   const result: string[] = [];
   for (const tag of raw) {
-    const trimmed = tag.trim();
-    if (!trimmed) continue;
-    const lower = trimmed.toLowerCase();
+    const cleaned = cleanTag(tag);
+    if (!cleaned) continue;
+    if (!isVisualTag(cleaned)) continue;
+    const lower = cleaned.toLowerCase();
     if (seen.has(lower)) continue;
     seen.add(lower);
-    result.push(trimmed);
+    result.push(cleaned);
   }
 
   return result.sort((a, b) => a.localeCompare(b));
 }
 
+/** Split a long text field on sentence-level punctuation. */
 function splitField(value: string): string[] {
-  return value.split(/[,\n]+/).map((s) => s.trim()).filter(Boolean);
+  return value
+    .split(/[,;\n.!?—–()[\]]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** Trim + strip trailing punctuation and leading label prefixes. */
+function cleanTag(raw: string): string {
+  let t = raw.trim();
+  // Drop label prefix like "Primary: value" or "Tone: value"
+  const colonIdx = t.indexOf(':');
+  if (colonIdx !== -1 && colonIdx < 20) {
+    t = t.slice(colonIdx + 1).trim();
+  }
+  // Strip leading/trailing punctuation (except within-word hyphens/ampersands)
+  t = t.replace(/^[\s"'`.,;:!?—–-]+/, '').replace(/[\s"'`.,;:!?—–-]+$/, '');
+  return t;
+}
+
+const NON_VISUAL_STARTERS = new Set([
+  'but', 'and', 'or', 'yet', 'so', 'because', 'while', 'although', 'however',
+  'never', 'always', 'sometimes', 'often', 'rarely',
+  'the', 'a', 'an', 'we', 'they', 'you', 'it',
+  'speaks', 'says', 'emphasizing', 'focusing', 'highlighting',
+]);
+
+const NON_VISUAL_KEYWORDS = [
+  'language', 'voice', 'tone', 'messaging', 'copywriting', 'writing',
+  'sentence', 'paragraph', 'statement',
+];
+
+/** Heuristic test: is this tag usable as a visual prompt modifier? */
+function isVisualTag(tag: string): boolean {
+  // Length constraints — single words up to short phrases
+  if (tag.length < 2 || tag.length > 40) return false;
+
+  // At most 4 words
+  const words = tag.split(/\s+/);
+  if (words.length > 4) return false;
+
+  // Reject sentence-like fragments
+  if (/[.!?]/.test(tag)) return false;
+
+  // Reject leading conjunctions / sentence fragments
+  const firstLower = words[0].toLowerCase();
+  if (NON_VISUAL_STARTERS.has(firstLower)) return false;
+
+  // Reject verb-heavy phrases: ends in "-ing" and > 1 word (e.g. "emphasizing craftsmanship")
+  if (words.length > 1 && /ing$/i.test(words[0])) return false;
+
+  // Reject tone-of-voice terms that won't influence a visual model
+  const lower = tag.toLowerCase();
+  if (NON_VISUAL_KEYWORDS.some((kw) => lower.includes(kw))) return false;
+
+  return true;
 }
 
 // ─── Prompt Building ────────────────────────────────────────

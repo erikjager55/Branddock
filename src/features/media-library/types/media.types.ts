@@ -343,7 +343,13 @@ export interface ImportStockBody {
 
 // ─── AI Images ───────────────────────────────────────────────
 
-export type ImageProvider = 'IMAGEN' | 'DALLE' | 'TRAINED_MODEL' | 'FLUX_PRO' | 'RECRAFT' | 'IDEOGRAM';
+/**
+ * Image provider id. Known values include built-ins ('IMAGEN' | 'DALLE' |
+ * 'TRAINED_MODEL') and fal.ai ids ('fal-ai/flux-2-pro', etc.). Stored as a
+ * free-form string in the DB. Legacy values ('FLUX_PRO', 'RECRAFT',
+ * 'IDEOGRAM') remain readable but are re-mapped on write.
+ */
+export type ImageProvider = string;
 
 export interface GeneratedImageWithMeta {
   id: string;
@@ -378,6 +384,18 @@ export interface GenerateImageBody {
   trainedModelId?: string;
   /** For TRAINED_MODEL provider: combine multiple trained models (max 3) */
   trainedModelIds?: string[];
+  /** Brand context tags injected into the prompt (ignored for TRAINED_MODEL) */
+  brandTags?: string[];
+  /** Style guideline — what MUST appear in the image */
+  dos?: string;
+  /** Style guideline — what to AVOID */
+  donts?: string;
+  /**
+   * When true (default), the workspace brand summary (photography guidelines,
+   * design language, personality direction) is appended server-side to the
+   * generation prompt. Set to false to opt out.
+   */
+  applyBrandGuidelines?: boolean;
 }
 
 export interface UpdateGeneratedImageBody {

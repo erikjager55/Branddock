@@ -30,6 +30,7 @@ export interface WizardStepState {
   finalStrategy: unknown | null;
   contentGenPhase?: string;
   hasSelectedVariant?: boolean;
+  skipConceptStep?: boolean;
 }
 
 export interface StepDefinition {
@@ -84,6 +85,9 @@ export const CONCEPT_STEP: StepDefinition = {
   key: 'concept',
   label: 'Concept',
   canProceed: (s) => {
+    // When concept is skipped, this step is filtered out of the steps array.
+    // Safety fallback in case it's still reached:
+    if (s.skipConceptStep) return true;
     if (s.strategyPhase === 'mining_insights') return false;
     if (s.strategyPhase === 'review_insights') return false; // transient — chains to concepts
     if (s.strategyPhase === 'generating_concepts') return false;
@@ -140,6 +144,8 @@ export const CONTENT_STEPS: StepDefinition[] = [
 
 // ─── Helper ──────────────────────────────────────────────
 
-export function getStepsForMode(mode: WizardMode): StepDefinition[] {
-  return mode === 'content' ? CONTENT_STEPS : CAMPAIGN_STEPS;
+export function getStepsForMode(mode: WizardMode, skipConcept?: boolean): StepDefinition[] {
+  const steps = mode === 'content' ? CONTENT_STEPS : CAMPAIGN_STEPS;
+  if (skipConcept) return steps.filter(s => s.key !== 'concept');
+  return steps;
 }

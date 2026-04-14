@@ -8,6 +8,9 @@ import { z } from 'zod';
 import { generateImage } from '@/lib/ai/gemini-client';
 import { generateDalleImage } from '@/lib/ai/openai-client';
 import { runFalGeneration, generateFalImage } from '@/lib/integrations/fal/fal-client';
+import { getFalProviderById, getFalEndpoint } from '@/lib/integrations/fal/fal-providers';
+import { buildPromptWithContext } from '@/lib/ai/prompt-context-builder';
+import { resolveWorkspaceBrandContext } from '@/lib/consistent-models/workspace-context-resolver';
 import { LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
 import { mapGeneratedImage } from '@/features/media-library/utils/media-utils';
 import type { ConsistentModelType } from '@prisma/client';
@@ -15,8 +18,14 @@ import type { ConsistentModelType } from '@prisma/client';
 const generateSchema = z.object({
   name: z.string().min(1).max(200),
   prompt: z.string().min(1).max(1000),
-  provider: z.enum(['IMAGEN', 'DALLE', 'TRAINED_MODEL', 'FLUX_PRO', 'RECRAFT', 'IDEOGRAM']),
-  // Imagen / Flux / Recraft / Ideogram options
+  /**
+   * Provider id. Accepts:
+   * - 'IMAGEN' | 'DALLE' | 'TRAINED_MODEL' (built-ins)
+   * - 'fal-ai/...' (any registered fal.ai provider)
+   * - legacy 'FLUX_PRO' | 'RECRAFT' | 'IDEOGRAM' (back-compat only)
+   */
+  provider: z.string().min(1),
+  // fal.ai / Imagen / Trained model aspect ratio
   aspectRatio: z.string().optional(),
   // DALL-E options
   size: z.enum(['1024x1024', '1792x1024', '1024x1792']).optional(),
@@ -25,13 +34,23 @@ const generateSchema = z.object({
   // Trained model options (single or multiple)
   trainedModelId: z.string().optional(),
   trainedModelIds: z.array(z.string()).max(3).optional(),
+  // Brand context + style guidelines (applied to every provider)
+  brandTags: z.array(z.string().min(1).max(100)).max(30).optional(),
+  dos: z.string().max(1000).optional(),
+  donts: z.string().max(1000).optional(),
+  /**
+   * When true, the workspace brand summary (photography guidelines, brand
+   * personality direction, design language) is appended to the prompt.
+   * Defaults to true. Server-side resolved — never trusts client content.
+   */
+  applyBrandGuidelines: z.boolean().optional(),
 });
 
-// fal.ai model endpoints
-const FAL_MODELS: Record<string, { endpoint: string; modelName: string }> = {
-  FLUX_PRO: { endpoint: 'fal-ai/flux-pro/v1.1', modelName: 'flux-pro-v1.1' },
-  RECRAFT: { endpoint: 'fal-ai/recraft-v3', modelName: 'recraft-v3' },
-  IDEOGRAM: { endpoint: 'fal-ai/ideogram/v2/turbo', modelName: 'ideogram-v2-turbo' },
+// Legacy provider aliases — map old enum values to new fal.ai ids.
+const LEGACY_PROVIDER_ALIASES: Record<string, string> = {
+  FLUX_PRO: 'fal-ai/flux-2-pro',
+  RECRAFT: 'fal-ai/recraft-v3',
+  IDEOGRAM: 'fal-ai/ideogram-v3',
 };
 
 // Map aspect ratio string to fal.ai image_size preset
@@ -68,7 +87,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, prompt, provider, aspectRatio, size, quality, style, trainedModelId, trainedModelIds } = parsed.data;
+    const { name, prompt, provider: rawProvider, aspectRatio, size, quality, style, trainedModelId, trainedModelIds, brandTags, dos, donts, applyBrandGuidelines } = parsed.data;
+
+    // Resolve provider — aliases map legacy enum values, else pass through.
+    const provider = LEGACY_PROVIDER_ALIASES[rawProvider] ?? rawProvider;
+
+    // Build the final prompt with brand context + style guidelines injected.
+    // Trained model flow is excluded — it relies on LoRA weights, not prompt context.
+    const isTrained = provider === 'TRAINED_MODEL';
+
+    // Default applyBrandGuidelines to true. When enabled, fetch the workspace
+    // brand summary server-side so the prompt also carries photography
+    // direction, design language, and personality cues from brand foundation.
+    const shouldApplyGuidelines = applyBrandGuidelines !== false;
+    let brandSummary: string | undefined;
+    if (!isTrained && shouldApplyGuidelines) {
+      const ctx = await resolveWorkspaceBrandContext(workspaceId);
+      brandSummary = ctx?.contextSummary || undefined;
+    }
+
+    const finalPrompt = isTrained
+      ? prompt
+      : buildPromptWithContext({ prompt, brandTags, dos, donts, brandSummary });
 
     let imageBytes: Buffer;
     let mimeType: string;
@@ -120,13 +160,13 @@ export async function POST(request: NextRequest) {
       avgGuidanceScale /= readyModels.length;
 
       const triggerPrefix = triggerWords.length > 0 ? triggerWords.join(', ') + ', ' : '';
-      const finalPrompt = triggerPrefix + prompt;
+      const loraPrompt = triggerPrefix + prompt;
 
       // Use first model's endpoint (all should be compatible Flux-based)
       const generatorEndpoint = readyModels[0].generatorEndpoint ?? 'fal-ai/flux-lora';
 
       const result = await runFalGeneration(generatorEndpoint, {
-        prompt: finalPrompt,
+        prompt: loraPrompt,
         loras,
         num_images: 1,
         num_inference_steps: maxInferenceSteps || 40,
@@ -154,17 +194,27 @@ export async function POST(request: NextRequest) {
       modelName = `${generatorEndpoint} (LoRA: ${modelNames})`;
       resolvedAspectRatio = aspectRatio ?? '1:1';
 
-    } else if (provider === 'FLUX_PRO' || provider === 'RECRAFT' || provider === 'IDEOGRAM') {
-      // ─── fal.ai models ────────────────────────────────────
+    } else if (provider.startsWith('fal-ai/')) {
+      // ─── fal.ai models (generic routing by provider id) ──
       if (!process.env.FAL_KEY) {
         return NextResponse.json(
-          { error: 'FAL_KEY is not configured. Add FAL_KEY to enable Flux Pro, Recraft, and Ideogram.' },
+          { error: 'FAL_KEY is not configured. Add FAL_KEY to enable fal.ai image generation.' },
           { status: 400 }
         );
       }
 
-      const falModel = FAL_MODELS[provider];
-      const result = await generateFalImage(falModel.endpoint, prompt, {
+      const falProvider = getFalProviderById(provider);
+      if (!falProvider) {
+        return NextResponse.json(
+          { error: `Unknown fal.ai provider: ${provider}` },
+          { status: 400 }
+        );
+      }
+
+      // Resolve the actual fal.ai endpoint — some providers route through a
+      // nested path (e.g. fal-ai/recraft/v3/text-to-image) while keeping a
+      // shorter stable id (fal-ai/recraft-v3) in our DB.
+      const result = await generateFalImage(getFalEndpoint(falProvider), finalPrompt, {
         imageSize: toFalImageSize(aspectRatio ?? '1:1'),
         numImages: 1,
       });
@@ -179,7 +229,7 @@ export async function POST(request: NextRequest) {
       }
       imageBytes = Buffer.from(await imgResponse.arrayBuffer());
       mimeType = 'image/png';
-      modelName = falModel.modelName;
+      modelName = falProvider.id;
       width = result.images[0].width;
       height = result.images[0].height;
       resolvedAspectRatio = aspectRatio ?? '1:1';
@@ -193,7 +243,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const result = await generateImage(prompt, {
+      const result = await generateImage(finalPrompt, {
         aspectRatio: aspectRatio ?? '1:1',
       });
       imageBytes = result.imageBytes;
@@ -201,7 +251,7 @@ export async function POST(request: NextRequest) {
       modelName = 'imagen-4.0-generate-001';
       resolvedAspectRatio = aspectRatio ?? '1:1';
 
-    } else {
+    } else if (provider === 'DALLE') {
       // ─── DALL-E 3 ─────────────────────────────────────────
       if (!process.env.OPENAI_API_KEY) {
         return NextResponse.json(
@@ -211,7 +261,7 @@ export async function POST(request: NextRequest) {
       }
 
       const dalleSize = size ?? '1024x1024';
-      const result = await generateDalleImage(prompt, {
+      const result = await generateDalleImage(finalPrompt, {
         size: dalleSize,
         quality: quality ?? 'standard',
         style: style ?? 'vivid',
@@ -227,6 +277,12 @@ export async function POST(request: NextRequest) {
       if (dalleSize === '1024x1024') resolvedAspectRatio = '1:1';
       else if (dalleSize === '1792x1024') resolvedAspectRatio = '16:9';
       else if (dalleSize === '1024x1792') resolvedAspectRatio = '9:16';
+
+    } else {
+      return NextResponse.json(
+        { error: `Unknown provider: ${rawProvider}` },
+        { status: 400 }
+      );
     }
 
     // Upload to storage

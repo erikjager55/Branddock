@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { MediaType, MediaCategory, MediaSource } from '../types/media.types';
 import type { MediaViewMode } from '../constants/media-constants';
 
-type UploadTab = 'upload' | 'import-url' | 'stock' | 'ai';
+type UploadTab = 'upload' | 'import-url' | 'stock';
 type ActiveTab = 'library' | 'collections' | 'tags';
 
 interface MediaLibraryStore {

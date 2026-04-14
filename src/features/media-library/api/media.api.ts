@@ -275,6 +275,16 @@ export async function reorderCollectionAssets(
 
 // ─── Stock Photos ────────────────────────────────────────────
 
+/** Error thrown by stock photo search — exposes the HTTP status. */
+export class StockSearchError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+    this.name = 'StockSearchError';
+  }
+}
+
 export async function searchStockPhotos(
   query: string,
   page = 1,
@@ -282,7 +292,16 @@ export async function searchStockPhotos(
 ): Promise<StockSearchResponse> {
   const sp = new URLSearchParams({ query, page: String(page), per_page: String(perPage) });
   const res = await fetch(`${BASE}/stock/search?${sp}`);
-  if (!res.ok) throw new Error('Failed to search stock photos');
+  if (!res.ok) {
+    let message = `Failed to search stock photos (HTTP ${res.status})`;
+    try {
+      const data = await res.json();
+      if (typeof data?.error === 'string') message = data.error;
+    } catch {
+      /* non-JSON response */
+    }
+    throw new StockSearchError(res.status, message);
+  }
   return res.json();
 }
 
@@ -420,6 +439,18 @@ export async function deleteSoundEffect(id: string): Promise<void> {
 }
 
 // ─── AI Images ──────────────────────────────────────────────
+
+export interface WorkspaceBrandContextResponse {
+  tags: string[];
+  summary: string;
+  brandName: string | null;
+}
+
+export async function fetchWorkspaceBrandContext(): Promise<WorkspaceBrandContextResponse> {
+  const res = await fetch(`${BASE}/ai-images/brand-context`);
+  if (!res.ok) throw new Error('Failed to fetch workspace brand context');
+  return res.json();
+}
 
 export async function fetchAiImages(
   favorite?: boolean

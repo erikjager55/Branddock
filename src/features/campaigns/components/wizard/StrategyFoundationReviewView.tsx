@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button, Badge } from "@/components/shared";
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
+import { ElementRatingCard } from "./ElementRatingCard";
 import type { StrategyFoundation } from "../../types/campaign-wizard.types";
 
 // ─── Helpers ─────────────────────────────────────────────
@@ -95,6 +96,7 @@ export function StrategyFoundationReviewView({
   const setStrategyFeedback = useCampaignWizardStore(
     (s) => s.setStrategyFeedback,
   );
+  const skipConceptStep = useCampaignWizardStore((s) => s.skipConceptStep);
 
   return (
     <div className="space-y-6">
@@ -105,39 +107,83 @@ export function StrategyFoundationReviewView({
         </h3>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
           AI has built a behavioral science-driven strategy foundation. Review
-          the insights and provide feedback before creative concept generation.
+          the insights and provide feedback{skipConceptStep ? '.' : ' before creative concept generation.'}
         </p>
       </div>
 
-      {/* Strategic Direction */}
-      <div className="bg-gradient-to-r from-primary-50 to-emerald-50 rounded-xl border border-primary-100 p-5">
-        <div className="flex items-start gap-3">
-          <Compass className="w-5 h-5 text-primary mt-0.5 shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-primary-800 mb-1">
-              Strategic Direction
-            </p>
-            <p className="text-sm text-primary-700">
-              {toDisplayString(foundation.strategicDirection)}
-            </p>
+      {/* Strategic Direction + Suggested Approach — read-only when concept step is active */}
+      {!skipConceptStep && (
+        <>
+          <div className="bg-gradient-to-r from-primary-50 to-emerald-50 rounded-xl border border-primary-100 p-5">
+            <div className="flex items-start gap-3">
+              <Compass className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-primary-800 mb-1">
+                  Strategic Direction
+                </p>
+                <p className="text-sm text-primary-700">
+                  {toDisplayString(foundation.strategicDirection)}
+                </p>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Suggested Approach */}
-      <div className="bg-blue-50 rounded-xl border border-blue-100 p-5">
-        <div className="flex items-start gap-3">
-          <Target className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
-          <div>
-            <p className="text-sm font-medium text-blue-800 mb-1">
-              Suggested Approach
-            </p>
-            <p className="text-sm text-blue-700">
-              {toDisplayString(foundation.suggestedApproach)}
-            </p>
+          <div className="bg-blue-50 rounded-xl border border-blue-100 p-5">
+            <div className="flex items-start gap-3">
+              <Target className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-blue-800 mb-1">
+                  Suggested Approach
+                </p>
+                <p className="text-sm text-blue-700">
+                  {toDisplayString(foundation.suggestedApproach)}
+                </p>
+              </div>
+            </div>
           </div>
+        </>
+      )}
+
+      {/* Strategic Rationale Rating (replaces read-only cards when skipping concept step) */}
+      {skipConceptStep && (
+        <div className="space-y-3">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            Rate the strategic rationale
+          </p>
+          <ElementRatingCard
+            label="Strategic Direction"
+            value={toDisplayString(foundation.strategicDirection)}
+            ratingKey="strategicDirection"
+            icon={Compass}
+            highlighted
+            highlightBg="bg-emerald-50"
+          />
+          <ElementRatingCard
+            label="Suggested Approach"
+            value={toDisplayString(foundation.suggestedApproach)}
+            ratingKey="suggestedApproach"
+            icon={Target}
+            highlighted
+            highlightBg="bg-blue-50"
+          />
+          {foundation.behavioralStrategy?.summary && (
+            <ElementRatingCard
+              label="Behavioral Strategy"
+              value={toDisplayString(foundation.behavioralStrategy.summary)}
+              ratingKey="behavioralStrategy"
+              icon={Sparkles}
+            />
+          )}
+          {foundation.elmRouteRecommendation?.rationale && (
+            <ElementRatingCard
+              label="ELM Route"
+              value={`${foundation.elmRouteRecommendation.primaryRoute === 'central' ? 'Central' : 'Peripheral'} — ${toDisplayString(foundation.elmRouteRecommendation.rationale)}`}
+              ratingKey="elmRoute"
+              icon={Compass}
+            />
+          )}
         </div>
-      </div>
+      )}
 
       {/* Feedback */}
       <div className="space-y-2">
@@ -420,7 +466,7 @@ export function StrategyFoundationReviewView({
       {/* Actions */}
       <div className="flex items-center justify-center gap-3 pt-4 border-t border-gray-100">
         <Button variant="primary" onClick={onProceed}>
-          Develop Creative Concept
+          {skipConceptStep ? 'Build Deployment Plan' : 'Develop Creative Concept'}
         </Button>
       </div>
     </div>

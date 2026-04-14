@@ -1,11 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { readFile } from 'fs/promises';
+import path from 'path';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
-import { generateThumbnail } from '@/lib/storage/thumbnail-generator';
+import { getStorageProvider } from '@/lib/storage';
 import { z } from 'zod';
 import type { MediaCategory, ProductImageCategory } from '@prisma/client';
+
+/**
+ * Load an image buffer from either a local `/uploads/...` path or an external URL.
+ * Local paths are read directly from disk because `fetch()` cannot resolve them
+ * during server-side execution in dev mode.
+ */
+async function loadImageBuffer(fileUrl: string): Promise<Buffer | null> {
+  try {
+    if (fileUrl.startsWith('/uploads/')) {
+      const localPath = path.join(process.cwd(), 'public', fileUrl);
+      return await readFile(localPath);
+    }
+    const res = await fetch(fileUrl);
+    if (!res.ok) return null;
+    return Buffer.from(await res.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
 
 const PROVIDER_TAG_LABELS: Record<string, string> = {
   IMAGEN: 'Imagen 4',
@@ -98,21 +119,24 @@ export async function POST(
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-|-$/g, '') + `-${Date.now()}`;
 
-      // Generate thumbnail from original image
+      // Generate a thumbnail using the active storage provider (R2 in prod,
+      // local filesystem in dev). The provider's upload() handles thumbnail
+      // generation automatically for image content types.
       let thumbnailUrl: string | null = null;
       try {
-        const imageRes = await fetch(generatedImage.fileUrl);
-        if (imageRes.ok) {
-          const imageBuffer = Buffer.from(await imageRes.arrayBuffer());
-          const thumbBuffer = await generateThumbnail(imageBuffer);
-          const { randomUUID } = await import('crypto');
-          const thumbKey = `ws_${workspaceId}/media/thumbs/${randomUUID()}.jpg`;
-          const { uploadToR2 } = await import('@/lib/storage/r2-storage');
-          const thumbResult = await uploadToR2(thumbKey, thumbBuffer, 'image/jpeg');
-          thumbnailUrl = thumbResult.url;
+        const imageBuffer = await loadImageBuffer(generatedImage.fileUrl);
+        if (imageBuffer) {
+          const storageProvider = getStorageProvider();
+          const uploadResult = await storageProvider.upload(imageBuffer, {
+            workspaceId,
+            fileName: generatedImage.fileName,
+            contentType: generatedImage.fileType,
+          });
+          thumbnailUrl = uploadResult.thumbnailUrl ?? null;
         }
-      } catch {
-        // Non-critical — asset works without thumbnail
+      } catch (err) {
+        // Non-critical — asset works without thumbnail, but log so we can debug
+        console.warn('[send-to-library] thumbnail generation failed:', err);
       }
 
       const asset = await tx.mediaAsset.create({

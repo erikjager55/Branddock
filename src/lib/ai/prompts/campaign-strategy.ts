@@ -930,6 +930,22 @@ ${phaseInstruction}
 - estimatedEffort: "low" (< 2 hours), "medium" (2-8 hours), "high" (> 8 hours)
 - suggestedOrder: number (1-based deployment order within this phase — 1 goes out first, 2 second, etc. Consider channel variety and persona rotation when ordering. Avoid scheduling two deliverables for the same channel back-to-back.)
 
+## CRITICAL: TIMELINE DISTRIBUTION RULES
+The deployment timeline has multiple journey phases, each lasting several weeks. You MUST distribute deliverables across ALL phases — not just the first one.
+
+Rules:
+1. **Every phase must have deliverables.** If there are 4 phases, each phase should have at least 2 deliverables.
+2. **Vary suggestedOrder within each phase.** If a phase has 4 deliverables, use orders 1, 2, 3, 4 — NOT all set to 1.
+3. **No more than 3 deliverables in the same phase with the same suggestedOrder.** Spread them out.
+4. **Later phases need content too.** Retention and loyalty phases need follow-up content, not just awareness.
+5. **The phase durations from the channel plan tell you how many weeks each phase lasts.** Use this to plan realistic spacing.
+
+Example distribution for a 4-phase campaign (12 deliverables):
+- Awareness (3 weeks): 3 deliverables, orders 1, 2, 3
+- Consideration (3 weeks): 3 deliverables, orders 1, 2, 3
+- Conversion (2 weeks): 3 deliverables, orders 1, 1, 2
+- Retention (2 weeks): 3 deliverables, orders 1, 2, 2
+
 IMPORTANT: The contentType field MUST exactly match one of the valid IDs listed above. Do NOT invent new content types. Choose the closest matching type from the list.
 
 Also provide:
@@ -943,7 +959,7 @@ Also provide:
   - estimatedEffort: "low" (< 2h), "medium" (2-8h), "high" (> 8h)
   Typical prep deliverables include: campaign brief finalization, brand/tone guidelines, content calendar setup, audience segment definitions, channel account setup, stakeholder alignment docs, asset templates, and approval workflows.
 
-Produce 8-15 deliverables that form a coherent content ecosystem covering awareness, consideration, conversion, and retention stages.
+Produce 8-15 deliverables that form a coherent content ecosystem covering ALL journey phases. Distribute them proportionally across phases based on phase duration.
 
 Respond with valid JSON matching the AssetPlanLayer schema.`;
 

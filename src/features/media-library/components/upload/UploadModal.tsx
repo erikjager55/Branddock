@@ -1,28 +1,26 @@
 'use client';
 
 import React from 'react';
+import { UploadCloud, Link as LinkIcon, Images } from 'lucide-react';
 import { Modal } from '@/components/shared';
 import { useMediaLibraryStore } from '../../stores/useMediaLibraryStore';
-
-// Sub-components (placeholders — will be implemented separately)
 import FileDropzone from './FileDropzone';
 import UrlImportTab from './UrlImportTab';
 import StockPhotoTab from './StockPhotoTab';
 
 // ─── Tab Config ─────────────────────────────────────────────
 
-type UploadTab = 'upload' | 'import-url' | 'stock' | 'ai';
+type UploadTab = 'upload' | 'import-url' | 'stock';
 
-const TABS: { id: UploadTab; label: string }[] = [
-  { id: 'upload', label: 'Upload' },
-  { id: 'import-url', label: 'Import URL' },
-  { id: 'stock', label: 'Stock Photos' },
-  { id: 'ai', label: 'AI Generate' },
+const TABS: { id: UploadTab; label: string; icon: typeof UploadCloud }[] = [
+  { id: 'upload', label: 'Upload', icon: UploadCloud },
+  { id: 'import-url', label: 'Import URL', icon: LinkIcon },
+  { id: 'stock', label: 'Stock Photos', icon: Images },
 ];
 
 // ─── Component ──────────────────────────────────────────────
 
-/** Modal with 4 tabs for uploading / importing media assets */
+/** Modal with 3 tabs for adding media to the library. */
 export function UploadModal() {
   const isUploadModalOpen = useMediaLibraryStore((s) => s.isUploadModalOpen);
   const setUploadModalOpen = useMediaLibraryStore((s) => s.setUploadModalOpen);
@@ -36,22 +34,30 @@ export function UploadModal() {
       title="Add Media"
       size="lg"
     >
-      {/* Tab Bar */}
-      <div className="flex gap-1 p-1 bg-gray-100 rounded-lg mb-4">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveUploadTab(tab.id)}
-            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-              activeUploadTab === tab.id
-                ? 'bg-white shadow-sm font-medium text-gray-900'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Underlined tab bar */}
+      <div className="flex items-center gap-1 border-b border-gray-200 -mx-1 mb-5">
+        {TABS.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeUploadTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveUploadTab(tab.id)}
+              className={`relative flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${
+                isActive
+                  ? 'text-teal-700'
+                  : 'text-gray-500 hover:text-gray-800'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {tab.label}
+              {isActive && (
+                <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-teal-600" />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Tab Content */}
@@ -59,11 +65,6 @@ export function UploadModal() {
         {activeUploadTab === 'upload' && <FileDropzone />}
         {activeUploadTab === 'import-url' && <UrlImportTab />}
         {activeUploadTab === 'stock' && <StockPhotoTab />}
-        {activeUploadTab === 'ai' && (
-          <div className="flex items-center justify-center py-16 text-sm text-gray-500">
-            AI media generation coming soon
-          </div>
-        )}
       </div>
     </Modal>
   );

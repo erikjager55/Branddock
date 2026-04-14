@@ -42,3 +42,12 @@ export { OptimizedImage } from './OptimizedImage';
 export type { OptimizedImageProps } from './OptimizedImage';
 
 export { ErrorBoundary } from '../ErrorBoundary';
+
+export { ImageProviderGrid } from './ImageProviderGrid';
+export type { ImageProviderGridProps } from './ImageProviderGrid';
+
+export { BrandContextTagsEditor } from './BrandContextTagsEditor';
+export type { BrandContextTagsEditorProps } from './BrandContextTagsEditor';
+
+export { StyleGuidelinesEditor } from './StyleGuidelinesEditor';
+export type { StyleGuidelinesEditorProps } from './StyleGuidelinesEditor';
