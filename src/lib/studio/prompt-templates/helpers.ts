@@ -101,9 +101,10 @@ export function buildBaseSystemPrompt(typeInstructions: string): string {
 6. ALL product/service names must be self-explanatory or briefly explained on first use.
 7. Headlines must be unambiguous — avoid words with unintended double meanings.
 8. HEADINGS AND TITLES: Always use sentence case (capitalize only the first word and proper nouns). NEVER use Title Case where every word is capitalized. Example: "How to build a strong brand" NOT "How To Build A Strong Brand".
-9. Every piece of content MUST include a clear, specific call-to-action, unless the content type is informational by nature (e.g., press releases, employee stories, internal comms, impact reports) — in those cases, follow the type-specific instructions for closing elements.
-10. Claims must be concrete and verifiable — replace "many" with numbers, "soon" with dates, "leading" with evidence.
-11. Write for the end consumer, not the marketing team — no meta-commentary about the content itself.`;
+9. NEVER generate a table of contents with markdown anchor links like [Title](#slug) or --- horizontal rules. Use ## headings to structure content — the reader navigates by scrolling.
+10. Every piece of content MUST include a clear, specific call-to-action, unless the content type is informational by nature (e.g., press releases, employee stories, internal comms, impact reports) — in those cases, follow the type-specific instructions for closing elements.
+11. Claims must be concrete and verifiable — replace "many" with numbers, "soon" with dates, "leading" with evidence.
+12. Write for the end consumer, not the marketing team — no meta-commentary about the content itself.`;
 }
 
 /**

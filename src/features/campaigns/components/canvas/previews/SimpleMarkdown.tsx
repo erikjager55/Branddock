@@ -16,13 +16,23 @@ import React from 'react';
 export function SimpleMarkdown({ text, className = '' }: { text: string; className?: string }) {
   if (!text) return null;
 
-  const blocks = text.split(/\n{2,}/);
+  // Pre-process: strip markdown anchor links [Text](#slug) → Text
+  const cleaned = text
+    .replace(/\[([^\]]+)\]\(#[^)]*\)/g, '$1')  // [Text](#anchor) → Text
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1');   // [Text](url) → Text
+
+  const blocks = cleaned.split(/\n{2,}/);
 
   return (
     <div className={`space-y-3 ${className}`}>
       {blocks.map((block, blockIdx) => {
         const trimmed = block.trim();
         if (!trimmed) return null;
+
+        // Horizontal rule — skip
+        if (/^-{3,}$/.test(trimmed) || /^\*{3,}$/.test(trimmed) || /^_{3,}$/.test(trimmed)) {
+          return null;
+        }
 
         // Heading 2
         if (trimmed.startsWith('## ')) {

@@ -658,6 +658,8 @@ function buildCanvasPrompt(
     '## FORMATTING RULES',
     'The "content" field in each variant MUST use markdown formatting for professional, well-structured output:',
     '- HEADINGS: Use sentence case (only capitalize the first word and proper nouns). NEVER use Title Case. Example: "## How to build a brand strategy" NOT "## How To Build A Brand Strategy"',
+    '- NEVER generate a table of contents with markdown anchor links like [Title](#slug). Just use ## headings — the reader navigates by scrolling.',
+    '- NEVER use horizontal rules (---) to separate sections — use ## headings instead.',
     '- Use ## for section headings and ### for sub-headings where appropriate',
     '- Use **bold** for key phrases, names, and emphasis',
     '- Use *italic* for quotes, subtle emphasis, or foreign terms',
