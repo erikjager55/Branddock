@@ -21,6 +21,7 @@ import { Modal, Input, Badge, Button, Select } from "@/components/shared";
 import { DELIVERABLE_TYPES, DELIVERABLE_CATEGORIES } from "../../lib/deliverable-types";
 import { ContentTypeInputFields } from "./ContentTypeInputFields";
 import { deriveBriefFromBlueprint } from "../../lib/derive-brief";
+import { getCreationEssentialInputs } from "../../lib/content-type-inputs";
 import { useCampaigns, useStrategy } from "../../hooks";
 import type { ContentTypeInputValue } from "../../lib/content-type-inputs";
 import type { CampaignBlueprint } from "@/lib/campaigns/strategy-blueprint.types";
@@ -532,12 +533,16 @@ export function AddContentModal({
                   />
                 </div>
 
-                <ContentTypeInputFields
-                  typeId={contentType}
-                  values={contentTypeInputs}
-                  onChange={handleContentTypeInputChange}
-                  compact
-                />
+                {/* Only essential fields (max 1-2) — full set in Canvas */}
+                {contentType && getCreationEssentialInputs(contentType).length > 0 && (
+                  <ContentTypeInputFields
+                    typeId={contentType}
+                    values={contentTypeInputs}
+                    onChange={handleContentTypeInputChange}
+                    compact
+                    filterKeys={getCreationEssentialInputs(contentType).map(f => f.key)}
+                  />
+                )}
               </div>
             </div>
           </>

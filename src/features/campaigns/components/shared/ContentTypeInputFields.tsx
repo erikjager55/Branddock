@@ -29,6 +29,8 @@ export interface ContentTypeInputFieldsProps {
   aiDerivedKeys?: Set<string>;
   /** Compact mode hides help text and reduces spacing */
   compact?: boolean;
+  /** If set, only render fields whose key is in this list */
+  filterKeys?: string[];
 }
 
 // ─── Tag Input Sub-Component ───────────────────────────────
@@ -258,8 +260,12 @@ export function ContentTypeInputFields({
   onChange,
   aiDerivedKeys,
   compact = false,
+  filterKeys,
 }: ContentTypeInputFieldsProps) {
-  const fields = getContentTypeInputs(typeId);
+  const allFields = getContentTypeInputs(typeId);
+  const fields = filterKeys
+    ? allFields.filter((f) => filterKeys.includes(f.key))
+    : allFields;
   const categories = getInputCategories(typeId);
 
   if (fields.length === 0) return null;

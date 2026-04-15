@@ -1798,6 +1798,45 @@ export function getRequiredInputs(
 }
 
 /**
+ * Essential fields for the Add Content modal (max 1-2 per type).
+ * Only fields that make the content item unique and can't be AI-derived.
+ * Everything else is filled in later via the Canvas ContentBriefCard.
+ */
+const CREATION_ESSENTIAL_KEYS: Record<string, string[]> = {
+  "blog-post": ["seoKeyword"],
+  "pillar-page": ["seoKeyword"],
+  "case-study": ["customerName"],
+  "linkedin-event": ["eventName", "eventDate"],
+  "linkedin-poll": ["pollQuestion"],
+  "press-release": ["newsFact"],
+  "career-page": ["jobTitle"],
+  "job-ad-copy": ["jobTitle"],
+  "employee-story": ["employeeName"],
+  "proposal-template": ["clientName"],
+  "impact-report": ["reportingPeriod"],
+  "landing-page": ["conversionGoal"],
+  "product-page": ["seoKeyword"],
+  "faq-page": ["seoKeyword"],
+  "comparison-page": ["seoKeyword"],
+  "testimonial-video": ["customerName"],
+};
+
+/**
+ * Get only creation-essential fields for the Add Content modal.
+ * Returns max 1-2 fields per type. Returns empty for types where
+ * all fields can be filled later in the Canvas.
+ */
+export function getCreationEssentialInputs(
+  typeId: string
+): ContentTypeInputField[] {
+  const resolved = CONTENT_TYPE_ALIASES[typeId] ?? typeId;
+  const essentialKeys = CREATION_ESSENTIAL_KEYS[resolved];
+  if (!essentialKeys) return [];
+  const allFields = getContentTypeInputs(typeId);
+  return allFields.filter((f) => essentialKeys.includes(f.key));
+}
+
+/**
  * Get only AI-derivable fields (Asset Planner should attempt to fill these).
  */
 export function getAiDerivableInputs(
