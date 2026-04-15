@@ -1762,10 +1762,42 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
  * Get all content-type-specific input fields for a deliverable type.
  * Returns empty array for unknown types.
  */
+/**
+ * Map common AI-generated content type variants to canonical registry IDs.
+ * The Asset Planner sometimes generates non-standard IDs (e.g. "blog-article"
+ * instead of "blog-post"). This mapping ensures the registry still works.
+ */
+const CONTENT_TYPE_ALIASES: Record<string, string> = {
+  "blog-article": "blog-post",
+  "blog": "blog-post",
+  "linkedin-sponsored-content": "linkedin-ad",
+  "facebook-ad-copy": "social-ad",
+  "instagram-carousel": "social-carousel",
+  "linkedin-carousel-post": "linkedin-carousel",
+  "google-ads-copy": "search-ad",
+  "google-ad": "search-ad",
+  "podcast-episode-outline": "podcast-outline",
+  "explainer-video-script": "explainer-video",
+  "sales-email-sequence": "nurture-sequence",
+  "welcome-email-series": "welcome-sequence",
+  "sales-page-copy": "product-description",
+  "pitch-deck-copy": "sales-deck",
+  "company-announcement": "internal-comms",
+  "job-posting": "career-page",
+  "employer-brand-story": "employee-story",
+};
+
+/**
+ * Get all content-type-specific input fields for a deliverable type.
+ * Falls back to alias mapping for non-standard AI-generated type IDs.
+ * Returns empty array for unknown types.
+ */
 export function getContentTypeInputs(
   typeId: string
 ): ContentTypeInputField[] {
-  return CONTENT_TYPE_INPUTS[typeId] ?? [];
+  return CONTENT_TYPE_INPUTS[typeId]
+    ?? CONTENT_TYPE_INPUTS[CONTENT_TYPE_ALIASES[typeId] ?? '']
+    ?? [];
 }
 
 /**
