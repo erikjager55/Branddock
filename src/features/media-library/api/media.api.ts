@@ -503,6 +503,28 @@ export async function deleteAiImage(id: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete AI image');
 }
 
+export interface OptimizeImageBody {
+  name: string;
+  sourceImageUrl: string;
+  provider: string;
+  prompt?: string;
+}
+
+export async function optimizeAiImage(
+  body: OptimizeImageBody,
+): Promise<GeneratedImageWithMeta> {
+  const res = await fetch(`${BASE}/ai-images/optimize`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to optimize image');
+  }
+  return res.json();
+}
+
 export interface SendToLibraryBody {
   category?: string;
   tags?: string[];
@@ -579,7 +601,11 @@ export async function generateAiVideo(
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || 'Failed to generate video');
+    const fieldErrors = data.details?.fieldErrors;
+    const detail = fieldErrors
+      ? Object.entries(fieldErrors).map(([k, v]) => `${k}: ${(v as string[]).join(', ')}`).join('; ')
+      : '';
+    throw new Error(detail ? `${data.error} — ${detail}` : (data.error || 'Failed to generate video'));
   }
   return res.json();
 }
@@ -600,4 +626,20 @@ export async function updateAiVideo(
 export async function deleteAiVideo(id: string): Promise<void> {
   const res = await fetch(`${BASE}/ai-videos/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error('Failed to delete AI video');
+}
+
+export async function sendAiVideoToLibrary(
+  id: string,
+  body: { category?: string; tags?: string[] } = {},
+): Promise<Record<string, unknown>> {
+  const res = await fetch(`${BASE}/ai-videos/${id}/send-to-library`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to send video to library');
+  }
+  return res.json();
 }

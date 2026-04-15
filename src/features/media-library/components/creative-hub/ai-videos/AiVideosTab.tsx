@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Video, AlertTriangle, Heart } from 'lucide-react';
 import { Button, EmptyState, SkeletonCard } from '@/components/shared';
-import { useAiVideos, useDeleteAiVideo, useUpdateAiVideo } from '@/features/media-library/hooks';
+import { useAiVideos, useDeleteAiVideo, useUpdateAiVideo, useSendAiVideoToLibrary } from '@/features/media-library/hooks';
 import type { GeneratedVideoWithMeta } from '@/features/media-library/types/media.types';
 import { AiVideoCard } from './AiVideoCard';
 import { GenerateVideoModal } from './GenerateVideoModal';
@@ -11,8 +11,8 @@ import { AiVideoDetailPanel } from './AiVideoDetailPanel';
 
 // ─── Wrapper — hooks must be called per-video, outside of the grid ──
 
-/** Renders an AiVideoCard with its own useUpdateAiVideo hook. */
-function AiVideoCardWithFavorite({
+/** Renders an AiVideoCard with its own useUpdateAiVideo + useSendToLibrary hooks. */
+function AiVideoCardWithActions({
   video,
   onClick,
   onDelete,
@@ -22,6 +22,7 @@ function AiVideoCardWithFavorite({
   onDelete: (id: string) => void;
 }) {
   const updateVideo = useUpdateAiVideo(video.id);
+  const sendToLibrary = useSendAiVideoToLibrary();
   return (
     <AiVideoCard
       video={video}
@@ -30,6 +31,7 @@ function AiVideoCardWithFavorite({
       onToggleFavorite={() =>
         updateVideo.mutate({ isFavorite: !video.isFavorite })
       }
+      onSendToLibrary={(id) => sendToLibrary.mutate({ id })}
     />
   );
 }
@@ -62,7 +64,7 @@ export function AiVideosTab() {
         <div>
           <h3 className="text-lg font-semibold text-gray-900">AI Videos</h3>
           <p className="text-sm text-gray-500 mt-0.5">
-            Generate short concept videos with AI — powered by Runway ML.
+            Generate short concept videos with AI — text-to-video and image-to-video.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -115,7 +117,7 @@ export function AiVideosTab() {
           description={
             showFavoritesOnly
               ? 'Mark videos as favorites to see them here.'
-              : 'Generate your first video with Runway ML.'
+              : 'Generate your first AI video from text or an image.'
           }
           action={
             showFavoritesOnly
@@ -129,7 +131,7 @@ export function AiVideosTab() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {videos.map((video) => (
-            <AiVideoCardWithFavorite
+            <AiVideoCardWithActions
               key={video.id}
               video={video}
               onClick={() => setSelectedVideoId(video.id)}

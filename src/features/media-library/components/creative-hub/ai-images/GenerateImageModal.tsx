@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Wand2, Cpu, ChevronRight, Check, Sparkles } from 'lucide-react';
+import { Wand2, Cpu, ChevronRight, Check, Sparkles, SlidersHorizontal } from 'lucide-react';
 import { Modal, Button, Input, ImageProviderGrid, BrandContextTagsEditor, StyleGuidelinesEditor } from '@/components/shared';
 import { useGenerateAiImage, useWorkspaceBrandContext } from '@/features/media-library/hooks';
 import {
@@ -53,6 +53,8 @@ interface GenerateImageModalProps {
    * post-success UX.
    */
   onGenerated?: (image: GeneratedImageWithMeta) => void | Promise<void>;
+  /** When provided, shows an "Optimize Image" option in the mode chooser. Closes this modal and calls the callback. */
+  onOpenOptimize?: () => void;
 }
 
 // ─── Main Component ─────────────────────────────────────────
@@ -64,6 +66,7 @@ export function GenerateImageModal({
   preselectedModelId,
   trainedModels = [],
   onGenerated,
+  onOpenOptimize,
 }: GenerateImageModalProps) {
   const generateImage = useGenerateAiImage();
   const { data: brandContext, isLoading: isBrandContextLoading } = useWorkspaceBrandContext();
@@ -243,7 +246,7 @@ export function GenerateImageModal({
         {mode === 'choose' && (
           <div className="space-y-3">
             <p className="text-sm text-gray-600">What would you like to do?</p>
-            <div className={`grid gap-3 ${hasTrainedModels ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
               {hasTrainedModels && (
                 <button
                   type="button"
@@ -268,6 +271,19 @@ export function GenerateImageModal({
                 </div>
                 <p className="text-sm text-gray-500">Pick a fal.ai model, tune brand context, and generate.</p>
               </button>
+              {onOpenOptimize && (
+                <button
+                  type="button"
+                  onClick={() => { handleClose(); onOpenOptimize(); }}
+                  className="p-4 rounded-lg border-2 border-gray-200 hover:border-amber-400 hover:bg-amber-50/50 text-left transition-all group"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <SlidersHorizontal className="w-5 h-5 text-amber-600" />
+                    <span className="font-semibold text-gray-900">Optimize Image</span>
+                  </div>
+                  <p className="text-sm text-gray-500">Edit, upscale, enhance, or remove backgrounds from an existing image.</p>
+                </button>
+              )}
             </div>
           </div>
         )}

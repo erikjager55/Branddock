@@ -45,6 +45,8 @@ import {
   fetchAiImageDetail,
   fetchWorkspaceBrandContext,
   generateAiImage,
+  optimizeAiImage,
+  type OptimizeImageBody,
   updateAiImage,
   deleteAiImage,
   sendAiImageToLibrary,
@@ -54,6 +56,7 @@ import {
   generateAiVideo,
   updateAiVideo,
   deleteAiVideo,
+  sendAiVideoToLibrary,
 } from '../api/media.api';
 import type {
   MediaListParams,
@@ -575,6 +578,16 @@ export function useGenerateAiImage() {
   });
 }
 
+export function useOptimizeAiImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: OptimizeImageBody) => optimizeAiImage(body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...mediaKeys.all, 'ai-images'] });
+    },
+  });
+}
+
 export function useUpdateAiImage(id: string) {
   const qc = useQueryClient();
   return useMutation({
@@ -665,6 +678,18 @@ export function useDeleteAiVideo() {
     mutationFn: (id: string) => deleteAiVideo(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [...mediaKeys.all, 'ai-videos'] });
+    },
+  });
+}
+
+export function useSendAiVideoToLibrary() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body?: { category?: string; tags?: string[] } }) =>
+      sendAiVideoToLibrary(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...mediaKeys.all, 'ai-videos'] });
+      qc.invalidateQueries({ queryKey: mediaKeys.all });
     },
   });
 }

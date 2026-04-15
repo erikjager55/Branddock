@@ -1,4 +1,5 @@
 import { getFalProviderById } from '@/lib/integrations/fal/fal-providers';
+import { getFalVideoProviderById } from '@/lib/integrations/fal/fal-video-providers';
 
 /**
  * Legacy provider aliases — maps old enum values that may still exist in the
@@ -25,9 +26,9 @@ export function getProviderShortLabel(provider: string): string {
   const builtin = BUILTIN_LABELS[provider];
   if (builtin) return builtin.short;
 
-  // Legacy aliases fall through to fal provider lookup
+  // Legacy aliases fall through to fal provider lookup (image + video registries)
   const resolved = LEGACY_ALIASES[provider] ?? provider;
-  const fal = getFalProviderById(resolved);
+  const fal = getFalProviderById(resolved) ?? getFalVideoProviderById(resolved);
   return fal?.label ?? provider;
 }
 
@@ -39,6 +40,6 @@ export function getProviderFullLabel(provider: string): string {
   if (builtin) return builtin.full;
 
   const resolved = LEGACY_ALIASES[provider] ?? provider;
-  const fal = getFalProviderById(resolved);
+  const fal = getFalProviderById(resolved) ?? getFalVideoProviderById(resolved);
   return fal ? `${fal.label} (fal.ai)` : provider;
 }

@@ -10,6 +10,7 @@ import { GenerateImageModal } from './GenerateImageModal';
 import type { TrainedModelOption } from './GenerateImageModal';
 import { AiImageDetailPanel } from './AiImageDetailPanel';
 import { SendToLibraryModal } from './SendToLibraryModal';
+import { OptimizeImageModal } from './OptimizeImageModal';
 
 // ─── Wrapper — hooks must be called per-image, outside of the grid ──
 
@@ -58,6 +59,7 @@ export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModel
   const { data, isLoading, isError } = useAiImages(showFavoritesOnly || undefined);
   const deleteAiImage = useDeleteAiImage();
   const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+  const [isOptimizeModalOpen, setIsOptimizeModalOpen] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [sendToLibraryImage, setSendToLibraryImage] = useState<GeneratedImageWithMeta | null>(null);
 
@@ -189,6 +191,7 @@ export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModel
         preselectedModel={preselectedModel}
         preselectedModelId={preselectedModelId}
         trainedModels={trainedModels}
+        onOpenOptimize={() => setIsOptimizeModalOpen(true)}
       />
 
       {/* Detail Panel — inline detail when an image is selected */}
@@ -208,6 +211,12 @@ export function AiImagesTab({ preselectedModel, preselectedModelId, trainedModel
         isOpen={!!sendToLibraryImage}
         onClose={() => setSendToLibraryImage(null)}
         image={sendToLibraryImage}
+      />
+
+      {/* Optimize Image Modal */}
+      <OptimizeImageModal
+        isOpen={isOptimizeModalOpen}
+        onClose={() => setIsOptimizeModalOpen(false)}
       />
     </div>
   );

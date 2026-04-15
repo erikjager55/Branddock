@@ -36,6 +36,9 @@ export async function resolveWorkspaceBrandContext(
           designLanguageSavedForAi: true,
           toneSavedForAi: true,
           imagerySavedForAi: true,
+          logoVariations: true,
+          logoGuidelines: true,
+          logoDonts: true,
         },
       }),
       prisma.persona.findMany({
@@ -104,6 +107,30 @@ export async function resolveWorkspaceBrandContext(
     ctx.toneOfVoice = 'Tone of voice saved for AI context';
   }
 
+  // Build logo context — only injected when the user explicitly asks for logo/brand name
+  if (styleguide) {
+    const logoParts: string[] = [];
+    if (ctx.brandName) logoParts.push(`Brand name: "${ctx.brandName}".`);
+    if (styleguide.logoVariations) {
+      const variations = styleguide.logoVariations as Record<string, unknown>;
+      const desc = variations.description ?? variations.primary ?? variations.summary;
+      if (typeof desc === 'string') logoParts.push(`Logo: ${desc}.`);
+    }
+    if (styleguide.logoGuidelines?.length) {
+      logoParts.push(`Logo guidelines: ${styleguide.logoGuidelines.join('. ')}.`);
+    }
+    if (styleguide.logoDonts?.length) {
+      logoParts.push(`Logo don'ts: ${styleguide.logoDonts.join('. ')}.`);
+    }
+    if (ctx.brandColors?.length) {
+      const primary = ctx.brandColors[0];
+      logoParts.push(`Primary brand color: ${primary.name} (${primary.hex}).`);
+    }
+    if (logoParts.length > 0) {
+      ctx.logoContext = logoParts.join(' ');
+    }
+  }
+
   if (personalityAsset?.frameworkData) {
     const fw = personalityAsset.frameworkData as Record<string, unknown>;
     const parts: string[] = [];
@@ -145,16 +172,21 @@ export async function resolveWorkspaceBrandContext(
     }));
   }
 
-  // Short summary line — used as a suffix in generation prompts.
+  // Short summary line — used as a suffix in image generation prompts.
+  // IMPORTANT: Only include VISUAL style directions. Do NOT include brand
+  // name, product names, personas, or competitor names — image models
+  // interpret all text as visual instructions and will render them as
+  // text-on-clothing, signage, etc.
   const summaryParts: string[] = [];
-  if (ctx.brandName) summaryParts.push(`Brand: ${ctx.brandName}.`);
+  summaryParts.push('Style direction (do NOT render any text, logos, or brand names in the image):');
   if (ctx.brandColors?.length) {
-    summaryParts.push(
-      `Brand colors: ${ctx.brandColors.map((c) => `${c.name} (${c.hex})`).join(', ')}.`,
-    );
+    const colorHints = ctx.brandColors.map((c) => `${c.name} (${c.hex})`).join(', ');
+    summaryParts.push(`Color palette: ${colorHints}.`);
   }
-  if (ctx.brandPersonality) summaryParts.push(`Personality: ${ctx.brandPersonality}`);
-  if (ctx.brandImageryStyle) summaryParts.push(`Imagery: ${ctx.brandImageryStyle}`);
+  if (ctx.moodKeywords?.length) {
+    summaryParts.push(`Mood: ${ctx.moodKeywords.join(', ')}.`);
+  }
+  if (ctx.brandImageryStyle) summaryParts.push(`Photography: ${ctx.brandImageryStyle}`);
   ctx.contextSummary = summaryParts.join(' ');
 
   return ctx;

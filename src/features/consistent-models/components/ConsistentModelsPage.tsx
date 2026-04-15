@@ -9,6 +9,7 @@ import { ModelCard } from "./ModelCard";
 import { CreateModelModal } from "./CreateModelModal";
 import { useConsistentModels, useConsistentModelStats } from "../hooks";
 import { useConsistentModelStore } from "../stores/useConsistentModelStore";
+import { HIDDEN_MODEL_TYPES } from "../constants/model-constants";
 import type {
   ConsistentModelType,
   ConsistentModelStatus,
@@ -41,7 +42,9 @@ export function ConsistentModelsContent({
   const { data, isLoading } = useConsistentModels(params);
   const { data: stats, isLoading: statsLoading } = useConsistentModelStats();
 
-  const models = data?.models ?? [];
+  const models = (data?.models ?? []).filter(
+    (m) => !HIDDEN_MODEL_TYPES.has(m.type as ConsistentModelType),
+  );
 
   return (
     <div className="space-y-6">

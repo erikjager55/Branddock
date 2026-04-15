@@ -201,6 +201,8 @@ export interface ModelBrandContext {
   competitors?: { name: string; notes: string }[];
   trendInsights?: { title: string; summary: string }[];
   moodKeywords?: string[];
+  /** Logo description + guidelines for when the user explicitly requests brand/logo in the image */
+  logoContext?: string;
 }
 
 // ─── Request Bodies ─────────────────────────────────────────

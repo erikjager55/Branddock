@@ -228,13 +228,15 @@ export type GenerationPreset = keyof typeof GENERATION_PRESETS;
 
 // ─── Model Type Options (for dropdowns) ─────────────────────
 
-/** Types that can no longer be created — their functionality moved to Brandstyle */
-const HIDDEN_CREATE_TYPES = new Set<ConsistentModelType>(["BRAND_STYLE", "STYLE"]);
+/** Types hidden from the AI Trainer UI (create modal + filter bar + overview).
+ *  BRAND_STYLE/STYLE: functionality moved to Brandstyle.
+ *  VOICE/SOUND_EFFECT: deactivated — audio training not yet supported. */
+export const HIDDEN_MODEL_TYPES = new Set<ConsistentModelType>(["BRAND_STYLE", "STYLE", "VOICE", "SOUND_EFFECT"]);
 
 export const MODEL_TYPE_OPTIONS = (
   Object.entries(TYPE_CONFIG) as [ConsistentModelType, ModelTypeConfig][]
 )
-  .filter(([value]) => !HIDDEN_CREATE_TYPES.has(value))
+  .filter(([value]) => !HIDDEN_MODEL_TYPES.has(value))
   .map(([value, config]) => ({
     value,
     label: config.label,

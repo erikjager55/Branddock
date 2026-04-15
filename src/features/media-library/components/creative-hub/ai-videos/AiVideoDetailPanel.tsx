@@ -1,10 +1,10 @@
 'use client';
 
 import { useCallback } from 'react';
-import { X, Video, Heart, Download } from 'lucide-react';
+import { X, Video, Heart, Download, FolderPlus, Check } from 'lucide-react';
 import { Badge, Button, Skeleton } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
-import { useAiVideoDetail, useUpdateAiVideo } from '@/features/media-library/hooks';
+import { useAiVideoDetail, useUpdateAiVideo, useSendAiVideoToLibrary } from '@/features/media-library/hooks';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -19,6 +19,7 @@ interface AiVideoDetailPanelProps {
 export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps) {
   const { data: video, isLoading, isError } = useAiVideoDetail(videoId);
   const updateVideo = useUpdateAiVideo(videoId);
+  const sendToLibrary = useSendAiVideoToLibrary();
   const mutate = updateVideo.mutate;
 
   const handleToggleFavorite = useCallback(() => {
@@ -180,17 +181,44 @@ export function AiVideoDetailPanel({ videoId, onClose }: AiVideoDetailPanelProps
             </button>
           </div>
 
-          {/* Download button */}
-          {video.fileUrl && (
-            <a
-              href={video.fileUrl}
-              download={video.fileName}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+          <div className="flex items-center gap-2">
+            {/* Save to Library button */}
+            <button
+              type="button"
+              onClick={() => sendToLibrary.mutate({ id: video.id })}
+              disabled={sendToLibrary.isPending || sendToLibrary.isSuccess}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+              style={
+                sendToLibrary.isSuccess
+                  ? { backgroundColor: '#ecfdf5', color: '#065f46' }
+                  : { backgroundColor: '#f0fdfa', color: '#0d9488' }
+              }
             >
-              <Download className="w-3.5 h-3.5" />
-              Download
-            </a>
-          )}
+              {sendToLibrary.isSuccess ? (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  Saved
+                </>
+              ) : (
+                <>
+                  <FolderPlus className="w-3.5 h-3.5" />
+                  {sendToLibrary.isPending ? 'Saving...' : 'Save to Library'}
+                </>
+              )}
+            </button>
+
+            {/* Download button */}
+            {video.fileUrl && (
+              <a
+                href={video.fileUrl}
+                download={video.fileName}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download
+              </a>
+            )}
+          </div>
         </div>
       </div>
     </div>

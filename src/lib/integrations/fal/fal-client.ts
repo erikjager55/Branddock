@@ -242,6 +242,7 @@ export async function runFalGeneration(
 
   const result = await fal.subscribe(endpoint || FLUX_LORA_GENERATOR, {
     input,
+    timeout: 180_000, // 3 minutes — GPU queue can be slow
   });
 
   const data = result.data as Record<string, unknown>;
@@ -312,13 +313,17 @@ export async function generateFalImage(
   const input: Record<string, unknown> = {
     prompt,
     num_images: options?.numImages ?? 1,
+    output_format: 'png',
     ...(options?.seed != null ? { seed: options.seed } : {}),
     ...(useAspectRatio
       ? { aspect_ratio: toAspectRatio(imageSize), resolution: '1K' }
       : { image_size: imageSize }),
   };
 
-  const result = await fal.subscribe(modelId, { input });
+  const result = await fal.subscribe(modelId, {
+    input,
+    timeout: 180_000, // 3 minutes — GPU queue can be slow
+  });
 
   const data = result.data as Record<string, unknown>;
   const images = (data?.images as FalGenerationImage[]) ?? [];

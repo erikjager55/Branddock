@@ -1,17 +1,19 @@
 "use client";
 
 import { SearchInput, Select } from "@/components/shared";
-import { TYPE_CONFIG, STATUS_FILTER_OPTIONS } from "../constants/model-constants";
+import { TYPE_CONFIG, STATUS_FILTER_OPTIONS, HIDDEN_MODEL_TYPES } from "../constants/model-constants";
 import type { ConsistentModelType } from "../types/consistent-model.types";
 
 const TYPE_PILL_OPTIONS: { value: ConsistentModelType; label: string; colorHex: string; bgHex: string }[] = (
   Object.entries(TYPE_CONFIG) as [ConsistentModelType, (typeof TYPE_CONFIG)[ConsistentModelType]][]
-).map(([value, config]) => ({
-  value,
-  label: config.label,
-  colorHex: config.colorHex,
-  bgHex: config.bgHex,
-}));
+)
+  .filter(([value]) => !HIDDEN_MODEL_TYPES.has(value as ConsistentModelType))
+  .map(([value, config]) => ({
+    value,
+    label: config.label,
+    colorHex: config.colorHex,
+    bgHex: config.bgHex,
+  }));
 
 interface ModelFilterBarProps {
   search: string;

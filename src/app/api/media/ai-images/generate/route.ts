@@ -101,14 +101,18 @@ export async function POST(request: NextRequest) {
     // direction, design language, and personality cues from brand foundation.
     const shouldApplyGuidelines = applyBrandGuidelines !== false;
     let brandSummary: string | undefined;
+    let brandName: string | undefined;
+    let logoContext: string | undefined;
     if (!isTrained && shouldApplyGuidelines) {
       const ctx = await resolveWorkspaceBrandContext(workspaceId);
       brandSummary = ctx?.contextSummary || undefined;
+      brandName = ctx?.brandName || undefined;
+      logoContext = ctx?.logoContext || undefined;
     }
 
     const finalPrompt = isTrained
       ? prompt
-      : buildPromptWithContext({ prompt, brandTags, dos, donts, brandSummary });
+      : buildPromptWithContext({ prompt, brandTags, dos, donts, brandSummary, brandName, logoContext });
 
     let imageBytes: Buffer;
     let mimeType: string;
