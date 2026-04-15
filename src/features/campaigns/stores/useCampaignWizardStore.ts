@@ -70,6 +70,8 @@ interface CampaignWizardState {
   campaignType: CampaignType | null;
   /** In content mode: the selected deliverable type ID (e.g. 'linkedin-post') */
   selectedContentType: string | null;
+  /** Type-specific inputs (SEO keyword, landing URL, etc.) — populated in content mode SetupStep */
+  contentTypeInputs: Record<string, string | string[] | number | boolean>;
   startDate: string;
   endDate: string;
   selectedKnowledgeIds: string[];
@@ -187,6 +189,7 @@ interface CampaignWizardState {
   setCampaignGoalType: (type: CampaignGoalType) => void;
   setCampaignType: (type: CampaignType) => void;
   setSelectedContentType: (typeId: string) => void;
+  setContentTypeInput: (key: string, value: string | string[] | number | boolean) => void;
   setStartDate: (date: string) => void;
   setEndDate: (date: string) => void;
   toggleKnowledgeId: (id: string) => void;
@@ -204,6 +207,16 @@ interface CampaignWizardState {
   allRationaleRated: () => boolean;
   allConceptRated: () => boolean;
   resetWizard: () => void;
+
+  /**
+   * Recover from stale in-flight pipeline phases. Call this on component mount
+   * (StrategyStep / ConceptStep) to handle the case where the user navigated
+   * away while SSE was running. The abort handler in createPhaseSSE silently
+   * returns (doesn't call onError), leaving isGenerating=true and strategyPhase
+   * in an in-flight state. This method applies the same recovery logic as
+   * onRehydrateStorage but for the in-memory store.
+   */
+  recoverStalePhase: () => void;
 
   // ─── Campaign Briefing Actions ──────────────────────────
   setBriefingOccasion: (v: string) => void;
@@ -303,6 +316,7 @@ const INITIAL_STATE = {
   campaignGoalType: null as CampaignGoalType | null,
   campaignType: null as CampaignType | null,
   selectedContentType: null as string | null,
+  contentTypeInputs: {} as Record<string, string | string[] | number | boolean>,
   startDate: "",
   endDate: "",
   selectedKnowledgeIds: [] as string[],
@@ -465,7 +479,9 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
       set(updates);
     },
     setCampaignType: (campaignType) => set({ campaignType }),
-    setSelectedContentType: (selectedContentType) => set({ selectedContentType }),
+    setSelectedContentType: (selectedContentType) => set({ selectedContentType, contentTypeInputs: {} }),
+    setContentTypeInput: (key: string, value: string | string[] | number | boolean) =>
+      set((state) => ({ contentTypeInputs: { ...state.contentTypeInputs, [key]: value } })),
     setStartDate: (startDate) => set({ startDate }),
     setEndDate: (endDate) => set({ endDate }),
 
@@ -546,6 +562,43 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
     },
 
     resetWizard: () => set(INITIAL_STATE),
+
+    recoverStalePhase: () => {
+      const state = get();
+      // Only recover if isGenerating is true (no SSE actually running — it was
+      // aborted silently when the component unmounted during navigation).
+      if (!state.isGenerating) return;
+
+      const updates: Partial<CampaignWizardState> = { isGenerating: false };
+      switch (state.strategyPhase) {
+        case 'validating_briefing':
+          updates.strategyPhase = 'idle';
+          break;
+        case 'building_foundation':
+          updates.strategyPhase = state.briefingValidation ? 'review_briefing' : 'idle';
+          break;
+        case 'mining_insights':
+          updates.strategyPhase = state.insights.length > 0 ? 'review_insights' : 'rationale_complete';
+          break;
+        case 'generating_concepts':
+          updates.strategyPhase = state.concepts.length > 0 ? 'review_concepts' : 'review_insights';
+          break;
+        case 'creative_debate':
+        case 'building_strategy':
+          updates.strategyPhase = 'review_concepts';
+          break;
+        case 'generating_journey':
+          updates.strategyPhase = state.synthesizedStrategy ? 'review_final_strategy' : 'review_concepts';
+          break;
+        case 'elaborating_direct':
+          updates.strategyPhase = 'rationale_complete';
+          break;
+        default:
+          // Phase is a stable review/idle phase — just clear isGenerating
+          break;
+      }
+      set(updates);
+    },
 
     // ─── Campaign Briefing Actions ──────────────────────────
     setBriefingOccasion: (briefingOccasion) => set({ briefingOccasion }),

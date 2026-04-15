@@ -154,6 +154,8 @@ export interface AssetPlanDeliverable {
   estimatedEffort: EffortLevel;
   /** 1-based deployment order within phase, set by AI in Step 6 */
   suggestedOrder?: number;
+  /** Type-specific inputs derived by AI (SEO keywords, landing page URL, etc.) */
+  contentTypeInputs?: Record<string, string | string[] | number | boolean>;
 }
 
 /** A preparation deliverable for the pre-campaign "Week 0" phase */
@@ -1067,6 +1069,7 @@ export const assetPlanDeliverableSchema = z.object({
   productionPriority: z.enum(['must-have', 'should-have', 'nice-to-have']),
   estimatedEffort: z.enum(['low', 'medium', 'high']),
   suggestedOrder: z.number().optional(),
+  contentTypeInputs: z.record(z.string(), z.union([z.string(), z.array(z.string()), z.number(), z.boolean()])).optional(),
 });
 
 export const prepDeliverableSchema = z.object({
@@ -1502,6 +1505,7 @@ export const assetPlanResponseSchema: Record<string, unknown> = {
           productionPriority: { type: 'string', enum: ['must-have', 'should-have', 'nice-to-have'] },
           estimatedEffort: { type: 'string', enum: ['low', 'medium', 'high'] },
           suggestedOrder: { type: 'number' },
+          contentTypeInputs: { type: 'object', description: 'Optional type-specific metadata (SEO keywords, landing URL, etc.)' },
         },
         required: ['title', 'contentType', 'channel', 'phase', 'targetPersonas', 'brief', 'productionPriority', 'estimatedEffort', 'suggestedOrder'],
       },

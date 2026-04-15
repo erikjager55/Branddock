@@ -77,6 +77,15 @@ interface CanvasStoreState {
   selectedMediumVariantId: 'A' | 'B' | 'C';
   variantsGenerated: boolean;
 
+  // ─── Content-type-specific inputs ─────────────────────────
+  contentTypeInputs: Record<string, string | string[] | number | boolean>;
+  contentTypeInputsModified: boolean;
+
+  // ─── SEO Pipeline ────────────────────────────────────────
+  seoInput: { primaryKeyword: string; funnelStage: 'awareness' | 'consideration' | 'decision'; competitorUrls: string[] };
+  seoSteps: Array<{ step: number; name: string; label: string; status: 'pending' | 'running' | 'complete' | 'error'; preview: string | null }>;
+  seoCurrentStep: number | null;
+
   // ─── Step 4: scheduling ───────────────────────────────────
   scheduledDate: string | null;
   scheduledTime: string | null;
@@ -123,6 +132,13 @@ interface CanvasStoreState {
   setScheduledDate: (date: string | null) => void;
   setScheduledTime: (time: string | null) => void;
   setIsTimeBound: (timeBound: boolean) => void;
+  setContentTypeInput: (key: string, value: string | string[] | number | boolean) => void;
+  setContentTypeInputsBulk: (inputs: Record<string, string | string[] | number | boolean>) => void;
+
+  // ─── SEO actions ─────────────────────────────────────────
+  setSeoInput: (input: Partial<{ primaryKeyword: string; funnelStage: 'awareness' | 'consideration' | 'decision'; competitorUrls: string[] }>) => void;
+  initSeoSteps: () => void;
+  updateSeoStep: (step: number, update: { status: 'pending' | 'running' | 'complete' | 'error'; preview?: string | null }) => void;
 
   reset: () => void;
 }
@@ -170,6 +186,15 @@ const INITIAL_STATE = {
   scheduledDate: null,
   scheduledTime: null,
   isTimeBound: false,
+
+  // Content-type-specific inputs
+  contentTypeInputs: {} as Record<string, string | string[] | number | boolean>,
+  contentTypeInputsModified: false,
+
+  // SEO Pipeline
+  seoInput: { primaryKeyword: '', funnelStage: 'awareness' as const, competitorUrls: [] as string[] },
+  seoSteps: [] as Array<{ step: number; name: string; label: string; status: 'pending' | 'running' | 'complete' | 'error'; preview: string | null }>,
+  seoCurrentStep: null as number | null,
 };
 
 export const useCanvasStore = create<CanvasStoreState>((set) => ({
@@ -290,6 +315,42 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
   setScheduledTime: (time) => set({ scheduledTime: time }),
   setIsTimeBound: (timeBound) => set({ isTimeBound: timeBound }),
 
+  setContentTypeInput: (key, value) =>
+    set((state) => ({
+      contentTypeInputs: { ...state.contentTypeInputs, [key]: value },
+      contentTypeInputsModified: true,
+    })),
+
+  setContentTypeInputsBulk: (inputs) =>
+    set({ contentTypeInputs: inputs, contentTypeInputsModified: false }),
+
+  setSeoInput: (input) =>
+    set((state) => ({ seoInput: { ...state.seoInput, ...input } })),
+
+  initSeoSteps: () => {
+    set({
+      seoSteps: [
+        { step: 1, name: 'project_briefing', label: 'Project Briefing', status: 'pending' as const, preview: null },
+        { step: 2, name: 'keyword_research', label: 'Keyword Research', status: 'pending' as const, preview: null },
+        { step: 3, name: 'competitor_analysis', label: 'Competitor Analysis', status: 'pending' as const, preview: null },
+        { step: 4, name: 'serp_gaps_eeat', label: 'SERP Gaps & E-E-A-T', status: 'pending' as const, preview: null },
+        { step: 5, name: 'outline_structure', label: 'Outline & Internal Links', status: 'pending' as const, preview: null },
+        { step: 6, name: 'first_draft', label: 'First Draft', status: 'pending' as const, preview: null },
+        { step: 7, name: 'editorial_review', label: 'Editorial Review', status: 'pending' as const, preview: null },
+        { step: 8, name: 'publication_prep', label: 'Publication Prep', status: 'pending' as const, preview: null },
+      ],
+      seoCurrentStep: null,
+    });
+  },
+
+  updateSeoStep: (step, update) =>
+    set((state) => ({
+      seoSteps: state.seoSteps.map((s) =>
+        s.step === step ? { ...s, ...update, preview: update.preview ?? s.preview } : s,
+      ),
+      seoCurrentStep: update.status === 'running' ? step : state.seoCurrentStep,
+    })),
+
   reset: () => set({
     ...INITIAL_STATE,
     // Create fresh instances on reset
@@ -299,5 +360,9 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
     additionalContextItems: new Map(),
     completedSteps: new Set(),
     stepSummaries: new Map(),
+    // Reset SEO state
+    seoInput: { primaryKeyword: '', funnelStage: 'awareness' as const, competitorUrls: [] },
+    seoSteps: [],
+    seoCurrentStep: null,
   }),
 }));

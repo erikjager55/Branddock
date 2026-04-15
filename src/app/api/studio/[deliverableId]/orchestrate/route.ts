@@ -13,12 +13,22 @@ const contextItemSchema = z.object({
   sourceId: z.string().max(100),
 });
 
+const seoInputSchema = z.object({
+  primaryKeyword: z.string().min(1).max(200),
+  funnelStage: z.enum(['awareness', 'consideration', 'decision']),
+  competitorUrls: z.array(z.string().url().max(500)).max(5).optional(),
+  secondaryKeywordHints: z.array(z.string().max(200)).max(20).optional(),
+  conversionGoal: z.string().max(200).optional(),
+  trafficSource: z.string().max(200).optional(),
+});
+
 const orchestrateBodySchema = z.object({
   instruction: z.string().max(2000).optional(),
   regenerateGroup: z.string().max(100).optional(),
   userFeedback: z.string().max(5000).optional(),
   additionalContextItems: z.array(contextItemSchema).max(50).optional(),
   mediumConfig: z.record(z.string(), z.unknown()).optional(),
+  seoInput: seoInputSchema.optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -120,6 +130,7 @@ export async function POST(
               userFeedback: body.userFeedback,
               additionalContextText,
               mediumConfig: body.mediumConfig,
+              seoInput: body.seoInput,
             },
           );
 

@@ -77,6 +77,41 @@ export function useCanvasOrchestration(deliverableId: string | null) {
       const mediumConfigValues = store.mediumConfigValues;
       const hasMediumConfig = Object.keys(mediumConfigValues).length > 0;
 
+      // Include SEO input if the user has provided a primary keyword.
+      // Auto-seed from contentTypeInputs if the user hasn't manually entered one.
+      const cti = store.contentTypeInputs;
+      const effectiveKeyword = store.seoInput.primaryKeyword
+        || (typeof cti.seoKeyword === 'string' ? cti.seoKeyword : '')
+        || (typeof cti.targetKeywords === 'object' && Array.isArray(cti.targetKeywords) && cti.targetKeywords.length > 0 ? cti.targetKeywords[0] : '');
+
+      const filteredCompetitorUrls = store.seoInput.competitorUrls.filter((u) => u.trim().length > 0);
+
+      // Merge secondaryKeywords from contentTypeInputs as hints for the pipeline
+      const secondaryHints = Array.isArray(cti.secondaryKeywords)
+        ? (cti.secondaryKeywords as string[])
+        : Array.isArray(cti.targetKeywords)
+          ? (cti.targetKeywords as string[]).slice(1) // first one used as primary
+          : undefined;
+
+      const seoInput = effectiveKeyword
+        ? {
+            primaryKeyword: effectiveKeyword,
+            funnelStage: store.seoInput.funnelStage,
+            competitorUrls: filteredCompetitorUrls.length > 0
+              ? filteredCompetitorUrls
+              : undefined,
+            secondaryKeywordHints: secondaryHints && secondaryHints.length > 0
+              ? secondaryHints
+              : undefined,
+            conversionGoal: typeof cti.conversionGoal === 'string' && cti.conversionGoal
+              ? cti.conversionGoal
+              : undefined,
+            trafficSource: typeof cti.trafficSource === 'string' && cti.trafficSource
+              ? cti.trafficSource
+              : undefined,
+          }
+        : undefined;
+
       const res = await fetch(`/api/studio/${deliverableId}/orchestrate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -84,6 +119,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
           instruction: options?.instruction,
           additionalContextItems: contextItems.length > 0 ? contextItems : undefined,
           mediumConfig: hasMediumConfig ? mediumConfigValues : undefined,
+          seoInput,
         }),
         signal: controller.signal,
       });
@@ -299,6 +335,22 @@ function routeEvent(eventName: string, rawData: string) {
         });
       }
       break;
+
+    case 'seo_step': {
+      const step = data.step as number | undefined;
+      const status = data.status as string | undefined;
+      if (typeof step === 'number' && status) {
+        // Initialize steps on first event
+        if (store.seoSteps.length === 0) {
+          store.initSeoSteps();
+        }
+        store.updateSeoStep(step, {
+          status: status as 'pending' | 'running' | 'complete' | 'error',
+          preview: (data.preview as string) ?? null,
+        });
+      }
+      break;
+    }
 
     case 'complete':
       store.setGlobalStatus('complete');

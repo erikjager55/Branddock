@@ -5,6 +5,7 @@ import { useCanvasStore } from '../../stores/useCanvasStore';
 import { ChevronDown, ChevronRight, Building2, Lightbulb, Route, Monitor, BookOpen, X, Plus } from 'lucide-react';
 import { Skeleton, SkeletonText, Badge } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
+import { ContentBriefCard } from './ContentBriefCard';
 
 export function ContextPanel() {
   const contextStack = useCanvasStore((s) => s.contextStack);
@@ -133,6 +134,8 @@ export function ContextPanel() {
                 <p className="text-xs text-gray-400 italic">No medium data available</p>
               )}
             </ContextCard>
+
+            <ContentBriefCard />
 
             <ContextCard
               icon={<BookOpen className="h-4 w-4" />}

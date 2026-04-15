@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
@@ -11,6 +12,7 @@ const patchDeliverableSchema = z.object({
   status: z.enum(["NOT_STARTED", "IN_PROGRESS", "COMPLETED"]).optional(),
   progress: z.number().min(0).max(100).optional(),
   assignedTo: z.string().nullable().optional(),
+  contentTypeInputs: z.record(z.string(), z.union([z.string(), z.array(z.string()), z.number(), z.boolean()])).optional(),
 });
 
 export async function PATCH(
@@ -50,7 +52,17 @@ export async function PATCH(
       );
     }
 
-    const { title, status, progress, assignedTo } = parsed.data;
+    const { title, status, progress, assignedTo, contentTypeInputs } = parsed.data;
+
+    // Merge contentTypeInputs into existing settings Json field
+    let settingsUpdate: Record<string, unknown> | undefined;
+    if (contentTypeInputs !== undefined) {
+      const currentSettings = (deliverable.settings as Record<string, unknown>) ?? {};
+      settingsUpdate = {
+        ...currentSettings,
+        contentTypeInputs,
+      };
+    }
 
     const updated = await prisma.deliverable.update({
       where: { id: did },
@@ -59,6 +71,7 @@ export async function PATCH(
         ...(status !== undefined && { status }),
         ...(progress !== undefined && { progress }),
         ...(assignedTo !== undefined && { assignedTo }),
+        ...(settingsUpdate !== undefined && { settings: settingsUpdate as Prisma.InputJsonValue }),
       },
     });
 

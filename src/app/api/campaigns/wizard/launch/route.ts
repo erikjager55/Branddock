@@ -31,6 +31,7 @@ const launchSchema = z.object({
     constraints: z.string().optional(),
   }).optional(),
   draftCampaignId: z.string().optional(),
+  contentTypeInputs: z.record(z.string(), z.union([z.string(), z.array(z.string()), z.number(), z.boolean()])).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { name, type, goalType, knowledgeIds, strategy, deliverables, briefing, draftCampaignId } = parsed.data;
+    const { name, type, goalType, knowledgeIds, strategy, deliverables, briefing, draftCampaignId, contentTypeInputs } = parsed.data;
 
     const slug = name
       .toLowerCase()
@@ -152,12 +153,17 @@ export async function POST(request: NextRequest) {
       await createDeliverablesFromBlueprint(campaign.id, assetPlanDeliverables);
     } else if (deliverables && deliverables.length > 0) {
       // Fallback: use wizard-provided deliverables with briefing from wizard
-      const briefSettings = briefing ? {
-        brief: {
-          objective: briefing.occasion || briefing.audienceObjective || undefined,
-          keyMessage: briefing.coreMessage || undefined,
-          toneDirection: briefing.tonePreference || undefined,
-        },
+      const briefSettings = briefing || contentTypeInputs ? {
+        ...(briefing ? {
+          brief: {
+            objective: briefing.occasion || briefing.audienceObjective || undefined,
+            keyMessage: briefing.coreMessage || undefined,
+            toneDirection: briefing.tonePreference || undefined,
+          },
+        } : {}),
+        ...(contentTypeInputs && Object.keys(contentTypeInputs).length > 0
+          ? { contentTypeInputs }
+          : {}),
       } : undefined;
 
       for (const d of deliverables) {

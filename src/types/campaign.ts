@@ -76,6 +76,8 @@ export interface DeliverableBriefSettings {
   estimatedEffort?: 'low' | 'medium' | 'high';
   /** 1-based deployment order within phase, set by AI */
   suggestedOrder?: number;
+  /** Type-specific inputs (SEO keywords, landing page URL, event details, etc.) */
+  contentTypeInputs?: Record<string, string | string[] | number | boolean>;
 }
 
 export interface DeliverableResponse {

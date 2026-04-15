@@ -74,6 +74,8 @@ export interface CanvasContextStack {
   personas: PersonaContext[];
   brief: BriefContext | null;
   products: ProductContext[];
+  /** Type-specific inputs (SEO keywords, landing page URL, event details, etc.) */
+  contentTypeInputs?: Record<string, string | string[] | number | boolean>;
 }
 
 // ─── Content Type → Platform/Format Mapping ──────────────────
@@ -319,9 +321,13 @@ export async function assembleCanvasContext(
     }
   }
 
+  // Content-type-specific inputs from deliverable settings
+  const contentTypeInputs = (settings.contentTypeInputs ?? undefined) as
+    Record<string, string | string[] | number | boolean> | undefined;
+
   return {
     brand, concept, journeyPhase, medium,
     deliverableTypeId: deliverable.contentType ?? null,
-    personas, brief, products,
+    personas, brief, products, contentTypeInputs,
   };
 }

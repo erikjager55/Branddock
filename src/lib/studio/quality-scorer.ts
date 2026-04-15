@@ -13,6 +13,7 @@
 import { generateAIResponse } from '@/lib/ai/exploration/ai-caller';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
 import { getDeliverableTypeById, type QualityCriterion } from '@/features/campaigns/lib/deliverable-types';
+import { getRequiredInputs } from '@/features/campaigns/lib/content-type-inputs';
 import { buildBrandVoiceDirective } from './brand-voice-directive';
 import type { GenerationContext } from './context-builder';
 
@@ -29,6 +30,8 @@ export interface QualityScoringResult {
   overall: number;
   dimensions: QualityDimension[];
   summary: string;
+  /** Nudges for missing content-type-specific inputs that would improve quality */
+  nudges?: string[];
 }
 
 // ─── Constants ────────────────────────────────────────────
@@ -144,6 +147,7 @@ export async function scoreContentQuality(
   deliverableTitle: string,
   workspaceId?: string,
   deliverableTypeId?: string,
+  contentTypeInputs?: Record<string, unknown>,
 ): Promise<QualityScoringResult> {
   // Look up type-specific criteria if deliverableTypeId provided
   const typeDefinition = deliverableTypeId ? getDeliverableTypeById(deliverableTypeId) : undefined;
@@ -182,9 +186,15 @@ export async function scoreContentQuality(
       2000,
     );
 
-    return typeSpecificCriteria && typeSpecificCriteria.length > 0
+    const result = typeSpecificCriteria && typeSpecificCriteria.length > 0
       ? parseTypeSpecificResponse(response, typeSpecificCriteria)
       : parseScoringResponse(response);
+
+    // Add nudges for missing content-type-specific inputs
+    const nudges = getMissingInputNudges(deliverableTypeId, contentTypeInputs);
+    if (nudges.length > 0) result.nudges = nudges;
+
+    return result;
   } catch (error) {
     console.error('Quality scoring AI call failed:', error);
     return createEmptyResult(typeSpecificCriteria);
@@ -313,6 +323,35 @@ function parseScoringResponse(raw: string): QualityScoringResult {
 function clampScore(score: number | undefined): number {
   if (score === undefined || isNaN(score)) return 50;
   return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+/**
+ * Check for missing required content-type-specific inputs and generate nudge messages.
+ */
+function getMissingInputNudges(typeId: string | undefined, inputs?: Record<string, unknown>): string[] {
+  if (!typeId) return [];
+  const required = getRequiredInputs(typeId);
+  if (required.length === 0) return [];
+  const safeInputs = inputs ?? {};
+  return required
+    .filter((f) => {
+      const val = safeInputs[f.key];
+      if (val == null || val === '') return true;
+      // Boolean false is a valid explicit answer, not "missing"
+      if (f.type === 'boolean') return val == null;
+      if (Array.isArray(val) && val.length === 0) return true;
+      return false;
+    })
+    .map((f) => {
+      const categoryHint = f.category === 'seo' ? 'for better SEO ranking'
+        : f.category === 'campaign-details' ? 'to make the content actionable'
+        : f.category === 'references' ? 'to add credibility'
+        : f.category === 'format-specs' ? 'for correct formatting'
+        : f.category === 'audience' ? 'for better targeting'
+        : f.category === 'creative-direction' ? 'to guide the creative direction'
+        : 'to improve content specificity';
+      return `Add ${f.label.toLowerCase()} ${categoryHint}`;
+    });
 }
 
 function createEmptyResult(criteria?: QualityCriterion[]): QualityScoringResult {

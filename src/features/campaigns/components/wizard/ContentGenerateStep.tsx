@@ -19,6 +19,7 @@ export function ContentGenerateStep() {
   const contentGenPhase = useCampaignWizardStore((s) => s.contentGenPhase);
   const setContentGenPhase = useCampaignWizardStore((s) => s.setContentGenPhase);
   const selectedContentType = useCampaignWizardStore((s) => s.selectedContentType);
+  const globalErrorMessage = useCanvasStore((s) => s.globalErrorMessage);
 
   const launchCampaign = useLaunchCampaign();
   const launchStartedRef = useRef(false);
@@ -72,6 +73,7 @@ export function ContentGenerateStep() {
           constraints: store.briefingConstraints || undefined,
         },
         draftCampaignId,
+        ...(Object.keys(store.contentTypeInputs).length > 0 ? { contentTypeInputs: store.contentTypeInputs } : {}),
       });
 
       const s = useCampaignWizardStore.getState();
@@ -135,7 +137,6 @@ export function ContentGenerateStep() {
 
   // ─── Render: Error ─────────────────────────────────────────
   if (contentGenPhase === 'error') {
-    const globalErrorMessage = useCanvasStore.getState().globalErrorMessage;
     return (
       <div className="flex flex-col items-center justify-center py-16 gap-4">
         <AlertCircle className="h-8 w-8 text-red-500" />

@@ -23,6 +23,7 @@ import { cacheKeys } from '@/lib/api/cache-keys';
 import type { JourneyPhaseContext } from '@/lib/campaigns/journey-phase';
 import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-types';
 import { getPromptTemplate } from '@/lib/studio/prompt-templates';
+import { getContentTypeInputs } from '@/features/campaigns/lib/content-type-inputs';
 import { buildBrandVoiceDirectiveFromContext } from '@/lib/studio/brand-voice-directive';
 import OpenAI from 'openai';
 
@@ -39,6 +40,7 @@ export interface OrchestrationOptions {
   userFeedback?: string;
   additionalContextText?: string;
   mediumConfig?: Record<string, unknown>;
+  seoInput?: import('./seo-pipeline.types').SeoInput;
 }
 
 interface TextComponentGroup {
@@ -127,6 +129,25 @@ export async function* orchestrateContentGeneration(
   // ── Regeneration path ─────────────────────────────────
   if (options?.regenerateGroup) {
     yield* handleRegeneration(deliverableId, workspaceId, stack, options, startTime, voiceDirective);
+    return;
+  }
+
+  // ── SEO Pipeline path (website types with keyword) ───
+  const deliverableTypeId = stack.deliverableTypeId ?? '';
+  const { WEBSITE_DELIVERABLE_TYPES } = await import('./seo-pipeline.types');
+  if (
+    WEBSITE_DELIVERABLE_TYPES.has(deliverableTypeId) &&
+    options?.seoInput?.primaryKeyword
+  ) {
+    const { runSeoPipeline } = await import('./seo-pipeline');
+    yield* runSeoPipeline(
+      deliverableId,
+      workspaceId,
+      options.seoInput,
+      stack,
+      voiceDirective,
+      deliverableTypeId,
+    );
     return;
   }
 
@@ -580,6 +601,7 @@ function buildCanvasPrompt(
     stack.journeyPhase ? formatPhaseGuidance(stack.journeyPhase) : '',
     stack.brief ? formatBriefContext(stack.brief) : '',
     stack.products.length > 0 ? formatProductContext(stack.products) : '',
+    formatContentTypeInputs(stack.contentTypeInputs, contentType),
     medium ? formatMediumSpecs(medium) : '',
     options?.mediumConfig ? formatMediumConfig(options.mediumConfig) : '',
     contentType ? formatConstraintsForPrompt(contentType) : '',
@@ -669,6 +691,7 @@ function buildRegenerationPrompt(
     stack.journeyPhase ? formatPhaseGuidance(stack.journeyPhase) : '',
     stack.brief ? formatBriefContext(stack.brief) : '',
     stack.products.length > 0 ? formatProductContext(stack.products) : '',
+    formatContentTypeInputs(stack.contentTypeInputs, regenContentType),
     options?.mediumConfig ? formatMediumConfig(options.mediumConfig) : '',
     regenContentType ? formatConstraintsForPrompt(regenContentType) : '',
     options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
@@ -976,6 +999,23 @@ function formatProductContext(products: ProductContext[]): string {
     if (p.useCases.length > 0) parts.push(`Use Cases:\n${p.useCases.map((u) => `- ${u}`).join('\n')}`);
   }
   return parts.join('\n');
+}
+
+function formatContentTypeInputs(
+  inputs: Record<string, string | string[] | number | boolean> | undefined,
+  typeId: string | null,
+): string {
+  if (!typeId || !inputs || Object.keys(inputs).length === 0) return '';
+  const fields = getContentTypeInputs(typeId);
+  const lines = fields
+    .filter((f) => inputs[f.key] != null && inputs[f.key] !== '')
+    .map((f) => {
+      const val = inputs[f.key];
+      const display = Array.isArray(val) ? (val as string[]).join(', ') : String(val);
+      return `- ${f.label}: ${display}`;
+    });
+  if (lines.length === 0) return '';
+  return `\n## Content-Specific Inputs\nUse these inputs to make the content specific and actionable. For example, if SEO keywords are provided, naturally incorporate them. If a landing page URL is specified, use it in the CTA.\n${lines.join('\n')}`;
 }
 
 // ─── Image Generation ─────────────────────────────────────
