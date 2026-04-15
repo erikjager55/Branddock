@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Plus, Zap } from "lucide-react";
+import { AddContentModal } from "../shared/AddContentModal";
 import { PageShell, PageHeader } from "@/components/ui/layout";
 import { Button } from "@/components/shared";
 import { CampaignStatsCards } from "./CampaignStatsCards";
@@ -50,6 +51,7 @@ export function ActiveCampaignsPage({
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [busyDraftId, setBusyDraftId] = useState<string | null>(null);
+  const [showAddContentModal, setShowAddContentModal] = useState(false);
 
   const {
     filterTab,
@@ -133,7 +135,7 @@ export function ActiveCampaignsPage({
         subtitle="Plan, create, and manage your campaigns"
         actions={
           <div className="flex items-center gap-3">
-            <Button data-testid="create-content-button" variant="secondary" onClick={() => onNavigateToContentWizard?.()} className="gap-2">
+            <Button data-testid="create-content-button" variant="secondary" onClick={() => setShowAddContentModal(true)} className="gap-2">
               <Zap className="h-4 w-4" />
               Create Content
             </Button>
@@ -195,6 +197,21 @@ export function ActiveCampaignsPage({
         onArchive={handleArchiveDraft}
         onStartNew={handleStartNewCampaign}
         busyDraftId={busyDraftId}
+      />
+      <AddContentModal
+        isOpen={showAddContentModal}
+        onClose={() => setShowAddContentModal(false)}
+        onSelectCampaign={(cid) => {
+          setShowAddContentModal(false);
+          onNavigateToCampaign(cid);
+        }}
+        onStartWizard={(formatName) => {
+          setShowAddContentModal(false);
+          const store = useCampaignWizardStore.getState();
+          store.setWizardMode('content');
+          store.setName(formatName);
+          onNavigateToContentWizard?.();
+        }}
       />
     </PageShell>
   );
