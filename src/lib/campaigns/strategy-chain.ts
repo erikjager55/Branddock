@@ -7,7 +7,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { getBrandContext } from '@/lib/ai/brand-context';
-import { formatBrandContext } from '@/lib/ai/prompt-templates';
+import { formatBrandContext, formatBrandContextTier } from '@/lib/ai/prompt-templates';
 import { buildSelectedPersonasContext } from '@/lib/ai/persona-context';
 import { createClaudeStructuredCompletion, createStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
@@ -79,6 +79,7 @@ const CLAUDE_OPUS = 'claude-opus-4-6';
 const GPT_54 = 'gpt-5.4';
 const GEMINI_31_PRO = 'gemini-3.1-pro-preview';
 const GEMINI_FLASH = 'gemini-2.5-flash';
+const GEMINI_FLASH_LITE = 'gemini-2.5-flash-lite';
 
 /** Deep thinking configuration for strategy variant generation */
 const THINKING_CONFIG = {
@@ -559,10 +560,10 @@ export async function elaborateJourney(
       briefing: data.wizardContext.briefing,
     });
 
-    const jpRaw = await withStepContext('Step 4.5 (Journey Phases — Gemini)', 60, () =>
+    const jpRaw = await withStepContext('Step 4.5 (Journey Phases — Gemini Lite)', 60, () =>
       createGeminiStructuredCompletion<ArchitectureLayer>(
         jpPrompt.system, jpPrompt.user,
-        { model: GEMINI_FLASH, temperature: 0.3, maxOutputTokens: 8000, timeoutMs: 60_000, responseSchema: journeyPhasesResponseSchema },
+        { model: GEMINI_FLASH_LITE, temperature: 0.3, maxOutputTokens: 8000, timeoutMs: 60_000, responseSchema: journeyPhasesResponseSchema },
       ),
     );
 
@@ -594,10 +595,10 @@ export async function elaborateJourney(
     eastChecklist: journeyEastChecklist,
   });
 
-  const channelPlanRaw = await withStepContext('Step 5 (Channel Planner — Gemini)', 180, () =>
+  const channelPlanRaw = await withStepContext('Step 5 (Channel Planner — Gemini Lite)', 180, () =>
     createGeminiStructuredCompletion<ChannelPlanLayer>(
       step5Prompt.system, step5Prompt.user,
-      { model: GEMINI_FLASH, temperature: 0.2, maxOutputTokens: 12000, timeoutMs: 180_000, responseSchema: channelPlanResponseSchema },
+      { model: GEMINI_FLASH_LITE, temperature: 0.2, maxOutputTokens: 12000, timeoutMs: 180_000, responseSchema: channelPlanResponseSchema },
     ),
   );
   const channelPlan = validateOrWarn(channelPlanLayerSchema, channelPlanRaw, 'Step 5 Channel Plan');
@@ -626,10 +627,10 @@ export async function elaborateJourney(
     selectedDeliverables: data.wizardContext.selectedDeliverables,
   });
 
-  const assetPlanRaw = await withStepContext('Step 6 (Asset Planner — Gemini)', 120, () =>
+  const assetPlanRaw = await withStepContext('Step 6 (Asset Planner — Gemini Lite)', 120, () =>
     createGeminiStructuredCompletion<AssetPlanLayer>(
       step6Prompt.system, step6Prompt.user,
-      { model: GEMINI_FLASH, temperature: 0.3, maxOutputTokens: 16000, timeoutMs: 120_000, responseSchema: assetPlanResponseSchema },
+      { model: GEMINI_FLASH_LITE, temperature: 0.3, maxOutputTokens: 16000, timeoutMs: 120_000, responseSchema: assetPlanResponseSchema },
     ),
   );
   const assetPlan = validateOrWarn(assetPlanLayerSchema, assetPlanRaw, 'Step 6 Asset Plan');
@@ -681,6 +682,9 @@ export async function createDeliverablesFromBlueprint(
           productionPriority: d.productionPriority,
           estimatedEffort: d.estimatedEffort,
           suggestedOrder: d.suggestedOrder,
+          ...(d.contentTypeInputs && Object.keys(d.contentTypeInputs).length > 0
+            ? { contentTypeInputs: d.contentTypeInputs }
+            : {}),
         })),
       },
     });
@@ -881,7 +885,7 @@ export async function regenerateBlueprintLayer(
     const channelRaw = await withStepContext('Regenerate Channel Plan (Step 4)', 180, () =>
       createGeminiStructuredCompletion<ChannelPlanLayer>(
         prompt.system, prompt.user,
-        { model: GEMINI_FLASH, temperature: 0.2, maxOutputTokens: 12000, timeoutMs: 180_000, responseSchema: channelPlanResponseSchema },
+        { model: GEMINI_FLASH_LITE, temperature: 0.2, maxOutputTokens: 12000, timeoutMs: 180_000, responseSchema: channelPlanResponseSchema },
       ),
     );
     blueprint.channelPlan = validateOrWarn(channelPlanLayerSchema, channelRaw, 'Regenerate Channel Plan');
@@ -914,7 +918,7 @@ export async function regenerateBlueprintLayer(
   const assetRaw = await withStepContext('Regenerate Asset Plan (Step 5)', 180, () =>
     createGeminiStructuredCompletion<AssetPlanLayer>(
       assetPrompt.system, assetPrompt.user,
-      { model: GEMINI_FLASH, temperature: 0.3, maxOutputTokens: 16000, timeoutMs: 180_000, responseSchema: assetPlanResponseSchema },
+      { model: GEMINI_FLASH_LITE, temperature: 0.3, maxOutputTokens: 16000, timeoutMs: 180_000, responseSchema: assetPlanResponseSchema },
     ),
   );
   blueprint.assetPlan = validateOrWarn(assetPlanLayerSchema, assetRaw, 'Regenerate Asset Plan');
@@ -1015,12 +1019,12 @@ export async function validateBriefing(
     selectedContentType,
     strategicIntent,
     briefing: wizardContext.briefing,
-    brandContext: formatBrandContext(brandContext),
+    brandContext: formatBrandContextTier(brandContext, 'summary'),
     personaContext,
     productContext,
   });
 
-  // Use Gemini Flash for speed
+  // Use Gemini Flash for speed — summary context keeps prompt small
   const raw = await withStepContext('Phase 1 (Briefing Validation)', 60, () =>
     createStructuredCompletion<BriefingValidation>(
       'google', GEMINI_FLASH,
@@ -1312,7 +1316,10 @@ import { buildQuickConceptPrompt } from '@/lib/ai/prompts/campaign-strategy';
 /** Shared context needed across new pipeline phases */
 interface CreativePipelineContext {
   workspaceId: string;
+  /** Full brand context string (for strategy build which needs everything) */
   brandContext: string;
+  /** Raw brand context data block — use with formatBrandContextTier() for lighter phases */
+  brandContextData: import('@/lib/ai/prompt-templates').BrandContextBlock;
   personaContext: string;
   productContext: string;
   competitorContext: string;
@@ -1389,6 +1396,7 @@ export async function buildCreativePipelineContext(
   return {
     workspaceId,
     brandContext,
+    brandContextData,
     personaContext,
     productContext,
     competitorContext,
@@ -1430,9 +1438,12 @@ export async function generateInsights(
     { role: 'behavior', provider: modelC.provider, model: modelC.model },
   ];
 
+  // Use medium tier for insight mining — strategy assets + personality, no competitor/trend details
+  const insightBrandContext = formatBrandContextTier(ctx.brandContextData, 'medium');
+
   const insightPromises = lenses.map(async (lens) => {
     const prompt = buildInsightMiningPrompt({
-      brandContext: ctx.brandContext,
+      brandContext: insightBrandContext,
       personaContext: ctx.personaContext,
       productContext: ctx.productContext,
       competitorContext: ctx.competitorContext,
@@ -1540,10 +1551,13 @@ Human truth: ${selectedInsight.humanTruth}`;
     { template: templates[2], angle: angles[2], provider: modelC.provider, model: modelC.model },
   ];
 
+  // Use medium tier for creative leap — brand identity matters, not competitor/trend details
+  const leapBrandContext = formatBrandContextTier(ctx.brandContextData, 'medium');
+
   const conceptPromises = assignments.map(async (a) => {
     const prompt = buildCreativeLeapPrompt({
       selectedInsight: insightText,
-      brandContext: ctx.brandContext,
+      brandContext: leapBrandContext,
       personaContext: ctx.personaContext,
       goalType: ctx.goalType,
       goldenbergTemplate: {
@@ -1602,7 +1616,7 @@ Generate DIFFERENT concepts that address these failures.` : undefined,
 // ─── Phase 2b: Creative Debate (Multi-Round) ────────────────
 
 const MAX_DEBATE_ROUNDS = 3;
-const DEBATE_QUALITY_GATE = 75;
+const DEBATE_QUALITY_GATE = 70;
 
 /** Thinking budgets per debate round (decreasing) */
 const DEBATE_THINKING_BUDGETS: Array<{ critic: number; defense: number }> = [
@@ -1631,6 +1645,9 @@ export async function runCreativeDebate(
   let latestDefense: unknown = null;
   let finalScore = 0;
 
+  // Use light tier for debate — critic/defense need brand positioning + tone, not full frameworks
+  const debateBrandContext = formatBrandContextTier(ctx.brandContextData, 'light');
+
   for (let round = 0; round < MAX_DEBATE_ROUNDS; round++) {
     const roundNum = round + 1;
     const budgets = DEBATE_THINKING_BUDGETS[round] ?? DEBATE_THINKING_BUDGETS[DEBATE_THINKING_BUDGETS.length - 1];
@@ -1645,7 +1662,7 @@ export async function runCreativeDebate(
     const criticPrompt = buildCreativeCriticPrompt({
       conceptJson,
       insightJson,
-      brandContext: ctx.brandContext,
+      brandContext: debateBrandContext,
       personaContext: ctx.personaContext,
       goalType,
       previousRoundContext,
@@ -1694,7 +1711,7 @@ export async function runCreativeDebate(
       conceptJson,
       insightJson,
       critiqueJson: JSON.stringify(critique, null, 2),
-      brandContext: ctx.brandContext,
+      brandContext: debateBrandContext,
       personaContext: ctx.personaContext,
       goalType,
       roundContext,

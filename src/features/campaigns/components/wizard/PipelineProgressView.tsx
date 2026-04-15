@@ -169,6 +169,8 @@ export interface PipelineStepConfig {
 interface PipelineProgressViewProps {
   title: string;
   subtitle?: string;
+  /** Human-readable estimated duration, e.g. "1–2 minutes" */
+  estimatedDuration?: string;
   steps: PipelineStepConfig[];
   pipelineSteps: PipelineStep[];
   enrichmentStatus?: 'idle' | 'running' | 'complete' | 'skipped';
@@ -179,7 +181,7 @@ interface PipelineProgressViewProps {
 // ─── Component ──────────────────────────────────────────
 
 /** Reusable pipeline progress view for any subset of steps */
-export function PipelineProgressView({ title, subtitle, steps, pipelineSteps, enrichmentStatus = 'idle', enrichmentBlockCount = 0, enrichmentSources }: PipelineProgressViewProps) {
+export function PipelineProgressView({ title, subtitle, estimatedDuration, steps, pipelineSteps, enrichmentStatus = 'idle', enrichmentBlockCount = 0, enrichmentSources }: PipelineProgressViewProps) {
   const completedSteps = pipelineSteps.filter((s) => s.status === "complete").length;
   const totalSteps = steps.length;
   const progressPercent = totalSteps > 0 ? Math.round((completedSteps / totalSteps) * 100) : 0;
@@ -199,6 +201,9 @@ export function PipelineProgressView({ title, subtitle, steps, pipelineSteps, en
             </span>
           )}
         </p>
+        {estimatedDuration && !allComplete && (
+          <p className="text-xs text-gray-400 mt-0.5">Typically takes {estimatedDuration}</p>
+        )}
       </div>
 
       <ProgressBar value={progressPercent} color="emerald" size="md" showLabel />

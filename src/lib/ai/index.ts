@@ -25,12 +25,13 @@ export {
   ANALYSIS_INSTRUCTIONS,
   STRUCTURED_INSTRUCTIONS,
   formatBrandContext,
+  formatBrandContextTier,
   buildSystemMessage,
   buildAnalysisMessages,
   buildStructuredMessages,
   buildChatMessages,
 } from './prompt-templates';
-export type { BrandContextBlock } from './prompt-templates';
+export type { BrandContextBlock, BrandContextTier } from './prompt-templates';
 
 // ─── Middleware ─────────────────────────────────────────────
 export { withAi, withAiRateLimit, withBrandContext } from './middleware';

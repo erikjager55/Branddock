@@ -129,6 +129,108 @@ export function formatBrandContext(ctx: BrandContextBlock): string {
   return lines.join('\n');
 }
 
+// ─── Tiered brand context ──────────────────────────────────
+
+export type BrandContextTier = 'full' | 'medium' | 'light' | 'summary';
+
+/**
+ * Format brand context at different detail levels to reduce prompt tokens
+ * where the full context isn't needed.
+ *
+ * - **full**: Everything (default, same as formatBrandContext)
+ * - **medium**: Strategy + personality + tone + visual — no competitor/trend details
+ * - **light**: Brand name + positioning + tone guidelines only
+ * - **summary**: One-liner inventory (what exists, not the content)
+ */
+export function formatBrandContextTier(ctx: BrandContextBlock, tier: BrandContextTier): string {
+  if (tier === 'full') return formatBrandContext(ctx);
+
+  if (tier === 'summary') {
+    const parts: string[] = ['## Brand Context (Summary)'];
+    if (ctx.brandName) parts.push(`**Brand:** ${ctx.brandName}`);
+    if (ctx.industry) parts.push(`**Industry:** ${ctx.industry}`);
+
+    // List which assets have content (without including the content itself)
+    const assets: string[] = [];
+    if (ctx.brandPurpose) assets.push('Purpose');
+    if (ctx.goldenCircle) assets.push('Golden Circle');
+    if (ctx.brandEssence) assets.push('Brand Essence');
+    if (ctx.brandPromise) assets.push('Brand Promise');
+    if (ctx.brandMission) assets.push('Mission');
+    if (ctx.brandVision) assets.push('Vision');
+    if (ctx.brandArchetype) assets.push('Brand Archetype');
+    if (ctx.brandPersonality) assets.push('Brand Personality');
+    if (ctx.brandStory) assets.push('Brand Story');
+    if (ctx.brandValues?.length) assets.push(`Core Values (${ctx.brandValues.length})`);
+    if (ctx.transformativeGoals) assets.push('Transformative Goals');
+    if (ctx.socialRelevancy) assets.push('Social Relevancy');
+    if (assets.length > 0) parts.push(`**Defined brand assets:** ${assets.join(', ')}`);
+
+    // Summarise visual identity availability
+    const visual: string[] = [];
+    if (ctx.brandColors) visual.push('colors');
+    if (ctx.brandTypography) visual.push('typography');
+    if (ctx.brandToneOfVoice) visual.push('tone of voice');
+    if (ctx.brandImageryStyle) visual.push('imagery style');
+    if (ctx.brandVisualLanguage) visual.push('visual language');
+    if (visual.length > 0) parts.push(`**Visual identity:** ${visual.join(', ')} defined`);
+
+    if (ctx.targetAudience) parts.push(`**Target audience:** ${ctx.targetAudience}`);
+    if (ctx.productsOverview) parts.push(`**Products:** ${ctx.productsOverview}`);
+    if (ctx.competitorAnalysis || ctx.competitiveLandscape) parts.push('**Competitors:** analyzed');
+
+    return parts.join('\n');
+  }
+
+  if (tier === 'light') {
+    const parts: string[] = ['## Brand Context'];
+    if (ctx.brandName) parts.push(`**Brand Name:** ${ctx.brandName}`);
+    if (ctx.brandEssence) parts.push(`**Brand Essence:** ${ctx.brandEssence}`);
+    if (ctx.brandPromise) parts.push(`**Brand Promise:** ${ctx.brandPromise}`);
+    if (ctx.brandValues?.length) parts.push(`**Core Values:** ${ctx.brandValues.join(', ')}`);
+    if (ctx.brandToneOfVoice) parts.push(`**Tone of Voice:** ${ctx.brandToneOfVoice}`);
+    if (ctx.brandPersonality) {
+      // Only first 500 chars of personality — enough for voice/tone guidance
+      const short = ctx.brandPersonality.length > 500
+        ? ctx.brandPersonality.slice(0, 500) + '…'
+        : ctx.brandPersonality;
+      parts.push(`**Brand Personality:** ${short}`);
+    }
+    if (ctx.industry) parts.push(`**Industry:** ${ctx.industry}`);
+    return parts.join('\n');
+  }
+
+  // tier === 'medium'
+  const parts: string[] = ['## Brand Context'];
+  if (ctx.brandName) parts.push(`**Brand Name:** ${ctx.brandName}`);
+
+  parts.push('');
+  parts.push('> Prioritize Brand Personality for tone/voice guidance.');
+  parts.push('');
+
+  // Strategy foundation
+  if (ctx.brandPurpose) parts.push(`**Purpose:** ${ctx.brandPurpose}`);
+  if (ctx.goldenCircle) parts.push(`**Golden Circle:**\n${ctx.goldenCircle}`);
+  if (ctx.brandEssence) parts.push(`**Brand Essence:** ${ctx.brandEssence}`);
+  if (ctx.brandPromise) parts.push(`**Brand Promise:** ${ctx.brandPromise}`);
+  if (ctx.brandMission) parts.push(`**Mission:** ${ctx.brandMission}`);
+  if (ctx.brandVision) parts.push(`**Vision:** ${ctx.brandVision}`);
+  if (ctx.brandArchetype) parts.push(`**Brand Archetype:** ${ctx.brandArchetype}`);
+  if (ctx.brandPersonality) parts.push(`**Brand Personality:** ${ctx.brandPersonality}`);
+  if (ctx.brandValues?.length) parts.push(`**Core Values:** ${ctx.brandValues.join(', ')}`);
+
+  // Visual identity (included in medium)
+  if (ctx.brandColors) parts.push(`**Brand Colors:** ${ctx.brandColors}`);
+  if (ctx.brandToneOfVoice) parts.push(`**Tone of Voice:** ${ctx.brandToneOfVoice}`);
+
+  // External context — only audience + industry, no competitor/trend details
+  if (ctx.targetAudience) parts.push(`**Target Audience:** ${ctx.targetAudience}`);
+  if (ctx.industry) parts.push(`**Industry:** ${ctx.industry}`);
+  if (ctx.productsOverview) parts.push(`**Products/Services:** ${ctx.productsOverview}`);
+
+  return parts.join('\n');
+}
+
 // ─── Message builders ──────────────────────────────────────
 
 /**

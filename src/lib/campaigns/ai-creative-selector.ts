@@ -74,15 +74,32 @@ function formatAffinityHints(insight: HumanInsight): string {
   return `Detected insight lens: **${lens}**. Template affinity:\n${sorted.slice(0, 4).map(([id, scores]) => `- ${id}: ${scores[lens]}/10`).join('\n')}`;
 }
 
+// ─── Selection Cache ──────────────────────────────────────
+
+/** In-memory cache keyed on goalType + insight statement. Survives retry/regeneration within same server instance. */
+const selectionCache = new Map<string, { result: CreativeSelectionResult; ts: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function buildCacheKey(ctx: CreativeSelectionContext): string {
+  return `${ctx.goalType}::${ctx.insight.insightStatement?.slice(0, 100) ?? ''}`;
+}
+
 // ─── Main Selection ────────────────────────────────────────
 
 /**
  * Uses Gemini Flash to select 3 Goldenberg templates AND generate
  * 3 context-specific creative angles that are unexpected but relevant.
+ * Results are cached per goalType + insight for retry/regeneration speed.
  */
 export async function selectCreativeMaterials(
   ctx: CreativeSelectionContext,
 ): Promise<CreativeSelectionResult> {
+  // Check cache first — avoids repeated LLM call on retry/regeneration
+  const cacheKey = buildCacheKey(ctx);
+  const cached = selectionCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    return cached.result;
+  }
   try {
     const systemPrompt = `You are an award-winning creative director who finds unexpected but powerful connections between brands and metaphor worlds.
 
@@ -145,13 +162,17 @@ Find 3 Goldenberg templates and 3 creative angles that would make THIS specific 
     ).slice(0, 3);
 
     if (templates.length >= 2 && angles.length >= 2) {
-      return {
+      const selected = {
         templates: templates.slice(0, 3),
         angles: fillAngles(angles, 3),
       };
+      selectionCache.set(cacheKey, { result: selected, ts: Date.now() });
+      return selected;
     }
 
-    return fallbackSelection(ctx.insight);
+    const fallback = fallbackSelection(ctx.insight);
+    selectionCache.set(cacheKey, { result: fallback, ts: Date.now() });
+    return fallback;
   } catch (error) {
     console.warn('[ai-creative-selector] AI selection failed, using fallback:', error);
     return fallbackSelection(ctx.insight);

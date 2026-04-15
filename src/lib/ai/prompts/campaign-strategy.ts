@@ -994,6 +994,16 @@ ${phaseInstruction}
 - productionPriority: "must-have" (core deliverables), "should-have" (enhances campaign), "nice-to-have" (stretch goals)
 - estimatedEffort: "low" (< 2 hours), "medium" (2-8 hours), "high" (> 8 hours)
 - suggestedOrder: number (1-based deployment order within this phase — 1 goes out first, 2 second, etc. Consider channel variety and persona rotation when ordering. Avoid scheduling two deliverables for the same channel back-to-back.)
+- contentTypeInputs: (optional) A JSON object of type-specific metadata that makes the content actionable. Based on the contentType, include relevant fields:
+  - Blog posts / articles / pillar pages: { seoKeyword: "primary keyword", secondaryKeywords: [...], targetWordCount: N }
+  - Search ads / social ads: { landingPageUrl: "suggested URL path", targetKeywords: [...], adObjective: "Conversions" }
+  - Email (newsletter, promotional, welcome): { subjectLine: "suggested subject", emailCount: N (for sequences) }
+  - Video / audio content: { videoDuration: N (seconds), videoFormat: "Animation" }
+  - Landing pages / product pages: { conversionGoal: "Free Trial", trafficSource: "Paid Ads" }
+  - Carousels / decks: { slidesCount: N, narrativeStructure: "Problem → Solution" }
+  - Press releases / media pitches: { newsFact: "the announcement", releaseDate: "date" }
+  - Job postings / career pages: { jobTitle: "role title", keyRequirements: [...] }
+  Only include fields where you can derive a reasonable value from the campaign strategy context. Do NOT include empty strings or empty arrays.
 
 ## CRITICAL: TIMELINE DISTRIBUTION RULES
 The deployment timeline has multiple journey phases, each lasting several weeks. You MUST distribute deliverables across ALL phases — not just the first one.
@@ -1345,13 +1355,7 @@ ${params.productContext || 'No products defined.'}
 ${params.competitorContext || 'No competitors defined.'}
 
 ## Market Trends
-${params.trendContext || 'No trends defined.'}${params.briefing?.occasion ? `
-
-## Campaign Occasion
-${params.briefing.occasion}` : ''}${params.briefing?.audienceObjective ? `
-
-## Audience Objective
-${params.briefing.audienceObjective}` : ''}
+${params.trendContext || 'No trends defined.'}${buildBriefingSection(params.briefing)}
 
 Dig deep. The best insight is hiding in plain sight — obvious once articulated, but nobody in this category is saying it.`;
 
@@ -1474,10 +1478,7 @@ ${params.selectedInsight}
 ${params.brandContext}
 
 ## Target Personas
-${params.personaContext || 'No personas available.'}${params.briefing?.tonePreference ? `
-
-## Desired Tone
-${params.briefing.tonePreference}` : ''}${params.arenaContext ? `
+${params.personaContext || 'No personas available.'}${buildBriefingSection(params.briefing)}${params.arenaContext ? `
 
 ## Associative Inspiration (Are.na)
 ${params.arenaContext}` : ''}${params.exaContext ? `

@@ -151,6 +151,11 @@ export function ConceptStep() {
   // without going through review_insights.
   const generateConceptsRef = useRef<() => void>(() => {});
 
+  // Recover from stale in-flight phases (same rationale as StrategyStep).
+  useEffect(() => {
+    useCampaignWizardStore.getState().recoverStalePhase();
+  }, []);
+
   // Cleanup SSE on unmount — deferred abort to survive React 19 dev double-invoke
   const isMountedRef = useRef(false);
   useEffect(() => {
@@ -828,6 +833,7 @@ export function ConceptStep() {
     return (
       <PipelineProgressView
         title="Finding the Best Insight"
+        estimatedDuration="30–60 seconds"
         steps={[{ step: 1, name: "Insight Mining", label: "Mining insights and selecting the strongest one...", description: "Three AI models analyze your brand from different angles. The richest insight is auto-selected for concept generation." }]}
         pipelineSteps={pipelineSteps}
         enrichmentStatus={enrichmentStatus}
@@ -843,6 +849,7 @@ export function ConceptStep() {
     return (
       <PipelineProgressView
         title={isSingle ? "Generating Quick Concept" : "Generating Creative Concepts"}
+        estimatedDuration={isSingle ? "15–30 seconds" : "45–90 seconds"}
         steps={[{
           step: 1,
           name: isSingle ? "Quick Concept" : "Creative Leap",
@@ -943,6 +950,7 @@ export function ConceptStep() {
     return (
       <PipelineProgressView
         title="Building Concept-Driven Strategy"
+        estimatedDuration="30–90 seconds"
         steps={[{ step: 1, name: "Strategy Build", label: "Building strategy around your concept...", description: "Applying marketing frameworks to make your creative concept strategically robust." }]}
         pipelineSteps={pipelineSteps}
       />
@@ -972,6 +980,7 @@ export function ConceptStep() {
     return (
       <PipelineProgressView
         title="Elaborating Campaign Journey"
+        estimatedDuration="1–2 minutes"
         steps={ELABORATE_STEPS}
         pipelineSteps={pipelineSteps}
         enrichmentStatus={enrichmentStatus}

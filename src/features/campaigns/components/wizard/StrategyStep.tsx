@@ -70,6 +70,21 @@ const PHASE_FOUNDATION_STEPS: PipelineStepConfig[] = [
 ];
 
 
+// ─── Elapsed Timer ───────────────────────────────────────
+
+function ElapsedTimer({ isComplete }: { isComplete: boolean }) {
+  const [elapsed, setElapsed] = useState(0);
+  const startRef = useRef(Date.now());
+  useEffect(() => {
+    if (isComplete) return;
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [isComplete]);
+  const m = Math.floor(elapsed / 60);
+  const s = elapsed % 60;
+  return <>{m}:{String(s).padStart(2, '0')}</>;
+}
+
 // ─── Component ────────────────────────────────────────────
 
 export function StrategyStep() {
@@ -121,6 +136,15 @@ export function StrategyStep() {
   const abortRef = useRef<{ abort: () => void } | null>(null);
   const generationIdRef = useRef(0);
   const strategyAutoStartedRef = useRef(false);
+
+  // Recover from stale in-flight phases. When the user navigated away while
+  // SSE was running, the abort handler in createPhaseSSE silently returns
+  // (doesn't call onError), leaving isGenerating=true and strategyPhase stuck.
+  // This must run before the auto-start effect so the recovered phase can
+  // trigger the correct auto-start logic.
+  useEffect(() => {
+    useCampaignWizardStore.getState().recoverStalePhase();
+  }, []);
 
   // Cleanup on unmount — only abort if component is truly unmounting, not during
   // React 19 dev-mode double-invoke (mount→unmount→mount).  We use a flag to
@@ -402,10 +426,10 @@ export function StrategyStep() {
   // NOTE: This useEffect MUST be before any conditional returns (React hooks rule)
   const skipConceptStep = useCampaignWizardStore((s) => s.skipConceptStep);
   const elaborateStartedRef = useRef(false);
-  const [directBuildSteps, setDirectBuildSteps] = useState<Array<{ name: string; status: 'pending' | 'running' | 'complete'; label: string; preview?: string }>>([
-    { name: 'Journey Phases', status: 'pending', label: 'Generating journey phases...' },
-    { name: 'Channel Planner', status: 'pending', label: 'Planning channels...' },
-    { name: 'Asset Planner', status: 'pending', label: 'Creating deliverable plan...' },
+  const [directBuildSteps, setDirectBuildSteps] = useState<Array<{ name: string; status: 'pending' | 'running' | 'complete'; label: string; description: string; preview?: string }>>([
+    { name: 'Journey Phases', status: 'pending', label: 'Generating journey phases...', description: 'Designing the customer journey from awareness to action, with persona-specific touchpoints per phase.' },
+    { name: 'Channel Planner', status: 'pending', label: 'Planning channels...', description: 'Selecting the optimal media mix, channel roles (hero/hub/hygiene), and timing strategy.' },
+    { name: 'Asset Planner', status: 'pending', label: 'Creating deliverable plan...', description: 'Planning campaign deliverables with briefs, production priorities, and flow connections.' },
   ]);
 
   useEffect(() => {
@@ -422,9 +446,9 @@ export function StrategyStep() {
 
     // Reset progress indicators for retry after failure
     setDirectBuildSteps([
-      { name: 'Journey Phases', status: 'pending', label: 'Generating journey phases...' },
-      { name: 'Channel Planner', status: 'pending', label: 'Planning channels...' },
-      { name: 'Asset Planner', status: 'pending', label: 'Creating deliverable plan...' },
+      { name: 'Journey Phases', status: 'pending', label: 'Generating journey phases...', description: 'Designing the customer journey from awareness to action, with persona-specific touchpoints per phase.' },
+      { name: 'Channel Planner', status: 'pending', label: 'Planning channels...', description: 'Selecting the optimal media mix, channel roles (hero/hub/hygiene), and timing strategy.' },
+      { name: 'Asset Planner', status: 'pending', label: 'Creating deliverable plan...', description: 'Planning campaign deliverables with briefs, production priorities, and flow connections.' },
     ]);
 
     const store = useCampaignWizardStore.getState();
@@ -523,10 +547,16 @@ export function StrategyStep() {
       },
       (error: string) => {
         setPhaseError(error);
-        useCampaignWizardStore.getState().setIsGenerating(false);
+        const s = useCampaignWizardStore.getState();
+        s.setIsGenerating(false);
+        // Roll back to rationale_complete so the user can retry the elaborate
+        // (or so recoverStalePhase picks it up on re-mount after navigation).
+        s.setStrategyPhase("rationale_complete");
         elaborateStartedRef.current = false;
       },
     );
+
+    abortRef.current = { abort };
 
     // Cleanup: deferred abort to avoid React 19 double-invoke
     return () => {
@@ -540,42 +570,71 @@ export function StrategyStep() {
 
   // Elaborating direct (skip concept — building deployment plan)
   if (strategyPhase === "elaborating_direct") {
+    const completedCount = directBuildSteps.filter(s => s.status === 'complete').length;
+    const allDone = completedCount === directBuildSteps.length;
     return (
       <div className="max-w-lg mx-auto py-12 space-y-6">
         <div className="text-center">
           <div className="w-12 h-12 mx-auto rounded-full bg-teal-50 flex items-center justify-center mb-3">
             <Sparkles className="w-6 h-6 text-teal-500 animate-pulse" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">Building Deployment Plan</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            Building Deployment Plan
+            {!allDone && (
+              <span className="ml-2 text-xs font-normal text-gray-400">
+                <ElapsedTimer isComplete={allDone} />
+              </span>
+            )}
+          </h3>
           <p className="text-sm text-gray-500">Translating strategy into channel plan and deliverables...</p>
+          <p className="text-xs text-gray-400 mt-1">This typically takes 1–2 minutes</p>
         </div>
 
         {/* Process status */}
         <div className="space-y-3">
           {directBuildSteps.map((step) => (
-            <div key={step.name} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-100 bg-white">
-              {step.status === 'pending' && <div className="w-5 h-5 rounded-full border-2 border-gray-200" />}
-              {step.status === 'running' && (
-                <div className="w-5 h-5 rounded-full border-2 border-teal-500 border-t-transparent animate-spin" />
-              )}
-              {step.status === 'complete' && (
-                <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-              )}
+            <div key={step.name} className="flex items-start gap-3 px-4 py-3 rounded-lg border border-gray-100 bg-white">
+              <div className="mt-0.5">
+                {step.status === 'pending' && <div className="w-5 h-5 rounded-full border-2 border-gray-200" />}
+                {step.status === 'running' && (
+                  <div className="w-5 h-5 rounded-full border-2 border-teal-500 border-t-transparent animate-spin" />
+                )}
+                {step.status === 'complete' && (
+                  <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+              </div>
               <div className="flex-1 min-w-0">
                 <p className={`text-sm font-medium ${step.status === 'complete' ? 'text-teal-700' : step.status === 'running' ? 'text-gray-900' : 'text-gray-400'}`}>
                   {step.name}
                 </p>
                 <p className="text-xs text-gray-500">{step.label}</p>
+                {step.status === 'running' && (
+                  <p className="text-xs text-gray-400 mt-0.5">{step.description}</p>
+                )}
               </div>
               {step.preview && (
-                <span className="text-xs text-teal-600 font-medium">{step.preview}</span>
+                <span className="text-xs text-teal-600 font-medium mt-0.5">{step.preview}</span>
               )}
             </div>
           ))}
+        </div>
+
+        {/* Progress bar */}
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs text-gray-400">
+            <span>{completedCount} of {directBuildSteps.length} steps</span>
+            <span>{Math.round((completedCount / directBuildSteps.length) * 100)}%</span>
+          </div>
+          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-teal-500 rounded-full transition-all duration-500"
+              style={{ width: `${(completedCount / directBuildSteps.length) * 100}%` }}
+            />
+          </div>
         </div>
       </div>
     );
@@ -614,6 +673,7 @@ export function StrategyStep() {
     return (
       <PipelineProgressView
         title="Validating Campaign Briefing"
+        estimatedDuration="15–30 seconds"
         steps={PHASE_VALIDATE_STEPS}
         pipelineSteps={pipelineSteps}
       />
@@ -655,6 +715,7 @@ export function StrategyStep() {
     return (
       <PipelineProgressView
         title="Building Strategy Foundation"
+        estimatedDuration="2–4 minutes"
         steps={PHASE_FOUNDATION_STEPS}
         pipelineSteps={pipelineSteps}
         enrichmentStatus={enrichmentStatus}
