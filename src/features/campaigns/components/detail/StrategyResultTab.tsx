@@ -144,7 +144,15 @@ export function StrategyResultTab({
         suggestedOrder: d.settings?.suggestedOrder,
       }));
 
-    const merged = [...filteredBlueprint, ...manualDeliverables];
+    // Deduplicate by title (case-insensitive) — keep first occurrence
+    const allDeliverables = [...filteredBlueprint, ...manualDeliverables];
+    const seenTitles = new Set<string>();
+    const merged = allDeliverables.filter((d) => {
+      const key = d.title.trim().toLowerCase();
+      if (seenTitles.has(key)) return false;
+      seenTitles.add(key);
+      return true;
+    });
 
     return {
       ...basePlan,
