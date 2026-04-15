@@ -205,35 +205,114 @@ export function StockPhotoTab() {
                 {totalResults.toLocaleString()} results
               </p>
 
-              {/* Photo grid */}
-              <div className="grid grid-cols-3 gap-2">
-                {photos.map((photo) => {
-                  const isSelected = selectedPhoto?.id === photo.id;
+              {/* Photo grid — rows of 3 with inline import panel after selected row */}
+              <div className="space-y-2">
+                {Array.from({ length: Math.ceil(photos.length / 3) }, (_, rowIdx) => {
+                  const rowPhotos = photos.slice(rowIdx * 3, rowIdx * 3 + 3);
+                  const selectedInRow = rowPhotos.find((p) => selectedPhoto?.id === p.id);
                   return (
-                    <button
-                      key={photo.id}
-                      type="button"
-                      onClick={() => handlePhotoClick(photo)}
-                      className={`group relative aspect-square overflow-hidden rounded-lg border-2 transition-all ${
-                        isSelected
-                          ? 'border-teal-500 ring-2 ring-teal-500/30'
-                          : 'border-transparent hover:border-gray-300'
-                      }`}
-                    >
-                      <img
-                        src={photo.src.medium}
-                        alt={photo.alt || `Photo by ${photo.photographer}`}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                      {/* Photographer credit overlay */}
-                      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <p className="flex items-center gap-1 text-xs text-white truncate">
-                          <User className="h-3 w-3 flex-shrink-0" />
-                          {photo.photographer}
-                        </p>
+                    <div key={rowIdx} className="space-y-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        {rowPhotos.map((photo) => {
+                          const isSelected = selectedPhoto?.id === photo.id;
+                          return (
+                            <button
+                              key={photo.id}
+                              type="button"
+                              onClick={() => handlePhotoClick(photo)}
+                              className={`group relative aspect-square overflow-hidden rounded-lg border-2 transition-all ${
+                                isSelected
+                                  ? 'border-teal-500 ring-2 ring-teal-500/30'
+                                  : 'border-transparent hover:border-gray-300'
+                              }`}
+                            >
+                              <img
+                                src={photo.src.medium}
+                                alt={photo.alt || `Photo by ${photo.photographer}`}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <p className="flex items-center gap-1 text-xs text-white truncate">
+                                  <User className="h-3 w-3 flex-shrink-0" />
+                                  {photo.photographer}
+                                </p>
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
-                    </button>
+
+                      {/* Import panel — full width, directly below the row containing the selected photo */}
+                      {selectedInRow && (
+                        <div className="rounded-lg border border-teal-200 bg-teal-50/50 p-3 space-y-2.5">
+                          <div className="flex items-center gap-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {selectedInRow.alt || 'Untitled'}
+                              </p>
+                              <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
+                                <span className="flex items-center gap-1">
+                                  <User className="h-3 w-3" />
+                                  {selectedInRow.photographer}
+                                </span>
+                                <span>{selectedInRow.width} x {selectedInRow.height}px</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-gray-700">Size:</span>
+                            {SIZE_OPTIONS.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => setSelectedSize(option.value)}
+                                className="rounded-md px-2.5 py-1 text-xs font-medium transition-colors border"
+                                style={
+                                  selectedSize === option.value
+                                    ? { backgroundColor: '#0d9488', color: '#fff', borderColor: '#0d9488' }
+                                    : { backgroundColor: '#fff', color: '#374151', borderColor: '#d1d5db' }
+                                }
+                              >
+                                {option.label}
+                              </button>
+                            ))}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handleImport}
+                            disabled={importStockPhoto.isPending}
+                            className="w-full inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            style={{ backgroundColor: '#0d9488' }}
+                          >
+                            {importStockPhoto.isPending ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Importing...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="h-4 w-4" />
+                                Import Photo
+                              </>
+                            )}
+                          </button>
+
+                          {importStockPhoto.isError && (
+                            <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2" role="alert">
+                              <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-red-500" />
+                              <p className="text-xs text-red-700">
+                                {importStockPhoto.error instanceof Error
+                                  ? importStockPhoto.error.message
+                                  : 'Failed to import photo. Please try again.'}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
@@ -261,89 +340,6 @@ export function StockPhotoTab() {
             </>
           )}
         </>
-      )}
-
-      {/* Selected photo - size selection + import */}
-      {selectedPhoto && (
-        <div className="rounded-lg border border-teal-200 bg-teal-50/50 p-4 space-y-3">
-          <div className="flex items-start gap-3">
-            <img
-              src={selectedPhoto.src.small}
-              alt={selectedPhoto.alt || `Photo by ${selectedPhoto.photographer}`}
-              className="h-16 w-16 rounded-md object-cover flex-shrink-0"
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {selectedPhoto.alt || 'Untitled'}
-              </p>
-              <a
-                href={selectedPhoto.photographer_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-0.5 flex items-center gap-1 text-xs text-gray-500 hover:text-teal-600 transition-colors"
-              >
-                <User className="h-3 w-3" />
-                {selectedPhoto.photographer}
-              </a>
-              <p className="mt-0.5 text-xs text-gray-400">
-                {selectedPhoto.width} x {selectedPhoto.height}px
-              </p>
-            </div>
-          </div>
-
-          {/* Size selection */}
-          <div>
-            <p className="text-xs font-medium text-gray-700 mb-1.5">Select size</p>
-            <div className="flex gap-2">
-              {SIZE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setSelectedSize(option.value)}
-                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                    selectedSize === option.value
-                      ? 'bg-teal-600 text-white'
-                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Import button */}
-          <button
-            type="button"
-            onClick={handleImport}
-            disabled={importStockPhoto.isPending}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {importStockPhoto.isPending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Importing...
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4" />
-                Import Photo
-              </>
-            )}
-          </button>
-
-          {/* Import error */}
-          {importStockPhoto.isError && (
-            <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2" role="alert">
-              <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-red-500" />
-              <p className="text-xs text-red-700">
-                {importStockPhoto.error instanceof Error
-                  ? importStockPhoto.error.message
-                  : 'Failed to import photo. Please try again.'}
-              </p>
-            </div>
-          )}
-        </div>
       )}
 
       {/* Pexels attribution */}

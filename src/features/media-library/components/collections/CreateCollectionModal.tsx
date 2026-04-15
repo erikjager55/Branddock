@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FolderOpen } from 'lucide-react';
+import { FolderOpen, AlertCircle } from 'lucide-react';
 import { Modal, Button } from '@/components/shared';
 import { useCreateCollection } from '../../hooks/index';
 import { useMediaLibraryStore } from '../../stores/useMediaLibraryStore';
@@ -29,11 +29,13 @@ export function CreateCollectionModal() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const resetForm = () => {
     setName('');
     setDescription('');
     setSelectedColor(null);
+    setErrorMessage(null);
   };
 
   const handleClose = () => {
@@ -45,6 +47,7 @@ export function CreateCollectionModal() {
     e.preventDefault();
     if (!name.trim()) return;
 
+    setErrorMessage(null);
     createCollection.mutate(
       {
         name: name.trim(),
@@ -54,6 +57,13 @@ export function CreateCollectionModal() {
       {
         onSuccess: () => {
           handleClose();
+        },
+        onError: (err) => {
+          setErrorMessage(
+            err instanceof Error && err.message.includes('already exists')
+              ? 'A collection with this name already exists.'
+              : 'Failed to create collection. Please try again.',
+          );
         },
       },
     );
@@ -68,6 +78,7 @@ export function CreateCollectionModal() {
       title="Create Collection"
       subtitle="Organize your media assets into collections."
       size="sm"
+      zIndex={60}
       footer={
         <div className="flex items-center justify-end gap-3">
           <Button variant="secondary" size="md" onClick={handleClose}>
@@ -87,6 +98,14 @@ export function CreateCollectionModal() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Error message */}
+        {errorMessage && (
+          <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2.5" role="alert">
+            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-500" />
+            <p className="text-sm text-red-700">{errorMessage}</p>
+          </div>
+        )}
+
         {/* Name */}
         <div>
           <label htmlFor="collection-name" className="block text-sm font-medium text-gray-700 mb-1">

@@ -119,7 +119,8 @@ export function TagManagerModal() {
             <button
               onClick={handleCreate}
               disabled={!newName.trim() || createTag.isPending}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-white text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              style={{ backgroundColor: '#0d9488' }}
             >
               <Plus className="w-4 h-4" />
               Add
@@ -194,17 +195,19 @@ export function TagManagerModal() {
                       <span className="text-sm text-red-700">
                         Delete &ldquo;{tag.name}&rdquo;? ({tag._count.assets} assets)
                       </span>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleDelete(tag.id)}
                           disabled={deleteTag.isPending}
-                          className="px-2.5 py-1 text-xs font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg disabled:opacity-50 transition-colors"
+                          style={{ backgroundColor: '#dc2626', color: '#ffffff' }}
                         >
                           Delete
                         </button>
                         <button
                           onClick={() => setDeleteConfirmId(null)}
-                          className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                          className="px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors"
+                          style={{ color: '#374151', backgroundColor: '#ffffff', borderColor: '#d1d5db' }}
                         >
                           Cancel
                         </button>
@@ -223,7 +226,7 @@ export function TagManagerModal() {
                           {tag._count.assets} {tag._count.assets === 1 ? 'asset' : 'assets'}
                         </span>
                       </div>
-                      <div className="flex items-center gap-0.5 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-0.5">
                         <button
                           onClick={() => startEdit(tag)}
                           className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"

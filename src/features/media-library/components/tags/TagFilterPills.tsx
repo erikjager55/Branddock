@@ -49,11 +49,12 @@ export function TagFilterPills() {
           <button
             key={tag.id}
             onClick={() => setTagFilter(isActive ? null : tag.id)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium flex-shrink-0 transition-colors ${
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium flex-shrink-0 transition-colors"
+            style={
               isActive
-                ? 'bg-teal-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+                ? { backgroundColor: '#0d9488', color: '#fff' }
+                : { backgroundColor: '#f3f4f6', color: '#374151' }
+            }
           >
             {tag.color && (
               <span

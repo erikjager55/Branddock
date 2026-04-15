@@ -80,7 +80,7 @@ export function MediaLibraryPage() {
               data-testid="upload-media-button"
             >
               <Upload className="h-4 w-4" />
-              Upload
+              Add Media
             </Button>
           }
         />
@@ -189,11 +189,32 @@ export function MediaLibraryPage() {
             <div data-testid="collections-tab">
               <CollectionsPanel />
               <CreateCollectionModal />
-              <AddToCollectionModal />
             </div>
           ) : store.activeTab === 'tags' ? (
-            <div data-testid="tags-tab" className="space-y-6">
+            <div data-testid="tags-tab" className="space-y-4">
               <TagFilterPills />
+              {/* Show assets for selected tag */}
+              {store.tagFilter && (
+                isLoading ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="aspect-square rounded-lg bg-gray-100 animate-pulse" />
+                    ))}
+                  </div>
+                ) : assets.length > 0 ? (
+                  <MediaCardGrid
+                    assets={assets}
+                    onSelect={(id) => store.setSelectedAssetId(id)}
+                    onFavorite={handleFavorite}
+                    onDelete={handleDelete}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Image className="h-10 w-10 text-gray-300" />
+                    <p className="mt-3 text-sm text-gray-500">No assets with this tag</p>
+                  </div>
+                )
+              )}
               <TagManagerModal />
             </div>
           ) : null}
@@ -201,6 +222,10 @@ export function MediaLibraryPage() {
 
         {/* Upload Modal */}
         {store.isUploadModalOpen && <UploadModal />}
+
+        {/* Add to Collection + Create Collection — always available (used from detail panel) */}
+        <AddToCollectionModal />
+        <CreateCollectionModal />
       </div>
     </PageShell>
   );

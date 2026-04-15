@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Video, Heart, Trash2, Play } from 'lucide-react';
+import { Video, Heart, Trash2, Play, FolderPlus } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import { formatFileSize } from '@/features/media-library/constants/media-constants';
+import { getProviderShortLabel } from '@/features/media-library/lib/provider-labels';
 import type { GeneratedVideoWithMeta } from '@/features/media-library/types/media.types';
 
 // ─── Types ──────────────────────────────────────────────────
@@ -13,6 +14,7 @@ interface AiVideoCardProps {
   onClick: () => void;
   onDelete: (id: string) => void;
   onToggleFavorite: () => void;
+  onSendToLibrary?: (id: string) => void;
 }
 
 // ─── Component ──────────────────────────────────────────────
@@ -23,6 +25,7 @@ export const AiVideoCard = React.memo(function AiVideoCard({
   onClick,
   onDelete,
   onToggleFavorite,
+  onSendToLibrary,
 }: AiVideoCardProps) {
   const [thumbFailed, setThumbFailed] = useState(false);
 
@@ -54,8 +57,13 @@ export const AiVideoCard = React.memo(function AiVideoCard({
           <video
             src={video.fileUrl}
             muted
-            preload="metadata"
+            playsInline
+            preload="auto"
             className="w-full h-full object-cover"
+            onLoadedData={(e) => {
+              const el = e.currentTarget;
+              el.currentTime = 0.5;
+            }}
           />
         ) : (
           <Video className="w-8 h-8 text-indigo-400" />
@@ -84,18 +92,33 @@ export const AiVideoCard = React.memo(function AiVideoCard({
           </div>
         )}
 
-        {/* Delete button */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(video.id);
-          }}
-          className="absolute top-2 left-2 p-1 rounded-md bg-white/80 text-gray-400 hover:text-red-500 hover:bg-white opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
-          aria-label={`Delete ${video.name}`}
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        {/* Action buttons (top-left) */}
+        <div className="absolute top-2 left-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all">
+          {onSendToLibrary && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSendToLibrary(video.id);
+              }}
+              className="p-1 rounded-md bg-white/80 text-gray-400 hover:text-teal-600 hover:bg-white transition-all"
+              aria-label={`Save ${video.name} to library`}
+            >
+              <FolderPlus className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(video.id);
+            }}
+            className="p-1 rounded-md bg-white/80 text-gray-400 hover:text-red-500 hover:bg-white transition-all"
+            aria-label={`Delete ${video.name}`}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
         {/* Favorite button */}
         <button

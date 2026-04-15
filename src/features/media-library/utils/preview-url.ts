@@ -28,14 +28,14 @@ export function isPreviewableImage(asset: MediaPreviewInput): boolean {
 
 /**
  * Best image URL to show on a card:
- *   1. dedicated thumbnail when present
- *   2. the full fileUrl as a fallback (browser handles sizing)
+ *   1. the full fileUrl (sharp on retina displays)
+ *   2. dedicated thumbnail as fallback
  *   3. null if the asset is not previewable
  *
- * SVGs and AVIFs are handled the same way — modern browsers render
- * them directly in <img>, so we treat them as previewable too.
+ * We prefer fileUrl because thumbnails are typically 300px wide,
+ * which looks blurry on retina displays where cards need 350px+.
  */
 export function getPreviewImageUrl(asset: MediaPreviewInput): string | null {
   if (!isPreviewableImage(asset)) return null;
-  return asset.thumbnailUrl || asset.fileUrl || null;
+  return asset.fileUrl || asset.thumbnailUrl || null;
 }

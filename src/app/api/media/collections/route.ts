@@ -28,23 +28,41 @@ export async function GET() {
         parent: {
           select: { id: true, name: true },
         },
+        assets: {
+          take: 1,
+          orderBy: { sortOrder: "asc" },
+          include: {
+            mediaAsset: {
+              select: { fileUrl: true, thumbnailUrl: true, mediaType: true },
+            },
+          },
+        },
       },
       orderBy: { name: "asc" },
     });
 
-    const result = collections.map((c) => ({
-      id: c.id,
-      name: c.name,
-      slug: c.slug,
-      description: c.description,
-      coverImageUrl: c.coverImageUrl,
-      color: c.color,
-      parentId: c.parentId,
-      parent: c.parent ? { id: c.parent.id, name: c.parent.name } : null,
-      _count: { assets: c._count.assets, children: c._count.children },
-      createdAt: c.createdAt.toISOString(),
-      updatedAt: c.updatedAt.toISOString(),
-    }));
+    const result = collections.map((c) => {
+      const firstAsset = c.assets[0]?.mediaAsset;
+      const previewAssetUrl =
+        firstAsset?.mediaType === "IMAGE"
+          ? firstAsset.fileUrl || firstAsset.thumbnailUrl
+          : firstAsset?.thumbnailUrl || null;
+
+      return {
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        description: c.description,
+        coverImageUrl: c.coverImageUrl,
+        color: c.color,
+        parentId: c.parentId,
+        parent: c.parent ? { id: c.parent.id, name: c.parent.name } : null,
+        previewAssetUrl: c.coverImageUrl || previewAssetUrl || null,
+        _count: { assets: c._count.assets, children: c._count.children },
+        createdAt: c.createdAt.toISOString(),
+        updatedAt: c.updatedAt.toISOString(),
+      };
+    });
 
     setCache(cacheKeys.media.collections(workspaceId), result, CACHE_TTL.OVERVIEW);
 

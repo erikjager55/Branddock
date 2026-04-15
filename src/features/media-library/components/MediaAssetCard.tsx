@@ -33,11 +33,11 @@ export const MediaAssetCard = React.memo(function MediaAssetCard({
 
   return (
     <div
-      className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer group"
+      className="bg-white rounded-lg border border-gray-200 overflow-hidden hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer group flex flex-col"
       onClick={onClick}
     >
-      {/* Thumbnail area */}
-      <div className="relative h-44">
+      {/* Thumbnail area — square via aspect-square */}
+      <div className="relative aspect-square overflow-hidden">
         {showImagePreview ? (
           <img
             src={previewUrl}
@@ -47,14 +47,25 @@ export const MediaAssetCard = React.memo(function MediaAssetCard({
             onError={() => setImageFailed(true)}
           />
         ) : asset.mediaType === 'VIDEO' ? (
-          <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-            {asset.thumbnailUrl && (
+          <div className="w-full h-full bg-gray-900 flex items-center justify-center relative">
+            {asset.thumbnailUrl ? (
               <img
                 src={asset.thumbnailUrl}
                 alt={asset.name}
                 className="absolute inset-0 w-full h-full object-cover opacity-60"
               />
-            )}
+            ) : asset.fileUrl ? (
+              <video
+                src={asset.fileUrl}
+                muted
+                playsInline
+                preload="auto"
+                className="absolute inset-0 w-full h-full object-cover opacity-60"
+                onLoadedData={(e) => {
+                  e.currentTarget.currentTime = 0.5;
+                }}
+              />
+            ) : null}
             <Play className="relative z-10 w-10 h-10 text-white fill-white/80" />
           </div>
         ) : (
@@ -101,7 +112,7 @@ export const MediaAssetCard = React.memo(function MediaAssetCard({
       </div>
 
       {/* Body */}
-      <div className="p-3">
+      <div className="p-3 flex-shrink-0">
         <p className="text-sm font-medium text-gray-900 line-clamp-1 mb-1">
           {asset.name}
         </p>

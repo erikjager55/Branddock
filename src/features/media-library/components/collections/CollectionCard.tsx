@@ -1,26 +1,23 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { FolderOpen } from 'lucide-react';
 import { Badge } from '@/components/shared';
 import type { MediaCollectionWithMeta } from '../../types/media.types';
-
-// ─── Types ────────────────────────────────────────────────
 
 interface CollectionCardProps {
   collection: MediaCollectionWithMeta;
   onClick?: (id: string) => void;
 }
 
-// ─── Color fallback ───────────────────────────────────────
-
 const DEFAULT_COLOR = '#6B7280';
-
-// ─── Component ────────────────────────────────────────────
 
 /** Card component for a single media collection. */
 export function CollectionCard({ collection, onClick }: CollectionCardProps) {
   const bgColor = collection.color ?? DEFAULT_COLOR;
+  const [imgFailed, setImgFailed] = useState(false);
+  const previewUrl = collection.previewAssetUrl;
+  const showPreview = previewUrl && !imgFailed;
 
   return (
     <div
@@ -36,12 +33,14 @@ export function CollectionCard({ collection, onClick }: CollectionCardProps) {
       }}
     >
       {/* Cover area */}
-      <div className="relative h-36">
-        {collection.coverImageUrl ? (
+      <div className="relative aspect-video">
+        {showPreview ? (
           <img
-            src={collection.coverImageUrl}
+            src={previewUrl}
             alt={collection.name}
             className="w-full h-full object-cover"
+            loading="lazy"
+            onError={() => setImgFailed(true)}
           />
         ) : (
           <div
@@ -55,11 +54,19 @@ export function CollectionCard({ collection, onClick }: CollectionCardProps) {
             />
           </div>
         )}
+
+        {/* Color dot indicator */}
+        {collection.color && (
+          <div
+            className="absolute top-2.5 left-2.5 w-3 h-3 rounded-full border-2 border-white shadow-sm"
+            style={{ backgroundColor: collection.color }}
+          />
+        )}
       </div>
 
       {/* Body */}
-      <div className="p-3.5">
-        <div className="flex items-center justify-between gap-2 mb-1">
+      <div className="px-3.5 py-3">
+        <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-medium text-gray-900 truncate">
             {collection.name}
           </h3>
@@ -69,14 +76,8 @@ export function CollectionCard({ collection, onClick }: CollectionCardProps) {
         </div>
 
         {collection.description && (
-          <p className="text-xs text-gray-500 line-clamp-2 mt-1">
+          <p className="text-xs text-gray-500 line-clamp-1 mt-1">
             {collection.description}
-          </p>
-        )}
-
-        {collection._count.children > 0 && (
-          <p className="text-xs text-gray-400 mt-1.5">
-            {collection._count.children} sub-collection{collection._count.children !== 1 ? 's' : ''}
           </p>
         )}
       </div>

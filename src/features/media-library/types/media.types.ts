@@ -156,6 +156,8 @@ export interface MediaCollectionWithMeta {
   coverImageUrl: string | null;
   color: string | null;
   parentId: string | null;
+  /** URL of the first image asset in this collection (for preview) */
+  previewAssetUrl: string | null;
   _count: { assets: number; children: number };
   createdAt: string;
   updatedAt: string;
@@ -405,13 +407,14 @@ export interface UpdateGeneratedImageBody {
 
 // ─── AI Videos ──────────────────────────────────────────────
 
-export type VideoProvider = 'RUNWAY' | 'KLING' | 'FAL';
+/** Provider is now a fal.ai video provider id string (e.g. "kling-v3-pro") */
+export type VideoProvider = string;
 
 export interface GeneratedVideoWithMeta {
   id: string;
   name: string;
   prompt: string;
-  provider: VideoProvider;
+  provider: string;
   model: string;
   fileUrl: string;
   fileName: string;
@@ -424,6 +427,8 @@ export interface GeneratedVideoWithMeta {
   thumbnailUrl: string | null;
   status: string;
   isFavorite: boolean;
+  /** URL of the source image used for image-to-video generation */
+  sourceImageUrl?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -431,9 +436,11 @@ export interface GeneratedVideoWithMeta {
 export interface GenerateVideoBody {
   name: string;
   prompt: string;
-  provider: VideoProvider;
-  duration?: 5 | 10;
-  aspectRatio?: '16:9' | '9:16';
+  provider: string;
+  duration?: number;
+  aspectRatio?: string;
+  /** Source image URL for image-to-video generation */
+  sourceImageUrl?: string;
 }
 
 export interface UpdateGeneratedVideoBody {

@@ -25,6 +25,8 @@ export interface ModalProps {
   showCloseButton?: boolean;
   /** Extra classes for the content container */
   className?: string;
+  /** Override z-index for stacked modals (default: 50) */
+  zIndex?: number;
   /** Test ID for e2e tests */
   'data-testid'?: string;
 }
@@ -50,6 +52,7 @@ export function Modal({
   footer,
   showCloseButton = true,
   className: extraClassName,
+  zIndex,
   'data-testid': testId,
 }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -93,8 +96,8 @@ export function Modal({
   return (
     <div
       ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 animate-in fade-in duration-200"
-      style={{ paddingTop: '12vh' }}
+      className="fixed inset-0 flex items-start justify-center bg-black/50 animate-in fade-in duration-200"
+      style={{ paddingTop: '12vh', zIndex: zIndex ?? 50 }}
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose();
       }}
