@@ -3,7 +3,7 @@
 import React, { useState, useRef, useMemo, useCallback } from "react";
 import { ArrowLeft, Download, Megaphone, Zap, Pencil, Check, X, Sparkles, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { Badge, Button, Modal, Input, Select } from "@/components/shared";
-import { DELIVERABLE_TYPES } from "../../lib/deliverable-types";
+import { DELIVERABLE_TYPES, DELIVERABLE_CATEGORIES } from "../../lib/deliverable-types";
 import { deriveBriefFromBlueprint } from "../../lib/derive-brief";
 import { PageShell } from "@/components/ui/layout";
 import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
@@ -106,6 +106,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
   const [showAddModal, setShowAddModal] = useState(false);
   const [addTitle, setAddTitle] = useState("");
   const [addContentType, setAddContentType] = useState<string | null>(null);
+  const [addCategoryFilter, setAddCategoryFilter] = useState<string | null>(null);
   const [addPhase, setAddPhase] = useState<string | null>(null);
   const [addChannel, setAddChannel] = useState<string | null>(null);
   const [addTargetPersonas, setAddTargetPersonas] = useState<string[]>([]);
@@ -173,21 +174,17 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
     [blueprint, addContentType, addPhase, addChannel],
   );
 
-  const hasDerivedBrief = !!(derivedBrief.keyMessage || derivedBrief.toneDirection || derivedBrief.callToAction || derivedBrief.contentOutline.length > 0);
 
-  const contentTypeOptions = useMemo(() => {
-    const groups = new Map<string, { value: string; label: string }[]>();
-    for (const dt of DELIVERABLE_TYPES) {
-      if (!groups.has(dt.category)) groups.set(dt.category, []);
-      groups.get(dt.category)!.push({ value: dt.id, label: dt.name });
-    }
-    return Array.from(groups.entries()).map(([label, options]) => ({ label, options }));
-  }, []);
+  const filteredContentTypes = useMemo(() => {
+    if (!addCategoryFilter) return DELIVERABLE_TYPES;
+    return DELIVERABLE_TYPES.filter((dt) => dt.category === addCategoryFilter);
+  }, [addCategoryFilter]);
 
   const resetAddModal = () => {
     setShowAddModal(false);
     setAddTitle("");
     setAddContentType(null);
+    setAddCategoryFilter(null);
     setAddPhase(null);
     setAddChannel(null);
     setAddTargetPersonas([]);
@@ -595,14 +592,55 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
                 placeholder="e.g. Instagram Carousel — Brand Launch"
                 required
               />
-              <Select
-                label="Content Type"
-                value={addContentType}
-                onChange={setAddContentType}
-                groups={contentTypeOptions}
-                placeholder="Select content type..."
-                required
-              />
+              {/* Content Type — category pills + selectable grid */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <span className="text-red-500 mr-0.5">*</span>
+                  Content Type
+                </label>
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setAddCategoryFilter(null)}
+                    style={!addCategoryFilter ? { backgroundColor: '#ccfbf1', color: '#0d9488' } : undefined}
+                    className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
+                      !addCategoryFilter ? 'ring-1 ring-teal-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {DELIVERABLE_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setAddCategoryFilter(cat)}
+                      style={addCategoryFilter === cat ? { backgroundColor: '#ccfbf1', color: '#0d9488' } : undefined}
+                      className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
+                        addCategoryFilter === cat ? 'ring-1 ring-teal-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto rounded-lg border border-gray-200 p-2">
+                  {filteredContentTypes.map((dt) => (
+                    <button
+                      key={dt.id}
+                      type="button"
+                      onClick={() => setAddContentType(dt.id)}
+                      style={addContentType === dt.id ? { backgroundColor: '#f0fdfa', borderColor: '#0d9488' } : undefined}
+                      className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                        addContentType === dt.id
+                          ? 'font-medium text-teal-800'
+                          : 'border-gray-100 text-gray-700 hover:bg-gray-50'
+                      }`}
+                    >
+                      {dt.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -687,40 +725,6 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
                 />
               </div>
 
-              {/* Derived brief preview */}
-              {hasDerivedBrief && (
-                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 space-y-2">
-                  <p className="text-xs font-medium text-emerald-700 uppercase tracking-wider">Derived from campaign strategy</p>
-                  {derivedBrief.keyMessage && (
-                    <div>
-                      <span className="text-xs font-medium text-gray-500">Key Message</span>
-                      <p className="text-sm text-gray-800">{derivedBrief.keyMessage}</p>
-                    </div>
-                  )}
-                  {derivedBrief.toneDirection && (
-                    <div>
-                      <span className="text-xs font-medium text-gray-500">Tone</span>
-                      <p className="text-sm text-gray-800">{derivedBrief.toneDirection}</p>
-                    </div>
-                  )}
-                  {derivedBrief.callToAction && (
-                    <div>
-                      <span className="text-xs font-medium text-gray-500">Call to Action</span>
-                      <p className="text-sm text-gray-800">{derivedBrief.callToAction}</p>
-                    </div>
-                  )}
-                  {derivedBrief.contentOutline.length > 0 && (
-                    <div>
-                      <span className="text-xs font-medium text-gray-500">Content Outline</span>
-                      <ul className="text-sm text-gray-800 list-disc list-inside mt-0.5">
-                        {derivedBrief.contentOutline.map((item, i) => (
-                          <li key={i}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 
