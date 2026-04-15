@@ -2,8 +2,9 @@
 
 import React from "react";
 import { EmptyState, Badge, ProgressBar } from "@/components/shared";
-import { Megaphone, Zap } from "lucide-react";
+import { Megaphone } from "lucide-react";
 import { CampaignOverflowMenu } from "./CampaignOverflowMenu";
+import { CampaignTypePill } from "../shared/CampaignTypePill";
 import type { CampaignSummary } from "@/types/campaign";
 
 interface CampaignListProps {
@@ -74,13 +75,7 @@ export function CampaignList({
               )}
             </div>
             <div className="col-span-2">
-              {campaign.type === "STRATEGIC" ? (
-                <Badge variant="success">Strategic</Badge>
-              ) : (
-                <Badge variant="info" className="bg-purple-100 text-purple-700">
-                  <Zap className="h-3 w-3 mr-1" /> Quick
-                </Badge>
-              )}
+              <CampaignTypePill type={campaign.type} confidence={campaign.confidence} />
             </div>
             <div className="col-span-2">
               <Badge

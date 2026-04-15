@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
-import { Megaphone, Database, FileText, Users } from "lucide-react";
-import { Badge, ProgressBar } from "@/components/shared";
+import { Database, FileText, Users } from "lucide-react";
+import { ProgressBar } from "@/components/shared";
 import { CardLockIndicator } from "@/components/lock";
 import { CampaignOverflowMenu } from "./CampaignOverflowMenu";
+import { CampaignTypePill } from "../shared/CampaignTypePill";
 import type { CampaignSummary } from "@/types/campaign";
 
 interface StrategicCampaignCardProps {
@@ -28,8 +29,8 @@ export function StrategicCampaignCard({ campaign, onClick, onArchive, onDelete }
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Badge variant="success">Strategic</Badge>
-          {campaign.confidence != null && (
+          <CampaignTypePill type={campaign.type} confidence={campaign.confidence} />
+          {campaign.confidence != null && campaign.confidence > 0 && (
             <span className="text-xs font-medium text-gray-500">
               {Math.round(campaign.confidence)}% confidence
             </span>

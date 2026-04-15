@@ -3,6 +3,7 @@
 import React from "react";
 import { ExternalLink, Heart } from "lucide-react";
 import { Badge } from "@/components/shared";
+import { CampaignTypePill } from "../shared/CampaignTypePill";
 import { useContentLibraryStore } from "../../stores/useContentLibraryStore";
 import { QualityScoreBadge } from "./QualityScoreBadge";
 import type { ContentLibraryItem } from "../../types/content-library.types";
@@ -110,14 +111,7 @@ export function ContentCardList({
               <span className="text-xs text-gray-600 truncate">
                 {item.campaignName}
               </span>
-              <Badge
-                variant={
-                  item.campaignType === "STRATEGIC" ? "teal" : "default"
-                }
-                size="sm"
-              >
-                {item.campaignType === "STRATEGIC" ? "S" : "Q"}
-              </Badge>
+              <CampaignTypePill type={item.campaignType} size="sm" />
             </div>
 
             {/* Status */}

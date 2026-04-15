@@ -46,24 +46,28 @@ export function CampaignGrid({
 
   return (
     <div data-testid="campaigns-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {safeCampaigns.map((campaign) =>
-        campaign.type === "STRATEGIC" ? (
-          <StrategicCampaignCard
-            key={campaign.id}
-            campaign={campaign}
-            onClick={() => onCampaignClick(campaign.id)}
-            onArchive={() => onArchive(campaign.id)}
-            onDelete={() => onDelete(campaign.id)}
-          />
-        ) : (
+      {safeCampaigns.map((campaign) => {
+        // Formats (CONTENT type) and Strategic campaigns use the same card layout
+        if (campaign.type === "STRATEGIC" || (campaign.type as string) === "CONTENT") {
+          return (
+            <StrategicCampaignCard
+              key={campaign.id}
+              campaign={campaign}
+              onClick={() => onCampaignClick(campaign.id)}
+              onArchive={() => onArchive(campaign.id)}
+              onDelete={() => onDelete(campaign.id)}
+            />
+          );
+        }
+        return (
           <QuickContentCard
             key={campaign.id}
             campaign={campaign}
             onClick={() => onCampaignClick(campaign.id)}
             onDelete={() => onDelete(campaign.id)}
           />
-        )
-      )}
+        );
+      })}
     </div>
   );
 }

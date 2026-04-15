@@ -3,6 +3,7 @@
 import React from "react";
 import { ExternalLink, Heart, FileText, Clock, Trash2 } from "lucide-react";
 import { Card, Badge, Button } from "@/components/shared";
+import { CampaignTypePill } from "../shared/CampaignTypePill";
 import { useContentLibraryStore } from "../../stores/useContentLibraryStore";
 import { QualityScoreBadge } from "./QualityScoreBadge";
 import type { ContentLibraryItem } from "../../types/content-library.types";
@@ -118,14 +119,7 @@ export function ContentCardGrid({
                 <span className="text-xs text-gray-500 truncate">
                   {item.campaignName}
                 </span>
-                <Badge
-                  variant={
-                    item.campaignType === "STRATEGIC" ? "teal" : "default"
-                  }
-                  size="sm"
-                >
-                  {item.campaignType === "STRATEGIC" ? "Strategic" : "Quick"}
-                </Badge>
+                <CampaignTypePill type={item.campaignType} size="sm" />
               </div>
 
               {/* Status + Quality */}
