@@ -9,6 +9,8 @@ import { Badge } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { PreviewContent } from '../../../types/canvas.types';
 import { Loader2, Sparkles, ArrowRight, Check } from 'lucide-react';
+import { SeoProgressPanel } from '../SeoProgressPanel';
+import { getEstimatedDuration } from '../../../lib/content-type-inputs';
 
 interface Step2ContentVariantsProps {
   deliverableId: string;
@@ -27,6 +29,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const globalStatus = useCanvasStore((s) => s.globalStatus);
   const imageVariants = useCanvasStore((s) => s.imageVariants);
   const contextStack = useCanvasStore((s) => s.contextStack);
+  const contentType = useCanvasStore((s) => s.contentType);
   const heroImage = useCanvasStore((s) => s.heroImage);
   const { regenerate, abort } = useCanvasOrchestration(deliverableId);
 
@@ -89,22 +92,22 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const PreviewComponent = previewEntry.component;
   const VARIANT_LABELS = ['A', 'B', 'C', 'D'];
 
+  // ─── SEO pipeline active ────────────────────────────────────
+  const seoSteps = useCanvasStore((s) => s.seoSteps);
+  const hasSeoSteps = seoSteps.length > 0;
+
   // ─── Generating state ──────────────────────────────────────
   if (isGenerating && !hasVariants) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 gap-5">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-          <Loader2 className="h-8 w-8 text-primary animate-spin" />
+    // Show SEO progress panel when the 8-step pipeline is running
+    if (hasSeoSteps) {
+      return (
+        <div className="py-6">
+          <SeoProgressPanel />
         </div>
-        <div className="text-center">
-          <p className="text-base font-semibold text-gray-800">Generating content variants</p>
-          <p className="text-sm text-gray-500 mt-1">
-            Creating 2 unique variants based on your strategy and briefing...
-          </p>
-          <p className="text-xs text-gray-400 mt-2">This usually takes 20-40 seconds</p>
-        </div>
-      </div>
-    );
+      );
+    }
+
+    return <GeneratingIndicator contentType={contentType} />;
   }
 
   // ─── Empty state ───────────────────────────────────────────
@@ -214,6 +217,41 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Generating Indicator with elapsed timer ────────────────
+
+function GeneratingIndicator({ contentType }: { contentType: string | null }) {
+  const { label: estimatedLabel } = getEstimatedDuration(contentType ?? '');
+  const [elapsed, setElapsed] = React.useState(0);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => setElapsed((e) => e + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatElapsed = (s: number) => {
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
+    return mins > 0 ? `${mins}:${String(secs).padStart(2, '0')}` : `${secs}s`;
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center py-16 gap-5">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+      </div>
+      <div className="text-center">
+        <p className="text-base font-semibold text-gray-800">Generating content variants</p>
+        <p className="text-sm text-gray-500 mt-1">
+          Creating 2 unique variants based on your strategy and briefing...
+        </p>
+        <p className="text-xs text-gray-400 mt-2">
+          Estimated: {estimatedLabel} · Elapsed: {formatElapsed(elapsed)}
+        </p>
+      </div>
     </div>
   );
 }

@@ -169,6 +169,7 @@ export async function* orchestrateContentGeneration(
     textModel.model,
     systemPrompt,
     userPrompt,
+    stack.deliverableTypeId,
   );
 
   // Validate AI response
@@ -332,12 +333,28 @@ const FALLBACK_MODELS: Record<AiProvider, string> = {
   google: 'gemini-3.1-pro-preview',
 };
 
+/** Resolve maxTokens based on content type — long-form needs much more */
+function resolveMaxTokens(contentType: string | null): number {
+  const longForm = new Set([
+    'blog-post', 'pillar-page', 'whitepaper', 'case-study', 'ebook',
+    'article', 'thought-leadership',
+  ]);
+  const mediumForm = new Set([
+    'newsletter', 'welcome-sequence', 'nurture-sequence', 'sales-deck',
+    'proposal-template', 'press-release', 'impact-report', 'career-page',
+  ]);
+  if (longForm.has(contentType ?? '')) return 16000;
+  if (mediumForm.has(contentType ?? '')) return 8000;
+  return 4000; // short-form: social posts, ads, carousels
+}
+
 async function generateTextWithFallback(
   workspaceId: string,
   primaryProvider: AiProvider,
   primaryModel: string,
   systemPrompt: string,
   userPrompt: string,
+  contentType?: string | null,
 ): Promise<TextGenerationResult> {
   // Build the ordered list of providers to try. Primary first, then the
   // feature's other supportedProviders (from the feature registry).
@@ -362,7 +379,7 @@ async function generateTextWithFallback(
         model,
         systemPrompt,
         userPrompt,
-        { temperature: 0.7, maxTokens: 4000 },
+        { temperature: 0.7, maxTokens: resolveMaxTokens(contentType ?? null) },
       );
       if (i > 0) {
         console.warn(
@@ -501,7 +518,7 @@ async function* handleRegeneration(
       textModel.model,
       systemPrompt,
       userPrompt,
-      { temperature: 0.8, maxTokens: 4000 },
+      { temperature: 0.8, maxTokens: resolveMaxTokens(stack.deliverableTypeId ?? null) },
     );
     const textDurationMs = Date.now() - textStart;
 

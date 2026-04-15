@@ -186,7 +186,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   "blog-post": [
     seoKeyword(),
     secondaryKeywords(),
-    targetWordCount(),
+
     {
       key: "metaDescription",
       label: "Meta Description",
@@ -210,22 +210,10 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   "pillar-page": [
     seoKeyword(),
     secondaryKeywords(),
-    targetWordCount(),
-    {
-      key: "clusterTopics",
-      label: "Topic Cluster Pages",
-      category: "seo",
-      type: "tags",
-      placeholder: "Add sub-topic…",
-      required: true,
-      helpText: "Sub-topics that link to/from this pillar page",
-      aiDerivable: true,
-      aiHint: "5-8 sub-topics based on the primary keyword",
-    },
   ],
 
   whitepaper: [
-    targetWordCount(),
+
     {
       key: "researchTheme",
       label: "Research Theme",
@@ -298,7 +286,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   ebook: [
-    targetWordCount(),
+
     {
       key: "chapterCount",
       label: "Number of Chapters",
@@ -332,7 +320,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   article: [
     seoKeyword(),
     secondaryKeywords(),
-    targetWordCount(),
+
     {
       key: "publicationTarget",
       label: "Publication / Platform",
@@ -345,7 +333,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
 
   "thought-leadership": [
     seoKeyword(),
-    targetWordCount(),
+
     {
       key: "authorPerspective",
       label: "Author / Executive Perspective",
@@ -417,7 +405,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
 
   "linkedin-article": [
     seoKeyword(),
-    targetWordCount(),
+
     {
       key: "authorPerspective",
       label: "Author Perspective",
@@ -484,7 +472,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
 
   "linkedin-newsletter": [
     subjectLine(),
-    targetWordCount(),
+
     {
       key: "newsletterTheme",
       label: "Newsletter Theme",
@@ -1914,4 +1902,53 @@ export function buildAiDerivationInstructions(): string {
   }
 
   return lines.join("\n");
+}
+
+/**
+ * Estimated generation duration per content type.
+ * Returns { label: "20-40 seconds", seconds: [20, 40] } for UI display + elapsed timer.
+ */
+export function getEstimatedDuration(typeId: string): { label: string; minSeconds: number; maxSeconds: number } {
+  const resolved = CONTENT_TYPE_ALIASES[typeId] ?? typeId;
+
+  // Long-form content (800-10,000 words) — significantly longer
+  const longForm = new Set([
+    'blog-post', 'pillar-page', 'whitepaper', 'case-study', 'ebook',
+    'article', 'thought-leadership',
+  ]);
+
+  // Website types run the 8-step SEO pipeline
+  const seoTypes = new Set([
+    'landing-page', 'product-page', 'faq-page', 'comparison-page', 'microsite',
+  ]);
+
+  // Medium-length content (300-1000 words)
+  const mediumForm = new Set([
+    'newsletter', 'welcome-sequence', 'promotional-email', 'nurture-sequence',
+    're-engagement-email', 'sales-deck', 'one-pager', 'proposal-template',
+    'product-description', 'sales-page', 'press-release', 'media-pitch',
+    'internal-comms', 'career-page', 'job-ad-copy', 'employee-story',
+    'impact-report', 'media-kit', 'employer-brand-video',
+  ]);
+
+  // Video/audio scripts
+  const videoAudio = new Set([
+    'explainer-video', 'testimonial-video', 'promo-video',
+    'webinar-outline', 'podcast-outline', 'video-ad', 'native-ad',
+  ]);
+
+  if (seoTypes.has(resolved)) {
+    return { label: '2-4 minutes', minSeconds: 120, maxSeconds: 240 };
+  }
+  if (longForm.has(resolved)) {
+    return { label: '45-90 seconds', minSeconds: 45, maxSeconds: 90 };
+  }
+  if (mediumForm.has(resolved)) {
+    return { label: '30-60 seconds', minSeconds: 30, maxSeconds: 60 };
+  }
+  if (videoAudio.has(resolved)) {
+    return { label: '30-60 seconds', minSeconds: 30, maxSeconds: 60 };
+  }
+  // Short-form: social posts, ads, carousels
+  return { label: '15-30 seconds', minSeconds: 15, maxSeconds: 30 };
 }
