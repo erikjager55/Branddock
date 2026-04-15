@@ -7,7 +7,7 @@ import {
   Globe,
   MessageSquare,
   Download,
-  X,
+  Trash2,
 } from "lucide-react";
 import { Modal } from "@/components/shared";
 import { useContentCanvasStore } from "@/features/campaigns/stores/useContentCanvasStore";
@@ -21,10 +21,11 @@ import type { DeliverableResponse } from "@/types/campaign";
 interface BulkActionBarProps {
   campaignId: string;
   deliverables: DeliverableResponse[];
+  onDeleteDeliverables?: (ids: string[]) => void;
 }
 
 /** Floating action bar for bulk deliverable operations */
-export function BulkActionBar({ campaignId, deliverables }: BulkActionBarProps) {
+export function BulkActionBar({ campaignId, deliverables, onDeleteDeliverables }: BulkActionBarProps) {
   const { selectedDeliverableIds, clearSelection } = useContentCanvasStore();
   const bulkApprove = useBulkApprove(campaignId);
   const bulkPublish = useBulkPublish(campaignId);
@@ -94,6 +95,17 @@ export function BulkActionBar({ campaignId, deliverables }: BulkActionBarProps) 
     });
   };
 
+  const handleDelete = () => {
+    if (!onDeleteDeliverables) return;
+    const confirmed = window.confirm(
+      `Delete ${count} deliverable${count !== 1 ? 's' : ''}? This cannot be undone.`,
+    );
+    if (confirmed) {
+      onDeleteDeliverables(selectedIds);
+      clearSelection();
+    }
+  };
+
   return (
     <>
       {/* Floating bar */}
@@ -154,6 +166,20 @@ export function BulkActionBar({ campaignId, deliverables }: BulkActionBarProps) 
             title="Copy to clipboard"
             onClick={handleExport}
           />
+
+          {onDeleteDeliverables && (
+            <>
+              <div className="w-px h-6 bg-gray-200" />
+              <ActionButton
+                icon={Trash2}
+                label="Delete"
+                disabled={isPending}
+                title={`Delete ${count} deliverable${count !== 1 ? 's' : ''}`}
+                onClick={handleDelete}
+                danger
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -203,18 +229,24 @@ function ActionButton({
   disabled,
   title,
   onClick,
+  danger = false,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   disabled: boolean;
   title: string;
   onClick: () => void;
+  danger?: boolean;
 }) {
+  const activeStyle = danger
+    ? { color: "#dc2626", backgroundColor: "#fef2f2" }
+    : { color: "#0f766e", backgroundColor: "#f0fdfa" };
+
   return (
     <button
       type="button"
       className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-      style={disabled ? { color: "#9ca3af" } : { color: "#0f766e", backgroundColor: "#f0fdfa" }}
+      style={disabled ? { color: "#9ca3af" } : activeStyle}
       disabled={disabled}
       title={title}
       onClick={onClick}

@@ -203,6 +203,12 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
     deleteDeliverable.mutate(match.id);
   };
 
+  const handleBulkDeleteDeliverables = useCallback((ids: string[]) => {
+    for (const id of ids) {
+      deleteDeliverable.mutate(id);
+    }
+  }, [deleteDeliverable]);
+
   const handleAddDeliverable = async () => {
     if (!addTitle.trim() || !addContentType || addDeliverable.isPending) return;
     setAddError(null);
@@ -520,6 +526,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
                       onBringToLife={onOpenInStudio ? handleBringToLife : undefined}
                       onDeleteDeliverable={handleDeleteDeliverable}
                       onAddDeliverable={() => setShowAddModal(true)}
+                      onBulkDeleteDeliverables={handleBulkDeleteDeliverables}
                       campaignStartDate={campaign?.startDate}
                       deliverables={deliverables}
                     />

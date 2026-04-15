@@ -45,6 +45,8 @@ interface StrategyResultTabProps {
   onDeleteDeliverable?: (title: string) => void;
   /** Called when user clicks "Add Deliverable" in the timeline header */
   onAddDeliverable?: () => void;
+  /** Called when user bulk-deletes deliverables by ID */
+  onBulkDeleteDeliverables?: (ids: string[]) => void;
   /** Optional campaign start date — enables week date labels in the timeline */
   campaignStartDate?: string | null;
   /** DB deliverables (includes manually added ones via modal) */
@@ -76,6 +78,7 @@ export function StrategyResultTab({
   onBringToLife,
   onDeleteDeliverable,
   onAddDeliverable,
+  onBulkDeleteDeliverables,
   campaignStartDate,
   deliverables,
 }: StrategyResultTabProps) {
@@ -351,7 +354,7 @@ export function StrategyResultTab({
               )}
 
               {/* Bulk action bar (visible when deliverables are selected) */}
-              <BulkActionBar campaignId={campaignId} deliverables={deliverables ?? []} />
+              <BulkActionBar campaignId={campaignId} deliverables={deliverables ?? []} onDeleteDeliverables={onBulkDeleteDeliverables} />
             </div>
           ) : (
             <EmptyState
