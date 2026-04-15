@@ -78,7 +78,7 @@ export function AddContentModal({
     if (!selectedCampaignId && !isNewCampaign) return;
     if (isNewCampaign && !newCampaignName.trim()) return;
 
-    // New campaign → go through wizard stepper (needs strategy/knowledge/concept)
+    // New format → go through wizard stepper (builds strategy + concept)
     if (isNewCampaign) {
       resetAndClose();
       onStartWizard?.(contentType, newCampaignName.trim());
@@ -151,7 +151,7 @@ export function AddContentModal({
               Cancel
             </button>
             <Button onClick={handleCreate} disabled={!canCreate} isLoading={isSubmitting}>
-              {isNewCampaign ? 'Start Wizard' : 'Create & Open Canvas'}
+              {isNewCampaign ? 'Create Format' : 'Create & Open Canvas'}
             </Button>
           </div>
         </div>
@@ -240,7 +240,7 @@ export function AddContentModal({
                     }`}
                   >
                     <span className="truncate">{c.title}</span>
-                    <Badge variant="default" size="sm">{c.type === "STRATEGIC" ? "Strategic" : c.type}</Badge>
+                    <Badge variant="default" size="sm">{c.type === "STRATEGIC" ? "Campaign" : "Format"}</Badge>
                   </button>
                 );
               })}
@@ -254,7 +254,7 @@ export function AddContentModal({
                 }`}
               >
                 <Plus className="w-4 h-4" />
-                Create new campaign
+                Create new format
               </button>
 
               {isNewCampaign && (
@@ -262,7 +262,7 @@ export function AddContentModal({
                   <Input
                     value={newCampaignName}
                     onChange={(e) => setNewCampaignName(e.target.value)}
-                    placeholder="Campaign name..."
+                    placeholder="e.g. Weekly LinkedIn Insights, Klant-in-beeld serie..."
                     required
                   />
                 </div>
