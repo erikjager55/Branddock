@@ -264,18 +264,16 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
       <AddContentModal
         isOpen={showAddContentModal}
         onClose={() => setShowAddContentModal(false)}
-        onCreated={(cid, did) => {
+        onSelectCampaign={(cid) => {
           setShowAddContentModal(false);
           useCampaignStore.getState().setSelectedCampaignId(cid);
-          useCampaignStore.getState().setSelectedDeliverableId(did);
-          onNavigate("content-canvas");
+          onNavigate("campaign-detail");
         }}
-        onStartWizard={(contentTypeId, campaignName) => {
+        onStartWizard={(formatName) => {
           setShowAddContentModal(false);
           const store = useCampaignWizardStore.getState();
           store.setWizardMode('content');
-          store.setName(campaignName);
-          store.setSelectedContentType(contentTypeId);
+          store.setName(formatName);
           onNavigate('campaign-wizard');
         }}
       />

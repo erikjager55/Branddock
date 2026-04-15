@@ -5,7 +5,7 @@ import { ArrowLeft, Download, Megaphone, Zap, Pencil, Check, X, Sparkles, CheckC
 import { Badge, Button, Modal, Input, Select } from "@/components/shared";
 import { DELIVERABLE_TYPES } from "../../lib/deliverable-types";
 import { deriveBriefFromBlueprint } from "../../lib/derive-brief";
-import { AddContentModal } from "../shared/AddContentModal";
+import { AddDeliverableTypeModal } from "../shared/AddDeliverableTypeModal";
 import { PageShell } from "@/components/ui/layout";
 import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
 import { useLockState } from "@/hooks/useLockState";
@@ -505,15 +505,14 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
         onCancel={lock.cancelToggle}
       />
 
-      {/* Unified Add Content Modal */}
-      <AddContentModal
+      {/* Add Deliverable — lightweight type selector (campaign already known) */}
+      <AddDeliverableTypeModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         campaignId={campaignId}
-        campaignName={campaign?.title}
-        onCreated={(cid, did) => {
+        onCreated={(did) => {
           setShowAddModal(false);
-          if (onOpenInCanvas) onOpenInCanvas(cid, did);
+          if (onOpenInCanvas) onOpenInCanvas(campaignId, did);
         }}
       />
     </PageShell>
