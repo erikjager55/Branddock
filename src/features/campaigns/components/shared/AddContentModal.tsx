@@ -16,7 +16,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { Plus, Megaphone, Sparkles } from "lucide-react";
+import { Plus, Megaphone, Sparkles, FileText, FolderOpen, PenLine } from "lucide-react";
 import { Modal, Input, Badge, Button, Select } from "@/components/shared";
 import { DELIVERABLE_TYPES, DELIVERABLE_CATEGORIES } from "../../lib/deliverable-types";
 import { ContentTypeInputFields } from "./ContentTypeInputFields";
@@ -30,11 +30,34 @@ import type { CampaignBlueprint } from "@/lib/campaigns/strategy-blueprint.types
 interface AddContentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  /** Pre-selected campaign (from campaign detail page) */
   campaignId?: string;
   campaignName?: string;
-  /** Callback after content is created — navigate to Canvas */
   onCreated?: (campaignId: string, deliverableId: string) => void;
+}
+
+// ─── Section Header ────────────────────────────────────────
+
+function SectionHeader({ icon: Icon, number, title, subtitle }: {
+  icon: React.ComponentType<{ className?: string }>;
+  number: number;
+  title: string;
+  subtitle?: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 mb-3">
+      <div
+        className="flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold"
+        style={{ backgroundColor: '#ccfbf1', color: '#0d9488' }}
+      >
+        {number}
+      </div>
+      <div className="flex items-center gap-2">
+        <Icon className="w-4 h-4 text-gray-500" />
+        <h4 className="text-sm font-semibold text-gray-800">{title}</h4>
+      </div>
+      {subtitle && <span className="text-xs text-gray-400 ml-auto">{subtitle}</span>}
+    </div>
+  );
 }
 
 // ─── Component ─────────────────────────────────────────────
@@ -67,7 +90,6 @@ export function AddContentModal({
   const effectiveCampaignId = isNewCampaign ? null : selectedCampaignId;
   const { data: strategy } = useStrategy(effectiveCampaignId ?? "");
 
-  // ── Sync pre-selected campaign ─────────────────────────
   useEffect(() => {
     if (preSelectedCampaignId) {
       setSelectedCampaignId(preSelectedCampaignId);
@@ -75,7 +97,6 @@ export function AddContentModal({
     }
   }, [preSelectedCampaignId]);
 
-  // ── Blueprint extraction ───────────────────────────────
   const blueprint = useMemo<CampaignBlueprint | null>(() => {
     if (!strategy) return null;
     if ("blueprint" in strategy && strategy.blueprint) {
@@ -84,43 +105,32 @@ export function AddContentModal({
     return null;
   }, [strategy]);
 
-  // ── Auto-fill from blueprint when campaign + content type change
+  // ── Auto-fill from blueprint ───────────────────────────
   useEffect(() => {
     if (!blueprint || !contentType) return;
     const derived = deriveBriefFromBlueprint(blueprint, contentType, phase, channel);
-
-    if (derived.keyMessage && !objective) {
-      setObjective(derived.keyMessage);
-    }
-
-    // Auto-fill phase from blueprint architecture
+    if (derived.keyMessage && !objective) setObjective(derived.keyMessage);
     if (!phase && blueprint.architecture?.journeyPhases?.length > 0) {
       setPhase(blueprint.architecture.journeyPhases[0].name ?? null);
     }
-
-    // Auto-fill personas from blueprint
     if (targetPersonas.length === 0 && blueprint.architecture?.journeyPhases) {
-      const personaNames = new Set<string>();
+      const names = new Set<string>();
       for (const jp of blueprint.architecture.journeyPhases) {
         if (jp.personaPhaseData) {
           for (const ppd of jp.personaPhaseData) {
-            if (ppd.personaName) personaNames.add(ppd.personaName);
+            if (ppd.personaName) names.add(ppd.personaName);
           }
         }
       }
-      if (personaNames.size > 0) {
-        setTargetPersonas(Array.from(personaNames));
-      }
+      if (names.size > 0) setTargetPersonas(Array.from(names));
     }
   }, [blueprint, contentType]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Filtered content types ─────────────────────────────
   const filteredTypes = useMemo(() => {
     if (!categoryFilter) return DELIVERABLE_TYPES;
     return DELIVERABLE_TYPES.filter((dt) => dt.category === categoryFilter);
   }, [categoryFilter]);
 
-  // ── Phase + Channel options from blueprint ─────────────
   const phaseOptions = useMemo(() => {
     if (!blueprint?.architecture?.journeyPhases) return [];
     return blueprint.architecture.journeyPhases
@@ -153,16 +163,10 @@ export function AddContentModal({
     if (!contentType) return;
     const typeDef = DELIVERABLE_TYPES.find((dt) => dt.id === contentType);
     if (!typeDef) return;
-
-    const campaignName = isNewCampaign
+    const campName = isNewCampaign
       ? newCampaignName
       : (campaigns?.campaigns ?? []).find((c) => c.id === selectedCampaignId)?.title ?? preSelectedCampaignName ?? "";
-
-    const autoTitle = campaignName
-      ? `${typeDef.name} — ${campaignName}`
-      : typeDef.name;
-
-    setTitle(autoTitle);
+    setTitle(campName ? `${typeDef.name} — ${campName}` : typeDef.name);
   }, [contentType, selectedCampaignId, isNewCampaign, newCampaignName, campaigns, preSelectedCampaignName]);
 
   // ── Handlers ───────────────────────────────────────────
@@ -173,7 +177,6 @@ export function AddContentModal({
   const handleSelectCampaign = useCallback((id: string | null) => {
     setSelectedCampaignId(id);
     setIsNewCampaign(false);
-    // Reset brief fields when campaign changes
     setPhase(null);
     setChannel(null);
     setTargetPersonas([]);
@@ -220,16 +223,11 @@ export function AddContentModal({
     try {
       let campaignId = selectedCampaignId;
 
-      // Create new campaign if needed
       if (isNewCampaign) {
         const res = await fetch("/api/campaigns", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: newCampaignName.trim(),
-            type: "STRATEGIC",
-            status: "ACTIVE",
-          }),
+          body: JSON.stringify({ title: newCampaignName.trim(), type: "STRATEGIC", status: "ACTIVE" }),
         });
         if (!res.ok) throw new Error("Failed to create campaign");
         const data = await res.json();
@@ -238,7 +236,6 @@ export function AddContentModal({
 
       if (!campaignId) throw new Error("No campaign selected");
 
-      // Build settings
       const settings: Record<string, unknown> = {};
       if (phase) settings.phase = phase;
       if (channel) settings.channel = channel;
@@ -247,8 +244,6 @@ export function AddContentModal({
 
       const briefFields: Record<string, unknown> = {};
       if (objective.trim()) briefFields.objective = objective.trim();
-
-      // Merge derived brief from blueprint
       if (blueprint && contentType) {
         const derived = deriveBriefFromBlueprint(blueprint, contentType, phase, channel);
         if (derived.keyMessage && !briefFields.keyMessage) briefFields.keyMessage = derived.keyMessage;
@@ -256,11 +251,9 @@ export function AddContentModal({
         if (derived.callToAction) briefFields.callToAction = derived.callToAction;
         if (derived.contentOutline.length > 0) briefFields.contentOutline = derived.contentOutline;
       }
-
       if (Object.keys(briefFields).length > 0) settings.brief = briefFields;
       if (Object.keys(contentTypeInputs).length > 0) settings.contentTypeInputs = contentTypeInputs;
 
-      // Create deliverable
       const res = await fetch(`/api/campaigns/${campaignId}/deliverables`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -280,8 +273,7 @@ export function AddContentModal({
       resetAndClose();
       onCreated?.(campaignId, deliverable.id);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Something went wrong";
-      setError(msg);
+      setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setIsSubmitting(false);
     }
@@ -292,11 +284,14 @@ export function AddContentModal({
   ]);
 
   const canCreate = !!(
-    contentType &&
-    title.trim() &&
+    contentType && title.trim() &&
     (selectedCampaignId || (isNewCampaign && newCampaignName.trim())) &&
     !isSubmitting
   );
+
+  const selectedTypeName = contentType
+    ? DELIVERABLE_TYPES.find((dt) => dt.id === contentType)?.name ?? contentType
+    : null;
 
   // ── Render ─────────────────────────────────────────────
   return (
@@ -307,8 +302,13 @@ export function AddContentModal({
       size="lg"
       footer={
         <div className="flex items-center justify-between w-full">
-          <div className="text-xs text-gray-400">
-            {contentType && !selectedCampaignId && !isNewCampaign && "Select a campaign to continue"}
+          <div className="text-sm text-gray-500">
+            {contentType && selectedTypeName && (
+              <span className="inline-flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5" />
+                {selectedTypeName}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -323,18 +323,17 @@ export function AddContentModal({
               disabled={!canCreate}
               isLoading={isSubmitting}
             >
-              Create
+              Create Content
             </Button>
           </div>
         </div>
       }
     >
-      <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
-        {/* ── 1. Content Type ── */}
-        <div>
-          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Content Type
-          </h4>
+      <div className="max-h-[70vh] overflow-y-auto">
+        {/* ── Section 1: Content Type ── */}
+        <div className="px-1 pb-5">
+          <SectionHeader icon={FileText} number={1} title="Content Type" subtitle={selectedTypeName ?? undefined} />
+
           <div className="flex flex-wrap gap-1.5 mb-3">
             <button
               type="button"
@@ -360,17 +359,18 @@ export function AddContentModal({
               </button>
             ))}
           </div>
-          <div className="grid grid-cols-3 gap-1.5 max-h-40 overflow-y-auto rounded-lg border border-gray-200 p-2">
+
+          <div className="grid grid-cols-3 gap-1.5 max-h-36 overflow-y-auto rounded-lg border border-gray-200 p-2">
             {filteredTypes.map((dt) => (
               <button
                 key={dt.id}
                 type="button"
                 onClick={() => setContentType(dt.id)}
                 style={contentType === dt.id ? { backgroundColor: "#f0fdfa", borderColor: "#0d9488" } : undefined}
-                className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
+                className={`text-left px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
                   contentType === dt.id
-                    ? "font-medium text-teal-800"
-                    : "border-gray-100 text-gray-700 hover:bg-gray-50"
+                    ? "font-semibold text-teal-800"
+                    : "border-transparent text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 {dt.name}
@@ -379,47 +379,44 @@ export function AddContentModal({
           </div>
         </div>
 
-        {/* ── 2. Campaign ── */}
-        <div>
-          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Campaign
-          </h4>
+        {/* Divider */}
+        <div className="border-t border-gray-100" />
+
+        {/* ── Section 2: Campaign ── */}
+        <div className="px-1 py-5">
+          <SectionHeader icon={FolderOpen} number={2} title="Campaign" />
 
           {preSelectedCampaignId && preSelectedCampaignName ? (
-            // Pre-selected — show as read-only badge
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-teal-200 bg-teal-50">
-              <Megaphone className="w-4 h-4 text-teal-600" />
-              <span className="text-sm font-medium text-teal-800">{preSelectedCampaignName}</span>
-              <Badge variant="teal" size="sm">Selected</Badge>
+            <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg" style={{ backgroundColor: "#f0fdfa", borderColor: "#99f6e4", border: "1px solid #99f6e4" }}>
+              <Megaphone className="w-4 h-4 flex-shrink-0" style={{ color: "#0d9488" }} />
+              <span className="text-sm font-medium" style={{ color: "#115e59" }}>{preSelectedCampaignName}</span>
             </div>
           ) : (
-            <div className="space-y-1.5 max-h-40 overflow-y-auto rounded-lg border border-gray-200 p-2">
-              {(campaigns?.campaigns ?? []).map((c) => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => handleSelectCampaign(c.id)}
-                  style={selectedCampaignId === c.id && !isNewCampaign ? { backgroundColor: "#f0fdfa", borderColor: "#0d9488" } : undefined}
-                  className={`flex items-center justify-between w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
-                    selectedCampaignId === c.id && !isNewCampaign
-                      ? "font-medium text-teal-800"
-                      : "border-gray-100 text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  <span className="truncate">{c.title}</span>
-                  <Badge variant="default" size="sm">{c.type === "STRATEGIC" ? "Strategic" : c.type}</Badge>
-                </button>
-              ))}
+            <div className="space-y-1 max-h-36 overflow-y-auto rounded-lg border border-gray-200 p-2">
+              {(campaigns?.campaigns ?? []).map((c) => {
+                const isActive = selectedCampaignId === c.id && !isNewCampaign;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => handleSelectCampaign(c.id)}
+                    style={isActive ? { backgroundColor: "#f0fdfa", borderColor: "#0d9488" } : undefined}
+                    className={`flex items-center justify-between w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
+                      isActive ? "font-medium text-teal-800" : "border-transparent text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span className="truncate">{c.title}</span>
+                    <Badge variant="default" size="sm">{c.type === "STRATEGIC" ? "Strategic" : c.type}</Badge>
+                  </button>
+                );
+              })}
 
-              {/* Create new */}
               <button
                 type="button"
                 onClick={handleSelectNewCampaign}
                 style={isNewCampaign ? { backgroundColor: "#f0fdfa", borderColor: "#0d9488" } : undefined}
                 className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg border text-sm transition-colors ${
-                  isNewCampaign
-                    ? "font-medium text-teal-800"
-                    : "border-gray-100 text-gray-600 hover:bg-gray-50"
+                  isNewCampaign ? "font-medium text-teal-800" : "border-transparent text-gray-600 hover:bg-gray-50"
                 }`}
               >
                 <Plus className="w-4 h-4" />
@@ -427,7 +424,7 @@ export function AddContentModal({
               </button>
 
               {isNewCampaign && (
-                <div className="pl-8 pt-1">
+                <div className="pl-8 pt-1 pb-1">
                   <Input
                     value={newCampaignName}
                     onChange={(e) => setNewCampaignName(e.target.value)}
@@ -440,106 +437,116 @@ export function AddContentModal({
           )}
         </div>
 
-        {/* ── 3. Content Brief ── */}
+        {/* ── Section 3: Content Brief ── */}
         {contentType && (selectedCampaignId || isNewCampaign) && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Content Brief
-              {blueprint && (
-                <span className="ml-2 inline-flex items-center gap-1 text-[10px] font-medium text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded normal-case tracking-normal">
-                  <Sparkles className="w-2.5 h-2.5" />
-                  Auto-filled from strategy
-                </span>
-              )}
-            </h4>
-            <div className="space-y-4">
-              <Input
-                label="Title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Instagram Carousel — Brand Launch"
-                required
+          <>
+            <div className="border-t border-gray-100" />
+
+            <div className="px-1 pt-5 pb-2">
+              <SectionHeader
+                icon={PenLine}
+                number={3}
+                title="Content Brief"
+                subtitle={blueprint ? "Auto-filled from strategy" : undefined}
               />
 
-              {/* Phase + Channel (if blueprint available) */}
-              {(phaseOptions.length > 0 || channelOptions.length > 0) && (
-                <div className="grid grid-cols-2 gap-4">
-                  <Select
-                    label="Phase"
-                    value={phase}
-                    onChange={setPhase}
-                    options={phaseOptions}
-                    placeholder="Select phase..."
-                    allowClear
-                  />
-                  <Select
-                    label="Channel"
-                    value={channel}
-                    onChange={setChannel}
-                    options={channelOptions}
-                    placeholder="Select channel..."
-                    allowClear
-                  />
+              {blueprint && (
+                <div className="flex items-center gap-1.5 mb-4 px-3 py-2 rounded-lg" style={{ backgroundColor: "#f5f3ff" }}>
+                  <Sparkles className="w-3.5 h-3.5" style={{ color: "#7c3aed" }} />
+                  <span className="text-xs font-medium" style={{ color: "#6d28d9" }}>
+                    Fields are pre-filled from your campaign strategy. Edit as needed.
+                  </span>
                 </div>
               )}
 
-              {/* Personas */}
-              {personaOptions.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Target Personas</label>
-                  <div className="flex flex-wrap gap-2">
-                    {personaOptions.map((name) => {
-                      const isSelected = targetPersonas.includes(name);
-                      return (
-                        <button
-                          key={name}
-                          type="button"
-                          onClick={() =>
-                            setTargetPersonas((prev) =>
-                              isSelected ? prev.filter((n) => n !== name) : [...prev, name]
-                            )
-                          }
-                          style={isSelected ? { backgroundColor: "#ccfbf1", color: "#0d9488", borderColor: "#99f6e4" } : undefined}
-                          className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
-                            isSelected ? "" : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                          }`}
-                        >
-                          {name}
-                        </button>
-                      );
-                    })}
+              <div className="space-y-4">
+                <Input
+                  label="Title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Instagram Carousel — Brand Launch"
+                  required
+                />
+
+                {(phaseOptions.length > 0 || channelOptions.length > 0) && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Select
+                      label="Phase"
+                      value={phase}
+                      onChange={setPhase}
+                      options={phaseOptions}
+                      placeholder="Select phase..."
+                      allowClear
+                    />
+                    <Select
+                      label="Channel"
+                      value={channel}
+                      onChange={setChannel}
+                      options={channelOptions}
+                      placeholder="Select channel..."
+                      allowClear
+                    />
                   </div>
-                </div>
-              )}
+                )}
 
-              <div>
-                <label htmlFor="add-content-objective" className="block text-sm font-medium text-gray-700 mb-1">
-                  Objective
-                </label>
-                <textarea
-                  id="add-content-objective"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 resize-y"
-                  rows={2}
-                  maxLength={2000}
-                  value={objective}
-                  onChange={(e) => setObjective(e.target.value)}
-                  placeholder="Brief description of the content objective..."
+                {personaOptions.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Target Personas</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {personaOptions.map((name) => {
+                        const isSelected = targetPersonas.includes(name);
+                        return (
+                          <button
+                            key={name}
+                            type="button"
+                            onClick={() =>
+                              setTargetPersonas((prev) =>
+                                isSelected ? prev.filter((n) => n !== name) : [...prev, name]
+                              )
+                            }
+                            style={isSelected ? { backgroundColor: "#ccfbf1", color: "#0d9488", borderColor: "#99f6e4" } : undefined}
+                            className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
+                              isSelected ? "" : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                            }`}
+                          >
+                            {name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="add-content-objective" className="block text-sm font-medium text-gray-700 mb-1">
+                    Objective
+                  </label>
+                  <textarea
+                    id="add-content-objective"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 resize-y"
+                    rows={2}
+                    maxLength={2000}
+                    value={objective}
+                    onChange={(e) => setObjective(e.target.value)}
+                    placeholder="Brief description of the content objective..."
+                  />
+                </div>
+
+                <ContentTypeInputFields
+                  typeId={contentType}
+                  values={contentTypeInputs}
+                  onChange={handleContentTypeInputChange}
+                  compact
                 />
               </div>
-
-              {/* Type-specific fields */}
-              <ContentTypeInputFields
-                typeId={contentType}
-                values={contentTypeInputs}
-                onChange={handleContentTypeInputChange}
-                compact
-              />
             </div>
-          </div>
+          </>
         )}
 
         {error && (
-          <p className="text-sm text-red-600" role="alert">{error}</p>
+          <div className="px-1 pb-2">
+            <p className="text-sm text-red-600" role="alert">{error}</p>
+          </div>
         )}
       </div>
     </Modal>

@@ -76,6 +76,7 @@ const createDeliverableSchema = z.object({
       callToAction: z.string().max(2000).optional(),
       contentOutline: z.array(z.string()).optional(),
     }).optional(),
+    contentTypeInputs: z.record(z.string(), z.union([z.string(), z.array(z.string()), z.number(), z.boolean()])).optional(),
   }).optional(),
 });
 
