@@ -270,6 +270,14 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
           useCampaignStore.getState().setSelectedDeliverableId(did);
           onNavigate("content-canvas");
         }}
+        onStartWizard={(contentTypeId, campaignName) => {
+          setShowAddContentModal(false);
+          const store = useCampaignWizardStore.getState();
+          store.setWizardMode('content');
+          store.setName(campaignName);
+          store.setSelectedContentType(contentTypeId);
+          onNavigate('campaign-wizard');
+        }}
       />
     </PageShell>
   );

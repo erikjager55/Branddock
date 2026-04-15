@@ -20,7 +20,10 @@ interface AddContentModalProps {
   onClose: () => void;
   campaignId?: string;
   campaignName?: string;
+  /** Called when deliverable is created in an existing campaign → navigate to Canvas */
   onCreated?: (campaignId: string, deliverableId: string) => void;
+  /** Called when user wants to create new campaign + content → navigate to wizard stepper */
+  onStartWizard?: (contentType: string, campaignName: string) => void;
 }
 
 // ─── Component ─────────────────────────────────────────────
@@ -31,6 +34,7 @@ export function AddContentModal({
   campaignId: preSelectedCampaignId,
   campaignName: preSelectedCampaignName,
   onCreated,
+  onStartWizard,
 }: AddContentModalProps) {
   const [contentType, setContentType] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
@@ -74,35 +78,28 @@ export function AddContentModal({
     if (!selectedCampaignId && !isNewCampaign) return;
     if (isNewCampaign && !newCampaignName.trim()) return;
 
+    // New campaign → go through wizard stepper (needs strategy/knowledge/concept)
+    if (isNewCampaign) {
+      resetAndClose();
+      onStartWizard?.(contentType, newCampaignName.trim());
+      return;
+    }
+
+    // Existing campaign → create deliverable directly, open Canvas
     setError(null);
     setIsSubmitting(true);
 
     try {
-      let campaignId = selectedCampaignId;
+      if (!selectedCampaignId) throw new Error("No campaign selected");
 
-      if (isNewCampaign) {
-        const res = await fetch("/api/campaigns", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title: newCampaignName.trim(), type: "STRATEGIC", status: "ACTIVE" }),
-        });
-        if (!res.ok) throw new Error("Failed to create campaign");
-        const data = await res.json();
-        campaignId = data.id;
-      }
-
-      if (!campaignId) throw new Error("No campaign selected");
-
-      // Auto-generate title from type name + campaign name
       const typeDef = DELIVERABLE_TYPES.find((dt) => dt.id === contentType);
-      const campName = isNewCampaign
-        ? newCampaignName
-        : (campaigns?.campaigns ?? []).find((c) => c.id === selectedCampaignId)?.title ?? preSelectedCampaignName ?? "";
+      const campName = (campaigns?.campaigns ?? []).find((c) => c.id === selectedCampaignId)?.title
+        ?? preSelectedCampaignName ?? "";
       const title = campName
         ? `${typeDef?.name ?? contentType} — ${campName}`
         : typeDef?.name ?? contentType;
 
-      const res = await fetch(`/api/campaigns/${campaignId}/deliverables`, {
+      const res = await fetch(`/api/campaigns/${selectedCampaignId}/deliverables`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, contentType }),
@@ -115,13 +112,13 @@ export function AddContentModal({
 
       const deliverable = await res.json();
       resetAndClose();
-      onCreated?.(campaignId, deliverable.id);
+      onCreated?.(selectedCampaignId, deliverable.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setIsSubmitting(false);
     }
-  }, [contentType, selectedCampaignId, isNewCampaign, newCampaignName, campaigns, preSelectedCampaignName, resetAndClose, onCreated]);
+  }, [contentType, selectedCampaignId, isNewCampaign, newCampaignName, campaigns, preSelectedCampaignName, resetAndClose, onCreated, onStartWizard]);
 
   const canCreate = !!(
     contentType &&
@@ -154,7 +151,7 @@ export function AddContentModal({
               Cancel
             </button>
             <Button onClick={handleCreate} disabled={!canCreate} isLoading={isSubmitting}>
-              Create & Open Canvas
+              {isNewCampaign ? 'Start Wizard' : 'Create & Open Canvas'}
             </Button>
           </div>
         </div>
