@@ -3,6 +3,7 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { Library, Plus, Zap } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { AddContentModal } from "../shared/AddContentModal";
 import { EmptyState, SkeletonCard, Button } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
 import { useContentLibrary } from "../../hooks";
@@ -94,6 +95,8 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
   const toggleFavorite = useToggleContentFavorite();
 
   // Group tracking for collapsible headers
+  const [showAddContentModal, setShowAddContentModal] = useState(false);
+
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
     new Set(),
   );
@@ -233,7 +236,7 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
               <Zap className="h-4 w-4" />
               View Campaigns
             </Button>
-            <Button data-testid="create-content-button" onClick={() => onNavigate('create-content')} className="gap-2">
+            <Button data-testid="create-content-button" onClick={() => setShowAddContentModal(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               Create Content
             </Button>
@@ -257,6 +260,17 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
 
         {renderContent()}
       </div>
+
+      <AddContentModal
+        isOpen={showAddContentModal}
+        onClose={() => setShowAddContentModal(false)}
+        onCreated={(cid, did) => {
+          setShowAddContentModal(false);
+          useCampaignStore.getState().setSelectedCampaignId(cid);
+          useCampaignStore.getState().setSelectedDeliverableId(did);
+          onNavigate("content-canvas");
+        }}
+      />
     </PageShell>
   );
 }

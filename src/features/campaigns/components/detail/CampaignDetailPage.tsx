@@ -3,8 +3,9 @@
 import React, { useState, useRef, useMemo, useCallback } from "react";
 import { ArrowLeft, Download, Megaphone, Zap, Pencil, Check, X, Sparkles, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { Badge, Button, Modal, Input, Select } from "@/components/shared";
-import { DELIVERABLE_TYPES, DELIVERABLE_CATEGORIES } from "../../lib/deliverable-types";
+import { DELIVERABLE_TYPES } from "../../lib/deliverable-types";
 import { deriveBriefFromBlueprint } from "../../lib/derive-brief";
+import { AddContentModal } from "../shared/AddContentModal";
 import { PageShell } from "@/components/ui/layout";
 import { LockShield, LockStatusPill, LockBanner, LockOverlay, LockConfirmDialog } from "@/components/lock";
 import { useLockState } from "@/hooks/useLockState";
@@ -104,15 +105,6 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
 
   // ── Add deliverable modal ──────────────────────────────────
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addTitle, setAddTitle] = useState("");
-  const [addContentType, setAddContentType] = useState<string | null>(null);
-  const [addCategoryFilter, setAddCategoryFilter] = useState<string | null>(null);
-  const [addPhase, setAddPhase] = useState<string | null>(null);
-  const [addChannel, setAddChannel] = useState<string | null>(null);
-  const [addTargetPersonas, setAddTargetPersonas] = useState<string[]>([]);
-  const [addPriority, setAddPriority] = useState<string | null>(null);
-  const [addObjective, setAddObjective] = useState("");
-  const [addError, setAddError] = useState<string | null>(null);
   const [bringToLifeError, setBringToLifeError] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -168,31 +160,6 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
     return Array.from(personas.entries()).map(([id, name]) => ({ id, name }));
   }, [blueprint]);
 
-  // Derive brief fields from blueprint when modal context changes
-  const derivedBrief = useMemo(
-    () => deriveBriefFromBlueprint(blueprint, addContentType, addPhase, addChannel),
-    [blueprint, addContentType, addPhase, addChannel],
-  );
-
-
-  const filteredContentTypes = useMemo(() => {
-    if (!addCategoryFilter) return DELIVERABLE_TYPES;
-    return DELIVERABLE_TYPES.filter((dt) => dt.category === addCategoryFilter);
-  }, [addCategoryFilter]);
-
-  const resetAddModal = () => {
-    setShowAddModal(false);
-    setAddTitle("");
-    setAddContentType(null);
-    setAddCategoryFilter(null);
-    setAddPhase(null);
-    setAddChannel(null);
-    setAddTargetPersonas([]);
-    setAddPriority(null);
-    setAddObjective("");
-    setAddError(null);
-  };
-
   /** Delete a deliverable by matching its title to the DB record */
   const handleDeleteDeliverable = (title: string) => {
     if (!deliverables) return;
@@ -208,36 +175,6 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
       deleteDeliverable.mutate(id);
     }
   }, [deleteDeliverable]);
-
-  const handleAddDeliverable = async () => {
-    if (!addTitle.trim() || !addContentType || addDeliverable.isPending) return;
-    setAddError(null);
-    try {
-      // Build settings from optional fields, omit empty values
-      const settings: NonNullable<import('@/types/campaign').CreateDeliverableBody['settings']> = {};
-      if (addPhase) settings.phase = addPhase;
-      if (addChannel) settings.channel = addChannel;
-      if (addTargetPersonas.length > 0) settings.targetPersonas = addTargetPersonas;
-      if (addPriority) settings.productionPriority = addPriority as 'must-have' | 'should-have' | 'nice-to-have';
-      // Merge user objective with derived brief fields
-      const briefFields: NonNullable<typeof settings.brief> = {};
-      if (addObjective.trim()) briefFields.objective = addObjective.trim();
-      if (derivedBrief.keyMessage) briefFields.keyMessage = derivedBrief.keyMessage;
-      if (derivedBrief.toneDirection) briefFields.toneDirection = derivedBrief.toneDirection;
-      if (derivedBrief.callToAction) briefFields.callToAction = derivedBrief.callToAction;
-      if (derivedBrief.contentOutline.length > 0) briefFields.contentOutline = derivedBrief.contentOutline;
-      if (Object.keys(briefFields).length > 0) settings.brief = briefFields;
-
-      await addDeliverable.mutateAsync({
-        title: addTitle.trim(),
-        contentType: addContentType,
-        ...(Object.keys(settings).length > 0 ? { settings } : {}),
-      });
-      resetAddModal();
-    } catch (err) {
-      setAddError(err instanceof Error ? err.message : "Failed to add deliverable");
-    }
-  };
 
   /** Warm handover: set campaign context in Content Studio store before navigation */
   const handleOpenInStudio = (cId: string, did: string) => {
@@ -568,180 +505,17 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
         onCancel={lock.cancelToggle}
       />
 
-      {/* Add Deliverable Modal */}
-      <Modal
+      {/* Unified Add Content Modal */}
+      <AddContentModal
         isOpen={showAddModal}
-        onClose={resetAddModal}
-        title="Add Deliverable"
-        size="md"
-        footer={
-          <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={resetAddModal}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleAddDeliverable}
-              disabled={!addTitle.trim() || !addContentType || addDeliverable.isPending}
-              isLoading={addDeliverable.isPending}
-            >
-              Add
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-5">
-          {/* ── Basics ── */}
-          <div>
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Basics</h4>
-            <div className="space-y-4">
-              <Input
-                label="Title"
-                value={addTitle}
-                onChange={(e) => setAddTitle(e.target.value)}
-                placeholder="e.g. Instagram Carousel — Brand Launch"
-                required
-              />
-              {/* Content Type — category pills + selectable grid */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <span className="text-red-500 mr-0.5">*</span>
-                  Content Type
-                </label>
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  <button
-                    type="button"
-                    onClick={() => setAddCategoryFilter(null)}
-                    style={!addCategoryFilter ? { backgroundColor: '#ccfbf1', color: '#0d9488' } : undefined}
-                    className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
-                      !addCategoryFilter ? 'ring-1 ring-teal-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    All
-                  </button>
-                  {DELIVERABLE_CATEGORIES.map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setAddCategoryFilter(cat)}
-                      style={addCategoryFilter === cat ? { backgroundColor: '#ccfbf1', color: '#0d9488' } : undefined}
-                      className={`px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
-                        addCategoryFilter === cat ? 'ring-1 ring-teal-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto rounded-lg border border-gray-200 p-2">
-                  {filteredContentTypes.map((dt) => (
-                    <button
-                      key={dt.id}
-                      type="button"
-                      onClick={() => setAddContentType(dt.id)}
-                      style={addContentType === dt.id ? { backgroundColor: '#f0fdfa', borderColor: '#0d9488' } : undefined}
-                      className={`text-left px-3 py-2 rounded-lg border text-sm transition-colors ${
-                        addContentType === dt.id
-                          ? 'font-medium text-teal-800'
-                          : 'border-gray-100 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      {dt.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Context (optional) ── */}
-          <div>
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Context (optional)</h4>
-            {!blueprint && (
-              <p className="text-xs text-gray-400 mb-3">Generate a campaign strategy to populate phase and channel options.</p>
-            )}
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <Select
-                  label="Phase"
-                  value={addPhase}
-                  onChange={setAddPhase}
-                  options={phaseOptions}
-                  placeholder={phaseOptions.length > 0 ? "Select phase..." : "No phases available"}
-                  disabled={phaseOptions.length === 0}
-                  allowClear
-                />
-                <Select
-                  label="Channel"
-                  value={addChannel}
-                  onChange={setAddChannel}
-                  options={channelOptions}
-                  placeholder={channelOptions.length > 0 ? "Select channel..." : "No channels available"}
-                  disabled={channelOptions.length === 0}
-                  allowClear
-                />
-              </div>
-
-              {/* Target Personas — checkbox list */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Target Personas</label>
-                {personaOptions.length > 0 ? (
-                  <div className="space-y-1.5">
-                    {personaOptions.map((p) => (
-                      <label key={p.id} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                          checked={addTargetPersonas.includes(p.name)}
-                          onChange={(e) => {
-                            setAddTargetPersonas((prev) =>
-                              e.target.checked
-                                ? [...prev, p.name]
-                                : prev.filter((n) => n !== p.name)
-                            );
-                          }}
-                        />
-                        {p.name}
-                      </label>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-gray-400">No personas available — generate a strategy first.</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Select
-                  label="Priority"
-                  value={addPriority}
-                  onChange={setAddPriority}
-                  options={PRIORITY_OPTIONS}
-                  placeholder="Select priority..."
-                  allowClear
-                />
-                <div /> {/* spacer for grid alignment */}
-              </div>
-
-              <div>
-                <label htmlFor="add-deliverable-objective" className="block text-sm font-medium text-gray-700 mb-1">Objective</label>
-                <textarea
-                  id="add-deliverable-objective"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 resize-none"
-                  rows={2}
-                  maxLength={2000}
-                  value={addObjective}
-                  onChange={(e) => setAddObjective(e.target.value)}
-                  placeholder="Brief description of the deliverable's objective..."
-                />
-              </div>
-
-            </div>
-          </div>
-
-          {addError && (
-            <p className="text-sm text-red-600" role="alert">{addError}</p>
-          )}
-        </div>
-      </Modal>
+        onClose={() => setShowAddModal(false)}
+        campaignId={campaignId}
+        campaignName={campaign?.title}
+        onCreated={(cid, did) => {
+          setShowAddModal(false);
+          if (onOpenInCanvas) onOpenInCanvas(cid, did);
+        }}
+      />
     </PageShell>
   );
 }
