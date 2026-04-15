@@ -41,6 +41,8 @@ export interface OrchestrationOptions {
   additionalContextText?: string;
   mediumConfig?: Record<string, unknown>;
   seoInput?: import('./seo-pipeline.types').SeoInput;
+  /** Client-side content type inputs (override DB values — user may not have saved yet) */
+  contentTypeInputs?: Record<string, string | string[] | number | boolean>;
 }
 
 interface TextComponentGroup {
@@ -100,6 +102,11 @@ export async function* orchestrateContentGeneration(
 
   // ── Step 1: Assemble context ──────────────────────────
   const stack = await assembleCanvasContext(deliverableId, workspaceId);
+
+  // Override DB contentTypeInputs with client-side values (user may not have saved yet)
+  if (options?.contentTypeInputs && Object.keys(options.contentTypeInputs).length > 0) {
+    stack.contentTypeInputs = options.contentTypeInputs;
+  }
 
   yield {
     event: 'context_loaded',

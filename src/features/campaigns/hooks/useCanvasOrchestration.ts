@@ -120,6 +120,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
           additionalContextItems: contextItems.length > 0 ? contextItems : undefined,
           mediumConfig: hasMediumConfig ? mediumConfigValues : undefined,
           seoInput,
+          contentTypeInputs: Object.keys(cti).length > 0 ? cti : undefined,
         }),
         signal: controller.signal,
       });

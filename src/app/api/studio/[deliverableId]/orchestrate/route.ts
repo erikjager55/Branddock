@@ -29,6 +29,7 @@ const orchestrateBodySchema = z.object({
   additionalContextItems: z.array(contextItemSchema).max(50).optional(),
   mediumConfig: z.record(z.string(), z.unknown()).optional(),
   seoInput: seoInputSchema.optional(),
+  contentTypeInputs: z.record(z.string(), z.union([z.string(), z.array(z.string()), z.number(), z.boolean()])).optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -131,6 +132,7 @@ export async function POST(
               additionalContextText,
               mediumConfig: body.mediumConfig,
               seoInput: body.seoInput,
+              contentTypeInputs: body.contentTypeInputs,
             },
           );
 
