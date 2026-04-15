@@ -34,6 +34,21 @@ interface KnowledgeContextSelectorModalProps {
   initialSelected?: Map<string, SelectedContextEntry>;
 }
 
+/** Badge color styles using inline styles to avoid Tailwind 4 purge issues */
+const BADGE_STYLES: Record<string, { bg: string; text: string }> = {
+  brand_asset:           { bg: '#d1fae5', text: '#047857' },
+  brandstyle:            { bg: '#fce7f3', text: '#be185d' },
+  persona:               { bg: '#e0e7ff', text: '#4338ca' },
+  product:               { bg: '#dbeafe', text: '#1d4ed8' },
+  detected_trend:        { bg: '#fef3c7', text: '#b45309' },
+  knowledge_resource:    { bg: '#f3e8ff', text: '#7e22ce' },
+  campaign:              { bg: '#ffe4e6', text: '#be123c' },
+  deliverable:           { bg: '#e0f2fe', text: '#0369a1' },
+  competitor:            { bg: '#ffedd5', text: '#c2410c' },
+  business_strategy:     { bg: '#cffafe', text: '#0e7490' },
+  strategic_implication:  { bg: '#ccfbf1', text: '#0d9488' },
+};
+
 /**
  * Shared modal for selecting knowledge context items.
  * Used by both persona chat and canvas context selectors.
@@ -140,21 +155,21 @@ export function KnowledgeContextSelectorModal({
           <span className="text-sm text-gray-500">
             {selected.size} item{selected.size !== 1 ? 's' : ''} selected
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <button
               onClick={resetAndClose}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handleApply}
               disabled={selected.size === 0 || isPending}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-opacity hover:opacity-90 disabled:cursor-not-allowed ${
-                selected.size > 0
-                  ? 'bg-green-500 text-white'
-                  : 'bg-gray-200 text-gray-400'
-              }`}
+              style={{
+                backgroundColor: selected.size > 0 ? '#0d9488' : '#e5e7eb',
+                color: selected.size > 0 ? '#ffffff' : '#9ca3af',
+              }}
+              className="px-5 py-2 text-sm font-medium rounded-lg transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isPending ? 'Applying...' : 'Apply Selection'}
             </button>
@@ -162,7 +177,7 @@ export function KnowledgeContextSelectorModal({
         </div>
       }
     >
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         {/* Search */}
         <div className="relative">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -171,12 +186,12 @@ export function KnowledgeContextSelectorModal({
             placeholder="Search knowledge items..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
           />
         </div>
 
         {/* Filter chips */}
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {filterChips.map((chip) => {
             const Icon = chip.icon;
             const isActive = activeFilter === chip.key;
@@ -184,13 +199,14 @@ export function KnowledgeContextSelectorModal({
               <button
                 key={chip.key}
                 onClick={() => setActiveFilter(chip.key)}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full transition-colors ${
+                style={isActive ? { backgroundColor: '#ccfbf1', color: '#0d9488' } : undefined}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
                   isActive
-                    ? 'bg-primary/10 text-primary ring-1 ring-primary/30'
+                    ? 'ring-1 ring-teal-300'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
-                <Icon className="w-3 h-3" />
+                <Icon className="w-3.5 h-3.5" />
                 {chip.label}
               </button>
             );
@@ -198,7 +214,7 @@ export function KnowledgeContextSelectorModal({
         </div>
 
         {/* Items list */}
-        <div className="max-h-[40vh] overflow-y-auto border border-gray-200 rounded-lg">
+        <div className="max-h-[40vh] overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
           {isLoading ? (
             <div className="flex items-center justify-center py-12 text-sm text-gray-400">
               Loading available context...
@@ -213,43 +229,48 @@ export function KnowledgeContextSelectorModal({
               const isItemSelected = selected.has(key);
               const meta = SOURCE_TYPE_META[item.sourceType];
               const Icon = meta?.icon ?? DEFAULT_SOURCE_ICON;
+              const badgeStyle = BADGE_STYLES[item.sourceType];
 
               return (
                 <button
                   key={key}
                   onClick={() => toggleItem(item)}
-                  className={`flex items-center gap-2.5 w-full px-3 py-1.5 text-left transition-colors hover:bg-gray-50 border-b border-gray-50 last:border-b-0 ${
-                    isItemSelected ? 'bg-primary/5' : ''
+                  className={`flex items-center gap-3 w-full px-4 py-3 text-left transition-colors ${
+                    isItemSelected
+                      ? 'bg-teal-50/60'
+                      : 'hover:bg-gray-50'
                   }`}
                 >
                   {/* Checkbox */}
                   <div
-                    className={`flex items-center justify-center h-5 w-5 rounded border flex-shrink-0 transition-colors ${
+                    style={isItemSelected ? { backgroundColor: '#0d9488', borderColor: '#0d9488' } : undefined}
+                    className={`flex items-center justify-center h-5 w-5 rounded flex-shrink-0 transition-colors ${
                       isItemSelected
-                        ? 'bg-primary border-primary'
-                        : 'bg-white border-gray-300'
+                        ? ''
+                        : 'bg-white border border-gray-300'
                     }`}
                   >
-                    {isItemSelected && <Check className="w-3.5 h-3.5 text-green-500" strokeWidth={3} />}
+                    {isItemSelected && <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />}
                   </div>
 
                   {/* Icon */}
-                  <div className="flex items-center justify-center w-7 h-7 rounded-md bg-gray-100 flex-shrink-0">
-                    <Icon className="w-3.5 h-3.5 text-gray-500" />
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 flex-shrink-0">
+                    <Icon className="w-4 h-4 text-gray-500" />
                   </div>
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
                     {item.description && (
-                      <p className="text-xs text-gray-500 truncate">{item.description}</p>
+                      <p className="text-xs text-gray-500 truncate mt-0.5">{item.description}</p>
                     )}
                   </div>
 
-                  {/* Type badge */}
+                  {/* Type badge — inline styles for Tailwind 4 purge safety */}
                   {meta && (
                     <span
-                      className={`text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0 ${meta.color}`}
+                      style={badgeStyle ? { backgroundColor: badgeStyle.bg, color: badgeStyle.text } : undefined}
+                      className="text-[11px] font-semibold px-2 py-0.5 rounded-md flex-shrink-0"
                     >
                       {meta.label}
                     </span>
