@@ -224,11 +224,12 @@ export function DeliverablesStep() {
             <Card
               key={item.id}
               padding="none"
-              className={`transition-all ${
+              className={`transition-all cursor-pointer ${
                 isSelected
                   ? "ring-2 ring-emerald-500 border-emerald-200"
                   : "hover:shadow-md"
               }`}
+              onClick={() => toggleDeliverable(item.id)}
             >
               <div className="p-4 space-y-3">
                 {/* Header row */}
@@ -258,8 +259,10 @@ export function DeliverablesStep() {
                   <input
                     type="checkbox"
                     checked={isSelected}
-                    onChange={() => toggleDeliverable(item.id)}
-                    className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 mt-1"
+                    onChange={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
+                    readOnly
+                    className="w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 mt-1 pointer-events-none"
                   />
                 </div>
 
@@ -277,7 +280,7 @@ export function DeliverablesStep() {
 
                 {/* Quantity stepper (only when selected) */}
                 {isSelected && (
-                  <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+                  <div className="flex items-center gap-3 pt-2 border-t border-gray-100" onClick={(e) => e.stopPropagation()}>
                     <span className="text-xs text-gray-500">Quantity:</span>
                     <div className="flex items-center gap-0 border border-gray-200 rounded-lg overflow-hidden">
                       <button

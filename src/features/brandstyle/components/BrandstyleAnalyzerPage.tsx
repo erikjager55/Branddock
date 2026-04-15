@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AlertTriangle } from "lucide-react";
 import { Skeleton } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
@@ -27,11 +27,15 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
   const hasExistingStyleguide = !isLoading && data?.styleguide?.status === "COMPLETE";
 
   // Reset stale analysis state on mount — prevents showing ProcessingProgress
-  // with a jobId from a previous (completed/deleted) analysis session
+  // with a jobId from a previous (completed/deleted) analysis session.
+  // Only runs once on mount (via ref) to avoid cancelling a freshly started analysis
+  // when the styleguide query hasn't refetched yet (stale COMPLETE status).
+  const didMountCleanupRef = useRef(false);
   useEffect(() => {
+    if (didMountCleanupRef.current) return;
     if (isAnalyzing && analysisJobId && !isLoading) {
+      didMountCleanupRef.current = true;
       const currentStatus = data?.styleguide?.analysisStatus;
-      // If there's no styleguide or it's already COMPLETE/ERROR, the store is stale
       if (!data?.styleguide || currentStatus === "COMPLETE" || currentStatus === "ERROR") {
         stopAnalysis();
       }

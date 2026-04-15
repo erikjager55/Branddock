@@ -57,10 +57,12 @@ export function VariantCard({
   };
 
   const label = VARIANT_LABELS[variantIndex] ?? String(variantIndex + 1);
-  const plainContent = variant.content.replace(/<[^>]*>/g, '');
-  const isLong = plainContent.length > 200;
-  const truncatedPlain = isLong && !expanded
-    ? plainContent.slice(0, 200) + '...'
+  // Strip HTML tags but preserve markdown formatting for SimpleMarkdown
+  const displayContent = variant.content.replace(/<[^>]*>/g, '');
+  const isLong = displayContent.length > 200;
+  // For truncation, find a clean cut point (end of paragraph or sentence)
+  const truncatedContent = isLong && !expanded
+    ? displayContent.slice(0, displayContent.indexOf('\n\n', 150) > 0 ? displayContent.indexOf('\n\n', 150) : 200) + '...'
     : null;
 
   return (
@@ -160,10 +162,17 @@ export function VariantCard({
               </div>
             )}
 
-            {truncatedPlain ? (
-              <SimpleMarkdown text={truncatedPlain} />
+            {truncatedContent ? (
+              <SimpleMarkdown text={truncatedContent} />
             ) : (
-              <SimpleMarkdown text={plainContent} />
+              <SimpleMarkdown text={displayContent} />
+            )}
+            {/* CTA highlight */}
+            {variant.cta && (
+              <div className="mt-2 flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-50 border border-amber-200">
+                <span className="text-[10px] font-semibold text-amber-700 uppercase tracking-wider flex-shrink-0">CTA</span>
+                <span className="text-xs font-medium text-amber-900">{variant.cta}</span>
+              </div>
             )}
             {isLong && (
               <button

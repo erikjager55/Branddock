@@ -2,86 +2,88 @@
 
 import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
-import { PreviewFrame } from './PreviewFrame';
-import { Mic, Clock, Radio } from 'lucide-react';
+import { Play, Download, MoreHorizontal, Radio } from 'lucide-react';
 
-/** Stub preview for podcast/audio content */
-export function PodcastPreview({ previewContent, isGenerating }: PlatformPreviewProps) {
-  const textEntries = Object.entries(previewContent).filter(
-    ([, v]) => v.type === 'text' && v.content,
-  );
-  const audioEntries = Object.entries(previewContent).filter(
-    ([, v]) => v.type === 'audio',
-  );
+/**
+ * Podcast episode mockup — styled after Spotify's episode card design.
+ */
+export function PodcastPreview({ previewContent, isGenerating, brandName }: PlatformPreviewProps) {
+  const title = previewContent.headline?.content ?? previewContent.hook?.content ?? '';
+  const description = previewContent.body?.content ?? previewContent.caption?.content ?? '';
+  const name = brandName ?? 'Brand Name';
+  const duration = previewContent.body?.metadata?.duration ?? 23;
 
   if (isGenerating) {
     return (
-      <PreviewFrame platformLabel="Podcast" platformColor="#7c3aed">
-        <div className="animate-pulse space-y-3">
-          <div className="h-16 rounded bg-gray-200" />
-          <div className="h-4 w-3/4 rounded bg-gray-200" />
-          <div className="h-4 w-full rounded bg-gray-200" />
+      <div className="bg-white rounded-lg border border-gray-200">
+        <div className="animate-pulse p-4 space-y-3">
+          <div className="flex gap-3">
+            <div className="h-16 w-16 rounded-lg bg-gray-200 flex-shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-3/4 rounded bg-gray-200" />
+              <div className="h-3 w-1/2 rounded bg-gray-200" />
+              <div className="h-3 w-1/3 rounded bg-gray-200" />
+            </div>
+          </div>
+          <div className="h-3 w-full rounded bg-gray-200" />
+          <div className="h-1.5 w-full rounded-full bg-gray-200" />
         </div>
-      </PreviewFrame>
-    );
-  }
-
-  const hasContent = textEntries.length > 0 || audioEntries.length > 0;
-  if (!hasContent) {
-    return (
-      <PreviewFrame platformLabel="Podcast" platformColor="#7c3aed">
-        <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-          <Mic className="h-10 w-10 mb-2" />
-          <p className="text-sm">Podcast preview will appear here</p>
-          <p className="text-xs mt-1">Generate content to see episode notes</p>
-        </div>
-      </PreviewFrame>
+      </div>
     );
   }
 
   return (
-    <PreviewFrame platformLabel="Podcast" platformColor="#7c3aed">
-      {/* Audio waveform placeholder */}
-      <div className="bg-gray-100 rounded-lg p-4 mb-3">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      {/* Episode header */}
+      <div className="p-4">
+        <div className="flex gap-3 mb-3">
+          {/* Artwork */}
+          <div className="h-16 w-16 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #1DB954 0%, #191414 100%)' }}>
+            <Radio className="h-7 w-7 text-white" />
+          </div>
+          {/* Episode meta */}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">
+              {title || 'Episode Title'}
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">{name}</p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Just now · {duration} min
+            </p>
+          </div>
+        </div>
+
+        {/* Description */}
+        {description && (
+          <p className="text-xs text-gray-600 leading-relaxed line-clamp-3 mb-3">{description}</p>
+        )}
+
+        {/* Player bar */}
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0">
-            <Radio className="h-5 w-5 text-violet-600" />
-          </div>
+          <button
+            type="button"
+            className="h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: '#1DB954' }}
+          >
+            <Play className="h-4 w-4 text-white ml-0.5" fill="white" />
+          </button>
           <div className="flex-1">
-            {/* Waveform bars mockup */}
-            <div className="flex items-end gap-0.5 h-8">
-              {Array.from({ length: 40 }, (_, i) => (
-                <div
-                  key={i}
-                  className="flex-1 bg-violet-300 rounded-full"
-                  style={{
-                    height: `${20 + Math.sin(i * 0.5) * 40 + Math.sin(i * 1.3) * 20 + Math.cos(i * 0.7) * 10}%`,
-                    minHeight: '4px',
-                  }}
-                />
-              ))}
+            <div className="h-1 rounded-full bg-gray-200 overflow-hidden">
+              <div className="h-full rounded-full w-0" style={{ backgroundColor: '#1DB954' }} />
             </div>
           </div>
-          {audioEntries.length > 0 && audioEntries[0][1].metadata?.duration && (
-            <div className="flex items-center gap-1 text-xs text-gray-500 flex-shrink-0">
-              <Clock className="h-3 w-3" />
-              {Math.floor(audioEntries[0][1].metadata.duration / 60)}:{String(audioEntries[0][1].metadata.duration % 60).padStart(2, '0')}
-            </div>
-          )}
+          <span className="text-[10px] text-gray-400 flex-shrink-0">{duration} min</span>
         </div>
       </div>
 
-      {/* Show notes / script */}
-      {textEntries.map(([group, value]) => (
-        <div key={group} className="mb-2">
-          <p className="text-xs font-medium text-gray-400 uppercase mb-1">
-            {group.replace(/_/g, ' ')}
-          </p>
-          <p className="text-sm text-gray-800 whitespace-pre-wrap line-clamp-6">
-            {value.content}
-          </p>
+      {/* Bottom actions */}
+      <div className="border-t border-gray-100 px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Download className="h-4 w-4 text-gray-400" />
+          <MoreHorizontal className="h-4 w-4 text-gray-400" />
         </div>
-      ))}
-    </PreviewFrame>
+        <span className="text-[10px] text-gray-400 uppercase tracking-wider">Podcast</span>
+      </div>
+    </div>
   );
 }

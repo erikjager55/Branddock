@@ -24,6 +24,7 @@ export function PreviewPanel() {
   const platform = medium?.platform ?? null;
   const format = medium?.format ?? null;
   const isGenerating = globalStatus === 'generating';
+  const brandName = contextStack?.brand?.brandName ?? undefined;
 
   // Resolve the correct preview component for this platform + format
   const { component: PreviewComponent, label } = resolvePreviewComponent(platform, format);
@@ -40,6 +41,7 @@ export function PreviewPanel() {
       result[group] = {
         content: selected.content || null,
         type: 'text',
+        cta: selected.cta ?? null,
       };
     }
 
@@ -58,6 +60,8 @@ export function PreviewPanel() {
             previewContent={previewContent}
             imageVariants={imageVariants}
             isGenerating={isGenerating}
+            brandName={brandName}
+            platform={platform ?? undefined}
           />
         </div>
 

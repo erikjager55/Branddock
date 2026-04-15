@@ -302,7 +302,21 @@ export async function fetchAndParse(url: string): Promise<{
     throw new Error('URL does not return HTML content');
   }
 
-  const html = await response.text();
+  let html = await response.text();
+
+  // Cap HTML size to prevent cheerio from choking on huge pages (>500KB)
+  const MAX_HTML_SIZE = 500_000;
+  if (html.length > MAX_HTML_SIZE) {
+    // Strip inline scripts and styles before truncating to preserve structure
+    html = html
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '');
+
+    if (html.length > MAX_HTML_SIZE) {
+      html = html.slice(0, MAX_HTML_SIZE);
+    }
+  }
+
   const $ = cheerio.load(html);
 
   const title = $('title').first().text().trim() || null;

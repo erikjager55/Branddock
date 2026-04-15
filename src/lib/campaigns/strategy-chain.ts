@@ -20,6 +20,7 @@ import {
   buildAssetPlannerPrompt,
   buildBriefingValidationPrompt,
   buildStrategyFoundationPrompt,
+  buildJourneyPhasesPrompt,
 } from '@/lib/ai/prompts/campaign-strategy';
 import { buildArenaQueries } from '@/lib/arena/arena-queries';
 import { fetchArenaContext } from '@/lib/arena/arena-client';
@@ -47,6 +48,7 @@ import {
   assetPlanLayerSchema,
   channelPlanResponseSchema,
   assetPlanResponseSchema,
+  journeyPhasesResponseSchema,
   briefingValidationSchema,
   strategyFoundationSchema,
 } from './strategy-blueprint.types';
@@ -184,6 +186,7 @@ interface WizardContext {
   selectedContentType?: string;
   briefing?: CampaignBriefing;
   useExternalEnrichment?: boolean;
+  selectedDeliverables?: { type: string; quantity: number }[];
 }
 
 interface GenerateOptions {
@@ -541,10 +544,42 @@ export async function elaborateJourney(
   const synthesizedStrategyJson = data.synthesisFeedback
     ? JSON.stringify(data.synthesizedStrategy) + `\n\n--- USER FEEDBACK ON STRATEGY ---\n${data.synthesisFeedback}`
     : JSON.stringify(data.synthesizedStrategy);
-  const synthesizedArchitectureJson = JSON.stringify(data.synthesizedArchitecture);
+
+  // Step 4.5: Generate journey phases when missing
+  // This happens in quick-concept mode (hardcoded empty) and when the strategy
+  // build AI truncates the architecture object.
+  let architecture = data.synthesizedArchitecture;
+  if (!architecture.journeyPhases || architecture.journeyPhases.length === 0) {
+    onProgress?.({ step: 4, name: 'Journey Phases', status: 'running', label: 'Generating journey phases...' } as PipelineEvent);
+
+    const jpPrompt = buildJourneyPhasesPrompt({
+      synthesizedStrategy: synthesizedStrategyJson,
+      goalType: campaignGoalType,
+      personaIds,
+      briefing: data.wizardContext.briefing,
+    });
+
+    const jpRaw = await withStepContext('Step 4.5 (Journey Phases — Gemini)', 60, () =>
+      createGeminiStructuredCompletion<ArchitectureLayer>(
+        jpPrompt.system, jpPrompt.user,
+        { model: GEMINI_FLASH, temperature: 0.3, maxOutputTokens: 8000, timeoutMs: 60_000, responseSchema: journeyPhasesResponseSchema },
+      ),
+    );
+
+    const generatedPhases = (jpRaw as ArchitectureLayer)?.journeyPhases ?? [];
+    if (generatedPhases.length > 0) {
+      architecture = { ...architecture, journeyPhases: generatedPhases };
+    } else {
+      console.warn('[elaborateJourney] Journey phase generation returned 0 phases — downstream plans will lack phase context');
+    }
+
+    onProgress?.({ step: 4, name: 'Journey Phases', status: 'complete', label: `${architecture.journeyPhases?.length ?? 0} journey phases generated` } as PipelineEvent);
+  }
+
+  const synthesizedArchitectureJson = JSON.stringify(architecture);
 
   // Step 5: Channel Planner
-  onProgress?.({ step: 5, name: 'Channel Planner', status: 'running', label: 'Planning channel strategy...' });
+  onProgress?.({ step: 5, name: 'Channel Planner', status: 'running', label: 'Planning channel strategy...' } as PipelineEvent);
 
   const step5Prompt = buildChannelPlannerPrompt({
     synthesizedStrategy: synthesizedStrategyJson,
@@ -571,7 +606,7 @@ export async function elaborateJourney(
   // Step 6: Asset Planner
   onProgress?.({ step: 6, name: 'Asset Planner', status: 'running', label: 'Creating asset plan...' });
 
-  const phaseNames = (data.synthesizedArchitecture?.journeyPhases ?? []).map((p: { name: string }) => p.name);
+  const phaseNames = (architecture.journeyPhases ?? []).map((p: { name: string }) => p.name);
 
   const step6Prompt = buildAssetPlannerPrompt({
     synthesizedStrategy: synthesizedStrategyJson,
@@ -588,6 +623,7 @@ export async function elaborateJourney(
     framingContext: journeyFramingContext,
     growthContext: journeyGrowthContext,
     eastChecklist: journeyEastChecklist,
+    selectedDeliverables: data.wizardContext.selectedDeliverables,
   });
 
   const assetPlanRaw = await withStepContext('Step 6 (Asset Planner — Gemini)', 120, () =>
@@ -599,7 +635,10 @@ export async function elaborateJourney(
   const assetPlan = validateOrWarn(assetPlanLayerSchema, assetPlanRaw, 'Step 6 Asset Plan');
   onProgress?.({ step: 6, name: 'Asset Planner', status: 'complete', label: 'Asset plan complete', preview: `${assetPlan.totalDeliverables} deliverables` });
 
-  return { channelPlan, assetPlan };
+  // Return architecture when journey phases were auto-generated so the caller
+  // can update the store with the enriched architecture.
+  const architectureChanged = architecture !== data.synthesizedArchitecture;
+  return { channelPlan, assetPlan, ...(architectureChanged ? { architecture } : {}) };
 }
 
 // ─── Deliverable Creation from Blueprint ────────────────────
@@ -1857,6 +1896,9 @@ Bisociation: ${approvedConcept.bisociationDomain.domain} — ${approvedConcept.b
     campaignTheme: approvedConcept.campaignLine,
   } as StrategyLayer;
 
+  if (!parsed.architecture) {
+    console.warn('[buildConceptDrivenStrategy] AI did not return architecture object — journey phases will be generated in elaborateJourney()');
+  }
   const architecture = (parsed.architecture ?? { campaignType: 'strategic', journeyPhases: [] }) as ArchitectureLayer;
 
   onProgress?.({ type: 'step', step: 1, name: 'Strategy Build', status: 'complete', label: 'Strategy built on approved concept' } as PipelineEvent);

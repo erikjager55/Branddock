@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
+import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { SimpleMarkdown } from '../previews/SimpleMarkdown';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import {
@@ -35,6 +36,9 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
   const setInsertImageModalOpen = useCanvasStore((s) => s.setInsertImageModalOpen);
   const config = useCanvasStore((s) => s.mediumConfigValues);
 
+  const { generate } = useCanvasOrchestration(deliverableId ?? null);
+  const hasExistingContent = variantGroups.size > 0;
+
   // Read config values
   const pageLayout = (config.pageLayout as string) ?? 'single-column';
   const heroStyle = (config.heroStyle as string) ?? 'full-bleed-image';
@@ -56,6 +60,32 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
   const textEntries = Object.entries(previewContent).filter(
     ([, v]) => v.type === 'text' && v.content,
   );
+
+  const handleConfirm = useCallback(async () => {
+    const store = useCanvasStore.getState();
+    store.setMediumApproved(true);
+
+    if (deliverableId) {
+      try {
+        await fetch(`/api/studio/${deliverableId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            settings: { mediumConfig: store.mediumConfigValues },
+          }),
+        });
+      } catch {
+        // Non-blocking
+      }
+    }
+
+    if (hasExistingContent) {
+      generate({ instruction: 'Regenerate content applying the updated medium configuration settings.' });
+    }
+
+    store.setStepSummary(3, { label: 'Web page configured' });
+    onAdvance();
+  }, [onAdvance, deliverableId, hasExistingContent, generate]);
 
   // Separate title / meta from body entries
   const titleEntry = textEntries.find(([g]) => g.toLowerCase() === 'title');
@@ -310,7 +340,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
       {/* Confirm button */}
       <button
         type="button"
-        onClick={onAdvance}
+        onClick={handleConfirm}
         className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
       >
         <CheckCircle2 className="h-4 w-4" />

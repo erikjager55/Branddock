@@ -4,13 +4,14 @@ import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { HeroImageSlot } from './HeroImageSlot';
 import { SimpleMarkdown } from './SimpleMarkdown';
+import { extractCta } from './CtaButton';
 import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, MoreHorizontal } from 'lucide-react';
 
 /**
  * LinkedIn organic post mockup — styled to match the real LinkedIn feed.
  * Uses LinkedIn's actual font sizes, spacing, and color palette.
  */
-export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, onAddImage, mediumConfig }: PlatformPreviewProps) {
+export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, onAddImage, mediumConfig, brandName }: PlatformPreviewProps) {
   const body = previewContent.body?.content ?? previewContent.caption?.content ?? '';
   const headline = previewContent.headline?.content ?? '';
   const hashtags = previewContent.hashtags?.content ?? '';
@@ -42,12 +43,12 @@ export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, o
       <div className="px-4 pt-3 pb-2">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full flex items-center justify-center" style={{ backgroundColor: '#dbeafe' }}>
-              <span className="text-sm font-bold" style={{ color: '#1d4ed8' }}>B</span>
+            <div className="h-12 w-12 rounded-sm flex items-center justify-center" style={{ backgroundColor: '#dbeafe' }}>
+              <span className="text-sm font-bold" style={{ color: '#1d4ed8' }}>{(brandName ?? 'B').charAt(0).toUpperCase()}</span>
             </div>
             <div>
-              <p className="text-sm font-semibold text-gray-900 leading-tight">Brand Name</p>
-              <p className="text-xs text-gray-500 leading-tight">Brand tagline or description</p>
+              <p className="text-sm font-semibold text-gray-900 leading-tight">{brandName ?? 'Brand Name'}</p>
+              <p className="text-xs text-gray-500 leading-tight">1,234 followers</p>
               <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
                 Just now · <Globe className="h-2.5 w-2.5" />
               </p>
@@ -75,20 +76,24 @@ export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, o
       {/* Image */}
       <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[1.91/1]" rounded="rounded-none" />
 
-      {/* CTA button (if configured) */}
-      {ctaStyle && ctaStyle !== 'none' && (
-        <div className="px-4 py-2 border-t border-gray-100">
-          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Learn more about this</p>
-              <p className="text-xs text-gray-500">brand.com</p>
+      {/* CTA button — uses generated CTA text or medium config fallback */}
+      {(() => {
+        const ctaText = extractCta(previewContent) ?? (ctaStyle && ctaStyle !== 'none' ? (ctaStyle === 'sign-up' ? 'Sign Up' : 'Learn More') : null);
+        if (!ctaText) return null;
+        return (
+          <div className="px-4 py-2 border-t border-gray-100">
+            <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+              <div>
+                <p className="text-sm font-medium text-gray-900">{ctaText}</p>
+                <p className="text-xs text-gray-500">{(brandName ?? 'brand').toLowerCase().replace(/\s+/g, '')}.com</p>
+              </div>
+              <span className="px-3 py-1 rounded-full text-xs font-semibold border" style={{ color: '#0A66C2', borderColor: '#0A66C2' }}>
+                {ctaText}
+              </span>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold border border-blue-700" style={{ color: '#0A66C2' }}>
-              {ctaStyle === 'learn-more' ? 'Learn More' : ctaStyle === 'sign-up' ? 'Sign Up' : 'Learn More'}
-            </span>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Engagement counts */}
       <div className="px-4 py-1.5">

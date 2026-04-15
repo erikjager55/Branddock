@@ -120,12 +120,19 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
     }
 
     for (const [group, components] of groups) {
-      const variants = components.map((c, i) => ({
-        index: c.variantIndex ?? i,
-        content: c.generatedContent ?? '',
-        tone: undefined,
-        isSelected: c.isSelected,
-      }));
+      const variants = components.map((c, i) => {
+        let cta: string | undefined;
+        if (c.visualBrief) {
+          try { cta = JSON.parse(c.visualBrief)?.cta; } catch { /* ignore */ }
+        }
+        return {
+          index: c.variantIndex ?? i,
+          content: c.generatedContent ?? '',
+          tone: undefined,
+          cta,
+          isSelected: c.isSelected,
+        };
+      });
       storeState.addVariantGroup(group, variants);
     }
 

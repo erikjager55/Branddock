@@ -2,11 +2,12 @@
 
 import React, { useMemo, useCallback } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
+import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { resolvePreviewComponent } from '../previews/preview-map';
 import { SimpleMarkdown } from '../previews/SimpleMarkdown';
 import { HeroImageSlot } from '../previews/HeroImageSlot';
 import { STUDIO } from '@/lib/constants/design-tokens';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, RefreshCw } from 'lucide-react';
 import type { PreviewContent } from '../../../types/canvas.types';
 
 interface MediumConfigLayoutProps {
@@ -36,6 +37,9 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
   const heroImage = useCanvasStore((s) => s.heroImage);
   const setInsertImageModalOpen = useCanvasStore((s) => s.setInsertImageModalOpen);
   const mediumConfigValues = useCanvasStore((s) => s.mediumConfigValues);
+  const globalStatus = useCanvasStore((s) => s.globalStatus);
+
+  const { generate } = useCanvasOrchestration(deliverableId ?? null);
 
   const platform = contextStack?.medium?.platform ?? null;
   const format = contextStack?.medium?.format ?? null;
@@ -61,6 +65,8 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
     ([, v]) => v.type === 'text' && v.content,
   );
 
+  const hasExistingContent = variantGroups.size > 0;
+
   const handleConfirm = useCallback(async () => {
     const store = useCanvasStore.getState();
     store.setMediumApproved(true);
@@ -79,9 +85,14 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
       }
     }
 
+    // Regenerate content with the new medium config applied
+    if (hasExistingContent) {
+      generate({ instruction: 'Regenerate content applying the updated medium configuration settings.' });
+    }
+
     store.setStepSummary(3, { label: `${previewEntry.label} configured` });
     onAdvance();
-  }, [onAdvance, previewEntry.label, deliverableId]);
+  }, [onAdvance, previewEntry.label, deliverableId, hasExistingContent, generate]);
 
   const PreviewComponent = previewEntry.component;
 
@@ -121,6 +132,8 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
             heroImage={heroImage}
             onAddImage={() => setInsertImageModalOpen(true)}
             mediumConfig={mediumConfigValues}
+            brandName={contextStack?.brand?.brandName ?? undefined}
+            platform={platform ?? undefined}
           />
         </div>
       </div>

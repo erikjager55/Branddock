@@ -46,6 +46,7 @@ interface TextComponentGroup {
   variants: Array<{
     content: string;
     tone?: string;
+    cta?: string;
   }>;
 }
 
@@ -184,6 +185,7 @@ export async function* orchestrateContentGeneration(
           index: i,
           content: v.content,
           tone: v.tone,
+          cta: v.cta ?? null,
         })),
       },
     };
@@ -607,10 +609,21 @@ function buildCanvasPrompt(
     imageInstruction,
     userInstruction,
     '',
+    '## FORMATTING RULES',
+    'The "content" field in each variant MUST use markdown formatting for professional, well-structured output:',
+    '- Use ## for section headings and ### for sub-headings where appropriate',
+    '- Use **bold** for key phrases, names, and emphasis',
+    '- Use *italic* for quotes, subtle emphasis, or foreign terms',
+    '- Use - bullet lists for features, benefits, steps, or enumerated points',
+    '- Separate paragraphs with blank lines (\\n\\n) for clear visual rhythm',
+    '- For long-form content (articles, blog posts, whitepapers): include an intro paragraph, 2-4 headed sections, and a conclusion',
+    '- For short-form content (social posts, ads, emails): use bold for hooks and CTAs, keep paragraphs tight',
+    '- Never output a wall of unformatted text — every piece of content must have clear visual hierarchy',
+    '',
     'Response schema:',
     '{',
     '  "components": [',
-    '    { "group": "hook", "variants": [{ "content": "...", "tone": "..." }, ...] }',
+    '    { "group": "hook", "variants": [{ "content": "## Heading\\n\\nIntro paragraph with **bold emphasis**...\\n\\n### Sub-section\\n\\n- Bullet point one\\n- Bullet point two", "tone": "...", "cta": "Get Started Now" }, ...] }',
     '  ],',
     hasImageComponent
       ? '  "imagePrompts": [{ "description": "...", "style": "..." }]'
@@ -618,6 +631,7 @@ function buildCanvasPrompt(
     '}',
     '',
     'Each group must have exactly 2 variants with different creative approaches.',
+    'IMPORTANT: Every variant MUST include a "cta" field — a short, compelling call-to-action text (2-6 words, e.g. "Start Your Free Trial", "Learn More", "Book a Demo", "Shop Now"). The CTA should match the content goal and platform. Never leave cta empty.',
     'Ensure all content is on-brand and appropriate for the target platform.',
   ]
     .filter(Boolean)
@@ -675,11 +689,14 @@ function buildRegenerationPrompt(
     `User feedback: ${feedback}`,
     '',
     'Generate 2 improved variants that address the feedback while staying on-brand.',
+    'IMPORTANT: Every variant MUST include a "cta" field — a short, compelling call-to-action text (2-6 words). Never leave cta empty.',
+    '',
+    'FORMATTING: Use markdown in the "content" field — ## headings, ### sub-headings, **bold**, *italic*, - bullet lists, and blank lines between paragraphs. Never output unformatted walls of text.',
     '',
     'Response schema:',
     '{',
     '  "components": [',
-    `    { "group": "${group}", "variants": [{ "content": "...", "tone": "..." }, { "content": "...", "tone": "..." }] }`,
+    `    { "group": "${group}", "variants": [{ "content": "## Heading\\n\\nParagraph with **bold**...\\n\\n- Bullet point", "tone": "...", "cta": "Get Started" }, { "content": "...", "tone": "...", "cta": "Learn More" }] }`,
     '  ]',
     '}',
   ].join('\n');
@@ -1043,6 +1060,7 @@ async function persistVariants(
             variantIndex,
             isSelected: variantIndex === 0,
             generatedContent: variant.content,
+            visualBrief: variant.cta ? JSON.stringify({ cta: variant.cta }) : null,
             aiProvider: meta.provider,
             generationDuration: meta.textDurationMs,
             aiModel: null,
@@ -1138,6 +1156,7 @@ async function persistRegeneratedGroup(
             variantIndex,
             isSelected: variantIndex === 0,
             generatedContent: variant.content,
+            visualBrief: variant.cta ? JSON.stringify({ cta: variant.cta }) : null,
             aiProvider: meta?.provider ?? null,
             generationDuration: meta?.durationMs ?? 0,
             status: 'GENERATED',

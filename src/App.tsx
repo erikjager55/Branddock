@@ -6,6 +6,7 @@ import { TopNavigationBar } from './components/TopNavigationBar';
 import { EnhancedSidebarSimple } from './components/EnhancedSidebarSimple';
 import { ActivityFeed } from './components/ActivityFeed';
 import { FloatingChatWidget } from './features/help/components/FloatingChatWidget';
+import { ClawOverlay } from './features/claw/components/ClawOverlay';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TooltipProvider } from './components/ui/tooltip';
 import { LazyWrapper } from './components/shared';
@@ -996,6 +997,7 @@ function AppContent() {
       />
 
       <FloatingChatWidget />
+      <ClawOverlay />
     </WorkflowEnhancer>
   );
 }

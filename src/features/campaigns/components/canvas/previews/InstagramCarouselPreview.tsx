@@ -4,13 +4,16 @@ import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { PreviewFrame } from './PreviewFrame';
 import { ChevronLeft, ChevronRight, Heart, MessageCircle, Send, Bookmark } from 'lucide-react';
+import { extractCta, CtaButton } from './CtaButton';
 
 const INSTAGRAM_GRADIENT = '#E1306C';
 
 /** Instagram carousel mockup with slide navigation */
-export function InstagramCarouselPreview({ previewContent, imageVariants, isGenerating }: PlatformPreviewProps) {
+export function InstagramCarouselPreview({ previewContent, imageVariants, isGenerating, brandName }: PlatformPreviewProps) {
   const [currentSlide, setCurrentSlide] = React.useState(0);
   const caption = previewContent.caption?.content ?? previewContent.body?.content ?? '';
+  const cta = extractCta(previewContent);
+  const brandHandle = (brandName ?? 'brandname').toLowerCase().replace(/\s+/g, '');
 
   const slides = imageVariants.length > 0 ? imageVariants : [];
   const totalSlides = Math.max(slides.length, 1);
@@ -44,9 +47,9 @@ export function InstagramCarouselPreview({ previewContent, imageVariants, isGene
       {/* Profile header */}
       <div className="flex items-center gap-2 mb-3">
         <div className="h-8 w-8 rounded-full bg-pink-100 flex items-center justify-center">
-          <span className="text-xs font-bold text-pink-600">B</span>
+          <span className="text-xs font-bold text-pink-600">{brandHandle.charAt(0).toUpperCase()}</span>
         </div>
-        <p className="text-xs font-semibold text-gray-900">brandname</p>
+        <p className="text-xs font-semibold text-gray-900">{brandHandle}</p>
       </div>
 
       {/* Carousel viewer */}
@@ -122,9 +125,16 @@ export function InstagramCarouselPreview({ previewContent, imageVariants, isGene
       {/* Caption */}
       {caption && (
         <p className="text-xs text-gray-800">
-          <span className="font-semibold">brandname </span>
+          <span className="font-semibold">{brandHandle} </span>
           <span className="line-clamp-3">{caption}</span>
         </p>
+      )}
+
+      {/* CTA pill */}
+      {cta && (
+        <div className="mt-2 text-center">
+          <CtaButton text={cta} variant="pill" />
+        </div>
       )}
     </PreviewFrame>
   );

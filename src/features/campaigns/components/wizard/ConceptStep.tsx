@@ -38,13 +38,19 @@ import { compileStructuredFeedback } from "../../lib/compile-structured-feedback
 
 const ELABORATE_STEPS: PipelineStepConfig[] = [
   {
-    step: 1,
+    step: 4,
+    name: "Journey Phases",
+    label: "Generating journey phases...",
+    description: "Designs the customer journey phases that guide the audience from awareness to action.",
+  },
+  {
+    step: 5,
     name: "Channel Planner",
     label: "Planning channel strategy...",
     description: "Designs the media mix and channel deployment plan based on the approved strategy.",
   },
   {
-    step: 2,
+    step: 6,
     name: "Asset Planner",
     label: "Planning campaign assets...",
     description: "Creates a detailed asset plan with deliverables, briefs, and production priorities.",
@@ -78,6 +84,8 @@ export function ConceptStep() {
   const useExternalEnrichment = useCampaignWizardStore((s) => s.useExternalEnrichment);
   const pipelineConfig = useCampaignWizardStore((s) => s.pipelineConfig);
   const wizardMode = useCampaignWizardStore((s) => s.wizardMode);
+  const campaignType = useCampaignWizardStore((s) => s.campaignType);
+  const selectedContentType = useCampaignWizardStore((s) => s.selectedContentType);
 
 
 
@@ -88,6 +96,7 @@ export function ConceptStep() {
   const briefingTonePreference = useCampaignWizardStore((s) => s.briefingTonePreference);
   const briefingConstraints = useCampaignWizardStore((s) => s.briefingConstraints);
   const briefingSources = useCampaignWizardStore((s) => s.briefingSources);
+  const selectedDeliverables = useCampaignWizardStore((s) => s.selectedDeliverables);
 
   // Elaborate result from Zustand store (survives unmount/remount)
   const elaborateResult = useCampaignWizardStore((s) => s.elaborateResult);
@@ -112,6 +121,8 @@ export function ConceptStep() {
     campaignName: campaignName || "Untitled Campaign",
     campaignDescription,
     campaignGoalType: campaignGoalType ?? undefined,
+    campaignType: wizardMode === 'content' ? 'content' as const : (campaignType ?? undefined),
+    selectedContentType: selectedContentType ?? undefined,
     useExternalEnrichment,
     briefing: {
       occasion: briefingOccasion || undefined,
@@ -129,7 +140,8 @@ export function ConceptStep() {
           extractedText: s.extractedText,
         })),
     },
-  }), [campaignName, campaignDescription, campaignGoalType, useExternalEnrichment, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints, briefingSources]);
+    selectedDeliverables: selectedDeliverables.length > 0 ? selectedDeliverables : undefined,
+  }), [campaignName, campaignDescription, campaignGoalType, campaignType, selectedContentType, wizardMode, useExternalEnrichment, briefingOccasion, briefingAudienceObjective, briefingCoreMessage, briefingTonePreference, briefingConstraints, briefingSources, selectedDeliverables]);
 
   const abortRef = useRef<{ abort: () => void } | null>(null);
   const generationIdRef = useRef(0);
@@ -534,13 +546,20 @@ export function ConceptStep() {
           const result = data.result as {
             channelPlan: ChannelPlanLayer;
             assetPlan: AssetPlanLayer;
+            architecture?: ArchitectureLayer;
           };
           // Atomic update: set result + stop generating in one call to prevent
           // a one-frame flash where neither the progress nor review view renders.
-          useCampaignWizardStore.setState({
-            elaborateResult: result,
+          const stateUpdate: Record<string, unknown> = {
+            elaborateResult: { channelPlan: result.channelPlan, assetPlan: result.assetPlan },
             isGenerating: false,
-          });
+          };
+          // When journey phases were auto-generated (empty → filled), update
+          // the synthesized architecture so the blueprint assembly uses them.
+          if (result.architecture) {
+            stateUpdate.synthesizedArchitecture = result.architecture;
+          }
+          useCampaignWizardStore.setState(stateUpdate);
           return;
         }
 

@@ -106,7 +106,11 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           passed = textGroups.some((g) => g === 'title' || g === 'headline' || g === 'subject');
           break;
         case 'has-body':
-          passed = textGroups.some((g) => g === 'body' || g === 'caption' || g === 'introduction' || g === 'body-sections');
+          passed = textGroups.some((g) =>
+            g === 'body' || g === 'caption' || g === 'introduction' || g === 'body-sections' ||
+            g === 'content' || g === 'hook' || g === 'email-body' || g === 'main' || g === 'text' ||
+            g === 'copy' || g === 'post' || g === 'article' || g === 'script'
+          );
           break;
         case 'has-image':
           passed = !!heroImage?.url;
@@ -118,7 +122,13 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           passed = textGroups.some((g) => g === 'subject' || g === 'subject-line');
           break;
         case 'has-cta':
-          passed = textGroups.some((g) => g === 'cta' || g === 'call-to-action');
+          // Check group keys + cta field on groups + text extraction
+          passed = textGroups.some((g) => g === 'cta' || g === 'call-to-action') ||
+            Object.values(previewContent).some((v) => !!v?.cta) ||
+            textGroups.some((g) => {
+              const content = previewContent[g]?.content;
+              return content ? /\*\*(get|start|join|sign|book|claim|download|discover|learn|try|shop|buy|register|subscribe|explore|request|schedule|apply|contact)\b/i.test(content) : false;
+            });
           break;
         case 'has-meta':
           passed = textGroups.some((g) => g.includes('meta'));
@@ -279,6 +289,8 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
               isGenerating={false}
               heroImage={heroImage}
               mediumConfig={mediumConfigValues}
+              brandName={contextStack?.brand?.brandName ?? undefined}
+              platform={platform ?? undefined}
             />
           </div>
         )}

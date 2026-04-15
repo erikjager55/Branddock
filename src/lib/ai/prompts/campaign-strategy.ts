@@ -820,6 +820,60 @@ SYNTHESIS GUIDANCE (with debate context):
   return { system, user };
 }
 
+// ─── Step 4.5: Journey Phase Generator (Gemini Flash) ──────
+// Used when the strategy build step returns empty journeyPhases
+// (common in quick-concept mode or when the AI truncates output).
+
+export function buildJourneyPhasesPrompt(params: {
+  synthesizedStrategy: string;
+  goalType: string;
+  personaIds: string[];
+  briefing?: CampaignBriefing;
+}): { system: string; user: string } {
+  const goalLabel = GOAL_LABELS[params.goalType] ?? params.goalType;
+
+  const system = `You are a campaign architect designing the customer journey phases for a marketing campaign.
+
+Generate 3-5 journey phases that guide the audience from first awareness to desired action.
+
+Each phase needs:
+- id: A short kebab-case identifier (e.g. "awareness", "consideration", "conversion")
+- name: A clear display name (e.g. "Awareness & Discovery")
+- description: What happens in this phase (1-2 sentences)
+- orderIndex: 0-based index
+- goal: The primary objective of this phase
+- kpis: 2-4 measurable KPIs for this phase
+- personaPhaseData: Per-persona needs, pain points, mindset, key question, and triggers
+  Use the provided persona IDs. If no persona IDs are provided, use a single generic entry with personaId "general".
+- touchpoints: 2-4 touchpoints per phase with channel, contentType, message, role ("primary" or "supporting"), and personaRelevance
+
+Guidelines:
+- Design phases appropriate for the campaign goal type: "${goalLabel}"
+- Common patterns: Awareness → Engagement → Consideration → Conversion → Advocacy
+- Not every campaign needs all stages — a brand campaign may focus on Awareness → Engagement → Recall
+- Each touchpoint message should be specific and actionable, not generic
+
+Also include campaignType as "strategic".
+
+Respond with valid JSON matching the architecture schema.`;
+
+  const user = `Design the journey phases for this campaign.
+
+## Strategy
+${params.synthesizedStrategy}
+
+## Campaign Goal
+${goalLabel}
+
+## Persona IDs to use
+${JSON.stringify(params.personaIds.length > 0 ? params.personaIds : ['general'])}${params.briefing ? `
+
+## Briefing
+${buildBriefingSection(params.briefing)}` : ''}`;
+
+  return { system, user };
+}
+
 // ─── Step 5: Channel Planner (Gemini Flash) ────────────────
 
 export function buildChannelPlannerPrompt(params: {
@@ -899,6 +953,8 @@ export function buildAssetPlannerPrompt(params: {
   campaignType?: string;
   /** In content mode: the specific content type being generated */
   selectedContentType?: string;
+  /** User-selected deliverable types with quantities — these MUST all appear in the plan */
+  selectedDeliverables?: { type: string; quantity: number }[];
 }): { system: string; user: string } {
   const validTypes = DELIVERABLE_TYPE_IDS.join(', ');
   const validPhases = params.journeyPhaseNames?.length
@@ -914,6 +970,15 @@ export function buildAssetPlannerPrompt(params: {
   const phaseInstruction = validPhases
     ? `- phase: MUST be one of these exact phase names: ${validPhases}. Do NOT invent phase names or use abbreviations — copy the phase name exactly as listed.`
     : '- phase: Which journey phase this serves';
+
+  const selectedDeliverablesInstruction = params.selectedDeliverables?.length
+    ? `\n\n## REQUIRED DELIVERABLES (user-selected — ALL must appear in the plan)
+The user has explicitly selected the following deliverable types. You MUST include ALL of them in your plan with at least the specified quantity. You may add additional deliverables beyond these, but none of the selected types may be omitted.
+
+${params.selectedDeliverables.map(d => `- "${d.type}" × ${d.quantity}`).join('\n')}
+
+Distribute these across the journey phases where they strategically fit best. If a type appears multiple times (quantity > 1), create separate deliverables with distinct titles and briefs for each instance.`
+    : '';
 
   const system = `You are a content strategist creating a deliverable plan for a campaign.
 
@@ -959,7 +1024,7 @@ Also provide:
   - estimatedEffort: "low" (< 2h), "medium" (2-8h), "high" (> 8h)
   Typical prep deliverables include: campaign brief finalization, brand/tone guidelines, content calendar setup, audience segment definitions, channel account setup, stakeholder alignment docs, asset templates, and approval workflows.
 
-Produce 8-15 deliverables that form a coherent content ecosystem covering ALL journey phases. Distribute them proportionally across phases based on phase duration.
+Produce 8-15 deliverables that form a coherent content ecosystem covering ALL journey phases. Distribute them proportionally across phases based on phase duration.${selectedDeliverablesInstruction}
 
 Respond with valid JSON matching the AssetPlanLayer schema.`;
 

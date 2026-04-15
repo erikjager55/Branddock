@@ -4,15 +4,16 @@ import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { HeroImageSlot } from './HeroImageSlot';
 import { SimpleMarkdown } from './SimpleMarkdown';
+import { extractCta } from './CtaButton';
 
 /**
  * Email client mockup — styled like a real email template rendering.
  */
-export function EmailPreview({ previewContent, isGenerating, heroImage, onAddImage, mediumConfig }: PlatformPreviewProps) {
+export function EmailPreview({ previewContent, isGenerating, heroImage, onAddImage, mediumConfig, brandName }: PlatformPreviewProps) {
   const subject = previewContent.subject?.content ?? previewContent.headline?.content ?? '';
   const preheader = previewContent.preheader?.content ?? '';
   const body = previewContent.body?.content ?? '';
-  const cta = previewContent.cta?.content ?? '';
+  const cta = extractCta(previewContent) ?? '';
   const templateStyle = (mediumConfig?.templateStyle as string) ?? 'minimal';
   const ctaPlacement = (mediumConfig?.ctaPlacement as string) ?? 'bottom';
   const personalize = (mediumConfig?.personalize as boolean) ?? false;
@@ -44,7 +45,7 @@ export function EmailPreview({ previewContent, isGenerating, heroImage, onAddIma
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-xs">
             <span className="text-gray-400 w-10">From:</span>
-            <span className="text-gray-700 font-medium">Brand Name &lt;hello@brand.com&gt;</span>
+            <span className="text-gray-700 font-medium">{brandName ?? 'Brand Name'} &lt;hello@{(brandName ?? 'brand').toLowerCase().replace(/\s+/g, '')}.com&gt;</span>
           </div>
           <div className="flex items-center gap-2 text-xs">
             <span className="text-gray-400 w-10">To:</span>
@@ -61,7 +62,7 @@ export function EmailPreview({ previewContent, isGenerating, heroImage, onAddIma
 
       {/* Email body — centered card on gray background */}
       <div className="p-4">
-        <div className="bg-white rounded-lg shadow-sm max-w-lg mx-auto overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Brand header bar */}
           <div className="h-1.5" style={{ backgroundColor: accentColor }} />
 
@@ -109,7 +110,7 @@ export function EmailPreview({ previewContent, isGenerating, heroImage, onAddIma
           {/* Footer */}
           <div className="border-t border-gray-100 px-6 py-3 bg-gray-50">
             <p className="text-[10px] text-gray-400 text-center leading-relaxed">
-              Brand Name · 123 Street · City, Country<br />
+              {brandName ?? 'Brand Name'} · 123 Street · City, Country<br />
               <span className="underline">Unsubscribe</span> · <span className="underline">View in browser</span>
             </p>
           </div>

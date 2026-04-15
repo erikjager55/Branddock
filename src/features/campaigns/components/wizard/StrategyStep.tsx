@@ -403,14 +403,15 @@ export function StrategyStep() {
   const skipConceptStep = useCampaignWizardStore((s) => s.skipConceptStep);
   const elaborateStartedRef = useRef(false);
   const [directBuildSteps, setDirectBuildSteps] = useState<Array<{ name: string; status: 'pending' | 'running' | 'complete'; label: string; preview?: string }>>([
-    { name: 'Channel Planner', status: 'pending', label: 'Planning channels and journey phases...' },
+    { name: 'Journey Phases', status: 'pending', label: 'Generating journey phases...' },
+    { name: 'Channel Planner', status: 'pending', label: 'Planning channels...' },
     { name: 'Asset Planner', status: 'pending', label: 'Creating deliverable plan...' },
   ]);
 
   useEffect(() => {
     if (strategyPhase !== "rationale_complete") return;
 
-    if (!skipConceptStep) {
+    if (!skipConceptStep || wizardMode === 'content') {
       useCampaignWizardStore.getState().nextStep();
       return;
     }
@@ -418,6 +419,13 @@ export function StrategyStep() {
     // Skip concept: build channel plan + asset plan directly from strategy foundation
     if (elaborateStartedRef.current) return;
     elaborateStartedRef.current = true;
+
+    // Reset progress indicators for retry after failure
+    setDirectBuildSteps([
+      { name: 'Journey Phases', status: 'pending', label: 'Generating journey phases...' },
+      { name: 'Channel Planner', status: 'pending', label: 'Planning channels...' },
+      { name: 'Asset Planner', status: 'pending', label: 'Creating deliverable plan...' },
+    ]);
 
     const store = useCampaignWizardStore.getState();
     store.setIsGenerating(true);
@@ -435,6 +443,7 @@ export function StrategyStep() {
         competitorIds: selectedContextIds.competitorIds,
         trendIds: selectedContextIds.trendIds,
         strategicIntent,
+        pipelineConfig,
       },
       (event: unknown) => {
         const evt = event as { type?: string; step?: number; name?: string; status?: string; label?: string; preview?: string; result?: { channelPlan: unknown; assetPlan: unknown } };
@@ -454,7 +463,16 @@ export function StrategyStep() {
           const s = useCampaignWizardStore.getState();
           const channelPlan = evt.result.channelPlan;
           const assetPlan = evt.result.assetPlan;
+          const resultArch = (evt.result as { architecture?: import('@/lib/campaigns/strategy-blueprint.types').ArchitectureLayer }).architecture;
           s.setElaborateResult({ channelPlan, assetPlan } as Parameters<typeof s.setElaborateResult>[0]);
+
+          // When journey phases were auto-generated (Step 4.5), update the store
+          if (resultArch) {
+            s.setSynthesisResult({
+              strategy: (s.synthesizedStrategy ?? s.strategyFoundation ?? {}) as import('@/lib/campaigns/strategy-blueprint.types').StrategyLayer,
+              architecture: resultArch,
+            });
+          }
 
           // Build a messaging framework from strategy foundation + briefing
           // so all deliverables share consistent direction via extractConceptContext()
@@ -480,9 +498,12 @@ export function StrategyStep() {
             reasonToAct: foundation?.reasonToAct ?? null,
           };
 
+          // Use the (possibly updated) architecture from the store
+          const finalArch = resultArch ?? s.synthesizedArchitecture ?? { journeyPhases: [] };
+
           s.setBlueprintResult({
             strategy: strategyWithMessaging,
-            architecture: s.synthesizedArchitecture ?? { journeyPhases: [] },
+            architecture: finalArch,
             channelPlan,
             assetPlan,
             personaValidation: s.personaValidation ?? [],
@@ -513,7 +534,7 @@ export function StrategyStep() {
         if (!elaborateStartedRef.current) abort();
       }, 50);
     };
-  }, [strategyPhase, skipConceptStep, wizardContext, selectedContextIds, strategicIntent]);
+  }, [strategyPhase, skipConceptStep, wizardContext, selectedContextIds, strategicIntent, pipelineConfig]);
 
   // ─── Render based on phase ───────────────────────────
 

@@ -431,13 +431,19 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
     setWizardMode: (wizardMode) =>
       set({
         wizardMode,
+        // Reset step to 1 — modes have different step counts and the current
+        // step may exceed the new mode's total (e.g., campaign step 6 → content max 5).
+        currentStep: 1,
         // Reset to the mode's default pipeline preset on mode switch.
         // Users who want a custom config can still tweak the sliders after.
         pipelineConfig: getDefaultPresetForMode(wizardMode),
+        // Content mode always includes concept — reset skipConcept to prevent
+        // stale state from a previous campaign-mode session bleeding through.
+        ...(wizardMode === 'content' ? { skipConceptStep: false } : {}),
       }),
     nextStep: () =>
       set((s) => {
-        const maxStep = getStepsForMode(s.wizardMode).length;
+        const maxStep = getStepsForMode(s.wizardMode, s.skipConceptStep).length;
         return { currentStep: Math.min(maxStep, s.currentStep + 1) };
       }),
     prevStep: () =>
@@ -508,7 +514,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
 
     canProceed: () => {
       const state = get();
-      const steps = getStepsForMode(state.wizardMode);
+      const steps = getStepsForMode(state.wizardMode, state.skipConceptStep);
       const stepDef = steps[state.currentStep - 1];
       if (!stepDef) return false;
       return stepDef.canProceed(state);
@@ -827,6 +833,7 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
         pipelineAttempt: state.pipelineAttempt,
         failedConcepts: state.failedConcepts,
         regenerationBrief: state.regenerationBrief,
+        skipConceptStep: state.skipConceptStep,
       }),
       // Recover from in-flight pipeline phases. Without this, refreshing during
       // e.g. mining_insights would leave the UI in a "spinner without isGenerating"
@@ -852,6 +859,11 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
             break;
           case 'generating_journey':
             state.strategyPhase = state.synthesizedStrategy ? 'review_final_strategy' : 'review_concepts';
+            break;
+          case 'elaborating_direct':
+            // Skip-concept elaborate was in-flight — fall back to rationale_complete
+            // so the StrategyStep re-triggers elaborate on next mount.
+            state.strategyPhase = 'rationale_complete';
             break;
         }
       },

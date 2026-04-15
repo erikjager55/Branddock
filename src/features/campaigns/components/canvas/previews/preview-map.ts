@@ -4,6 +4,8 @@ import { LinkedInAdPreview } from './LinkedInAdPreview';
 import { LinkedInCarouselPreview } from './LinkedInCarouselPreview';
 import { InstagramPostPreview } from './InstagramPostPreview';
 import { InstagramCarouselPreview } from './InstagramCarouselPreview';
+import { FacebookPostPreview } from './FacebookPostPreview';
+import { XPostPreview } from './XPostPreview';
 import { EmailPreview } from './EmailPreview';
 import { VideoPreview } from './VideoPreview';
 import { PodcastPreview } from './PodcastPreview';
@@ -43,6 +45,18 @@ const PLATFORM_PREVIEW_MAP: Record<string, Record<string, PreviewRegistryEntry>>
   podcast: {
     episode: { component: PodcastPreview, label: 'Podcast Episode' },
     'show-notes': { component: PodcastPreview, label: 'Show Notes' },
+  },
+  facebook: {
+    post: { component: FacebookPostPreview, label: 'Facebook Post' },
+    ad: { component: FacebookPostPreview, label: 'Facebook Ad' },
+  },
+  x: {
+    post: { component: XPostPreview, label: 'X Post' },
+    thread: { component: XPostPreview, label: 'X Thread' },
+  },
+  twitter: {
+    post: { component: XPostPreview, label: 'X Post' },
+    thread: { component: XPostPreview, label: 'X Thread' },
   },
   web: {
     'landing-page': { component: LandingPagePreview, label: 'Landing Page' },

@@ -1,11 +1,12 @@
 import React from 'react';
-import { Search, Bell, Zap } from 'lucide-react';
+import { Search, Bell, Zap, Sparkles } from 'lucide-react';
 import { Button } from './ui/button';
 import { ShortcutHint, getModifierKey } from './ShortcutHint';
 import { BreadcrumbNavigation } from './BreadcrumbNavigation';
 import { BreadcrumbItem } from '../types/workflow';
 import { useNotificationCount } from '../hooks/use-notifications';
 import { useShellStore } from '../stores/useShellStore';
+import { useClawStore } from '../stores/useClawStore';
 import { HelpIndicator } from './HelpTooltip';
 import { OrganizationSwitcher } from './auth/OrganizationSwitcher';
 
@@ -54,6 +55,17 @@ export function TopNavigationBar({
               <span className="hidden md:inline">Quick Content</span>
             </Button>
           )}
+
+          {/* Claw AI Assistant */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => useClawStore.getState().openClaw()}
+            className="gap-1.5 hidden sm:flex"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-teal-500" />
+            <span className="hidden md:inline">Brand Assistant</span>
+          </Button>
 
           {/* Global Search */}
           <Button

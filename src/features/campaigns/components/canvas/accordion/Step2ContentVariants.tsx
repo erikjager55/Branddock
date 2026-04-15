@@ -187,6 +187,8 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
                   imageVariants={imageVariants}
                   isGenerating={false}
                   heroImage={heroImage}
+                  brandName={contextStack?.brand?.brandName ?? undefined}
+                  platform={platform ?? undefined}
                 />
               </div>
             </div>

@@ -4,12 +4,14 @@ import React, { useState, useEffect } from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { PreviewFrame } from './PreviewFrame';
 import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
+import { extractCta } from './CtaButton';
 
 const LINKEDIN_BLUE = '#0A66C2';
 
 /** LinkedIn carousel post mockup */
-export function LinkedInCarouselPreview({ previewContent, imageVariants, isGenerating }: PlatformPreviewProps) {
+export function LinkedInCarouselPreview({ previewContent, imageVariants, isGenerating, brandName }: PlatformPreviewProps) {
   const caption = previewContent.body?.content ?? previewContent.caption?.content ?? '';
+  const cta = extractCta(previewContent);
   const totalSlides = imageVariants.length;
 
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -47,10 +49,10 @@ export function LinkedInCarouselPreview({ previewContent, imageVariants, isGener
       {/* Author header */}
       <div className="flex items-center gap-2 mb-3">
         <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-          <span className="text-sm font-semibold text-blue-700">B</span>
+          <span className="text-sm font-semibold text-blue-700">{(brandName ?? 'B').charAt(0).toUpperCase()}</span>
         </div>
         <div>
-          <p className="text-sm font-semibold text-gray-900">Brand Name</p>
+          <p className="text-sm font-semibold text-gray-900">{brandName ?? 'Brand Name'}</p>
           <p className="text-xs text-gray-500 flex items-center gap-1">
             Just now · <Globe className="h-3 w-3" />
           </p>
@@ -120,6 +122,21 @@ export function LinkedInCarouselPreview({ previewContent, imageVariants, isGener
               }`}
             />
           ))}
+        </div>
+      )}
+
+      {/* CTA link card */}
+      {cta && (
+        <div className="px-0 py-2">
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+            <div>
+              <p className="text-sm font-medium text-gray-900">{cta}</p>
+              <p className="text-xs text-gray-500">{(brandName ?? 'brand').toLowerCase().replace(/\s+/g, '')}.com</p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-semibold border" style={{ color: '#0A66C2', borderColor: '#0A66C2' }}>
+              {cta}
+            </span>
+          </div>
         </div>
       )}
 

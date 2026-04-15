@@ -91,6 +91,8 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
             isGenerating={false}
             heroImage={heroImage}
             onAddImage={() => setInsertImageModalOpen(true)}
+            brandName={contextStack?.brand?.brandName ?? undefined}
+            platform={platform ?? undefined}
           />
         </div>
       </div>

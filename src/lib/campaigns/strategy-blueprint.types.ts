@@ -699,10 +699,12 @@ export interface SynthesisPhaseResult {
   architecture: ArchitectureLayer;
 }
 
-/** Data returned after Phase C (Steps 5-6) */
+/** Data returned after Phase C (Steps 4.5-6) */
 export interface JourneyPhaseResult {
   channelPlan: ChannelPlanLayer;
   assetPlan: AssetPlanLayer;
+  /** Architecture with journey phases — populated when phases were missing and auto-generated */
+  architecture?: ArchitectureLayer;
 }
 
 /** Body for the elaborate endpoint */
@@ -717,6 +719,7 @@ export interface ElaborateJourneyBody {
     campaignGoalType?: string;
     briefing?: CampaignBriefing;
     useExternalEnrichment?: boolean;
+    selectedDeliverables?: { type: string; quantity: number }[];
   };
   personaIds?: string[];
   productIds?: string[];
@@ -1420,6 +1423,9 @@ export const fullVariantResponseSchema: Record<string, unknown> = {
   },
   required: ['strategy', 'architecture'],
 };
+
+/** Gemini responseSchema for Journey Phases generation (step 4.5 — when phases are missing) */
+export const journeyPhasesResponseSchema: Record<string, unknown> = architectureLayerResponseSchema;
 
 /** Gemini responseSchema for Channel Plan (step 5) */
 export const channelPlanResponseSchema: Record<string, unknown> = {

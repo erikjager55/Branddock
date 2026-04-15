@@ -326,8 +326,8 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {typeScale.map((level) => (
-                  <tr key={level.level}>
+                {typeScale.map((level, idx) => (
+                  <tr key={`${level.level}-${idx}`}>
                     <td className="py-3 pr-4 font-mono text-xs text-gray-500">{level.level}</td>
                     <td className="py-3 pr-4">
                       <span

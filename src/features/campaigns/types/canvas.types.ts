@@ -11,6 +11,8 @@ export interface CanvasVariant {
   index: number;
   content: string;
   tone?: string;
+  /** Standalone call-to-action text (button label / link text) */
+  cta?: string;
   isSelected: boolean;
 }
 
@@ -57,6 +59,8 @@ export interface PreviewContent {
   [variantGroup: string]: {
     content: string | null;
     type: 'text' | 'image' | 'video' | 'audio';
+    /** Standalone call-to-action text extracted from variant */
+    cta?: string | null;
     metadata?: {
       altText?: string;
       duration?: number;
@@ -86,6 +90,10 @@ export interface PlatformPreviewProps {
   onAddImage?: () => void;
   /** Medium config values from the Step 3 config panel. */
   mediumConfig?: Record<string, unknown>;
+  /** Workspace brand name — used in platform chrome instead of hardcoded "Brand Name". */
+  brandName?: string;
+  /** Platform identifier — used by multi-platform components (e.g. VideoPreview for TikTok vs YouTube). */
+  platform?: string;
 }
 
 /** Registry entry for platform previews */

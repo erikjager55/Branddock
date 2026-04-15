@@ -290,7 +290,9 @@ export function SetupStep() {
       {/* Pipeline Configuration (sliders + presets) */}
       <PipelineConfigCard />
 
-      {/* Skip Creative Concept toggle */}
+      {/* Skip Creative Concept toggle — campaign mode only.
+          Content mode always has a concept step, no need to skip. */}
+      {!isContentMode && (
       <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50">
         <label className="flex items-start gap-3 cursor-pointer">
           <input
@@ -307,6 +309,7 @@ export function SetupStep() {
           </div>
         </label>
       </div>
+      )}
 
       {/* Date fields — campaign mode only, hidden for content mode */}
       {(() => {
