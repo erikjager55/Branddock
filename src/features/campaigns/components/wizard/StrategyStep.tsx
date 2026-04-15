@@ -70,21 +70,6 @@ const PHASE_FOUNDATION_STEPS: PipelineStepConfig[] = [
 ];
 
 
-// ─── Elapsed Timer ───────────────────────────────────────
-
-function ElapsedTimer({ isComplete }: { isComplete: boolean }) {
-  const [elapsed, setElapsed] = useState(0);
-  const startRef = useRef(Date.now());
-  useEffect(() => {
-    if (isComplete) return;
-    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000);
-    return () => clearInterval(id);
-  }, [isComplete]);
-  const m = Math.floor(elapsed / 60);
-  const s = elapsed % 60;
-  return <>{m}:{String(s).padStart(2, '0')}</>;
-}
-
 // ─── Component ────────────────────────────────────────────
 
 export function StrategyStep() {
@@ -569,74 +554,28 @@ export function StrategyStep() {
   // ─── Render based on phase ───────────────────────────
 
   // Elaborating direct (skip concept — building deployment plan)
+  // Map directBuildSteps to PipelineProgressView format
   if (strategyPhase === "elaborating_direct") {
-    const completedCount = directBuildSteps.filter(s => s.status === 'complete').length;
-    const allDone = completedCount === directBuildSteps.length;
+    const deployStepConfigs: PipelineStepConfig[] = directBuildSteps.map((s, i) => ({
+      step: i + 1,
+      name: s.name,
+      label: s.label,
+      description: s.description,
+    }));
+    const deployPipelineSteps = directBuildSteps.map((s, i) => ({
+      step: i + 1,
+      name: s.name,
+      status: s.status as PipelineStepStatus,
+      label: s.label,
+      preview: s.preview,
+    }));
     return (
-      <div className="max-w-lg mx-auto py-12 space-y-6">
-        <div className="text-center">
-          <div className="w-12 h-12 mx-auto rounded-full bg-teal-50 flex items-center justify-center mb-3">
-            <Sparkles className="w-6 h-6 text-teal-500 animate-pulse" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">
-            Building Deployment Plan
-            {!allDone && (
-              <span className="ml-2 text-xs font-normal text-gray-400">
-                <ElapsedTimer isComplete={allDone} />
-              </span>
-            )}
-          </h3>
-          <p className="text-sm text-gray-500">Translating strategy into channel plan and deliverables...</p>
-          <p className="text-xs text-gray-400 mt-1">This typically takes 1–2 minutes</p>
-        </div>
-
-        {/* Process status */}
-        <div className="space-y-3">
-          {directBuildSteps.map((step) => (
-            <div key={step.name} className="flex items-start gap-3 px-4 py-3 rounded-lg border border-gray-100 bg-white">
-              <div className="mt-0.5">
-                {step.status === 'pending' && <div className="w-5 h-5 rounded-full border-2 border-gray-200" />}
-                {step.status === 'running' && (
-                  <div className="w-5 h-5 rounded-full border-2 border-teal-500 border-t-transparent animate-spin" />
-                )}
-                {step.status === 'complete' && (
-                  <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center">
-                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${step.status === 'complete' ? 'text-teal-700' : step.status === 'running' ? 'text-gray-900' : 'text-gray-400'}`}>
-                  {step.name}
-                </p>
-                <p className="text-xs text-gray-500">{step.label}</p>
-                {step.status === 'running' && (
-                  <p className="text-xs text-gray-400 mt-0.5">{step.description}</p>
-                )}
-              </div>
-              {step.preview && (
-                <span className="text-xs text-teal-600 font-medium mt-0.5">{step.preview}</span>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Progress bar */}
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-gray-400">
-            <span>{completedCount} of {directBuildSteps.length} steps</span>
-            <span>{Math.round((completedCount / directBuildSteps.length) * 100)}%</span>
-          </div>
-          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-teal-500 rounded-full transition-all duration-500"
-              style={{ width: `${(completedCount / directBuildSteps.length) * 100}%` }}
-            />
-          </div>
-        </div>
-      </div>
+      <PipelineProgressView
+        title="Building Deployment Plan"
+        estimatedDuration="1–2 minutes"
+        steps={deployStepConfigs}
+        pipelineSteps={deployPipelineSteps}
+      />
     );
   }
 
