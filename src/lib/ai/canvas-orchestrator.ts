@@ -829,7 +829,7 @@ function formatMediumConfig(config: Record<string, unknown>): string {
     if (pageLayout) {
       const layoutMap: Record<string, string> = {
         'single-column': 'Single-column article layout — focused, sequential reading flow.',
-        'two-column': 'Two-column layout — main content on the left, sidebar on the right with table of contents and related links. Structure the content with clear section headings that work as anchor links.',
+        'two-column': 'Two-column layout — main content on the left, sidebar on the right with highlights and related links. Structure the content with clear section headings.',
         'magazine': 'Magazine-style layout — wider format with a prominent pull-quote from the opening paragraph. Use vivid, editorial language.',
       };
       parts.push(`- Page layout: ${layoutMap[pageLayout] ?? pageLayout}`);

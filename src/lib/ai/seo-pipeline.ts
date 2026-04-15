@@ -520,6 +520,8 @@ What should be DIFFERENT in variant B:
 - Different emotional register (while staying within brand voice guidelines)
 
 Output the complete alternative page in markdown format. Do NOT output JSON.
+Use sentence case for ALL headings (capitalize only first word + proper nouns, NEVER Title Case).
+Do NOT generate a table of contents with anchor links. Do NOT use --- horizontal rules.
 ${voiceDirective}`;
 
   const userPrompt = `## ORIGINAL PAGE (Variant A)

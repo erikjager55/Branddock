@@ -278,6 +278,9 @@ Match the dominant word count from the competitor analysis. Deviate by max 20% u
 OUTPUT FORMAT:
 Write the full page in markdown format:
 - Use # for H1, ## for H2, ### for H3
+- Use sentence case for ALL headings (capitalize only first word + proper nouns). NEVER use Title Case.
+- NEVER generate a table of contents with markdown anchor links like [Title](#slug)
+- NEVER use --- horizontal rules to separate sections
 - Use **bold** for key phrases and emphasis
 - Use bullet lists for benefits, features, steps
 - Separate paragraphs with blank lines
@@ -320,7 +323,8 @@ Respond with a JSON object:
   "revisedContent": "string — the complete rewritten page in markdown, with ALL improvements applied"
 }
 
-The revisedContent must be a COMPLETE page — not a diff or partial update. Include every section from the draft, improved.`,
+The revisedContent must be a COMPLETE page — not a diff or partial update. Include every section from the draft, improved.
+Use sentence case for ALL headings (capitalize only first word + proper nouns, NEVER Title Case). Do NOT add a table of contents with anchor links. Do NOT use --- horizontal rules.`,
     userPrompt: `${accumulatedBlock(ctx.accumulatedOutputs)}
 ${outputLanguageInstruction(ctx.voiceDirective)}
 Review the draft and produce an improved version with all corrections applied. Focus on the highest-impact improvements first.`,
@@ -339,7 +343,9 @@ Your task: Take the editorially reviewed content and produce:
 
 FINAL TEXT REQUIREMENTS:
 - Complete body text in markdown, ready to copy into a CMS
-- Correct heading capitalization (sentence case, no ALL CAPS)
+- Correct heading capitalization (sentence case — capitalize only first word + proper nouns, NEVER Title Case)
+- NEVER include a table of contents with markdown anchor links like [Title](#slug)
+- NEVER use --- horizontal rules to separate sections
 - Internal links marked as [internal link: anchor text → target page]
 - No placeholder values, no [INSERT], no TBD (except [QUOTE:] and [CASE STUDY:] markers which are intentional)
 - Clean, professional formatting
