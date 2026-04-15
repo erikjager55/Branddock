@@ -12,9 +12,10 @@ interface DeliverablesTabProps {
   deliverables: DeliverableResponse[];
   campaignId: string;
   onOpenInStudio?: (deliverableId: string) => void;
+  onDelete?: (deliverableId: string) => void;
 }
 
-export function DeliverablesTab({ deliverables, campaignId, onOpenInStudio }: DeliverablesTabProps) {
+export function DeliverablesTab({ deliverables, campaignId, onOpenInStudio, onDelete }: DeliverablesTabProps) {
   const safeDeliverables = Array.isArray(deliverables) ? deliverables : [];
   const viewMode = useCampaignStore((s) => s.deliverablesViewMode);
   const setViewMode = useCampaignStore((s) => s.setDeliverablesViewMode);
@@ -66,6 +67,7 @@ export function DeliverablesTab({ deliverables, campaignId, onOpenInStudio }: De
               key={d.id}
               deliverable={d}
               onOpenInStudio={() => onOpenInStudio?.(d.id)}
+              onDelete={onDelete}
             />
           ))}
         </div>

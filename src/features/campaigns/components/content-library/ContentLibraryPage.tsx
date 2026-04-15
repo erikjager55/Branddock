@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { Library, Plus, Zap } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { EmptyState, SkeletonCard, Button } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
 import { useContentLibrary } from "../../hooks";
@@ -124,6 +125,15 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
     toggleFavorite.mutate(id);
   };
 
+  const qc = useQueryClient();
+  const handleDeleteContent = useCallback(async (deliverableId: string, campaignId: string) => {
+    try {
+      const res = await fetch(`/api/campaigns/${campaignId}/deliverables/${deliverableId}`, { method: 'DELETE' });
+      if (!res.ok) return;
+      qc.invalidateQueries({ queryKey: ['content-library'] });
+    } catch { /* silent */ }
+  }, [qc]);
+
   // ── Render ──
 
   const renderContent = () => {
@@ -174,6 +184,7 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
                       items={group.items}
                       onOpenInStudio={handleOpenInStudio}
                       onToggleFavorite={handleToggleFavorite}
+                      onDelete={handleDeleteContent}
                     />
                   ) : (
                     <ContentCardList
@@ -196,6 +207,7 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
           items={items}
           onOpenInStudio={handleOpenInStudio}
           onToggleFavorite={handleToggleFavorite}
+          onDelete={handleDeleteContent}
         />
       );
     }

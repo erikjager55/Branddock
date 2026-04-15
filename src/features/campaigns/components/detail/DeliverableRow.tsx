@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Badge, Button } from "@/components/shared";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Trash2 } from "lucide-react";
 import type { DeliverableResponse, DeliverableStatus, DeliverableBriefSettings } from "@/types/campaign";
 import { getChannelColor } from "@/features/campaigns/lib/channel-colors";
 import { normalizeChannel } from "@/features/campaigns/lib/channel-frequency";
@@ -10,6 +10,7 @@ import { normalizeChannel } from "@/features/campaigns/lib/channel-frequency";
 interface DeliverableRowProps {
   deliverable: DeliverableResponse;
   onOpenInStudio?: () => void;
+  onDelete?: (deliverableId: string) => void;
 }
 
 const STATUS_CONFIG: Record<DeliverableStatus, { label: string; variant: "success" | "warning" | "default" }> = {
@@ -30,7 +31,7 @@ const EFFORT_HEX: Record<string, { label: string; bg: string; text: string; bord
   high: { label: 'High', bg: '#fef2f2', text: '#b91c1c', border: '#fecaca' },
 };
 
-export function DeliverableRow({ deliverable, onOpenInStudio }: DeliverableRowProps) {
+export function DeliverableRow({ deliverable, onOpenInStudio, onDelete }: DeliverableRowProps) {
   const statusConfig = STATUS_CONFIG[deliverable.status];
   const settings = deliverable.settings as DeliverableBriefSettings | null;
 
@@ -95,14 +96,31 @@ export function DeliverableRow({ deliverable, onOpenInStudio }: DeliverableRowPr
           </span>
         )}
       </div>
-      <Button
-        variant="ghost"
-        size="sm"
-        icon={ExternalLink}
-        onClick={(e) => { e.stopPropagation(); onOpenInStudio?.(); }}
-      >
-        Open in Studio
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={ExternalLink}
+          onClick={(e) => { e.stopPropagation(); onOpenInStudio?.(); }}
+        >
+          Open in Studio
+        </Button>
+        {onDelete && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (window.confirm(`Delete "${deliverable.title}"?`)) {
+                onDelete(deliverable.id);
+              }
+            }}
+            className="p-1.5 rounded hover:bg-red-50 transition-colors"
+            title="Delete deliverable"
+          >
+            <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -539,6 +539,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
                       deliverables={safeDeliverables}
                       campaignId={campaignId}
                       onOpenInStudio={visibility.showAITools ? (did) => handleOpenInStudio(campaignId, did) : undefined}
+                      onDelete={(did) => deleteDeliverable.mutate(did)}
                     />
                   );
                 }
@@ -552,6 +553,7 @@ export function CampaignDetailPage({ campaignId, onBack, onOpenInStudio, onOpenI
               deliverables={deliverables || campaign.deliverables || []}
               campaignId={campaignId}
               onOpenInStudio={visibility.showAITools ? (did) => handleOpenInStudio(campaignId, did) : undefined}
+              onDelete={(did) => deleteDeliverable.mutate(did)}
             />
           )}
         </div>

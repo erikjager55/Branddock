@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ExternalLink, Heart, FileText, Clock } from "lucide-react";
+import { ExternalLink, Heart, FileText, Clock, Trash2 } from "lucide-react";
 import { Card, Badge, Button } from "@/components/shared";
 import { useContentLibraryStore } from "../../stores/useContentLibraryStore";
 import { QualityScoreBadge } from "./QualityScoreBadge";
@@ -13,6 +13,7 @@ interface ContentCardGridProps {
   items: ContentLibraryItem[];
   onOpenInStudio: (deliverableId: string, campaignId: string) => void;
   onToggleFavorite: (id: string) => void;
+  onDelete?: (deliverableId: string, campaignId: string) => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -41,6 +42,7 @@ export function ContentCardGrid({
   items,
   onOpenInStudio,
   onToggleFavorite,
+  onDelete,
 }: ContentCardGridProps) {
   const selectedIds = useContentLibraryStore((s) => s.selectedIds);
   const toggleSelected = useContentLibraryStore((s) => s.toggleSelected);
@@ -70,22 +72,40 @@ export function ContentCardGrid({
                   />
                   <Badge size="sm">{item.type}</Badge>
                 </label>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleFavorite(item.id);
-                  }}
-                  className="p-1 rounded hover:bg-gray-100 transition-colors"
-                >
-                  <Heart
-                    className={`w-4 h-4 ${
-                      item.isFavorite
-                        ? "text-red-500 fill-red-500"
-                        : "text-gray-400"
-                    }`}
-                  />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onToggleFavorite(item.id);
+                    }}
+                    className="p-1 rounded hover:bg-gray-100 transition-colors"
+                    title="Toggle favorite"
+                  >
+                    <Heart
+                      className={`w-4 h-4 ${
+                        item.isFavorite
+                          ? "text-red-500 fill-red-500"
+                          : "text-gray-400"
+                      }`}
+                    />
+                  </button>
+                  {onDelete && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Delete "${item.title}"?`)) {
+                          onDelete(item.id, item.campaignId);
+                        }
+                      }}
+                      className="p-1 rounded hover:bg-red-50 transition-colors"
+                      title="Delete deliverable"
+                    >
+                      <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500" />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Title */}
