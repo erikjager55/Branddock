@@ -33,12 +33,16 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
 
     const controller = new AbortController();
 
-    // Fetch approval state from studio endpoint
+    // Fetch deliverable detail — approval state + real contentType
     fetch(`/api/studio/${deliverableId}`, { signal: controller.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!data?.deliverable) return;
         const d = data.deliverable;
+        // Update store with the real contentType (initial 'canvas' is a placeholder)
+        if (d.contentType) {
+          useCanvasStore.getState().setDeliverable(deliverableId, d.contentType);
+        }
         useCanvasStore.getState().setApprovalState({
           approvalStatus: (d.approvalStatus ?? 'DRAFT') as ApprovalStatus,
           approvalNote: d.approvalNote ?? null,
