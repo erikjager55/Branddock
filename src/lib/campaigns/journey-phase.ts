@@ -111,23 +111,78 @@ function extractPhaseObjectives(
   return [];
 }
 
+// ─── Blueprint Phase Derivation ─────────────────────────────
+
+/**
+ * Try to derive the journey phase from the blueprint's assetPlan deliverables
+ * by matching on title or contentType, or fall back to the first journey phase.
+ */
+function derivePhaseFromBlueprint(
+  blueprintData: unknown,
+  deliverableTitle?: string,
+  deliverableContentType?: string,
+): JourneyPhase | null {
+  if (!blueprintData || typeof blueprintData !== 'object') return null;
+  const blueprint = blueprintData as Record<string, unknown>;
+
+  // Try to match from assetPlan deliverables
+  const assetPlan = blueprint.assetPlan as Record<string, unknown> | undefined;
+  if (assetPlan) {
+    const deliverables = assetPlan.deliverables as Array<{ title?: string; contentType?: string; phase?: string }> | undefined;
+    if (Array.isArray(deliverables)) {
+      for (const d of deliverables) {
+        const match =
+          (deliverableTitle && d.title && d.title.toLowerCase().trim() === deliverableTitle.toLowerCase().trim()) ||
+          (deliverableContentType && d.contentType && d.contentType === deliverableContentType);
+        if (match && d.phase) {
+          const phase = normalizePhase(d.phase);
+          if (phase) return phase;
+        }
+      }
+    }
+  }
+
+  // Fall back to the first journey phase from the architecture
+  const architecture = blueprint.architecture as Record<string, unknown> | undefined;
+  const journeyPhases = (architecture?.journeyPhases ?? blueprint.journeyPhases) as BlueprintJourneyPhase[] | undefined;
+  if (Array.isArray(journeyPhases) && journeyPhases.length > 0) {
+    const first = journeyPhases[0];
+    const phase = normalizePhase(first.phase ?? first.name);
+    if (phase) return phase;
+  }
+
+  return null;
+}
+
 // ─── Public API ──────────────────────────────────────────────
 
 /**
  * Auto-detect journey phase from deliverable settings + campaign blueprint.
  * Phase is already known at "bring to life" — stored in settings.phase.
+ * If no explicit phase is set, tries to derive from the blueprint's asset plan
+ * by matching deliverable title/contentType, or falls back to the first journey phase.
  *
  * @param settingsPhase - The phase string from deliverable.settings.phase
  * @param campaignBlueprint - The campaign.strategy JSON (blueprint)
  * @param weekInCampaign - Optional week number within the campaign
+ * @param deliverableTitle - Optional deliverable title for blueprint matching
+ * @param deliverableContentType - Optional content type for blueprint matching
  * @returns JourneyPhaseContext or null if no phase data available
  */
 export function detectJourneyPhase(
   settingsPhase: string | undefined,
   campaignBlueprint: unknown,
   weekInCampaign?: number,
+  deliverableTitle?: string,
+  deliverableContentType?: string,
 ): JourneyPhaseContext | null {
-  const phase = normalizePhase(settingsPhase);
+  let phase = normalizePhase(settingsPhase);
+
+  // If no explicit phase, try to derive from blueprint
+  if (!phase) {
+    phase = derivePhaseFromBlueprint(campaignBlueprint, deliverableTitle, deliverableContentType);
+  }
+
   if (!phase) return null;
 
   const guidance = PHASE_GUIDANCE[phase];

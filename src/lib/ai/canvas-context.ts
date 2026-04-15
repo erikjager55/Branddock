@@ -218,11 +218,13 @@ export async function assembleCanvasContext(
   // Layer 2: Campaign concept from strategy JSON
   const concept = extractConceptContext(deliverable.campaign.strategy);
 
-  // Layer 3: Journey phase
+  // Layer 3: Journey phase (explicit from settings, or derived from blueprint)
   const journeyPhase = detectJourneyPhase(
     settingsPhase ?? undefined,
     deliverable.campaign.strategy,
     deliverable.weekInCampaign ?? undefined,
+    deliverable.title ?? undefined,
+    deliverable.contentType ?? undefined,
   );
 
   // Layer 4: Medium enrichment
