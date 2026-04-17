@@ -10,6 +10,41 @@ import type { MappedResults } from '@/lib/website-scanner/types';
 
 type RouteParams = { params: Promise<{ jobId: string }> };
 
+// Whitelist of allowed Prisma fields per model — prevents "Unknown arg" errors
+// when AI-generated data contains fields not on the model.
+const PERSONA_ALLOWED_FIELDS = new Set([
+  'name', 'tagline', 'avatarUrl', 'avatarSource', 'age', 'gender', 'location',
+  'occupation', 'education', 'income', 'familyStatus', 'personalityType',
+  'coreValues', 'interests', 'goals', 'motivations', 'frustrations', 'behaviors',
+  'strategicImplications', 'preferredChannels', 'techStack', 'quote', 'bio',
+  'buyingTriggers', 'decisionCriteria',
+]);
+
+const PRODUCT_ALLOWED_FIELDS = new Set([
+  'name', 'slug', 'description', 'category', 'categoryIcon', 'pricingModel',
+  'pricingDetails', 'features', 'benefits', 'useCases', 'source', 'sourceUrl',
+  'sourceFileName', 'status', 'analysisData',
+]);
+
+const COMPETITOR_ALLOWED_FIELDS = new Set([
+  'name', 'slug', 'description', 'websiteUrl', 'logoUrl', 'foundingYear',
+  'headquarters', 'employeeRange', 'tier', 'status', 'valueProposition',
+  'targetAudience', 'differentiators', 'mainOfferings', 'pricingModel',
+  'pricingDetails', 'strengths', 'weaknesses', 'toneOfVoice', 'messagingThemes',
+  'visualStyle', 'competitiveScore', 'analysisData',
+]);
+
+/** Filter an object to only include keys in the allowed set */
+function filterFields(fields: Record<string, unknown>, allowed: Set<string>): Record<string, unknown> {
+  const filtered: Record<string, unknown> = {};
+  for (const key of Object.keys(fields)) {
+    if (allowed.has(key)) {
+      filtered[key] = fields[key];
+    }
+  }
+  return filtered;
+}
+
 /**
  * POST /api/website-scanner/[jobId]/apply — Apply scan results to workspace data.
  *
@@ -122,7 +157,7 @@ export async function POST(
               name: persona.name,
               workspaceId,
               createdById: userId,
-              ...persona.fields,
+              ...filterFields(persona.fields, PERSONA_ALLOWED_FIELDS),
               researchMethods: {
                 create: [
                   { method: 'AI_EXPLORATION', status: 'AVAILABLE', workspaceId },
@@ -152,7 +187,7 @@ export async function POST(
             slug = `${slug}-${Date.now().toString(36)}`;
           }
 
-          const { images, ...fields } = product.fields as Record<string, unknown> & {
+          const { images, ...rawFields } = product.fields as Record<string, unknown> & {
             images?: unknown[];
           };
 
@@ -164,7 +199,7 @@ export async function POST(
               source: 'WEBSITE_URL',
               status: 'ANALYZED',
               sourceUrl: scan.url,
-              ...fields,
+              ...filterFields(rawFields, PRODUCT_ALLOWED_FIELDS),
             },
           });
           productsCreated++;
@@ -195,7 +230,7 @@ export async function POST(
               slug,
               workspaceId,
               createdById: userId,
-              ...competitor.fields,
+              ...filterFields(competitor.fields, COMPETITOR_ALLOWED_FIELDS),
             },
           });
           competitorsCreated++;
