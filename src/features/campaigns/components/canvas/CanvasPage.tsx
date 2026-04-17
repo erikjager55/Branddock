@@ -43,9 +43,9 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
         // Update store with the real contentType (initial 'canvas' is a placeholder)
         if (d.contentType) {
           useCanvasStore.getState().setDeliverable(deliverableId, d.contentType);
-          // Auto-set video config defaults for video-adjacent types
+          // Auto-set video provider config defaults for video-adjacent types
           if (VIDEO_ADJACENT_TYPES.has(d.contentType)) {
-            useCanvasStore.getState().setConceptVideoConfig(getDefaultVideoConfig(d.contentType));
+            useCanvasStore.getState().setVideoProviderConfig(getDefaultVideoConfig(d.contentType));
           }
         }
         useCanvasStore.getState().setApprovalState({
@@ -151,21 +151,18 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           tone: undefined,
           cta,
           isSelected: c.isSelected,
+          componentId: c.id,
         };
       });
       storeState.addVariantGroup(group, variants);
     }
 
-    // Hydrate concept video from existing component
+    // Hydrate composed video from existing component
     const videoComp = existingComponents.find(
-      (c) => c.variantGroup === 'concept-video' && c.videoUrl,
+      (c) => c.variantGroup === 'final-video' && c.videoUrl,
     );
     if (videoComp?.videoUrl) {
-      storeState.setConceptVideoResult(
-        videoComp.videoUrl,
-        videoComp.generatedContent ?? videoComp.imagePromptUsed ?? '',
-        videoComp.aiModel ?? '',
-      );
+      storeState.setComposedVideo(videoComp.videoUrl);
     }
 
     // Content already exists — jump straight to step 2 so the user sees

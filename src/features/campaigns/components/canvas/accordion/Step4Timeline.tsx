@@ -217,11 +217,14 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         });
       } else {
         const res = await fetch(`/api/studio/${deliverableId}/approval`, {
-          method: 'POST',
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'approve' }),
+          body: JSON.stringify({ status: 'APPROVED' }),
         });
-        if (!res.ok) throw new Error('Failed to approve');
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Failed to approve' }));
+          throw new Error(err.error ?? 'Failed to approve');
+        }
 
         store.setApprovalState({ approvalStatus: 'APPROVED' });
         store.setStepSummary(4, { label: 'Ready for publishing' });
@@ -379,26 +382,39 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => handlePublish('approve')}
-              disabled={!requiredPassed || isSubmitting}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-gray-700 font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              Mark as Ready
-            </button>
-            <button
-              type="button"
-              onClick={() => handlePublish('schedule')}
-              disabled={!scheduledDate || !requiredPassed || isSubmitting}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              <Send className="h-4 w-4" />
-              {scheduledDate ? 'Schedule' : 'Pick a date'}
-            </button>
-          </div>
+          {(() => {
+            const hasActiveChannels = channels && channels.some((ch) => ch.isActive);
+            return (
+              <div className="space-y-3">
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handlePublish('approve')}
+                    disabled={!requiredPassed || isSubmitting}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-gray-700 font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Mark as Ready
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePublish('schedule')}
+                    disabled={!scheduledDate || !requiredPassed || isSubmitting || !hasActiveChannels}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <Send className="h-4 w-4" />
+                    {scheduledDate ? 'Schedule' : 'Pick a date'}
+                  </button>
+                </div>
+                {!hasActiveChannels && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
+                    <Plug className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span>Connect a publishing channel in Settings to enable scheduling. You can still mark content as ready.</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
 

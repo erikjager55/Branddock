@@ -7,7 +7,8 @@ import { resolvePreviewComponent } from '../previews/preview-map';
 import { SimpleMarkdown } from '../previews/SimpleMarkdown';
 import { HeroImageSlot } from '../previews/HeroImageSlot';
 import { STUDIO } from '@/lib/constants/design-tokens';
-import { CheckCircle2, RefreshCw } from 'lucide-react';
+import { CheckCircle2, RefreshCw, Video } from 'lucide-react';
+import { ContentSectionsEditor } from './ContentSectionsEditor';
 import type { PreviewContent } from '../../../types/canvas.types';
 
 interface MediumConfigLayoutProps {
@@ -96,6 +97,8 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
 
   const PreviewComponent = previewEntry.component;
 
+  const composedVideoUrl = useCanvasStore((s) => s.composedVideoUrl);
+
   const configBadges = useMemo(() => {
     return Object.entries(mediumConfigValues)
       .filter(([, v]) => v !== undefined && v !== null && v !== '')
@@ -113,28 +116,45 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
         {children}
       </div>
 
-      {/* Full-width content preview */}
+      {/* Per-section content editor — only shown when content has been generated */}
+      {hasExistingContent && deliverableId && (
+        <ContentSectionsEditor deliverableId={deliverableId} />
+      )}
+
+      {/* Full-width content preview — show generated video if available, else platform mock */}
       <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
-          <span className="text-xs font-semibold text-gray-600">{previewEntry.label} Preview</span>
-          {textEntries.length > 0 && (
+          <span className="text-xs font-semibold text-gray-600">
+            {composedVideoUrl ? 'Generated Video' : `${previewEntry.label} Preview`}
+          </span>
+          {composedVideoUrl ? (
+            <span className="text-xs text-emerald-600 flex items-center gap-1">
+              <Video className="h-3 w-3" /> Video ready
+            </span>
+          ) : textEntries.length > 0 ? (
             <span className="text-xs text-emerald-600 flex items-center gap-1">
               <CheckCircle2 className="h-3 w-3" /> Live preview
             </span>
-          )}
+          ) : null}
         </div>
 
         <div className="p-4">
-          <PreviewComponent
-            previewContent={previewContent}
-            imageVariants={imageVariants}
-            isGenerating={false}
-            heroImage={heroImage}
-            onAddImage={() => setInsertImageModalOpen(true)}
-            mediumConfig={mediumConfigValues}
-            brandName={contextStack?.brand?.brandName ?? undefined}
-            platform={platform ?? undefined}
-          />
+          {composedVideoUrl ? (
+            <div className="rounded-lg overflow-hidden bg-black">
+              <video src={composedVideoUrl} controls playsInline className="w-full" style={{ maxHeight: 400 }} />
+            </div>
+          ) : (
+            <PreviewComponent
+              previewContent={previewContent}
+              imageVariants={imageVariants}
+              isGenerating={false}
+              heroImage={heroImage}
+              onAddImage={() => setInsertImageModalOpen(true)}
+              mediumConfig={mediumConfigValues}
+              brandName={contextStack?.brand?.brandName ?? undefined}
+              platform={platform ?? undefined}
+            />
+          )}
         </div>
       </div>
 

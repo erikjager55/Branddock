@@ -15,6 +15,7 @@ import {
   Mail,
   ArrowRight,
 } from 'lucide-react';
+import { ContentSectionsEditor } from './ContentSectionsEditor';
 import type { PreviewContent } from '../../../types/canvas.types';
 
 interface WebPageLayoutProps {
@@ -318,6 +319,11 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
       <div className="grid grid-cols-2 gap-4 items-start">
         {children}
       </div>
+
+      {/* Per-section content editor */}
+      {hasExistingContent && deliverableId && (
+        <ContentSectionsEditor deliverableId={deliverableId} />
+      )}
 
       {/* Full-width article preview */}
       <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">

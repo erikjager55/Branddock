@@ -14,6 +14,8 @@ export interface CanvasVariant {
   /** Standalone call-to-action text (button label / link text) */
   cta?: string;
   isSelected: boolean;
+  /** DB component ID — set when loaded from existing DeliverableComponent records */
+  componentId?: string;
 }
 
 export interface CanvasImageVariant {

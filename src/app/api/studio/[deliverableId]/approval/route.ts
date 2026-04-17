@@ -6,7 +6,7 @@ import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  DRAFT: ['IN_REVIEW'],
+  DRAFT: ['IN_REVIEW', 'APPROVED'],
   IN_REVIEW: ['APPROVED', 'CHANGES_REQUESTED'],
   CHANGES_REQUESTED: ['IN_REVIEW'],
   APPROVED: ['PUBLISHED'],
