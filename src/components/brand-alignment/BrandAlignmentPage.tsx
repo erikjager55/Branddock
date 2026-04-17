@@ -7,6 +7,8 @@ import {
   Download,
   FileText,
   FileJson,
+  ShieldCheck,
+  ClipboardCheck,
 } from 'lucide-react';
 import {
   EmptyState,
@@ -21,6 +23,7 @@ import {
   useDismissIssue,
 } from '@/contexts/BrandAlignmentContext';
 import { useBrandAlignmentStore } from '@/stores/useBrandAlignmentStore';
+import type { AlignmentTab } from '@/stores/useBrandAlignmentStore';
 import { useUIState } from '@/contexts/UIStateContext';
 import type { AlignmentIssueListParams } from '@/types/brand-alignment';
 import { exportAlignmentPdf } from '@/features/brand-alignment/utils/exportAlignmentPdf';
@@ -33,6 +36,7 @@ import { AlignmentIssuesSection } from './AlignmentIssuesSection';
 import { AnalyzingScanModal } from './AnalyzingScanModal';
 import { ScanCompleteModal } from './ScanCompleteModal';
 import { FixIssueModal } from './FixIssueModal';
+import { BrandAuditView } from './BrandAuditView';
 
 // ─── Relative time helper ───────────────────────────────────
 
@@ -63,6 +67,8 @@ export function BrandAlignmentPage() {
   const { data: modulesData, isLoading: isModulesLoading } = useAlignmentModules();
 
   // Store — UI state
+  const activeTab = useBrandAlignmentStore((s) => s.activeTab);
+  const setActiveTab = useBrandAlignmentStore((s) => s.setActiveTab);
   const severityFilter = useBrandAlignmentStore((s) => s.severityFilter);
   const statusFilter = useBrandAlignmentStore((s) => s.statusFilter);
   const moduleFilter = useBrandAlignmentStore((s) => s.moduleFilter);
@@ -163,75 +169,113 @@ export function BrandAlignmentPage() {
         title="Brand Alignment"
         subtitle="Ensure consistency across all brand touchpoints"
         actions={
-          <div className="flex items-center gap-2">
-            {hasScan && (
-              <>
-                <Button variant="secondary" onClick={handleExportPdf} className="gap-2">
-                  <FileText className="h-4 w-4" />
-                  Export PDF
-                </Button>
-                <Button variant="secondary" onClick={handleExportJson} className="gap-2">
-                  <FileJson className="h-4 w-4" />
-                  Export JSON
-                </Button>
-              </>
-            )}
-            <Button
-              onClick={handleStartScan}
-              disabled={startScan.isPending || isScanning}
-              isLoading={startScan.isPending}
-              className="gap-2"
-            >
-              {!startScan.isPending && <RefreshCw className="h-4 w-4" />}
-              {startScan.isPending ? 'Scanning...' : 'Run Alignment Check'}
-            </Button>
-          </div>
+          activeTab === 'alignment' ? (
+            <div className="flex items-center gap-2">
+              {hasScan && (
+                <>
+                  <Button variant="secondary" onClick={handleExportPdf} className="gap-2">
+                    <FileText className="h-4 w-4" />
+                    Export PDF
+                  </Button>
+                  <Button variant="secondary" onClick={handleExportJson} className="gap-2">
+                    <FileJson className="h-4 w-4" />
+                    Export JSON
+                  </Button>
+                </>
+              )}
+              <Button
+                onClick={handleStartScan}
+                disabled={startScan.isPending || isScanning}
+                isLoading={startScan.isPending}
+                className="gap-2"
+              >
+                {!startScan.isPending && <RefreshCw className="h-4 w-4" />}
+                {startScan.isPending ? 'Scanning...' : 'Run Alignment Check'}
+              </Button>
+            </div>
+          ) : undefined
         }
       />
 
-      {/* ── No scan placeholder ──────────────────────────── */}
-      {!hasScan && (
-        <EmptyState
-          icon={CircleDot}
-          title="No alignment scan yet"
-          description="Run your first scan to check consistency across all brand modules and identify misalignments."
-          action={{ label: 'Start First Scan', onClick: handleStartScan }}
-        />
-      )}
+      {/* ── Tab switcher ─────────────────────────────────── */}
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit mb-6">
+        {([
+          { key: 'alignment' as AlignmentTab, label: 'Brand Alignment', icon: ShieldCheck },
+          { key: 'audit' as AlignmentTab, label: 'Brand Audit', icon: ClipboardCheck },
+        ]).map((tab) => {
+          const isActive = activeTab === tab.key;
+          const TabIcon = tab.icon;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                isActive
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <TabIcon className="w-4 h-4" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* ── Score overview + modules + issues (only with scan) */}
-      {hasScan && (
-        <div data-testid="brand-alignment-page">
-          {/* Score overview */}
-          <div data-testid="score-overview" className="bg-white border border-gray-200 rounded-lg p-6 mb-6 flex flex-col md:flex-row items-center gap-6">
-            <AlignmentScoreGauge score={overallScore} />
-            <div className="flex-1 w-full">
-              <AlignmentStatsRow
-                alignedCount={scan?.alignedCount ?? 0}
-                reviewCount={scan?.reviewCount ?? 0}
-                misalignedCount={scan?.misalignedCount ?? 0}
+      {/* ── Alignment tab content ────────────────────────── */}
+      {activeTab === 'alignment' && (
+        <>
+          {/* No scan placeholder */}
+          {!hasScan && (
+            <EmptyState
+              icon={CircleDot}
+              title="No alignment scan yet"
+              description="Run your first scan to check consistency across all brand modules and identify misalignments."
+              action={{ label: 'Start First Scan', onClick: handleStartScan }}
+            />
+          )}
+
+          {/* Score overview + modules + issues (only with scan) */}
+          {hasScan && (
+            <div data-testid="brand-alignment-page">
+              {/* Score overview */}
+              <div data-testid="score-overview" className="bg-white border border-gray-200 rounded-lg p-6 mb-6 flex flex-col md:flex-row items-center gap-6">
+                <AlignmentScoreGauge score={overallScore} />
+                <div className="flex-1 w-full">
+                  <AlignmentStatsRow
+                    alignedCount={scan?.alignedCount ?? 0}
+                    reviewCount={scan?.reviewCount ?? 0}
+                    misalignedCount={scan?.misalignedCount ?? 0}
+                  />
+                </div>
+              </div>
+
+              {/* Module scores grid */}
+              <ModuleAlignmentGrid
+                modules={modules}
+                isLoading={isModulesLoading}
+                onNavigate={handleNavigate}
+              />
+
+              {/* Issues section */}
+              <AlignmentIssuesSection
+                issues={issues}
+                isLoading={isIssuesLoading}
+                openIssuesCount={openIssuesCount}
+                onDismiss={handleDismiss}
+                onFix={handleOpenFix}
+                isDismissing={dismissIssue.isPending}
+                onNavigate={handleNavigate}
               />
             </div>
-          </div>
+          )}
+        </>
+      )}
 
-          {/* Module scores grid */}
-          <ModuleAlignmentGrid
-            modules={modules}
-            isLoading={isModulesLoading}
-            onNavigate={handleNavigate}
-          />
-
-          {/* Issues section */}
-          <AlignmentIssuesSection
-            issues={issues}
-            isLoading={isIssuesLoading}
-            openIssuesCount={openIssuesCount}
-            onDismiss={handleDismiss}
-            onFix={handleOpenFix}
-            isDismissing={dismissIssue.isPending}
-            onNavigate={handleNavigate}
-          />
-        </div>
+      {/* ── Audit tab content ────────────────────────────── */}
+      {activeTab === 'audit' && (
+        <BrandAuditView />
       )}
 
       {/* ── Scan Progress Modal ──────────────────────────── */}

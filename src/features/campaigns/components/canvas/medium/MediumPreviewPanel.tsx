@@ -73,7 +73,7 @@ export function MediumPreviewPanel({ onAdvance, deliverableId }: MediumPreviewPa
     }
 
     const label = previewEntry.label ?? 'Medium';
-    store.setStepSummary(3, { label: `${label} configured` });
+    store.setStepSummary(store.activeStep, { label: `${label} configured` });
     onAdvance();
   }, [onAdvance, previewEntry.label, deliverableId]);
 

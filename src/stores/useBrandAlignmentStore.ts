@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import type { IssueSeverity, IssueStatus } from "@/types/brand-alignment";
 
+export type AlignmentTab = "alignment" | "audit";
+
 interface BrandAlignmentStore {
+  // Tab state
+  activeTab: AlignmentTab;
+
   // Scan state
   activeScanId: string | null;
   isScanning: boolean;
@@ -20,6 +25,7 @@ interface BrandAlignmentStore {
   selectedFixOption: 'A' | 'B' | 'C' | null;
 
   // Actions
+  setActiveTab: (tab: AlignmentTab) => void;
   setActiveScanId: (id: string | null) => void;
   setIsScanning: (v: boolean) => void;
   openScanCompleteModal: (score: number, issues: number) => void;
@@ -36,6 +42,7 @@ interface BrandAlignmentStore {
 }
 
 export const useBrandAlignmentStore = create<BrandAlignmentStore>((set) => ({
+  activeTab: "alignment" as AlignmentTab,
   activeScanId: null,
   isScanning: false,
   isScanCompleteModalOpen: false,
@@ -50,6 +57,7 @@ export const useBrandAlignmentStore = create<BrandAlignmentStore>((set) => ({
   selectedIssueId: null,
   selectedFixOption: null,
 
+  setActiveTab: (tab) => set({ activeTab: tab }),
   setActiveScanId: (id) => set({ activeScanId: id }),
   setIsScanning: (v) => set({ isScanning: v }),
   openScanCompleteModal: (score, issues) =>

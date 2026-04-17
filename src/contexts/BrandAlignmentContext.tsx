@@ -23,6 +23,8 @@ import {
   dismissAlignmentIssue,
   fetchFixOptions,
   applyFix,
+  fetchBrandAudit,
+  startBrandAudit,
 } from "@/lib/api/alignment";
 import { useWorkspace } from "@/hooks/use-workspace";
 import type {
@@ -40,6 +42,8 @@ import type {
   FixOptionsResponse,
   ApplyFixBody,
   ApplyFixResponse,
+  BrandAuditResponse,
+  StartAuditResponse,
   IssueSeverity,
   IssueStatus,
 } from "@/types/brand-alignment";
@@ -263,6 +267,36 @@ export function useApplyFix() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: alignmentKeys.all });
       queryClient.invalidateQueries({ queryKey: alignmentKeys.issueDetail(variables.id) });
+    },
+  });
+}
+
+// =============================================================
+// Brand Audit Hooks
+// =============================================================
+
+/**
+ * Hook: fetch latest brand audit result.
+ */
+export function useBrandAudit() {
+  const { workspaceId } = useWorkspace();
+  return useQuery<BrandAuditResponse>({
+    queryKey: ["alignment", "audit", workspaceId ?? ""],
+    queryFn: fetchBrandAudit,
+    enabled: !!workspaceId,
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Mutation: start a new brand audit.
+ */
+export function useStartBrandAudit() {
+  const queryClient = useQueryClient();
+  return useMutation<StartAuditResponse>({
+    mutationFn: startBrandAudit,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["alignment", "audit"] });
     },
   });
 }

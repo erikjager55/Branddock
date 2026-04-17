@@ -147,6 +147,7 @@ export function VariantWorkspace({ deliverableId, onGenerate }: VariantWorkspace
           </div>
         </div>
       )}
+
     </div>
   );
 }

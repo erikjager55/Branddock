@@ -1,11 +1,11 @@
 'use client';
 
 import type { LucideIcon } from 'lucide-react';
-import type { AccordionStepStatus, StepNumber } from '../../../types/accordion.types';
+import type { AccordionStepStatus } from '../../../types/accordion.types';
 import { ACCORDION, cn } from '@/lib/constants/design-tokens';
 
 interface VerticalTabProps {
-  stepNumber: StepNumber;
+  stepNumber: string | number;
   title: string;
   icon: LucideIcon;
   status: AccordionStepStatus;

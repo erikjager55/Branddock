@@ -13,7 +13,8 @@ import { Skeleton } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ArrowLeft } from 'lucide-react';
 import type { ApprovalStatus } from '../../types/canvas.types';
-import { VIDEO_ADJACENT_TYPES, getDefaultVideoConfig } from '../../lib/deliverable-types';
+import { getDefaultVideoConfig, VIDEO_ADJACENT_TYPES } from '../../lib/deliverable-types';
+import { detectMediumCategory } from '../../constants/medium-config-registry';
 
 interface CanvasPageProps {
   deliverableId: string;
@@ -167,8 +168,10 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
 
     // Content already exists — jump straight to step 2 so the user sees
     // their variants instead of a regeneration prompt.
-    if (groups.size > 0 && storeState.activeStep === 1) {
-      storeState.advanceToStep(2);
+    if (groups.size > 0 && storeState.activeStep === 'context') {
+      // Auto-advance past context if content already exists
+      const nextStep = storeState.mediumCategory === 'video' ? 'script' : 'variants';
+      storeState.advanceToStep(nextStep);
     }
   }, [existingComponents]);
 

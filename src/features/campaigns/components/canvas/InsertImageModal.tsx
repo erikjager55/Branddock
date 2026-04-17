@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Library, Link as LinkIcon, Images, Wand2 } from 'lucide-react';
+import { Library, Upload, Link as LinkIcon, Images, Wand2 } from 'lucide-react';
 import { Modal } from '@/components/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCanvasStore } from '../../stores/useCanvasStore';
@@ -11,12 +11,14 @@ import { LibraryTab } from './insert-image/LibraryTab';
 import { UrlImportTab } from './insert-image/UrlImportTab';
 import { StockPhotosTab } from './insert-image/StockPhotosTab';
 import { GenerateImageTab } from './insert-image/GenerateImageTab';
+import { UploadTab } from './insert-image/UploadTab';
 import type { InsertImageSelection } from './insert-image/types';
 
-type InsertImageTab = 'library' | 'url' | 'stock' | 'generate';
+type InsertImageTab = 'library' | 'upload' | 'url' | 'stock' | 'generate';
 
 const TABS: { id: InsertImageTab; label: string; icon: typeof Library }[] = [
   { id: 'library', label: 'Library', icon: Library },
+  { id: 'upload', label: 'Upload', icon: Upload },
   { id: 'url', label: 'Import URL', icon: LinkIcon },
   { id: 'stock', label: 'Stock Photos', icon: Images },
   { id: 'generate', label: 'Generate Image', icon: Wand2 },
@@ -61,7 +63,7 @@ export function InsertImageModal() {
         await persistHeroImage(deliverableId, {
           imageUrl: selection.url,
           imageSource:
-            activeTab === 'library'
+            activeTab === 'library' || activeTab === 'upload'
               ? 'library'
               : activeTab === 'url'
                 ? 'url-import'
@@ -109,6 +111,7 @@ export function InsertImageModal() {
       {/* Tab content */}
       <div>
         {activeTab === 'library' && <LibraryTab onSelected={handleSelected} />}
+        {activeTab === 'upload' && <UploadTab onSelected={handleSelected} />}
         {activeTab === 'url' && <UrlImportTab onSelected={handleSelected} />}
         {activeTab === 'stock' && <StockPhotosTab onSelected={handleSelected} />}
         {activeTab === 'generate' && <GenerateImageTab onSelected={handleSelected} />}

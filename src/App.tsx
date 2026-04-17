@@ -7,6 +7,7 @@ import { EnhancedSidebarSimple } from './components/EnhancedSidebarSimple';
 import { ActivityFeed } from './components/ActivityFeed';
 import { FloatingChatWidget } from './features/help/components/FloatingChatWidget';
 import { ClawOverlay } from './features/claw/components/ClawOverlay';
+import { useClawStore } from './stores/useClawStore';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TooltipProvider } from './components/ui/tooltip';
 import { LazyWrapper } from './components/shared';
@@ -127,6 +128,10 @@ function AppContent() {
   // Generate breadcrumbs
   const breadcrumbs = useBreadcrumbs(activeSection, selectedAssetId ?? undefined);
 
+  // Sync activeSection to Claw store for /bug command
+  useEffect(() => {
+    useClawStore.getState().setCurrentPage(activeSection);
+  }, [activeSection]);
 
   // Track recent items when navigating
   useEffect(() => {

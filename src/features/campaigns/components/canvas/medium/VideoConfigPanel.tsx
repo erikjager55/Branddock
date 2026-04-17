@@ -5,15 +5,15 @@ import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { MediumConfigLayout } from './MediumConfigLayout';
 import { VideoSpecifications } from './VideoSpecifications';
 import { VisualStyle } from './VisualStyle';
-import { SceneStructure } from './SceneStructure';
 import { AudioSettings } from './AudioSettings';
+import { VideoSceneEditor } from './VideoSceneEditor';
 
 interface VideoConfigPanelProps {
   onAdvance: () => void;
   deliverableId?: string;
 }
 
-/** Custom config panel for video medium (4 sections) */
+/** Video medium config — 3 sections: Specs, Style & Audio, Scene Video Builder */
 export function VideoConfigPanel({ onAdvance, deliverableId }: VideoConfigPanelProps) {
   // Initialize video defaults on mount, removing stale keys from previous categories
   useEffect(() => {
@@ -42,14 +42,12 @@ export function VideoConfigPanel({ onAdvance, deliverableId }: VideoConfigPanelP
         cleaned[key] = value;
       }
     }
-    // Check if the cleaned config differs from current
     for (const key of validKeys) {
       if (current[key] !== cleaned[key]) {
         needsUpdate = true;
         break;
       }
     }
-    // Also check for stale keys not in validKeys
     if (!needsUpdate) {
       for (const key of Object.keys(current)) {
         if (!validKeys.has(key)) {
@@ -61,21 +59,21 @@ export function VideoConfigPanel({ onAdvance, deliverableId }: VideoConfigPanelP
     if (needsUpdate) {
       useCanvasStore.getState().setMediumConfigValues(cleaned);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- intentionally run only on mount
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <MediumConfigLayout onAdvance={onAdvance} deliverableId={deliverableId}>
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-800">Video Configuration</h3>
         <p className="text-sm text-gray-500 mt-1">
-          Configure specifications, visual style, scene structure and audio for your video.
+          Set specifications and style, then generate video per scene below.
         </p>
       </div>
 
       <VideoSpecifications />
       <VisualStyle />
-      <SceneStructure />
       <AudioSettings />
+      <VideoSceneEditor />
     </MediumConfigLayout>
   );
 }

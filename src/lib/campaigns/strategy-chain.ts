@@ -1606,9 +1606,24 @@ Generate DIFFERENT concepts that address these failures.` : undefined,
     } as CreativeConcept;
   });
 
-  const concepts = await Promise.all(conceptPromises);
+  const settled = await Promise.allSettled(conceptPromises);
+  const concepts: CreativeConcept[] = [];
+  const failures: string[] = [];
+  for (const r of settled) {
+    if (r.status === 'fulfilled') {
+      concepts.push(r.value);
+    } else {
+      const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
+      console.error('[generateCreativeConcepts] One variant failed:', msg);
+      failures.push(msg);
+    }
+  }
 
-  onProgress?.({ type: 'step', step: 1, name: 'Creative Leap', status: 'complete', label: '3 concepts generated' } as PipelineEvent);
+  if (concepts.length === 0) {
+    throw new Error(`All 3 concept variants failed: ${failures.join(' | ')}`);
+  }
+
+  onProgress?.({ type: 'step', step: 1, name: 'Creative Leap', status: 'complete', label: `${concepts.length} of 3 concepts generated${failures.length > 0 ? ` (${failures.length} failed)` : ''}` } as PipelineEvent);
 
   return { concepts, selectedConceptIndex: null, selectedInsight };
 }

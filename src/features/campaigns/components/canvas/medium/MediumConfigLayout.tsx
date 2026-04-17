@@ -91,7 +91,7 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
       generate({ instruction: 'Regenerate content applying the updated medium configuration settings.' });
     }
 
-    store.setStepSummary(3, { label: `${previewEntry.label} configured` });
+    store.setStepSummary(store.activeStep, { label: `${previewEntry.label} configured` });
     onAdvance();
   }, [onAdvance, previewEntry.label, deliverableId, hasExistingContent, generate]);
 

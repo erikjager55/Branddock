@@ -84,7 +84,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
       generate({ instruction: 'Regenerate content applying the updated medium configuration settings.' });
     }
 
-    store.setStepSummary(3, { label: 'Web page configured' });
+    store.setStepSummary(store.activeStep, { label: 'Web page configured' });
     onAdvance();
   }, [onAdvance, deliverableId, hasExistingContent, generate]);
 

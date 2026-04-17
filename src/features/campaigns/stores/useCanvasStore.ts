@@ -4,10 +4,51 @@
 
 import { create } from 'zustand';
 import type { CanvasVariant, CanvasImageVariant, ApprovalStatus } from '../types/canvas.types';
-import type { StepSummaryData, StepNumber } from '../types/accordion.types';
+import type { StepSummaryData } from '../types/accordion.types';
 import type { CanvasContextStack } from '@/lib/ai/canvas-context';
 import type { MediumCategory, MediumVariant } from '../types/medium-config.types';
 type GenerationStatus = 'idle' | 'generating' | 'complete' | 'error';
+
+export type SceneId = 'hook' | 'body' | 'cta';
+export type SceneSourceMode = 'text-to-video' | 'image-to-video' | 'existing' | 'none';
+
+export interface SceneVideoConfig {
+  sceneId: SceneId;
+  sourceMode: SceneSourceMode;
+  sourceUrl: string | null;
+  provider: string;
+  videoUrl: string | null;
+  status: 'idle' | 'generating' | 'complete' | 'error';
+  error: string | null;
+  prompt: string | null;
+  textOverlay: string | null;
+  logoPlacement: 'none' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  voiceoverText: string | null;
+  voiceoverUrl: string | null;
+}
+
+function createDefaultScene(sceneId: SceneId): SceneVideoConfig {
+  return {
+    sceneId,
+    sourceMode: 'text-to-video',
+    sourceUrl: null,
+    provider: 'kling-v3-pro',
+    videoUrl: null,
+    status: 'idle',
+    error: null,
+    prompt: null,
+    textOverlay: null,
+    logoPlacement: 'none',
+    voiceoverText: null,
+    voiceoverUrl: null,
+  };
+}
+
+const DEFAULT_SCENES: SceneVideoConfig[] = [
+  createDefaultScene('hook'),
+  createDefaultScene('body'),
+  createDefaultScene('cta'),
+];
 
 export interface SelectedContextItem {
   sourceType: string;
@@ -57,9 +98,9 @@ interface CanvasStoreState {
   publishedAt: string | null;
 
   // ─── Accordion navigation ─────────────────────────────────
-  activeStep: StepNumber;
-  completedSteps: Set<number>;
-  stepSummaries: Map<number, StepSummaryData>;
+  activeStep: string;
+  completedSteps: Set<string>;
+  stepSummaries: Map<string, StepSummaryData>;
 
   // ─── Step 3: medium generation ────────────────────────────
   mediumGenerationStatus: 'idle' | 'generating' | 'complete' | 'error';
@@ -85,6 +126,13 @@ interface CanvasStoreState {
   seoInput: { primaryKeyword: string; funnelStage: 'awareness' | 'consideration' | 'decision'; competitorUrls: string[] };
   seoSteps: Array<{ step: number; name: string; label: string; status: 'pending' | 'running' | 'complete' | 'error'; preview: string | null }>;
   seoCurrentStep: number | null;
+
+  // ─── Scene-based Video Builder ───────────────────────────
+  sceneVideos: SceneVideoConfig[];
+  composedVideoUrl: string | null;
+  composedVideoStatus: 'idle' | 'composing' | 'complete' | 'error';
+  composedVideoError: string | null;
+  videoProviderConfig: { provider: string; duration: number; aspectRatio: string };
 
   // ─── Step 4: scheduling ───────────────────────────────────
   scheduledDate: string | null;
@@ -115,9 +163,9 @@ interface CanvasStoreState {
   }) => void;
 
   // ─── Accordion actions ────────────────────────────────────
-  advanceToStep: (step: StepNumber) => void;
-  goToStep: (step: StepNumber) => void;
-  setStepSummary: (step: number, summary: StepSummaryData) => void;
+  advanceToStep: (stepId: string) => void;
+  goToStep: (stepId: string) => void;
+  setStepSummary: (stepId: string, summary: StepSummaryData) => void;
   setMediumGenerationStatus: (status: 'idle' | 'generating' | 'complete' | 'error') => void;
   setGeneratedMediumUrl: (url: string | null) => void;
   setMediumApproved: (approved: boolean) => void;
@@ -139,6 +187,15 @@ interface CanvasStoreState {
   setSeoInput: (input: Partial<{ primaryKeyword: string; funnelStage: 'awareness' | 'consideration' | 'decision'; competitorUrls: string[] }>) => void;
   initSeoSteps: () => void;
   updateSeoStep: (step: number, update: { status: 'pending' | 'running' | 'complete' | 'error'; preview?: string | null }) => void;
+
+  // ─── Scene Video actions ─────────────────────────────────
+  updateScene: (sceneId: SceneId, update: Partial<SceneVideoConfig>) => void;
+  setSceneVideoResult: (sceneId: SceneId, videoUrl: string, prompt: string) => void;
+  setSceneError: (sceneId: SceneId, error: string) => void;
+  setVideoProviderConfig: (config: Partial<{ provider: string; duration: number; aspectRatio: string }>) => void;
+  setComposedVideo: (url: string) => void;
+  setComposedVideoStatus: (status: 'idle' | 'composing' | 'complete' | 'error', error?: string) => void;
+  resetSceneVideos: () => void;
 
   reset: () => void;
 }
@@ -166,9 +223,9 @@ const INITIAL_STATE = {
   publishedAt: null,
 
   // Accordion
-  activeStep: 1 as StepNumber,
-  completedSteps: new Set<number>(),
-  stepSummaries: new Map<number, StepSummaryData>(),
+  activeStep: 'context',
+  completedSteps: new Set<string>(),
+  stepSummaries: new Map<string, StepSummaryData>(),
 
   // Step 3
   mediumGenerationStatus: 'idle' as const,
@@ -195,6 +252,13 @@ const INITIAL_STATE = {
   seoInput: { primaryKeyword: '', funnelStage: 'awareness' as const, competitorUrls: [] as string[] },
   seoSteps: [] as Array<{ step: number; name: string; label: string; status: 'pending' | 'running' | 'complete' | 'error'; preview: string | null }>,
   seoCurrentStep: null as number | null,
+
+  // Scene-based Video Builder
+  sceneVideos: [...DEFAULT_SCENES] as SceneVideoConfig[],
+  composedVideoUrl: null as string | null,
+  composedVideoStatus: 'idle' as const,
+  composedVideoError: null as string | null,
+  videoProviderConfig: { provider: 'kling-v3-pro', duration: 6, aspectRatio: '9:16' },
 };
 
 export const useCanvasStore = create<CanvasStoreState>((set) => ({
@@ -266,34 +330,31 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
 
   // ─── Accordion actions ────────────────────────────────────
 
-  advanceToStep: (step) =>
+  advanceToStep: (stepId) =>
     set((state) => {
       const nextCompleted = new Set(state.completedSteps);
-      // Mark all previous steps as completed
-      for (let i = 1; i < step; i++) {
-        nextCompleted.add(i);
-      }
-      return { activeStep: step, completedSteps: nextCompleted };
+      // Mark current step as completed before advancing
+      nextCompleted.add(state.activeStep);
+      return { activeStep: stepId, completedSteps: nextCompleted };
     }),
 
-  goToStep: (step) =>
+  goToStep: (stepId) =>
     set((state) => {
-      // Only allow navigating to completed steps (review mode) or current active
-      if (state.completedSteps.has(step) || step === state.activeStep) {
-        // Mark the previously active step as completed so user can navigate back
+      // Only allow navigating to completed steps or current active
+      if (state.completedSteps.has(stepId) || stepId === state.activeStep) {
         const nextCompleted = new Set(state.completedSteps);
-        if (step !== state.activeStep) {
+        if (stepId !== state.activeStep) {
           nextCompleted.add(state.activeStep);
         }
-        return { activeStep: step, completedSteps: nextCompleted };
+        return { activeStep: stepId, completedSteps: nextCompleted };
       }
       return {};
     }),
 
-  setStepSummary: (step, summary) =>
+  setStepSummary: (stepId, summary) =>
     set((state) => {
       const next = new Map(state.stepSummaries);
-      next.set(step, summary);
+      next.set(stepId, summary);
       return { stepSummaries: next };
     }),
 
@@ -350,6 +411,34 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       ),
       seoCurrentStep: update.status === 'running' ? step : state.seoCurrentStep,
     })),
+
+  // ─── Scene Video actions ─────────────────────────────────
+  updateScene: (sceneId, update) =>
+    set((state) => ({
+      sceneVideos: state.sceneVideos.map((s) =>
+        s.sceneId === sceneId ? { ...s, ...update } : s,
+      ),
+    })),
+  setSceneVideoResult: (sceneId, videoUrl, prompt) =>
+    set((state) => ({
+      sceneVideos: state.sceneVideos.map((s) =>
+        s.sceneId === sceneId ? { ...s, status: 'complete' as const, videoUrl, prompt, error: null } : s,
+      ),
+    })),
+  setSceneError: (sceneId, error) =>
+    set((state) => ({
+      sceneVideos: state.sceneVideos.map((s) =>
+        s.sceneId === sceneId ? { ...s, status: 'error' as const, error } : s,
+      ),
+    })),
+  setVideoProviderConfig: (config) =>
+    set((state) => ({ videoProviderConfig: { ...state.videoProviderConfig, ...config } })),
+  setComposedVideo: (url) =>
+    set({ composedVideoUrl: url, composedVideoStatus: 'complete' as const, composedVideoError: null }),
+  setComposedVideoStatus: (status, error) =>
+    set({ composedVideoStatus: status, composedVideoError: error ?? null }),
+  resetSceneVideos: () =>
+    set({ sceneVideos: [...DEFAULT_SCENES], composedVideoUrl: null, composedVideoStatus: 'idle' as const, composedVideoError: null }),
 
   reset: () => set({
     ...INITIAL_STATE,

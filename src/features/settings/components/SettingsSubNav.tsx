@@ -1,6 +1,6 @@
 'use client';
 
-import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain, Plug } from 'lucide-react';
+import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain, Plug, Bug } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useSettingsStore, type SettingsTab } from '@/stores/useSettingsStore';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
@@ -78,6 +78,18 @@ export function SettingsSubNav() {
           >
             <Shield className="w-4 h-4" />
             AI Configuration
+          </button>
+          <button
+            data-testid="settings-tab-bug-triage"
+            onClick={() => setActiveTab('bug-triage')}
+            className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              activeTab === 'bug-triage'
+                ? 'bg-primary/10 text-primary'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <Bug className="w-4 h-4" />
+            Bug Triage
           </button>
         </div>
       )}

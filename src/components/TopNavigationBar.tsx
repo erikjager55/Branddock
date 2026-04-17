@@ -60,7 +60,14 @@ export function TopNavigationBar({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => useClawStore.getState().openClaw()}
+            onClick={() => {
+              const state = useClawStore.getState();
+              if (state.isOpen) {
+                state.toggleViewMode();
+              } else {
+                state.openClaw();
+              }
+            }}
             className="gap-1.5 hidden sm:flex"
           >
             <Sparkles className="h-3.5 w-3.5 text-teal-500" />

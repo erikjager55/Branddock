@@ -70,6 +70,8 @@ function buildServerSnapshot(state: StoreState): DraftSnapshot {
     pipelineAttempt: state.pipelineAttempt,
     failedConcepts: state.failedConcepts,
     regenerationBrief: state.regenerationBrief,
+    skipConceptStep: state.skipConceptStep,
+    contentTypeInputs: state.contentTypeInputs,
   };
 }
 

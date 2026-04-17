@@ -4,12 +4,14 @@ import React, { useRef, useEffect } from 'react';
 import { Bot, User, Wrench, AlertCircle, Sparkles } from 'lucide-react';
 import { useClawStore } from '@/stores/useClawStore';
 import { MutationConfirmCard } from './MutationConfirmCard';
+import { BugReportForm } from './BugReportForm';
+import { BugLogbook } from './BugLogbook';
 import { MarkdownContent } from './MarkdownContent';
 import { getQuickActions } from '@/lib/claw/quick-actions';
 import type { ClawMessage, ClawQuickAction } from '@/lib/claw/claw.types';
 
 export function ChatArea() {
-  const { messages, streamingText, isStreaming, setInputText, pendingMutation } = useClawStore();
+  const { messages, streamingText, isStreaming, setInputText, pendingMutation, bugReportForm, bugLogbook } = useClawStore();
 
   // Generate contextual quick actions
   const quickActions = React.useMemo(() => getQuickActions({}), []);
@@ -64,6 +66,12 @@ export function ChatArea() {
 
         {/* Mutation confirmation card */}
         {pendingMutation && <MutationConfirmCard />}
+
+        {/* Bug report form */}
+        {bugReportForm && <BugReportForm />}
+
+        {/* Bug logbook */}
+        {bugLogbook !== null && <BugLogbook />}
 
         {/* Quick action follow-ups after last assistant message */}
         {!isStreaming && !pendingMutation && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && quickActions.length > 0 && (

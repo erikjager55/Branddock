@@ -28,9 +28,23 @@ export function InputBar() {
   const [showContextModal, setShowContextModal] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
+  const { openBugReportForm, openBugLogbook } = useClawStore();
+
   const handleSend = useCallback(async () => {
     const message = inputText.trim();
     if (!message || isStreaming) return;
+
+    // Slash command interception
+    if (message.toLowerCase() === '/bug') {
+      setInputText('');
+      openBugReportForm();
+      return;
+    }
+    if (message.toLowerCase() === '/bugs') {
+      setInputText('');
+      openBugLogbook();
+      return;
+    }
 
     // Add user message to store
     const userMessage: ClawMessage = {
@@ -176,7 +190,7 @@ export function InputBar() {
   }, [
     inputText, isStreaming, attachments, activeConversationId, contextSelection,
     addMessage, setInputText, setIsStreaming, appendStreamingText, finalizeStreaming,
-    setPendingMutation, resetStreamingText,
+    setPendingMutation, resetStreamingText, openBugReportForm, openBugLogbook,
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

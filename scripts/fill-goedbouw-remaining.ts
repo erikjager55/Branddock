@@ -72,9 +72,27 @@ const brandPersonality = {
     enthusiasticMatterOfFact: 4, // meer matter-of-fact
   },
   brandVoiceDescription: 'De stem van Goed-bouw is direct, nuchter en vakkundig. We praten zoals we bouwen: geen omwegen, geen smoesjes, gewoon goed werk. De toon is eerlijk en betrokken, nooit afstandelijk of overdreven verkoopachtig.',
+  toneOfVoicePrinciples: [
+    {
+      title: 'Zeg wat je bedoelt',
+      description: 'Geen wollige zinnen. Geen vakjargon. Kort, helder, raak. Als het in twee zinnen kan, gebruik er dan geen drie.',
+    },
+    {
+      title: 'Praat als een vakman, niet als een marketeer',
+      description: 'Wij schrijven zoals mensen op de bouwplaats praten. Herkenbaar, direct en zonder franje. Geen "oplossingen" of "partnerships", maar gewoon doen wat je zegt.',
+    },
+    {
+      title: 'Laat het werk spreken',
+      description: 'Wij schreeuwen niet. Wij bewijzen. Sterke uitspraken onderbouw je met feiten, projecten of mensen.',
+    },
+    {
+      title: 'Wees eerlijk, ook als het niet uitkomt',
+      description: 'Een probleem benoem je. Een afspraak kom je na. En als iets niet lukt, zeg je dat direct. Dat is precies waarom mensen voor ons kiezen.',
+    },
+  ],
   wordsWeUse: ['aanpakken', 'vakmanschap', 'trots', 'klopt', 'team', 'afspraken', 'gewoon doen', 'hecht', 'vrijheid', 'gedreven'],
-  wordsWeAvoid: ['uniek', 'innovatief', 'state-of-the-art', 'exclusief', 'ongeëvenaard', 'oplossingen', 'partnerships', 'synergy', 'stakeholders'],
-  writingSample: 'De bouw is een vak vol beloftes. Maar wie een project heeft laten bouwen weet: het is makkelijker gezegd dan gedaan. Bij Goed-bouw werken we met een hechte groep vakmensen die energie halen uit de uitdagingen van het werk. Die trots zijn op wat ze neerzetten. En die pas stoppen als het klopt.',
+  wordsWeAvoid: ['uniek', 'innovatief', 'state-of-the-art', 'exclusief', 'oplossingen', 'partnerships', 'synergie', 'ongeëvenaard'],
+  writingSample: 'De bouw is een vak vol beloftes. Over planning, kwaliteit en samenwerking. Maar wie ooit iets heeft laten bouwen weet hoe makkelijk die beloftes sneuvelen. Bij Goed-bouw doen we wat we zeggen en nemen we onze verantwoordelijkheid. Zonder gedoe, zonder kleine lettertjes.',
   channelTones: {
     website: 'Direct en informatief. Laat het werk spreken. Korte zinnen, concrete projecten.',
     socialMedia: 'Behind-the-scenes op de bouwplaats. Trots op het team. Rauw en echt, geen stockfoto\'s.',
@@ -87,14 +105,14 @@ const brandPersonality = {
   imageryDirection: 'Echte beelden van de bouwplaats: vakmensen aan het werk, ruw materiaal, teamwork. Geen geposeerde foto\'s. Warm licht, aardse kleuren.',
 };
 
-// ── Mission & Vision (afgeleid uit Golden Circle + Transformative Goals) ──
+// ── Mission & Vision (uit merkdocument) ──
 const missionVision = {
-  missionStatement: 'Goed-bouw realiseert bouwprojecten met een hechte groep vakmensen die eerlijke afspraken nakomt en pas stopt als het klopt.',
+  missionStatement: 'Wij bouwen voor mensen die trots willen zijn op het resultaat.',
   missionOneLiner: 'Gewoon goed bouwen.',
   forWhom: 'Voor opdrachtgevers die waarde hechten aan betrouwbaarheid, vakmanschap en een persoonlijke aanpak — in nieuwbouw, renovatie en transformatieprojecten.',
   whatWeDo: 'Wij realiseren nieuwbouw, renovatie en transformatieprojecten. Van woningbouw en villabouw tot appartementencomplexen en utiliteitsbouw. Van grondwerk tot oplevering.',
   howWeDoIt: 'Door uitdagende projecten aan te gaan met een hechte, gedreven groep. Eerlijke afspraken maken en nakomen. Mensen de vrijheid en het vertrouwen geven. Als één team werken. Pas stoppen als het klopt.',
-  visionStatement: 'Een bouwsector waarin vakmanschap, eerlijkheid en trots de norm zijn — niet de uitzondering.',
+  visionStatement: 'Wij geloven in een wereld waarin vakmanschap telt en je op je aannemer kunt bouwen.',
   timeHorizon: '5-10 jaar',
   boldAspiration: 'De standaard zetten voor hoe goed bouwen eruitziet: een sector waarin je kunt vertrouwen op je aannemer.',
   desiredFutureState: 'Opdrachtgevers kiezen voor Goed-bouw omdat ze weten dat ze een team krijgen dat er écht voor gaat. Het merk staat synoniem voor betrouwbaar bouwen.',
@@ -107,7 +125,7 @@ const missionVision = {
   stakeholderBenefit: 'Opdrachtgevers krijgen vertrouwen en een resultaat om trots op te zijn. Medewerkers krijgen vrijheid en een team waar ze bij horen. Partners krijgen eerlijke samenwerking.',
   impactGoal: 'Het bewijs leveren dat goed bouwen wél kan — door het gewoon te doen.',
   valuesAlignment: 'De missie is direct geworteld in de kernwaarden: aanpakken (gewoon doen), vakmanschap (kwaliteit leveren), samenwerking (als één team), gedrevenheid (pas stoppen als het klopt), vrijheid (vertrouwen geven), hechtheid (een groep waar je bij hoort).',
-  missionVisionTension: 'De spanning zit tussen de eenvoud van de missie ("gewoon goed bouwen") en de ambitie van de visie (de norm veranderen in een hele sector). Goed-bouw lost dit op door klein te beginnen: project voor project bewijzen dat het anders kan.',
+  missionVisionTension: 'De spanning zit tussen de eenvoud van de missie ("bouwen voor mensen die trots willen zijn") en de ambitie van de visie (een wereld waarin je op je aannemer kunt bouwen). Goed-bouw lost dit op door klein te beginnen: project voor project bewijzen dat het anders kan.',
 };
 
 // ── Social Relevancy (afgeleid uit waarden en EVP) ──
@@ -237,7 +255,7 @@ async function main() {
     {
       slug: 'mission-statement',
       data: missionVision,
-      description: 'Missie: Gewoon goed bouwen. Visie: Een bouwsector waarin vakmanschap, eerlijkheid en trots de norm zijn.',
+      description: 'Missie: Wij bouwen voor mensen die trots willen zijn op het resultaat. Visie: Wij geloven in een wereld waarin vakmanschap telt en je op je aannemer kunt bouwen.',
     },
     {
       slug: 'social-relevancy',

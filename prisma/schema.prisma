@@ -147,6 +147,7 @@ model Workspace {
   personaResearchMethods    PersonaResearchMethod[]
   marketInsights            MarketInsight[]
   alignmentScans            AlignmentScan[]
+  brandAudits               BrandAudit[]
 
   // S5: Research & Validation relaties
   validationPlans           ValidationPlan[]
@@ -217,6 +218,7 @@ model Workspace {
 
   // Claw AI Assistant
   clawConversations         ClawConversation[]
+  bugReports                BugReport[]
 
   @@index([organizationId])
 }
@@ -307,6 +309,8 @@ model User {
 
   // Claw AI Assistant
   clawConversations             ClawConversation[]
+  bugReports                    BugReport[]
+  resolvedBugReports            BugReport[]            @relation("BugResolver")
 
   @@index([workspaceId])
 }
@@ -2388,6 +2392,21 @@ model AlignmentIssue {
   @@index([workspaceId, severity])
 }
 
+// Brand Audit (merksterkte-analyse, onafhankelijk van alignment scan)
+model BrandAudit {
+  id              String   @id @default(cuid())
+  overallScore    Float    // 0-100 weighted average
+  dimensions      Json     // AuditDimension[]
+  assetScores     Json     // AssetAuditScore[]
+  improvements    Json     // ImprovementPoint[]
+  createdAt       DateTime @default(now())
+
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
 // =============================================================
 // R0.1: NIEUWE ENUMS
 // =============================================================
@@ -3930,4 +3949,34 @@ model ClawConversation {
   @@index([workspaceId])
   @@index([userId])
   @@index([updatedAt])
+}
+
+// === BUG REPORTS (Testing) ===
+
+model BugReport {
+  id          String   @id @default(cuid())
+  page        String   // activeSection value where bug occurred
+  description String   @db.Text
+  severity    String   // low | medium | high | critical
+  screenshot  String?  // optional URL or description
+  status      String   @default("open") // open | fixed | wontfix
+
+  aiSuggestion  String?   @db.Text
+  aiStatus      String    @default("pending") // pending | analyzing | ready | failed
+
+  resolvedAt    DateTime?
+  resolvedById  String?
+  resolvedBy    User?     @relation("BugResolver", fields: [resolvedById], references: [id])
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([status])
 }

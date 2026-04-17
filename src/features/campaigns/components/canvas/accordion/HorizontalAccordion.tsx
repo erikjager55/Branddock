@@ -1,74 +1,83 @@
 'use client';
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { VerticalTab } from './VerticalTab';
 import { Step1Context } from './Step1Context';
 import { Step2ContentVariants } from './Step2ContentVariants';
 import { Step3GenerateMedium } from './Step3GenerateMedium';
 import { Step4Timeline } from './Step4Timeline';
-import { FileText, Layers, Monitor, Calendar } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { ACCORDION } from '@/lib/constants/design-tokens';
-import type { AccordionStepStatus, StepNumber } from '../../../types/accordion.types';
-import type { LucideIcon } from 'lucide-react';
+import { getFlowForCategory, getNextStepId, type CanvasStepDefinition } from '../../../constants/canvas-flow-registry';
+import type { AccordionStepStatus } from '../../../types/accordion.types';
 
 interface HorizontalAccordionProps {
   deliverableId: string;
 }
 
-const STEPS: { number: StepNumber; title: string; icon: LucideIcon }[] = [
-  { number: 1, title: 'Review Context', icon: FileText },
-  { number: 2, title: 'Content Variants', icon: Layers },
-  { number: 3, title: 'Medium', icon: Monitor },
-  { number: 4, title: 'Planner', icon: Calendar },
-];
+/** Maps step componentKey → React component */
+function resolveStepComponent(componentKey: string) {
+  switch (componentKey) {
+    case 'context': return Step1Context;
+    case 'variants': return Step2ContentVariants;
+    case 'medium': return Step3GenerateMedium;
+    case 'planner': return Step4Timeline;
+    default: return Step1Context;
+  }
+}
 
 export function HorizontalAccordion({ deliverableId }: HorizontalAccordionProps) {
   const activeStep = useCanvasStore((s) => s.activeStep);
   const completedSteps = useCanvasStore((s) => s.completedSteps);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
+  const mediumCategory = useCanvasStore((s) => s.mediumCategory);
+
+  // Get the flow for the current medium category
+  const steps = useMemo(() => getFlowForCategory(mediumCategory), [mediumCategory]);
 
   // Auto-advance to step 2 when generation starts
   useEffect(() => {
-    if (globalStatus === 'generating' && activeStep === 1) {
-      useCanvasStore.getState().advanceToStep(2);
+    if (globalStatus === 'generating' && activeStep === steps[0]?.id) {
+      const nextId = steps[1]?.id;
+      if (nextId) useCanvasStore.getState().advanceToStep(nextId);
     }
-  }, [globalStatus, activeStep]);
+  }, [globalStatus, activeStep, steps]);
 
   const getStepStatus = useCallback(
-    (stepNumber: StepNumber): AccordionStepStatus => {
-      if (stepNumber === activeStep) return 'active';
-      if (completedSteps.has(stepNumber)) return 'completed';
+    (stepId: string): AccordionStepStatus => {
+      if (stepId === activeStep) return 'active';
+      if (completedSteps.has(stepId)) return 'completed';
       return 'locked';
     },
     [activeStep, completedSteps],
   );
 
-  const handleTabClick = useCallback((stepNumber: StepNumber) => {
+  const handleTabClick = useCallback((stepId: string) => {
     const store = useCanvasStore.getState();
-    if (store.completedSteps.has(stepNumber) || stepNumber === store.activeStep) {
-      store.goToStep(stepNumber);
+    if (store.completedSteps.has(stepId) || stepId === store.activeStep) {
+      store.goToStep(stepId);
     }
   }, []);
 
-  const handleAdvance = useCallback((nextStep: StepNumber) => {
-    useCanvasStore.getState().advanceToStep(nextStep);
+  const handleAdvance = useCallback((nextStepId: string) => {
+    useCanvasStore.getState().advanceToStep(nextStepId);
   }, []);
 
-  const handleTabKeyDown = useCallback((e: React.KeyboardEvent, currentStep: StepNumber) => {
-    const stepNumbers = STEPS.map((s) => s.number);
-    const currentIndex = stepNumbers.indexOf(currentStep);
+  const handleTabKeyDown = useCallback((e: React.KeyboardEvent, currentStepId: string) => {
+    const stepIds = steps.map((s) => s.id);
+    const currentIndex = stepIds.indexOf(currentStepId);
     let direction: 1 | -1 | null = null;
     let targetIndex: number | null = null;
 
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
       e.preventDefault();
       direction = 1;
-      targetIndex = (currentIndex + 1) % stepNumbers.length;
+      targetIndex = (currentIndex + 1) % stepIds.length;
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
       e.preventDefault();
       direction = -1;
-      targetIndex = (currentIndex - 1 + stepNumbers.length) % stepNumbers.length;
+      targetIndex = (currentIndex - 1 + stepIds.length) % stepIds.length;
     } else if (e.key === 'Home') {
       e.preventDefault();
       direction = 1;
@@ -76,32 +85,39 @@ export function HorizontalAccordion({ deliverableId }: HorizontalAccordionProps)
     } else if (e.key === 'End') {
       e.preventDefault();
       direction = -1;
-      targetIndex = stepNumbers.length - 1;
+      targetIndex = stepIds.length - 1;
     }
 
     if (targetIndex !== null && direction !== null) {
       const store = useCanvasStore.getState();
       let attempts = 0;
-      while (attempts < stepNumbers.length) {
-        const candidate = stepNumbers[targetIndex];
-        if (candidate === store.activeStep || store.completedSteps.has(candidate)) {
+      while (attempts < stepIds.length) {
+        const candidateId = stepIds[targetIndex];
+        if (candidateId === store.activeStep || store.completedSteps.has(candidateId)) {
           break;
         }
-        targetIndex = (targetIndex + direction + stepNumbers.length) % stepNumbers.length;
+        targetIndex = (targetIndex + direction + stepIds.length) % stepIds.length;
         attempts++;
       }
-      const targetStep = stepNumbers[targetIndex];
-      const targetEl = document.getElementById(`canvas-step-tab-${targetStep}`);
+      const targetId = stepIds[targetIndex];
+      const targetEl = document.getElementById(`canvas-step-tab-${targetId}`);
       targetEl?.focus();
     }
-  }, []);
+  }, [steps]);
 
-  const activeStepConfig = STEPS.find((s) => s.number === activeStep);
-  const ActiveIcon = activeStepConfig?.icon ?? FileText;
+  // Find active step in flow
+  const activeIndex = steps.findIndex((s) => s.id === activeStep);
+  const activeStepDef = activeIndex >= 0 ? steps[activeIndex] : steps[0];
+  const ActiveIcon = activeStepDef?.icon ?? FileText;
 
-  const activeIndex = STEPS.findIndex((s) => s.number === activeStep);
-  const precedingSteps = STEPS.slice(0, activeIndex);
-  const followingSteps = STEPS.slice(activeIndex + 1);
+  const precedingSteps = activeIndex > 0 ? steps.slice(0, activeIndex) : [];
+  const followingSteps = activeIndex >= 0 ? steps.slice(activeIndex + 1) : [];
+
+  // Resolve the component for the active step
+  const StepComponent = resolveStepComponent(activeStepDef?.componentKey ?? 'context');
+
+  // Build onAdvance callback: advance to the next step in the flow
+  const nextStepId = activeStepDef ? getNextStepId(mediumCategory, activeStepDef.id) : null;
 
   return (
     <div className="flex h-full" style={{ minHeight: 0 }}>
@@ -109,23 +125,23 @@ export function HorizontalAccordion({ deliverableId }: HorizontalAccordionProps)
       <div className="flex flex-shrink-0 border-r border-gray-200" role="tablist" aria-orientation="vertical" aria-label="Content canvas steps">
         {precedingSteps.map((step) => (
           <VerticalTab
-            key={step.number}
-            stepNumber={step.number}
+            key={step.id}
+            stepNumber={step.id}
             title={step.title}
             icon={step.icon}
-            status={getStepStatus(step.number)}
-            onClick={() => handleTabClick(step.number)}
-            onKeyDown={(e) => handleTabKeyDown(e, step.number)}
+            status={getStepStatus(step.id)}
+            onClick={() => handleTabClick(step.id)}
+            onKeyDown={(e) => handleTabKeyDown(e, step.id)}
           />
         ))}
         <VerticalTab
-          key={activeStepConfig?.number ?? 1}
-          stepNumber={activeStepConfig?.number ?? (1 as StepNumber)}
-          title={activeStepConfig?.title ?? ''}
-          icon={activeStepConfig?.icon ?? FileText}
+          key={activeStepDef?.id ?? 'context'}
+          stepNumber={activeStepDef?.id ?? 'context'}
+          title={activeStepDef?.title ?? ''}
+          icon={activeStepDef?.icon ?? FileText}
           status="active"
           onClick={() => {}}
-          onKeyDown={(e) => handleTabKeyDown(e, activeStepConfig?.number ?? (1 as StepNumber))}
+          onKeyDown={(e) => handleTabKeyDown(e, activeStepDef?.id ?? 'context')}
         />
       </div>
 
@@ -140,29 +156,15 @@ export function HorizontalAccordion({ deliverableId }: HorizontalAccordionProps)
         <div className={ACCORDION.content.header}>
           <ActiveIcon className={ACCORDION.content.headerIcon} />
           <h2 className={ACCORDION.content.headerTitle}>
-            {activeStepConfig?.title}
+            {activeStepDef?.title}
           </h2>
         </div>
 
-        {/* Step content */}
-        {activeStep === 1 && (
-          <Step1Context deliverableId={deliverableId} />
-        )}
-        {activeStep === 2 && (
-          <Step2ContentVariants
-            deliverableId={deliverableId}
-            onAdvance={() => handleAdvance(3)}
-          />
-        )}
-        {activeStep === 3 && (
-          <Step3GenerateMedium
-            onAdvance={() => handleAdvance(4)}
-            deliverableId={deliverableId}
-          />
-        )}
-        {activeStep === 4 && (
-          <Step4Timeline deliverableId={deliverableId} />
-        )}
+        {/* Step content — dynamically resolved */}
+        <StepComponent
+          deliverableId={deliverableId}
+          onAdvance={nextStepId ? () => handleAdvance(nextStepId) : () => {}}
+        />
       </div>
 
       {/* Following step tabs (right side) */}
@@ -170,13 +172,13 @@ export function HorizontalAccordion({ deliverableId }: HorizontalAccordionProps)
         <div className="flex flex-shrink-0 border-l border-gray-200">
           {followingSteps.map((step) => (
             <VerticalTab
-              key={step.number}
-              stepNumber={step.number}
+              key={step.id}
+              stepNumber={step.id}
               title={step.title}
               icon={step.icon}
-              status={getStepStatus(step.number)}
-              onClick={() => handleTabClick(step.number)}
-              onKeyDown={(e) => handleTabKeyDown(e, step.number)}
+              status={getStepStatus(step.id)}
+              onClick={() => handleTabClick(step.id)}
+              onKeyDown={(e) => handleTabKeyDown(e, step.id)}
             />
           ))}
         </div>

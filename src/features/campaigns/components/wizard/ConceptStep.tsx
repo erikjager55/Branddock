@@ -350,7 +350,9 @@ export function ConceptStep() {
           const s = useCampaignWizardStore.getState();
           s.setIsGenerating(false);
           s.setStrategyPhase("rationale_complete");
-          setPhaseError("Concept generation failed. Please try again.");
+          const errorMsg = typeof data.error === 'string' ? data.error : 'Unknown error';
+          console.error("[ConceptStep] Backend error:", errorMsg);
+          setPhaseError(`Concept generation failed: ${errorMsg}`);
           return;
         }
         if (data.step && data.name && data.status && data.label) {

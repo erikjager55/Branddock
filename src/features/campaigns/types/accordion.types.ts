@@ -13,5 +13,13 @@ export interface StepSummaryData {
 /** Visual status of an accordion step */
 export type AccordionStepStatus = 'locked' | 'active' | 'completed';
 
-/** Valid step numbers in the 4-step accordion */
-export type StepNumber = 1 | 2 | 3 | 4;
+/**
+ * Step identifier — string ID matching a step in the canvas flow registry.
+ * Examples: 'context', 'variants', 'script', 'medium', 'video-builder', 'planner'
+ */
+export type StepId = string;
+
+/**
+ * @deprecated Use StepId instead. Kept for backward compat during migration.
+ */
+export type StepNumber = number;

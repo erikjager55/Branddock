@@ -294,7 +294,7 @@ function ContextCard({
   const [open, setOpen] = React.useState(defaultOpen);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white">
+    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -310,7 +310,7 @@ function ContextCard({
         )}
       </button>
       {open && (
-        <div className="px-3 pb-3 pt-3 border-t border-gray-100">
+        <div className="px-3 pb-3 pt-3 border-t border-gray-100 break-words" style={{ minWidth: 0 }}>
           {children}
         </div>
       )}

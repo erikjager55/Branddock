@@ -9,12 +9,38 @@ import type {
 } from '@/lib/claw/claw.types';
 import { DEFAULT_CONTEXT_MODULES } from '@/lib/claw/claw.types';
 
+export type BugSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+export interface BugReportFormState {
+  page: string;
+  description: string;
+  severity: BugSeverity;
+  screenshot: string;
+}
+
+export interface BugReportItem {
+  id: string;
+  page: string;
+  description: string;
+  severity: string;
+  screenshot: string | null;
+  status: string;
+  createdAt: string;
+  user: { name: string | null; email: string };
+}
+
 interface ClawStore {
   // ── Panel State ──────────────────────────────────────────
   isOpen: boolean;
+  viewMode: 'panel' | 'overlay';
   openClaw: () => void;
   closeClaw: () => void;
   toggleClaw: () => void;
+  toggleViewMode: () => void;
+
+  // ── Current Page (synced from App.tsx) ───────────────────
+  currentPage: string;
+  setCurrentPage: (page: string) => void;
 
   // ── Active Conversation ──────────────────────────────────
   activeConversationId: string | null;
@@ -58,16 +84,33 @@ interface ClawStore {
   quickActions: ClawQuickAction[];
   setQuickActions: (actions: ClawQuickAction[]) => void;
 
+  // ── Bug Report ──────────────────────────────────────────
+  bugReportForm: BugReportFormState | null;
+  openBugReportForm: () => void;
+  updateBugReportForm: (fields: Partial<BugReportFormState>) => void;
+  closeBugReportForm: () => void;
+
+  bugLogbook: BugReportItem[] | null;
+  openBugLogbook: () => void;
+  closeBugLogbook: () => void;
+  setBugLogbook: (bugs: BugReportItem[]) => void;
+
   // ── Reset ────────────────────────────────────────────────
   startNewConversation: () => void;
 }
 
-export const useClawStore = create<ClawStore>((set) => ({
+export const useClawStore = create<ClawStore>((set, get) => ({
   // Panel
   isOpen: false,
-  openClaw: () => set({ isOpen: true }),
-  closeClaw: () => set({ isOpen: false }),
-  toggleClaw: () => set((s) => ({ isOpen: !s.isOpen })),
+  viewMode: 'panel',
+  openClaw: () => set({ isOpen: true, viewMode: 'panel' }),
+  closeClaw: () => set({ isOpen: false, viewMode: 'panel', bugReportForm: null, bugLogbook: null }),
+  toggleClaw: () => set((s) => ({ isOpen: !s.isOpen, viewMode: s.isOpen ? 'panel' : s.viewMode })),
+  toggleViewMode: () => set((s) => ({ viewMode: s.viewMode === 'panel' ? 'overlay' : 'panel' })),
+
+  // Current page
+  currentPage: 'dashboard',
+  setCurrentPage: (page) => set({ currentPage: page }),
 
   // Active conversation
   activeConversationId: null,
@@ -134,6 +177,27 @@ export const useClawStore = create<ClawStore>((set) => ({
   quickActions: [],
   setQuickActions: (actions) => set({ quickActions: actions }),
 
+  // Bug report
+  bugReportForm: null,
+  openBugReportForm: () => set({
+    bugReportForm: {
+      page: get().currentPage,
+      description: '',
+      severity: 'medium',
+      screenshot: '',
+    },
+    bugLogbook: null,
+  }),
+  updateBugReportForm: (fields) => set((s) => ({
+    bugReportForm: s.bugReportForm ? { ...s.bugReportForm, ...fields } : null,
+  })),
+  closeBugReportForm: () => set({ bugReportForm: null }),
+
+  bugLogbook: null,
+  openBugLogbook: () => set({ bugLogbook: [], bugReportForm: null }),
+  closeBugLogbook: () => set({ bugLogbook: null }),
+  setBugLogbook: (bugs) => set({ bugLogbook: bugs }),
+
   // Reset
   startNewConversation: () =>
     set({
@@ -143,5 +207,7 @@ export const useClawStore = create<ClawStore>((set) => ({
       pendingMutation: null,
       inputText: '',
       attachments: [],
+      bugReportForm: null,
+      bugLogbook: null,
     }),
 }));

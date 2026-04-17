@@ -8,9 +8,10 @@ import { FeedbackBar } from '../FeedbackBar';
 import { Badge } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { PreviewContent } from '../../../types/canvas.types';
-import { Loader2, Sparkles, ArrowRight, Check } from 'lucide-react';
+import { Loader2, Sparkles, ArrowRight, Check, Film, MessageSquare, MousePointerClick } from 'lucide-react';
 import { SeoProgressPanel } from '../SeoProgressPanel';
 import { getEstimatedDuration } from '../../../lib/content-type-inputs';
+import type { SceneId } from '../../../stores/useCanvasStore';
 
 interface Step2ContentVariantsProps {
   deliverableId: string;
@@ -35,6 +36,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
 
   const hasVariants = variantGroups.size > 0;
   const isGenerating = globalStatus === 'generating';
+  const hasSceneGroups = variantGroups.has('hook') || variantGroups.has('body') || variantGroups.has('cta');
 
   const platform = contextStack?.medium?.platform ?? null;
   const format = contextStack?.medium?.format ?? null;
@@ -85,7 +87,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const handleAdvance = useCallback(() => {
     const store = useCanvasStore.getState();
     const label = `Variant ${String.fromCharCode(65 + selectedVariantIndex)} selected`;
-    store.setStepSummary(2, { label });
+    store.setStepSummary(store.activeStep, { label });
     onAdvance();
   }, [onAdvance, selectedVariantIndex]);
 
@@ -199,6 +201,11 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
         })}
       </div>
 
+      {/* Scene breakdown — shown when variant groups include hook/body/cta */}
+      {hasSceneGroups && hasVariants && !isGenerating && (
+        <SceneBreakdown variantGroups={variantGroups} selectedVariantIndex={selectedVariantIndex} />
+      )}
+
       {/* Feedback bar */}
       <div className="border-t border-gray-200 pt-4">
         <FeedbackBar onRegenerate={regenerate} onAbort={abort} />
@@ -213,10 +220,59 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
             className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
           >
             <ArrowRight className="h-4 w-4" />
-            Confirm & Continue
+            {hasSceneGroups ? 'Confirm Script & Configure Video' : 'Confirm & Continue'}
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Scene Breakdown (video types only) ───────────────────────
+
+const SCENE_CONFIG: { id: SceneId; label: string; icon: typeof Film; borderColor: string; bgColor: string; textColor: string }[] = [
+  { id: 'hook', label: 'Hook', icon: Film, borderColor: '#f59e0b', bgColor: '#fffbeb', textColor: '#92400e' },
+  { id: 'body', label: 'Body', icon: MessageSquare, borderColor: '#3b82f6', bgColor: '#eff6ff', textColor: '#1e40af' },
+  { id: 'cta', label: 'CTA', icon: MousePointerClick, borderColor: '#10b981', bgColor: '#ecfdf5', textColor: '#065f46' },
+];
+
+function SceneBreakdown({
+  variantGroups,
+  selectedVariantIndex,
+}: {
+  variantGroups: Map<string, { content: string }[]>;
+  selectedVariantIndex: number;
+}) {
+  const hasSceneGroups = variantGroups.has('hook') || variantGroups.has('body') || variantGroups.has('cta');
+  if (!hasSceneGroups) return null;
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-4">
+      <h4 className="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wider">Scene Breakdown</h4>
+      <div className="space-y-2">
+        {SCENE_CONFIG.map(({ id, label, icon: Icon, borderColor, bgColor, textColor }) => {
+          const variants = variantGroups.get(id);
+          if (!variants) return null;
+          const text = variants[selectedVariantIndex]?.content ?? variants[0]?.content ?? '';
+          if (!text) return null;
+
+          return (
+            <div
+              key={id}
+              className="flex gap-3 rounded-lg p-3"
+              style={{ backgroundColor: bgColor, borderLeft: `3px solid ${borderColor}` }}
+            >
+              <div className="flex-shrink-0 mt-0.5">
+                <Icon className="h-4 w-4" style={{ color: borderColor }} />
+              </div>
+              <div className="min-w-0">
+                <span className="text-xs font-semibold" style={{ color: textColor }}>{label}</span>
+                <p className="text-xs text-gray-700 mt-0.5 leading-relaxed">{text}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

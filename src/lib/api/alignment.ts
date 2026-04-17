@@ -13,6 +13,8 @@ import type {
   FixOptionsResponse,
   ApplyFixBody,
   ApplyFixResponse,
+  BrandAuditResponse,
+  StartAuditResponse,
 } from "@/types/brand-alignment";
 
 const API_BASE = "/api/alignment";
@@ -143,4 +145,24 @@ export async function applyFix(
     body: JSON.stringify(body),
   });
   return handleResponse<ApplyFixResponse>(res);
+}
+
+// =============================================================
+// Brand Audit
+// =============================================================
+
+/**
+ * Fetch latest brand audit result.
+ */
+export async function fetchBrandAudit(): Promise<BrandAuditResponse> {
+  const res = await fetch(`${API_BASE}/audit`);
+  return handleResponse<BrandAuditResponse>(res);
+}
+
+/**
+ * Start a new brand audit.
+ */
+export async function startBrandAudit(): Promise<StartAuditResponse> {
+  const res = await fetch(`${API_BASE}/audit`, { method: "POST" });
+  return handleResponse<StartAuditResponse>(res);
 }

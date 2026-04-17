@@ -196,3 +196,67 @@ export interface AlignmentHistoryItem {
   completedAt: string;
   issuesFound: number;
 }
+
+// =============================================================
+// Brand Audit Types
+// =============================================================
+
+export type AuditDimensionKey =
+  | "completeness"
+  | "clarity"
+  | "consistency"
+  | "differentiation"
+  | "activation_readiness";
+
+export type AuditGrade = "A" | "B" | "C" | "D" | "F";
+
+export type ImprovementImpact = "HIGH" | "MEDIUM" | "LOW";
+
+export interface AuditDimension {
+  key: AuditDimensionKey;
+  label: string;
+  score: number;           // 0-100
+  grade: AuditGrade;
+  summary: string;         // 1-2 sentence explanation
+}
+
+export interface AssetAuditScore {
+  assetId: string;
+  assetName: string;
+  frameworkType: string;
+  completenessPercent: number;  // 0-100 (deterministic)
+  qualityScore: number;         // 1-10 (AI-assessed)
+  qualitySummary: string;       // 1 sentence AI assessment
+  improvements: string[];       // 2-3 specific improvement points
+}
+
+export interface ImprovementPoint {
+  title: string;
+  description: string;
+  impact: ImprovementImpact;
+  effort: "LOW" | "MEDIUM" | "HIGH";
+  assetId: string | null;       // null = cross-asset improvement
+  assetName: string | null;
+  frameworkType: string | null;
+}
+
+export interface BrandAuditResult {
+  id: string;
+  overallScore: number;         // 0-100, weighted average of dimensions
+  dimensions: AuditDimension[];
+  assetScores: AssetAuditScore[];
+  improvements: ImprovementPoint[];
+  createdAt: string;
+}
+
+// GET /api/alignment/audit response
+export interface BrandAuditResponse {
+  hasAudit: boolean;
+  audit: BrandAuditResult | null;
+}
+
+// POST /api/alignment/audit response
+export interface StartAuditResponse {
+  auditId: string;
+  status: "COMPLETED";
+}

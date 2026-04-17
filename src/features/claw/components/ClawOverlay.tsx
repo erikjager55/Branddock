@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useCallback } from 'react';
-import { X, Plus, PanelLeftClose, PanelLeftOpen, Download } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { X, Plus, PanelLeftClose, PanelLeftOpen, Download, Maximize2, Minimize2 } from 'lucide-react';
 import { useClawStore } from '@/stores/useClawStore';
 import { ChatArea } from './ChatArea';
 import { InputBar } from './InputBar';
@@ -10,12 +10,25 @@ import { ConversationSidebar } from './ConversationSidebar';
 export function ClawOverlay() {
   const {
     isOpen,
+    viewMode,
     closeClaw,
+    toggleViewMode,
     isSidebarOpen,
     toggleSidebar,
     startNewConversation,
     activeConversationId,
   } = useClawStore();
+
+  // Slide-in animation state
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      requestAnimationFrame(() => setIsVisible(true));
+    } else {
+      setIsVisible(false);
+    }
+  }, [isOpen]);
 
   // Close on Escape
   useEffect(() => {
@@ -27,9 +40,9 @@ export function ClawOverlay() {
     return () => document.removeEventListener('keydown', handler);
   }, [isOpen, closeClaw]);
 
-  // Prevent body scroll when overlay is open
+  // Prevent body scroll only in overlay mode
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && viewMode === 'overlay') {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
@@ -37,7 +50,7 @@ export function ClawOverlay() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isOpen]);
+  }, [isOpen, viewMode]);
 
   const handleExport = useCallback(() => {
     const { messages } = useClawStore.getState();
@@ -61,10 +74,16 @@ export function ClawOverlay() {
 
   if (!isOpen) return null;
 
+  const isPanel = viewMode === 'panel';
+
+  const containerClassName = isPanel
+    ? `fixed right-0 top-0 bottom-0 z-50 flex flex-col w-[480px] bg-white border-l border-gray-200 shadow-2xl transition-transform duration-300 ease-in-out ${isVisible ? 'translate-x-0' : 'translate-x-full'}`
+    : 'fixed inset-0 z-50 flex bg-white transition-all duration-300 ease-in-out';
+
   return (
-    <div className="fixed inset-0 z-50 flex bg-white">
-      {/* Sidebar */}
-      {isSidebarOpen && (
+    <div className={containerClassName}>
+      {/* Conversation Sidebar — only in overlay mode */}
+      {!isPanel && isSidebarOpen && (
         <div className="w-72 flex-shrink-0 border-r border-gray-200 bg-gray-50 flex flex-col">
           <ConversationSidebar />
         </div>
@@ -75,13 +94,16 @@ export function ClawOverlay() {
         {/* Header */}
         <header className="flex items-center justify-between px-4 h-14 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <button
-              onClick={toggleSidebar}
-              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500"
-              aria-label={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
-            >
-              {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
-            </button>
+            {/* Sidebar toggle — only in overlay mode */}
+            {!isPanel && (
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500"
+                aria-label={isSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
+              >
+                {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+              </button>
+            )}
 
             <button
               onClick={startNewConversation}
@@ -106,6 +128,14 @@ export function ClawOverlay() {
                 <Download size={18} />
               </button>
             )}
+
+            <button
+              onClick={toggleViewMode}
+              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500"
+              aria-label={isPanel ? 'Expand to full screen' : 'Collapse to panel'}
+            >
+              {isPanel ? <Maximize2 size={18} /> : <Minimize2 size={18} />}
+            </button>
 
             <button
               onClick={closeClaw}

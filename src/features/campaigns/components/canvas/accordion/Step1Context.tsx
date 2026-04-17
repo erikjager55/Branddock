@@ -13,9 +13,10 @@ import { getContentTypeInputs, type ContentTypeInputValue } from '../../../lib/c
 
 interface Step1ContextProps {
   deliverableId: string;
+  onAdvance?: () => void;
 }
 
-export function Step1Context({ deliverableId }: Step1ContextProps) {
+export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
   const contextStack = useCanvasStore((s) => s.contextStack);
   const additionalContextItems = useCanvasStore((s) => s.additionalContextItems);
   const removeContextItem = useCanvasStore((s) => s.removeContextItem);
@@ -30,7 +31,7 @@ export function Step1Context({ deliverableId }: Step1ContextProps) {
   const hasExistingContent = variantGroups.size > 0;
 
   const handleContinue = () => {
-    useCanvasStore.getState().advanceToStep(2);
+    onAdvance?.();
   };
 
   const handleGenerate = async () => {
@@ -51,7 +52,7 @@ export function Step1Context({ deliverableId }: Step1ContextProps) {
       if (phase?.phase) summaryParts.push(`${phase.phase} phase`);
       if (knowledgeCount > 0) summaryParts.push(`${knowledgeCount} knowledge items`);
 
-      state.setStepSummary(1, {
+      state.setStepSummary('context', {
         label: summaryParts.join(' | ') || 'Context reviewed',
       });
     } catch (err) {

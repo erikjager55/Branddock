@@ -10,6 +10,8 @@ import { useDraftAutoSave } from "../../hooks/useDraftAutoSave";
 import { useLaunchCampaign } from "../../hooks";
 import { useCampaignStore } from "../../stores/useCampaignStore";
 import { getStepsForMode } from "../../lib/wizard-steps";
+import { reconcileAssetPlan } from "../../lib/reconcile-asset-plan";
+import type { CampaignBlueprint } from "@/lib/campaigns/strategy-blueprint.types";
 import { WizardStepper } from "./WizardStepper";
 import { SetupStep } from "./SetupStep";
 import { KnowledgeStep } from "./KnowledgeStep";
@@ -148,6 +150,18 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
     } else if (stepProceedOverride) {
       stepProceedOverride();
     } else {
+      // When leaving the Deliverables step, reconcile the blueprint's asset plan
+      // with the user's selections. The AI Asset Planner runs in step 4 (Concept)
+      // before the user picks deliverables in step 5, so the two can diverge.
+      const currentStepKey = steps[currentStep - 1]?.key;
+      if (currentStepKey === 'deliverables') {
+        const store = useCampaignWizardStore.getState();
+        const bp = store.blueprintResult as CampaignBlueprint | null;
+        if (bp?.assetPlan && store.selectedDeliverables.length > 0) {
+          const reconciledPlan = reconcileAssetPlan(bp.assetPlan, store.selectedDeliverables);
+          store.setBlueprintResult({ ...bp, assetPlan: reconciledPlan });
+        }
+      }
       nextStep();
     }
   };

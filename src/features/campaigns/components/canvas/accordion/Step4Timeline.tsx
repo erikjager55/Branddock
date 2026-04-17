@@ -33,6 +33,7 @@ import {
 
 interface Step4TimelineProps {
   deliverableId: string;
+  onAdvance?: () => void;
 }
 
 export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
@@ -212,7 +213,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         if (!res.ok) throw new Error('Failed to schedule');
 
         store.setApprovalState({ approvalStatus: 'PUBLISHED', publishedAt: new Date().toISOString() });
-        store.setStepSummary(4, {
+        store.setStepSummary('planner', {
           label: `Scheduled: ${formatDateDisplay(store.scheduledDate)}${store.scheduledTime ? ` at ${store.scheduledTime}` : ''}`,
         });
       } else {
@@ -227,7 +228,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         }
 
         store.setApprovalState({ approvalStatus: 'APPROVED' });
-        store.setStepSummary(4, { label: 'Ready for publishing' });
+        store.setStepSummary('planner', { label: 'Ready for publishing' });
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Action failed');

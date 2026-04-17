@@ -34,11 +34,47 @@
 - [x] Bibliotheek-UI: upload eigen audio + AI-gegenereerde varianten
 - [x] Creative Hub tab "Sound Effects" toevoegen (naast Brand Voices, AI Images, AI Videos)
 
-### 1.2 Video Generatie Uitgebreid (I.5) — conditioneel
+### 1.2 Brand Voice Generator (I.6) — verwijderd uit AI Trainer, moet opnieuw geplaatst worden
 
-- [ ] Marktrijpheid evalueren (huidige inschatting: Q3 2027)
-- [ ] Evalueer naast Runway ML ook: Kling, Luma Dream Machine
-- [ ] Gebruik: TikTok scripts omzetten naar concept-video's voor review
+- [ ] Nieuwe standalone pagina of sectie voor Brand Voice generatie (was in AI Trainer > Voices tab)
+- [ ] ElevenLabs TTS voice browsing, selectie en audio sample generatie (backend staat al: `src/lib/integrations/elevenlabs/`)
+- [ ] Brand Voice CRUD (backend staat al: `/api/media/brand-voices/`)
+- [ ] Voice preview player + TTS settings panel (componenten bestaan: `VoiceDetailPanel`, `VoicePreviewPlayer`, `TtsSettingsPanel`)
+- [ ] Integratie met Content Canvas voor voice-over generatie bij video/audio deliverables
+
+### 1.3 Sound Effects Generator (I.7) — verwijderd uit AI Trainer, moet opnieuw geplaatst worden
+
+- [ ] Nieuwe standalone pagina of sectie voor Sound Effects (was in AI Trainer > Sound Effects tab)
+- [ ] ElevenLabs Sound Effects API integratie (backend staat al)
+- [ ] Bibliotheek-UI: upload eigen audio + AI-gegenereerde varianten
+- [ ] Integratie met Content Canvas voor audio-elementen bij video deliverables
+
+### 1.4 Video Generatie Uitgebreid (I.5) — ⏸️ ON HOLD
+
+> Fundament gebouwd (17 april 2026), niet-actief tot video-first prioriteit.
+> Alle code is werkend maar de volledige pipeline (per-scene generatie + compositie + voiceover) vereist significante UX-afronding.
+
+**Wat er al staat (fundament):**
+- [x] fal.ai video providers (5: Kling v3 Pro/Std, Veo 3.1 Fast, Seedance 2.0, LTX 2.0 Pro)
+- [x] `VIDEO_ADJACENT_TYPES` constant (6 deliverable types)
+- [x] Video prompt builder (`video-prompt-builder.ts` — Claude vertaalt script → visuele prompt, scene-aware)
+- [x] SSE API route (`generate-video/route.ts` — text-to-video + image-to-video + existing video)
+- [x] Voiceover API route (`generate-voiceover/route.ts` — ElevenLabs TTS per scene)
+- [x] Video compositie API route (`compose-video/route.ts` — MVP: eerste scene als preview)
+- [x] Canvas store: scene-based video state (hook/body/cta scenes + composedVideo)
+- [x] `useVideoGeneration` hook (SSE consumer, scene-aware)
+- [x] `VideoSceneEditor` component (per-scene video builder in Step 3)
+- [x] Content-type-aware stepper registry (`canvas-flow-registry.ts`)
+- [x] Step 2 SceneBreakdown (toont hook/body/cta splitsing voor script types)
+
+**Wat nog moet voor volledige feature:**
+- [ ] VideoSceneEditor UX polish (Media Library picker i.p.v. URL input voor image/video bron)
+- [ ] Echte video compositie (ffmpeg of fal.ai workflow i.p.v. MVP eerste-scene preview)
+- [ ] Voiceover: Brand Voice selector i.p.v. hardcoded 'default' voice ID
+- [ ] Text overlay rendering op gegenereerde video's (logo, CTA tekst)
+- [ ] Video preview in platform-specifiek chrome (TikTok/YouTube mockup met echte video)
+- [ ] E2E testing van de volledige pipeline
+- [ ] Kostenindicatie per scene + totaal vóór generatie
 
 ---
 

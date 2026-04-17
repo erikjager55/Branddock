@@ -87,23 +87,33 @@ const transformativeGoals = {
 const brandHouseValues = {
   anchorValue1: {
     name: 'Vakmanschap',
-    description: 'Wij leveren niet wat net voldoende is. We leveren werk waar we achter staan. Dat vakmanschap zit in de voorbereiding, de uitvoering en de manier waarop we een project opleveren. Goed werk begint bij mensen die er trots op zijn.',
+    tagline: 'Goed werk begint bij mensen die er trots op zijn',
+    description: 'Wij leveren niet wat net voldoende is. We leveren werk waar we achter staan. Dat vakmanschap zit in de voorbereiding, de uitvoering en de manier waarop we een project opleveren.',
   },
   anchorValue2: {
     name: 'Samenwerking',
-    description: 'Goed bouwen doe je samen. Met het team, met de opdrachtgever en met de partijen om ons heen. Korte lijnen, open communicatie en wederzijds vertrouwen vormen daarvoor de basis. Hand in hand, van begin tot eind.',
+    tagline: 'Hand in hand, van begin tot eind',
+    description: 'Goed bouwen doe je samen. Met het team, met de opdrachtgever en met de partijen om ons heen. Korte lijnen, open communicatie en wederzijds vertrouwen vormen daarvoor de basis.',
   },
   aspirationValue1: {
     name: 'Gedrevenheid',
-    description: 'Wij halen energie uit de uitdaging. Hoe groter het project, hoe meer wij er de schouders onder zetten. Die drang om door te gaan, tot het resultaat er staat, zit in ons allemaal. Gas blijven geven.',
+    tagline: 'Gas blijven geven',
+    description: 'Wij halen energie uit de uitdaging. Hoe groter het project, hoe meer wij er de schouders onder zetten. Die drang om door te gaan, tot het resultaat er staat, zit in ons allemaal.',
   },
   aspirationValue2: {
     name: 'Vrijheid',
-    description: 'Bij Goed-Bouw krijgen mensen de ruimte om te handelen, te groeien en zichzelf te zijn. We vertrouwen op de mensen die het werk doen. Die vrijheid maakt ons beter en het werken bij Goed-bouw de moeite waard. De ruimte om jezelf te zijn.',
+    tagline: 'De ruimte om jezelf te zijn',
+    description: 'Bij Goed-Bouw krijgen mensen de ruimte om te handelen, te groeien en zichzelf te zijn. We vertrouwen op de mensen die het werk doen. Die vrijheid maakt ons beter en het werken bij Goed-bouw de moeite waard.',
   },
   ownValue: {
     name: 'Aanpakken',
-    description: 'Bij Goed-Bouw pakken we aan. We nemen verantwoordelijkheid, lossen op en gaan door totdat het klopt. Geen omwegen, geen smoesjes. Wat we zeggen, doen we. Gewoon doen.',
+    tagline: 'Gewoon doen',
+    description: 'Bij Goed-Bouw pakken we aan. We nemen verantwoordelijkheid, lossen op en gaan door totdat het klopt. Geen omwegen, geen smoesjes. Wat we zeggen, doen we.',
+  },
+  hechtValue: {
+    name: 'Hechtheid',
+    tagline: 'Een groep waar je bij wilt horen',
+    description: 'Wij zijn geen anoniem bedrijf. We zijn een hechte groep mensen die samen bouwen aan iets om trots op te zijn. Dat betekent ook dat je niet altijd bij ons past en dat is precies de kracht van Goed-bouw.',
   },
   valueTension: 'De spanning tussen Vrijheid (individuele ruimte) en Hechtheid (de groep). Goed-bouw geeft mensen vrijheid, maar verwacht ook dat je past bij de hechte groep. Je hoort erbij of je hoort er niet bij — en dat is precies de kracht.',
 };
@@ -134,7 +144,7 @@ const brandArchetype = {
 
 // ── Brand Story ────────────────────────────────────────────────
 const brandStory = {
-  originStory: 'De bouw is een vak vol beloftes. Beloftes over planning, kwaliteit en samenwerking. Maar wie een project heeft laten bouwen weet: het is makkelijker gezegd dan gedaan.',
+  originStory: 'De bouw is een vak vol beloftes. Over planning, kwaliteit en samenwerking. Maar wie ooit iets heeft laten bouwen weet hoe makkelijk die beloftes sneuvelen.',
   founderMotivation: 'De overtuiging dat het succes van een project bepaald wordt door de mensen die het maken. Niet door systemen, niet door processen — maar door vakmensen die trots zijn op wat ze neerzetten.',
   coreBeliefStatement: 'Wij geloven dat goed bouwen begint bij mensen die trots zijn op wat ze neerzetten.',
   worldContext: 'De bouwsector wordt gekenmerkt door gebroken beloftes, miscommunicatie en projecten die niet naar verwachting worden opgeleverd. Opdrachtgevers zijn het vertrouwen verloren in aannemers.',
@@ -155,6 +165,7 @@ const brandStory = {
     'Wij zijn niet voor iedereen — en dat is precies de kracht.',
     'Eerlijke afspraken. Gewoon nakomen.',
     'Pas stoppen als het klopt.',
+    'Gewoon dóén.',
   ],
   narrativeArc: 'De bouw is vol gebroken beloftes → Goed-bouw kiest een andere weg → Een hechte groep vakmensen die aanpakken → Projecten om trots op te zijn.',
   proofPoints: [
@@ -168,15 +179,24 @@ const brandStory = {
     'Vakmanschap: werk waar we achter staan.',
     'Samenwerking: als één team, van begin tot eind.',
     'Vrijheid: vertrouwen op de mensen die het werk doen.',
+    'Hechtheid: een groep waar je bij wilt horen.',
+    'Gedrevenheid: gas blijven geven.',
   ],
   brandMilestones: [],
   elevatorPitch: 'Goed-bouw is een aannemer die werkt met een hechte, gedreven groep vakmensen. Wij maken eerlijke afspraken, geven mensen de vrijheid om het beste uit zichzelf te halen, en stoppen pas als het klopt. Het resultaat? Projecten om trots op te zijn.',
-  manifestoText: 'De bouw is een vak vol beloftes. Beloftes over planning, kwaliteit en samenwerking. Maar wie een project heeft laten bouwen weet: het is makkelijker gezegd dan gedaan. Wat is dan het geheim van het succes van een project? Bij Goed-bouw zijn we ervan overtuigd dat dit de mensen zijn die het project maken. Daarom werken we met een hechte groep vakmensen die energie halen uit de uitdagingen van het werk. Die trots zijn op wat ze neerzetten en die pas stoppen als het klopt. Dit is de instelling die bij ons past. We maken duidelijke afspraken en komen die na. Of het nu gaat om woningbouw, een villa, een appartementencomplex, een bedrijfspand of een ingrijpende renovatie. Wij staan voor je klaar zodat je weet wat je kunt krijgen: een team dat er écht voor gaat en een eindresultaat om trots op te zijn.',
+  manifestoText: 'De bouw is een vak vol beloftes. Over planning, kwaliteit en samenwerking. Maar wie ooit iets heeft laten bouwen weet hoe makkelijk die beloftes sneuvelen. Bij Goed-bouw doen we wat we zeggen en nemen we onze verantwoordelijkheid. Zonder gedoe, zonder kleine lettertjes.\n\nDat kunnen we, omdat we weten wat een project écht maakt: de mensen die het bouwen. Daarom werken we met een hechte groep vakmensen. Mensen die energie halen uit het werk, trots zijn op wat ze neerzetten en pas stoppen als het klopt.\n\nGoed-bouw\nGewoon dóén',
+  tagline: 'Gewoon dóén',
   audienceAdaptations: {
     customers: 'Je weet wat je krijgt: een team dat er écht voor gaat en een eindresultaat om trots op te zijn.',
     investors: '',
-    employees: 'Wij zijn een aannemer voor mensen die écht willen bouwen. Een hechte, gedreven club die eerlijke afspraken maakt en nakomt. Goed-bouw is niet voor iedereen. Maar als jij trots bent op je vak en gas blijft geven, dan weet je wat je bij ons krijgt.',
+    employees: 'Wij zijn een aannemer voor mensen die écht willen bouwen. We realiseren nieuwbouw, renovatie en transformatieprojecten. Van woningbouw tot villabouw, van grondwerk tot oplevering. Wat ons onderscheidt? De groep mensen die het doet. Wij zijn een hechte, gedreven club die eerlijke afspraken maakt en die nakomt. We geven mensen op de bouwplaats de vrijheid en het vertrouwen om het beste uit zichzelf te halen. En we stoppen pas als het klopt. Het resultaat? Een eindresultaat om trots op te zijn. Voor de opdrachtgever. En voor jezelf. Goed-bouw is niet voor iedereen. Maar als jij iemand bent die trots is op zijn vak en die gas blijft geven totdat het resultaat er staat, dan weet je wat je bij ons krijgt en wat we van je verwachten.',
     partners: 'Korte lijnen, eerlijke afspraken, samen als één team. Van werkvoorbereiding tot oplevering.',
+  },
+  evp: {
+    contractueel: 'Eerlijke afspraken die worden nagekomen. Heldere verwachtingen. Je weet wat je krijgt.',
+    beleving: 'Een hechte, gedreven club. Selectief gezelschap als kracht. Samenwerken prettig. Je hoeft niet te controleren.',
+    emotioneel: 'Trots op je vak. Vakmanschap als identiteit. Verbinding met de visie en missie van Goed-bouw.',
+    narrative: 'Wij zijn een aannemer voor mensen die écht willen bouwen. We realiseren nieuwbouw, renovatie en transformatieprojecten. Van woningbouw tot villabouw, van grondwerk tot oplevering. Wat ons onderscheidt? De groep mensen die het doet. Wij zijn een hechte, gedreven club die eerlijke afspraken maakt en die nakomt. We geven mensen op de bouwplaats de vrijheid en het vertrouwen om het beste uit zichzelf te halen. En we stoppen pas als het klopt. Het resultaat? Een eindresultaat om trots op te zijn. Voor de opdrachtgever. En voor jezelf. Goed-bouw is niet voor iedereen. Maar als jij iemand bent die trots is op zijn vak en die gas blijft geven totdat het resultaat er staat, dan weet je wat je bij ons krijgt en wat we van je verwachten.',
   },
 };
 

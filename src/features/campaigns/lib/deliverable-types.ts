@@ -838,3 +838,29 @@ export function getDeliverableTypeById(
 ): DeliverableTypeDefinition | undefined {
   return DELIVERABLE_TYPES.find((d) => d.id === id);
 }
+
+// ─── Video-adjacent deliverable types ─────────────────────
+
+/** Deliverable types that can generate a concept video from the script */
+export const VIDEO_ADJACENT_TYPES = new Set([
+  'tiktok-script',
+  'video-script',
+  'explainer-video-script',
+  'brand-video-script',
+  'radio-script',
+  'podcast-ad-script',
+]);
+
+/** Default video generation config per deliverable type */
+export function getDefaultVideoConfig(typeId: string): {
+  aspectRatio: string;
+  duration: number;
+  provider: string;
+} {
+  const isVertical = ['tiktok-script'].includes(typeId);
+  return {
+    aspectRatio: isVertical ? '9:16' : '16:9',
+    duration: typeId === 'tiktok-script' ? 6 : 8,
+    provider: 'kling-v3-pro',
+  };
+}
