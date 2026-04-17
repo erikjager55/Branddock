@@ -200,14 +200,22 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       return;
     }
 
-    // Step 1: Scrape + preprocess
+    // Step 1: Scrape + preprocess (with Gemini fallback on failure)
     await updateStatus(styleguideId, 'SCANNING_STRUCTURE');
     let scraped: ScrapedData;
     try {
       scraped = await scrapeUrl(url);
-    } catch (err) {
-      await markError(styleguideId, `Failed to fetch URL: ${err instanceof Error ? err.message : String(err)}`);
-      return;
+    } catch (scrapeErr) {
+      console.warn(`[brandstyle-analysis] Direct scrape failed for ${url}: ${scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr)}`);
+      // Fallback: use Gemini with Google Search grounding to extract basic brand data
+      try {
+        scraped = await scrapeUrlViaGeminiFallback(url);
+        console.log(`[brandstyle-analysis] Gemini fallback succeeded for ${url}`);
+      } catch (fallbackErr) {
+        // Both methods failed — report the original scrape error (more useful to the user)
+        await markError(styleguideId, `Failed to fetch URL: ${scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr)}`);
+        return;
+      }
     }
 
     const processed = preprocessScrapeData(scraped);
@@ -975,4 +983,81 @@ function isNonEmptyObject(val: unknown): boolean {
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// ─── Gemini URL Fallback ─────────────────────────────
+
+/**
+ * Fallback scraper for when direct HTTP fetch fails (timeout, 403, Cloudflare, etc.).
+ * Uses Gemini with Google Search grounding to extract brand-relevant data.
+ * Returns a minimal ScrapedData object — no CSS heuristics, but colors/fonts/text.
+ */
+async function scrapeUrlViaGeminiFallback(url: string): Promise<ScrapedData> {
+  const { GoogleGenAI } = await import('@google/genai');
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY not set — cannot use Gemini fallback');
+
+  const client = new GoogleGenAI({ apiKey });
+  const hostname = new URL(url).hostname;
+
+  const response = await client.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: [{
+      role: 'user' as const,
+      parts: [{
+        text: `Analyze the website at ${url} (${hostname}).
+
+Extract and return a JSON object with:
+- "title": page title
+- "description": meta description or first paragraph
+- "bodyText": main text content (headings + paragraphs, max 3000 chars)
+- "colors": array of hex color strings used on the site (brand colors, not grays). Max 12.
+- "fonts": array of font family names used (e.g. "Inter", "Poppins"). Max 5.
+- "logoUrl": URL of the company logo if found, else null
+
+Return ONLY valid JSON. No markdown.`,
+      }],
+    }],
+    config: {
+      tools: [{ googleSearch: {} }],
+      temperature: 0.1,
+    },
+  });
+
+  const raw = response.text ?? '';
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('Gemini fallback returned no parseable JSON');
+
+  let parsed: {
+    title?: string;
+    description?: string;
+    bodyText?: string;
+    colors?: string[];
+    fonts?: string[];
+    logoUrl?: string | null;
+  };
+  try {
+    parsed = JSON.parse(jsonMatch[0]);
+  } catch {
+    throw new Error('Gemini fallback returned invalid JSON');
+  }
+
+  return {
+    url,
+    title: parsed.title ?? null,
+    description: parsed.description ?? null,
+    bodyText: parsed.bodyText ?? '',
+    cssColors: (parsed.colors ?? []).filter((c) => /^#[0-9A-Fa-f]{3,8}$/.test(c)),
+    cssFonts: parsed.fonts ?? [],
+    logoUrls: parsed.logoUrl ? [parsed.logoUrl] : [],
+    ogImage: null,
+    favicon: null,
+    inlineCss: '',
+    linkedCssContent: '',
+    cssVariables: [],
+    colorFrequency: [],
+    fontSizes: [],
+    linkedStylesheetCount: 0,
+    brandImages: [],
+  };
 }

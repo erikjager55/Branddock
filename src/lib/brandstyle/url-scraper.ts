@@ -79,15 +79,48 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
   // SSRF protection: block private IPs
   assertSafeUrl(url);
 
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': CHROME_USER_AGENT,
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.9',
-    },
-    signal: AbortSignal.timeout(15000),
-    redirect: 'follow',
-  });
+  // Fetch HTML with retry on timeout/network errors (max 2 attempts)
+  let response: Response | null = null;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      response = await fetch(url, {
+        headers: {
+          'User-Agent': CHROME_USER_AGENT,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'DNT': '1',
+          'Cache-Control': 'no-cache',
+        },
+        signal: AbortSignal.timeout(30000),
+        redirect: 'follow',
+      });
+      lastError = null;
+      break;
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      const isTimeout = lastError.name === 'AbortError' || lastError.message.includes('aborted');
+      // Only retry on timeout/network errors, not on SSRF blocks
+      if (!isTimeout || attempt >= 1) break;
+      // Wait 2s before retry
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
+
+  if (lastError || !response) {
+    const msg = lastError?.message ?? 'Unknown fetch error';
+    const isTimeout = msg.includes('aborted') || lastError?.name === 'AbortError';
+    throw new Error(
+      isTimeout
+        ? `Website took too long to respond (>30s). The site may be slow or blocking automated access.`
+        : `Failed to fetch URL: ${msg}`,
+    );
+  }
 
   // Check for SSRF after redirect
   assertSafeRedirect(url, response.url);
@@ -144,7 +177,7 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
       assertSafeUrl(cssUrl);
       const cssResponse = await fetch(cssUrl, {
         headers: { 'User-Agent': CHROME_USER_AGENT },
-        signal: AbortSignal.timeout(8000),
+        signal: AbortSignal.timeout(15000),
       });
       if (cssResponse.ok) {
         linkedCssParts.push(await cssResponse.text());
@@ -258,7 +291,7 @@ export function extractCssVariables(css: string): CssVariable[] {
   let usageMatch;
   while ((usageMatch = usagePattern.exec(css)) !== null) {
     const name = usageMatch[1].trim();
-    if (isColorRelatedVariableName(name)) {
+    if (isColorRelatedVariableName(name) && !isCmsPresetVariable(name)) {
       const key = `usage:${name}`;
       if (!seen.has(key)) {
         seen.add(key);
@@ -276,11 +309,35 @@ export function extractCssVariables(css: string): CssVariable[] {
 
 /** Check if a CSS variable name + value suggest it's color-related */
 function isColorRelatedVariable(name: string, value: string): boolean {
+  // Skip CMS/framework preset variables — these are default palettes, not brand colors
+  if (isCmsPresetVariable(name)) return false;
   if (isColorRelatedVariableName(name)) return true;
   // Check if the value looks like a color
   return /^#[0-9A-Fa-f]{3,8}\b/.test(value) ||
     /^rgba?\s*\(/.test(value) ||
     /^hsla?\s*\(/.test(value);
+}
+
+/**
+ * Detect CMS framework preset CSS variables that contain default color palettes.
+ * These pollute brand color extraction because they define 12-20 standard colors
+ * that are not part of the brand identity.
+ */
+function isCmsPresetVariable(name: string): boolean {
+  const lower = name.toLowerCase();
+  // WordPress/Gutenberg preset colors (--wp--preset--color--*)
+  if (lower.startsWith('--wp--preset--')) return true;
+  // WordPress global styles
+  if (lower.startsWith('--wp--style--')) return true;
+  // Elementor default colors
+  if (/^--e-global-color-/.test(lower)) return true;
+  // Squarespace system colors
+  if (lower.startsWith('--sqs-')) return true;
+  // Wix system colors
+  if (lower.startsWith('--wix-')) return true;
+  // Shopify Dawn theme defaults
+  if (lower.startsWith('--color-base-') || lower.startsWith('--color-badge-')) return true;
+  return false;
 }
 
 /** Check if a variable name suggests color usage */
@@ -431,6 +488,8 @@ const FRAMEWORK_COLORS = new Set([
   '#FFF1F2', '#FFE4E6', '#FECDD3', '#FDA4AF', '#FB7185', '#F43F5E', '#E11D48', '#BE123C', '#9F1239', '#881337', // rose
   // Bootstrap defaults
   '#0D6EFD', '#6C757D', '#198754', '#DC3545', '#FFC107', '#0DCAF0', '#212529', '#6610F2', '#D63384', '#FD7E14', '#20C997',
+  // WordPress / Gutenberg default editor palette
+  '#ABB8C3', '#F78DA7', '#CF2E2E', '#FF6900', '#FCB900', '#7BDCB5', '#00D084', '#8ED1FC', '#0693E3', '#9B51E0',
   // Common CSS resets
   '#TRANSPARENT', '#INHERIT',
 ]);

@@ -190,3 +190,26 @@ export async function unlinkProduct(
   }
   return res.json();
 }
+
+// ─── Auto-Discovery ─────────────────────────────────────
+
+export interface DiscoveredCompetitor {
+  name: string;
+  websiteUrl: string;
+  description: string;
+  relevanceScore: number;
+  relevanceReason: string;
+  tier: 'DIRECT' | 'INDIRECT' | 'ASPIRATIONAL';
+}
+
+export async function discoverCompetitors(): Promise<{ competitors: DiscoveredCompetitor[] }> {
+  const res = await fetch(`${BASE}/discover`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? `Failed to discover competitors (${res.status})`);
+  }
+  return res.json();
+}

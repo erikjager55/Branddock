@@ -148,3 +148,15 @@ export function useUnlinkProduct(competitorId: string | undefined) {
     },
   });
 }
+
+// ─── Auto-Discovery ─────────────────────────────────────
+
+export function useDiscoverCompetitors() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.discoverCompetitors(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: competitorKeys.list() });
+    },
+  });
+}

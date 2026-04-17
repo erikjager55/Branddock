@@ -10,6 +10,7 @@ function sanitizeErrorMessage(raw: string | null): string {
   // (e.g., "Failed to fetch URL: Server returned 403") but could also leak internal details.
   // Safe approach: return the prefix only, with a generic suffix.
   const scrapePrefixes: Array<{ prefix: string; userMessage: string }> = [
+    { prefix: "Website took too long", userMessage: "Website took too long to respond. The site may be slow or blocking automated access. Try again later." },
     { prefix: "Failed to fetch URL", userMessage: "Failed to fetch URL. The website may be unavailable or blocking automated access." },
     { prefix: "Failed to parse PDF", userMessage: "Failed to parse the PDF. The file may be corrupted or password-protected." },
   ];
