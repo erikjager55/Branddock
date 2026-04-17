@@ -229,6 +229,30 @@ export function extractCssVariables(css: string): CssVariable[] {
     }
   }
 
+  // Match non-:root blocks that define CSS variables (e.g. .dark, [data-theme], *, html)
+  // This catches theme variants, component-scoped colors, and framework color tokens
+  const anyBlockPattern = /([^{}]+)\{([^}]+)\}/g;
+  let blockMatch;
+  while ((blockMatch = anyBlockPattern.exec(css)) !== null) {
+    const selector = blockMatch[1].trim();
+    // Skip :root (already handled above)
+    if (/^:root\s*$/.test(selector)) continue;
+    const block = blockMatch[2];
+    const varPattern = /(--[\w-]+)\s*:\s*([^;]+)/g;
+    let varMatch;
+    while ((varMatch = varPattern.exec(block)) !== null) {
+      const name = varMatch[1].trim();
+      const value = varMatch[2].trim();
+      if (isColorRelatedVariable(name, value)) {
+        const key = `usage:${name}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          variables.push({ name, value, context: 'usage' });
+        }
+      }
+    }
+  }
+
   // Match var(--name) usage to discover variables defined elsewhere
   const usagePattern = /var\((--[\w-]+)\)/g;
   let usageMatch;
@@ -277,9 +301,12 @@ function isColorRelatedVariableName(name: string): boolean {
  * Analyze how frequently each color appears in CSS.
  * Returns colors sorted by frequency (most used first).
  * Filters out known CSS framework colors.
+ * For Tailwind sites: applies stricter filtering since Tailwind CSS includes
+ * hundreds of utility classes with colors that aren't actually used on the page.
  */
 export function analyzeColorFrequency(css: string): ColorFrequency[] {
   const freq = new Map<string, { count: number; contexts: Set<string> }>();
+  const isTailwind = isTailwindCss(css);
 
   // Properties that contain colors
   const colorProps = [
@@ -327,16 +354,51 @@ export function analyzeColorFrequency(css: string): ColorFrequency[] {
           }
         }
       }
+
+      // Extract modern CSS color syntax: rgb(31 209 178), rgb(31 209 178 / 0.5)
+      const rgbModernPattern = /rgba?\(\s*(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})/g;
+      let rgbModernMatch;
+      while ((rgbModernMatch = rgbModernPattern.exec(value)) !== null) {
+        const r = parseInt(rgbModernMatch[1]);
+        const g = parseInt(rgbModernMatch[2]);
+        const b = parseInt(rgbModernMatch[3]);
+        if (r <= 255 && g <= 255 && b <= 255) {
+          const hex = rgbToHex(r, g, b).toUpperCase();
+          if (!isNearBlackOrWhite(hex) && !isFrameworkColor(hex)) {
+            const entry = freq.get(hex) || { count: 0, contexts: new Set<string>() };
+            entry.count++;
+            entry.contexts.add(prop);
+            freq.set(hex, entry);
+          }
+        }
+      }
     }
   }
 
-  return Array.from(freq.entries())
+  let results = Array.from(freq.entries())
     .map(([hex, data]) => ({
       hex,
       count: data.count,
       contexts: Array.from(data.contexts),
     }))
     .sort((a, b) => b.count - a.count);
+
+  // For Tailwind sites: utility classes mean each color typically appears only 1×
+  // (one class definition per color). Real brand colors are used in multiple
+  // contexts (background + text + border) or appear via CSS variables.
+  // Raise the minimum frequency threshold to filter out unused utility colors.
+  if (isTailwind && results.length > 20) {
+    // Keep colors used ≥2× or in ≥2 property contexts
+    const filtered = results.filter(
+      (c) => c.count >= 2 || c.contexts.length >= 2,
+    );
+    // Only apply filter if it leaves at least 3 colors
+    if (filtered.length >= 3) {
+      results = filtered;
+    }
+  }
+
+  return results;
 }
 
 // ─── Framework Color Filtering ────────────────────────
@@ -349,15 +411,51 @@ const FRAMEWORK_COLORS = new Set([
   '#FAFAFA', '#F4F4F5', '#E4E4E7', '#D4D4D8', '#A1A1AA', '#71717A', '#52525B', '#3F3F46', '#27272A', '#18181B', // zinc
   '#FAFAFA', '#F5F5F5', '#E5E5E5', '#D4D4D4', '#A3A3A3', '#737373', '#525252', '#404040', '#262626', '#171717', // neutral
   '#FAFAF9', '#F5F5F4', '#E7E5E4', '#D6D3D1', '#A8A29E', '#78716C', '#57534E', '#44403C', '#292524', '#1C1917', // stone
+  // Tailwind default chromatic colors (full palette — these are ALL framework defaults, not brand colors)
+  '#FEF2F2', '#FEE2E2', '#FECACA', '#FCA5A5', '#F87171', '#EF4444', '#DC2626', '#B91C1C', '#991B1B', '#7F1D1D', // red
+  '#FFF7ED', '#FFEDD5', '#FED7AA', '#FDBA74', '#FB923C', '#F97316', '#EA580C', '#C2410C', '#9A3412', '#7C2D12', // orange
+  '#FFFBEB', '#FEF3C7', '#FDE68A', '#FCD34D', '#FBBF24', '#F59E0B', '#D97706', '#B45309', '#92400E', '#78350F', // amber
+  '#FEFCE8', '#FEF9C3', '#FEF08A', '#FDE047', '#FACC15', '#EAB308', '#CA8A04', '#A16207', '#854D0E', '#713F12', // yellow
+  '#F7FEE7', '#ECFCCB', '#D9F99D', '#BEF264', '#A3E635', '#84CC16', '#65A30D', '#4D7C0F', '#3F6212', '#365314', // lime
+  '#F0FDF4', '#DCFCE7', '#BBF7D0', '#86EFAC', '#4ADE80', '#22C55E', '#16A34A', '#15803D', '#166534', '#14532D', // green
+  '#ECFDF5', '#D1FAE5', '#A7F3D0', '#6EE7B7', '#34D399', '#10B981', '#059669', '#047857', '#065F46', '#064E3B', // emerald
+  '#F0FDFA', '#CCFBF1', '#99F6E4', '#5EEAD4', '#2DD4BF', '#14B8A6', '#0D9488', '#0F766E', '#115E59', '#134E4A', // teal
+  '#ECFEFF', '#CFFAFE', '#A5F3FC', '#67E8F9', '#22D3EE', '#06B6D4', '#0891B2', '#0E7490', '#155E75', '#164E63', // cyan
+  '#F0F9FF', '#E0F2FE', '#BAE6FD', '#7DD3FC', '#38BDF8', '#0EA5E9', '#0284C7', '#0369A1', '#075985', '#0C4A6E', // sky
+  '#EFF6FF', '#DBEAFE', '#BFDBFE', '#93C5FD', '#60A5FA', '#3B82F6', '#2563EB', '#1D4ED8', '#1E40AF', '#1E3A8A', // blue
+  '#EEF2FF', '#E0E7FF', '#C7D2FE', '#A5B4FC', '#818CF8', '#6366F1', '#4F46E5', '#4338CA', '#3730A3', '#312E81', // indigo
+  '#F5F3FF', '#EDE9FE', '#DDD6FE', '#C4B5FD', '#A78BFA', '#8B5CF6', '#7C3AED', '#6D28D9', '#5B21B6', '#4C1D95', // violet
+  '#FAF5FF', '#F3E8FF', '#E9D5FF', '#D8B4FE', '#C084FC', '#A855F7', '#9333EA', '#7E22CE', '#6B21A8', '#581C87', // purple
+  '#FDF4FF', '#FAE8FF', '#F5D0FE', '#F0ABFC', '#E879F9', '#D946EF', '#C026D3', '#A21CAF', '#86198F', '#701A75', // fuchsia
+  '#FDF2F8', '#FCE7F3', '#FBCFE8', '#F9A8D4', '#F472B6', '#EC4899', '#DB2777', '#BE185D', '#9D174D', '#831843', // pink
+  '#FFF1F2', '#FFE4E6', '#FECDD3', '#FDA4AF', '#FB7185', '#F43F5E', '#E11D48', '#BE123C', '#9F1239', '#881337', // rose
   // Bootstrap defaults
   '#0D6EFD', '#6C757D', '#198754', '#DC3545', '#FFC107', '#0DCAF0', '#212529', '#6610F2', '#D63384', '#FD7E14', '#20C997',
   // Common CSS resets
   '#TRANSPARENT', '#INHERIT',
 ]);
 
-/** Check if a hex color is a known framework/utility color */
+/**
+ * Check if a hex color is a known framework/utility color.
+ * Also detects Tailwind-compiled CSS by checking for utility class patterns,
+ * and filters accordingly.
+ */
 export function isFrameworkColor(hex: string): boolean {
   return FRAMEWORK_COLORS.has(hex.toUpperCase());
+}
+
+/**
+ * Detect if CSS content likely comes from a Tailwind build.
+ * Used by analyzeColorFrequency to apply smarter filtering.
+ */
+function isTailwindCss(css: string): boolean {
+  // Tailwind compiled CSS contains characteristic patterns
+  return (
+    css.includes('--tw-') ||
+    css.includes('.text-\\[') ||
+    css.includes('.bg-\\[') ||
+    /\.(bg|text|border)-(red|blue|green|yellow|purple|pink|indigo|teal|cyan|emerald|orange|amber|lime|sky|violet|fuchsia|rose|slate|gray|zinc|neutral|stone)-\d{2,3}\b/.test(css)
+  );
 }
 
 // ─── Font Size Extraction ─────────────────────────────
@@ -365,13 +463,13 @@ export function isFrameworkColor(hex: string): boolean {
 /**
  * Extract font-size declarations from CSS.
  * Replaces hallucinated AI type scales with real observed data.
+ * Supports simple values (36px, 2rem), clamp(), calc(), and var() references.
  */
 export function extractFontSizes(css: string): FontSizeEntry[] {
   const sizes: FontSizeEntry[] = [];
   const seen = new Set<string>();
 
   // Match selector { ... font-size: value; ... }
-  // We try to capture the selector for context
   const rulePattern = /([^{}]+)\{([^}]+)\}/g;
   let ruleMatch;
   while ((ruleMatch = rulePattern.exec(css)) !== null) {
@@ -381,21 +479,75 @@ export function extractFontSizes(css: string): FontSizeEntry[] {
     const fontSizePattern = /font-size\s*:\s*([^;!]+)/gi;
     let sizeMatch;
     while ((sizeMatch = fontSizePattern.exec(block)) !== null) {
-      const value = sizeMatch[1].trim();
-      // Only include meaningful sizes (px, rem, em, pt, %)
-      if (/^[\d.]+(?:px|rem|em|pt|%)$/.test(value)) {
-        const key = `${selector}:${value}`;
+      const rawValue = sizeMatch[1].trim();
+      const resolved = resolveFontSizeValue(rawValue, css);
+      if (resolved) {
+        const key = `${selector}:${resolved}`;
         if (!seen.has(key)) {
           seen.add(key);
-          // Clean up selector for display (truncate long selectors)
           const cleanSelector = selector.length > 60 ? selector.slice(0, 57) + '...' : selector;
-          sizes.push({ value, selector: cleanSelector });
+          sizes.push({ value: resolved, selector: cleanSelector });
         }
       }
     }
   }
 
   return sizes;
+}
+
+/**
+ * Resolve a font-size CSS value to a displayable string.
+ * - Simple values: "36px", "2rem" → returned as-is
+ * - clamp(): extract the preferred (middle) value
+ * - calc(): extract the dominant size value
+ * - var(): attempt to resolve the variable from the CSS
+ *
+ * @param depth - recursion guard (max 5) to prevent infinite loops on circular CSS vars
+ */
+function resolveFontSizeValue(value: string, fullCss: string, depth = 0): string | null {
+  if (depth > 5) return null;
+  // Simple unit value
+  if (/^[\d.]+(?:px|rem|em|pt|%|vw|vh|vi|svw|dvw|cqi)$/.test(value)) {
+    return value;
+  }
+
+  // clamp(min, preferred, max) → extract the preferred (middle) value
+  const clampMatch = value.match(/clamp\(\s*[^,]+,\s*([^,]+),/);
+  if (clampMatch) {
+    const preferred = clampMatch[1].trim();
+    const resolved = resolveFontSizeValue(preferred, fullCss, depth + 1);
+    if (resolved) return `${resolved} (clamp)`;
+    return value;
+  }
+
+  // calc() → extract the largest numeric+unit part
+  const calcMatch = value.match(/calc\((.+)\)/);
+  if (calcMatch) {
+    const inner = calcMatch[1];
+    const tokens = inner.match(/[\d.]+(?:px|rem|em|pt|%|vw|vh)/g);
+    if (tokens && tokens.length > 0) {
+      return `${tokens[0]} (calc)`;
+    }
+  }
+
+  // var(--name) or var(--name, fallback) → resolve from CSS
+  const varMatch = value.match(/var\(\s*(--[\w-]+)(?:\s*,\s*([^)]+))?\)/);
+  if (varMatch) {
+    const varName = varMatch[1];
+    const fallback = varMatch[2]?.trim();
+    const defPattern = new RegExp(`${escapeRegex(varName)}\\s*:\\s*([^;]+)`, 'g');
+    const defMatch = defPattern.exec(fullCss);
+    if (defMatch) {
+      const resolved = resolveFontSizeValue(defMatch[1].trim(), fullCss, depth + 1);
+      if (resolved) return resolved;
+    }
+    if (fallback) {
+      const resolved = resolveFontSizeValue(fallback, fullCss, depth + 1);
+      if (resolved) return resolved;
+    }
+  }
+
+  return null;
 }
 
 // ─── Color Extraction ─────────────────────────────────
@@ -768,8 +920,10 @@ function rgbToHex(r: number, g: number, b: number): string {
 }
 
 /**
- * Filter out near-black (#000-#111) and near-white (#EEE-#FFF) colors
- * to avoid cluttering results with common CSS reset/base colors
+ * Filter out near-black and near-white colors to avoid cluttering results
+ * with common CSS reset/base colors. Uses tight thresholds to preserve
+ * dark brand colors (e.g. deep navy #1B2A4A) and light brand colors
+ * (e.g. cream #F5E6C8).
  */
 function isNearBlackOrWhite(hex: string): boolean {
   const clean = hex.replace('#', '').toUpperCase();
@@ -778,8 +932,8 @@ function isNearBlackOrWhite(hex: string): boolean {
   const g = parseInt(clean.slice(2, 4), 16);
   const b = parseInt(clean.slice(4, 6), 16);
   const avg = (r + g + b) / 3;
-  // Wider thresholds to filter out more near-black/near-white noise
-  return avg < 35 || avg > 225;
+  // Tight thresholds: only filter true black/white, not dark/light brand colors
+  return avg < 15 || avg > 245;
 }
 
 function escapeRegex(str: string): string {

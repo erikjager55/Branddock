@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
@@ -19,9 +19,53 @@ function createBlankLevel(): TypeScaleLevel {
   return { level: "", name: "", size: "", lineHeight: "", weight: "", color: "", usage: "" };
 }
 
+/**
+ * Build a Google Fonts CSS import URL for one or more font names.
+ * Returns null if no valid fonts are provided.
+ */
+function buildGoogleFontsUrl(fonts: string[]): string | null {
+  const valid = fonts.filter((f) => f && f.trim().length > 0);
+  if (valid.length === 0) return null;
+  const families = valid.map((f) => `family=${f.trim().replace(/\s+/g, '+')}:wght@100;200;300;400;500;600;700;800;900`);
+  return `https://fonts.googleapis.com/css2?${families.join('&')}&display=swap`;
+}
+
 export function TypographySection({ styleguide, canEdit }: TypographySectionProps) {
   const typeScale = (styleguide.typeScale ?? []) as TypeScaleLevel[];
   const updateTypography = useUpdateSection("typography");
+
+  // Stabilize the additional fonts array reference to avoid unnecessary useEffect re-runs
+  const additionalFontsKey = useMemo(
+    () => (styleguide.additionalFonts ?? []).join(','),
+    [styleguide.additionalFonts],
+  );
+
+  // Load fonts into the browser so previews render correctly.
+  // Injects a <link> to Google Fonts for the primary + additional fonts.
+  useEffect(() => {
+    const allFonts = [
+      styleguide.primaryFontName,
+      ...(styleguide.additionalFonts ?? []),
+    ].filter((f): f is string => !!f);
+
+    const googleUrl = buildGoogleFontsUrl(allFonts);
+    if (!googleUrl) return;
+
+    // Avoid duplicate links
+    const existingLink = document.querySelector(`link[data-brandstyle-fonts]`);
+    if (existingLink) existingLink.remove();
+
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = googleUrl;
+    link.setAttribute('data-brandstyle-fonts', 'true');
+    document.head.appendChild(link);
+
+    return () => {
+      link.remove();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [styleguide.primaryFontName, additionalFontsKey]);
 
   // Font editing state
   const [isEditingFont, setIsEditingFont] = useState(false);
@@ -336,6 +380,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                           fontSize: level.size,
                           fontWeight: level.weight,
                           lineHeight: level.lineHeight,
+                          fontFamily: styleguide.primaryFontName || undefined,
                         }}
                       >
                         {level.name}

@@ -540,9 +540,13 @@ function buildColorGroups(
   const seen = new Set<string>();
 
   // 1. Colors from CSS variables (highest confidence)
+  // Accept both :root and non-:root variables — many sites define colors in
+  // .dark, [data-theme], component scopes, or media queries.
+  // Prioritize :root first, then other contexts.
   const fromVariables: Array<{ name: string; hex: string }> = [];
-  for (const v of cssVariables) {
-    if (v.context !== 'root') continue;
+  const rootVars = cssVariables.filter((v) => v.context === 'root');
+  const otherVars = cssVariables.filter((v) => v.context !== 'root');
+  for (const v of [...rootVars, ...otherVars]) {
     const hex = extractHexFromValue(v.value);
     if (hex && !seen.has(hex)) {
       seen.add(hex);
@@ -605,7 +609,7 @@ function isTooSimilarToAny(hex: string, existingHexes: Set<string>): boolean {
   return false;
 }
 
-/** Extract a hex color from a CSS value (e.g., "#1FD1B2", "rgb(31, 209, 178)", "hsl(166, 74%, 47%)") */
+/** Extract a hex color from a CSS value (hex, rgb, hsl, oklch, lch, lab, color-mix) */
 function extractHexFromValue(value: string): string | null {
   // Hex colors (3, 4, 6, or 8 digits)
   const hexMatch = value.match(/#[0-9A-Fa-f]{3,8}\b/);
@@ -624,7 +628,18 @@ function extractHexFromValue(value: string): string | null {
     }
   }
 
-  // HSL/HSLA
+  // Modern RGB syntax: rgb(31 209 178) or rgb(31 209 178 / 0.5)
+  const rgbModernMatch = value.match(/rgba?\(\s*(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})/);
+  if (rgbModernMatch) {
+    const r = parseInt(rgbModernMatch[1]);
+    const g = parseInt(rgbModernMatch[2]);
+    const b = parseInt(rgbModernMatch[3]);
+    if (r <= 255 && g <= 255 && b <= 255) {
+      return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`.toUpperCase();
+    }
+  }
+
+  // HSL/HSLA (legacy comma syntax)
   const hslMatch = value.match(/hsla?\(\s*(\d{1,3})\s*,\s*(\d{1,3})%\s*,\s*(\d{1,3})%/);
   if (hslMatch) {
     const h = parseInt(hslMatch[1]);
@@ -635,7 +650,79 @@ function extractHexFromValue(value: string): string | null {
     }
   }
 
+  // HSL modern syntax: hsl(166 74% 47%) or hsl(166deg 74% 47%)
+  const hslModernMatch = value.match(/hsla?\(\s*([\d.]+)(?:deg)?\s+([\d.]+)%\s+([\d.]+)%/);
+  if (hslModernMatch) {
+    const h = Math.round(parseFloat(hslModernMatch[1]));
+    const s = Math.round(parseFloat(hslModernMatch[2]));
+    const l = Math.round(parseFloat(hslModernMatch[3]));
+    if (h <= 360 && s <= 100 && l <= 100) {
+      return hslToHex(h, s, l)?.toUpperCase() ?? null;
+    }
+  }
+
+  // OKLCH: oklch(0.7 0.15 180) or oklch(70% 0.15 180deg)
+  const oklchMatch = value.match(/oklch\(\s*([\d.]+)(%?)\s+([\d.]+)\s+([\d.]+)/);
+  if (oklchMatch) {
+    const L = oklchMatch[2] === '%' ? parseFloat(oklchMatch[1]) / 100 : parseFloat(oklchMatch[1]);
+    const C = parseFloat(oklchMatch[3]);
+    const H = parseFloat(oklchMatch[4]);
+    if (L >= 0 && L <= 1 && C >= 0 && C <= 0.5 && H >= 0 && H <= 360) {
+      return oklchToHex(L, C, H);
+    }
+  }
+
+  // LCH: lch(70% 50 180)
+  const lchMatch = value.match(/lch\(\s*([\d.]+)%?\s+([\d.]+)\s+([\d.]+)/);
+  if (lchMatch) {
+    const L = parseFloat(lchMatch[1]);
+    const C = parseFloat(lchMatch[2]);
+    const H = parseFloat(lchMatch[3]);
+    if (L >= 0 && L <= 100 && C >= 0 && H >= 0 && H <= 360) {
+      // Approximate LCH→sRGB via oklch conversion (close enough for palette extraction)
+      return oklchToHex(L / 100, C / 150, H);
+    }
+  }
+
+  // color-mix: color-mix(in srgb, #ff0000 50%, #0000ff)
+  // Extract the first color as approximation
+  const colorMixMatch = value.match(/color-mix\([^,]+,\s*([^,\s)]+)/);
+  if (colorMixMatch) {
+    return extractHexFromValue(colorMixMatch[1]);
+  }
+
   return null;
+}
+
+/** Convert OKLCH to hex (approximate sRGB conversion) */
+function oklchToHex(L: number, C: number, H: number): string | null {
+  // OKLCH → OKLab
+  const hRad = (H * Math.PI) / 180;
+  const a = C * Math.cos(hRad);
+  const b = C * Math.sin(hRad);
+
+  // OKLab → linear sRGB (approximate matrix)
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s_ = L - 0.0894841775 * a - 1.2914855480 * b;
+
+  const l3 = l_ * l_ * l_;
+  const m3 = m_ * m_ * m_;
+  const s3 = s_ * s_ * s_;
+
+  let r = +4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3;
+  let g = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3;
+  let bl = -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3;
+
+  // Gamma correction (linear → sRGB)
+  const gammaCorrect = (v: number) =>
+    v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+
+  r = Math.round(Math.min(255, Math.max(0, gammaCorrect(r) * 255)));
+  g = Math.round(Math.min(255, Math.max(0, gammaCorrect(g) * 255)));
+  bl = Math.round(Math.min(255, Math.max(0, gammaCorrect(bl) * 255)));
+
+  return `#${[r, g, bl].map((v) => v.toString(16).padStart(2, '0')).join('')}`.toUpperCase();
 }
 
 /** Convert HSL to hex */

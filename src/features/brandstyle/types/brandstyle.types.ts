@@ -226,6 +226,6 @@ export interface AiContextResponse {
   context: Record<string, unknown> | null;
 }
 
-export type StyleguideTab = "logo" | "colors" | "typography" | "tone_of_voice" | "imagery" | "design_language" | "visual_language";
+export type StyleguideTab = "logo" | "colors" | "typography" | "tone_of_voice" | "imagery" | "visual_system";
 
 export type SaveForAiSection = "logo" | "colors" | "typography" | "tone-of-voice" | "imagery" | "design-language" | "visual-language";

@@ -265,14 +265,25 @@ export function exportBrandstylePdf(styleguide: BrandStyleguide) {
   }
 
   // ═══════════════════════════════════════════════════════════════
-  // 6. DESIGN LANGUAGE
+  // 6. VISUAL SYSTEM (merged Design Language + Visual Language)
   // ═══════════════════════════════════════════════════════════════
+  const vl = styleguide.visualLanguage as { summary?: string; promptFragment?: string; cornerRadius?: { dominant?: string; radiusPx?: number }; shadow?: { style?: string; elevation?: string }; space?: { density?: string; whitespaceRatio?: number }; shape?: { primary?: string; angularity?: number } } | null;
   const hasDesignLanguage = styleguide.graphicElements || styleguide.patternsTextures
     || styleguide.iconographyStyle || styleguide.gradientsEffects
-    || styleguide.layoutPrinciples;
+    || styleguide.layoutPrinciples || vl;
 
   if (hasDesignLanguage) {
-    addSectionHeader('6. Design Language');
+    addSectionHeader('6. Visual System');
+
+    // Visual Language foundations
+    if (vl) {
+      addSubHeader('Foundations (detected from CSS)');
+      if (vl.summary) addField('Summary', vl.summary);
+      if (vl.cornerRadius) addField('Corners', `${vl.cornerRadius.dominant ?? 'unknown'} (${vl.cornerRadius.radiusPx ?? 0}px)`);
+      if (vl.shadow) addField('Shadows', `${vl.shadow.style ?? 'unknown'} — ${vl.shadow.elevation ?? 'unknown'} elevation`);
+      if (vl.shape) addField('Shapes', `${vl.shape.primary ?? 'unknown'} (angularity ${vl.shape.angularity ?? 0}/10)`);
+      if (vl.space) addField('Spacing', `${vl.space.density ?? 'unknown'} density, ${Math.round((vl.space.whitespaceRatio ?? 0) * 100)}% whitespace`);
+    }
 
     if (styleguide.graphicElements) {
       const ge = styleguide.graphicElements;

@@ -1118,8 +1118,9 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
       if (imgParts.length > 0) ctx.brandImageryStyle = imgParts.join('. ');
     }
 
-    // Design Language
-    if (styleguide.designLanguageSavedForAi) {
+    // Design Language — use visualLanguageSavedForAi as gate (merged Visual System tab)
+    // Backward compat: also accept the legacy designLanguageSavedForAi flag
+    if (styleguide.designLanguageSavedForAi || styleguide.visualLanguageSavedForAi) {
       const dlParts: string[] = [];
       const graphicEl = styleguide.graphicElements as { brandShapes?: string[]; decorativeElements?: string[]; visualDevices?: string[]; usageNotes?: string } | null;
       if (graphicEl) {
@@ -1180,6 +1181,13 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         ctx.brandVisualLanguage = vl.summary;
       }
     }
+
+    // Merged Visual System — combines design language + visual language into one context block.
+    // Used by downstream prompts as a single coherent visual identity reference.
+    const vsysParts: string[] = [];
+    if (ctx.brandVisualLanguage) vsysParts.push(ctx.brandVisualLanguage);
+    if (ctx.brandDesignLanguage) vsysParts.push(ctx.brandDesignLanguage);
+    if (vsysParts.length > 0) ctx.brandVisualSystem = vsysParts.join('\n\n');
   }
 
   // Competitor analysis

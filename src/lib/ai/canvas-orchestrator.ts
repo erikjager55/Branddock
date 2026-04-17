@@ -1061,7 +1061,7 @@ async function generateImages(
   const brandStyle = [
     brandContext.brandColors ? `Brand colors: ${brandContext.brandColors}.` : '',
     brandContext.brandImageryStyle ? `Imagery style: ${brandContext.brandImageryStyle}.` : '',
-    brandContext.brandDesignLanguage ? `Design language: ${brandContext.brandDesignLanguage}.` : '',
+    brandContext.brandVisualSystem ? `Visual system: ${brandContext.brandVisualSystem}.` : (brandContext.brandDesignLanguage ? `Design language: ${brandContext.brandDesignLanguage}.` : ''),
   ]
     .filter(Boolean)
     .join(' ');
