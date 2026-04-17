@@ -11,6 +11,18 @@ export interface ContentLibraryItem {
   isFavorite: boolean;
   wordCount: number | null;
   updatedAt: string;
+  /** User-set publish date (ISO timestamp); null when not yet scheduled */
+  scheduledPublishDate: string | null;
+  /** AI-suggested publish date (ISO timestamp); fallback for unscheduled items */
+  suggestedPublishDate: string | null;
+  /** Actual publish timestamp (ISO); set after publication completes */
+  publishedAt: string | null;
+  /** True when content is generated + approved — ready for publishing */
+  isPublishReady: boolean;
+  /** Human-readable hint about what's missing (null when publish-ready) */
+  readinessHint: string | null;
+  /** Journey phase (e.g. "awareness", "consideration", "conversion") */
+  phase: string | null;
 }
 
 export interface ContentLibraryStatsResponse {

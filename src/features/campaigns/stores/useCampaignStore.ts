@@ -8,21 +8,21 @@ interface CampaignStoreState {
   // ─── Overview ──────────────────────────────────────────────
   filterTab: 'all' | 'strategic' | 'quick' | 'completed';
   searchQuery: string;
-  viewMode: 'grid' | 'list';
+  viewMode: 'grid' | 'list' | 'calendar';
   setFilterTab: (tab: CampaignStoreState['filterTab']) => void;
   setSearchQuery: (q: string) => void;
-  setViewMode: (mode: 'grid' | 'list') => void;
+  setViewMode: (mode: 'grid' | 'list' | 'calendar') => void;
 
   // ─── Campaign Detail ──────────────────────────────────────
   selectedCampaignId: string | null;
   selectedDeliverableId: string | null;
   activeStrategySubTab: 'core-concept' | 'channel-mix' | 'target-audience' | 'deliverables' | 'timeline' | 'strategy' | 'channel-plan';
-  timelineViewMode: 'timeline' | 'grid';
+  timelineViewMode: 'timeline' | 'grid' | 'calendar';
   deliverablesViewMode: 'list' | 'board';
   setSelectedCampaignId: (id: string | null) => void;
   setSelectedDeliverableId: (id: string | null) => void;
   setActiveStrategySubTab: (tab: CampaignStoreState['activeStrategySubTab']) => void;
-  setTimelineViewMode: (mode: 'timeline' | 'grid') => void;
+  setTimelineViewMode: (mode: 'timeline' | 'grid' | 'calendar') => void;
   setDeliverablesViewMode: (mode: 'list' | 'board') => void;
 
   // ─── Reset ────────────────────────────────────────────────

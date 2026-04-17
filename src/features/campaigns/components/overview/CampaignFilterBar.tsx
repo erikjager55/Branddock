@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { LayoutGrid, List } from "lucide-react";
+import { Calendar, LayoutGrid, List } from "lucide-react";
 import { SearchInput, Button } from "@/components/shared";
 import { useCampaignStore } from "../../stores/useCampaignStore";
 
@@ -60,6 +60,14 @@ export function CampaignFilterBar() {
           size="sm"
           icon={List}
           onClick={() => setViewMode("list")}
+          className="!p-1.5"
+        />
+        <Button
+          data-testid="campaign-view-calendar"
+          variant={viewMode === "calendar" ? "primary" : "ghost"}
+          size="sm"
+          icon={Calendar}
+          onClick={() => setViewMode("calendar")}
           className="!p-1.5"
         />
       </div>

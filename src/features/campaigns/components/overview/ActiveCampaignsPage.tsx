@@ -9,6 +9,7 @@ import { CampaignStatsCards } from "./CampaignStatsCards";
 import { CampaignFilterBar } from "./CampaignFilterBar";
 import { CampaignGrid } from "./CampaignGrid";
 import { CampaignList } from "./CampaignList";
+import { CampaignsOverviewCalendarView } from "./CampaignsOverviewCalendarView";
 import { DraftCampaignsList } from "./DraftCampaignsList";
 import { DraftPickerModal } from "./DraftPickerModal";
 import {
@@ -168,7 +169,7 @@ export function ActiveCampaignsPage({
         {/* Filters */}
         <CampaignFilterBar />
 
-        {/* Grid / List */}
+        {/* Grid / List / Calendar */}
         {viewMode === "grid" ? (
             <CampaignGrid
             campaigns={campaigns}
@@ -177,13 +178,18 @@ export function ActiveCampaignsPage({
             onArchive={(id) => archiveCampaign.mutate(id)}
             onDelete={(id) => deleteCampaign.mutate(id)}
           />
-        ) : (
+        ) : viewMode === "list" ? (
           <CampaignList
             campaigns={campaigns}
             isLoading={isLoading}
             onCampaignClick={handleCampaignClick}
             onArchive={(id) => archiveCampaign.mutate(id)}
             onDelete={(id) => deleteCampaign.mutate(id)}
+          />
+        ) : (
+          <CampaignsOverviewCalendarView
+            campaigns={campaigns ?? []}
+            onSelectCampaign={handleCampaignClick}
           />
         )}
       </div>

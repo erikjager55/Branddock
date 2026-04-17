@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
 import { z } from "zod";
 import { requireUnlocked } from "@/lib/lock-guard";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 
 // ---------------------------------------------------------------------------
 // GET /api/campaigns/[id] — Campaign detail with all relations
@@ -108,8 +110,8 @@ const patchSchema = z.object({
   description: z.string().optional(),
   status: z.enum(["ACTIVE", "COMPLETED", "ARCHIVED"]).optional(),
   campaignGoalType: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  startDate: z.string().datetime().nullable().optional(),
+  endDate: z.string().datetime().nullable().optional(),
 });
 
 export async function PATCH(
@@ -152,10 +154,14 @@ export async function PATCH(
         ...(description !== undefined && { description }),
         ...(status !== undefined && { status }),
         ...(campaignGoalType !== undefined && { campaignGoalType }),
-        ...(startDate !== undefined && { startDate: new Date(startDate) }),
-        ...(endDate !== undefined && { endDate: new Date(endDate) }),
+        ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
+        ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }),
       },
     });
+
+    // Invalidate caches affected by date / status / metadata changes
+    invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json({
       id: updated.id,

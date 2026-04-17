@@ -27,6 +27,10 @@ export interface CampaignSummary {
   createdBy: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Campaign start date (ISO timestamp); null when not yet scheduled */
+  startDate: string | null;
+  /** Campaign end date (ISO timestamp); null when open-ended */
+  endDate: string | null;
   // Aggregated counts
   knowledgeAssetCount: number;
   deliverableCount: number;
@@ -95,6 +99,8 @@ export interface DeliverableResponse {
   approvedBy: string | null;
   approvedAt: string | null;
   publishedAt: string | null;
+  /** ISO timestamp when this deliverable is scheduled to publish; null when unscheduled */
+  scheduledPublishDate: string | null;
   derivedFromId: string | null;
   createdAt: string;
   updatedAt: string;

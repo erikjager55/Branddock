@@ -8,7 +8,7 @@ interface ContentLibraryState {
   campaignFilter: string | null;
   statusFilter: string | null;
   sort: string;
-  viewMode: "grid" | "list";
+  viewMode: "grid" | "list" | "calendar";
   groupByCampaign: boolean;
   showFavorites: boolean;
   selectedIds: string[];
@@ -17,7 +17,7 @@ interface ContentLibraryState {
   setCampaignFilter: (f: string | null) => void;
   setStatusFilter: (f: string | null) => void;
   setSort: (s: string) => void;
-  setViewMode: (m: "grid" | "list") => void;
+  setViewMode: (m: "grid" | "list" | "calendar") => void;
   toggleGroupByCampaign: () => void;
   setShowFavorites: (v: boolean) => void;
   toggleShowFavorites: () => void;

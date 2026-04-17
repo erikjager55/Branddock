@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { invalidateCache } from "@/lib/api/cache";
+import { cacheKeys } from "@/lib/api/cache-keys";
 import { z } from "zod";
 
 // ---------------------------------------------------------------------------
@@ -13,6 +15,8 @@ const patchDeliverableSchema = z.object({
   progress: z.number().min(0).max(100).optional(),
   assignedTo: z.string().nullable().optional(),
   contentTypeInputs: z.record(z.string(), z.union([z.string(), z.array(z.string()), z.number(), z.boolean()])).optional(),
+  /** ISO datetime to schedule a publish; null clears the scheduled date */
+  scheduledPublishDate: z.string().datetime().nullable().optional(),
 });
 
 export async function PATCH(
@@ -52,7 +56,7 @@ export async function PATCH(
       );
     }
 
-    const { title, status, progress, assignedTo, contentTypeInputs } = parsed.data;
+    const { title, status, progress, assignedTo, contentTypeInputs, scheduledPublishDate } = parsed.data;
 
     // Merge contentTypeInputs into existing settings Json field
     let settingsUpdate: Record<string, unknown> | undefined;
@@ -72,8 +76,15 @@ export async function PATCH(
         ...(progress !== undefined && { progress }),
         ...(assignedTo !== undefined && { assignedTo }),
         ...(settingsUpdate !== undefined && { settings: settingsUpdate as Prisma.InputJsonValue }),
+        ...(scheduledPublishDate !== undefined && {
+          scheduledPublishDate: scheduledPublishDate ? new Date(scheduledPublishDate) : null,
+        }),
       },
     });
+
+    // Invalidate caches affected by this change (campaign list/detail + dashboard)
+    invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json({
       id: updated.id,
@@ -84,6 +95,7 @@ export async function PATCH(
       qualityScore: updated.qualityScore,
       assignedTo: updated.assignedTo,
       isFavorite: updated.isFavorite,
+      scheduledPublishDate: updated.scheduledPublishDate?.toISOString() ?? null,
       createdAt: updated.createdAt.toISOString(),
       updatedAt: updated.updatedAt.toISOString(),
     });
@@ -125,6 +137,9 @@ export async function DELETE(
     }
 
     await prisma.deliverable.delete({ where: { id: did } });
+
+    invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
+    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json({ success: true });
   } catch (error) {

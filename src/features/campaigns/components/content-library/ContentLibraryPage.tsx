@@ -24,6 +24,7 @@ import { ContentFilterBar } from "./ContentFilterBar";
 import { ContentCardGrid } from "./ContentCardGrid";
 import { ContentCardList } from "./ContentCardList";
 import { ContentGroupHeader } from "./ContentGroupHeader";
+import { ContentLibraryCalendarView } from "./ContentLibraryCalendarView";
 import { DraftCampaignsList } from "../overview/DraftCampaignsList";
 
 // ─── Types ────────────────────────────────────────────────
@@ -137,6 +138,18 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
     } catch { /* silent */ }
   }, [qc]);
 
+  const handleRenameContent = useCallback(async (deliverableId: string, campaignId: string, newTitle: string) => {
+    try {
+      const res = await fetch(`/api/campaigns/${campaignId}/deliverables/${deliverableId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newTitle }),
+      });
+      if (!res.ok) return;
+      qc.invalidateQueries({ queryKey: ['content-library'] });
+    } catch { /* silent */ }
+  }, [qc]);
+
   // ── Render ──
 
   const renderContent = () => {
@@ -155,11 +168,23 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
         <EmptyState
           icon={Library}
           title="No content found"
-          description="Create a campaign to start generating content, or adjust your filters."
+          description="Create content to start generating, or adjust your filters."
           action={{
-            label: "Create Campaign",
-            onClick: () => onNavigate("new-campaign"),
+            label: "Create Content",
+            onClick: () => setShowAddContentModal(true),
           }}
+        />
+      );
+    }
+
+    // Calendar view (overrides grouped + flat)
+    if (viewMode === "calendar") {
+      return (
+        <ContentLibraryCalendarView
+          items={items}
+          onOpenItem={handleOpenInStudio}
+          onDeleteItem={handleDeleteContent}
+          onRenameItem={handleRenameContent}
         />
       );
     }
@@ -188,12 +213,15 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
                       onOpenInStudio={handleOpenInStudio}
                       onToggleFavorite={handleToggleFavorite}
                       onDelete={handleDeleteContent}
+                      onRename={handleRenameContent}
                     />
                   ) : (
                     <ContentCardList
                       items={group.items}
                       onOpenInStudio={handleOpenInStudio}
                       onToggleFavorite={handleToggleFavorite}
+                      onDelete={handleDeleteContent}
+                      onRename={handleRenameContent}
                     />
                   ))}
               </div>
@@ -211,6 +239,7 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
           onOpenInStudio={handleOpenInStudio}
           onToggleFavorite={handleToggleFavorite}
           onDelete={handleDeleteContent}
+          onRename={handleRenameContent}
         />
       );
     }
@@ -220,6 +249,8 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
         items={items}
         onOpenInStudio={handleOpenInStudio}
         onToggleFavorite={handleToggleFavorite}
+        onDelete={handleDeleteContent}
+        onRename={handleRenameContent}
       />
     );
   };

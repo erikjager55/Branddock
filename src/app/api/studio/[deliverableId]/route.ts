@@ -78,6 +78,8 @@ export async function GET(
         approvedBy: deliverable.approvedBy ?? null,
         approvedAt: deliverable.approvedAt?.toISOString() ?? null,
         publishedAt: deliverable.publishedAt?.toISOString() ?? null,
+        scheduledPublishDate: deliverable.scheduledPublishDate?.toISOString() ?? null,
+        suggestedPublishDate: deliverable.suggestedPublishDate?.toISOString() ?? null,
       },
       campaign: {
         id: deliverable.campaign.id,

@@ -414,6 +414,39 @@ export function useToggleContentFavorite(): UseMutationResult<
   });
 }
 
+/**
+ * Update a deliverable's scheduled publish date (used by calendar drag & drop).
+ * Pass `scheduledPublishDate: null` to clear the date.
+ */
+export function useUpdateDeliverableSchedule(): UseMutationResult<
+  void,
+  Error,
+  { deliverableId: string; campaignId: string; scheduledPublishDate: string | null }
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ deliverableId, campaignId, scheduledPublishDate }) => {
+      const res = await fetch(
+        `/api/campaigns/${campaignId}/deliverables/${deliverableId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scheduledPublishDate }),
+        },
+      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Failed to update schedule");
+      }
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: contentLibraryKeys.all });
+      qc.invalidateQueries({ queryKey: campaignKeys.detail(variables.campaignId) });
+      qc.invalidateQueries({ queryKey: campaignKeys.deliverables(variables.campaignId) });
+    },
+  });
+}
+
 // ─── Campaign Wizard Hooks ────────────────────────────────
 
 export function useWizardKnowledge() {

@@ -101,20 +101,51 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const items = deliverables.map((d) => ({
-      id: d.id,
-      title: d.title,
-      type: d.contentType,
-      typeCategory: getTypeCategory(d.contentType),
-      status: d.status as "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED",
-      qualityScore: d.qualityScore,
-      campaignId: d.campaign.id,
-      campaignName: d.campaign.title,
-      campaignType: d.campaign.type as "STRATEGIC" | "QUICK",
-      isFavorite: d.isFavorite,
-      wordCount: computeWordCount(d.generatedText),
-      updatedAt: d.updatedAt.toISOString(),
-    }));
+    const items = deliverables.map((d) => {
+      // Determine publish readiness
+      const hasContent =
+        d.generatedText != null ||
+        (Array.isArray(d.generatedImageUrls) && d.generatedImageUrls.length > 0) ||
+        d.generatedVideoUrl != null;
+      const isApproved =
+        d.approvalStatus === "APPROVED" || d.approvalStatus === "PUBLISHED";
+      const isPipelineComplete = d.pipelineStatus === "COMPLETE";
+      const isPublishReady = hasContent && isApproved;
+
+      // Build a human-readable hint about what's missing
+      const hints: string[] = [];
+      if (!hasContent) hints.push("No content generated");
+      if (!isPipelineComplete && hasContent) hints.push("Pipeline incomplete");
+      if (!isApproved) hints.push(d.approvalStatus === "DRAFT" ? "Not reviewed" : `Status: ${d.approvalStatus ?? "DRAFT"}`);
+      const readinessHint = hints.length > 0 ? hints.join(" · ") : null;
+
+      return {
+        id: d.id,
+        title: d.title,
+        type: d.contentType,
+        typeCategory: getTypeCategory(d.contentType),
+        status: d.status as "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED",
+        qualityScore: d.qualityScore,
+        campaignId: d.campaign.id,
+        campaignName: d.campaign.title,
+        campaignType: d.campaign.type as "STRATEGIC" | "QUICK",
+        isFavorite: d.isFavorite,
+        wordCount: computeWordCount(d.generatedText),
+        updatedAt: d.updatedAt.toISOString(),
+        // Calendar view date fields
+        scheduledPublishDate: d.scheduledPublishDate?.toISOString() ?? null,
+        suggestedPublishDate: d.suggestedPublishDate?.toISOString() ?? null,
+        publishedAt: d.publishedAt?.toISOString() ?? null,
+        // Publish readiness
+        isPublishReady,
+        readinessHint,
+        phase: d.journeyPhase
+          ?? (typeof d.settings === "object" && d.settings !== null && !Array.isArray(d.settings)
+            ? (d.settings as Record<string, unknown>).phase as string | undefined
+            : undefined)
+          ?? null,
+      };
+    });
 
     return NextResponse.json(items);
   } catch (error) {

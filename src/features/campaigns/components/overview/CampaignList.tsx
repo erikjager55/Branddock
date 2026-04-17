@@ -1,10 +1,12 @@
 "use client";
 
-import React from "react";
-import { EmptyState, Badge, ProgressBar } from "@/components/shared";
-import { Megaphone } from "lucide-react";
+import React, { useState } from "react";
+import { EmptyState, ProgressBar } from "@/components/shared";
+import { CalendarDays, Megaphone } from "lucide-react";
 import { CampaignOverflowMenu } from "./CampaignOverflowMenu";
 import { CampaignTypePill } from "../shared/CampaignTypePill";
+import { DeleteConfirmModal } from "../shared/DeleteConfirmModal";
+import { deriveCampaignTrafficLight, TRAFFIC_LIGHT } from "../../lib/campaign-readiness";
 import type { CampaignSummary } from "@/types/campaign";
 
 interface CampaignListProps {
@@ -15,6 +17,13 @@ interface CampaignListProps {
   onDelete: (id: string) => void;
 }
 
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function CampaignList({
   campaigns,
   isLoading,
@@ -23,6 +32,7 @@ export function CampaignList({
   onDelete,
 }: CampaignListProps) {
   const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; title: string } | null>(null);
 
   if (isLoading) {
     return (
@@ -45,15 +55,31 @@ export function CampaignList({
   }
 
   return (
-    <div className="bg-white rounded-lg border divide-y">
+    <>
+    {deleteTarget && (
+      <DeleteConfirmModal
+        title={deleteTarget.title}
+        onConfirm={() => onDelete(deleteTarget.id)}
+        onCancel={() => setDeleteTarget(null)}
+      />
+    )}
+    <div className="bg-white rounded-lg border divide-y overflow-hidden">
       {/* Header */}
-      <div className="grid grid-cols-12 gap-4 px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider">
-        <div className="col-span-4">Campaign</div>
-        <div className="col-span-2">Type</div>
-        <div className="col-span-2">Status</div>
-        <div className="col-span-2">Progress</div>
-        <div className="col-span-1">Content</div>
-        <div className="col-span-1" />
+      <div
+        className="gap-4 px-4 py-2.5 text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "6px 1fr 120px 110px 140px 80px 80px 60px",
+        }}
+      >
+        <div />
+        <div>Campaign</div>
+        <div>Type</div>
+        <div>Readiness</div>
+        <div>Progress</div>
+        <div>Content</div>
+        <div>Scheduled</div>
+        <div />
       </div>
 
       {/* Rows */}
@@ -61,33 +87,55 @@ export function CampaignList({
         const progress = campaign.deliverableCount > 0
           ? Math.round((campaign.completedDeliverableCount / campaign.deliverableCount) * 100)
           : 0;
+        const { light, label: lightLabel } = deriveCampaignTrafficLight(campaign);
+        const tl = TRAFFIC_LIGHT[light];
 
         return (
           <div
             key={campaign.id}
+            role="button"
+            tabIndex={0}
             onClick={() => onCampaignClick(campaign.id)}
-            className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-gray-50 cursor-pointer transition-colors"
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCampaignClick(campaign.id); } }}
+            className="gap-4 px-4 py-3 items-center hover:brightness-95 cursor-pointer transition-all"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "6px 1fr 120px 110px 140px 80px 80px 60px",
+              backgroundColor: tl.bg,
+            }}
           >
-            <div className="col-span-4">
+            {/* Traffic light stripe */}
+            <div
+              className="w-1.5 h-full rounded-full self-stretch"
+              style={{ backgroundColor: tl.stripe }}
+            />
+
+            {/* Campaign title + description */}
+            <div className="min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">{campaign.title}</p>
               {campaign.description && (
                 <p className="text-xs text-gray-500 truncate">{campaign.description}</p>
               )}
             </div>
-            <div className="col-span-2">
+
+            {/* Type */}
+            <div className="overflow-hidden">
               <CampaignTypePill type={campaign.type} confidence={campaign.confidence} />
             </div>
-            <div className="col-span-2">
-              <Badge
-                variant={
-                  campaign.status === "COMPLETED" ? "success" :
-                  campaign.status === "ACTIVE" ? "default" : "warning"
-                }
+
+            {/* Readiness (traffic light pill) */}
+            <div className="overflow-hidden">
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                style={{ backgroundColor: `${tl.stripe}18`, color: tl.text }}
               >
-                {campaign.status === "ACTIVE" ? "Active" : campaign.status === "COMPLETED" ? "Completed" : "Archived"}
-              </Badge>
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tl.dot }} />
+                {lightLabel}
+              </span>
             </div>
-            <div className="col-span-2">
+
+            {/* Progress */}
+            <div className="overflow-hidden">
               <div className="flex items-center gap-2">
                 <div className="flex-1">
                   <ProgressBar value={progress} color="emerald" size="sm" />
@@ -95,18 +143,35 @@ export function CampaignList({
                 <span className="text-xs text-gray-500 w-8">{progress}%</span>
               </div>
             </div>
-            <div className="col-span-1">
+
+            {/* Content count */}
+            <div>
               <span className="text-sm text-gray-700">{campaign.deliverableCount}</span>
             </div>
-            <div className="col-span-1 flex justify-end">
+
+            {/* Scheduled date */}
+            <div className="overflow-hidden">
+              {campaign.startDate ? (
+                <span className="inline-flex items-center gap-1 text-xs text-teal-600">
+                  <CalendarDays className="w-3 h-3" />
+                  {formatDate(campaign.startDate)}
+                </span>
+              ) : (
+                <span className="text-xs text-gray-400">—</span>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
               <CampaignOverflowMenu
                 onArchive={() => onArchive(campaign.id)}
-                onDelete={() => onDelete(campaign.id)}
+                onDelete={() => setDeleteTarget({ id: campaign.id, title: campaign.title })}
               />
             </div>
           </div>
         );
       })}
     </div>
+    </>
   );
 }

@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ArrowLeft } from 'lucide-react';
 import type { ApprovalStatus } from '../../types/canvas.types';
+import { VIDEO_ADJACENT_TYPES, getDefaultVideoConfig } from '../../lib/deliverable-types';
 
 interface CanvasPageProps {
   deliverableId: string;
@@ -42,6 +43,10 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
         // Update store with the real contentType (initial 'canvas' is a placeholder)
         if (d.contentType) {
           useCanvasStore.getState().setDeliverable(deliverableId, d.contentType);
+          // Auto-set video config defaults for video-adjacent types
+          if (VIDEO_ADJACENT_TYPES.has(d.contentType)) {
+            useCanvasStore.getState().setConceptVideoConfig(getDefaultVideoConfig(d.contentType));
+          }
         }
         useCanvasStore.getState().setApprovalState({
           approvalStatus: (d.approvalStatus ?? 'DRAFT') as ApprovalStatus,
@@ -50,6 +55,17 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           approvedAt: d.approvedAt ?? null,
           publishedAt: d.publishedAt ?? null,
         });
+        // Sync scheduledPublishDate from DB → Canvas store (calendar may have set it)
+        if (d.scheduledPublishDate) {
+          const sd = new Date(d.scheduledPublishDate);
+          const yyyy = sd.getFullYear();
+          const mm = String(sd.getMonth() + 1).padStart(2, '0');
+          const dd = String(sd.getDate()).padStart(2, '0');
+          const hh = String(sd.getHours()).padStart(2, '0');
+          const min = String(sd.getMinutes()).padStart(2, '0');
+          useCanvasStore.getState().setScheduledDate(`${yyyy}-${mm}-${dd}`);
+          useCanvasStore.getState().setScheduledTime(`${hh}:${min}`);
+        }
       })
       .catch((err) => {
         if ((err as Error).name === 'AbortError') return;
@@ -138,6 +154,18 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
         };
       });
       storeState.addVariantGroup(group, variants);
+    }
+
+    // Hydrate concept video from existing component
+    const videoComp = existingComponents.find(
+      (c) => c.variantGroup === 'concept-video' && c.videoUrl,
+    );
+    if (videoComp?.videoUrl) {
+      storeState.setConceptVideoResult(
+        videoComp.videoUrl,
+        videoComp.generatedContent ?? videoComp.imagePromptUsed ?? '',
+        videoComp.aiModel ?? '',
+      );
     }
 
     // Content already exists — jump straight to step 2 so the user sees

@@ -11,6 +11,7 @@ import {
   Lightbulb,
   CalendarDays,
   CalendarRange,
+  Calendar,
   LayoutGrid,
   Plus,
 } from "lucide-react";
@@ -20,6 +21,7 @@ import { StrategySection } from "./strategy/StrategySection";
 import { ChannelPlanSection } from "./strategy/ChannelPlanSection";
 import { DeploymentTimelineSection } from "./strategy/DeploymentTimelineSection";
 import { DeploymentGridView } from "./strategy/DeploymentGridView";
+import { DeploymentCalendarView } from "./strategy/DeploymentCalendarView";
 import { CanvasStatsBar } from "./strategy/CanvasStatsBar";
 import { BulkActionBar } from "./strategy/BulkActionBar";
 import { RegenerateSectionButton } from "./strategy/RegenerateSectionButton";
@@ -92,6 +94,20 @@ export function StrategyResultTab({
       const key = d.title.trim().toLowerCase();
       if (!map.has(key)) {
         map.set(key, d.status);
+      }
+    }
+    return map;
+  }, [deliverables]);
+
+  // Build deliverable title → DB record map for drag-and-drop scheduling
+  // (provides id + scheduledPublishDate so calendar can write back via PATCH)
+  const deliverableDbLookup = React.useMemo(() => {
+    if (!deliverables?.length) return undefined;
+    const map = new Map<string, { id: string; scheduledPublishDate: string | null }>();
+    for (const d of deliverables) {
+      const key = d.title.trim().toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, { id: d.id, scheduledPublishDate: d.scheduledPublishDate });
       }
     }
     return map;
@@ -324,6 +340,18 @@ export function StrategyResultTab({
                       <LayoutGrid className="w-3.5 h-3.5" />
                       Grid
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setTimelineViewMode("calendar")}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                        timelineViewMode === "calendar"
+                          ? "bg-primary-50 text-primary-700 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      <Calendar className="w-3.5 h-3.5" />
+                      Calendar
+                    </button>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -347,7 +375,7 @@ export function StrategyResultTab({
                   campaignStartDate={campaignStartDate}
                   deliverableStatuses={deliverableStatuses}
                 />
-              ) : (
+              ) : timelineViewMode === "grid" ? (
                 <DeploymentGridView
                   assetPlan={effectiveAssetPlan}
                   architecture={blueprint.architecture}
@@ -357,6 +385,18 @@ export function StrategyResultTab({
                   campaignStartDate={campaignStartDate}
                   deliverableStatuses={deliverableStatuses}
                   deliverables={deliverables}
+                  campaignId={campaignId}
+                />
+              ) : (
+                <DeploymentCalendarView
+                  assetPlan={effectiveAssetPlan}
+                  architecture={blueprint.architecture}
+                  channelPlan={blueprint.channelPlan}
+                  onBringToLife={onBringToLife}
+                  onDeleteDeliverable={handleDeleteDeliverable}
+                  campaignStartDate={campaignStartDate}
+                  deliverableStatuses={deliverableStatuses}
+                  deliverableDbLookup={deliverableDbLookup}
                   campaignId={campaignId}
                 />
               )}
