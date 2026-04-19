@@ -79,6 +79,24 @@ export function useRecommendedActions() {
   });
 }
 
+// ─── 6b. useValidateMethod ──────────────────────────────────
+
+/** Mark a research method as VALIDATED. Refetches the hub data so the
+ *  validated item disappears from "pending" and the insights/actions
+ *  recompute against the new state. */
+export function useValidateMethod() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (itemId: string) => api.validateMethod(itemId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: researchKeys.pending() });
+      queryClient.invalidateQueries({ queryKey: researchKeys.insights() });
+      queryClient.invalidateQueries({ queryKey: researchKeys.recommended() });
+      queryClient.invalidateQueries({ queryKey: researchKeys.stats() });
+    },
+  });
+}
+
 // ─── 7. useBundles ──────────────────────────────────────────
 
 export function useBundles() {

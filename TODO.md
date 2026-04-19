@@ -176,16 +176,17 @@
 - [x] Pending validation — brand assets + personas with AI_EXPLORATION COMPLETED but not yet VALIDATED, sorted recent-first, capped at 10
 - [x] Recommended actions — heuristic priority: unexplored brand asset → unexplored persona → empty active strategy; fallback "All caught up"
 
-### 5.2 Research Validation Flow
+### 5.2 Research Validation Flow ✅ DONE (2026-04-19)
 
-- [ ] Echte validation flow `src/app/api/research/validate/[assetId]/route.ts` (nu: 501)
-- [ ] Koppel aan research methods + brand assets
+- [x] `/api/research/validate/[assetId]` POST — parses `ba-{methodId}` / `p-{methodId}` discriminator, transitions COMPLETED → VALIDATED on the right table, enforces workspace ownership
+- [x] `validateMethod()` API client + `useValidateMethod()` mutation hook with cache invalidation across pending/insights/recommended/stats queries
+- [x] `ValidationNeededSection` Validate button now calls the mutation with per-item loading state and error display
 
-### 5.3 Strategy ↔ Campaign Linking
+### 5.3 Strategy ↔ Campaign Linking ✅ DONE (2026-04-19)
 
-- [ ] `src/app/api/strategies/[id]/link-campaign/route.ts` (nu: 501)
-- [ ] `src/app/api/strategies/[id]/unlink-campaign/[campId]/route.ts` (nu: 501)
-- [ ] UI: LinkedCampaignsSection in strategy detail (nu: EmptyState stub)
+- [x] `/api/strategies/[id]/link-campaign` POST — already implemented (Zod-validated, workspace-scoped, lock-guarded, upserts CampaignStrategy)
+- [x] `/api/strategies/[id]/unlink-campaign/[campId]` DELETE — already implemented (workspace + lock check, deleteMany)
+- [x] `LinkedCampaignsSection` UI — already wired with useLinkCampaign / useUnlinkCampaign / useSearchCampaigns. TODO entries were stale.
 
 ### 5.4 Billing + Connected Accounts Stubs
 

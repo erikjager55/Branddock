@@ -54,6 +54,26 @@ export async function fetchRecommendedActions(): Promise<{ actions: RecommendedA
   return res.json();
 }
 
+export interface ValidateMethodResponse {
+  validated: true;
+  kind: "BRAND_ASSET" | "PERSONA";
+  methodId: string;
+  assetId: string;
+}
+
+/** Mark a research method as VALIDATED. `itemId` is the prefixed id from
+ *  PendingValidationItem ('ba-{id}' or 'p-{id}'). */
+export async function validateMethod(itemId: string): Promise<ValidateMethodResponse> {
+  const res = await fetch(`${BASE}/validate/${encodeURIComponent(itemId)}`, {
+    method: "POST",
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.error ?? "Failed to validate research method");
+  }
+  return res.json();
+}
+
 // ─── Bundles ────────────────────────────────────────────────
 
 export async function fetchBundles(): Promise<BundleListResponse> {
