@@ -68,44 +68,43 @@ export function GoalsMotivationsCards({ persona, isEditing, onUpdate }: GoalsMot
       {CARDS.map(({ key, title, subtitle, placeholder, icon: Icon, iconBg, iconColor, checkColor, subCardBg, subCardBorder }) => (
         <div
           key={key}
-          className="rounded-xl border border-gray-200 bg-white p-4"
+          className="flex flex-col rounded-xl border border-gray-200 bg-white p-4"
         >
-          {/* Row 1: icon */}
+          {/* Header */}
           <div className="mb-3">
             <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center flex-shrink-0`}>
               <Icon className={`w-5 h-5 ${iconColor}`} />
             </div>
           </div>
 
-          {/* Row 2: title */}
           <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-
-          {/* Row 3: subtitle */}
           <p className="text-sm text-gray-500 mt-0.5 mb-3">{subtitle}</p>
 
-          {/* Items sub-card */}
-          {isEditing ? (
-            <RepeatableListInput
-              items={persona[key]}
-              onChange={(items) => onUpdate({ [key]: items })}
-              placeholder={placeholder}
-            />
-          ) : persona[key].length > 0 ? (
-            <div className={`rounded-xl border ${subCardBorder} ${subCardBg} p-4`}>
-              <ul className="space-y-2">
-                {persona[key].map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-                    <CheckCircle className={`w-4 h-4 ${checkColor} mt-0.5 shrink-0`} />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-300 italic">None defined</p>
-          )}
+          {/* Items sub-card — grows to fill available height so all cards align */}
+          <div className="flex-1 min-h-0">
+            {isEditing ? (
+              <RepeatableListInput
+                items={persona[key]}
+                onChange={(items) => onUpdate({ [key]: items })}
+                placeholder={placeholder}
+              />
+            ) : persona[key].length > 0 ? (
+              <div className={`h-full rounded-xl border ${subCardBorder} ${subCardBg} p-4`}>
+                <ul className="space-y-2">
+                  {persona[key].map((item, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                      <CheckCircle className={`w-4 h-4 ${checkColor} mt-0.5 shrink-0`} />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-300 italic">None defined</p>
+            )}
+          </div>
 
-          {/* Count footer */}
+          {/* Count footer — pinned to bottom */}
           <div className="mt-3 pt-3 border-t border-gray-100">
             <div className="flex items-center gap-1.5 text-xs text-gray-400">
               <CheckCircle className="w-3.5 h-3.5" />

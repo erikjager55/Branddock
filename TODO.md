@@ -293,11 +293,11 @@
 - [ ] Delete `src/lib/api/mock-to-meta-adapter.ts` na migratie
 - [ ] Evalueer of `brand-asset-adapter.ts` en `persona-adapter.ts` nog nodig zijn
 
-### 9.3 UI Polish — Persona (PSR.6-8)
+### 9.3 UI Polish — Persona (PSR.6-8) ✅ DONE (2026-04-19)
 
-- [ ] PSR.6: Layout Optimalisatie Fase 2 (grid containment, sidebar volgorde, demographics 3×2, sub-grid)
-- [ ] PSR.7: AI Persona Analysis Redesign (chat restyling, rapport, veldsuggesties)
-- [ ] PSR.8: Foto Generatie Fix (echte Gemini API i.p.v. DiceBear stub)
+- [x] PSR.6: Layout Optimalisatie Fase 2 — sidebar volgorde (Research → Completeness → Implications → Quick Actions), `ResearchSidebarCard` border-dashed → solid met status-tints, `GoalsMotivationsCards` flex-col + flex-1 voor uniforme heights. min-w-0 + 3-col Demographics + empty-state early returns bleken al aanwezig.
+- [x] PSR.7: AI Persona Analysis Redesign — inspectie wees uit dat de redesign al volledig in code zat: teal/emerald chat bubbles met asymmetrische radii, rapport met Executive Summary + Key Findings + Strategic Recommendations, FieldSuggestionCard met accept/reject/edit. TODO entry was stale.
+- [x] PSR.8: Foto Generatie Fix — Gemini 2.5 Flash Image API al geïmplementeerd, DiceBear alleen als fallback bij geen key / API-error, in `/api/personas/[id]/generate-image`.
 
 ### 9.4 Mock Data Fallbacks
 

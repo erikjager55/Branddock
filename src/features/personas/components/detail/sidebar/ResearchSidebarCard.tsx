@@ -47,10 +47,12 @@ export function ResearchSidebarCard({ persona, onStartMethod, isLocked = false }
           return (
             <div
               key={config.method}
-              className={`p-3 rounded-xl border border-dashed transition-colors ${
+              className={`p-3 rounded-xl border transition-colors ${
                 isCompleted
                   ? 'bg-emerald-50 border-emerald-200'
-                  : 'bg-white border-gray-200 hover:border-gray-300'
+                  : isInProgress
+                    ? 'bg-blue-50/50 border-blue-200'
+                    : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50/50'
               }`}
             >
               <div className="flex items-start gap-3">

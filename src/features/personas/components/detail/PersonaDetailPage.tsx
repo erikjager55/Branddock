@@ -276,9 +276,29 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
             </div>
           </div>
 
-          {/* Sidebar — right column (1/3), sticky */}
+          {/* Sidebar — right column (1/3), sticky.
+              Order: primary research actions first, then validation state,
+              then strategic output, then secondary actions (chat/export/delete). */}
           <div className="min-w-0">
             <div className="md:sticky md:top-6 space-y-4">
+              {/* Research sidebar: hide non-started methods when locked */}
+              <ResearchSidebarCard
+                persona={persona}
+                onStartMethod={handleStartMethod}
+                isLocked={lockState.isLocked}
+              />
+
+              <ProfileCompletenessCard persona={persona} />
+
+              {/* Strategic Implications: show if filled, hide generate when locked */}
+              <StrategicImplicationsSidebar
+                persona={persona}
+                isEditing={isEditing}
+                onUpdate={(data) => updatePersona.mutate(data)}
+                onGenerate={visibility.showAITools ? () => generateImplications.mutate() : undefined}
+                isGenerating={generateImplications.isPending}
+              />
+
               <QuickActionsCard
                 onChat={() => setChatModalOpen(true)}
                 onExportPdf={() => {
@@ -324,26 +344,6 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
                 isLocked={lockState.isLocked}
                 isDeleting={deletePersona.isPending}
               />
-
-              <ProfileCompletenessCard persona={persona} />
-
-              {/* Research sidebar: hide non-started methods when locked */}
-              <ResearchSidebarCard
-                persona={persona}
-                onStartMethod={handleStartMethod}
-                isLocked={lockState.isLocked}
-              />
-
-              {/* Strategic Implications: show if filled, hide generate when locked */}
-              <StrategicImplicationsSidebar
-                persona={persona}
-                isEditing={isEditing}
-                onUpdate={(data) => updatePersona.mutate(data)}
-                onGenerate={visibility.showAITools ? () => generateImplications.mutate() : undefined}
-                isGenerating={generateImplications.isPending}
-              />
-
-
             </div>
           </div>
         </div>
