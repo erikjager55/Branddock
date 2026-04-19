@@ -25,10 +25,13 @@ export interface ActiveResearchItem {
 
 export interface PendingValidationItem {
   id: string;
+  /** Real DB id for the underlying brand asset or persona (used for navigation). */
+  assetId?: string;
   assetName: string;
   assetType: string;
   status: "Ready For Validation";
-  completedAt: string;
+  /** ISO timestamp; null when the underlying record has no completedAt yet. */
+  completedAt: string | null;
 }
 
 export interface QuickInsight {
@@ -40,7 +43,9 @@ export interface QuickInsight {
 
 export interface RecommendedAction {
   id: string;
-  type: "brand" | "persona" | "strategy";
+  /** Action category — drives the icon/colour styling. `info` is a fallback
+   *  used when no concrete recommendation surfaces (everything caught up). */
+  type: "brand" | "persona" | "strategy" | "info";
   title: string;
   description: string;
   targetRoute: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Shield, Users, Target, ChevronRight, Compass } from "lucide-react";
+import { Shield, Users, Target, ChevronRight, Compass, CheckCircle } from "lucide-react";
 import { EmptyState } from "@/components/shared";
 import type { RecommendedAction } from "../../types/research.types";
 
@@ -14,6 +14,7 @@ const ACTION_STYLES: Record<
   brand: { icon: Shield, iconColor: "text-green-600" },
   persona: { icon: Users, iconColor: "text-purple-600" },
   strategy: { icon: Target, iconColor: "text-green-600" },
+  info: { icon: CheckCircle, iconColor: "text-emerald-600" },
 };
 
 // ─── Types ───────────────────────────────────────────────────

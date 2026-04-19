@@ -170,11 +170,11 @@
 
 > Research & Validation module bevat stubs die naar echte executie moeten.
 
-### 5.1 Research Hub Stubs Vervangen
+### 5.1 Research Hub Stubs Vervangen ✅ DONE (2026-04-19)
 
-- [ ] Echte research insights `src/app/api/research/insights/route.ts` (nu: 3 hardcoded items)
-- [ ] Echte pending validation `src/app/api/research/pending-validation/route.ts` (nu: 2 hardcoded items)
-- [ ] Echte recommended actions `src/app/api/research/recommended-actions/route.ts` (nu: 3 hardcoded items)
+- [x] Insights — depth (% explored), recent momentum (last 7 days), coverage balance (brand vs persona)
+- [x] Pending validation — brand assets + personas with AI_EXPLORATION COMPLETED but not yet VALIDATED, sorted recent-first, capped at 10
+- [x] Recommended actions — heuristic priority: unexplored brand asset → unexplored persona → empty active strategy; fallback "All caught up"
 
 ### 5.2 Research Validation Flow
 
