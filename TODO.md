@@ -305,9 +305,11 @@
 - [ ] Overweeg mock fallback verwijderen wanneer API 100% betrouwbaar
 - [ ] Per-page ErrorBoundary wrappers voor granulaire crash isolation
 
-### 9.5 Hardcoded Kleuren
+### 9.5 Hardcoded Kleuren ✅ DONE (2026-04-19)
 
-- [ ] Audit overige componenten op hardcoded kleuren buiten design tokens
+- [x] **Teal prefix utilities** — 96 usages (13 unique combos) relied on `hover:/focus:/group-hover:` teal variants that were missing from the compiled `src/index.css`, so those styles rendered as noop. Added them: `hover:bg-teal-50/100`, `hover:text-teal-600/700`, `hover:border-teal-300/400/500`, `focus:border-teal-400/500`, `focus:ring-teal-400/500`, `group-hover:bg-teal-500`.
+- [x] Arbitrary hex utilities (`bg-[#1FD1B2]` etc., 191 usages) audited — all present in compiled CSS, no action needed.
+- [x] Inline `style={{ backgroundColor: '#hex' }}` (172 usages) audited — largely legitimate: either dynamic brand-data rendering (color swatches, visual system previews) or the documented Tailwind purge workaround. Not a batch-fix target.
 
 ### 9.6 Environment & Security
 
