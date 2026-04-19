@@ -50,6 +50,23 @@ const requestSchema = z.object({
     }).optional(),
     sourceUrl: z.string().optional(),
   })).optional(),
+  pageContext: z.object({
+    page: z.string(),
+    entityType: z.enum(['brand_asset', 'persona', 'product', 'competitor']).optional(),
+    entityId: z.string().optional(),
+    entityName: z.string().optional(),
+    wizardSnapshot: z.object({
+      name: z.string(),
+      currentStep: z.string().optional(),
+      fields: z.array(z.object({
+        label: z.string(),
+        key: z.string(),
+        value: z.string().nullable(),
+        isEmpty: z.boolean(),
+      })),
+      notes: z.string().optional(),
+    }).optional(),
+  }).optional(),
 });
 
 // ─── POST /api/claw/chat ───────────────────────────────────
@@ -68,7 +85,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: parsed.error.message, issues: parsed.error.issues }, { status: 400 });
   }
 
-  const { message, contextSelection, attachments } = parsed.data as ClawChatRequest;
+  const { message, contextSelection, attachments, pageContext } = parsed.data as ClawChatRequest;
   const conversationId = parsed.data.conversationId ?? undefined;
   const userId = session.user.id;
 
@@ -113,7 +130,8 @@ export async function POST(req: NextRequest) {
     const assembled = await assembleSystemPrompt(
       workspaceId,
       contextSelection as ContextSelection,
-      attachments as ClawAttachment[] | undefined
+      attachments as ClawAttachment[] | undefined,
+      pageContext,
     );
     systemPrompt = assembled.systemPrompt;
 
@@ -166,6 +184,14 @@ export async function POST(req: NextRequest) {
 
           continueLoop = false;
 
+          // Collect tool_result blocks for ALL tool_use blocks in this response.
+          // Anthropic requires every tool_use to have a matching tool_result in
+          // the very next user message — so we append one combined user message
+          // after the inner loop, not one per tool_use.
+          const toolResultBlocks: Anthropic.Messages.ToolResultBlockParam[] = [];
+          let sawWriteTool = false;
+          let sawAnyToolUse = false;
+
           for (const block of response.content) {
             if (block.type === 'text') {
               fullAssistantText += block.text;
@@ -173,8 +199,16 @@ export async function POST(req: NextRequest) {
             }
 
             if (block.type === 'tool_use') {
+              sawAnyToolUse = true;
               const toolDef = getToolByName(block.name);
               if (!toolDef) {
+                // Still emit a tool_result so the message stays valid.
+                toolResultBlocks.push({
+                  type: 'tool_result',
+                  tool_use_id: block.id,
+                  content: `Unknown tool: ${block.name}`,
+                  is_error: true,
+                });
                 sendEvent('error', { message: `Unknown tool: ${block.name}` });
                 continue;
               }
@@ -207,34 +241,23 @@ export async function POST(req: NextRequest) {
 
                 sendEvent('mutation_proposal', proposal);
 
-                // Add a synthetic tool result telling Claude to wait
+                // Synthetic tool_result so Claude sees a complete exchange.
                 const waitResult: ClawToolResult = {
                   toolCallId: block.id,
                   toolName: block.name,
                   result: 'Waiting for user confirmation. The change has been proposed to the user.',
                 };
                 assistantToolResults.push(waitResult);
+                toolResultBlocks.push({
+                  type: 'tool_result',
+                  tool_use_id: block.id,
+                  content: 'Waiting for user confirmation.',
+                });
 
-                // Append to messages for the conversation record
-                currentMessages = [
-                  ...currentMessages,
-                  {
-                    role: 'assistant' as const,
-                    content: response.content as Anthropic.Messages.ContentBlock[],
-                  },
-                  {
-                    role: 'user' as const,
-                    content: [{
-                      type: 'tool_result' as const,
-                      tool_use_id: block.id,
-                      content: 'Waiting for user confirmation.',
-                    }],
-                  },
-                ];
-
-                // Don't continue the loop — wait for user to confirm via /api/claw/confirm
-                continueLoop = false;
-                break;
+                // After this response we stop the outer loop — user has to
+                // confirm via /api/claw/confirm before we talk to Claude again.
+                sawWriteTool = true;
+                continue;
               }
 
               // ── Read/Analyze tools: execute immediately ──
@@ -259,32 +282,48 @@ export async function POST(req: NextRequest) {
                   result,
                 });
 
-                // Continue loop — Claude needs to process the tool result
-                currentMessages = [
-                  ...currentMessages,
-                  {
-                    role: 'assistant' as const,
-                    content: response.content as Anthropic.Messages.ContentBlock[],
-                  },
-                  {
-                    role: 'user' as const,
-                    content: [{
-                      type: 'tool_result' as const,
-                      tool_use_id: block.id,
-                      content: JSON.stringify(result),
-                    }],
-                  },
-                ];
-                continueLoop = true;
+                toolResultBlocks.push({
+                  type: 'tool_result',
+                  tool_use_id: block.id,
+                  content: JSON.stringify(result),
+                });
               } catch (err) {
+                const errorMsg = String(err);
                 sendEvent('tool_result', {
                   toolCallId: block.id,
                   toolName: block.name,
-                  result: { error: String(err) },
+                  result: { error: errorMsg },
                   isError: true,
+                });
+                // Must still emit a tool_result block so the message pair stays
+                // valid — otherwise the next Anthropic call will 400.
+                toolResultBlocks.push({
+                  type: 'tool_result',
+                  tool_use_id: block.id,
+                  content: errorMsg,
+                  is_error: true,
                 });
               }
             }
+          }
+
+          // If the model used tools, append ONE assistant + ONE user message
+          // covering all tool_uses in this response.
+          if (sawAnyToolUse) {
+            currentMessages = [
+              ...currentMessages,
+              {
+                role: 'assistant' as const,
+                content: response.content as Anthropic.Messages.ContentBlock[],
+              },
+              {
+                role: 'user' as const,
+                content: toolResultBlocks,
+              },
+            ];
+            // Only loop again when there were read-tool results to feed back
+            // to Claude AND no write tool is pending confirmation.
+            continueLoop = !sawWriteTool;
           }
 
           // If Claude stopped naturally (end_turn), break
@@ -304,8 +343,10 @@ export async function POST(req: NextRequest) {
         };
         existingMessages.push(assistantMessage);
 
-        // Auto-generate title from first user message
-        const title = conversation.title || generateTitle(message);
+        // Initial title comes from the first user message. We'll upgrade to an
+        // AI-written summary once the conversation has some substance.
+        const initialTitle = generateTitle(message);
+        const title = conversation.title || initialTitle;
 
         await prisma.clawConversation.update({
           where: { id: conversation.id },
@@ -318,6 +359,17 @@ export async function POST(req: NextRequest) {
 
         sendEvent('conversation_meta', { conversationId: conversation.id, title });
         sendEvent('done', {});
+
+        // ── Async: after 3 assistant turns, upgrade the auto-generated
+        // title to a concise AI-written summary. Fire-and-forget — user
+        // picks it up on next sidebar refresh. We skip if the user has
+        // manually renamed (title differs from the auto-generated one).
+        const assistantTurnCount = existingMessages.filter((m) => m.role === 'assistant').length;
+        if (assistantTurnCount === 3 && title === initialTitle) {
+          void upgradeConversationTitle(conversation.id, existingMessages).catch(() => {
+            // Silently swallow — title upgrade is best-effort
+          });
+        }
       } catch (err) {
         sendEvent('error', { message: String(err) });
       } finally {
@@ -368,4 +420,48 @@ function generateTitle(firstMessage: string): string {
   const cleaned = firstMessage.trim().replace(/\n/g, ' ');
   if (cleaned.length <= 50) return cleaned;
   return cleaned.slice(0, 47) + '...';
+}
+
+/**
+ * Call Claude Haiku to summarize a conversation into a short title.
+ * Runs async after the SSE response completes — users see the improved
+ * title on next sidebar fetch. Best-effort: errors are swallowed.
+ */
+async function upgradeConversationTitle(
+  conversationId: string,
+  messages: ClawMessage[],
+): Promise<void> {
+  // Use the first few messages — no need to feed the whole conversation.
+  const transcript = messages
+    .slice(0, 6)
+    .filter((m) => m.role === 'user' || m.role === 'assistant')
+    .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${(m.content || '').slice(0, 400)}`)
+    .join('\n\n');
+
+  if (!transcript.trim()) return;
+
+  const client = getClient();
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 80,
+    messages: [
+      {
+        role: 'user',
+        content:
+          'Summarize the topic of this chat as a short title (3-7 words, no quotes, no trailing punctuation). ' +
+          'Respond with ONLY the title.\n\n' + transcript,
+      },
+    ],
+  });
+
+  const textBlock = response.content.find((b) => b.type === 'text');
+  if (!textBlock || textBlock.type !== 'text') return;
+  const rawTitle = textBlock.text.trim().replace(/^["']|["']$/g, '').replace(/\.+$/, '');
+  if (!rawTitle) return;
+  const newTitle = rawTitle.length > 80 ? rawTitle.slice(0, 77) + '...' : rawTitle;
+
+  await prisma.clawConversation.update({
+    where: { id: conversationId },
+    data: { title: newTitle },
+  });
 }

@@ -6,8 +6,24 @@ import type {
   ClawAttachment,
   MutationProposal,
   ClawQuickAction,
+  ClawPageContext,
+  ClawWizardSnapshot,
 } from '@/lib/claw/claw.types';
 import { DEFAULT_CONTEXT_MODULES } from '@/lib/claw/claw.types';
+
+export type ActiveEntity = {
+  type: NonNullable<ClawPageContext['entityType']>;
+  id: string;
+  name: string;
+};
+
+/** Navigation intent emitted by the Brand Assistant (e.g. after a create). App.tsx watches this and routes accordingly. */
+export type PendingNavigation = {
+  /** Sidebar section ID, e.g. 'persona-detail', 'trend-detail', 'brand-asset-detail'. */
+  section: string;
+  /** Optional entity ID for detail pages. */
+  entityId?: string;
+};
 
 export type BugSeverity = 'low' | 'medium' | 'high' | 'critical';
 
@@ -42,6 +58,19 @@ interface ClawStore {
   currentPage: string;
   setCurrentPage: (page: string) => void;
 
+  // ── Active Entity (synced from detail pages) ─────────────
+  activeEntity: ActiveEntity | null;
+  setActiveEntity: (entity: ActiveEntity | null) => void;
+
+  // ── Wizard Snapshot (synced from multi-step flows) ───────
+  wizardSnapshot: ClawWizardSnapshot | null;
+  setWizardSnapshot: (snapshot: ClawWizardSnapshot | null) => void;
+
+  // ── Pending Navigation (consumed by App.tsx) ─────────────
+  pendingNavigation: PendingNavigation | null;
+  requestNavigation: (nav: PendingNavigation) => void;
+  clearPendingNavigation: () => void;
+
   // ── Active Conversation ──────────────────────────────────
   activeConversationId: string | null;
   messages: ClawMessage[];
@@ -54,6 +83,11 @@ interface ClawStore {
   finalizeStreaming: (assistantMessage: ClawMessage) => void;
   setIsStreaming: (streaming: boolean) => void;
   resetStreamingText: () => void;
+
+  // ── Activity Status (live progress during streaming) ─────
+  /** Human-readable label of what the AI is doing right now, e.g. "Personas aan het lezen...". Null when idle or when answer text is streaming. */
+  activityStatus: string | null;
+  setActivityStatus: (status: string | null) => void;
 
   // ── Context Selection ────────────────────────────────────
   contextSelection: ContextSelection;
@@ -77,8 +111,13 @@ interface ClawStore {
   // ── Conversation History ─────────────────────────────────
   conversations: ClawConversationMeta[];
   setConversations: (conversations: ClawConversationMeta[]) => void;
+  /** Sidebar visibility in overlay (full-screen) mode. */
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
+  /** Popover visibility when Brand Assistant is in panel (side) mode. */
+  isHistoryPopoverOpen: boolean;
+  toggleHistoryPopover: () => void;
+  closeHistoryPopover: () => void;
 
   // ── Quick Actions ────────────────────────────────────────
   quickActions: ClawQuickAction[];
@@ -112,6 +151,19 @@ export const useClawStore = create<ClawStore>((set, get) => ({
   currentPage: 'dashboard',
   setCurrentPage: (page) => set({ currentPage: page }),
 
+  // Active entity
+  activeEntity: null,
+  setActiveEntity: (entity) => set({ activeEntity: entity }),
+
+  // Wizard snapshot
+  wizardSnapshot: null,
+  setWizardSnapshot: (snapshot) => set({ wizardSnapshot: snapshot }),
+
+  // Pending navigation intent
+  pendingNavigation: null,
+  requestNavigation: (nav) => set({ pendingNavigation: nav }),
+  clearPendingNavigation: () => set({ pendingNavigation: null }),
+
   // Active conversation
   activeConversationId: null,
   messages: [],
@@ -134,9 +186,18 @@ export const useClawStore = create<ClawStore>((set, get) => ({
       messages: [...s.messages, assistantMessage],
       streamingText: '',
       isStreaming: false,
+      activityStatus: null,
     })),
-  setIsStreaming: (streaming) => set({ isStreaming: streaming }),
+  setIsStreaming: (streaming) =>
+    set((s) => ({
+      isStreaming: streaming,
+      // Clear activity status when streaming stops
+      activityStatus: streaming ? s.activityStatus : null,
+    })),
   resetStreamingText: () => set({ streamingText: '' }),
+
+  activityStatus: null,
+  setActivityStatus: (status) => set({ activityStatus: status }),
 
   // Context
   contextSelection: {
@@ -172,6 +233,9 @@ export const useClawStore = create<ClawStore>((set, get) => ({
   setConversations: (conversations) => set({ conversations }),
   isSidebarOpen: true,
   toggleSidebar: () => set((s) => ({ isSidebarOpen: !s.isSidebarOpen })),
+  isHistoryPopoverOpen: false,
+  toggleHistoryPopover: () => set((s) => ({ isHistoryPopoverOpen: !s.isHistoryPopoverOpen })),
+  closeHistoryPopover: () => set({ isHistoryPopoverOpen: false }),
 
   // Quick actions
   quickActions: [],
@@ -209,5 +273,6 @@ export const useClawStore = create<ClawStore>((set, get) => ({
       attachments: [],
       bugReportForm: null,
       bugLogbook: null,
+      activityStatus: null,
     }),
 }));

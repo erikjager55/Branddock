@@ -13,6 +13,7 @@ import {
   useDeleteCompetitor,
   competitorKeys,
 } from "../../hooks";
+import { useClawStore } from "@/stores/useClawStore";
 import { TIER_BADGES, STATUS_BADGES, TIER_OPTIONS } from "../../constants/competitor-constants";
 import { CompanyOverviewSection } from "./CompanyOverviewSection";
 import { PositioningSection } from "./PositioningSection";
@@ -42,6 +43,15 @@ export function CompetitorDetailPage({
   const qc = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const setActiveEntity = useClawStore((s) => s.setActiveEntity);
+
+  // Sync active entity to Brand Assistant
+  useEffect(() => {
+    if (competitor?.id && competitor?.name) {
+      setActiveEntity({ type: 'competitor', id: competitor.id, name: competitor.name });
+    }
+    return () => setActiveEntity(null);
+  }, [competitor?.id, competitor?.name, setActiveEntity]);
 
   // Lock state — coerce lockedBy.name from string|null to string
   const lock = useLockState({

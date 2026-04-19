@@ -1,12 +1,249 @@
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import type { ClawToolDefinition, ToolExecutionContext } from '../claw.types';
+import {
+  getAssetCompletenessFields,
+  getAssetCompletenessPercentage,
+} from '@/lib/brand-asset-completeness';
+
+// ─── Helpers for inspect_current_entity ──────────────────────
+
+const PREVIEW_MAX_CHARS = 200;
+
+type FieldPreview = {
+  label: string;
+  key: string;
+  value: string | null;
+  isEmpty: boolean;
+};
+
+function preview(val: unknown): string | null {
+  if (val === null || val === undefined) return null;
+  if (typeof val === 'string') {
+    if (!val.trim()) return null;
+    return val.length > PREVIEW_MAX_CHARS ? val.slice(0, PREVIEW_MAX_CHARS) + '…' : val;
+  }
+  if (Array.isArray(val)) {
+    const filtered = val.filter((v) => v !== null && v !== undefined && v !== '');
+    if (filtered.length === 0) return null;
+    const joined = filtered.map((v) => (typeof v === 'string' ? v : JSON.stringify(v))).join(', ');
+    return joined.length > PREVIEW_MAX_CHARS ? joined.slice(0, PREVIEW_MAX_CHARS) + '…' : joined;
+  }
+  if (typeof val === 'object') {
+    const json = JSON.stringify(val);
+    if (json === '{}' || json === '[]') return null;
+    return json.length > PREVIEW_MAX_CHARS ? json.slice(0, PREVIEW_MAX_CHARS) + '…' : json;
+  }
+  const str = String(val);
+  return str || null;
+}
+
+function field(label: string, key: string, val: unknown): FieldPreview {
+  const p = preview(val);
+  return { label, key, value: p, isEmpty: p === null };
+}
+
+function completenessFromFields(fields: FieldPreview[]): number {
+  if (fields.length === 0) return 0;
+  const filled = fields.filter((f) => !f.isEmpty).length;
+  return Math.round((filled / fields.length) * 100);
+}
 
 /**
  * READ tools — fetch data from the workspace.
  * No confirmation needed. Results are returned to Claude as context.
  */
 export const readTools: ClawToolDefinition[] = [
+  // ─── Current Page Inspection ─────────────────────────────
+  {
+    name: 'inspect_current_entity',
+    description:
+      'Inspect the entity the user is currently viewing on the page. Returns the current value of each field (truncated preview) with an isEmpty marker, plus an overall completenessPercentage. ' +
+      'Use this BEFORE proposing field updates, so you know which fields are empty and what the existing content looks like. ' +
+      'Works for the four entity types shown in the Current Page context: brand_asset, persona, product, competitor.',
+    inputSchema: z.object({
+      entityType: z.enum(['brand_asset', 'persona', 'product', 'competitor'])
+        .describe('The entity type from the Current Page context.'),
+      entityId: z.string().describe('The entity ID from the Current Page context.'),
+    }),
+    requiresConfirmation: false,
+    category: 'read',
+    execute: async (params, ctx: ToolExecutionContext) => {
+      const p = params as {
+        entityType: 'brand_asset' | 'persona' | 'product' | 'competitor';
+        entityId: string;
+      };
+
+      switch (p.entityType) {
+        case 'brand_asset': {
+          const asset = await prisma.brandAsset.findFirst({
+            where: { id: p.entityId, workspaceId: ctx.workspaceId },
+            select: {
+              id: true, name: true, slug: true, description: true,
+              frameworkType: true, frameworkData: true, content: true,
+              status: true, isLocked: true,
+            },
+          });
+          if (!asset) return { error: 'Brand asset not found in this workspace' };
+
+          // Reuse the canonical completeness helper so the AI sees the same
+          // fields + labels as the UI's Completeness card.
+          const completenessFields = getAssetCompletenessFields({
+            description: asset.description ?? '',
+            frameworkType: asset.frameworkType,
+            frameworkData: asset.frameworkData,
+          });
+          const completenessPercentage = getAssetCompletenessPercentage({
+            description: asset.description ?? '',
+            frameworkType: asset.frameworkType,
+            frameworkData: asset.frameworkData,
+          });
+
+          // Extract per-field previews from framework data
+          let fd: Record<string, unknown> = {};
+          if (asset.frameworkData) {
+            try {
+              fd = typeof asset.frameworkData === 'string'
+                ? JSON.parse(asset.frameworkData)
+                : asset.frameworkData as Record<string, unknown>;
+            } catch { /* malformed — treat as empty */ }
+          }
+
+          const descriptionPreview = preview(asset.description);
+          const contentPreview = preview(asset.content);
+          return {
+            entityType: 'brand_asset',
+            id: asset.id,
+            name: asset.name,
+            slug: asset.slug,
+            frameworkType: asset.frameworkType,
+            status: asset.status,
+            isLocked: asset.isLocked,
+            completenessPercentage,
+            description: { value: descriptionPreview, isEmpty: descriptionPreview === null },
+            content: { value: contentPreview, isEmpty: contentPreview === null },
+            // Flat list with label + filled status (matches UI)
+            completenessFields,
+            // Raw framework data preview per top-level key (truncated)
+            frameworkDataPreview: Object.fromEntries(
+              Object.entries(fd).map(([k, v]) => [k, preview(v)])
+            ),
+            tip: 'Use update_asset_content for the content field, update_asset_framework for framework fields. Reference fields by key from completenessFields or frameworkDataPreview.',
+          };
+        }
+
+        case 'persona': {
+          const persona = await prisma.persona.findFirst({
+            where: { id: p.entityId, workspaceId: ctx.workspaceId },
+          });
+          if (!persona) return { error: 'Persona not found in this workspace' };
+
+          const fields: FieldPreview[] = [
+            field('Age', 'age', persona.age),
+            field('Gender', 'gender', persona.gender),
+            field('Location', 'location', persona.location),
+            field('Occupation', 'occupation', persona.occupation),
+            field('Education', 'education', persona.education),
+            field('Income', 'income', persona.income),
+            field('Family Status', 'familyStatus', persona.familyStatus),
+            field('Personality Type', 'personalityType', persona.personalityType),
+            field('Core Values', 'coreValues', persona.coreValues),
+            field('Interests', 'interests', persona.interests),
+            field('Goals', 'goals', persona.goals),
+            field('Motivations', 'motivations', persona.motivations),
+            field('Frustrations', 'frustrations', persona.frustrations),
+            field('Behaviors', 'behaviors', persona.behaviors),
+            field('Strategic Implications', 'strategicImplications', persona.strategicImplications),
+            field('Preferred Channels', 'preferredChannels', persona.preferredChannels),
+            field('Tech Stack', 'techStack', persona.techStack),
+            field('Quote', 'quote', persona.quote),
+            field('Bio', 'bio', persona.bio),
+            field('Buying Triggers', 'buyingTriggers', persona.buyingTriggers),
+            field('Decision Criteria', 'decisionCriteria', persona.decisionCriteria),
+          ];
+
+          return {
+            entityType: 'persona',
+            id: persona.id,
+            name: persona.name,
+            tagline: persona.tagline,
+            isLocked: persona.isLocked,
+            completenessPercentage: completenessFromFields(fields),
+            fields,
+            tip: 'Use update_persona to fill empty fields. Pass only the field keys you want to change.',
+          };
+        }
+
+        case 'product': {
+          const product = await prisma.product.findFirst({
+            where: { id: p.entityId, workspaceId: ctx.workspaceId },
+          });
+          if (!product) return { error: 'Product not found in this workspace' };
+
+          const fields: FieldPreview[] = [
+            field('Description', 'description', product.description),
+            field('Category', 'category', product.category),
+            field('Pricing Model', 'pricingModel', product.pricingModel),
+            field('Pricing Details', 'pricingDetails', product.pricingDetails),
+            field('Features', 'features', product.features),
+            field('Benefits', 'benefits', product.benefits),
+            field('Use Cases', 'useCases', product.useCases),
+          ];
+
+          return {
+            entityType: 'product',
+            id: product.id,
+            name: product.name,
+            slug: product.slug,
+            status: product.status,
+            source: product.source,
+            isLocked: product.isLocked,
+            completenessPercentage: completenessFromFields(fields),
+            fields,
+            tip: 'Use update_product to fill empty fields.',
+          };
+        }
+
+        case 'competitor': {
+          const comp = await prisma.competitor.findFirst({
+            where: { id: p.entityId, workspaceId: ctx.workspaceId },
+          });
+          if (!comp) return { error: 'Competitor not found in this workspace' };
+
+          const fields: FieldPreview[] = [
+            field('Description', 'description', comp.description),
+            field('Tagline', 'tagline', comp.tagline),
+            field('Headquarters', 'headquarters', comp.headquarters),
+            field('Employee Range', 'employeeRange', comp.employeeRange),
+            field('Value Proposition', 'valueProposition', comp.valueProposition),
+            field('Target Audience', 'targetAudience', comp.targetAudience),
+            field('Differentiators', 'differentiators', comp.differentiators),
+            field('Main Offerings', 'mainOfferings', comp.mainOfferings),
+            field('Pricing Model', 'pricingModel', comp.pricingModel),
+            field('Pricing Details', 'pricingDetails', comp.pricingDetails),
+            field('Tone of Voice', 'toneOfVoice', comp.toneOfVoice),
+            field('Messaging Themes', 'messagingThemes', comp.messagingThemes),
+            field('Visual Style Notes', 'visualStyleNotes', comp.visualStyleNotes),
+            field('Strengths', 'strengths', comp.strengths),
+            field('Weaknesses', 'weaknesses', comp.weaknesses),
+          ];
+
+          return {
+            entityType: 'competitor',
+            id: comp.id,
+            name: comp.name,
+            tier: comp.tier,
+            competitiveScore: comp.competitiveScore,
+            isLocked: comp.isLocked,
+            completenessPercentage: completenessFromFields(fields),
+            fields,
+            tip: 'Use update_competitor to fill empty fields.',
+          };
+        }
+      }
+    },
+  },
+
   // ─── Brand Assets ────────────────────────────────────────
   {
     name: 'read_brand_assets',

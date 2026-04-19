@@ -10350,3 +10350,41 @@ html {
     height: 0;
   }
 }
+
+/* --------------------------------------------------------------
+ * Teal bg/hover utility fallback — patches gaps in the compiled
+ * Tailwind 4 output (see CLAUDE.md "Tailwind purge workaround").
+ * Only bg-teal-50/100/500 were pre-compiled, leaving 21+ usages
+ * of bg-teal-600/700 etc. rendering with no background.
+ * CSS variables (--color-teal-*) are defined earlier in this file.
+ * ------------------------------------------------------------ */
+@layer utilities {
+  .bg-teal-200  { background-color: var(--color-teal-200); }
+  .bg-teal-300  { background-color: var(--color-teal-300); }
+  .bg-teal-400  { background-color: var(--color-teal-400); }
+  .bg-teal-600  { background-color: var(--color-teal-600); }
+  .bg-teal-700  { background-color: var(--color-teal-700); }
+  .bg-teal-800  { background-color: var(--color-teal-800); }
+  .bg-teal-900  { background-color: var(--color-teal-900); }
+
+  @media (hover: hover) {
+    .hover\:bg-teal-500:hover { background-color: var(--color-teal-500); }
+    .hover\:bg-teal-600:hover { background-color: var(--color-teal-600); }
+    .hover\:bg-teal-700:hover { background-color: var(--color-teal-700); }
+    .hover\:bg-teal-800:hover { background-color: var(--color-teal-800); }
+  }
+
+  .border-teal-400 { border-color: var(--color-teal-400); }
+  .border-teal-500 { border-color: var(--color-teal-500); }
+  .border-teal-600 { border-color: var(--color-teal-600); }
+  .border-teal-700 { border-color: var(--color-teal-700); }
+
+  .text-teal-400 { color: var(--color-teal-400); }
+  .text-teal-500 { color: var(--color-teal-500); }
+  .text-teal-800 { color: var(--color-teal-800); }
+  .text-teal-900 { color: var(--color-teal-900); }
+
+  .ring-teal-400 { --tw-ring-color: var(--color-teal-400); }
+  .ring-teal-500 { --tw-ring-color: var(--color-teal-500); }
+  .ring-teal-600 { --tw-ring-color: var(--color-teal-600); }
+}

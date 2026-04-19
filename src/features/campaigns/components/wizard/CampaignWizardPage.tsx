@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ArrowLeft, ArrowRight, Rocket } from "lucide-react";
 import { Button } from "@/components/shared";
 import { PageShell } from '@/components/ui/layout';
 import { useCampaignWizardStore } from "../../stores/useCampaignWizardStore";
+import { useClawStore } from "@/stores/useClawStore";
 import { useEnsureWizardWorkspace } from "../../hooks/useEnsureWizardWorkspace";
 import { useDraftAutoSave } from "../../hooks/useDraftAutoSave";
 import { useLaunchCampaign } from "../../hooks";
@@ -77,6 +78,58 @@ export function CampaignWizardPage({ onNavigate }: CampaignWizardPageProps) {
   const templateName = useCampaignWizardStore((s) => s.templateName);
 
   const launchCampaign = useLaunchCampaign();
+
+  // ─── Brand Assistant wizard snapshot ─────────────────────
+  // Push the current wizard state into the Claw store so the AI can see
+  // which fields are filled / empty. Unlike detail pages, the wizard has
+  // no DB row yet — so `inspect_current_entity` can't read this.
+  const skipConceptStepForSnapshot = useCampaignWizardStore((s) => s.skipConceptStep);
+  const briefingOccasion = useCampaignWizardStore((s) => s.briefingOccasion);
+  const briefingAudienceObjective = useCampaignWizardStore((s) => s.briefingAudienceObjective);
+  const briefingCoreMessage = useCampaignWizardStore((s) => s.briefingCoreMessage);
+  const briefingTonePreference = useCampaignWizardStore((s) => s.briefingTonePreference);
+  const briefingConstraints = useCampaignWizardStore((s) => s.briefingConstraints);
+  const setWizardSnapshot = useClawStore((s) => s.setWizardSnapshot);
+
+  useEffect(() => {
+    const stepList = getStepsForMode(wizardMode, skipConceptStepForSnapshot);
+    const stepLabel = stepList[currentStep - 1]?.label ?? `Step ${currentStep}`;
+    const selectedContentTypeValue = useCampaignWizardStore.getState().selectedContentType;
+    const stringField = (value: string | null | undefined, maxLen = 200) => {
+      const v = (value ?? '').trim();
+      if (!v) return { value: null as string | null, isEmpty: true };
+      return { value: v.length > maxLen ? v.slice(0, maxLen) + '…' : v, isEmpty: false };
+    };
+
+    setWizardSnapshot({
+      name: wizardMode === 'content' ? 'Content Wizard' : 'Campaign Wizard',
+      currentStep: `${currentStep} of ${stepList.length} — ${stepLabel}`,
+      fields: [
+        { label: 'Campaign name', key: 'name', ...stringField(name) },
+        { label: 'Description', key: 'description', ...stringField(description) },
+        ...(wizardMode === 'content'
+          ? [{ label: 'Content type', key: 'selectedContentType', ...stringField(selectedContentTypeValue) }]
+          : [{ label: 'Campaign goal', key: 'campaignGoalType', ...stringField(campaignGoalType) }]
+        ),
+        { label: 'Start date', key: 'startDate', ...stringField(startDate) },
+        { label: 'End date', key: 'endDate', ...stringField(endDate) },
+        { label: 'Briefing — occasion', key: 'briefingOccasion', ...stringField(briefingOccasion) },
+        { label: 'Briefing — audience & objective', key: 'briefingAudienceObjective', ...stringField(briefingAudienceObjective) },
+        { label: 'Briefing — core message', key: 'briefingCoreMessage', ...stringField(briefingCoreMessage) },
+        { label: 'Briefing — tone preference', key: 'briefingTonePreference', ...stringField(briefingTonePreference) },
+        { label: 'Briefing — constraints', key: 'briefingConstraints', ...stringField(briefingConstraints) },
+      ],
+      notes: 'The user cannot be given write-tool help here — they fill these fields in the UI themselves. Offer concrete suggestions grounded in the brand context.',
+    });
+
+    return () => setWizardSnapshot(null);
+  }, [
+    wizardMode, currentStep, skipConceptStepForSnapshot,
+    name, description, campaignGoalType, startDate, endDate,
+    briefingOccasion, briefingAudienceObjective, briefingCoreMessage,
+    briefingTonePreference, briefingConstraints,
+    setWizardSnapshot,
+  ]);
 
   const [showSuccess, setShowSuccess] = useState(false);
   const [launchResult, setLaunchResult] = useState<{

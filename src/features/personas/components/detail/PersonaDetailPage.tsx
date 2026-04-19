@@ -9,6 +9,7 @@ import { LockBanner, LockOverlay, LockConfirmDialog } from '@/components/lock';
 import { useLockState } from '@/hooks/useLockState';
 import { useLockVisibility } from '@/hooks/useLockVisibility';
 import { usePersonaDetail, useUpdatePersona, useGenerateImplications, useDeletePersona, personaKeys } from '../../hooks';
+import { useClawStore } from '@/stores/useClawStore';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as explorationApi from '@/lib/api/exploration.api';
 import { usePersonaDetailStore } from '../../stores/usePersonaDetailStore';
@@ -61,6 +62,15 @@ export function PersonaDetailPage({ personaId, onBack, onNavigateToAnalysis, ini
       setEditing(true);
     }
   }, [initialEditing, setEditing]);
+
+  // Sync active entity to Brand Assistant
+  const setActiveEntity = useClawStore((s) => s.setActiveEntity);
+  useEffect(() => {
+    if (persona?.id && persona?.name) {
+      setActiveEntity({ type: 'persona', id: persona.id, name: persona.name });
+    }
+    return () => setActiveEntity(null);
+  }, [persona?.id, persona?.name, setActiveEntity]);
 
   // Lock state & visibility
   const lockState = useLockState({

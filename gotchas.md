@@ -2,6 +2,15 @@
 
 Lessons learned from past mistakes. Read this at the start of every session.
 
+## 2026-04-19: Tailwind 4 compiled index.css is incomplete — many teal shades missing
+**What went wrong**: Buttons with `bg-teal-600` / `hover:bg-teal-700` had no background (white on white) because `src/index.css` is a committed, pre-compiled Tailwind 4 output — not a source file with `@tailwind` directives. Only `bg-teal-50/100/500` and `text-teal-600/700` were generated; `bg-teal-200/300/400/600/700/800/900` and most `hover:bg-teal-*` variants were missing. 21+ call sites across the codebase rendered transparent.
+**Rule**: Treat `src/index.css` as static content. Before using a Tailwind utility class, verify it appears in `src/index.css` via `grep`. If it's missing, either (a) append the rule to the bottom of `src/index.css` using the `--color-teal-*` CSS variables already defined, (b) use inline `style={{ backgroundColor: '#hex' }}`, or (c) swap to `bg-primary` (which uses the `--primary` CSS var and is pre-compiled). The default fix is (a) — one-line addition covers every usage.
+**Prior art**: CLAUDE.md "Tailwind purge workaround" entry mentions this for `min-h-0` and custom colors. Same pattern.
+
+## 2026-04-18: Anthropic tool_use without tool_result breaks multi-tool responses
+**What went wrong**: The Claw chat route processed multiple tool_use blocks in a single Claude response by pushing one assistant-message + one tool_result per block sequentially. Result: the second pushed assistant-message still contained the first tool_use, but the following user-message only had the second tool_result → Anthropic 400 "tool_use without tool_result".
+**Rule**: When the model emits multiple tool_use blocks in one response, append ONE combined user-message with tool_result blocks for ALL of them. Also emit a tool_result for execute() failures and for unknown tools — never leave a tool_use orphaned.
+
 ## 2026-04-07: Next.js wizard vs [id] route conflict
 **What went wrong**: `/api/campaigns/wizard/strategy/validate-briefing` was silently intercepted by `/api/campaigns/[id]/strategy/validate-briefing` (Next.js matched "wizard" as the `[id]` param). The wrong route was executed.
 **Rule**: Never create overlapping static (`/wizard/`) and dynamic (`/[id]/`) route segments at the same level. If both exist, the dynamic route can swallow the static one.

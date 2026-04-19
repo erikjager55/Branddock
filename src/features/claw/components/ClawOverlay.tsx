@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { X, Plus, PanelLeftClose, PanelLeftOpen, Download, Maximize2, Minimize2 } from 'lucide-react';
+import { X, PanelLeftClose, PanelLeftOpen, Download, Maximize2, Minimize2, RefreshCw, History } from 'lucide-react';
 import { useClawStore } from '@/stores/useClawStore';
 import { ChatArea } from './ChatArea';
 import { InputBar } from './InputBar';
@@ -17,7 +17,19 @@ export function ClawOverlay() {
     toggleSidebar,
     startNewConversation,
     activeConversationId,
+    activeEntity,
+    wizardSnapshot,
+    isHistoryPopoverOpen,
+    toggleHistoryPopover,
+    closeHistoryPopover,
   } = useClawStore();
+
+  // Short "watching" label shown under the title when Claw has real page context.
+  const watchingLabel = (() => {
+    if (activeEntity) return activeEntity.name;
+    if (wizardSnapshot) return wizardSnapshot.name;
+    return null;
+  })();
 
   // Slide-in animation state
   const [isVisible, setIsVisible] = useState(false);
@@ -90,11 +102,11 @@ export function ClawOverlay() {
       )}
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0" style={{ minHeight: 0 }}>
         {/* Header */}
         <header className="flex items-center justify-between px-4 h-14 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-2">
-            {/* Sidebar toggle — only in overlay mode */}
+            {/* Sidebar toggle — overlay mode gets the full collapse toggle */}
             {!isPanel && (
               <button
                 onClick={toggleSidebar}
@@ -104,21 +116,43 @@ export function ClawOverlay() {
                 {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
               </button>
             )}
+            {/* Panel mode shows a History popover trigger instead */}
+            {isPanel && (
+              <button
+                onClick={toggleHistoryPopover}
+                className={`p-1.5 rounded-md transition-colors ${
+                  isHistoryPopoverOpen ? 'bg-teal-50 text-teal-700' : 'hover:bg-gray-100 text-gray-500'
+                }`}
+                aria-label="Conversation history"
+                title="Conversation history"
+              >
+                <History size={18} />
+              </button>
+            )}
 
-            <button
-              onClick={startNewConversation}
-              className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500"
-              aria-label="New conversation"
-            >
-              <Plus size={18} />
-            </button>
-
-            <h1 className="text-sm font-semibold text-gray-900 ml-2">
-              Brand Assistant
-            </h1>
+            <div className="ml-2 flex flex-col min-w-0">
+              <h1 className="text-sm font-semibold text-gray-900 leading-tight">
+                Brand Assistant
+              </h1>
+              {watchingLabel && (
+                <span className="text-[11px] text-gray-500 leading-tight truncate" title={watchingLabel}>
+                  Watching: <span className="text-teal-700 font-medium">{watchingLabel}</span>
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-1">
+            {/* Start new conversation — prominent circular button */}
+            <button
+              onClick={startNewConversation}
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-700 transition-colors mr-1"
+              aria-label="Start new conversation"
+              title="New conversation"
+            >
+              <RefreshCw size={16} strokeWidth={2} />
+            </button>
+
             {activeConversationId && (
               <button
                 onClick={handleExport}
@@ -148,9 +182,35 @@ export function ClawOverlay() {
         </header>
 
         {/* Chat + Input */}
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col relative" style={{ minHeight: 0 }}>
           <ChatArea />
           <InputBar />
+
+          {/* History popover — only in panel mode */}
+          {isPanel && isHistoryPopoverOpen && (
+            <>
+              <div
+                className="absolute inset-0 bg-black/20 z-10"
+                onClick={closeHistoryPopover}
+                aria-hidden="true"
+              />
+              <div className="absolute left-2 top-2 bottom-2 w-72 bg-gray-50 border border-gray-200 rounded-xl shadow-xl z-20 overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-white">
+                  <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">History</span>
+                  <button
+                    onClick={closeHistoryPopover}
+                    className="p-1 rounded-md hover:bg-gray-100 text-gray-500"
+                    aria-label="Close history"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                <div className="h-[calc(100%-41px)]">
+                  <ConversationSidebar />
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

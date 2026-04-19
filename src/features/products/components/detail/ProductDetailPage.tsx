@@ -9,6 +9,7 @@ import { VersionPill } from "@/components/versioning/VersionPill";
 import { useLockState } from "@/hooks/useLockState";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProductDetail, useUpdateProduct, useDeleteProduct, useUnlinkPersona, useProductPersonas, productKeys } from "../../hooks";
+import { useClawStore } from "@/stores/useClawStore";
 import {
   SOURCE_BADGES,
   STATUS_BADGES,
@@ -39,6 +40,15 @@ export function ProductDetailPage({
   const { data: product, isLoading } = useProductDetail(productId);
   const { data: personasData } = useProductPersonas(productId);
   const unlinkPersona = useUnlinkPersona(productId);
+  const setActiveEntity = useClawStore((s) => s.setActiveEntity);
+
+  // Sync active entity to Brand Assistant
+  useEffect(() => {
+    if (product?.id && product?.name) {
+      setActiveEntity({ type: 'product', id: product.id, name: product.name });
+    }
+    return () => setActiveEntity(null);
+  }, [product?.id, product?.name, setActiveEntity]);
   const updateProduct = useUpdateProduct(productId);
   const deleteProduct = useDeleteProduct(productId);
   const qc = useQueryClient();

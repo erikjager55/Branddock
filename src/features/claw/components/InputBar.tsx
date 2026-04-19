@@ -1,10 +1,15 @@
 'use client';
 
-import React, { useRef, useCallback, useState } from 'react';
-import { Send, Paperclip, FileText, Link, Type } from 'lucide-react';
+import React, { useRef, useCallback, useState, useEffect } from 'react';
+import { Send, Paperclip, FileText, Link, Type, X } from 'lucide-react';
 import { useClawStore } from '@/stores/useClawStore';
 import { ContextSelectorModal } from './ContextSelectorModal';
 import type { ClawMessage, ClawAttachment } from '@/lib/claw/claw.types';
+import {
+  toolActivityLabel,
+  THINKING_LABEL,
+  PROCESSING_RESULTS_LABEL,
+} from '@/lib/claw/activity-labels';
 
 export function InputBar() {
   const {
@@ -22,11 +27,24 @@ export function InputBar() {
     activeConversationId,
     setPendingMutation,
     resetStreamingText,
+    currentPage,
+    activeEntity,
+    wizardSnapshot,
+    setActivityStatus,
   } = useClawStore();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [showContextModal, setShowContextModal] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Auto-resize: grow with content between min (~1 row) and max (~240px).
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const next = Math.min(el.scrollHeight, 240);
+    el.style.height = `${next}px`;
+  }, [inputText]);
 
   const { openBugReportForm, openBugLogbook } = useClawStore();
 
@@ -58,6 +76,7 @@ export function InputBar() {
     setInputText('');
     setIsStreaming(true);
     resetStreamingText();
+    setActivityStatus(THINKING_LABEL);
 
     // Abort previous request if any
     abortRef.current?.abort();
@@ -72,6 +91,15 @@ export function InputBar() {
           message,
           contextSelection,
           attachments: attachments.length > 0 ? attachments : undefined,
+          pageContext: {
+            page: currentPage,
+            ...(activeEntity && {
+              entityType: activeEntity.type,
+              entityId: activeEntity.id,
+              entityName: activeEntity.name,
+            }),
+            ...(wizardSnapshot && { wizardSnapshot }),
+          },
         }),
         signal: abortRef.current.signal,
       });
@@ -119,6 +147,9 @@ export function InputBar() {
 
         switch (type) {
           case 'text_delta':
+            // Once text starts streaming, the thinking/reading indicator is replaced
+            // by the text itself — clear the status so we don't double-render.
+            setActivityStatus(null);
             fullText += (d.text as string) ?? '';
             appendStreamingText((d.text as string) ?? '');
             break;
@@ -155,13 +186,22 @@ export function InputBar() {
             }
             break;
 
-          case 'mutation_proposal':
-            setPendingMutation(d as never);
+          case 'tool_use_start': {
+            // Show which tool the AI is running right now
+            const name = (d.toolName as string) ?? '';
+            if (name) setActivityStatus(toolActivityLabel(name));
+            break;
+          }
+
+          case 'tool_result':
+            // Tool finished — either another tool follows or Claude writes a reply.
+            // Briefly indicate processing so there's no "dead" gap.
+            setActivityStatus(PROCESSING_RESULTS_LABEL);
             break;
 
-          case 'tool_use_start':
-          case 'tool_result':
-            // Tool results are embedded in the final assistant message
+          case 'mutation_proposal':
+            setActivityStatus(null);
+            setPendingMutation(d as never);
             break;
 
           case 'done': {
@@ -177,6 +217,7 @@ export function InputBar() {
 
           case 'error':
             console.error('Chat SSE error:', d.message);
+            setActivityStatus(null);
             setIsStreaming(false);
             break;
         }
@@ -189,8 +230,10 @@ export function InputBar() {
     }
   }, [
     inputText, isStreaming, attachments, activeConversationId, contextSelection,
+    currentPage, activeEntity, wizardSnapshot,
     addMessage, setInputText, setIsStreaming, appendStreamingText, finalizeStreaming,
     setPendingMutation, resetStreamingText, openBugReportForm, openBugLogbook,
+    setActivityStatus,
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -292,94 +335,82 @@ export function InputBar() {
 
   return (
     <>
-      <div className="border-t border-gray-200 bg-white px-4 py-3 flex-shrink-0">
-        <div className="max-w-3xl mx-auto">
+      <div className="border-t border-gray-200 bg-gradient-to-b from-gray-50/50 to-white px-4 py-4 flex-shrink-0">
+        <div className="max-w-4xl mx-auto">
           {/* Attachment previews */}
           {attachments.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {attachments.map((att) => (
-                <span
-                  key={att.id}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gray-100 text-xs text-gray-600"
-                >
-                  {att.type === 'file' ? '📁' : att.type === 'url' ? '🔗' : '📄'}
-                  <span className="max-w-[200px] truncate">{att.label}</span>
-                  <button
-                    onClick={() => removeAttachment(att.id)}
-                    className="text-gray-400 hover:text-gray-600 ml-0.5"
+            <div className="flex flex-wrap gap-2 mb-3">
+              {attachments.map((att) => {
+                const Icon = att.type === 'file' ? FileText : att.type === 'url' ? Link : Type;
+                return (
+                  <span
+                    key={att.id}
+                    className="inline-flex items-center gap-1.5 pl-2.5 pr-1 py-1.5 rounded-lg bg-teal-50 border border-teal-100 text-xs text-teal-800"
                   >
-                    ×
-                  </button>
-                </span>
-              ))}
+                    <Icon size={12} className="text-teal-600 flex-shrink-0" />
+                    <span className="max-w-[220px] truncate font-medium">{att.label}</span>
+                    <button
+                      onClick={() => removeAttachment(att.id)}
+                      className="w-5 h-5 rounded-md flex items-center justify-center text-teal-500 hover:text-teal-700 hover:bg-teal-100 transition-colors"
+                      aria-label={`Remove ${att.label}`}
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                );
+              })}
             </div>
           )}
 
-          {/* Context indicator */}
-          <div className="flex items-center gap-1 mb-2 text-xs text-gray-400">
-            <span>Context: {contextSelection.modules.length} sources</span>
-            <button
-              onClick={() => setShowContextModal(true)}
-              className="text-teal-600 hover:text-teal-700 underline"
-            >
-              Edit
-            </button>
-          </div>
+          {/* Unified composition card: textarea + action row + send button */}
+          <div
+            className="group rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow focus-within:border-teal-400 focus-within:shadow-md focus-within:ring-4 focus-within:ring-teal-500/10"
+          >
+            <textarea
+              ref={textareaRef}
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask anything about your brand, personas, campaigns..."
+              rows={1}
+              className="block w-full resize-none rounded-t-2xl border-0 bg-transparent px-4 pt-3 pb-1 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-0 disabled:opacity-60 leading-6"
+              style={{ maxHeight: 240, minHeight: 44 }}
+              disabled={isStreaming}
+            />
 
-          {/* Input row */}
-          <div className="flex items-end gap-2">
-            <div className="flex-1 relative">
-              <textarea
-                ref={textareaRef}
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask anything..."
-                rows={1}
-                className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                style={{ maxHeight: 200 }}
-                disabled={isStreaming}
-              />
+            {/* Action row inside the card */}
+            <div className="flex items-center justify-between gap-2 px-2 pb-2 pt-0">
+              <div className="flex items-center gap-0.5">
+                <ActionButton icon={Paperclip} label="Context" onClick={() => setShowContextModal(true)} />
+                <ActionButton icon={Type} label="Text" onClick={handleAddText} />
+                <ActionButton icon={FileText} label="File" onClick={handleAddFile} />
+                <ActionButton icon={Link} label="URL" onClick={handleAddUrl} />
+              </div>
+
+              <button
+                onClick={handleSend}
+                disabled={!inputText.trim() || isStreaming}
+                className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl bg-teal-600 text-white text-sm font-semibold shadow-sm hover:bg-teal-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                aria-label="Send message"
+              >
+                <span>Send</span>
+                <Send size={14} />
+              </button>
             </div>
-            <button
-              onClick={handleSend}
-              disabled={!inputText.trim() || isStreaming}
-              className="h-11 w-11 rounded-xl bg-teal-600 text-white flex items-center justify-center hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-            >
-              <Send size={16} />
-            </button>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center gap-1 mt-2">
+          {/* Context indicator — below the card, subtle */}
+          <div className="flex items-center justify-between mt-2 px-1 text-[11px] text-gray-400">
             <button
               onClick={() => setShowContextModal(true)}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-gray-100 transition-colors"
+              className="inline-flex items-center gap-1 hover:text-teal-700 transition-colors"
             >
-              <Paperclip size={14} />
-              Context
+              <span>
+                {contextSelection.modules.length} {contextSelection.modules.length === 1 ? 'source' : 'sources'} in context
+              </span>
+              <span className="text-teal-600 underline">Edit</span>
             </button>
-            <button
-              onClick={handleAddText}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-gray-100 transition-colors"
-            >
-              <Type size={14} />
-              Text
-            </button>
-            <button
-              onClick={handleAddFile}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-gray-100 transition-colors"
-            >
-              <FileText size={14} />
-              File
-            </button>
-            <button
-              onClick={handleAddUrl}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-gray-100 transition-colors"
-            >
-              <Link size={14} />
-              URL
-            </button>
+            <span className="text-gray-300">Enter to send · Shift + Enter for new line</span>
           </div>
         </div>
       </div>
@@ -388,5 +419,24 @@ export function InputBar() {
         <ContextSelectorModal onClose={() => setShowContextModal(false)} />
       )}
     </>
+  );
+}
+
+interface ActionButtonProps {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  label: string;
+  onClick: () => void;
+}
+
+function ActionButton({ icon: Icon, label, onClick }: ActionButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+      type="button"
+    >
+      <Icon size={13} />
+      <span className="font-medium">{label}</span>
+    </button>
   );
 }

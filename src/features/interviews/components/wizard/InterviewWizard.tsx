@@ -13,6 +13,7 @@ import {
   useApproveInterview,
 } from '../../hooks/useInterviews';
 import { useInterviewStore } from '../../stores/useInterviewStore';
+import { useClawStore } from '@/stores/useClawStore';
 import { WizardStepper } from './WizardStepper';
 import { ContactStep } from './ContactStep';
 import { ScheduleStep } from './ScheduleStep';
@@ -22,6 +23,8 @@ import { TemplatePanelSlideout } from './TemplatePanelSlideout';
 import { ConductStep } from './ConductStep';
 import { ReviewStep } from './ReviewStep';
 import type { InterviewTemplate } from '../../types/interview.types';
+
+const INTERVIEW_STEP_LABELS = ['Contact', 'Schedule', 'Questions', 'Conduct', 'Review'];
 
 interface InterviewWizardProps {
   assetId: string;
@@ -54,6 +57,45 @@ export function InterviewWizard({ assetId, interviewId, onBack }: InterviewWizar
       setWizardStep(interview.currentStep);
     }
   }, [interview?.currentStep, setWizardStep]);
+
+  // ─── Brand Assistant wizard snapshot ─────────────────────
+  const setWizardSnapshot = useClawStore((s) => s.setWizardSnapshot);
+  useEffect(() => {
+    if (!interview) return;
+
+    const stepLabel = INTERVIEW_STEP_LABELS[currentStep - 1] ?? `Step ${currentStep}`;
+    const stringField = (value: string | number | null | undefined, max = 200) => {
+      if (value === null || value === undefined || value === '') return { value: null as string | null, isEmpty: true };
+      const str = String(value);
+      return { value: str.length > max ? str.slice(0, max) + '…' : str, isEmpty: false };
+    };
+    const answered = interview.questions.filter((q) => q.isAnswered).length;
+
+    setWizardSnapshot({
+      name: 'Interview Wizard',
+      currentStep: `${currentStep} of 5 — ${stepLabel}`,
+      fields: [
+        { label: 'Interviewee name', key: 'intervieweeName', ...stringField(interview.intervieweeName) },
+        { label: 'Interviewee position', key: 'intervieweePosition', ...stringField(interview.intervieweePosition) },
+        { label: 'Interviewee email', key: 'intervieweeEmail', ...stringField(interview.intervieweeEmail) },
+        { label: 'Interviewee company', key: 'intervieweeCompany', ...stringField(interview.intervieweeCompany) },
+        { label: 'Interviewee phone', key: 'intervieweePhone', ...stringField(interview.intervieweePhone) },
+        { label: 'Scheduled date', key: 'scheduledDate', ...stringField(interview.scheduledDate) },
+        { label: 'Scheduled time', key: 'scheduledTime', ...stringField(interview.scheduledTime) },
+        { label: 'Duration (minutes)', key: 'durationMinutes', ...stringField(interview.durationMinutes) },
+        { label: 'General notes', key: 'generalNotes', ...stringField(interview.generalNotes) },
+        {
+          label: 'Questions',
+          key: '_questionCount',
+          value: `${interview.questions.length} total · ${answered} answered`,
+          isEmpty: interview.questions.length === 0,
+        },
+      ],
+      notes: `To modify fields, call update_interview with interviewId="${interviewId}" and assetId="${assetId}". The selected brand assets for this interview: ${interview.selectedAssets.map((a) => a.brandAsset.name).join(', ') || 'none'}.`,
+    });
+
+    return () => setWizardSnapshot(null);
+  }, [interview, interviewId, assetId, currentStep, setWizardSnapshot]);
 
   const handleSave = (stepData: Record<string, unknown>) => {
     updateInterview.mutate(stepData);

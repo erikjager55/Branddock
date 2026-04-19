@@ -163,11 +163,45 @@ export interface ClawConversationFull {
 
 // ─── API Request/Response ────────────────────────────────────
 
+export interface ClawPageContext {
+  /** Sidebar section ID, e.g. 'brand-asset-detail', 'personas', 'dashboard'. */
+  page: string;
+  /** Active entity type when the user is viewing a detail page. */
+  entityType?: 'brand_asset' | 'persona' | 'product' | 'competitor';
+  entityId?: string;
+  /** Display name shown to the AI for readable references. */
+  entityName?: string;
+  /**
+   * Client-side snapshot of an in-progress wizard or multi-step form that
+   * has no DB representation yet (e.g. the Campaign Wizard before launch).
+   * `inspect_current_entity` can't see this — so the AI receives it directly
+   * in the system prompt instead.
+   */
+  wizardSnapshot?: ClawWizardSnapshot;
+}
+
+export interface ClawWizardSnapshot {
+  /** Human-readable wizard name, e.g. 'Campaign Wizard'. */
+  name: string;
+  /** Current step label, e.g. '2 of 6 — Knowledge'. */
+  currentStep?: string;
+  /** Flat list of fields with their current state — lets AI spot gaps. */
+  fields: Array<{
+    label: string;
+    key: string;
+    value: string | null;
+    isEmpty: boolean;
+  }>;
+  /** Optional extra context the AI should know about this wizard. */
+  notes?: string;
+}
+
 export interface ClawChatRequest {
   conversationId?: string;
   message: string;
   contextSelection: ContextSelection;
   attachments?: ClawAttachment[];
+  pageContext?: ClawPageContext;
 }
 
 export interface ClawConfirmRequest {

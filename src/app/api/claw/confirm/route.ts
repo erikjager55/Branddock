@@ -102,5 +102,116 @@ export async function POST(req: NextRequest) {
     data: { messages: JSON.parse(JSON.stringify(messages)) },
   });
 
-  return Response.json({ success: true, result });
+  // Hint the client which TanStack Query keys to invalidate so the active
+  // detail page reflects the mutation without a manual refresh. For create
+  // tools we read the new ID from the execute result instead of the input.
+  const affected = approved
+    ? resolveAffectedEntity(
+        toolCall.toolName,
+        toolCall.input,
+        result.result as Record<string, unknown> | undefined,
+      )
+    : null;
+
+  return Response.json({ success: true, result, affected });
+}
+
+type AffectedEntity = {
+  entityType: 'brand_asset' | 'persona' | 'product' | 'competitor' | 'strategy' | 'trend' | 'alignment' | 'interview';
+  entityId: string | null;
+  entityName: string | null;
+  /** True when this is a freshly created entity (enables "View →" toast). */
+  isNew: boolean;
+};
+
+/** Map a write-tool name + input + execute result to the affected entity. */
+function resolveAffectedEntity(
+  toolName: string,
+  input: Record<string, unknown>,
+  result: Record<string, unknown> | undefined,
+): AffectedEntity | null {
+  const inputId = (key: string) => {
+    const v = input[key];
+    return typeof v === 'string' ? v : null;
+  };
+  const resultStr = (key: string) => {
+    const v = result?.[key];
+    return typeof v === 'string' ? v : null;
+  };
+
+  switch (toolName) {
+    case 'update_asset_content':
+    case 'update_asset_framework':
+      return { entityType: 'brand_asset', entityId: inputId('assetId'), entityName: null, isNew: false };
+    case 'update_persona':
+      return { entityType: 'persona', entityId: inputId('personaId'), entityName: null, isNew: false };
+    case 'create_persona':
+      return {
+        entityType: 'persona',
+        entityId: resultStr('personaId'),
+        entityName: resultStr('personaName') ?? (typeof input.name === 'string' ? input.name : null),
+        isNew: true,
+      };
+    case 'update_product':
+      return { entityType: 'product', entityId: inputId('productId'), entityName: null, isNew: false };
+    case 'create_product':
+      return {
+        entityType: 'product',
+        entityId: resultStr('productId'),
+        entityName: resultStr('productName') ?? (typeof input.name === 'string' ? input.name : null),
+        isNew: true,
+      };
+    case 'update_competitor':
+      return { entityType: 'competitor', entityId: inputId('competitorId'), entityName: null, isNew: false };
+    case 'create_competitor':
+      return {
+        entityType: 'competitor',
+        entityId: resultStr('competitorId'),
+        entityName: resultStr('competitorName') ?? (typeof input.name === 'string' ? input.name : null),
+        isNew: true,
+      };
+    case 'link_persona_to_product':
+      // Both sides are affected — persona list (shows linked products) and product list (shows linked personas).
+      return {
+        entityType: 'product',
+        entityId: resultStr('productId'),
+        entityName: null,
+        isNew: false,
+      };
+    case 'update_interview':
+      return {
+        entityType: 'interview',
+        entityId: inputId('interviewId'),
+        entityName: null,
+        isNew: false,
+      };
+    case 'update_strategy_context':
+      return { entityType: 'strategy', entityId: inputId('strategyId'), entityName: null, isNew: false };
+    case 'start_alignment_scan':
+      return { entityType: 'alignment', entityId: null, entityName: null, isNew: false };
+    case 'start_trend_scan':
+      return { entityType: 'trend', entityId: null, entityName: null, isNew: false };
+    case 'create_trend':
+      return {
+        entityType: 'trend',
+        entityId: resultStr('trendId'),
+        entityName: resultStr('trendTitle') ?? (typeof input.title === 'string' ? input.title : null),
+        isNew: true,
+      };
+    case 'lock_entity': {
+      const entityType = typeof input.entityType === 'string' ? input.entityType : '';
+      const map: Record<string, AffectedEntity['entityType']> = {
+        brand_asset: 'brand_asset',
+        persona: 'persona',
+        product: 'product',
+        competitor: 'competitor',
+      };
+      if (entityType in map) {
+        return { entityType: map[entityType], entityId: inputId('entityId'), entityName: null, isNew: false };
+      }
+      return null;
+    }
+    default:
+      return null;
+  }
 }

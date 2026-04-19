@@ -5,6 +5,7 @@ import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { useAssetDetail, useUpdateFramework } from "../hooks/useBrandAssetDetail";
 import { useBrandAssetDetailStore } from "../store/useBrandAssetDetailStore";
+import { useClawStore } from "@/stores/useClawStore";
 import { useBrandAssetsQuery } from "@/hooks/use-brand-assets";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { AssetDetailHeader } from "./AssetDetailHeader";
@@ -93,6 +94,15 @@ export function BrandAssetDetailPage({
   const qc = useQueryClient();
   const { workspaceId } = useWorkspace();
   const { data: allAssetsData } = useBrandAssetsQuery(workspaceId ?? undefined);
+  const setActiveEntity = useClawStore((s) => s.setActiveEntity);
+
+  // Sync active entity to Brand Assistant so it knows which asset the user is viewing
+  useEffect(() => {
+    if (asset?.id && asset?.name) {
+      setActiveEntity({ type: 'brand_asset', id: asset.id, name: asset.name });
+    }
+    return () => setActiveEntity(null);
+  }, [asset?.id, asset?.name, setActiveEntity]);
 
   // Resolve companion data for Brand Essence ↔ Brand Promise cross-referencing
   const companionData = useMemo(() => {

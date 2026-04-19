@@ -133,6 +133,33 @@ function AppContent() {
     useClawStore.getState().setCurrentPage(activeSection);
   }, [activeSection]);
 
+  // Consume pending navigation requests from the Brand Assistant (e.g. the
+  // "View →" action on a create-persona toast). Sets the relevant detail store
+  // selectedId, switches activeSection, then clears the intent.
+  const pendingNavigation = useClawStore((s) => s.pendingNavigation);
+  useEffect(() => {
+    if (!pendingNavigation) return;
+    const { section, entityId } = pendingNavigation;
+    switch (section) {
+      case 'persona-detail':
+        if (entityId) usePersonaDetailStore.getState().setSelectedPersonaId(entityId);
+        break;
+      case 'trend-detail':
+        if (entityId) useTrendRadarStore.getState().setSelectedTrendId(entityId);
+        break;
+      case 'product-detail':
+        if (entityId) useProductsStore.getState().setSelectedProductId(entityId);
+        break;
+      case 'competitor-detail':
+        if (entityId) useCompetitorsStore.getState().setSelectedCompetitorId(entityId);
+        break;
+      // Other detail sections don't have create flows yet — falls through to
+      // plain setActiveSection below.
+    }
+    setActiveSectionRaw(section);
+    useClawStore.getState().clearPendingNavigation();
+  }, [pendingNavigation, setActiveSectionRaw]);
+
   // Track recent items when navigating
   useEffect(() => {
     if (activeSection === 'dashboard') {

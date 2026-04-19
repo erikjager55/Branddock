@@ -1,19 +1,86 @@
 import type { ClawQuickAction } from './claw.types';
 
-/**
- * Generate contextual quick actions based on workspace state and active page.
- */
-export function getQuickActions(context: {
+interface QuickActionContext {
   activeSection?: string;
+  /** Active entity type + name when on a detail page (from useClawStore). */
+  activeEntityType?: 'brand_asset' | 'persona' | 'product' | 'competitor';
+  activeEntityName?: string;
+  /** Whether the user is currently in a wizard with unfilled fields. */
+  hasWizardSnapshot?: boolean;
+  wizardEmptyFieldCount?: number;
+  wizardName?: string;
+  // Workspace counts (fallback when no page context)
   brandAssetCount?: number;
   personaCount?: number;
   campaignCount?: number;
   hasAlignmentIssues?: boolean;
   hasTrends?: boolean;
-}): ClawQuickAction[] {
+}
+
+/**
+ * Generate contextual quick actions based on workspace state and active page.
+ * Prioritises the most context-rich signal: wizard > detail entity > section > workspace fallback.
+ */
+export function getQuickActions(context: QuickActionContext): ClawQuickAction[] {
   const actions: ClawQuickAction[] = [];
 
-  // ── Page-specific actions ────────────────────────────────
+  // ── Wizard mode (highest priority — tight active workflow) ───
+  if (context.hasWizardSnapshot) {
+    const empty = context.wizardEmptyFieldCount ?? 0;
+    if (empty > 0) {
+      actions.push({
+        label: `Fill ${empty} empty field${empty === 1 ? '' : 's'}`,
+        prompt: 'Fill in the empty fields in this wizard using the brand context. Propose concrete values for each.',
+        icon: 'Edit',
+      });
+    }
+    actions.push(
+      { label: 'Suggest a campaign goal', prompt: 'Based on my brand foundation and current context, which campaign goal fits best here? Suggest one and fill it in.', icon: 'Target' },
+      { label: 'Write the briefing', prompt: 'Draft a complete campaign briefing (occasion, audience & objective, core message, tone, constraints) grounded in my brand assets and personas. Fill all five briefing fields.', icon: 'FileText' },
+      { label: 'Review what I have', prompt: 'Review the fields I\'ve already filled in this wizard. Are they strong? Flag anything weak or inconsistent.', icon: 'CheckCircle' },
+    );
+    return actions.slice(0, 4);
+  }
+
+  // ── Detail-entity priority (specific to the viewed item) ─────
+  if (context.activeEntityType && context.activeEntityName) {
+    const name = context.activeEntityName;
+    switch (context.activeEntityType) {
+      case 'brand_asset':
+        actions.push(
+          { label: `Fill gaps in "${truncate(name)}"`, prompt: `Inspect "${name}" and propose concrete values for every empty field. Ground each suggestion in my brand context.`, icon: 'Edit' },
+          { label: 'Strengthen what\'s there', prompt: `Critique the existing fields of "${name}". Where is it weak or generic? Suggest improvements.`, icon: 'Sparkles' },
+          { label: 'Check consistency', prompt: `Is "${name}" consistent with my other brand assets (promise, personality, archetype)?`, icon: 'CheckCircle' },
+        );
+        return actions.slice(0, 4);
+
+      case 'persona':
+        actions.push(
+          { label: `Fill gaps in ${truncate(name)}`, prompt: `Inspect ${name} and suggest values for every empty field — demographics, psychographics, buying triggers, everything.`, icon: 'Edit' },
+          { label: 'Write a strong quote', prompt: `Write a believable, specific first-person quote for ${name} based on their profile.`, icon: 'Quote' },
+          { label: 'Suggest decision criteria', prompt: `Based on ${name}'s goals and frustrations, suggest realistic buying triggers and decision criteria.`, icon: 'Target' },
+        );
+        return actions.slice(0, 4);
+
+      case 'product':
+        actions.push(
+          { label: `Fill gaps in ${truncate(name)}`, prompt: `Inspect ${name} and propose values for empty fields (features, benefits, use cases, pricing model).`, icon: 'Edit' },
+          { label: 'Write benefit copy', prompt: `Rewrite the benefits of ${name} to be more outcome-focused and persuasive.`, icon: 'Sparkles' },
+          { label: 'Link to personas', prompt: `Which of my personas is ${name} most relevant for, and why?`, icon: 'Users' },
+        );
+        return actions.slice(0, 4);
+
+      case 'competitor':
+        actions.push(
+          { label: `Fill gaps in ${truncate(name)}`, prompt: `Inspect ${name} and suggest values for empty fields (positioning, strengths, weaknesses, offerings).`, icon: 'Edit' },
+          { label: 'Compare to us', prompt: `Where do I stand vs ${name}? Give me 3 concrete differentiators.`, icon: 'Swords' },
+          { label: 'Spot their weakness', prompt: `Based on ${name}'s profile, what's their biggest weakness I could exploit?`, icon: 'Target' },
+        );
+        return actions.slice(0, 4);
+    }
+  }
+
+  // ── Page-level fallback actions ──────────────────────────
   switch (context.activeSection) {
     case 'brand':
     case 'brand-asset-detail':
@@ -88,4 +155,9 @@ export function getQuickActions(context: {
   }
 
   return actions.slice(0, 4);
+}
+
+function truncate(text: string, max = 24): string {
+  if (text.length <= max) return text;
+  return text.slice(0, max - 1) + '…';
 }

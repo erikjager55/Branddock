@@ -2,11 +2,69 @@
 
 import React, { useState, useCallback } from 'react';
 import { Check, X, Pencil, Wrench } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { useClawStore } from '@/stores/useClawStore';
+import { useCampaignWizardStore } from '@/features/campaigns/stores/useCampaignWizardStore';
 import type { MutationProposal, ClawMessage } from '@/lib/claw/claw.types';
+import type { CampaignGoalType, CampaignType } from '@/features/campaigns/types/campaign-wizard.types';
+
+/**
+ * Map an entity type returned by /api/claw/confirm to the TanStack Query
+ * key prefixes that should be invalidated so the active detail page re-fetches.
+ * Broad prefixes cover both list-level and detail-level queries.
+ */
+const INVALIDATION_PREFIXES: Record<string, string[][]> = {
+  brand_asset: [['brand-asset-detail'], ['brand-assets']],
+  persona: [['personas']],
+  product: [['products']],
+  competitor: [['competitors']],
+  strategy: [['strategies']],
+  trend: [['trend-radar'], ['trends']],
+  alignment: [['alignment'], ['brand-alignment']],
+  interview: [['interviews']],
+};
+
+/** Detail-section IDs for the "View →" toast action after a create. */
+const DETAIL_SECTION_FOR_ENTITY: Record<string, string> = {
+  persona: 'persona-detail',
+  trend: 'trend-detail',
+  product: 'product-detail',
+  competitor: 'competitor-detail',
+  // Other create-tools not wired yet
+};
+
+/**
+ * Apply a wizard_update client-action by calling the matching setter on
+ * useCampaignWizardStore. Skips empty values and unknown keys.
+ */
+function applyWizardUpdate(updates: Record<string, unknown>): number {
+  const state = useCampaignWizardStore.getState();
+  let count = 0;
+  for (const [key, raw] of Object.entries(updates)) {
+    if (typeof raw !== 'string' || !raw) continue;
+    switch (key) {
+      case 'name': state.setName(raw); count++; break;
+      case 'description': state.setDescription(raw); count++; break;
+      case 'campaignGoalType': state.setCampaignGoalType(raw as CampaignGoalType); count++; break;
+      case 'campaignType': state.setCampaignType(raw as CampaignType); count++; break;
+      case 'selectedContentType': state.setSelectedContentType(raw); count++; break;
+      case 'startDate': state.setStartDate(raw); count++; break;
+      case 'endDate': state.setEndDate(raw); count++; break;
+      case 'briefingOccasion': state.setBriefingOccasion(raw); count++; break;
+      case 'briefingAudienceObjective': state.setBriefingAudienceObjective(raw); count++; break;
+      case 'briefingCoreMessage': state.setBriefingCoreMessage(raw); count++; break;
+      case 'briefingTonePreference': state.setBriefingTonePreference(raw); count++; break;
+      case 'briefingConstraints': state.setBriefingConstraints(raw); count++; break;
+      default: /* ignore unknown keys */ break;
+    }
+  }
+  return count;
+}
 
 export function MutationConfirmCard() {
-  const { pendingMutation, setPendingMutation, activeConversationId, addMessage } = useClawStore();
+  const { pendingMutation, setPendingMutation, activeConversationId, addMessage, requestNavigation } = useClawStore();
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editedValues, setEditedValues] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,6 +93,52 @@ export function MutationConfirmCard() {
 
       const data = await res.json();
 
+      // Handle client-side actions (e.g. wizard updates). The server's
+      // execute() returned a "clientAction" descriptor instead of mutating
+      // state directly — apply it here.
+      if (approved && !data.result?.isError) {
+        const innerResult = data.result?.result as Record<string, unknown> | undefined;
+        if (innerResult?.clientAction === 'wizard_update' && innerResult.updates) {
+          const applied = applyWizardUpdate(innerResult.updates as Record<string, unknown>);
+          if (applied > 0) {
+            toast.success(`Filled ${applied} wizard field${applied === 1 ? '' : 's'}`);
+          }
+        }
+      }
+
+      // Refresh any visible detail pages so they show the new values without
+      // a manual refresh. Dashboard is always invalidated since stats may change.
+      if (approved && data.affected?.entityType) {
+        const affected = data.affected as {
+          entityType: string;
+          entityId: string | null;
+          entityName: string | null;
+          isNew: boolean;
+        };
+        const prefixes = INVALIDATION_PREFIXES[affected.entityType] ?? [];
+        for (const prefix of prefixes) {
+          queryClient.invalidateQueries({ queryKey: prefix });
+        }
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+
+        // After a create: show a toast with a "View →" action so the user can
+        // jump to the new entity's detail page without losing the chat.
+        if (affected.isNew && affected.entityId && affected.entityName) {
+          const section = DETAIL_SECTION_FOR_ENTITY[affected.entityType];
+          const label = affected.entityName;
+          if (section) {
+            toast.success(`Created "${label}"`, {
+              action: {
+                label: 'View →',
+                onClick: () => requestNavigation({ section, entityId: affected.entityId! }),
+              },
+            });
+          } else {
+            toast.success(`Created "${label}"`);
+          }
+        }
+      }
+
       // Add result message to chat
       const resultMessage: ClawMessage = {
         id: crypto.randomUUID(),
@@ -54,20 +158,20 @@ export function MutationConfirmCard() {
       setIsEditing(false);
       setEditedValues({});
     }
-  }, [pendingMutation, activeConversationId, editedValues, isSubmitting, setPendingMutation, addMessage]);
+  }, [pendingMutation, activeConversationId, editedValues, isSubmitting, setPendingMutation, addMessage, queryClient, requestNavigation]);
 
   if (!pendingMutation) return null;
 
   return (
     <div className="max-w-3xl mx-auto px-4 mb-4">
-      <div className="rounded-xl border border-amber-200 bg-amber-50/50 overflow-hidden">
+      <div className="rounded-xl border border-amber-200 bg-amber-50/50 overflow-hidden shadow-sm">
         {/* Header */}
         <div className="flex items-center gap-2 px-4 py-3 border-b border-amber-200/60">
-          <Wrench size={14} className="text-amber-600" />
-          <span className="text-sm font-medium text-amber-900">Proposed Change</span>
+          <Wrench size={14} className="text-amber-600 flex-shrink-0" />
+          <span className="text-sm font-semibold text-amber-900">Proposed Change</span>
           {pendingMutation.entityName && (
-            <span className="text-xs text-amber-600 ml-auto">
-              {pendingMutation.entityType}: {pendingMutation.entityName}
+            <span className="text-xs text-amber-700 ml-auto truncate">
+              {pendingMutation.entityType}: <span className="font-medium">{pendingMutation.entityName}</span>
             </span>
           )}
         </div>
@@ -99,36 +203,45 @@ export function MutationConfirmCard() {
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-2 px-4 py-3 border-t border-amber-200/60 bg-amber-50/30">
-          <button
-            onClick={() => handleConfirm(true)}
-            disabled={isSubmitting}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
-          >
-            <Check size={14} />
-            {isEditing ? 'Apply with edits' : 'Apply'}
-          </button>
-          <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-          >
-            <Pencil size={14} />
-            Edit
-          </button>
+        {/* Info footer */}
+        <div className="px-4 py-2 border-t border-amber-200/40 bg-amber-50/20 text-xs text-amber-700">
+          This will update the data and create a version snapshot.
+        </div>
+
+        {/* Actions — primary Apply on the right, secondary Edit next to it, tertiary Skip on the left */}
+        <div className="flex items-center gap-2 px-4 py-3 border-t border-amber-200/60 bg-white">
           <button
             onClick={() => handleConfirm(false)}
             disabled={isSubmitting}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors ml-auto"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <X size={14} />
             Skip
           </button>
-        </div>
 
-        {/* Info footer */}
-        <div className="px-4 py-2 bg-amber-50/20 text-xs text-amber-600">
-          This will update the data and create a version snapshot.
+          <div className="flex-1" />
+
+          <button
+            onClick={() => setIsEditing(!isEditing)}
+            disabled={isSubmitting}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              isEditing
+                ? 'bg-teal-50 border border-teal-300 text-teal-700 hover:bg-teal-100'
+                : 'border border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+            }`}
+          >
+            <Pencil size={14} />
+            {isEditing ? 'Editing' : 'Edit'}
+          </button>
+
+          <button
+            onClick={() => handleConfirm(true)}
+            disabled={isSubmitting}
+            className="inline-flex items-center gap-1.5 h-10 px-5 rounded-lg bg-teal-600 text-white text-sm font-semibold shadow-sm hover:bg-teal-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none disabled:cursor-not-allowed transition-colors"
+          >
+            <Check size={15} strokeWidth={2.5} />
+            {isSubmitting ? 'Applying…' : (isEditing ? 'Apply with edits' : 'Apply change')}
+          </button>
         </div>
       </div>
     </div>

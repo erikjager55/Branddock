@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { Bot, User, Wrench, AlertCircle, Sparkles } from 'lucide-react';
+import { Bot, User, Wrench, AlertCircle, Sparkles, Loader2 } from 'lucide-react';
 import { useClawStore } from '@/stores/useClawStore';
 import { MutationConfirmCard } from './MutationConfirmCard';
 import { BugReportForm } from './BugReportForm';
@@ -11,10 +11,27 @@ import { getQuickActions } from '@/lib/claw/quick-actions';
 import type { ClawMessage, ClawQuickAction } from '@/lib/claw/claw.types';
 
 export function ChatArea() {
-  const { messages, streamingText, isStreaming, setInputText, pendingMutation, bugReportForm, bugLogbook } = useClawStore();
+  const {
+    messages, streamingText, isStreaming, setInputText, pendingMutation,
+    bugReportForm, bugLogbook, activityStatus,
+    currentPage, activeEntity, wizardSnapshot,
+  } = useClawStore();
 
-  // Generate contextual quick actions
-  const quickActions = React.useMemo(() => getQuickActions({}), []);
+  // Context-aware quick actions — refreshes when the user navigates or the
+  // wizard state changes so the suggestions always match what's on screen.
+  const quickActions = React.useMemo(() => {
+    const emptyCount = wizardSnapshot
+      ? wizardSnapshot.fields.filter((f) => f.isEmpty).length
+      : 0;
+    return getQuickActions({
+      activeSection: currentPage,
+      activeEntityType: activeEntity?.type,
+      activeEntityName: activeEntity?.name,
+      hasWizardSnapshot: !!wizardSnapshot,
+      wizardEmptyFieldCount: emptyCount,
+      wizardName: wizardSnapshot?.name,
+    });
+  }, [currentPage, activeEntity, wizardSnapshot]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll on new messages
@@ -29,7 +46,12 @@ export function ChatArea() {
       <div className="max-w-3xl mx-auto space-y-6">
         {/* Empty state with quick actions */}
         {!hasMessages && (
-          <EmptyState quickActions={quickActions} onSelectAction={setInputText} />
+          <EmptyState
+            quickActions={quickActions}
+            onSelectAction={setInputText}
+            activeEntity={activeEntity}
+            wizardSnapshot={wizardSnapshot}
+          />
         )}
 
         {/* Messages */}
@@ -50,18 +72,10 @@ export function ChatArea() {
           </div>
         )}
 
-        {/* Streaming indicator without text yet */}
-        {isStreaming && !streamingText && messages[messages.length - 1]?.role === 'user' && (
-          <div className="flex gap-3">
-            <div className="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <Bot size={14} className="text-teal-700" />
-            </div>
-            <div className="flex items-center gap-1 text-sm text-gray-400">
-              <span className="inline-block w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-              <span className="inline-block w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-              <span className="inline-block w-1.5 h-1.5 bg-teal-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-            </div>
-          </div>
+        {/* Activity indicator — shown while the AI is thinking or running a tool
+            and before any answer text has started streaming */}
+        {isStreaming && !streamingText && (
+          <ActivityIndicator label={activityStatus} />
         )}
 
         {/* Mutation confirmation card */}
@@ -86,12 +100,47 @@ export function ChatArea() {
 
 // ─── Sub-components ────────────────────────────────────────
 
+/** Live activity indicator shown between "user sent message" and "answer text arrives". */
+function ActivityIndicator({ label }: { label: string | null }) {
+  const text = label ?? 'Aan het nadenken';
+  return (
+    <div className="flex gap-3">
+      <div className="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <Bot size={14} className="text-teal-700" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-teal-50 border border-teal-100">
+          <Loader2 size={12} className="text-teal-600 animate-spin flex-shrink-0" aria-hidden="true" />
+          <span className="text-xs text-teal-700 font-medium">
+            {text}
+            <AnimatedEllipsis />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AnimatedEllipsis() {
+  return (
+    <span aria-hidden="true" className="inline-flex ml-0.5">
+      <span className="animate-pulse" style={{ animationDelay: '0ms' }}>.</span>
+      <span className="animate-pulse" style={{ animationDelay: '200ms' }}>.</span>
+      <span className="animate-pulse" style={{ animationDelay: '400ms' }}>.</span>
+    </span>
+  );
+}
+
 function EmptyState({
   quickActions,
   onSelectAction,
+  activeEntity,
+  wizardSnapshot,
 }: {
   quickActions: ClawQuickAction[];
   onSelectAction: (text: string) => void;
+  activeEntity: { type: string; id: string; name: string } | null;
+  wizardSnapshot: { name: string; fields: Array<{ isEmpty: boolean }> } | null;
 }) {
   const defaultActions: ClawQuickAction[] = quickActions.length > 0 ? quickActions : [
     { label: 'Assess my brand foundation', prompt: 'Beoordeel mijn brand foundation — welke assets zijn goed ingevuld en waar is werk nodig?' },
@@ -100,14 +149,17 @@ function EmptyState({
     { label: 'What needs attention?', prompt: 'Wat heeft het meest urgent aandacht nodig in mijn workspace?' },
   ];
 
+  // Proactive greeting: pick the best signal we have for context
+  const greeting = resolveGreeting(activeEntity, wizardSnapshot);
+
   return (
     <div className="flex flex-col items-center justify-center py-20">
       <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center mb-5">
         <Sparkles size={24} className="text-white" />
       </div>
-      <h2 className="text-xl font-semibold text-gray-900 mb-2">Brand Assistant</h2>
+      <h2 className="text-xl font-semibold text-gray-900 mb-2">{greeting.title}</h2>
       <p className="text-sm text-gray-500 mb-8 text-center max-w-md">
-        Your AI brand strategist. Ask questions, get advice, or let me update your brand data.
+        {greeting.subtitle}
       </p>
       <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
         {defaultActions.map((action, i) => (
@@ -122,6 +174,49 @@ function EmptyState({
       </div>
     </div>
   );
+}
+
+const ENTITY_TYPE_LABELS: Record<string, string> = {
+  brand_asset: 'brand asset',
+  persona: 'persona',
+  product: 'product',
+  competitor: 'competitor',
+};
+
+/** Decide title + subtitle for the EmptyState based on available context. */
+function resolveGreeting(
+  activeEntity: { type: string; name: string } | null,
+  wizardSnapshot: { name: string; fields: Array<{ isEmpty: boolean }> } | null,
+): { title: string; subtitle: string } {
+  // Wizard in progress — highest signal
+  if (wizardSnapshot) {
+    const emptyCount = wizardSnapshot.fields.filter((f) => f.isEmpty).length;
+    if (emptyCount >= 3) {
+      return {
+        title: `Need help with your ${wizardSnapshot.name}?`,
+        subtitle: `I can see ${emptyCount} empty fields. I can fill them in for you — you just confirm.`,
+      };
+    }
+    return {
+      title: `Working on your ${wizardSnapshot.name}`,
+      subtitle: 'Ask me to refine any field, or I can review what you have so far.',
+    };
+  }
+
+  // Detail page — I know which entity is active
+  if (activeEntity) {
+    const kindLabel = ENTITY_TYPE_LABELS[activeEntity.type] ?? activeEntity.type;
+    return {
+      title: `About ${activeEntity.name}`,
+      subtitle: `I'm watching this ${kindLabel}. Ask me to fill empty fields, strengthen what's there, or compare it to the rest of your brand.`,
+    };
+  }
+
+  // Workspace default
+  return {
+    title: 'Brand Assistant',
+    subtitle: 'Your AI brand strategist. Ask questions, get advice, or let me update your brand data.',
+  };
 }
 
 function MessageBubble({ message }: { message: ClawMessage }) {

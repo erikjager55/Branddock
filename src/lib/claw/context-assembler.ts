@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { getBrandContext } from '@/lib/ai/brand-context';
 import { formatBrandContext } from '@/lib/ai/prompt-templates';
-import type { ContextSelection, ContextModule, ClawAttachment } from './claw.types';
+import type { ContextSelection, ContextModule, ClawAttachment, ClawPageContext } from './claw.types';
 
 const MAX_CONTEXT_TOKENS_ESTIMATE = 12_000;
 const AVG_CHARS_PER_TOKEN = 4;
@@ -14,12 +14,18 @@ const MAX_CONTEXT_CHARS = MAX_CONTEXT_TOKENS_ESTIMATE * AVG_CHARS_PER_TOKEN;
 export async function assembleSystemPrompt(
   workspaceId: string,
   selection: ContextSelection,
-  attachments?: ClawAttachment[]
+  attachments?: ClawAttachment[],
+  pageContext?: ClawPageContext,
 ): Promise<{ systemPrompt: string; estimatedTokens: number }> {
   const sections: string[] = [];
 
   // ── Identity ─────────────────────────────────────────────
   sections.push(SYSTEM_IDENTITY);
+
+  // ── Current Page (so the AI knows where the user is) ─────
+  if (pageContext) {
+    sections.push(formatPageContext(pageContext));
+  }
 
   // ── Brand context (compact, always included) ─────────────
   if (selection.modules.includes('brand_assets') || selection.modules.includes('brandstyle')) {
@@ -331,6 +337,78 @@ async function fetchDashboardContext(workspaceId: string): Promise<string | null
 }
 
 // ─── Helpers ──────────────────────────────────────────────
+
+function formatPageContext(ctx: ClawPageContext): string {
+  const lines = ['## Current Page', `The user is currently viewing: \`${ctx.page}\`.`];
+
+  if (ctx.entityType && ctx.entityId) {
+    const typeLabel = ENTITY_TYPE_LABELS[ctx.entityType] ?? ctx.entityType;
+    const nameLabel = ctx.entityName ? `"${ctx.entityName}"` : '(unnamed)';
+    lines.push(`Active entity: ${typeLabel} ${nameLabel} (id: ${ctx.entityId}).`);
+    lines.push(
+      'When the user says "this asset", "deze persona", "dit product", or "this competitor", ' +
+      'assume they mean this entity — use the ID above in tool calls without asking for clarification.'
+    );
+    lines.push(
+      'When the user asks about which fields are empty, wants to fill in fields, or asks for ' +
+      'a review of the current entity, call `inspect_current_entity` FIRST with the entityType ' +
+      'and entityId above. That tool returns the current value of each field with an isEmpty ' +
+      'marker and the overall completeness percentage.'
+    );
+    lines.push(
+      'When creating new entities from this page, default to this workspace without further confirmation.'
+    );
+  } else if (!ctx.wizardSnapshot) {
+    lines.push(
+      'No specific entity is active. If the user refers to "this" or "the current", ask which one they mean.'
+    );
+  }
+
+  if (ctx.wizardSnapshot) {
+    lines.push('');
+    lines.push(formatWizardSnapshot(ctx.wizardSnapshot));
+  }
+
+  return lines.join('\n');
+}
+
+function formatWizardSnapshot(snapshot: NonNullable<ClawPageContext['wizardSnapshot']>): string {
+  const lines = [`## ${snapshot.name} (in progress)`];
+  if (snapshot.currentStep) lines.push(`Step: ${snapshot.currentStep}`);
+  if (snapshot.notes) lines.push(snapshot.notes);
+  lines.push('');
+  lines.push('Current field values (wizard state — no DB row exists yet, so inspect_current_entity cannot fetch this):');
+  for (const f of snapshot.fields) {
+    if (f.isEmpty) {
+      lines.push(`- ${f.label} (\`${f.key}\`): _empty_`);
+    } else {
+      lines.push(`- ${f.label} (\`${f.key}\`): ${f.value}`);
+    }
+  }
+  lines.push('');
+  lines.push(
+    'When the user asks "which fields are empty" or "help me fill in the wizard", answer directly ' +
+    'from this snapshot — do not call inspect_current_entity.'
+  );
+  lines.push(
+    'You CAN fill wizard fields for the user. The right tool depends on which wizard this is:'
+  );
+  lines.push('- Campaign Wizard / Content Wizard → `update_campaign_wizard` (updates object with the field keys above).');
+  lines.push('- Interview Wizard → `update_interview` (pass the interviewId + assetId from the snapshot notes, plus an updates object).');
+  lines.push(
+    'In both cases the user sees a confirmation card before anything is applied. Ground proposed ' +
+    'values in the brand context above — never invent generic filler. When the user says "fill in …", ' +
+    '"vul … in", or accepts a suggestion you made, call the matching tool.'
+  );
+  return lines.join('\n');
+}
+
+const ENTITY_TYPE_LABELS: Record<NonNullable<ClawPageContext['entityType']>, string> = {
+  brand_asset: 'Brand Asset',
+  persona: 'Persona',
+  product: 'Product',
+  competitor: 'Competitor',
+};
 
 function formatAttachments(attachments: ClawAttachment[]): string {
   const lines = ['## User Attachments'];
