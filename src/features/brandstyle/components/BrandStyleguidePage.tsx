@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
-import { Download, Pencil, Palette, Save, X, RefreshCw } from "lucide-react";
+import { useEffect, useCallback, useState } from "react";
+import { Download, Pencil, Palette, Save, X, RefreshCw, Sparkles, Loader2 } from "lucide-react";
 import { Skeleton, Button } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
 import { LockBanner, LockConfirmDialog, LockOverlay } from "@/components/lock";
@@ -10,8 +10,10 @@ import { useLockState } from "@/hooks/useLockState";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStyleguide, brandstyleKeys } from "../hooks/useBrandstyleHooks";
 import { exportBrandstylePdf } from "../utils/exportBrandstylePdf";
+import { exportBrandKitPdf, type BrandKitPdfProgress } from "../utils/brand-kit/exportBrandKitPdf";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { StyleguideTabNav } from "./StyleguideTabNav";
+import { AnalysisProvenanceBanner } from "./AnalysisProvenanceBanner";
 import { LogoSection } from "./LogoSection";
 import { ColorsSection } from "./ColorsSection";
 import { ColorDetailModal } from "./ColorDetailModal";
@@ -36,6 +38,22 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
   const handleExportPdf = useCallback(() => {
     if (styleguide) exportBrandstylePdf(styleguide);
   }, [styleguide]);
+
+  const [kitProgress, setKitProgress] = useState<BrandKitPdfProgress | null>(null);
+  const [kitError, setKitError] = useState<string | null>(null);
+  const isExportingKit = kitProgress !== null && kitProgress.stage !== "complete";
+
+  const handleExportBrandKit = useCallback(async () => {
+    setKitError(null);
+    setKitProgress({ stage: "fetching", message: "Starting export…" });
+    try {
+      await exportBrandKitPdf((progress) => setKitProgress(progress));
+      setTimeout(() => setKitProgress(null), 2000);
+    } catch (error) {
+      setKitError(error instanceof Error ? error.message : "Export failed");
+      setKitProgress(null);
+    }
+  }, []);
 
   // Hook must be called unconditionally (Rules of Hooks).
   // Pass safe defaults when styleguide is not yet loaded.
@@ -171,7 +189,33 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
                   <Download className="h-3 w-3" />
                   Export PDF
                 </button>
+                <span>·</span>
+                <button
+                  onClick={handleExportBrandKit}
+                  disabled={isExportingKit}
+                  className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-60 disabled:cursor-wait"
+                  title="Export a ZIP containing the full brand foundation, ready to upload to Claude Design"
+                >
+                  {isExportingKit ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3 w-3" />
+                  )}
+                  {isExportingKit
+                    ? (kitProgress?.message ?? "Exporting…")
+                    : "Export for Claude Design"}
+                </button>
               </div>
+              {kitError && (
+                <p className="text-xs text-red-600 mt-1" role="alert">
+                  Brand kit export failed: {kitError}
+                </p>
+              )}
+              {kitProgress?.stage === "complete" && (
+                <p className="text-xs text-emerald-700 mt-1">
+                  Brand book PDF exported — check your Downloads folder.
+                </p>
+              )}
             </div>
 
             {/* Action buttons — Edit/Save/Cancel + LockShield */}
@@ -224,6 +268,10 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
         />
 
         <div className="mt-6" />
+
+        <div className="mb-5">
+          <AnalysisProvenanceBanner styleguide={styleguide} />
+        </div>
 
         <StyleguideTabNav
           activeTab={activeTab}

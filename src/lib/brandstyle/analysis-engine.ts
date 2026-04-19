@@ -223,15 +223,44 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       }
     }
 
-    const processed = preprocessScrapeData(scraped);
+    let processed = preprocessScrapeData(scraped);
 
-    // Refuse-mode: if scraping produced essentially nothing usable, fail fast
-    // with an actionable message instead of letting the AI hallucinate a palette.
-    // Trigger when the palette has no high-confidence color AND fewer than 3
-    // entries total — typical for sites that block scraping, render via
-    // CSS-in-JS, or whose stylesheets failed to fetch.
-    const hasHighConfidence = processed.authoritativeColors.some((c) => c.confidence === 'high');
-    if (!hasHighConfidence && processed.authoritativeColors.length < 3) {
+    // Refuse-mode trigger: no high-confidence brand colors AND too few total.
+    // Before falling all the way through to refuse-mode, try the headless
+    // browser fallback (if enabled) — many CSS-in-JS / SPA sites only reveal
+    // their brand tokens via getComputedStyle after the JS has run.
+    const isWeakPalette = (data: ProcessedData): boolean =>
+      !data.authoritativeColors.some((c) => c.confidence === 'high') &&
+      data.authoritativeColors.length < 3;
+
+    if (isWeakPalette(processed)) {
+      const { isHeadlessFallbackEnabled, scrapeUrlViaHeadless } = await import('./playwright-fallback');
+      if (isHeadlessFallbackEnabled()) {
+        try {
+          console.log(`[brandstyle-analysis] Static palette weak, trying headless fallback for ${url}`);
+          const headlessScraped = await scrapeUrlViaHeadless(url);
+          // Merge: keep static scrape's metadata, take colors/fonts from headless
+          scraped = {
+            ...scraped,
+            cssColors: headlessScraped.cssColors,
+            cssFonts: headlessScraped.cssFonts,
+            colorFrequency: headlessScraped.colorFrequency,
+            title: scraped.title ?? headlessScraped.title,
+          };
+          processed = preprocessScrapeData(scraped);
+          console.log(
+            `[brandstyle-analysis] Headless extracted ${processed.authoritativeColors.length} colors`,
+          );
+        } catch (headlessErr) {
+          console.warn(
+            `[brandstyle-analysis] Headless fallback failed: ${headlessErr instanceof Error ? headlessErr.message : String(headlessErr)}`,
+          );
+        }
+      }
+    }
+
+    // Final refuse-mode check — after potential headless fallback
+    if (isWeakPalette(processed)) {
       await markError(
         styleguideId,
         'Could not extract enough brand colors from this site. ' +
@@ -330,6 +359,7 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       resolvedColors,
       processed.fonts,
       processed.logoUrls,
+      processed.frameworks,
     );
 
     // Route scraped brand images into the Media Library instead of persisting
@@ -933,6 +963,7 @@ async function writeResultToDb(
   resolvedColors: ResolvedColor[],
   detectedFonts: string[],
   logoUrls?: string[],
+  detectedFrameworks: string[] = [],
 ): Promise<void> {
   // Delete existing colors before creating new ones
   await prisma.styleguideColor.deleteMany({ where: { styleguideId } });
@@ -959,6 +990,9 @@ async function writeResultToDb(
         : Prisma.JsonNull,
       logoGuidelines: result.logoGuidelines || [],
       logoDonts: result.logoDonts || [],
+
+      // Provenance — which CSS frameworks the scraper recognised
+      detectedFrameworks,
 
       // Typography — primaryFontName pinned to scraped value
       primaryFontName,

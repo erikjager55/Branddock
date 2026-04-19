@@ -1517,6 +1517,10 @@ model BrandStyleguide {
   analysisJobId         String?
   analysisStatus        AnalysisStatus    @default(PENDING)
   errorMessage          String?           @db.Text
+  // CSS framework / design-system fingerprints recognised during analysis
+  // (e.g. ["acss", "elementor"]). Used by the UI to surface provenance
+  // and confidence in the extracted brand tokens.
+  detectedFrameworks    String[]          @default([])
 
   // Logo
   logoVariations        Json?

@@ -115,6 +115,10 @@ export interface BrandStyleguide {
   sourceFileName: string | null;
   analysisJobId: string | null;
   analysisStatus: string;
+  /** CSS framework fingerprints recognised during analysis, e.g. ['acss', 'elementor']. */
+  detectedFrameworks: string[];
+  /** Free-text error message if analysis failed (refuse-mode or pipeline error). */
+  errorMessage?: string | null;
 
   // Logo
   logoVariations: LogoVariation[] | null;
