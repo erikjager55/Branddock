@@ -65,6 +65,51 @@ export interface ScrapedData {
 const CHROME_USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
+/** Cap on linked stylesheets fetched per scrape. WordPress / Shopify / Webflow
+ *  sites routinely link 15-25 sheets where brand tokens may not appear until
+ *  position 6+. We still cap to keep payload bounded and the AI prompt in budget. */
+const MAX_LINKED_STYLESHEETS = 15;
+
+/**
+ * Score a stylesheet by likely brand-relevance using id and href hints.
+ * Higher = fetch first. Used to pick the top N sheets within MAX_LINKED_STYLESHEETS.
+ *
+ * Strategy:
+ * - Brand-token files (palettes, themes, ACSS, Tailwind, design systems) score highest.
+ * - Generic main stylesheets score medium.
+ * - Admin / plugin / cookie-consent / icon-font files score lowest.
+ *
+ * Works across WordPress (rich id attrs), Shopify (theme.css), Webflow (webflow.css),
+ * and Next.js (path patterns like /globals.css).
+ */
+function rankStylesheets(links: Array<{ href: string; id: string }>): string[] {
+  const scoreLink = (link: { href: string; id: string }): number => {
+    const id = link.id.toLowerCase();
+    const href = link.href.toLowerCase();
+
+    // High value: explicit brand / token / palette / design-system files
+    if (/color|palette|theme|brand|skin|globals|tokens|design-system/.test(id)) return 100;
+    if (/acss|bricks-frontend|bricks-color|tailwind|shadcn/.test(id)) return 95;
+    if (/automaticcss|elementor-frontend|webflow/.test(id)) return 90;
+
+    // Medium-high: main / app / index stylesheets when not admin/plugin
+    if (/style|main|app|index/.test(id) && !/admin|plugin|gutenberg/.test(id)) return 70;
+    if (id === '' && /\/(style|main|app|globals|tokens)[._-]?[a-z0-9]*\.css/.test(href)) return 65;
+
+    // Low: admin UI, page-builder editor, jQuery UI, icon fonts, popups, cookies
+    if (/admin|gutenberg|wp-block-library|jquery-ui|bootstrap-icons/.test(id)) return 20;
+    if (/font|webfont|preload|ionicons|material-icons|fontawesome/.test(id)) return 15;
+    if (/cookie|popup|notice|gdpr|consent|translatepress|trp-/.test(id)) return 10;
+
+    return 50; // unknown / default — keep middle priority
+  };
+
+  return links
+    .map((link, originalIndex) => ({ link, score: scoreLink(link), originalIndex }))
+    .sort((a, b) => b.score - a.score || a.originalIndex - b.originalIndex)
+    .map((entry) => entry.link.href);
+}
+
 // ─── Public API ───────────────────────────────────────
 
 /**
@@ -159,44 +204,62 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
     if (style) styleAttrs.push(style);
   });
 
-  // Fetch linked CSS files (max 5)
-  const cssLinks: string[] = [];
+  // Fetch linked CSS files. Many WordPress / Shopify / Webflow sites have
+  // 15-25 stylesheets where brand tokens live in non-first files. We fetch up
+  // to 15 in parallel, prioritised by likely brand-relevance via id/href hints.
+  const allLinks: Array<{ href: string; id: string }> = [];
   $('link[rel="stylesheet"]').each((_, el) => {
     const href = $(el).attr('href');
-    if (href) cssLinks.push(href);
+    if (href) allLinks.push({ href, id: $(el).attr('id') || '' });
   });
 
-  const linkedCssParts: string[] = [];
   const baseUrl = new URL(url);
-  for (const cssHref of cssLinks.slice(0, 5)) {
-    try {
-      const cssUrl = cssHref.startsWith('http')
-        ? cssHref
-        : new URL(cssHref, baseUrl).toString();
-      // SSRF protection on linked stylesheet URLs
-      assertSafeUrl(cssUrl);
-      const cssResponse = await fetch(cssUrl, {
-        headers: { 'User-Agent': CHROME_USER_AGENT },
-        signal: AbortSignal.timeout(15000),
-      });
-      if (cssResponse.ok) {
-        linkedCssParts.push(await cssResponse.text());
+  const rankedHrefs = rankStylesheets(allLinks).slice(0, MAX_LINKED_STYLESHEETS);
+
+  const linkedCssParts: string[] = await Promise.all(
+    rankedHrefs.map(async (cssHref) => {
+      try {
+        const cssUrl = cssHref.startsWith('http')
+          ? cssHref
+          : new URL(cssHref, baseUrl).toString();
+        // SSRF protection on linked stylesheet URLs
+        assertSafeUrl(cssUrl);
+        const cssResponse = await fetch(cssUrl, {
+          headers: { 'User-Agent': CHROME_USER_AGENT },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (cssResponse.ok) return await cssResponse.text();
+      } catch {
+        // Skip failed CSS fetches (including SSRF blocks, timeouts)
       }
-    } catch {
-      // Skip failed CSS fetches (including SSRF blocks)
-    }
-  }
-  const linkedCssContent = linkedCssParts.join('\n');
+      return '';
+    }),
+  );
+  const linkedCssContent = linkedCssParts.filter(Boolean).join('\n');
 
   // Combine all CSS sources
   const allCss = [inlineCss, linkedCssContent, ...styleAttrs].join('\n');
 
   // Extract data from combined CSS
   const cssColors = extractColorsFromCss(allCss);
-  const cssFonts = extractFontsFromCss(allCss);
   const cssVariables = extractCssVariables(allCss);
   const colorFrequency = analyzeColorFrequency(allCss);
   const fontSizes = extractFontSizes(allCss);
+
+  // Font priority chain (strongest signal first):
+  //   1. Preloaded webfonts (`<link rel="preload" as="font">`)
+  //   2. Body font (`body { font-family: ... }`)
+  //   3. Heading font (`h1, h2, h3 { font-family: ... }`)
+  //   4. Remaining font-family declarations + @font-face
+  const preloadedFonts = extractPreloadedFonts($);
+  const { bodyFont, headingFont } = extractSemanticFonts(allCss);
+  const remainingFonts = extractFontsFromCss(allCss);
+  const cssFonts = mergeFontsByPriority(
+    preloadedFonts,
+    bodyFont,
+    headingFont,
+    remainingFonts,
+  );
 
   // Extract visual language heuristics from CSS
   const { extractVisualLanguageHeuristics } = await import('./css-visual-heuristics');
@@ -226,7 +289,7 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
     cssVariables,
     colorFrequency,
     fontSizes,
-    linkedStylesheetCount: cssLinks.length,
+    linkedStylesheetCount: allLinks.length,
     brandImages,
     visualHeuristics,
   };
@@ -304,6 +367,18 @@ export function extractCssVariables(css: string): CssVariable[] {
     }
   }
 
+  // Promote ACSS canonical brand tokens to the front of the list. They are
+  // explicit by-convention brand declarations (e.g. --primary-hex:#B59032)
+  // and must outrank generic page-builder defaults (e.g. --bricks-color-primary)
+  // when the authoritative palette is built downstream.
+  variables.sort((a, b) => {
+    const aIsAcss = isAcssBrandToken(a.name);
+    const bIsAcss = isAcssBrandToken(b.name);
+    if (aIsAcss && !bIsAcss) return -1;
+    if (!aIsAcss && bIsAcss) return 1;
+    return 0; // keep original relative order otherwise
+  });
+
   return variables;
 }
 
@@ -337,7 +412,24 @@ function isCmsPresetVariable(name: string): boolean {
   if (lower.startsWith('--wix-')) return true;
   // Shopify Dawn theme defaults
   if (lower.startsWith('--color-base-') || lower.startsWith('--color-badge-')) return true;
+  // Bricks Builder default theme palette (--bricks-color-primary, --bricks-text-dark, etc.)
+  // These are page-builder presets, NOT brand tokens. ACSS sites override them
+  // with --primary-hex / --secondary-hex which we want to surface instead.
+  if (lower.startsWith('--bricks-color-') || lower.startsWith('--bricks-text-')) return true;
+  // Bricks element defaults (button, heading, link colors from the builder UI)
+  if (/^--bricks-(button|heading|link|body|background)/.test(lower)) return true;
   return false;
+}
+
+/**
+ * Recognise ACSS-style canonical brand token names.
+ * AutomaticCSS uses `--primary-hex`, `--secondary-hex`, `--base-hex`,
+ * `--neutral-hex`, `--accent-hex` as the explicit brand-color tokens.
+ * These are by-convention brand-defining and should outrank any other
+ * `--primary` / `--brand-*` variables in the same stylesheet.
+ */
+function isAcssBrandToken(name: string): boolean {
+  return /^--(primary|secondary|base|neutral|accent)-hex$/i.test(name);
 }
 
 /** Check if a variable name suggests color usage */
@@ -364,6 +456,7 @@ function isColorRelatedVariableName(name: string): boolean {
 export function analyzeColorFrequency(css: string): ColorFrequency[] {
   const freq = new Map<string, { count: number; contexts: Set<string> }>();
   const isTailwind = isTailwindCss(css);
+  const isWordPress = isWordPressCss(css);
 
   // Properties that contain colors
   const colorProps = [
@@ -440,11 +533,11 @@ export function analyzeColorFrequency(css: string): ColorFrequency[] {
     }))
     .sort((a, b) => b.count - a.count);
 
-  // For Tailwind sites: utility classes mean each color typically appears only 1×
-  // (one class definition per color). Real brand colors are used in multiple
-  // contexts (background + text + border) or appear via CSS variables.
-  // Raise the minimum frequency threshold to filter out unused utility colors.
-  if (isTailwind && results.length > 20) {
+  // For Tailwind/WordPress sites: many colors appear once via utility classes
+  // or in admin/plugin chrome. Real brand colors are used in multiple contexts
+  // (background + text + border) or via CSS variables. Apply a stricter
+  // frequency threshold to filter out incidental colors.
+  if ((isTailwind || isWordPress) && results.length > 20) {
     // Keep colors used ≥2× or in ≥2 property contexts
     const filtered = results.filter(
       (c) => c.count >= 2 || c.contexts.length >= 2,
@@ -456,6 +549,23 @@ export function analyzeColorFrequency(css: string): ColorFrequency[] {
   }
 
   return results;
+}
+
+/**
+ * Detect WordPress / Gutenberg / common-plugin CSS patterns.
+ * Used to apply stricter frequency thresholds since many WP sites bundle
+ * plugin and admin-bar chrome that pollutes brand color extraction.
+ */
+function isWordPressCss(css: string): boolean {
+  return (
+    /--wp--preset--/.test(css) ||
+    /--wp--style--/.test(css) ||
+    /\.wp-block-/.test(css) ||
+    /\.gutenberg-/.test(css) ||
+    /\.elementor-/.test(css) ||
+    /\.brxe-/.test(css) || // Bricks Builder
+    /\.is-style-/.test(css)
+  );
 }
 
 // ─── Framework Color Filtering ────────────────────────
@@ -490,6 +600,19 @@ const FRAMEWORK_COLORS = new Set([
   '#0D6EFD', '#6C757D', '#198754', '#DC3545', '#FFC107', '#0DCAF0', '#212529', '#6610F2', '#D63384', '#FD7E14', '#20C997',
   // WordPress / Gutenberg default editor palette
   '#ABB8C3', '#F78DA7', '#CF2E2E', '#FF6900', '#FCB900', '#7BDCB5', '#00D084', '#8ED1FC', '#0693E3', '#9B51E0',
+  // WordPress admin color scheme + dashboard chrome (these polluted linfi.nl extraction)
+  '#0073AA', '#006799', '#00669B', '#135E96', '#2271B1', '#0085BA', '#4C6066', '#32373C', '#222222',
+  '#23282D', '#191E23', '#F0F0EE', '#EDEDED', '#E1E1E1', '#F7F7F7', '#F9F9F9',
+  // Material Design baseline (often shipped by Material Icons / MDC)
+  '#6200EE', '#3700B3', '#03DAC6', '#018786', '#B00020', '#BB86FC',
+  // Foundation defaults
+  '#1779BA', '#3ADB76', '#FFAE00', '#CC4B37',
+  // jQuery UI
+  '#E78F08', '#F6A828', '#FBD850',
+  // Cookie consent / GDPR libraries
+  '#0F4FFF', '#3F46AD',
+  // Webflow editor / form chrome
+  '#3898EC', '#3898EB',
   // Common CSS resets
   '#TRANSPARENT', '#INHERIT',
 ]);
@@ -652,16 +775,14 @@ function extractFontsFromCss(css: string): string[] {
   const fontFamilyPattern = /font-family\s*:\s*([^;}"]+)/gi;
   let match;
   while ((match = fontFamilyPattern.exec(css)) !== null) {
-    const fonts = match[1].split(',').map((f) =>
-      f.trim().replace(/^["']|["']$/g, '')
-    );
-    for (const font of fonts) {
-      const normalized = font.trim();
+    const fonts = match[1].split(',').map((f) => f.trim());
+    for (const rawFont of fonts) {
+      const resolved = resolveFontFamilyValue(rawFont, css);
       if (
-        normalized &&
-        !GENERIC_FONT_FAMILIES.has(normalized.toLowerCase())
+        resolved &&
+        !GENERIC_FONT_FAMILIES.has(resolved.toLowerCase())
       ) {
-        fontSet.add(normalized);
+        fontSet.add(resolved);
       }
     }
   }
@@ -675,6 +796,52 @@ function extractFontsFromCss(css: string): string[] {
   return Array.from(fontSet);
 }
 
+/**
+ * Resolve a single font-family value to a clean font name.
+ * Handles: `!important` flags, surrounding quotes, `var(--name)` references
+ * (recursively resolved from the surrounding CSS), and unresolvable references.
+ *
+ * @param depth - recursion guard to prevent infinite var() loops
+ * @returns the clean font name, or null if the value is unresolvable / a CSS var
+ */
+function resolveFontFamilyValue(
+  rawValue: string,
+  fullCss: string,
+  depth = 0,
+): string | null {
+  if (depth > 5) return null;
+
+  // Strip !important and surrounding whitespace
+  let value = rawValue.replace(/!important/i, '').trim();
+  // Strip surrounding quotes
+  value = value.replace(/^["']|["']$/g, '').trim();
+  if (!value) return null;
+
+  // var(--name) or var(--name, fallback) → resolve from CSS
+  const varMatch = value.match(/^var\(\s*(--[\w-]+)(?:\s*,\s*([^)]+))?\s*\)$/);
+  if (varMatch) {
+    const varName = varMatch[1];
+    const fallback = varMatch[2]?.trim();
+    const defPattern = new RegExp(`${escapeRegex(varName)}\\s*:\\s*([^;}]+)`, 'g');
+    const defMatch = defPattern.exec(fullCss);
+    if (defMatch) {
+      const resolved = resolveFontFamilyValue(defMatch[1].trim(), fullCss, depth + 1);
+      if (resolved) return resolved;
+    }
+    if (fallback) {
+      const resolved = resolveFontFamilyValue(fallback, fullCss, depth + 1);
+      if (resolved) return resolved;
+    }
+    // Couldn't resolve var() — drop it rather than persisting "var(--xxx)" literal
+    return null;
+  }
+
+  // Drop any remaining var() / function references that slipped through
+  if (value.includes('var(') || value.includes('(')) return null;
+
+  return value;
+}
+
 const GENERIC_FONT_FAMILIES = new Set([
   'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy',
   'system-ui', 'ui-sans-serif', 'ui-serif', 'ui-monospace', 'ui-rounded',
@@ -682,6 +849,130 @@ const GENERIC_FONT_FAMILIES = new Set([
   '-apple-system', 'blinkmacsystemfont', 'segoe ui', 'apple color emoji',
   'segoe ui emoji', 'segoe ui symbol', 'noto color emoji',
 ]);
+
+/** Filename fragments that indicate icon fonts rather than typography. */
+const ICON_FONT_FRAGMENTS = [
+  'icon', 'icomoon', 'fontawesome', 'ionicon', 'material-icons', 'feather', 'lucide',
+];
+
+/**
+ * Extract font family names from `<link rel="preload" as="font">` tags.
+ * Modern sites use preload as a performance signal — the font that's preloaded
+ * is almost always the primary brand font (body or display). Stronger signal
+ * than CSS-extracted fonts because preload is explicit prioritisation by the dev.
+ *
+ * Heuristic: parse the filename portion of the href, which typically follows
+ * patterns like `poppins-v23-latin-400.woff2` or `Poppins-Regular.woff2`.
+ */
+function extractPreloadedFonts($: cheerio.CheerioAPI): string[] {
+  const fonts = new Set<string>();
+  $('link[rel="preload"][as="font"]').each((_, el) => {
+    const href = $(el).attr('href') || '';
+    if (!href) return;
+
+    // Get the last path segment
+    const segment = href.split('/').pop() || href;
+    // Strip extension
+    const base = segment.replace(/\.(woff2?|ttf|otf|eot)(\?.*)?$/i, '');
+    // Strip query/cache suffix and trailing timestamps
+    const clean = base.replace(/-\d{8,}$/, '').replace(/\?.*$/, '');
+    if (!clean) return;
+
+    // Common patterns:
+    //   "google-fonts-poppins-v23-latin-400-normal" → "poppins"
+    //   "Poppins-Regular" → "Poppins"
+    //   "inter-var" → "inter"
+    //   "MaterialIcons-Regular" → skip (icon font)
+    const stripPrefix = clean.replace(/^(google-fonts?|gf|webfont)-/i, '');
+    const firstWord = stripPrefix.split(/[-_.]/)[0] || stripPrefix;
+    if (!firstWord) return;
+
+    const lower = firstWord.toLowerCase();
+    if (ICON_FONT_FRAGMENTS.some((frag) => lower.includes(frag))) return;
+
+    // Capitalize first letter (most font names are PascalCase)
+    const fontName = firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
+    fonts.add(fontName);
+  });
+  return Array.from(fonts);
+}
+
+/**
+ * Extract the body font and heading font from CSS by parsing the rules
+ * that target `body` and `h1, h2, h3` selectors. These are the strongest
+ * CSS-side signals for which fonts are intentional brand typography
+ * (vs framework defaults, fallbacks, or one-off component fonts).
+ *
+ * Returns `null` for either if no targeted rule was found.
+ */
+function extractSemanticFonts(css: string): {
+  bodyFont: string | null;
+  headingFont: string | null;
+} {
+  // Match each CSS rule: `selector { ... font-family: <value>; ... }`
+  const rulePattern = /([^{}]+)\{([^}]+)\}/g;
+
+  let bodyFont: string | null = null;
+  let headingFont: string | null = null;
+  let ruleMatch: RegExpExecArray | null;
+
+  while ((ruleMatch = rulePattern.exec(css)) !== null) {
+    const selector = ruleMatch[1].trim().toLowerCase();
+    const block = ruleMatch[2];
+
+    const familyMatch = block.match(/font-family\s*:\s*([^;}!]+)(?:!important)?/i);
+    if (!familyMatch) continue;
+
+    // Take the first declared font from the comma-separated list
+    const firstFontRaw = familyMatch[1].split(',')[0]?.trim() || '';
+    const resolved = resolveFontFamilyValue(firstFontRaw, css);
+    if (!resolved || GENERIC_FONT_FAMILIES.has(resolved.toLowerCase())) continue;
+
+    // Body selectors (also covers `html, body { ... }`)
+    if (!bodyFont && /(^|[\s,])(html|body)([\s,{]|$)/.test(selector)) {
+      bodyFont = resolved;
+    }
+
+    // Heading selectors — first match wins
+    if (!headingFont && /(^|[\s,])(h1|h2|h3)([\s,{]|$)/.test(selector)) {
+      headingFont = resolved;
+    }
+
+    if (bodyFont && headingFont) break;
+  }
+
+  return { bodyFont, headingFont };
+}
+
+/**
+ * Merge font lists by priority into a single deduplicated list.
+ * Earlier sources outrank later ones — the first font is used as `primaryFontName`
+ * downstream, so its placement matters.
+ */
+function mergeFontsByPriority(
+  preloaded: string[],
+  bodyFont: string | null,
+  headingFont: string | null,
+  remaining: string[],
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  const push = (font: string | null | undefined): void => {
+    if (!font) return;
+    const key = font.toLowerCase().replace(/['"]/g, '').trim();
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    out.push(font);
+  };
+
+  preloaded.forEach(push);
+  push(bodyFont);
+  push(headingFont);
+  remaining.forEach(push);
+
+  return out;
+}
 
 // ─── Logo Detection ───────────────────────────────────
 

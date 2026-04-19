@@ -35,6 +35,7 @@ import {
   type ProcessedColorGroup,
   type AuthoritativeColor,
 } from './analysis-prompts';
+import { runFrameworkDetectors, type DetectedToken } from './framework-detectors';
 import {
   hexToRgb,
   hexToRgbString,
@@ -219,6 +220,22 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     }
 
     const processed = preprocessScrapeData(scraped);
+
+    // Refuse-mode: if scraping produced essentially nothing usable, fail fast
+    // with an actionable message instead of letting the AI hallucinate a palette.
+    // Trigger when the palette has no high-confidence color AND fewer than 3
+    // entries total — typical for sites that block scraping, render via
+    // CSS-in-JS, or whose stylesheets failed to fetch.
+    const hasHighConfidence = processed.authoritativeColors.some((c) => c.confidence === 'high');
+    if (!hasHighConfidence && processed.authoritativeColors.length < 3) {
+      await markError(
+        styleguideId,
+        'Could not extract enough brand colors from this site. ' +
+        'It may use CSS-in-JS, block automated scraping, or hide its design tokens behind authentication. ' +
+        'Try uploading a brand-guide PDF, or analysing a marketing landing page instead of the homepage.',
+      );
+      return;
+    }
 
     // Step 2: AI Call 1 — Visual Identity
     await updateStatus(styleguideId, 'EXTRACTING_COLORS');
@@ -465,6 +482,11 @@ export async function analyzePdf(
  * - Consolidates fonts
  */
 function preprocessScrapeData(scraped: ScrapedData): ProcessedData {
+  // Run framework detectors FIRST — their output is the highest-confidence
+  // signal we have for what counts as a real brand color on this site.
+  const combinedCss = `${scraped.inlineCss ?? ''}\n${scraped.linkedCssContent ?? ''}`;
+  const { frameworks, tokens: detectedTokens } = runFrameworkDetectors(combinedCss, '');
+
   // Defensive defaults for scraper fields that might be empty
   const colorGroups = buildColorGroups(
     scraped.cssVariables ?? [],
@@ -474,7 +496,7 @@ function preprocessScrapeData(scraped: ScrapedData): ProcessedData {
 
   // Build the authoritative palette — this is what we will write to the DB,
   // regardless of what the AI returns. AI is only allowed to annotate.
-  const authoritativeColors = buildAuthoritativePalette(colorGroups);
+  const authoritativeColors = buildAuthoritativePalette(colorGroups, detectedTokens);
 
   // Deduplicate and sort fonts by likely importance
   const fonts = deduplicateFonts(scraped.cssFonts ?? []);
@@ -486,6 +508,7 @@ function preprocessScrapeData(scraped: ScrapedData): ProcessedData {
     bodyText: scraped.bodyText ?? '',
     colorGroups,
     authoritativeColors,
+    frameworks,
     fonts,
     fontSizes: scraped.fontSizes ?? [],
     logoUrls: scraped.logoUrls ?? [],
@@ -496,16 +519,24 @@ function preprocessScrapeData(scraped: ScrapedData): ProcessedData {
 }
 
 /**
- * Pick the authoritative brand palette from the grouped scraper data.
- * Priority: CSS variables → frequency-ranked colors → other.
- * Max 12 entries total.
+ * Pick the authoritative brand palette from grouped scraper data + detector tokens.
+ * Priority: framework detectors → CSS variables → frequency → other. Max 12.
+ *
+ * Confidence scoring:
+ *   - detector  → 'high' (recognised by ACSS / Tailwind / shadcn / etc.)
+ *   - css-var   → 'medium' (could be brand or framework default)
+ *   - frequency → 'medium' if count ≥3 or used in ≥2 properties, else 'low'
+ *   - other     → 'low'
  */
-function buildAuthoritativePalette(groups: ProcessedColorGroup): AuthoritativeColor[] {
+function buildAuthoritativePalette(
+  groups: ProcessedColorGroup,
+  detectedTokens: DetectedToken[],
+): AuthoritativeColor[] {
   const MAX = 12;
   const out: AuthoritativeColor[] = [];
   const seen = new Set<string>();
 
-  const push = (entry: AuthoritativeColor) => {
+  const push = (entry: AuthoritativeColor): void => {
     if (out.length >= MAX) return;
     const key = entry.hex.toUpperCase();
     if (seen.has(key)) return;
@@ -513,24 +544,43 @@ function buildAuthoritativePalette(groups: ProcessedColorGroup): AuthoritativeCo
     out.push({ ...entry, hex: key });
   };
 
-  // 1. CSS variables come first — highest confidence
-  for (const v of groups.fromVariables) {
-    push({ hex: v.hex, source: 'css-variable', variableName: v.name });
+  // 1. Framework-detector tokens first — these are by-convention brand tokens.
+  for (const token of detectedTokens) {
+    const [detectorName] = token.source.split(':');
+    push({
+      hex: token.hex,
+      source: 'detector',
+      confidence: 'high',
+      detectorName,
+      detectorRole: token.role,
+    });
   }
 
-  // 2. Frequency-ranked next
+  // 2. CSS variables — medium confidence (could be brand or builder default)
+  for (const v of groups.fromVariables) {
+    push({
+      hex: v.hex,
+      source: 'css-variable',
+      confidence: 'medium',
+      variableName: v.name,
+    });
+  }
+
+  // 3. Frequency-ranked — confidence depends on usage strength
   for (const f of groups.byFrequency) {
+    const isStrong = f.count >= 3 || f.contexts.length >= 2;
     push({
       hex: f.hex,
       source: 'frequency',
+      confidence: isStrong ? 'medium' : 'low',
       frequency: f.count,
       contexts: f.contexts,
     });
   }
 
-  // 3. Fill remaining slots with other detected colors
+  // 4. Fill remaining slots with other detected colors
   for (const hex of groups.other) {
-    push({ hex, source: 'other' });
+    push({ hex, source: 'other', confidence: 'low' });
   }
 
   return out;
@@ -548,13 +598,27 @@ function buildColorGroups(
   const seen = new Set<string>();
 
   // 1. Colors from CSS variables (highest confidence)
-  // Accept both :root and non-:root variables — many sites define colors in
-  // .dark, [data-theme], component scopes, or media queries.
-  // Prioritize :root first, then other contexts.
+  // Priority order:
+  //   a. ACSS canonical brand tokens (--primary-hex / --secondary-hex / --base-hex /
+  //      --neutral-hex / --accent-hex) — explicit by-convention brand declarations
+  //      that must outrank generic page-builder defaults like --bricks-color-primary.
+  //   b. :root variables — typical brand token location
+  //   c. Non-:root variables (.dark, [data-theme], compound selectors like
+  //      `:root,.color-scheme--main{}` which our regex puts in 'usage' context).
+  const isAcssToken = (name: string): boolean =>
+    /^--(primary|secondary|base|neutral|accent)-hex$/i.test(name);
+  const sortedVars = [...cssVariables].sort((a, b) => {
+    const aAcss = isAcssToken(a.name);
+    const bAcss = isAcssToken(b.name);
+    if (aAcss !== bAcss) return aAcss ? -1 : 1;
+    const aRoot = a.context === 'root';
+    const bRoot = b.context === 'root';
+    if (aRoot !== bRoot) return aRoot ? -1 : 1;
+    return 0; // stable sort preserves original order
+  });
+
   const fromVariables: Array<{ name: string; hex: string }> = [];
-  const rootVars = cssVariables.filter((v) => v.context === 'root');
-  const otherVars = cssVariables.filter((v) => v.context !== 'root');
-  for (const v of [...rootVars, ...otherVars]) {
+  for (const v of sortedVars) {
     const hex = extractHexFromValue(v.value);
     if (hex && !seen.has(hex)) {
       seen.add(hex);

@@ -28,7 +28,22 @@ export interface ProcessedColorGroup {
  */
 export interface AuthoritativeColor {
   hex: string;
-  source: 'css-variable' | 'frequency' | 'other';
+  source: 'detector' | 'css-variable' | 'frequency' | 'other';
+  /**
+   * Confidence that this hex is an actual brand color:
+   *   - 'high'   — emitted by a framework detector (ACSS, Tailwind, etc.)
+   *   - 'medium' — found via CSS custom property scan or frequent in CSS
+   *   - 'low'    — single-occurrence frequency hit or generic fallback
+   *
+   * Used downstream to (a) instruct the AI to classify low-confidence
+   * colors as NEUTRAL rather than PRIMARY/SECONDARY, and (b) trigger
+   * refuse-mode when no high-confidence color exists.
+   */
+  confidence: 'high' | 'medium' | 'low';
+  /** Framework that emitted this token, e.g. `'acss'`, `'shadcn'`. */
+  detectorName?: string;
+  /** Semantic role assigned by the detector, e.g. `'primary'`, `'semantic'`. */
+  detectorRole?: string;
   /** CSS variable name if available, e.g. `--primary-500` */
   variableName?: string;
   /** Number of occurrences across scraped CSS, if known */
@@ -45,6 +60,8 @@ export interface ProcessedData {
   colorGroups: ProcessedColorGroup;
   /** Authoritative palette — exact hex values, capped at 12 */
   authoritativeColors: AuthoritativeColor[];
+  /** Names of frameworks that fingerprinted positive (acss, tailwind-v4, …). */
+  frameworks: string[];
   fonts: string[];
   fontSizes: FontSizeEntry[];
   logoUrls: string[];
@@ -62,7 +79,10 @@ const VISUAL_IDENTITY_SYSTEM_PROMPT = `You are an expert brand designer speciali
 
 CRITICAL RULES:
 1. For COLORS: You are given an AUTHORITATIVE PALETTE list of exact hex values. You MUST return an entry for EVERY hex in that list, with the EXACT same hex (uppercase, 6 digits). You may not add colors, drop colors, merge colors, or change any hex value — not even by a single digit.
-2. For COLORS: For each hex, choose a category that best describes its role — PRIMARY (main brand color), SECONDARY (supporting), ACCENT (CTA/highlight), NEUTRAL (grays/backgrounds/text), or SEMANTIC (success/error/warning). Use the provided usage contexts (CSS variable name, property usage, frequency) to decide.
+2. For COLORS: For each hex, choose a category that best describes its role — PRIMARY (main brand color), SECONDARY (supporting), ACCENT (CTA/highlight), NEUTRAL (grays/backgrounds/text), or SEMANTIC (success/error/warning).
+   - HIGH-confidence colors (recognised by a framework detector with a known role like "primary"/"secondary"/"semantic") MUST use that role's category. A token labelled "detector: acss role: primary" becomes PRIMARY. A token labelled "role: semantic" becomes SEMANTIC. Do not overrule the detector.
+   - MEDIUM-confidence colors (CSS variables, frequent observations) — use your judgement based on the variable name and usage contexts.
+   - LOW-confidence colors (single observations, fallbacks) MUST be classified as NEUTRAL or SEMANTIC. Never assign LOW-confidence colors to PRIMARY, SECONDARY, or ACCENT — those slots are reserved for the strongest brand signals.
 3. For COLORS: Give each color a short, human-friendly name (e.g., "Ocean Blue", "Warm Coral"). Never use the hex string as the name.
 4. For COLORS: If the palette contains neutrals (grays / near-black / near-white), categorize them as NEUTRAL — do not refuse them. Preserving the exact scraped palette is more important than aesthetic curation.
 5. For TYPOGRAPHY: You are given a FONT LIST detected from CSS. Set \`primaryFontName\` to the FIRST font in that list verbatim. Do not rename, pretty-print, or substitute. If the list is empty, return null.
@@ -79,11 +99,16 @@ export function buildVisualIdentityPrompt(data: ProcessedData): string {
   const { fonts, fontSizes, logoUrls, authoritativeColors } = data;
 
   // Build the AUTHORITATIVE palette section — this is what the AI must echo back verbatim.
+  // Confidence + detector role are surfaced explicitly so the AI follows Rule 2.
   const paletteSection = authoritativeColors.length > 0
     ? authoritativeColors
         .map((c, i) => {
           const parts: string[] = [];
           parts.push(`  ${i + 1}. ${c.hex}`);
+          parts.push(`confidence: ${c.confidence}`);
+          if (c.detectorName && c.detectorRole) {
+            parts.push(`detector: ${c.detectorName} role: ${c.detectorRole}`);
+          }
           if (c.variableName) parts.push(`var: ${c.variableName}`);
           if (typeof c.frequency === 'number' && c.frequency > 0) parts.push(`${c.frequency}×`);
           if (c.contexts && c.contexts.length > 0) parts.push(`in ${c.contexts.join(', ')}`);

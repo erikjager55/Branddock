@@ -28,17 +28,36 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
 
   // Reset stale analysis state on mount — prevents showing ProcessingProgress
   // with a jobId from a previous (completed/deleted) analysis session.
-  // Only runs once on mount (via ref) to avoid cancelling a freshly started analysis
-  // when the styleguide query hasn't refetched yet (stale COMPLETE status).
+  //
+  // Critical: only treat the store as stale when the DB record's jobId MATCHES
+  // the store's jobId. If they differ, the store has a fresher jobId from a
+  // just-started mutation while the styleguide query hasn't refetched yet —
+  // killing the store would abort the new analysis right after it begins
+  // (the user would have to click Analyze twice). Wait for the refetch instead.
   const didMountCleanupRef = useRef(false);
   useEffect(() => {
     if (didMountCleanupRef.current) return;
-    if (isAnalyzing && analysisJobId && !isLoading) {
+    if (isLoading) return; // wait for the styleguide query to settle
+    if (!isAnalyzing || !analysisJobId) return; // nothing to clean up
+
+    const dbJobId = data?.styleguide?.analysisJobId;
+
+    // No DB record at all → store is definitely stale (e.g. record was deleted)
+    if (!data?.styleguide) {
       didMountCleanupRef.current = true;
-      const currentStatus = data?.styleguide?.analysisStatus;
-      if (!data?.styleguide || currentStatus === "COMPLETE" || currentStatus === "ERROR") {
-        stopAnalysis();
-      }
+      stopAnalysis();
+      return;
+    }
+
+    // DB jobId differs from store jobId → a newer analysis just started; the
+    // refetch hasn't caught up yet. Don't clean up — let the next render handle it.
+    if (dbJobId !== analysisJobId) return;
+
+    // Same jobId AND finalised → genuinely stale store, safe to clean up.
+    const status = data.styleguide.analysisStatus;
+    if (status === "COMPLETE" || status === "ERROR") {
+      didMountCleanupRef.current = true;
+      stopAnalysis();
     }
   }, [isAnalyzing, analysisJobId, isLoading, data?.styleguide, stopAnalysis]);
 
