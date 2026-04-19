@@ -767,7 +767,7 @@ function extractColorsFromCss(css: string): string[] {
 
 // ─── Font Extraction ──────────────────────────────────
 
-/** Extract unique font families from CSS */
+/** Extract unique font families from CSS, excluding generic + web-safe fallbacks. */
 function extractFontsFromCss(css: string): string[] {
   const fontSet = new Set<string>();
 
@@ -780,17 +780,20 @@ function extractFontsFromCss(css: string): string[] {
       const resolved = resolveFontFamilyValue(rawFont, css);
       if (
         resolved &&
-        !GENERIC_FONT_FAMILIES.has(resolved.toLowerCase())
+        !GENERIC_FONT_FAMILIES.has(resolved.toLowerCase()) &&
+        !isWebSafeFallbackFont(resolved) &&
+        !isIconFont(resolved)
       ) {
         fontSet.add(resolved);
       }
     }
   }
 
-  // Match @font-face declarations
+  // Match @font-face declarations (these are always intentional)
   const fontFacePattern = /@font-face\s*\{[^}]*font-family\s*:\s*["']?([^"';}\s]+)/gi;
   while ((match = fontFacePattern.exec(css)) !== null) {
-    fontSet.add(match[1].trim());
+    const name = match[1].trim();
+    if (!isWebSafeFallbackFont(name) && !isIconFont(name)) fontSet.add(name);
   }
 
   return Array.from(fontSet);
@@ -850,10 +853,39 @@ const GENERIC_FONT_FAMILIES = new Set([
   'segoe ui emoji', 'segoe ui symbol', 'noto color emoji',
 ]);
 
-/** Filename fragments that indicate icon fonts rather than typography. */
+/**
+ * Web-safe / system fallback fonts that appear in CSS as `font-family` fallbacks
+ * (e.g. `font-family: 'Oranienbaum', Georgia, serif;`). They are never the
+ * intentional brand font — keeping them in the output adds noise like "Times New
+ * Roman" in the additionalFonts list. We filter them out at merge time.
+ *
+ * Note: includes lowercase variants because some CSS uses `roboto` instead of
+ * `Roboto` as a fallback declaration.
+ */
+const WEB_SAFE_FALLBACK_FONTS = new Set([
+  'georgia', 'times', 'times new roman', 'helvetica', 'helvetica neue',
+  'arial', 'arial black', 'verdana', 'tahoma', 'trebuchet ms',
+  'courier', 'courier new', 'lucida console', 'lucida sans unicode',
+  'palatino', 'palatino linotype', 'book antiqua', 'garamond', 'impact',
+  'comic sans ms', 'monaco', 'consolas',
+]);
+
+/** Check if a font name is a system / web-safe fallback (not an intentional brand font). */
+function isWebSafeFallbackFont(name: string): boolean {
+  return WEB_SAFE_FALLBACK_FONTS.has(name.toLowerCase().trim());
+}
+
+/** Filename / font-family fragments that indicate icon fonts rather than typography. */
 const ICON_FONT_FRAGMENTS = [
   'icon', 'icomoon', 'fontawesome', 'ionicon', 'material-icons', 'feather', 'lucide',
+  'dashicons', 'themify', 'eicons', 'glyphicon', 'webflow-icons', 'bricks-icons',
 ];
+
+/** Check whether a font name looks like an icon font (not real typography). */
+function isIconFont(name: string): boolean {
+  const lower = name.toLowerCase();
+  return ICON_FONT_FRAGMENTS.some((frag) => lower.includes(frag));
+}
 
 /**
  * Extract font family names from `<link rel="preload" as="font">` tags.
@@ -887,8 +919,7 @@ function extractPreloadedFonts($: cheerio.CheerioAPI): string[] {
     const firstWord = stripPrefix.split(/[-_.]/)[0] || stripPrefix;
     if (!firstWord) return;
 
-    const lower = firstWord.toLowerCase();
-    if (ICON_FONT_FRAGMENTS.some((frag) => lower.includes(frag))) return;
+    if (isIconFont(firstWord)) return;
 
     // Capitalize first letter (most font names are PascalCase)
     const fontName = firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
@@ -898,24 +929,60 @@ function extractPreloadedFonts($: cheerio.CheerioAPI): string[] {
 }
 
 /**
- * Extract the body font and heading font from CSS by parsing the rules
- * that target `body` and `h1, h2, h3` selectors. These are the strongest
- * CSS-side signals for which fonts are intentional brand typography
- * (vs framework defaults, fallbacks, or one-off component fonts).
+ * Extract the body font and heading font from CSS.
  *
- * Returns `null` for either if no targeted rule was found.
+ * Two extraction paths, in priority order:
+ *   1. Framework-style CSS variable conventions (highest signal): ACSS uses
+ *      `--h1-font-family`, `--h2-font-family`, `--body-font-family`. WordPress
+ *      themes often expose `--wp--preset--font-family--*`. These are explicit
+ *      brand typography declarations.
+ *   2. Direct selector rules: `body { font-family }` and `h1, h2, h3 { font-family }`.
+ *      The fallback path for sites that don't use a token system.
+ *
+ * Web-safe fallbacks (Georgia, Times, Arial, etc.) are skipped — they're never
+ * the intentional brand font, just CSS fallback chain noise.
+ *
+ * Returns `null` for either if no targeted signal was found.
  */
 function extractSemanticFonts(css: string): {
   bodyFont: string | null;
   headingFont: string | null;
 } {
-  // Match each CSS rule: `selector { ... font-family: <value>; ... }`
-  const rulePattern = /([^{}]+)\{([^}]+)\}/g;
-
   let bodyFont: string | null = null;
   let headingFont: string | null = null;
-  let ruleMatch: RegExpExecArray | null;
 
+  // ── Path 1: framework-style font-family variables ─────
+  // ACSS heading vars: --h1-font-family, --h2-font-family, --h3-font-family, …
+  const headingVarMatch = css.match(/--h[1-6]-font-family\s*:\s*([^;}!]+)/i);
+  if (headingVarMatch) {
+    const resolved = resolveFontFamilyValue(
+      headingVarMatch[1].split(',')[0]?.trim() || '',
+      css,
+    );
+    if (resolved && !GENERIC_FONT_FAMILIES.has(resolved.toLowerCase()) && !isWebSafeFallbackFont(resolved) && !isIconFont(resolved)) {
+      headingFont = resolved;
+    }
+  }
+
+  // Body / paragraph / text vars (ACSS, Tailwind, common conventions)
+  const bodyVarMatch = css.match(
+    /--(?:body|paragraph|text|p|font-(?:body|primary))-font-family\s*:\s*([^;}!]+)/i,
+  );
+  if (bodyVarMatch) {
+    const resolved = resolveFontFamilyValue(
+      bodyVarMatch[1].split(',')[0]?.trim() || '',
+      css,
+    );
+    if (resolved && !GENERIC_FONT_FAMILIES.has(resolved.toLowerCase()) && !isWebSafeFallbackFont(resolved) && !isIconFont(resolved)) {
+      bodyFont = resolved;
+    }
+  }
+
+  if (bodyFont && headingFont) return { bodyFont, headingFont };
+
+  // ── Path 2: direct selector rules ─────────────────────
+  const rulePattern = /([^{}]+)\{([^}]+)\}/g;
+  let ruleMatch: RegExpExecArray | null;
   while ((ruleMatch = rulePattern.exec(css)) !== null) {
     const selector = ruleMatch[1].trim().toLowerCase();
     const block = ruleMatch[2];
@@ -923,18 +990,20 @@ function extractSemanticFonts(css: string): {
     const familyMatch = block.match(/font-family\s*:\s*([^;}!]+)(?:!important)?/i);
     if (!familyMatch) continue;
 
-    // Take the first declared font from the comma-separated list
     const firstFontRaw = familyMatch[1].split(',')[0]?.trim() || '';
     const resolved = resolveFontFamilyValue(firstFontRaw, css);
-    if (!resolved || GENERIC_FONT_FAMILIES.has(resolved.toLowerCase())) continue;
+    if (
+      !resolved
+      || GENERIC_FONT_FAMILIES.has(resolved.toLowerCase())
+      || isWebSafeFallbackFont(resolved)
+      || isIconFont(resolved)
+    ) continue;
 
-    // Body selectors (also covers `html, body { ... }`)
-    if (!bodyFont && /(^|[\s,])(html|body)([\s,{]|$)/.test(selector)) {
+    if (!bodyFont && /(^|[\s,])(html|body)([\s,.{]|$)/.test(selector)) {
       bodyFont = resolved;
     }
 
-    // Heading selectors — first match wins
-    if (!headingFont && /(^|[\s,])(h1|h2|h3)([\s,{]|$)/.test(selector)) {
+    if (!headingFont && /(^|[\s,])(h1|h2|h3)([\s,.{]|$)/.test(selector)) {
       headingFont = resolved;
     }
 
@@ -948,6 +1017,12 @@ function extractSemanticFonts(css: string): {
  * Merge font lists by priority into a single deduplicated list.
  * Earlier sources outrank later ones — the first font is used as `primaryFontName`
  * downstream, so its placement matters.
+ *
+ * Subtle priority rule: when a preloaded font exists, it wins over `bodyFont`
+ * derived from a `body{font-family}` selector. Preload is an explicit
+ * developer-placed performance signal (the brand body font), whereas the body
+ * selector often resolves to a framework default like `roboto` (Bricks Builder)
+ * or `system-ui` that's NOT the actual brand typography.
  */
 function mergeFontsByPriority(
   preloaded: string[],
@@ -967,7 +1042,8 @@ function mergeFontsByPriority(
   };
 
   preloaded.forEach(push);
-  push(bodyFont);
+  // bodyFont only matters when no preloaded font signalled the body typography
+  if (preloaded.length === 0) push(bodyFont);
   push(headingFont);
   remaining.forEach(push);
 

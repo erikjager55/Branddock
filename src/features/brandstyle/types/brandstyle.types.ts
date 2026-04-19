@@ -14,6 +14,10 @@ export interface StyleguideColor {
   notes: string | null;
   contrastWhite: string | null;
   contrastBlack: string | null;
+  /** 'high' | 'medium' | 'low' — how confident the scraper is this is a brand token. */
+  confidence: string | null;
+  /** Origin label, e.g. 'acss', 'shadcn', 'css-variable', 'frequency'. */
+  detectorSource: string | null;
   sortOrder: number;
 }
 

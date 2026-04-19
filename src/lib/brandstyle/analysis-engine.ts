@@ -76,6 +76,8 @@ interface VisualIdentityResult {
  * A color that will actually be written to the DB.
  * Hex is always the authoritative hex from scraping; name/category/tags
  * come from AI annotation (merged by hex match) with deterministic fallbacks.
+ * Confidence + detectorSource come straight from the scraper pipeline so
+ * the UI can show how trustworthy the color is.
  */
 interface ResolvedColor {
   hex: string;
@@ -83,6 +85,8 @@ interface ResolvedColor {
   category: 'PRIMARY' | 'SECONDARY' | 'ACCENT' | 'NEUTRAL' | 'SEMANTIC';
   tags: string[];
   notes: string | null;
+  confidence: 'high' | 'medium' | 'low';
+  detectorSource: string | null;
 }
 
 interface VoiceImageryResult {
@@ -454,6 +458,9 @@ export async function analyzePdf(
           category: validateCategory(c.category),
           tags: c.tags ?? [],
           notes: c.notes ?? null,
+          // PDFs have no scraper provenance — treat AI extraction as medium confidence
+          confidence: 'medium',
+          detectorSource: 'pdf-extraction',
         };
       })
       .filter((c): c is ResolvedColor => c !== null);
@@ -868,6 +875,8 @@ function resolveColors(
       category: ai ? validateCategory(ai.category) : defaultCategory(entry, index),
       tags: ai?.tags ?? [],
       notes: ai?.notes?.trim() || defaultColorNotes(entry),
+      confidence: entry.confidence,
+      detectorSource: entry.detectorName ?? entry.source,
     });
   });
 
@@ -1011,6 +1020,8 @@ async function writeResultToDb(
         notes: color.notes,
         contrastWhite: contrastWithWhite(color.hex),
         contrastBlack: contrastWithBlack(color.hex),
+        confidence: color.confidence,
+        detectorSource: color.detectorSource,
         sortOrder: i,
         styleguideId,
       },

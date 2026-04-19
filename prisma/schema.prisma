@@ -1592,6 +1592,12 @@ model StyleguideColor {
   notes             String?
   contrastWhite     String?
   contrastBlack     String?
+  // Provenance fields from the brandstyle scraper pipeline so the UI can show
+  // how confident we are this color is actually a brand token.
+  // confidence:     'high' | 'medium' | 'low'
+  // detectorSource: e.g. 'acss', 'shadcn', 'css-variable', 'frequency', 'other'
+  confidence        String?
+  detectorSource    String?
   sortOrder         Int               @default(0)
 
   styleguideId      String
