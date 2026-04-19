@@ -570,6 +570,10 @@ export const readTools: ClawToolDefinition[] = [
             select: { id: true, name: true, hex: true, category: true },
             orderBy: { sortOrder: 'asc' },
           },
+          logos: {
+            select: { variant: true, fileUrl: true, description: true },
+            orderBy: { sortOrder: 'asc' },
+          },
         },
       });
 
@@ -577,7 +581,11 @@ export const readTools: ClawToolDefinition[] = [
 
       return {
         id: styleguide.id,
-        logoVariations: styleguide.logoVariations,
+        logoVariations: styleguide.logos.map((l) => ({
+          variant: l.variant,
+          url: l.fileUrl,
+          description: l.description,
+        })),
         logoGuidelines: styleguide.logoGuidelines,
         colors: styleguide.colors,
         primaryFontName: styleguide.primaryFontName,

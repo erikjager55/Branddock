@@ -220,6 +220,12 @@ model Workspace {
   clawConversations         ClawConversation[]
   bugReports                BugReport[]
 
+  // Brandstyle v2 (Fase 0)
+  styleguideFonts           StyleguideFont[]
+  styleguideLogos           StyleguideLogo[]
+  styleguideComponents      StyleguideComponent[]
+  styleguideReviews         StyleguideReview[]
+
   @@index([organizationId])
 }
 
@@ -311,6 +317,11 @@ model User {
   clawConversations             ClawConversation[]
   bugReports                    BugReport[]
   resolvedBugReports            BugReport[]            @relation("BugResolver")
+
+  // Brandstyle v2 (Fase 0)
+  uploadedFonts                 StyleguideFont[]       @relation("FontUploader")
+  uploadedLogos                 StyleguideLogo[]       @relation("LogoUploader")
+  styleguideReviews             StyleguideReview[]     @relation("StyleguideReviewer")
 
   @@index([workspaceId])
 }
@@ -1522,16 +1533,21 @@ model BrandStyleguide {
   // and confidence in the extracted brand tokens.
   detectedFrameworks    String[]          @default([])
 
-  // Logo
-  logoVariations        Json?
+  // Logo (logoVariations JSON vervangen door StyleguideLogo relatie — Fase 0)
+  logos                 StyleguideLogo[]
   logoGuidelines        String[]
   logoDonts             String[]
   logoSavedForAi        Boolean           @default(false)
+
+  // Fonts (nieuw Fase 0 — vervangt primaryFontName/additionalFonts op termijn)
+  fonts                 StyleguideFont[]
 
   // Colors
   colors                StyleguideColor[]
   colorDonts            String[]
   colorsSavedForAi      Boolean           @default(false)
+  // Semantic colors: { info: {light, base}, success: {...}, warning: {...}, danger: {...} }
+  semanticColors        Json?
 
   // Typography
   primaryFontName       String?
@@ -1567,6 +1583,19 @@ model BrandStyleguide {
   // Visual Language (Vormentaal)
   visualLanguage        Json?
   visualLanguageSavedForAi Boolean        @default(false)
+
+  // Spacing tokens (Fase 4 — gesplitst uit Visual System)
+  spacingScale          Json?             // { xs, sm, md, lg, xl } or array
+  cornerRadii           Json?             // { sm, md, lg, xl, full }
+  shadowSystem          Json?             // Array<{ label, value, intensity }>
+
+  // Components (Fase 5 — automatisch gedetecteerd tijdens analyzer run)
+  components            StyleguideComponent[]
+
+  // Review workflow + Published state (Fase 2)
+  reviews               StyleguideReview[]
+  published             Boolean           @default(false)
+  publishedAt           DateTime?
 
   isLocked              Boolean           @default(false)
   lockedAt              DateTime?
@@ -1608,6 +1637,151 @@ model StyleguideColor {
   styleguide        BrandStyleguide   @relation(fields: [styleguideId], references: [id], onDelete: Cascade)
 
   @@index([styleguideId])
+}
+
+// === BRANDSTYLE V2 — Fase 0 ===
+
+model StyleguideFont {
+  id           String      @id @default(cuid())
+  name         String      // "Poppins", "Oranienbaum"
+  role         FontRole    @default(UI)
+  source       FontSource  @default(DETECTED)
+
+  // File fields (null als DETECTED zonder upload)
+  fileUrl      String?
+  fileName     String?
+  fileType     String?     // "woff2" | "woff" | "ttf" | "otf"
+  fileSize     Int?
+
+  // CSS metadata
+  fontFamily   String?     // CSS font-family value
+  weight       String?     // "400", "400,700", "100-900"
+  style        String?     // "normal" | "italic"
+  sortOrder    Int         @default(0)
+
+  uploadedById String?
+  uploadedBy   User?       @relation("FontUploader", fields: [uploadedById], references: [id])
+
+  styleguideId String
+  styleguide   BrandStyleguide @relation(fields: [styleguideId], references: [id], onDelete: Cascade)
+  workspaceId  String
+  workspace    Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([workspaceId])
+  @@index([styleguideId])
+  @@index([role])
+}
+
+model StyleguideLogo {
+  id           String      @id @default(cuid())
+  variant      LogoVariant
+  fileUrl      String
+  fileName     String
+  fileType     String      // "svg" | "png" | "jpg"
+  fileSize     Int?
+  width        Int?
+  height       Int?
+  description  String?
+  sortOrder    Int         @default(0)
+
+  uploadedById String?
+  uploadedBy   User?       @relation("LogoUploader", fields: [uploadedById], references: [id])
+
+  styleguideId String
+  styleguide   BrandStyleguide @relation(fields: [styleguideId], references: [id], onDelete: Cascade)
+  workspaceId  String
+  workspace    Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([workspaceId])
+  @@index([styleguideId])
+  @@index([variant])
+}
+
+model StyleguideComponent {
+  id              String        @id @default(cuid())
+  type            ComponentType
+  label           String        // "Primary Button", "Status Chip — Success"
+  sourceUrl       String?
+  screenshotUrl   String?
+  extractedStyles Json          // { padding, radius, colors, shadow, typography, ... }
+  previewHtml     String?       @db.Text
+  confidence      Float?
+  sortOrder       Int           @default(0)
+
+  styleguideId    String
+  styleguide      BrandStyleguide @relation(fields: [styleguideId], references: [id], onDelete: Cascade)
+  workspaceId     String
+  workspace       Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([workspaceId])
+  @@index([styleguideId])
+  @@index([type])
+}
+
+model StyleguideReview {
+  id                String       @id @default(cuid())
+  section           String       // e.g. "colors-brand", "typography-display", "components-buttons"
+  status            ReviewStatus @default(PENDING)
+  feedback          String?      @db.Text
+  referenceImageUrl String?
+
+  reviewedById      String?
+  reviewedBy        User?        @relation("StyleguideReviewer", fields: [reviewedById], references: [id])
+
+  styleguideId      String
+  styleguide        BrandStyleguide @relation(fields: [styleguideId], references: [id], onDelete: Cascade)
+  workspaceId       String
+  workspace         Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@unique([styleguideId, section])
+  @@index([workspaceId])
+  @@index([styleguideId])
+  @@index([status])
+}
+
+enum FontRole {
+  DISPLAY
+  UI
+  EYEBROW_META
+  BODY
+}
+
+enum FontSource {
+  DETECTED
+  UPLOADED
+}
+
+enum LogoVariant {
+  PRIMARY
+  LIGHT
+  DARK
+  ICON
+  WORDMARK
+  LOCKUP
+}
+
+enum ComponentType {
+  BUTTON
+  FORM_INPUT
+  STATUS_CHIP
+  PRODUCT_CARD
+  FEATURE_ICON
+  TOP_NAVIGATION
+  QUOTE_BLOCK
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  NEEDS_WORK
 }
 
 // Brandstyle Enums

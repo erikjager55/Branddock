@@ -68,7 +68,8 @@ export function buildStyleguideSnapshot(sg: BrandStyleguide): Record<string, unk
   return {
     status: sg.status,
     sourceType: sg.sourceType,
-    logoVariations: sg.logoVariations,
+    // logoVariations removed in brandstyle v2 — logos live in StyleguideLogo table.
+    // Snapshot callers should include logos separately via `sg.logos` if needed.
     logoGuidelines: sg.logoGuidelines,
     logoDonts: sg.logoDonts,
     colorDonts: sg.colorDonts,

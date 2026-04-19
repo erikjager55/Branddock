@@ -974,20 +974,42 @@ async function writeResultToDb(
   const primaryFontName = firstFont ?? result.primaryFontName ?? null;
   const additionalFonts = restFonts.slice(0, 5);
 
+  // Replace all existing detected logos, then create new ones from scraped URLs.
+  // User-uploaded logos are managed via dedicated upload endpoints (Fase 1).
+  const sgForWorkspace = await prisma.brandStyleguide.findUnique({
+    where: { id: styleguideId },
+    select: { workspaceId: true },
+  });
+  const sgWorkspaceId = sgForWorkspace?.workspaceId;
+  if (sgWorkspaceId) {
+    await prisma.styleguideLogo.deleteMany({ where: { styleguideId } });
+    if (logoUrls && logoUrls.length > 0) {
+      const detectedLogos = logoUrls
+        .filter((u) => !u.startsWith('['))
+        .map((url, i) => {
+          const ext = url.split('.').pop()?.toLowerCase() ?? 'png';
+          const fileType = ext === 'svg' ? 'svg' : ext === 'png' ? 'png' : ext === 'jpg' || ext === 'jpeg' ? 'jpg' : 'png';
+          return {
+            fileUrl: url,
+            fileName: `logo-${i + 1}.${fileType}`,
+            fileType,
+            variant: (i === 0 ? 'PRIMARY' : 'LOCKUP') as 'PRIMARY' | 'LOCKUP',
+            sortOrder: i,
+            styleguideId,
+            workspaceId: sgWorkspaceId,
+          };
+        });
+      if (detectedLogos.length > 0) {
+        await prisma.styleguideLogo.createMany({ data: detectedLogos });
+      }
+    }
+  }
+
   // Update styleguide fields
   await prisma.brandStyleguide.update({
     where: { id: styleguideId },
     data: {
       // Logo
-      logoVariations: logoUrls && logoUrls.length > 0
-        ? logoUrls
-            .filter((u) => !u.startsWith('[')) // Skip "[SVG logo found in HTML]" markers
-            .map((url, i) => ({
-              name: `Logo ${i + 1}`,
-              url,
-              type: url.endsWith('.svg') ? 'SVG' : url.endsWith('.png') ? 'PNG' : 'Image',
-            }))
-        : Prisma.JsonNull,
       logoGuidelines: result.logoGuidelines || [],
       logoDonts: result.logoDonts || [],
 

@@ -36,7 +36,10 @@ export async function resolveWorkspaceBrandContext(
           designLanguageSavedForAi: true,
           toneSavedForAi: true,
           imagerySavedForAi: true,
-          logoVariations: true,
+          logos: {
+            orderBy: { sortOrder: 'asc' },
+            select: { variant: true, fileUrl: true, description: true },
+          },
           logoGuidelines: true,
           logoDonts: true,
         },
@@ -111,10 +114,9 @@ export async function resolveWorkspaceBrandContext(
   if (styleguide) {
     const logoParts: string[] = [];
     if (ctx.brandName) logoParts.push(`Brand name: "${ctx.brandName}".`);
-    if (styleguide.logoVariations) {
-      const variations = styleguide.logoVariations as Record<string, unknown>;
-      const desc = variations.description ?? variations.primary ?? variations.summary;
-      if (typeof desc === 'string') logoParts.push(`Logo: ${desc}.`);
+    const primaryLogo = styleguide.logos.find((l) => l.variant === 'PRIMARY') ?? styleguide.logos[0];
+    if (primaryLogo?.description) {
+      logoParts.push(`Logo: ${primaryLogo.description}.`);
     }
     if (styleguide.logoGuidelines?.length) {
       logoParts.push(`Logo guidelines: ${styleguide.logoGuidelines.join('. ')}.`);

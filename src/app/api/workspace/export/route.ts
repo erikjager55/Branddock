@@ -264,7 +264,8 @@ export async function GET() {
         where: w,
         select: {
           id: true, status: true, sourceUrl: true, sourceType: true,
-          logoVariations: true, logoGuidelines: true, logoDonts: true,
+          logos: { select: { variant: true, fileUrl: true, fileName: true, description: true } },
+          logoGuidelines: true, logoDonts: true,
           primaryFontName: true, primaryFontUrl: true, typeScale: true,
           contentGuidelines: true, writingGuidelines: true, examplePhrases: true,
           photographyStyle: true, photographyGuidelines: true, illustrationGuidelines: true, imageryDonts: true,

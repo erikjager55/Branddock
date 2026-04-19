@@ -14,7 +14,10 @@ export async function GET() {
 
     const styleguide = await prisma.brandStyleguide.findUnique({
       where: { workspaceId },
-      include: { colors: { orderBy: { sortOrder: "asc" } } },
+      include: {
+        colors: { orderBy: { sortOrder: "asc" } },
+        logos: { orderBy: { sortOrder: "asc" } },
+      },
     });
 
     if (!styleguide) {
@@ -25,7 +28,11 @@ export async function GET() {
 
     if (styleguide.logoSavedForAi) {
       sections.logo = {
-        variations: styleguide.logoVariations,
+        variations: styleguide.logos.map((l) => ({
+          name: l.description ?? l.fileName,
+          url: l.fileUrl,
+          type: l.variant,
+        })),
         guidelines: styleguide.logoGuidelines,
         donts: styleguide.logoDonts,
       };

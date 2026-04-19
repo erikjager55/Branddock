@@ -635,31 +635,46 @@ const socialRelevancy = {
 // BRANDSTYLE (uit Logo 2026 PDF)
 // ────────────────────────────────────────────────────────────────
 
+const logoRecords = [
+  {
+    variant: 'PRIMARY' as const,
+    fileUrl: '/assets/wra-logo-primary.svg',
+    fileName: 'wra-logo-primary.svg',
+    fileType: 'svg',
+    description: 'Hoofdvariant: WRA JURISTEN in donkerblauw (#233e59) met groen weegschaalbeeldmerk in het hart.',
+    sortOrder: 0,
+  },
+  {
+    variant: 'LIGHT' as const,
+    fileUrl: '/assets/wra-logo-on-green.svg',
+    fileName: 'wra-logo-on-green.svg',
+    fileType: 'svg',
+    description: 'Witte typografie op #0bd8a2 mintgroen achtergrond, geschikt voor uitingen in primaire accentkleur.',
+    sortOrder: 1,
+  },
+  {
+    variant: 'DARK' as const,
+    fileUrl: '/assets/wra-logo-on-dark.svg',
+    fileName: 'wra-logo-on-dark.svg',
+    fileType: 'svg',
+    description: 'Mintgroene typografie op #233e59 donkerblauwe achtergrond met wit beeldmerk.',
+    sortOrder: 2,
+  },
+  {
+    variant: 'ICON' as const,
+    fileUrl: '/assets/wra-logo-icon.svg',
+    fileName: 'wra-logo-icon.svg',
+    fileType: 'svg',
+    description: 'Schildvorm met driehoek (weegschaal). Bedoeld als monogram voor digitale toepassingen waar weinig ruimte is.',
+    sortOrder: 3,
+  },
+];
+
 const styleguideData = {
   status: 'COMPLETE' as const,
   sourceType: 'PDF' as const,
   sourceFileName: 'Logo 2026 WRA Juristen.pdf',
   analysisStatus: 'COMPLETE' as const,
-  logoVariations: [
-    {
-      label: 'Primair logo (donker)',
-      description:
-        'Hoofdvariant: WRA JURISTEN in donkerblauw (#233e59) met groen weegschaalbeeldmerk in het hart.',
-    },
-    {
-      label: 'Logo op groen vlak (wit)',
-      description: 'Witte typografie op #0bd8a2 mintgroen achtergrond, geschikt voor uitingen in primaire accentkleur.',
-    },
-    {
-      label: 'Logo op donker vlak (mintgroen)',
-      description: 'Mintgroene typografie op #233e59 donkerblauwe achtergrond met wit beeldmerk.',
-    },
-    {
-      label: 'Beeldmerk / favicon',
-      description:
-        'Schildvorm met driehoek (weegschaal). Bedoeld als monogram voor digitale toepassingen waar weinig ruimte is — social media profielicoon, app-icon, favicon.',
-    },
-  ],
   logoGuidelines: [
     'Gebruik altijd voldoende witruimte rond het logo.',
     'Het beeldmerk staat als schild voor bescherming en richting.',
@@ -1070,9 +1085,11 @@ async function main() {
       ...styleguideData,
       workspaceId: WORKSPACE_ID,
       createdById: USER_ID,
-      logoVariations: styleguideData.logoVariations as Prisma.InputJsonValue,
       typeScale: styleguideData.typeScale as Prisma.InputJsonValue,
       examplePhrases: styleguideData.examplePhrases as Prisma.InputJsonValue,
+      logos: {
+        create: logoRecords.map((l) => ({ ...l, workspaceId: WORKSPACE_ID })),
+      },
     },
   });
   console.log(`  ✅ BrandStyleguide created (${styleguide.id})`);

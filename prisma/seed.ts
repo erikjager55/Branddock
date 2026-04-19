@@ -1402,12 +1402,14 @@ async function main() {
       sourceUrl: "https://branddock.com",
       analysisStatus: analysisStatusComplete,
 
-      // Logo
-      logoVariations: [
-        { name: "Primary Logo", url: "/assets/logo-primary.svg", type: "primary" },
-        { name: "White Logo", url: "/assets/logo-white.svg", type: "white" },
-        { name: "Icon Only", url: "/assets/logo-icon.svg", type: "icon" },
-      ],
+      // Logo (brandstyle v2 — moved to StyleguideLogo relation)
+      logos: {
+        create: [
+          { workspaceId: workspace.id, variant: "PRIMARY", fileUrl: "/assets/logo-primary.svg", fileName: "logo-primary.svg", fileType: "svg", description: "Primary Logo", sortOrder: 0 },
+          { workspaceId: workspace.id, variant: "LIGHT", fileUrl: "/assets/logo-white.svg", fileName: "logo-white.svg", fileType: "svg", description: "White Logo", sortOrder: 1 },
+          { workspaceId: workspace.id, variant: "ICON", fileUrl: "/assets/logo-icon.svg", fileName: "logo-icon.svg", fileType: "svg", description: "Icon Only", sortOrder: 2 },
+        ],
+      },
       logoGuidelines: [
         "Always maintain minimum clear space equal to the height of the 'B' in the logo",
         "Use the primary logo on light backgrounds and the white logo on dark backgrounds",
