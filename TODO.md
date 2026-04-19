@@ -283,8 +283,24 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
 
 ### 9.1 Deprecated Types Opruimen
 
-- [ ] CampaignSummary, DeliverableResponse, KnowledgeAssetResponse, CampaignDetail in `src/types/campaign.ts` (6+ imports)
-- [ ] DecisionStatus → DecisionQuality in `src/types/decision-status.ts` (20+ imports)
+**✅ 9.1.1 Campaign deprecated types (2026-04-19)**
+- [x] Verwijderd uit `src/types/campaign.ts`: `Campaign`, `CampaignDeliverable`, `CampaignAsset`, `CampaignWithMeta` (4 deprecated interfaces)
+- [x] 6 orphan bestanden gewist die deze types gebruikten:
+  - `src/lib/api/campaign-adapter.ts` — 0 consumers
+  - `src/lib/api/campaigns.ts` — 0 consumers (vervangen door `src/features/campaigns/api/campaigns.api.ts`)
+  - `src/hooks/use-campaigns.ts` — 0 consumers
+  - `src/utils/campaign-helpers.ts` — 0 consumers
+  - `src/components/campaign-strategy/CampaignDeliverableButton.tsx` — 0 consumers
+  - `src/contexts/CampaignsContext.tsx` — `CampaignsProvider` in tree maar 0 consumers; fetchte `/api/campaigns` bij elke app-mount zonder gebruik
+- [x] `CampaignsProvider` uit `src/contexts/index.tsx` verwijderd (3 refs: import, JSX, re-export)
+
+**⏳ 9.1.2 DecisionStatus → DecisionQuality (live code, grotere refactor)**
+
+- [ ] `DecisionStatus` type in `src/types/decision-status.ts` migreren naar `DecisionQuality` uit `./validation`
+- Scope: 56 occurrences in 17 files, waaronder actief gebruikte componenten (`RelationshipsPage` via `src/components/decision-status/`, `TransformativeGoalsDashboard`, `SocialRelevancyDashboard`, `UniversalAssetDashboard`)
+- Waarden verschillen: `'safe-to-decide'` → `'safe'`, `'decision-at-risk'` → `'at-risk'`, `'blocked'` blijft. UI-strings/kleuren in `DECISION_STATUS_CONFIG` moeten ook meegaan.
+- `mapDecisionQuality()` bridge function kan pas weg als alle consumers over zijn.
+- Niet puur mechanisch — regressie-risico vereist componenttests na migratie.
 
 ### 9.2 Adapter Pattern Afbouwen
 

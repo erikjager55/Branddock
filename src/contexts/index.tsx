@@ -18,7 +18,6 @@ import { ChangeImpactConnector } from '../components/impact/ChangeImpactConnecto
 import { ProductTierProvider } from './ProductTierContext';
 import { ProductsProvider } from './ProductsContext';
 import { KnowledgeProvider } from './KnowledgeContext';
-import { CampaignsProvider } from './CampaignsContext';
 import { BrandAlignmentProvider } from './BrandAlignmentContext';
 
 interface AppProvidersProps {
@@ -34,7 +33,6 @@ export function AppProviders({ children }: AppProvidersProps) {
           <PersonasProvider>
             <ProductsProvider>
               <KnowledgeProvider>
-              <CampaignsProvider>
               <BrandAlignmentProvider>
               <ResearchPlanProvider>
                 <ResearchBundleProvider>
@@ -48,7 +46,6 @@ export function AppProviders({ children }: AppProvidersProps) {
                 </ResearchBundleProvider>
               </ResearchPlanProvider>
               </BrandAlignmentProvider>
-            </CampaignsProvider>
               </KnowledgeProvider>
               </ProductsProvider>
           </PersonasProvider>
@@ -70,5 +67,4 @@ export { useChangeImpact } from './ChangeImpactContext';
 export { useProductTier } from './ProductTierContext';
 export { useProducts } from './ProductsContext';
 export { useKnowledgeContext } from './KnowledgeContext';
-export { useCampaignsContext } from './CampaignsContext';
 export { useBrandAlignment, useAlignmentModules, useAlignmentHistory, useAlignmentIssues, useAlignmentIssueDetail, useStartAlignmentScan, useDismissIssue, useScanProgress, useFixOptions, useApplyFix, useCancelScan } from './BrandAlignmentContext';
