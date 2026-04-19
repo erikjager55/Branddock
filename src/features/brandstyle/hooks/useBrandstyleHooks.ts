@@ -14,8 +14,19 @@ import {
   addColor,
   deleteColor,
   fetchAiContext,
+  fetchFonts,
+  uploadFont,
+  updateFont,
+  deleteFont,
+  fetchLogos,
+  uploadLogo,
+  updateLogo,
+  deleteLogo,
+  updateReview,
+  uploadReviewReference,
+  setPublished,
 } from "../api/brandstyle.api";
-import type { SaveForAiSection } from "../types/brandstyle.types";
+import type { SaveForAiSection, UpdateFontBody, UpdateLogoBody, UpdateReviewBody } from "../types/brandstyle.types";
 
 // Query keys
 export const brandstyleKeys = {
@@ -24,6 +35,8 @@ export const brandstyleKeys = {
   section: (s: string) => ["brandstyle", "section", s] as const,
   analysisStatus: (jobId: string) => ["brandstyle", "analysis", jobId] as const,
   aiContext: () => ["brandstyle", "ai-context"] as const,
+  fonts: () => ["brandstyle", "fonts"] as const,
+  logos: () => ["brandstyle", "logos"] as const,
 };
 
 // === Queries ===
@@ -132,6 +145,114 @@ export function useDeleteColor() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
       queryClient.invalidateQueries({ queryKey: brandstyleKeys.section("colors") });
+    },
+  });
+}
+
+// === Brand Assets — Fonts (Fase 1) ===
+
+export function useFonts() {
+  return useQuery({ queryKey: brandstyleKeys.fonts(), queryFn: fetchFonts });
+}
+
+export function useUploadFont() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: uploadFont,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: brandstyleKeys.fonts() });
+      qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
+    },
+  });
+}
+
+export function useUpdateFont() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateFontBody }) => updateFont(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: brandstyleKeys.fonts() });
+      qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
+    },
+  });
+}
+
+export function useDeleteFont() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteFont(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: brandstyleKeys.fonts() });
+      qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
+    },
+  });
+}
+
+// === Brand Assets — Logos (Fase 1) ===
+
+export function useLogos() {
+  return useQuery({ queryKey: brandstyleKeys.logos(), queryFn: fetchLogos });
+}
+
+export function useUploadLogo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: uploadLogo,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: brandstyleKeys.logos() });
+      qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
+    },
+  });
+}
+
+export function useUpdateLogo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateLogoBody }) => updateLogo(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: brandstyleKeys.logos() });
+      qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
+    },
+  });
+}
+
+export function useDeleteLogo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteLogo(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: brandstyleKeys.logos() });
+      qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
+    },
+  });
+}
+
+// === Review workflow + Published toggle (Fase 2) ===
+
+export function useUpdateReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ section, body }: { section: string; body: UpdateReviewBody }) =>
+      updateReview(section, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
+    },
+  });
+}
+
+export function useUploadReviewReference() {
+  return useMutation({
+    mutationFn: ({ section, file }: { section: string; file: File }) =>
+      uploadReviewReference(section, file),
+  });
+}
+
+export function useSetPublished() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (published: boolean) => setPublished(published),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
     },
   });
 }

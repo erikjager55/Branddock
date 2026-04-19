@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
+import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
 import { useUpdateSection } from "../hooks/useBrandstyleHooks";
 import type { BrandStyleguide, TypeScaleLevel } from "../types/brandstyle.types";
 
@@ -852,6 +853,15 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
           />
         </Card>
       )}
+
+      <Card>
+        <ReviewDraftPanel
+          section="typography"
+          reviews={styleguide.reviews ?? []}
+          canEdit={canEdit}
+          label="Review typography"
+        />
+      </Card>
 
       <AiContentBanner section="typography" savedForAi={styleguide.typographySavedForAi} />
     </div>

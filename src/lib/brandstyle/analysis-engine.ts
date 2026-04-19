@@ -1003,6 +1003,35 @@ async function writeResultToDb(
         await prisma.styleguideLogo.createMany({ data: detectedLogos });
       }
     }
+
+    // Replace detected fonts (UPLOADED fonts are preserved). Upgrade a matching
+    // UPLOADED font's "detected source" if present — otherwise create DETECTED rows.
+    await prisma.styleguideFont.deleteMany({
+      where: { styleguideId, source: 'DETECTED' },
+    });
+    const fontNames = [primaryFontName, ...additionalFonts].filter(
+      (n): n is string => typeof n === 'string' && n.trim().length > 0,
+    );
+    if (fontNames.length > 0) {
+      const existingUploaded = await prisma.styleguideFont.findMany({
+        where: { styleguideId, source: 'UPLOADED' },
+        select: { name: true },
+      });
+      const uploadedSet = new Set(existingUploaded.map((f) => f.name.toLowerCase()));
+      const newDetected = fontNames
+        .filter((n) => !uploadedSet.has(n.toLowerCase()))
+        .map((name, i) => ({
+          styleguideId,
+          workspaceId: sgWorkspaceId,
+          name,
+          role: (i === 0 ? 'DISPLAY' : 'UI') as 'DISPLAY' | 'UI',
+          source: 'DETECTED' as const,
+          sortOrder: i,
+        }));
+      if (newDetected.length > 0) {
+        await prisma.styleguideFont.createMany({ data: newDetected });
+      }
+    }
   }
 
   // Update styleguide fields

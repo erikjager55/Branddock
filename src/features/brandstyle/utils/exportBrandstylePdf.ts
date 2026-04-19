@@ -117,13 +117,27 @@ export function exportBrandstylePdf(styleguide: BrandStyleguide) {
   // ═══════════════════════════════════════════════════════════════
   addSectionHeader('1. Logo');
 
-  if (styleguide.logoVariations && styleguide.logoVariations.length > 0) {
+  if (styleguide.logos && styleguide.logos.length > 0) {
     addSubHeader('Logo Variations');
     doc.setTextColor(55, 65, 81);
     doc.setFontSize(10);
-    styleguide.logoVariations.forEach(v => {
+    styleguide.logos.forEach(l => {
       checkPageBreak(8);
-      doc.text(`•  ${v.name} (${v.type})`, margin + 2, y);
+      const label = l.description ?? l.fileName;
+      doc.text(`•  ${label} (${l.variant})`, margin + 2, y);
+      y += 6;
+    });
+    y += 2;
+  }
+
+  if (styleguide.fonts && styleguide.fonts.length > 0) {
+    addSubHeader('Fonts');
+    doc.setTextColor(55, 65, 81);
+    doc.setFontSize(10);
+    styleguide.fonts.forEach(f => {
+      checkPageBreak(8);
+      const status = f.source === 'UPLOADED' ? 'uploaded' : 'detected — file missing';
+      doc.text(`•  ${f.name} · ${f.role} · ${status}`, margin + 2, y);
       y += 6;
     });
     y += 2;

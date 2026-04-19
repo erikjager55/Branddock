@@ -14,7 +14,8 @@ import { exportBrandKitPdf, type BrandKitPdfProgress } from "../utils/brand-kit/
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { StyleguideTabNav } from "./StyleguideTabNav";
 import { AnalysisProvenanceBanner } from "./AnalysisProvenanceBanner";
-import { LogoSection } from "./LogoSection";
+import { ReviewSummaryHeader } from "./review/ReviewSummaryHeader";
+import { BrandAssetsSection } from "./BrandAssetsSection";
 import { ColorsSection } from "./ColorsSection";
 import { ColorDetailModal } from "./ColorDetailModal";
 import { TypographySection } from "./TypographySection";
@@ -273,6 +274,10 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
           <AnalysisProvenanceBanner styleguide={styleguide} />
         </div>
 
+        <div className="mb-5">
+          <ReviewSummaryHeader styleguide={styleguide} canEdit={!lockState.isLocked} />
+        </div>
+
         <StyleguideTabNav
           activeTab={activeTab}
           onTabChange={setActiveTab}
@@ -280,7 +285,7 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
 
         {/* Active section — wrapped in LockOverlay */}
         <LockOverlay isLocked={lockState.isLocked}>
-          {activeTab === "logo" && <LogoSection styleguide={styleguide} canEdit={canEdit} />}
+          {activeTab === "brand_assets" && <BrandAssetsSection styleguide={styleguide} canEdit={canEdit} />}
           {activeTab === "colors" && <ColorsSection styleguide={styleguide} canEdit={canEdit} />}
           {activeTab === "typography" && <TypographySection styleguide={styleguide} canEdit={canEdit} />}
           {activeTab === "tone_of_voice" && <ToneOfVoiceSection styleguide={styleguide} canEdit={canEdit} />}

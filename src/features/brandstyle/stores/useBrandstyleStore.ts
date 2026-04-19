@@ -17,11 +17,19 @@ interface BrandstyleState {
   selectedColorId: string | null;
   isColorModalOpen: boolean;
 
+  // Brand Assets modals (Fase 1)
+  isFontUploadOpen: boolean;
+  isLogoUploadOpen: boolean;
+
   // Actions
   setActiveTab: (tab: StyleguideTab) => void;
   setIsEditing: (editing: boolean) => void;
   openColorModal: (colorId: string) => void;
   closeColorModal: () => void;
+  openFontUpload: () => void;
+  closeFontUpload: () => void;
+  openLogoUpload: () => void;
+  closeLogoUpload: () => void;
   startAnalysis: (jobId: string) => void;
   stopAnalysis: () => void;
   setAnalysisStatus: (status: string) => void;
@@ -33,12 +41,15 @@ export const useBrandstyleStore = create<BrandstyleState>((set) => ({
   analysisStatus: null,
   isAnalyzing: false,
 
-  activeTab: "logo",
+  activeTab: "brand_assets",
 
   isEditing: false,
 
   selectedColorId: null,
   isColorModalOpen: false,
+
+  isFontUploadOpen: false,
+  isLogoUploadOpen: false,
 
   setActiveTab: (tab) => set({ activeTab: tab }),
 
@@ -49,6 +60,11 @@ export const useBrandstyleStore = create<BrandstyleState>((set) => ({
 
   closeColorModal: () =>
     set({ selectedColorId: null, isColorModalOpen: false }),
+
+  openFontUpload: () => set({ isFontUploadOpen: true }),
+  closeFontUpload: () => set({ isFontUploadOpen: false }),
+  openLogoUpload: () => set({ isLogoUploadOpen: true }),
+  closeLogoUpload: () => set({ isLogoUploadOpen: false }),
 
   startAnalysis: (jobId) =>
     set({ analysisJobId: jobId, isAnalyzing: true, analysisStatus: "SCANNING_STRUCTURE" }),
@@ -64,9 +80,11 @@ export const useBrandstyleStore = create<BrandstyleState>((set) => ({
       analysisJobId: null,
       analysisStatus: null,
       isAnalyzing: false,
-      activeTab: "logo",
+      activeTab: "brand_assets",
       isEditing: false,
       selectedColorId: null,
       isColorModalOpen: false,
+      isFontUploadOpen: false,
+      isLogoUploadOpen: false,
     }),
 }));

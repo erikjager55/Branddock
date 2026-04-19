@@ -18,6 +18,9 @@ export async function GET() {
       where: { workspaceId },
       include: {
         colors: { orderBy: { sortOrder: "asc" } },
+        logos: { orderBy: { sortOrder: "asc" } },
+        fonts: { orderBy: [{ role: "asc" }, { sortOrder: "asc" }] },
+        reviews: true,
         createdBy: { select: { id: true, name: true, avatarUrl: true } },
         lockedBy: { select: { id: true, name: true } },
       },
@@ -77,7 +80,6 @@ const gradientDefinitionSchema = z.object({
 });
 
 const updateSchema = z.object({
-  logoVariations: z.any().optional(),
   logoGuidelines: z.array(z.string()).optional(),
   logoDonts: z.array(z.string()).optional(),
   colorDonts: z.array(z.string()).optional(),
@@ -117,7 +119,7 @@ export async function PATCH(request: NextRequest) {
 
     // Convert null → Prisma.JsonNull for nullable JSON fields
     const NULLABLE_JSON_FIELDS = [
-      "logoVariations", "typeScale", "examplePhrases", "photographyStyle", "brandImages",
+      "typeScale", "examplePhrases", "photographyStyle", "brandImages",
       "graphicElements", "patternsTextures", "iconographyStyle", "gradientsEffects", "layoutPrinciples",
     ] as const;
     const data: Record<string, unknown> = { ...parsed.data };
@@ -132,6 +134,9 @@ export async function PATCH(request: NextRequest) {
       data,
       include: {
         colors: { orderBy: { sortOrder: "asc" } },
+        logos: { orderBy: { sortOrder: "asc" } },
+        fonts: { orderBy: [{ role: "asc" }, { sortOrder: "asc" }] },
+        reviews: true,
         createdBy: { select: { id: true, name: true, avatarUrl: true } },
         lockedBy: { select: { id: true, name: true } },
       },

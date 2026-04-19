@@ -69,6 +69,11 @@ export const cacheKeys = {
   websiteScanner: {
     scan: (wsId: string, scanId: string) => `website-scanner:${wsId}:scan:${scanId}`,
   },
+  brandstyle: {
+    styleguide: (wsId: string) => `brandstyle:${wsId}:styleguide`,
+    fonts: (wsId: string) => `brandstyle:${wsId}:fonts`,
+    logos: (wsId: string) => `brandstyle:${wsId}:logos`,
+  },
   media: {
     list: (wsId: string) => `media:${wsId}:list`,
     detail: (wsId: string, id: string) => `media:${wsId}:detail:${id}`,
@@ -98,6 +103,7 @@ export const cacheKeys = {
     campaigns: (wsId: string) => `campaigns:${wsId}`,
     competitors: (wsId: string) => `competitors:${wsId}`,
     websiteScanner: (wsId: string) => `website-scanner:${wsId}`,
+    brandstyle: (wsId: string) => `brandstyle:${wsId}`,
     media: (wsId: string) => `media:${wsId}`,
     notifications: (wsId: string) => `notifications:${wsId}`,
     allDashboards: 'dashboard:',

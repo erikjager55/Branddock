@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X, Pencil, Plus } from "lucide-react";
 import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
+import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
 import { EditableStringList } from "./EditableStringList";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { useUpdateSection, useAddColor, useDeleteColor } from "../hooks/useBrandstyleHooks";
@@ -627,6 +628,15 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
             )
           }
         </EditableStringList>
+      </Card>
+
+      <Card>
+        <ReviewDraftPanel
+          section="colors"
+          reviews={styleguide.reviews ?? []}
+          canEdit={canEdit}
+          label="Review colors"
+        />
       </Card>
 
       <AiContentBanner section="colors" savedForAi={styleguide.colorsSavedForAi} />

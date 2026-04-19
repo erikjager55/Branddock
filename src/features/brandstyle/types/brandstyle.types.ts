@@ -21,7 +21,59 @@ export interface StyleguideColor {
   sortOrder: number;
 }
 
+export type FontRole = "DISPLAY" | "UI" | "EYEBROW_META" | "BODY";
+export type FontSource = "DETECTED" | "UPLOADED";
+export type LogoVariant = "PRIMARY" | "LIGHT" | "DARK" | "ICON" | "WORDMARK" | "LOCKUP";
+export type ReviewStatus = "PENDING" | "APPROVED" | "NEEDS_WORK";
+
+export interface StyleguideReviewData {
+  id: string;
+  section: string;
+  status: ReviewStatus;
+  feedback: string | null;
+  referenceImageUrl: string | null;
+  reviewedById: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StyleguideFontData {
+  id: string;
+  name: string;
+  role: FontRole;
+  source: FontSource;
+  fileUrl: string | null;
+  fileName: string | null;
+  fileType: string | null;
+  fileSize: number | null;
+  fontFamily: string | null;
+  weight: string | null;
+  style: string | null;
+  sortOrder: number;
+  uploadedById: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StyleguideLogoData {
+  id: string;
+  variant: LogoVariant;
+  fileUrl: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number | null;
+  width: number | null;
+  height: number | null;
+  description: string | null;
+  sortOrder: number;
+  uploadedById: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** @deprecated Replaced by StyleguideLogoData. Kept for legacy logo-route response shape. */
 export interface LogoVariation {
+  id?: string;
   name: string;
   url: string;
   type: string;
@@ -120,11 +172,19 @@ export interface BrandStyleguide {
   /** Free-text error message if analysis failed (refuse-mode or pipeline error). */
   errorMessage?: string | null;
 
-  // Logo
-  logoVariations: LogoVariation[] | null;
+  // Brand Assets (Fase 1)
+  logos: StyleguideLogoData[];
+  fonts: StyleguideFontData[];
   logoGuidelines: string[];
   logoDonts: string[];
   logoSavedForAi: boolean;
+  /** @deprecated Kept temporarily for legacy callers — prefer `logos`. */
+  logoVariations?: LogoVariation[] | null;
+
+  // Review workflow + publish state (Fase 2)
+  reviews: StyleguideReviewData[];
+  published: boolean;
+  publishedAt: string | null;
 
   // Colors
   colors: StyleguideColor[];
@@ -234,6 +294,28 @@ export interface AiContextResponse {
   context: Record<string, unknown> | null;
 }
 
-export type StyleguideTab = "logo" | "colors" | "typography" | "tone_of_voice" | "imagery" | "visual_system";
+// === Brand Assets API bodies (Fase 1) ===
+
+export interface UpdateFontBody {
+  role?: FontRole;
+  weight?: string;
+  style?: string;
+  fontFamily?: string;
+  sortOrder?: number;
+}
+
+export interface UpdateLogoBody {
+  variant?: LogoVariant;
+  description?: string | null;
+  sortOrder?: number;
+}
+
+export interface UpdateReviewBody {
+  status: ReviewStatus;
+  feedback?: string | null;
+  referenceImageUrl?: string | null;
+}
+
+export type StyleguideTab = "brand_assets" | "colors" | "typography" | "tone_of_voice" | "imagery" | "visual_system";
 
 export type SaveForAiSection = "logo" | "colors" | "typography" | "tone-of-voice" | "imagery" | "design-language" | "visual-language";
