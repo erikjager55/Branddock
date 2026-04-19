@@ -69,9 +69,12 @@ export async function POST(
       return NextResponse.json({ error: "personaId is required" }, { status: 400 });
     }
 
-    // Verify persona exists (skip workspace check — persona may be in a different workspace context)
-    const persona = await prisma.persona.findUnique({
-      where: { id: personaId },
+    // Persona must belong to the same workspace as the product — prevents
+    // cross-tenant linking where a user could surface persona data from a
+    // workspace they don't own via GET /:id/personas.
+    const persona = await prisma.persona.findFirst({
+      where: { id: personaId, workspaceId },
+      select: { id: true },
     });
     if (!persona) {
       return NextResponse.json({ error: "Persona not found" }, { status: 404 });

@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set("branddock-workspace-id", workspaceId, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 365, // 1 year
@@ -120,6 +121,7 @@ export async function DELETE() {
     // Delete the workspace cookie
     response.cookies.set("branddock-workspace-id", "", {
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
       maxAge: 0,

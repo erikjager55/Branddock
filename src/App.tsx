@@ -1012,7 +1012,12 @@ function AppContent() {
           />
           <main className="flex-1 overflow-y-auto bg-background">
             <LazyWrapper>
-              {renderContent()}
+              {/* Per-page ErrorBoundary: a crash inside one module should not
+                  unmount the sidebar/top-nav. resetKeys tied to activeSection
+                  so navigating to another page recovers automatically. */}
+              <ErrorBoundary resetKeys={[activeSection]}>
+                {renderContent()}
+              </ErrorBoundary>
             </LazyWrapper>
           </main>
         </div>

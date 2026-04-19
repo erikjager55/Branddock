@@ -2,7 +2,7 @@
 
 > Geprioriteerde gids voor alle openstaande ontwikkelstappen.
 > Geconsolideerd uit: TODO.md, BRANDCLAW-ROADMAP.md, CLAUDE.md, inline TODOs.
-> Laatst bijgewerkt: 30 maart 2026
+> Laatst bijgewerkt: 19 april 2026
 
 ---
 
@@ -14,7 +14,7 @@
 | 2 | Content Afronding (B-FIN) | ~8 | Hoog — content pipeline voltooien |
 | 3 | Production Launch (D.1 + D.3) | ~12 | Kritiek — blokkeert deployment |
 | 4 | Agent Infrastructure (D.2) | ~10 | Hoog — fundament voor agents |
-| 5 | Research Afronding (E-REST) | ~8 | Medium — stubs → echte executie |
+| 5 | Research Afronding (E-REST) | ~8 | ✅ DONE — behalve 5.4 billing (→ Fase 3) |
 | 6 | Brandclaw Agent Core (F) | ~12 | Hoog — eerste autonome loop |
 | 7 | Channel Activation (G) | ~6 | Medium — executie-kanalen |
 | 8 | Full Platform (H) | ~8 | Medium — Meta + Social + CRM |
@@ -166,9 +166,9 @@
 
 ---
 
-## Fase 5: Research Afronding (E-REST)
+## Fase 5: Research Afronding (E-REST) ✅ DONE
 
-> Research & Validation module bevat stubs die naar echte executie moeten.
+> Research & Validation module stubs vervangen door echte implementaties (5.1–5.3). 5.4 verplaatst naar Fase 3 (Stripe).
 
 ### 5.1 Research Hub Stubs Vervangen ✅ DONE (2026-04-19)
 
@@ -188,11 +188,9 @@
 - [x] `/api/strategies/[id]/unlink-campaign/[campId]` DELETE — already implemented (workspace + lock check, deleteMany)
 - [x] `LinkedCampaignsSection` UI — already wired with useLinkCampaign / useUnlinkCampaign / useSearchCampaigns. TODO entries were stale.
 
-### 5.4 Billing + Connected Accounts Stubs
+### 5.4 Billing + Connected Accounts Stubs → verplaatst naar Fase 3 (Stripe)
 
-- [ ] Echte usage data in billing/usage (nu: demo stubs)
-- [ ] Echte invoice download (nu: placeholder PDF)
-- [ ] Echte OAuth connectie in connected-accounts (nu: demo user IDs)
+Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe wordt geïntegreerd. Zie Fase 3.2.
 
 ---
 
@@ -300,10 +298,10 @@
 - [x] PSR.7: AI Persona Analysis Redesign — inspectie wees uit dat de redesign al volledig in code zat: teal/emerald chat bubbles met asymmetrische radii, rapport met Executive Summary + Key Findings + Strategic Recommendations, FieldSuggestionCard met accept/reject/edit. TODO entry was stale.
 - [x] PSR.8: Foto Generatie Fix — Gemini 2.5 Flash Image API al geïmplementeerd, DiceBear alleen als fallback bij geen key / API-error, in `/api/personas/[id]/generate-image`.
 
-### 9.4 Mock Data Fallbacks
+### 9.4 Mock Data Fallbacks + Error Isolation
 
 - [ ] Overweeg mock fallback verwijderen wanneer API 100% betrouwbaar
-- [ ] Per-page ErrorBoundary wrappers voor granulaire crash isolation
+- [x] **Per-page ErrorBoundary wrappers** (2026-04-19) — `<ErrorBoundary resetKeys={[activeSection]}>` wrappt `renderContent()` in `App.tsx:1015`. Crash in één module laat sidebar + top-nav intact; navigatie naar andere sectie reset automatisch.
 
 ### 9.5 Hardcoded Kleuren ✅ DONE (2026-04-19)
 
@@ -311,11 +309,41 @@
 - [x] Arbitrary hex utilities (`bg-[#1FD1B2]` etc., 191 usages) audited — all present in compiled CSS, no action needed.
 - [x] Inline `style={{ backgroundColor: '#hex' }}` (172 usages) audited — largely legitimate: either dynamic brand-data rendering (color swatches, visual system previews) or the documented Tailwind purge workaround. Not a batch-fix target.
 
-### 9.6 Environment & Security
+### 9.6 Environment & Security Audit (2026-04-19)
 
-- [ ] Audit alle env vars en verwijder ongebruikte
-- [ ] Zorg dat secrets niet in client-side code lekken
-- [ ] Review rate limiting op auth endpoints
+> Brede audit uitgevoerd. 12 zaken al goed (SSRF guards, workspace-isolatie op 382/405 routes, geen `$queryRaw`, Zod op 140+ routes, Stripe idempotentie, cookies HttpOnly+SameSite, geen client-side secret leakage, lock guards, cache invalidatie).
+
+**✅ Direct gefixt (2026-04-19)**
+- [x] **C3 — Cross-workspace IDOR**: `POST /api/products/:id/personas` — persona moet zelfde workspace als product hebben (voorheen: alle personas linkbaar cross-tenant)
+- [x] **H2 — Cookie Secure flag**: `branddock-workspace-id` cookie krijgt `secure: true` in productie (workspace/switch POST + DELETE)
+
+**⏳ Launch-blockers — Fase D pre-launch checklist**
+
+- [ ] **C1** — Rate limiting op `/api/auth/sign-in/email` + `sign-up/email` + `sign-in/social` (brute-force / credential-stuffing). Per IP + per email.
+- [ ] **C2** — Rate limiting op alle AI endpoints (bill shock risico). Nu alleen op `ai/completion`, `ai/health`, `studio/inline-transform`. Ontbreekt op: `media/ai-images/generate`, `media/ai-videos/generate`, `campaigns/wizard/strategy/*` (11 routes), `consistent-models/[id]/train`, `exploration/analyze`, `competitors/analyze/url`, `products/analyze/url`, `products/analyze/pdf`. Overweeg "expensive tier" voor training/video.
+- [ ] **C5** — Rotate alle API keys in `.env.local` vóór productie-deploy (OpenAI, Anthropic, Gemini, ElevenLabs, fal.ai, Are.na, Pexels). Verwijder `.env` bestand (alleen `.env.local` gebruiken).
+- [ ] **H1** — Security headers in `next.config.ts` via `async headers()`: CSP, HSTS (`max-age=63072000; includeSubDomains; preload`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`.
+- [ ] **H3** — `knowledge-resources/upload/route.ts` stub: ofwel volledig implementeren (MIME whitelist + size limit + filename sanitization, template: `products/[id]/images/upload`), ofwel verwijderen.
+- [ ] **H4** — Content-Length / size caps op externe AI-response fetches (OOM preventie): `media/ai-images/generate`, `media/ai-videos/generate`, `consistent-models/generate`, `consistent-models/generate-references`, `studio/generate-video`. Template: `media/import-url:108` (100MB cap).
+- [ ] **H5** — Magic-byte MIME validatie op file uploads (nu alleen `file.type` client-header): `products/images/upload`, `media/route`. Gebruik `file-type` library of sharp `.metadata()`.
+- [ ] **H6** — Stripe webhook: vervang `whsec_placeholder` door echte secret vóór productie.
+- [ ] **H7** — Prompt injection mitigatie: length-cap + control-token stripping op user-facing AI input. Voor Claw: whitelist welke tools Claude per sessie mag aanroepen.
+- [ ] **M1** — Rate limiter migreren naar Upstash Redis (in-memory Map werkt niet op Vercel multi-instance / cold starts). Redis-lib al aangemaakt: `src/lib/redis.ts`.
+- [ ] **M8** — `ai/completion` tier resolver: nu hardcoded FREE. Moet uit `Subscription` model gelezen worden.
+- [ ] **M9** — `resolveWorkspaceForProduct` checkt nog geen `WorkspaceMemberAccess`: MEMBER met "no access to workspace B" kan via directe product-ID nog steeds in workspace B schrijven.
+- [ ] **M10** — OAuth tokens (Google/Microsoft/Apple) in `Account` + `WorkspaceIntegration` opgeslagen als plaintext. Field-level encryption (envelope met KMS) toevoegen.
+
+**📝 Lagere prioriteit (low risk, na launch OK)**
+- [ ] **C4** — `api/campaigns/wizard/deliverable-types`: geen auth (statische JSON, low risk maar inconsistent)
+- [ ] **M2** — `api/versions/[id]` PATCH: Zod validatie op `label`/`changeNote` met `.max(200)`
+- [ ] **M3** — Expliciete field-whitelist in `data: { ...parsed.data }` calls (toekomst-proofing tegen mass assignment)
+- [ ] **M4** — FAQ feedback endpoints: rate limit per IP tegen vote-pumping
+- [ ] **M5** — `exploration/models` endpoint lekt welke API-keys geconfigureerd zijn (`!!process.env.ANTHROPIC_API_KEY`). `requireAuth()` toevoegen.
+- [ ] **M6** — `search/quick-actions`: geen auth (consistent maken)
+- [ ] **L1-L7** — Diverse cleanup: dead env vars (`RUNWAYML_API_SECRET` in `.env.example` ongebruikt sinds fal.ai migratie), stale docs, CSRF tokens voor state-changing routes.
+
+**📝 Env hygiene**
+- [ ] `.env.example` bijwerken: mist `NEXT_PUBLIC_BILLING_ENABLED`, Stripe keys, `PEXELS_API_KEY`; `RUNWAYML_API_SECRET` kan weg.
 
 ### 9.7 Orphaned Golden Circle Routes ✅ DONE (2026-04-19)
 
@@ -328,6 +356,53 @@
 - [ ] `src/app/api/settings/billing/invoices/[id]/download/route.ts` — placeholder PDF
 - [ ] `src/app/api/settings/connected-accounts/[provider]/connect/route.ts` — demo user IDs
 - [ ] `src/app/api/settings/notifications/channels/[channel]/connect/route.ts` — "coming soon" stub
+
+---
+
+## Fase 10: Claude Design Integratie (uitgesteld)
+
+> Claude Design gelanceerd 17 april 2026 (Anthropic Labs). Spoor 1 is af, Spoor 2 & 3 staan geparkeerd tot Anthropic een publieke API/MCP publiceert — anders is integratiewerk fragiel.
+
+### 10.1 Spoor 1: Brand Kit PDF Export ✅ DONE (2026-04-19)
+
+- [x] `GET /api/export/brand-kit/data` — aggregator endpoint (workspace + styleguide + 12 brand assets + personas + products + competitors)
+- [x] `GET /api/export/proxy-image` — server-side image fetch met workspace whitelist + SSRF guard
+- [x] `buildCompositeBrandPdf()` — one-shot jsPDF met cover, TOC, styleguide (kleurenstalen + embedded logo's), 12 framework-specifieke asset renderers, personas, products, competitors
+- [x] "Export for Claude Design" knop in Brand Styleguide header
+- [x] Getest: PDF wordt geaccepteerd door Claude Design design-system onboarding
+- Commit: `534feb8`
+
+### 10.2 Spoor 2: Claude Design Outputs Importeren (TODO)
+
+> Laat gebruikers Claude Design output (PDF/PPTX/HTML) terugtrekken in Branddock zodat de brand-loop sluit.
+> Start met Niveau 1, schaal alleen op naar 2/3 als gebruik dit rechtvaardigt.
+
+**Niveau 1 — File import (2-3 dagen)**
+- [ ] Media Library "Upload" dropdown uitbreiden met "Import from Claude Design"
+- [ ] Accepteer PDF/PPTX/HTML, auto-tag met "Claude Design", auto-collectie "Claude Design exports"
+- [ ] Bewaar bron-metadata (export-datum, bronformaat) op `MediaAsset`
+
+**Niveau 2 — Slide/page extraction (1-2 weken)**
+- [ ] PPTX: splitsen in individuele slides → losse `MediaAsset` records met thumbnail + extracted tekst (pptx skill beschikbaar)
+- [ ] PDF: pagina-niveau extractie via `unpdf` (al in gebruik voor brandstyle)
+- [ ] HTML: screenshot-per-section via headless Chromium
+- [ ] Individuele slides/pagina's beschikbaar als image-variant in Content Canvas
+
+**Niveau 3 — Brand refinement loop (3-4 weken)**
+- [ ] Visuele analyse van geïmporteerde designs (kleuren/fonts/patterns) via Claude Vision
+- [ ] "Refinement suggestion" banner in Brandstyle bij gedetecteerde afwijking van huidig profiel
+- [ ] Optioneel: accepteer suggestie → update `BrandStyleguide`
+- [ ] Sluit loop: Branddock brand → Claude Design ontwerp → verfijnd Branddock brand
+
+### 10.3 Spoor 3: MCP/API Integratie (wachtspoor)
+
+> Blokkerend: Anthropic heeft alleen "integraties komende weken" aangekondigd, geen docs of spec.
+
+- [ ] Monitor https://support.claude.com/en/articles/14604397-set-up-your-design-system-in-claude-design voor API/MCP aankondiging
+- [ ] Zodra beschikbaar: spec evalueren, bidirectionele koppeling ontwerpen
+- [ ] Nieuw Prisma model `GeneratedDesign` (analoog aan `GeneratedImage`)
+- [ ] Live push van Branddock brand context → Claude Design project
+- [ ] Live pull van Claude Design outputs → Branddock content canvas
 
 ---
 
