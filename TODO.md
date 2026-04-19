@@ -354,12 +354,12 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
 - [ ] **M2** — `api/versions/[id]` PATCH: Zod validatie op `label`/`changeNote` met `.max(200)`
 - [ ] **M3** — Expliciete field-whitelist in `data: { ...parsed.data }` calls (toekomst-proofing tegen mass assignment)
 - [ ] **M4** — FAQ feedback endpoints: rate limit per IP tegen vote-pumping
-- [ ] **M5** — `exploration/models` endpoint lekt welke API-keys geconfigureerd zijn (`!!process.env.ANTHROPIC_API_KEY`). `requireAuth()` toevoegen.
-- [ ] **M6** — `search/quick-actions`: geen auth (consistent maken)
+- [x] **M5** (2026-04-19) — `/api/exploration/models` auth-check toegevoegd; endpoint onthult welke AI-provider keys gezet zijn, dat is reconnaissance-vector zonder auth.
+- [x] **M6** (2026-04-19) — `/api/search/quick-actions` auth-check voor cache-wrapper; statische respons blijft gecached, auth draait per request.
 - [ ] **L1-L7** — Diverse cleanup: dead env vars (`RUNWAYML_API_SECRET` in `.env.example` ongebruikt sinds fal.ai migratie), stale docs, CSRF tokens voor state-changing routes.
 
 **📝 Env hygiene**
-- [ ] `.env.example` bijwerken: mist `NEXT_PUBLIC_BILLING_ENABLED`, Stripe keys, `PEXELS_API_KEY`; `RUNWAYML_API_SECRET` kan weg.
+- [x] `.env.example` bijgewerkt (2026-04-19) — `NEXT_PUBLIC_BILLING_ENABLED` + Stripe keys + `PEXELS_API_KEY` toegevoegd, `RUNWAYML_API_SECRET` verwijderd (fal.ai migratie). Orphan `src/lib/integrations/runway/runway-client.ts` nog in codebase, kan later weg.
 
 ### 9.7 Orphaned Golden Circle Routes ✅ DONE (2026-04-19)
 

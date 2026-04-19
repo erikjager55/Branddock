@@ -1,11 +1,19 @@
 import { NextResponse } from 'next/server';
 import { EXPLORATION_MODELS } from '@/lib/ai/exploration/exploration-llm';
+import { getServerSession } from '@/lib/auth-server';
 
 // ─── GET /api/exploration/models ────────────────────────────
 // Returns available AI models filtered by configured API keys.
+// Auth required — response reveals which provider keys are set,
+// which is useful reconnaissance for an unauthenticated caller.
 // ────────────────────────────────────────────────────────────
 
 export async function GET() {
+  const session = await getServerSession();
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const available = EXPLORATION_MODELS.filter((m) => {
     if (m.provider === 'anthropic') return !!process.env.ANTHROPIC_API_KEY;
     if (m.provider === 'google') return !!process.env.GEMINI_API_KEY;
