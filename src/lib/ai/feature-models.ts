@@ -14,6 +14,7 @@ import type { AIModelOption } from './exploration/config.types';
 
 export const AVAILABLE_MODELS: AIModelOption[] = [
   // ── Anthropic ──
+  { id: 'claude-opus-4-7', provider: 'anthropic', label: 'Claude Opus 4.7', description: 'Newest flagship — vision + design, released Apr 17, 2026' },
   { id: 'claude-opus-4-6', provider: 'anthropic', label: 'Claude Opus 4.6', description: 'Most capable — best for complex tasks' },
   { id: 'claude-opus-4-5-20251101', provider: 'anthropic', label: 'Claude Opus 4.5', description: 'Very capable — deep analysis' },
   { id: 'claude-sonnet-4-6', provider: 'anthropic', label: 'Claude Sonnet 4.6', description: 'Latest Sonnet — fast and smart' },
