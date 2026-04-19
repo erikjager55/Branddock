@@ -314,10 +314,10 @@
 - [ ] Zorg dat secrets niet in client-side code lekken
 - [ ] Review rate limiting op auth endpoints
 
-### 9.7 Orphaned Golden Circle Routes
+### 9.7 Orphaned Golden Circle Routes ✅ DONE (2026-04-19)
 
-- [ ] `src/app/api/brand-assets/[id]/golden-circle/route.ts` + `lock/route.ts` — geen frontend callers
-- [ ] `src/features/golden-circle/` directory is leeg
+- [x] `src/app/api/brand-assets/[id]/golden-circle/route.ts` + `lock/route.ts` — verwijderd
+- [x] `src/features/golden-circle/` directory bestond al niet meer
 
 ### 9.8 Source Code TODOs
 

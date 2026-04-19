@@ -1330,10 +1330,6 @@ Directe klant (Organization type=DIRECT)
 | `/api/brand-assets/:id/interviews/:interviewId/complete` | POST | Interview afronden (COMPLETED + actualDuration) |
 | `/api/brand-assets/:id/interviews/:interviewId/approve` | POST | Approve & lock + research method cascade |
 | `/api/brand-assets/:id/interviews/templates` | GET | Templates per category |
-| `/api/brand-assets/:id/golden-circle` | GET | Golden Circle data (WHY/HOW/WHAT) |
-| `/api/brand-assets/:id/golden-circle` | PATCH | Golden Circle updaten |
-| `/api/brand-assets/:id/golden-circle/lock` | PATCH | Lock/unlock Golden Circle |
-| `/api/brand-assets/:id/golden-circle/history` | GET | Versie geschiedenis |
 | `/api/personas` | GET | Lijst met computed validationPercentage + stats (search, filter) |
 | `/api/personas` | POST | Persona aanmaken (Zod, auto 4 research methods, createdById) |
 | `/api/personas/:id` | GET | Detail met researchMethods, computed validation% |
@@ -2026,7 +2022,7 @@ workspaceId komt uit sessie (activeOrganizationId → workspace resolution via w
 - **AI Exploration re-test na config wijziging** — Om opnieuw te testen na config-wijzigingen, moeten ExplorationSession + ExplorationMessage + BrandAssetResearchMethod (method: 'AI_EXPLORATION', status → 'AVAILABLE') gereset worden voor het betreffende asset. Alleen een nieuwe sessie pakt bijgewerkte config op.
 - **~~Lock/unlock inconsistentie~~** — ✅ Opgelost, endpoint gebruikt body-based `{ locked: boolean }`.
 - **~~Dual versioning (BrandAssetVersion + ResourceVersion)~~** — ✅ Opgelost. Alle brand asset versioning gebruikt nu ResourceVersion. BrandAssetVersion Prisma model bewust behouden voor historische data — tabel kan op termijn gedropt worden.
-- **Orphaned golden-circle API routes** — `src/app/api/brand-assets/[id]/golden-circle/route.ts` + `lock/route.ts` bestaan maar hebben geen frontend callers. `src/features/golden-circle/` directory is leeg. Opruimen als onderdeel van toekomstige cleanup.
+- **~~Orphaned golden-circle API routes~~** — ✅ Verwijderd (2026-04-19). Beide routes weg, `src/features/golden-circle/` directory bestond niet meer.
 
 ### 📋 ROADMAP (herzien 27 feb 2026)
 
