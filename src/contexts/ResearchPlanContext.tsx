@@ -33,16 +33,6 @@ interface ResearchPlanContextType {
 
 const ResearchPlanContext = createContext<ResearchPlanContextType | undefined>(undefined);
 
-const DEMO_PLAN: ResearchPlan = {
-  id: 'demo-plan-1',
-  method: 'workshop',
-  unlockedMethods: ['ai-agent', 'canvas-workshop', 'interviews', 'questionnaire'],
-  unlockedAssets: ['1', '2', '3', '4', '5'],
-  entryMode: 'bundle',
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
-
 export function ResearchPlanProvider({ children }: { children: ReactNode }) {
   const { workspaceId, isLoading: wsLoading } = useWorkspace();
   const [activeResearchPlan, setActiveResearchPlan] = useState<ResearchPlan | null>(null);
@@ -56,13 +46,11 @@ export function ResearchPlanProvider({ children }: { children: ReactNode }) {
     });
   });
 
-  // API first, fallback to localStorage/demo
   useEffect(() => {
     if (wsLoading) return;
 
     if (!workspaceId) {
-      const stored = loadFromStorage<ResearchPlan | null>(StorageKeys.ACTIVE_RESEARCH_PLAN, null);
-      setActiveResearchPlan(stored ?? DEMO_PLAN);
+      setActiveResearchPlan(null);
       setIsLoading(false);
       return;
     }
@@ -87,14 +75,12 @@ export function ResearchPlanProvider({ children }: { children: ReactNode }) {
             updatedAt: p.updatedAt,
           });
         } else {
-          const stored = loadFromStorage<ResearchPlan | null>(StorageKeys.ACTIVE_RESEARCH_PLAN, null);
-          setActiveResearchPlan(stored ?? DEMO_PLAN);
+          setActiveResearchPlan(null);
         }
       })
       .catch((err) => {
-        console.warn('[ResearchPlanContext] API fetch failed, using fallback:', err.message);
-        const stored = loadFromStorage<ResearchPlan | null>(StorageKeys.ACTIVE_RESEARCH_PLAN, null);
-        setActiveResearchPlan(stored ?? DEMO_PLAN);
+        console.warn('[ResearchPlanContext] API fetch failed:', err.message);
+        setActiveResearchPlan(null);
       })
       .finally(() => setIsLoading(false));
   }, [workspaceId, wsLoading]);
@@ -112,13 +98,6 @@ export function ResearchPlanProvider({ children }: { children: ReactNode }) {
     if (!activeResearchPlan) return false;
     return activeResearchPlan.unlockedAssets.includes(assetId);
   };
-
-  // Persist to localStorage as backup
-  useEffect(() => {
-    if (activeResearchPlan) {
-      saveToStorage(StorageKeys.ACTIVE_RESEARCH_PLAN, activeResearchPlan);
-    }
-  }, [activeResearchPlan]);
 
   useEffect(() => {
     if (sharedSelectedAssets) {

@@ -11,10 +11,6 @@ const STORAGE_VERSION = '1.0';
 const STORAGE_PREFIX = 'research_app_';
 
 export const StorageKeys = {
-  BRAND_ASSETS: `${STORAGE_PREFIX}brand_assets`,
-  PERSONAS: `${STORAGE_PREFIX}personas`,
-  RESEARCH_PLAN: `${STORAGE_PREFIX}research_plan`,
-  ACTIVE_RESEARCH_PLAN: `${STORAGE_PREFIX}active_research_plan`,
   SHARED_ASSETS: `${STORAGE_PREFIX}shared_assets`,
   UI_STATE: `${STORAGE_PREFIX}ui_state`,
   VERSION: `${STORAGE_PREFIX}version`,

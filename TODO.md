@@ -314,9 +314,13 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
 - [x] PSR.7: AI Persona Analysis Redesign — inspectie wees uit dat de redesign al volledig in code zat: teal/emerald chat bubbles met asymmetrische radii, rapport met Executive Summary + Key Findings + Strategic Recommendations, FieldSuggestionCard met accept/reject/edit. TODO entry was stale.
 - [x] PSR.8: Foto Generatie Fix — Gemini 2.5 Flash Image API al geïmplementeerd, DiceBear alleen als fallback bij geen key / API-error, in `/api/personas/[id]/generate-image`.
 
-### 9.4 Mock Data Fallbacks + Error Isolation
+### 9.4 Mock Data Fallbacks + Error Isolation ✅ DONE (2026-04-19)
 
-- [ ] Overweeg mock fallback verwijderen wanneer API 100% betrouwbaar
+- [x] **Mock fallback verwijderd uit contexts** (2026-04-19) — `PersonasContext` en `ResearchPlanContext` losgekoppeld van localStorage/DEMO-fallbacks:
+  - `PersonasContext`: `dataSource: "api" | "mock"` veld verwijderd (geen externe consumers), `migratePersonaStatus`/`migratePersonaData` legacy helpers weg, localStorage read/write van `StorageKeys.PERSONAS` weg. Op workspace-absent of API-fail → lege array + `isLoading=false` (zelfde patroon als `BrandAssetsContext` sinds maart '26).
+  - `ResearchPlanContext`: `DEMO_PLAN` hardcoded constant weg (had mock asset-IDs `'1'-'5'` die niet matchten met DB-CUIDs → silent failures in `isAssetUnlocked`). `ACTIVE_RESEARCH_PLAN` localStorage-cache weg (was enkel voor demo-restore). Op workspace-absent of API-fail → `activeResearchPlan = null`; bestaande `isMethodUnlocked`/`isAssetUnlocked` returnen al `false` bij null.
+  - `storage.ts`: 4 ongebruikte keys weg (`BRAND_ASSETS`, `PERSONAS`, `RESEARCH_PLAN`, `ACTIVE_RESEARCH_PLAN`). Behouden: `SHARED_ASSETS` (UI-selectie), `UI_STATE`, `VERSION`, `CHANGE_IMPACT`, `CAMPAIGN_WIZARD`.
+  - Verificatie: `tsc --noEmit` 0 errors, dev server compile-clean (200 OK, 10ms recompile).
 - [x] **Per-page ErrorBoundary wrappers** (2026-04-19) — `<ErrorBoundary resetKeys={[activeSection]}>` wrappt `renderContent()` in `App.tsx:1015`. Crash in één module laat sidebar + top-nav intact; navigatie naar andere sectie reset automatisch.
 
 ### 9.5 Hardcoded Kleuren ✅ DONE (2026-04-19)
