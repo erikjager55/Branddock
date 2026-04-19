@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Globe, Sparkles } from "lucide-react";
 import { Button, Card } from "@/components/shared";
+import { normaliseUserUrl, INVALID_URL_MESSAGE } from "@/lib/utils/normalise-url";
 import { useAnalyzeUrl } from "../hooks/useBrandstyleHooks";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 
@@ -15,13 +16,9 @@ export function WebsiteUrlInput() {
   const handleAnalyze = () => {
     setError(null);
 
-    // Normalise: trim whitespace and auto-prepend https:// when the user
-    // typed a bare hostname (e.g. "linfi.nl" or "www.linfi.nl"). Without
-    // this, `new URL()` and the backend's z.string().url() both reject it
-    // and the user has to type the protocol manually.
-    const normalised = normaliseUrl(url);
+    const normalised = normaliseUserUrl(url);
     if (!normalised) {
-      setError("Please enter a valid URL (e.g., https://example.com)");
+      setError(INVALID_URL_MESSAGE);
       return;
     }
 
@@ -37,22 +34,6 @@ export function WebsiteUrlInput() {
       },
     });
   };
-
-  /** Normalise a user-typed URL by trimming and adding https:// if missing.
-   *  Returns the canonical URL string, or null if it can't be parsed. */
-  function normaliseUrl(input: string): string | null {
-    const trimmed = input.trim();
-    if (!trimmed) return null;
-    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-    try {
-      const parsed = new URL(withProtocol);
-      // Reject empty/invalid hostnames (e.g. "https://" alone, or "https:///path")
-      if (!parsed.hostname || !parsed.hostname.includes(".")) return null;
-      return parsed.toString();
-    } catch {
-      return null;
-    }
-  }
 
   return (
     <Card>

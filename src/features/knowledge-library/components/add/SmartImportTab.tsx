@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { Button } from '@/components/shared';
+import { normaliseUserUrl, INVALID_URL_MESSAGE } from '@/lib/utils/normalise-url';
 import { useKnowledgeLibraryStore } from '@/stores/useKnowledgeLibraryStore';
 import { useImportUrl } from '../../hooks';
 import { SUPPORTED_IMPORT_PLATFORMS } from '../../constants/library-constants';
@@ -15,15 +16,27 @@ export function SmartImportTab({ onSwitchToManual }: SmartImportTabProps) {
   const store = useKnowledgeLibraryStore();
   const importUrl = useImportUrl();
   const [url, setUrl] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleImport = () => {
-    if (!url.trim()) return;
+    setError(null);
+    const normalised = normaliseUserUrl(url);
+    if (!normalised) {
+      setError(INVALID_URL_MESSAGE);
+      return;
+    }
+    if (normalised !== url) setUrl(normalised);
 
-    importUrl.mutateAsync({ url: url.trim() }).then((data) => {
-      store.setImportedMetadata(data);
-      store.setSelectedResourceType(data.detectedType);
-      onSwitchToManual();
-    });
+    importUrl
+      .mutateAsync({ url: normalised })
+      .then((data) => {
+        store.setImportedMetadata(data);
+        store.setSelectedResourceType(data.detectedType);
+        onSwitchToManual();
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to import. Please try again.');
+      });
   };
 
   return (
@@ -40,12 +53,18 @@ export function SmartImportTab({ onSwitchToManual }: SmartImportTabProps) {
         <input
           type="url"
           value={url}
-          onChange={(e) => setUrl(e.target.value)}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            setError(null);
+          }}
           data-testid="import-url-input"
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-green-500"
           placeholder="https://..."
           onKeyDown={(e) => e.key === 'Enter' && handleImport()}
         />
+        {error && (
+          <p data-testid="import-error" className="text-xs text-red-500">{error}</p>
+        )}
         <Button
           variant="primary"
           onClick={handleImport}

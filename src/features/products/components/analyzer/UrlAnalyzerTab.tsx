@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Globe } from "lucide-react";
 import { Button, Input } from "@/components/shared";
+import { normaliseUserUrl, INVALID_URL_MESSAGE } from "@/lib/utils/normalise-url";
 import { useAnalyzeUrl } from "../../hooks";
 import { useProductsStore } from "../../stores/useProductsStore";
 import { WhatWeExtractGrid } from "./WhatWeExtractGrid";
@@ -15,26 +16,18 @@ export function UrlAnalyzerTab() {
 
   const handleSubmit = () => {
     setError(null);
-    if (!url.trim()) {
-      setError("Please enter a URL");
+    const normalised = normaliseUserUrl(url);
+    if (!normalised) {
+      setError(INVALID_URL_MESSAGE);
       return;
     }
-
-    // Basic URL validation
-    try {
-      new URL(url.startsWith("http") ? url : `https://${url}`);
-    } catch {
-      setError("Please enter a valid URL");
-      return;
-    }
-
-    const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
+    if (normalised !== url) setUrl(normalised);
 
     // Open modal immediately, then fire API call
     setProcessingModalOpen(true);
 
     analyzeUrl.mutate(
-      normalizedUrl,
+      normalised,
       {
         onSuccess: (data) => {
           // Only set result if modal is still open (user hasn't cancelled)

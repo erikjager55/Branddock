@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Globe, Building2, Target, Swords, BarChart3 } from "lucide-react";
 import { Button, Input } from "@/components/shared";
+import { normaliseUserUrl, INVALID_URL_MESSAGE } from "@/lib/utils/normalise-url";
 import { useAnalyzeCompetitorUrl } from "../../hooks";
 import { useCompetitorsStore } from "../../stores/useCompetitorsStore";
 import type { AnalyzeJobResponse } from "../../types/competitor.types";
@@ -16,23 +17,16 @@ export function UrlAnalyzerTab() {
 
   const handleSubmit = () => {
     setError(null);
-    if (!url.trim()) {
-      setError("Please enter a URL");
+    const normalised = normaliseUserUrl(url);
+    if (!normalised) {
+      setError(INVALID_URL_MESSAGE);
       return;
     }
-
-    try {
-      new URL(url.startsWith("http") ? url : `https://${url}`);
-    } catch {
-      setError("Please enter a valid URL");
-      return;
-    }
-
-    const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
+    if (normalised !== url) setUrl(normalised);
 
     openProcessingModal();
 
-    analyzeUrl.mutate(normalizedUrl, {
+    analyzeUrl.mutate(normalised, {
       onSuccess: (data: AnalyzeJobResponse) => {
         if (useCompetitorsStore.getState().isProcessingModalOpen) {
           setAnalyzeResultData(data);
