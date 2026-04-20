@@ -294,7 +294,7 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
           description: persona.tagline,
           icon: Users,
           type: 'Persona',
-          avatar: persona.avatar
+          avatar: persona.avatarUrl
         }] : [];
       } else {
         // All personas
@@ -304,7 +304,7 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
           description: persona.tagline,
           icon: Users,
           type: 'Persona',
-          avatar: persona.avatar,
+          avatar: persona.avatarUrl,
           compatibleTools: ['interviews', 'questionnaire', 'workshop']
         }));
       }

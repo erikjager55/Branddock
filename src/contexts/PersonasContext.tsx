@@ -1,15 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { logger } from "../utils/logger";
 import { fetchPersonas } from "../lib/api/personas";
-import { apiPersonasToMockFormat, type MockPersona } from "../lib/api/persona-adapter";
+import type { Persona } from "../types/persona";
 import { useWorkspace } from "../hooks/use-workspace";
 
 interface PersonasContextType {
-  personas: MockPersona[];
-  setPersonas: (personas: MockPersona[]) => void;
-  getPersona: (id: string) => MockPersona | undefined;
-  updatePersona: (id: string, updates: Partial<MockPersona>) => void;
-  addPersona: (persona: MockPersona) => void;
+  personas: Persona[];
+  setPersonas: (personas: Persona[]) => void;
+  getPersona: (id: string) => Persona | undefined;
+  updatePersona: (id: string, updates: Partial<Persona>) => void;
+  addPersona: (persona: Persona) => void;
   removePersona: (id: string) => void;
   isLoading: boolean;
 }
@@ -18,7 +18,7 @@ const PersonasContext = createContext<PersonasContextType | undefined>(undefined
 
 export function PersonasProvider({ children }: { children: ReactNode }) {
   const { workspaceId, isLoading: wsLoading } = useWorkspace();
-  const [personas, setPersonas] = useState<MockPersona[]>([]);
+  const [personas, setPersonas] = useState<Persona[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -37,9 +37,8 @@ export function PersonasProvider({ children }: { children: ReactNode }) {
     fetchPersonas()
       .then((response) => {
         if (cancelled) return;
-        const mapped = apiPersonasToMockFormat(response.personas);
-        logger.info(`Loaded ${mapped.length} personas from API`);
-        setPersonas(mapped);
+        logger.info(`Loaded ${response.personas.length} personas from API`);
+        setPersonas(response.personas);
         setIsLoading(false);
       })
       .catch((error) => {
@@ -54,13 +53,13 @@ export function PersonasProvider({ children }: { children: ReactNode }) {
 
   const getPersona = (id: string) => personas.find((p) => p.id === id);
 
-  const updatePersona = (id: string, updates: Partial<MockPersona>) => {
+  const updatePersona = (id: string, updates: Partial<Persona>) => {
     setPersonas((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
     );
   };
 
-  const addPersona = (persona: MockPersona) => {
+  const addPersona = (persona: Persona) => {
     setPersonas((prev) => [...prev, persona]);
   };
 

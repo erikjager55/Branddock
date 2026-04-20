@@ -329,8 +329,11 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
   - Directories: `src/components/unified/` (README + design-system + EntityCard + StatusCard + types + index), `src/components/campaign-strategy/` (leeg geworden)
   - Services: `GlobalSearchService.ts`
 
-**⏳ Vervolgpunt (eigen sessie)**
-- [ ] `persona-adapter.ts` — analoge refactor voor `PersonasContext`; nog niet geëvalueerd.
+**Fase 3: persona-adapter verwijderd** (2026-04-20)
+- [x] `PersonasContext` interface en state geflipt van `MockPersona[]` naar API-native `Persona[]`; `apiPersonasToMockFormat()` call verwijderd.
+- [x] `src/lib/api/persona-adapter.ts` gewist (0 consumers na context flip).
+- [x] 2 consumers gemigreerd (`StrategicResearchPlanner.tsx` — `persona.avatar` → `persona.avatarUrl`); andere 5 hadden geen veld-verschillen (context-consumers gebruikten alleen `id`/`name`/`tagline` die overeen kwamen met de API-shape).
+- [x] Deployment views (`DeploymentGridView`/`DeploymentCalendarView`/`DeploymentTimelineSection`) gebruiken al `usePersonas` uit `features/personas/hooks` (TanStack Query), niet de context — niet geraakt.
 
 ### 9.3 UI Polish — Persona (PSR.6-8) ✅ DONE (2026-04-19)
 
