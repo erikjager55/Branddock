@@ -4,9 +4,11 @@
  * Global state management for brand assets data.
  * Provides CRUD operations and asset-related queries.
  *
+ * DATA SHAPE: BrandAssetWithMeta (API format, single source of truth).
+ * The legacy BrandAsset mock shape and the two-way adapter are removed —
+ * every consumer reads the API format directly.
+ *
  * DATA SOURCE: API only — no mock data fallback.
- * Mock fallback caused "Asset not found" errors because mock IDs ('1'-'13')
- * did not match database CUIDs. Removed as of March 2026.
  */
 
 import React, {
@@ -18,24 +20,23 @@ import React, {
   useCallback,
   ReactNode,
 } from "react";
-import { BrandAsset, SummaryStats } from "../types/brand-asset";
+import type { BrandAssetWithMeta, SummaryStats } from "../types/brand-asset";
 import { logger } from "../utils/logger";
 import { ChangeType } from "../types/change-impact";
 import { fetchBrandAssets } from "../lib/api/brand-assets";
-import { apiAssetsToMockFormat } from "../lib/api/brand-asset-adapter";
 import { useWorkspace } from "../hooks/use-workspace";
 
 interface BrandAssetsContextType {
-  brandAssets: BrandAsset[];
-  setBrandAssets: (assets: BrandAsset[]) => void;
-  getBrandAsset: (id: string) => BrandAsset | undefined;
+  brandAssets: BrandAssetWithMeta[];
+  setBrandAssets: (assets: BrandAssetWithMeta[]) => void;
+  getBrandAsset: (id: string) => BrandAssetWithMeta | undefined;
   updateBrandAsset: (
     id: string,
-    updates: Partial<BrandAsset>,
+    updates: Partial<BrandAssetWithMeta>,
     changeType?: ChangeType,
     changeDescription?: string
   ) => void;
-  addBrandAsset: (asset: BrandAsset) => void;
+  addBrandAsset: (asset: BrandAssetWithMeta) => void;
   removeBrandAsset: (id: string) => void;
 
   /** API-computed summary stats (total, ready, needValidation, avgCoverage) */
@@ -52,8 +53,8 @@ interface BrandAssetsContextType {
   // Change tracking callback - set by ChangeImpactContext
   setOnAssetChange: (
     callback: (
-      asset: BrandAsset,
-      previous: BrandAsset | undefined,
+      asset: BrandAssetWithMeta,
+      previous: BrandAssetWithMeta | undefined,
       changeType: ChangeType,
       description: string
     ) => void
@@ -66,7 +67,7 @@ const BrandAssetsContext = createContext<BrandAssetsContextType | undefined>(
 
 export function BrandAssetsProvider({ children }: { children: ReactNode }) {
   const { workspaceId, isLoading: wsLoading } = useWorkspace();
-  const [brandAssets, setBrandAssets] = useState<BrandAsset[]>([]);
+  const [brandAssets, setBrandAssets] = useState<BrandAssetWithMeta[]>([]);
   const [stats, setStats] = useState<SummaryStats | null>(null);
   const [dataSource, setDataSource] = useState<"api" | "loading">("loading");
   const [isLoading, setIsLoading] = useState(true);
@@ -75,8 +76,8 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
   // Change tracking callback
   const onAssetChangeRef = useRef<
     | ((
-        asset: BrandAsset,
-        previous: BrandAsset | undefined,
+        asset: BrandAssetWithMeta,
+        previous: BrandAssetWithMeta | undefined,
         changeType: ChangeType,
         description: string
       ) => void)
@@ -103,12 +104,11 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
       .then((response) => {
         if (cancelled) return;
 
-        const mapped = apiAssetsToMockFormat(response.assets);
         logger.info(
-          `Loaded ${mapped.length} brand assets from API (workspace: ${workspaceId})`
+          `Loaded ${response.assets.length} brand assets from API (workspace: ${workspaceId})`
         );
 
-        setBrandAssets(mapped);
+        setBrandAssets(response.assets);
         setStats(response.stats);
         setDataSource("api");
         setIsLoading(false);
@@ -129,18 +129,15 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
     };
   }, [workspaceId, wsLoading]);
 
-  // localStorage persistence removed — caused stale mock IDs
-  // that did not match database IDs, leading to "asset not found" errors
-
-  const getBrandAsset = (id: string): BrandAsset | undefined => {
+  const getBrandAsset = (id: string): BrandAssetWithMeta | undefined => {
     return brandAssets.find((asset) => asset.id === id);
   };
 
   const setOnAssetChange = useCallback(
     (
       callback: (
-        asset: BrandAsset,
-        previous: BrandAsset | undefined,
+        asset: BrandAssetWithMeta,
+        previous: BrandAssetWithMeta | undefined,
         changeType: ChangeType,
         description: string
       ) => void
@@ -153,7 +150,7 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
   const updateBrandAsset = useCallback(
     (
       id: string,
-      updates: Partial<BrandAsset>,
+      updates: Partial<BrandAssetWithMeta>,
       changeType: ChangeType = "content-update",
       changeDescription?: string
     ) => {
@@ -187,7 +184,7 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
     [brandAssets]
   );
 
-  const addBrandAsset = useCallback((asset: BrandAsset) => {
+  const addBrandAsset = useCallback((asset: BrandAssetWithMeta) => {
     setBrandAssets((prev) => [...prev, asset]);
   }, []);
 
@@ -202,8 +199,7 @@ export function BrandAssetsProvider({ children }: { children: ReactNode }) {
     setError(null);
     fetchBrandAssets()
       .then((response) => {
-        const mapped = apiAssetsToMockFormat(response.assets);
-        setBrandAssets(mapped);
+        setBrandAssets(response.assets);
         setStats(response.stats);
         setDataSource("api");
         setIsLoading(false);
@@ -248,7 +244,7 @@ export function useBrandAssets() {
  * Automatically generates a description of the change
  */
 function generateChangeDescription(
-  updates: Partial<BrandAsset>,
+  updates: Partial<BrandAssetWithMeta>,
   changeType: ChangeType
 ): string {
   switch (changeType) {
@@ -260,8 +256,7 @@ function generateChangeDescription(
       return `Status changed to ${updates.status}`;
     case "content-update":
     default:
-      if (updates.content) return "Content updated";
-      if (updates.title) return "Title changed";
+      if (updates.name) return "Name changed";
       return "Asset updated";
   }
 }

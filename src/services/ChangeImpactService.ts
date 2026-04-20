@@ -14,9 +14,8 @@ import {
   ImpactLevel,
   ChangeType
 } from '../types/change-impact';
-import { BrandAsset } from '../types/brand-asset';
+import type { BrandAssetWithMeta } from '../types/brand-asset';
 import { logger } from '../utils/logger';
-import { calculateDecisionStatus } from '../utils/decision-status-calculator';
 
 export class ChangeImpactService {
   /**
@@ -24,8 +23,8 @@ export class ChangeImpactService {
    */
   static analyzeAssetChange(
     change: AssetChange,
-    asset: BrandAsset,
-    previousAsset?: BrandAsset
+    asset: BrandAssetWithMeta,
+    previousAsset?: BrandAssetWithMeta
   ): ImpactAnalysis {
     logger.info(`Analyzing impact for change ${change.id} on asset ${asset.id}`);
 
@@ -67,8 +66,8 @@ export class ChangeImpactService {
    */
   private static calculateDecisionImpact(
     change: AssetChange,
-    asset: BrandAsset,
-    previousAsset?: BrandAsset
+    asset: BrandAssetWithMeta,
+    previousAsset?: BrandAssetWithMeta
   ): DecisionImpact {
     // Decision status changes ONLY with new research or validation
     const shouldRecalculate =
@@ -163,11 +162,12 @@ export class ChangeImpactService {
    * Identifies which personas may be affected
    * NOTE: This does NOT modify the personas!
    */
-  private static identifyAffectedPersonas(asset: BrandAsset): string[] {
-    // Simple logic: if the asset is validated and essential,
-    // it can be relevant for persona development
-    if (asset.status === 'validated' && asset.priority === 'essential') {
-      return ['all-personas']; // Placeholder — in a real implementation this would be more specific
+  private static identifyAffectedPersonas(asset: BrandAssetWithMeta): string[] {
+    // Simple heuristic: READY + high coverage assets are brand-critical
+    // and may influence personas. Placeholder — real impl needs per-asset
+    // persona linkage.
+    if (asset.status === 'READY' && asset.coveragePercentage >= 70) {
+      return ['all-personas'];
     }
     return [];
   }
@@ -175,8 +175,8 @@ export class ChangeImpactService {
   /**
    * Simplified decision status for comparison
    */
-  private static getSimplifiedStatus(asset: BrandAsset): 'safe' | 'at-risk' | 'blocked' {
-    const coverage = asset.researchCoverage || 0;
+  private static getSimplifiedStatus(asset: BrandAssetWithMeta): 'safe' | 'at-risk' | 'blocked' {
+    const coverage = asset.coveragePercentage || 0;
 
     if (coverage >= 80) return 'safe';
     if (coverage >= 50) return 'at-risk';
@@ -191,26 +191,26 @@ export class ChangeImpactService {
     statusChanged: boolean,
     previousStatus: 'safe' | 'at-risk' | 'blocked' | undefined,
     newStatus: 'safe' | 'at-risk' | 'blocked',
-    asset: BrandAsset
+    asset: BrandAssetWithMeta
   ): string {
     if (!statusChanged) {
       if (change.changeType === 'research-added') {
-        return `Research added to "${asset.title}". Decision status remains ${this.statusToText(newStatus)} (${asset.researchCoverage}% coverage).`;
+        return `Research added to "${asset.name}". Decision status remains ${this.statusToText(newStatus)} (${asset.coveragePercentage}% coverage).`;
       }
-      return `Update to "${asset.title}" without impact on decision status.`;
+      return `Update to "${asset.name}" without impact on decision status.`;
     }
 
     // Status has changed
     if (newStatus === 'safe') {
-      return `"${asset.title}" is now safe to decide! (${asset.researchCoverage}% research coverage reached)`;
+      return `"${asset.name}" is now safe to decide! (${asset.coveragePercentage}% research coverage reached)`;
     }
 
     if (newStatus === 'blocked') {
-      return `"${asset.title}" is now blocked for decisions (${asset.researchCoverage}% coverage, minimum 50% required).`;
+      return `"${asset.name}" is now blocked for decisions (${asset.coveragePercentage}% coverage, minimum 50% required).`;
     }
 
     // at-risk
-    return `"${asset.title}" status changed to ${this.statusToText(newStatus)} (${asset.researchCoverage}% coverage).`;
+    return `"${asset.name}" status changed to ${this.statusToText(newStatus)} (${asset.coveragePercentage}% coverage).`;
   }
 
   private static statusToText(status: 'safe' | 'at-risk' | 'blocked'): string {

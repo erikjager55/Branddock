@@ -167,12 +167,21 @@ export function TransformativeGoalsDashboard({ onBack, onStartResearch }: Transf
   
   // ✅ Get the Transformative Goals asset from context (synchronized with overview)
   const { brandAssets } = useBrandAssets();
-  const asset = brandAssets.find((a) => a.type === 'Transformative Goals');
-  
+  const asset = brandAssets.find((a) => a.slug === 'transformative-goals');
+
   if (!asset) return null;
 
-  const decisionStatus = calculateDecisionStatus(asset);
-  const completedMethods = asset.researchMethods.filter((m) => m.status === 'completed');
+  // WithMeta carries validationMethods booleans; synthesise a researchMethods
+  // array so legacy calculators and display logic keep working.
+  const syntheticResearchMethods = [
+    { type: 'ai-exploration', status: asset.validationMethods.ai ? 'completed' : 'not-started' },
+    { type: 'canvas-workshop', status: asset.validationMethods.workshop ? 'completed' : 'not-started' },
+    { type: 'interviews', status: asset.validationMethods.interview ? 'completed' : 'not-started' },
+    { type: 'questionnaire', status: asset.validationMethods.questionnaire ? 'completed' : 'not-started' },
+  ];
+
+  const decisionStatus = calculateDecisionStatus({ researchMethods: syntheticResearchMethods });
+  const completedMethods = syntheticResearchMethods.filter((m) => m.status === 'completed');
   const totalMethods = researchMethods.length;
   const unlockProgress = (completedMethods.length / totalMethods) * 100;
 
@@ -614,7 +623,7 @@ export function TransformativeGoalsDashboard({ onBack, onStartResearch }: Transf
 
               <div className="space-y-4">
                 {researchMethods.map((method) => {
-                  const assetMethod = asset.researchMethods.find((m) => m.type === method.id);
+                  const assetMethod = syntheticResearchMethods.find((m) => m.type === method.id);
                   
                   // Map status - synchronized with overview page (entity-card-adapters.ts)
                   // We use the asset's method status directly, not unlock levels

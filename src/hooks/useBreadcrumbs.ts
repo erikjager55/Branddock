@@ -45,7 +45,7 @@ export function useBreadcrumbs(
       if (asset) {
         breadcrumbs.push({
           id: `brand-${selectedAssetId}`,
-          label: asset.title,
+          label: asset.name,
           isActive: true
         });
       }

@@ -174,7 +174,7 @@ function AppContent() {
         recentItems.addItem({
           id: asset.id,
           type: 'brand-asset',
-          title: asset.title,
+          title: asset.name,
           subtitle: asset.category,
           route: `brand-${asset.id}`,
           metadata: {
@@ -440,9 +440,13 @@ function AppContent() {
 
       // Check if this method is completed for this asset (using context)
       const asset = getBrandAsset(selectedAssetId);
-      const isMethodCompleted = asset?.researchMethods?.some(
-        m => m.type === selectedResearchOption && m.status === 'completed'
-      );
+      const methodCompletionMap: Record<string, boolean> = {
+        'ai-exploration': asset?.validationMethods.ai ?? false,
+        'canvas-workshop': asset?.validationMethods.workshop ?? false,
+        'interviews': asset?.validationMethods.interview ?? false,
+        'questionnaire': asset?.validationMethods.questionnaire ?? false,
+      };
+      const isMethodCompleted = methodCompletionMap[selectedResearchOption] ?? false;
 
       const methodUnlocked = isMethodUnlocked(selectedResearchOption);
 

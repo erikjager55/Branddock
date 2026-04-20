@@ -306,18 +306,31 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
   - decision-status internals: `SectionDecisionIndicator.tsx`, `CampaignDecisionHeader.tsx`, `DecisionSummaryPanel.tsx`, `DecisionWarningModal.tsx`, `index.ts`
   - `UniversalAssetDashboard` lazy-import uit `lazy-imports.ts` verwijderd; lege `stakeholder/` directory opgeruimd.
 
-### 9.2 Adapter Pattern Afbouwen (deels) — 2026-04-20
+### 9.2 Adapter Pattern Afbouwen ✅ DONE — 2026-04-20
 
-**✅ mock-to-meta-adapter verwijderd** (commit `2c8b186`)
-- [x] `src/lib/api/mock-to-meta-adapter.ts` gewist — 2 consumers gemigreerd naar `useBrandAssetsQuery()` (TanStack Query returnt `BrandAssetWithMeta[]` direct, geen mock→meta round-trip meer):
-  - `BrandAssetGrid.tsx` — vervangt `useBrandAssets() + brandAssets.map(mockToMeta)` door `useBrandAssetsQuery(workspaceId).data.assets`
-  - `BrandFoundationPage.tsx` — zelfde swap; selectedAsset resolves direct uit de API-lijst
-- Scope-check: context had 15 (niet 26) consumers; slechts 2 gebruikten mock-to-meta-adapter. Andere 13 lezen legacy `BrandAsset` mock-format zonder adapter — geen noodzaak voor volledige context-migratie nu.
+**Fase 1: mock-to-meta-adapter verwijderd** (commit `2c8b186`, 2026-04-20)
+- [x] `src/lib/api/mock-to-meta-adapter.ts` gewist — `BrandAssetGrid.tsx` + `BrandFoundationPage.tsx` gemigreerd naar `useBrandAssetsQuery()` (direct BrandAssetWithMeta, geen round-trip).
 
-**⏳ Nog open (lager urgentie, aparte sessie)**
-- [ ] `BrandAssetsContext` volledig migreren naar `BrandAssetWithMeta` (13 consumers × mock-format field refs). Mapping: `title` → `name`, `lastUpdated` → `updatedAt`, `researchMethods[]` → `validationMethods {ai,workshop,interview,questionnaire}`, dropped: `isCritical`, `content`, `type`.
-- [ ] `brand-asset-adapter.ts` (`apiAssetsToMockFormat`) — nog in gebruik door context als seed. Kan pas weg na volledige context-migratie.
-- [ ] `persona-adapter.ts` — analoge refactor voor Personas; nog niet geëvalueerd.
+**Fase 2: Context geflipt + brand-asset-adapter verwijderd** (2026-04-20)
+- [x] `BrandAssetsContext` interface en state geflipt van `BrandAsset[]` naar `BrandAssetWithMeta[]`; `apiAssetsToMockFormat()` call verwijderd — context geeft nu de API-response direct door.
+- [x] `src/lib/api/brand-asset-adapter.ts` gewist (0 consumers na context flip).
+- [x] 12 consumers gemigreerd:
+  - App.tsx: `asset.title` → `asset.name`; `researchMethods.some()` check → `validationMethods[key]` boolean lookup.
+  - useBreadcrumbs, WorkshopPurchasePage: `title` → `name`.
+  - ChangeImpactContext + ChangeImpactService: signatures naar WithMeta; `researchCoverage` → `coveragePercentage`; `status === 'validated'` → `status === 'READY'`; priority-check vervangen door coverage-heuristiek.
+  - RelationshipService: `title` → `name`, `lastUpdated` → `updatedAt`, `type === 'Golden Circle'` → `slug === 'golden-circle'`, `content` → `description` (keyword heuristic), `status === 'ready-to-validate'` → `'NEEDS_ATTENTION'`, `isCritical` → status+coverage heuristiek.
+  - StrategicResearchPlanner: `type`/`content` → `name`/`description`.
+  - TransformativeGoalsDashboard: `type === '...'` → `slug === 'transformative-goals'`; `asset.researchMethods` → synthetische array uit `validationMethods` booleans (voor bestaande `calculateDecisionStatus` + UI).
+  - SessionNavigator: prop type → WithMeta[].
+- [x] Legacy `BrandAsset` + `ResearchMethod` interfaces uit `src/types/brand-asset.ts` verwijderd (alleen `ResearchMethodType`/`ResearchMethodStatus`/`CalculatedAssetStatus` + WithMeta behouden).
+- [x] **16 orphan bestanden gewist** in cascade:
+  - Utils: `brand-score-calculator.ts`, `entity-card-adapters.ts`, `status-card-adapters.ts`, `asset-status.ts`, `research-method-utils.ts`
+  - Components: `ResearchStatusOverview.tsx`, `ResearchBundlesSection.tsx`, `ResearchFoundationMatrix.tsx`, `ResearchMethodBadge.tsx`, `CampaignCardUnified.tsx`, `DeliverableCardUnified.tsx`, `DeliverableCard.tsx`, `ValidationCardUnified.tsx`
+  - Directories: `src/components/unified/` (README + design-system + EntityCard + StatusCard + types + index), `src/components/campaign-strategy/` (leeg geworden)
+  - Services: `GlobalSearchService.ts`
+
+**⏳ Vervolgpunt (eigen sessie)**
+- [ ] `persona-adapter.ts` — analoge refactor voor `PersonasContext`; nog niet geëvalueerd.
 
 ### 9.3 UI Polish — Persona (PSR.6-8) ✅ DONE (2026-04-19)
 

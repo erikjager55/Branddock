@@ -12,12 +12,12 @@ import {
   Home,
   Target
 } from 'lucide-react';
-import { BrandAsset, ResearchMethodType } from '../types/brand-asset';
+import type { BrandAssetWithMeta, ResearchMethodType } from '../types/brand-asset';
 
 interface SessionNavigatorProps {
   currentAssetId: string;
   currentMethodType: ResearchMethodType;
-  allAssets: BrandAsset[];
+  allAssets: BrandAssetWithMeta[];
   onNavigateToAsset: (assetId: string) => void;
   onReturnToHub: () => void;
 }

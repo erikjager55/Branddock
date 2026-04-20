@@ -266,10 +266,10 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
       if (selectedTarget.targetId) {
         // Specific brand asset
         const asset = brandAssets.find(a => a.id === selectedTarget.targetId);
-        return asset ? [{ 
-          id: asset.id, 
-          name: asset.type, 
-          description: asset.content?.substring(0, 100) || '',
+        return asset ? [{
+          id: asset.id,
+          name: asset.name,
+          description: asset.description?.substring(0, 100) || '',
           icon: Palette,
           type: 'Brand Asset'
         }] : [];
@@ -277,8 +277,8 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
         // All brand assets
         return brandAssets.map(asset => ({
           id: asset.id,
-          name: asset.type,
-          description: asset.content?.substring(0, 100) || '',
+          name: asset.name,
+          description: asset.description?.substring(0, 100) || '',
           icon: Palette,
           type: 'Brand Asset',
           compatibleTools: ['workshop', 'interviews', 'ai-agent', 'questionnaire']
@@ -1324,7 +1324,7 @@ export function StrategicResearchPlanner({ onPlanCreated, onCancel, preSelectedP
                           // Try to find in brand assets first
                           let item = brandAssets.find(a => a.id === itemId);
                           let ItemIcon = Palette;
-                          let itemName = item?.type;
+                          let itemName = item?.name;
                           
                           // If not found, try personas
                           if (!item) {

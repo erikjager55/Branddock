@@ -98,7 +98,7 @@ export function WorkshopPurchasePage({
     const assetIds =
       store.selectionMode === "bundles" && selectedBundle
         ? brandAssets
-            .filter((a) => selectedBundle.assetNames.includes(a.title))
+            .filter((a) => selectedBundle.assetNames.includes(a.name))
             .map((a) => a.id)
         : store.selectedAssetIds;
 
@@ -110,7 +110,7 @@ export function WorkshopPurchasePage({
 
   const assets = brandAssets.map((a) => ({
     id: a.id,
-    name: a.title,
+    name: a.name,
     category: a.category,
   }));
 

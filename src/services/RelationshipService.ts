@@ -1,4 +1,4 @@
-import { BrandAsset } from '../types/brand-asset';
+import type { BrandAssetWithMeta } from '../types/brand-asset';
 import {
   Relationship,
   ImpactAnalysis,
@@ -22,10 +22,10 @@ interface ServicePersona {
  * Core service for managing relationships between entities
  */
 export class RelationshipService {
-  private static brandAssets: BrandAsset[] = [];
+  private static brandAssets: BrandAssetWithMeta[] = [];
   private static personas: ServicePersona[] = [];
 
-  static setBrandAssets(assets: BrandAsset[]) { RelationshipService.brandAssets = assets; }
+  static setBrandAssets(assets: BrandAssetWithMeta[]) { RelationshipService.brandAssets = assets; }
   static setPersonas(personas: ServicePersona[]) { RelationshipService.personas = personas; }
 
   
@@ -242,7 +242,7 @@ export class RelationshipService {
     switch (entityType) {
       case 'brand-asset':
         const asset = RelationshipService.brandAssets.find(a => a.id === entityId);
-        return asset?.title || 'Unknown Brand Asset';
+        return asset?.name || 'Unknown Brand Asset';
       case 'persona':
         const persona = RelationshipService.personas.find(p => p.id === entityId);
         return persona?.name || 'Unknown Persona';
@@ -348,19 +348,20 @@ export class RelationshipService {
     const issues: ConsistencyIssue[] = [];
     
     // Example: Golden Circle should connect to all critical brand assets
-    const goldenCircle = RelationshipService.brandAssets.find(a => a.type === 'Golden Circle');
+    const goldenCircle = RelationshipService.brandAssets.find(a => a.slug === 'golden-circle');
     if (goldenCircle) {
       const gcRelationships = this.getForEntity('brand-asset', goldenCircle.id);
       const connectedAssetIds = gcRelationships
         .filter(r => r.targetType === 'brand-asset' || r.sourceType === 'brand-asset')
         .map(r => r.targetId === goldenCircle.id ? r.sourceId : r.targetId);
-      
-      const criticalAssets = RelationshipService.brandAssets.filter(a => 
-        a.isCritical && a.id !== goldenCircle.id
+
+      // WithMeta has no isCritical — derive from status + coverage as proxy
+      const criticalAssets = RelationshipService.brandAssets.filter(a =>
+        (a.status === 'READY' || a.coveragePercentage >= 70) && a.id !== goldenCircle.id
       );
-      
+
       const missingConnections = criticalAssets.filter(a => !connectedAssetIds.includes(a.id));
-      
+
       if (missingConnections.length > 0) {
         issues.push({
           id: 'missing-gc-connections',
@@ -371,7 +372,7 @@ export class RelationshipService {
           affectedEntities: missingConnections.map(a => ({
             id: a.id,
             type: 'brand-asset' as EntityType,
-            name: a.title,
+            name: a.name,
             relationshipType: 'supports' as RelationType,
             strength: 'strong'
           })),
@@ -392,7 +393,7 @@ export class RelationshipService {
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
     RelationshipService.brandAssets.forEach(asset => {
-      const assetDate = new Date(asset.lastUpdated);
+      const assetDate = new Date(asset.updatedAt);
       if (assetDate < sixMonthsAgo) {
         const relationships = this.getForEntity('brand-asset', asset.id);
         if (relationships.length > 0) {
@@ -400,15 +401,15 @@ export class RelationshipService {
             id: `stale-${asset.id}`,
             severity: 'info',
             type: 'stale-reference',
-            title: `${asset.title} hasn't been updated in 6+ months`,
+            title: `${asset.name} hasn't been updated in 6+ months`,
             description: `This asset has ${relationships.length} relationships but hasn't been reviewed recently`,
             affectedEntities: [{
               id: asset.id,
               type: 'brand-asset',
-              name: asset.title,
+              name: asset.name,
               relationshipType: 'references',
               strength: 'medium',
-              lastUpdated: asset.lastUpdated
+              lastUpdated: asset.updatedAt
             }],
             detectedAt: new Date().toISOString(),
             suggestedAction: 'Review and refresh this asset to ensure information is current',
@@ -426,13 +427,14 @@ export class RelationshipService {
     const issues: ConsistencyIssue[] = [];
     
     // Simple keyword check (in production, use NLP)
-    const goldenCircle = RelationshipService.brandAssets.find(a => a.type === 'Golden Circle');
-    const missionVision = RelationshipService.brandAssets.find(a => a.type === 'Mission & Vision');
+    const goldenCircle = RelationshipService.brandAssets.find(a => a.slug === 'golden-circle');
+    const missionVision = RelationshipService.brandAssets.find(a => a.slug === 'mission-vision' || a.slug === 'mission-statement');
 
     if (goldenCircle && missionVision) {
-      // This is a simplified check - in production, use proper NLP
-      const gcKeywords = this.extractKeywords(goldenCircle.content || '');
-      const mvKeywords = this.extractKeywords(missionVision.content || '');
+      // WithMeta has no content field — fall back to description for the
+      // simple keyword heuristic. Replaced by proper NLP in production.
+      const gcKeywords = this.extractKeywords(goldenCircle.description || '');
+      const mvKeywords = this.extractKeywords(missionVision.description || '');
 
       const missingInMV = gcKeywords.filter(kw => !mvKeywords.includes(kw));
 
@@ -447,14 +449,14 @@ export class RelationshipService {
             {
               id: goldenCircle.id,
               type: 'brand-asset',
-              name: goldenCircle.title,
+              name: goldenCircle.name,
               relationshipType: 'supports',
               strength: 'strong'
             },
             {
               id: missionVision.id,
               type: 'brand-asset',
-              name: missionVision.title,
+              name: missionVision.name,
               relationshipType: 'supports',
               strength: 'strong'
             }
@@ -481,12 +483,12 @@ export class RelationshipService {
           id: `orphan-${asset.id}`,
           severity: 'info',
           type: 'missing-connection',
-          title: `${asset.title} has no relationships`,
+          title: `${asset.name} has no relationships`,
           description: 'This asset is isolated and not connected to other brand elements',
           affectedEntities: [{
             id: asset.id,
             type: 'brand-asset',
-            name: asset.title,
+            name: asset.name,
             relationshipType: 'references',
             strength: 'weak'
           }],
@@ -557,29 +559,29 @@ export class RelationshipService {
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
     return RelationshipService.brandAssets
-      .filter(asset => new Date(asset.lastUpdated) > oneDayAgo)
+      .filter(asset => new Date(asset.updatedAt) > oneDayAgo)
       .slice(0, 5)
       .map(asset => ({
         id: asset.id,
         type: 'brand-asset' as EntityType,
-        name: asset.title,
+        name: asset.name,
         relationshipType: 'references' as RelationType,
         strength: 'medium' as const,
-        lastUpdated: asset.lastUpdated
+        lastUpdated: asset.updatedAt
       }));
   }
 
   private static getEntitiesNeedingAttention(): EntityReference[] {
     const needsAttention: EntityReference[] = [];
 
-    // Assets with status 'ready-to-validate'
+    // Assets flagged for validation (WithMeta uses the DB enum)
     RelationshipService.brandAssets
-      .filter(asset => asset.status === 'ready-to-validate')
+      .filter(asset => asset.status === 'NEEDS_ATTENTION')
       .forEach(asset => {
         needsAttention.push({
           id: asset.id,
           type: 'brand-asset',
-          name: asset.title,
+          name: asset.name,
           relationshipType: 'validates',
           strength: 'medium'
         });
@@ -673,7 +675,7 @@ export class RelationshipService {
         orphanedEntities.push({
           id: asset.id,
           type: 'brand-asset',
-          name: asset.title,
+          name: asset.name,
           relationshipType: 'references',
           strength: 'weak'
         });

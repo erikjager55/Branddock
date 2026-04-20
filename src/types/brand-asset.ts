@@ -7,7 +7,7 @@ export type AssetStatus = "DRAFT" | "IN_PROGRESS" | "NEEDS_ATTENTION" | "READY";
 // Calculated UI status (derived from research methods and content state)
 export type CalculatedAssetStatus = "awaiting-research" | "in-development" | "ready-to-validate" | "validated";
 
-// --- Research method types (gebruikt door mock data) ---
+// --- Research method identifiers (used by App.tsx + SessionNavigator) ---
 export type ResearchMethodType =
   | "ai-exploration"
   | "canvas-workshop"
@@ -18,40 +18,6 @@ export type ResearchMethodType =
   | "desk-research";
 
 export type ResearchMethodStatus = "completed" | "in-progress" | "locked" | "not-started" | "available" | "running";
-
-export interface ResearchMethod {
-  type: ResearchMethodType;
-  status: ResearchMethodStatus;
-  completedAt?: string;
-  progress?: number;
-  metadata?: Record<string, unknown>;
-}
-
-// --- Core BrandAsset type (bron: mock-brand-assets.ts) ---
-export interface BrandAsset {
-  id: string;
-  type: string;
-  title: string;
-  content: string;
-  category: string;
-  lastUpdated: string;
-  status: string;
-  description: string;
-  isCritical?: boolean;
-  priority?: string;
-  researchMethods: ResearchMethod[];
-  researchCoverage: number;
-  artifactsGenerated: number;
-  artifactsValidated: number;
-  validatedAt?: string;
-  validatedBy?: string;
-  contentSections?: { title: string; content: string; completed: boolean }[];
-  version?: string;
-  /** Preserved from API for completeness calculation */
-  frameworkType?: string | null;
-  /** Preserved from API for completeness calculation */
-  frameworkData?: Record<string, unknown> | null;
-}
 
 export interface BrandAssetWithMeta {
   id: string;

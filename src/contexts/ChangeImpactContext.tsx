@@ -13,7 +13,7 @@ import {
   ChangeImpactStore,
   ChangeType 
 } from '../types/change-impact';
-import { BrandAsset } from '../types/brand-asset';
+import type { BrandAssetWithMeta } from '../types/brand-asset';
 import { ChangeImpactService } from '../services/ChangeImpactService';
 import { saveToStorage, loadFromStorage, StorageKeys } from '../utils/storage';
 import { logger } from '../utils/logger';
@@ -24,8 +24,8 @@ interface ChangeImpactContextType {
   
   // Change tracking
   trackAssetChange: (
-    asset: BrandAsset,
-    previousAsset: BrandAsset | undefined,
+    asset: BrandAssetWithMeta,
+    previousAsset: BrandAssetWithMeta | undefined,
     changeType: ChangeType,
     description: string
   ) => void;
@@ -67,8 +67,8 @@ export function ChangeImpactProvider({ children }: { children: ReactNode }) {
    * Track an asset change and analyze the impact
    */
   const trackAssetChange = (
-    asset: BrandAsset,
-    previousAsset: BrandAsset | undefined,
+    asset: BrandAssetWithMeta,
+    previousAsset: BrandAssetWithMeta | undefined,
     changeType: ChangeType,
     description: string
   ) => {
@@ -78,13 +78,13 @@ export function ChangeImpactProvider({ children }: { children: ReactNode }) {
     const change: AssetChange = {
       id: `change-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       assetId: asset.id,
-      assetTitle: asset.title,
+      assetTitle: asset.name,
       changeType,
       timestamp: new Date().toISOString(),
       description,
       researchAdded: changeType === 'research-added',
-      coverageChangeBefore: previousAsset?.researchCoverage,
-      coverageChangeAfter: asset.researchCoverage,
+      coverageChangeBefore: previousAsset?.coveragePercentage,
+      coverageChangeAfter: asset.coveragePercentage,
     };
 
     // Analyze impact
