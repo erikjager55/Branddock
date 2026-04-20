@@ -4,6 +4,7 @@ import { resolveWorkspaceId, requireAuth } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { analyzeIllustrationStyle } from "@/lib/consistent-models/style-analyzer";
+import { withAiRateLimit } from "@/lib/ai/middleware";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -19,6 +20,9 @@ export async function POST(request: NextRequest, context: RouteContext) {
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace" }, { status: 400 });
     }
+
+    const rateLimit = await withAiRateLimit(workspaceId);
+    if (rateLimit instanceof Response) return rateLimit;
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json(

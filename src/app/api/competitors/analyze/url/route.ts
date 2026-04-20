@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { withAiRateLimit } from "@/lib/ai/middleware";
 import { scrapeProductUrl } from "@/lib/products/url-scraper";
 import { scrapeUrlViaGemini } from "@/lib/products/gemini-url-fallback";
 import { createStructuredCompletion } from "@/lib/ai/exploration/ai-caller";
@@ -26,6 +27,9 @@ export async function POST(request: NextRequest) {
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
+
+    const rateLimit = await withAiRateLimit(workspaceId);
+    if (rateLimit instanceof Response) return rateLimit;
 
     const body = await request.json();
     const parsed = analyzeUrlSchema.safeParse(body);

@@ -10,6 +10,7 @@ import { validateGeneratedImage } from '@/lib/consistent-models/style-validator'
 import type { IllustrationStyleProfile } from '@/lib/consistent-models/style-profile.types';
 import type { ConsistentModelType } from '@prisma/client';
 import { z } from 'zod';
+import { withAiRateLimit } from '@/lib/ai/middleware';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -39,6 +40,9 @@ export async function POST(
     if (!workspaceId) {
       return NextResponse.json({ error: 'No workspace' }, { status: 400 });
     }
+
+    const rateLimit = await withAiRateLimit(workspaceId);
+    if (rateLimit instanceof Response) return rateLimit;
 
     if (!isFalConfigured()) {
       return NextResponse.json(

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { withAiRateLimit } from '@/lib/ai/middleware';
 import { buildCreativePipelineContext, generateCreativeConcepts } from '@/lib/campaigns/strategy-chain';
 import type { StrategicIntent, HumanInsight } from '@/lib/campaigns/strategy-blueprint.types';
 import { z } from 'zod';
@@ -55,6 +56,9 @@ export async function POST(request: NextRequest) {
     if (!workspaceId) {
       return NextResponse.json({ error: 'No workspace found' }, { status: 403 });
     }
+
+    const rateLimit = await withAiRateLimit(workspaceId);
+    if (rateLimit instanceof Response) return rateLimit;
 
     const body = requestSchema.parse(await request.json());
 

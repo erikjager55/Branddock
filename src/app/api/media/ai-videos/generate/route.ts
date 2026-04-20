@@ -10,6 +10,7 @@ import { getStorageProvider } from '@/lib/storage';
 import { z } from 'zod';
 import { getFalVideoProviderById } from '@/lib/integrations/fal/fal-video-providers';
 import { mapGeneratedVideo } from '@/features/media-library/utils/media-utils';
+import { withAiRateLimit } from '@/lib/ai/middleware';
 
 const generateSchema = z.object({
   name: z.string().min(1).max(200),
@@ -32,6 +33,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const rateLimit = await withAiRateLimit(workspaceId);
+    if (rateLimit instanceof Response) return rateLimit;
 
     const body = await request.json();
     const parsed = generateSchema.safeParse(body);

@@ -13,6 +13,7 @@ import { buildPromptWithContext } from '@/lib/ai/prompt-context-builder';
 import { resolveWorkspaceBrandContext } from '@/lib/consistent-models/workspace-context-resolver';
 import { LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
 import { mapGeneratedImage } from '@/features/media-library/utils/media-utils';
+import { withAiRateLimit } from '@/lib/ai/middleware';
 import type { ConsistentModelType } from '@prisma/client';
 
 const generateSchema = z.object({
@@ -77,6 +78,9 @@ export async function POST(request: NextRequest) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const rateLimit = await withAiRateLimit(workspaceId);
+    if (rateLimit instanceof Response) return rateLimit;
 
     const body = await request.json();
     const parsed = generateSchema.safeParse(body);
