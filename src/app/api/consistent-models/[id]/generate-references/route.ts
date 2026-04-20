@@ -9,6 +9,7 @@ import { cacheKeys } from '@/lib/api/cache-keys';
 import type { ConsistentModelType } from '@prisma/client';
 import { z } from 'zod';
 import { withAiRateLimit } from '@/lib/ai/middleware';
+import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -118,16 +119,15 @@ export async function POST(
 
         const image = genResult.images[0];
 
-        // Download image bytes from fal.ai URL
-        const imageResponse = await fetch(image.url);
-        if (!imageResponse.ok) {
-          console.error(`Failed to download image from fal.ai: ${imageResponse.status}`);
+        // Download image bytes from fal.ai URL (size-capped)
+        let imageBytes: Buffer;
+        try {
+          imageBytes = await fetchWithSizeLimit(image.url, AI_IMAGE_SIZE_CAP);
+        } catch (err) {
+          console.error('[consistent-models/generate-references] Skipping image:', err instanceof Error ? err.message : err);
           continue;
         }
-
-        const imageArrayBuffer = await imageResponse.arrayBuffer();
-        const imageBytes = Buffer.from(imageArrayBuffer);
-        const contentType = image.content_type ?? imageResponse.headers.get('content-type') ?? 'image/png';
+        const contentType = image.content_type ?? 'image/png';
 
         // Upload to storage
         const ext = contentType.includes('jpeg') || contentType.includes('jpg') ? 'jpg' : 'png';

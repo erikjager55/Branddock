@@ -11,6 +11,7 @@ import { getStorageProvider } from '@/lib/storage';
 import { getFalVideoProviderById, FAL_VIDEO_PROVIDERS } from '@/lib/integrations/fal/fal-video-providers';
 import { buildVideoPromptFromScript } from '@/lib/studio/video-prompt-builder';
 import { getBrandContext } from '@/lib/ai/brand-context';
+import { fetchWithSizeLimit, AI_VIDEO_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 
 // Allow up to 5 minutes for video generation
 export const maxDuration = 300;
@@ -193,14 +194,15 @@ export async function POST(
             return;
           }
 
-          // Step 3: Download and store video
-          const videoResponse = await fetch(video.url);
-          if (!videoResponse.ok) {
-            sendEvent('video_error', { message: 'Failed to download generated video' });
+          // Step 3: Download and store video (size-capped)
+          let videoBytes: Buffer;
+          try {
+            videoBytes = await fetchWithSizeLimit(video.url, AI_VIDEO_SIZE_CAP);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Failed to download generated video';
+            sendEvent('video_error', { message: msg });
             return;
           }
-
-          const videoBytes = Buffer.from(await videoResponse.arrayBuffer());
           const fileName = `concept-video-${Date.now()}.mp4`;
           const storageProvider = getStorageProvider();
           const uploadResult = await storageProvider.upload(videoBytes, {

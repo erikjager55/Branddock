@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { getFalVideoProviderById } from '@/lib/integrations/fal/fal-video-providers';
 import { mapGeneratedVideo } from '@/features/media-library/utils/media-utils';
 import { withAiRateLimit } from '@/lib/ai/middleware';
+import { fetchWithSizeLimit, AI_VIDEO_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 
 const generateSchema = z.object({
   name: z.string().min(1).max(200),
@@ -114,12 +115,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No video generated' }, { status: 500 });
     }
 
-    // Download the video bytes from the fal.ai result URL
-    const videoResponse = await fetch(video.url);
-    if (!videoResponse.ok) {
-      return NextResponse.json({ error: 'Failed to download generated video' }, { status: 500 });
+    // Download the video bytes from the fal.ai result URL (size-capped)
+    let videoBytes: Buffer;
+    try {
+      videoBytes = await fetchWithSizeLimit(video.url, AI_VIDEO_SIZE_CAP);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to download generated video';
+      return NextResponse.json({ error: msg }, { status: 500 });
     }
-    const videoBytes = Buffer.from(await videoResponse.arrayBuffer());
     const mimeType = 'video/mp4';
 
     // Upload to storage

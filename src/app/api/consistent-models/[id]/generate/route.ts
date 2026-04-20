@@ -11,6 +11,7 @@ import type { IllustrationStyleProfile } from '@/lib/consistent-models/style-pro
 import type { ConsistentModelType } from '@prisma/client';
 import { z } from 'zod';
 import { withAiRateLimit } from '@/lib/ai/middleware';
+import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -131,11 +132,14 @@ export async function POST(
 
     for (const image of result.images ?? []) {
       try {
-        // Download the generated image from fal.ai
-        const imageResponse = await fetch(image.url);
-        if (!imageResponse.ok) continue;
-
-        const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+        // Download the generated image from fal.ai (size-capped)
+        let imageBuffer: Buffer;
+        try {
+          imageBuffer = await fetchWithSizeLimit(image.url, AI_IMAGE_SIZE_CAP);
+        } catch (err) {
+          console.warn('[consistent-models/generate] Skipping image:', err instanceof Error ? err.message : err);
+          continue;
+        }
 
         // Upload via storage provider (local storage for now, R2 later)
         const storageResult = await storage.upload(imageBuffer, {

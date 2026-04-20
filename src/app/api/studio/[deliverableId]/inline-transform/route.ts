@@ -5,6 +5,7 @@ import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
 import { createStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import { checkRateLimit } from '@/lib/ai/rate-limiter';
 import { buildBrandVoiceDirective } from '@/lib/studio/brand-voice-directive';
+import { sanitizeAiInputString } from '@/lib/security/input-sanitizer';
 
 // ---------------------------------------------------------------------------
 // POST /api/studio/[deliverableId]/inline-transform
@@ -53,23 +54,27 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
-    const { selectedText, action, fullContent } = body;
+    const { selectedText: rawSelectedText, action, fullContent: rawFullContent } = body;
 
-    if (!selectedText || typeof selectedText !== 'string' || selectedText.trim().length === 0) {
+    if (!rawSelectedText || typeof rawSelectedText !== 'string' || rawSelectedText.trim().length === 0) {
       return NextResponse.json({ error: 'selectedText is required' }, { status: 400 });
     }
 
-    if (selectedText.length > 5000) {
+    if (rawSelectedText.length > 5000) {
       return NextResponse.json({ error: 'selectedText exceeds maximum length of 5000 characters' }, { status: 400 });
     }
 
-    if (fullContent !== undefined && typeof fullContent !== 'string') {
+    if (rawFullContent !== undefined && typeof rawFullContent !== 'string') {
       return NextResponse.json({ error: 'fullContent must be a string' }, { status: 400 });
     }
 
-    if (fullContent && fullContent.length > 10000) {
+    if (rawFullContent && rawFullContent.length > 10000) {
       return NextResponse.json({ error: 'fullContent exceeds maximum length of 10000 characters' }, { status: 400 });
     }
+
+    // Strip LLM control tokens before the text flows into the prompt.
+    const selectedText = sanitizeAiInputString(rawSelectedText, 5000);
+    const fullContent = rawFullContent ? sanitizeAiInputString(rawFullContent, 10000) : rawFullContent;
 
     if (!action || !VALID_ACTIONS.includes(action as TransformAction)) {
       return NextResponse.json(

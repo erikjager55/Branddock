@@ -8,9 +8,10 @@ import { resolveExplorationConfig } from '@/lib/ai/exploration/config-resolver';
 import { buildBrandContextString, resolveTemplate } from '@/lib/ai/exploration/prompt-engine';
 import { generateAIResponse } from '@/lib/ai/exploration/ai-caller';
 import { resolveItemSubType } from '@/lib/ai/exploration/constants';
+import { sanitizeAiInputString } from '@/lib/security/input-sanitizer';
 
 const answerSchema = z.object({
-  content: z.string().min(1).max(5000),
+  content: z.string().min(1).max(5000).transform((s) => sanitizeAiInputString(s, 5000)),
 });
 
 // ─── POST /api/exploration/[itemType]/[itemId]/sessions/[sessionId]/answer ──

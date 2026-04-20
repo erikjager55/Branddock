@@ -4,13 +4,18 @@ import { requireUnlocked } from "@/lib/lock-guard";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { resolveWorkspaceForProduct } from "@/lib/products/resolve-workspace";
+import { validateBinaryFile } from "@/lib/security/file-validator";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import type { ProductImageCategory } from "@prisma/client";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_IMAGES_PER_PRODUCT = 20;
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const ALLOWED_TYPES: ReadonlySet<string> = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+]);
 
 /** Hardcoded enum values — Prisma enums are not available at Next.js runtime */
 const VALID_IMAGE_CATEGORIES: string[] = [
@@ -52,7 +57,7 @@ export async function POST(
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    if (!ALLOWED_TYPES.includes(file.type)) {
+    if (!ALLOWED_TYPES.has(file.type)) {
       return NextResponse.json(
         { error: "Invalid file type. Allowed: PNG, JPG, WEBP" },
         { status: 400 },
@@ -75,6 +80,16 @@ export async function POST(
     const filePath = path.join(uploadDir, safeName);
 
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Magic-byte MIME validation — catches client-header spoofing
+    const contentCheck = await validateBinaryFile(buffer, ALLOWED_TYPES);
+    if (!contentCheck.ok) {
+      return NextResponse.json(
+        { error: contentCheck.error ?? "Invalid file content" },
+        { status: 400 },
+      );
+    }
+
     await writeFile(filePath, buffer);
 
     // Public URL path

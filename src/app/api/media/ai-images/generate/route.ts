@@ -14,6 +14,7 @@ import { resolveWorkspaceBrandContext } from '@/lib/consistent-models/workspace-
 import { LORA_QUALITY_CONFIG } from '@/features/consistent-models/constants/model-constants';
 import { mapGeneratedImage } from '@/features/media-library/utils/media-utils';
 import { withAiRateLimit } from '@/lib/ai/middleware';
+import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import type { ConsistentModelType } from '@prisma/client';
 
 const generateSchema = z.object({
@@ -192,11 +193,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'No image generated' }, { status: 500 });
       }
 
-      const imgResponse = await fetch(result.images[0].url);
-      if (!imgResponse.ok) {
-        return NextResponse.json({ error: 'Failed to download generated image' }, { status: 500 });
+      try {
+        imageBytes = await fetchWithSizeLimit(result.images[0].url, AI_IMAGE_SIZE_CAP);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed to download generated image';
+        return NextResponse.json({ error: msg }, { status: 500 });
       }
-      imageBytes = Buffer.from(await imgResponse.arrayBuffer());
       mimeType = 'image/png';
       const modelNames = readyModels.map((m) => m.name).join(' + ');
       modelName = `${generatorEndpoint} (LoRA: ${modelNames})`;
@@ -231,11 +233,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'No image generated' }, { status: 500 });
       }
 
-      const imgResponse = await fetch(result.images[0].url);
-      if (!imgResponse.ok) {
-        return NextResponse.json({ error: 'Failed to download generated image' }, { status: 500 });
+      try {
+        imageBytes = await fetchWithSizeLimit(result.images[0].url, AI_IMAGE_SIZE_CAP);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed to download generated image';
+        return NextResponse.json({ error: msg }, { status: 500 });
       }
-      imageBytes = Buffer.from(await imgResponse.arrayBuffer());
       mimeType = 'image/png';
       modelName = falProvider.id;
       width = result.images[0].width;
