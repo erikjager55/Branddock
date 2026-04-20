@@ -7,6 +7,7 @@ import { prisma } from "./prisma";
 import { ac, owner, admin, member, viewer } from "./auth-permissions";
 import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from "./constants/canonical-brand-assets";
 import { checkAuthEmailRateLimit } from "./auth/auth-rate-limiter";
+import { redis } from "./redis";
 import type { SocialProviders } from "better-auth/social-providers";
 
 // ─── Build socialProviders config from env vars ────────────
@@ -185,9 +186,31 @@ export const auth = betterAuth({
     modelName: "User",
   },
   // Per-IP rate limits on auth endpoints (brute-force defense).
-  // In-memory store; migrate to Upstash Redis for multi-instance deploys (9.6 M1).
+  // Uses secondaryStorage (Redis) when UPSTASH_REDIS_REST_URL is set,
+  // falls back to Better Auth's in-memory store in local dev.
+  ...(redis
+    ? {
+        secondaryStorage: {
+          get: async (key: string) => {
+            const value = await redis!.get<string>(key);
+            return value ?? null;
+          },
+          set: async (key: string, value: string, ttl?: number) => {
+            if (ttl) {
+              await redis!.set(key, value, { ex: ttl });
+            } else {
+              await redis!.set(key, value);
+            }
+          },
+          delete: async (key: string) => {
+            await redis!.del(key);
+          },
+        },
+      }
+    : {}),
   rateLimit: {
     enabled: true,
+    storage: redis ? ("secondary-storage" as const) : undefined,
     customRules: {
       "/sign-in/email": { window: 900, max: 10 },
       "/sign-up/email": { window: 900, max: 5 },
@@ -202,7 +225,7 @@ export const auth = betterAuth({
       if (ctx.path !== "/sign-in/email" && ctx.path !== "/sign-up/email") return;
       const email = (ctx.body as { email?: unknown } | undefined)?.email;
       if (typeof email !== "string" || email.length === 0) return;
-      const result = checkAuthEmailRateLimit(email);
+      const result = await checkAuthEmailRateLimit(email);
       if (!result.allowed) {
         const retryAfter = Math.max(1, Math.ceil((result.resetAt.getTime() - Date.now()) / 1000));
         throw new APIError("TOO_MANY_REQUESTS", {

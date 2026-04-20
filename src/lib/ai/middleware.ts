@@ -39,7 +39,7 @@ export async function withAiRateLimit(
   workspaceId: string,
   tier: RateLimitTier = 'FREE',
 ): Promise<RateLimitResult | Response> {
-  const result = checkRateLimit(workspaceId, tier);
+  const result = await checkRateLimit(workspaceId, tier);
 
   if (!result.allowed) {
     return NextResponse.json(

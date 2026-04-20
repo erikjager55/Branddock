@@ -131,12 +131,13 @@
 
 > Fundament voor Brandclaw agent-loops. Moet staan voordat Fase 6 (Agent Core) gebouwd kan worden.
 
-### 4.1 Redis via Upstash (D.2.1)
+### 4.1 Redis via Upstash (D.2.1) ✅ DONE (2026-04-20)
 
-- [ ] `@upstash/redis` SDK installeren
-- [ ] In-memory rate limiter vervangen (`src/lib/ai/rate-limiter.ts`)
-- [ ] Redis ook gebruiken voor sessie-cache
-- [ ] Config: `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` env vars
+- [x] `@upstash/redis` SDK al geïnstalleerd (v1.37), singleton client in `src/lib/redis.ts` (returnt `null` als env vars ontbreken)
+- [x] In-memory rate limiter herschreven: `checkRateLimit()` + `checkGenericRateLimit()` nu async, gebruikt Redis ZSET sliding window als `redis !== null`, anders in-memory Map fallback. AI-tier rate limits (FREE/PRO/AGENCY minute + day) via single ZSET met 2 `ZCOUNT` queries op verschillende windows.
+- [x] Redis ook gebruikt voor Better Auth `secondaryStorage` (session cache + per-IP rate limits via `rateLimit.storage: "secondary-storage"`). Graceful fallback: spread `...(redis ? {secondaryStorage} : {})` omit config als Redis niet geconfigureerd.
+- [x] Config env vars gedocumenteerd in `.env.example`: `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`.
+- [x] Callers geüpgraded naar async: `withAiRateLimit()` middleware, `studio/inline-transform`, `checkAuthEmailRateLimit()`, Better Auth `hooks.before`. E2E getest: auth rate limit werkt nog steeds (11e attempt = 429 in dev/in-memory modus).
 
 ### 4.2 Resend E-mail (D.2.2)
 
@@ -375,7 +376,7 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
 - [x] **H5** (2026-04-20) — Magic-byte MIME validatie via nieuwe `file-type@22` library + shared helper `validateBinaryFile()` in `src/lib/security/file-validator.ts`. Toegepast op `products/[id]/images/upload` (PNG/JPG/WEBP) en `media/route` POST (alle binary types via `ACCEPTED_MIME_TYPES[mediaType]`, SVG skipt magic-byte check — is XML tekst). Fails closed: onbekende magic bytes → 400.
 - [ ] **H6** — Stripe webhook: vervang `whsec_placeholder` door echte secret vóór productie.
 - [x] **H7** (2026-04-20) — Prompt injection mitigatie. Shared helper `sanitizeAiInput()` + `sanitizeAiInputString()` in `src/lib/security/input-sanitizer.ts` strijkt ChatML/Llama/Anthropic control tokens (`<|system|>`, `<|user|>`, `<|assistant|>`, `<|im_start|>`, `<|im_end|>`, `[INST]`, `[/INST]`, `<s>`, `\n\nHuman:`, `\n\nAssistant:` etc.) + length-cap (default 50K chars). Toegepast in: `studio/[deliverableId]/inline-transform` (selectedText + fullContent) en `exploration/.../sessions/.../answer` (via Zod `.transform()` op content field). **Overige AI-routes (wizard/strategy/*, persona chat, etc.) nog niet expliciet gesanitized — helper beschikbaar voor bredere roll-out post-launch**. Voor Claw: tool-whitelist per sessie staat nog open tot agent-laag gebouwd is (Fase 6).
-- [ ] **M1** — Rate limiter migreren naar Upstash Redis (in-memory Map werkt niet op Vercel multi-instance / cold starts). Redis-lib al aangemaakt: `src/lib/redis.ts`.
+- [x] **M1** (2026-04-20) — Rate limiter gemigreerd naar Upstash Redis — zie Fase 4.1 voor details.
 - [ ] **M8** — `ai/completion` tier resolver: nu hardcoded FREE. Moet uit `Subscription` model gelezen worden.
 - [ ] **M9** — `resolveWorkspaceForProduct` checkt nog geen `WorkspaceMemberAccess`: MEMBER met "no access to workspace B" kan via directe product-ID nog steeds in workspace B schrijven.
 - [ ] **M10** — OAuth tokens (Google/Microsoft/Apple) in `Account` + `WorkspaceIntegration` opgeslagen als plaintext. Field-level encryption (envelope met KMS) toevoegen.

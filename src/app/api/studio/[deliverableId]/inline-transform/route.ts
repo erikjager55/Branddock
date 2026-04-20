@@ -40,7 +40,7 @@ export async function POST(
       return NextResponse.json({ error: 'No workspace found' }, { status: 403 });
     }
 
-    const rateLimitResult = checkRateLimit(workspaceId);
+    const rateLimitResult = await checkRateLimit(workspaceId);
     if (!rateLimitResult.allowed) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
     }
