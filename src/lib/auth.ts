@@ -2,9 +2,11 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { organization } from "better-auth/plugins";
+import { createAuthMiddleware, APIError } from "better-auth/api";
 import { prisma } from "./prisma";
 import { ac, owner, admin, member, viewer } from "./auth-permissions";
 import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from "./constants/canonical-brand-assets";
+import { checkAuthEmailRateLimit } from "./auth/auth-rate-limiter";
 import type { SocialProviders } from "better-auth/social-providers";
 
 // ─── Build socialProviders config from env vars ────────────
@@ -181,6 +183,34 @@ export const auth = betterAuth({
   socialProviders: buildSocialProviders(),
   user: {
     modelName: "User",
+  },
+  // Per-IP rate limits on auth endpoints (brute-force defense).
+  // In-memory store; migrate to Upstash Redis for multi-instance deploys (9.6 M1).
+  rateLimit: {
+    enabled: true,
+    customRules: {
+      "/sign-in/email": { window: 900, max: 10 },
+      "/sign-up/email": { window: 900, max: 5 },
+      "/sign-in/social": { window: 900, max: 10 },
+      "/forget-password": { window: 900, max: 5 },
+      "/reset-password": { window: 900, max: 5 },
+    },
+  },
+  hooks: {
+    // Per-email rate limit (credential-stuffing defense) on top of Better Auth's per-IP rule.
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/sign-in/email" && ctx.path !== "/sign-up/email") return;
+      const email = (ctx.body as { email?: unknown } | undefined)?.email;
+      if (typeof email !== "string" || email.length === 0) return;
+      const result = checkAuthEmailRateLimit(email);
+      if (!result.allowed) {
+        const retryAfter = Math.max(1, Math.ceil((result.resetAt.getTime() - Date.now()) / 1000));
+        throw new APIError("TOO_MANY_REQUESTS", {
+          message: "Too many attempts for this email. Please try again later.",
+          retryAfter,
+        });
+      }
+    }),
   },
   databaseHooks: {
     user: {

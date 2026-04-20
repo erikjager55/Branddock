@@ -162,3 +162,45 @@ export function getRateLimitStatus(
 export function resetRateLimit(workspaceId: string): void {
   store.delete(`ai:${workspaceId}`);
 }
+
+// ─── Generic sliding window ────────────────────────────────
+
+/**
+ * Generic sliding-window rate limiter — reusable across auth, AI, webhooks.
+ * Consumes one token per call.
+ *
+ * @param key        - unique bucket key (namespace with prefix, e.g. "auth-email:foo@bar.com")
+ * @param maxInWindow - max requests allowed in the window
+ * @param windowMs   - sliding window length in ms
+ */
+export function checkGenericRateLimit(
+  key: string,
+  maxInWindow: number,
+  windowMs: number,
+): { allowed: boolean; remaining: number; resetAt: Date } {
+  const now = Date.now();
+  let entry = store.get(key);
+  if (!entry) {
+    entry = { timestamps: [], dailyCount: 0, dailyResetAt: getNextMidnightUTC() };
+    store.set(key, entry);
+  }
+
+  const windowStart = now - windowMs;
+  entry.timestamps = entry.timestamps.filter((t) => t > windowStart);
+
+  if (entry.timestamps.length >= maxInWindow) {
+    const oldestInWindow = entry.timestamps[0] ?? now;
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAt: new Date(oldestInWindow + windowMs),
+    };
+  }
+
+  entry.timestamps.push(now);
+  return {
+    allowed: true,
+    remaining: maxInWindow - entry.timestamps.length,
+    resetAt: new Date(now + windowMs),
+  };
+}
