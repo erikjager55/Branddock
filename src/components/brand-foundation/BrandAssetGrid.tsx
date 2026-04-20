@@ -1,8 +1,8 @@
 // =============================================================
 // BrandAssetGrid — responsive grid of BrandAssetCard instances
 //
-// Reads context (mock BrandAsset[]), converts to BrandAssetWithMeta,
-// applies Zustand store filters, renders cards.
+// Reads BrandAssetWithMeta directly from the API via TanStack
+// Query, applies Zustand store filters, renders cards.
 //
 // Shared primitives: EmptyState, SkeletonCard
 // =============================================================
@@ -12,10 +12,10 @@
 import React, { useMemo } from 'react';
 import { FileText, AlertTriangle } from 'lucide-react';
 import { EmptyState, SkeletonCard } from '@/components/shared';
-import { useBrandAssets } from '@/contexts';
+import { useBrandAssetsQuery } from '@/hooks/use-brand-assets';
+import { useWorkspace } from '@/hooks/use-workspace';
 import { useBrandAssetStore } from '@/stores/useBrandAssetStore';
 import { BrandAssetCard } from '@/components/brand-assets/BrandAssetCard';
-import { mockToMeta } from '@/lib/api/mock-to-meta-adapter';
 import type { BrandAssetWithMeta, AssetCategory } from '@/types/brand-asset';
 
 // ─── Category sort order ─────────────────────────────────
@@ -41,7 +41,8 @@ interface BrandAssetGridProps {
 // ─── Component ───────────────────────────────────────────
 
 export function BrandAssetGrid({ onAssetClick }: BrandAssetGridProps) {
-  const { brandAssets, isLoading, error } = useBrandAssets();
+  const { workspaceId } = useWorkspace();
+  const { data, isLoading, error } = useBrandAssetsQuery(workspaceId ?? undefined);
   const searchQuery = useBrandAssetStore((s) => s.searchQuery);
   const categoryFilter = useBrandAssetStore((s) => s.categoryFilter);
   const statusFilter = useBrandAssetStore((s) => s.statusFilter);
@@ -51,9 +52,9 @@ export function BrandAssetGrid({ onAssetClick }: BrandAssetGridProps) {
 
   const hasActiveFilters = !!searchQuery || !!categoryFilter || !!statusFilter;
 
-  // Convert mock → BrandAssetWithMeta + filter + sort
+  // Filter + sort BrandAssetWithMeta straight from the API
   const filteredAssets = useMemo(() => {
-    let result: BrandAssetWithMeta[] = brandAssets.map(mockToMeta);
+    let result: BrandAssetWithMeta[] = data?.assets ?? [];
 
     // Search filter
     if (searchQuery.trim()) {
@@ -83,7 +84,7 @@ export function BrandAssetGrid({ onAssetClick }: BrandAssetGridProps) {
       if (catA !== catB) return catA - catB;
       return a.name.localeCompare(b.name);
     });
-  }, [brandAssets, searchQuery, categoryFilter, statusFilter]);
+  }, [data, searchQuery, categoryFilter, statusFilter]);
 
   // Loading state
   if (isLoading) {

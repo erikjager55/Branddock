@@ -16,8 +16,8 @@ import { BrandAssetFilters } from './BrandAssetFilters';
 import { BrandAssetGrid } from './BrandAssetGrid';
 import { BrandAssetDetailPanel } from '@/components/brand-assets/BrandAssetDetailPanel';
 import { useBrandAssetStore } from '@/stores/useBrandAssetStore';
-import { useBrandAssets } from '@/contexts';
-import { mockToMeta } from '@/lib/api/mock-to-meta-adapter';
+import { useBrandAssetsQuery } from '@/hooks/use-brand-assets';
+import { useWorkspace } from '@/hooks/use-workspace';
 import type { BrandAssetWithMeta } from '@/types/brand-asset';
 import type { ResearchMethodType } from '@/utils/research-method-helpers';
 
@@ -39,7 +39,9 @@ export function BrandFoundationPage({
   onAssetClick,
   onNavigate,
 }: BrandFoundationPageProps) {
-  const { brandAssets, refetch } = useBrandAssets();
+  const { workspaceId } = useWorkspace();
+  const { data, refetch } = useBrandAssetsQuery(workspaceId ?? undefined);
+  const brandAssets = data?.assets ?? [];
 
   // Refresh data when the page mounts (ensures fresh data on navigation)
   useEffect(() => { refetch(); }, [refetch]);
@@ -47,11 +49,10 @@ export function BrandFoundationPage({
   const selectedAssetId = useBrandAssetStore((s) => s.selectedAssetId);
   const setSelectedAssetId = useBrandAssetStore((s) => s.setSelectedAssetId);
 
-  // Resolve selected asset as BrandAssetWithMeta
+  // Resolve selected asset from the API-formatted list
   const selectedAsset: BrandAssetWithMeta | null = useMemo(() => {
     if (!selectedAssetId) return null;
-    const mockAsset = brandAssets.find((a) => a.id === selectedAssetId);
-    return mockAsset ? mockToMeta(mockAsset) : null;
+    return brandAssets.find((a) => a.id === selectedAssetId) ?? null;
   }, [selectedAssetId, brandAssets]);
 
   // Card click → open detail panel OR navigate (if parent handler)
