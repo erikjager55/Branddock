@@ -85,7 +85,6 @@ import {
   NewStrategyPage,
   CommercialDemoPage,
   ValidationMethodDemo,
-  RelationshipsPage,
 } from './lib/lazy-imports';
 
 function AppContent() {
@@ -803,10 +802,6 @@ function AppContent() {
       }
       case 'research-validation':
         return <ResearchValidationPage />;
-      
-      // 🆕 NEW: Relationships & Insights (Decision Status)
-      case 'relationships':
-        return <RelationshipsPage onNavigate={handleSetActiveSection} />;
       
       // 🆕 NEW: Agency Settings (White Label)
       case 'agency':

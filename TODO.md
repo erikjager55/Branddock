@@ -342,8 +342,9 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
 - [x] PSR.7: AI Persona Analysis Redesign — inspectie wees uit dat de redesign al volledig in code zat: teal/emerald chat bubbles met asymmetrische radii, rapport met Executive Summary + Key Findings + Strategic Recommendations, FieldSuggestionCard met accept/reject/edit. TODO entry was stale.
 - [x] PSR.8: Foto Generatie Fix — Gemini 2.5 Flash Image API al geïmplementeerd, DiceBear alleen als fallback bij geen key / API-error, in `/api/personas/[id]/generate-image`.
 
-### 9.4 Mock Data Fallbacks + Error Isolation ✅ DONE (2026-04-19)
+### 9.4 Mock Data Fallbacks + Error Isolation ✅ DONE (2026-04-20)
 
+- [x] **Relationships demo-feature gewist** (2026-04-20) — de laatste `src/data/mock-*.ts` bron in de codebase. Whole chain verwijderd: `RelationshipsPage.tsx`, `RelationshipService.ts`, `mock-relationships.ts`, `types/relationship.ts`, route cases (App.tsx + lazy-imports + useBreadcrumbs + search/quick-actions). Page was niet in sidebar nav, alleen via search quick-action bereikbaar. `src/data/` directory leeg → verwijderd.
 - [x] **Mock fallback verwijderd uit contexts** (2026-04-19) — `PersonasContext` en `ResearchPlanContext` losgekoppeld van localStorage/DEMO-fallbacks:
   - `PersonasContext`: `dataSource: "api" | "mock"` veld verwijderd (geen externe consumers), `migratePersonaStatus`/`migratePersonaData` legacy helpers weg, localStorage read/write van `StorageKeys.PERSONAS` weg. Op workspace-absent of API-fail → lege array + `isLoading=false` (zelfde patroon als `BrandAssetsContext` sinds maart '26).
   - `ResearchPlanContext`: `DEMO_PLAN` hardcoded constant weg (had mock asset-IDs `'1'-'5'` die niet matchten met DB-CUIDs → silent failures in `isAssetUnlocked`). `ACTIVE_RESEARCH_PLAN` localStorage-cache weg (was enkel voor demo-restore). Op workspace-absent of API-fail → `activeResearchPlan = null`; bestaande `isMethodUnlocked`/`isAssetUnlocked` returnen al `false` bij null.

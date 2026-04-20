@@ -131,16 +131,6 @@ export function useBreadcrumbs(
       });
     }
     
-    // Relationships
-    else if (activeSection === 'relationships') {
-      breadcrumbs.push({
-        id: 'relationships',
-        label: 'Relationships',
-        icon: 'Network',
-        isActive: true
-      });
-    }
-
     // Research Plans
     else if (activeSection === 'research-plans') {
       breadcrumbs.push({

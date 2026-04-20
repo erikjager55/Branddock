@@ -202,10 +202,6 @@ export const CommercialDemoPage = lazy(() =>
 export const ValidationMethodDemo = lazy(() =>
   import('@/components/ValidationMethodDemo').then(m => ({ default: m.ValidationMethodDemo }))
 );
-export const RelationshipsPage = lazy(() =>
-  import('@/components/RelationshipsPage').then(m => ({ default: m.RelationshipsPage }))
-);
-
 // ─── Preload ───────────────────────────────────────────────
 // Call on sidebar hover to preload the module chunk before user clicks.
 

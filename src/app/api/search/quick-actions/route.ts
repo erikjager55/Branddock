@@ -21,14 +21,6 @@ const _GET = async () => {
       href: 'persona-create',
       color: 'text-blue-600',
     },
-    {
-      id: 'relationships',
-      icon: 'Link',
-      label: 'View Relationships',
-      description: 'See data connections',
-      href: 'relationships',
-      color: 'text-purple-600',
-    },
   ]);
 };
 
