@@ -306,11 +306,18 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
   - decision-status internals: `SectionDecisionIndicator.tsx`, `CampaignDecisionHeader.tsx`, `DecisionSummaryPanel.tsx`, `DecisionWarningModal.tsx`, `index.ts`
   - `UniversalAssetDashboard` lazy-import uit `lazy-imports.ts` verwijderd; lege `stakeholder/` directory opgeruimd.
 
-### 9.2 Adapter Pattern Afbouwen
+### 9.2 Adapter Pattern Afbouwen (deels) — 2026-04-20
 
-- [ ] Migreer `BrandAssetsContext.tsx` om direct `BrandAssetWithMeta` te leveren (26 consumers)
-- [ ] Delete `src/lib/api/mock-to-meta-adapter.ts` na migratie
-- [ ] Evalueer of `brand-asset-adapter.ts` en `persona-adapter.ts` nog nodig zijn
+**✅ mock-to-meta-adapter verwijderd** (commit `2c8b186`)
+- [x] `src/lib/api/mock-to-meta-adapter.ts` gewist — 2 consumers gemigreerd naar `useBrandAssetsQuery()` (TanStack Query returnt `BrandAssetWithMeta[]` direct, geen mock→meta round-trip meer):
+  - `BrandAssetGrid.tsx` — vervangt `useBrandAssets() + brandAssets.map(mockToMeta)` door `useBrandAssetsQuery(workspaceId).data.assets`
+  - `BrandFoundationPage.tsx` — zelfde swap; selectedAsset resolves direct uit de API-lijst
+- Scope-check: context had 15 (niet 26) consumers; slechts 2 gebruikten mock-to-meta-adapter. Andere 13 lezen legacy `BrandAsset` mock-format zonder adapter — geen noodzaak voor volledige context-migratie nu.
+
+**⏳ Nog open (lager urgentie, aparte sessie)**
+- [ ] `BrandAssetsContext` volledig migreren naar `BrandAssetWithMeta` (13 consumers × mock-format field refs). Mapping: `title` → `name`, `lastUpdated` → `updatedAt`, `researchMethods[]` → `validationMethods {ai,workshop,interview,questionnaire}`, dropped: `isCritical`, `content`, `type`.
+- [ ] `brand-asset-adapter.ts` (`apiAssetsToMockFormat`) — nog in gebruik door context als seed. Kan pas weg na volledige context-migratie.
+- [ ] `persona-adapter.ts` — analoge refactor voor Personas; nog niet geëvalueerd.
 
 ### 9.3 UI Polish — Persona (PSR.6-8) ✅ DONE (2026-04-19)
 
