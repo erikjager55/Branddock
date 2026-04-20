@@ -294,13 +294,17 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
   - `src/contexts/CampaignsContext.tsx` — `CampaignsProvider` in tree maar 0 consumers; fetchte `/api/campaigns` bij elke app-mount zonder gebruik
 - [x] `CampaignsProvider` uit `src/contexts/index.tsx` verwijderd (3 refs: import, JSX, re-export)
 
-**⏳ 9.1.2 DecisionStatus → DecisionQuality (live code, grotere refactor)**
+**✅ 9.1.2 DecisionStatus → DecisionQuality (2026-04-20)**
 
-- [ ] `DecisionStatus` type in `src/types/decision-status.ts` migreren naar `DecisionQuality` uit `./validation`
-- Scope: 56 occurrences in 17 files, waaronder actief gebruikte componenten (`RelationshipsPage` via `src/components/decision-status/`, `TransformativeGoalsDashboard`, `SocialRelevancyDashboard`, `UniversalAssetDashboard`)
-- Waarden verschillen: `'safe-to-decide'` → `'safe'`, `'decision-at-risk'` → `'at-risk'`, `'blocked'` blijft. UI-strings/kleuren in `DECISION_STATUS_CONFIG` moeten ook meegaan.
-- `mapDecisionQuality()` bridge function kan pas weg als alle consumers over zijn.
-- Niet puur mechanisch — regressie-risico vereist componenttests na migratie.
+- [x] Type geünificeerd op `DecisionQuality` uit `./validation` (`'safe' | 'at-risk' | 'blocked'`); `DecisionStatus` blijft als alias voor backward compat.
+- [x] `DECISION_STATUS_CONFIG` keys hernoemd naar nieuwe waarden; `mapDecisionQuality()` bridge verwijderd.
+- [x] `calculateDecisionStatus()` emit nu `'safe'/'at-risk'` i.p.v. `'safe-to-decide'/'decision-at-risk'`.
+- [x] Hardcoded string literals bijgewerkt in `DecisionStatusBadge`, `RelationshipsPage`, `DecisionScanOnboarding`.
+- [x] **14 orphan bestanden gewist** tijdens scope-analyse (origineel 17 consumers bleek na inspectie 11 live + 14 dood):
+  - Utils: `campaign-decision-gate.ts`, `campaign-decision-calculator.ts`, `campaign-decision-calculator-v2.ts`
+  - Components: `ShareableBrandReport.tsx`, `AssetUnlockDetailView.tsx`, `SocialRelevancyDashboard.tsx`, `UniversalAssetDashboard.tsx`, `ShareableCampaignReport.tsx`, `DecisionGateWarning.tsx`
+  - decision-status internals: `SectionDecisionIndicator.tsx`, `CampaignDecisionHeader.tsx`, `DecisionSummaryPanel.tsx`, `DecisionWarningModal.tsx`, `index.ts`
+  - `UniversalAssetDashboard` lazy-import uit `lazy-imports.ts` verwijderd; lege `stakeholder/` directory opgeruimd.
 
 ### 9.2 Adapter Pattern Afbouwen
 

@@ -1,27 +1,18 @@
 import type { DecisionQuality, ValidationMethodId } from './validation';
 
-// Re-export central types
+// Re-export the canonical DecisionQuality type — this file now acts as
+// the decision-status-specific metadata hub (info, config, ranking) while
+// delegating the status enum to the shared validation types.
 export type { DecisionQuality };
 
 /**
- * @deprecated Use DecisionQuality from ./validation instead
- * Kept for backwards compatibility
+ * Alias kept so existing `DecisionStatus` imports continue to compile.
+ * New code should import `DecisionQuality` from './validation' directly.
  */
-export type DecisionStatus = 'safe-to-decide' | 'decision-at-risk' | 'blocked';
-
-/**
- * Map new DecisionQuality to legacy DecisionStatus
- */
-export function mapDecisionQuality(quality: DecisionQuality): DecisionStatus {
-  switch (quality) {
-    case 'safe': return 'safe-to-decide';
-    case 'at-risk': return 'decision-at-risk';
-    case 'blocked': return 'blocked';
-  }
-}
+export type DecisionStatus = DecisionQuality;
 
 export interface DecisionStatusInfo {
-  status: DecisionStatus;
+  status: DecisionQuality;
   coverage: number;
   completedMethods: ValidationMethodId[];
   topMethodsCompleted: boolean;
@@ -43,8 +34,8 @@ export interface DecisionStatusConfig {
   warningLevel: 'none' | 'warning' | 'critical';
 }
 
-export const DECISION_STATUS_CONFIG: Record<DecisionStatus, DecisionStatusConfig> = {
-  'safe-to-decide': {
+export const DECISION_STATUS_CONFIG: Record<DecisionQuality, DecisionStatusConfig> = {
+  'safe': {
     label: 'Safe to Decide',
     color: 'text-emerald-700 dark:text-emerald-300',
     bgColor: 'bg-emerald-50 dark:bg-emerald-950/20',
@@ -55,7 +46,7 @@ export const DECISION_STATUS_CONFIG: Record<DecisionStatus, DecisionStatusConfig
     canProceed: true,
     warningLevel: 'none'
   },
-  'decision-at-risk': {
+  'at-risk': {
     label: 'Proceed with Caution',
     color: 'text-amber-700 dark:text-amber-300',
     bgColor: 'bg-amber-50 dark:bg-amber-950/20',

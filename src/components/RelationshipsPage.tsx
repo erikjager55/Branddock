@@ -239,7 +239,7 @@ export function RelationshipsPage({
           borderColor: 'border-green-200 dark:border-green-800',
           badgeColor: 'bg-green-100 text-green-700 border-green-300',
           label: 'Increases Decision Certainty',
-          decisionStatus: 'safe-to-decide' as const,
+          decisionStatus: 'safe' as const,
         };
       case 'creates-risk':
         return {
@@ -259,7 +259,7 @@ export function RelationshipsPage({
           borderColor: 'border-gray-200 dark:border-gray-800',
           badgeColor: 'bg-gray-100 text-gray-700 border-gray-300',
           label: 'No Decision Impact',
-          decisionStatus: 'decision-at-risk' as const,
+          decisionStatus: 'at-risk' as const,
         };
     }
   };
@@ -321,7 +321,7 @@ export function RelationshipsPage({
                 <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/20">
                   <Shield className="h-5 w-5 text-green-600" />
                 </div>
-                <DecisionStatusBadge status="safe-to-decide" size="sm" />
+                <DecisionStatusBadge status="safe" size="sm" />
               </div>
               <div className="space-y-1">
                 <p className="text-3xl font-bold">{insightsByImpact['increases-certainty'].length}</p>

@@ -1,4 +1,5 @@
-import { DecisionStatus, DecisionStatusInfo, RESEARCH_METHOD_RANKING } from '../types/decision-status';
+import { DecisionStatusInfo, RESEARCH_METHOD_RANKING } from '../types/decision-status';
+import type { DecisionQuality } from '../types/validation';
 import type { ValidationMethodId } from '../types/validation';
 
 export interface ResearchItem {
@@ -36,13 +37,13 @@ export function calculateDecisionStatus(item: ResearchItem): DecisionStatusInfo 
     .filter(m => m.status !== 'completed')
     .map(m => m.type);
   
-  let status: DecisionStatus;
+  let status: DecisionQuality;
   let recommendation: string;
   let risk: string;
   let nextSteps: string[];
-  
+
   if (coverage >= 80 && topMethodsCompleted) {
-    status = 'safe-to-decide';
+    status = 'safe';
     recommendation = 'You have sufficient validated research to make confident strategic decisions.';
     risk = 'Minimal risk - your decisions are backed by comprehensive research.';
     nextSteps = [
@@ -51,7 +52,7 @@ export function calculateDecisionStatus(item: ResearchItem): DecisionStatusInfo 
       'Document key insights before strategizing'
     ];
   } else if (coverage >= 50) {
-    status = 'decision-at-risk';
+    status = 'at-risk';
     if (!topMethodsCompleted) {
       recommendation = `Complete the highest-ranked research methods (${missingTopMethods.join(', ')}) for better decision quality.`;
       risk = 'Moderate risk - missing critical strategic research methods.';

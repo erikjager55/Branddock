@@ -54,7 +54,7 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
 
   // Mock scan results
   const scanResults = {
-    decisionStatus: 'decision-at-risk' as const,
+    decisionStatus: 'at-risk' as const,
     overallScore: 62,
     risks: [
       {
@@ -201,9 +201,9 @@ export function DecisionScanOnboarding({ onComplete, onUpgrade }: DecisionScanOn
   // Results step
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'safe-to-decide':
+      case 'safe':
         return 'text-green-700 dark:text-green-400';
-      case 'decision-at-risk':
+      case 'at-risk':
         return 'text-amber-700 dark:text-amber-400';
       default:
         return 'text-red-700 dark:text-red-400';

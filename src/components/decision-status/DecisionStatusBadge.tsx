@@ -29,10 +29,10 @@ export function DecisionStatusBadge({
 }: DecisionStatusBadgeProps) {
   const config = DECISION_STATUS_CONFIG[status];
   
-  const Icon = status === 'safe-to-decide' 
-    ? CheckCircle 
-    : status === 'decision-at-risk' 
-    ? AlertTriangle 
+  const Icon = status === 'safe'
+    ? CheckCircle
+    : status === 'at-risk'
+    ? AlertTriangle
     : XCircle;
   
   const sizeClasses = {

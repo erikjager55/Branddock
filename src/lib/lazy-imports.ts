@@ -12,9 +12,6 @@ export const BrandFoundationPage = lazy(() =>
 export const BrandAssetDetailPage = lazy(() =>
   import('@/features/brand-asset-detail/components/BrandAssetDetailPage').then(m => ({ default: m.BrandAssetDetailPage }))
 );
-export const UniversalAssetDashboard = lazy(() =>
-  import('@/components/UniversalAssetDashboard').then(m => ({ default: m.UniversalAssetDashboard }))
-);
 export const TransformativeGoalsDashboard = lazy(() =>
   import('@/components/TransformativeGoalsDashboard').then(m => ({ default: m.TransformativeGoalsDashboard }))
 );
