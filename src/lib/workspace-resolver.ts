@@ -58,3 +58,58 @@ export async function getWorkspaceForUser(userId: string) {
 
   return membership.organization.workspaces[0];
 }
+
+/**
+ * Effective access check for a (user, workspace) pair.
+ *
+ * Rules (mirrors `/api/workspace/switch`):
+ *   1. User must be an OrganizationMember of the workspace's org.
+ *   2. OWNER/ADMIN bypass per-workspace ACL.
+ *   3. For member/viewer: empty `WorkspaceMemberAccess` = unrestricted
+ *      (all workspaces in the org). Non-empty = must have an explicit row
+ *      for the target workspace.
+ *
+ * Use this for any direct-ID lookup that would otherwise trust
+ * `resolveWorkspaceId()`'s cookie/session path — that path does not
+ * re-check ACL, so a stale cookie or direct product-ID hit could
+ * bypass revoked access without this guard (9.6 M9).
+ */
+export async function hasWorkspaceAccess(
+  userId: string,
+  workspaceId: string,
+): Promise<boolean> {
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { organizationId: true },
+  });
+  if (!workspace) return false;
+
+  const membership = await prisma.organizationMember.findUnique({
+    where: {
+      userId_organizationId: {
+        userId,
+        organizationId: workspace.organizationId,
+      },
+    },
+    select: { id: true, role: true },
+  });
+  if (!membership) return false;
+
+  if (["owner", "admin"].includes(membership.role)) return true;
+
+  const aclCount = await prisma.workspaceMemberAccess.count({
+    where: { memberId: membership.id },
+  });
+  if (aclCount === 0) return true;
+
+  const row = await prisma.workspaceMemberAccess.findUnique({
+    where: {
+      memberId_workspaceId: {
+        memberId: membership.id,
+        workspaceId,
+      },
+    },
+    select: { id: true },
+  });
+  return row !== null;
+}
