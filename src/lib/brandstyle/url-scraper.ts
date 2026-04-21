@@ -48,6 +48,10 @@ export interface ScrapedData {
   bodyText: string;
   cssColors: string[];
   cssFonts: string[];
+  /** Font used for body text (html/body selector). Used to assign UI role. */
+  bodyFont?: string | null;
+  /** Font used for headings (h1-h3). Used to assign DISPLAY role. */
+  headingFont?: string | null;
   logoUrls: string[];
   ogImage: string | null;
   favicon: string | null;
@@ -59,6 +63,11 @@ export interface ScrapedData {
   linkedStylesheetCount: number;
   brandImages: ScrapedBrandImage[];
   visualHeuristics?: import('./visual-language.types').CssVisualHeuristics;
+  components?: import('./component-extractor').DetectedComponent[];
+  /** Adobe Fonts / Typekit detection result. `detected: true` means the
+   *  site serves webfonts via Typekit; `kitId` is populated when we could
+   *  extract it from the classic URL shape. */
+  adobeFonts?: { detected: boolean; kitId: string | null };
 }
 
 // Chrome-like User-Agent to avoid bot blocking
@@ -265,6 +274,10 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
   const { extractVisualLanguageHeuristics } = await import('./css-visual-heuristics');
   const visualHeuristics = extractVisualLanguageHeuristics(allCss);
 
+  // Extract component samples (buttons, inputs, chips, cards, nav, etc.) from the DOM + CSS
+  const { extractComponents } = await import('./component-extractor');
+  const components = extractComponents($, allCss);
+
   // Find logo candidates
   const logoUrls = findLogoUrls($, baseUrl);
 
@@ -273,6 +286,12 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
 
   // Extract body text (trimmed, limited)
   const bodyText = extractBodyText($);
+
+  // Detect Adobe Fonts / Typekit presence + kit id. Searches the raw
+  // HTML AND the combined CSS so we catch both `<link>` tags and
+  // `@import url('https://use.typekit.net/...')` inside stylesheets.
+  const { detectAdobeFonts } = await import('./adobe-fonts-detector');
+  const adobeFonts = detectAdobeFonts(html, allCss);
 
   return {
     url,
@@ -292,6 +311,10 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
     linkedStylesheetCount: allLinks.length,
     brandImages,
     visualHeuristics,
+    components,
+    bodyFont,
+    headingFont,
+    adobeFonts,
   };
 }
 
@@ -305,6 +328,27 @@ export function extractCssVariables(css: string): CssVariable[] {
   const variables: CssVariable[] = [];
   const seen = new Set<string>();
 
+  // Ghost-variable filter: before accepting a `:root { --primary: #xyz }`
+  // definition as a brand signal, verify it's actually referenced somewhere
+  // via `var(--primary)`. Otherwise we're just reading template boilerplate,
+  // legacy declarations, or unused page-builder presets — a common source of
+  // false positives where "--primary" is purple but the real brand button
+  // is actually blue.
+  const usedVarNames = new Set<string>();
+  const usageScanPattern = /var\(\s*(--[\w-]+)/g;
+  let usageScanMatch;
+  while ((usageScanMatch = usageScanPattern.exec(css)) !== null) {
+    usedVarNames.add(usageScanMatch[1].trim());
+  }
+
+  // ACSS brand tokens (--primary-hex, --secondary-hex, …) are explicit by
+  // convention — keep them even if not directly referenced. Other variables
+  // must have actual usage to be trusted as brand tokens.
+  const keepDefinitionSideVar = (name: string): boolean => {
+    if (isAcssBrandToken(name)) return true;
+    return usedVarNames.has(name);
+  };
+
   // Match :root { --var: value; } declarations
   const rootBlockPattern = /:root\s*\{([^}]+)\}/g;
   let rootMatch;
@@ -315,7 +359,7 @@ export function extractCssVariables(css: string): CssVariable[] {
     while ((varMatch = varPattern.exec(block)) !== null) {
       const name = varMatch[1].trim();
       const value = varMatch[2].trim();
-      if (isColorRelatedVariable(name, value)) {
+      if (isColorRelatedVariable(name, value) && keepDefinitionSideVar(name)) {
         const key = `root:${name}`;
         if (!seen.has(key)) {
           seen.add(key);
@@ -339,7 +383,7 @@ export function extractCssVariables(css: string): CssVariable[] {
     while ((varMatch = varPattern.exec(block)) !== null) {
       const name = varMatch[1].trim();
       const value = varMatch[2].trim();
-      if (isColorRelatedVariable(name, value)) {
+      if (isColorRelatedVariable(name, value) && keepDefinitionSideVar(name)) {
         const key = `usage:${name}`;
         if (!seen.has(key)) {
           seen.add(key);
@@ -473,12 +517,17 @@ export function analyzeColorFrequency(css: string): ColorFrequency[] {
     while ((propMatch = propPattern.exec(css)) !== null) {
       const value = propMatch[1];
 
-      // Extract hex colors from the value
+      // Extract hex colors from the value.
+      // NOTE: framework colors (Tailwind/Bootstrap palette) are no longer hard-
+      // filtered here — if a brand genuinely uses a Tailwind token as their
+      // primary color, we'd throw it away. Instead we count them like any other
+      // color and apply a stricter usage threshold downstream (see isFrameworkColor
+      // filter after dedup).
       const hexPattern = /#[0-9A-Fa-f]{3,8}\b/g;
       let hexMatch;
       while ((hexMatch = hexPattern.exec(value)) !== null) {
         const hex = normalizeHex(hexMatch[0]);
-        if (hex && !isNearBlackOrWhite(hex) && !isFrameworkColor(hex)) {
+        if (hex && !isNearBlackOrWhite(hex)) {
           const upper = hex.toUpperCase();
           const entry = freq.get(upper) || { count: 0, contexts: new Set<string>() };
           entry.count++;
@@ -496,7 +545,7 @@ export function analyzeColorFrequency(css: string): ColorFrequency[] {
         const b = parseInt(rgbMatch[3]);
         if (r <= 255 && g <= 255 && b <= 255) {
           const hex = rgbToHex(r, g, b).toUpperCase();
-          if (!isNearBlackOrWhite(hex) && !isFrameworkColor(hex)) {
+          if (!isNearBlackOrWhite(hex)) {
             const entry = freq.get(hex) || { count: 0, contexts: new Set<string>() };
             entry.count++;
             entry.contexts.add(prop);
@@ -514,7 +563,7 @@ export function analyzeColorFrequency(css: string): ColorFrequency[] {
         const b = parseInt(rgbModernMatch[3]);
         if (r <= 255 && g <= 255 && b <= 255) {
           const hex = rgbToHex(r, g, b).toUpperCase();
-          if (!isNearBlackOrWhite(hex) && !isFrameworkColor(hex)) {
+          if (!isNearBlackOrWhite(hex)) {
             const entry = freq.get(hex) || { count: 0, contexts: new Set<string>() };
             entry.count++;
             entry.contexts.add(prop);
@@ -532,6 +581,18 @@ export function analyzeColorFrequency(css: string): ColorFrequency[] {
       contexts: Array.from(data.contexts),
     }))
     .sort((a, b) => b.count - a.count);
+
+  // Framework-color threshold: when a color matches a Tailwind/Bootstrap
+  // palette token AND is only weakly used, assume it's incidental styling
+  // noise rather than a brand color. When the same token is used prominently
+  // (≥3 times and in ≥2 contexts) it's likely the brand genuinely adopted
+  // that palette — keep it.
+  const filteredFramework = results.filter(
+    (c) => !isFrameworkColor(c.hex) || (c.count >= 3 && c.contexts.length >= 2),
+  );
+  if (filteredFramework.length >= 3) {
+    results = filteredFramework;
+  }
 
   // For Tailwind/WordPress sites: many colors appear once via utility classes
   // or in admin/plugin chrome. Real brand colors are used in multiple contexts

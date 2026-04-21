@@ -277,6 +277,11 @@ interface ClaudeCompletionOptions {
   /** Enable extended thinking — model reasons internally before responding.
    *  When enabled, temperature MUST be undefined (Anthropic requirement). */
   thinking?: { budgetTokens: number };
+  /** Optional image attachments. When provided, the user message is sent
+   *  as a multipart content array (images + text) instead of plain text.
+   *  Use this for Vision-grounded prompts (e.g. "here's the page screenshot,
+   *  classify these colors"). */
+  images?: Array<{ buffer: Buffer; mediaType: "image/png" | "image/jpeg" | "image/webp" }>;
 }
 
 /**
@@ -308,11 +313,27 @@ export async function createClaudeStructuredCompletion<T>(
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
+      // Build user message content. When `images` is provided, send as a
+      // multipart content array (image blocks + text). Otherwise plain text.
+      const userContent = options?.images && options.images.length > 0
+        ? [
+            ...options.images.map((img) => ({
+              type: 'image' as const,
+              source: {
+                type: 'base64' as const,
+                media_type: img.mediaType,
+                data: img.buffer.toString('base64'),
+              },
+            })),
+            { type: 'text' as const, text: userPrompt },
+          ]
+        : userPrompt;
+
       // Build request params — conditionally include thinking config
       const requestParams: Record<string, unknown> = {
         model,
         system: `${systemPrompt}\n\nIMPORTANT: Respond with valid JSON only. No markdown, no explanation, no code blocks — just the raw JSON object.`,
-        messages: [{ role: 'user', content: userPrompt }],
+        messages: [{ role: 'user', content: userContent }],
         max_tokens: maxTokens,
       };
 

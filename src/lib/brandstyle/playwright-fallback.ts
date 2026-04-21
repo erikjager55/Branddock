@@ -52,7 +52,19 @@ interface HeadlessExtraction {
   headingFont: string | null;
   primaryColor: string | null;
   pageTitle: string | null;
+  /** All CSS from document.styleSheets serialized into one string.
+   *  Captures CSS-in-JS output (styled-components / emotion) and any
+   *  JS-injected or runtime stylesheets the static scraper can't see. */
+  renderedCss: string;
+  /** CSS custom properties (variables) from `:root` after the page has
+   *  hydrated. Includes variables set by JS-based theming. */
+  rootVariables: Array<{ name: string; value: string }>;
 }
+
+/** Cap on serialized CSS length — big sites with utility-first frameworks
+ *  can produce many MB. Truncation is acceptable; all regex-based extractors
+ *  downstream work on prefixes. */
+const MAX_RENDERED_CSS_BYTES = 5 * 1024 * 1024; // 5 MB
 
 /**
  * Run a Chromium headless render against the URL and read computed styles.
@@ -162,6 +174,42 @@ async function extractWithChromium(url: string): Promise<HeadlessExtraction> {
         .filter((c) => /button|cta|primary|hero/.test(c.source))
         .sort((a, b) => b.count - a.count)[0];
 
+      // Serialize ALL CSS from document.styleSheets — this captures
+      // CSS-in-JS (styled-components, emotion), runtime-injected
+      // stylesheets, and any rules added by JS frameworks. Some
+      // stylesheets are cross-origin and throw SecurityError when we
+      // try to read cssRules — we swallow those silently.
+      const cssChunks: string[] = [];
+      let totalBytes = 0;
+      for (const sheet of Array.from(document.styleSheets)) {
+        let rules: CSSRuleList | null = null;
+        try {
+          rules = sheet.cssRules;
+        } catch {
+          rules = null;
+        }
+        if (!rules) continue;
+        for (let i = 0; i < rules.length; i++) {
+          const text = rules[i].cssText;
+          if (!text) continue;
+          if (totalBytes + text.length > 5 * 1024 * 1024) break;
+          cssChunks.push(text);
+          totalBytes += text.length;
+        }
+        if (totalBytes > 5 * 1024 * 1024) break;
+      }
+
+      // Extract CSS custom properties (--var-name) from :root computed
+      // style after the page has rendered. Captures JS-set theme vars.
+      const rootVariables: Array<{ name: string; value: string }> = [];
+      const rootStyle = window.getComputedStyle(document.documentElement);
+      for (let i = 0; i < rootStyle.length; i++) {
+        const prop = rootStyle[i];
+        if (!prop.startsWith('--')) continue;
+        const value = rootStyle.getPropertyValue(prop).trim();
+        if (value) rootVariables.push({ name: prop, value });
+      }
+
       return {
         colors: colorEntries,
         fonts: Object.keys(fontSet),
@@ -169,6 +217,8 @@ async function extractWithChromium(url: string): Promise<HeadlessExtraction> {
         headingFont,
         primaryColor: primary ? primary.hex : null,
         pageTitle: document.title || null,
+        renderedCss: cssChunks.join('\n'),
+        rootVariables,
       };
     }, BRAND_ANCHOR_SELECTORS)) as HeadlessExtraction;
 
@@ -188,6 +238,12 @@ async function extractWithChromium(url: string): Promise<HeadlessExtraction> {
  */
 export async function scrapeUrlViaHeadless(url: string): Promise<ScrapedData> {
   const extracted = await extractWithChromium(url);
+
+  // Truncate the serialized CSS if it exceeded our cap — the JS side
+  // already stops collecting but we guard again here.
+  const renderedCss = extracted.renderedCss.length > MAX_RENDERED_CSS_BYTES
+    ? extracted.renderedCss.slice(0, MAX_RENDERED_CSS_BYTES)
+    : extracted.renderedCss;
 
   // Sort colors by count (most-used first) and cap at 16 — keeps the
   // authoritative palette manageable.
@@ -211,6 +267,15 @@ export async function scrapeUrlViaHeadless(url: string): Promise<ScrapedData> {
   push(extracted.headingFont);
   for (const f of extracted.fonts) push(f);
 
+  // Map the rendered rootVariables into the ScrapedData CssVariable shape
+  // so the static pipeline's variable-based color detectors still fire.
+  // Context is 'root' because we pulled them from the resolved :root style.
+  const cssVariables = extracted.rootVariables.map((v) => ({
+    name: v.name,
+    value: v.value,
+    context: 'root' as const,
+  }));
+
   return {
     url,
     title: extracted.pageTitle,
@@ -218,12 +283,18 @@ export async function scrapeUrlViaHeadless(url: string): Promise<ScrapedData> {
     bodyText: '',
     cssColors: extracted.colors.map((c) => c.hex),
     cssFonts: orderedFonts,
+    bodyFont: extracted.bodyFont,
+    headingFont: extracted.headingFont,
     logoUrls: [],
     ogImage: null,
     favicon: null,
-    inlineCss: '',
+    // Push the serialized rendered CSS into `inlineCss` so the downstream
+    // pipeline (colorFrequency, visualHeuristics, component-extractor,
+    // extractCssVariables) runs over the real post-render CSS instead of
+    // the sparse static HTML.
+    inlineCss: renderedCss,
     linkedCssContent: '',
-    cssVariables: [],
+    cssVariables,
     colorFrequency,
     fontSizes: [],
     linkedStylesheetCount: 0,

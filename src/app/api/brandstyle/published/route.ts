@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, requireAuth } from "@/lib/auth-server";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
-import { ACTIVE_REVIEW_SECTIONS } from "@/lib/brandstyle/review-sections";
+import { getApplicableReviewSections } from "@/lib/brandstyle/review-sections";
 
 const publishSchema = z.object({ published: z.boolean() });
 
@@ -23,7 +23,17 @@ export async function PATCH(request: NextRequest) {
 
     const styleguide = await prisma.brandStyleguide.findUnique({
       where: { workspaceId },
-      select: { id: true },
+      select: {
+        id: true,
+        semanticColors: true,
+        colors: { select: { category: true } },
+        // Needed by getApplicableReviewSections to skip empty typography
+        // roles (DISPLAY/UI/EYEBROW without a font) and empty component
+        // types — otherwise publish gate blocks on reviews that aren't
+        // even rendered in the UI.
+        fonts: { select: { role: true } },
+        components: { select: { type: true } },
+      },
     });
     if (!styleguide) {
       return NextResponse.json({ error: "No styleguide found" }, { status: 404 });
@@ -36,22 +46,33 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (parsed.data.published === true) {
+      // Dynamic filter: sections like semantic tints / empty font roles
+      // / component types with zero samples are only active when the
+      // styleguide actually has the data for them — don't gate publish
+      // behind an empty panel the user can't approve anyway.
+      const activeSections = getApplicableReviewSections(styleguide);
       const reviews = await prisma.styleguideReview.findMany({
         where: {
           styleguideId: styleguide.id,
-          section: { in: [...ACTIVE_REVIEW_SECTIONS] },
+          section: { in: activeSections },
         },
         select: { section: true, status: true },
       });
-      const approvedSet = new Set(
-        reviews.filter((r) => r.status === "APPROVED").map((r) => r.section),
+      // Publish allowed when every active section has a REVIEW DECISION
+      // (APPROVED or NEEDS_WORK). Pure PENDING sections are the ones
+      // that still block — those are "I haven't looked at this yet".
+      // Needs-work sections don't block because flagging IS a decision.
+      const reviewedSet = new Set(
+        reviews
+          .filter((r) => r.status === "APPROVED" || r.status === "NEEDS_WORK")
+          .map((r) => r.section),
       );
-      const missing = ACTIVE_REVIEW_SECTIONS.filter((s) => !approvedSet.has(s));
-      if (missing.length > 0) {
+      const pending = activeSections.filter((s) => !reviewedSet.has(s));
+      if (pending.length > 0) {
         return NextResponse.json(
           {
-            error: "Not all sections are approved",
-            missingSections: missing,
+            error: "Not all sections have been reviewed",
+            missingSections: pending,
           },
           { status: 400 },
         );

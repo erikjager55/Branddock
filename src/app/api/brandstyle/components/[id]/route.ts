@@ -2,30 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, requireAuth } from "@/lib/auth-server";
-import { getStorageProvider } from "@/lib/storage";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 const updateSchema = z.object({
-  role: z.enum(["DISPLAY", "UI", "EYEBROW_META", "BODY"]).optional(),
-  weight: z.string().max(50).optional(),
-  style: z.string().max(50).optional(),
-  fontFamily: z.string().max(100).optional(),
+  label: z.string().max(200).optional(),
+  extractedStyles: z.record(z.string(), z.unknown()).optional(),
+  previewHtml: z.string().max(10_000).nullable().optional(),
   sortOrder: z.number().int().min(0).optional(),
-  // Adobe Fonts / Typekit kit id. Empty string clears the value (user
-  // paste-and-delete). We cap length at 32 — real kits are 7-15 chars.
-  adobeFontsKitId: z
-    .string()
-    .max(32)
-    .regex(/^[a-z0-9]*$/i, "Kit ID must be alphanumeric")
-    .optional()
-    .nullable(),
 });
 
 // =============================================================
-// PATCH /api/brandstyle/fonts/[id] — update metadata
+// PATCH /api/brandstyle/components/[id]
 // =============================================================
 export async function PATCH(request: NextRequest, context: RouteContext) {
   try {
@@ -35,11 +25,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     if (!workspaceId) return NextResponse.json({ error: "No workspace" }, { status: 400 });
 
     const { id } = await context.params;
-    const existing = await prisma.styleguideFont.findFirst({
+    const existing = await prisma.styleguideComponent.findFirst({
       where: { id, workspaceId },
       select: { id: true },
     });
-    if (!existing) return NextResponse.json({ error: "Font not found" }, { status: 404 });
+    if (!existing) return NextResponse.json({ error: "Component not found" }, { status: 404 });
 
     const body = await request.json();
     const parsed = updateSchema.safeParse(body);
@@ -47,31 +37,27 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    // Empty-string kit id → clear to null so the UI reverts to the
-    // generic "Commercial" messaging instead of trying to load
-    // `use.typekit.net/.css`.
-    const data: typeof parsed.data = { ...parsed.data };
-    if (typeof data.adobeFontsKitId === "string" && data.adobeFontsKitId.length === 0) {
-      data.adobeFontsKitId = null;
+    const data: Record<string, unknown> = { ...parsed.data };
+    if ("extractedStyles" in data && data.extractedStyles) {
+      // Prisma JSON needs proper type cast
+      data.extractedStyles = data.extractedStyles as object;
     }
 
-    const font = await prisma.styleguideFont.update({
+    const component = await prisma.styleguideComponent.update({
       where: { id },
       data,
     });
 
     invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
-    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
-
-    return NextResponse.json({ font });
+    return NextResponse.json({ component });
   } catch (error) {
-    console.error("[PATCH /api/brandstyle/fonts/:id]", error);
+    console.error("[PATCH /api/brandstyle/components/:id]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
 // =============================================================
-// DELETE /api/brandstyle/fonts/[id] — remove record + stored file
+// DELETE /api/brandstyle/components/[id]
 // =============================================================
 export async function DELETE(_request: NextRequest, context: RouteContext) {
   try {
@@ -81,28 +67,18 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     if (!workspaceId) return NextResponse.json({ error: "No workspace" }, { status: 400 });
 
     const { id } = await context.params;
-    const existing = await prisma.styleguideFont.findFirst({
+    const existing = await prisma.styleguideComponent.findFirst({
       where: { id, workspaceId },
-      select: { id: true, fileUrl: true },
+      select: { id: true },
     });
-    if (!existing) return NextResponse.json({ error: "Font not found" }, { status: 404 });
+    if (!existing) return NextResponse.json({ error: "Component not found" }, { status: 404 });
 
-    await prisma.styleguideFont.delete({ where: { id } });
-
-    if (existing.fileUrl) {
-      try {
-        await getStorageProvider().delete(existing.fileUrl);
-      } catch (err) {
-        console.warn("[DELETE font] storage cleanup failed:", err);
-      }
-    }
+    await prisma.styleguideComponent.delete({ where: { id } });
 
     invalidateCache(cacheKeys.prefixes.brandstyle(workspaceId));
-    invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("[DELETE /api/brandstyle/fonts/:id]", error);
+    console.error("[DELETE /api/brandstyle/components/:id]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

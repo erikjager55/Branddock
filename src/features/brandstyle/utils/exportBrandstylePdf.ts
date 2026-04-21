@@ -56,6 +56,21 @@ export function exportBrandstylePdf(styleguide: BrandStyleguide) {
   doc.text(parts.join('  |  '), margin, y);
   y += 8;
 
+  // Fase 2: Published stamp on cover
+  if (styleguide.published) {
+    const stamp = `PUBLISHED${styleguide.publishedAt ? ` — ${new Date(styleguide.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}` : ''}`;
+    doc.setFillColor(16, 185, 129); // emerald-500
+    const stampWidth = doc.getTextWidth(stamp) + 6;
+    doc.roundedRect(margin, y - 4, stampWidth, 6, 1, 1, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text(stamp, margin + 3, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(107, 114, 128);
+    y += 6;
+  }
+
   // ── Divider ──
   doc.setDrawColor(209, 213, 219);
   doc.line(margin, y, pageWidth - margin, y);
@@ -184,6 +199,39 @@ export function exportBrandstylePdf(styleguide: BrandStyleguide) {
   }
 
   addList("Color Don'ts", styleguide.colorDonts);
+
+  // Fase 3: Semantic tints
+  type SemanticTint = { light?: string; base?: string; dark?: string };
+  const semantic = (styleguide as unknown as {
+    semanticColors?: { info?: SemanticTint; success?: SemanticTint; warning?: SemanticTint; danger?: SemanticTint };
+  }).semanticColors;
+  if (semantic) {
+    const labels: { key: keyof typeof semantic; label: string }[] = [
+      { key: "info", label: "Info" },
+      { key: "success", label: "Success" },
+      { key: "warning", label: "Warning" },
+      { key: "danger", label: "Danger" },
+    ];
+    const present = labels
+      .map(({ key, label }) => {
+        const tint = semantic[key];
+        if (!tint || (!tint.light && !tint.base && !tint.dark)) return null;
+        const values = [tint.light, tint.base, tint.dark].filter(Boolean).join(" / ");
+        return `${label}: ${values}`;
+      })
+      .filter((s): s is string => s !== null);
+    if (present.length > 0) {
+      addSubHeader("Semantic Tints");
+      doc.setTextColor(55, 65, 81);
+      doc.setFontSize(10);
+      present.forEach((line) => {
+        checkPageBreak(8);
+        doc.text(`•  ${line}`, margin + 2, y);
+        y += 6;
+      });
+      y += 2;
+    }
+  }
 
   // ═══════════════════════════════════════════════════════════════
   // 3. TYPOGRAPHY
@@ -348,6 +396,120 @@ export function exportBrandstylePdf(styleguide: BrandStyleguide) {
       addField('Whitespace Philosophy', lp.whitespacePhilosophy);
       addList('Composition Rules', lp.compositionRules);
       addField('Usage Notes', lp.usageNotes);
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 7. SPACING TOKENS (Fase 4)
+  // ═══════════════════════════════════════════════════════════════
+  type ScaleToken = { name: string; value: number };
+  type ShadowToken = { name: string; value: string; intensity: string };
+  const spacingScaleData = (styleguide as unknown as {
+    spacingScale?: { gridBase: number | null; tokens: ScaleToken[] };
+  }).spacingScale;
+  const cornerRadiiData = (styleguide as unknown as {
+    cornerRadii?: { tokens: ScaleToken[] };
+  }).cornerRadii;
+  const shadowSystemData = (styleguide as unknown as {
+    shadowSystem?: { tokens: ShadowToken[] };
+  }).shadowSystem;
+
+  const hasSpacing =
+    (spacingScaleData?.tokens?.length ?? 0) > 0 ||
+    (cornerRadiiData?.tokens?.length ?? 0) > 0 ||
+    (shadowSystemData?.tokens?.length ?? 0) > 0;
+
+  if (hasSpacing) {
+    addSectionHeader('7. Spacing & Tokens');
+
+    if (spacingScaleData?.tokens?.length) {
+      const label = spacingScaleData.gridBase ? `Spacing Scale (${spacingScaleData.gridBase}px grid)` : 'Spacing Scale';
+      addSubHeader(label);
+      doc.setTextColor(55, 65, 81);
+      doc.setFontSize(10);
+      spacingScaleData.tokens.forEach((t) => {
+        checkPageBreak(8);
+        doc.text(`•  ${t.name} — ${t.value}px`, margin + 2, y);
+        y += 6;
+      });
+      y += 2;
+    }
+
+    if (cornerRadiiData?.tokens?.length) {
+      addSubHeader('Corner Radii');
+      doc.setTextColor(55, 65, 81);
+      doc.setFontSize(10);
+      cornerRadiiData.tokens.forEach((t) => {
+        checkPageBreak(8);
+        doc.text(`•  ${t.name} — ${t.value}px`, margin + 2, y);
+        y += 6;
+      });
+      y += 2;
+    }
+
+    if (shadowSystemData?.tokens?.length) {
+      addSubHeader('Shadow System');
+      doc.setTextColor(55, 65, 81);
+      doc.setFontSize(9);
+      shadowSystemData.tokens.forEach((t) => {
+        checkPageBreak(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${t.name}`, margin + 2, y);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(107, 114, 128);
+        const value = t.value.length > 80 ? t.value.slice(0, 80) + '…' : t.value;
+        doc.text(`${t.intensity} — ${value}`, margin + 2, y + 4);
+        doc.setTextColor(55, 65, 81);
+        y += 9;
+      });
+      y += 2;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // 8. COMPONENTS (Fase 5)
+  // ═══════════════════════════════════════════════════════════════
+  if (Array.isArray(styleguide.components) && styleguide.components.length > 0) {
+    addSectionHeader('8. Components');
+    doc.setTextColor(55, 65, 81);
+    doc.setFontSize(10);
+
+    const grouped = new Map<string, { label: string; tokens: Record<string, unknown> }[]>();
+    for (const c of styleguide.components) {
+      const arr = grouped.get(c.type) ?? [];
+      arr.push({
+        label: c.label,
+        tokens: (c.extractedStyles ?? {}) as Record<string, unknown>,
+      });
+      grouped.set(c.type, arr);
+    }
+
+    for (const [type, items] of grouped) {
+      addSubHeader(`${type.replace(/_/g, ' ')} (${items.length})`);
+      doc.setTextColor(55, 65, 81);
+      doc.setFontSize(9);
+      items.forEach((item) => {
+        checkPageBreak(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`•  ${item.label}`, margin + 2, y);
+        doc.setFont('helvetica', 'normal');
+        y += 5;
+        const tokenEntries = Object.entries(item.tokens)
+          .filter(([, v]) => typeof v === 'string' && v)
+          .slice(0, 6);
+        if (tokenEntries.length > 0) {
+          doc.setTextColor(107, 114, 128);
+          const line = tokenEntries.map(([k, v]) => `${k}: ${String(v).slice(0, 40)}`).join(' · ');
+          const wrapped = doc.splitTextToSize(line, pageWidth - margin * 2 - 4);
+          wrapped.forEach((w: string) => {
+            checkPageBreak(5);
+            doc.text(w, margin + 6, y);
+            y += 4;
+          });
+          doc.setTextColor(55, 65, 81);
+        }
+        y += 2;
+      });
     }
   }
 

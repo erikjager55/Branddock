@@ -14,23 +14,34 @@ export async function GET() {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
 
-    const styleguide = await prisma.brandStyleguide.findUnique({
-      where: { workspaceId },
-      include: {
-        colors: { orderBy: { sortOrder: "asc" } },
-        logos: { orderBy: { sortOrder: "asc" } },
-        fonts: { orderBy: [{ role: "asc" }, { sortOrder: "asc" }] },
-        reviews: true,
-        createdBy: { select: { id: true, name: true, avatarUrl: true } },
-        lockedBy: { select: { id: true, name: true } },
-      },
-    });
+    const [styleguide, workspace] = await Promise.all([
+      prisma.brandStyleguide.findUnique({
+        where: { workspaceId },
+        include: {
+          colors: { orderBy: { sortOrder: "asc" } },
+          logos: { orderBy: { sortOrder: "asc" } },
+          fonts: { orderBy: [{ role: "asc" }, { sortOrder: "asc" }] },
+          components: { orderBy: [{ type: "asc" }, { sortOrder: "asc" }] },
+          reviews: true,
+          createdBy: { select: { id: true, name: true, avatarUrl: true } },
+          lockedBy: { select: { id: true, name: true } },
+        },
+      }),
+      prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { adobeFontsKitId: true },
+      }),
+    ]);
 
     if (!styleguide) {
       return NextResponse.json({ styleguide: null });
     }
 
-    return NextResponse.json({ styleguide });
+    // Attach workspace-level Adobe Fonts kit so the UI can render live
+    // previews for every ADOBE_FONTS font without a second fetch.
+    return NextResponse.json({
+      styleguide: { ...styleguide, workspaceAdobeFontsKitId: workspace?.adobeFontsKitId ?? null },
+    });
   } catch (error) {
     console.error("[GET /api/brandstyle]", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -136,6 +147,7 @@ export async function PATCH(request: NextRequest) {
         colors: { orderBy: { sortOrder: "asc" } },
         logos: { orderBy: { sortOrder: "asc" } },
         fonts: { orderBy: [{ role: "asc" }, { sortOrder: "asc" }] },
+        components: { orderBy: [{ type: "asc" }, { sortOrder: "asc" }] },
         reviews: true,
         createdBy: { select: { id: true, name: true, avatarUrl: true } },
         lockedBy: { select: { id: true, name: true } },

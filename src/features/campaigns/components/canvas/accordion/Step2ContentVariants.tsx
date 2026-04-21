@@ -11,6 +11,7 @@ import type { PreviewContent } from '../../../types/canvas.types';
 import { Loader2, Sparkles, ArrowRight, Check, Film, MessageSquare, MousePointerClick } from 'lucide-react';
 import { SeoProgressPanel } from '../SeoProgressPanel';
 import { getEstimatedDuration } from '../../../lib/content-type-inputs';
+import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
 import type { SceneId } from '../../../stores/useCanvasStore';
 
 interface Step2ContentVariantsProps {
@@ -36,7 +37,8 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
 
   const hasVariants = variantGroups.size > 0;
   const isGenerating = globalStatus === 'generating';
-  const hasSceneGroups = variantGroups.has('hook') || variantGroups.has('body') || variantGroups.has('cta');
+  const isVideoScript = contentType ? VIDEO_ADJACENT_TYPES.has(contentType) : false;
+  const hasSceneGroups = isVideoScript && (variantGroups.has('hook') || variantGroups.has('body') || variantGroups.has('cta'));
 
   const platform = contextStack?.medium?.platform ?? null;
   const format = contextStack?.medium?.format ?? null;

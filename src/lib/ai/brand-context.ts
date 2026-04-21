@@ -851,6 +851,14 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         designLanguageSavedForAi: true,
         visualLanguage: true,
         visualLanguageSavedForAi: true,
+        // Fase 2: publish gate
+        published: true,
+        // Fase 1: brand assets
+        fonts: { select: { name: true, role: true, source: true, fileUrl: true, weight: true } },
+        // Fase 3: semantic colors
+        semanticColors: true,
+        // Fase 5: components
+        components: { select: { type: true, label: true } },
       },
     }),
 
@@ -1061,8 +1069,10 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
     ctx.productsOverview = summaries.join(', ');
   }
 
-  // Visual identity from brandstyle (only sections marked as saved for AI)
-  if (styleguide) {
+  // Visual identity from brandstyle
+  // Fase 2 gate: only expose the styleguide context when published is true.
+  // Individual per-section `savedForAi` flags then provide finer-grained control.
+  if (styleguide && styleguide.published) {
     // Colors
     if (styleguide.colorsSavedForAi && styleguide.colors.length > 0) {
       const colorsByCategory = new Map<string, typeof styleguide.colors>();
@@ -1076,7 +1086,45 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
         const items = colors.map((c) => `${c.name} ${c.hex}`).join(', ');
         colorParts.push(`${cat}: ${items}`);
       }
+
+      // Fase 3: semantic color tints (info/success/warning/danger)
+      const sem = styleguide.semanticColors as {
+        info?: { light?: string; base?: string; dark?: string };
+        success?: { light?: string; base?: string; dark?: string };
+        warning?: { light?: string; base?: string; dark?: string };
+        danger?: { light?: string; base?: string; dark?: string };
+      } | null;
+      if (sem) {
+        const semParts: string[] = [];
+        for (const key of ["info", "success", "warning", "danger"] as const) {
+          const tint = sem[key];
+          if (!tint) continue;
+          const swatches = [tint.light, tint.base, tint.dark].filter(Boolean).join(" / ");
+          if (swatches) semParts.push(`${key} ${swatches}`);
+        }
+        if (semParts.length > 0) colorParts.push(`Semantic: ${semParts.join("; ")}`);
+      }
       ctx.brandColors = colorParts.join('; ');
+    }
+
+    // Fase 1: brand fonts (uploaded files let the writer know the real type
+    // is available for previews / exports). Cap to 3 per role to keep the
+    // context tight — for a site with 15 scraped Google Fonts we don't want
+    // to flood the prompt with detector noise.
+    if (styleguide.fonts && styleguide.fonts.length > 0) {
+      const byRole = new Map<string, string[]>();
+      for (const f of styleguide.fonts) {
+        const status = f.source === "UPLOADED" ? "uploaded" : "detected";
+        const label = `${f.name} (${status}${f.weight ? `, ${f.weight}` : ""})`;
+        const arr = byRole.get(f.role) ?? [];
+        if (arr.length < 3) arr.push(label);
+        byRole.set(f.role, arr);
+      }
+      const fontParts: string[] = [];
+      for (const [role, items] of byRole) {
+        fontParts.push(`${role}: ${items.join(", ")}`);
+      }
+      if (fontParts.length > 0) ctx.brandFonts = fontParts.join("; ");
     }
 
     // Typography
@@ -1188,6 +1236,24 @@ export async function getBrandContext(workspaceId: string): Promise<BrandContext
     if (ctx.brandVisualLanguage) vsysParts.push(ctx.brandVisualLanguage);
     if (ctx.brandDesignLanguage) vsysParts.push(ctx.brandDesignLanguage);
     if (vsysParts.length > 0) ctx.brandVisualSystem = vsysParts.join('\n\n');
+
+    // Fase 5: component samples — aggregate high-level counts per type so the
+    // writer knows which component vocabulary the brand uses. Gated by the
+    // visual-system saved-for-AI flag since components belong to the same tier.
+    if (
+      (styleguide.designLanguageSavedForAi || styleguide.visualLanguageSavedForAi) &&
+      Array.isArray(styleguide.components) &&
+      styleguide.components.length > 0
+    ) {
+      const counts = new Map<string, number>();
+      for (const c of styleguide.components) {
+        counts.set(c.type, (counts.get(c.type) ?? 0) + 1);
+      }
+      const compParts = Array.from(counts.entries())
+        .map(([type, count]) => `${count} ${type.toLowerCase().replace(/_/g, " ")}`)
+        .join(", ");
+      if (compParts) ctx.brandComponents = `Detected samples: ${compParts}.`;
+    }
   }
 
   // Competitor analysis

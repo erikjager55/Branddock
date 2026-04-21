@@ -56,7 +56,12 @@ function getFontForLevel(
   const isHeading = /^h[1-6]$/i.test(level.trim());
   const headingFont = additionalFonts[0];
   const chosen = isHeading && headingFont ? headingFont : primaryFont;
-  return chosen ? normaliseFontName(chosen) : undefined;
+  if (!chosen) return undefined;
+  // Always append a sans-serif fallback chain so unknown families (e.g.
+  // "effra-fallback" — a CSS name that isn't a real typeface) don't drop
+  // through to the browser's default serif. The brand's real font comes
+  // first, then system-ui, then the generic sans-serif bucket.
+  return `"${normaliseFontName(chosen)}", system-ui, -apple-system, sans-serif`;
 }
 
 /**
@@ -276,21 +281,27 @@ function InContextPreview({
 
   // Build a style for one role: take font-family + weight + color from the
   // matching scale level (if any), but always use the supplied mock size.
+  // Wrap a raw font name into a stack with sans-serif fallback so unknown
+  // families don't drop to the browser's default serif.
+  const withFallback = (raw: string | null | undefined): string | undefined => {
+    if (!raw) return undefined;
+    return `"${normaliseFontName(raw)}", system-ui, -apple-system, sans-serif`;
+  };
+
   const mockStyle = (level: TypeScaleLevel | undefined, sizePx: number): React.CSSProperties => ({
     fontSize: `${sizePx}px`,
     fontWeight: level?.weight || undefined,
     color: level?.color || undefined,
     fontFamily: level
       ? getFontForLevel(level.level, primaryFont, additionalFonts)
-      : (primaryFont ? normaliseFontName(primaryFont) : undefined),
+      : withFallback(primaryFont),
   });
 
   // Heading fonts use the heading-font even when the scale doesn't define
   // that exact level (e.g. brand has H1 + H2 but no H3) — falls back to
   // additionalFonts[0] consistently with getFontForLevel.
-  const headingFontFamily =
-    additionalFonts[0] ? normaliseFontName(additionalFonts[0]) : (primaryFont ? normaliseFontName(primaryFont) : undefined);
-  const bodyFontFamily = primaryFont ? normaliseFontName(primaryFont) : undefined;
+  const headingFontFamily = withFallback(additionalFonts[0] ?? primaryFont);
+  const bodyFontFamily = withFallback(primaryFont);
 
   return (
     <div className="rounded-md border border-gray-200 bg-white p-8">
@@ -400,11 +411,16 @@ function FontDisplayCard({
   usage,
   name,
   url,
+  availability,
 }: {
   role: string;
   usage: string;
   name: string | null | undefined;
   url: string | null | undefined;
+  /** Availability of this font in the detected set — drives the source
+   *  label (Google Fonts / Adobe Fonts / Uploaded / Commercial) and
+   *  whether the "View on Google Fonts" link renders. */
+  availability?: "UPLOADED" | "GOOGLE_FONTS" | "ADOBE_FONTS" | "COMMERCIAL" | "UNKNOWN" | null;
 }) {
   const normalised = name ? normaliseFontName(name) : null;
   const hasFont = Boolean(name);
@@ -422,6 +438,19 @@ function FontDisplayCard({
 
   const classification = classifyFont(name as string);
 
+  // Source label adapts to availability so we don't mis-claim every
+  // font is on Google Fonts. Commercial/unknown fonts simply show the
+  // classification without a source suffix.
+  const sourceSuffix =
+    availability === "GOOGLE_FONTS"
+      ? " · Google Fonts"
+      : availability === "ADOBE_FONTS"
+        ? " · Adobe Fonts"
+        : availability === "UPLOADED"
+          ? " · Uploaded"
+          : "";
+  const isGoogleFonts = availability === "GOOGLE_FONTS";
+
   return (
     <div className="rounded-lg border border-gray-200 p-5 flex flex-col gap-4">
       {/* Role tag */}
@@ -433,19 +462,20 @@ function FontDisplayCard({
       <div className="flex items-center gap-6">
         <div
           className="leading-none text-gray-900 select-none"
-          style={{ fontFamily: normalised ?? undefined, fontSize: '5.25rem', fontWeight: 600 }}
+          style={{ fontFamily: normalised ? `"${normalised}", system-ui, -apple-system, sans-serif` : undefined, fontSize: '5.25rem', fontWeight: 600 }}
         >
           Aa
         </div>
         <div className="min-w-0">
           <div
             className="text-2xl font-semibold text-gray-900 break-words leading-tight"
-            style={{ fontFamily: normalised ?? undefined }}
+            style={{ fontFamily: normalised ? `"${normalised}", system-ui, -apple-system, sans-serif` : undefined }}
           >
             {name}
           </div>
           <div className="mt-1 text-xs text-gray-500">
-            {classification} · Google Fonts
+            {classification}
+            {sourceSuffix}
           </div>
         </div>
       </div>
@@ -453,13 +483,15 @@ function FontDisplayCard({
       {/* Pangram in the actual font */}
       <p
         className="text-base text-gray-700 leading-relaxed"
-        style={{ fontFamily: normalised ?? undefined }}
+        style={{ fontFamily: normalised ? `"${normalised}", system-ui, -apple-system, sans-serif` : undefined }}
       >
         The quick brown fox jumps over the lazy dog.
       </p>
 
-      {/* Link out */}
-      {url && (
+      {/* Link out — only for real Google Fonts (the URL is built with the
+          Google Fonts viewer assumption). Adobe Fonts users browse via their
+          kit; no public browse URL exists for arbitrary kit fonts. */}
+      {url && isGoogleFonts && (
         <a
           href={url}
           target="_blank"
@@ -500,6 +532,19 @@ function buildGoogleFontsUrls(fonts: string[]): string[] {
 export function TypographySection({ styleguide, canEdit }: TypographySectionProps) {
   const typeScale = (styleguide.typeScale ?? []) as TypeScaleLevel[];
   const updateTypography = useUpdateSection("typography");
+
+  /** Lookup: font-name (lowercase) → availability, so the two
+   *  top-level brand-font cards render the correct source label
+   *  (Google Fonts / Adobe Fonts / Uploaded / Commercial). */
+  const fontAvailabilityMap = useMemo(() => {
+    const map = new Map<string, "UPLOADED" | "GOOGLE_FONTS" | "ADOBE_FONTS" | "COMMERCIAL" | "UNKNOWN">();
+    for (const f of styleguide.fonts ?? []) {
+      map.set(f.name.toLowerCase(), f.availability);
+    }
+    return map;
+  }, [styleguide.fonts]);
+  const availabilityFor = (name: string | null | undefined) =>
+    name ? fontAvailabilityMap.get(name.toLowerCase()) ?? null : null;
 
   // Stabilize the additional fonts array reference to avoid unnecessary useEffect re-runs
   const additionalFontsKey = useMemo(
@@ -649,12 +694,14 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                 usage="Body, UI, running copy"
                 name={styleguide.primaryFontName}
                 url={styleguide.primaryFontUrl}
+                availability={availabilityFor(styleguide.primaryFontName)}
               />
               <FontDisplayCard
                 role="Secondary"
                 usage="Headings, display, emphasis"
                 name={styleguide.additionalFonts?.[0] ?? null}
                 url={googleFontsViewUrl(styleguide.additionalFonts?.[0])}
+                availability={availabilityFor(styleguide.additionalFonts?.[0])}
               />
             </div>
 
@@ -667,7 +714,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
                     <span
                       key={f}
                       className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600"
-                      style={{ fontFamily: normaliseFontName(f) }}
+                      style={{ fontFamily: `"${normaliseFontName(f)}", system-ui, -apple-system, sans-serif` }}
                     >
                       {f}
                     </span>
@@ -854,16 +901,88 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
         </Card>
       )}
 
-      <Card>
-        <ReviewDraftPanel
-          section="typography"
-          reviews={styleguide.reviews ?? []}
-          canEdit={canEdit}
-          label="Review typography"
-        />
-      </Card>
+      <TypographyRolesPanel styleguide={styleguide} canEdit={canEdit} />
 
       <AiContentBanner section="typography" savedForAi={styleguide.typographySavedForAi} />
+    </div>
+  );
+}
+
+// ── Typography roles (Display / UI / Eyebrow & meta) — Fase 3 ──
+function TypographyRolesPanel({
+  styleguide,
+  canEdit,
+}: {
+  styleguide: BrandStyleguide;
+  canEdit: boolean;
+}) {
+  const reviews = styleguide.reviews ?? [];
+  const fonts = styleguide.fonts ?? [];
+  const display = fonts.filter((f) => f.role === "DISPLAY");
+  const ui = fonts.filter((f) => f.role === "UI" || f.role === "BODY");
+  const eyebrow = fonts.filter((f) => f.role === "EYEBROW_META");
+
+  const renderRole = (
+    label: string,
+    roleFonts: typeof fonts,
+    section: "typography-display" | "typography-ui" | "typography-eyebrow",
+    previewSize: string,
+  ) => {
+    // Hide the card entirely when no font is assigned to this role —
+    // asking the user to review an empty slot is pure noise. The
+    // getApplicableReviewSections filter below keeps the progress bar
+    // and "Continue review" button in sync.
+    if (roleFonts.length === 0) return null;
+    return (
+    <Card>
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold text-gray-900">{label}</h3>
+        <p className="text-xs text-gray-500 mt-1">
+          {roleFonts.map((f) => f.name).join(", ")}
+        </p>
+      </div>
+
+      {roleFonts.length > 0 && (
+        <div className="space-y-3">
+          {roleFonts.map((font) => {
+            const family = font.fontFamily ?? font.name;
+            const isUsable = font.source === "UPLOADED" && !!font.fileUrl;
+            return (
+              <div
+                key={font.id}
+                className="border border-gray-100 rounded-md p-4 bg-gray-50"
+              >
+                <p className="text-[11px] uppercase tracking-wide text-gray-400 mb-1">
+                  {font.name}
+                  {!isUsable && " — substitute font (upload to use real type)"}
+                </p>
+                <p
+                  className={previewSize + " text-gray-900"}
+                  style={isUsable ? { fontFamily: `"${family}", system-ui, sans-serif` } : undefined}
+                >
+                  The quick brown fox jumps over the lazy dog
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <ReviewDraftPanel
+        section={section}
+        reviews={reviews}
+        canEdit={canEdit}
+        label={`Review ${label.toLowerCase()}`}
+      />
+    </Card>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {renderRole("Display type", display, "typography-display", "text-3xl")}
+      {renderRole("UI type", ui, "typography-ui", "text-base")}
+      {renderRole("Eyebrow & meta", eyebrow, "typography-eyebrow", "text-xs uppercase tracking-widest")}
     </div>
   );
 }

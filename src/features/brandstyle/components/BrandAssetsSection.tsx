@@ -40,6 +40,7 @@ export function BrandAssetsSection({ styleguide, canEdit }: BrandAssetsSectionPr
       <FontsGrid
         fonts={styleguide.fonts ?? []}
         canEdit={canEdit}
+        workspaceKitId={styleguide.workspaceAdobeFontsKitId ?? null}
         reviewSlot={
           <ReviewDraftPanel
             section="brand-assets-fonts"

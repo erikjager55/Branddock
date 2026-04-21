@@ -186,6 +186,102 @@ function extractGlassmorphism(css: string) {
   };
 }
 
+// ─── Spacing Tokens (Fase 4) ───────────────────────────────
+
+export interface SpacingScaleTokens {
+  gridBase: number | null;
+  tokens: Array<{ name: string; value: number }>; // px values, sorted
+}
+
+export interface CornerRadiiTokens {
+  tokens: Array<{ name: string; value: number }>; // px values, sorted
+}
+
+export interface ShadowSystemTokens {
+  tokens: Array<{ name: string; value: string; intensity: "subtle" | "medium" | "bold" }>;
+}
+
+/**
+ * Derive structured design tokens from raw CSS heuristics. Used in Fase 4 to
+ * populate the Spacing section cards (scale, radii, shadows).
+ */
+export function buildSpacingTokens(heuristics: CssVisualHeuristics): {
+  spacingScale: SpacingScaleTokens;
+  cornerRadii: CornerRadiiTokens;
+  shadowSystem: ShadowSystemTokens;
+} {
+  return {
+    spacingScale: deriveSpacingScale(heuristics.spacing),
+    cornerRadii: deriveCornerRadii(heuristics.borderRadius),
+    shadowSystem: deriveShadowSystem(heuristics.boxShadow),
+  };
+}
+
+function deriveSpacingScale(spacing: CssVisualHeuristics["spacing"]): SpacingScaleTokens {
+  const { values, gridBase } = spacing;
+  if (!values || values.length === 0) {
+    return { gridBase, tokens: [] };
+  }
+  // Frequency count, then pick top distinct values in ascending order.
+  const freq = new Map<number, number>();
+  for (const v of values) freq.set(v, (freq.get(v) ?? 0) + 1);
+  const unique = Array.from(freq.keys()).sort((a, b) => a - b);
+
+  // Pick values that appear more than once (reduces noise), cap to 6 tokens.
+  const candidates = unique.filter((v) => (freq.get(v) ?? 0) > 1);
+  const picks = (candidates.length >= 3 ? candidates : unique).slice(0, 6);
+
+  const labels = ["xs", "sm", "md", "lg", "xl", "2xl"];
+  const tokens = picks.map((value, i) => ({ name: labels[i] ?? `t${i + 1}`, value }));
+  return { gridBase, tokens };
+}
+
+function deriveCornerRadii(
+  radius: CssVisualHeuristics["borderRadius"],
+): CornerRadiiTokens {
+  const { values } = radius;
+  if (!values || values.length === 0) return { tokens: [] };
+  const freq = new Map<number, number>();
+  for (const v of values) freq.set(v, (freq.get(v) ?? 0) + 1);
+  const unique = Array.from(freq.keys()).sort((a, b) => a - b);
+  // Pick up to 4 distinct radii.
+  const picks = unique.slice(0, 4);
+  const labels = ["sm", "md", "lg", "full"];
+  return {
+    tokens: picks.map((value, i) => ({
+      name: picks.length === 1 ? "default" : labels[i] ?? `r${i + 1}`,
+      value,
+    })),
+  };
+}
+
+function deriveShadowSystem(
+  shadow: CssVisualHeuristics["boxShadow"],
+): ShadowSystemTokens {
+  const { samples } = shadow;
+  if (!samples || samples.length === 0) return { tokens: [] };
+
+  // Dedupe preserving order.
+  const seen = new Set<string>();
+  const unique = samples.filter((s) => {
+    const key = s.replace(/\s+/g, " ").trim();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  const labels = ["subtle", "default", "bold", "elevated"];
+  return {
+    tokens: unique.slice(0, 4).map((value, i) => {
+      const blurMatch = value.match(/\d+\s*px\s+\d+\s*px\s+(\d+)\s*px/);
+      const blur = blurMatch ? parseInt(blurMatch[1], 10) : 0;
+      const intensity: "subtle" | "medium" | "bold" =
+        blur <= 6 ? "subtle" : blur <= 16 ? "medium" : "bold";
+      return { name: labels[i] ?? `s${i + 1}`, value, intensity };
+    }),
+  };
+}
+
 // ─── Helpers ───────────────────────────────────────────────
 
 function findMostCommon(values: number[]): number | null {

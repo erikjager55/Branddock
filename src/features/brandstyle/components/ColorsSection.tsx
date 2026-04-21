@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { X, Pencil, Plus } from "lucide-react";
+import { X, Pencil, Plus, ChevronDown, ChevronRight } from "lucide-react";
 import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
 import { EditableStringList } from "./EditableStringList";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { useUpdateSection, useAddColor, useDeleteColor } from "../hooks/useBrandstyleHooks";
+import { contrastRatio } from "../utils/color-utils";
 import type { BrandStyleguide, StyleguideColor } from "../types/brandstyle.types";
 
 const CATEGORY_OPTIONS: StyleguideColor["category"][] = ["PRIMARY", "SECONDARY", "ACCENT", "NEUTRAL", "SEMANTIC"];
@@ -59,15 +60,6 @@ function readableForeground(hex: string): "#FFFFFF" | "#000000" {
   return lum > 0.55 ? "#000000" : "#FFFFFF";
 }
 
-/** Parse a contrast string like "4.7:1" or "4.7" into a numeric ratio. */
-function parseContrast(str: string | null): number | null {
-  if (!str) return null;
-  const m = str.match(/([\d.]+)/);
-  if (!m) return null;
-  const n = parseFloat(m[1]);
-  return Number.isFinite(n) ? n : null;
-}
-
 /** WCAG result for a given contrast ratio. */
 function wcagLabel(ratio: number | null): { label: string; pass: boolean } {
   if (ratio == null) return { label: "—", pass: false };
@@ -75,6 +67,42 @@ function wcagLabel(ratio: number | null): { label: string; pass: boolean } {
   if (ratio >= 4.5) return { label: "AA", pass: true };
   if (ratio >= 3) return { label: "AA Large", pass: true };
   return { label: "Fail", pass: false };
+}
+
+/** Inline collapsible — used to demote non-critical color blocks (In
+ *  Context mockup, Don'ts) so the review flow isn't buried in noise. */
+function CollapsibleCard({
+  title,
+  subtitle,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <Card>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-3 text-left"
+      >
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-gray-900 truncate">{title}</h3>
+          {subtitle && <p className="text-xs text-gray-400 mt-0.5 truncate">{subtitle}</p>}
+        </div>
+        {open ? (
+          <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-gray-400 flex-shrink-0" />
+        )}
+      </button>
+      {open && <div className="mt-5">{children}</div>}
+    </Card>
+  );
 }
 
 // ─── Sub-components ──────────────────────────────────
@@ -107,15 +135,25 @@ function DetectorBadge({ source }: { source: string | null }) {
   );
 }
 
-/** Hero block for one PRIMARY color — big swatch + technical info + WCAG. */
-function HeroColorBlock({ color }: { color: StyleguideColor }) {
-  const cw = parseContrast(color.contrastWhite);
-  const cb = parseContrast(color.contrastBlack);
-  const wWhite = wcagLabel(cw);
-  const wBlack = wcagLabel(cb);
+/** Hero block for one PRIMARY color — slimmed to name + HEX + a single
+ *  WCAG summary. Clicking the swatch opens the detail modal where RGB/
+ *  HSL/CMYK/full WCAG grid live. */
+function HeroColorBlock({ color, onOpen }: { color: StyleguideColor; onOpen: () => void }) {
+  // Recompute contrast from the hex itself — the stored `contrastWhite` /
+  // `contrastBlack` fields are WCAG labels ("AAA", "Fail") and don't carry
+  // the numeric ratio, so parsing them for a toFixed render was yielding
+  // "—". Pure client-side math from the hex is deterministic.
+  const cwRatio = contrastRatio(color.hex, "#FFFFFF");
+  const cbRatio = contrastRatio(color.hex, "#000000");
+  const bestBg = cwRatio >= cbRatio ? { on: "white", ratio: cwRatio } : { on: "black", ratio: cbRatio };
+  const bestWcag = wcagLabel(bestBg.ratio);
 
   return (
-    <div className="rounded-lg border border-gray-200 overflow-hidden flex flex-col">
+    <button
+      type="button"
+      onClick={onOpen}
+      className="rounded-lg border border-gray-200 overflow-hidden flex flex-col text-left hover:ring-2 hover:ring-primary/40 transition-all"
+    >
       {/* Big color block with name reversed on top */}
       <div
         className="px-6 py-10 flex flex-col justify-end min-h-[160px]"
@@ -127,64 +165,26 @@ function HeroColorBlock({ color }: { color: StyleguideColor }) {
         <p className="mt-1 text-2xl font-semibold">{color.name}</p>
       </div>
 
-      {/* Technical strip */}
-      <div className="p-5 space-y-4 bg-white">
-        <div className="flex items-center gap-2 flex-wrap">
+      {/* Compact summary — just the essentials. Full tech data lives in the
+          detail modal on click. */}
+      <div className="p-4 bg-white flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <span className="font-mono text-xs text-gray-700">{color.hex}</span>
           <DetectorBadge source={color.detectorSource} />
           <ConfidenceBadge confidence={color.confidence} />
         </div>
-
-        <dl className="grid grid-cols-[80px_1fr] gap-x-3 gap-y-1.5 text-xs">
-          <dt className="text-gray-400 uppercase tracking-wider">Hex</dt>
-          <dd className="font-mono text-gray-700">{color.hex}</dd>
-          {color.rgb && (
-            <>
-              <dt className="text-gray-400 uppercase tracking-wider">RGB</dt>
-              <dd className="font-mono text-gray-700">{color.rgb}</dd>
-            </>
-          )}
-          {color.hsl && (
-            <>
-              <dt className="text-gray-400 uppercase tracking-wider">HSL</dt>
-              <dd className="font-mono text-gray-700">{color.hsl}</dd>
-            </>
-          )}
-          {color.cmyk && (
-            <>
-              <dt className="text-gray-400 uppercase tracking-wider">CMYK</dt>
-              <dd className="font-mono text-gray-700">{color.cmyk}</dd>
-            </>
-          )}
-        </dl>
-
-        {/* WCAG contrast */}
-        <div className="border-t border-gray-100 pt-3">
-          <p className="text-[10px] font-semibold tracking-wider text-gray-500 uppercase mb-2">
-            WCAG Contrast
-          </p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded border border-gray-200 bg-white flex-shrink-0" />
-              <div className="min-w-0">
-                <div className="font-mono text-gray-700">{cw?.toFixed(1) ?? "—"}</div>
-                <div className={`text-[10px] font-semibold ${wWhite.pass ? "text-emerald-600" : "text-red-500"}`}>
-                  {wWhite.label}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded border border-gray-200 flex-shrink-0" style={{ backgroundColor: "#000000" }} />
-              <div className="min-w-0">
-                <div className="font-mono text-gray-700">{cb?.toFixed(1) ?? "—"}</div>
-                <div className={`text-[10px] font-semibold ${wBlack.pass ? "text-emerald-600" : "text-red-500"}`}>
-                  {wBlack.label}
-                </div>
-              </div>
-            </div>
-          </div>
+        <div
+          className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded ${
+            bestWcag.pass
+              ? "bg-emerald-50 text-emerald-700"
+              : "bg-red-50 text-red-600"
+          }`}
+          title={`Contrast on ${bestBg.on}: ${bestBg.ratio.toFixed(2)}:1`}
+        >
+          {bestWcag.label} on {bestBg.on}
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -250,11 +250,10 @@ function InContextPreview({
 }) {
   const primary = primaries[0];
   const secondary = secondaries[0] ?? primaries[1] ?? null;
+  // Pick the darkest neutral that passes WCAG AA against white. Computed
+  // from hex for the same reason as above.
   const darkNeutral =
-    neutrals.find((n) => {
-      const c = parseContrast(n.contrastWhite);
-      return c != null && c >= 4.5;
-    }) ?? neutrals[0];
+    neutrals.find((n) => contrastRatio(n.hex, "#FFFFFF") >= 4.5) ?? neutrals[0];
   const lightSurface = "#FFFFFF";
 
   if (!primary) {
@@ -269,18 +268,22 @@ function InContextPreview({
   const darkText = darkNeutral?.hex ?? "#0F172A";
 
   // Contrast facts for the bottom strip
+  // Contrast facts — compute directly from hex so the render always has
+  // a real ratio. The stored `contrastWhite`/`contrastBlack` fields are
+  // WCAG labels ("AAA", "Fail"), not ratios, so parsing them for x.x:1
+  // output previously produced dashes.
   const facts = [
     {
-      label: `Body text on white`,
-      ratio: parseContrast(darkNeutral?.contrastWhite ?? null),
+      label: "Body text on white",
+      ratio: darkNeutral ? contrastRatio(darkNeutral.hex, "#FFFFFF") : null,
     },
     {
       label: `${primary.name} on white`,
-      ratio: parseContrast(primary.contrastWhite),
+      ratio: contrastRatio(primary.hex, "#FFFFFF"),
     },
     {
       label: `${primaryFg === "#FFFFFF" ? "White" : "Black"} on ${primary.name}`,
-      ratio: primaryFg === "#FFFFFF" ? parseContrast(primary.contrastWhite) : parseContrast(primary.contrastBlack),
+      ratio: contrastRatio(primary.hex, primaryFg),
     },
   ];
 
@@ -500,7 +503,7 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
           </div>
           <div className={`grid ${heroGridCols} gap-6`}>
             {primaries.map((c) => (
-              <HeroColorBlock key={c.id} color={c} />
+              <HeroColorBlock key={c.id} color={c} onOpen={() => openColorModal(c.id)} />
             ))}
           </div>
         </Card>
@@ -525,6 +528,16 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
           {CATEGORY_ORDER.map((cat) => {
             const colors = colorsByCategory[cat];
             if (!colors?.length) return null;
+            // Which inline review belongs to this color group, if any.
+            // PRIMARY/SECONDARY/ACCENT are all "brand" — we anchor that
+            // review on the LAST non-empty brand category so the thumbs
+            // appear once directly under the colours the user is judging.
+            const brandCats: StyleguideColor["category"][] = ["PRIMARY", "SECONDARY", "ACCENT"];
+            const lastBrandCat = [...brandCats]
+              .reverse()
+              .find((c) => (colorsByCategory[c]?.length ?? 0) > 0);
+            const showBrandReview = cat === lastBrandCat;
+            const showNeutralReview = cat === "NEUTRAL";
             return (
               <div key={cat}>
                 <p className="text-[11px] font-semibold tracking-wider text-gray-500 uppercase mb-1">
@@ -542,6 +555,25 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
                     />
                   ))}
                 </div>
+                {/* Inline review thumbs directly under the colours they
+                    refer to — previously lived in a pair of mostly-empty
+                    Card wrappers at the bottom of the page. */}
+                {showBrandReview && (
+                  <ReviewDraftPanel
+                    section="colors-brand"
+                    reviews={styleguide.reviews ?? []}
+                    canEdit={canEdit}
+                    label="Review brand colors"
+                  />
+                )}
+                {showNeutralReview && (
+                  <ReviewDraftPanel
+                    section="colors-neutrals"
+                    reviews={styleguide.reviews ?? []}
+                    canEdit={canEdit}
+                    label="Review neutrals"
+                  />
+                )}
               </div>
             );
           })}
@@ -587,26 +619,32 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
         )}
       </Card>
 
-      {/* ── Block 3: In Context ─────────────────────────── */}
+      {/* ── Block 3: In Context (collapsed) ──────────────── */}
       {primaries.length > 0 && (
-        <Card>
-          <div className="flex items-center justify-between gap-3 mb-5">
-            <h3 className="text-sm font-semibold text-gray-900 truncate min-w-0">In Context</h3>
-            <p className="text-xs text-gray-400">How {brandName}&apos;s colors combine on a real page</p>
-          </div>
+        <CollapsibleCard
+          title="In Context"
+          subtitle={`How ${brandName}'s colors combine on a real page`}
+        >
           <InContextPreview
             brandName={brandName}
             primaries={primaries}
             secondaries={secondaries}
             neutrals={neutrals}
           />
-        </Card>
+        </CollapsibleCard>
       )}
 
-      {/* ── Block 4: Don'ts ─────────────────────────────── */}
-      <Card>
+      {/* ── Block 4: Don'ts (collapsed) ──────────────────── */}
+      <CollapsibleCard
+        title="Don'ts"
+        subtitle={
+          styleguide.colorDonts.length > 0
+            ? `${styleguide.colorDonts.length} rule${styleguide.colorDonts.length === 1 ? "" : "s"}`
+            : undefined
+        }
+      >
         <EditableStringList
-          title="Don'ts"
+          title=""
           items={styleguide.colorDonts}
           canEdit={canEdit}
           isSaving={updateColors.isPending}
@@ -628,18 +666,119 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
             )
           }
         </EditableStringList>
-      </Card>
+      </CollapsibleCard>
 
-      <Card>
-        <ReviewDraftPanel
-          section="colors"
-          reviews={styleguide.reviews ?? []}
-          canEdit={canEdit}
-          label="Review colors"
-        />
-      </Card>
+      <SemanticTintsPanel styleguide={styleguide} canEdit={canEdit} />
 
       <AiContentBanner section="colors" savedForAi={styleguide.colorsSavedForAi} />
     </div>
+  );
+}
+
+// ── Semantic Tints Panel (Fase 3) ──
+interface SemanticTint {
+  light?: string;
+  base?: string;
+  dark?: string;
+}
+interface SemanticColorsData {
+  info?: SemanticTint;
+  success?: SemanticTint;
+  warning?: SemanticTint;
+  danger?: SemanticTint;
+}
+
+const SEMANTIC_LABELS: Record<keyof SemanticColorsData, { label: string; description: string }> = {
+  info: { label: "Info", description: "Informational notices, neutral messaging" },
+  success: { label: "Success", description: "Confirmations, positive feedback" },
+  warning: { label: "Warning", description: "Caution, attention required" },
+  danger: { label: "Danger", description: "Errors, destructive actions" },
+};
+
+function SemanticTintsPanel({
+  styleguide,
+  canEdit,
+}: {
+  styleguide: BrandStyleguide;
+  canEdit: boolean;
+}) {
+  const semantic: SemanticColorsData =
+    (styleguide as unknown as { semanticColors?: SemanticColorsData }).semanticColors ?? {};
+
+  const hasAnyTint = Object.values(semantic).some(
+    (t) => t && (t.light || t.base || t.dark),
+  );
+
+  // Also fall back to colors with SEMANTIC-like categories for legacy data.
+  const legacySemanticColors = styleguide.colors.filter((c) =>
+    ["SEMANTIC", "SUCCESS", "WARNING", "ERROR_COLOR"].includes(c.category as string),
+  );
+
+  if (!hasAnyTint && legacySemanticColors.length === 0) {
+    return (
+      <Card>
+        <div className="mb-3">
+          <h3 className="text-sm font-semibold text-gray-900">Semantic Tints</h3>
+          <p className="text-xs text-gray-400 mt-1">
+            Info / success / warning / danger tints — not yet detected. Analyze a site with
+            status UI to populate, or add manually via Color System.
+          </p>
+        </div>
+        <ReviewDraftPanel
+          section="colors-semantic"
+          reviews={styleguide.reviews ?? []}
+          canEdit={canEdit}
+          label="Review semantic tints"
+        />
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold text-gray-900">Semantic Tints</h3>
+        <p className="text-xs text-gray-400 mt-1">Status colors for info, success, warning, and danger messaging</p>
+      </div>
+
+      {hasAnyTint && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {(Object.keys(SEMANTIC_LABELS) as (keyof SemanticColorsData)[]).map((key) => {
+            const tint = semantic[key];
+            if (!tint || (!tint.light && !tint.base && !tint.dark)) return null;
+            const meta = SEMANTIC_LABELS[key];
+            return (
+              <div key={key} className="border border-gray-100 rounded-md p-3">
+                <p className="text-xs font-semibold text-gray-700">{meta.label}</p>
+                <p className="text-[11px] text-gray-400 mb-2">{meta.description}</p>
+                <div className="flex gap-1.5">
+                  {(["light", "base", "dark"] as const).map((variant) =>
+                    tint[variant] ? (
+                      <div key={variant} className="flex-1 text-center">
+                        <div
+                          className="h-10 rounded border border-gray-200"
+                          style={{ backgroundColor: tint[variant] }}
+                          title={`${meta.label} ${variant}: ${tint[variant]}`}
+                        />
+                        <p className="text-[10px] text-gray-500 mt-1 font-mono">
+                          {tint[variant]}
+                        </p>
+                      </div>
+                    ) : null,
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <ReviewDraftPanel
+        section="colors-semantic"
+        reviews={styleguide.reviews ?? []}
+        canEdit={canEdit}
+        label="Review semantic tints"
+      />
+    </Card>
   );
 }

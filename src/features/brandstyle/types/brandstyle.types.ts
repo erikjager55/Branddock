@@ -23,8 +23,43 @@ export interface StyleguideColor {
 
 export type FontRole = "DISPLAY" | "UI" | "EYEBROW_META" | "BODY";
 export type FontSource = "DETECTED" | "UPLOADED";
+export type FontAvailability =
+  | "UPLOADED"
+  | "GOOGLE_FONTS"
+  | "ADOBE_FONTS"
+  | "COMMERCIAL"
+  | "UNKNOWN";
 export type LogoVariant = "PRIMARY" | "LIGHT" | "DARK" | "ICON" | "WORDMARK" | "LOCKUP";
 export type ReviewStatus = "PENDING" | "APPROVED" | "NEEDS_WORK";
+export type ComponentTypeKey =
+  | "BUTTON"
+  | "FORM_INPUT"
+  | "STATUS_CHIP"
+  | "PRODUCT_CARD"
+  | "FEATURE_ICON"
+  | "TOP_NAVIGATION"
+  | "QUOTE_BLOCK";
+
+export interface StyleguideComponentData {
+  id: string;
+  type: ComponentTypeKey;
+  label: string;
+  sourceUrl: string | null;
+  screenshotUrl: string | null;
+  extractedStyles: Record<string, string | undefined>;
+  previewHtml: string | null;
+  confidence: number | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateComponentBody {
+  label?: string;
+  extractedStyles?: Record<string, string | undefined>;
+  previewHtml?: string | null;
+  sortOrder?: number;
+}
 
 export interface StyleguideReviewData {
   id: string;
@@ -42,6 +77,7 @@ export interface StyleguideFontData {
   name: string;
   role: FontRole;
   source: FontSource;
+  availability: FontAvailability;
   fileUrl: string | null;
   fileName: string | null;
   fileType: string | null;
@@ -51,6 +87,11 @@ export interface StyleguideFontData {
   style: string | null;
   sortOrder: number;
   uploadedById: string | null;
+  /** Adobe Fonts / Typekit kit id — auto-filled by scraper when it
+   *  spots `use.typekit.net/{kit}.css`, or pasted by the user. When
+   *  present the UI can load `https://use.typekit.net/{kitId}.css`
+   *  for a live preview of the real font. */
+  adobeFontsKitId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -172,9 +213,10 @@ export interface BrandStyleguide {
   /** Free-text error message if analysis failed (refuse-mode or pipeline error). */
   errorMessage?: string | null;
 
-  // Brand Assets (Fase 1)
+  // Brand Assets (Fase 1) + Components (Fase 5)
   logos: StyleguideLogoData[];
   fonts: StyleguideFontData[];
+  components: StyleguideComponentData[];
   logoGuidelines: string[];
   logoDonts: string[];
   logoSavedForAi: boolean;
@@ -237,6 +279,12 @@ export interface BrandStyleguide {
   createdBy: { id: string; name: string | null; avatarUrl: string | null };
   createdAt: string;
   updatedAt: string;
+
+  /** Adobe Fonts / Typekit kit ID set by THIS workspace's user. Applies
+   *  to all ADOBE_FONTS fonts across the styleguide — the UI uses this
+   *  before falling back to the per-font scraper-detected kit (which is
+   *  the source site's kit and usually domain-locked). */
+  workspaceAdobeFontsKitId?: string | null;
 }
 
 export interface AnalysisStep {
@@ -302,6 +350,8 @@ export interface UpdateFontBody {
   style?: string;
   fontFamily?: string;
   sortOrder?: number;
+  /** Adobe Fonts / Typekit kit id. Pass "" to clear. */
+  adobeFontsKitId?: string | null;
 }
 
 export interface UpdateLogoBody {
@@ -316,6 +366,6 @@ export interface UpdateReviewBody {
   referenceImageUrl?: string | null;
 }
 
-export type StyleguideTab = "brand_assets" | "colors" | "typography" | "tone_of_voice" | "imagery" | "visual_system";
+export type StyleguideTab = "brand_assets" | "colors" | "typography" | "spacing" | "components" | "tone_of_voice" | "imagery" | "visual_system";
 
 export type SaveForAiSection = "logo" | "colors" | "typography" | "tone-of-voice" | "imagery" | "design-language" | "visual-language";

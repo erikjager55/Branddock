@@ -95,6 +95,31 @@ CRITICAL RULES:
  * Build the Visual Identity prompt (colors + typography + logo).
  * Input: structured color groups, fonts, sizes, logos.
  */
+/** Shared addendum appended when the AI call is given page screenshots.
+ *  Placed near the top of the prompt so Claude uses the visual evidence as
+ *  the primary signal and falls back to extracted data only when the image
+ *  is insufficient. */
+export const VISUAL_REFERENCE_ADDENDUM = `
+## Visual reference
+You have been given screenshots of the actual page alongside the extracted data.
+USE the images as your primary signal:
+
+- When classifying colors, identify which hex from the palette appears on
+  visible branded elements (CTA buttons, headings, accents) → those are
+  PRIMARY / ACCENT. Hexes that appear on large background surfaces →
+  NEUTRAL / BACKGROUND. Hexes you only see as faint borders or hover-states →
+  not real brand tokens, drop their priority.
+- When choosing fonts, observe which face appears in the hero heading vs
+  body text vs UI chrome. Confirm or correct the body/heading split that
+  CSS-based detection provided.
+- When describing imagery style, look at the actual photos / illustrations
+  in the screenshot and describe what you see (photography mood, subject
+  matter, composition). Do not guess from bodyText alone.
+
+When the screenshots disagree with extracted CSS data, trust the screenshots —
+they represent what real users see.
+`;
+
 export function buildVisualIdentityPrompt(data: ProcessedData): string {
   const { fonts, fontSizes, logoUrls, authoritativeColors } = data;
 

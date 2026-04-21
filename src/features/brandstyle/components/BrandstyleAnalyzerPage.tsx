@@ -63,7 +63,7 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
 
   if (isLoading) {
     return (
-      <PageShell maxWidth="5xl">
+      <PageShell maxWidth="7xl">
         <div data-testid="skeleton-loader" className="space-y-6">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-64 w-full" />
@@ -74,7 +74,7 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
 
   if (isError) {
     return (
-      <PageShell maxWidth="5xl">
+      <PageShell maxWidth="7xl">
         <div data-testid="error-message" className="flex flex-col items-center justify-center h-64 text-gray-500 gap-2">
           <p className="text-sm">Failed to load brandstyle data. Please try again.</p>
         </div>
@@ -85,7 +85,7 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
   // Show processing progress if analyzing
   if (isAnalyzing && analysisJobId) {
     return (
-      <PageShell maxWidth="5xl">
+      <PageShell maxWidth="7xl">
         <PageHeader
           moduleKey="brandstyle"
           title="Analyzing Your Brand Style"
@@ -97,7 +97,7 @@ export function BrandstyleAnalyzerPage({ onNavigateToGuide, onNavigate }: Brands
   }
 
   return (
-    <PageShell maxWidth="5xl">
+    <PageShell maxWidth="7xl">
       <div data-testid="brandstyle-analyzer">
       <PageHeader
         moduleKey="brandstyle"

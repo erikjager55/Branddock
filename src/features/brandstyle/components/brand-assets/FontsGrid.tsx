@@ -6,10 +6,15 @@ import { Card, Button } from "@/components/shared";
 import type { StyleguideFontData, FontRole } from "../../types/brandstyle.types";
 import { FontCard } from "./FontCard";
 import { FontUploadModal } from "./FontUploadModal";
+import { WorkspaceAdobeKitBanner } from "./WorkspaceAdobeKitBanner";
 
 interface FontsGridProps {
   fonts: StyleguideFontData[];
   canEdit: boolean;
+  /** Workspace-level Adobe Fonts kit ID. Threaded through to FontCard
+   *  so every Adobe-Fonts-classified font uses the same kit for its
+   *  live preview. */
+  workspaceKitId?: string | null;
   /** Optional review panel rendered inside the same card. */
   reviewSlot?: React.ReactNode;
 }
@@ -22,7 +27,10 @@ const ROLE_HEADER: Record<FontRole, string> = {
   BODY: "Body",
 };
 
-export function FontsGrid({ fonts, canEdit, reviewSlot }: FontsGridProps) {
+export function FontsGrid({ fonts, canEdit, workspaceKitId, reviewSlot }: FontsGridProps) {
+  const hasAdobeFonts = fonts.some(
+    (f) => f.availability === "ADOBE_FONTS" && f.source !== "UPLOADED",
+  );
   const [uploadOpen, setUploadOpen] = useState(false);
   const [preset, setPreset] = useState<{ name?: string; role?: FontRole }>({});
 
@@ -36,7 +44,14 @@ export function FontsGrid({ fonts, canEdit, reviewSlot }: FontsGridProps) {
     fonts: fonts.filter((f) => f.role === role),
   }));
 
-  const missingCount = fonts.filter((f) => f.source === "DETECTED" && !f.fileUrl).length;
+  // Only count fonts that ACTUALLY need an upload: commercial ones and the
+  // ones we couldn't classify. Google Fonts load via CDN automatically.
+  const missingCount = fonts.filter(
+    (f) =>
+      f.source === "DETECTED" &&
+      !f.fileUrl &&
+      (f.availability === "COMMERCIAL" || f.availability === "UNKNOWN"),
+  ).length;
 
   return (
     <Card>
@@ -54,6 +69,10 @@ export function FontsGrid({ fonts, canEdit, reviewSlot }: FontsGridProps) {
         )}
       </div>
 
+      {hasAdobeFonts && (
+        <WorkspaceAdobeKitBanner kitId={workspaceKitId ?? null} canEdit={canEdit} />
+      )}
+
       {missingCount > 0 && (
         <div className="mb-4 flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
           <Upload className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
@@ -62,7 +81,7 @@ export function FontsGrid({ fonts, canEdit, reviewSlot }: FontsGridProps) {
               {missingCount} brand {missingCount === 1 ? "font" : "fonts"} missing their file
             </p>
             <p className="text-xs text-amber-800 mt-0.5">
-              Claude is rendering previews with substitute web fonts. Click &quot;Upload&quot; on each card below to add the real file.
+              Previews are using substitute web fonts. Click &quot;Upload&quot; on each card below to add the real files — needed for accurate previews, PDF exports, and AI-generated content.
             </p>
           </div>
         </div>
@@ -87,6 +106,7 @@ export function FontsGrid({ fonts, canEdit, reviewSlot }: FontsGridProps) {
                       key={font.id}
                       font={font}
                       canEdit={canEdit}
+                      workspaceKitId={workspaceKitId}
                       onUploadClick={(name, r) => openUpload(name, r)}
                     />
                   ))}

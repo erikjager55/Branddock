@@ -31,12 +31,14 @@ export interface BrandContextBlock {
   socialRelevancy?: string;
   // Visual identity (from brandstyle)
   brandColors?: string;
+  brandFonts?: string;
   brandTypography?: string;
   brandToneOfVoice?: string;
   brandImageryStyle?: string;
   brandDesignLanguage?: string;
   brandVisualLanguage?: string;
   brandVisualSystem?: string;
+  brandComponents?: string;
   // External context
   targetAudience?: string;
   industry?: string;
@@ -102,6 +104,7 @@ export function formatBrandContext(ctx: BrandContextBlock): string {
 
   // Visual identity
   if (ctx.brandColors) lines.push(`**Brand Colors:** ${ctx.brandColors}`);
+  if (ctx.brandFonts) lines.push(`**Brand Fonts:** ${ctx.brandFonts}`);
   if (ctx.brandTypography) lines.push(`**Typography:** ${ctx.brandTypography}`);
   if (ctx.brandToneOfVoice) lines.push(`**Tone of Voice:** ${ctx.brandToneOfVoice}`);
   if (ctx.brandImageryStyle) lines.push(`**Imagery Style:** ${ctx.brandImageryStyle}`);
@@ -111,6 +114,7 @@ export function formatBrandContext(ctx: BrandContextBlock): string {
     if (ctx.brandDesignLanguage) lines.push(`**Design Language:** ${ctx.brandDesignLanguage}`);
     if (ctx.brandVisualLanguage) lines.push(`**Visual Language (Vormentaal):** ${ctx.brandVisualLanguage}`);
   }
+  if (ctx.brandComponents) lines.push(`**Component System:** ${ctx.brandComponents}`);
 
   // External context
   if (ctx.targetAudience) lines.push(`**Target Audience:** ${ctx.targetAudience}`);

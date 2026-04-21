@@ -521,6 +521,7 @@ What should be DIFFERENT in variant B:
 
 Output the complete alternative page in markdown format. Do NOT output JSON.
 Use sentence case for ALL headings (capitalize only first word + proper nouns, NEVER Title Case).
+Preserve the official capitalization of every brand, product and company name (e.g., "Napking", "iPhone", "LinkedIn") — never lowercase or uppercase them unless the brand officially does so. Applies to headings, body, meta tags, alt text and CTAs.
 Do NOT generate a table of contents with anchor links. Do NOT use --- horizontal rules.
 ${voiceDirective}`;
 

@@ -10,11 +10,13 @@ import type {
   StyleguideColor,
   StyleguideFontData,
   StyleguideLogoData,
+  StyleguideComponentData,
   StyleguideReviewData,
   AiContextResponse,
   SaveForAiSection,
   UpdateFontBody,
   UpdateLogoBody,
+  UpdateComponentBody,
   UpdateReviewBody,
   FontRole,
   LogoVariant,
@@ -280,6 +282,26 @@ export async function deleteLogo(id: string): Promise<void> {
   if (!res.ok) throw new Error("Failed to delete logo");
 }
 
+// === Components (Fase 5) ===
+
+export async function updateComponent(
+  id: string,
+  body: UpdateComponentBody,
+): Promise<{ component: StyleguideComponentData }> {
+  const res = await fetch(`${BASE}/components/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error("Failed to update component");
+  return res.json();
+}
+
+export async function deleteComponent(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/components/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete component");
+}
+
 // === Review workflow (Fase 2) ===
 
 export async function updateReview(
@@ -330,6 +352,17 @@ export async function setPublished(
     };
     if (Array.isArray(body?.missingSections)) err.missingSections = body.missingSections;
     throw err;
+  }
+  return res.json();
+}
+
+/** Close the review: flips the styleguide to published AND deletes all
+ *  StyleguideReview records. After this call the review UI disappears. */
+export async function finalizeReview(): Promise<{ success: true }> {
+  const res = await fetch(`${BASE}/finalize`, { method: "POST" });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.error ?? "Failed to close review");
   }
   return res.json();
 }

@@ -25,8 +25,11 @@ import {
   updateReview,
   uploadReviewReference,
   setPublished,
+  finalizeReview,
+  updateComponent,
+  deleteComponent,
 } from "../api/brandstyle.api";
-import type { SaveForAiSection, UpdateFontBody, UpdateLogoBody, UpdateReviewBody } from "../types/brandstyle.types";
+import type { SaveForAiSection, UpdateFontBody, UpdateLogoBody, UpdateReviewBody, UpdateComponentBody } from "../types/brandstyle.types";
 
 // Query keys
 export const brandstyleKeys = {
@@ -234,7 +237,50 @@ export function useUpdateReview() {
   return useMutation({
     mutationFn: ({ section, body }: { section: string; body: UpdateReviewBody }) =>
       updateReview(section, body),
-    onSuccess: () => {
+    // Optimistic update so the progress bar moves the instant the user
+    // clicks "Looks good" / "Needs work" — waiting for the PATCH round-trip
+    // + full styleguide refetch made the UI feel dead.
+    onMutate: async ({ section, body }) => {
+      await qc.cancelQueries({ queryKey: brandstyleKeys.styleguide() });
+      const previous = qc.getQueryData<{
+        styleguide: { reviews?: Array<Record<string, unknown>> } | null;
+      }>(brandstyleKeys.styleguide());
+      qc.setQueryData<{
+        styleguide: { reviews?: Array<Record<string, unknown>> } | null;
+      }>(brandstyleKeys.styleguide(), (old) => {
+        if (!old?.styleguide) return old;
+        const reviews = old.styleguide.reviews ?? [];
+        const existing = reviews.find((r) => r.section === section);
+        const patched: Record<string, unknown> = existing
+          ? { ...existing, status: body.status, feedback: body.feedback ?? null, referenceImageUrl: body.referenceImageUrl ?? null }
+          : {
+              id: `optimistic-${section}`,
+              section,
+              status: body.status,
+              feedback: body.feedback ?? null,
+              referenceImageUrl: body.referenceImageUrl ?? null,
+              reviewedById: null,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            };
+        const nextReviews = existing
+          ? reviews.map((r) => (r.section === section ? patched : r))
+          : [...reviews, patched];
+        return {
+          ...old,
+          styleguide: { ...old.styleguide, reviews: nextReviews },
+        };
+      });
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        qc.setQueryData(brandstyleKeys.styleguide(), context.previous);
+      }
+    },
+    onSettled: () => {
+      // Re-fetch so any server-side derived state (e.g. auto-unpublish when
+      // a section drops out of APPROVED) lands in the cache authoritatively.
       qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
     },
   });
@@ -251,6 +297,39 @@ export function useSetPublished() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (published: boolean) => setPublished(published),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
+    },
+  });
+}
+
+export function useFinalizeReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => finalizeReview(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
+    },
+  });
+}
+
+// === Components (Fase 5) ===
+
+export function useUpdateComponent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateComponentBody }) =>
+      updateComponent(id, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
+    },
+  });
+}
+
+export function useDeleteComponent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteComponent(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: brandstyleKeys.styleguide() });
     },

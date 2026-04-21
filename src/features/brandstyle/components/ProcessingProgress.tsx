@@ -53,7 +53,7 @@ export function ProcessingProgress({ jobId, onComplete }: ProcessingProgressProp
         <p className="text-sm text-gray-500">
           {isError
             ? "Something went wrong during analysis."
-            : "Our AI is analyzing your brand. This usually takes 15–30 seconds."}
+            : "Our AI is crawling the homepage plus key subpages and extracting brand tokens, fonts, components and visual system. This usually takes 2–4 minutes."}
         </p>
       </div>
 

@@ -279,6 +279,7 @@ OUTPUT FORMAT:
 Write the full page in markdown format:
 - Use # for H1, ## for H2, ### for H3
 - Use sentence case for ALL headings (capitalize only first word + proper nouns). NEVER use Title Case.
+- BRAND, PRODUCT AND COMPANY NAMES: Always preserve the official capitalization — "iPhone", "LinkedIn", "HubSpot", "Napking", "HelloFresh". NEVER lowercase a brand name and NEVER uppercase every letter unless the brand does so. This applies to H1, H2, H3, body text, meta tags, alt text, CTAs and FAQ.
 - NEVER generate a table of contents with markdown anchor links like [Title](#slug)
 - NEVER use --- horizontal rules to separate sections
 - Use **bold** for key phrases and emphasis
@@ -324,7 +325,7 @@ Respond with a JSON object:
 }
 
 The revisedContent must be a COMPLETE page — not a diff or partial update. Include every section from the draft, improved.
-Use sentence case for ALL headings (capitalize only first word + proper nouns, NEVER Title Case). Do NOT add a table of contents with anchor links. Do NOT use --- horizontal rules.`,
+Use sentence case for ALL headings (capitalize only first word + proper nouns, NEVER Title Case). Always preserve the official capitalization of brand, product and company names (e.g., "Napking", "iPhone", "LinkedIn") — never lowercase them. Do NOT add a table of contents with anchor links. Do NOT use --- horizontal rules.`,
     userPrompt: `${accumulatedBlock(ctx.accumulatedOutputs)}
 ${outputLanguageInstruction(ctx.voiceDirective)}
 Review the draft and produce an improved version with all corrections applied. Focus on the highest-impact improvements first.`,
@@ -344,6 +345,7 @@ Your task: Take the editorially reviewed content and produce:
 FINAL TEXT REQUIREMENTS:
 - Complete body text in markdown, ready to copy into a CMS
 - Correct heading capitalization (sentence case — capitalize only first word + proper nouns, NEVER Title Case)
+- Preserve the official capitalization of every brand, product and company name — in headings, body text, meta tags, alt text and CTAs. Examples: "Napking", "iPhone", "LinkedIn", "HubSpot". Never lowercase or fully uppercase a brand name.
 - NEVER include a table of contents with markdown anchor links like [Title](#slug)
 - NEVER use --- horizontal rules to separate sections
 - Internal links marked as [internal link: anchor text → target page]

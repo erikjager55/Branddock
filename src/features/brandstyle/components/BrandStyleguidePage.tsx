@@ -1,24 +1,23 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
-import { Download, Pencil, Palette, Save, X, RefreshCw, Sparkles, Loader2 } from "lucide-react";
-import { Skeleton, Button } from "@/components/shared";
+import { useEffect, useCallback } from "react";
+import { Skeleton } from "@/components/shared";
 import { PageShell } from "@/components/ui/layout";
 import { LockBanner, LockConfirmDialog, LockOverlay } from "@/components/lock";
-import { LockShield, LockStatusPill } from "@/components/lock";
 import { useLockState } from "@/hooks/useLockState";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStyleguide, brandstyleKeys } from "../hooks/useBrandstyleHooks";
-import { exportBrandstylePdf } from "../utils/exportBrandstylePdf";
-import { exportBrandKitPdf, type BrandKitPdfProgress } from "../utils/brand-kit/exportBrandKitPdf";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { StyleguideTabNav } from "./StyleguideTabNav";
-import { AnalysisProvenanceBanner } from "./AnalysisProvenanceBanner";
+import { StyleguideHeader } from "./StyleguideHeader";
 import { ReviewSummaryHeader } from "./review/ReviewSummaryHeader";
+import { ReviewClosedProvider } from "./review/ReviewDraftPanel";
 import { BrandAssetsSection } from "./BrandAssetsSection";
 import { ColorsSection } from "./ColorsSection";
 import { ColorDetailModal } from "./ColorDetailModal";
 import { TypographySection } from "./TypographySection";
+import { SpacingSection } from "./SpacingSection";
+import { ComponentsSection } from "./ComponentsSection";
 import { ToneOfVoiceSection } from "./ToneOfVoiceSection";
 import { ImagerySection } from "./ImagerySection";
 import { VisualSystemSection } from "./VisualSystemSection";
@@ -35,26 +34,6 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
   const qc = useQueryClient();
 
   const styleguide = data?.styleguide ?? null;
-
-  const handleExportPdf = useCallback(() => {
-    if (styleguide) exportBrandstylePdf(styleguide);
-  }, [styleguide]);
-
-  const [kitProgress, setKitProgress] = useState<BrandKitPdfProgress | null>(null);
-  const [kitError, setKitError] = useState<string | null>(null);
-  const isExportingKit = kitProgress !== null && kitProgress.stage !== "complete";
-
-  const handleExportBrandKit = useCallback(async () => {
-    setKitError(null);
-    setKitProgress({ stage: "fetching", message: "Starting export…" });
-    try {
-      await exportBrandKitPdf((progress) => setKitProgress(progress));
-      setTimeout(() => setKitProgress(null), 2000);
-    } catch (error) {
-      setKitError(error instanceof Error ? error.message : "Export failed");
-      setKitProgress(null);
-    }
-  }, []);
 
   // Hook must be called unconditionally (Rules of Hooks).
   // Pass safe defaults when styleguide is not yet loaded.
@@ -92,7 +71,7 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
 
   if (isLoading) {
     return (
-      <PageShell maxWidth="5xl">
+      <PageShell maxWidth="7xl">
         <div data-testid="skeleton-loader" className="space-y-6">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-8 w-full" />
@@ -104,7 +83,7 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
 
   if (isError) {
     return (
-      <PageShell maxWidth="5xl">
+      <PageShell maxWidth="7xl">
         <div data-testid="error-message" className="flex flex-col items-center justify-center h-64 text-gray-500 gap-2">
           <p className="text-sm">Failed to load styleguide. Please try again.</p>
         </div>
@@ -116,12 +95,6 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
     return null;
   }
 
-  const createdDate = new Date(styleguide.createdAt).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
   const selectedColor = selectedColorId
     ? styleguide.colors.find((c) => c.id === selectedColorId) ?? null
     : null;
@@ -129,137 +102,19 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
   const canEdit = !lockState.isLocked && isEditing;
 
   return (
-    <PageShell maxWidth="5xl">
+    <PageShell maxWidth="7xl">
       <div data-testid="brandstyle-guide">
-        {/* Card-style header — matches AssetDetailHeader pattern */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-start gap-6">
-            {/* Module icon */}
-            <div className="flex-shrink-0">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-md">
-                <Palette className="h-10 w-10 text-white" />
-              </div>
-            </div>
-
-            {/* Info */}
-            <div className="flex-1 min-w-0">
-              {/* Title + Lock badge */}
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-gray-900">Brand Styleguide</h1>
-                <LockStatusPill
-                  isLocked={lockState.isLocked}
-                  lockedBy={lockState.lockedBy}
-                  lockedAt={lockState.lockedAt}
-                />
-              </div>
-
-              {/* Subtitle */}
-              <p className="text-base text-gray-500 mt-0.5">Your visual identity guidelines</p>
-
-              {/* Metadata bar */}
-              <div className="flex items-center gap-2 mt-3 text-xs text-gray-500">
-                {styleguide.createdBy.name && (
-                  <>
-                    <span>Created by {styleguide.createdBy.name}</span>
-                    <span>·</span>
-                  </>
-                )}
-                <span>{createdDate}</span>
-                {styleguide.sourceUrl && (
-                  <>
-                    <span>·</span>
-                    <span className="text-primary truncate max-w-[200px]">
-                      {styleguide.sourceUrl}
-                    </span>
-                  </>
-                )}
-                <span>·</span>
-                <button
-                  onClick={handleNewAnalysis}
-                  disabled={lockState.isLocked}
-                  className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  New Analysis
-                </button>
-                <span>·</span>
-                <button
-                  onClick={handleExportPdf}
-                  className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  <Download className="h-3 w-3" />
-                  Export PDF
-                </button>
-                <span>·</span>
-                <button
-                  onClick={handleExportBrandKit}
-                  disabled={isExportingKit}
-                  className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-60 disabled:cursor-wait"
-                  title="Export a ZIP containing the full brand foundation, ready to upload to Claude Design"
-                >
-                  {isExportingKit ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-3 w-3" />
-                  )}
-                  {isExportingKit
-                    ? (kitProgress?.message ?? "Exporting…")
-                    : "Export for Claude Design"}
-                </button>
-              </div>
-              {kitError && (
-                <p className="text-xs text-red-600 mt-1" role="alert">
-                  Brand kit export failed: {kitError}
-                </p>
-              )}
-              {kitProgress?.stage === "complete" && (
-                <p className="text-xs text-emerald-700 mt-1">
-                  Brand book PDF exported — check your Downloads folder.
-                </p>
-              )}
-            </div>
-
-            {/* Action buttons — Edit/Save/Cancel + LockShield */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {isEditing ? (
-                <>
-                  <button
-                    onClick={() => setIsEditing(false)}
-                    style={{ backgroundColor: '#0d9488', color: '#ffffff' }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg transition-opacity hover:opacity-90"
-                  >
-                    <Save className="h-4 w-4" />
-                    Save
-                  </button>
-                  <button
-                    onClick={() => setIsEditing(false)}
-                    className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={Pencil}
-                  onClick={() => setIsEditing(true)}
-                  disabled={lockState.isLocked}
-                >
-                  Edit
-                </Button>
-              )}
-
-              <LockShield
-                isLocked={lockState.isLocked}
-                isToggling={lockState.isToggling}
-                onClick={lockState.requestToggle}
-                size="sm"
-              />
-            </div>
-          </div>
-        </div>
+        <StyleguideHeader
+          styleguide={styleguide}
+          isEditing={isEditing}
+          isLocked={lockState.isLocked}
+          isTogglingLock={lockState.isToggling}
+          lockedBy={lockState.lockedBy}
+          lockedAt={lockState.lockedAt}
+          onEditToggle={setIsEditing}
+          onLockToggle={lockState.requestToggle}
+          onNewAnalysis={handleNewAnalysis}
+        />
 
         <LockBanner
           isLocked={lockState.isLocked}
@@ -270,28 +125,33 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
 
         <div className="mt-6" />
 
-        <div className="mb-5">
-          <AnalysisProvenanceBanner styleguide={styleguide} />
-        </div>
-
-        <div className="mb-5">
-          <ReviewSummaryHeader styleguide={styleguide} canEdit={!lockState.isLocked} />
-        </div>
+        {!styleguide.published && (
+          <div className="mb-5">
+            <ReviewSummaryHeader styleguide={styleguide} canEdit={!lockState.isLocked} />
+          </div>
+        )}
 
         <StyleguideTabNav
           activeTab={activeTab}
           onTabChange={setActiveTab}
         />
 
-        {/* Active section — wrapped in LockOverlay */}
-        <LockOverlay isLocked={lockState.isLocked}>
-          {activeTab === "brand_assets" && <BrandAssetsSection styleguide={styleguide} canEdit={canEdit} />}
-          {activeTab === "colors" && <ColorsSection styleguide={styleguide} canEdit={canEdit} />}
-          {activeTab === "typography" && <TypographySection styleguide={styleguide} canEdit={canEdit} />}
-          {activeTab === "tone_of_voice" && <ToneOfVoiceSection styleguide={styleguide} canEdit={canEdit} />}
-          {activeTab === "imagery" && <ImagerySection styleguide={styleguide} canEdit={canEdit} />}
-          {activeTab === "visual_system" && <VisualSystemSection styleguide={styleguide} canEdit={canEdit} />}
-        </LockOverlay>
+        {/* Active section — wrapped in LockOverlay. ReviewClosedProvider
+            hides every ReviewDraftPanel in the tree when the user has
+            finalized the review (published=true), without threading the
+            flag through each section's props. */}
+        <ReviewClosedProvider value={styleguide.published === true}>
+          <LockOverlay isLocked={lockState.isLocked}>
+            {activeTab === "brand_assets" && <BrandAssetsSection styleguide={styleguide} canEdit={canEdit} />}
+            {activeTab === "colors" && <ColorsSection styleguide={styleguide} canEdit={canEdit} />}
+            {activeTab === "typography" && <TypographySection styleguide={styleguide} canEdit={canEdit} />}
+            {activeTab === "spacing" && <SpacingSection styleguide={styleguide} canEdit={canEdit} />}
+            {activeTab === "components" && <ComponentsSection styleguide={styleguide} canEdit={canEdit} />}
+            {activeTab === "tone_of_voice" && <ToneOfVoiceSection styleguide={styleguide} canEdit={canEdit} />}
+            {activeTab === "imagery" && <ImagerySection styleguide={styleguide} canEdit={canEdit} />}
+            {activeTab === "visual_system" && <VisualSystemSection styleguide={styleguide} canEdit={canEdit} />}
+          </LockOverlay>
+        </ReviewClosedProvider>
 
         {/* Color detail modal */}
         <ColorDetailModal

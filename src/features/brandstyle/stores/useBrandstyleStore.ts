@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { StyleguideTab } from "../types/brandstyle.types";
+import type { StyleguideTab, ComponentTypeKey } from "../types/brandstyle.types";
 
 interface BrandstyleState {
   // Analysis
@@ -9,6 +9,11 @@ interface BrandstyleState {
 
   // Styleguide tabs
   activeTab: StyleguideTab;
+  /** Active Components sub-tab. Lifted out of ComponentsSection local
+   *  state so the "Continue review" button can auto-select the correct
+   *  sub-tab for the next pending review panel (otherwise the scroll
+   *  target doesn't exist in the DOM). */
+  activeComponentType: ComponentTypeKey;
 
   // Edit mode (global, matches Brand Asset Detail pattern)
   isEditing: boolean;
@@ -23,6 +28,7 @@ interface BrandstyleState {
 
   // Actions
   setActiveTab: (tab: StyleguideTab) => void;
+  setActiveComponentType: (type: ComponentTypeKey) => void;
   setIsEditing: (editing: boolean) => void;
   openColorModal: (colorId: string) => void;
   closeColorModal: () => void;
@@ -42,6 +48,7 @@ export const useBrandstyleStore = create<BrandstyleState>((set) => ({
   isAnalyzing: false,
 
   activeTab: "brand_assets",
+  activeComponentType: "BUTTON",
 
   isEditing: false,
 
@@ -52,6 +59,7 @@ export const useBrandstyleStore = create<BrandstyleState>((set) => ({
   isLogoUploadOpen: false,
 
   setActiveTab: (tab) => set({ activeTab: tab }),
+  setActiveComponentType: (type) => set({ activeComponentType: type }),
 
   setIsEditing: (editing) => set({ isEditing: editing }),
 
@@ -81,6 +89,7 @@ export const useBrandstyleStore = create<BrandstyleState>((set) => ({
       analysisStatus: null,
       isAnalyzing: false,
       activeTab: "brand_assets",
+      activeComponentType: "BUTTON",
       isEditing: false,
       selectedColorId: null,
       isColorModalOpen: false,

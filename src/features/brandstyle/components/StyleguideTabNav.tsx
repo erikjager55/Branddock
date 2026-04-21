@@ -1,6 +1,6 @@
 "use client";
 
-import { Package, Palette, Type, MessageCircle, Camera, Layers } from "lucide-react";
+import { Package, Palette, Type, Ruler, Blocks, MessageCircle, Camera, Layers } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { StyleguideTab } from "../types/brandstyle.types";
 
@@ -14,6 +14,8 @@ const TABS: Tab[] = [
   { id: "brand_assets", label: "Brand Assets", icon: Package },
   { id: "colors", label: "Colors", icon: Palette },
   { id: "typography", label: "Typography", icon: Type },
+  { id: "spacing", label: "Spacing", icon: Ruler },
+  { id: "components", label: "Components", icon: Blocks },
   { id: "tone_of_voice", label: "Tone of Voice", icon: MessageCircle },
   { id: "imagery", label: "Imagery", icon: Camera },
   { id: "visual_system", label: "Visual System", icon: Layers },

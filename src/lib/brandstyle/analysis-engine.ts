@@ -31,6 +31,7 @@ import {
   VOICE_IMAGERY_SYSTEM,
   DESIGN_LANGUAGE_SYSTEM,
   PDF_ANALYSIS_SYSTEM_PROMPT,
+  VISUAL_REFERENCE_ADDENDUM,
   type ProcessedData,
   type ProcessedColorGroup,
   type AuthoritativeColor,
@@ -208,13 +209,29 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     // Step 1: Scrape + preprocess (with Gemini fallback on failure)
     await updateStatus(styleguideId, 'SCANNING_STRUCTURE');
     let scraped: ScrapedData;
+    let usedGeminiFallback = false;
+    let usedMultiPage = false;
+    let subpageUrls: string[] = [];
     try {
-      scraped = await scrapeUrl(url);
+      // Sprint 6D: When multi-page crawl is enabled, scrape the homepage
+      // plus ~3 prioritised subpages (about, services, contact) and merge.
+      // Link-heavy sites ship almost nothing on the homepage — subpages
+      // carry the real CTA buttons, form inputs, and service cards.
+      const { isMultiPageEnabled, scrapeUrlMultiPage } = await import('./multi-page-scraper');
+      if (isMultiPageEnabled()) {
+        const multi = await scrapeUrlMultiPage(url);
+        scraped = multi.merged;
+        subpageUrls = multi.subpageUrls;
+        usedMultiPage = true;
+      } else {
+        scraped = await scrapeUrl(url);
+      }
     } catch (scrapeErr) {
       console.warn(`[brandstyle-analysis] Direct scrape failed for ${url}: ${scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr)}`);
       // Fallback: use Gemini with Google Search grounding to extract basic brand data
       try {
         scraped = await scrapeUrlViaGeminiFallback(url);
+        usedGeminiFallback = true;
         console.log(`[brandstyle-analysis] Gemini fallback succeeded for ${url}`);
       } catch (fallbackErr) {
         // Both methods failed — report the original scrape error (more useful to the user)
@@ -233,23 +250,34 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       !data.authoritativeColors.some((c) => c.confidence === 'high') &&
       data.authoritativeColors.length < 3;
 
+    let usedHeadlessRender = false;
     if (isWeakPalette(processed)) {
       const { isHeadlessFallbackEnabled, scrapeUrlViaHeadless } = await import('./playwright-fallback');
       if (isHeadlessFallbackEnabled()) {
         try {
           console.log(`[brandstyle-analysis] Static palette weak, trying headless fallback for ${url}`);
           const headlessScraped = await scrapeUrlViaHeadless(url);
-          // Merge: keep static scrape's metadata, take colors/fonts from headless
+          // Replace CSS sources with the post-render serialized output so
+          // the full downstream pipeline (variables, visual heuristics,
+          // components, frequency analysis) sees the actual rendered
+          // stylesheets — including CSS-in-JS that the static scrape missed.
           scraped = {
             ...scraped,
             cssColors: headlessScraped.cssColors,
             cssFonts: headlessScraped.cssFonts,
+            bodyFont: headlessScraped.bodyFont ?? scraped.bodyFont,
+            headingFont: headlessScraped.headingFont ?? scraped.headingFont,
             colorFrequency: headlessScraped.colorFrequency,
             title: scraped.title ?? headlessScraped.title,
+            inlineCss: headlessScraped.inlineCss || scraped.inlineCss,
+            cssVariables: headlessScraped.cssVariables.length > 0
+              ? headlessScraped.cssVariables
+              : scraped.cssVariables,
           };
           processed = preprocessScrapeData(scraped);
+          usedHeadlessRender = true;
           console.log(
-            `[brandstyle-analysis] Headless extracted ${processed.authoritativeColors.length} colors`,
+            `[brandstyle-analysis] Headless extracted ${processed.authoritativeColors.length} colors, ${scraped.inlineCss.length} bytes CSS`,
           );
         } catch (headlessErr) {
           console.warn(
@@ -270,15 +298,65 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
       return;
     }
 
+    // Optional: take page screenshots via Playwright BEFORE running AI calls
+    // so the model sees the actual visual alongside extracted CSS data.
+    // Hero + full-page shots ground color/font/imagery classifications in
+    // what users actually see on the site instead of raw token counts.
+    let pageScreenshots: { buffer: Buffer; mediaType: 'image/png' }[] = [];
+    let heroBuffer: Buffer | null = null;
+    let usedVisualAi = false;
+    try {
+      const { isVisualAiEnabled, capturePageScreenshots } = await import('./page-screenshotter');
+      if (isVisualAiEnabled()) {
+        const shots = await capturePageScreenshots(url);
+        pageScreenshots = shots.map((s) => ({ buffer: s.buffer, mediaType: s.mediaType }));
+        // Keep the hero buffer around for logo detection — it's the
+        // screenshot most likely to contain a crisp above-the-fold logo.
+        const hero = shots.find((s) => s.label === 'hero');
+        if (hero) heroBuffer = hero.buffer;
+        if (pageScreenshots.length > 0) {
+          usedVisualAi = true;
+          console.log(`[brandstyle-analysis] Captured ${pageScreenshots.length} page screenshots for AI vision`);
+        }
+      }
+    } catch (shotErr) {
+      console.warn(
+        `[brandstyle-analysis] Page screenshots failed (non-critical): ${shotErr instanceof Error ? shotErr.message : String(shotErr)}`,
+      );
+    }
+
+    // Sprint 6A: Detect the real brand logo via Claude Vision on the hero
+    // screenshot. HTML regex-based logo scraping often picks unrelated small
+    // icons (favicons, social glyphs); Vision pinpoints the actual wordmark.
+    let visionLogo: Awaited<
+      ReturnType<typeof import('./logo-vision-detector').detectAndCropLogo>
+    > = null;
+    let usedLogoVision = false;
+    if (heroBuffer && styleguideMeta.workspaceId) {
+      try {
+        const { detectAndCropLogo } = await import('./logo-vision-detector');
+        visionLogo = await detectAndCropLogo(heroBuffer, styleguideMeta.workspaceId);
+        if (visionLogo) {
+          usedLogoVision = true;
+          console.log(`[brandstyle-analysis] Logo detected via Vision: ${visionLogo.description}`);
+        }
+      } catch (logoErr) {
+        console.warn(
+          `[brandstyle-analysis] Logo vision failed (non-critical): ${logoErr instanceof Error ? logoErr.message : String(logoErr)}`,
+        );
+      }
+    }
+    const visualPromptSuffix = pageScreenshots.length > 0 ? `\n\n${VISUAL_REFERENCE_ADDENDUM}` : '';
+
     // Step 2: AI Call 1 — Visual Identity
     await updateStatus(styleguideId, 'EXTRACTING_COLORS');
     let visualResult: VisualIdentityResult;
     try {
-      const prompt = buildVisualIdentityPrompt(processed);
+      const prompt = buildVisualIdentityPrompt(processed) + visualPromptSuffix;
       visualResult = await createClaudeStructuredCompletion<VisualIdentityResult>(
         VISUAL_IDENTITY_SYSTEM,
         prompt,
-        { temperature: 0.2, maxTokens: 4096 },
+        { temperature: 0.2, maxTokens: 4096, images: pageScreenshots, timeoutMs: 180_000 },
       );
     } catch (err) {
       await markError(styleguideId, `Visual identity analysis failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -299,11 +377,11 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     await updateStatus(styleguideId, 'DETECTING_COMPONENTS');
     let voiceResult: VoiceImageryResult;
     try {
-      const prompt = buildVoiceImageryPrompt(processed);
+      const prompt = buildVoiceImageryPrompt(processed) + visualPromptSuffix;
       voiceResult = await createClaudeStructuredCompletion<VoiceImageryResult>(
         VOICE_IMAGERY_SYSTEM,
         prompt,
-        { temperature: 0.3, maxTokens: 4096 },
+        { temperature: 0.3, maxTokens: 4096, images: pageScreenshots, timeoutMs: 180_000 },
       );
     } catch (err) {
       await markError(styleguideId, `Voice & imagery analysis failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -313,11 +391,11 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     // Step 5: AI Call 3 — Design Language
     let designResult: DesignLanguageResult | null = null;
     try {
-      const dlPrompt = buildDesignLanguagePrompt(processed);
+      const dlPrompt = buildDesignLanguagePrompt(processed) + visualPromptSuffix;
       designResult = await createClaudeStructuredCompletion<DesignLanguageResult>(
         DESIGN_LANGUAGE_SYSTEM,
         dlPrompt,
-        { temperature: 0.3, maxTokens: 4096 },
+        { temperature: 0.3, maxTokens: 4096, images: pageScreenshots, timeoutMs: 180_000 },
       );
     } catch (err) {
       // Design language is non-critical — log and continue
@@ -352,14 +430,114 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     await updateStatus(styleguideId, 'GENERATING_STYLEGUIDE');
     const combined: CombinedResult = { ...visualResult, ...voiceResult, ...(designResult ?? {}) };
     // Resolve the authoritative palette with AI annotations merged in
-    const resolvedColors = resolveColors(processed.authoritativeColors, visualResult.colors);
+    let resolvedColors = resolveColors(processed.authoritativeColors, visualResult.colors);
+
+    // Sprint 6B: cross-source confidence promotion.
+    // When Claude has seen the actual page screenshots AND classifies a color
+    // as PRIMARY or ACCENT (branded CTA / accent colors — the ones that matter
+    // most for downstream AI generation), promote its confidence from medium
+    // to high. Claude saw the pixels and the CSS together; if it agrees those
+    // colors are the brand signal, we should trust that over the bare
+    // frequency-derived medium default.
+    if (usedVisualAi) {
+      resolvedColors = resolvedColors.map((c) => {
+        if (c.confidence !== 'medium') return c;
+        if (c.category === 'PRIMARY' || c.category === 'ACCENT') {
+          return { ...c, confidence: 'high' as const };
+        }
+        return c;
+      });
+    }
+
+    // Optionally take real element screenshots + computed-style extraction
+    // via Playwright. Much higher accuracy than the static DOM extractor
+    // (catches Tailwind / CSS-in-JS / runtime styles). Replaces the static
+    // detectedComponents when enabled; falls back to static on failure.
+    // Optionally also sends each screenshot through Claude Vision to derive
+    // better labels (e.g. "Primary emerald CTA button" instead of "Button").
+    let finalComponents = scraped.components;
+    let usedComponentScreenshots = false;
+    let usedComponentVision = false;
+    try {
+      const { isComponentScreenshotsEnabled, extractComponentsFromPages } =
+        await import('./component-screenshotter');
+      if (isComponentScreenshotsEnabled()) {
+        // Sprint 6D: when multi-page is enabled, screenshot components
+        // from homepage + up to 4 subpages (5 pages total). Pages beyond
+        // the top 4 already contributed via static CSS/component merge;
+        // running Playwright on them doubles wall-clock for little extra
+        // visual variety.
+        const componentUrls = usedMultiPage
+          ? [url, ...subpageUrls.slice(0, 4)]
+          : [url];
+        console.log(`[brandstyle-analysis] Taking component screenshots for ${componentUrls.length} page(s)`);
+        const shot = await extractComponentsFromPages(componentUrls, styleguideMeta.workspaceId);
+        if (shot.length > 0) {
+          let enriched = shot;
+          try {
+            const { isComponentVisionEnabled, enrichComponentsWithVision } = await import(
+              './component-vision-enricher'
+            );
+            if (isComponentVisionEnabled()) {
+              console.log(`[brandstyle-analysis] Enriching ${shot.length} components with Claude Vision`);
+              enriched = await enrichComponentsWithVision(shot);
+              usedComponentVision = true;
+            }
+          } catch (visionErr) {
+            console.warn(
+              `[brandstyle-analysis] Vision enrichment failed (non-critical): ${visionErr instanceof Error ? visionErr.message : String(visionErr)}`,
+            );
+          }
+          // Strip the in-memory Buffer before handing off to the persistence
+          // layer — DetectedComponent is the public shape.
+          finalComponents = enriched.map((c) => ({
+            type: c.type,
+            label: c.label,
+            selector: c.selector,
+            classes: c.classes,
+            extractedStyles: c.extractedStyles,
+            previewHtml: c.previewHtml,
+            confidence: c.confidence,
+            screenshotUrl: c.screenshotUrl ?? null,
+          }));
+          usedComponentScreenshots = true;
+          console.log(`[brandstyle-analysis] Captured ${finalComponents.length} component screenshots`);
+        }
+      }
+    } catch (shotErr) {
+      console.warn(
+        `[brandstyle-analysis] Component screenshots failed (non-critical): ${shotErr instanceof Error ? shotErr.message : String(shotErr)}`,
+      );
+    }
+    // Tag provenance so the UI can surface what path was used:
+    //   - gemini-fallback  → LLM-reconstructed data (reduced accuracy)
+    //   - headless-render  → browser-rendered CSS (higher fidelity than static)
+    const provenanceMarkers: string[] = [];
+    if (usedGeminiFallback) provenanceMarkers.push("gemini-fallback");
+    if (usedHeadlessRender) provenanceMarkers.push("headless-render");
+    if (usedComponentScreenshots) provenanceMarkers.push("component-screenshots");
+    if (usedComponentVision) provenanceMarkers.push("component-vision");
+    if (usedVisualAi) provenanceMarkers.push("visual-ai-analysis");
+    if (usedLogoVision) provenanceMarkers.push("logo-vision");
+    if (usedMultiPage) provenanceMarkers.push("multi-page");
+    const frameworksWithProvenance =
+      provenanceMarkers.length > 0
+        ? [...processed.frameworks, ...provenanceMarkers]
+        : processed.frameworks;
+
     await writeResultToDb(
       styleguideId,
       combined,
       resolvedColors,
       processed.fonts,
       processed.logoUrls,
-      processed.frameworks,
+      frameworksWithProvenance,
+      scraped.visualHeuristics,
+      finalComponents,
+      scraped.bodyFont,
+      scraped.headingFont,
+      visionLogo,
+      scraped.adobeFonts ?? null,
     );
 
     // Route scraped brand images into the Media Library instead of persisting
@@ -964,6 +1142,25 @@ async function writeResultToDb(
   detectedFonts: string[],
   logoUrls?: string[],
   detectedFrameworks: string[] = [],
+  visualHeuristics?: import('./visual-language.types').CssVisualHeuristics,
+  detectedComponents?: import('./component-extractor').DetectedComponent[],
+  /** Font used on body/html selector. Maps to UI role. */
+  bodyFont?: string | null,
+  /** Font used on h1-h3. Maps to DISPLAY role. */
+  headingFont?: string | null,
+  /** Vision-detected primary logo — takes priority over scraped URLs. */
+  visionLogo?: {
+    fileUrl: string;
+    fileName: string;
+    width: number;
+    height: number;
+    description: string;
+  } | null,
+  /** Adobe Fonts / Typekit detection: when `detected` is true, fonts not
+   *  on Google Fonts are labelled ADOBE_FONTS instead of COMMERCIAL. The
+   *  scraped kitId (if any) is stored on each new row so the UI can
+   *  render a live preview using the publisher's Typekit kit. */
+  adobeFonts?: { detected: boolean; kitId: string | null } | null,
 ): Promise<void> {
   // Delete existing colors before creating new ones
   await prisma.styleguideColor.deleteMany({ where: { styleguideId } });
@@ -983,25 +1180,74 @@ async function writeResultToDb(
   const sgWorkspaceId = sgForWorkspace?.workspaceId;
   if (sgWorkspaceId) {
     await prisma.styleguideLogo.deleteMany({ where: { styleguideId } });
+
+    // Vision-detected logo (Sprint 6A) — takes the PRIMARY slot because it
+    // comes from Claude identifying the actual brand logo in the hero
+    // screenshot, which is far more accurate than HTML `<img>` regex.
+    const logoRows: Array<{
+      fileUrl: string;
+      fileName: string;
+      fileType: string;
+      variant: 'PRIMARY' | 'LOCKUP';
+      description?: string | null;
+      width?: number | null;
+      height?: number | null;
+      sortOrder: number;
+      styleguideId: string;
+      workspaceId: string;
+    }> = [];
+    if (visionLogo) {
+      logoRows.push({
+        fileUrl: visionLogo.fileUrl,
+        fileName: visionLogo.fileName,
+        fileType: 'png',
+        variant: 'PRIMARY',
+        description: visionLogo.description,
+        width: visionLogo.width,
+        height: visionLogo.height,
+        sortOrder: 0,
+        styleguideId,
+        workspaceId: sgWorkspaceId,
+      });
+    }
+
+    // Scraped HTML logo URLs — keep as additional LOCKUP variants. If the
+    // vision detector didn't run / found nothing, the first scraped URL
+    // gets promoted to PRIMARY so we still have a primary record.
     if (logoUrls && logoUrls.length > 0) {
-      const detectedLogos = logoUrls
-        .filter((u) => !u.startsWith('['))
-        .map((url, i) => {
-          const ext = url.split('.').pop()?.toLowerCase() ?? 'png';
-          const fileType = ext === 'svg' ? 'svg' : ext === 'png' ? 'png' : ext === 'jpg' || ext === 'jpeg' ? 'jpg' : 'png';
-          return {
-            fileUrl: url,
-            fileName: `logo-${i + 1}.${fileType}`,
-            fileType,
-            variant: (i === 0 ? 'PRIMARY' : 'LOCKUP') as 'PRIMARY' | 'LOCKUP',
-            sortOrder: i,
-            styleguideId,
-            workspaceId: sgWorkspaceId,
-          };
+      // Filter out obvious non-logo assets: favicons, apple-touch-icons,
+      // and URLs with explicit tiny-size suffixes (e.g. `-16x16.png`,
+      // `_32x32.jpg`). These are almost always tab icons that slipped
+      // through the HTML regex and shouldn't be promoted to PRIMARY.
+      const FAVICON_PATTERNS = /(favicon|apple-touch-icon|fav\.ico|mstile)/i;
+      const SMALL_SIZE_SUFFIX = /[-_](\d+)x\1(?:@\dx)?\.(png|jpe?g|webp|svg|ico)(\?|$)/i;
+      const isFaviconLike = (url: string): boolean => {
+        if (FAVICON_PATTERNS.test(url)) return true;
+        const sizeMatch = url.match(SMALL_SIZE_SUFFIX);
+        if (sizeMatch && Number(sizeMatch[1]) <= 64) return true;
+        return false;
+      };
+      const cleaned = logoUrls.filter(
+        (u) => !u.startsWith('[') && !isFaviconLike(u),
+      );
+      cleaned.forEach((url, i) => {
+        const ext = url.split('.').pop()?.toLowerCase() ?? 'png';
+        const fileType = ext === 'svg' ? 'svg' : ext === 'png' ? 'png' : ext === 'jpg' || ext === 'jpeg' ? 'jpg' : 'png';
+        const isPromotedPrimary = !visionLogo && i === 0;
+        logoRows.push({
+          fileUrl: url,
+          fileName: `logo-${logoRows.length + 1}.${fileType}`,
+          fileType,
+          variant: isPromotedPrimary ? 'PRIMARY' : 'LOCKUP',
+          sortOrder: logoRows.length,
+          styleguideId,
+          workspaceId: sgWorkspaceId,
         });
-      if (detectedLogos.length > 0) {
-        await prisma.styleguideLogo.createMany({ data: detectedLogos });
-      }
+      });
+    }
+
+    if (logoRows.length > 0) {
+      await prisma.styleguideLogo.createMany({ data: logoRows });
     }
 
     // Replace detected fonts (UPLOADED fonts are preserved). Upgrade a matching
@@ -1018,20 +1264,111 @@ async function writeResultToDb(
         select: { name: true },
       });
       const uploadedSet = new Set(existingUploaded.map((f) => f.name.toLowerCase()));
-      const newDetected = fontNames
-        .filter((n) => !uploadedSet.has(n.toLowerCase()))
-        .map((name, i) => ({
-          styleguideId,
-          workspaceId: sgWorkspaceId,
-          name,
-          role: (i === 0 ? 'DISPLAY' : 'UI') as 'DISPLAY' | 'UI',
-          source: 'DETECTED' as const,
-          sortOrder: i,
-        }));
+      // Role assignment based on scraped CSS selectors (when available):
+      //   - headingFont (from h1-h3) → DISPLAY
+      //   - bodyFont (from html/body) → UI
+      //   - Anything else detected → UI (fallback)
+      // When we have no semantic signal, fall back to the old heuristic
+      // (first font DISPLAY, rest UI) so sites without clear selector-based
+      // body/heading rules still get a reasonable split.
+      const headingFontLower = headingFont?.toLowerCase() ?? null;
+      const bodyFontLower = bodyFont?.toLowerCase() ?? null;
+      const hasSemanticSignal = !!(headingFontLower || bodyFontLower);
+      const assignRole = (name: string, fallbackIndex: number): 'DISPLAY' | 'UI' => {
+        const lower = name.toLowerCase();
+        if (headingFontLower && lower === headingFontLower) return 'DISPLAY';
+        if (bodyFontLower && lower === bodyFontLower) return 'UI';
+        if (hasSemanticSignal) return 'UI';
+        return fallbackIndex === 0 ? 'DISPLAY' : 'UI';
+      };
+      const filteredNames = fontNames.filter((n) => !uploadedSet.has(n.toLowerCase()));
+      // Classify each detected font against the public Google Fonts catalog
+      // so the UI can distinguish "auto-loadable from CDN" (Inter, Poppins)
+      // from "commercial — upload required" (Effra, Sohne, Circular).
+      const { classifyFontsAgainstGoogleFonts } = await import('./google-fonts-catalog');
+      let gfLookup: Map<string, boolean> = new Map();
+      try {
+        gfLookup = await classifyFontsAgainstGoogleFonts(filteredNames);
+      } catch (err) {
+        console.warn(
+          `[brandstyle-analysis] Google Fonts classify failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+      const usesAdobeFonts = adobeFonts?.detected === true;
+      const resolveAvailability = (
+        name: string,
+      ): 'GOOGLE_FONTS' | 'ADOBE_FONTS' | 'COMMERCIAL' | 'UNKNOWN' => {
+        const lower = name.toLowerCase();
+        if (gfLookup.get(lower)) return 'GOOGLE_FONTS';
+        // If the site serves fonts via Typekit and the font is NOT on
+        // Google Fonts, it's almost certainly the Adobe-hosted one.
+        // Adobe-subscribing users can preview without uploading.
+        if (usesAdobeFonts) return 'ADOBE_FONTS';
+        if (!gfLookup.has(lower)) return 'UNKNOWN';
+        return 'COMMERCIAL';
+      };
+      const newDetected = filteredNames.map((name, i) => ({
+        styleguideId,
+        workspaceId: sgWorkspaceId,
+        name,
+        role: assignRole(name, i),
+        source: 'DETECTED' as const,
+        availability: resolveAvailability(name),
+        adobeFontsKitId: usesAdobeFonts ? adobeFonts?.kitId ?? null : null,
+        sortOrder: i,
+      }));
       if (newDetected.length > 0) {
         await prisma.styleguideFont.createMany({ data: newDetected });
       }
     }
+  }
+
+  // Persist detected components (Fase 5) — replace all existing records
+  // belonging to this styleguide with the fresh scan results. Scope the
+  // workspaceId via the styleguide's workspace association.
+  const sgMeta = await prisma.brandStyleguide.findUnique({
+    where: { id: styleguideId },
+    select: { workspaceId: true },
+  });
+  if (sgMeta?.workspaceId) {
+    await prisma.styleguideComponent.deleteMany({ where: { styleguideId } });
+    if (detectedComponents && detectedComponents.length > 0) {
+      const rows = detectedComponents.map((c, i) => ({
+        styleguideId,
+        workspaceId: sgMeta.workspaceId,
+        type: c.type,
+        label: c.label,
+        sourceUrl: null,
+        screenshotUrl: c.screenshotUrl ?? null,
+        extractedStyles: c.extractedStyles as unknown as Prisma.InputJsonValue,
+        previewHtml: c.previewHtml,
+        confidence: c.confidence,
+        sortOrder: i,
+      }));
+      await prisma.styleguideComponent.createMany({ data: rows });
+    }
+  }
+
+  // Derive spacing tokens (Fase 4) from CSS heuristics.
+  let spacingTokenFields: {
+    spacingScale?: Prisma.InputJsonValue | typeof Prisma.JsonNull;
+    cornerRadii?: Prisma.InputJsonValue | typeof Prisma.JsonNull;
+    shadowSystem?: Prisma.InputJsonValue | typeof Prisma.JsonNull;
+  } = {};
+  if (visualHeuristics) {
+    const { buildSpacingTokens } = await import('./css-visual-heuristics');
+    const tokens = buildSpacingTokens(visualHeuristics);
+    spacingTokenFields = {
+      spacingScale: tokens.spacingScale.tokens.length > 0
+        ? (tokens.spacingScale as unknown as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
+      cornerRadii: tokens.cornerRadii.tokens.length > 0
+        ? (tokens.cornerRadii as unknown as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
+      shadowSystem: tokens.shadowSystem.tokens.length > 0
+        ? (tokens.shadowSystem as unknown as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
+    };
   }
 
   // Update styleguide fields
@@ -1086,6 +1423,9 @@ async function writeResultToDb(
       layoutPrinciples: isNonEmptyObject(result.layoutPrinciples)
         ? (result.layoutPrinciples as Prisma.InputJsonValue)
         : Prisma.JsonNull,
+
+      // Spacing tokens (Fase 4) — derived from CSS heuristics
+      ...(spacingTokenFields),
     },
   });
 

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState, useRef } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
+import { updateComponentContent } from '../../../api/canvas.api';
 import { SimpleMarkdown } from '../previews/SimpleMarkdown';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import {
@@ -14,9 +15,11 @@ import {
   Calendar,
   Mail,
   ArrowRight,
+  Pencil,
+  Check,
+  X,
+  Loader2,
 } from 'lucide-react';
-import { ContentSectionsEditor } from './ContentSectionsEditor';
-import type { PreviewContent } from '../../../types/canvas.types';
 
 interface WebPageLayoutProps {
   children: React.ReactNode;
@@ -45,22 +48,25 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
   const heroStyle = (config.heroStyle as string) ?? 'full-bleed-image';
   const ctaType = (config.ctaType as string) ?? 'button';
 
-  // Build preview content from selected variants
-  const previewContent = useMemo<PreviewContent>(() => {
-    const content: PreviewContent = {};
+  // Build preview entries from selected variants (keeps componentId for editing)
+  const selectedEntries = useMemo(() => {
+    const result: Array<{ group: string; content: string; componentId?: string; variantIndex: number }> = [];
     for (const [group, variants] of variantGroups) {
       const selectedIdx = selections.get(group) ?? 0;
       const selected = variants[selectedIdx];
-      if (selected) {
-        content[group] = { content: selected.content, type: 'text' };
+      if (selected?.content) {
+        result.push({
+          group,
+          content: selected.content,
+          componentId: selected.componentId,
+          variantIndex: selectedIdx,
+        });
       }
     }
-    return content;
+    return result;
   }, [variantGroups, selections]);
 
-  const textEntries = Object.entries(previewContent).filter(
-    ([, v]) => v.type === 'text' && v.content,
-  );
+  const textEntries = selectedEntries;
 
   const handleConfirm = useCallback(async () => {
     const store = useCanvasStore.getState();
@@ -89,14 +95,14 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
   }, [onAdvance, deliverableId, hasExistingContent, generate]);
 
   // Separate title / meta from body entries
-  const titleEntry = textEntries.find(([g]) => g.toLowerCase() === 'title');
-  const metaEntry = textEntries.find(([g]) => g.toLowerCase().includes('meta'));
+  const titleEntry = textEntries.find((e) => e.group.toLowerCase() === 'title');
+  const metaEntry = textEntries.find((e) => e.group.toLowerCase().includes('meta'));
   const bodyEntries = textEntries.filter(
-    ([g]) => g.toLowerCase() !== 'title' && !g.toLowerCase().includes('meta'),
+    (e) => e.group.toLowerCase() !== 'title' && !e.group.toLowerCase().includes('meta'),
   );
 
-  const titleText = titleEntry?.[1]?.content ?? null;
-  const metaText = metaEntry?.[1]?.content ?? null;
+  const titleText = titleEntry?.content ?? null;
+  const metaText = metaEntry?.content ?? null;
 
   // ─── Hero Section (responds to heroStyle) ─────────────────
 
@@ -240,16 +246,27 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
 
     const articleContent = (
       <div className="space-y-4">
-        {showTitleInBody && titleText && (
-          <h1 className="text-2xl font-bold text-gray-900 leading-tight">{titleText}</h1>
+        {showTitleInBody && titleEntry && (
+          <EditableArticleSection
+            entry={titleEntry}
+            deliverableId={deliverableId}
+            render={(text) => <h1 className="text-2xl font-bold text-gray-900 leading-tight">{text}</h1>}
+          />
         )}
-        {showTitleInBody && metaText && (
-          <p className="text-sm text-gray-500 italic">{metaText}</p>
+        {showTitleInBody && metaEntry && (
+          <EditableArticleSection
+            entry={metaEntry}
+            deliverableId={deliverableId}
+            render={(text) => <p className="text-sm text-gray-500 italic">{text}</p>}
+          />
         )}
-        {bodyEntries.map(([group, value]) => (
-          <div key={group}>
-            <SimpleMarkdown text={value.content ?? ''} />
-          </div>
+        {bodyEntries.map((entry) => (
+          <EditableArticleSection
+            key={entry.group}
+            entry={entry}
+            deliverableId={deliverableId}
+            render={(text) => <SimpleMarkdown text={text} />}
+          />
         ))}
         <div className="pt-4">{renderCta()}</div>
       </div>
@@ -262,9 +279,9 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
           <aside className="space-y-4 pt-1">
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
               <p className="text-xs font-semibold text-gray-600 uppercase mb-2">In this article</p>
-              {bodyEntries.slice(0, 5).map(([group], i) => (
-                <p key={group} className="text-xs text-teal-700 py-1 border-b border-gray-100 last:border-0">
-                  {i + 1}. {group.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase())}
+              {bodyEntries.slice(0, 5).map((entry, i) => (
+                <p key={entry.group} className="text-xs text-teal-700 py-1 border-b border-gray-100 last:border-0">
+                  {i + 1}. {entry.group.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase())}
                 </p>
               ))}
             </div>
@@ -284,24 +301,35 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
     if (pageLayout === 'magazine') {
       return (
         <div className="max-w-4xl mx-auto">
-          {showTitleInBody && titleText && (
-            <h1 className="text-3xl font-bold text-gray-900 leading-tight mb-2">{titleText}</h1>
+          {showTitleInBody && titleEntry && (
+            <EditableArticleSection
+              entry={titleEntry}
+              deliverableId={deliverableId}
+              render={(text) => <h1 className="text-3xl font-bold text-gray-900 leading-tight mb-2">{text}</h1>}
+            />
           )}
-          {showTitleInBody && metaText && (
-            <p className="text-base text-gray-500 italic mb-6">{metaText}</p>
+          {showTitleInBody && metaEntry && (
+            <EditableArticleSection
+              entry={metaEntry}
+              deliverableId={deliverableId}
+              render={(text) => <p className="text-base text-gray-500 italic mb-6">{text}</p>}
+            />
           )}
           {bodyEntries.length > 0 && (
             <div className="border-l-4 border-teal-500 pl-4 mb-6 py-1">
               <p className="text-lg text-gray-700 italic leading-relaxed">
-                {(bodyEntries[0][1].content ?? '').split('.')[0]}.
+                {(bodyEntries[0].content ?? '').split('.')[0]}.
               </p>
             </div>
           )}
           <div className="space-y-4">
-            {bodyEntries.map(([group, value]) => (
-              <div key={group}>
-                <SimpleMarkdown text={value.content ?? ''} />
-              </div>
+            {bodyEntries.map((entry) => (
+              <EditableArticleSection
+                key={entry.group}
+                entry={entry}
+                deliverableId={deliverableId}
+                render={(text) => <SimpleMarkdown text={text} />}
+              />
             ))}
           </div>
           <div className="pt-6">{renderCta()}</div>
@@ -320,12 +348,7 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
         {children}
       </div>
 
-      {/* Per-section content editor */}
-      {hasExistingContent && deliverableId && (
-        <ContentSectionsEditor deliverableId={deliverableId} />
-      )}
-
-      {/* Full-width article preview */}
+      {/* Full-width article preview (inline-editable per section) */}
       <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
           <span className="text-xs font-semibold text-gray-600">Article Preview</span>
@@ -352,6 +375,132 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
         <CheckCircle2 className="h-4 w-4" />
         Confirm & Continue
       </button>
+    </div>
+  );
+}
+
+// ─── EditableArticleSection ────────────────────────────────────────
+
+interface EditableArticleSectionEntry {
+  group: string;
+  content: string;
+  componentId?: string;
+  variantIndex: number;
+}
+
+interface EditableArticleSectionProps {
+  entry: EditableArticleSectionEntry;
+  deliverableId?: string;
+  render: (text: string) => React.ReactNode;
+}
+
+/**
+ * Inline-editable article section. Click "Edit" to open a textarea,
+ * save writes through to the canvas store and (if componentId + deliverableId)
+ * persists to the DB via the component PATCH endpoint. Matches the edit
+ * semantics of ContentSectionsEditor so the preview is the single source of truth.
+ */
+function EditableArticleSection({ entry, deliverableId, render }: EditableArticleSectionProps) {
+  const { group, content, componentId, variantIndex } = entry;
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(content);
+  const [isSaving, setIsSaving] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleStartEdit = useCallback(() => {
+    setDraft(content);
+    setIsEditing(true);
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  }, [content]);
+
+  const handleCancel = useCallback(() => {
+    setIsEditing(false);
+    setDraft(content);
+  }, [content]);
+
+  const handleSave = useCallback(async () => {
+    if (draft.trim() === content.trim()) {
+      setIsEditing(false);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const store = useCanvasStore.getState();
+      const variants = store.variantGroups.get(group);
+      if (variants) {
+        const updated = variants.map((v, i) =>
+          i === variantIndex ? { ...v, content: draft } : v,
+        );
+        store.addVariantGroup(group, updated);
+      }
+
+      if (componentId && deliverableId) {
+        await updateComponentContent(deliverableId, componentId, draft);
+      }
+    } catch {
+      const store = useCanvasStore.getState();
+      const variants = store.variantGroups.get(group);
+      if (variants) {
+        const reverted = variants.map((v, i) =>
+          i === variantIndex ? { ...v, content } : v,
+        );
+        store.addVariantGroup(group, reverted);
+      }
+    } finally {
+      setIsSaving(false);
+      setIsEditing(false);
+    }
+  }, [draft, content, group, variantIndex, componentId, deliverableId]);
+
+  if (isEditing) {
+    return (
+      <div className="rounded-md border border-teal-300 bg-teal-50/30 p-3">
+        <div className="flex items-center justify-end gap-1 mb-2">
+          {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 disabled:opacity-50"
+          >
+            <Check className="h-3.5 w-3.5" /> Save
+          </button>
+          <button
+            type="button"
+            onClick={handleCancel}
+            disabled={isSaving}
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 disabled:opacity-50"
+          >
+            <X className="h-3.5 w-3.5" /> Cancel
+          </button>
+        </div>
+        <textarea
+          ref={textareaRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') handleCancel();
+            if (e.key === 'Enter' && e.metaKey) handleSave();
+          }}
+          rows={Math.min(20, Math.max(3, draft.split('\n').length + 1))}
+          className="w-full text-sm text-gray-800 border border-gray-300 rounded-md px-3 py-2 resize-y focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 bg-white"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="group relative">
+      <button
+        type="button"
+        onClick={handleStartEdit}
+        className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded bg-white/90 border border-gray-200"
+        aria-label={`Edit ${group}`}
+      >
+        <Pencil className="h-3 w-3" /> Edit
+      </button>
+      {render(content)}
     </div>
   );
 }
