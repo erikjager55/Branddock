@@ -18,6 +18,7 @@ import { NextResponse } from 'next/server';
 import { resolveWorkspaceId } from '@/lib/auth-server';
 import { aiConfig } from './config';
 import { checkRateLimit, type RateLimitTier, type RateLimitResult } from './rate-limiter';
+import { resolveWorkspaceTier } from './tier-resolver';
 import { getBrandContext } from './brand-context';
 import type { BrandContextBlock } from './prompt-templates';
 
@@ -112,8 +113,10 @@ export async function withAi(
     );
   }
 
-  // 3. Rate limit
-  const tier = options?.tier ?? 'FREE';
+  // 3. Rate limit — tier resolved from workspace.planTier (9.6 M8).
+  // Explicit override via options.tier still wins (e.g. for admin
+  // tooling that wants to force a specific tier).
+  const tier = options?.tier ?? (await resolveWorkspaceTier(workspaceId));
   const rateLimitResult = await withAiRateLimit(workspaceId, tier);
   if (rateLimitResult instanceof Response) return rateLimitResult;
 

@@ -9,6 +9,7 @@ import type Stripe from "stripe";
 import prisma from "@/lib/prisma";
 import type { PlanTier } from "@/types/billing";
 import { resolveWorkspaceFromCustomer } from "./customer";
+import { invalidateWorkspaceTier } from "@/lib/ai/tier-resolver";
 
 // ─── Map Stripe status → our SubscriptionStatus enum ────────
 
@@ -131,6 +132,10 @@ export async function syncSubscription(
     where: { id: workspaceId },
     data: { planTier },
   });
+
+  // Drop the cached tier so AI rate limits reflect the new plan
+  // on the next request instead of waiting 5 minutes for TTL.
+  invalidateWorkspaceTier(workspaceId);
 }
 
 // ─── Update plan from Stripe (manual sync) ──────────────────
@@ -172,6 +177,7 @@ export async function updatePlanFromStripe(
     await prisma.subscription.deleteMany({
       where: { workspaceId },
     });
+    invalidateWorkspaceTier(workspaceId);
     return;
   }
 
@@ -204,6 +210,7 @@ export async function handleSubscriptionCanceled(
         where: { id: workspaceId },
         data: { planTier: "FREE" },
       });
+      invalidateWorkspaceTier(workspaceId);
     }
   }
 }
