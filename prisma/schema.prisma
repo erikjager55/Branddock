@@ -4225,6 +4225,7 @@ model ChatFeedback {
   id             String   @id @default(cuid())
 
   // What the feedback is about
+  page           String?  // activeSection where the user was when giving feedback
   conversationId String?  // ClawConversation.id when available
   messageId      String?  // Local assistant message id (client-side UUID)
   messageContent String?  @db.Text  // snapshot of the assistant reply
@@ -4233,6 +4234,10 @@ model ChatFeedback {
   sentiment      String   // 'positive' | 'neutral' | 'negative'
   tags           String[]  // subset of: inaccurate, off-brand, too-verbose, too-generic, unhelpful, other
   comment        String   @db.Text
+
+  // AI analysis (mirror of BugReport.aiSuggestion/aiStatus)
+  aiSuggestion   String?  @db.Text
+  aiStatus       String   @default("pending") // pending | analyzing | ready | failed
 
   // Triage
   status         String   @default("new") // 'new' | 'reviewed' | 'actioned' | 'dismissed'

@@ -44,6 +44,8 @@ export type FeedbackTag =
   | 'other';
 
 export interface FeedbackFormState {
+  /** Where in the app the user was when giving feedback — captured from currentPage. */
+  page: string;
   /** Optional anchoring to a specific assistant message — captured when /feedback is typed. */
   conversationId: string | null;
   messageId: string | null;
@@ -274,6 +276,7 @@ export const useClawStore = create<ClawStore>((set, get) => ({
   openFeedbackForm: (anchor) =>
     set({
       feedbackForm: {
+        page: get().currentPage,
         conversationId: anchor?.conversationId ?? null,
         messageId: anchor?.messageId ?? null,
         messageContent: anchor?.messageContent ?? null,

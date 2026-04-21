@@ -212,7 +212,23 @@ export function BugReportForm() {
         <button
           onClick={handleSubmit}
           disabled={isSubmitting || !bugReportForm.description.trim()}
-          className="px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          style={{
+            backgroundColor:
+              isSubmitting || !bugReportForm.description.trim()
+                ? '#9ca3af'
+                : '#d97706', // amber-600 (not in compiled Tailwind, see gotchas.md)
+          }}
+          onMouseEnter={(e) => {
+            if (!isSubmitting && bugReportForm.description.trim()) {
+              e.currentTarget.style.backgroundColor = '#b45309'; // amber-700
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isSubmitting && bugReportForm.description.trim()) {
+              e.currentTarget.style.backgroundColor = '#d97706';
+            }
+          }}
         >
           {isSubmitting ? 'Submitting...' : 'Submit Bug Report'}
         </button>

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { getServerSession, resolveWorkspaceId } from '@/lib/auth-server';
 import { requireDeveloper } from '@/lib/developer-access';
+import { analyzeFeedback } from '@/lib/feedback-analysis/analyze-feedback';
 
 const SENTIMENTS = ['positive', 'neutral', 'negative'] as const;
 const TAGS = [
@@ -18,6 +19,7 @@ const createSchema = z.object({
   sentiment: z.enum(SENTIMENTS),
   tags: z.array(z.enum(TAGS)).max(TAGS.length).default([]),
   comment: z.string().trim().min(1).max(5000),
+  page: z.string().trim().max(200).optional().nullable(),
   conversationId: z.string().min(1).max(200).optional().nullable(),
   messageId: z.string().min(1).max(200).optional().nullable(),
   messageContent: z.string().max(20_000).optional().nullable(),
@@ -90,10 +92,16 @@ export async function POST(req: NextRequest) {
         sentiment: parsed.data.sentiment,
         tags: parsed.data.tags,
         comment: parsed.data.comment,
+        page: parsed.data.page ?? null,
         conversationId: parsed.data.conversationId ?? null,
         messageId: parsed.data.messageId ?? null,
         messageContent: parsed.data.messageContent ?? null,
       },
+    });
+
+    // Fire-and-forget AI suggestion (mirrors /bug analyzeBugReport pattern).
+    analyzeFeedback(entry.id).catch((err) => {
+      console.error('[feedback-analysis] Failed to start:', err);
     });
 
     return Response.json({ feedback: entry }, { status: 201 });

@@ -118,6 +118,7 @@ export function FeedbackForm() {
           sentiment: feedbackForm.sentiment,
           tags: feedbackForm.tags,
           comment: feedbackForm.comment.trim(),
+          page: feedbackForm.page,
           conversationId: feedbackForm.conversationId,
           messageId: feedbackForm.messageId,
           messageContent: feedbackForm.messageContent,

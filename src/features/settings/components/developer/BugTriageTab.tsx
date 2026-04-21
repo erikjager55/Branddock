@@ -123,26 +123,29 @@ export function BugTriageTab() {
         </div>
       </div>
 
-      {/* Filter pills */}
+      {/* Filter pills — inline hex for the active state because Tailwind 4
+          purge drops bg-gray-800 from the compiled CSS (see gotchas.md). */}
       <div className="flex gap-2">
-        {STATUS_FILTERS.map((f) => (
-          <button
-            key={f}
-            onClick={() => setStatusFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              statusFilter === f
-                ? 'bg-gray-800 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {f === 'wontfix' ? "Won't Fix" : f.charAt(0).toUpperCase() + f.slice(1)}
-            {f !== 'all' && (
-              <span className="ml-1 opacity-60">
-                ({bugs.filter((b) => b.status === f).length})
-              </span>
-            )}
-          </button>
-        ))}
+        {STATUS_FILTERS.map((f) => {
+          const isActive = statusFilter === f;
+          return (
+            <button
+              key={f}
+              onClick={() => setStatusFilter(f)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                isActive ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+              style={isActive ? { backgroundColor: '#1f2937' } : undefined}
+            >
+              {f === 'wontfix' ? "Won't Fix" : f.charAt(0).toUpperCase() + f.slice(1)}
+              {f !== 'all' && (
+                <span className="ml-1 opacity-60">
+                  ({bugs.filter((b) => b.status === f).length})
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Loading */}
@@ -288,7 +291,14 @@ export function BugTriageTab() {
                         <button
                           onClick={() => approveMutation.mutate({ id: bug.id, action: 'approve' })}
                           disabled={approveMutation.isPending}
-                          className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-40 transition-colors"
+                          className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-40 transition-colors"
+                          style={{ backgroundColor: '#059669' }}
+                          onMouseEnter={(ev) => {
+                            if (!approveMutation.isPending) ev.currentTarget.style.backgroundColor = '#047857';
+                          }}
+                          onMouseLeave={(ev) => {
+                            if (!approveMutation.isPending) ev.currentTarget.style.backgroundColor = '#059669';
+                          }}
                         >
                           <CheckCircle size={14} />
                           Approve Fix

@@ -13,8 +13,16 @@ import {
   Check,
   X as XIcon,
   AlertCircle,
+  Sparkles,
+  Clock,
+  RefreshCw,
 } from 'lucide-react';
-import { useChatFeedbackTriage, type FeedbackItem } from '@/hooks/use-chat-feedback';
+import { MarkdownContent } from '@/features/claw/components/MarkdownContent';
+import {
+  useChatFeedbackTriage,
+  type FeedbackItem,
+  type FeedbackAiStatus,
+} from '@/hooks/use-chat-feedback';
 
 // ─── Constants ──────────────────────────────────────────────
 
@@ -26,15 +34,28 @@ const SENTIMENT_STYLES: Record<FeedbackItem['sentiment'], { label: string; cls: 
 
 const STATUS_FILTERS = ['all', 'new', 'reviewed', 'actioned', 'dismissed'] as const;
 
+// Tailwind 4 purge drops many color shades (gotchas.md). Inline hex so
+// the buttons render regardless of which classes ended up compiled.
 const STATUS_ACTIONS: Array<{
   value: FeedbackItem['status'];
   label: string;
-  cls: string;
+  bg: string;
+  bgHover: string;
 }> = [
-  { value: 'reviewed', label: 'Reviewed', cls: 'bg-blue-600 hover:bg-blue-700' },
-  { value: 'actioned', label: 'Actioned', cls: 'bg-emerald-600 hover:bg-emerald-700' },
-  { value: 'dismissed', label: 'Dismiss', cls: 'bg-gray-600 hover:bg-gray-700' },
+  { value: 'reviewed', label: 'Reviewed', bg: '#2563eb', bgHover: '#1d4ed8' }, // blue-600/700
+  { value: 'actioned', label: 'Actioned', bg: '#059669', bgHover: '#047857' }, // emerald-600/700
+  { value: 'dismissed', label: 'Dismiss', bg: '#4b5563', bgHover: '#374151' }, // gray-600/700
 ];
+
+const GRAY_800 = '#1f2937';
+const VIOLET_700 = '#6d28d9';
+
+const AI_STATUS_INDICATOR: Record<FeedbackAiStatus, { icon: React.ReactNode; label: string; color: string }> = {
+  pending: { icon: <Clock size={12} />, label: 'Pending', color: 'text-gray-400' },
+  analyzing: { icon: <Loader2 size={12} className="animate-spin" />, label: 'Analyzing...', color: 'text-blue-500' },
+  ready: { icon: <Sparkles size={12} />, label: 'Suggestion ready', color: 'text-emerald-600' },
+  failed: { icon: <AlertCircle size={12} />, label: 'Analysis failed', color: 'text-red-500' },
+};
 
 // ─── Component ──────────────────────────────────────────────
 
@@ -66,11 +87,22 @@ export function FeedbackTriageTab() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['feedback-triage'] }),
   });
 
+  const reanalyzeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/chat-feedback/${id}/reanalyze`, { method: 'POST' });
+      if (!res.ok) throw new Error('Failed');
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['feedback-triage'] }),
+  });
+
   const handleToggle = useCallback((id: string) => {
     setExpandedId((prev) => (prev === id ? null : id));
   }, []);
 
   const newCount = entries.filter((e) => e.status === 'new').length;
+  const suggestionReadyCount = entries.filter(
+    (e) => e.aiStatus === 'ready' && e.status === 'new',
+  ).length;
 
   return (
     <div className="p-6 max-w-4xl space-y-6">
@@ -84,6 +116,11 @@ export function FeedbackTriageTab() {
             <h2 className="text-lg font-semibold text-gray-900">Feedback</h2>
             <p className="text-sm text-gray-500">
               {newCount} new {newCount === 1 ? 'entry' : 'entries'} to review
+              {suggestionReadyCount > 0 && (
+                <span className="ml-1 text-emerald-600">
+                  ({suggestionReadyCount} with AI suggestion)
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -92,25 +129,27 @@ export function FeedbackTriageTab() {
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="flex gap-2">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setStatusFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                statusFilter === f
-                  ? 'bg-gray-800 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {f.charAt(0).toUpperCase() + f.slice(1)}
-              {f !== 'all' && (
-                <span className="ml-1 opacity-60">
-                  ({entries.filter((e) => e.status === f).length})
-                </span>
-              )}
-            </button>
-          ))}
+          {STATUS_FILTERS.map((f) => {
+            const isActive = statusFilter === f;
+            return (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setStatusFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  isActive ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                style={isActive ? { backgroundColor: GRAY_800 } : undefined}
+              >
+                {f.charAt(0).toUpperCase() + f.slice(1)}
+                {f !== 'all' && (
+                  <span className="ml-1 opacity-60">
+                    ({entries.filter((e) => e.status === f).length})
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
         <div className="flex gap-2">
           {(['all', 'positive', 'neutral', 'negative'] as const).map((s) => {
@@ -121,10 +160,9 @@ export function FeedbackTriageTab() {
                 type="button"
                 onClick={() => setSentimentFilter(s)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  isActive
-                    ? 'bg-violet-700 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  isActive ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
+                style={isActive ? { backgroundColor: VIOLET_700 } : undefined}
               >
                 {s === 'all' ? 'All sentiments' : s.charAt(0).toUpperCase() + s.slice(1)}
               </button>
@@ -179,6 +217,7 @@ export function FeedbackTriageTab() {
             const isExpanded = expandedId === e.id;
             const s = SENTIMENT_STYLES[e.sentiment];
             const SentimentIcon = s.Icon;
+            const aiIndicator = AI_STATUS_INDICATOR[e.aiStatus] ?? AI_STATUS_INDICATOR.pending;
             return (
               <div
                 key={e.id}
@@ -202,6 +241,11 @@ export function FeedbackTriageTab() {
                         <SentimentIcon size={11} />
                         {s.label}
                       </span>
+                      {e.page && (
+                        <span className="text-[11px] font-mono text-gray-500 bg-gray-100 rounded px-1.5 py-0.5">
+                          {e.page}
+                        </span>
+                      )}
                       <span className="text-xs text-gray-500">
                         {e.user.name || e.user.email}
                       </span>
@@ -213,7 +257,11 @@ export function FeedbackTriageTab() {
                           · {e.tags.join(', ')}
                         </span>
                       )}
-                      <span className="ml-auto text-xs text-gray-400 whitespace-nowrap">
+                      <span className={`ml-auto flex items-center gap-1 text-[10px] font-medium whitespace-nowrap ${aiIndicator.color}`}>
+                        {aiIndicator.icon}
+                        {aiIndicator.label}
+                      </span>
+                      <span className="text-xs text-gray-400 whitespace-nowrap">
                         {new Date(e.createdAt).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -246,6 +294,42 @@ export function FeedbackTriageTab() {
                       </div>
                     )}
 
+                    {/* AI suggestion */}
+                    <div className="rounded-lg border p-3" style={{ borderColor: '#ddd6fe', backgroundColor: '#f5f3ff' }}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide font-medium" style={{ color: '#6d28d9' }}>
+                          <Sparkles size={12} />
+                          AI suggestion
+                        </div>
+                        <button
+                          type="button"
+                          disabled={reanalyzeMutation.isPending || e.aiStatus === 'analyzing'}
+                          onClick={() => reanalyzeMutation.mutate(e.id)}
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-gray-800 disabled:opacity-40 transition-colors"
+                          title="Regenerate AI suggestion"
+                        >
+                          <RefreshCw size={11} className={e.aiStatus === 'analyzing' ? 'animate-spin' : ''} />
+                          {e.aiStatus === 'analyzing' ? 'Analyzing' : 'Regenerate'}
+                        </button>
+                      </div>
+                      {e.aiStatus === 'ready' && e.aiSuggestion ? (
+                        <div className="prose prose-sm max-w-none text-sm text-gray-800">
+                          <MarkdownContent content={e.aiSuggestion} />
+                        </div>
+                      ) : e.aiStatus === 'failed' ? (
+                        <p className="text-xs text-red-600">
+                          {e.aiSuggestion ?? 'AI analysis failed. Click Regenerate to retry.'}
+                        </p>
+                      ) : e.aiStatus === 'analyzing' ? (
+                        <p className="text-xs text-gray-500 inline-flex items-center gap-1.5">
+                          <Loader2 size={12} className="animate-spin" />
+                          Claude is drafting a suggestion…
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-500">Queued for AI analysis.</p>
+                      )}
+                    </div>
+
                     {e.status !== 'new' && e.reviewedBy && (
                       <div className="text-xs text-gray-500">
                         Status: <span className="font-medium capitalize">{e.status}</span>
@@ -264,7 +348,14 @@ export function FeedbackTriageTab() {
                             type="button"
                             disabled={updateMutation.isPending}
                             onClick={() => updateMutation.mutate({ id: e.id, status: a.value })}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors disabled:opacity-40 ${a.cls}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white transition-colors disabled:opacity-40"
+                            style={{ backgroundColor: a.bg }}
+                            onMouseEnter={(ev) => {
+                              if (!updateMutation.isPending) ev.currentTarget.style.backgroundColor = a.bgHover;
+                            }}
+                            onMouseLeave={(ev) => {
+                              if (!updateMutation.isPending) ev.currentTarget.style.backgroundColor = a.bg;
+                            }}
                           >
                             {a.value === 'dismissed' ? <XIcon size={12} /> : <Check size={12} />}
                             {a.label}

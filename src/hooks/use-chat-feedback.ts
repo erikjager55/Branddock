@@ -2,14 +2,19 @@
 
 import { useQuery } from '@tanstack/react-query';
 
+export type FeedbackAiStatus = 'pending' | 'analyzing' | 'ready' | 'failed';
+
 export interface FeedbackItem {
   id: string;
   sentiment: 'positive' | 'neutral' | 'negative';
   tags: string[];
   comment: string;
+  page: string | null;
   conversationId: string | null;
   messageId: string | null;
   messageContent: string | null;
+  aiSuggestion: string | null;
+  aiStatus: FeedbackAiStatus;
   status: 'new' | 'reviewed' | 'actioned' | 'dismissed';
   notes: string | null;
   reviewedAt: string | null;
