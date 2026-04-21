@@ -1,15 +1,21 @@
 'use client';
 
-import React, { useRef, useCallback, useState, useEffect } from 'react';
+import React, { useRef, useCallback, useState, useEffect, useMemo } from 'react';
 import { Send, Paperclip, FileText, Link, Type, X } from 'lucide-react';
 import { useClawStore } from '@/stores/useClawStore';
 import { ContextSelectorModal } from './ContextSelectorModal';
+import { SlashCommandMenu } from './SlashCommandMenu';
 import type { ClawMessage, ClawAttachment } from '@/lib/claw/claw.types';
 import {
   toolActivityLabel,
   THINKING_LABEL,
   PROCESSING_RESULTS_LABEL,
 } from '@/lib/claw/activity-labels';
+import {
+  filterSlashCommands,
+  readSlashQuery,
+  type SlashCommand,
+} from '@/lib/claw/slash-commands';
 
 export function InputBar() {
   const {
@@ -38,6 +44,36 @@ export function InputBar() {
   const [showContextModal, setShowContextModal] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
+  // ── Slash-command auto-suggest ───────────────────────────
+  const [slashHighlight, setSlashHighlight] = useState(0);
+  // Remember the exact input the user dismissed via Escape so the menu
+  // doesn't pop back until they change the input.
+  const [dismissedFor, setDismissedFor] = useState<string | null>(null);
+
+  const slashQuery = readSlashQuery(inputText);
+  const slashMatches = useMemo<SlashCommand[]>(
+    () => (slashQuery !== null ? filterSlashCommands(slashQuery) : []),
+    [slashQuery],
+  );
+  const slashMenuOpen =
+    slashQuery !== null &&
+    slashMatches.length > 0 &&
+    dismissedFor !== inputText;
+
+  // Keep highlight in range when the filter changes.
+  useEffect(() => {
+    setSlashHighlight((i) =>
+      slashMatches.length === 0 ? 0 : Math.min(i, slashMatches.length - 1),
+    );
+  }, [slashMatches.length]);
+
+  // Clear the "dismissed" latch whenever the input changes.
+  useEffect(() => {
+    if (dismissedFor !== null && dismissedFor !== inputText) {
+      setDismissedFor(null);
+    }
+  }, [inputText, dismissedFor]);
+
   // Auto-resize: grow with content between min (~1 row) and max (~240px).
   useEffect(() => {
     const el = textareaRef.current;
@@ -49,8 +85,13 @@ export function InputBar() {
 
   const { openBugReportForm, openBugLogbook, openFeedbackForm } = useClawStore();
 
-  const handleSend = useCallback(async () => {
-    const message = inputText.trim();
+  /**
+   * Send the current input. Accepts an optional override so slash-menu
+   * selection can dispatch through the same pipeline without waiting for
+   * React to flush setInputText first.
+   */
+  const handleSend = useCallback(async (override?: string) => {
+    const message = (override ?? inputText).trim();
     if (!message || isStreaming) return;
 
     // Slash command interception
@@ -251,7 +292,45 @@ export function InputBar() {
     openFeedbackForm, setActivityStatus,
   ]);
 
+  const applySlashCommand = useCallback(
+    (id: SlashCommand['id']) => {
+      setSlashHighlight(0);
+      setDismissedFor(null);
+      // Route through handleSend so dispatch stays in one place; override
+      // bypasses React batching for inputText.
+      handleSend(id);
+    },
+    [handleSend],
+  );
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Slash-menu keyboard wins when it's open.
+    if (slashMenuOpen) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSlashHighlight((i) => (i + 1) % slashMatches.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSlashHighlight((i) =>
+          (i - 1 + slashMatches.length) % slashMatches.length,
+        );
+        return;
+      }
+      if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') {
+        e.preventDefault();
+        const selected = slashMatches[slashHighlight];
+        if (selected) applySlashCommand(selected.id);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setDismissedFor(inputText);
+        return;
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -379,8 +458,16 @@ export function InputBar() {
 
           {/* Unified composition card: textarea + action row + send button */}
           <div
-            className="group rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow focus-within:border-teal-400 focus-within:shadow-md focus-within:ring-4 focus-within:ring-teal-500/10"
+            className="relative group rounded-2xl border border-gray-200 bg-white shadow-sm transition-shadow focus-within:border-teal-400 focus-within:shadow-md focus-within:ring-4 focus-within:ring-teal-500/10"
           >
+            {slashMenuOpen && (
+              <SlashCommandMenu
+                commands={slashMatches}
+                highlightedIndex={slashHighlight}
+                onHover={setSlashHighlight}
+                onSelect={applySlashCommand}
+              />
+            )}
             <textarea
               ref={textareaRef}
               value={inputText}
@@ -403,7 +490,7 @@ export function InputBar() {
               </div>
 
               <button
-                onClick={handleSend}
+                onClick={() => handleSend()}
                 disabled={!inputText.trim() || isStreaming}
                 className="inline-flex items-center gap-1.5 h-10 px-4 rounded-xl bg-teal-600 text-white text-sm font-semibold shadow-sm hover:bg-teal-700 disabled:bg-gray-200 disabled:text-gray-400 disabled:shadow-none disabled:cursor-not-allowed transition-colors flex-shrink-0"
                 aria-label="Send message"
