@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
+import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleSystemPrompt } from '@/lib/claw/context-assembler';
 import { getToolsForClaude, getToolByName } from '@/lib/claw/tools/registry';
 import type {
@@ -77,6 +78,9 @@ export async function POST(req: NextRequest) {
 
   const workspaceId = await resolveWorkspaceId();
   if (!workspaceId) return new Response('No workspace', { status: 400 });
+
+  const rateLimit = await withAiRateLimit(workspaceId);
+  if (rateLimit instanceof Response) return rateLimit;
 
   const body = await req.json();
   const parsed = requestSchema.safeParse(body);

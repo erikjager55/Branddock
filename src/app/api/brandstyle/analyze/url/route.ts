@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
+import { withAiRateLimit } from "@/lib/ai/middleware";
 import { analyzeUrl } from "@/lib/brandstyle/analysis-engine";
 
 const analyzeUrlSchema = z.object({
@@ -17,6 +18,9 @@ export async function POST(request: NextRequest) {
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
+
+    const rateLimit = await withAiRateLimit(workspaceId);
+    if (rateLimit instanceof Response) return rateLimit;
 
     const session = await getServerSession();
     if (!session) {

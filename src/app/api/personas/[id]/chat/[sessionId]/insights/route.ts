@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { withAiRateLimit } from "@/lib/ai/middleware";
 import { generateInsightFromMessage } from "@/lib/ai/persona-insight-generator";
 
 // ─── GET /api/personas/[id]/chat/[sessionId]/insights ────────
@@ -63,6 +64,9 @@ export async function POST(
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
+
+    const rateLimit = await withAiRateLimit(workspaceId);
+    if (rateLimit instanceof Response) return rateLimit;
 
     const { id: personaId, sessionId } = await params;
 

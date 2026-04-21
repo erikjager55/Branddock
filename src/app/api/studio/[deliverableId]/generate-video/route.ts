@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { fal } from '@fal-ai/client';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
+import { withAiRateLimit } from '@/lib/ai/middleware';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { getStorageProvider } from '@/lib/storage';
@@ -43,6 +44,9 @@ export async function POST(
     if (!workspaceId) {
       return NextResponse.json({ error: 'No workspace found' }, { status: 403 });
     }
+
+    const rateLimit = await withAiRateLimit(workspaceId);
+    if (rateLimit instanceof Response) return rateLimit;
 
     const session = await getServerSession();
     if (!session?.user?.id) {

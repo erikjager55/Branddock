@@ -5,6 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { withAiRateLimit } from '@/lib/ai/middleware';
 import { prisma } from '@/lib/prisma';
 import { createClaudeStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 
@@ -35,6 +36,9 @@ export async function POST() {
   if (!workspaceId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const rateLimit = await withAiRateLimit(workspaceId);
+  if (rateLimit instanceof Response) return rateLimit;
 
   try {
     // 1. Gather brand context from workspace

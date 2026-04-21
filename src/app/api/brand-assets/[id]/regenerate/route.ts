@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId, getServerSession } from "@/lib/auth-server";
 import { requireUnlocked } from "@/lib/lock-guard";
+import { withAiRateLimit } from "@/lib/ai/middleware";
 import { openaiClient } from "@/lib/ai";
 import { parseAIError, getReadableErrorMessage, getAIErrorStatus } from "@/lib/ai/error-handler";
 import { createVersion } from "@/lib/versioning";
@@ -19,6 +20,9 @@ export async function POST(
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
+
+    const rateLimit = await withAiRateLimit(workspaceId);
+    if (rateLimit instanceof Response) return rateLimit;
 
     const session = await getServerSession();
     if (!session) {

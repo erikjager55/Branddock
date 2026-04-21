@@ -35,12 +35,18 @@ export interface AiRequestContext {
 /**
  * Check rate limits for the current workspace.
  * Returns a 429 Response if the limit is exceeded, or the RateLimitResult.
+ *
+ * When no tier is provided, the workspace's planTier is resolved from
+ * the DB (5-minute cache) so PRO/AGENCY plans get their higher limits.
+ * Callers that need to force a specific tier (admin tooling) can still
+ * pass it explicitly.
  */
 export async function withAiRateLimit(
   workspaceId: string,
-  tier: RateLimitTier = 'FREE',
+  tier?: RateLimitTier,
 ): Promise<RateLimitResult | Response> {
-  const result = await checkRateLimit(workspaceId, tier);
+  const resolvedTier = tier ?? (await resolveWorkspaceTier(workspaceId));
+  const result = await checkRateLimit(workspaceId, resolvedTier);
 
   if (!result.allowed) {
     return NextResponse.json(
@@ -113,11 +119,9 @@ export async function withAi(
     );
   }
 
-  // 3. Rate limit — tier resolved from workspace.planTier (9.6 M8).
-  // Explicit override via options.tier still wins (e.g. for admin
-  // tooling that wants to force a specific tier).
-  const tier = options?.tier ?? (await resolveWorkspaceTier(workspaceId));
-  const rateLimitResult = await withAiRateLimit(workspaceId, tier);
+  // 3. Rate limit — tier resolved from workspace.planTier inside
+  // withAiRateLimit when no explicit tier is passed (9.6 M8).
+  const rateLimitResult = await withAiRateLimit(workspaceId, options?.tier);
   if (rateLimitResult instanceof Response) return rateLimitResult;
 
   // 4. Brand context (optional)

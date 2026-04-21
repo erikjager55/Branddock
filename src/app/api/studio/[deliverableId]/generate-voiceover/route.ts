@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
+import { withAiRateLimit } from '@/lib/ai/middleware';
 import { getStorageProvider } from '@/lib/storage';
 import { generateSpeech } from '@/lib/integrations/elevenlabs/elevenlabs-client';
 
@@ -21,6 +22,9 @@ export async function POST(
     if (!workspaceId) {
       return NextResponse.json({ error: 'No workspace found' }, { status: 403 });
     }
+
+    const rateLimit = await withAiRateLimit(workspaceId);
+    if (rateLimit instanceof Response) return rateLimit;
 
     const session = await getServerSession();
     if (!session?.user?.id) {

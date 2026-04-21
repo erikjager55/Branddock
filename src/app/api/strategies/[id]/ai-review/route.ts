@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { withAiRateLimit } from "@/lib/ai/middleware";
 import { createClaudeStructuredCompletion } from "@/lib/ai/exploration/ai-caller";
 import type { AiReviewResponse } from "@/features/business-strategy/types/business-strategy.types";
 
@@ -44,6 +45,9 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     if (!workspaceId) {
       return NextResponse.json({ error: "No workspace found" }, { status: 403 });
     }
+
+    const rateLimit = await withAiRateLimit(workspaceId);
+    if (rateLimit instanceof Response) return rateLimit;
 
     const { id } = await params;
 
