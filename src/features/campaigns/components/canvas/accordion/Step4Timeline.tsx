@@ -3,6 +3,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { resolvePreviewComponent } from '../previews/preview-map';
+import { SendCampaignModal } from '../SendCampaignModal';
+import { CampaignSendStats } from '../CampaignSendStats';
 import {
   getSuggestedPublishTime,
   getChecklistForPlatform,
@@ -46,6 +48,13 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
   const scheduledTime = useCanvasStore((s) => s.scheduledTime);
   const approvalStatus = useCanvasStore((s) => s.approvalStatus);
   const mediumConfigValues = useCanvasStore((s) => s.mediumConfigValues);
+  const contentType = useCanvasStore((s) => s.contentType);
+  const campaignId = useCanvasStore((s) => s.campaignId);
+  const [showSendCampaign, setShowSendCampaign] = useState(false);
+
+  // Email deliverable → unlock the Send Campaign flow once approved.
+  const isEmailDeliverable =
+    typeof contentType === 'string' && contentType.toLowerCase().includes('email');
 
   const { data: channels } = usePublishChannels();
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
@@ -262,6 +271,41 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
             )}
           </div>
         </div>
+      )}
+
+      {/* Send Campaign (email deliverables only) */}
+      {isEmailDeliverable && campaignId && isApproved && (
+        <div className="rounded-lg border border-gray-200 bg-white p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-900">Ready to send via Emailit</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Push the approved email to an inline recipient list. Stats flow back via the webhook.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowSendCampaign(true)}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-teal-600 text-white hover:bg-teal-700 transition-colors"
+          >
+            <Send className="h-4 w-4" />
+            Send campaign
+          </button>
+        </div>
+      )}
+
+      {/* Campaign send stats (renders when a send exists for this deliverable) */}
+      {isEmailDeliverable && campaignId && (
+        <CampaignSendStats campaignId={campaignId} deliverableId={deliverableId} />
+      )}
+
+      {isEmailDeliverable && campaignId && (
+        <SendCampaignModal
+          isOpen={showSendCampaign}
+          onClose={() => setShowSendCampaign(false)}
+          campaignId={campaignId}
+          deliverableId={deliverableId}
+          defaultSubject={previewContent.title?.content ?? 'Branddock email'}
+        />
       )}
 
       {/* Error */}

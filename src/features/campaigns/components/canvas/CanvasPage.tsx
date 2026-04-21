@@ -31,7 +31,7 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
 
   // Set deliverable in store on mount + load approval state + load context
   useEffect(() => {
-    useCanvasStore.getState().setDeliverable(deliverableId, 'canvas');
+    useCanvasStore.getState().setDeliverable(deliverableId, 'canvas', campaignId);
 
     const controller = new AbortController();
 
@@ -43,7 +43,7 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
         const d = data.deliverable;
         // Update store with the real contentType (initial 'canvas' is a placeholder)
         if (d.contentType) {
-          useCanvasStore.getState().setDeliverable(deliverableId, d.contentType);
+          useCanvasStore.getState().setDeliverable(deliverableId, d.contentType, campaignId);
           // Auto-set video provider config defaults for video-adjacent types
           if (VIDEO_ADJACENT_TYPES.has(d.contentType)) {
             useCanvasStore.getState().setVideoProviderConfig(getDefaultVideoConfig(d.contentType));

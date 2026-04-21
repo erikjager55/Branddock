@@ -139,9 +139,9 @@
 - [x] Config env vars gedocumenteerd in `.env.example`: `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`.
 - [x] Callers geüpgraded naar async: `withAiRateLimit()` middleware, `studio/inline-transform`, `checkAuthEmailRateLimit()`, Better Auth `hooks.before`. E2E getest: auth rate limit werkt nog steeds (11e attempt = 429 in dev/in-memory modus).
 
-### 4.2 Emailit E-mail (D.2.2) — stappen 1-3 ✅ DONE (2026-04-21)
+### 4.2 Emailit E-mail (D.2.2) ✅ DONE (2026-04-21)
 
-> Emailit i.p.v. Resend gekozen (EU-hosted, GDPR-simpeler, server-side templates + audiences + suppressions API). Stap 4 (Canvas Send Campaign) blijft open.
+> Emailit i.p.v. Resend gekozen (EU-hosted, GDPR-simpeler, server-side templates + audiences + suppressions API). Alle 4 stappen afgerond.
 
 - [x] **Stap 1 — Client**: `src/lib/email/emailit-client.ts` (singleton, bearer auth, 30s timeout, `EmailitError` class, `isEmailitConfigured()` helper). Low-level methods voor emails, subscribers, suppressions. Geen SDK — plain fetch (Emailit heeft nog geen Node SDK).
 - [x] **Stap 2 — Service laag + webhook**: `transactional.ts` (`sendTransactional()` + `trySendTransactional()` dev-mode stub als `EMAILIT_API_KEY` ontbreekt — logt payload), `audiences.ts` (addSubscriber/removeSubscriber), `suppressions.ts` (GDPR: suppress/isSuppressed/unsuppress), `webhook-handler.ts` (HMAC-SHA256 verify via `X-Emailit-Signature` of `X-Signature`, event normaliser die `delivered`/`bounced`/`opened`/`clicked`/`complained`/`unsubscribed`/`failed` mapt). Nieuwe route `src/app/api/email/webhook/route.ts` — auto-suppress bij bounce/complaint. E2E getest: 200 + "delivered test@example.com" gelogd.
@@ -152,7 +152,7 @@
   - Env vars in `.env.example`: `EMAILIT_API_KEY`, `EMAILIT_FROM_EMAIL` (default `noreply@branddock.app`), `EMAILIT_FROM_NAME`, `EMAILIT_WEBHOOK_SECRET`.
 
 **Open (stap 4 — aparte sessie)**:
-- [ ] Content Canvas "Send Campaign" voor email-deliverables: `CampaignSend` Prisma model + audience selector UI + stats dashboard + webhook → stats update
+- [x] **Stap 4 — Canvas Send Campaign** (2026-04-21): `CampaignSend` Prisma model + `CampaignSendStatus` enum, 2 nieuwe routes (`POST /api/campaigns/[id]/deliverables/[did]/send` met 500-recipient cap + gates op email contentType + APPROVED status, `GET /send-status` voor polling), webhook extension die events mapt op counters (delivered/opened/clicked/bounced/complained/unsubscribed/failed) via `findFirst({emailitSendIds: {has: emailId}})` + atomic increment, UI componenten `SendCampaignModal` (recipient-textarea met parse + validatie + confirm-gate) + `CampaignSendStats` (6 stat-tiles met %), Step4Timeline integratie (alleen voor email-contentType + APPROVED), `useCampaignSendStatus` hook (TanStack Query met refetchInterval van 5s tijdens SENDING, 10s eerste 5min daarna, dan uit), `campaignId` toegevoegd aan canvas store.
 - [ ] Weekly report email (wacht tot de weekly-report generator bestaat)
 - [ ] Config: `RESEND_API_KEY` env var
 

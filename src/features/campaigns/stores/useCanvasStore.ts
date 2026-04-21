@@ -60,6 +60,7 @@ interface CanvasStoreState {
   // ─── Context (loaded from server) ─────────────────────────
   contextStack: CanvasContextStack | null;
   deliverableId: string | null;
+  campaignId: string | null;
   contentType: string | null;
 
   // ─── Variants — Map<group, VariantData[]> ─────────────────
@@ -141,7 +142,7 @@ interface CanvasStoreState {
 
   // ─── Actions ──────────────────────────────────────────────
   setContextStack: (stack: CanvasContextStack) => void;
-  setDeliverable: (id: string, type: string) => void;
+  setDeliverable: (id: string, type: string, campaignId?: string) => void;
   addVariantGroup: (group: string, variants: CanvasVariant[]) => void;
   setSelection: (group: string, index: number) => void;
   setGenerationStatus: (group: string, status: GenerationStatus) => void;
@@ -203,6 +204,7 @@ interface CanvasStoreState {
 const INITIAL_STATE = {
   contextStack: null,
   deliverableId: null,
+  campaignId: null,
   contentType: null,
   variantGroups: new Map<string, CanvasVariant[]>(),
   selections: new Map<string, number>(),
@@ -266,7 +268,8 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
 
   setContextStack: (stack) => set({ contextStack: stack }),
 
-  setDeliverable: (id, type) => set({ deliverableId: id, contentType: type }),
+  setDeliverable: (id, type, campaignId) =>
+    set({ deliverableId: id, contentType: type, campaignId: campaignId ?? null }),
 
   addVariantGroup: (group, variants) =>
     set((state) => {
