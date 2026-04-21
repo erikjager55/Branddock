@@ -14,31 +14,56 @@ import {
 import { useClawStore } from '@/stores/useClawStore';
 import type { FeedbackSentiment, FeedbackTag } from '@/stores/useClawStore';
 
+// Tailwind 4 in this repo is a compiled stylesheet; many color shades are
+// missing from src/index.css (see gotchas.md). Inline hex lives on the
+// active state so the buttons render regardless of purge state.
 const SENTIMENTS: {
   value: FeedbackSentiment;
   label: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
-  activeClasses: string;
+  activeStyle: React.CSSProperties;
 }[] = [
   {
     value: 'positive',
     label: 'Positive',
     icon: ThumbsUp,
-    activeClasses: 'bg-emerald-100 text-emerald-700 ring-2 ring-emerald-200',
+    activeStyle: {
+      backgroundColor: '#d1fae5', // emerald-100
+      color: '#047857', // emerald-700
+      boxShadow: '0 0 0 2px #a7f3d0', // emerald-200 ring
+    },
   },
   {
     value: 'neutral',
     label: 'Neutral',
     icon: Minus,
-    activeClasses: 'bg-gray-200 text-gray-700 ring-2 ring-gray-300',
+    activeStyle: {
+      backgroundColor: '#e5e7eb', // gray-200
+      color: '#374151', // gray-700
+      boxShadow: '0 0 0 2px #d1d5db', // gray-300 ring
+    },
   },
   {
     value: 'negative',
     label: 'Negative',
     icon: ThumbsDown,
-    activeClasses: 'bg-rose-100 text-rose-700 ring-2 ring-rose-200',
+    activeStyle: {
+      backgroundColor: '#ffe4e6', // rose-100
+      color: '#be123c', // rose-700
+      boxShadow: '0 0 0 2px #fecdd3', // rose-200 ring
+    },
   },
 ];
+
+const VIOLET = {
+  card: '#f5f3ff', // violet-50
+  border: '#ddd6fe', // violet-200
+  iconBg: '#ede9fe', // violet-100
+  iconText: '#6d28d9', // violet-700
+  subtle: '#8b5cf6', // violet-500
+  primary: '#7c3aed', // violet-600
+  primaryHover: '#6d28d9', // violet-700
+};
 
 const TAGS: { value: FeedbackTag; label: string }[] = [
   { value: 'inaccurate', label: 'Inaccurate' },
@@ -100,8 +125,27 @@ export function FeedbackForm() {
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error?.toString?.() || 'Failed to submit feedback');
+        let msg = `Request failed (${res.status})`;
+        try {
+          const data = await res.json();
+          if (typeof data?.error === 'string') {
+            msg = data.error;
+          } else if (data?.error && typeof data.error === 'object') {
+            // Zod flatten: { formErrors: [...], fieldErrors: { field: [...] } }
+            const first =
+              data.error.formErrors?.[0] ??
+              Object.values(data.error.fieldErrors ?? {}).flat()[0];
+            if (first) msg = String(first);
+          } else if (typeof data?.details === 'object') {
+            const first =
+              data.details.formErrors?.[0] ??
+              Object.values(data.details.fieldErrors ?? {}).flat()[0];
+            if (first) msg = String(first);
+          }
+        } catch {
+          // non-JSON body (server 500 HTML page); keep status fallback
+        }
+        throw new Error(msg);
       }
 
       addMessage({
@@ -120,18 +164,27 @@ export function FeedbackForm() {
   };
 
   return (
-    <div className="rounded-xl border border-violet-200 bg-violet-50/50 p-4 space-y-4">
+    <div
+      className="rounded-xl p-4 space-y-4"
+      style={{
+        border: `1px solid ${VIOLET.border}`,
+        backgroundColor: VIOLET.card,
+      }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center">
-            <MessageSquarePlus size={14} className="text-violet-700" />
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: VIOLET.iconBg }}
+          >
+            <MessageSquarePlus size={14} style={{ color: VIOLET.iconText }} />
           </div>
           <h3 className="text-sm font-semibold text-gray-900">Share feedback</h3>
         </div>
         <button
           onClick={closeFeedbackForm}
-          className="p-1 rounded-md hover:bg-violet-100 text-gray-400"
+          className="p-1 rounded-md hover:bg-gray-100 text-gray-400"
           aria-label="Close feedback form"
           type="button"
         >
@@ -141,7 +194,10 @@ export function FeedbackForm() {
 
       {/* Snippet preview — the AI response this feedback is about */}
       {snippet && (
-        <div className="rounded-lg border border-violet-100 bg-white">
+        <div
+          className="rounded-lg bg-white"
+          style={{ border: `1px solid ${VIOLET.iconBg}` }}
+        >
           <button
             type="button"
             onClick={() => isLongSnippet && setSnippetExpanded((v) => !v)}
@@ -150,15 +206,18 @@ export function FeedbackForm() {
           >
             {isLongSnippet ? (
               snippetExpanded ? (
-                <ChevronDown size={14} className="mt-0.5 text-violet-500 flex-shrink-0" />
+                <ChevronDown size={14} className="mt-0.5 flex-shrink-0" style={{ color: VIOLET.subtle }} />
               ) : (
-                <ChevronRight size={14} className="mt-0.5 text-violet-500 flex-shrink-0" />
+                <ChevronRight size={14} className="mt-0.5 flex-shrink-0" style={{ color: VIOLET.subtle }} />
               )
             ) : (
               <span className="w-[14px]" />
             )}
             <div className="flex-1 min-w-0">
-              <div className="text-[11px] uppercase tracking-wide text-violet-500 font-medium mb-0.5">
+              <div
+                className="text-[11px] uppercase tracking-wide font-medium mb-0.5"
+                style={{ color: VIOLET.subtle }}
+              >
                 About this response
               </div>
               <p className="text-xs text-gray-700 whitespace-pre-wrap break-words">
@@ -169,8 +228,14 @@ export function FeedbackForm() {
         </div>
       )}
       {!snippet && (
-        <div className="rounded-lg border border-violet-100 bg-white px-3 py-2">
-          <div className="text-[11px] uppercase tracking-wide text-violet-500 font-medium mb-0.5">
+        <div
+          className="rounded-lg bg-white px-3 py-2"
+          style={{ border: `1px solid ${VIOLET.iconBg}` }}
+        >
+          <div
+            className="text-[11px] uppercase tracking-wide font-medium mb-0.5"
+            style={{ color: VIOLET.subtle }}
+          >
             General feedback
           </div>
           <p className="text-xs text-gray-500">
@@ -192,8 +257,9 @@ export function FeedbackForm() {
                 type="button"
                 onClick={() => updateFeedbackForm({ sentiment: s.value })}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  isActive ? s.activeClasses : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  isActive ? '' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                 }`}
+                style={isActive ? s.activeStyle : undefined}
                 aria-pressed={isActive}
               >
                 <Icon size={13} />
@@ -218,10 +284,9 @@ export function FeedbackForm() {
                 type="button"
                 onClick={() => toggleTag(t.value)}
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                  isActive
-                    ? 'bg-violet-600 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  isActive ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
+                style={isActive ? { backgroundColor: VIOLET.primary } : undefined}
                 aria-pressed={isActive}
               >
                 {t.label}
@@ -242,7 +307,16 @@ export function FeedbackForm() {
           placeholder="Be specific — what worked, what didn't, what was missing..."
           rows={4}
           maxLength={5000}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-violet-400"
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm resize-y focus:outline-none focus:ring-2"
+          style={{ outline: 'none', boxShadow: undefined }}
+          onFocus={(e) => {
+            e.currentTarget.style.boxShadow = `0 0 0 2px ${VIOLET.primary}66`;
+            e.currentTarget.style.borderColor = VIOLET.primary;
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.boxShadow = '';
+            e.currentTarget.style.borderColor = '';
+          }}
         />
       </div>
 
@@ -260,7 +334,21 @@ export function FeedbackForm() {
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting || !feedbackForm.comment.trim()}
-          className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="px-4 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          style={{
+            backgroundColor:
+              isSubmitting || !feedbackForm.comment.trim() ? '#9ca3af' : VIOLET.primary,
+          }}
+          onMouseEnter={(e) => {
+            if (!isSubmitting && feedbackForm.comment.trim()) {
+              e.currentTarget.style.backgroundColor = VIOLET.primaryHover;
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isSubmitting && feedbackForm.comment.trim()) {
+              e.currentTarget.style.backgroundColor = VIOLET.primary;
+            }
+          }}
         >
           {isSubmitting ? 'Submitting...' : 'Submit feedback'}
         </button>

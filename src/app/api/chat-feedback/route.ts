@@ -63,34 +63,46 @@ export async function GET(req: NextRequest) {
 
 /** POST /api/chat-feedback — user submits feedback on an AI response */
 export async function POST(req: NextRequest) {
-  const session = await getServerSession();
-  if (!session) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  try {
+    const session = await getServerSession();
+    if (!session) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const workspaceId = await resolveWorkspaceId();
+    if (!workspaceId) {
+      return Response.json({ error: 'No workspace' }, { status: 400 });
+    }
+
+    const body = await req.json().catch(() => null);
+    const parsed = createSchema.safeParse(body);
+    if (!parsed.success) {
+      return Response.json(
+        { error: 'Validation failed', details: parsed.error.flatten() },
+        { status: 400 },
+      );
+    }
+
+    const entry = await prisma.chatFeedback.create({
+      data: {
+        workspaceId,
+        userId: session.user.id,
+        sentiment: parsed.data.sentiment,
+        tags: parsed.data.tags,
+        comment: parsed.data.comment,
+        conversationId: parsed.data.conversationId ?? null,
+        messageId: parsed.data.messageId ?? null,
+        messageContent: parsed.data.messageContent ?? null,
+      },
+    });
+
+    return Response.json({ feedback: entry }, { status: 201 });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[POST /api/chat-feedback]', message, err);
+    return Response.json(
+      { error: `Failed to create feedback: ${message}` },
+      { status: 500 },
+    );
   }
-
-  const workspaceId = await resolveWorkspaceId();
-  if (!workspaceId) {
-    return Response.json({ error: 'No workspace' }, { status: 400 });
-  }
-
-  const body = await req.json().catch(() => null);
-  const parsed = createSchema.safeParse(body);
-  if (!parsed.success) {
-    return Response.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
-
-  const entry = await prisma.chatFeedback.create({
-    data: {
-      workspaceId,
-      userId: session.user.id,
-      sentiment: parsed.data.sentiment,
-      tags: parsed.data.tags,
-      comment: parsed.data.comment,
-      conversationId: parsed.data.conversationId ?? null,
-      messageId: parsed.data.messageId ?? null,
-      messageContent: parsed.data.messageContent ?? null,
-    },
-  });
-
-  return Response.json({ feedback: entry }, { status: 201 });
 }
