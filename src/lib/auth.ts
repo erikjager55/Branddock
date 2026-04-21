@@ -8,6 +8,9 @@ import { ac, owner, admin, member, viewer } from "./auth-permissions";
 import { CANONICAL_BRAND_ASSETS, ACTIVE_RESEARCH_METHOD_TYPES } from "./constants/canonical-brand-assets";
 import { checkAuthEmailRateLimit } from "./auth/auth-rate-limiter";
 import { redis } from "./redis";
+import { trySendTransactional } from "./email/transactional";
+import { renderPasswordResetEmail } from "./email/templates/password-reset";
+import { renderEmailVerificationEmail } from "./email/templates/email-verification";
 import type { SocialProviders } from "better-auth/social-providers";
 
 // ─── Build socialProviders config from env vars ────────────
@@ -180,6 +183,36 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    sendResetPassword: async ({ user, url }) => {
+      const { subject, html, text } = renderPasswordResetEmail({
+        recipientEmail: user.email,
+        userName: user.name ?? undefined,
+        resetUrl: url,
+      });
+      await trySendTransactional({
+        to: user.email,
+        subject,
+        html,
+        text,
+        tags: { kind: "password_reset" },
+      });
+    },
+  },
+  emailVerification: {
+    sendVerificationEmail: async ({ user, url }) => {
+      const { subject, html, text } = renderEmailVerificationEmail({
+        recipientEmail: user.email,
+        userName: user.name ?? undefined,
+        verifyUrl: url,
+      });
+      await trySendTransactional({
+        to: user.email,
+        subject,
+        html,
+        text,
+        tags: { kind: "email_verification" },
+      });
+    },
   },
   socialProviders: buildSocialProviders(),
   user: {

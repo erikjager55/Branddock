@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/auth-server";
+import { trySendTransactional } from "@/lib/email/transactional";
+import { renderInviteEmail } from "@/lib/email/templates/invite";
 
 // POST /api/organization/invite — create an invitation
 export async function POST(request: NextRequest) {
@@ -104,7 +106,36 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(invitation, { status: 201 });
+    // Send the invite email. We intentionally don't fail the request if
+    // mail fails — the invitation record exists and the link can be
+    // retrieved by the inviter from the UI.
+    const baseUrl = process.env.BETTER_AUTH_URL || "https://branddock.app";
+    const acceptUrl = `${baseUrl}/invite/accept?token=${encodeURIComponent(invitation.token)}`;
+    const inviterName = session.user.name || session.user.email || "A teammate";
+    const { subject, html, text } = renderInviteEmail({
+      recipientEmail: email,
+      inviterName,
+      organizationName: org?.name ?? "your team",
+      role: inviteRole,
+      acceptUrl,
+      expiresAt: invitation.expiresAt,
+    });
+    const sendResult = await trySendTransactional({
+      to: email,
+      subject,
+      html,
+      text,
+      tags: { kind: "organization_invite", organization_id: organizationId },
+    });
+
+    return NextResponse.json(
+      {
+        ...invitation,
+        emailSent: sendResult.ok,
+        emailError: sendResult.ok ? undefined : sendResult.error,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error("[POST /api/organization/invite]", error);
     return NextResponse.json(
