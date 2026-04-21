@@ -6,6 +6,7 @@ import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { getStorageProvider } from '@/lib/storage';
+import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { z } from 'zod';
 import type { MediaCategory, ProductImageCategory } from '@prisma/client';
 
@@ -20,9 +21,9 @@ async function loadImageBuffer(fileUrl: string): Promise<Buffer | null> {
       const localPath = path.join(process.cwd(), 'public', fileUrl);
       return await readFile(localPath);
     }
-    const res = await fetch(fileUrl);
-    if (!res.ok) return null;
-    return Buffer.from(await res.arrayBuffer());
+    // External URL — cap download to AI image size limit. An oversized
+    // response would OOM the worker before the upload path reads it.
+    return await fetchWithSizeLimit(fileUrl, AI_IMAGE_SIZE_CAP);
   } catch {
     return null;
   }

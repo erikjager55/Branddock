@@ -5,6 +5,7 @@ import { getStorageProvider } from "@/lib/storage";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { isPrivateHostname } from "@/lib/utils/ssrf";
+import { fetchWithSizeLimit, ResponseTooLargeError } from "@/lib/security/fetch-with-limit";
 import { generateMediaSlug, detectMediaType } from "@/features/media-library/utils/media-utils";
 
 /** Extract a filename from URL or Content-Disposition header */
@@ -67,8 +68,10 @@ export async function POST(request: NextRequest) {
 
     // Fetch the URL content
     const controller = new AbortController();
+    const MAX_IMPORT_SIZE = 100 * 1024 * 1024; // 100MB
     const timeout = setTimeout(() => controller.abort(), 30000);
 
+    // Fetch headers first to read content-type before downloading bytes.
     let response: Response;
     try {
       response = await fetch(url, {
@@ -100,15 +103,23 @@ export async function POST(request: NextRequest) {
     const fileName = extractFileName(url, contentDisposition);
     const mediaType = detectMediaType(mimeType);
 
-    // Read response body as buffer
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    const MAX_IMPORT_SIZE = 100 * 1024 * 1024; // 100MB
-    if (buffer.length > MAX_IMPORT_SIZE) {
+    // Read response body with a pre-download Content-Length check so
+    // oversized responses are rejected before allocating a buffer.
+    let buffer: Buffer;
+    try {
+      buffer = await fetchWithSizeLimit(url, MAX_IMPORT_SIZE, {
+        headers: { "User-Agent": "Branddock-MediaImporter/1.0" },
+      });
+    } catch (err) {
+      if (err instanceof ResponseTooLargeError) {
+        return NextResponse.json(
+          { error: "File exceeds maximum allowed size of 100MB" },
+          { status: 413 },
+        );
+      }
       return NextResponse.json(
-        { error: "File exceeds maximum allowed size of 100MB" },
-        { status: 413 }
+        { error: "Failed to fetch URL content" },
+        { status: 502 },
       );
     }
 

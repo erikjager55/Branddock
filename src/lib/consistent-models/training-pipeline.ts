@@ -20,6 +20,7 @@ import {
   runFalGeneration,
 } from '@/lib/integrations/fal/fal-client';
 import { getStorageProvider } from '@/lib/storage';
+import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { TRIGGER_WORDS, MIN_IMAGES_BY_TYPE, FAL_MODEL_CONFIG, LORA_QUALITY_CONFIG, TRAINING_STEPS_BY_TYPE } from '@/features/consistent-models/constants/model-constants';
@@ -150,12 +151,13 @@ export async function startTraining(
     if (img.storageUrl.startsWith('http://') || img.storageUrl.startsWith('https://')) {
       // Remote URL (e.g. AI-generated images stored in R2/cloud)
       console.log('[training-pipeline]   Downloading:', img.storageUrl.slice(0, 80));
-      const resp = await fetch(img.storageUrl);
-      if (!resp.ok) {
-        console.error(`[training-pipeline]   Failed to download image ${img.fileName}: ${resp.status}`);
+      try {
+        fileBuffer = await fetchWithSizeLimit(img.storageUrl, AI_IMAGE_SIZE_CAP);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'unknown error';
+        console.error(`[training-pipeline]   Failed to download image ${img.fileName}: ${msg}`);
         continue;
       }
-      fileBuffer = Buffer.from(await resp.arrayBuffer());
     } else {
       // Local file path
       const localPath = path.join('public', img.storageUrl.replace(/^\//, ''));
@@ -317,9 +319,10 @@ export async function handleTrainingComplete(
             });
 
             if (result.images?.[0]) {
-              const response = await fetch(result.images[0].url);
-              if (!response.ok) continue;
-              const buffer = Buffer.from(await response.arrayBuffer());
+              let buffer: Buffer;
+              try {
+                buffer = await fetchWithSizeLimit(result.images[0].url, AI_IMAGE_SIZE_CAP);
+              } catch { continue; }
               const uploaded = await storage.upload(buffer, {
                 workspaceId: model.workspaceId,
                 fileName: `sample-${Date.now()}-${sampleUrls.length}.png`,
@@ -364,9 +367,10 @@ export async function handleTrainingComplete(
             });
 
             if (result.images?.[0]) {
-              const response = await fetch(result.images[0].url);
-              if (!response.ok) continue;
-              const buffer = Buffer.from(await response.arrayBuffer());
+              let buffer: Buffer;
+              try {
+                buffer = await fetchWithSizeLimit(result.images[0].url, AI_IMAGE_SIZE_CAP);
+              } catch { continue; }
               const uploaded = await storage.upload(buffer, {
                 workspaceId: model.workspaceId,
                 fileName: `sample-${Date.now()}-${sampleUrls.length}.png`,
@@ -396,9 +400,7 @@ export async function handleTrainingComplete(
           if (result.images && result.images.length > 0) {
             for (const image of result.images) {
               try {
-                const response = await fetch(image.url);
-                if (!response.ok) continue;
-                const buffer = Buffer.from(await response.arrayBuffer());
+                const buffer = await fetchWithSizeLimit(image.url, AI_IMAGE_SIZE_CAP);
                 const uploaded = await storage.upload(buffer, {
                   workspaceId: model.workspaceId,
                   fileName: `sample-${Date.now()}.png`,

@@ -4,6 +4,7 @@ import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { getStorageProvider, extractDominantColors } from '@/lib/storage';
+import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP, ResponseTooLargeError } from '@/lib/security/fetch-with-limit';
 import { z } from 'zod';
 import { generateMediaSlug } from '@/features/media-library/utils/media-utils';
 
@@ -51,18 +52,26 @@ export async function POST(request: NextRequest) {
 
     const { photoUrl, photographer, photographerUrl, pexelsUrl, width, height } = parsed.data;
 
-    // Fetch the image from Pexels
-    const imageResponse = await fetch(photoUrl);
-    if (!imageResponse.ok) {
+    // Fetch the image from Pexels with size cap. We need the response
+    // object for the content-type header, so fetch headers first then
+    // download via fetchWithSizeLimit for the OOM-safe body read.
+    const headResponse = await fetch(photoUrl);
+    if (!headResponse.ok) {
       return NextResponse.json(
         { error: 'Failed to download image from Pexels' },
         { status: 502 }
       );
     }
+    const contentType = headResponse.headers.get('content-type') || 'image/jpeg';
 
-    const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
-    const arrayBuffer = await imageResponse.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    let buffer: Buffer;
+    try {
+      buffer = await fetchWithSizeLimit(photoUrl, AI_IMAGE_SIZE_CAP);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to download image';
+      const status = err instanceof ResponseTooLargeError ? 502 : 500;
+      return NextResponse.json({ error: msg }, { status });
+    }
 
     // Determine file extension from content type
     const extMap: Record<string, string> = {

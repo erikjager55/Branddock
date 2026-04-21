@@ -7,6 +7,7 @@ import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { getStorageProvider } from '@/lib/storage';
+import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP, ResponseTooLargeError } from '@/lib/security/fetch-with-limit';
 import { z } from 'zod';
 import { getFalOptimizeProviderById } from '@/lib/integrations/fal/fal-optimize-providers';
 import { mapGeneratedImage } from '@/features/media-library/utils/media-utils';
@@ -110,12 +111,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No optimized image returned' }, { status: 500 });
     }
 
-    // Download optimized image
-    const imgResponse = await fetch(imageUrl);
-    if (!imgResponse.ok) {
-      return NextResponse.json({ error: 'Failed to download optimized image' }, { status: 500 });
+    // Download optimized image with size cap — guards against providers
+    // returning oversized responses that would OOM the worker.
+    let imageBytes: Buffer;
+    try {
+      imageBytes = await fetchWithSizeLimit(imageUrl, AI_IMAGE_SIZE_CAP);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to download optimized image';
+      const status = err instanceof ResponseTooLargeError ? 502 : 500;
+      return NextResponse.json({ error: msg }, { status });
     }
-    const imageBytes = Buffer.from(await imgResponse.arrayBuffer());
     const mimeType = 'image/png';
 
     // Upload to storage
