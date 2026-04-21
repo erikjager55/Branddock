@@ -226,6 +226,9 @@ model Workspace {
   styleguideComponents      StyleguideComponent[]
   styleguideReviews         StyleguideReview[]
 
+  // Emailit campaign sends (4.2 step 4)
+  campaignSends             CampaignSend[]
+
   @@index([organizationId])
 }
 
@@ -322,6 +325,9 @@ model User {
   uploadedFonts                 StyleguideFont[]       @relation("FontUploader")
   uploadedLogos                 StyleguideLogo[]       @relation("LogoUploader")
   styleguideReviews             StyleguideReview[]     @relation("StyleguideReviewer")
+
+  // Emailit campaign sends (4.2 step 4)
+  campaignSendsSent             CampaignSend[]         @relation("CampaignSendSender")
 
   @@index([workspaceId])
 }
@@ -1008,6 +1014,7 @@ model Deliverable {
   insertedInsights  InsertedInsight[]
   improveSuggestions ImproveSuggestion[]
   components        DeliverableComponent[]
+  campaignSends     CampaignSend[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
@@ -1646,6 +1653,7 @@ model StyleguideFont {
   name         String      // "Poppins", "Oranienbaum"
   role         FontRole    @default(UI)
   source       FontSource  @default(DETECTED)
+  availability FontAvailability @default(UNKNOWN)
 
   // File fields (null als DETECTED zonder upload)
   fileUrl      String?
@@ -1658,6 +1666,12 @@ model StyleguideFont {
   weight       String?     // "400", "400,700", "100-900"
   style        String?     // "normal" | "italic"
   sortOrder    Int         @default(0)
+
+  // Adobe Fonts / Typekit kit id, set either by the scraper (auto-detect)
+  // or by the user (paste their own kit for preview). When present and
+  // availability=ADOBE_FONTS, the UI can load
+  // https://use.typekit.net/{kitId}.css for a real-font preview.
+  adobeFontsKitId String?
 
   uploadedById String?
   uploadedBy   User?       @relation("FontUploader", fields: [uploadedById], references: [id])
@@ -1757,6 +1771,23 @@ enum FontRole {
 enum FontSource {
   DETECTED
   UPLOADED
+}
+
+enum FontAvailability {
+  /** User uploaded the file — always usable. */
+  UPLOADED
+  /** Detected font exists in the Google Fonts catalog — auto-loaded via CDN. */
+  GOOGLE_FONTS
+  /** Detected font is served via Adobe Fonts (Typekit) on the source site.
+   *  If the user has an Adobe Creative Cloud / Fonts subscription they can
+   *  paste their kit ID to preview the real file; otherwise they can still
+   *  upload the woff2. */
+  ADOBE_FONTS
+  /** Detected font is commercial / not on Google Fonts or Adobe Fonts —
+   *  upload required for use. */
+  COMMERCIAL
+  /** Google Fonts catalog lookup failed or not yet resolved. Treated as commercial. */
+  UNKNOWN
 }
 
 enum LogoVariant {
@@ -4163,4 +4194,66 @@ model BugReport {
 
   @@index([workspaceId])
   @@index([status])
+}
+
+// =============================================================
+// Campaign Send — Emailit-powered email campaign delivery (4.2 step 4)
+//
+// Represents a single send of an email deliverable to a list of
+// recipients. Webhook events update the stats counters.
+// =============================================================
+
+enum CampaignSendStatus {
+  DRAFT
+  QUEUED
+  SENDING
+  COMPLETED
+  PARTIAL
+  FAILED
+  CANCELLED
+}
+
+model CampaignSend {
+  id                String              @id @default(cuid())
+
+  deliverableId     String
+  deliverable       Deliverable         @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+
+  workspaceId       String
+  workspace         Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  status            CampaignSendStatus  @default(DRAFT)
+  subject           String
+
+  // Recipients — either an inline list or an Emailit audience id.
+  recipientEmails   String[]            @default([])
+  emailitAudienceId String?
+  recipientCount    Int                 @default(0)
+
+  // Emailit correlation — one send id per recipient (bulk POST /emails loop).
+  emailitSendIds    String[]            @default([])
+
+  // Stats (mutated atomically by webhook handler).
+  deliveredCount    Int                 @default(0)
+  openedCount       Int                 @default(0)
+  clickedCount      Int                 @default(0)
+  bouncedCount      Int                 @default(0)
+  complainedCount   Int                 @default(0)
+  unsubscribedCount Int                 @default(0)
+  failedCount       Int                 @default(0)
+
+  // Meta
+  sentById          String?
+  sentBy            User?               @relation("CampaignSendSender", fields: [sentById], references: [id], onDelete: SetNull)
+  errorMessage      String?             @db.Text
+  scheduledAt       DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@index([deliverableId])
+  @@index([workspaceId, status])
+  @@index([emailitSendIds])
 }

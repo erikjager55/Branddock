@@ -13,6 +13,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { normaliseWebhookEvent, verifyEmailitSignature } from '@/lib/email/webhook-handler';
 import { suppress } from '@/lib/email/suppressions';
+import { prisma } from '@/lib/prisma';
+import type { EmailitEventType } from '@/lib/email/types';
+
+/** Which CampaignSend counter a given event type should increment. */
+const EVENT_COUNTER_FIELD: Record<EmailitEventType, string | null> = {
+  delivered: 'deliveredCount',
+  opened: 'openedCount',
+  clicked: 'clickedCount',
+  bounced: 'bouncedCount',
+  complained: 'complainedCount',
+  unsubscribed: 'unsubscribedCount',
+  failed: 'failedCount',
+};
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
@@ -49,6 +62,27 @@ export async function POST(request: NextRequest) {
         await suppress(event.recipient, event.type === 'bounced' ? 'BOUNCE' : 'COMPLAINT');
       } catch (err) {
         console.error('[email-webhook] suppress failed:', err);
+      }
+    }
+
+    // Correlate to an active CampaignSend via emailitSendIds and bump
+    // the matching counter atomically. No-op when the emailId belongs
+    // to a non-campaign transactional (invite, reset, verify).
+    const counterField = EVENT_COUNTER_FIELD[event.type];
+    if (counterField) {
+      try {
+        const campaignSend = await prisma.campaignSend.findFirst({
+          where: { emailitSendIds: { has: event.emailId } },
+          select: { id: true },
+        });
+        if (campaignSend) {
+          await prisma.campaignSend.update({
+            where: { id: campaignSend.id },
+            data: { [counterField]: { increment: 1 } },
+          });
+        }
+      } catch (err) {
+        console.error('[email-webhook] campaign-send stats update failed:', err);
       }
     }
   }
