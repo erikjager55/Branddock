@@ -5,7 +5,8 @@ import { getStorageProvider } from "@/lib/storage";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
 import { generateMediaSlug, detectMediaType } from "@/features/media-library/utils/media-utils";
-import { MAX_FILE_SIZES, formatFileSize } from "@/features/media-library/constants/media-constants";
+import { MAX_FILE_SIZES, formatFileSize, ACCEPTED_MIME_TYPES } from "@/features/media-library/constants/media-constants";
+import { validateBinaryFile, validateSvgContent } from "@/lib/security/file-validator";
 
 /** POST /api/media/bulk — bulk upload multiple files */
 export async function POST(request: NextRequest) {
@@ -93,6 +94,43 @@ export async function POST(request: NextRequest) {
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
+
+        // Magic-byte MIME validation. SVG gets the XML/script sanity
+        // check; other types go through file-type's magic-byte detection.
+        if (mimeType === "image/svg+xml") {
+          const svgCheck = validateSvgContent(buffer);
+          if (!svgCheck.ok) {
+            results.push({
+              id: "",
+              name: fileName,
+              slug: "",
+              fileUrl: "",
+              fileType: mimeType,
+              fileSize: file.size,
+              mediaType,
+              thumbnailUrl: null,
+              error: svgCheck.error ?? "Invalid SVG content",
+            });
+            continue;
+          }
+        } else {
+          const allowedForType = new Set(ACCEPTED_MIME_TYPES[mediaType]);
+          const contentCheck = await validateBinaryFile(buffer, allowedForType);
+          if (!contentCheck.ok) {
+            results.push({
+              id: "",
+              name: fileName,
+              slug: "",
+              fileUrl: "",
+              fileType: mimeType,
+              fileSize: file.size,
+              mediaType,
+              thumbnailUrl: null,
+              error: contentCheck.error ?? "Invalid file content",
+            });
+            continue;
+          }
+        }
 
         const assetName = fileName.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
 

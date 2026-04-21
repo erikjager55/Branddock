@@ -4,9 +4,20 @@ import { resolveWorkspaceId, requireAuth } from "@/lib/auth-server";
 import { getStorageProvider } from "@/lib/storage";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { validateBinaryFile } from "@/lib/security/file-validator";
 import type { FontRole } from "@/features/brandstyle/types/brandstyle.types";
 
 const ALLOWED_FONT_EXTENSIONS = ["woff2", "woff", "ttf", "otf"] as const;
+const ALLOWED_FONT_MIMES: ReadonlySet<string> = new Set([
+  "font/woff2",
+  "font/woff",
+  "font/ttf",
+  "font/otf",
+  "application/font-woff",
+  "application/font-woff2",
+  "application/x-font-ttf",
+  "application/x-font-otf",
+]);
 const MAX_FONT_SIZE = 5 * 1024 * 1024; // 5MB
 const VALID_ROLES: FontRole[] = ["DISPLAY", "UI", "EYEBROW_META", "BODY"];
 
@@ -81,6 +92,17 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Magic-byte validation for fonts — blocks malicious binaries
+    // dressed up as font files (e.g. an EXE renamed to .woff2).
+    const contentCheck = await validateBinaryFile(buffer, ALLOWED_FONT_MIMES);
+    if (!contentCheck.ok) {
+      return NextResponse.json(
+        { error: contentCheck.error ?? "Invalid font content" },
+        { status: 400 },
+      );
+    }
+
     const contentType =
       ext === "woff2" ? "font/woff2" :
       ext === "woff" ? "font/woff" :
@@ -110,6 +132,7 @@ export async function POST(request: NextRequest) {
           where: { id: existingDetected.id },
           data: {
             source: "UPLOADED",
+            availability: "UPLOADED",
             role: role as FontRole,
             fileUrl: result.url,
             fileName: file.name,
@@ -128,6 +151,7 @@ export async function POST(request: NextRequest) {
             name,
             role: role as FontRole,
             source: "UPLOADED",
+            availability: "UPLOADED",
             fileUrl: result.url,
             fileName: file.name,
             fileType: ext,

@@ -1,9 +1,15 @@
 import { NextRequest } from 'next/server';
 import { getServerSession, resolveWorkspaceId } from '@/lib/auth-server';
 import { getStorageProvider } from '@/lib/storage';
+import { validateBinaryFile } from '@/lib/security/file-validator';
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
-const ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+const ALLOWED_TYPES: ReadonlySet<string> = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/gif',
+]);
 
 /** POST /api/bug-reports/upload — upload a screenshot image */
 export async function POST(req: NextRequest) {
@@ -17,7 +23,7 @@ export async function POST(req: NextRequest) {
   const file = formData.get('file') as File | null;
   if (!file) return Response.json({ error: 'No file provided' }, { status: 400 });
 
-  if (!ALLOWED_TYPES.includes(file.type)) {
+  if (!ALLOWED_TYPES.has(file.type)) {
     return Response.json({ error: 'Only PNG, JPEG, WebP and GIF are allowed' }, { status: 400 });
   }
   if (file.size > MAX_SIZE) {
@@ -25,6 +31,17 @@ export async function POST(req: NextRequest) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
+
+  // Magic-byte MIME validation — blocks client-header spoofing that would
+  // otherwise let a crafted HTML/PDF through as an "image" upload.
+  const contentCheck = await validateBinaryFile(buffer, ALLOWED_TYPES);
+  if (!contentCheck.ok) {
+    return Response.json(
+      { error: contentCheck.error ?? 'Invalid file content' },
+      { status: 400 },
+    );
+  }
+
   const ext = file.name.split('.').pop() ?? 'png';
   const fileName = `bug-screenshots/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
 

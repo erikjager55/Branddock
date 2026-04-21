@@ -8,7 +8,7 @@ import { cacheKeys, CACHE_TTL } from "@/lib/api/cache-keys";
 import { getStorageProvider, extractDominantColors } from "@/lib/storage";
 import { generateMediaSlug, detectMediaType } from "@/features/media-library/utils/media-utils";
 import { MAX_FILE_SIZES, formatFileSize, ACCEPTED_MIME_TYPES } from "@/features/media-library/constants/media-constants";
-import { validateBinaryFile } from "@/lib/security/file-validator";
+import { validateBinaryFile, validateSvgContent } from "@/lib/security/file-validator";
 
 const MEDIA_ASSET_INCLUDE = {
   tags: { include: { mediaTag: true } },
@@ -190,8 +190,16 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
 
     // Magic-byte MIME validation — catches client-header spoofing.
-    // SVG is text (no magic bytes), so we allow it to skip validation.
-    if (mimeType !== "image/svg+xml") {
+    // SVG is text (no magic bytes) so it gets an XML/script sanity check.
+    if (mimeType === "image/svg+xml") {
+      const svgCheck = validateSvgContent(buffer);
+      if (!svgCheck.ok) {
+        return NextResponse.json(
+          { error: svgCheck.error ?? "Invalid SVG content" },
+          { status: 400 },
+        );
+      }
+    } else {
       const allowedForType = new Set(ACCEPTED_MIME_TYPES[mediaType]);
       const contentCheck = await validateBinaryFile(buffer, allowedForType);
       if (!contentCheck.ok) {

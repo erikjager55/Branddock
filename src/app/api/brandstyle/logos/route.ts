@@ -4,9 +4,11 @@ import { resolveWorkspaceId, requireAuth } from "@/lib/auth-server";
 import { getStorageProvider } from "@/lib/storage";
 import { invalidateCache } from "@/lib/api/cache";
 import { cacheKeys } from "@/lib/api/cache-keys";
+import { validateBinaryFile, validateSvgContent } from "@/lib/security/file-validator";
 import type { LogoVariant } from "@/features/brandstyle/types/brandstyle.types";
 
 const ALLOWED_LOGO_EXTENSIONS = ["svg", "png", "jpg", "jpeg"] as const;
+const RASTER_MIMES: ReadonlySet<string> = new Set(["image/png", "image/jpeg"]);
 const MAX_LOGO_SIZE = 10 * 1024 * 1024; // 10MB
 const VALID_VARIANTS: LogoVariant[] = ["PRIMARY", "LIGHT", "DARK", "ICON", "WORDMARK", "LOCKUP"];
 
@@ -75,6 +77,27 @@ export async function POST(request: NextRequest) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Magic-byte MIME validation. SVG gets a separate XML/script-scrub
+    // path because file-type can't detect text-based formats reliably.
+    if (ext === "svg") {
+      const svgCheck = validateSvgContent(buffer);
+      if (!svgCheck.ok) {
+        return NextResponse.json(
+          { error: svgCheck.error ?? "Invalid SVG content" },
+          { status: 400 },
+        );
+      }
+    } else {
+      const rasterCheck = await validateBinaryFile(buffer, RASTER_MIMES);
+      if (!rasterCheck.ok) {
+        return NextResponse.json(
+          { error: rasterCheck.error ?? "Invalid image content" },
+          { status: 400 },
+        );
+      }
+    }
+
     const contentType =
       ext === "svg" ? "image/svg+xml" :
       ext === "png" ? "image/png" :

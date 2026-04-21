@@ -2,10 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveWorkspaceId, requireAuth } from "@/lib/auth-server";
 import { getStorageProvider } from "@/lib/storage";
 import { isValidReviewSection } from "@/lib/brandstyle/review-sections";
+import { validateBinaryFile } from "@/lib/security/file-validator";
 
 type RouteContext = { params: Promise<{ section: string }> };
 
 const ALLOWED_EXT = ["png", "jpg", "jpeg", "webp"] as const;
+const ALLOWED_MIMES: ReadonlySet<string> = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+]);
 const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 // =============================================================
@@ -45,6 +51,17 @@ export async function POST(request: NextRequest, context: RouteContext) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Magic-byte check: block spoofed PNG/JPEG/WebP headers wrapping
+    // HTML/SVG/PDF payloads that could XSS when served inline.
+    const contentCheck = await validateBinaryFile(buffer, ALLOWED_MIMES);
+    if (!contentCheck.ok) {
+      return NextResponse.json(
+        { error: contentCheck.error ?? "Invalid image content" },
+        { status: 400 },
+      );
+    }
+
     const contentType =
       extRaw === "png" ? "image/png" :
       extRaw === "webp" ? "image/webp" :

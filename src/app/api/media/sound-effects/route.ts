@@ -5,6 +5,19 @@ import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { getStorageProvider } from '@/lib/storage';
 import { mapSoundEffect } from '@/features/media-library/utils/media-utils';
+import { validateBinaryFile } from '@/lib/security/file-validator';
+
+const ALLOWED_AUDIO_MIMES: ReadonlySet<string> = new Set([
+  'audio/mpeg',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/ogg',
+  'audio/aac',
+  'audio/mp4',
+  'audio/x-m4a',
+  'audio/webm',
+  'video/webm', // file-type reports webm audio as video/webm
+]);
 
 /** GET /api/media/sound-effects — List sound effects for workspace */
 export async function GET() {
@@ -93,6 +106,18 @@ export async function POST(request: NextRequest) {
 
     // Upload to storage
     const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Magic-byte validation — audio containers have stable signatures
+    // (ID3/MP3, RIFF/WAV, OggS, ftyp, etc.); this catches anything
+    // relabelled from HTML/PDF to audio/*.
+    const contentCheck = await validateBinaryFile(buffer, ALLOWED_AUDIO_MIMES);
+    if (!contentCheck.ok) {
+      return NextResponse.json(
+        { error: contentCheck.error ?? 'Invalid audio content' },
+        { status: 400 },
+      );
+    }
+
     const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const provider = getStorageProvider();
     const result = await provider.upload(buffer, {

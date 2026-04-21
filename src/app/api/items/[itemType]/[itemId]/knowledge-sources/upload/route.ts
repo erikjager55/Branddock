@@ -1,10 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId } from '@/lib/auth-server';
+import { validateBinaryFile } from '@/lib/security/file-validator';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+
+// Knowledge sources: docs + text + images.
+const TEXT_EXTS: ReadonlySet<string> = new Set(['.txt', '.md', '.csv', '.json']);
+const BINARY_ALLOWED_MIMES: ReadonlySet<string> = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'image/gif',
+]);
 
 // ─── POST /api/items/[itemType]/[itemId]/knowledge-sources/upload ──
 export async function POST(
@@ -35,15 +52,29 @@ export async function POST(
       return NextResponse.json({ error: 'File too large (max 50MB)' }, { status: 400 });
     }
 
+    const ext = path.extname(file.name).toLowerCase();
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Text formats have no magic bytes — allowlist by extension.
+    // Binary formats must pass magic-byte validation.
+    const isText = TEXT_EXTS.has(ext);
+    if (!isText) {
+      const contentCheck = await validateBinaryFile(buffer, BINARY_ALLOWED_MIMES);
+      if (!contentCheck.ok) {
+        return NextResponse.json(
+          { error: contentCheck.error ?? 'Unsupported or invalid file type' },
+          { status: 400 },
+        );
+      }
+    }
+
     // Save file to uploads directory
     const uploadDir = path.join(process.cwd(), 'uploads', 'knowledge-sources', workspaceId);
     await mkdir(uploadDir, { recursive: true });
 
-    const ext = path.extname(file.name);
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
     const filePath = path.join(uploadDir, safeName);
 
-    const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(filePath, buffer);
 
     // Extract text content for simple text files
