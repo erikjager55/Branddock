@@ -232,6 +232,9 @@ model Workspace {
   // Agent memory (4.3 — pgvector)
   agentMemories             AgentMemory[]
 
+  // Agent jobs (4.4 — DB-polling queue)
+  agentJobs                 AgentJob[]
+
   @@index([organizationId])
 }
 
@@ -4311,4 +4314,66 @@ model AgentMemory {
 
   @@index([workspaceId, memoryType])
   @@index([workspaceId, createdAt])
+}
+
+// =============================================================
+// Agent Job Queue (4.4)
+//
+// Persistent job queue for deferred / recurring / retryable work
+// triggered by the Brandclaw agent or external webhooks. Processed
+// by the /api/cron/run-jobs endpoint on a Vercel Cron schedule —
+// DB polling keeps the design serverless-friendly. BullMQ can swap
+// in later via the queue abstraction when a dedicated worker
+// process becomes feasible.
+// =============================================================
+
+enum AgentJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+  RETRY
+}
+
+enum AgentJobType {
+  MEMORY_DECAY
+  CAMPAIGN_SEND_FOLLOWUP
+  TREND_SCAN_WORKSPACE
+  AGENT_TASK
+  HEARTBEAT
+}
+
+model AgentJob {
+  id              String          @id @default(cuid())
+
+  workspaceId     String?
+  workspace       Workspace?      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  type            AgentJobType
+  status          AgentJobStatus  @default(PENDING)
+  priority        Int             @default(100)
+
+  payload         Json?
+  result          Json?
+  errorMessage    String?         @db.Text
+
+  scheduledAt     DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+
+  attempts        Int             @default(0)
+  maxAttempts     Int             @default(3)
+  nextAttemptAt   DateTime?
+
+  idempotencyKey  String?         @unique
+
+  triggeredBy     String?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([status, scheduledAt])
+  @@index([type, status])
+  @@index([workspaceId, status])
 }

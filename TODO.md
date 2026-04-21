@@ -167,12 +167,21 @@
   - `decayOldMemories()` nachtelijke sweep — `decayWeight = min(1, 2^(-ageDays/halfLife) + accessCount*reinforcement)` met `::float8` casts om Postgres' int-coercie te vermijden
 - [x] E2E smoke test (`scripts/agent-memory-smoke.ts`): 5 memories stored, 3 semantic recall queries retourneerden correct gerankte hits (similarity 0.5-0.6), decay sweep 5 rows.
 
-### 4.4 Webhook Infrastructuur + Job Queue (D.2.4)
+### 4.4 Webhook Infrastructuur + Job Queue (D.2.4) ✅ DONE (2026-04-21)
 
-- [ ] BullMQ via Redis (Upstash-compatible) als job queue
-- [ ] Nieuw Prisma model: `AgentJob` (jobType, status, payload, result, scheduledAt)
-- [ ] Worker-architectuur in `src/lib/agents/workers/`
-- [ ] Webhook endpoints voor externe triggers
+> **Keuze**: DB-polling + Vercel Cron i.p.v. BullMQ. Reden: BullMQ vereist een long-running worker proces dat incompatibel is met Vercel serverless. Polling tegen Postgres + Vercel Cron elke minuut levert dezelfde garanties (persistence, retry, delayed execution) zonder extra infrastructuur. Het handler-registry is queue-agnostic zodat BullMQ als drop-in backend kan komen zodra we self-hosted workers inzetten.
+
+- [x] Prisma `AgentJob` model — type, status, priority, payload Json, result Json, errorMessage, scheduledAt/startedAt/completedAt, attempts/maxAttempts/nextAttemptAt, idempotencyKey (unique), triggeredBy, workspaceId optioneel. Enums `AgentJobStatus` (PENDING/RUNNING/COMPLETED/FAILED/CANCELLED/RETRY) + `AgentJobType` (MEMORY_DECAY / CAMPAIGN_SEND_FOLLOWUP / TREND_SCAN_WORKSPACE / AGENT_TASK / HEARTBEAT).
+- [x] Queue-agnostic service laag in `src/lib/agents/jobs/`:
+  - `dispatch.ts` — `dispatchJob()` met idempotencyKey dedupe + scheduledAt support, `cancelJob()`
+  - `handlers.ts` — `registerHandler()` registry + 3 builtins (MEMORY_DECAY roept `decayOldMemories`, HEARTBEAT no-op voor queue-health, AGENT_TASK stub voor Fase 6)
+  - `runner.ts` — `runPendingJobs()` met atomic claim, exponential backoff retry (2^attempts minuten, cap 1 uur), priority + FIFO ordering; `runJobById()` voor debug
+- [x] HTTP endpoints:
+  - `GET /api/cron/run-jobs` — Vercel Cron trigger, `Authorization: Bearer $CRON_SECRET`, batch limit (default 20, max 100)
+  - `POST /api/webhooks/trigger/[type]` — externe trigger (n8n/Zapier/etc.), `Authorization: Bearer $WEBHOOK_TRIGGER_SECRET` + per-IP rate limit (30/min), Zod body (workspaceId, payload, scheduledAt, idempotencyKey, priority, maxAttempts)
+- [x] `vercel.json` cron: `* * * * *` (every minute) op `/api/cron/run-jobs`
+- [x] Env vars: `CRON_SECRET` + `WEBHOOK_TRIGGER_SECRET` in `.env.example`
+- [x] E2E smoke test (`scripts/jobs-smoke.ts`): dispatch 3 types + idempotency + runner → alle jobs COMPLETED; live HTTP test webhook→cron flow ook groen.
 
 ### 4.5 PostHog als Feedback Engine (D.2.5)
 
