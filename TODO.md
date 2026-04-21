@@ -34,20 +34,22 @@
 - [x] Bibliotheek-UI: upload eigen audio + AI-gegenereerde varianten
 - [x] Creative Hub tab "Sound Effects" toevoegen (naast Brand Voices, AI Images, AI Videos)
 
-### 1.2 Brand Voice Generator (I.6) — verwijderd uit AI Trainer, moet opnieuw geplaatst worden
+### 1.2 Brand Voice Generator (I.6) ✅ DONE (2026-04-21)
 
-- [ ] Nieuwe standalone pagina of sectie voor Brand Voice generatie (was in AI Trainer > Voices tab)
-- [ ] ElevenLabs TTS voice browsing, selectie en audio sample generatie (backend staat al: `src/lib/integrations/elevenlabs/`)
-- [ ] Brand Voice CRUD (backend staat al: `/api/media/brand-voices/`)
-- [ ] Voice preview player + TTS settings panel (componenten bestaan: `VoiceDetailPanel`, `VoicePreviewPlayer`, `TtsSettingsPanel`)
-- [ ] Integratie met Content Canvas voor voice-over generatie bij video/audio deliverables
+- [x] Voices tab teruggeplaatst als derde tab in **AI Studio** (`src/features/ai-studio/components/AiStudioPage.tsx`). Rationale: AI Studio is de "generate AI content" hub — consistent met Images/Videos; AI Trainer blijft dedicated voor model-training.
+- [x] ElevenLabs TTS voice browsing, selectie en audio sample generatie — bestaande componenten (`BrandVoiceTab`, `BrandVoiceCard`, `CreateBrandVoiceModal`, `VoiceDetailPanel`, `VoicePreviewPlayer`, `TtsSettingsPanel`) hergebruikt; backend `/api/media/brand-voices/*` + `src/lib/integrations/elevenlabs/` al geïmplementeerd sinds BV-EL (memory #159).
+- [x] Brand Voice CRUD via `useBrandVoices` + `useDeleteBrandVoice` hooks.
 
-### 1.3 Sound Effects Generator (I.7) — verwijderd uit AI Trainer, moet opnieuw geplaatst worden
+**Open (vervolg-sessie)**:
+- [ ] Integratie met Content Canvas voor voice-over generatie bij video/audio deliverables — Brand Voice selector koppelen aan de `generate-voiceover` SSE route (hardcoded 'default' vervangen door workspace-gekozen voice).
 
-- [ ] Nieuwe standalone pagina of sectie voor Sound Effects (was in AI Trainer > Sound Effects tab)
-- [ ] ElevenLabs Sound Effects API integratie (backend staat al)
-- [ ] Bibliotheek-UI: upload eigen audio + AI-gegenereerde varianten
-- [ ] Integratie met Content Canvas voor audio-elementen bij video deliverables
+### 1.3 Sound Effects Generator (I.7) ✅ DONE (2026-04-21)
+
+- [x] Sound Effects tab teruggeplaatst als vierde tab in **AI Studio** (zelfde placement-logica als Voices).
+- [x] ElevenLabs Sound Effects API + upload + library-UI — bestaande componenten (`SoundEffectsTab`, `SoundEffectCard`, `GenerateSoundModal`, `UploadSoundModal`, `SoundEffectDetailPanel`) hergebruikt; backend `/api/media/sound-effects` al geïmplementeerd.
+
+**Open (vervolg-sessie)**:
+- [ ] Integratie met Content Canvas voor audio-elementen bij video deliverables — sound effect picker in video scene editor.
 
 ### 1.4 Video Generatie Uitgebreid (I.5) — ⏸️ ON HOLD
 

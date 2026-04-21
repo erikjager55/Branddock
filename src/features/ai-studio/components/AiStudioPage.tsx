@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { PageShell, PageHeader } from '@/components/ui/layout';
-import { ImagePlus, Video } from 'lucide-react';
+import { ImagePlus, Video, Mic, Music2 } from 'lucide-react';
 import { AiImagesTab } from '@/features/media-library/components/creative-hub/ai-images/AiImagesTab';
 import { AiVideosTab } from '@/features/media-library/components/creative-hub/ai-videos/AiVideosTab';
+import { BrandVoiceTab } from '@/features/media-library/components/creative-hub/brand-voice/BrandVoiceTab';
+import { SoundEffectsTab } from '@/features/media-library/components/creative-hub/sound-effects/SoundEffectsTab';
 import { useConsistentModelStore } from '@/features/consistent-models/stores/useConsistentModelStore';
 import { useConsistentModels } from '@/features/consistent-models/hooks';
 import type { LucideIcon } from 'lucide-react';
@@ -13,6 +15,8 @@ import type { TrainedModelOption } from '@/features/media-library/components/cre
 const TABS = [
   { key: 'images', label: 'Images', icon: ImagePlus },
   { key: 'videos', label: 'Videos', icon: Video },
+  { key: 'voices', label: 'Voices', icon: Mic },
+  { key: 'sound-effects', label: 'Sound Effects', icon: Music2 },
 ] as const;
 
 type StudioTab = (typeof TABS)[number]['key'];
@@ -59,7 +63,7 @@ export function AiStudioPage() {
       <PageHeader
         moduleKey="ai-studio"
         title="AI Studio"
-        subtitle="Generate images and videos with AI"
+        subtitle="Generate images, videos, voice-overs and sound effects with AI"
       />
 
       <div className="px-8 pt-4 pb-2">
@@ -93,6 +97,8 @@ export function AiStudioPage() {
           />
         )}
         {activeTab === 'videos' && <AiVideosTab />}
+        {activeTab === 'voices' && <BrandVoiceTab />}
+        {activeTab === 'sound-effects' && <SoundEffectsTab />}
       </div>
     </PageShell>
   );
