@@ -156,12 +156,16 @@
 - [ ] Weekly report email (wacht tot de weekly-report generator bestaat)
 - [ ] Config: `RESEND_API_KEY` env var
 
-### 4.3 pgvector voor Agent Memory (D.2.3)
+### 4.3 pgvector voor Agent Memory (D.2.3) ✅ DONE (2026-04-21)
 
-- [ ] `vector` extensie aanzetten op production PostgreSQL
-- [ ] Nieuw Prisma model: `AgentMemory` (content, embedding vector(1536), memoryType, confidence, decayWeight)
-- [ ] Embedding via OpenAI `text-embedding-3-small`
-- [ ] Service: `src/lib/agents/memory.ts` (storeMemory, recallRelevant, decayOldMemories)
+- [x] `vector` extension geïnstalleerd (pgvector 0.8.2 via Homebrew) en aangezet op lokale Postgres 17. Productie (Neon) heeft pgvector standaard — geen extra werk daar.
+- [x] Prisma `AgentMemory` model met `Unsupported("vector(1536)")` embedding-kolom, `AgentMemoryType` enum (OBSERVATION / PREFERENCE / DECISION / FACT / OUTCOME), confidence + decayWeight + accessCount + lastAccessedAt voor recall-reinforcement. HNSW cosine-index op embedding toegevoegd via raw SQL (`USING hnsw (embedding vector_cosine_ops)`).
+- [x] Embedding-laag `src/lib/ai/embeddings.ts` — singleton OpenAI client, `embedText()` + `embedTextBatch()` tegen `text-embedding-3-small` (1536 dims), `toPgVectorLiteral()` helper met finite-check voor veilige interpolatie in raw SQL.
+- [x] Memory service `src/lib/agents/memory.ts`:
+  - `storeMemory()` embed + INSERT via `$executeRawUnsafe` (vector literal geïnterpoleerd, rest via parameters)
+  - `recallRelevant()` cosine similarity search met `1 - (embedding <=> query)` als similarity en `similarity * decayWeight * confidence` als ranking score; optionele `memoryType` filter + `minSimilarity` threshold (default 0.25); bumpt `accessCount` + `lastAccessedAt` op elke hit
+  - `decayOldMemories()` nachtelijke sweep — `decayWeight = min(1, 2^(-ageDays/halfLife) + accessCount*reinforcement)` met `::float8` casts om Postgres' int-coercie te vermijden
+- [x] E2E smoke test (`scripts/agent-memory-smoke.ts`): 5 memories stored, 3 semantic recall queries retourneerden correct gerankte hits (similarity 0.5-0.6), decay sweep 5 rows.
 
 ### 4.4 Webhook Infrastructuur + Job Queue (D.2.4)
 

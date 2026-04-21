@@ -229,6 +229,9 @@ model Workspace {
   // Emailit campaign sends (4.2 step 4)
   campaignSends             CampaignSend[]
 
+  // Agent memory (4.3 — pgvector)
+  agentMemories             AgentMemory[]
+
   @@index([organizationId])
 }
 
@@ -4256,4 +4259,56 @@ model CampaignSend {
   @@index([deliverableId])
   @@index([workspaceId, status])
   @@index([emailitSendIds])
+}
+
+// =============================================================
+// Agent Memory — pgvector-backed long-term memory (4.3)
+//
+// Supports the future Brandclaw agent loop. Each memory stores a
+// 1536-dim embedding (OpenAI text-embedding-3-small) of a content
+// snippet plus metadata used for recall ranking:
+//   - confidence   how strongly the agent trusts the memory (0-1)
+//   - decayWeight  freshness, lowered by age, reinforced on access
+//   - accessCount  how often this memory has been recalled
+//
+// Vector column is Unsupported in Prisma; mutations and similarity
+// queries run via raw SQL in src/lib/agents/memory.ts.
+// =============================================================
+
+enum AgentMemoryType {
+  OBSERVATION
+  PREFERENCE
+  DECISION
+  FACT
+  OUTCOME
+}
+
+model AgentMemory {
+  id              String           @id @default(cuid())
+
+  workspaceId     String
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  content         String           @db.Text
+  memoryType      AgentMemoryType
+
+  // 1536-dim embedding — managed via raw SQL only
+  embedding       Unsupported("vector(1536)")?
+
+  confidence      Float            @default(1.0)
+  decayWeight     Float            @default(1.0)
+
+  // Access tracking — reinforces memories the agent keeps using.
+  accessCount     Int              @default(0)
+  lastAccessedAt  DateTime?
+
+  // Provenance / metadata
+  source          String?
+  metadata        Json?
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([workspaceId, memoryType])
+  @@index([workspaceId, createdAt])
 }
