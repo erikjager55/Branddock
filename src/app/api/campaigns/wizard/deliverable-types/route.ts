@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "@/lib/auth-server";
 
 // GET /api/campaigns/wizard/deliverable-types — Return available deliverable types
 const DELIVERABLE_TYPES = [
@@ -21,5 +22,11 @@ const DELIVERABLE_TYPES = [
 ];
 
 export async function GET() {
+  // Static data, but gated for consistency with the rest of the API —
+  // no reason unauthenticated callers need to see our deliverable catalog.
+  const session = await getServerSession();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   return NextResponse.json(DELIVERABLE_TYPES);
 }

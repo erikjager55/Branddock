@@ -1,13 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolveWorkspaceId } from "@/lib/auth-server";
+import { validateBinaryFile } from "@/lib/security/file-validator";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import type { KnowledgeResource } from "@prisma/client";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
-const ALLOWED_MIME_TYPES: ReadonlySet<string> = new Set([
+// Text formats don't have stable magic bytes — allowlist them by
+// MIME/extension and skip the byte check.
+const TEXT_MIME_TYPES: ReadonlySet<string> = new Set([
+  "text/plain",
+  "text/markdown",
+  "text/csv",
+]);
+
+const BINARY_MIME_TYPES: ReadonlySet<string> = new Set([
   "application/pdf",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
@@ -15,12 +24,14 @@ const ALLOWED_MIME_TYPES: ReadonlySet<string> = new Set([
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
   "application/vnd.ms-powerpoint",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation", // .pptx
-  "text/plain",
-  "text/markdown",
-  "text/csv",
   "image/png",
   "image/jpeg",
   "image/webp",
+]);
+
+const ALLOWED_MIME_TYPES: ReadonlySet<string> = new Set([
+  ...TEXT_MIME_TYPES,
+  ...BINARY_MIME_TYPES,
 ]);
 
 const ALLOWED_EXTENSIONS: ReadonlySet<string> = new Set([
@@ -32,7 +43,7 @@ function mapResource(r: KnowledgeResource) {
   return {
     id: r.id,
     title: r.title,
-    slug: r.slug,
+    slug: r.slug ?? "",
     description: r.description,
     type: r.type,
     category: r.category,
@@ -109,6 +120,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const buffer = Buffer.from(await file.arrayBuffer());
+
+    // Magic-byte MIME validation for binary types. Text types (plain,
+    // markdown, csv) have no reliable signature so we keep the MIME
+    // allowlist check only.
+    if (!TEXT_MIME_TYPES.has(file.type)) {
+      const contentCheck = await validateBinaryFile(buffer, BINARY_MIME_TYPES);
+      if (!contentCheck.ok) {
+        return NextResponse.json(
+          { error: contentCheck.error ?? "Invalid file content" },
+          { status: 400 },
+        );
+      }
+    }
+
     const uploadDir = path.join(
       process.cwd(),
       "public",
@@ -121,7 +147,6 @@ export async function POST(request: NextRequest) {
     const safeDiskName = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext}`;
     const diskPath = path.join(uploadDir, safeDiskName);
 
-    const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(diskPath, buffer);
 
     const fileUrl = `/uploads/knowledge-resources/${workspaceId}/${safeDiskName}`;
