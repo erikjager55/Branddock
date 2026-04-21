@@ -397,10 +397,10 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
 - [ ] **M10** — OAuth tokens (Google/Microsoft/Apple) in `Account` + `WorkspaceIntegration` opgeslagen als plaintext. Field-level encryption (envelope met KMS) toevoegen.
 
 **📝 Lagere prioriteit (low risk, na launch OK)**
-- [ ] **C4** — `api/campaigns/wizard/deliverable-types`: geen auth (statische JSON, low risk maar inconsistent)
-- [ ] **M2** — `api/versions/[id]` PATCH: Zod validatie op `label`/`changeNote` met `.max(200)`
+- [x] **C4** (2026-04-21) — `api/campaigns/wizard/deliverable-types`: session-gate toegevoegd. Statische JSON, maar niet meer blootgesteld aan unauthenticated callers.
+- [x] **M2** (2026-04-21) — `api/versions/[id]` PATCH: Zod-schema op `label` (max 200) + `changeNote` (max 2000), beide `.trim().optional()`. Velden worden alleen meegestuurd in update wanneer aanwezig (geen leeg overschrijven).
 - [ ] **M3** — Expliciete field-whitelist in `data: { ...parsed.data }` calls (toekomst-proofing tegen mass assignment)
-- [ ] **M4** — FAQ feedback endpoints: rate limit per IP tegen vote-pumping
+- [x] **M4** (2026-04-21) — FAQ + article feedback (unauthenticated) nu per IP rate-limited via `checkGenericRateLimit()`: max 5 votes/uur/item per IP. Stopt helpfulYes/helpfulNo pumping scripts.
 - [x] **M5** (2026-04-19) — `/api/exploration/models` auth-check toegevoegd; endpoint onthult welke AI-provider keys gezet zijn, dat is reconnaissance-vector zonder auth.
 - [x] **M6** (2026-04-19) — `/api/search/quick-actions` auth-check voor cache-wrapper; statische respons blijft gecached, auth draait per request.
 - [ ] **L1-L7** — Diverse cleanup: dead env vars (`RUNWAYML_API_SECRET` in `.env.example` ongebruikt sinds fal.ai migratie), stale docs, CSRF tokens voor state-changing routes.
