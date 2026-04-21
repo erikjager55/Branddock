@@ -114,6 +114,13 @@ model Workspace {
   updatedAt       DateTime @updatedAt
   contentLanguage String   @default("en") // ISO 639-1: "en", "nl", "de", "fr", etc.
 
+  /** Adobe Fonts (Typekit) kit ID for THIS workspace — set once by the
+   *  user with their own Adobe Fonts subscription. Used across all
+   *  styleguides / fonts to render live previews of commercial fonts.
+   *  Auto-detected kit IDs on StyleguideFont are the source site's own
+   *  kit and won't serve fonts due to Adobe's domain lock. */
+  adobeFontsKitId String?
+
   // Organization koppeling
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -219,6 +226,7 @@ model Workspace {
   // Claw AI Assistant
   clawConversations         ClawConversation[]
   bugReports                BugReport[]
+  chatFeedback              ChatFeedback[]
 
   // Brandstyle v2 (Fase 0)
   styleguideFonts           StyleguideFont[]
@@ -326,6 +334,8 @@ model User {
   clawConversations             ClawConversation[]
   bugReports                    BugReport[]
   resolvedBugReports            BugReport[]            @relation("BugResolver")
+  chatFeedback                  ChatFeedback[]
+  reviewedChatFeedback          ChatFeedback[]         @relation("ChatFeedbackReviewer")
 
   // Brandstyle v2 (Fase 0)
   uploadedFonts                 StyleguideFont[]       @relation("FontUploader")
@@ -4200,6 +4210,49 @@ model BugReport {
 
   @@index([workspaceId])
   @@index([status])
+}
+
+// =============================================================
+// ChatFeedback — /feedback slash command in Brand Assistant
+//
+// User feedback on an AI-generated response. Captures a snapshot of
+// the assistant message so the feedback stays meaningful even if the
+// conversation moves on. Developer-only triage under
+// Settings > Developer > Feedback.
+// =============================================================
+
+model ChatFeedback {
+  id             String   @id @default(cuid())
+
+  // What the feedback is about
+  conversationId String?  // ClawConversation.id when available
+  messageId      String?  // Local assistant message id (client-side UUID)
+  messageContent String?  @db.Text  // snapshot of the assistant reply
+
+  // The feedback itself
+  sentiment      String   // 'positive' | 'neutral' | 'negative'
+  tags           String[]  // subset of: inaccurate, off-brand, too-verbose, too-generic, unhelpful, other
+  comment        String   @db.Text
+
+  // Triage
+  status         String   @default("new") // 'new' | 'reviewed' | 'actioned' | 'dismissed'
+  reviewedById   String?
+  reviewedBy     User?    @relation("ChatFeedbackReviewer", fields: [reviewedById], references: [id])
+  reviewedAt     DateTime?
+  notes          String?  @db.Text
+
+  // Scope
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([status])
+  @@index([sentiment])
 }
 
 // =============================================================

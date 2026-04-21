@@ -12,9 +12,10 @@ import { IntegrationsTab } from './integrations/IntegrationsTab';
 import { AdministratorTab } from './administrator/AdministratorTab';
 import { AiModelsTab } from './ai-models/AiModelsTab';
 import { BugTriageTab } from './developer/BugTriageTab';
+import { FeedbackTriageTab } from './developer/FeedbackTriageTab';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
 
-const DEVELOPER_TABS: SettingsTab[] = ['administrator', 'ai-models', 'bug-triage'];
+const DEVELOPER_TABS: SettingsTab[] = ['administrator', 'ai-models', 'bug-triage', 'feedback-triage'];
 
 interface SettingsPageProps {
   initialTab?: SettingsTab;
@@ -73,6 +74,8 @@ export function SettingsPage({ initialTab }: SettingsPageProps) {
         return <AiModelsTab />;
       case 'bug-triage':
         return <BugTriageTab />;
+      case 'feedback-triage':
+        return <FeedbackTriageTab />;
       default:
         return <AccountTab />;
     }

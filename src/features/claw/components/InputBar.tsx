@@ -20,6 +20,7 @@ export function InputBar() {
     attachments,
     addAttachment,
     removeAttachment,
+    messages,
     addMessage,
     setIsStreaming,
     appendStreamingText,
@@ -46,7 +47,7 @@ export function InputBar() {
     el.style.height = `${next}px`;
   }, [inputText]);
 
-  const { openBugReportForm, openBugLogbook } = useClawStore();
+  const { openBugReportForm, openBugLogbook, openFeedbackForm } = useClawStore();
 
   const handleSend = useCallback(async () => {
     const message = inputText.trim();
@@ -61,6 +62,20 @@ export function InputBar() {
     if (message.toLowerCase() === '/bugs') {
       setInputText('');
       openBugLogbook();
+      return;
+    }
+    if (message.toLowerCase() === '/feedback') {
+      setInputText('');
+      // Snapshot the most recent assistant reply so the feedback stays
+      // anchored to what it's actually about.
+      const lastAssistant = [...messages]
+        .reverse()
+        .find((m) => m.role === 'assistant');
+      openFeedbackForm({
+        conversationId: activeConversationId,
+        messageId: lastAssistant?.id ?? null,
+        messageContent: lastAssistant?.content ?? null,
+      });
       return;
     }
 
@@ -230,10 +245,10 @@ export function InputBar() {
     }
   }, [
     inputText, isStreaming, attachments, activeConversationId, contextSelection,
-    currentPage, activeEntity, wizardSnapshot,
+    currentPage, activeEntity, wizardSnapshot, messages,
     addMessage, setInputText, setIsStreaming, appendStreamingText, finalizeStreaming,
     setPendingMutation, resetStreamingText, openBugReportForm, openBugLogbook,
-    setActivityStatus,
+    openFeedbackForm, setActivityStatus,
   ]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

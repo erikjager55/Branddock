@@ -45,6 +45,25 @@ export interface BugReportItem {
   user: { name: string | null; email: string };
 }
 
+export type FeedbackSentiment = 'positive' | 'neutral' | 'negative';
+export type FeedbackTag =
+  | 'inaccurate'
+  | 'off-brand'
+  | 'too-verbose'
+  | 'too-generic'
+  | 'unhelpful'
+  | 'other';
+
+export interface FeedbackFormState {
+  /** Optional anchoring to a specific assistant message — captured when /feedback is typed. */
+  conversationId: string | null;
+  messageId: string | null;
+  messageContent: string | null;
+  sentiment: FeedbackSentiment;
+  tags: FeedbackTag[];
+  comment: string;
+}
+
 interface ClawStore {
   // ── Panel State ──────────────────────────────────────────
   isOpen: boolean;
@@ -134,6 +153,16 @@ interface ClawStore {
   closeBugLogbook: () => void;
   setBugLogbook: (bugs: BugReportItem[]) => void;
 
+  // ── Feedback ────────────────────────────────────────────
+  feedbackForm: FeedbackFormState | null;
+  openFeedbackForm: (anchor?: {
+    conversationId?: string | null;
+    messageId?: string | null;
+    messageContent?: string | null;
+  }) => void;
+  updateFeedbackForm: (fields: Partial<FeedbackFormState>) => void;
+  closeFeedbackForm: () => void;
+
   // ── Reset ────────────────────────────────────────────────
   startNewConversation: () => void;
 }
@@ -143,7 +172,7 @@ export const useClawStore = create<ClawStore>((set, get) => ({
   isOpen: false,
   viewMode: 'panel',
   openClaw: () => set({ isOpen: true, viewMode: 'panel' }),
-  closeClaw: () => set({ isOpen: false, viewMode: 'panel', bugReportForm: null, bugLogbook: null }),
+  closeClaw: () => set({ isOpen: false, viewMode: 'panel', bugReportForm: null, bugLogbook: null, feedbackForm: null }),
   toggleClaw: () => set((s) => ({ isOpen: !s.isOpen, viewMode: s.isOpen ? 'panel' : s.viewMode })),
   toggleViewMode: () => set((s) => ({ viewMode: s.viewMode === 'panel' ? 'overlay' : 'panel' })),
 
@@ -262,6 +291,27 @@ export const useClawStore = create<ClawStore>((set, get) => ({
   closeBugLogbook: () => set({ bugLogbook: null }),
   setBugLogbook: (bugs) => set({ bugLogbook: bugs }),
 
+  // Feedback
+  feedbackForm: null,
+  openFeedbackForm: (anchor) =>
+    set({
+      feedbackForm: {
+        conversationId: anchor?.conversationId ?? null,
+        messageId: anchor?.messageId ?? null,
+        messageContent: anchor?.messageContent ?? null,
+        sentiment: 'neutral',
+        tags: [],
+        comment: '',
+      },
+      bugReportForm: null,
+      bugLogbook: null,
+    }),
+  updateFeedbackForm: (fields) =>
+    set((s) => ({
+      feedbackForm: s.feedbackForm ? { ...s.feedbackForm, ...fields } : null,
+    })),
+  closeFeedbackForm: () => set({ feedbackForm: null }),
+
   // Reset
   startNewConversation: () =>
     set({
@@ -273,6 +323,7 @@ export const useClawStore = create<ClawStore>((set, get) => ({
       attachments: [],
       bugReportForm: null,
       bugLogbook: null,
+      feedbackForm: null,
       activityStatus: null,
     }),
 }));
