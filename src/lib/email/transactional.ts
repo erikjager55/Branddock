@@ -9,7 +9,10 @@
 import { emailitClient, isEmailitConfigured, EmailitError } from './emailit-client';
 import type { SendEmailOptions, SendEmailResult } from './types';
 
-const DEFAULT_FROM_EMAIL = 'noreply@branddock.app';
+// Branddock emails go through the shared BetterBrands sending domain
+// (email.betterbrands.nl) because that's the verified domain in Emailit.
+// The display name keeps recipients anchored to the Branddock brand.
+const DEFAULT_FROM_EMAIL = 'branddock@email.betterbrands.nl';
 const DEFAULT_FROM_NAME = 'Branddock';
 
 function resolveFrom(): string {
