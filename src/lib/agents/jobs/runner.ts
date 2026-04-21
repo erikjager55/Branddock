@@ -12,6 +12,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { getHandler } from './handlers';
+import { trackEvent } from '@/lib/analytics/posthog';
 import type { JobRunResult, RunPendingJobsResult, AgentJob } from './types';
 
 const DEFAULT_LIMIT = 20;
@@ -67,6 +68,20 @@ async function runJob(job: AgentJob): Promise<JobRunResult> {
         errorMessage: null,
       },
     });
+
+    const runtimeMs = freshJob.startedAt ? Date.now() - freshJob.startedAt.getTime() : null;
+    void trackEvent({
+      event: 'agent_job_completed',
+      workspaceId: freshJob.workspaceId,
+      properties: {
+        job_id: job.id,
+        job_type: job.type,
+        attempts: freshJob.attempts,
+        runtime_ms: runtimeMs,
+        triggered_by: freshJob.triggeredBy,
+      },
+    });
+
     return {
       id: job.id,
       type: job.type,
@@ -90,6 +105,19 @@ async function runJob(job: AgentJob): Promise<JobRunResult> {
     });
 
     console.error(`[agent-job ${job.id}] ${job.type} failed (attempt ${freshJob.attempts}/${freshJob.maxAttempts}):`, message);
+
+    void trackEvent({
+      event: willRetry ? 'agent_job_retrying' : 'agent_job_failed',
+      workspaceId: freshJob.workspaceId,
+      properties: {
+        job_id: job.id,
+        job_type: job.type,
+        attempts: freshJob.attempts,
+        max_attempts: freshJob.maxAttempts,
+        error_message: message,
+        triggered_by: freshJob.triggeredBy,
+      },
+    });
 
     return {
       id: job.id,

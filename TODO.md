@@ -183,10 +183,16 @@
 - [x] Env vars: `CRON_SECRET` + `WEBHOOK_TRIGGER_SECRET` in `.env.example`
 - [x] E2E smoke test (`scripts/jobs-smoke.ts`): dispatch 3 types + idempotency + runner → alle jobs COMPLETED; live HTTP test webhook→cron flow ook groen.
 
-### 4.5 PostHog als Feedback Engine (D.2.5)
+### 4.5 PostHog als Feedback Engine (D.2.5) ✅ DONE (2026-04-21)
 
-- [ ] Uitgebreide event tracking (content_generated, agent_action_taken, user_approved, etc.)
-- [ ] Custom properties per event (workspace_plan, brand_foundation_coverage)
+- [x] `posthog-node` v5.29 geïnstalleerd. Server-side analytics service `src/lib/analytics/posthog.ts` — singleton client met EU host default (`eu.i.posthog.com`), graceful no-op als `POSTHOG_API_KEY` ontbreekt. `trackEvent()` is fire-and-forget (swallowt errors) zodat analytics-failures request paths nooit breken.
+- [x] Automatische workspace-enrichment met 60s cache — voegt `workspace_plan`, `workspace_name`, `workspace_created_at`, `organization_id`, `brand_foundation_coverage` (% READY brand assets), en `brand_asset_count` toe aan elke event. Group analytics: `groups: { workspace: workspaceId }` voor PostHog Group Analytics slicing.
+- [x] Ingehaakt op 4 high-value server events:
+  - `agent_job_completed` / `agent_job_retrying` / `agent_job_failed` — runner met `job_type`, `attempts`, `runtime_ms`, `triggered_by`
+  - `campaign_send_completed` — campaign send route met `recipient_count`, `accepted_count`, `failed_count`, `final_status`
+  - `deliverable_approval_changed` — studio approval route met `previous_status`, `new_status`, `quality_score`, `content_type`
+- [x] Env vars: `POSTHOG_API_KEY` + `POSTHOG_HOST` in `.env.example`. `flushAnalytics()` helper voor graceful shutdown.
+- [x] Voor browser-side page-view / button-click tracking: apart op te pakken met `posthog-js` wanneer nodig — niet nu in MVP.
 
 ---
 

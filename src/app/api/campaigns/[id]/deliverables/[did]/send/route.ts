@@ -17,6 +17,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { sendTransactional } from '@/lib/email/transactional';
 import { isEmailitConfigured } from '@/lib/email/emailit-client';
+import { trackEvent } from '@/lib/analytics/posthog';
 import type { CampaignSendStatus } from '@prisma/client';
 
 const MAX_INLINE_RECIPIENTS = 500;
@@ -176,6 +177,22 @@ export async function POST(
         status: finalStatus,
         completedAt: new Date(),
         errorMessage: failed > 0 ? `${failed}/${recipients.length} recipients failed at submit time` : null,
+      },
+    });
+
+    void trackEvent({
+      event: 'campaign_send_completed',
+      userId: session.user.id,
+      workspaceId,
+      properties: {
+        send_id: updated.id,
+        deliverable_id: deliverableId,
+        campaign_id: campaignId,
+        content_type: deliverable.contentType,
+        recipient_count: recipients.length,
+        accepted_count: sendIds.length,
+        failed_count: failed,
+        final_status: finalStatus,
       },
     });
 

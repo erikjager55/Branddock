@@ -4,6 +4,7 @@ import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { z } from 'zod';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
+import { trackEvent } from '@/lib/analytics/posthog';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ['IN_REVIEW', 'APPROVED'],
@@ -102,6 +103,19 @@ export async function PATCH(
     // Cache invalidation
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+
+    void trackEvent({
+      event: 'deliverable_approval_changed',
+      userId,
+      workspaceId,
+      properties: {
+        deliverable_id: updated.id,
+        content_type: updated.contentType,
+        previous_status: currentStatus,
+        new_status: newStatus,
+        quality_score: updated.qualityScore ?? null,
+      },
+    });
 
     return NextResponse.json({
       deliverableId: updated.id,
