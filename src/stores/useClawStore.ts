@@ -34,17 +34,6 @@ export interface BugReportFormState {
   screenshot: string;
 }
 
-export interface BugReportItem {
-  id: string;
-  page: string;
-  description: string;
-  severity: string;
-  screenshot: string | null;
-  status: string;
-  createdAt: string;
-  user: { name: string | null; email: string };
-}
-
 export type FeedbackSentiment = 'positive' | 'neutral' | 'negative';
 export type FeedbackTag =
   | 'inaccurate'
@@ -148,11 +137,6 @@ interface ClawStore {
   updateBugReportForm: (fields: Partial<BugReportFormState>) => void;
   closeBugReportForm: () => void;
 
-  bugLogbook: BugReportItem[] | null;
-  openBugLogbook: () => void;
-  closeBugLogbook: () => void;
-  setBugLogbook: (bugs: BugReportItem[]) => void;
-
   // ── Feedback ────────────────────────────────────────────
   feedbackForm: FeedbackFormState | null;
   openFeedbackForm: (anchor?: {
@@ -172,7 +156,7 @@ export const useClawStore = create<ClawStore>((set, get) => ({
   isOpen: false,
   viewMode: 'panel',
   openClaw: () => set({ isOpen: true, viewMode: 'panel' }),
-  closeClaw: () => set({ isOpen: false, viewMode: 'panel', bugReportForm: null, bugLogbook: null, feedbackForm: null }),
+  closeClaw: () => set({ isOpen: false, viewMode: 'panel', bugReportForm: null, feedbackForm: null }),
   toggleClaw: () => set((s) => ({ isOpen: !s.isOpen, viewMode: s.isOpen ? 'panel' : s.viewMode })),
   toggleViewMode: () => set((s) => ({ viewMode: s.viewMode === 'panel' ? 'overlay' : 'panel' })),
 
@@ -279,17 +263,11 @@ export const useClawStore = create<ClawStore>((set, get) => ({
       severity: 'medium',
       screenshot: '',
     },
-    bugLogbook: null,
   }),
   updateBugReportForm: (fields) => set((s) => ({
     bugReportForm: s.bugReportForm ? { ...s.bugReportForm, ...fields } : null,
   })),
   closeBugReportForm: () => set({ bugReportForm: null }),
-
-  bugLogbook: null,
-  openBugLogbook: () => set({ bugLogbook: [], bugReportForm: null }),
-  closeBugLogbook: () => set({ bugLogbook: null }),
-  setBugLogbook: (bugs) => set({ bugLogbook: bugs }),
 
   // Feedback
   feedbackForm: null,
@@ -304,7 +282,6 @@ export const useClawStore = create<ClawStore>((set, get) => ({
         comment: '',
       },
       bugReportForm: null,
-      bugLogbook: null,
     }),
   updateFeedbackForm: (fields) =>
     set((s) => ({
@@ -322,7 +299,6 @@ export const useClawStore = create<ClawStore>((set, get) => ({
       inputText: '',
       attachments: [],
       bugReportForm: null,
-      bugLogbook: null,
       feedbackForm: null,
       activityStatus: null,
     }),

@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Bug, FileText, MessageSquarePlus } from "lucide-react";
+import { Bug, MessageSquarePlus } from "lucide-react";
 
 /**
  * Registry of slash commands usable in the Brand Assistant input.
@@ -27,12 +27,6 @@ export const SLASH_COMMANDS: readonly SlashCommand[] = [
     label: "Report a bug",
     description: "Report a problem on this page",
     icon: Bug,
-  },
-  {
-    id: "/bugs",
-    label: "Bug logbook",
-    description: "See all reported bugs",
-    icon: FileText,
   },
 ];
 

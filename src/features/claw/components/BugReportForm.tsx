@@ -48,7 +48,7 @@ export function BugReportForm() {
       addMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: `Bug report submitted for **${bugReportForm.page}** (${bugReportForm.severity}). Type \`/bugs\` to view all reports.`,
+        content: `Bug report submitted for **${bugReportForm.page}** (${bugReportForm.severity}).`,
         createdAt: new Date().toISOString(),
       });
 

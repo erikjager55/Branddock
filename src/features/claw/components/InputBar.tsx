@@ -83,7 +83,7 @@ export function InputBar() {
     el.style.height = `${next}px`;
   }, [inputText]);
 
-  const { openBugReportForm, openBugLogbook, openFeedbackForm } = useClawStore();
+  const { openBugReportForm, openFeedbackForm } = useClawStore();
 
   /**
    * Send the current input. Accepts an optional override so slash-menu
@@ -98,11 +98,6 @@ export function InputBar() {
     if (message.toLowerCase() === '/bug') {
       setInputText('');
       openBugReportForm();
-      return;
-    }
-    if (message.toLowerCase() === '/bugs') {
-      setInputText('');
-      openBugLogbook();
       return;
     }
     if (message.toLowerCase() === '/feedback') {
@@ -288,7 +283,7 @@ export function InputBar() {
     inputText, isStreaming, attachments, activeConversationId, contextSelection,
     currentPage, activeEntity, wizardSnapshot, messages,
     addMessage, setInputText, setIsStreaming, appendStreamingText, finalizeStreaming,
-    setPendingMutation, resetStreamingText, openBugReportForm, openBugLogbook,
+    setPendingMutation, resetStreamingText, openBugReportForm,
     openFeedbackForm, setActivityStatus,
   ]);
 
