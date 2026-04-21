@@ -4,6 +4,7 @@ import { User, Users, Briefcase, CreditCard, Bell, Palette, Shield, Brain, Plug,
 import type { LucideIcon } from 'lucide-react';
 import { useSettingsStore, type SettingsTab } from '@/stores/useSettingsStore';
 import { useDeveloperAccess } from '@/hooks/use-developer-access';
+import { useChatFeedbackTriage } from '@/hooks/use-chat-feedback';
 
 interface NavItem {
   id: SettingsTab;
@@ -25,6 +26,8 @@ export function SettingsSubNav() {
   const activeTab = useSettingsStore((s) => s.activeTab);
   const setActiveTab = useSettingsStore((s) => s.setActiveTab);
   const { data: isDeveloper } = useDeveloperAccess();
+  const { data: feedbackList } = useChatFeedbackTriage(isDeveloper === true);
+  const newFeedbackCount = (feedbackList ?? []).filter((f) => f.status === 'new').length;
 
   return (
     <div data-testid="settings-subnav" className="w-[200px] flex-shrink-0 border-r border-gray-200 p-4 space-y-1">
@@ -101,7 +104,16 @@ export function SettingsSubNav() {
             }`}
           >
             <MessageSquarePlus className="w-4 h-4" />
-            Feedback
+            <span className="flex-1 text-left">Feedback</span>
+            {newFeedbackCount > 0 && (
+              <span
+                className="min-w-[18px] h-[18px] px-1.5 rounded-full text-[11px] font-semibold flex items-center justify-center text-white"
+                style={{ backgroundColor: '#7c3aed' }}
+                aria-label={`${newFeedbackCount} new feedback ${newFeedbackCount === 1 ? 'entry' : 'entries'}`}
+              >
+                {newFeedbackCount > 99 ? '99+' : newFeedbackCount}
+              </span>
+            )}
           </button>
         </div>
       )}

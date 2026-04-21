@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   MessageSquarePlus,
   ThumbsUp,
@@ -12,26 +12,9 @@ import {
   ChevronRight,
   Check,
   X as XIcon,
+  AlertCircle,
 } from 'lucide-react';
-
-// ─── Types ──────────────────────────────────────────────────
-
-interface FeedbackItem {
-  id: string;
-  sentiment: 'positive' | 'neutral' | 'negative';
-  tags: string[];
-  comment: string;
-  conversationId: string | null;
-  messageId: string | null;
-  messageContent: string | null;
-  status: 'new' | 'reviewed' | 'actioned' | 'dismissed';
-  notes: string | null;
-  reviewedAt: string | null;
-  createdAt: string;
-  user: { name: string | null; email: string };
-  reviewedBy: { name: string | null; email: string } | null;
-  workspace: { name: string } | null;
-}
+import { useChatFeedbackTriage, type FeedbackItem } from '@/hooks/use-chat-feedback';
 
 // ─── Constants ──────────────────────────────────────────────
 
@@ -61,16 +44,7 @@ export function FeedbackTriageTab() {
   const [sentimentFilter, setSentimentFilter] = useState<FeedbackItem['sentiment'] | 'all'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['feedback-triage'],
-    queryFn: async (): Promise<FeedbackItem[]> => {
-      const res = await fetch('/api/chat-feedback?all=true');
-      if (!res.ok) throw new Error('Failed to fetch');
-      const json = await res.json();
-      return json.feedback ?? [];
-    },
-    refetchInterval: 15_000,
-  });
+  const { data, isLoading, error, refetch } = useChatFeedbackTriage(true);
 
   const entries = data ?? [];
   const filtered = entries.filter((e) => {
@@ -159,8 +133,32 @@ export function FeedbackTriageTab() {
         </div>
       </div>
 
+      {/* Error */}
+      {!isLoading && error && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle size={18} className="text-red-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-red-900">
+                Could not load feedback
+              </p>
+              <p className="text-xs text-red-700 mt-0.5">
+                {error instanceof Error ? error.message : String(error)}
+              </p>
+              <button
+                type="button"
+                onClick={() => refetch()}
+                className="mt-2 text-xs font-medium text-red-700 hover:text-red-900 underline"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Loading */}
-      {isLoading && (
+      {isLoading && !error && (
         <div className="py-12 text-center text-sm text-gray-400">
           <Loader2 size={20} className="animate-spin mx-auto mb-2" />
           Loading feedback...
@@ -168,14 +166,14 @@ export function FeedbackTriageTab() {
       )}
 
       {/* Empty */}
-      {!isLoading && filtered.length === 0 && (
+      {!isLoading && !error && filtered.length === 0 && (
         <div className="py-12 text-center text-sm text-gray-400">
           No feedback {statusFilter !== 'all' ? `with status "${statusFilter}"` : 'yet'}.
         </div>
       )}
 
       {/* Cards */}
-      {!isLoading && filtered.length > 0 && (
+      {!isLoading && !error && filtered.length > 0 && (
         <div className="space-y-3">
           {filtered.map((e) => {
             const isExpanded = expandedId === e.id;
