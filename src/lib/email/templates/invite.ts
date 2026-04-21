@@ -10,7 +10,9 @@ export interface InviteEmailVars {
 }
 
 export function renderInviteEmail(vars: InviteEmailVars): { subject: string; html: string; text: string } {
-  const subject = `${vars.inviterName} invited you to ${vars.organizationName} on Branddock`;
+  // Keep subject close to natural conversation — "X invited you to join Y"
+  // is the shape Gmail recognises as legitimate transactional mail.
+  const subject = `${vars.inviterName} invited you to join ${vars.organizationName}`;
 
   const daysLeft = Math.max(
     1,

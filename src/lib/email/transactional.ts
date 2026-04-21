@@ -12,6 +12,9 @@ import type { SendEmailOptions, SendEmailResult } from './types';
 // Branddock emails go through the shared BetterBrands sending domain
 // (email.betterbrands.nl) because that's the verified domain in Emailit.
 // The display name keeps recipients anchored to the Branddock brand.
+// Branddock emails go through the shared BetterBrands sending domain
+// (email.betterbrands.nl) because that's the verified domain in Emailit.
+// The display name keeps recipients anchored to the Branddock brand.
 const DEFAULT_FROM_EMAIL = 'branddock@email.betterbrands.nl';
 const DEFAULT_FROM_NAME = 'Branddock';
 
@@ -19,6 +22,17 @@ function resolveFrom(): string {
   const email = process.env.EMAILIT_FROM_EMAIL || DEFAULT_FROM_EMAIL;
   const name = process.env.EMAILIT_FROM_NAME || DEFAULT_FROM_NAME;
   return `${name} <${email}>`;
+}
+
+/**
+ * Default Reply-To — helps deliverability signals. Points back to the
+ * sending domain (recipients can reply, Emailit's inbound routing
+ * picks it up). Override via EMAILIT_REPLY_TO or per-call options.replyTo.
+ */
+function resolveReplyTo(): string {
+  return process.env.EMAILIT_REPLY_TO
+    || process.env.EMAILIT_FROM_EMAIL
+    || DEFAULT_FROM_EMAIL;
 }
 
 /**
@@ -49,10 +63,11 @@ export async function sendTransactional(
     to: recipients,
     subject: options.subject,
     html: options.html,
+    // Reply-To is included by default — omitting it is a mild spam signal.
+    reply_to: options.replyTo ?? resolveReplyTo(),
   };
 
   if (options.text) body.text = options.text;
-  if (options.replyTo) body.reply_to = options.replyTo;
   if (options.tags) body.tags = options.tags;
   if (options.headers) body.headers = options.headers;
   if (options.tracking !== undefined) body.tracking = options.tracking;
