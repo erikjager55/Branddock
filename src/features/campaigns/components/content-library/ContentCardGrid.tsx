@@ -120,10 +120,12 @@ export function ContentCardGrid({
                   </div>
                 </div>
 
-                {/* Row 2: Title — inline editable when untitled */}
-                {item.title.toLowerCase() === item.type.toLowerCase() && onRename ? (
+                {/* Row 2: Title — inline editable */}
+                {onRename ? (
                   <InlineRenameField
                     placeholder={`Untitled ${formatContentType(item.type)}`}
+                    currentValue={item.title.toLowerCase() === item.type.toLowerCase() ? undefined : item.title}
+                    className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-200"
                     onRename={(t) => onRename(item.id, item.campaignId, t)}
                   />
                 ) : (

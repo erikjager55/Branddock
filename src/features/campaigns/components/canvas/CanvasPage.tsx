@@ -1,15 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useCanvasStore } from '../../stores/useCanvasStore';
-import { useCampaignStore } from '../../stores/useCampaignStore';
 import { useCanvasComponents } from '../../hooks/canvas.hooks';
-import { ApprovalActionBar } from './ApprovalActionBar';
 import { HorizontalAccordion } from './accordion/HorizontalAccordion';
-import { DerivePlatformSelectorModal } from './DerivePlatformSelectorModal';
 import { CanvasContextSelector } from './CanvasContextSelector';
 import { InsertImageModal } from './InsertImageModal';
-import { Skeleton } from '@/components/shared';
+import { Badge, Skeleton } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ArrowLeft } from 'lucide-react';
 import type { ApprovalStatus } from '../../types/canvas.types';
@@ -22,12 +19,30 @@ interface CanvasPageProps {
   onNavigate: (section: string) => void;
 }
 
+const STATUS_BADGE: Record<ApprovalStatus, {
+  label: string;
+  variant: 'default' | 'info' | 'success' | 'warning' | 'danger';
+}> = {
+  DRAFT: { label: 'Draft', variant: 'default' },
+  IN_REVIEW: { label: 'In Review', variant: 'info' },
+  APPROVED: { label: 'Ready', variant: 'success' },
+  CHANGES_REQUESTED: { label: 'Changes Requested', variant: 'warning' },
+  PUBLISHED: { label: 'Published', variant: 'success' },
+};
+
 export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPageProps) {
   const globalStatus = useCanvasStore((s) => s.globalStatus);
-
-  const [showDeriveModal, setShowDeriveModal] = useState(false);
+  const approvalStatus = useCanvasStore((s) => s.approvalStatus);
+  const activeStep = useCanvasStore((s) => s.activeStep);
+  const completedSteps = useCanvasStore((s) => s.completedSteps);
 
   const { data: existingComponents, isLoading: componentsLoading } = useCanvasComponents(deliverableId);
+
+  const statusConfig = STATUS_BADGE[approvalStatus];
+
+  // Whether the store is hydrated from the server — guards against saving
+  // a default activeStep before we've read the stored one.
+  const hydratedRef = React.useRef(false);
 
   // Set deliverable in store on mount + load approval state + load context
   useEffect(() => {
@@ -67,10 +82,24 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           useCanvasStore.getState().setScheduledDate(`${yyyy}-${mm}-${dd}`);
           useCanvasStore.getState().setScheduledTime(`${hh}:${min}`);
         }
+
+        // Restore the last active accordion step + completedSteps so the user
+        // lands back where they were, instead of always on "variants".
+        const canvasState = d.settings?.canvasState as
+          | { lastActiveStep?: string; completedSteps?: string[] }
+          | undefined;
+        if (canvasState?.completedSteps && Array.isArray(canvasState.completedSteps)) {
+          useCanvasStore.getState().setCompletedSteps(canvasState.completedSteps);
+        }
+        if (canvasState?.lastActiveStep && typeof canvasState.lastActiveStep === 'string') {
+          useCanvasStore.getState().setActiveStep(canvasState.lastActiveStep);
+        }
+        hydratedRef.current = true;
       })
       .catch((err) => {
         if ((err as Error).name === 'AbortError') return;
         // Non-critical — approval state defaults to DRAFT
+        hydratedRef.current = true;
       });
 
     // Load context stack immediately (without triggering content generation)
@@ -166,14 +195,40 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
       storeState.setComposedVideo(videoComp.videoUrl);
     }
 
-    // Content already exists — jump straight to step 2 so the user sees
-    // their variants instead of a regeneration prompt.
+    // Content already exists — jump to step 2 only when there is no
+    // restored position (i.e. user is freshly landing on the item for the
+    // first time after generation). If the store was hydrated with a
+    // lastActiveStep from settings.canvasState, respect that instead.
     if (groups.size > 0 && storeState.activeStep === 'context') {
-      // Auto-advance past context if content already exists
       const nextStep = storeState.mediumCategory === 'video' ? 'script' : 'variants';
       storeState.advanceToStep(nextStep);
     }
   }, [existingComponents]);
+
+  // Persist activeStep + completedSteps back to the deliverable settings so
+  // reopening the item lands on the same step. Only saves after initial
+  // hydration to avoid clobbering stored values with the default 'context'.
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    const controller = new AbortController();
+    fetch(`/api/studio/${deliverableId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        settings: {
+          canvasState: {
+            lastActiveStep: activeStep,
+            completedSteps: Array.from(completedSteps),
+          },
+        },
+      }),
+    }).catch((err) => {
+      if ((err as Error).name === 'AbortError') return;
+      // Non-critical — next navigation will retry
+    });
+    return () => controller.abort();
+  }, [activeStep, completedSteps, deliverableId]);
 
   const handleBack = () => {
     onNavigate('campaign-detail');
@@ -229,6 +284,7 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           <ArrowLeft className="h-5 w-5" />
         </button>
         <h1 className="text-lg font-semibold text-gray-900">Content Canvas</h1>
+        <Badge variant={statusConfig.variant} size="sm">{statusConfig.label}</Badge>
         {globalStatus === 'generating' && (
           <span className="text-sm text-primary animate-pulse">Generating...</span>
         )}
@@ -238,13 +294,6 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
         {globalStatus === 'error' && (
           <span className="text-sm text-red-500">Generation failed</span>
         )}
-
-        <div className="ml-auto">
-          <ApprovalActionBar
-            deliverableId={deliverableId}
-            onDeriveClick={() => setShowDeriveModal(true)}
-          />
-        </div>
       </div>
 
       {/* Accordion layout */}
@@ -257,20 +306,6 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
 
       {/* Insert image modal (Step 3 hero image picker) */}
       <InsertImageModal />
-
-      {/* Derive platform selector modal */}
-      <DerivePlatformSelectorModal
-        isOpen={showDeriveModal}
-        onClose={() => setShowDeriveModal(false)}
-        deliverableId={deliverableId}
-        onDerived={(newId) => {
-          // Navigate to the new derived deliverable's canvas
-          useCanvasStore.getState().reset();
-          useCanvasStore.getState().setDeliverable(newId, 'canvas');
-          useCampaignStore.getState().setSelectedDeliverableId(newId);
-          onNavigate('content-canvas');
-        }}
-      />
     </div>
   );
 }

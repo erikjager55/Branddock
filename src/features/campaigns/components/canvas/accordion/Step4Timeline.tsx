@@ -63,6 +63,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
   const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showDownloadFormats, setShowDownloadFormats] = useState(false);
 
   const platform = contextStack?.medium?.platform ?? null;
   const format = contextStack?.medium?.format ?? null;
@@ -200,6 +201,40 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
     useCanvasStore.getState().setScheduledDate(date);
     useCanvasStore.getState().setScheduledTime(timingSuggestion.time);
   };
+
+  // Publish or schedule to a specific connected channel (LinkedIn, WordPress, Ayrshare, etc.)
+  const handlePublishToChannel = useCallback(async (channelId: string) => {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const body: Record<string, unknown> = { channelId };
+      const store = useCanvasStore.getState();
+      if (store.scheduledDate) {
+        const dt = store.scheduledTime
+          ? `${store.scheduledDate}T${store.scheduledTime}:00Z`
+          : `${store.scheduledDate}T09:00:00Z`;
+        body.scheduledFor = dt;
+      } else {
+        body.publishNow = true;
+      }
+      const res = await fetch(`/api/studio/${deliverableId}/publish-to-channel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('Publish failed');
+      const data = await res.json();
+      setPublishSuccess(`${data.status === 'published' ? 'Published' : 'Scheduled'} to ${data.channelPlatform}`);
+      store.setApprovalState({
+        approvalStatus: data.status === 'published' ? 'PUBLISHED' : 'APPROVED',
+        publishedAt: data.status === 'published' ? new Date().toISOString() : undefined,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Publish failed');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [deliverableId]);
 
   // Schedule / Approve
   const handlePublish = useCallback(async (action: 'approve' | 'schedule') => {
@@ -369,231 +404,216 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         {!requiredPassed && (
           <p className="text-xs text-amber-600 mt-3 flex items-center gap-1">
             <AlertTriangle className="h-3 w-3" />
-            Complete all required items before publishing
+            Some required items are still missing — you can publish anyway, but double-check first.
           </p>
         )}
       </div>
 
-      {/* ── Section 3: Scheduling ─────────────────────────────── */}
-      {!isPublished && !isApproved && (
-        <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-4">
-          <h3 className="text-sm font-semibold text-gray-700">Schedule Publication</h3>
+      {/* ── Finish & Publish — unified actions panel ───────────── */}
+      {!isPublished && (() => {
+        const activeChannels = channels?.filter((ch) => ch.isActive) ?? [];
+        const hasActiveChannels = activeChannels.length > 0;
+        const hasMultipleChannels = activeChannels.length > 1;
+        const effectiveChannelId = hasMultipleChannels
+          ? selectedChannelId
+          : (activeChannels[0]?.id ?? null);
 
-          {/* AI timing suggestion */}
-          {timingSuggestion && (
-            <button
-              type="button"
-              onClick={handleApplySuggestion}
-              className="w-full flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors text-left"
-            >
-              <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-gray-800">
-                  Suggested: {timingSuggestion.day} at {timingSuggestion.time}
-                </p>
-                <p className="text-xs text-gray-500 mt-0.5">{timingSuggestion.reason}</p>
-              </div>
-            </button>
-          )}
+        const publishLabel = isSubmitting
+          ? 'Publishing...'
+          : scheduledDate
+            ? 'Schedule to Platform'
+            : 'Publish Now';
 
-          {/* Date + time pickers */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="schedule-date" className="block text-xs font-medium text-gray-600 mb-1">
-                <Calendar className="h-3.5 w-3.5 inline mr-1" />
-                Date
-              </label>
-              <input
-                id="schedule-date"
-                type="date"
-                value={scheduledDate ?? ''}
-                onChange={(e) => useCanvasStore.getState().setScheduledDate(e.target.value || null)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label htmlFor="schedule-time" className="block text-xs font-medium text-gray-600 mb-1">
-                <Clock className="h-3.5 w-3.5 inline mr-1" />
-                Time
-              </label>
-              <input
-                id="schedule-time"
-                type="time"
-                value={scheduledTime ?? ''}
-                onChange={(e) => useCanvasStore.getState().setScheduledTime(e.target.value || null)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-              />
-            </div>
-          </div>
+        return (
+          <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-5">
+            <h3 className="text-sm font-semibold text-gray-700">Finish &amp; Publish</h3>
 
-          {/* Action buttons */}
-          {(() => {
-            const hasActiveChannels = channels && channels.some((ch) => ch.isActive);
-            return (
-              <div className="space-y-3">
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handlePublish('approve')}
-                    disabled={!requiredPassed || isSubmitting}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-gray-700 font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <CheckCircle2 className="h-4 w-4" />
-                    Mark as Ready
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handlePublish('schedule')}
-                    disabled={!scheduledDate || !requiredPassed || isSubmitting || !hasActiveChannels}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
-                  >
-                    <Send className="h-4 w-4" />
-                    {scheduledDate ? 'Schedule' : 'Pick a date'}
-                  </button>
-                </div>
-                {!hasActiveChannels && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
-                    <Plug className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span>Connect a publishing channel in Settings to enable scheduling. You can still mark content as ready.</span>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-      )}
+            {/* Schedule (optional) */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Schedule (optional)</h4>
 
-      {/* ── Section 4: Publish to Channel ────────────────────── */}
-      {!isPublished && channels && channels.length > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-gray-700">Publish to Platform</h3>
-          <div className="space-y-2">
-            {channels.filter((ch) => ch.isActive).map((ch) => {
-              const isSelected = selectedChannelId === ch.id;
-              const COLORS: Record<string, string> = {
-                linkedin: 'border-blue-400 bg-blue-50',
-                instagram: 'border-pink-400 bg-pink-50',
-                facebook: 'border-blue-500 bg-blue-50',
-                tiktok: 'border-gray-800 bg-gray-50',
-                email: 'border-gray-400 bg-gray-50',
-                wordpress: 'border-blue-600 bg-blue-50',
-                youtube: 'border-red-400 bg-red-50',
-              };
-              return (
+              {timingSuggestion && (
                 <button
-                  key={ch.id}
                   type="button"
-                  onClick={() => setSelectedChannelId(isSelected ? null : ch.id)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-colors ${
-                    isSelected ? (COLORS[ch.platform] ?? 'border-teal-400 bg-teal-50') : 'border-gray-200 hover:border-gray-300'
-                  }`}
+                  onClick={handleApplySuggestion}
+                  className="w-full flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors text-left"
                 >
-                  <CheckCircle2 className={`h-4 w-4 flex-shrink-0 ${isSelected ? 'text-teal-600' : 'text-gray-300'}`} />
+                  <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{ch.label ?? ch.platform}</p>
-                    <p className="text-xs text-gray-500">{ch.provider}</p>
+                    <p className="text-sm font-medium text-gray-800">
+                      Suggested: {timingSuggestion.day} at {timingSuggestion.time}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">{timingSuggestion.reason}</p>
                   </div>
                 </button>
-              );
-            })}
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="schedule-date" className="block text-xs font-medium text-gray-600 mb-1">
+                    <Calendar className="h-3.5 w-3.5 inline mr-1" />
+                    Date
+                  </label>
+                  <input
+                    id="schedule-date"
+                    type="date"
+                    value={scheduledDate ?? ''}
+                    onChange={(e) => useCanvasStore.getState().setScheduledDate(e.target.value || null)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="schedule-time" className="block text-xs font-medium text-gray-600 mb-1">
+                    <Clock className="h-3.5 w-3.5 inline mr-1" />
+                    Time
+                  </label>
+                  <input
+                    id="schedule-time"
+                    type="time"
+                    value={scheduledTime ?? ''}
+                    onChange={(e) => useCanvasStore.getState().setScheduledTime(e.target.value || null)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Two primary actions */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Action 1 — Mark as Ready (opens download options on success) */}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!isApproved) {
+                      await handlePublish('approve');
+                    }
+                    setShowDownloadFormats(true);
+                  }}
+                  disabled={isSubmitting}
+                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-gray-700 font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  {isApproved ? 'Ready' : 'Mark as Ready'}
+                </button>
+
+                {/* Action 2 — Publish / Schedule to Platform */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!effectiveChannelId) return;
+                    handlePublishToChannel(effectiveChannelId);
+                  }}
+                  disabled={!hasActiveChannels || isSubmitting || (hasMultipleChannels && !selectedChannelId)}
+                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <Send className="h-4 w-4" />
+                  {publishLabel}
+                </button>
+              </div>
+
+              {/* Download format picker — appears after Mark as Ready */}
+              {showDownloadFormats && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                  <p className="text-xs font-medium text-emerald-800 mb-2 flex items-center gap-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Marked as ready — download a copy if you like
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {exportFormats.map((fmt) => {
+                      const Icon = ICON_MAP[fmt.icon] ?? FileText;
+                      const onClick = fmt.id === 'clipboard'
+                        ? handleCopyToClipboard
+                        : () => handleDownload(fmt.id);
+                      return (
+                        <button
+                          key={fmt.id}
+                          type="button"
+                          onClick={onClick}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-emerald-200 bg-white text-xs font-medium text-gray-700 hover:bg-emerald-100"
+                        >
+                          <Icon className="h-3.5 w-3.5" />
+                          {fmt.id === 'clipboard' && copied ? 'Copied!' : fmt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* No active channel hint */}
+              {!hasActiveChannels && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
+                  <Plug className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>Connect a publishing channel in Settings → Integrations to enable Publish / Schedule. You can still Mark as Ready or download locally.</span>
+                </div>
+              )}
+
+              {/* Channel selector — only shown when multiple active channels require a choice */}
+              {hasMultipleChannels && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-gray-600">Select publishing channel</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {activeChannels.map((ch) => {
+                      const isSelected = selectedChannelId === ch.id;
+                      return (
+                        <button
+                          key={ch.id}
+                          type="button"
+                          onClick={() => setSelectedChannelId(isSelected ? null : ch.id)}
+                          className={`flex items-center gap-3 p-2.5 rounded-lg border-2 text-left transition-colors ${
+                            isSelected ? 'border-teal-500 bg-teal-50' : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <CheckCircle2 className={`h-4 w-4 flex-shrink-0 ${isSelected ? 'text-teal-600' : 'text-gray-300'}`} />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{ch.label ?? ch.platform}</p>
+                            <p className="text-xs text-gray-500 truncate">{ch.provider}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Success */}
+              {publishSuccess && (
+                <p className="text-sm text-emerald-600 flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  {publishSuccess}
+                </p>
+              )}
+            </div>
           </div>
+        );
+      })()}
 
-          {selectedChannelId && (
-            <button
-              type="button"
-              onClick={async () => {
-                setIsSubmitting(true);
-                setError(null);
-                try {
-                  const body: Record<string, unknown> = { channelId: selectedChannelId };
-                  const store = useCanvasStore.getState();
-                  if (store.scheduledDate) {
-                    const dt = store.scheduledTime
-                      ? `${store.scheduledDate}T${store.scheduledTime}:00Z`
-                      : `${store.scheduledDate}T09:00:00Z`;
-                    body.scheduledFor = dt;
-                  } else {
-                    body.publishNow = true;
-                  }
-                  const res = await fetch(`/api/studio/${deliverableId}/publish-to-channel`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
-                  });
-                  if (!res.ok) throw new Error('Publish failed');
-                  const data = await res.json();
-                  setPublishSuccess(`${data.status === 'published' ? 'Published' : 'Scheduled'} to ${data.channelPlatform}`);
-                  useCanvasStore.getState().setApprovalState({
-                    approvalStatus: data.status === 'published' ? 'PUBLISHED' : 'APPROVED',
-                    publishedAt: data.status === 'published' ? new Date().toISOString() : undefined,
-                  });
-                } catch (err) {
-                  setError(err instanceof Error ? err.message : 'Publish failed');
-                } finally {
-                  setIsSubmitting(false);
-                }
-              }}
-              disabled={isSubmitting || !requiredPassed}
-              className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              <Send className="h-4 w-4" />
-              {isSubmitting ? 'Publishing...' : scheduledDate ? 'Schedule to Platform' : 'Publish Now'}
-            </button>
-          )}
-
-          {publishSuccess && (
-            <p className="text-sm text-emerald-600 flex items-center gap-1">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              {publishSuccess}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* No channels connected hint */}
-      {!isPublished && channels && channels.length === 0 && (
-        <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-center">
-          <Plug className="h-5 w-5 text-gray-400 mx-auto mb-2" />
-          <p className="text-sm text-gray-600 font-medium">No publishing platforms connected</p>
-          <p className="text-xs text-gray-400 mt-1">
-            Go to Settings → Integrations to connect LinkedIn, Instagram, Email, WordPress and more.
-          </p>
-        </div>
-      )}
-
-      {/* ── Section 5: Export ──────────────────────────────────── */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Export</h3>
-        <div className="flex flex-wrap gap-2">
-          {exportFormats.map((fmt) => {
-            const Icon = ICON_MAP[fmt.icon] ?? FileText;
-            if (fmt.id === 'clipboard') {
+      {/* Export stays available after Publish too (download approved/published content) */}
+      {isPublished && (
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">Download</h3>
+          <div className="flex flex-wrap gap-2">
+            {exportFormats.map((fmt) => {
+              const Icon = ICON_MAP[fmt.icon] ?? FileText;
+              const onClick = fmt.id === 'clipboard'
+                ? handleCopyToClipboard
+                : () => handleDownload(fmt.id);
               return (
                 <button
                   key={fmt.id}
                   type="button"
-                  onClick={handleCopyToClipboard}
+                  onClick={onClick}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
                 >
                   <Icon className="h-3.5 w-3.5" />
-                  {copied ? 'Copied!' : fmt.label}
+                  {fmt.id === 'clipboard' && copied ? 'Copied!' : fmt.label}
                 </button>
               );
-            }
-            return (
-              <button
-                key={fmt.id}
-                type="button"
-                onClick={() => handleDownload(fmt.id)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50"
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {fmt.label}
-              </button>
-            );
-          })}
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

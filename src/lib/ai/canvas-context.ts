@@ -103,13 +103,33 @@ const CONTENT_TYPE_TO_MEDIUM: Record<string, { platform: string; format: string 
   'promotional-email': { platform: 'email', format: 'newsletter' },
   'nurture-sequence': { platform: 'email', format: 'newsletter' },
   're-engagement-email': { platform: 'email', format: 'newsletter' },
-  // Web
+  // Web — landing/product pages (hero + CTA focused)
   'landing-page': { platform: 'web', format: 'landing-page' },
   'product-page': { platform: 'web', format: 'landing-page' },
+  'faq-page': { platform: 'web', format: 'landing-page' },
+  'comparison-page': { platform: 'web', format: 'landing-page' },
+  'microsite': { platform: 'web', format: 'landing-page' },
+  // Long-form content (narrative focused, no hero)
   'blog-post': { platform: 'web', format: 'blog-article' },
   'pillar-page': { platform: 'web', format: 'blog-article' },
   'article': { platform: 'web', format: 'blog-article' },
   'thought-leadership': { platform: 'web', format: 'blog-article' },
+  'whitepaper': { platform: 'web', format: 'blog-article' },
+  'case-study': { platform: 'web', format: 'blog-article' },
+  'ebook': { platform: 'web', format: 'blog-article' },
+  // Sales enablement
+  'one-pager': { platform: 'sales', format: 'one-pager' },
+  'sales-deck': { platform: 'sales', format: 'sales-deck' },
+  'proposal-template': { platform: 'sales', format: 'proposal' },
+  'product-description': { platform: 'sales', format: 'product-description' },
+  // PR, HR & Comms
+  'press-release': { platform: 'pr', format: 'press-release' },
+  'media-pitch': { platform: 'pr', format: 'media-pitch' },
+  'internal-comms': { platform: 'pr', format: 'internal-comms' },
+  'career-page': { platform: 'pr', format: 'career-page' },
+  'job-ad-copy': { platform: 'pr', format: 'job-ad' },
+  'employee-story': { platform: 'pr', format: 'employee-story' },
+  'impact-report': { platform: 'pr', format: 'impact-report' },
   // Video
   'video-ad': { platform: 'tiktok', format: 'video' },
 };

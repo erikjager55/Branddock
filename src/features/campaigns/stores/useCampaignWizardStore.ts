@@ -451,9 +451,6 @@ export const useCampaignWizardStore = create<CampaignWizardState>()(
         // Reset to the mode's default pipeline preset on mode switch.
         // Users who want a custom config can still tweak the sliders after.
         pipelineConfig: getDefaultPresetForMode(wizardMode),
-        // Content mode always includes concept — reset skipConcept to prevent
-        // stale state from a previous campaign-mode session bleeding through.
-        ...(wizardMode === 'content' ? { skipConceptStep: false } : {}),
       }),
     nextStep: () =>
       set((s) => {

@@ -166,6 +166,10 @@ interface CanvasStoreState {
   // ─── Accordion actions ────────────────────────────────────
   advanceToStep: (stepId: string) => void;
   goToStep: (stepId: string) => void;
+  /** Set activeStep directly, bypassing the completion-guard in goToStep. Used for restoring from server-side state. */
+  setActiveStep: (stepId: string) => void;
+  /** Replace the completedSteps set. Used for restoring from server-side state. */
+  setCompletedSteps: (stepIds: string[]) => void;
   setStepSummary: (stepId: string, summary: StepSummaryData) => void;
   setMediumGenerationStatus: (status: 'idle' | 'generating' | 'complete' | 'error') => void;
   setGeneratedMediumUrl: (url: string | null) => void;
@@ -266,7 +270,26 @@ const INITIAL_STATE = {
 export const useCanvasStore = create<CanvasStoreState>((set) => ({
   ...INITIAL_STATE,
 
-  setContextStack: (stack) => set({ contextStack: stack }),
+  setContextStack: (stack) =>
+    set((state) => {
+      // Hydrate contentTypeInputs from the context stack on first load.
+      // The wizard stored these in deliverable.settings and the /context
+      // endpoint surfaces them on the stack — but the form reads them
+      // from the top-level store field, not from contextStack. Sync them
+      // here so users don't re-enter SEO keyword, meta description, etc.
+      //
+      // Only hydrate if the user hasn't already modified them locally
+      // (contentTypeInputsModified guards against clobbering live edits).
+      const hydrated = stack.contentTypeInputs;
+      const shouldHydrate =
+        !state.contentTypeInputsModified &&
+        hydrated &&
+        Object.keys(hydrated).length > 0;
+      return {
+        contextStack: stack,
+        ...(shouldHydrate ? { contentTypeInputs: hydrated } : {}),
+      };
+    }),
 
   setDeliverable: (id, type, campaignId) =>
     set({ deliverableId: id, contentType: type, campaignId: campaignId ?? null }),
@@ -353,6 +376,10 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       }
       return {};
     }),
+
+  setActiveStep: (stepId) => set({ activeStep: stepId }),
+
+  setCompletedSteps: (stepIds) => set({ completedSteps: new Set(stepIds) }),
 
   setStepSummary: (stepId, summary) =>
     set((state) => {

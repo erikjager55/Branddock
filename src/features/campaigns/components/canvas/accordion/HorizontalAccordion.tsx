@@ -123,10 +123,11 @@ export function HorizontalAccordion({ deliverableId }: HorizontalAccordionProps)
     <div className="flex h-full" style={{ minHeight: 0 }}>
       {/* Preceding step tabs + active step tab (left side) */}
       <div className="flex flex-shrink-0 border-r border-gray-200" role="tablist" aria-orientation="vertical" aria-label="Content canvas steps">
-        {precedingSteps.map((step) => (
+        {precedingSteps.map((step, idx) => (
           <VerticalTab
             key={step.id}
-            stepNumber={step.id}
+            stepId={step.id}
+            stepNumber={idx + 1}
             title={step.title}
             icon={step.icon}
             status={getStepStatus(step.id)}
@@ -136,7 +137,8 @@ export function HorizontalAccordion({ deliverableId }: HorizontalAccordionProps)
         ))}
         <VerticalTab
           key={activeStepDef?.id ?? 'context'}
-          stepNumber={activeStepDef?.id ?? 'context'}
+          stepId={activeStepDef?.id ?? 'context'}
+          stepNumber={activeIndex >= 0 ? activeIndex + 1 : 1}
           title={activeStepDef?.title ?? ''}
           icon={activeStepDef?.icon ?? FileText}
           status="active"
@@ -170,10 +172,11 @@ export function HorizontalAccordion({ deliverableId }: HorizontalAccordionProps)
       {/* Following step tabs (right side) */}
       {followingSteps.length > 0 && (
         <div className="flex flex-shrink-0 border-l border-gray-200">
-          {followingSteps.map((step) => (
+          {followingSteps.map((step, idx) => (
             <VerticalTab
               key={step.id}
-              stepNumber={step.id}
+              stepId={step.id}
+              stepNumber={activeIndex + 2 + idx}
               title={step.title}
               icon={step.icon}
               status={getStepStatus(step.id)}

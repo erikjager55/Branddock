@@ -420,7 +420,11 @@ export function StrategyStep() {
   useEffect(() => {
     if (strategyPhase !== "rationale_complete") return;
 
-    if (!skipConceptStep || wizardMode === 'content') {
+    // skipConceptStep applies to both campaign and content mode now — when
+    // the user opts out of the creative pipeline, build the blueprint
+    // directly from the strategy foundation and advance to the next step
+    // (Deliverables in campaign mode, Content generation in content mode).
+    if (!skipConceptStep) {
       useCampaignWizardStore.getState().nextStep();
       return;
     }

@@ -29,6 +29,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const selections = useCanvasStore((s) => s.selections);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
+  const generationStatus = useCanvasStore((s) => s.generationStatus);
   const imageVariants = useCanvasStore((s) => s.imageVariants);
   const contextStack = useCanvasStore((s) => s.contextStack);
   const contentType = useCanvasStore((s) => s.contentType);
@@ -37,6 +38,16 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
 
   const hasVariants = variantGroups.size > 0;
   const isGenerating = globalStatus === 'generating';
+
+  // Which groups are currently regenerating — drives per-card overlay
+  const regeneratingGroups = useMemo(() => {
+    const set = new Set<string>();
+    for (const [group, status] of generationStatus) {
+      if (status === 'generating') set.add(group);
+    }
+    return set;
+  }, [generationStatus]);
+  const isAnyRegenerating = regeneratingGroups.size > 0;
   const isVideoScript = contentType ? VIDEO_ADJACENT_TYPES.has(contentType) : false;
   const hasSceneGroups = isVideoScript && (variantGroups.has('hook') || variantGroups.has('body') || variantGroups.has('cta'));
 
@@ -129,11 +140,35 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   // ─── Variants ready ────────────────────────────────────────
   return (
     <div className="space-y-6">
-      {/* Still streaming indicator */}
-      {isGenerating && (
+      {/* Regeneration banner — prominent so user doesn't miss it */}
+      {isGenerating && hasVariants && (
+        <div className="flex items-center gap-3 rounded-lg border-2 border-teal-200 bg-teal-50 px-4 py-3">
+          <Loader2 className="h-5 w-5 animate-spin text-teal-600 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-teal-900">
+              {regeneratingGroups.size > 0
+                ? `Regenerating ${Array.from(regeneratingGroups).map((g) => g.replace(/_/g, ' ')).join(', ')}...`
+                : 'Generating content...'}
+            </p>
+            <p className="text-xs text-teal-700">
+              Applying your feedback — this can take 10–30 seconds.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={abort}
+            className="flex-shrink-0 text-xs font-medium text-teal-700 hover:text-teal-900 underline"
+          >
+            Stop
+          </button>
+        </div>
+      )}
+
+      {/* Still streaming (initial generation, no variants yet shown) */}
+      {isGenerating && !hasVariants && (
         <div className="flex items-center gap-2 text-sm text-primary">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Generating more variants...
+          Generating variants...
         </div>
       )}
 
@@ -171,12 +206,22 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
               tabIndex={0}
               onClick={() => selectVariant(idx)}
               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectVariant(idx); } }}
-              className={`text-left rounded-xl border-2 overflow-hidden transition-all cursor-pointer ${
+              className={`text-left rounded-xl border-2 overflow-hidden transition-all cursor-pointer relative ${
                 isSelected
                   ? 'border-teal-500 ring-2 ring-teal-200'
                   : 'border-gray-200 hover:border-gray-300'
-              }`}
+              } ${isAnyRegenerating ? 'opacity-60' : ''}`}
             >
+              {/* Regeneration overlay — visible when any group is regenerating */}
+              {isAnyRegenerating && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm pointer-events-none">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-teal-600 text-white shadow-lg">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm font-semibold">Regenerating...</span>
+                  </div>
+                </div>
+              )}
+
               {/* Variant label header */}
               <div className={`flex items-center justify-between px-3 py-2 text-xs font-semibold ${
                 isSelected ? 'bg-teal-50 text-teal-700' : 'bg-gray-50 text-gray-600'

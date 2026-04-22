@@ -5,7 +5,10 @@ import type { AccordionStepStatus } from '../../../types/accordion.types';
 import { ACCORDION, cn } from '@/lib/constants/design-tokens';
 
 interface VerticalTabProps {
-  stepNumber: string | number;
+  /** DOM id used for focus/aria — unique per step (e.g. "context", "variants") */
+  stepId: string;
+  /** Display number shown in the circle — 1-based index in the flow */
+  stepNumber: number;
   title: string;
   icon: LucideIcon;
   status: AccordionStepStatus;
@@ -14,6 +17,7 @@ interface VerticalTabProps {
 }
 
 export function VerticalTab({
+  stepId,
   stepNumber,
   title,
   icon: Icon,
@@ -26,13 +30,13 @@ export function VerticalTab({
   return (
     <button
       type="button"
-      id={`canvas-step-tab-${stepNumber}`}
+      id={`canvas-step-tab-${stepId}`}
       onClick={onClick}
       onKeyDown={onKeyDown}
       disabled={status === 'locked'}
       tabIndex={isActive ? 0 : -1}
       className={cn(
-        'flex flex-col items-center justify-center w-16 h-full relative cursor-pointer',
+        'flex flex-col items-center w-16 h-full relative cursor-pointer pt-6',
         ACCORDION.transition,
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-400',
         isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-500',
@@ -42,7 +46,7 @@ export function VerticalTab({
       aria-controls="canvas-step-panel"
       role="tab"
     >
-      {/* Step number */}
+      {/* Step number — fixed position so all circles align horizontally */}
       <div
         className={cn(
           'flex items-center justify-center h-9 w-9 rounded-full text-sm font-bold flex-shrink-0',
@@ -53,11 +57,11 @@ export function VerticalTab({
       </div>
 
       {/* Icon */}
-      <div className="mt-3">
-        <Icon className={cn('h-5 w-5 flex-shrink-0', isActive ? 'text-emerald-600' : 'text-gray-400')} />
+      <div className="mt-3 flex-shrink-0">
+        <Icon className={cn('h-5 w-5', isActive ? 'text-emerald-600' : 'text-gray-400')} />
       </div>
 
-      {/* Title — vertical text */}
+      {/* Title — vertical text, grows to fill remaining space */}
       <span
         className={cn('mt-3 text-xs font-semibold tracking-wide select-none', isActive ? 'text-emerald-700' : 'text-gray-400')}
         style={{

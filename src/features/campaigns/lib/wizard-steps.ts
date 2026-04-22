@@ -146,7 +146,8 @@ export const CONTENT_STEPS: StepDefinition[] = [
 
 export function getStepsForMode(mode: WizardMode, skipConcept?: boolean): StepDefinition[] {
   const steps = mode === 'content' ? CONTENT_STEPS : CAMPAIGN_STEPS;
-  // Content mode always includes concept — skipConcept only applies to campaign mode
-  if (skipConcept && mode !== 'content') return steps.filter(s => s.key !== 'concept');
+  // skipConcept now applies to both campaign and content mode — useful for
+  // SEO / informative content types where the creative pipeline is overkill.
+  if (skipConcept) return steps.filter(s => s.key !== 'concept');
   return steps;
 }

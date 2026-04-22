@@ -8,7 +8,10 @@ export type MediumCategory =
   | 'social-post'
   | 'carousel'
   | 'email'
-  | 'web-page'
+  | 'web-page'     // landing pages, product pages, FAQ, comparison — hero + CTA focused
+  | 'long-form'    // blog, article, whitepaper, case-study, ebook — narrative focused
+  | 'sales'        // one-pager, sales deck, proposal, product description
+  | 'pr-hr'        // press release, media pitch, internal comms, career page, job ad
   | 'podcast'
   | 'advertising';
 

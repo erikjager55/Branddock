@@ -9,7 +9,7 @@ import { WEBSITE_DELIVERABLE_TYPES } from '@/lib/ai/seo-pipeline.types';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
 import { ContentTypeInputFields } from '../../shared/ContentTypeInputFields';
-import { getContentTypeInputs, type ContentTypeInputValue } from '../../../lib/content-type-inputs';
+import { getContentTypeInputs, getRequiredInputs, type ContentTypeInputValue } from '../../../lib/content-type-inputs';
 
 interface Step1ContextProps {
   deliverableId: string;
@@ -21,6 +21,8 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
   const additionalContextItems = useCanvasStore((s) => s.additionalContextItems);
   const removeContextItem = useCanvasStore((s) => s.removeContextItem);
   const variantGroups = useCanvasStore((s) => s.variantGroups);
+  const contentType = useCanvasStore((s) => s.contentType);
+  const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
   const { generate, isGenerating } = useCanvasOrchestration(deliverableId);
 
   // When content has already been generated (variants exist in the store,
@@ -29,6 +31,22 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
   // not re-run the expensive generation pipeline. The user can still trigger
   // a fresh generation via the secondary "Regenerate" link.
   const hasExistingContent = variantGroups.size > 0;
+
+  // Required-field gate: advancing past Step 1 (and triggering generation)
+  // should not be possible while required content-type inputs are empty.
+  const missingRequired = React.useMemo(() => {
+    if (!contentType) return [] as { key: string; label: string }[];
+    const required = getRequiredInputs(contentType);
+    return required.filter((field) => {
+      const value = contentTypeInputs[field.key];
+      if (value == null) return true;
+      if (typeof value === 'string') return value.trim().length === 0;
+      if (Array.isArray(value)) return value.length === 0;
+      return false;
+    }).map((f) => ({ key: f.key, label: f.label }));
+  }, [contentType, contentTypeInputs]);
+
+  const hasMissingRequired = missingRequired.length > 0;
 
   const handleContinue = () => {
     onAdvance?.();
@@ -188,12 +206,35 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
 
       {/* Primary CTA — Continue (if content exists) or Generate (first time) */}
       <div className="pt-2 space-y-2">
+        {/* Missing-required alert — blocks Continue / Generate until filled */}
+        {hasMissingRequired && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800"
+          >
+            <span className="text-amber-600 mt-0.5">*</span>
+            <div>
+              <p className="font-semibold">
+                Fill in required field{missingRequired.length > 1 ? 's' : ''} to continue:
+              </p>
+              <ul className="mt-0.5 list-disc list-inside">
+                {missingRequired.map((f) => (
+                  <li key={f.key}>{f.label}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
         {hasExistingContent ? (
           <>
             <button
               type="button"
               onClick={handleContinue}
-              className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
+              disabled={hasMissingRequired}
+              aria-disabled={hasMissingRequired}
+              title={hasMissingRequired ? 'Fill in required fields first' : undefined}
+              className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <Sparkles className="h-4 w-4" />
               Continue to Variants
@@ -201,9 +242,10 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
             <button
               type="button"
               onClick={handleGenerate}
-              disabled={isGenerating}
+              disabled={isGenerating || hasMissingRequired}
               aria-busy={isGenerating}
-              className="w-full text-xs text-gray-500 hover:text-gray-700 underline disabled:opacity-50 disabled:cursor-not-allowed"
+              title={hasMissingRequired ? 'Fill in required fields first' : undefined}
+              className="w-full text-xs text-gray-500 hover:text-gray-700 underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline"
             >
               {isGenerating ? 'Regenerating...' : 'Regenerate from scratch'}
             </button>
@@ -212,8 +254,9 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
           <button
             type="button"
             onClick={handleGenerate}
-            disabled={isGenerating}
+            disabled={isGenerating || hasMissingRequired}
             aria-busy={isGenerating}
+            title={hasMissingRequired ? 'Fill in required fields first' : undefined}
             className={`w-full flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <Sparkles className="h-4 w-4" />

@@ -11,8 +11,6 @@ import { DELIVERABLE_CATEGORIES, getDeliverablesByCategory } from "../../lib/del
 import type { StrategicIntent } from "../../types/campaign-wizard.types";
 import { PipelineConfigCard } from "./PipelineConfigCard";
 import { BriefingSourcesField } from "./BriefingSourcesField";
-import { ContentTypeInputFields } from "../shared/ContentTypeInputFields";
-import type { ContentTypeInputValue } from "../../lib/content-type-inputs";
 
 // ─── Strategic Intent Cards ──────────────────────────────
 
@@ -61,8 +59,6 @@ export function SetupStep() {
   const setCampaignType = useCampaignWizardStore((s) => s.setCampaignType);
   const selectedContentType = useCampaignWizardStore((s) => s.selectedContentType);
   const setSelectedContentType = useCampaignWizardStore((s) => s.setSelectedContentType);
-  const contentTypeInputs = useCampaignWizardStore((s) => s.contentTypeInputs);
-  const setContentTypeInput = useCampaignWizardStore((s) => s.setContentTypeInput);
   const strategicIntent = useCampaignWizardStore((s) => s.strategicIntent);
   const setStrategicIntent = useCampaignWizardStore((s) => s.setStrategicIntent);
   const startDate = useCampaignWizardStore((s) => s.startDate);
@@ -197,20 +193,10 @@ export function SetupStep() {
         />
       )}
 
-      {/* Type-specific input fields — content mode only, shown after type selection */}
-      {isContentMode && selectedContentType && (
-        <div className="rounded-lg border border-gray-200 p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Content Details</h3>
-          <p className="text-xs text-gray-500 mb-4">
-            Optional — fill in to make the generated content more specific. You can also edit these later in the Canvas.
-          </p>
-          <ContentTypeInputFields
-            typeId={selectedContentType}
-            values={contentTypeInputs}
-            onChange={(key: string, val: ContentTypeInputValue) => setContentTypeInput(key, val)}
-          />
-        </div>
-      )}
+      {/* Content-specific inputs (SEO keyword, landing page URL, etc.) are
+          intentionally NOT shown here — they live exclusively in the Content
+          Canvas per the design principle: Setup = universal campaign info only,
+          Canvas = content-specific parameters. */}
 
       {/* Campaign Type — 3-column cards (campaign mode only) */}
       {!isContentMode && <div>
@@ -309,9 +295,8 @@ export function SetupStep() {
       {/* Pipeline Configuration (sliders + presets) */}
       <PipelineConfigCard />
 
-      {/* Skip Creative Concept toggle — campaign mode only.
-          Content mode always has a concept step, no need to skip. */}
-      {!isContentMode && (
+      {/* Skip Creative Concept toggle — available in both campaign and content mode.
+          Useful for SEO / informative long-form types where creative pipeline is overkill. */}
       <div className="border border-gray-200 rounded-lg p-4 bg-gray-50/50">
         <label className="flex items-start gap-3 cursor-pointer">
           <input
@@ -323,12 +308,13 @@ export function SetupStep() {
           <div>
             <span className="text-sm font-medium text-gray-700">Skip Creative Concept</span>
             <p className="text-xs text-gray-500 mt-0.5">
-              Go directly from strategy to deliverables. The AI translates your strategy into a core message for your target audience, without creative concept development (insight mining, concept generation, debate).
+              {isContentMode
+                ? 'Go directly from strategy to content generation. Recommended for SEO / informative content (blog, whitepaper, article) where insight mining and creative debate are overkill. Saves 3–5 minutes.'
+                : 'Go directly from strategy to deliverables. The AI translates your strategy into a core message for your target audience, without creative concept development (insight mining, concept generation, debate).'}
             </p>
           </div>
         </label>
       </div>
-      )}
 
       {/* Date fields — campaign mode only, hidden for content mode */}
       {(() => {

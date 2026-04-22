@@ -125,9 +125,11 @@ export function ContentCardList({
                   }`}
                 />
               </button>
-              {item.title.toLowerCase() === item.type.toLowerCase() && onRename ? (
+              {onRename ? (
                 <InlineRenameField
                   placeholder={`Untitled ${formatContentType(item.type)}`}
+                  currentValue={item.title.toLowerCase() === item.type.toLowerCase() ? undefined : item.title}
+                  className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-200 truncate"
                   onRename={(t) => onRename(item.id, item.campaignId, t)}
                 />
               ) : (

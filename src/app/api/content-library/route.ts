@@ -109,8 +109,14 @@ export async function GET(request: NextRequest) {
         d.generatedVideoUrl != null;
       const isApproved =
         d.approvalStatus === "APPROVED" || d.approvalStatus === "PUBLISHED";
+      const isScheduled = d.scheduledPublishDate != null;
       const isPipelineComplete = d.pipelineStatus === "COMPLETE";
-      const isPublishReady = hasContent && isApproved;
+      // User-approved OR scheduled = publish-ready. We trust the user's
+      // explicit action (Mark as Ready / Schedule to Platform) as the
+      // source of truth for "green" state — hasContent-gating was too
+      // strict for Canvas-generated items where variants live on
+      // DeliverableComponent records rather than Deliverable fields.
+      const isPublishReady = isApproved || isScheduled;
 
       // Build a human-readable hint about what's missing
       const hints: string[] = [];

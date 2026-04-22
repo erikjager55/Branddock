@@ -27,7 +27,8 @@ export function DeleteConfirmModal({ title, onConfirm, onCancel }: DeleteConfirm
       aria-labelledby="delete-confirm-title"
     >
       <div
-        className="bg-white rounded-xl shadow-2xl max-w-sm w-full p-5"
+        className="bg-white rounded-xl shadow-2xl w-full p-5"
+        style={{ maxWidth: 420 }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start gap-3 mb-4">

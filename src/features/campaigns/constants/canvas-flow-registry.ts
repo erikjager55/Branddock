@@ -10,7 +10,7 @@
 // =============================================================
 
 import type { LucideIcon } from 'lucide-react';
-import { FileText, Layers, Monitor, Calendar, Video, Search } from 'lucide-react';
+import { FileText, Layers, Monitor, Calendar, Video } from 'lucide-react';
 import type { MediumCategory } from '../types/medium-config.types';
 
 // ─── Types ────────────────────────────────────────────────────
@@ -46,17 +46,12 @@ const VIDEO_FLOW: CanvasStepDefinition[] = [
   { id: 'planner',       title: 'Planner',          icon: Calendar, componentKey: 'planner' },
 ];
 
-const WEB_PAGE_FLOW: CanvasStepDefinition[] = [
-  { id: 'context',  title: 'Review Context',   icon: FileText, componentKey: 'context' },
-  { id: 'seo',      title: 'SEO & Structure',  icon: Search,   componentKey: 'context' }, // SEO inputs are part of context for now
-  { id: 'variants', title: 'Content Variants',  icon: Layers,   componentKey: 'variants' },
-  { id: 'medium',   title: 'Medium',           icon: Monitor,  componentKey: 'medium' },
-  { id: 'planner',  title: 'Planner',          icon: Calendar, componentKey: 'planner' },
-];
+// Web-page (blog, landing, product page) uses the default 4-step flow.
+// SEO inputs are part of the Review Context step (Step 1) — no dedicated
+// SEO tab is needed. Kept in registry for backward compat / future use.
 
 const FLOW_REGISTRY: Record<string, CanvasStepDefinition[]> = {
   video: VIDEO_FLOW,
-  'web-page': WEB_PAGE_FLOW,
 };
 
 // ─── Public API ───────────────────────────────────────────────
@@ -87,7 +82,7 @@ export function getStepDefinition(category: MediumCategory | null, stepId: strin
 
 /** All valid step IDs across all flows (for type safety) */
 export const ALL_STEP_IDS = [
-  'context', 'variants', 'script', 'medium', 'video-builder', 'seo', 'planner',
+  'context', 'variants', 'script', 'medium', 'video-builder', 'planner',
 ] as const;
 
 export type CanvasStepId = (typeof ALL_STEP_IDS)[number];

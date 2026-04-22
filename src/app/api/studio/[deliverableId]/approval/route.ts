@@ -8,9 +8,9 @@ import { trackEvent } from '@/lib/analytics/posthog';
 
 const VALID_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ['IN_REVIEW', 'APPROVED'],
-  IN_REVIEW: ['APPROVED', 'CHANGES_REQUESTED'],
-  CHANGES_REQUESTED: ['IN_REVIEW'],
-  APPROVED: ['PUBLISHED'],
+  IN_REVIEW: ['APPROVED', 'CHANGES_REQUESTED', 'DRAFT'],
+  CHANGES_REQUESTED: ['APPROVED', 'IN_REVIEW', 'DRAFT'],
+  APPROVED: ['PUBLISHED', 'DRAFT'],
   PUBLISHED: [],
 };
 
@@ -56,6 +56,17 @@ export async function PATCH(
 
     const { status: newStatus, note } = parsed.data;
     const currentStatus = deliverable.approvalStatus ?? 'DRAFT';
+
+    // Idempotent no-op: status already matches — just echo current state.
+    if (currentStatus === newStatus) {
+      return NextResponse.json({
+        approvalStatus: deliverable.approvalStatus,
+        approvalNote: deliverable.approvalNote,
+        approvedBy: deliverable.approvedBy,
+        approvedAt: deliverable.approvedAt,
+        publishedAt: deliverable.publishedAt,
+      });
+    }
 
     // Validate state transition
     const allowed = VALID_TRANSITIONS[currentStatus] ?? [];

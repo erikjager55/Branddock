@@ -55,10 +55,15 @@ export function deriveTrafficLight(
   workflowStatus?: string,
   state?: string,
 ): { light: TrafficLight; label: string } {
-  if (isPublishReady === true || state === "published") {
+  if (isPublishReady === true || state === "published" || state === "scheduled") {
     return {
       light: "green",
-      label: state === "published" ? "Published" : "Publish-ready",
+      label:
+        state === "published"
+          ? "Published"
+          : state === "scheduled"
+            ? "Scheduled"
+            : "Ready",
     };
   }
   if (
@@ -137,21 +142,32 @@ export interface CalendarCardProps {
   campaignConfidence?: number | null;
 }
 
-/** Inline rename input — shown in place of "Untitled" text.
- *  Exported for reuse in Grid view. */
+/** Inline rename input — click-to-edit title field.
+ *  When `currentValue` is provided, shows the title as clickable text that
+ *  opens an editable input on click. Without it, shows a dashed placeholder
+ *  (untitled state). Exported for reuse in Grid/List/Calendar views. */
 export function InlineRenameField({
   placeholder,
+  currentValue,
+  className,
   onRename,
 }: {
   placeholder: string;
+  currentValue?: string;
+  className?: string;
   onRename: (newTitle: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
 
+  const handleStartEdit = () => {
+    setValue(currentValue ?? "");
+    setEditing(true);
+  };
+
   const handleSubmit = () => {
     const trimmed = value.trim();
-    if (trimmed) {
+    if (trimmed && trimmed !== (currentValue ?? "")) {
       onRename(trimmed);
     }
     setEditing(false);
@@ -171,20 +187,32 @@ export function InlineRenameField({
           e.stopPropagation();
         }}
         onClick={(e) => e.stopPropagation()}
-        placeholder="Enter a title…"
+        placeholder={placeholder}
         autoFocus
-        className="w-full text-[12px] font-semibold text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-200 mb-0.5"
+        className={className ?? "w-full text-[12px] font-semibold text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-200 mb-0.5"}
       />
     );
   }
 
+  // With currentValue: clickable real title
+  if (currentValue) {
+    return (
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); handleStartEdit(); }}
+        className={className ?? "text-left font-semibold text-sm text-gray-900 hover:text-primary-700 hover:underline decoration-dashed decoration-gray-300 transition-colors truncate w-full"}
+        title="Click to rename"
+      >
+        {currentValue}
+      </button>
+    );
+  }
+
+  // Empty state: dashed placeholder
   return (
     <button
       type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        setEditing(true);
-      }}
+      onClick={(e) => { e.stopPropagation(); handleStartEdit(); }}
       className="text-left font-semibold text-[12px] italic text-gray-400 hover:text-gray-600 mb-0.5 underline decoration-dashed decoration-gray-300 hover:decoration-gray-500 transition-colors"
       title="Click to add a title"
     >
