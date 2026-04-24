@@ -318,8 +318,9 @@ Na Sprint A is de **power-user workflow structureel 4-5 clicks per content item*
 - **Canvas herorder** (Medium vóór Variants) — apart voorstel uit flow-analyse, hoort in aparte refactor
 - **Setup/Canvas duplicaat opruimen** — apart, hoort bij de "content-specifieke inputs alleen in Canvas" principe
 - **"Planner" → "Publish" rename** — micro-fix, kan mee in één van deze sprints
-- **Templates per content type** — niet nodig gebleken met auto-inherit + Brand Assistant
+- **Templates per content type** — ingetrokken
 - **Parallel tweede entry-point** — expliciet ingetrokken na flow-analyse
+- **Content generation quality plan** — apart document, hoort niet thuis in een UX-shortcuts plan (zie roll-out notitie onderaan)
 
 ---
 
