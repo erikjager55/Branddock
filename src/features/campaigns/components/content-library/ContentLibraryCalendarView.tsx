@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type DragEvent,
@@ -275,6 +276,19 @@ export function ContentLibraryCalendarView({
   /** True while ANY item is being dragged — used to dim non-target cells subtly */
   const [isDraggingActive, setIsDraggingActive] = useState(false);
   const updateSchedule = useUpdateDeliverableSchedule();
+
+  // Escape cancels an active drag — consistent with Timeline view.
+  useEffect(() => {
+    if (!isDraggingActive) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsDraggingActive(false);
+        setDragOverKey(null);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [isDraggingActive]);
 
   /** Schedule (or unschedule) an item via date picker — `isoDate` is YYYY-MM-DD or null */
   const handleDatePick = useCallback(
@@ -565,6 +579,7 @@ export function ContentLibraryCalendarView({
                     workflowStatus={item.status}
                     campaignName={item.campaignName}
                     isPublishReady={item.isPublishReady}
+                    hasContent={item.hasContent}
                     readinessHint={item.readinessHint}
                     isDraggable
                     onClick={() =>
@@ -688,6 +703,7 @@ export function ContentLibraryCalendarView({
                           workflowStatus={p.item.status}
                           campaignName={p.item.campaignName}
                           isPublishReady={p.item.isPublishReady}
+                          hasContent={p.item.hasContent}
                           readinessHint={p.item.readinessHint}
                           isDraggable
                           currentDateValue={dateValue}

@@ -33,6 +33,52 @@ function computeWordCount(text: string | null): number | null {
   return trimmed.split(/\s+/).length;
 }
 
+/** Parse a comma-separated query param → trimmed non-empty string array */
+function csv(raw: string | null): string[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+}
+
+/** Derive the traffic-light bucket used by both server filter and UI.
+ *  Matches user mental model of progress rather than DB status enum alone:
+ *    - GREEN  : approved or published
+ *    - RED    : genuinely untouched — no content, not scheduled, status
+ *               NOT_STARTED
+ *    - AMBER  : anything else — content exists, item is scheduled, or
+ *               status advanced to IN_PROGRESS / COMPLETED
+ *  Overdue is a label modifier (see deriveTrafficLight) and never changes
+ *  the bucket. */
+function deriveReadiness(
+  isPublishReady: boolean,
+  status: string | null,
+  hasContent: boolean,
+  isScheduled: boolean,
+  isPublished: boolean,
+): "red" | "amber" | "green" {
+  if (isPublishReady || isPublished) return "green";
+  const hasAnyProgress =
+    hasContent ||
+    isScheduled ||
+    status === "IN_PROGRESS" ||
+    status === "COMPLETED";
+  if (!hasAnyProgress) return "red";
+  return "amber";
+}
+
+/** Classify readiness hints into filter tokens. */
+function hintTokens(hint: string | null): string[] {
+  if (!hint) return [];
+  const tokens: string[] = [];
+  const lower = hint.toLowerCase();
+  if (lower.includes("no content")) tokens.push("no-content");
+  if (lower.includes("not reviewed")) tokens.push("not-reviewed");
+  if (lower.includes("pipeline incomplete")) tokens.push("pipeline-incomplete");
+  return tokens;
+}
+
 // GET /api/content-library
 export async function GET(request: NextRequest) {
   try {
@@ -48,21 +94,38 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get("type");
     const campaignType = searchParams.get("campaignType");
     const status = searchParams.get("status");
-    const sort = searchParams.get("sort") ?? "updatedAt";
+    const sort = searchParams.get("sort") ?? "-updatedAt";
     const favorites = searchParams.get("favorites") === "true";
     const search = searchParams.get("search");
 
+    // Advanced (multi-value) filters — comma-separated lists
+    const typesList = csv(searchParams.get("types"));
+    const campaignsList = csv(searchParams.get("campaigns"));
+    const campaignTypesList = csv(searchParams.get("campaignTypes"));
+    const phasesList = csv(searchParams.get("phases"));
+    const readinessList = csv(searchParams.get("readiness"));
+    const readinessHintsList = csv(searchParams.get("readinessHints"));
+    const scheduledFrom = searchParams.get("scheduledFrom");
+    const scheduledTo = searchParams.get("scheduledTo");
+    const qualityMinRaw = searchParams.get("qualityMin");
+    const qualityMin = qualityMinRaw != null ? Number(qualityMinRaw) : null;
+
     // Build deliverable where clause
+    const campaignWhere: Record<string, unknown> = {
+      workspaceId,
+      isArchived: false,
+    };
     const deliverableWhere: Record<string, unknown> = {
-      campaign: {
-        workspaceId,
-        isArchived: false,
-      },
+      campaign: campaignWhere,
     };
 
-    if (type) {
+    // Content type — single or multi
+    if (typesList.length > 0) {
+      deliverableWhere.contentType = { in: typesList };
+    } else if (type) {
       deliverableWhere.contentType = type;
     }
+
     if (status) {
       deliverableWhere.status = status;
     }
@@ -73,19 +136,58 @@ export async function GET(request: NextRequest) {
       deliverableWhere.title = { contains: search, mode: "insensitive" };
     }
 
-    // Campaign type filter needs to be in the campaign relation
-    if (campaignType) {
-      (deliverableWhere.campaign as Record<string, unknown>).type =
-        campaignType;
+    // Campaign filters
+    if (campaignsList.length > 0) {
+      campaignWhere.id = { in: campaignsList };
+    }
+    if (campaignTypesList.length > 0) {
+      campaignWhere.type = { in: campaignTypesList };
+    } else if (campaignType) {
+      campaignWhere.type = campaignType;
     }
 
-    // Sort mapping
-    const sortMap: Record<string, Record<string, string>> = {
-      updatedAt: { updatedAt: "desc" },
-      qualityScore: { qualityScore: "desc" },
-      title: { title: "asc" },
+    // Journey phase filter — read from Deliverable.journeyPhase or settings.phase
+    if (phasesList.length > 0) {
+      deliverableWhere.OR = [
+        { journeyPhase: { in: phasesList } },
+        // JSON-path fallback: settings.phase (Postgres JSONB)
+        ...phasesList.map((p) => ({
+          settings: { path: ["phase"], equals: p },
+        })),
+      ];
+    }
+
+    // Scheduled date range filter
+    if (scheduledFrom || scheduledTo) {
+      const gte = scheduledFrom ? new Date(scheduledFrom) : undefined;
+      const lte = scheduledTo ? new Date(`${scheduledTo}T23:59:59`) : undefined;
+      deliverableWhere.scheduledPublishDate = {
+        ...(gte ? { gte } : {}),
+        ...(lte ? { lte } : {}),
+      };
+    }
+
+    // Quality minimum
+    if (qualityMin != null && !isNaN(qualityMin)) {
+      deliverableWhere.qualityScore = { gte: qualityMin };
+    }
+
+    // Sort mapping — supports leading "-" for descending
+    const sortKey = sort.startsWith("-") ? sort.slice(1) : sort;
+    const sortDir: "asc" | "desc" = sort.startsWith("-") ? "desc" : "asc";
+    const sortFieldMap: Record<string, string> = {
+      updatedAt: "updatedAt",
+      createdAt: "createdAt",
+      title: "title",
+      qualityScore: "qualityScore",
+      scheduledPublishDate: "scheduledPublishDate",
+      contentType: "contentType",
     };
-    const orderBy = sortMap[sort] ?? { updatedAt: "desc" };
+    // Nested sort (Prisma relation) — campaignName sorts on campaign.title
+    const orderBy: Record<string, unknown> =
+      sortKey === "campaignName"
+        ? { campaign: { title: sortDir } }
+        : { [sortFieldMap[sortKey] ?? "updatedAt"]: sortDir };
 
     const deliverables = await prisma.deliverable.findMany({
       where: deliverableWhere,
@@ -101,7 +203,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const items = deliverables.map((d) => {
+    const rawItems = deliverables.map((d) => {
       // Determine publish readiness
       const hasContent =
         d.generatedText != null ||
@@ -111,12 +213,11 @@ export async function GET(request: NextRequest) {
         d.approvalStatus === "APPROVED" || d.approvalStatus === "PUBLISHED";
       const isScheduled = d.scheduledPublishDate != null;
       const isPipelineComplete = d.pipelineStatus === "COMPLETE";
-      // User-approved OR scheduled = publish-ready. We trust the user's
-      // explicit action (Mark as Ready / Schedule to Platform) as the
-      // source of truth for "green" state — hasContent-gating was too
-      // strict for Canvas-generated items where variants live on
-      // DeliverableComponent records rather than Deliverable fields.
-      const isPublishReady = isApproved || isScheduled;
+      // Publish-ready = user-approved (Mark as Ready) OR already published.
+      // Scheduling alone is NOT readiness — a user can drag an unfinished
+      // item onto the calendar to pick a date, but the content is still
+      // work in progress. Status pill should only turn green once approved.
+      const isPublishReady = isApproved;
 
       // Build a human-readable hint about what's missing
       const hints: string[] = [];
@@ -144,13 +245,48 @@ export async function GET(request: NextRequest) {
         publishedAt: d.publishedAt?.toISOString() ?? null,
         // Publish readiness
         isPublishReady,
+        hasContent,
         readinessHint,
+        // Extra bookkeeping used only for post-filtering; stripped below
+        _isScheduled: isScheduled,
+        _isPublished: d.approvalStatus === "PUBLISHED",
         phase: d.journeyPhase
           ?? (typeof d.settings === "object" && d.settings !== null && !Array.isArray(d.settings)
             ? (d.settings as Record<string, unknown>).phase as string | undefined
             : undefined)
           ?? null,
       };
+    });
+
+    // Post-filter on derived readiness + hints (DB doesn't store these directly)
+    const filteredItems = rawItems.filter((it) => {
+      if (readinessList.length > 0) {
+        const bucket = deriveReadiness(
+          it.isPublishReady,
+          it.status,
+          it.hasContent,
+          (it as { _isScheduled: boolean })._isScheduled,
+          (it as { _isPublished: boolean })._isPublished,
+        );
+        if (!readinessList.includes(bucket)) return false;
+      }
+      if (readinessHintsList.length > 0) {
+        const tokens = hintTokens(it.readinessHint);
+        const matches = readinessHintsList.some((req) => tokens.includes(req));
+        if (!matches) return false;
+      }
+      return true;
+    });
+
+    // Strip internal bookkeeping fields before returning
+    const items = filteredItems.map((it) => {
+      const { _isScheduled: _s, _isPublished: _p, ...rest } = it as typeof it & {
+        _isScheduled: boolean;
+        _isPublished: boolean;
+      };
+      void _s;
+      void _p;
+      return rest;
     });
 
     return NextResponse.json(items);

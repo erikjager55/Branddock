@@ -8,14 +8,7 @@ export { StrategicCampaignCard } from "./overview/StrategicCampaignCard";
 export { QuickContentCard } from "./overview/QuickContentCard";
 export { CampaignOverflowMenu } from "./overview/CampaignOverflowMenu";
 
-// Campaign Detail
-export { CampaignDetailPage } from "./detail/CampaignDetailPage";
-export { ConfigureInputsTab } from "./detail/ConfigureInputsTab";
-export { StrategyResultTab } from "./detail/StrategyResultTab";
-export { DeliverablesTab } from "./detail/DeliverablesTab";
-export { DeliverableRow } from "./detail/DeliverableRow";
-
-// Content Library
+// Content Library (incorporates merged Campaign Detail views)
 export { ContentLibraryPage } from "./content-library/ContentLibraryPage";
 
 // Campaign Wizard

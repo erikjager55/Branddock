@@ -21,10 +21,14 @@ import { groupByCampaign } from "../../lib/group-by-campaign";
 import type { ContentLibraryParams } from "../../types/content-library.types";
 import { ContentStatsCards } from "./ContentStatsCards";
 import { ContentFilterBar } from "./ContentFilterBar";
+import { ActiveFilterChips } from "./ActiveFilterChips";
+import { ContentFiltersPanel } from "./ContentFiltersPopover";
 import { ContentCardGrid } from "./ContentCardGrid";
 import { ContentCardList } from "./ContentCardList";
 import { ContentGroupHeader } from "./ContentGroupHeader";
 import { ContentLibraryCalendarView } from "./ContentLibraryCalendarView";
+import { ContentLibraryTimelineView } from "./ContentLibraryTimelineView";
+import { ContentLibraryCampaignMode } from "./ContentLibraryCampaignMode";
 import { DraftCampaignsList } from "../overview/DraftCampaignsList";
 
 // ─── Types ────────────────────────────────────────────────
@@ -69,26 +73,41 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
   };
 
   const search = useContentLibraryStore((s) => s.search);
-  const typeFilter = useContentLibraryStore((s) => s.typeFilter);
-  const campaignFilter = useContentLibraryStore((s) => s.campaignFilter);
   const statusFilter = useContentLibraryStore((s) => s.statusFilter);
   const sort = useContentLibraryStore((s) => s.sort);
   const viewMode = useContentLibraryStore((s) => s.viewMode);
   const isGrouped = useContentLibraryStore((s) => s.groupByCampaign);
   const showFavorites = useContentLibraryStore((s) => s.showFavorites);
+  const filters = useContentLibraryStore((s) => s.filters);
+  const campaignSubTab = useContentLibraryStore((s) => s.campaignSubTab);
+
+  // Campaign mode: when a single campaign is filtered, the page transforms
+  // into the campaign-detail view — same deliverable rendering, plus
+  // campaign header, stats and actions.
+  const activeCampaignId = filters.campaigns.length === 1 ? filters.campaigns[0] : null;
+  // Hide filter bar + deliverable rendering when viewing Strategy / Channel Plan sub-tabs.
+  const showDeliverables = !activeCampaignId || campaignSubTab === "content";
 
   // Build params from store filters
   const params: ContentLibraryParams = useMemo(
     () => ({
       search: search || undefined,
-      type: typeFilter || undefined,
-      campaignType: campaignFilter || undefined,
       status: statusFilter || undefined,
       sort: sort || undefined,
       favorites: showFavorites || undefined,
       groupByCampaign: isGrouped || undefined,
+      // Advanced filters
+      types: filters.types.length ? filters.types : undefined,
+      campaigns: filters.campaigns.length ? filters.campaigns : undefined,
+      campaignTypes: filters.campaignTypes.length ? filters.campaignTypes : undefined,
+      phases: filters.phases.length ? filters.phases : undefined,
+      readiness: filters.readiness.length ? filters.readiness : undefined,
+      readinessHints: filters.readinessHints.length ? filters.readinessHints : undefined,
+      scheduledFrom: filters.scheduledFrom ?? undefined,
+      scheduledTo: filters.scheduledTo ?? undefined,
+      qualityMin: filters.qualityMin ?? undefined,
     }),
-    [search, typeFilter, campaignFilter, statusFilter, sort, showFavorites, isGrouped],
+    [search, statusFilter, sort, showFavorites, isGrouped, filters],
   );
 
   const { data: items, isLoading } = useContentLibrary(params);
@@ -189,6 +208,19 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
       );
     }
 
+    // Timeline view — horizontal swimlanes with Group-By
+    if (viewMode === "timeline") {
+      return (
+        <ContentLibraryTimelineView
+          items={items}
+          campaignId={activeCampaignId}
+          onOpenItem={handleOpenInStudio}
+          onDeleteItem={handleDeleteContent}
+          onRenameItem={handleRenameContent}
+        />
+      );
+    }
+
     // Grouped view
     if (isGrouped && groups) {
       return (
@@ -257,39 +289,67 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
 
   return (
     <PageShell>
-      <PageHeader
-        moduleKey="content-library"
-        title="Content"
-        subtitle="Browse and manage all your generated content"
-        actions={
-          <div className="flex items-center gap-3">
-            <Button variant="secondary" onClick={() => onNavigate('active-campaigns')} className="gap-2">
-              <Zap className="h-4 w-4" />
-              View Campaigns
-            </Button>
-            <Button data-testid="create-content-button" onClick={() => setShowAddContentModal(true)} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create Content
-            </Button>
-          </div>
-        }
-      />
+      {/* Hide workspace-level PageHeader when in campaign mode — the
+          campaign header below takes over. */}
+      {!activeCampaignId && (
+        <PageHeader
+          moduleKey="content-library"
+          title="Content"
+          subtitle="Browse and manage all your generated content"
+          actions={
+            <div className="flex items-center gap-3">
+              <Button variant="secondary" onClick={() => onNavigate('active-campaigns')} className="gap-2">
+                <Zap className="h-4 w-4" />
+                View Campaigns
+              </Button>
+              <Button data-testid="create-content-button" onClick={() => setShowAddContentModal(true)} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Create Content
+              </Button>
+            </div>
+          }
+        />
+      )}
 
       <div className="space-y-6">
-        {/* Draft content list — DB-backed (Fase 2), CONTENT-typed only */}
-        <DraftCampaignsList
-          drafts={drafts}
-          limit={draftLimit}
-          onResume={handleResumeDraft}
-          onArchive={handleArchiveDraft}
-          busyDraftId={busyDraftId}
-        />
+        {activeCampaignId ? (
+          <ContentLibraryCampaignMode
+            campaignId={activeCampaignId}
+            onOpenInCanvas={handleOpenInStudio}
+          />
+        ) : (
+          <>
+            {/* Draft content list — DB-backed (Fase 2), CONTENT-typed only */}
+            <DraftCampaignsList
+              drafts={drafts}
+              limit={draftLimit}
+              onResume={handleResumeDraft}
+              onArchive={handleArchiveDraft}
+              busyDraftId={busyDraftId}
+            />
 
-        <ContentStatsCards stats={stats} isLoading={isStatsLoading} />
+            <ContentStatsCards stats={stats} isLoading={isStatsLoading} />
+          </>
+        )}
 
+        {/* ContentFilterBar is ALWAYS visible in campaign mode — it hosts the
+            Content/Strategy toggle itself, so hiding it would trap the user on
+            the Strategy tab with no way back to Content. */}
         <ContentFilterBar />
 
-        {renderContent()}
+        {showDeliverables && (
+          <>
+            {/* Filter panel + active-filter chips visually belong together.
+                Wrap them in a tight space-y-1 so there's no space-y-6 gap
+                breaking up the filter area. */}
+            <div className="space-y-1">
+              <ContentFiltersPanel />
+              <ActiveFilterChips />
+            </div>
+
+            {renderContent()}
+          </>
+        )}
       </div>
 
       <AddContentModal

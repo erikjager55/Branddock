@@ -12,6 +12,7 @@ import { buildSelectedPersonasContext } from '@/lib/ai/persona-context';
 import { createClaudeStructuredCompletion, createStructuredCompletion } from '@/lib/ai/exploration/ai-caller';
 import { createGeminiStructuredCompletion } from '@/lib/ai/gemini-client';
 import { calculateBlueprintConfidence } from './confidence-calculator';
+import { computePhaseSchedule } from './phase-scheduler';
 import { resolveFeatureModel } from '@/lib/ai/feature-models.server';
 import { getGoalTypeGuidance } from '@/features/campaigns/lib/goal-types';
 import {
@@ -652,6 +653,11 @@ export async function elaborateJourney(
 export async function createDeliverablesFromBlueprint(
   campaignId: string,
   assetPlanDeliverables: import('./strategy-blueprint.types').AssetPlanDeliverable[],
+  schedulerContext?: {
+    campaignStart?: Date | string | null;
+    campaignEnd?: Date | string | null;
+    phases?: import('./strategy-blueprint.types').JourneyPhase[];
+  },
 ): Promise<number> {
   // 1. Delete existing NOT_STARTED deliverables without generated content
   await prisma.deliverable.deleteMany({
@@ -664,8 +670,19 @@ export async function createDeliverablesFromBlueprint(
     },
   });
 
+  // Compute AI-suggested publish dates per deliverable. Stored as
+  // `suggestedPublishDate` (not `scheduledPublishDate`) so users explicitly
+  // commit via drag or the "Accept all suggestions" bulk action.
+  const schedule = schedulerContext?.phases && schedulerContext.phases.length > 0
+    ? computePhaseSchedule(assetPlanDeliverables, schedulerContext.phases, {
+        campaignStart: schedulerContext.campaignStart ?? null,
+        campaignEnd: schedulerContext.campaignEnd ?? null,
+      }).byTitle
+    : new Map<string, Date>();
+
   // 2. Create new deliverables from blueprint
   for (const d of assetPlanDeliverables) {
+    const suggestedDate = schedule.get(d.title) ?? null;
     await prisma.deliverable.create({
       data: {
         campaignId,
@@ -674,6 +691,7 @@ export async function createDeliverablesFromBlueprint(
         status: 'NOT_STARTED',
         progress: 0,
         journeyPhase: d.phase ?? null,
+        ...(suggestedDate ? { suggestedPublishDate: suggestedDate } : {}),
         settings: JSON.parse(JSON.stringify({
           channel: d.channel,
           phase: d.phase,

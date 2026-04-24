@@ -152,9 +152,6 @@ export const ResearchValidationPage = lazy(() =>
 export const ActiveCampaignsPage = lazy(() =>
   import('@/features/campaigns/components/overview/ActiveCampaignsPage').then(m => ({ default: m.ActiveCampaignsPage }))
 );
-export const CampaignDetailPage = lazy(() =>
-  import('@/features/campaigns/components/detail/CampaignDetailPage').then(m => ({ default: m.CampaignDetailPage }))
-);
 export const CanvasPage = lazy(() =>
   import('@/features/campaigns/components/canvas/CanvasPage').then(m => ({ default: m.CanvasPage }))
 );

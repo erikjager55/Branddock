@@ -1,7 +1,7 @@
 /**
  * AddDeliverableTypeModal — select content type for an existing campaign.
  *
- * Used in CampaignDetailPage where the campaign is already known.
+ * Used in the Content Library campaign-mode view where the campaign is already known.
  * Only asks: what type of content? Then creates + opens Canvas.
  */
 

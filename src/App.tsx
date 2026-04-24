@@ -22,6 +22,7 @@ import { usePersonaDetailStore } from './features/personas/stores/usePersonaDeta
 import { useResearchStore } from './features/research/stores/useResearchStore';
 import { useCampaignStore } from './features/campaigns/stores/useCampaignStore';
 import { useCampaignWizardStore } from './features/campaigns/stores/useCampaignWizardStore';
+import { useContentLibraryStore } from './features/campaigns/stores/useContentLibraryStore';
 import { useConsistentModelStore } from './features/consistent-models/stores/useConsistentModelStore';
 import { useShellStore } from './stores/useShellStore';
 import { getResearchOptionId, ResearchMethodType } from './utils/research-method-helpers';
@@ -71,7 +72,6 @@ import {
   StrategicResearchPlanner,
   ResearchValidationPage,
   ActiveCampaignsPage,
-  CampaignDetailPage,
   CanvasPage,
   ContentLibraryPage,
   CampaignWizardPage,
@@ -369,8 +369,16 @@ function AppContent() {
       redirectTo = 'personas';
     } else if (activeSection === 'persona-ai-analysis' && !usePersonaDetailStore.getState().selectedPersonaId) {
       redirectTo = 'personas';
-    } else if (activeSection === 'campaign-detail' && !useCampaignStore.getState().selectedCampaignId) {
-      redirectTo = 'active-campaigns';
+    } else if (activeSection === 'campaign-detail') {
+      const campaignId = useCampaignStore.getState().selectedCampaignId;
+      if (!campaignId) {
+        redirectTo = 'active-campaigns';
+      } else {
+        // Campaign Detail is now merged into Content Library — pre-fill the
+        // campaign filter and redirect so the library's campaign-mode renders.
+        useContentLibraryStore.getState().setFilter('campaigns', [campaignId]);
+        redirectTo = 'content-library';
+      }
     } else if (activeSection === 'ai-exploration-brand-asset' && !selectedAssetId) {
       redirectTo = 'brand';
     } else if (activeSection === 'consistent-model-detail' && !useConsistentModelStore.getState().selectedModelId) {
@@ -726,31 +734,10 @@ function AppContent() {
             onResumeWizard={() => handleSetActiveSection('campaign-wizard')}
           />
         );
-      case 'campaign-detail': {
-        const cdCampaignId = useCampaignStore.getState().selectedCampaignId;
-        if (!cdCampaignId) {
-          return null; // useEffect redirect handles navigation
-        }
-        return (
-          <CampaignDetailPage
-            campaignId={cdCampaignId}
-            onBack={() => {
-              useCampaignStore.getState().setSelectedCampaignId(null);
-              handleSetActiveSection('active-campaigns');
-            }}
-            onOpenInStudio={(campaignId, deliverableId) => {
-              useCampaignStore.getState().setSelectedCampaignId(campaignId);
-              useCampaignStore.getState().setSelectedDeliverableId(deliverableId);
-              handleSetActiveSection('content-canvas');
-            }}
-            onOpenInCanvas={(campaignId, deliverableId) => {
-              useCampaignStore.getState().setSelectedCampaignId(campaignId);
-              useCampaignStore.getState().setSelectedDeliverableId(deliverableId);
-              handleSetActiveSection('content-canvas');
-            }}
-          />
-        );
-      }
+      case 'campaign-detail':
+        // Handled by redirect useEffect — pre-fills campaign filter and
+        // swaps to `content-library`. Returning null until the effect runs.
+        return null;
       case 'trends':
         return <TrendRadarPage onNavigate={handleSetActiveSection} />;
       case 'trend-detail': {

@@ -40,8 +40,6 @@ export function ContentCardGrid({
   onDelete,
   onRename,
 }: ContentCardGridProps) {
-  const selectedIds = useContentLibraryStore((s) => s.selectedIds);
-  const toggleSelected = useContentLibraryStore((s) => s.toggleSelected);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; campaignId: string; title: string } | null>(null);
 
   return (
@@ -55,18 +53,18 @@ export function ContentCardGrid({
     )}
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {items.map((item) => {
-        const isSelected = selectedIds.includes(item.id);
         const { light, label: lightLabel } = deriveTrafficLight(
           item.isPublishReady,
           item.status,
           item.publishedAt ? "published" : item.scheduledPublishDate ? "scheduled" : "unscheduled",
+          item.hasContent,
         );
         const tl = TRAFFIC_LIGHT[light];
 
         return (
           <div
             key={item.id}
-            className={`rounded-lg border overflow-hidden flex hover:shadow-sm transition-shadow ${isSelected ? "ring-2 ring-primary-500" : ""}`}
+            className="rounded-lg border overflow-hidden flex hover:shadow-sm transition-shadow"
             style={{ backgroundColor: tl.bg, borderColor: tl.border }}
           >
             {/* Traffic light stripe */}
@@ -78,17 +76,9 @@ export function ContentCardGrid({
 
             <div className="flex-1 flex flex-col">
               <div className="p-4 flex flex-col gap-3 flex-1">
-                {/* Row 1: checkbox + campaign name + favorite + delete */}
+                {/* Row 1: campaign name + favorite + delete */}
                 <div className="flex items-center justify-between">
-                  <label className="flex items-center gap-2 cursor-pointer min-w-0">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSelected(item.id)}
-                      className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary-500 flex-shrink-0"
-                    />
-                    <span className="text-xs text-gray-500 truncate">{item.campaignName}</span>
-                  </label>
+                  <span className="text-xs text-gray-500 truncate min-w-0">{item.campaignName}</span>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       type="button"
@@ -189,7 +179,7 @@ export function ContentCardGrid({
               {/* Footer action */}
               <div className="px-4 pb-4">
                 <Button
-                  variant="ghost"
+                  variant="primary"
                   size="sm"
                   icon={ExternalLink}
                   onClick={() => onOpenInStudio(item.id, item.campaignId)}

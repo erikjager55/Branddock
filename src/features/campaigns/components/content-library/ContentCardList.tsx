@@ -88,8 +88,6 @@ export function ContentCardList({
   onDelete,
   onRename,
 }: ContentCardListProps) {
-  const selectedIds = useContentLibraryStore((s) => s.selectedIds);
-  const toggleSelected = useContentLibraryStore((s) => s.toggleSelected);
   const sort = useContentLibraryStore((s) => s.sort);
   const setSort = useContentLibraryStore((s) => s.setSort);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; campaignId: string; title: string } | null>(null);
@@ -109,10 +107,9 @@ export function ContentCardList({
         className="gap-3 px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider"
         style={{
           display: "grid",
-          gridTemplateColumns: "6px 40px 1fr 100px 160px 110px 90px 80px 80px",
+          gridTemplateColumns: "6px 1fr 100px 160px 110px 90px 80px 80px",
         }}
       >
-        <div />
         <div />
         <SortableHeader label="Title" field="title" currentSort={sort} onSort={setSort} />
         <SortableHeader label="Type" field="contentType" currentSort={sort} onSort={setSort} />
@@ -125,23 +122,21 @@ export function ContentCardList({
 
       {/* Rows */}
       {items.map((item) => {
-        const isSelected = selectedIds.includes(item.id);
         const { light, label: lightLabel } = deriveTrafficLight(
           item.isPublishReady,
           item.status,
           item.publishedAt ? "published" : item.scheduledPublishDate ? "scheduled" : "unscheduled",
+          item.hasContent,
         );
         const tl = TRAFFIC_LIGHT[light];
 
         return (
           <div
             key={item.id}
-            className={`gap-3 px-4 py-3 border-b border-gray-100 items-center hover:brightness-95 transition-all ${
-              isSelected ? "ring-2 ring-inset ring-primary-400" : ""
-            }`}
+            className="gap-3 px-4 py-3 border-b border-gray-100 items-center hover:brightness-95 transition-all"
             style={{
               display: "grid",
-              gridTemplateColumns: "6px 40px 1fr 100px 160px 110px 90px 80px 80px",
+              gridTemplateColumns: "6px 1fr 100px 160px 110px 90px 80px 80px",
               backgroundColor: tl.bg,
             }}
           >
@@ -151,16 +146,6 @@ export function ContentCardList({
               style={{ backgroundColor: tl.stripe }}
               title={lightLabel}
             />
-
-            {/* Checkbox */}
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={() => toggleSelected(item.id)}
-                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary-500"
-              />
-            </div>
 
             {/* Title + favorite */}
             <div className="flex items-center gap-2 min-w-0">
@@ -247,12 +232,14 @@ export function ContentCardList({
               )}
             </div>
 
-            {/* Actions */}
+            {/* Actions — solid button matches Grid view's "Open in Canvas" */}
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => onOpenInStudio(item.id, item.campaignId)}
-                className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary-700 font-medium transition-colors"
+                className="inline-flex items-center gap-1 text-xs font-medium text-white bg-primary hover:bg-primary-600 rounded-md transition-colors"
+                style={{ padding: "4px 8px" }}
+                title="Open in Canvas"
               >
                 <ExternalLink className="w-3 h-3" />
                 Canvas

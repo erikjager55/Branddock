@@ -54,24 +54,38 @@ export function deriveTrafficLight(
   isPublishReady?: boolean,
   workflowStatus?: string,
   state?: string,
+  hasContent?: boolean,
 ): { light: TrafficLight; label: string } {
-  // Green requires actual readiness — published content or user-approved
-  // content (Mark as Ready). Scheduling alone is NOT readiness: dragging
-  // an item to the calendar picks a publication date but doesn't finish
-  // the content.
+  // Match user mental model: an item is "in progress" as soon as *any*
+  // forward movement happened — scheduled on the calendar, content
+  // generated, or status moved past NOT_STARTED. Workflow status alone
+  // under-counts progress because wizard-created items stay NOT_STARTED
+  // even after scheduling.
+  //
+  // Overdue is a label modifier (date passed + not published) — it never
+  // changes the bucket, otherwise "In progress" filter would hide
+  // overdue-in-progress items.
   if (state === "published") return { light: "green", label: "Published" };
   if (isPublishReady === true) return { light: "green", label: "Ready" };
-  if (
-    workflowStatus === "NOT_STARTED" ||
-    (!workflowStatus && state === "unscheduled")
-  ) {
-    return { light: "red", label: "Not started" };
+
+  const isOverdue = state === "overdue";
+  const isScheduled = state === "scheduled" || state === "overdue";
+  const hasAnyProgress =
+    hasContent === true ||
+    isScheduled ||
+    workflowStatus === "IN_PROGRESS" ||
+    workflowStatus === "COMPLETED";
+
+  if (!hasAnyProgress) {
+    return {
+      light: "red",
+      label: isOverdue ? "Not started · overdue" : "Not started",
+    };
   }
-  let label = "In progress";
-  if (state === "overdue") label = "Overdue";
-  else if (state === "scheduled") label = "Scheduled · not ready";
-  else if (workflowStatus === "COMPLETED") label = "Needs review";
-  else if (workflowStatus === "IN_PROGRESS") label = "In progress";
+
+  let label =
+    workflowStatus === "COMPLETED" ? "Needs review" : "In progress";
+  if (isOverdue) label += " · overdue";
   return { light: "amber", label };
 }
 
@@ -126,6 +140,9 @@ export interface CalendarCardProps {
   onDatePick?: (isoDate: string | null) => void;
   currentDateValue?: string;
   isPublishReady?: boolean;
+  /** True when any content has been generated — drives the "has progress"
+   *  classification alongside workflow status. */
+  hasContent?: boolean;
   readinessHint?: string | null;
   onDelete?: () => void;
   onRename?: (newTitle: string) => void;
@@ -260,6 +277,7 @@ export function CalendarCard({
   onToggleFavorite,
   onDatePick,
   isPublishReady,
+  hasContent,
   readinessHint,
   currentDateValue,
   onDelete,
@@ -273,6 +291,7 @@ export function CalendarCard({
     isPublishReady,
     workflowStatus,
     state,
+    hasContent,
   );
   const tl = TRAFFIC_LIGHT[light];
 

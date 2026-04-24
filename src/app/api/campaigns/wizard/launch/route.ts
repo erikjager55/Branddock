@@ -146,11 +146,32 @@ export async function POST(request: NextRequest) {
     }
 
     // Create deliverables: prefer blueprint asset plan (rich metadata), fall back to simple list
-    const blueprintStrategy = strategy as { assetPlan?: { deliverables?: AssetPlanDeliverable[] } } | undefined;
+    const blueprintStrategy = strategy as
+      | {
+          assetPlan?: { deliverables?: AssetPlanDeliverable[] };
+          architecture?: { journeyPhases?: import('@/lib/campaigns/strategy-blueprint.types').JourneyPhase[] };
+        }
+      | undefined;
     const assetPlanDeliverables = blueprintStrategy?.assetPlan?.deliverables;
+    const blueprintPhases = blueprintStrategy?.architecture?.journeyPhases;
+
+    // Fetch campaign date range — fed to the scheduler so suggested dates
+    // fall inside the campaign window when the user has set one.
+    const campaignDates = await prisma.campaign.findUnique({
+      where: { id: campaign.id },
+      select: { startDate: true, endDate: true },
+    });
 
     if (assetPlanDeliverables && assetPlanDeliverables.length > 0) {
-      await createDeliverablesFromBlueprint(campaign.id, assetPlanDeliverables);
+      await createDeliverablesFromBlueprint(
+        campaign.id,
+        assetPlanDeliverables,
+        {
+          campaignStart: campaignDates?.startDate ?? null,
+          campaignEnd: campaignDates?.endDate ?? null,
+          phases: blueprintPhases,
+        },
+      );
     } else if (deliverables && deliverables.length > 0) {
       // Fallback: use wizard-provided deliverables with briefing from wizard
       const briefSettings = briefing || contentTypeInputs ? {

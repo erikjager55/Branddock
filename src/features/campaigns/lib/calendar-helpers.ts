@@ -2,7 +2,6 @@
  * Shared date helpers for calendar views.
  *
  * Used by:
- *  - DeploymentCalendarView (single campaign blueprint)
  *  - ContentLibraryCalendarView (workspace-wide deliverables)
  *  - CampaignsOverviewCalendarView (Gantt-style campaign bars)
  *

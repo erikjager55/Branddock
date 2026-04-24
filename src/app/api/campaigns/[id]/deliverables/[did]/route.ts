@@ -17,6 +17,9 @@ const patchDeliverableSchema = z.object({
   contentTypeInputs: z.record(z.string(), z.union([z.string(), z.array(z.string()), z.number(), z.boolean()])).optional(),
   /** ISO datetime to schedule a publish; null clears the scheduled date */
   scheduledPublishDate: z.string().datetime().nullable().optional(),
+  /** Journey phase name (matches blueprint phase names). Used by Timeline
+   *  drag-drop to move a deliverable between phase swimlanes. */
+  journeyPhase: z.string().nullable().optional(),
 });
 
 export async function PATCH(
@@ -56,16 +59,26 @@ export async function PATCH(
       );
     }
 
-    const { title, status, progress, assignedTo, contentTypeInputs, scheduledPublishDate } = parsed.data;
+    const { title, status, progress, assignedTo, contentTypeInputs, scheduledPublishDate, journeyPhase } = parsed.data;
 
-    // Merge contentTypeInputs into existing settings Json field
+    // Merge contentTypeInputs + phase into existing settings Json field.
+    // settings.phase is the canonical JSON-side source used by the content
+    // library API; Deliverable.journeyPhase is the column-side source.
+    // Writing both keeps them in sync so readers never see divergent values.
     let settingsUpdate: Record<string, unknown> | undefined;
-    if (contentTypeInputs !== undefined) {
-      const currentSettings = (deliverable.settings as Record<string, unknown>) ?? {};
-      settingsUpdate = {
-        ...currentSettings,
-        contentTypeInputs,
-      };
+    const currentSettings = (deliverable.settings as Record<string, unknown>) ?? {};
+    if (contentTypeInputs !== undefined || journeyPhase !== undefined) {
+      settingsUpdate = { ...currentSettings };
+      if (contentTypeInputs !== undefined) {
+        settingsUpdate.contentTypeInputs = contentTypeInputs;
+      }
+      if (journeyPhase !== undefined) {
+        if (journeyPhase === null) {
+          delete settingsUpdate.phase;
+        } else {
+          settingsUpdate.phase = journeyPhase;
+        }
+      }
     }
 
     const updated = await prisma.deliverable.update({
@@ -75,6 +88,7 @@ export async function PATCH(
         ...(status !== undefined && { status }),
         ...(progress !== undefined && { progress }),
         ...(assignedTo !== undefined && { assignedTo }),
+        ...(journeyPhase !== undefined && { journeyPhase }),
         ...(settingsUpdate !== undefined && { settings: settingsUpdate as Prisma.InputJsonValue }),
         ...(scheduledPublishDate !== undefined && {
           scheduledPublishDate: scheduledPublishDate ? new Date(scheduledPublishDate) : null,

@@ -309,6 +309,17 @@ async function fetchContentLibrary(
   if (params?.groupByCampaign) searchParams.set('groupByCampaign', 'true');
   if (params?.search) searchParams.set('search', params.search);
 
+  // Advanced filters — comma-separated lists
+  if (params?.types?.length) searchParams.set('types', params.types.join(','));
+  if (params?.campaigns?.length) searchParams.set('campaigns', params.campaigns.join(','));
+  if (params?.campaignTypes?.length) searchParams.set('campaignTypes', params.campaignTypes.join(','));
+  if (params?.phases?.length) searchParams.set('phases', params.phases.join(','));
+  if (params?.readiness?.length) searchParams.set('readiness', params.readiness.join(','));
+  if (params?.readinessHints?.length) searchParams.set('readinessHints', params.readinessHints.join(','));
+  if (params?.scheduledFrom) searchParams.set('scheduledFrom', params.scheduledFrom);
+  if (params?.scheduledTo) searchParams.set('scheduledTo', params.scheduledTo);
+  if (params?.qualityMin != null) searchParams.set('qualityMin', String(params.qualityMin));
+
   const qs = searchParams.toString();
   const res = await fetch(`/api/content-library${qs ? `?${qs}` : ''}`);
   if (!res.ok) throw new Error('Failed to fetch content library');
