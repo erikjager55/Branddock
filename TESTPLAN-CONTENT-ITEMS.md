@@ -2,6 +2,11 @@
 
 > Afvinkbaar testplan voor alle deliverable types in content mode.
 > Doel: grondig, maar snel. Representant per categorie eerst, varianten daarna.
+>
+> **Tweeledig gebruik**:
+> - **Ronde 1** — huidige implementatie verifiëren (text + losse image via huidige providers)
+> - **Ronde 2** — na integratie van nieuwe asset-generators (gpt-image-2 / Claude HTML→PNG), per type vastleggen welke generator de beste output levert. Zie sectie 4.5.
+>
 > Start: __________ · Tester: __________
 
 ---
@@ -46,6 +51,13 @@
 - Export levert bestand (TXT/MD/PDF/ZIP afhankelijk van type)
 - Geen console errors, geen stille SSE aborts
 
+**Asset-output (Ronde 2 — na generator-integratie)**
+- Asset-patroon van sectie 4 aanwezig in output (hero / carousel-slides / layout / etc.)
+- Brand kleuren + fonts toegepast conform Brandstyle
+- Text in beeld (indien van toepassing) leesbaar + spelling correct + taal klopt
+- Geen halucinaties in logo / productnaam binnen beeld
+- Compositie: whitespace, hiërarchie, leesbaarheid
+
 ## 3 · Regressie-hotspots (extra alert bij deze)
 
 Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, check extra:
@@ -66,15 +78,15 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 ### 📚 Long-Form Content (7)
 
-| Type | Gedaan | Passed | Bugs | Notes |
-|---|---|---|---|---|
-| **R blog-post** | ☐ | ☐ | ☐ | |
-| pillar-page | ☐ | ☐ | ☐ | |
-| whitepaper | ☐ | ☐ | ☐ | |
-| case-study | ☐ | ☐ | ☐ | |
-| ebook | ☐ | ☐ | ☐ | |
-| article | ☐ | ☐ | ☐ | |
-| thought-leadership | ☐ | ☐ | ☐ | |
+| Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
+|---|---|---|---|---|---|
+| **R blog-post** | Hero image met headline overlay | ☐ | ☐ | ☐ | |
+| pillar-page | Hero + section illustraties | ☐ | ☐ | ☐ | |
+| whitepaper | Cover + page headers (PDF) | ☐ | ☐ | ☐ | |
+| case-study | Cover + stats visualisatie | ☐ | ☐ | ☐ | |
+| ebook | Cover + chapter dividers | ☐ | ☐ | ☐ | |
+| article | Hero image | ☐ | ☐ | ☐ | |
+| thought-leadership | Hero met quote overlay | ☐ | ☐ | ☐ | |
 
 **Category-specific checks**
 - SEO pipeline loopt (8 stappen zichtbaar in progress view)
@@ -87,21 +99,21 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 ### 💬 Social Media (13)
 
-| Type | Gedaan | Passed | Bugs | Notes |
-|---|---|---|---|---|
-| **R linkedin-post** | ☐ | ☐ | ☐ | |
-| linkedin-article | ☐ | ☐ | ☐ | |
-| linkedin-carousel | ☐ | ☐ | ☐ | |
-| linkedin-ad | ☐ | ☐ | ☐ | |
-| linkedin-newsletter | ☐ | ☐ | ☐ | |
-| linkedin-video | ☐ | ☐ | ☐ | |
-| linkedin-event | ☐ | ☐ | ☐ | |
-| linkedin-poll | ☐ | ☐ | ☐ | |
-| instagram-post | ☐ | ☐ | ☐ | |
-| twitter-thread | ☐ | ☐ | ☐ | |
-| facebook-post | ☐ | ☐ | ☐ | |
-| tiktok-script | ☐ | ☐ | ☐ | |
-| social-carousel | ☐ | ☐ | ☐ | |
+| Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
+|---|---|---|---|---|---|
+| **R linkedin-post** | Inline image met text overlay | ☐ | ☐ | ☐ | |
+| linkedin-article | Hero image | ☐ | ☐ | ☐ | |
+| linkedin-carousel | 5-10 slide set (gedesigned) | ☐ | ☐ | ☐ | |
+| linkedin-ad | Ad creative met CTA | ☐ | ☐ | ☐ | |
+| linkedin-newsletter | Header + hero | ☐ | ☐ | ☐ | |
+| linkedin-video | Thumbnail + script storyboard | ☐ | ☐ | ☐ | |
+| linkedin-event | Event banner | ☐ | ☐ | ☐ | |
+| linkedin-poll | Geen asset (text-only) | ☐ | ☐ | ☐ | |
+| instagram-post | Square image met caption styling | ☐ | ☐ | ☐ | |
+| twitter-thread | Optionele image per tweet | ☐ | ☐ | ☐ | |
+| facebook-post | Inline image | ☐ | ☐ | ☐ | |
+| tiktok-script | Storyboard frames | ☐ | ☐ | ☐ | |
+| social-carousel | Multi-slide gedesigned | ☐ | ☐ | ☐ | |
 
 **Category-specific checks**
 - Character limits per platform gerespecteerd (LinkedIn 3000, X 280, Instagram 2200)
@@ -114,14 +126,14 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 ### 💰 Advertising & Paid (6)
 
-| Type | Gedaan | Passed | Bugs | Notes |
-|---|---|---|---|---|
-| **R search-ad** | ☐ | ☐ | ☐ | |
-| social-ad | ☐ | ☐ | ☐ | |
-| display-ad | ☐ | ☐ | ☐ | |
-| retargeting-ad | ☐ | ☐ | ☐ | |
-| video-ad | ☐ | ☐ | ☐ | |
-| native-ad | ☐ | ☐ | ☐ | |
+| Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
+|---|---|---|---|---|---|
+| **R search-ad** | Geen asset (text-only) | ☐ | ☐ | ☐ | |
+| social-ad | Ad creative met headline | ☐ | ☐ | ☐ | |
+| display-ad | Banner (meerdere sizes) | ☐ | ☐ | ☐ | |
+| retargeting-ad | Ad creative met context-cue | ☐ | ☐ | ☐ | |
+| video-ad | Thumbnail + storyboard | ☐ | ☐ | ☐ | |
+| native-ad | In-feed image + headline | ☐ | ☐ | ☐ | |
 
 **Category-specific checks**
 - Headlines + descriptions binnen character limits (Google Ads: 30/90)
@@ -133,13 +145,13 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 ### 📧 Email & Automation (5)
 
-| Type | Gedaan | Passed | Bugs | Notes |
-|---|---|---|---|---|
-| **R newsletter** | ☐ | ☐ | ☐ | |
-| welcome-sequence | ☐ | ☐ | ☐ | |
-| promotional-email | ☐ | ☐ | ☐ | |
-| nurture-sequence | ☐ | ☐ | ☐ | |
-| re-engagement-email | ☐ | ☐ | ☐ | |
+| Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
+|---|---|---|---|---|---|
+| **R newsletter** | Hero banner + section dividers (HTML) | ☐ | ☐ | ☐ | |
+| welcome-sequence | Hero per email + branded footer | ☐ | ☐ | ☐ | |
+| promotional-email | Hero + product-cards (HTML) | ☐ | ☐ | ☐ | |
+| nurture-sequence | Hero per email | ☐ | ☐ | ☐ | |
+| re-engagement-email | Hero met hooking visual | ☐ | ☐ | ☐ | |
 
 **Category-specific checks**
 - Subject line aanwezig + onder 60 tekens
@@ -151,13 +163,13 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 ### 🌐 Website & Landing Pages (5)
 
-| Type | Gedaan | Passed | Bugs | Notes |
-|---|---|---|---|---|
-| **R landing-page** | ☐ | ☐ | ☐ | |
-| product-page | ☐ | ☐ | ☐ | |
-| faq-page | ☐ | ☐ | ☐ | |
-| comparison-page | ☐ | ☐ | ☐ | |
-| microsite | ☐ | ☐ | ☐ | |
+| Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
+|---|---|---|---|---|---|
+| **R landing-page** | Volledige page layout (HTML) | ☐ | ☐ | ☐ | |
+| product-page | Product hero + feature sections | ☐ | ☐ | ☐ | |
+| faq-page | Layout zonder beelden (HTML) | ☐ | ☐ | ☐ | |
+| comparison-page | Comparison table layout | ☐ | ☐ | ☐ | |
+| microsite | Multi-section landing page | ☐ | ☐ | ☐ | |
 
 **Category-specific checks**
 - SEO keyword input → pipeline runt → keyword zichtbaar in H1, meta, body
@@ -169,13 +181,13 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 ### 🎥 Video & Audio (5)
 
-| Type | Gedaan | Passed | Bugs | Notes |
-|---|---|---|---|---|
-| **R explainer-video** | ☐ | ☐ | ☐ | |
-| testimonial-video | ☐ | ☐ | ☐ | |
-| promo-video | ☐ | ☐ | ☐ | |
-| webinar-outline | ☐ | ☐ | ☐ | |
-| podcast-outline | ☐ | ☐ | ☐ | |
+| Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
+|---|---|---|---|---|---|
+| **R explainer-video** | Storyboard frames + thumbnail | ☐ | ☐ | ☐ | |
+| testimonial-video | Thumbnail met quote overlay | ☐ | ☐ | ☐ | |
+| promo-video | Thumbnail + scene storyboards | ☐ | ☐ | ☐ | |
+| webinar-outline | Title card + agenda visualisatie | ☐ | ☐ | ☐ | |
+| podcast-outline | Cover art | ☐ | ☐ | ☐ | |
 
 **Category-specific checks**
 - Script opbouw: hook/body/cta scenes herkenbaar
@@ -187,12 +199,12 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 ### 💼 Sales Enablement (4)
 
-| Type | Gedaan | Passed | Bugs | Notes |
-|---|---|---|---|---|
-| **R one-pager** | ☐ | ☐ | ☐ | |
-| sales-deck | ☐ | ☐ | ☐ | |
-| proposal-template | ☐ | ☐ | ☐ | |
-| product-description | ☐ | ☐ | ☐ | |
+| Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
+|---|---|---|---|---|---|
+| **R one-pager** | 1-page PDF layout (HTML) | ☐ | ☐ | ☐ | |
+| sales-deck | Multi-slide deck (HTML/PPTX) | ☐ | ☐ | ☐ | |
+| proposal-template | Document layout met placeholders | ☐ | ☐ | ☐ | |
+| product-description | Product image + feature grid | ☐ | ☐ | ☐ | |
 
 **Category-specific checks**
 - Decks: slide-by-slide structuur, niet één blok
@@ -203,22 +215,176 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 ### 📣 PR, HR & Communications (8)
 
-| Type | Gedaan | Passed | Bugs | Notes |
-|---|---|---|---|---|
-| **R press-release** | ☐ | ☐ | ☐ | |
-| media-pitch | ☐ | ☐ | ☐ | |
-| internal-comms | ☐ | ☐ | ☐ | |
-| career-page | ☐ | ☐ | ☐ | |
-| job-ad-copy | ☐ | ☐ | ☐ | |
-| employee-story | ☐ | ☐ | ☐ | |
-| employer-brand-video | ☐ | ☐ | ☐ | |
-| impact-report | ☐ | ☐ | ☐ | |
+| Type | Asset-patroon | Gedaan | Passed | Bugs | Notes |
+|---|---|---|---|---|---|
+| **R press-release** | Document layout (HTML/PDF) | ☐ | ☐ | ☐ | |
+| media-pitch | Geen asset (email/tekst) | ☐ | ☐ | ☐ | |
+| internal-comms | Header banner + formatted body | ☐ | ☐ | ☐ | |
+| career-page | Page layout met team foto slot | ☐ | ☐ | ☐ | |
+| job-ad-copy | Social-size ad creative | ☐ | ☐ | ☐ | |
+| employee-story | Portrait hero + quote overlay | ☐ | ☐ | ☐ | |
+| employer-brand-video | Thumbnail + storyboard | ☐ | ☐ | ☐ | |
+| impact-report | Document cover + data visualisaties | ☐ | ☐ | ☐ | |
 
 **Category-specific checks**
 - Press-release: inverted pyramid (belangrijkste bovenaan), boilerplate onderaan, contact-blok
 - Job-ad: job title, responsibilities, requirements, locatie, contracttype
 - Impact-report: cijfers/metrics concreet (geen "many", "significant")
 - Employee-story: story spine structuur, echte quotes (of duidelijke quote-markers)
+
+---
+
+## 4.5 · Asset Generator Evaluatie (Ronde 2 — na integratie)
+
+> **Voorwaarde**: Sprint 1 (gpt-image-2) en/of Sprint 2 (Claude HTML→PNG) is geïntegreerd.
+> **Doel**: per content type empirisch vaststellen welke generator de beste output levert, zodat de default-mapping in `canvas-orchestrator.ts` data-gedreven ingevuld wordt i.p.v. op theorie.
+
+### Generator-opties
+
+| ID | Generator | Strong suit | Kosten per output |
+|---|---|---|---|
+| **A** | Huidig (DALL-E 3 / Imagen / Flux) | Baseline, bestaande stack | ~$0.04-0.19 |
+| **B** | gpt-image-2 (via OpenAI / fal.ai) | Text rendering, typografie, logos in beeld | ~$0.21 |
+| **C** | Claude HTML→PNG (Opus 4.7 + Puppeteer) | Brand-tokens afdwingen, document layouts, carousels | ~$0.03-0.08 |
+| **D** | Recraft V4 Vector | Editable SVG, icons, vector branding | ~$0.04-0.08 |
+| **E** | Geen asset nodig | Text-only content types | $0 |
+
+### Evaluatiecriteria per output
+
+Voor elk type × generator: score **1-5** per criterium en een eindoordeel.
+
+- **Brand fidelity** — kleuren, fonts, logo-plaatsing conform Brandstyle
+- **Text legibility** — titel/CTA/ondertitel leesbaar, correcte spelling, taal klopt
+- **Layout kwaliteit** — compositie, whitespace, hiërarchie
+- **Content accuraat** — beeld sluit aan bij de geschreven content
+- **Productie-gereed** — kan direct gepubliceerd, of eerst designer/editor nodig
+
+### Matrix per categorie
+
+Elke rij = één content type. Per generator: `[A-E]` markeer best fit + score (bijv. `B: 4.2`).
+Eindkolom `Winnaar` = de default-mapping die we in code vastleggen.
+
+#### Long-Form Content
+
+| Type | A Huidig | B gpt-image-2 | C Claude HTML→PNG | D Recraft Vector | E Geen | Winnaar |
+|---|---|---|---|---|---|---|
+| blog-post | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| pillar-page | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| whitepaper | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| case-study | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| ebook | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| article | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| thought-leadership | ☐ | ☐ | ☐ | ☐ | ☐ | |
+
+#### Social Media
+
+| Type | A | B | C | D | E | Winnaar |
+|---|---|---|---|---|---|---|
+| linkedin-post | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| linkedin-article | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| linkedin-carousel | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| linkedin-ad | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| linkedin-newsletter | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| linkedin-video | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| linkedin-event | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| linkedin-poll | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| instagram-post | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| twitter-thread | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| facebook-post | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| tiktok-script | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| social-carousel | ☐ | ☐ | ☐ | ☐ | ☐ | |
+
+#### Advertising & Paid
+
+| Type | A | B | C | D | E | Winnaar |
+|---|---|---|---|---|---|---|
+| search-ad | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| social-ad | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| display-ad | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| retargeting-ad | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| video-ad | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| native-ad | ☐ | ☐ | ☐ | ☐ | ☐ | |
+
+#### Email & Automation
+
+| Type | A | B | C | D | E | Winnaar |
+|---|---|---|---|---|---|---|
+| newsletter | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| welcome-sequence | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| promotional-email | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| nurture-sequence | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| re-engagement-email | ☐ | ☐ | ☐ | ☐ | ☐ | |
+
+#### Website & Landing Pages
+
+| Type | A | B | C | D | E | Winnaar |
+|---|---|---|---|---|---|---|
+| landing-page | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| product-page | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| faq-page | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| comparison-page | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| microsite | ☐ | ☐ | ☐ | ☐ | ☐ | |
+
+#### Video & Audio
+
+| Type | A | B | C | D | E | Winnaar |
+|---|---|---|---|---|---|---|
+| explainer-video | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| testimonial-video | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| promo-video | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| webinar-outline | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| podcast-outline | ☐ | ☐ | ☐ | ☐ | ☐ | |
+
+#### Sales Enablement
+
+| Type | A | B | C | D | E | Winnaar |
+|---|---|---|---|---|---|---|
+| one-pager | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| sales-deck | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| proposal-template | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| product-description | ☐ | ☐ | ☐ | ☐ | ☐ | |
+
+#### PR, HR & Communications
+
+| Type | A | B | C | D | E | Winnaar |
+|---|---|---|---|---|---|---|
+| press-release | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| media-pitch | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| internal-comms | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| career-page | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| job-ad-copy | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| employee-story | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| employer-brand-video | ☐ | ☐ | ☐ | ☐ | ☐ | |
+| impact-report | ☐ | ☐ | ☐ | ☐ | ☐ | |
+
+### Outcome
+
+Na de evaluatie-ronde, leg vast in `canvas-orchestrator.ts` of een nieuw `asset-generator-registry.ts`:
+
+```ts
+export const ASSET_GENERATOR_BY_TYPE: Record<string, AssetGenerator> = {
+  'blog-post': 'gpt-image-2',
+  'linkedin-carousel': 'claude-html-png',
+  'landing-page': 'claude-html-png',
+  'search-ad': 'none',
+  // ... per type uit winnaar-kolom
+};
+```
+
+Dit wordt de default-mapping; user kan in Canvas override per item kiezen.
+
+### Bekende theoretische voorkeur (voorspellingen om tegen te valideren)
+
+Uit onderzoek — te verifiëren in de test-ronde, niet als aanname behandelen:
+
+- **Carousel-types** (LinkedIn, social) → C (Claude HTML→PNG): volledige controle over multi-slide layout + brand tokens
+- **Email-types** → C: HTML is native formaat voor email, geen render nodig
+- **Landing pages / product pages / microsite** → C: HTML is direct deployable
+- **Social posts met text overlay** (LinkedIn/Instagram) → B (gpt-image-2): sterk in typography-in-image
+- **Blog hero / article hero** → B: photorealistic beeld met optionele titel
+- **Ad creatives** → B of C afhankelijk van brand-strictheid
+- **Vector assets** (icons, logos) → D (Recraft)
+- **Pure text types** (media-pitch, search-ad, linkedin-poll) → E (geen asset)
 
 ---
 
@@ -277,4 +443,4 @@ Vanuit recente `gotchas.md` en memories — hier zijn al eerder bugs gevonden, c
 
 ---
 
-*Laatst bijgewerkt: 2026-04-21*
+*Laatst bijgewerkt: 2026-04-24 (asset-patronen + generator-evaluatiematrix toegevoegd)*
