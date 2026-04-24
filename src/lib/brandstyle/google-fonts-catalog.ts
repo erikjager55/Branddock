@@ -14,7 +14,10 @@
 // "everything is commercial".
 // =============================================================
 
-const GOOGLE_FONTS_METADATA_URL = "https://fonts.googleapis.com/metadata/fonts";
+// Public (unauthenticated) metadata endpoint used internally by fonts.google.com.
+// The old `fonts.googleapis.com/metadata/fonts` path 404s since 2025; this path
+// returns the full 1900+ family list wrapped in a `familyMetadataList` array.
+const GOOGLE_FONTS_METADATA_URL = "https://fonts.google.com/metadata/fonts";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const FETCH_TIMEOUT_MS = 8_000;
 

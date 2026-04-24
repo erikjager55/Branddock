@@ -55,17 +55,12 @@ export function deriveTrafficLight(
   workflowStatus?: string,
   state?: string,
 ): { light: TrafficLight; label: string } {
-  if (isPublishReady === true || state === "published" || state === "scheduled") {
-    return {
-      light: "green",
-      label:
-        state === "published"
-          ? "Published"
-          : state === "scheduled"
-            ? "Scheduled"
-            : "Ready",
-    };
-  }
+  // Green requires actual readiness — published content or user-approved
+  // content (Mark as Ready). Scheduling alone is NOT readiness: dragging
+  // an item to the calendar picks a publication date but doesn't finish
+  // the content.
+  if (state === "published") return { light: "green", label: "Published" };
+  if (isPublishReady === true) return { light: "green", label: "Ready" };
   if (
     workflowStatus === "NOT_STARTED" ||
     (!workflowStatus && state === "unscheduled")
@@ -74,6 +69,7 @@ export function deriveTrafficLight(
   }
   let label = "In progress";
   if (state === "overdue") label = "Overdue";
+  else if (state === "scheduled") label = "Scheduled · not ready";
   else if (workflowStatus === "COMPLETED") label = "Needs review";
   else if (workflowStatus === "IN_PROGRESS") label = "In progress";
   return { light: "amber", label };
@@ -143,9 +139,32 @@ export interface CalendarCardProps {
 }
 
 /** Inline rename input — click-to-edit title field.
- *  When `currentValue` is provided, shows the title as clickable text that
- *  opens an editable input on click. Without it, shows a dashed placeholder
- *  (untitled state). Exported for reuse in Grid/List/Calendar views. */
+ *
+ *  The `className` prop controls *typography only* (font-size, weight,
+ *  color, truncation). Box / affordance styling is centralised so the
+ *  view-state button and the edit-state input stay visually cohesive:
+ *
+ *  - View: plain text, left-aligned, tiny negative horizontal margin so
+ *    the hover background tint sits visually behind the text. Hover =
+ *    faint gray tint + dashed underline → reader knows it's editable
+ *    without a heavy frame around every card.
+ *  - Edit: transparent bg, bottom border only (no box around the text).
+ *  - Untitled: dashed-underlined italic placeholder inviting a click.
+ *
+ *  Callsites should NOT pass `bg-*`, `border-*`, `rounded-*` or
+ *  `text-center` in className — those conflict with the base styling. */
+const BASE_VIEW_CLASSES =
+  "text-left leading-tight block w-full rounded px-1 -mx-1 " +
+  "transition-colors cursor-text " +
+  "hover:bg-black/[0.04] hover:underline decoration-dashed decoration-gray-400 underline-offset-2";
+
+const BASE_EDIT_CLASSES =
+  "text-left leading-tight block w-full " +
+  "bg-transparent border-0 border-b border-primary-400 " +
+  "rounded-none px-1 -mx-1 py-0 outline-none focus:border-primary-600";
+
+const DEFAULT_TYPOGRAPHY = "text-[12px] font-semibold text-gray-900";
+
 export function InlineRenameField({
   placeholder,
   currentValue,
@@ -154,11 +173,14 @@ export function InlineRenameField({
 }: {
   placeholder: string;
   currentValue?: string;
+  /** Typography-only overrides (font-size, weight, color, line-clamp/truncate). */
   className?: string;
   onRename: (newTitle: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
+
+  const typography = className ?? DEFAULT_TYPOGRAPHY;
 
   const handleStartEdit = () => {
     setValue(currentValue ?? "");
@@ -189,18 +211,17 @@ export function InlineRenameField({
         onClick={(e) => e.stopPropagation()}
         placeholder={placeholder}
         autoFocus
-        className={className ?? "w-full text-[12px] font-semibold text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-200 mb-0.5"}
+        className={`${BASE_EDIT_CLASSES} ${typography}`}
       />
     );
   }
 
-  // With currentValue: clickable real title
   if (currentValue) {
     return (
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); handleStartEdit(); }}
-        className={className ?? "text-left font-semibold text-sm text-gray-900 hover:text-primary-700 hover:underline decoration-dashed decoration-gray-300 transition-colors truncate w-full"}
+        className={`${BASE_VIEW_CLASSES} ${typography}`}
         title="Click to rename"
       >
         {currentValue}
@@ -208,12 +229,12 @@ export function InlineRenameField({
     );
   }
 
-  // Empty state: dashed placeholder
+  // Empty state: dashed placeholder, invites a click.
   return (
     <button
       type="button"
       onClick={(e) => { e.stopPropagation(); handleStartEdit(); }}
-      className="text-left font-semibold text-[12px] italic text-gray-400 hover:text-gray-600 mb-0.5 underline decoration-dashed decoration-gray-300 hover:decoration-gray-500 transition-colors"
+      className={`${BASE_VIEW_CLASSES} italic text-gray-400 hover:text-gray-600 ${typography.replace(/text-gray-\d+/g, "")}`}
       title="Click to add a title"
     >
       {placeholder}

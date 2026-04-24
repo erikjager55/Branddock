@@ -348,6 +348,42 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
     }
     const visualPromptSuffix = pageScreenshots.length > 0 ? `\n\n${VISUAL_REFERENCE_ADDENDUM}` : '';
 
+    // Screenshot-based usage evidence: for every authoritative palette
+    // entry, verify whether it actually appears on the captured page.
+    // This filters out plugin-chrome colours that live in CSS but never
+    // render, and fixes misleading variable names (e.g. Vercel's
+    // --geist-success holding the primary blue). See color-usage-verifier.
+    if (pageScreenshots.length > 0 && processed.authoritativeColors.length > 0) {
+      try {
+        const { verifyColorUsage } = await import('./color-usage-verifier');
+        const visionScreenshots = pageScreenshots.map((s, i) => ({
+          label: (i === 0 ? 'hero' : 'full-page') as 'hero' | 'full-page',
+          buffer: s.buffer,
+          mediaType: s.mediaType,
+        }));
+        const evidenceMap = await verifyColorUsage(
+          processed.authoritativeColors,
+          visionScreenshots,
+          { log: (msg) => console.log(msg) },
+        );
+        for (const color of processed.authoritativeColors) {
+          const rec = evidenceMap.get(color.hex);
+          if (!rec) continue;
+          color.usageEvidence = rec.finalEvidence;
+          color.visionRole = rec.visionRole;
+        }
+        const strong = processed.authoritativeColors.filter((c) => c.usageEvidence === 'strong').length;
+        const none = processed.authoritativeColors.filter((c) => c.usageEvidence === 'none').length;
+        console.log(
+          `[brandstyle-analysis] Usage evidence: ${strong} strong / ${processed.authoritativeColors.length - strong - none} weak / ${none} none`,
+        );
+      } catch (verifyErr) {
+        console.warn(
+          `[brandstyle-analysis] Usage verification failed (non-critical): ${verifyErr instanceof Error ? verifyErr.message : String(verifyErr)}`,
+        );
+      }
+    }
+
     // Step 2: AI Call 1 — Visual Identity
     await updateStatus(styleguideId, 'EXTRACTING_COLORS');
     let visualResult: VisualIdentityResult;
@@ -696,11 +732,35 @@ export async function analyzePdf(
  * - Groups colors by source: CSS variables > frequency > other
  * - Consolidates fonts
  */
-function preprocessScrapeData(scraped: ScrapedData): ProcessedData {
+export function preprocessScrapeData(scraped: ScrapedData): ProcessedData {
   // Run framework detectors FIRST — their output is the highest-confidence
   // signal we have for what counts as a real brand color on this site.
   const combinedCss = `${scraped.inlineCss ?? ''}\n${scraped.linkedCssContent ?? ''}`;
   const { frameworks, tokens: detectedTokens } = runFrameworkDetectors(combinedCss, '');
+
+  // Logo colours: high-confidence FALLBACK signal. Only merged when the
+  // framework pass didn't find a recognised `primary` token — otherwise a
+  // site with an ACSS `--primary-hex` already has a canonical brand colour
+  // and the logo extractor would just add noise (multiple "primary"s
+  // confuse Claude's classifier). When promoted, the most dominant logo
+  // colour becomes `primary` and the next one (if any) becomes `secondary`.
+  const frameworkHasPrimary = detectedTokens.some((t) => t.role === 'primary');
+  if (!frameworkHasPrimary && scraped.logoColors && scraped.logoColors.length > 0) {
+    const knownHexes = new Set(detectedTokens.map((t) => t.hex));
+    const roleOrder: Array<'primary' | 'secondary'> = ['primary', 'secondary'];
+    const logoTokens = scraped.logoColors
+      .filter((lc) => !knownHexes.has(lc.hex))
+      .slice(0, roleOrder.length)
+      .map((lc, i) => ({
+        hex: lc.hex,
+        role: roleOrder[i],
+        source: `logo-extraction:${lc.source}`,
+        confidence: 'high' as const,
+      }));
+    // Prepend so logo colours take priority in the palette pushlist.
+    detectedTokens.unshift(...logoTokens);
+    if (logoTokens.length > 0) frameworks.unshift('logo-extraction');
+  }
 
   // Defensive defaults for scraper fields that might be empty
   const colorGroups = buildColorGroups(

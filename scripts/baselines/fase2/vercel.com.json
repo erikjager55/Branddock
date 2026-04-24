@@ -1,0 +1,538 @@
+{
+  "url": "https://vercel.com",
+  "scrapedAt": "2026-04-22T13:07:54.766Z",
+  "title": "Vercel: Build and deploy the best web experiences with the AI Cloud",
+  "description": "Vercel gives developers the frameworks, workflows, and infrastructure to build a faster, more personalized web.",
+  "stylesheetSurvey": {
+    "total": 13,
+    "plugins": 0,
+    "samples": [
+      {
+        "href": "/vc-ap-vercel-marketing/_next/static/immutable/chunks/0izpoguyenja8.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "/vc-ap-vercel-marketing/_next/static/immutable/chunks/0k5fn5mrbarjn.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "/vc-ap-vercel-marketing/_next/static/immutable/chunks/23ye7m750-1d0.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "/vc-ap-vercel-marketing/_next/static/immutable/chunks/2wxwcs_h05udr.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "/vc-ap-vercel-marketing/_next/static/immutable/chunks/3qrce6k2r1w7-.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "/vc-ap-vercel-marketing/_next/static/immutable/chunks/2zajbvsm-en85.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "/vc-ap-vercel-marketing/_next/static/immutable/chunks/085xcg9gz-voi.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "/vc-ap-vercel-marketing/_next/static/immutable/chunks/1wdd5-3dohmnh.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "/vc-ap-vercel-marketing/_next/static/immutable/chunks/0oohemj2htt9-.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "/vc-ap-vercel-marketing/_next/static/immutable/chunks/1uw1dgdf8jkn6.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "/vc-ap-vercel-marketing/_next/static/immutable/chunks/3tv7kasw9qyea.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "/vc-ap-vercel-marketing/_next/static/immutable/chunks/0xolr114xxwtc.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "/vc-ap-vercel-marketing/_next/static/immutable/chunks/2ogbg8axdy3li.css",
+        "id": "",
+        "kind": "other"
+      }
+    ]
+  },
+  "scraperStylesheetLinkCount": 13,
+  "fonts": {
+    "body": null,
+    "heading": null,
+    "all": [
+      "797e433ab948586e",
+      "GeistPixel",
+      "Caa3a2e1cccd8315",
+      "Geist Mono\", ui-monospace, SFMono-Regular, Roboto Mono, Menlo, Monaco, Liberation Mono, DejaVu Sans Mono, Courier New, monospace, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol",
+      "Geist",
+      "Geist Mono",
+      "SFMono-Regular",
+      "Roboto Mono",
+      "Menlo",
+      "Liberation Mono",
+      "DejaVu Sans Mono",
+      "Geist\", Arial, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol",
+      "GeistPixelSquare",
+      "GeistPixelGrid",
+      "GeistPixelCircle",
+      "GeistPixelTriangle",
+      "GeistPixelLine",
+      "Space Mono",
+      "Space Grotesk",
+      "GeistPixelCircle\", Geist Mono, ui-monospace, SFMono-Regular, Roboto Mono, Menlo, Monaco, Liberation Mono, DejaVu Sans Mono, Courier New, monospace",
+      "GeistPixelSquare\", Geist Mono, ui-monospace, SFMono-Regular, Roboto Mono, Menlo, Monaco, Liberation Mono, DejaVu Sans Mono, Courier New, monospace",
+      "KaTeX_AMS",
+      "KaTeX_Caligraphic",
+      "KaTeX_Fraktur",
+      "KaTeX_Main",
+      "KaTeX_Math",
+      "KaTeX_SansSerif",
+      "KaTeX_Script",
+      "KaTeX_Size1",
+      "KaTeX_Size2",
+      "KaTeX_Size3",
+      "KaTeX_Size4",
+      "KaTeX_Typewriter",
+      "DSEG7 Classic",
+      "Space",
+      "Roboto",
+      "DSEG7"
+    ]
+  },
+  "logoUrls": [
+    "https://assets.vercel.com/image/upload/q_auto/front/favicon/vercel/apple-touch-icon-57x57.png",
+    "https://assets.vercel.com/image/upload/q_auto/front/favicon/vercel/apple-touch-icon-60x60.png",
+    "https://assets.vercel.com/image/upload/q_auto/front/favicon/vercel/apple-touch-icon-72x72.png",
+    "https://assets.vercel.com/image/upload/q_auto/front/favicon/vercel/apple-touch-icon-76x76.png",
+    "https://assets.vercel.com/image/upload/q_auto/front/favicon/vercel/apple-touch-icon-114x114.png",
+    "https://assets.vercel.com/image/upload/q_auto/front/favicon/vercel/apple-touch-icon-120x120.png",
+    "https://assets.vercel.com/image/upload/q_auto/front/favicon/vercel/apple-touch-icon-144x144.png",
+    "https://assets.vercel.com/image/upload/q_auto/front/favicon/vercel/apple-touch-icon-152x152.png"
+  ],
+  "logoColors": [],
+  "cssVariableCount": 239,
+  "cssVariablesSample": [
+    {
+      "name": "--badge-color",
+      "value": "#fff",
+      "context": "usage"
+    },
+    {
+      "name": "--badge-bg-color",
+      "value": "#000",
+      "context": "usage"
+    },
+    {
+      "name": "--guide-color",
+      "value": "var(--ds-red-400)",
+      "context": "usage"
+    },
+    {
+      "name": "--themed-border",
+      "value": "var(--button-custom-border)!important",
+      "context": "usage"
+    },
+    {
+      "name": "--ds-focus-ring",
+      "value": "0 0 0 2px var(--ds-background-100), 0 0 0 4px var(--form-foc",
+      "context": "usage"
+    },
+    {
+      "name": "--cross-color",
+      "value": "var(--ds-gray-600)",
+      "context": "usage"
+    },
+    {
+      "name": "--debug-color-rgb",
+      "value": "255, 204, 109",
+      "context": "usage"
+    },
+    {
+      "name": "--debug-guide-color",
+      "value": "rgba(var(--debug-color-rgb), .7)",
+      "context": "usage"
+    },
+    {
+      "name": "--debug-block-color",
+      "value": "rgba(var(--debug-color-rgb), .1)",
+      "context": "usage"
+    },
+    {
+      "name": "--debug-hidden-guide-color",
+      "value": "rgba(var(--debug-color-rgb), .1)",
+      "context": "usage"
+    },
+    {
+      "name": "--border-color",
+      "value": "var(--accents-2)",
+      "context": "usage"
+    },
+    {
+      "name": "--checkbox-color",
+      "value": "var(--ds-gray-700)",
+      "context": "usage"
+    },
+    {
+      "name": "--secondary-shift",
+      "value": "12px",
+      "context": "usage"
+    },
+    {
+      "name": "--themed-bg",
+      "value": "var(--geist-background)",
+      "context": "usage"
+    },
+    {
+      "name": "--checked-color",
+      "value": "var(--checked-bg-color-override,var(--geist-success))",
+      "context": "usage"
+    },
+    {
+      "name": "--thumb-unchecked-color",
+      "value": "var(--thumb-unchecked-bg-color-override,var(--ds-background-",
+      "context": "usage"
+    },
+    {
+      "name": "--thumb-icon-color",
+      "value": "var(--thumb-light-fg-color-override,var(--ds-gray-900))",
+      "context": "usage"
+    },
+    {
+      "name": "--unchecked-color",
+      "value": "var(--unchecked-bg-color-override,var(--ds-gray-400))",
+      "context": "usage"
+    },
+    {
+      "name": "--thumb-border-color",
+      "value": "transparent",
+      "context": "usage"
+    },
+    {
+      "name": "--thumb-checked-color",
+      "value": "var(--ds-background-100)",
+      "context": "usage"
+    }
+  ],
+  "colorFrequencyCount": 61,
+  "colorFrequencyTop": [
+    {
+      "hex": "#2C8CE1",
+      "count": 20,
+      "contexts": [
+        "color"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#333333",
+      "count": 12,
+      "contexts": [
+        "background-color",
+        "color",
+        "outline-color",
+        "fill",
+        "stroke"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#FFCADE",
+      "count": 11,
+      "contexts": [
+        "background",
+        "color",
+        "border-color"
+      ],
+      "hue": "red"
+    },
+    {
+      "hex": "#EAEAEA",
+      "count": 9,
+      "contexts": [
+        "background",
+        "fill",
+        "stroke",
+        "border"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#111111",
+      "count": 9,
+      "contexts": [
+        "background",
+        "color",
+        "fill"
+      ],
+      "hue": "black-ish"
+    },
+    {
+      "hex": "#E92A67",
+      "count": 9,
+      "contexts": [
+        "background"
+      ],
+      "hue": "red"
+    },
+    {
+      "hex": "#DE2670",
+      "count": 6,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color"
+      ],
+      "hue": "red"
+    },
+    {
+      "hex": "#2A8AF6",
+      "count": 6,
+      "contexts": [
+        "background"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#A853BA",
+      "count": 5,
+      "contexts": [
+        "background"
+      ],
+      "hue": "magenta"
+    },
+    {
+      "hex": "#95BF47",
+      "count": 4,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color"
+      ],
+      "hue": "green"
+    },
+    {
+      "hex": "#EF4444",
+      "count": 4,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color"
+      ],
+      "hue": "red"
+    },
+    {
+      "hex": "#E9D3FF",
+      "count": 4,
+      "contexts": [
+        "background"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#77B8FF",
+      "count": 4,
+      "contexts": [
+        "background"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#CADAFF",
+      "count": 4,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#E5484D",
+      "count": 4,
+      "contexts": [
+        "color",
+        "stroke"
+      ],
+      "hue": "red"
+    },
+    {
+      "hex": "#666666",
+      "count": 4,
+      "contexts": [
+        "fill",
+        "stroke"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#0070F3",
+      "count": 3,
+      "contexts": [
+        "background-color",
+        "background",
+        "color"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#4B4C57",
+      "count": 3,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#4EDFD6",
+      "count": 3,
+      "contexts": [
+        "background"
+      ],
+      "hue": "teal"
+    },
+    {
+      "hex": "#C8DDFF",
+      "count": 3,
+      "contexts": [
+        "background"
+      ],
+      "hue": "blue"
+    }
+  ],
+  "authoritativePalette": [
+    {
+      "hex": "#FFFFFF",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--badge-color",
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#000000",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--badge-bg-color",
+      "hue": "black-ish"
+    },
+    {
+      "hex": "#D3E5FF",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--geist-success-lighter",
+      "hue": "blue"
+    },
+    {
+      "hex": "#0070F3",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--geist-success",
+      "hue": "blue"
+    },
+    {
+      "hex": "#0761D1",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--geist-success-dark",
+      "hue": "blue"
+    },
+    {
+      "hex": "#F7D4D6",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--geist-error-lighter",
+      "hue": "red"
+    },
+    {
+      "hex": "#EE0000",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--geist-error",
+      "hue": "red"
+    },
+    {
+      "hex": "#C50000",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--geist-error-dark",
+      "hue": "red"
+    },
+    {
+      "hex": "#FFEFCF",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--geist-warning-lighter",
+      "hue": "neutral"
+    },
+    {
+      "hex": "#F5A623",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--geist-warning",
+      "hue": "yellow/orange"
+    },
+    {
+      "hex": "#AB570A",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--geist-warning-dark",
+      "hue": "red"
+    },
+    {
+      "hex": "#D8CCF1",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--geist-violet-lighter",
+      "hue": "blue"
+    }
+  ],
+  "authoritativeBuckets": {
+    "high": 0,
+    "medium": 12,
+    "low": 0
+  },
+  "semanticVarHits": [
+    "--geist-success-lighter: #d3e5ff",
+    "--geist-success: #0070f3",
+    "--geist-success-dark: #0761d1",
+    "--geist-error-lighter: #f7d4d6",
+    "--geist-error: #e00",
+    "--geist-error-dark: #c50000",
+    "--geist-warning-lighter: #ffefcf",
+    "--geist-warning: #f5a623",
+    "--geist-warning-dark: #ab570a"
+  ],
+  "symptoms": {
+    "missingPrimaryBlue": false,
+    "blueCandidatesInPalette": [
+      "#D3E5FF",
+      "#0070F3",
+      "#0761D1",
+      "#D8CCF1"
+    ],
+    "semanticColorsInPalette": [
+      "#F7D4D6",
+      "#EE0000",
+      "#C50000",
+      "#AB570A"
+    ]
+  }
+}

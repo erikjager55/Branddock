@@ -1,0 +1,315 @@
+{
+  "url": "https://betterbrands.nl",
+  "scrapedAt": "2026-04-22T13:07:49.229Z",
+  "title": "better brands - branding agency - Branding, Marketing & Innovatie\n\n    \n    | better brands",
+  "description": "better brands is een branding agency die merken helpt merken groeien met branding, marketing en innovatie.",
+  "stylesheetSurvey": {
+    "total": 7,
+    "plugins": 0,
+    "samples": [
+      {
+        "href": "https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://use.typekit.net/rgx4xmh.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://i.icomoon.io/public/294ff0ee91/BetterBrands/style.css",
+        "id": "",
+        "kind": "theme"
+      },
+      {
+        "href": "https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://use.typekit.net/rgx4xmh.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://i.icomoon.io/public/294ff0ee91/BetterBrands/style.css",
+        "id": "",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.betterbrands.nl/build/assets/tailwind-288fd467.css",
+        "id": "",
+        "kind": "theme"
+      }
+    ]
+  },
+  "scraperStylesheetLinkCount": 4,
+  "fonts": {
+    "body": "Open Sans",
+    "heading": null,
+    "all": [
+      "Open Sans",
+      "Cambria",
+      "SFMono-Regular",
+      "Menlo",
+      "Liberation Mono",
+      "mrs-eaves-xl-serif",
+      "Open"
+    ]
+  },
+  "logoUrls": [
+    "https://betterbrands.nl/img/favicon/apple-touch-icon.png",
+    "https://betterbrands.nl/img/logo-new.svg"
+  ],
+  "logoColors": [
+    {
+      "hex": "#20A020",
+      "dominance": 0.25386313465783666,
+      "source": "raster",
+      "hue": "green"
+    },
+    {
+      "hex": "#008020",
+      "dominance": 0.2222222222222222,
+      "source": "raster",
+      "hue": "green"
+    },
+    {
+      "hex": "#004040",
+      "dominance": 0.20676968359087564,
+      "source": "raster",
+      "hue": "neutral"
+    }
+  ],
+  "cssVariableCount": 0,
+  "cssVariablesSample": [],
+  "colorFrequencyCount": 9,
+  "colorFrequencyTop": [
+    {
+      "hex": "#111111",
+      "count": 25,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color",
+        "border-left-color"
+      ],
+      "hue": "black-ish"
+    },
+    {
+      "hex": "#20C509",
+      "count": 18,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color"
+      ],
+      "hue": "green"
+    },
+    {
+      "hex": "#F4F4F4",
+      "count": 14,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#CECECE",
+      "count": 9,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#727272",
+      "count": 8,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#EA0E44",
+      "count": 4,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "hue": "red"
+    },
+    {
+      "hex": "#A9A9A9",
+      "count": 4,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#002838",
+      "count": 3,
+      "contexts": [
+        "color"
+      ],
+      "hue": "neutral"
+    },
+    {
+      "hex": "#199F07",
+      "count": 1,
+      "contexts": [
+        "color"
+      ],
+      "hue": "green"
+    }
+  ],
+  "authoritativePalette": [
+    {
+      "hex": "#20A020",
+      "source": "detector",
+      "confidence": "high",
+      "detectorName": "logo-extraction",
+      "detectorRole": "primary",
+      "hue": "green"
+    },
+    {
+      "hex": "#008020",
+      "source": "detector",
+      "confidence": "high",
+      "detectorName": "logo-extraction",
+      "detectorRole": "secondary",
+      "hue": "green"
+    },
+    {
+      "hex": "#111111",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 25,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color",
+        "border-left-color"
+      ],
+      "hue": "black-ish"
+    },
+    {
+      "hex": "#20C509",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 18,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color"
+      ],
+      "hue": "green"
+    },
+    {
+      "hex": "#F4F4F4",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 14,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#CECECE",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 9,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#727272",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 8,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#EA0E44",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 4,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "hue": "red"
+    },
+    {
+      "hex": "#A9A9A9",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 4,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#002838",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 3,
+      "contexts": [
+        "color"
+      ],
+      "hue": "neutral"
+    },
+    {
+      "hex": "#199F07",
+      "source": "frequency",
+      "confidence": "low",
+      "frequency": 1,
+      "contexts": [
+        "color"
+      ],
+      "hue": "green"
+    },
+    {
+      "hex": "#374151",
+      "source": "other",
+      "confidence": "low",
+      "hue": "neutral"
+    }
+  ],
+  "authoritativeBuckets": {
+    "high": 2,
+    "medium": 8,
+    "low": 2
+  },
+  "semanticVarHits": [],
+  "symptoms": {
+    "missingPrimaryBlue": true,
+    "blueCandidatesInPalette": [],
+    "semanticColorsInPalette": [
+      "#20A020",
+      "#008020",
+      "#20C509",
+      "#EA0E44",
+      "#199F07"
+    ]
+  }
+}

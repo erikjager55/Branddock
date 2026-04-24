@@ -68,6 +68,10 @@ export interface ScrapedData {
    *  site serves webfonts via Typekit; `kitId` is populated when we could
    *  extract it from the classic URL shape. */
   adobeFonts?: { detected: boolean; kitId: string | null };
+  /** Dominant colours extracted from the primary logo bitmap or SVG.
+   *  Populated by `logo-color-extractor` when at least one fetchable logo
+   *  URL is available. Empty on failure or placeholder-only logos. */
+  logoColors?: import('./logo-color-extractor').LogoColor[];
 }
 
 // Chrome-like User-Agent to avoid bot blocking
@@ -85,30 +89,63 @@ const MAX_LINKED_STYLESHEETS = 15;
  *
  * Strategy:
  * - Brand-token files (palettes, themes, ACSS, Tailwind, design systems) score highest.
+ * - Main theme stylesheets (framework.css, style.css, overide-styles.css, button.css) medium-high.
  * - Generic main stylesheets score medium.
- * - Admin / plugin / cookie-consent / icon-font files score lowest.
+ * - **Plugin chrome (shadowbox, datepicker, club widgets, advertenties, animations)
+ *   score low** so they don't crowd out real brand files on WordPress sites that
+ *   ship 20+ link tags.
+ * - Admin / cookie-consent / icon-font files score lowest.
  *
  * Works across WordPress (rich id attrs), Shopify (theme.css), Webflow (webflow.css),
  * and Next.js (path patterns like /globals.css).
  */
+// Plugin/widget decorative stylesheets that rarely contain brand tokens.
+// Matched against `id` and `href` combined. Match order in scoreLink() must
+// happen BEFORE the generic "has 'style' in id" rule, otherwise e.g.
+// `nxs-shadowbox-style-css` would score 70 (generic style) instead of being
+// demoted to plugin chrome.
+const PLUGIN_CHROME_PATTERNS = [
+  'shadowbox', 'lightbox', 'modal', 'carousel', 'popup',
+  'slider-wd', 'slider_wd', 'wds_frontend', 'wds_effects',
+  'datepicker', 'ui-datepicker',
+  'advertenti', 'mainsponsor', 'widgetarchive',
+  'club-stats', 'club-countdown', 'countdown',
+  'wedstrijdverslag', 'events-widget', 'clublogos',
+  'eventskalender', 'agenda-widget',
+  'animation_', 'style-animation',
+  'rfwbs', 'recent-comments',
+];
+
 function rankStylesheets(links: Array<{ href: string; id: string }>): string[] {
   const scoreLink = (link: { href: string; id: string }): number => {
     const id = link.id.toLowerCase();
     const href = link.href.toLowerCase();
+    const combined = `${id} ${href}`;
 
-    // High value: explicit brand / token / palette / design-system files
+    // ── Low-value chrome (check first so decorative ids don't leak into medium) ──
+    if (/cookie|consent|gdpr|translatepress|trp-/.test(combined)) return 10;
+    if (/font-awesome|fontawesome|ionicons|material-icons|glyphicon|icomoon|googlefonts?|webfont/.test(combined)) return 15;
+    if (/wp-admin|wp-block-library|gutenberg|jquery-ui|bootstrap-icons/.test(combined)) return 20;
+    if (PLUGIN_CHROME_PATTERNS.some((p) => combined.includes(p))) return 30;
+
+    // ── High value: explicit brand / token / palette / design-system files ──
     if (/color|palette|theme|brand|skin|globals|tokens|design-system/.test(id)) return 100;
     if (/acss|bricks-frontend|bricks-color|tailwind|shadcn/.test(id)) return 95;
     if (/automaticcss|elementor-frontend|webflow/.test(id)) return 90;
 
-    // Medium-high: main / app / index stylesheets when not admin/plugin
+    // ── Medium-high: main theme stylesheet filenames (framework.css, button.css,
+    //    overide-styles.css, form-styles.css) — these carry the actual brand
+    //    typography/colour tokens on WP themes without CSS variables.
+    if (
+      /\/(framework|style|overide-styles|override-styles|form-styles|button|globals|main|app|index)[._-]?[a-z0-9]*\.css/.test(href)
+      && !/admin|plugin|gutenberg/.test(combined)
+    ) {
+      return 85;
+    }
+
+    // ── Medium: generic style/main/app/index ids (not clearly brand/plugin) ──
     if (/style|main|app|index/.test(id) && !/admin|plugin|gutenberg/.test(id)) return 70;
     if (id === '' && /\/(style|main|app|globals|tokens)[._-]?[a-z0-9]*\.css/.test(href)) return 65;
-
-    // Low: admin UI, page-builder editor, jQuery UI, icon fonts, popups, cookies
-    if (/admin|gutenberg|wp-block-library|jquery-ui|bootstrap-icons/.test(id)) return 20;
-    if (/font|webfont|preload|ionicons|material-icons|fontawesome/.test(id)) return 15;
-    if (/cookie|popup|notice|gdpr|consent|translatepress|trp-/.test(id)) return 10;
 
     return 50; // unknown / default — keep middle priority
   };
@@ -293,6 +330,15 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
   const { detectAdobeFonts } = await import('./adobe-fonts-detector');
   const adobeFonts = detectAdobeFonts(html, allCss);
 
+  // Extract dominant colours from the primary logo. For many WordPress /
+  // small-business sites the brand's primary colour lives only in the
+  // bitmap logo — not in CSS — so this is the strongest signal available.
+  // Safe-by-default: returns [] on any failure so the rest of the pipeline
+  // isn't blocked.
+  const { extractLogoColors } = await import('./logo-color-extractor');
+  const primaryLogoUrl = logoUrls.find((u) => /^https?:\/\//i.test(u));
+  const logoColors = primaryLogoUrl ? await extractLogoColors(primaryLogoUrl) : [];
+
   return {
     url,
     title,
@@ -315,6 +361,7 @@ export async function scrapeUrl(url: string): Promise<ScrapedData> {
     bodyFont,
     headingFont,
     adobeFonts,
+    logoColors,
   };
 }
 
@@ -462,6 +509,11 @@ function isCmsPresetVariable(name: string): boolean {
   if (lower.startsWith('--bricks-color-') || lower.startsWith('--bricks-text-')) return true;
   // Bricks element defaults (button, heading, link colors from the builder UI)
   if (/^--bricks-(button|heading|link|body|background)/.test(lower)) return true;
+  // Tailwind internal utility variables (--tw-ring-*, --tw-prose-*, --tw-shadow-*, etc.)
+  // These are set by Tailwind's reset + plugins (@tailwindcss/typography especially),
+  // never brand tokens. On betterbrands.nl they pushed real brand colors off the top
+  // of the authoritative palette.
+  if (lower.startsWith('--tw-')) return true;
   return false;
 }
 
@@ -879,6 +931,12 @@ function resolveFontFamilyValue(
   let value = rawValue.replace(/!important/i, '').trim();
   // Strip surrounding quotes
   value = value.replace(/^["']|["']$/g, '').trim();
+  // Decode CSS identifier escapes. The common case we see in the wild is
+  // `Font Awesome\ 6 Brands` — the backslash-before-space is a CSS escape
+  // for unquoted identifiers that persists when the value was already
+  // quoted. Collapse `\<space>` → ` ` and `\\` → `\`. We don't attempt
+  // full \<hex> codepoint decoding; it's vanishingly rare in font names.
+  value = value.replace(/\\ /g, ' ').replace(/\\\\/g, '\\').trim();
   if (!value) return null;
 
   // var(--name) or var(--name, fallback) → resolve from CSS
@@ -909,7 +967,10 @@ function resolveFontFamilyValue(
 const GENERIC_FONT_FAMILIES = new Set([
   'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy',
   'system-ui', 'ui-sans-serif', 'ui-serif', 'ui-monospace', 'ui-rounded',
-  'inherit', 'initial', 'unset', 'revert',
+  'inherit', 'initial', 'unset', 'revert', 'normal', 'auto', 'none',
+  // CSS placeholder / shorthand that some themes emit unquoted (seen on
+  // linfi.nl: `font-family: Font;` resolved to literal "Font"). Always noise.
+  'font', 'webfont', 'webfonts', 'text', 'body',
   '-apple-system', 'blinkmacsystemfont', 'segoe ui', 'apple color emoji',
   'segoe ui emoji', 'segoe ui symbol', 'noto color emoji',
 ]);
@@ -936,16 +997,31 @@ function isWebSafeFallbackFont(name: string): boolean {
   return WEB_SAFE_FALLBACK_FONTS.has(name.toLowerCase().trim());
 }
 
-/** Filename / font-family fragments that indicate icon fonts rather than typography. */
+/**
+ * Filename / font-family fragments that indicate icon fonts rather than
+ * typography. Stored without whitespace/hyphens so normalised comparison
+ * below matches spaced variants ("Font Awesome 6 Brands" → "fontawesome…").
+ */
 const ICON_FONT_FRAGMENTS = [
-  'icon', 'icomoon', 'fontawesome', 'ionicon', 'material-icons', 'feather', 'lucide',
-  'dashicons', 'themify', 'eicons', 'glyphicon', 'webflow-icons', 'bricks-icons',
+  'icomoon', 'fontawesome', 'ionicon', 'materialicons', 'materialsymbols',
+  'feather', 'lucide', 'dashicons', 'themify', 'eicons', 'glyphicon',
+  'webflowicons', 'bricksicons',
 ];
 
-/** Check whether a font name looks like an icon font (not real typography). */
+/**
+ * Check whether a font name looks like an icon font (not real typography).
+ * Normalises both sides by stripping whitespace / hyphens / underscores so
+ * "Font Awesome 6 Brands" matches the `fontawesome` fragment. We also
+ * special-case the "icon"/"icons" suffix — looser than substring match so
+ * brand names like "Iconic Display" don't get filtered.
+ */
 function isIconFont(name: string): boolean {
-  const lower = name.toLowerCase();
-  return ICON_FONT_FRAGMENTS.some((frag) => lower.includes(frag));
+  const normalised = name.toLowerCase().replace(/[\s_-]/g, '');
+  if (ICON_FONT_FRAGMENTS.some((frag) => normalised.includes(frag))) return true;
+  // "…icons" suffix is almost always an icon font (Material Icons, Web
+  // Icons, Dash Icons, etc.) without false-positive risk.
+  if (/icons?$/.test(normalised)) return true;
+  return false;
 }
 
 /**

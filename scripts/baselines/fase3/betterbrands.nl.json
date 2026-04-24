@@ -1,0 +1,436 @@
+{
+  "url": "https://betterbrands.nl",
+  "scrapedAt": "2026-04-22T14:53:37.391Z",
+  "title": "better brands - branding agency - Branding, Marketing & Innovatie\n\n    \n    | better brands",
+  "description": "better brands is een branding agency die merken helpt merken groeien met branding, marketing en innovatie.",
+  "stylesheetSurvey": {
+    "total": 7,
+    "plugins": 0,
+    "samples": [
+      {
+        "href": "https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://use.typekit.net/rgx4xmh.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://i.icomoon.io/public/294ff0ee91/BetterBrands/style.css",
+        "id": "",
+        "kind": "theme"
+      },
+      {
+        "href": "https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://use.typekit.net/rgx4xmh.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://i.icomoon.io/public/294ff0ee91/BetterBrands/style.css",
+        "id": "",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.betterbrands.nl/build/assets/tailwind-288fd467.css",
+        "id": "",
+        "kind": "theme"
+      }
+    ]
+  },
+  "scraperStylesheetLinkCount": 4,
+  "fonts": {
+    "body": "Open Sans",
+    "heading": null,
+    "all": [
+      "Open Sans",
+      "Cambria",
+      "SFMono-Regular",
+      "Menlo",
+      "Liberation Mono",
+      "mrs-eaves-xl-serif",
+      "Open"
+    ]
+  },
+  "logoUrls": [
+    "https://betterbrands.nl/img/favicon/apple-touch-icon.png",
+    "https://betterbrands.nl/img/logo-new.svg"
+  ],
+  "logoColors": [
+    {
+      "hex": "#20A020",
+      "dominance": 0.25386313465783666,
+      "source": "raster",
+      "hue": "green"
+    },
+    {
+      "hex": "#008020",
+      "dominance": 0.2222222222222222,
+      "source": "raster",
+      "hue": "green"
+    },
+    {
+      "hex": "#004040",
+      "dominance": 0.20676968359087564,
+      "source": "raster",
+      "hue": "neutral"
+    }
+  ],
+  "usageVerification": {
+    "ran": true,
+    "screenshotCount": 2,
+    "visionRan": true,
+    "perColor": [
+      {
+        "hex": "#20A020",
+        "pixelCoverage": 0.00001,
+        "pixelVerdict": "weak",
+        "visionRole": "none",
+        "visionReasoning": "Not visible on any screenshot. The green text in the tagline and logo dots appear to use different shades.",
+        "finalEvidence": "weak"
+      },
+      {
+        "hex": "#008020",
+        "pixelCoverage": 0.00007,
+        "pixelVerdict": "weak",
+        "visionRole": "primary",
+        "visionReasoning": "Visible in the logo dots (left side of header) - the primary brand green used in the 'better brands' logo icon.",
+        "finalEvidence": "strong"
+      },
+      {
+        "hex": "#111111",
+        "pixelCoverage": 0.02606,
+        "pixelVerdict": "strong",
+        "visionRole": null,
+        "visionReasoning": null,
+        "finalEvidence": "strong"
+      },
+      {
+        "hex": "#20C509",
+        "pixelCoverage": 0.00075,
+        "pixelVerdict": "weak",
+        "visionRole": "primary",
+        "visionReasoning": "Visible in the hero tagline text 'We drive sustainable growth through branding, innovation & activation' - bright green accent color used for key messaging.",
+        "finalEvidence": "strong"
+      },
+      {
+        "hex": "#F4F4F4",
+        "pixelCoverage": 0.92888,
+        "pixelVerdict": "strong",
+        "visionRole": null,
+        "visionReasoning": null,
+        "finalEvidence": "strong"
+      },
+      {
+        "hex": "#CECECE",
+        "pixelCoverage": 0.01017,
+        "pixelVerdict": "strong",
+        "visionRole": null,
+        "visionReasoning": null,
+        "finalEvidence": "strong"
+      },
+      {
+        "hex": "#727272",
+        "pixelCoverage": 0.00717,
+        "pixelVerdict": "weak",
+        "visionRole": "decorative",
+        "visionReasoning": "Appears in the 'SCROLLEN' text below the scroll indicator - subtle gray used for minor UI elements.",
+        "finalEvidence": "weak"
+      },
+      {
+        "hex": "#EA0E44",
+        "pixelCoverage": 0,
+        "pixelVerdict": "none",
+        "visionRole": "none",
+        "visionReasoning": "Not visible on any screenshot. No red/pink elements appear in the provided images.",
+        "finalEvidence": "none"
+      },
+      {
+        "hex": "#A9A9A9",
+        "pixelCoverage": 0.00856,
+        "pixelVerdict": "weak",
+        "visionRole": "decorative",
+        "visionReasoning": "Appears in the circular badge/seal on the bottom right - used for the outline and text of the 'Better Brands' certification mark.",
+        "finalEvidence": "weak"
+      },
+      {
+        "hex": "#002838",
+        "pixelCoverage": 0.00044,
+        "pixelVerdict": "none",
+        "visionRole": null,
+        "visionReasoning": null,
+        "finalEvidence": "none"
+      },
+      {
+        "hex": "#199F07",
+        "pixelCoverage": 0.00001,
+        "pixelVerdict": "none",
+        "visionRole": null,
+        "visionReasoning": null,
+        "finalEvidence": "none"
+      },
+      {
+        "hex": "#374151",
+        "pixelCoverage": 0.0052,
+        "pixelVerdict": "weak",
+        "visionRole": null,
+        "visionReasoning": null,
+        "finalEvidence": "weak"
+      }
+    ]
+  },
+  "cssVariableCount": 0,
+  "cssVariablesSample": [],
+  "colorFrequencyCount": 9,
+  "colorFrequencyTop": [
+    {
+      "hex": "#111111",
+      "count": 25,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color",
+        "border-left-color"
+      ],
+      "hue": "black-ish"
+    },
+    {
+      "hex": "#20C509",
+      "count": 18,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color"
+      ],
+      "hue": "green"
+    },
+    {
+      "hex": "#F4F4F4",
+      "count": 14,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#CECECE",
+      "count": 9,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#727272",
+      "count": 8,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#EA0E44",
+      "count": 4,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "hue": "red"
+    },
+    {
+      "hex": "#A9A9A9",
+      "count": 4,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#002838",
+      "count": 3,
+      "contexts": [
+        "color"
+      ],
+      "hue": "neutral"
+    },
+    {
+      "hex": "#199F07",
+      "count": 1,
+      "contexts": [
+        "color"
+      ],
+      "hue": "green"
+    }
+  ],
+  "authoritativePalette": [
+    {
+      "hex": "#20A020",
+      "source": "detector",
+      "confidence": "high",
+      "detectorName": "logo-extraction",
+      "detectorRole": "primary",
+      "usageEvidence": "weak",
+      "visionRole": "none",
+      "hue": "green"
+    },
+    {
+      "hex": "#008020",
+      "source": "detector",
+      "confidence": "high",
+      "detectorName": "logo-extraction",
+      "detectorRole": "secondary",
+      "usageEvidence": "strong",
+      "visionRole": "primary",
+      "hue": "green"
+    },
+    {
+      "hex": "#111111",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 25,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color",
+        "border-left-color"
+      ],
+      "usageEvidence": "strong",
+      "hue": "black-ish"
+    },
+    {
+      "hex": "#20C509",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 18,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color"
+      ],
+      "usageEvidence": "strong",
+      "visionRole": "primary",
+      "hue": "green"
+    },
+    {
+      "hex": "#F4F4F4",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 14,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "usageEvidence": "strong",
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#CECECE",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 9,
+      "contexts": [
+        "background-color",
+        "color",
+        "border-color"
+      ],
+      "usageEvidence": "strong",
+      "hue": "gray"
+    },
+    {
+      "hex": "#727272",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 8,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "usageEvidence": "weak",
+      "visionRole": "decorative",
+      "hue": "gray"
+    },
+    {
+      "hex": "#EA0E44",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 4,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "usageEvidence": "none",
+      "visionRole": "none",
+      "hue": "red"
+    },
+    {
+      "hex": "#A9A9A9",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 4,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "usageEvidence": "weak",
+      "visionRole": "decorative",
+      "hue": "gray"
+    },
+    {
+      "hex": "#002838",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 3,
+      "contexts": [
+        "color"
+      ],
+      "usageEvidence": "none",
+      "hue": "neutral"
+    },
+    {
+      "hex": "#199F07",
+      "source": "frequency",
+      "confidence": "low",
+      "frequency": 1,
+      "contexts": [
+        "color"
+      ],
+      "usageEvidence": "none",
+      "hue": "green"
+    },
+    {
+      "hex": "#374151",
+      "source": "other",
+      "confidence": "low",
+      "usageEvidence": "weak",
+      "hue": "neutral"
+    }
+  ],
+  "authoritativeBuckets": {
+    "high": 2,
+    "medium": 8,
+    "low": 2
+  },
+  "semanticVarHits": [],
+  "symptoms": {
+    "missingPrimaryBlue": true,
+    "blueCandidatesInPalette": [],
+    "semanticColorsInPalette": [
+      "#20A020",
+      "#008020",
+      "#20C509",
+      "#EA0E44",
+      "#199F07"
+    ]
+  }
+}

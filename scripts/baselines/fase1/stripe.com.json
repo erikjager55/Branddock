@@ -1,0 +1,488 @@
+{
+  "url": "https://stripe.com",
+  "scrapedAt": "2026-04-22T12:47:18.934Z",
+  "title": "Stripe | Financial Infrastructure to Grow Your Revenue",
+  "description": "Stripe is a financial services platform that helps all types of businesses accept payments, build flexible billing models and manage money movement.",
+  "stylesheetSurvey": {
+    "total": 7,
+    "plugins": 0,
+    "samples": [
+      {
+        "href": "https://b.stripecdn.com/mkt-ssr-statics/assets/_next/static/css/323e3eb5684d96da.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://b.stripecdn.com/mkt-ssr-statics/assets/_next/static/css/9b56730792431aed.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://b.stripecdn.com/mkt-ssr-statics/assets/_next/static/css/cc176e1e387de325.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://b.stripecdn.com/mkt-ssr-statics/assets/_next/static/css/7efbd095dc228131.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://b.stripecdn.com/mkt-ssr-statics/assets/_next/static/css/7e56bec390dc2a8d.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://b.stripecdn.com/mkt-ssr-statics/assets/_next/static/css/1b364268094d58c9.css",
+        "id": "",
+        "kind": "other"
+      },
+      {
+        "href": "https://b.stripecdn.com/mkt-ssr-statics/assets/_next/static/css/5ac76ef56c21b7fe.css",
+        "id": "",
+        "kind": "other"
+      }
+    ]
+  },
+  "scraperStylesheetLinkCount": 7,
+  "fonts": {
+    "body": null,
+    "heading": "sohne-var\",\"SF Pro Display\",sans-serif",
+    "all": [
+      "Sohne",
+      "SourceCodePro",
+      "sohne-var\",\"SF Pro Display\",sans-serif",
+      "sohne-var",
+      "SourceCodePro\",\"SFMono-Regular\",monospace",
+      "Roboto",
+      "Ubuntu"
+    ]
+  },
+  "logoUrls": [
+    "https://images.stripeassets.com/fzn2n1nzq965/1hgcBNd12BfT9VLgbId7By/01d91920114b124fb4cf6d448f9f06eb/favicon.svg",
+    "https://images.stripeassets.com/fzn2n1nzq965/4vVgZi0ZMoEzOhkcv7EVwK/8cce6fdcf2733b2ec8e99548908847ed/favicon.png?w=180&h=180",
+    "https://images.stripeassets.com/fzn2n1nzq965/24BNV3GGtvCprFLrYovyaa/b2eac20a1d5ec75e4bff3888b998d163/enterprise-accordion-hertz.png?w=296&q=90",
+    "https://images.stripeassets.com/fzn2n1nzq965/37wKFanVluouT2iEZUbD0H/f75e77141e1330ad81ea18c6aea65f0c/enterprise-accordion-urbn.png?w=296&q=90",
+    "https://images.stripeassets.com/fzn2n1nzq965/1v5hJ2NWvKpQfVbMqOzCpE/c900b9ed4c288f7cf0a0dced5f4983f2/enterprise-accordion-instacart.png?w=296&q=90",
+    "https://images.stripeassets.com/fzn2n1nzq965/5AQ9A87KzwpPy4CD3uPz5C/4afd1a1e9d6e1d698c4c7c74a4868822/enterprise-accordion-lemonde.png?w=296&q=90",
+    "[SVG logo found in HTML]"
+  ],
+  "cssVariableCount": 665,
+  "cssVariablesSample": [
+    {
+      "name": "--navigation-border-radius",
+      "value": "0",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-input-description-letterSpacing",
+      "value": "0px",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-input-description-lineHeight",
+      "value": "1.3",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-input-description-size",
+      "value": "0.875rem",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-input-description-weight",
+      "value": "300",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-input-label-md-lineHeight",
+      "value": "1.3",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-input-label-md-size",
+      "value": "0.875rem",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-input-label-md-weight",
+      "value": "400",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-input-label-lg-lineHeight",
+      "value": "1.2",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-input-label-lg-size",
+      "value": "1rem",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-input-text-lg-letterSpacing",
+      "value": "0px",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-input-text-lg-size",
+      "value": "1rem",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-input-text-lg-weight",
+      "value": "300",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-text-xxs-letterSpacing",
+      "value": "0em",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-text-xxs-lineHeight",
+      "value": "1.45",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-text-xxs-size",
+      "value": "0.75rem",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-text-xxs-weight",
+      "value": "300",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-text-xs-letterSpacing",
+      "value": "0em",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-text-xs-lineHeight",
+      "value": "1.45",
+      "context": "root"
+    },
+    {
+      "name": "--hds-font-text-xs-size",
+      "value": "0.75rem",
+      "context": "root"
+    }
+  ],
+  "colorFrequencyCount": 131,
+  "colorFrequencyTop": [
+    {
+      "hex": "#32325D",
+      "count": 21,
+      "contexts": [
+        "box-shadow"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#533AFD",
+      "count": 13,
+      "contexts": [
+        "background",
+        "color",
+        "fill"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#9966FF",
+      "count": 12,
+      "contexts": [
+        "background-color",
+        "background",
+        "color",
+        "border"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#E5EDF5",
+      "count": 12,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#0073E6",
+      "count": 8,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#2863B1",
+      "count": 8,
+      "contexts": [
+        "background",
+        "color",
+        "border"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#7232F1",
+      "count": 6,
+      "contexts": [
+        "background"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#FB76FA",
+      "count": 6,
+      "contexts": [
+        "background",
+        "color"
+      ],
+      "hue": "magenta"
+    },
+    {
+      "hex": "#FFCF5E",
+      "count": 6,
+      "contexts": [
+        "background"
+      ],
+      "hue": "yellow/orange"
+    },
+    {
+      "hex": "#1318C1",
+      "count": 6,
+      "contexts": [
+        "background",
+        "color"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#00D66F",
+      "count": 5,
+      "contexts": [
+        "background-color",
+        "background",
+        "color"
+      ],
+      "hue": "green"
+    },
+    {
+      "hex": "#15286A",
+      "count": 5,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#061B31",
+      "count": 5,
+      "contexts": [
+        "color"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#02BCF5",
+      "count": 4,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#ECF0F4",
+      "count": 4,
+      "contexts": [
+        "background-color",
+        "background",
+        "color"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#2B408A",
+      "count": 4,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#8129DF",
+      "count": 4,
+      "contexts": [
+        "background",
+        "color",
+        "border-color"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#E931B7",
+      "count": 4,
+      "contexts": [
+        "background",
+        "color",
+        "border-color"
+      ],
+      "hue": "red"
+    },
+    {
+      "hex": "#2B91DF",
+      "count": 4,
+      "contexts": [
+        "background",
+        "color",
+        "border-color"
+      ],
+      "hue": "blue"
+    },
+    {
+      "hex": "#B4D8FF",
+      "count": 4,
+      "contexts": [
+        "background"
+      ],
+      "hue": "blue"
+    }
+  ],
+  "authoritativePalette": [
+    {
+      "hex": "#F5F5FF",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--hds-color-core-brand-25",
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#E8E9FF",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--hds-color-core-brand-50",
+      "hue": "blue"
+    },
+    {
+      "hex": "#E2E4FF",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--hds-color-core-brand-75",
+      "hue": "blue"
+    },
+    {
+      "hex": "#D6D9FC",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--hds-color-core-brand-100",
+      "hue": "blue"
+    },
+    {
+      "hex": "#B9B9F9",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--hds-color-core-brand-200",
+      "hue": "blue"
+    },
+    {
+      "hex": "#9A9AFE",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--hds-color-core-brand-300",
+      "hue": "blue"
+    },
+    {
+      "hex": "#7F7DFC",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--hds-color-core-brand-400",
+      "hue": "blue"
+    },
+    {
+      "hex": "#665EFD",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--hds-color-core-brand-500",
+      "hue": "blue"
+    },
+    {
+      "hex": "#533AFD",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--hds-color-core-brand-600",
+      "hue": "blue"
+    },
+    {
+      "hex": "#4032C8",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--hds-color-core-brand-700",
+      "hue": "blue"
+    },
+    {
+      "hex": "#2E2B8C",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--hds-color-core-brand-800",
+      "hue": "blue"
+    },
+    {
+      "hex": "#1C1E54",
+      "source": "css-variable",
+      "confidence": "medium",
+      "variableName": "--hds-color-core-brand-900",
+      "hue": "blue"
+    }
+  ],
+  "authoritativeBuckets": {
+    "high": 0,
+    "medium": 12,
+    "low": 0
+  },
+  "semanticVarHits": [
+    "--hds-color-core-error-100: #feb9ac",
+    "--hds-color-core-error-400: #f3432a",
+    "--hds-color-core-error-500: #d8351e",
+    "--hds-color-core-error-600: #a01400",
+    "--hds-color-core-success-100: #b6f2c7",
+    "--hds-color-core-success-400: #00b261",
+    "--hds-color-core-success-600: #006f3a",
+    "--hds-color-input-border-error: var(--hds-color-core-error-500)",
+    "--hds-color-input-text-error: var(--hds-color-core-error-500)",
+    "--hds-color-input-border-error: var(--hds-color-core-error-500)",
+    "--hds-color-input-text-error: var(--hds-color-core-error-500)",
+    "--hds-color-core-error-500: #d8351e",
+    "--hds-color-core-success-400: #00b261",
+    "--hds-color-core-error-100: #feb9ac",
+    "--hds-color-core-error-400: #f3432a",
+    "--hds-color-core-error-600: #a01400",
+    "--hds-color-core-success-100: #b6f2c7",
+    "--hds-color-core-success-600: #006f3a"
+  ],
+  "symptoms": {
+    "missingPrimaryBlue": false,
+    "blueCandidatesInPalette": [
+      "#E8E9FF",
+      "#E2E4FF",
+      "#D6D9FC",
+      "#B9B9F9",
+      "#9A9AFE",
+      "#7F7DFC",
+      "#665EFD",
+      "#533AFD",
+      "#4032C8",
+      "#2E2B8C",
+      "#1C1E54"
+    ],
+    "semanticColorsInPalette": []
+  }
+}

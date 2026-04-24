@@ -50,6 +50,24 @@ export interface AuthoritativeColor {
   frequency?: number;
   /** CSS properties where this color was seen, e.g. ['background-color'] */
   contexts?: string[];
+  /**
+   * Screenshot-based usage evidence (color-usage-verifier):
+   *   - 'strong' — colour visibly used (≥1% of opaque pixels, or Vision
+   *     confirmed primary/cta/accent/surface role).
+   *   - 'weak'   — colour appears on a small fraction of pixels.
+   *   - 'none'   — colour present in CSS but NOT visible on any screenshot.
+   *   - undefined — verification skipped (no screenshots available).
+   *
+   * Prompt uses this to override misleading CSS-var names (e.g. Vercel's
+   * `--geist-success: #0070F3` that's actually their primary blue) and to
+   * drop plugin-chrome colours that leak into the palette.
+   */
+  usageEvidence?: 'strong' | 'weak' | 'none';
+  /**
+   * Vision pass role assignment for this hex, when the pass ran. Anchor
+   * hint for Claude when deciding primary vs secondary vs accent.
+   */
+  visionRole?: 'primary' | 'cta' | 'accent' | 'surface' | 'decorative' | 'none';
 }
 
 export interface ProcessedData {
@@ -137,11 +155,31 @@ export function buildVisualIdentityPrompt(data: ProcessedData): string {
           if (c.variableName) parts.push(`var: ${c.variableName}`);
           if (typeof c.frequency === 'number' && c.frequency > 0) parts.push(`${c.frequency}×`);
           if (c.contexts && c.contexts.length > 0) parts.push(`in ${c.contexts.join(', ')}`);
+          if (c.usageEvidence) {
+            const visionSuffix = c.visionRole ? ` (Vision: ${c.visionRole})` : '';
+            parts.push(`usage: ${c.usageEvidence}${visionSuffix}`);
+          }
           parts.push(`(source: ${c.source})`);
           return parts.join(' — ');
         })
         .join('\n')
     : '  (no colors detected)';
+
+  const hasUsageEvidence = authoritativeColors.some((c) => c.usageEvidence);
+  const usageEvidenceClause = hasUsageEvidence
+    ? `
+- USAGE EVIDENCE. Each palette entry carries a \`usage\` tag from the screenshot verifier:
+  - \`usage: strong\` — colour visibly rendered on the page. Classify based on role and screenshots.
+  - \`usage: weak\` — seen in small quantities. Prefer NEUTRAL or ACCENT over PRIMARY / SECONDARY.
+  - \`usage: none\` — present in CSS but NOT visible on any captured screenshot. Classify as NEUTRAL and set the note to "observed in stylesheets only — not visible on homepage screenshots". This overrides misleading CSS variable names (e.g. \`--geist-success\` holding an unused default blue → NEUTRAL).
+  EXCEPTION: detector-sourced entries (source: detector, including \`logo-extraction\`) outrank usage evidence. Treat \`detector: logo-extraction role: primary\` as PRIMARY even if \`usage: weak\`, since the hex came from the actual brand mark.
+- When \`Vision: <role>\` is present, treat it as a STRONG HINT that overrides the CSS variable name:
+  - \`Vision: primary\` → PRIMARY
+  - \`Vision: cta\`     → SECONDARY or ACCENT
+  - \`Vision: accent\`  → ACCENT
+  - \`Vision: surface\` → NEUTRAL (surface token, not a brand colour)
+  - \`Vision: decorative|none\` → NEUTRAL`
+    : '';
 
   // Format fonts — the first one is PINNED as primary
   const fontsSection = fonts.length > 0
@@ -202,7 +240,7 @@ Return a JSON object with this exact structure:
 }
 
 IMPORTANT:
-- You MUST return ${authoritativeColors.length} color entries — one for EVERY hex in the palette above, in the same order, with the EXACT SAME hex value (6-digit, uppercase, prefixed with '#'). Do not drop, add, merge, or alter hex values.
+- You MUST return ${authoritativeColors.length} color entries — one for EVERY hex in the palette above, in the same order, with the EXACT SAME hex value (6-digit, uppercase, prefixed with '#'). Do not drop, add, merge, or alter hex values.${usageEvidenceClause}
 - For primaryFontName: copy the first font from "Detected Fonts" verbatim. Do not rename or substitute. If no fonts detected, return null.
 - For typeScale: ONLY populate with font sizes from the "Observed Font Sizes" section above. Map observed sizes to their semantic level (H1, H2, H3, Body, Small, Caption) based on the selector context and size. If no font sizes were extracted, return an EMPTY array [].
 - Each typeScale entry: { "level": "H1", "name": "Heading 1", "size": "36px", "lineHeight": "calculated", "weight": "estimated", "color": "#333333" }

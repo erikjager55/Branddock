@@ -1,0 +1,522 @@
+{
+  "url": "https://dtsede.nl",
+  "scrapedAt": "2026-04-22T12:30:19.930Z",
+  "title": "DTS Ede",
+  "description": "DTS Ede",
+  "stylesheetSurvey": {
+    "total": 31,
+    "plugins": 15,
+    "samples": [
+      {
+        "href": "https://www.dtsede.nl/wp-includes/css/dist/block-library/style.min.css?ver=5.5.3",
+        "id": "wp-block-library-css",
+        "kind": "plugin"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/plugins/nxs-sportlink-foundation.redesign/css/style-sportlink.css?ver=5.5.3",
+        "id": "sportlink-style-css",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/plugins/responsive-full-width-background-slider/css/rfwbs_slider.css?ver=5.5.3",
+        "id": "rfwbs-front-style-css",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/plugins/slider-wd/css/wds_frontend.css?ver=2.2.32",
+        "id": "wds_frontend-css",
+        "kind": "other"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/plugins/slider-wd/css/wds_effects.css?ver=2.2.32",
+        "id": "wds_effects-css",
+        "kind": "other"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/plugins/slider-wd/css/font-awesome-4.0.1/font-awesome.css?ver=4.0.1",
+        "id": "wds_font-awesome-css",
+        "kind": "plugin"
+      },
+      {
+        "href": "https://fonts.googleapis.com/css?family=ABeeZee&#038;subset=greek,latin,greek-ext,vietnamese,cyrillic-ext,latin-ext,cyrillic",
+        "id": "wds_googlefonts-css",
+        "kind": "other"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/css-reset.css?ver=20121108003",
+        "id": "nxs-framework-style-css-reset-css",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/admin.css?ver=20180310",
+        "id": "nxs-framework-style-admin-css",
+        "kind": "plugin"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/framework.css?ver=20193110",
+        "id": "nxs-framework-style-css",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/form-styles.css?ver=20190930",
+        "id": "nxs-form-style-css",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/overide-styles.css?ver=20150413",
+        "id": "nxs-default-style-overide-css",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/blog.css?ver=20190418",
+        "id": "nxs-blog-style-css",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/text_test.css?ver=20160204",
+        "id": "nxs-text-style-css",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/agenda.css?ver=20190301",
+        "id": "nxs-event-style-css",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/wedstrijdverslag.css?ver=20190220",
+        "id": "nxs-wedstrijdverslag-style-css",
+        "kind": "plugin"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/sticky-nav.css?ver=20190926",
+        "id": "nxs-default-style-sticky-nav-css",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/mainsponsor.css?ver=20170209",
+        "id": "nxs-default-mainsponsor-css",
+        "kind": "plugin"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/widgetarchive.css?ver=20181127",
+        "id": "nxs-widgetarchive-style-css",
+        "kind": "plugin"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/advertenties.css?ver=20190905",
+        "id": "nxs-advertenties-style-css",
+        "kind": "plugin"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/shadowbox.css?ver=20160623-0",
+        "id": "nxs-shadowbox-style-css",
+        "kind": "plugin"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/clublogos.css?ver=20170621",
+        "id": "nxs-clublogos-style-css",
+        "kind": "plugin"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/club-stats-box.css?ver=20190215",
+        "id": "nxs-club-stats-box-style-css",
+        "kind": "plugin"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/club-stats-countdown.css?ver=20190916",
+        "id": "nxs-club-countdown-style-css",
+        "kind": "plugin"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/ui-datepicker.css?ver=20190408",
+        "id": "nxs-ui-datepicker-style-css",
+        "kind": "plugin"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/nxs-events-widget.css?ver=20191022",
+        "id": "nxs-events-widget-style-css",
+        "kind": "plugin"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/button_3.css?ver=20160301",
+        "id": "nxs-style-style-button-css",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/animation_1.css?ver=20160301",
+        "id": "nxs-style-style-animation-css",
+        "kind": "theme"
+      },
+      {
+        "href": "https://www.dtsede.nl/wp-content/themes/core-redesignsportlinkclubsites/nexusframework/stable/css/framework-responsive.css?ver=20193110",
+        "id": "nxs-framework-style-responsive-css",
+        "kind": "theme"
+      },
+      {
+        "href": "//use.fontawesome.com/releases/v5.7.1/css/all.css?ver=5.5.3",
+        "id": "font-awesome-free-css",
+        "kind": "plugin"
+      }
+    ]
+  },
+  "scraperStylesheetLinkCount": 31,
+  "fonts": {
+    "body": null,
+    "heading": null,
+    "all": [
+      "Geneva",
+      "nexus",
+      "Droid Sans",
+      "Roboto"
+    ]
+  },
+  "logoUrls": [
+    "https://www.dtsede.nl/wp-content/uploads/dtsede/2017/07/cropped-logo-512-512-e1519824421558.png",
+    "https://www.dtsede.nl/wp-content/uploads/dtsede/2019/02/logo-respect.png"
+  ],
+  "cssVariableCount": 0,
+  "cssVariablesSample": [],
+  "colorFrequencyCount": 39,
+  "colorFrequencyTop": [
+    {
+      "hex": "#DDDDDD",
+      "count": 10,
+      "contexts": [
+        "background-color",
+        "background",
+        "color",
+        "border"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#F0F0F4",
+      "count": 8,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#222222",
+      "count": 7,
+      "contexts": [
+        "background",
+        "color",
+        "border"
+      ],
+      "hue": "black-ish"
+    },
+    {
+      "hex": "#CCCCCC",
+      "count": 7,
+      "contexts": [
+        "background",
+        "color",
+        "border-color",
+        "box-shadow"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#888888",
+      "count": 7,
+      "contexts": [
+        "color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#999999",
+      "count": 6,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#E15B21",
+      "count": 5,
+      "contexts": [
+        "color"
+      ],
+      "hue": "red"
+    },
+    {
+      "hex": "#A6A6A6",
+      "count": 5,
+      "contexts": [
+        "color",
+        "border-color",
+        "border"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#DFDFDF",
+      "count": 5,
+      "contexts": [
+        "box-shadow",
+        "border"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#F1F1F1",
+      "count": 4,
+      "contexts": [
+        "background-color",
+        "background",
+        "color"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#F5F5F5",
+      "count": 3,
+      "contexts": [
+        "background-color",
+        "background",
+        "color"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#EEEEEE",
+      "count": 3,
+      "contexts": [
+        "background",
+        "border"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#333333",
+      "count": 3,
+      "contexts": [
+        "background",
+        "color",
+        "border"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#3E601A",
+      "count": 3,
+      "contexts": [
+        "box-shadow",
+        "text-shadow"
+      ],
+      "hue": "green"
+    },
+    {
+      "hex": "#F3F3F3",
+      "count": 2,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#E6E6E6",
+      "count": 2,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#BBBBBB",
+      "count": 2,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#FF0000",
+      "count": 2,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "red"
+    },
+    {
+      "hex": "#111111",
+      "count": 2,
+      "contexts": [
+        "background"
+      ],
+      "hue": "black-ish"
+    },
+    {
+      "hex": "#72B12F",
+      "count": 2,
+      "contexts": [
+        "background",
+        "color"
+      ],
+      "hue": "green"
+    }
+  ],
+  "authoritativePalette": [
+    {
+      "hex": "#DDDDDD",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 10,
+      "contexts": [
+        "background-color",
+        "background",
+        "color",
+        "border"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#F0F0F4",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 8,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "white-ish"
+    },
+    {
+      "hex": "#222222",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 7,
+      "contexts": [
+        "background",
+        "color",
+        "border"
+      ],
+      "hue": "black-ish"
+    },
+    {
+      "hex": "#CCCCCC",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 7,
+      "contexts": [
+        "background",
+        "color",
+        "border-color",
+        "box-shadow"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#888888",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 7,
+      "contexts": [
+        "color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#999999",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 6,
+      "contexts": [
+        "color",
+        "border-color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#E15B21",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 5,
+      "contexts": [
+        "color"
+      ],
+      "hue": "red"
+    },
+    {
+      "hex": "#A6A6A6",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 5,
+      "contexts": [
+        "color",
+        "border-color",
+        "border"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#333333",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 3,
+      "contexts": [
+        "background",
+        "color",
+        "border"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#3E601A",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 3,
+      "contexts": [
+        "box-shadow",
+        "text-shadow"
+      ],
+      "hue": "green"
+    },
+    {
+      "hex": "#BBBBBB",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 2,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "gray"
+    },
+    {
+      "hex": "#FF0000",
+      "source": "frequency",
+      "confidence": "medium",
+      "frequency": 2,
+      "contexts": [
+        "background-color",
+        "color"
+      ],
+      "hue": "red"
+    }
+  ],
+  "authoritativeBuckets": {
+    "high": 0,
+    "medium": 12,
+    "low": 0
+  },
+  "semanticVarHits": [],
+  "symptoms": {
+    "missingPrimaryBlue": true,
+    "blueCandidatesInPalette": [],
+    "semanticColorsInPalette": [
+      "#E15B21",
+      "#3E601A",
+      "#FF0000"
+    ]
+  }
+}

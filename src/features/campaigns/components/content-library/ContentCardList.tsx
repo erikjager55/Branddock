@@ -1,13 +1,63 @@
 "use client";
 
 import React, { useState } from "react";
-import { ExternalLink, Heart, CalendarDays, Trash2 } from "lucide-react";
+import { ExternalLink, Heart, CalendarDays, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/shared";
 import { deriveTrafficLight, TRAFFIC_LIGHT, getPhaseConfig, InlineRenameField } from "../shared/calendar-cards";
 import { formatContentType } from "../../lib/format-content-type";
 import { DeleteConfirmModal } from "../shared/DeleteConfirmModal";
 import { useContentLibraryStore } from "../../stores/useContentLibraryStore";
-import type { ContentLibraryItem } from "../../types/content-library.types";
+import type { ContentLibraryItem, ContentLibrarySort } from "../../types/content-library.types";
+
+// ─── Sortable header helper ──────────────────────────────
+
+type SortableField = "title" | "contentType" | "campaignName" | "scheduledPublishDate";
+
+function SortableHeader({
+  label,
+  field,
+  currentSort,
+  onSort,
+}: {
+  label: string;
+  field: SortableField;
+  currentSort: ContentLibrarySort;
+  onSort: (next: ContentLibrarySort) => void;
+}) {
+  const activeField = currentSort.startsWith("-") ? currentSort.slice(1) : currentSort;
+  const isActive = activeField === field;
+  const isDesc = currentSort.startsWith("-");
+
+  const handleClick = () => {
+    // Cycle: none → asc → desc → asc → ...
+    if (!isActive) {
+      onSort(field as ContentLibrarySort);
+    } else {
+      onSort((isDesc ? field : `-${field}`) as ContentLibrarySort);
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className={`inline-flex items-center gap-1 text-left transition-colors uppercase tracking-wider ${
+        isActive ? "text-gray-700 font-semibold" : "text-gray-500 hover:text-gray-700"
+      }`}
+    >
+      {label}
+      {isActive ? (
+        isDesc ? (
+          <ArrowDown className="w-3 h-3" />
+        ) : (
+          <ArrowUp className="w-3 h-3" />
+        )
+      ) : (
+        <ArrowUpDown className="w-3 h-3 opacity-40" />
+      )}
+    </button>
+  );
+}
 
 // ─── Types ────────────────────────────────────────────────
 
@@ -40,6 +90,8 @@ export function ContentCardList({
 }: ContentCardListProps) {
   const selectedIds = useContentLibraryStore((s) => s.selectedIds);
   const toggleSelected = useContentLibraryStore((s) => s.toggleSelected);
+  const sort = useContentLibraryStore((s) => s.sort);
+  const setSort = useContentLibraryStore((s) => s.setSort);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; campaignId: string; title: string } | null>(null);
 
   return (
@@ -62,12 +114,12 @@ export function ContentCardList({
       >
         <div />
         <div />
-        <div>Title</div>
-        <div>Type</div>
-        <div>Campaign</div>
+        <SortableHeader label="Title" field="title" currentSort={sort} onSort={setSort} />
+        <SortableHeader label="Type" field="contentType" currentSort={sort} onSort={setSort} />
+        <SortableHeader label="Campaign" field="campaignName" currentSort={sort} onSort={setSort} />
         <div>Readiness</div>
         <div>Phase</div>
-        <div>Scheduled</div>
+        <SortableHeader label="Scheduled" field="scheduledPublishDate" currentSort={sort} onSort={setSort} />
         <div>Actions</div>
       </div>
 
@@ -129,7 +181,7 @@ export function ContentCardList({
                 <InlineRenameField
                   placeholder={`Untitled ${formatContentType(item.type)}`}
                   currentValue={item.title.toLowerCase() === item.type.toLowerCase() ? undefined : item.title}
-                  className="w-full text-sm font-medium text-gray-900 bg-white border border-gray-300 rounded px-1.5 py-0.5 outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-200 truncate"
+                  className="text-sm font-medium text-gray-900 truncate"
                   onRename={(t) => onRename(item.id, item.campaignId, t)}
                 />
               ) : (
