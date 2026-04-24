@@ -25,6 +25,7 @@ import { getDeliverableTypeById } from '@/features/campaigns/lib/deliverable-typ
 import { getPromptTemplate } from '@/lib/studio/prompt-templates';
 import { getContentTypeInputs } from '@/features/campaigns/lib/content-type-inputs';
 import { buildBrandVoiceDirectiveFromContext } from '@/lib/studio/brand-voice-directive';
+import { sanitizeVariantContent } from '@/features/campaigns/lib/variant-content-sanitizer';
 import OpenAI from 'openai';
 
 // ─── Types ────────────────────────────────────────────────
@@ -656,19 +657,29 @@ function buildCanvasPrompt(
     userInstruction,
     '',
     '## FORMATTING RULES',
-    'The "content" field in each variant MUST use markdown formatting for professional, well-structured output:',
-    '- HEADINGS: Use sentence case (only capitalize the first word and proper nouns). NEVER use Title Case. Example: "## How to build a brand strategy" NOT "## How To Build A Brand Strategy".',
-    '- BRAND NAMES: Always preserve the original capitalization of brand names, product names, and company names. "iPhone", "LinkedIn", "HubSpot", "WordPress" — never lowercase these. When in doubt, capitalize.',
-    '- NEVER generate a table of contents with markdown anchor links like [Title](#slug). Just use ## headings — the reader navigates by scrolling.',
-    '- NEVER use horizontal rules (---) to separate sections — use ## headings instead.',
-    '- Use ## for section headings and ### for sub-headings where appropriate',
-    '- Use **bold** for key phrases, names, and emphasis',
-    '- Use *italic* for quotes, subtle emphasis, or foreign terms',
-    '- Use - bullet lists for features, benefits, steps, or enumerated points',
-    '- Separate paragraphs with blank lines (\\n\\n) for clear visual rhythm',
-    '- For long-form content (articles, blog posts, whitepapers): include an intro paragraph, 2-4 headed sections, and a conclusion',
-    '- For short-form content (social posts, ads, emails): use bold for hooks and CTAs, keep paragraphs tight',
-    '- Never output a wall of unformatted text — every piece of content must have clear visual hierarchy',
+    'Formatting depends on the variant group. The UI renders some groups as plain text (no markdown parser) and others as rich markdown. Respect this:',
+    '',
+    '### Plain-text-only groups (NEVER use markdown syntax, NO leading #, no **bold**, no [links], no list markers)',
+    '- "title" — one line, max 120 chars, the article/page title written as normal prose. DO NOT start with "# ".',
+    '- "headline" / "subheadline" — short line, max 120-140 chars, plain prose.',
+    '- "meta" / "meta-description" — one sentence, max 160 chars, no markdown, no quotes around it.',
+    '- "subject" — email subject line, max 78 chars, plain text.',
+    '- "preheader" — email preheader, max 110 chars, plain text.',
+    '- "cta" — short imperative button/link text, max 48 chars, ideally 2-6 words. Examples: "Start your free trial", "Download the guide", "Book a demo". NEVER a paragraph, NEVER markdown, NEVER ends with a period unless it\'s a question.',
+    '- "slug" — URL-friendly string, max 80 chars, lowercase-dashes, no markdown.',
+    '',
+    '### Markdown-rich groups (USE markdown for visual hierarchy)',
+    '- "body" / "hook" / "content" / "paragraph" / "intro" / "conclusion" — use markdown for well-structured prose.',
+    '- HEADINGS (inside body only): Use sentence case (only capitalize the first word and proper nouns). NEVER Title Case. Example: "## How to build a brand strategy" NOT "## How To Build A Brand Strategy".',
+    '- BRAND NAMES: Always preserve original capitalization ("iPhone", "LinkedIn", "HubSpot"). Never lowercase.',
+    '- NEVER generate a table of contents with anchor links like [Title](#slug). Just use ## headings.',
+    '- NEVER use horizontal rules (---) to separate sections — use ## headings.',
+    '- Use ## for sections, ### for sub-sections.',
+    '- Use **bold** for key phrases, *italic* for quotes/emphasis, - bullets for enumerations.',
+    '- Separate paragraphs with blank lines (\\n\\n).',
+    '- Long-form (blog/article/whitepaper): intro + 2-4 headed sections + conclusion.',
+    '- Short-form (social/ads/email): tight paragraphs, bold for hooks.',
+    '- Never output a wall of unformatted text in body groups — always visual hierarchy.',
     '',
     'Response schema:',
     '{',
@@ -681,7 +692,7 @@ function buildCanvasPrompt(
     '}',
     '',
     'Each group must have exactly 2 variants with different creative approaches.',
-    'IMPORTANT: Every variant MUST include a "cta" field — a short, compelling call-to-action text (2-6 words, e.g. "Start Your Free Trial", "Learn More", "Book a Demo", "Shop Now"). The CTA should match the content goal and platform. Never leave cta empty.',
+    'IMPORTANT: Every variant MUST include a "cta" field — a short, compelling call-to-action text in plain text, 2-6 words (max ~48 characters), no markdown. Examples: "Start your free trial", "Learn more", "Book a demo", "Shop now". The CTA should match the content goal and platform. NEVER a paragraph. NEVER leave it empty.',
     'Ensure all content is on-brand and appropriate for the target platform.',
   ]
     .filter(Boolean)
@@ -740,9 +751,16 @@ function buildRegenerationPrompt(
     `User feedback: ${feedback}`,
     '',
     'Generate 2 improved variants that address the feedback while staying on-brand.',
-    'IMPORTANT: Every variant MUST include a "cta" field — a short, compelling call-to-action text (2-6 words). Never leave cta empty.',
+    'IMPORTANT: Every variant MUST include a "cta" field — a short, compelling call-to-action text in plain text, 2-6 words (max ~48 characters), no markdown. Never leave it empty.',
     '',
-    'FORMATTING: Use markdown in the "content" field — ## headings (sentence case, NOT Title Case), ### sub-headings, **bold**, *italic*, - bullet lists, and blank lines between paragraphs. Always preserve original capitalization of brand/product/company names. Never output unformatted walls of text.',
+    `FORMATTING depends on the group. For "${group}" specifically:`,
+    ...(["title", "meta", "meta-description", "cta", "subject", "preheader", "headline", "subheadline", "slug"].includes(group)
+      ? [
+          `- "${group}" is PLAIN TEXT ONLY. No markdown. No leading "#" or "##". No **bold**. No [links]. Output must be a single plain sentence/phrase that renders as-is.`,
+        ]
+      : [
+          `- "${group}" supports markdown. Use ## headings (sentence case, NOT Title Case), ### sub-headings, **bold**, *italic*, - bullet lists, and blank lines between paragraphs. Always preserve original capitalization of brand/product/company names. Never output unformatted walls of text.`,
+        ]),
     '',
     'Response schema:',
     '{',
@@ -1118,6 +1136,13 @@ async function persistVariants(
     for (const component of textResult.components) {
       for (let variantIndex = 0; variantIndex < component.variants.length; variantIndex++) {
         const variant = component.variants[variantIndex];
+        // Sanitize content per group: title/meta/cta are plain text only,
+        // body/hook preserve markdown. Defense-in-depth — the prompt asks
+        // for this but models still leak # and wall-of-text CTAs.
+        const normalizedContent = sanitizeVariantContent(variant.content, component.group);
+        const normalizedCta = variant.cta
+          ? sanitizeVariantContent(variant.cta, 'cta')
+          : null;
         await tx.deliverableComponent.create({
           data: {
             deliverableId,
@@ -1127,8 +1152,8 @@ async function persistVariants(
             variantGroup: component.group,
             variantIndex,
             isSelected: variantIndex === 0,
-            generatedContent: variant.content,
-            visualBrief: variant.cta ? JSON.stringify({ cta: variant.cta }) : null,
+            generatedContent: normalizedContent,
+            visualBrief: normalizedCta ? JSON.stringify({ cta: normalizedCta }) : null,
             aiProvider: meta.provider,
             generationDuration: meta.textDurationMs,
             aiModel: null,
@@ -1211,9 +1236,13 @@ async function persistRegeneratedGroup(
     let order = (maxOrder?.order ?? -1) + 1;
 
     if (textGroup) {
-      // Persist text variants
+      // Persist text variants — sanitize per group (plain text vs markdown).
       for (let variantIndex = 0; variantIndex < textGroup.variants.length; variantIndex++) {
         const variant = textGroup.variants[variantIndex];
+        const normalizedContent = sanitizeVariantContent(variant.content, group);
+        const normalizedCta = variant.cta
+          ? sanitizeVariantContent(variant.cta, 'cta')
+          : null;
         await tx.deliverableComponent.create({
           data: {
             deliverableId,
@@ -1223,8 +1252,8 @@ async function persistRegeneratedGroup(
             variantGroup: group,
             variantIndex,
             isSelected: variantIndex === 0,
-            generatedContent: variant.content,
-            visualBrief: variant.cta ? JSON.stringify({ cta: variant.cta }) : null,
+            generatedContent: normalizedContent,
+            visualBrief: normalizedCta ? JSON.stringify({ cta: normalizedCta }) : null,
             aiProvider: meta?.provider ?? null,
             generationDuration: meta?.durationMs ?? 0,
             status: 'GENERATED',

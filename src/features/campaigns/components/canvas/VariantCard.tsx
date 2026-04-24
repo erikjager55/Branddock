@@ -7,6 +7,7 @@ import { SimpleMarkdown } from './previews/SimpleMarkdown';
 import { Badge } from '@/components/shared';
 import { Check, Pencil, Play, Mic, Clock } from 'lucide-react';
 import type { CanvasVariant } from '../../types/canvas.types';
+import { isPlainTextGroup, sanitizeVariantContent } from '../../lib/variant-content-sanitizer';
 
 type VariantMediaType = 'text' | 'video' | 'audio';
 
@@ -44,12 +45,15 @@ export function VariantCard({
   };
 
   const handleSave = (content: string) => {
+    // Sanitize plain-text groups on save too — if the user pasted markdown,
+    // normalize before it hits the store.
+    const sanitized = sanitizeVariantContent(content, group);
     // Update store variant content
     const store = useCanvasStore.getState();
     const variants = store.variantGroups.get(group);
     if (variants) {
       const updated = variants.map((v, i) =>
-        i === variantIndex ? { ...v, content } : v,
+        i === variantIndex ? { ...v, content: sanitized } : v,
       );
       store.addVariantGroup(group, updated);
     }
@@ -57,8 +61,12 @@ export function VariantCard({
   };
 
   const label = VARIANT_LABELS[variantIndex] ?? String(variantIndex + 1);
-  // Strip HTML tags but preserve markdown formatting for SimpleMarkdown
-  const displayContent = variant.content.replace(/<[^>]*>/g, '');
+  const isPlain = isPlainTextGroup(group);
+  // For plain-text groups, strip any leaked markdown (#, **, etc.) before
+  // rendering. For markdown-rich groups, keep markdown intact for SimpleMarkdown.
+  const displayContent = isPlain
+    ? sanitizeVariantContent(variant.content, group)
+    : variant.content.replace(/<[^>]*>/g, '');
   const isLong = displayContent.length > 200;
   // For truncation, find a clean cut point (end of paragraph or sentence)
   const truncatedContent = isLong && !expanded
@@ -162,16 +170,24 @@ export function VariantCard({
               </div>
             )}
 
-            {truncatedContent ? (
+            {/* Plain-text groups render as unprocessed text (no markdown
+                parsing). Markdown-rich groups go through SimpleMarkdown. */}
+            {isPlain ? (
+              <p className="text-sm text-gray-900 whitespace-pre-wrap break-words">
+                {truncatedContent ?? displayContent}
+              </p>
+            ) : truncatedContent ? (
               <SimpleMarkdown text={truncatedContent} />
             ) : (
               <SimpleMarkdown text={displayContent} />
             )}
-            {/* CTA highlight */}
+            {/* CTA highlight — also sanitized to avoid leaked markdown. */}
             {variant.cta && (
               <div className="mt-2 flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-50 border border-amber-200">
                 <span className="text-[10px] font-semibold text-amber-700 uppercase tracking-wider flex-shrink-0">CTA</span>
-                <span className="text-xs font-medium text-amber-900">{variant.cta}</span>
+                <span className="text-xs font-medium text-amber-900">
+                  {sanitizeVariantContent(variant.cta, 'cta')}
+                </span>
               </div>
             )}
             {isLong && (
