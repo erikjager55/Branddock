@@ -1,5 +1,5 @@
 # BRANDDOCK — Claude Code Context
-## Laatst bijgewerkt: 24 april 2026 (Campaign Detail merged into Content Library + Timeline view + filter redesign)
+## Laatst bijgewerkt: 24 april 2026 (Universal Design System Export: DESIGN.md / DTCG / Tailwind / shadcn / Figma Variables / Style Dictionary / Brand Brief — zie docs/design-system-export.md)
 
 > ⚠️ **VERPLICHT**: Lees `PATTERNS.md` in project root voor UI primitives, verboden patronen, en design tokens. Elke pagina MOET PageShell + PageHeader gebruiken.
 

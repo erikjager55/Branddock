@@ -2,7 +2,7 @@
 
 > Geprioriteerde gids voor alle openstaande ontwikkelstappen.
 > Geconsolideerd uit: TODO.md, BRANDCLAW-ROADMAP.md, CLAUDE.md, inline TODOs.
-> Laatst bijgewerkt: 19 april 2026
+> Laatst bijgewerkt: 25 april 2026
 
 ---
 
@@ -473,6 +473,129 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
 - [ ] "Refinement suggestion" banner in Brandstyle bij gedetecteerde afwijking van huidig profiel
 - [ ] Optioneel: accepteer suggestie → update `BrandStyleguide`
 - [ ] Sluit loop: Branddock brand → Claude Design ontwerp → verfijnd Branddock brand
+
+### 10.6 Spoor 6: Hyperbrowser Scraper Backend (feature-flag A/B) 📋 PENDING
+
+> Adoptie van `hyperbrowserai/hyperbrowser-app-examples` patterns 2 + 3 uit de Hyperbrowser-analyse (memory entry research). Doel: ons huidige Playwright + cheerio scrape-pad robuuster maken tegen 403-blocks en sneller op JS-rendered sites door `hb.scrape.batch` + `hb.extract.startAndWait` als opt-in alternatief in te zetten via env-flag, parallel aan de bestaande pijplijn voor A/B-meting.
+>
+> **Niet starten zonder**: Hyperbrowser account + budget-akkoord (5-40× duurder per scrape dan zelf-gehoste Playwright). Plan deze fase ná production launch (Fase 3) als we echte cijfers hebben over onze 403-rate en JS-rendered failure-rate.
+
+**Verwachte waarde**:
+- 4-6× snellere multi-page scrape op JS-rendered sites (onze huidige `multi-page-scraper.ts` doet 60-120s, scrape.batch met session-reuse zou ~15-30s moeten halen)
+- 0% 403-rate door ingebouwde stealth + residential proxy + captcha-solver — vervangt onze fragiele Gemini-grounding fallback
+- Easy-mode pipeline voor sites met framework-detector hit (ACSS/shadcn/Tailwind) via `hb.extract.startAndWait` met brand-token-schema — 1 call ipv 5-phase pipeline, halveert response time
+
+**Sprint breakdown (~4-5 dagen totaal)**
+
+- [ ] **S1 — Client setup + feature flag** (~0.5 dag)
+  - `npm install @hyperbrowser/sdk`
+  - `src/lib/integrations/hyperbrowser/client.ts` — singleton via `globalThis` (matching elevenlabs/runway pattern), `isHyperbrowserConfigured()` helper
+  - Env vars: `HYPERBROWSER_API_KEY`, `BRANDSTYLE_USE_HYPERBROWSER` (boolean flag)
+  - Fail-closed: bij missing key + flag aan → log warning, val terug op huidige Playwright pad
+- [ ] **S2 — scrape.batch als drop-in voor multi-page-scraper** (~1.5 dag)
+  - Nieuw bestand `src/lib/brandstyle/hyperbrowser-scraper.ts` parallel aan bestaande `multi-page-scraper.ts`
+  - `scrape.batch.startAndWait({ urls: [homepage, ...subpages], sessionId, scrapeOptions: { formats: ['html','markdown','links'], onlyMainContent: false, waitFor: 3000 } })` met session-reuse via `hb.sessions.create({ useStealth: true, useProxy: true, solveCaptchas: true, acceptCookies: true })`
+  - Output-shape compatibel met `ScrapedData` zodat downstream pipeline ongewijzigd blijft (color extractor, framework detectors, semantic resolver werken hergebruikbaar op de output)
+  - Routing in `analysis-engine.ts`: `if (BRANDSTYLE_USE_HYPERBROWSER) → hyperbrowser-scraper, else → multi-page-scraper`
+  - Beide routes loggen `provenance: 'hyperbrowser' | 'playwright'` op de analyzer output zodat downstream observability werkt
+- [ ] **S3 — Proxy-fallback ladder** (~0.5 dag)
+  - Adopteer het `hypervision` patroon: try `useProxy: true` → catch op 403/connection-error → retry zonder proxy. Bestaande Gemini-grounding fallback markeren als deprecated (kan in fase 4 weg na A/B-data)
+  - Failure-mode telemetry: PostHog event `brandstyle_scrape_attempt` met `{ provider, useProxy, durationMs, statusCode, success }`
+- [ ] **S4 — extract fast-path voor framework-detected sites** (~1 dag)
+  - `hb.extract.startAndWait` met expliciete JSON-schema voor brand-tokens (colors, typography, radii, spacing) — sites waar `framework-detectors.ts` een ACSS/shadcn/Tailwind hit heeft kunnen direct via deze 1-call route
+  - Fallback ladder: easy-mode → full pipeline bij failure of low-confidence output
+  - Schema-shape afgeleid van bestaande `DesignSystemModel` zodat extract-output direct in canonical-resolver gevoed kan worden
+- [ ] **S5 — Observability + A/B measurement** (~0.75 dag)
+  - PostHog dashboard: `brandstyle_provider_comparison` met `provider`, `success_rate`, `p50_duration`, `p95_duration`, `cost_per_scrape`
+  - 30-dagen A/B met gelijke verdeling van trafiek → stay/revert beslissing op basis van werkelijke 403-rate vs cost-delta
+  - Documentatie: `docs/hyperbrowser-integration.md` met setup, kosten-model, telemetrie-velden, decision criteria
+
+**Design beslissingen vóór start**
+
+| # | Vraag | Aanbeveling |
+|---|---|---|
+| 1 | Hyperbrowser account-tier? | Pricing v2 op moment van starten checken — start met laagste betaalde tier, scale-up als A/B groen is |
+| 2 | Default flag-state (dev vs prod)? | **Dev=off, Staging=A/B 50/50, Prod=off tot data**. Pas aan na 30 dagen meten. |
+| 3 | Telemetrie-destination? | **PostHog** — bestaand systeem, integreert met andere brandstyle-events |
+| 4 | extract.startAndWait scope? | **Alleen sites met framework-hit (ACSS/shadcn/Tailwind)** — andere sites blijven full pipeline. Voorkomt regressie op edge-cases |
+| 5 | enableWebRecording per scrape? | **Nee** — duur en niet nodig. Audit-log van CSS-tokens via snapshot-history (10.5) is voldoende |
+| 6 | useStealth + useProxy + solveCaptchas defaults? | **Allemaal aan** — daar betaal je voor, anders is Hyperbrowser geen meerwaarde t.o.v. lokale Playwright |
+
+**Acceptatie-criteria** (voor go/no-go na A/B-periode)
+
+- [ ] 403-rate via Hyperbrowser pad < 5% op test-set van 100 publieke brand-sites
+- [ ] Multi-page scrape p95 duration < 45s (vs huidige 60-120s)
+- [ ] Cost-per-scrape < €0.10 (anders revert)
+- [ ] Geen regressies op color-extraction accuracy: same RGB-distance van Vision-verified primary kleur
+- [ ] `extract.startAndWait` fast-path success-rate > 85% op sites met framework-hit, valt anders cleanly terug op full pipeline
+
+**Niet in V1**
+
+- `agents.browserUse` / `hyperAgent` voor brandstyle (overkill, traag, duur — zie no-go's in Hyperbrowser-rapport)
+- Migratie van `component-screenshotter.ts` (we hebben fijnmazige Playwright-controle nodig die `hb.scrape` API niet biedt; later optioneel via `chromium.connectOverCDP(session.wsEndpoint)`)
+- Hyperbrowser als enige path zonder fallback — feature-flag blijft, ook na A/B groen, voor outages
+
+**Bestanden (geprojecteerd)**
+
+- `src/lib/integrations/hyperbrowser/client.ts` (nieuw)
+- `src/lib/brandstyle/hyperbrowser-scraper.ts` (nieuw, parallel aan multi-page-scraper.ts)
+- `src/lib/brandstyle/extract-fast-path.ts` (nieuw)
+- `src/lib/brandstyle/analysis-engine.ts` (routing)
+- `src/lib/analytics/posthog.ts` (events)
+- `.env.example` (HYPERBROWSER_API_KEY, BRANDSTYLE_USE_HYPERBROWSER)
+- `docs/hyperbrowser-integration.md` (nieuw)
+
+**Bron**: Hyperbrowser-analyse uit `hyperbrowserai/hyperbrowser-app-examples` (24 april 2026). Adoptie 2 (HIGH) + Adoptie 3 (MEDIUM-HIGH) uit het rapport. Quick wins A.1 + A.2 uit datzelfde rapport zijn al uitgevoerd (zie memory entries). Spoor 10.5 (snapshot-history) is Adoptie 1 uit hetzelfde rapport.
+
+---
+
+### 10.5 Spoor 5: Brandstyle Snapshot History ✅ DONE (2026-04-25)
+
+> Adoptie van het hyperbrowserai/competitor-tracker patroon. Per analyzer-run wordt een append-only snapshot vastgelegd; diff-engine vergelijkt twee snapshots op canonical-model niveau en surface't token-changes als changelog. Lost het pijnpunt "we kunnen geen visuele evolutie tracken" op uit de Hyperbrowser-analyse.
+
+- [x] **S1 — Schema + write path**: Prisma `BrandstyleSnapshot` model + migratie. `create-snapshot.ts` met hash-based dedupe (skip schrijven als tokensHash gelijk aan vorige). Hash-input strip volatile timestamps zodat dezelfde brand-state telkens dezelfde fingerprint geeft. Hook in `analysis-engine.ts` als Phase 6. Smoke test: re-analyze 2x → 1 snapshot (correct gededupliceerd).
+- [x] **S2 — Diff engine**: `snapshot-diff.ts` met `computeSnapshotDiff` (per-categorie structureel: colors / typography / rounded / spacing / elevation / components / brandFoundation) + `summarizeDiff` (regex-first, geen LLM) + `shortSummary` (1-zin voor timeline-rijen). Cosmetic classifier: RGB delta < 3 wordt gemarkeerd als cosmetic en default verborgen — voorkomt dat anti-aliasing/JPEG noise als rebrand wordt gepresenteerd. 27 assertions in `scripts/test-snapshot-diff.ts` allen groen.
+- [x] **S3 — API endpoints**: `GET /api/brandstyle/snapshots` (list met pre-computed changeSummary per rij), `GET/PATCH /[id]` (detail + notes), `GET /[id]/diff/[otherId]` (structureel diff + summary). Workspace-scoped via `resolveWorkspaceId()`. TanStack Query hooks `useSnapshots`, `useSnapshotDetail`, `useSnapshotDiff`, `useUpdateSnapshotNotes` met `snapshotKeys` factory.
+- [x] **S4 — UI**: 9e tab "History" (Clock-icon). `HistorySection` orchestrator met chronologische timeline. `SnapshotTimelineRow` met dot+line visual, header (timestamp/hash/trigger/by), changeCount + summary, inline notes-edit, expand-toggle. `SnapshotDiffPanel` met per-categorie cards (Palette/Type/Square/Ruler/Layers/Blocks/Sparkles iconen) + cosmetic toggle. `CompareSnapshotsModal` met twee picker-dropdowns voor willekeurige paren. "Re-analyze now" knop in header triggert bestaande `useAnalyzeUrl` met `styleguide.sourceUrl`. Empty state met CTA.
+- [x] **S5 — Retention + docs**: `snapshot-cleanup.ts` met OR-combinatie van twee gates (top-N=24 ALTIJD bewaard + grace period=90 dagen ALTIJD bewaard). Nieuwe `AgentJobType.BRANDSTYLE_SNAPSHOT_CLEANUP` enum + handler in `agents/jobs/handlers.ts` zodat cleanup via bestaand cron-systeem dispatcht. `docs/snapshot-history.md` met motivatie, data-model, API, UI, retention en cost-model.
+
+**Design beslissingen (V1)**: storage in Postgres jsonb (5-50KB per snapshot), pixel-diff op screenshots geskipt, geen LLM-narrative (structureel diff is voldoende), geen periodieke cron-scan per merk (manual re-analyze blijft trigger), geen restore-flow (destructief, eigen review nodig). Cosmetic threshold RGB delta < 3 (gebaseerd op color-usage-verifier `DISTANCE_TOLERANCE: 40` ÷ 13).
+
+**Bestanden**: 4 nieuwe `src/lib/brandstyle/snapshots/`, 3 nieuwe API routes, 4 nieuwe UI componenten, 1 hook file, 1 cleanup handler-registratie, 2 smoke-test scripts, 1 docs file. Prisma: 1 nieuw model (BrandstyleSnapshot) + 1 enum-uitbreiding (AgentJobType.BRANDSTYLE_SNAPSHOT_CLEANUP) + 2 relatie-velden (BrandStyleguide.snapshots, Workspace.brandstyleSnapshots, User.triggeredSnapshots). 0 TS errors, 27/27 diff-assertions groen, write-path dedupe E2E gevalideerd.
+
+### 10.4 Spoor 4: Universele Design System Export ✅ DONE (2026-04-24)
+
+> Reactie op Google Stitch's open-sourced `DESIGN.md` spec (21 april 2026). Bouwt één canonical interne design-system model uit de brandstyle-analyzer data en emit dat naar 7 populaire agent-formaten. Maakt Branddock output direct bruikbaar door Stitch, Claude Code, Cursor, v0, Figma, shadcn CLI en Style Dictionary.
+
+**Sprint 1 — Backend (3 dagen)**
+- [x] Prisma schema: `semanticTokens Json?` op `BrandStyleguide`
+- [x] Semantic Role Resolver: `src/lib/brandstyle/semantic-role-resolver.ts` — afleiden van semantische rollen (primary/on-primary/surface/…) uit StyleguideColor + StyleguideComponent + typeScale + cornerRadii + spacingScale + shadowSystem. Geïntegreerd als Phase 5 in analysis-engine.ts.
+- [x] Canonical `DesignSystemModel` + DB-resolver: `src/lib/export/design-system/canonical.ts` + `resolver.ts` — aggregeert semanticTokens, prose, brand foundation (12 assets), personas, competitors.
+- [x] 3 emitters: `emitters/designmd.ts` (Stitch YAML + markdown), `emitters/dtcg.ts` (W3C Design Tokens), `emitters/tailwind.ts` (theme.extend fragment).
+- [x] Dynamic API route: `/api/export/design-system/[format]/route.ts` met workspace-auth, correcte Content-Type + Content-Disposition filename.
+
+**Sprint 2 — UI (2.5 dagen)**
+- [x] Colors tab: `SystemRolesSection` + `SystemRoleRow` + `SystemRoleOverrideModal` — swatch, source attributie, WCAG badge, override color-picker met contrast preview, revert-knop.
+- [x] Typography tab: DESIGN.md role-labels (`headline-display`, `body-md`, `label-sm`) per type scale row via `buildTypeRoleMap()`.
+- [x] Visual System tab: `SystemScalesSection` — 3 horizontale strips (Rounded corner previews, Spacing blocks, Elevation shadow cards).
+- [x] Components tab: button-variant grouping (Primary / Secondary / Tertiary / Ghost / Other) met per-card variant-badge.
+- [x] Nieuwe Design System tab (8e tab, Code2 icon) met canonical overview + linter panel + export panel met copy/download per format + resolver diagnostics.
+- [x] Header export dropdown uitgebreid met alle 7 DESIGN.md formats onder aparte sub-sectie.
+- [x] Review-sectie `system-roles` toegevoegd aan `ACTIVE_REVIEW_SECTIONS` met dynamic filter (alleen active als `semanticTokens !== null`).
+
+**Sprint 3 — Polish (1 dag)**
+- [x] 4 overige emitters: `shadcn.ts` (globals.css :root met HSL-triplets + dark-mode placeholder), `figma-variables.ts` (Figma Variables JSON v1 met collections/modes), `style-dictionary.ts` (SD source met `.value` nesting), `brand-brief.ts` (AGENTS.md-style markdown met 12 brand assets + personas + competitors).
+- [x] Eigen lightweight linter: `src/lib/export/design-system/linter.ts` met 7 regels (missing-primary, missing-required-role, contrast-ratio, missing-typography, missing-headline, missing-body, incomplete-rounded-scale, incomplete-spacing-scale, broken-ref). Externe `@google/design.md` alpha-package bewust niet ingezet (proprietary npm license, instabiele API) — onze resolver diagnostics hadden de benodigde data al.
+- [x] Linter panel in Design System tab met severity-badges + klikbare deep-links naar bron-tab per finding.
+- [x] `docs/design-system-export.md` — volledige documentatie (motivatie, architectuur, resolver fases, API endpoints, UI integratie, tool-specifieke gebruiksinstructies, troubleshooting).
+- [x] `scripts/test-semantic-resolver.ts` — smoke-test script dat resolver + canonical model + alle 7 emitters end-to-end test op een bestaande styleguide.
+
+**Design beslissingen**
+- Output-formaten: {DESIGN.md, DTCG tokens.json, Tailwind theme, shadcn CSS, Figma Variables, Style Dictionary, Brand Brief AGENTS.md} — dekt huidige landschap van AI coding/design agents. Uitbreiding via nieuwe emitter-file.
+- Brand Brief scope: maximum (alle 12 brand assets + personas + competitors + voice + imagery + iconography) conform gebruikerskeuze voor rijkere agent-context.
+- Override systeem: user-overrides leven als `semanticTokens.overrides` naast `semanticTokens.resolved`, gemerged op read-time. Clear-all knop beschikbaar in Colors tab.
+- Lazy resolver: bestaande styleguides zonder `semanticTokens` triggeren resolver on-demand bij eerste export-poging, resultaat persist naar DB.
+- Vision-fallback voor color roles staat klaar maar is nog niet geactiveerd — heuristiek-only voor V1 op basis van bestaande `color-usage-verifier.ts` data.
 
 ### 10.3 Spoor 3: MCP/API Integratie (wachtspoor)
 
