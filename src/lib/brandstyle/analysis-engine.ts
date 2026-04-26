@@ -507,7 +507,29 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
           ? [url, ...subpageUrls.slice(0, 4)]
           : [url];
         console.log(`[brandstyle-analysis] Taking component screenshots for ${componentUrls.length} page(s)`);
-        const shot = await extractComponentsFromPages(componentUrls, styleguideMeta.workspaceId);
+        const shotResult = await extractComponentsFromPages(componentUrls, styleguideMeta.workspaceId);
+        const shot = shotResult.components;
+
+        // Augment static CSS heuristics met runtime computed-style frequencies.
+        // Catches Tailwind/CSS-in-JS resolved values die de cheerio-pass mist.
+        // Non-mutating: we vervangen scraped.visualHeuristics indien augmented.
+        if (shotResult.bulkStyles && scraped.visualHeuristics) {
+          try {
+            const { augmentHeuristicsWithRuntime } = await import('./bulk-computed-styles');
+            scraped.visualHeuristics = augmentHeuristicsWithRuntime(
+              scraped.visualHeuristics,
+              shotResult.bulkStyles,
+            );
+            console.log(
+              `[brandstyle-analysis] Heuristics augmented with runtime data: ${scraped.visualHeuristics.borderRadius.values.length} radii, ${scraped.visualHeuristics.spacing.values.length} spacing samples, ${scraped.visualHeuristics.boxShadow.samples.length} shadow samples`,
+            );
+          } catch (augErr) {
+            console.warn(
+              `[brandstyle-analysis] Heuristics augmentation failed (non-critical): ${augErr instanceof Error ? augErr.message : String(augErr)}`,
+            );
+          }
+        }
+
         if (shot.length > 0) {
           let enriched = shot;
           try {
@@ -611,6 +633,57 @@ export async function analyzeUrl(styleguideId: string, url: string): Promise<voi
           visualLanguage: JSON.parse(JSON.stringify(visualLanguageResult)),
         },
       });
+    }
+
+    // Phase 5: Semantic Role Resolver — leidt DESIGN.md-compatible rollen
+    // af uit bestaande analyzer-output (colors + components + typeScale +
+    // cornerRadii + spacingScale + shadowSystem). Non-critical: als
+    // resolver faalt gaat de analyse door zonder semanticTokens.
+    let resolvedSemanticTokens: unknown = null;
+    try {
+      const { resolveSemanticTokens } = await import('./semantic-role-resolver');
+      const tokens = await resolveSemanticTokens(styleguideId);
+      resolvedSemanticTokens = tokens;
+      await prisma.brandStyleguide.update({
+        where: { id: styleguideId },
+        data: { semanticTokens: JSON.parse(JSON.stringify(tokens)) },
+      });
+    } catch (err) {
+      console.warn(
+        `[brandstyle-analysis] Semantic role resolver failed (non-critical): ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
+    // Phase 6: Snapshot — append-only history voor visuele evolutie
+    // tracking. Hash-based dedupe voorkomt spurious entries bij no-op
+    // re-scans. Non-critical: als snapshot faalt gaat de analyse door.
+    try {
+      const { createBrandstyleSnapshot } = await import('./snapshots/create-snapshot');
+      const result = await createBrandstyleSnapshot({
+        brandstyleId: styleguideId,
+        workspaceId: styleguideMeta.workspaceId,
+        triggerSource: 'analyze-url',
+        // Best-effort: createdById is wie de styleguide oorspronkelijk
+        // creëerde — niet noodzakelijkerwijs wie deze re-analyze
+        // triggerde. Voor V1 voldoende; volgnam-tracking kan later via
+        // request session.
+        triggeredById: styleguideMeta.createdById ?? null,
+        scrapedJson: {
+          colors: processed.authoritativeColors,
+          fonts: processed.fonts,
+          fontSizes: processed.fontSizes,
+          logoUrls: processed.logoUrls,
+          frameworks: processed.frameworks,
+        },
+        semanticTokens: resolvedSemanticTokens,
+      });
+      console.log(
+        `[brandstyle-analysis] Snapshot ${result.created ? 'created' : 'deduplicated'} (id=${result.snapshotId}, hash=${result.tokensHash.slice(0, 8)})`,
+      );
+    } catch (err) {
+      console.warn(
+        `[brandstyle-analysis] Snapshot write failed (non-critical): ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
     // Done — clear any stale errorMessage from previous failed runs

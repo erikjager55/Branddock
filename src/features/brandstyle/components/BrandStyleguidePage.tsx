@@ -21,6 +21,9 @@ import { ComponentsSection } from "./ComponentsSection";
 import { ToneOfVoiceSection } from "./ToneOfVoiceSection";
 import { ImagerySection } from "./ImagerySection";
 import { VisualSystemSection } from "./VisualSystemSection";
+import { DesignSystemSection } from "./DesignSystemSection";
+import { HistorySection } from "./HistorySection";
+import { useAnalyzeUrl } from "../hooks/useBrandstyleHooks";
 
 interface BrandStyleguidePageProps {
   onNavigateToAnalyzer: () => void;
@@ -150,6 +153,10 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
             {activeTab === "tone_of_voice" && <ToneOfVoiceSection styleguide={styleguide} canEdit={canEdit} />}
             {activeTab === "imagery" && <ImagerySection styleguide={styleguide} canEdit={canEdit} />}
             {activeTab === "visual_system" && <VisualSystemSection styleguide={styleguide} canEdit={canEdit} />}
+            {activeTab === "design_system" && <DesignSystemSection styleguide={styleguide} />}
+            {activeTab === "history" && (
+              <HistoryTabContent styleguide={styleguide} />
+            )}
           </LockOverlay>
         </ReviewClosedProvider>
 
@@ -169,5 +176,30 @@ export function BrandStyleguidePage({ onNavigateToAnalyzer }: BrandStyleguidePag
         />
       </div>
     </PageShell>
+  );
+}
+
+/**
+ * History-tab wrapper. Houdt de re-analyze mutation lokaal zodat de
+ * History view zelf "Re-analyze now" kan triggeren met de styleguide's
+ * sourceUrl, zonder dat het naar de Analyzer-pagina hoeft te navigeren.
+ */
+function HistoryTabContent({
+  styleguide,
+}: {
+  styleguide: import('../types/brandstyle.types').BrandStyleguide;
+}) {
+  const analyze = useAnalyzeUrl();
+  const handleReanalyze = useCallback(() => {
+    if (!styleguide.sourceUrl) return;
+    analyze.mutate(styleguide.sourceUrl);
+  }, [analyze, styleguide.sourceUrl]);
+
+  return (
+    <HistorySection
+      styleguide={styleguide}
+      onReanalyze={handleReanalyze}
+      isReanalyzing={analyze.isPending}
+    />
   );
 }

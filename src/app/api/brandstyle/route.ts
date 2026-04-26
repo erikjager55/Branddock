@@ -113,6 +113,10 @@ const updateSchema = z.object({
   iconographyDonts: z.array(z.string()).optional(),
   gradientsEffects: z.array(gradientDefinitionSchema).nullable().optional(),
   layoutPrinciples: layoutPrinciplesSchema,
+  // Semantic tokens overrides — alleen `overrides` key wordt gemerged met
+  // de resolver output. UI PATCH'et `{semanticTokens: {overrides: {...}}}`
+  // en we behouden `resolved`/`diagnostics` uit de laatste analyzer-run.
+  semanticTokens: z.any().optional(),
 });
 
 export async function PATCH(request: NextRequest) {
@@ -132,12 +136,30 @@ export async function PATCH(request: NextRequest) {
     const NULLABLE_JSON_FIELDS = [
       "typeScale", "examplePhrases", "photographyStyle", "brandImages",
       "graphicElements", "patternsTextures", "iconographyStyle", "gradientsEffects", "layoutPrinciples",
+      "semanticTokens",
     ] as const;
     const data: Record<string, unknown> = { ...parsed.data };
     for (const key of NULLABLE_JSON_FIELDS) {
       if (key in data && data[key] === null) {
         data[key] = Prisma.JsonNull;
       }
+    }
+
+    // Merge semantic tokens overrides into existing resolved snapshot zodat
+    // we resolved/diagnostics niet kwijtraken wanneer de UI alleen een override
+    // PATCH'et. Verwacht format uit UI: { semanticTokens: { overrides: {...} } }.
+    if (data.semanticTokens && typeof data.semanticTokens === 'object') {
+      const incoming = data.semanticTokens as { overrides?: unknown; resolved?: unknown };
+      const existing = await prisma.brandStyleguide.findUnique({
+        where: { workspaceId },
+        select: { semanticTokens: true },
+      });
+      const existingTokens = (existing?.semanticTokens ?? {}) as Record<string, unknown>;
+      data.semanticTokens = {
+        ...existingTokens,
+        ...(incoming.resolved ? { resolved: incoming.resolved } : {}),
+        overrides: incoming.overrides ?? (existingTokens.overrides ?? {}),
+      };
     }
 
     const styleguide = await prisma.brandStyleguide.update({

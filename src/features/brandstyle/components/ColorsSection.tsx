@@ -6,6 +6,7 @@ import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
 import { EditableStringList } from "./EditableStringList";
+import { SystemRolesSection } from "./SystemRolesSection";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
 import { useUpdateSection, useAddColor, useDeleteColor } from "../hooks/useBrandstyleHooks";
 import { contrastRatio } from "../utils/color-utils";
@@ -494,6 +495,9 @@ export function ColorsSection({ styleguide, canEdit }: ColorsSectionProps) {
 
   return (
     <div data-testid="colors-section" className="space-y-8">
+      {/* ── Block 0: System Roles (DESIGN.md export) ────── */}
+      <SystemRolesSection styleguide={styleguide} canEdit={canEdit} />
+
       {/* ── Block 1: Hero Palette ───────────────────────── */}
       {primaries.length > 0 && (
         <Card>

@@ -1,10 +1,22 @@
 "use client";
 
+import { useMemo } from "react";
 import { Card } from "@/components/shared";
-import type { BrandStyleguide, ComponentTypeKey } from "../types/brandstyle.types";
+import type { BrandStyleguide, ComponentTypeKey, StyleguideComponentData } from "../types/brandstyle.types";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
 import { ComponentCard } from "./components-section/ComponentCard";
 import { useBrandstyleStore } from "../stores/useBrandstyleStore";
+import { parseSemanticTokens } from "../utils/semantic-tokens";
+
+const VARIANT_ORDER = ['button-primary', 'button-secondary', 'button-tertiary', 'button-ghost', 'button-other'];
+
+const VARIANT_LABELS: Record<string, string> = {
+  'button-primary': 'Primary',
+  'button-secondary': 'Secondary',
+  'button-tertiary': 'Tertiary',
+  'button-ghost': 'Ghost',
+  'button-other': 'Other',
+};
 
 interface ComponentsSectionProps {
   styleguide: BrandStyleguide;
@@ -38,6 +50,11 @@ export function ComponentsSection({ styleguide, canEdit }: ComponentsSectionProp
   const all = styleguide.components ?? [];
   const reviews = styleguide.reviews ?? [];
 
+  const variantMap = useMemo(() => {
+    const tokens = parseSemanticTokens(styleguide.semanticTokens);
+    return tokens?.resolved.componentVariants ?? {};
+  }, [styleguide.semanticTokens]);
+
   const countByType = TYPE_TABS.map((t) => ({
     ...t,
     count: all.filter((c) => c.type === t.id).length,
@@ -45,6 +62,18 @@ export function ComponentsSection({ styleguide, canEdit }: ComponentsSectionProp
 
   const visible = all.filter((c) => c.type === activeType);
   const currentTab = TYPE_TABS.find((t) => t.id === activeType)!;
+
+  // Voor buttons groeperen we per variant. Andere types renderen flat tot
+  // we daarvoor ook classificatie hebben.
+  const buttonGroups = useMemo(() => {
+    if (activeType !== 'BUTTON') return null;
+    const byVariant: Record<string, StyleguideComponentData[]> = {};
+    for (const c of visible) {
+      const variant = variantMap[c.id] ?? 'button-other';
+      (byVariant[variant] ??= []).push(c);
+    }
+    return byVariant;
+  }, [activeType, visible, variantMap]);
 
   return (
     <div data-testid="components-section" className="space-y-6">
@@ -93,10 +122,44 @@ export function ComponentsSection({ styleguide, canEdit }: ComponentsSectionProp
             No {currentTab.label.toLowerCase()} detected yet. Run a fresh analysis on a
             website that uses this component type to populate.
           </div>
+        ) : buttonGroups ? (
+          <div className="space-y-8">
+            {VARIANT_ORDER.filter((v) => buttonGroups[v]?.length).map((variant) => {
+              const items = buttonGroups[variant]!;
+              return (
+                <div key={variant}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                      {VARIANT_LABELS[variant] ?? variant}
+                    </h4>
+                    <code className="font-mono text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded">
+                      {variant}
+                    </code>
+                    <span className="text-xs text-gray-400">· {items.length} sample{items.length === 1 ? '' : 's'}</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {items.map((component) => (
+                      <ComponentCard
+                        key={component.id}
+                        component={component}
+                        canEdit={canEdit}
+                        variant={variant}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {visible.map((component) => (
-              <ComponentCard key={component.id} component={component} canEdit={canEdit} />
+              <ComponentCard
+                key={component.id}
+                component={component}
+                canEdit={canEdit}
+                variant={variantMap[component.id]}
+              />
             ))}
           </div>
         )}

@@ -48,3 +48,18 @@ registerHandler('AGENT_TASK', async (job) => {
   console.info(`[agent-job ${job.id}] AGENT_TASK payload:`, job.payload);
   return { acknowledged: true };
 });
+
+registerHandler('BRANDSTYLE_SNAPSHOT_CLEANUP', async (job) => {
+  const { cleanupSnapshots } = await import('@/lib/brandstyle/snapshots/snapshot-cleanup');
+  const payload = (job.payload ?? {}) as {
+    keepCount?: number;
+    gracePeriodDays?: number;
+    brandstyleId?: string;
+  };
+  const result = await cleanupSnapshots({
+    keepCount: payload.keepCount,
+    gracePeriodDays: payload.gracePeriodDays,
+    brandstyleId: payload.brandstyleId,
+  });
+  return result as unknown as Record<string, unknown>;
+});

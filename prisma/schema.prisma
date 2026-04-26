@@ -233,6 +233,7 @@ model Workspace {
   styleguideLogos           StyleguideLogo[]
   styleguideComponents      StyleguideComponent[]
   styleguideReviews         StyleguideReview[]
+  brandstyleSnapshots       BrandstyleSnapshot[]
 
   // Emailit campaign sends (4.2 step 4)
   campaignSends             CampaignSend[]
@@ -341,6 +342,7 @@ model User {
   uploadedFonts                 StyleguideFont[]       @relation("FontUploader")
   uploadedLogos                 StyleguideLogo[]       @relation("LogoUploader")
   styleguideReviews             StyleguideReview[]     @relation("StyleguideReviewer")
+  triggeredSnapshots            BrandstyleSnapshot[]   @relation("SnapshotTrigger")
 
   // Emailit campaign sends (4.2 step 4)
   campaignSendsSent             CampaignSend[]         @relation("CampaignSendSender")
@@ -1612,8 +1614,16 @@ model BrandStyleguide {
   cornerRadii           Json?             // { sm, md, lg, xl, full }
   shadowSystem          Json?             // Array<{ label, value, intensity }>
 
+  // Semantic tokens (DESIGN.md export — afgeleide rollen door semantic-role-resolver)
+  // Shape: { resolved: {...}, overrides?: {...}, diagnostics: {...}, resolvedAt, resolverVersion }
+  // Zie src/lib/brandstyle/semantic-role-resolver.ts voor volledige type.
+  semanticTokens        Json?
+
   // Components (Fase 5 — automatisch gedetecteerd tijdens analyzer run)
   components            StyleguideComponent[]
+
+  // History — append-only snapshots per analyzer-run (zie BrandstyleSnapshot model)
+  snapshots             BrandstyleSnapshot[]
 
   // Review workflow + Published state (Fase 2)
   reviews               StyleguideReview[]
@@ -1775,6 +1785,50 @@ model StyleguideReview {
   @@index([workspaceId])
   @@index([styleguideId])
   @@index([status])
+}
+
+// =============================================================
+// BrandstyleSnapshot — historische versies per analyzer-run.
+// Adopteert het hyperbrowserai/competitor-tracker patroon: append-only
+// storage van canonical DesignSystemModel + scraped data, met hash-based
+// dedupe (skip schrijven als tokensHash gelijk aan vorige snapshot).
+// Diff-engine in src/lib/brandstyle/snapshots/snapshot-diff.ts vergelijkt
+// twee snapshots op token-niveau en produceert een human-readable changelog.
+// =============================================================
+model BrandstyleSnapshot {
+  id              String          @id @default(cuid())
+  capturedAt      DateTime        @default(now())
+
+  // Fingerprints voor fast no-op detectie zonder volledige diff-compute.
+  // tokensHash = sha256 van canonical DesignSystemModel JSON.
+  // scrapeHash = sha256 van cleaned scraped HTML (optional).
+  tokensHash      String
+  scrapeHash      String?
+
+  // Volledige content — JSON blobs voor reconstructie + diffing.
+  // tokensJson is de canonical DesignSystemModel (zie src/lib/export/design-system/canonical.ts).
+  tokensJson      Json
+  scrapedJson     Json?
+  semanticTokens  Json?
+
+  // Optionele assets — full-page hero screenshot URL voor preview in History tab.
+  screenshotUrl   String?
+
+  // Metadata
+  triggerSource   String          // 'analyze-url' | 'analyze-pdf' | 'manual' | 'cron'
+  triggeredById   String?
+  triggeredBy     User?           @relation("SnapshotTrigger", fields: [triggeredById], references: [id])
+  // Optionele user-set label, bijv. "Pre-rebrand", "Q3 2026 launch"
+  notes           String?         @db.Text
+
+  brandstyleId    String
+  brandstyle      BrandStyleguide @relation(fields: [brandstyleId], references: [id], onDelete: Cascade)
+  workspaceId     String
+  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([brandstyleId, capturedAt])
+  @@index([workspaceId])
+  @@index([tokensHash])
 }
 
 enum FontRole {
@@ -3250,6 +3304,10 @@ model UserProfile {
   avatarUrl     String?
   workspaceId   String?
 
+  // Flexible preferences blob — small UI flags that don't deserve their own
+  // columns. Known keys today: `brandAssistantTipDismissed: boolean`.
+  preferences   Json?
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -4400,6 +4458,7 @@ enum AgentJobType {
   TREND_SCAN_WORKSPACE
   AGENT_TASK
   HEARTBEAT
+  BRANDSTYLE_SNAPSHOT_CLEANUP
 }
 
 model AgentJob {

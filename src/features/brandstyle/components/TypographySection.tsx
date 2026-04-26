@@ -6,6 +6,7 @@ import { Card, Button } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
 import { ReviewDraftPanel } from "./review/ReviewDraftPanel";
 import { useUpdateSection } from "../hooks/useBrandstyleHooks";
+import { parseSemanticTokens, buildTypeRoleMap } from "../utils/semantic-tokens";
 import type { BrandStyleguide, TypeScaleLevel } from "../types/brandstyle.types";
 
 const LEVEL_PRESETS = ["H1", "H2", "H3", "H4", "H5", "H6", "Body", "Small", "Caption", "Overline"];
@@ -149,10 +150,12 @@ function TypeScaleList({
   typeScale,
   primaryFont,
   additionalFonts,
+  roleMap,
 }: {
   typeScale: TypeScaleLevel[];
   primaryFont: string | null;
   additionalFonts: string[];
+  roleMap: Map<string, string>;
 }) {
   // Group rows by the font they render in (heading-font vs body-font).
   // Preserves original ordering inside each group.
@@ -185,7 +188,12 @@ function TypeScaleList({
             </p>
             <div className="divide-y divide-gray-100">
               {group.rows.map((row, ri) => (
-                <TypeScaleRow key={`${row.level}-${ri}`} row={row} font={group.font} />
+                <TypeScaleRow
+                  key={`${row.level}-${ri}`}
+                  row={row}
+                  font={group.font}
+                  designMdRole={roleMap.get(row.level)}
+                />
               ))}
             </div>
           </div>
@@ -202,15 +210,27 @@ function TypeScaleList({
 function TypeScaleRow({
   row,
   font,
+  designMdRole,
 }: {
   row: TypeScaleLevel;
   font: string | null;
+  designMdRole?: string;
 }) {
   return (
     <div className="flex items-baseline gap-4 py-4 first:pt-0 last:pb-0">
-      <span className="w-12 flex-shrink-0 font-mono text-[11px] font-semibold tracking-wider text-gray-400 uppercase">
-        {row.level}
-      </span>
+      <div className="w-36 flex-shrink-0 flex flex-col gap-0.5">
+        <span className="font-mono text-[11px] font-semibold tracking-wider text-gray-400 uppercase">
+          {row.level}
+        </span>
+        {designMdRole && (
+          <span
+            className="inline-flex items-center self-start text-[10px] font-mono text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded"
+            title={`DESIGN.md typography role`}
+          >
+            {designMdRole}
+          </span>
+        )}
+      </div>
 
       <span
         className="flex-1 min-w-0 text-gray-900 leading-tight truncate"
@@ -532,6 +552,12 @@ function buildGoogleFontsUrls(fonts: string[]): string[] {
 export function TypographySection({ styleguide, canEdit }: TypographySectionProps) {
   const typeScale = (styleguide.typeScale ?? []) as TypeScaleLevel[];
   const updateTypography = useUpdateSection("typography");
+
+  // DESIGN.md role-mapping uit semanticTokens (of deterministische fallback)
+  const typeRoleMap = useMemo(
+    () => buildTypeRoleMap(typeScale, parseSemanticTokens(styleguide.semanticTokens)),
+    [typeScale, styleguide.semanticTokens],
+  );
 
   /** Lookup: font-name (lowercase) → availability, so the two
    *  top-level brand-font cards render the correct source label
@@ -865,6 +891,7 @@ export function TypographySection({ styleguide, canEdit }: TypographySectionProp
             typeScale={typeScale}
             primaryFont={styleguide.primaryFontName}
             additionalFonts={styleguide.additionalFonts ?? []}
+            roleMap={typeRoleMap}
           />
         ) : (
           <div className="py-6 text-center text-sm text-gray-400">

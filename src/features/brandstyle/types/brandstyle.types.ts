@@ -269,6 +269,11 @@ export interface BrandStyleguide {
   visualLanguage: unknown | null;
   visualLanguageSavedForAi: boolean;
 
+  // Semantic tokens — afgeleid door semantic-role-resolver (DESIGN.md export).
+  // Shape: { resolved, overrides?, diagnostics, resolvedAt, resolverVersion }
+  // `unknown` laat de UI-componenten zelf casten via een type guard.
+  semanticTokens: unknown | null;
+
   // Lock
   isLocked: boolean;
   lockedAt: string | null;
@@ -366,6 +371,6 @@ export interface UpdateReviewBody {
   referenceImageUrl?: string | null;
 }
 
-export type StyleguideTab = "brand_assets" | "colors" | "typography" | "spacing" | "components" | "tone_of_voice" | "imagery" | "visual_system";
+export type StyleguideTab = "brand_assets" | "colors" | "typography" | "spacing" | "components" | "tone_of_voice" | "imagery" | "visual_system" | "design_system" | "history";
 
 export type SaveForAiSection = "logo" | "colors" | "typography" | "tone-of-voice" | "imagery" | "design-language" | "visual-language";

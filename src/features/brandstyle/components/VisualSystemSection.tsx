@@ -22,6 +22,7 @@ import {
 import { Card, Button, Badge } from "@/components/shared";
 import { AiContentBanner } from "./AiContentBanner";
 import { EditableStringList } from "./EditableStringList";
+import { SystemScalesSection } from "./SystemScalesSection";
 import { useUpdateSection } from "../hooks/useBrandstyleHooks";
 import type {
   BrandStyleguide,
@@ -49,6 +50,9 @@ export function VisualSystemSection({ styleguide, canEdit }: VisualSystemSection
 
   return (
     <div data-testid="visual-system-section" className="space-y-8">
+      {/* DESIGN.md system scales — bovenaan voor developer-facing overzicht */}
+      <SystemScalesSection styleguide={styleguide} />
+
       {/* Summary banner */}
       {profile?.summary && (
         <div className="rounded-lg border border-teal-200 bg-teal-50/30 p-4">

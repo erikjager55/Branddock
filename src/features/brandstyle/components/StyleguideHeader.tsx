@@ -21,6 +21,8 @@ import type { BrandStyleguide } from "../types/brandstyle.types";
 import { ACTIVE_REVIEW_SECTIONS } from "@/lib/brandstyle/review-sections";
 import { exportBrandstylePdf } from "../utils/exportBrandstylePdf";
 import { exportBrandKitPdf, type BrandKitPdfProgress } from "../utils/brand-kit/exportBrandKitPdf";
+import { EXPORT_FORMATS, type ExportFormat } from "../utils/export-formats";
+import { Code2 } from "lucide-react";
 
 interface StyleguideHeaderProps {
   styleguide: BrandStyleguide;
@@ -311,9 +313,59 @@ function ExportMenu({ onExportPdf, onExportBrandKit, isExportingKit, kitMessage 
               </div>
             </div>
           </button>
+
+          {/* ── Design System exports (DESIGN.md / DTCG / Tailwind / ...) ── */}
+          <div className="my-1 border-t border-gray-100" />
+          <div className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider font-semibold text-gray-400">
+            Design system
+          </div>
+          {EXPORT_FORMATS.map((format) => (
+            <DesignSystemExportLink
+              key={format.id}
+              format={format}
+              onSelect={() => setOpen(false)}
+            />
+          ))}
         </div>
       )}
     </div>
+  );
+}
+
+function DesignSystemExportLink({
+  format,
+  onSelect,
+}: {
+  format: ExportFormat;
+  onSelect: () => void;
+}) {
+  const disabled = format.status === 'soon';
+  return (
+    <a
+      href={disabled ? undefined : format.endpoint}
+      rel="noopener"
+      onClick={disabled ? (e) => e.preventDefault() : onSelect}
+      aria-disabled={disabled}
+      className={`w-full flex items-start gap-2.5 px-3 py-2.5 text-sm ${
+        disabled
+          ? 'text-gray-400 cursor-not-allowed'
+          : 'text-gray-700 hover:bg-gray-50'
+      }`}
+      role="menuitem"
+    >
+      <Code2 className="h-4 w-4 mt-0.5 text-gray-500 flex-shrink-0" />
+      <div className="text-left min-w-0 flex-1">
+        <div className="font-medium whitespace-nowrap flex items-center gap-1.5">
+          {format.label}
+          {disabled && (
+            <span className="text-[9px] font-medium text-gray-500 bg-gray-100 px-1 py-0.5 rounded">
+              Soon
+            </span>
+          )}
+        </div>
+        <div className="text-[11px] text-gray-500 truncate">{format.description}</div>
+      </div>
+    </a>
   );
 }
 

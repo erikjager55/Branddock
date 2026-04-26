@@ -37,7 +37,9 @@ export type ReviewSectionKey =
   | "components-product-cards"
   | "components-feature-icons"
   | "components-top-navigation"
-  | "components-quote-blocks";
+  | "components-quote-blocks"
+  // Design System (DESIGN.md semantic role resolver)
+  | "system-roles";
 
 /** Sections currently visible in the UI — must be APPROVED before publish.
  *  Tone of voice, imagery, and visual-system sections were removed from
@@ -63,6 +65,7 @@ export const ACTIVE_REVIEW_SECTIONS: readonly ReviewSectionKey[] = [
   "components-feature-icons",
   "components-top-navigation",
   "components-quote-blocks",
+  "system-roles",
 ] as const;
 
 export const REVIEW_SECTION_LABELS: Record<ReviewSectionKey, string> = {
@@ -89,6 +92,7 @@ export const REVIEW_SECTION_LABELS: Record<ReviewSectionKey, string> = {
   "components-feature-icons": "Feature icons",
   "components-top-navigation": "Top navigation",
   "components-quote-blocks": "Quote blocks",
+  "system-roles": "System roles (DESIGN.md)",
 };
 
 export function isValidReviewSection(value: string): value is ReviewSectionKey {
@@ -106,6 +110,7 @@ export function isActiveReviewSection(value: string): boolean {
  */
 interface StyleguideForSectionCheck {
   semanticColors?: unknown;
+  semanticTokens?: unknown;
   colors?: Array<{ category: string }>;
   /** Scraped / uploaded fonts — used to filter out typography role review
    *  sections that have no font assigned (can't review an empty panel). */
@@ -160,6 +165,16 @@ export function getApplicableReviewSections(
   const components = styleguide.components ?? [];
   const hasComponentOfType = (t: string) => components.some((c) => c.type === t);
 
+  // System roles require the semantic-role-resolver to have produced output.
+  // Older styleguides analyzed before DESIGN.md feature shipped have no
+  // semanticTokens yet — skip until they re-analyze.
+  const hasSemanticTokens = (() => {
+    const t = styleguide.semanticTokens;
+    if (!t || typeof t !== 'object') return false;
+    const resolved = (t as { resolved?: unknown }).resolved;
+    return Boolean(resolved && typeof resolved === 'object');
+  })();
+
   return ACTIVE_REVIEW_SECTIONS.filter((s) => {
     if (s === "colors-semantic" && !hasSemanticData) return false;
     if (s === "typography-display" && !hasDisplayFont) return false;
@@ -172,6 +187,7 @@ export function getApplicableReviewSections(
     if (s === "components-feature-icons" && !hasComponentOfType("FEATURE_ICON")) return false;
     if (s === "components-top-navigation" && !hasComponentOfType("TOP_NAVIGATION")) return false;
     if (s === "components-quote-blocks" && !hasComponentOfType("QUOTE_BLOCK")) return false;
+    if (s === "system-roles" && !hasSemanticTokens) return false;
     return true;
   });
 }

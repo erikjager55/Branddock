@@ -8,9 +8,11 @@ import { useDeleteComponent } from "../../hooks/useBrandstyleHooks";
 interface ComponentCardProps {
   component: StyleguideComponentData;
   canEdit: boolean;
+  /** DESIGN.md variant classification uit semanticTokens (bijv. "button-primary"). */
+  variant?: string;
 }
 
-export function ComponentCard({ component, canEdit }: ComponentCardProps) {
+export function ComponentCard({ component, canEdit, variant }: ComponentCardProps) {
   const deleteMut = useDeleteComponent();
   const styles = component.extractedStyles ?? {};
   const [copied, setCopied] = useState<"css" | "tailwind" | null>(null);
@@ -44,11 +46,21 @@ export function ComponentCard({ component, canEdit }: ComponentCardProps) {
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-900 truncate">{component.label}</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">
-            {typeof component.confidence === "number"
-              ? `${Math.round(component.confidence * 100)}% confidence`
-              : "—"}
-          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            {variant && (
+              <span
+                className="inline-flex items-center font-mono text-[10px] text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded"
+                title="DESIGN.md component variant"
+              >
+                {variant}
+              </span>
+            )}
+            <p className="text-[11px] text-gray-400">
+              {typeof component.confidence === "number"
+                ? `${Math.round(component.confidence * 100)}% confidence`
+                : "—"}
+            </p>
+          </div>
         </div>
         {canEdit && (
           <button

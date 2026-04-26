@@ -27,6 +27,11 @@ import type {
   ExtractedComponentStyles,
 } from "./component-extractor";
 import { getStorageProvider } from "@/lib/storage";
+import {
+  extractBulkComputedStyles,
+  mergeBulkComputedStyles,
+  type BulkComputedStylesResult,
+} from "./bulk-computed-styles";
 
 export function isComponentScreenshotsEnabled(): boolean {
   return process.env.BRANDSTYLE_COMPONENT_SCREENSHOTS === "1";
@@ -205,7 +210,8 @@ export async function extractComponentsWithScreenshots(
   url: string,
   workspaceId: string,
 ): Promise<ScreenshotedComponent[]> {
-  return extractComponentsFromPages([url], workspaceId);
+  const result = await extractComponentsFromPages([url], workspaceId);
+  return result.components;
 }
 
 /**
@@ -219,11 +225,22 @@ export async function extractComponentsWithScreenshots(
  * a site with many buttons won't flood the output just because we
  * visit more pages.
  */
+/** Result wrapper voor extractComponentsFromPages — bevat zowel de
+ *  per-type component samples als de runtime-computed-style frequencies
+ *  van alle visible elementen. Het tweede stuk komt uit een bulk-pass
+ *  die hergebruikt wordt om cornerRadii / spacingScale / shadowSystem
+ *  derivation in css-visual-heuristics te augmenteren met data over
+ *  wat ECHT op de pagina rendert (Tailwind/CSS-in-JS resolved). */
+export interface ComponentScrapeResult {
+  components: ScreenshotedComponent[];
+  bulkStyles: BulkComputedStylesResult | null;
+}
+
 export async function extractComponentsFromPages(
   urls: string[],
   workspaceId: string,
-): Promise<ScreenshotedComponent[]> {
-  if (urls.length === 0) return [];
+): Promise<ComponentScrapeResult> {
+  if (urls.length === 0) return { components: [], bulkStyles: null };
   let chromium: typeof import("playwright").chromium;
   try {
     ({ chromium } = await import("playwright"));
@@ -254,6 +271,7 @@ export async function extractComponentsFromPages(
     const page = await ctx.newPage();
 
     const out: ScreenshotedComponent[] = [];
+    const perPageBulk: BulkComputedStylesResult[] = [];
 
     for (const pageUrl of urls) {
       if (Date.now() > deadline) {
@@ -267,6 +285,19 @@ export async function extractComponentsFromPages(
           `[component-screenshotter] Failed to load ${pageUrl}: ${gotoErr instanceof Error ? gotoErr.message : String(gotoErr)}`,
         );
         continue;
+      }
+
+      // Bulk computed-style pass — gathers runtime design-token frequencies
+      // for ALL visible elements (border-radius, padding, font-size, ...).
+      // Goedkoop (~50-200ms per pagina) en complementair aan de per-component
+      // scan hieronder. Niet-kritisch: bij failure gaat de scan door.
+      try {
+        const bulk = await extractBulkComputedStyles(page);
+        perPageBulk.push(bulk);
+      } catch (bulkErr) {
+        console.warn(
+          `[component-screenshotter] Bulk computed-style pass failed on ${pageUrl}: ${bulkErr instanceof Error ? bulkErr.message : String(bulkErr)}`,
+        );
       }
 
     for (const matcher of TYPE_MATCHERS) {
@@ -600,7 +631,14 @@ export async function extractComponentsFromPages(
       capped.push(c);
     }
 
-    return capped;
+    const mergedBulk = perPageBulk.length > 0 ? mergeBulkComputedStyles(perPageBulk) : null;
+    if (mergedBulk) {
+      console.log(
+        `[component-screenshotter] Bulk computed-styles: scanned ${mergedBulk.scannedCount} elements across ${perPageBulk.length} page(s) (border-radius observations: ${Object.keys(mergedBulk.styles['border-radius']).length}, padding: ${Object.keys(mergedBulk.styles['padding']).length}, box-shadow: ${Object.keys(mergedBulk.styles['box-shadow']).length})`,
+      );
+    }
+
+    return { components: capped, bulkStyles: mergedBulk };
   } finally {
     await browser.close();
   }
