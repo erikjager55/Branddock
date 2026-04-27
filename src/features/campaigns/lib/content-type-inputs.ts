@@ -19,7 +19,9 @@ export type InputCategory =
   | "format-specs"
   | "audience"
   | "references"
-  | "creative-direction";
+  | "creative-direction"
+  | "content-style"
+  | "engagement";
 
 export type InputFieldType =
   | "text"
@@ -42,8 +44,12 @@ export interface ContentTypeInputField {
   type: InputFieldType;
   /** Placeholder text for text/textarea/tags */
   placeholder?: string;
-  /** Options for 'select' type */
-  options?: string[];
+  /**
+   * Options for 'select' type. Accepts either bare strings (value === label)
+   * or `{ value, label }` objects when the underlying value differs from the
+   * display text (e.g. value `"text-only"`, label `"Text Only"`).
+   */
+  options?: Array<string | { value: string; label: string }>;
   /** If true, quality scorer will nudge when missing */
   required?: boolean;
   /** Short help text / tooltip */
@@ -61,11 +67,13 @@ export const INPUT_CATEGORY_CONFIG: Record<
   { label: string; order: number }
 > = {
   seo: { label: "SEO & Keywords", order: 1 },
-  "campaign-details": { label: "Campaign Details", order: 2 },
-  "format-specs": { label: "Format & Specs", order: 3 },
-  audience: { label: "Audience", order: 4 },
-  references: { label: "References & Sources", order: 5 },
-  "creative-direction": { label: "Creative Direction", order: 6 },
+  "content-style": { label: "Content Style", order: 2 },
+  engagement: { label: "Engagement", order: 3 },
+  "campaign-details": { label: "Campaign Details", order: 4 },
+  "format-specs": { label: "Format & Specs", order: 5 },
+  audience: { label: "Audience", order: 6 },
+  references: { label: "References & Sources", order: 7 },
+  "creative-direction": { label: "Creative Direction", order: 8 },
 };
 
 // ─── Shared field builders ─────────────────────────────────
@@ -177,6 +185,116 @@ function subjectLine(): ContentTypeInputField {
     aiDerivable: true,
     aiHint: "Based on campaign message and audience pain points",
   };
+}
+
+// ─── Content-styling field builders ───────────────────────
+// Migrated 2026-04-27 from medium-config-registry. These shape WHAT the AI
+// writes (tone, hashtag strategy, CTA voice) — they belong with the brief,
+// not with the medium-rendering config in Step 3. The medium config still
+// holds platform-rendering fields (page layout, hero style, slide count,
+// etc.). Prompt-injection still happens via formatMediumConfig in the
+// orchestrator — the value just travels through contentTypeInputs now.
+
+function socialTone(overrides: Partial<ContentTypeInputField> = {}): ContentTypeInputField {
+  return {
+    key: "tone",
+    label: "Tone of Voice",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "professional", label: "Professional" },
+      { value: "casual", label: "Casual" },
+      { value: "inspirational", label: "Inspirational" },
+      { value: "educational", label: "Educational" },
+      { value: "humorous", label: "Humorous" },
+    ],
+    helpText: "How the post should read overall",
+    aiDerivable: true,
+    aiHint: "Based on persona psychographics + brand personality",
+    ...overrides,
+  };
+}
+
+function visualStyle(overrides: Partial<ContentTypeInputField> = {}): ContentTypeInputField {
+  return {
+    key: "visualStyle",
+    label: "Visual Style",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "photo", label: "Photo" },
+      { value: "illustration", label: "Illustration" },
+      { value: "text-only", label: "Text Only" },
+      { value: "infographic", label: "Infographic" },
+    ],
+    helpText: "Direction for the accompanying visual",
+    aiDerivable: true,
+    aiHint: "Default to photo unless brand or content type suggests otherwise",
+    ...overrides,
+  };
+}
+
+function hashtagStrategy(overrides: Partial<ContentTypeInputField> = {}): ContentTypeInputField {
+  return {
+    key: "hashtagStrategy",
+    label: "Hashtag Strategy",
+    category: "engagement",
+    type: "select",
+    options: [
+      { value: "trending", label: "Trending — broad reach" },
+      { value: "niche", label: "Niche — targeted community" },
+      { value: "branded", label: "Branded — own hashtags" },
+      { value: "mixed", label: "Mixed — combination" },
+      { value: "none", label: "None" },
+    ],
+    helpText: "Which kind of hashtags to add at the end of the post",
+    aiDerivable: true,
+    ...overrides,
+  };
+}
+
+function socialCtaStyle(overrides: Partial<ContentTypeInputField> = {}): ContentTypeInputField {
+  return {
+    key: "ctaStyle",
+    label: "Call to Action",
+    category: "engagement",
+    type: "select",
+    options: [
+      { value: "subtle", label: "Subtle" },
+      { value: "direct", label: "Direct" },
+      { value: "question", label: "Question" },
+      { value: "none", label: "None" },
+    ],
+    helpText: "Style of how the post closes",
+    aiDerivable: true,
+    ...overrides,
+  };
+}
+
+function includeEmoji(overrides: Partial<ContentTypeInputField> = {}): ContentTypeInputField {
+  return {
+    key: "includeEmoji",
+    label: "Include Emojis",
+    category: "engagement",
+    type: "boolean",
+    helpText: "Weave emojis naturally into the post body",
+    aiDerivable: true,
+    ...overrides,
+  };
+}
+
+/**
+ * Standard set of content-style fields for all social-post types
+ * (LinkedIn / Instagram / Facebook / X / TikTok / etc.).
+ */
+function socialContentStyleFields(): ContentTypeInputField[] {
+  return [
+    socialTone(),
+    visualStyle(),
+    hashtagStrategy(),
+    socialCtaStyle(),
+    includeEmoji(),
+  ];
 }
 
 // ─── Registry ──────────────────────────────────────────────
@@ -359,6 +477,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── Social Media ───────────────────────────────────────
 
   "linkedin-post": [
+    ...socialContentStyleFields(),
     {
       key: "postType",
       label: "Post Type",
@@ -573,6 +692,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "instagram-post": [
+    ...socialContentStyleFields(),
     {
       key: "contentStyle",
       label: "Content Style",
@@ -604,6 +724,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "twitter-thread": [
+    ...socialContentStyleFields(),
     {
       key: "threadLength",
       label: "Thread Length (tweets)",
@@ -633,6 +754,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "facebook-post": [
+    ...socialContentStyleFields(),
     {
       key: "postType",
       label: "Post Type",

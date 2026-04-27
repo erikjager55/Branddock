@@ -307,80 +307,16 @@ export const MEDIUM_CATEGORY_CONFIGS: Record<MediumCategory, MediumCategoryConfi
     ],
   },
 
+  // Social-post category — content-styling fields (tone, visualStyle,
+  // hashtagStrategy, ctaStyle, includeEmoji) migrated to content-type-inputs
+  // (Step 1 Content Brief) on 2026-04-27. Step 3 Medium has nothing
+  // social-post-specific to render anymore — the layout shows the platform
+  // preview + Confirm only. Empty sections array → MediumConfigLayout still
+  // renders the preview + summary chips, just no input fields.
   'social-post': {
     category: 'social-post',
     label: 'Social Post',
-    sections: [
-      {
-        id: 'content-style',
-        title: 'Content Style',
-        fields: [
-          {
-            key: 'tone',
-            label: 'Tone of Voice',
-            type: 'select',
-            options: [
-              { value: 'professional', label: 'Professional' },
-              { value: 'casual', label: 'Casual' },
-              { value: 'inspirational', label: 'Inspirational' },
-              { value: 'educational', label: 'Educational' },
-              { value: 'humorous', label: 'Humorous' },
-            ],
-            defaultValue: 'professional',
-          },
-          {
-            key: 'visualStyle',
-            label: 'Visual Style',
-            type: 'button-group',
-            options: [
-              { value: 'photo', label: 'Photo' },
-              { value: 'illustration', label: 'Illustration' },
-              { value: 'text-only', label: 'Text Only' },
-              { value: 'infographic', label: 'Infographic' },
-            ],
-            defaultValue: 'photo',
-            columns: 4,
-          },
-        ],
-      },
-      {
-        id: 'engagement',
-        title: 'Engagement',
-        fields: [
-          {
-            key: 'hashtagStrategy',
-            label: 'Hashtag Strategy',
-            type: 'select',
-            options: [
-              { value: 'trending', label: 'Trending', description: 'Use trending hashtags for reach' },
-              { value: 'niche', label: 'Niche', description: 'Target specific community' },
-              { value: 'branded', label: 'Branded', description: 'Use brand-specific hashtags' },
-              { value: 'mixed', label: 'Mixed', description: 'Combination approach' },
-            ],
-            defaultValue: 'mixed',
-          },
-          {
-            key: 'ctaStyle',
-            label: 'Call to Action',
-            type: 'button-group',
-            options: [
-              { value: 'subtle', label: 'Subtle' },
-              { value: 'direct', label: 'Direct' },
-              { value: 'question', label: 'Question' },
-              { value: 'none', label: 'None' },
-            ],
-            defaultValue: 'direct',
-            columns: 4,
-          },
-          {
-            key: 'includeEmoji',
-            label: 'Include Emojis',
-            type: 'toggle',
-            defaultValue: true,
-          },
-        ],
-      },
-    ],
+    sections: [],
   },
 
   carousel: {

@@ -317,6 +317,43 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
 
 **Status: Intermediate step DONE (2026-04-27)** — `<ContentSectionsEditor />` verplaatst van *boven* de preview naar *onder* als collapsible "Edit content sections" panel in `MediumConfigLayout.tsx` (default dicht). Preview is nu primair voor alle non-WebPage layouts. Geen dubbele weergave meer. Tussenstap richting de eindvorm hieronder.
 
+### 9.0c Migreer content-styling velden naar Content Brief
+
+**Probleem (geconstateerd 2026-04-27)**
+Een aantal velden uit `medium-config-registry.ts` Stap 3 stuurt eigenlijk de
+**content-generatie** aan, niet de medium-rendering: Tone of Voice, Hashtag
+Strategy, Call to Action style, Include Emojis, Visual Style. Die horen bij
+de briefing (Stap 1 Content Brief), niet pas in Stap 3 — anders moet de
+gebruiker na zien van de eerste generatie alsnog terug en regenerate.
+
+**Status: social-post DONE (2026-04-27)** — 5 velden gemigreerd voor
+linkedin-post / instagram-post / facebook-post / twitter-thread via
+`socialContentStyleFields()` helper. Stap 3 social-post sectie is nu leeg.
+Prompt-injectie via `formatMergedMediumConfig()` mergt
+contentTypeInputs naar formatMediumConfig zodat de rich AI-instructies
+blijven werken.
+
+**Nog open — overige categorieën**
+
+| Categorie | Migreren | Behouden in Medium |
+|---|---|---|
+| **long-form** | tone, articleStructure, readingLevel, includeFaq, includeQuotes, internalLinking, seoFocus | (geen platform-rendering) |
+| **sales** | tone, salesAngle, proofPointDensity, includePricing, ctaStyle | (geen platform-rendering) |
+| **pr-hr** | tone, structure, quoteCount, includeBoilerplate, includeContactBlock, hasEmbargo | (geen platform-rendering) |
+| **email** | ctaPlacement, previewTextLength, personalize | templateStyle, headerType |
+| **carousel** | transitionStyle, includeCtaSlide, visualStyle | slideCount, slideFormat |
+| **podcast** | episodeFormat, segmentCount, introStyle, includeShowNotes, includeTranscript | duration |
+| **advertising** | urgencyLevel, socialProof, ctaType, visualStyle | adFormat |
+| **video** | footageType, textOverlay, colorGrade | duration, aspectRatio, quality |
+| **web-page** | seoFocus | pageLayout, heroStyle, sectionCount, ctaType |
+
+**Acceptatiecriteria per categorie**
+- Field-builders in content-type-inputs.ts (zoals `socialTone()`, etc.)
+- Toegepast op alle relevante content-types in registry
+- Verwijderd uit medium-config-registry sectie
+- Toegevoegd aan `MEDIUM_CONFIG_HANDLED_KEYS` set in canvas-orchestrator als
+  formatMediumConfig daar al rich-instructies voor genereert
+
 ### 9.0b Per-preview inline-edit overlays (follow-up)
 
 **Doel: ContentSectionsEditor compleet vervangen door inline-edit in elke preview component**, zoals `WebPageLayout.EditableArticleSection` al doet.

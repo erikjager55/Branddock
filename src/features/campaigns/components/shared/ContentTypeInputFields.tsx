@@ -228,7 +228,9 @@ function FieldRenderer({
           <Select
             value={(value as string) ?? null}
             onChange={(v) => onChange(v ?? '')}
-            options={(field.options ?? []).map((o) => ({ value: o, label: o }))}
+            options={(field.options ?? []).map((o) =>
+              typeof o === 'string' ? { value: o, label: o } : o,
+            )}
             placeholder={`Select ${field.label.toLowerCase()}…`}
             allowClear
           />

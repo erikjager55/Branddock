@@ -628,7 +628,7 @@ function buildCanvasPrompt(
     stack.products.length > 0 ? formatProductContext(stack.products) : '',
     formatContentTypeInputs(stack.contentTypeInputs, contentType),
     medium ? formatMediumSpecs(medium) : '',
-    options?.mediumConfig ? formatMediumConfig(options.mediumConfig) : '',
+    formatMergedMediumConfig(options?.mediumConfig, stack.contentTypeInputs),
     contentType ? formatConstraintsForPrompt(contentType) : '',
     options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
   ]
@@ -738,7 +738,7 @@ function buildRegenerationPrompt(
     stack.brief ? formatBriefContext(stack.brief) : '',
     stack.products.length > 0 ? formatProductContext(stack.products) : '',
     formatContentTypeInputs(stack.contentTypeInputs, regenContentType),
-    options?.mediumConfig ? formatMediumConfig(options.mediumConfig) : '',
+    formatMergedMediumConfig(options?.mediumConfig, stack.contentTypeInputs),
     regenContentType ? formatConstraintsForPrompt(regenContentType) : '',
     options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
   ]
@@ -903,6 +903,11 @@ function formatMediumConfig(config: Record<string, unknown>): string {
         minimal: 'Include 1-3 relevant hashtags at the end.',
         moderate: 'Include 3-5 hashtags. Mix branded + industry tags.',
         aggressive: 'Include 5-10 hashtags for maximum reach.',
+        // Migrated from medium-config-registry social-post categorie:
+        trending: 'Include 4-6 trending hashtags relevant to current discourse, mixed with 1-2 brand hashtags.',
+        niche: 'Include 3-5 niche/community-specific hashtags that target your exact audience — favour specificity over reach.',
+        branded: 'Include 2-4 brand-specific hashtags (campaign tag, brand handle, signature tag).',
+        mixed: 'Include 4-6 hashtags blending trending, niche-community, and branded tags.',
       };
       parts.push(`- Hashtags: ${hMap[hashtagStrategy] ?? hashtagStrategy}`);
     }
@@ -1113,6 +1118,34 @@ function formatProductContext(products: ProductContext[]): string {
   return parts.join('\n');
 }
 
+/**
+ * Keys that formatMediumConfig already turns into rich, actionable AI
+ * instructions ("Hashtags: include 4-6 trending tags ..."). When the same
+ * key is also present in contentTypeInputs (post 9.0c migration), we skip
+ * it here to avoid emitting a flat duplicate ("- Hashtag Strategy: mixed")
+ * that would compete with the rich version.
+ */
+const MEDIUM_CONFIG_HANDLED_KEYS = new Set<string>([
+  // Long-form
+  'tone', 'articleStructure', 'readingLevel', 'includeFaq', 'includeQuotes',
+  'internalLinking', 'seoFocus',
+  // Web-page
+  'pageLayout', 'heroStyle', 'sectionCount', 'ctaType',
+  // Social-post (migrated 9.0c)
+  'visualStyle', 'hashtagStrategy', 'ctaStyle', 'includeEmoji',
+  // Carousel
+  'slideCount', 'slideFormat', 'includeCtaSlide',
+  // Email
+  'templateStyle', 'headerType', 'ctaPlacement', 'personalize', 'previewTextLength',
+  // Podcast
+  'episodeFormat', 'duration', 'segmentCount', 'introStyle',
+  'includeShowNotes', 'includeTranscript',
+  // Advertising
+  'adFormat', 'urgencyLevel', 'socialProof',
+  // Video
+  'aspectRatio', 'footageType', 'textOverlay',
+]);
+
 function formatContentTypeInputs(
   inputs: Record<string, string | string[] | number | boolean> | undefined,
   typeId: string | null,
@@ -1120,6 +1153,9 @@ function formatContentTypeInputs(
   if (!typeId || !inputs || Object.keys(inputs).length === 0) return '';
   const fields = getContentTypeInputs(typeId);
   const lines = fields
+    // Skip keys that formatMediumConfig handles richly — avoid duplicate
+    // "- Tone: professional" + "- Tone: Write in a professional voice."
+    .filter((f) => !MEDIUM_CONFIG_HANDLED_KEYS.has(f.key))
     .filter((f) => inputs[f.key] != null && inputs[f.key] !== '')
     .map((f) => {
       const val = inputs[f.key];
@@ -1128,6 +1164,31 @@ function formatContentTypeInputs(
     });
   if (lines.length === 0) return '';
   return `\n## Content-Specific Inputs\nUse these inputs to make the content specific and actionable. For example, if SEO keywords are provided, naturally incorporate them. If a landing page URL is specified, use it in the CTA.\n${lines.join('\n')}`;
+}
+
+/**
+ * Merge mediumConfig (Step 3) and contentTypeInputs (Step 1) into a single
+ * map for formatMediumConfig. Content-styling fields used to live in
+ * mediumConfig only; after the 9.0c migration they travel via
+ * contentTypeInputs but the prompt-injection logic stays in
+ * formatMediumConfig (rich instructions per key). contentTypeInputs wins
+ * on conflict because it's the user's most recent intent (Step 1 form).
+ */
+function formatMergedMediumConfig(
+  mediumConfig: Record<string, unknown> | undefined,
+  contentTypeInputs: Record<string, string | string[] | number | boolean> | undefined,
+): string {
+  const merged: Record<string, unknown> = { ...(mediumConfig ?? {}) };
+  if (contentTypeInputs) {
+    for (const key of MEDIUM_CONFIG_HANDLED_KEYS) {
+      const val = contentTypeInputs[key];
+      if (val !== undefined && val !== null && val !== '') {
+        merged[key] = val;
+      }
+    }
+  }
+  if (Object.keys(merged).length === 0) return '';
+  return formatMediumConfig(merged);
 }
 
 // ─── Image Generation ─────────────────────────────────────
