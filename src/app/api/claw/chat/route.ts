@@ -53,9 +53,10 @@ const requestSchema = z.object({
   })).optional(),
   pageContext: z.object({
     page: z.string(),
-    entityType: z.enum(['brand_asset', 'persona', 'product', 'competitor']).optional(),
+    entityType: z.enum(['brand_asset', 'persona', 'product', 'competitor', 'deliverable', 'campaign']).optional(),
     entityId: z.string().optional(),
     entityName: z.string().optional(),
+    campaignId: z.string().optional(),
     wizardSnapshot: z.object({
       name: z.string(),
       currentStep: z.string().optional(),

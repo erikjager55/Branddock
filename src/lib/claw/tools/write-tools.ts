@@ -626,6 +626,212 @@ export const writeTools: ClawToolDefinition[] = [
     },
   },
 
+  // ─── Create Deliverable ──────────────────────────────────
+  // Path 2 fix (2026-04-25): when the user asks Claw "make a LinkedIn post"
+  // it must NOT generate the body in chat — it must create the deliverable
+  // row and navigate to its Canvas where the dedicated generation pipeline
+  // (with brand context, medium config, variant grid, etc.) takes over.
+  // The system prompt (claw/system-prompt.ts) is paired with this tool to
+  // enforce the contract.
+  {
+    name: 'create_deliverable',
+    description:
+      'Create a content deliverable (e.g. linkedin-post, blog-post, email-campaign) inside an existing campaign. Use this for ANY content creation request — never write the content body in chat. After creation the user is auto-navigated to the Content Canvas where the generation pipeline runs. Pass `contentType` as a kebab-case slug from the deliverable-types catalog (e.g. "linkedin-post"). Include any briefing details the user gave you (objective, key message, tone) in `brief` so the Canvas opens with that context pre-filled.',
+    inputSchema: z.object({
+      campaignId: z.string().describe('Campaign ID this deliverable belongs to. Required — create_campaign first if no campaign exists.'),
+      contentType: z.string().describe('Content type slug, kebab-case (e.g. "linkedin-post", "blog-post", "email-campaign", "video-script")'),
+      title: z.string().optional().describe('Optional title — defaults to the content type label'),
+      brief: z.object({
+        objective: z.string().optional().describe('What this content should achieve'),
+        keyMessage: z.string().optional().describe('Core message to land'),
+        toneDirection: z.string().optional().describe('Tone hint (e.g. "punchy and direct")'),
+        callToAction: z.string().optional().describe('Desired CTA'),
+      }).optional().describe('Briefing fields to pre-fill in the Canvas Step 1'),
+    }),
+    requiresConfirmation: true,
+    category: 'write',
+    buildProposal: async (params) => {
+      const p = params as {
+        campaignId: string;
+        contentType: string;
+        title?: string;
+        brief?: Record<string, string | undefined>;
+      };
+      const campaign = await prisma.campaign.findUnique({
+        where: { id: p.campaignId },
+        select: { title: true },
+      });
+      const title = p.title ?? p.contentType;
+      const changes: MutationProposal['changes'] = [
+        { field: 'contentType', label: 'Type', currentValue: null, proposedValue: p.contentType },
+        { field: 'title', label: 'Title', currentValue: null, proposedValue: title },
+      ];
+      if (campaign?.title) {
+        changes.push({ field: 'campaign', label: 'Campaign', currentValue: null, proposedValue: campaign.title });
+      }
+      if (p.brief?.objective) changes.push({ field: 'objective', label: 'Objective', currentValue: null, proposedValue: p.brief.objective });
+      if (p.brief?.keyMessage) changes.push({ field: 'keyMessage', label: 'Key message', currentValue: null, proposedValue: p.brief.keyMessage });
+      if (p.brief?.toneDirection) changes.push({ field: 'toneDirection', label: 'Tone', currentValue: null, proposedValue: p.brief.toneDirection });
+      if (p.brief?.callToAction) changes.push({ field: 'callToAction', label: 'Call to action', currentValue: null, proposedValue: p.brief.callToAction });
+      return {
+        toolCallId: '', toolName: 'create_deliverable', params,
+        description: `Create ${p.contentType} in "${campaign?.title ?? 'campaign'}" — opens the Content Canvas`,
+        entityType: 'Deliverable', entityName: title, changes,
+      };
+    },
+    execute: async (params, ctx) => {
+      const p = params as {
+        campaignId: string;
+        contentType: string;
+        title?: string;
+        brief?: { objective?: string; keyMessage?: string; toneDirection?: string; callToAction?: string };
+      };
+
+      // Verify campaign ownership — Claw operates per-workspace so cross-
+      // workspace deliverable creation would be a privilege escalation.
+      const campaign = await prisma.campaign.findFirst({
+        where: { id: p.campaignId, workspaceId: ctx.workspaceId },
+        select: { id: true, title: true, isLocked: true },
+      });
+      if (!campaign) {
+        throw new Error('Campaign not found in this workspace');
+      }
+      if (campaign.isLocked) {
+        throw new Error(`Campaign "${campaign.title}" is locked. Unlock it first.`);
+      }
+
+      const title = (p.title ?? p.contentType).trim() || p.contentType;
+      const briefSettings: Record<string, string> = {};
+      if (p.brief?.objective) briefSettings.objective = p.brief.objective;
+      if (p.brief?.keyMessage) briefSettings.keyMessage = p.brief.keyMessage;
+      if (p.brief?.toneDirection) briefSettings.toneDirection = p.brief.toneDirection;
+      if (p.brief?.callToAction) briefSettings.callToAction = p.brief.callToAction;
+
+      const settings: Record<string, unknown> = {};
+      if (Object.keys(briefSettings).length > 0) {
+        settings.brief = briefSettings;
+      }
+
+      const deliverable = await prisma.deliverable.create({
+        data: {
+          title,
+          contentType: p.contentType,
+          campaignId: p.campaignId,
+          status: 'NOT_STARTED',
+          progress: 0,
+          approvalStatus: 'DRAFT',
+          ...(Object.keys(settings).length > 0 ? { settings } : {}),
+        },
+        select: { id: true, title: true, contentType: true },
+      });
+
+      invalidateCache(cacheKeys.prefixes.campaigns(ctx.workspaceId));
+      invalidateDashboard(ctx.workspaceId);
+      return {
+        success: true,
+        deliverableId: deliverable.id,
+        deliverableTitle: deliverable.title,
+        campaignId: p.campaignId,
+        // clientAction tells MutationConfirmCard to auto-navigate after the
+        // user confirms — no "View →" toast click needed for content creation.
+        clientAction: 'navigate_to_canvas',
+        message: `Created ${deliverable.contentType} "${deliverable.title}" — opening Canvas`,
+      };
+    },
+  },
+
+  // ─── Create Campaign ─────────────────────────────────────
+  // Path 2 fix (2026-04-25): paired with create_deliverable so the user can
+  // start fresh from chat — "begin a campaign for our Q2 launch" creates
+  // a STRATEGIC shell that the user then drops content into via subsequent
+  // create_deliverable calls (or via the campaign wizard if they want the
+  // full strategy pipeline). Kept deliberately minimal — title + a few
+  // optional steering fields. The deeper strategy content gets filled in
+  // the wizard, not via this tool.
+  {
+    name: 'create_campaign',
+    description:
+      'Create a new STRATEGIC campaign shell in this workspace. Use when the user asks to start a campaign and no fitting one exists yet (check `list_campaigns` first). Returns the campaign ID so you can immediately call `create_deliverable` for it. Keep title focused — descriptive name that fits the user\'s intent (e.g. "Q2 Product Launch", "Spring Brand Refresh").',
+    inputSchema: z.object({
+      title: z.string().describe('Campaign title — short and descriptive'),
+      description: z.string().optional().describe('One-sentence summary of what the campaign is for'),
+      campaignGoalType: z.string().optional().describe('Goal type slug if you can infer it (BRAND_AWARENESS, PRODUCT_LAUNCH, THOUGHT_LEADERSHIP, etc.). Leave empty if unclear — the user can pick later.'),
+      startDate: z.string().optional().describe('ISO date string (YYYY-MM-DD) for campaign start, if the user mentioned timing'),
+      endDate: z.string().optional().describe('ISO date string (YYYY-MM-DD) for campaign end'),
+    }),
+    requiresConfirmation: true,
+    category: 'write',
+    buildProposal: async (params) => {
+      const p = params as {
+        title: string;
+        description?: string;
+        campaignGoalType?: string;
+        startDate?: string;
+        endDate?: string;
+      };
+      const changes: MutationProposal['changes'] = [
+        { field: 'title', label: 'Title', currentValue: null, proposedValue: p.title },
+        { field: 'type', label: 'Type', currentValue: null, proposedValue: 'STRATEGIC' },
+      ];
+      if (p.description) changes.push({ field: 'description', label: 'Description', currentValue: null, proposedValue: p.description });
+      if (p.campaignGoalType) changes.push({ field: 'campaignGoalType', label: 'Goal', currentValue: null, proposedValue: p.campaignGoalType });
+      if (p.startDate) changes.push({ field: 'startDate', label: 'Start date', currentValue: null, proposedValue: p.startDate });
+      if (p.endDate) changes.push({ field: 'endDate', label: 'End date', currentValue: null, proposedValue: p.endDate });
+      return {
+        toolCallId: '', toolName: 'create_campaign', params,
+        description: `Create campaign "${p.title}" — opens it after creation`,
+        entityType: 'Campaign', entityName: p.title, changes,
+      };
+    },
+    execute: async (params, ctx) => {
+      const p = params as {
+        title: string;
+        description?: string;
+        campaignGoalType?: string;
+        startDate?: string;
+        endDate?: string;
+      };
+      const title = p.title.trim();
+      if (!title) throw new Error('Campaign title is required');
+
+      // Slug pattern matches POST /api/campaigns — kebab-case + timestamp
+      // suffix to avoid collisions. The user-visible name is `title`.
+      const slugBase = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '')
+        .slice(0, 60);
+      const slug = `${slugBase || 'campaign'}-${Date.now().toString(36)}`;
+
+      const campaign = await prisma.campaign.create({
+        data: {
+          title,
+          slug,
+          type: 'STRATEGIC',
+          status: 'ACTIVE',
+          description: p.description ?? null,
+          campaignGoalType: p.campaignGoalType ?? null,
+          startDate: p.startDate ? new Date(p.startDate) : null,
+          endDate: p.endDate ? new Date(p.endDate) : null,
+          workspaceId: ctx.workspaceId,
+        },
+        select: { id: true, title: true },
+      });
+
+      invalidateCache(cacheKeys.prefixes.campaigns(ctx.workspaceId));
+      invalidateDashboard(ctx.workspaceId);
+      return {
+        success: true,
+        campaignId: campaign.id,
+        campaignTitle: campaign.title,
+        // Same auto-navigate hook as create_deliverable, but lands on the
+        // campaign-mode content library instead of the Canvas.
+        clientAction: 'navigate_to_campaign',
+        message: `Campaign "${campaign.title}" created — opening it`,
+      };
+    },
+  },
+
   // ─── Create Manual Trend ─────────────────────────────────
   {
     name: 'create_trend',

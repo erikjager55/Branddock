@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
-import { ExternalLink, Heart, CalendarDays, Trash2, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { ExternalLink, Heart, CalendarDays, Trash2, Copy, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { Badge } from "@/components/shared";
 import { deriveTrafficLight, TRAFFIC_LIGHT, getPhaseConfig, InlineRenameField } from "../shared/calendar-cards";
 import { formatContentType } from "../../lib/format-content-type";
 import { DeleteConfirmModal } from "../shared/DeleteConfirmModal";
 import { useContentLibraryStore } from "../../stores/useContentLibraryStore";
+import { QuickPublishMenu } from "./QuickPublishMenu";
+import { sameTimeAsLast } from "../../lib/publish-scheduler";
 import type { ContentLibraryItem, ContentLibrarySort } from "../../types/content-library.types";
 
 // ─── Sortable header helper ──────────────────────────────
@@ -67,6 +69,10 @@ interface ContentCardListProps {
   onToggleFavorite: (id: string) => void;
   onDelete?: (deliverableId: string, campaignId: string) => void;
   onRename?: (deliverableId: string, campaignId: string, newTitle: string) => void;
+  /** Duplicate the deliverable and open the copy in Canvas (Sprint B · Step 1). */
+  onDuplicate?: (deliverableId: string, campaignId: string) => void;
+  /** Set of deliverable IDs currently being duplicated — disables the button. */
+  duplicatingIds?: Set<string>;
 }
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -87,10 +93,14 @@ export function ContentCardList({
   onToggleFavorite,
   onDelete,
   onRename,
+  onDuplicate,
+  duplicatingIds,
 }: ContentCardListProps) {
   const sort = useContentLibraryStore((s) => s.sort);
   const setSort = useContentLibraryStore((s) => s.setSort);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; campaignId: string; title: string } | null>(null);
+
+  const sameAsLastDate = useMemo(() => sameTimeAsLast(items), [items]);
 
   return (
     <>
@@ -233,7 +243,7 @@ export function ContentCardList({
             </div>
 
             {/* Actions — solid button matches Grid view's "Open in Canvas" */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => onOpenInStudio(item.id, item.campaignId)}
@@ -244,6 +254,25 @@ export function ContentCardList({
                 <ExternalLink className="w-3 h-3" />
                 Canvas
               </button>
+              {item.hasContent && !item.isPublishReady && (
+                <QuickPublishMenu
+                  deliverableId={item.id}
+                  campaignId={item.campaignId}
+                  sameAsLastDate={sameAsLastDate}
+                  variant="icon"
+                />
+              )}
+              {onDuplicate && (
+                <button
+                  type="button"
+                  onClick={() => onDuplicate(item.id, item.campaignId)}
+                  disabled={duplicatingIds?.has(item.id)}
+                  className="p-1 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  title="Duplicate"
+                >
+                  <Copy className="w-3.5 h-3.5 text-gray-400 hover:text-gray-700" />
+                </button>
+              )}
               {onDelete && (
                 <button
                   type="button"

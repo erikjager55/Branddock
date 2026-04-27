@@ -6,6 +6,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useClawStore } from '@/stores/useClawStore';
 import { useCampaignWizardStore } from '@/features/campaigns/stores/useCampaignWizardStore';
+import { useCampaignStore } from '@/features/campaigns/stores/useCampaignStore';
+import { useContentLibraryStore } from '@/features/campaigns/stores/useContentLibraryStore';
 import type { MutationProposal, ClawMessage } from '@/lib/claw/claw.types';
 import type { CampaignGoalType, CampaignType } from '@/features/campaigns/types/campaign-wizard.types';
 
@@ -23,6 +25,14 @@ const INVALIDATION_PREFIXES: Record<string, string[][]> = {
   trend: [['trend-radar'], ['trends']],
   alignment: [['alignment'], ['brand-alignment']],
   interview: [['interviews']],
+  // Path 2 fix: when Claw creates a deliverable we need to invalidate
+  // both the campaigns tree (deliverables list, blueprint) and the cross-
+  // campaign content library list so the new row shows up everywhere.
+  deliverable: [['campaigns'], ['content-library']],
+  // Same prefixes for a freshly created campaign — its row appears in the
+  // campaigns overview, and the content library uses campaigns for the
+  // filter dropdown.
+  campaign: [['campaigns'], ['content-library']],
 };
 
 /** Detail-section IDs for the "View →" toast action after a create. */
@@ -31,7 +41,7 @@ const DETAIL_SECTION_FOR_ENTITY: Record<string, string> = {
   trend: 'trend-detail',
   product: 'product-detail',
   competitor: 'competitor-detail',
-  // Other create-tools not wired yet
+  // Deliverables auto-navigate (no toast click) — handled separately below.
 };
 
 /**
@@ -113,6 +123,7 @@ export function MutationConfirmCard() {
           entityType: string;
           entityId: string | null;
           entityName: string | null;
+          campaignId?: string | null;
           isNew: boolean;
         };
         const prefixes = INVALIDATION_PREFIXES[affected.entityType] ?? [];
@@ -121,9 +132,37 @@ export function MutationConfirmCard() {
         }
         queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 
-        // After a create: show a toast with a "View →" action so the user can
-        // jump to the new entity's detail page without losing the chat.
-        if (affected.isNew && affected.entityId && affected.entityName) {
+        // Path 2 fix (2026-04-25): deliverables auto-navigate to the
+        // Content Canvas instead of waiting for a toast click. Setting
+        // both IDs in useCampaignStore matches how every other Canvas
+        // entry-point (cards, calendar, timeline) primes the route.
+        if (
+          affected.isNew &&
+          affected.entityType === 'deliverable' &&
+          affected.entityId &&
+          affected.campaignId
+        ) {
+          useCampaignStore.getState().setSelectedCampaignId(affected.campaignId);
+          useCampaignStore.getState().setSelectedDeliverableId(affected.entityId);
+          requestNavigation({ section: 'content-canvas' });
+          if (affected.entityName) {
+            toast.success(`Opening Canvas for "${affected.entityName}"`);
+          }
+        } else if (
+          affected.isNew &&
+          affected.entityType === 'campaign' &&
+          affected.entityId
+        ) {
+          // Campaigns auto-navigate to the merged content-library campaign-
+          // mode view (post-merge #212). Setting the filter to just this
+          // campaign is what flips the page into single-campaign mode.
+          useContentLibraryStore.getState().setFilter('campaigns', [affected.entityId]);
+          requestNavigation({ section: 'content-library' });
+          if (affected.entityName) {
+            toast.success(`Opening campaign "${affected.entityName}"`);
+          }
+        } else if (affected.isNew && affected.entityId && affected.entityName) {
+          // Other create-tools keep the toast-click pattern.
           const section = DETAIL_SECTION_FOR_ENTITY[affected.entityType];
           const label = affected.entityName;
           if (section) {

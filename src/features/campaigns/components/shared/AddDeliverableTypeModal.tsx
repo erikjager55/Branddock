@@ -10,6 +10,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import { Modal, Button } from "@/components/shared";
 import { DELIVERABLE_TYPES, DELIVERABLE_CATEGORIES } from "../../lib/deliverable-types";
+import { BrandAssistantCTA } from "../../../claw/components/BrandAssistantCTA";
 
 interface AddDeliverableTypeModalProps {
   isOpen: boolean;
@@ -94,6 +95,13 @@ export function AddDeliverableTypeModal({
       }
     >
       <div>
+        {/* Sprint B · Step 3 — nudge toward Claw for power-users who'd rather type. */}
+        <div className="mb-3">
+          <BrandAssistantCTA
+            variant="tip"
+            prompts={['Create a LinkedIn post about our latest product launch']}
+          />
+        </div>
         <div className="flex flex-wrap gap-1.5 mb-3">
           <button
             type="button"

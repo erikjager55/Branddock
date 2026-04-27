@@ -1,14 +1,19 @@
 "use client";
 
-import React, { useMemo, useState, useCallback } from "react";
+import React, { useMemo, useState, useCallback, useEffect } from "react";
 import { Library, Plus, Zap } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AddContentModal } from "../shared/AddContentModal";
 import { EmptyState, SkeletonCard, Button } from "@/components/shared";
 import { PageShell, PageHeader } from "@/components/ui/layout";
+import { BrandAssistantCTA } from "../../../claw/components/BrandAssistantCTA";
+import { BrandAssistantTooltip } from "../../../claw/components/BrandAssistantTooltip";
 import { useContentLibrary } from "../../hooks";
 import { useContentLibraryStats } from "../../hooks";
 import { useToggleContentFavorite } from "../../hooks";
+import { useDuplicateDeliverable } from "../../hooks";
+import { useCampaigns } from "../../hooks";
+import { AddDeliverableTypeModal } from "../shared/AddDeliverableTypeModal";
 import {
   useDraftCampaigns,
   useArchiveDraft,
@@ -80,6 +85,32 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
   const showFavorites = useContentLibraryStore((s) => s.showFavorites);
   const filters = useContentLibraryStore((s) => s.filters);
   const campaignSubTab = useContentLibraryStore((s) => s.campaignSubTab);
+  const setFilter = useContentLibraryStore((s) => s.setFilter);
+
+  // Self-heal stale campaign IDs in `filters.campaigns`. A selected ID can
+  // become stale when the underlying campaign is deleted, archived, or
+  // becomes invisible to /api/campaigns (e.g. CONTENT-type campaigns are
+  // filtered out by default). Without this the badge shows a phantom
+  // count and the page may even land in fake campaign-mode for a
+  // non-existent campaign.
+  const { data: visibleCampaignsData } = useCampaigns();
+  useEffect(() => {
+    if (!visibleCampaignsData) return;
+    if (filters.campaigns.length === 0) return;
+    const raw = visibleCampaignsData as
+      | { campaigns?: Array<{ id: string }> }
+      | Array<{ id: string }>
+      | undefined;
+    const list = Array.isArray(raw) ? raw : raw?.campaigns ?? [];
+    const visible = new Set(list.map((c) => c.id));
+    const surviving = filters.campaigns.filter((id) => visible.has(id));
+    if (surviving.length === filters.campaigns.length) return;
+    setFilter("campaigns", surviving);
+    // Only depend on visibleCampaignsData — re-triggering on filters.campaigns
+    // after a setFilter would loop if the new list still contained stale IDs
+    // (it can't, by construction, but the guard is cheap).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleCampaignsData]);
 
   // Campaign mode: when a single campaign is filtered, the page transforms
   // into the campaign-detail view — same deliverable rendering, plus
@@ -116,6 +147,14 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
 
   // Group tracking for collapsible headers
   const [showAddContentModal, setShowAddContentModal] = useState(false);
+
+  // Chained flow: clicking "Create Content" → AddContentModal → pick a
+  // campaign → AddDeliverableTypeModal opens for that campaign → user
+  // picks a contentType → deliverable is created → navigate to its Canvas.
+  // Picking a campaign is a creation step here, not a navigation step —
+  // see issue 2026-04-25 where users landed on the campaign overview
+  // instead of the Canvas.
+  const [creationCampaignId, setCreationCampaignId] = useState<string | null>(null);
 
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
     new Set(),
@@ -169,6 +208,31 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
     } catch { /* silent */ }
   }, [qc]);
 
+  const duplicateDeliverable = useDuplicateDeliverable();
+  const [duplicatingIds, setDuplicatingIds] = useState<Set<string>>(new Set());
+  const handleDuplicate = useCallback((deliverableId: string, campaignId: string) => {
+    setDuplicatingIds((prev) => {
+      const next = new Set(prev);
+      next.add(deliverableId);
+      return next;
+    });
+    duplicateDeliverable.mutate(
+      { campaignId, deliverableId },
+      {
+        onSuccess: (created) => {
+          handleOpenInStudio(created.id, campaignId);
+        },
+        onSettled: () => {
+          setDuplicatingIds((prev) => {
+            const next = new Set(prev);
+            next.delete(deliverableId);
+            return next;
+          });
+        },
+      },
+    );
+  }, [duplicateDeliverable]);
+
   // ── Render ──
 
   const renderContent = () => {
@@ -184,15 +248,24 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
 
     if (!items || items.length === 0) {
       return (
-        <EmptyState
-          icon={Library}
-          title="No content found"
-          description="Create content to start generating, or adjust your filters."
-          action={{
-            label: "Create Content",
-            onClick: () => setShowAddContentModal(true),
-          }}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <EmptyState
+            icon={Library}
+            title="No content found"
+            description="Create content with the wizard, or adjust your filters."
+            action={{
+              label: "Create Content",
+              onClick: () => setShowAddContentModal(true),
+            }}
+          />
+          <BrandAssistantCTA
+            prompts={[
+              'Write a LinkedIn post about our latest product launch',
+              'Generate 5 social posts for this campaign',
+              'Turn our whitepaper into 3 blog posts',
+            ]}
+          />
+        </div>
       );
     }
 
@@ -204,6 +277,8 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
           onOpenItem={handleOpenInStudio}
           onDeleteItem={handleDeleteContent}
           onRenameItem={handleRenameContent}
+          onDuplicateItem={handleDuplicate}
+          duplicatingIds={duplicatingIds}
         />
       );
     }
@@ -217,6 +292,8 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
           onOpenItem={handleOpenInStudio}
           onDeleteItem={handleDeleteContent}
           onRenameItem={handleRenameContent}
+          onDuplicateItem={handleDuplicate}
+          duplicatingIds={duplicatingIds}
         />
       );
     }
@@ -246,6 +323,8 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
                       onToggleFavorite={handleToggleFavorite}
                       onDelete={handleDeleteContent}
                       onRename={handleRenameContent}
+                      onDuplicate={handleDuplicate}
+                      duplicatingIds={duplicatingIds}
                     />
                   ) : (
                     <ContentCardList
@@ -254,6 +333,8 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
                       onToggleFavorite={handleToggleFavorite}
                       onDelete={handleDeleteContent}
                       onRename={handleRenameContent}
+                      onDuplicate={handleDuplicate}
+                      duplicatingIds={duplicatingIds}
                     />
                   ))}
               </div>
@@ -272,6 +353,8 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
           onToggleFavorite={handleToggleFavorite}
           onDelete={handleDeleteContent}
           onRename={handleRenameContent}
+          onDuplicate={handleDuplicate}
+          duplicatingIds={duplicatingIds}
         />
       );
     }
@@ -283,6 +366,8 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
         onToggleFavorite={handleToggleFavorite}
         onDelete={handleDeleteContent}
         onRename={handleRenameContent}
+        onDuplicate={handleDuplicate}
+        duplicatingIds={duplicatingIds}
       />
     );
   };
@@ -316,6 +401,7 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
           <ContentLibraryCampaignMode
             campaignId={activeCampaignId}
             onOpenInCanvas={handleOpenInStudio}
+            filteredItems={items ?? []}
           />
         ) : (
           <>
@@ -356,9 +442,10 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
         isOpen={showAddContentModal}
         onClose={() => setShowAddContentModal(false)}
         onSelectCampaign={(cid) => {
+          // Hand off to AddDeliverableTypeModal — picking a campaign is the
+          // first half of "create content here", not a navigation in itself.
           setShowAddContentModal(false);
-          useCampaignStore.getState().setSelectedCampaignId(cid);
-          onNavigate("campaign-detail");
+          setCreationCampaignId(cid);
         }}
         onStartWizard={(formatName) => {
           setShowAddContentModal(false);
@@ -368,6 +455,25 @@ export function ContentLibraryPage({ onNavigate }: ContentLibraryPageProps) {
           onNavigate('campaign-wizard');
         }}
       />
+
+      {/* Second half of the creation flow — pick a contentType inside the
+          chosen campaign, then jump straight to that deliverable's Canvas. */}
+      {creationCampaignId && (
+        <AddDeliverableTypeModal
+          isOpen
+          onClose={() => setCreationCampaignId(null)}
+          campaignId={creationCampaignId}
+          onCreated={(did) => {
+            const cid = creationCampaignId;
+            setCreationCampaignId(null);
+            if (cid) handleOpenInStudio(did, cid);
+          }}
+        />
+      )}
+
+      {/* One-time discovery nudge — only on the cross-campaign library,
+          not when we're already in a specific campaign's detail view. */}
+      {!activeCampaignId && <BrandAssistantTooltip />}
     </PageShell>
   );
 }

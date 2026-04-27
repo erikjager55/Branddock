@@ -117,9 +117,21 @@ export async function POST(req: NextRequest) {
 }
 
 type AffectedEntity = {
-  entityType: 'brand_asset' | 'persona' | 'product' | 'competitor' | 'strategy' | 'trend' | 'alignment' | 'interview';
+  entityType:
+    | 'brand_asset'
+    | 'persona'
+    | 'product'
+    | 'competitor'
+    | 'strategy'
+    | 'trend'
+    | 'alignment'
+    | 'interview'
+    | 'deliverable'
+    | 'campaign';
   entityId: string | null;
   entityName: string | null;
+  /** Campaign ID for deliverable rows — required to open the Canvas. */
+  campaignId?: string | null;
   /** True when this is a freshly created entity (enables "View →" toast). */
   isNew: boolean;
 };
@@ -196,6 +208,23 @@ function resolveAffectedEntity(
         entityType: 'trend',
         entityId: resultStr('trendId'),
         entityName: resultStr('trendTitle') ?? (typeof input.title === 'string' ? input.title : null),
+        isNew: true,
+      };
+    case 'create_deliverable':
+      // Deliverable navigation needs both IDs — Canvas is keyed on
+      // (campaignId, deliverableId) in useCampaignStore.
+      return {
+        entityType: 'deliverable',
+        entityId: resultStr('deliverableId'),
+        entityName: resultStr('deliverableTitle') ?? (typeof input.title === 'string' ? input.title : null),
+        campaignId: resultStr('campaignId') ?? (typeof input.campaignId === 'string' ? input.campaignId : null),
+        isNew: true,
+      };
+    case 'create_campaign':
+      return {
+        entityType: 'campaign',
+        entityId: resultStr('campaignId'),
+        entityName: resultStr('campaignTitle') ?? (typeof input.title === 'string' ? input.title : null),
         isNew: true,
       };
     case 'lock_entity': {

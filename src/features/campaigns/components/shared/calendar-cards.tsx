@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type DragEvent } from "react";
-import { Calendar as CalendarIcon, ExternalLink, Heart, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, ExternalLink, Heart, Trash2, Copy } from "lucide-react";
 import { DeleteConfirmModal } from "./DeleteConfirmModal";
 import { formatContentType } from "../../lib/format-content-type";
 
@@ -146,6 +146,10 @@ export interface CalendarCardProps {
   readinessHint?: string | null;
   onDelete?: () => void;
   onRename?: (newTitle: string) => void;
+  /** Duplicate the deliverable and open the copy in Canvas (Sprint B · Step 1). */
+  onDuplicate?: () => void;
+  /** True while the duplicate mutation is in-flight — disables the button. */
+  isDuplicating?: boolean;
   phase?: string | null;
   isSelected?: boolean;
   onToggleSelected?: () => void;
@@ -282,6 +286,8 @@ export function CalendarCard({
   currentDateValue,
   onDelete,
   onRename,
+  onDuplicate,
+  isDuplicating,
   phase,
   isSelected,
   onToggleSelected,
@@ -453,7 +459,7 @@ export function CalendarCard({
         )}
 
         {/* Hover-revealed action row */}
-        {(onDatePick || onClick || onDelete) && (
+        {(onDatePick || onClick || onDelete || onDuplicate) && (
           <div className="flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
             {onDatePick && (
               <>
@@ -482,6 +488,17 @@ export function CalendarCard({
                   tabIndex={-1}
                 />
               </>
+            )}
+            {onDuplicate && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+                disabled={isDuplicating}
+                className="p-0.5 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
+                title="Duplicate"
+              >
+                <Copy className="w-2.5 h-2.5 text-gray-400 hover:text-gray-700" />
+              </button>
             )}
             {onDelete && (
               <button

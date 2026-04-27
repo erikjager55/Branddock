@@ -1,14 +1,19 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useRef } from "react";
-import { ArrowLeft, Megaphone, Zap, Plus, Download, Sparkles, Loader2, CheckCircle2, AlertCircle, Target, Share2, FileText, FileJson, Pencil, Check, X, Users } from "lucide-react";
+import { ArrowLeft, Megaphone, Zap, Plus, Download, Sparkles, Loader2, CheckCircle2, AlertCircle, Target, Share2, FileText, FileJson, Pencil, Check, X, Users, Wand2 } from "lucide-react";
 import { Badge, Button, EmptyState } from "@/components/shared";
 import { LockShield, LockStatusPill, LockBanner, LockConfirmDialog } from "@/components/lock";
 import { useLockState } from "@/hooks/useLockState";
 import { useContentLibraryStore } from "../../stores/useContentLibraryStore";
-import { useCampaignDetail, useStrategy, useDeliverables, useUpdateCampaign } from "../../hooks";
+import { useCampaignDetail, useStrategy, useDeliverables, useUpdateCampaign, useAddDeliverable } from "../../hooks";
 import { useBulkGenerate } from "../../hooks/useBulkGenerate";
 import { AddDeliverableTypeModal } from "../shared/AddDeliverableTypeModal";
+import { BulkGenerateModal } from "./BulkGenerateModal";
+import { RepeatSplitButton } from "./RepeatSplitButton";
+import { getDeliverableTypeById } from "../../lib/deliverable-types";
+import type { DeliverableResponse } from "@/types/campaign";
+import type { ContentLibraryItem } from "../../types/content-library.types";
 import { exportApprovedDeliverablesZip } from "../../lib/export-zip";
 import { StrategySection } from "../detail/strategy/StrategySection";
 import { RegenerateSectionButton } from "../detail/strategy/RegenerateSectionButton";
@@ -20,10 +25,21 @@ import type { CampaignBlueprint } from "@/lib/campaigns/strategy-blueprint.types
 
 interface ContentLibraryCampaignModeProps {
   campaignId: string;
-  onOpenInCanvas?: (campaignId: string, deliverableId: string) => void;
+  /**
+   * Args ordered `(deliverableId, campaignId)` to match the rest of the
+   * content-library surface (ContentCardGrid/List, Timeline, Calendar).
+   */
+  onOpenInCanvas?: (deliverableId: string, campaignId: string) => void;
+  /**
+   * Items list AFTER all active filters in the Content Library are applied.
+   * Drives the "Generate Drafts (N)" header button so its count + click
+   * target match what the user actually sees in the grid below — not the
+   * raw campaign total.
+   */
+  filteredItems?: ContentLibraryItem[];
 }
 
-export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas }: ContentLibraryCampaignModeProps) {
+export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas, filteredItems }: ContentLibraryCampaignModeProps) {
   const toggleCampaignFilter = useContentLibraryStore((s) => s.toggleCampaignFilter);
   const campaignSubTab = useContentLibraryStore((s) => s.campaignSubTab);
   const { data: campaign, isLoading } = useCampaignDetail(campaignId);
@@ -31,6 +47,28 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas }: Conte
   const { data: deliverables } = useDeliverables(campaignId);
   const bulkGenerate = useBulkGenerate(campaignId);
   const updateCampaign = useUpdateCampaign(campaignId);
+  const addDeliverable = useAddDeliverable(campaignId);
+
+  // Selecting a source — either the newest COMPLETED overall (main button)
+  // or the newest of a specific type (dropdown) — is delegated to
+  // RepeatSplitButton. This handler just creates the fresh deliverable and
+  // hands it to auto-inherit (Sprint A · Step 1) via the Canvas.
+  const handleRepeat = useCallback(
+    (source: DeliverableResponse) => {
+      if (addDeliverable.isPending) return;
+      const typeDef = getDeliverableTypeById(source.contentType);
+      const title = typeDef?.name ?? source.contentType;
+      addDeliverable.mutate(
+        { title, contentType: source.contentType },
+        {
+          onSuccess: (created) => {
+            onOpenInCanvas?.(created.id, campaignId);
+          },
+        },
+      );
+    },
+    [addDeliverable, campaignId, onOpenInCanvas],
+  );
 
   // Lock state — prevents edits when locked.
   const lock = useLockState({
@@ -45,6 +83,7 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas }: Conte
   });
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkGenerateModal, setShowBulkGenerateModal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   // Inline title + description editing
@@ -124,10 +163,25 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas }: Conte
     return Array.from(seen);
   }, [blueprint]);
 
-  const notStartedCount = useMemo(
-    () => (deliverables ?? []).filter((d) => d.status === "NOT_STARTED").length,
-    [deliverables],
-  );
+  // Generate Drafts targets the FILTERED items so the count + behavior
+  // match what the user sees in the grid. If no filteredItems prop was
+  // passed (defensive — shouldn't happen in practice), fall back to the
+  // raw campaign totals so the button still works.
+  const filteredNotStartedIds = useMemo(() => {
+    if (filteredItems) {
+      return filteredItems
+        .filter((i) => i.status === "NOT_STARTED")
+        .map((i) => i.id);
+    }
+    return (deliverables ?? [])
+      .filter((d) => d.status === "NOT_STARTED")
+      .map((d) => d.id);
+  }, [filteredItems, deliverables]);
+  const notStartedCount = filteredNotStartedIds.length;
+
+  // Export still targets the full campaign — we want users to be able to
+  // export everything that's APPROVED, not whatever the current filter
+  // happens to expose.
   const completedCount = useMemo(
     () => (deliverables ?? []).filter((d) => d.status === "COMPLETED").length,
     [deliverables],
@@ -317,11 +371,21 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas }: Conte
               variant="primary"
               size="sm"
               icon={Sparkles}
-              onClick={() => bulkGenerate.start()}
+              onClick={() => bulkGenerate.start(filteredNotStartedIds)}
               disabled={notStartedCount === 0 || bulkGenerate.isGenerating || lock.isLocked}
               isLoading={bulkGenerate.isGenerating}
             >
               Generate Drafts ({notStartedCount})
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Wand2}
+              onClick={() => setShowBulkGenerateModal(true)}
+              disabled={lock.isLocked || bulkGenerate.isGenerating}
+              title="Generate a batch of new deliverables from a prompt or source"
+            >
+              Generate more
             </Button>
             <Button
               variant="secondary"
@@ -333,6 +397,12 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas }: Conte
             >
               Export ({completedCount})
             </Button>
+            <RepeatSplitButton
+              deliverables={deliverables ?? []}
+              disabled={lock.isLocked}
+              isPending={addDeliverable.isPending}
+              onRepeat={handleRepeat}
+            />
             <Button
               variant="secondary"
               size="sm"
@@ -485,7 +555,18 @@ export function ContentLibraryCampaignMode({ campaignId, onOpenInCanvas }: Conte
         campaignId={campaignId}
         onCreated={(did) => {
           setShowAddModal(false);
-          onOpenInCanvas?.(campaignId, did);
+          onOpenInCanvas?.(did, campaignId);
+        }}
+      />
+
+      {/* Bulk Generate modal — creates N deliverables + kicks off SSE generation */}
+      <BulkGenerateModal
+        isOpen={showBulkGenerateModal}
+        onClose={() => setShowBulkGenerateModal(false)}
+        campaignId={campaignId}
+        deliverables={deliverables ?? []}
+        onCreated={(ids) => {
+          if (ids.length > 0) bulkGenerate.start(ids);
         }}
       />
     </>

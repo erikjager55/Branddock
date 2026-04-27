@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Bug, MessageSquarePlus } from "lucide-react";
+import { Bug, MessageSquarePlus, Sparkles } from "lucide-react";
 
 /**
  * Registry of slash commands usable in the Brand Assistant input.
@@ -16,6 +16,12 @@ export interface SlashCommand {
 }
 
 export const SLASH_COMMANDS: readonly SlashCommand[] = [
+  {
+    id: "/quick",
+    label: "Quick content",
+    description: "Start a new content item via a guided mini-interview",
+    icon: Sparkles,
+  },
   {
     id: "/feedback",
     label: "Feedback",

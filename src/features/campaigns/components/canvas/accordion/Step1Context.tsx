@@ -3,7 +3,7 @@
 import React from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
-import { Building2, Lightbulb, Route, Monitor, BookOpen, Plus, X, Sparkles, Search, Trash2 } from 'lucide-react';
+import { Building2, Lightbulb, Route, Monitor, BookOpen, Plus, X, Sparkles, Search, Trash2, FileText } from 'lucide-react';
 import { Badge, Skeleton, SkeletonText } from '@/components/shared';
 import { WEBSITE_DELIVERABLE_TYPES } from '@/lib/ai/seo-pipeline.types';
 import { STUDIO } from '@/lib/constants/design-tokens';
@@ -158,7 +158,12 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
         </ContextCard>
       </div>
 
-      {/* Content Brief — type-specific input fields */}
+      {/* Briefing — settings.brief (set by Claw create_deliverable or wizard) */}
+      <BriefSection />
+
+      {/* Content Brief — type-specific input fields. Required fields gate the
+          Generate button; optional fields tweak the AI output. Lives here (not
+          in a side panel) because the Generate CTA sits a few rows down. */}
       <ContentBriefSection />
 
       {/* Knowledge context */}
@@ -206,16 +211,17 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
 
       {/* Primary CTA — Continue (if content exists) or Generate (first time) */}
       <div className="pt-2 space-y-2">
-        {/* Missing-required alert — blocks Continue / Generate until filled */}
+        {/* Missing-required alert — blocks Continue / Generate until filled.
+            The Content Brief section just above this CTA contains the fields. */}
         {hasMissingRequired && (
           <div
             role="alert"
             className="flex items-start gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800"
           >
             <span className="text-amber-600 mt-0.5">*</span>
-            <div>
+            <div className="flex-1">
               <p className="font-semibold">
-                Fill in required field{missingRequired.length > 1 ? 's' : ''} to continue:
+                Fill in required field{missingRequired.length > 1 ? 's' : ''} above to continue:
               </p>
               <ul className="mt-0.5 list-disc list-inside">
                 {missingRequired.map((f) => (
@@ -325,54 +331,95 @@ function BrandContent({ brand }: { brand: BrandContextBlock }) {
   );
 }
 
-function ContentBriefSection() {
-  const contentType = useCanvasStore((s) => s.contentType);
-  const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
-  const setContentTypeInput = useCanvasStore((s) => s.setContentTypeInput);
+/**
+ * Briefing section — surfaces `settings.brief` (objective / keyMessage /
+ * tone / CTA). Filled by Claw via `create_deliverable` or by the wizard's
+ * launch step. Edits autosave through CanvasPage (debounced PATCH).
+ *
+ * Sits ABOVE the content-type input fields because brief is the strategic
+ * "what & why" — type-specific inputs (SEO keyword, meta description, etc.)
+ * are tactical knobs that build on top of the brief.
+ */
+function BriefSection() {
+  const brief = useCanvasStore((s) => s.brief);
+  const setBriefField = useCanvasStore((s) => s.setBriefField);
 
-  const fields = React.useMemo(
-    () => (contentType ? getContentTypeInputs(contentType) : []),
-    [contentType],
-  );
-
-  const handleChange = React.useCallback(
-    (key: string, value: ContentTypeInputValue) => {
-      setContentTypeInput(key, value);
-    },
-    [setContentTypeInput],
-  );
-
-  if (fields.length === 0 || !contentType) return null;
-
-  const filledCount = Object.values(contentTypeInputs).filter((v) => {
-    if (v === '' || v === false) return false;
-    if (Array.isArray(v) && v.length === 0) return false;
-    return v != null;
-  }).length;
+  const filledCount = Object.values(brief).filter(
+    (v) => typeof v === 'string' && v.trim().length > 0,
+  ).length;
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-3">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-teal-600" />
-          <span className="text-sm font-medium text-gray-700">Content Brief</span>
+          <Lightbulb className="h-4 w-4 text-amber-500" />
+          <span className="text-sm font-medium text-gray-700">Briefing</span>
         </div>
         {filledCount > 0 && (
-          <Badge variant="teal" size="sm">{filledCount}/{fields.length}</Badge>
+          <Badge variant="default" size="sm">
+            {filledCount}/4
+          </Badge>
         )}
       </div>
       <p className="text-xs text-gray-500 mb-3">
-        Fill in to make the generated content more specific. These are optional — the AI will work with what you provide.
+        The strategic frame — what this content needs to do. Inherited from
+        the campaign briefing or set when you (or Claw) create the item.
       </p>
-      <ContentTypeInputFields
-        typeId={contentType}
-        values={contentTypeInputs}
-        onChange={handleChange}
-        compact
-      />
+      <div className="space-y-2.5">
+        <BriefField
+          label="Objective"
+          placeholder="What this content should achieve"
+          value={brief.objective}
+          onChange={(v) => setBriefField('objective', v)}
+        />
+        <BriefField
+          label="Key message"
+          placeholder="The single thing the audience should take away"
+          value={brief.keyMessage}
+          onChange={(v) => setBriefField('keyMessage', v)}
+        />
+        <BriefField
+          label="Tone direction"
+          placeholder="e.g. authoritative, playful, urgent"
+          value={brief.toneDirection}
+          onChange={(v) => setBriefField('toneDirection', v)}
+        />
+        <BriefField
+          label="Call to action"
+          placeholder="What should the audience do next?"
+          value={brief.callToAction}
+          onChange={(v) => setBriefField('callToAction', v)}
+        />
+      </div>
     </div>
   );
 }
+
+function BriefField({
+  label,
+  placeholder,
+  value,
+  onChange,
+}: {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="block text-[11px] font-medium text-gray-600 mb-1">{label}</span>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={2}
+        className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-400 resize-y"
+      />
+    </label>
+  );
+}
+
 
 function SeoInputCard() {
   const seoInput = useCanvasStore((s) => s.seoInput);
@@ -492,6 +539,110 @@ function SkeletonContextCard() {
       <div className="mt-2">
         <SkeletonText lines={2} />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Type-specific input fields for the active deliverable. Required fields are
+ * highlighted with an amber accent because they gate the Generate CTA below;
+ * optional fields tweak the AI output but never block. Lives in Step 1 (no
+ * longer in a side panel) so the user sees + fills everything in one column.
+ */
+function ContentBriefSection() {
+  const contentType = useCanvasStore((s) => s.contentType);
+  const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
+  const setContentTypeInput = useCanvasStore((s) => s.setContentTypeInput);
+
+  const fields = React.useMemo(
+    () => (contentType ? getContentTypeInputs(contentType) : []),
+    [contentType],
+  );
+
+  const requiredFields = React.useMemo(
+    () => fields.filter((f) => f.required),
+    [fields],
+  );
+  const optionalFields = React.useMemo(
+    () => fields.filter((f) => !f.required),
+    [fields],
+  );
+
+  const handleChange = React.useCallback(
+    (key: string, value: ContentTypeInputValue) => {
+      setContentTypeInput(key, value);
+    },
+    [setContentTypeInput],
+  );
+
+  if (fields.length === 0 || !contentType) return null;
+
+  const filledCount = Object.values(contentTypeInputs).filter((v) => {
+    if (v === '' || v === false) return false;
+    if (Array.isArray(v) && v.length === 0) return false;
+    return v != null;
+  }).length;
+
+  const missingRequiredCount = requiredFields.filter((f) => {
+    const v = contentTypeInputs[f.key];
+    if (v == null) return true;
+    if (typeof v === 'string') return v.trim().length === 0;
+    if (Array.isArray(v)) return v.length === 0;
+    return false;
+  }).length;
+
+  const hasMissingRequired = missingRequiredCount > 0;
+
+  return (
+    <div
+      className={`rounded-lg border bg-white p-3 ${
+        hasMissingRequired ? 'border-amber-300' : 'border-gray-200'
+      }`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <FileText
+            className={`h-4 w-4 ${hasMissingRequired ? 'text-amber-600' : 'text-teal-600'}`}
+          />
+          <span className="text-sm font-medium text-gray-700">Content Brief</span>
+        </div>
+        {hasMissingRequired ? (
+          <Badge variant="warning" size="sm">{missingRequiredCount} required</Badge>
+        ) : filledCount > 0 ? (
+          <Badge variant="teal" size="sm">{filledCount}/{fields.length}</Badge>
+        ) : null}
+      </div>
+
+      {requiredFields.length > 0 && (
+        <div className="space-y-2 mb-3">
+          <ContentTypeInputFields
+            typeId={contentType}
+            values={contentTypeInputs}
+            onChange={handleChange}
+            compact
+            filterKeys={requiredFields.map((f) => f.key)}
+          />
+        </div>
+      )}
+
+      {optionalFields.length > 0 && (
+        <details className="group">
+          <summary className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 cursor-pointer select-none mb-2 list-none">
+            <Plus className="h-3 w-3 transition-transform group-open:rotate-45" />
+            <span>Optional fields ({optionalFields.length})</span>
+          </summary>
+          <p className="text-xs text-gray-400 mb-2">
+            These tweak the AI output. Empty is fine — the AI will derive sensible defaults.
+          </p>
+          <ContentTypeInputFields
+            typeId={contentType}
+            values={contentTypeInputs}
+            onChange={handleChange}
+            compact
+            filterKeys={optionalFields.map((f) => f.key)}
+          />
+        </details>
+      )}
     </div>
   );
 }

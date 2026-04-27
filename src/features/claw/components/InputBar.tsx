@@ -83,7 +83,7 @@ export function InputBar() {
     el.style.height = `${next}px`;
   }, [inputText]);
 
-  const { openBugReportForm, openFeedbackForm } = useClawStore();
+  const { openBugReportForm, openFeedbackForm, openQuickContentForm } = useClawStore();
 
   /**
    * Send the current input. Accepts an optional override so slash-menu
@@ -112,6 +112,13 @@ export function InputBar() {
         messageId: lastAssistant?.id ?? null,
         messageContent: lastAssistant?.content ?? null,
       });
+      return;
+    }
+    if (message.toLowerCase() === '/quick') {
+      // Open the structured Quick Content form — same UX as the TopNav
+      // button. Skips the AI mini-interview in favor of explicit fields.
+      setInputText('');
+      openQuickContentForm();
       return;
     }
 
@@ -148,6 +155,7 @@ export function InputBar() {
               entityType: activeEntity.type,
               entityId: activeEntity.id,
               entityName: activeEntity.name,
+              ...(activeEntity.campaignId && { campaignId: activeEntity.campaignId }),
             }),
             ...(wizardSnapshot && { wizardSnapshot }),
           },

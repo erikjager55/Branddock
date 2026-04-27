@@ -53,6 +53,10 @@ interface ContentLibraryTimelineViewProps {
   onOpenItem?: (deliverableId: string, campaignId: string) => void;
   onDeleteItem?: (deliverableId: string, campaignId: string) => void;
   onRenameItem?: (deliverableId: string, campaignId: string, newTitle: string) => void;
+  /** Duplicate the deliverable and open the copy in Canvas (Sprint B · Step 1). */
+  onDuplicateItem?: (deliverableId: string, campaignId: string) => void;
+  /** Set of deliverable IDs currently being duplicated. */
+  duplicatingIds?: Set<string>;
 }
 
 interface DragPayload {
@@ -215,6 +219,8 @@ export function ContentLibraryTimelineView({
   onOpenItem,
   onDeleteItem,
   onRenameItem,
+  onDuplicateItem,
+  duplicatingIds,
 }: ContentLibraryTimelineViewProps) {
   const groupBy = useContentLibraryStore((s) => s.timelineGroupBy);
   const setGroupBy = useContentLibraryStore((s) => s.setTimelineGroupBy);
@@ -903,6 +909,12 @@ export function ContentLibraryTimelineView({
                       ? (newTitle) => onRenameItem(item.id, item.campaignId, newTitle)
                       : undefined
                   }
+                  onDuplicate={
+                    onDuplicateItem
+                      ? () => onDuplicateItem(item.id, item.campaignId)
+                      : undefined
+                  }
+                  isDuplicating={duplicatingIds?.has(item.id)}
                 />
               );
             })}
@@ -1250,6 +1262,13 @@ export function ContentLibraryTimelineView({
                                       onRenameItem(item.id, item.campaignId, newTitle)
                                   : undefined
                               }
+                              onDuplicate={
+                                onDuplicateItem
+                                  ? () =>
+                                      onDuplicateItem(item.id, item.campaignId)
+                                  : undefined
+                              }
+                              isDuplicating={duplicatingIds?.has(item.id)}
                             />
                           </div>
                         );

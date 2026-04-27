@@ -4,6 +4,11 @@ import React, { useState, useCallback, useRef } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { updateComponentContent } from '../../../api/canvas.api';
 import { Pencil, Check, X, Loader2 } from 'lucide-react';
+import {
+  isPlainTextGroup,
+  stripMarkdownForPlainText,
+  clampCta,
+} from '../../../lib/strip-markdown';
 
 interface ContentSectionsEditorProps {
   deliverableId: string;
@@ -68,18 +73,33 @@ function SectionField({ group, content, componentId, variantIndex, deliverableId
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Strip HTML for display
-  const displayText = content.replace(/<[^>]*>/g, '');
+  const htmlStripped = content.replace(/<[^>]*>/g, '');
+  // Plain-text groups (title/meta/cta/subject/...) get markdown also stripped
+  // so stray `# Heading` / `**bold**` from the AI doesn't leak into the UI.
+  const isPlainText = isPlainTextGroup(group);
+  const isCta = group.toLowerCase().includes('cta');
+  const displayText = isCta
+    ? clampCta(htmlStripped)
+    : isPlainText
+      ? stripMarkdownForPlainText(htmlStripped)
+      : htmlStripped;
+
+  // For plain-text groups, the editor draft starts from the cleaned-up text
+  // (markdown stripped, CTA clamped) so what the user edits matches what
+  // they see — and pressing Save commits the cleaned version to the DB.
+  // For body/hook groups, draft starts from the raw html-stripped content.
+  const initialDraft = isPlainText ? displayText : htmlStripped;
 
   const handleStartEdit = useCallback(() => {
-    setDraft(content.replace(/<[^>]*>/g, ''));
+    setDraft(initialDraft);
     setIsEditing(true);
     requestAnimationFrame(() => textareaRef.current?.focus());
-  }, [content]);
+  }, [initialDraft]);
 
   const handleCancel = useCallback(() => {
     setIsEditing(false);
-    setDraft(content.replace(/<[^>]*>/g, ''));
-  }, [content]);
+    setDraft(initialDraft);
+  }, [initialDraft]);
 
   const handleSave = useCallback(async () => {
     if (draft.trim() === displayText.trim()) {

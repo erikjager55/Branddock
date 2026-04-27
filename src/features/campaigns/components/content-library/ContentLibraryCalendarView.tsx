@@ -52,6 +52,10 @@ interface ContentLibraryCalendarViewProps {
   onOpenItem?: (deliverableId: string, campaignId: string) => void;
   onDeleteItem?: (deliverableId: string, campaignId: string) => void;
   onRenameItem?: (deliverableId: string, campaignId: string, newTitle: string) => void;
+  /** Duplicate the deliverable and open the copy in Canvas (Sprint B · Step 1). */
+  onDuplicateItem?: (deliverableId: string, campaignId: string) => void;
+  /** Set of deliverable IDs currently being duplicated. */
+  duplicatingIds?: Set<string>;
 }
 
 // ─── Time defaults (research-backed) ────────────────────────────
@@ -190,6 +194,8 @@ export function ContentLibraryCalendarView({
   onOpenItem,
   onDeleteItem,
   onRenameItem,
+  onDuplicateItem,
+  duplicatingIds,
 }: ContentLibraryCalendarViewProps) {
   // ─── Item placement ──────────────────────────────────────────
   const { placedByDate, unscheduledItems } = useMemo(() => {
@@ -589,6 +595,8 @@ export function ContentLibraryCalendarView({
                     onDatePick={(iso) => handleDatePick(item, iso)}
                     onDelete={() => onDeleteItem?.(item.id, item.campaignId)}
                     onRename={(t) => onRenameItem?.(item.id, item.campaignId, t)}
+                    onDuplicate={onDuplicateItem ? () => onDuplicateItem(item.id, item.campaignId) : undefined}
+                    isDuplicating={duplicatingIds?.has(item.id)}
                     phase={item.phase}
                     campaignType={item.campaignType}
                   />
@@ -716,6 +724,8 @@ export function ContentLibraryCalendarView({
                           onDatePick={(iso) => handleDatePick(p.item, iso)}
                           onDelete={() => onDeleteItem?.(p.item.id, p.item.campaignId)}
                           onRename={(t) => onRenameItem?.(p.item.id, p.item.campaignId, t)}
+                          onDuplicate={onDuplicateItem ? () => onDuplicateItem(p.item.id, p.item.campaignId) : undefined}
+                          isDuplicating={duplicatingIds?.has(p.item.id)}
                           phase={p.item.phase}
                           campaignType={p.item.campaignType}
                         />

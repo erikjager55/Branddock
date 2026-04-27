@@ -95,7 +95,34 @@ Rules:
 - Use tools to read data you need — don't guess or make up brand information
 - For write actions: always explain what you want to change and why before calling the tool
 - Respond in the same language the user writes in
-- Be direct and professional — no unnecessary filler`;
+- Be direct and professional — no unnecessary filler
+
+Content creation contract (CRITICAL):
+- For ANY request to create or generate content (LinkedIn post, blog post, email,
+  video script, ad copy, social caption, landing page, etc.) you MUST call the
+  \`create_deliverable\` tool. NEVER write the content body, headline, hook, CTA,
+  or any draft text in chat — even partially, even as a "preview".
+- The Content Canvas is the place where copy gets generated, edited, and
+  approved — it has the full brand voice, medium config, persona context,
+  and variant grid. Your job in chat is to (1) figure out which content type
+  they want, (2) which campaign it belongs to, and (3) call
+  \`create_deliverable\` with a tight briefing in the \`brief\` field.
+- Campaign selection is a hard prerequisite for \`create_deliverable\`. ALWAYS
+  call \`list_campaigns\` first when no campaign is implied by context, and
+  present the existing options to the user before doing anything else. Only
+  call \`create_campaign\` after the user has explicitly seen the existing
+  list and confirmed they want a fresh campaign — never auto-create one
+  silently as a shortcut.
+- After the user confirms the create_deliverable proposal, the app
+  automatically navigates them to the Canvas. Don't try to do the
+  generation yourself in chat — trust the tool + the Canvas.
+- If the user explicitly insists "just write it here, don't open canvas",
+  briefly explain that the Canvas is where generation happens and offer
+  to open it via \`create_deliverable\`. Do not write the body in chat.
+- AFTER landing in the Canvas the user can ask you in chat to refine,
+  rewrite, or shorten — at that point use the relevant update tools or
+  give targeted advice. The chat is a sidekick to the Canvas, not a
+  replacement for it.`;
 
 // ─── Module Context Fetchers ──────────────────────────────
 
@@ -345,16 +372,37 @@ function formatPageContext(ctx: ClawPageContext): string {
     const typeLabel = ENTITY_TYPE_LABELS[ctx.entityType] ?? ctx.entityType;
     const nameLabel = ctx.entityName ? `"${ctx.entityName}"` : '(unnamed)';
     lines.push(`Active entity: ${typeLabel} ${nameLabel} (id: ${ctx.entityId}).`);
-    lines.push(
-      'When the user says "this asset", "deze persona", "dit product", or "this competitor", ' +
-      'assume they mean this entity — use the ID above in tool calls without asking for clarification.'
-    );
-    lines.push(
-      'When the user asks about which fields are empty, wants to fill in fields, or asks for ' +
-      'a review of the current entity, call `inspect_current_entity` FIRST with the entityType ' +
-      'and entityId above. That tool returns the current value of each field with an isEmpty ' +
-      'marker and the overall completeness percentage.'
-    );
+
+    // Deliverable context gets its own instruction block — the user is in
+    // the Content Canvas, the campaign is already known, and "vul de velden"
+    // means edit Step 1 of THIS deliverable, not start a new search.
+    if (ctx.entityType === 'deliverable') {
+      const campaignNote = ctx.campaignId
+        ? ` It belongs to campaign \`${ctx.campaignId}\`.`
+        : '';
+      lines.push(
+        `The user is INSIDE the Content Canvas for this deliverable.${campaignNote} ` +
+        'When they say "vul de velden", "fill in the briefing", "rewrite this", ' +
+        '"shorten it", "make it more formal", or anything else about THIS content, ' +
+        'they mean this deliverable. Do NOT search for a new campaign or call ' +
+        '`create_deliverable` — the deliverable already exists. Use ' +
+        '`update_deliverable` or `update_deliverable_brief` (when available) to ' +
+        'edit fields, or give targeted writing advice that the user can apply ' +
+        'in the Canvas. Never re-create what they\'re already working on.'
+      );
+    } else {
+      lines.push(
+        'When the user says "this asset", "deze persona", "dit product", or "this competitor", ' +
+        'assume they mean this entity — use the ID above in tool calls without asking for clarification.'
+      );
+      lines.push(
+        'When the user asks about which fields are empty, wants to fill in fields, or asks for ' +
+        'a review of the current entity, call `inspect_current_entity` FIRST with the entityType ' +
+        'and entityId above. That tool returns the current value of each field with an isEmpty ' +
+        'marker and the overall completeness percentage.'
+      );
+    }
+
     lines.push(
       'When creating new entities from this page, default to this workspace without further confirmation.'
     );
@@ -408,6 +456,8 @@ const ENTITY_TYPE_LABELS: Record<NonNullable<ClawPageContext['entityType']>, str
   persona: 'Persona',
   product: 'Product',
   competitor: 'Competitor',
+  deliverable: 'Content Deliverable',
+  campaign: 'Campaign',
 };
 
 function formatAttachments(attachments: ClawAttachment[]): string {

@@ -80,9 +80,6 @@ interface CanvasStoreState {
   // ─── Publish suggestion ───────────────────────────────────
   publishSuggestion: { suggestedDate: string; reasoning: string } | null;
 
-  // ─── Panel states ─────────────────────────────────────────
-  contextPanelCollapsed: boolean;
-
   // ─── Additional knowledge context ────────────────────────
   additionalContextItems: Map<string, SelectedContextItem>;
   contextSelectorOpen: boolean;
@@ -103,6 +100,12 @@ interface CanvasStoreState {
   completedSteps: Set<string>;
   stepSummaries: Map<string, StepSummaryData>;
 
+  // ─── Inheritance banner ────────────────────────────────────
+  // Non-null when the current deliverable had its settings auto-inherited
+  // from a previous completed deliverable of the same type in the same
+  // campaign. Shown as a dismissible banner on top of the Canvas.
+  inheritedFrom: { id: string; title: string } | null;
+
   // ─── Step 3: medium generation ────────────────────────────
   mediumGenerationStatus: 'idle' | 'generating' | 'complete' | 'error';
   generatedMediumUrl: string | null;
@@ -122,6 +125,18 @@ interface CanvasStoreState {
   // ─── Content-type-specific inputs ─────────────────────────
   contentTypeInputs: Record<string, string | string[] | number | boolean>;
   contentTypeInputsModified: boolean;
+
+  // ─── Briefing (settings.brief) ────────────────────────────
+  // Surfaces in Step 1 as the "Briefing" section. Hydrated from the
+  // contextStack on mount and from `create_deliverable` (Claw) when a
+  // briefing was passed at creation time. Edits debounce-save via PATCH.
+  brief: {
+    objective: string;
+    keyMessage: string;
+    toneDirection: string;
+    callToAction: string;
+  };
+  briefModified: boolean;
 
   // ─── SEO Pipeline ────────────────────────────────────────
   seoInput: { primaryKeyword: string; funnelStage: 'awareness' | 'consideration' | 'decision'; competitorUrls: string[] };
@@ -149,7 +164,6 @@ interface CanvasStoreState {
   setGlobalStatus: (status: GenerationStatus, errorMessage?: string) => void;
   setImageVariants: (variants: CanvasImageVariant[]) => void;
   setPublishSuggestion: (suggestion: { suggestedDate: string; reasoning: string } | null) => void;
-  toggleContextPanel: () => void;
   setFeedbackDraft: (text: string) => void;
   setFeedbackGroup: (group: string | null) => void;
   toggleContextSelector: () => void;
@@ -170,6 +184,8 @@ interface CanvasStoreState {
   setActiveStep: (stepId: string) => void;
   /** Replace the completedSteps set. Used for restoring from server-side state. */
   setCompletedSteps: (stepIds: string[]) => void;
+  /** Set inheritance info — usually called once when inheritance was applied. */
+  setInheritedFrom: (info: { id: string; title: string } | null) => void;
   setStepSummary: (stepId: string, summary: StepSummaryData) => void;
   setMediumGenerationStatus: (status: 'idle' | 'generating' | 'complete' | 'error') => void;
   setGeneratedMediumUrl: (url: string | null) => void;
@@ -187,6 +203,21 @@ interface CanvasStoreState {
   setIsTimeBound: (timeBound: boolean) => void;
   setContentTypeInput: (key: string, value: string | string[] | number | boolean) => void;
   setContentTypeInputsBulk: (inputs: Record<string, string | string[] | number | boolean>) => void;
+
+  /** Single-field briefing edit (autosaves via CanvasPage debounced PATCH). */
+  setBriefField: (
+    key: 'objective' | 'keyMessage' | 'toneDirection' | 'callToAction',
+    value: string,
+  ) => void;
+  /** Bulk hydrate briefing — used by setContextStack on first mount; sets `briefModified: false`. */
+  setBriefBulk: (
+    brief: Partial<{
+      objective: string;
+      keyMessage: string;
+      toneDirection: string;
+      callToAction: string;
+    }>,
+  ) => void;
 
   // ─── SEO actions ─────────────────────────────────────────
   setSeoInput: (input: Partial<{ primaryKeyword: string; funnelStage: 'awareness' | 'consideration' | 'decision'; competitorUrls: string[] }>) => void;
@@ -217,7 +248,6 @@ const INITIAL_STATE = {
   globalErrorMessage: null as string | null,
   imageVariants: [],
   publishSuggestion: null,
-  contextPanelCollapsed: false,
   additionalContextItems: new Map<string, SelectedContextItem>(),
   contextSelectorOpen: false,
   feedbackDraft: '',
@@ -232,6 +262,7 @@ const INITIAL_STATE = {
   activeStep: 'context',
   completedSteps: new Set<string>(),
   stepSummaries: new Map<string, StepSummaryData>(),
+  inheritedFrom: null,
 
   // Step 3
   mediumGenerationStatus: 'idle' as const,
@@ -253,6 +284,9 @@ const INITIAL_STATE = {
   // Content-type-specific inputs
   contentTypeInputs: {} as Record<string, string | string[] | number | boolean>,
   contentTypeInputsModified: false,
+
+  brief: { objective: '', keyMessage: '', toneDirection: '', callToAction: '' },
+  briefModified: false,
 
   // SEO Pipeline
   seoInput: { primaryKeyword: '', funnelStage: 'awareness' as const, competitorUrls: [] as string[] },
@@ -279,15 +313,39 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       // here so users don't re-enter SEO keyword, meta description, etc.
       //
       // Only hydrate if the user hasn't already modified them locally
-      // (contentTypeInputsModified guards against clobbering live edits).
-      const hydrated = stack.contentTypeInputs;
-      const shouldHydrate =
+      // (modified flag guards against clobbering live edits).
+      const hydratedInputs = stack.contentTypeInputs;
+      const shouldHydrateInputs =
         !state.contentTypeInputsModified &&
-        hydrated &&
-        Object.keys(hydrated).length > 0;
+        hydratedInputs &&
+        Object.keys(hydratedInputs).length > 0;
+
+      // Same pattern for the briefing — settings.brief flows through
+      // assembleCanvasContext as `stack.brief`. When Claw creates a
+      // deliverable with a brief (Path 2), this is what the user sees
+      // pre-filled in the Briefing section of Step 1.
+      const hydratedBrief = stack.brief;
+      const shouldHydrateBrief =
+        !state.briefModified &&
+        hydratedBrief &&
+        (hydratedBrief.objective ||
+          hydratedBrief.keyMessage ||
+          hydratedBrief.toneDirection ||
+          hydratedBrief.callToAction);
+
       return {
         contextStack: stack,
-        ...(shouldHydrate ? { contentTypeInputs: hydrated } : {}),
+        ...(shouldHydrateInputs ? { contentTypeInputs: hydratedInputs } : {}),
+        ...(shouldHydrateBrief
+          ? {
+              brief: {
+                objective: hydratedBrief?.objective ?? '',
+                keyMessage: hydratedBrief?.keyMessage ?? '',
+                toneDirection: hydratedBrief?.toneDirection ?? '',
+                callToAction: hydratedBrief?.callToAction ?? '',
+              },
+            }
+          : {}),
       };
     }),
 
@@ -325,9 +383,6 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
   setImageVariants: (variants) => set({ imageVariants: variants }),
 
   setPublishSuggestion: (suggestion) => set({ publishSuggestion: suggestion }),
-
-  toggleContextPanel: () =>
-    set((state) => ({ contextPanelCollapsed: !state.contextPanelCollapsed })),
 
   setFeedbackDraft: (text) => set({ feedbackDraft: text }),
 
@@ -380,6 +435,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
   setActiveStep: (stepId) => set({ activeStep: stepId }),
 
   setCompletedSteps: (stepIds) => set({ completedSteps: new Set(stepIds) }),
+  setInheritedFrom: (info) => set({ inheritedFrom: info }),
 
   setStepSummary: (stepId, summary) =>
     set((state) => {
@@ -414,6 +470,23 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
 
   setContentTypeInputsBulk: (inputs) =>
     set({ contentTypeInputs: inputs, contentTypeInputsModified: false }),
+
+  setBriefField: (key, value) =>
+    set((state) => ({
+      brief: { ...state.brief, [key]: value },
+      briefModified: true,
+    })),
+
+  setBriefBulk: (brief) =>
+    set((state) => ({
+      brief: {
+        objective: brief.objective ?? state.brief.objective,
+        keyMessage: brief.keyMessage ?? state.brief.keyMessage,
+        toneDirection: brief.toneDirection ?? state.brief.toneDirection,
+        callToAction: brief.callToAction ?? state.brief.callToAction,
+      },
+      briefModified: false,
+    })),
 
   setSeoInput: (input) =>
     set((state) => ({ seoInput: { ...state.seoInput, ...input } })),

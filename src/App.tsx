@@ -8,6 +8,7 @@ import { ActivityFeed } from './components/ActivityFeed';
 import { FloatingChatWidget } from './features/help/components/FloatingChatWidget';
 import { ClawOverlay } from './features/claw/components/ClawOverlay';
 import { useClawStore } from './stores/useClawStore';
+import { openClawWithPrompt } from './features/claw/lib/open-with-prompt';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { TooltipProvider } from './components/ui/tooltip';
 import { LazyWrapper } from './components/shared';
@@ -979,10 +980,13 @@ function AppContent() {
           breadcrumbs={breadcrumbs}
           onNavigate={handleSetActiveSection}
           onQuickContent={() => {
-            const ws = useCampaignWizardStore.getState();
-            ws.resetWizard();
-            ws.setWizardMode('content');
-            handleSetActiveSection('campaign-wizard');
+            // Open Claw + the structured Quick Content form. Same UX as the
+            // `/quick` slash command in the chat input — the form handles
+            // type / campaign / briefing in explicit fields, no AI
+            // mini-interview required.
+            const claw = useClawStore.getState();
+            claw.openClaw();
+            claw.openQuickContentForm();
           }}
         />
 

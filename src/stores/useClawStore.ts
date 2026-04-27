@@ -15,6 +15,10 @@ export type ActiveEntity = {
   type: NonNullable<ClawPageContext['entityType']>;
   id: string;
   name: string;
+  /** Only set when type === 'deliverable' — the campaign this deliverable
+   *  belongs to. Lets Claw fire create_deliverable in the same campaign
+   *  without a second question. */
+  campaignId?: string;
 };
 
 /** Navigation intent emitted by the Brand Assistant (e.g. after a create). App.tsx watches this and routes accordingly. */
@@ -53,6 +57,27 @@ export interface FeedbackFormState {
   sentiment: FeedbackSentiment;
   tags: FeedbackTag[];
   comment: string;
+}
+
+/**
+ * Quick Content form — structured alternative to the AI mini-interview.
+ * Triggered by the TopNav Quick Content button or `/quick` in chat.
+ * Requires an existing campaign — Quick Content is meant to be quick, so
+ * setting up a new campaign first lives in the regular Campaigns flow.
+ */
+export interface QuickContentFormState {
+  /** Kebab-case content type slug (e.g. "linkedin-post"). */
+  contentType: string;
+  /** Required — must reference an existing campaign in the workspace. */
+  campaignId: string | null;
+  /** Optional — defaults to a friendly form of contentType when empty. */
+  title: string;
+  /** Briefing fields — all optional, but at least one helps the user
+   *  start with usable Step 1 context in the Canvas. */
+  objective: string;
+  keyMessage: string;
+  toneDirection: string;
+  callToAction: string;
 }
 
 interface ClawStore {
@@ -149,6 +174,12 @@ interface ClawStore {
   updateFeedbackForm: (fields: Partial<FeedbackFormState>) => void;
   closeFeedbackForm: () => void;
 
+  // ── Quick Content ───────────────────────────────────────
+  quickContentForm: QuickContentFormState | null;
+  openQuickContentForm: () => void;
+  updateQuickContentForm: (fields: Partial<QuickContentFormState>) => void;
+  closeQuickContentForm: () => void;
+
   // ── Reset ────────────────────────────────────────────────
   startNewConversation: () => void;
 }
@@ -158,7 +189,7 @@ export const useClawStore = create<ClawStore>((set, get) => ({
   isOpen: false,
   viewMode: 'panel',
   openClaw: () => set({ isOpen: true, viewMode: 'panel' }),
-  closeClaw: () => set({ isOpen: false, viewMode: 'panel', bugReportForm: null, feedbackForm: null }),
+  closeClaw: () => set({ isOpen: false, viewMode: 'panel', bugReportForm: null, feedbackForm: null, quickContentForm: null }),
   toggleClaw: () => set((s) => ({ isOpen: !s.isOpen, viewMode: s.isOpen ? 'panel' : s.viewMode })),
   toggleViewMode: () => set((s) => ({ viewMode: s.viewMode === 'panel' ? 'overlay' : 'panel' })),
 
@@ -292,6 +323,30 @@ export const useClawStore = create<ClawStore>((set, get) => ({
     })),
   closeFeedbackForm: () => set({ feedbackForm: null }),
 
+  // Quick Content
+  quickContentForm: null,
+  openQuickContentForm: () =>
+    set({
+      quickContentForm: {
+        contentType: '',
+        campaignId: null,
+        title: '',
+        objective: '',
+        keyMessage: '',
+        toneDirection: '',
+        callToAction: '',
+      },
+      // Mirror the bug-/feedback-form pattern: opening Quick Content
+      // dismisses the other forms so only one is ever visible at a time.
+      bugReportForm: null,
+      feedbackForm: null,
+    }),
+  updateQuickContentForm: (fields) =>
+    set((s) => ({
+      quickContentForm: s.quickContentForm ? { ...s.quickContentForm, ...fields } : null,
+    })),
+  closeQuickContentForm: () => set({ quickContentForm: null }),
+
   // Reset
   startNewConversation: () =>
     set({
@@ -303,6 +358,7 @@ export const useClawStore = create<ClawStore>((set, get) => ({
       attachments: [],
       bugReportForm: null,
       feedbackForm: null,
+      quickContentForm: null,
       activityStatus: null,
     }),
 }));

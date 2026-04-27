@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Bell, Zap, Sparkles } from 'lucide-react';
+import { Search, Bell, Sparkles, MessageSquarePlus } from 'lucide-react';
 import { Button } from './ui/button';
 import { ShortcutHint, getModifierKey } from './ShortcutHint';
 import { BreadcrumbNavigation } from './BreadcrumbNavigation';
@@ -51,7 +51,7 @@ export function TopNavigationBar({
               onClick={onQuickContent}
               className="gap-1.5 hidden sm:flex"
             >
-              <Zap className="h-3.5 w-3.5 text-purple-500" />
+              <MessageSquarePlus className="h-3.5 w-3.5 text-teal-600" />
               <span className="hidden md:inline">Quick Content</span>
             </Button>
           )}

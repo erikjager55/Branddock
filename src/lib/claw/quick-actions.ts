@@ -3,7 +3,7 @@ import type { ClawQuickAction } from './claw.types';
 interface QuickActionContext {
   activeSection?: string;
   /** Active entity type + name when on a detail page (from useClawStore). */
-  activeEntityType?: 'brand_asset' | 'persona' | 'product' | 'competitor';
+  activeEntityType?: 'brand_asset' | 'persona' | 'product' | 'competitor' | 'deliverable' | 'campaign';
   activeEntityName?: string;
   /** Whether the user is currently in a wizard with unfilled fields. */
   hasWizardSnapshot?: boolean;

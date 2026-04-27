@@ -6,6 +6,9 @@ import { useCanvasComponents } from '../../hooks/canvas.hooks';
 import { HorizontalAccordion } from './accordion/HorizontalAccordion';
 import { CanvasContextSelector } from './CanvasContextSelector';
 import { InsertImageModal } from './InsertImageModal';
+import { InheritanceBanner } from './InheritanceBanner';
+import { CanvasHelpButton } from '../../../claw/components/CanvasHelpButton';
+import { useClawStore } from '@/stores/useClawStore';
 import { Badge, Skeleton } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import { ArrowLeft } from 'lucide-react';
@@ -30,15 +33,81 @@ const STATUS_BADGE: Record<ApprovalStatus, {
   PUBLISHED: { label: 'Published', variant: 'success' },
 };
 
+// Apply inherited settings from a previous deliverable to the current one.
+// Hydrates the store first (so UI reflects the change immediately), then
+// PATCHes the deliverable with a merged settings blob that carries the
+// inherited values plus an `inheritedFrom` marker so this code path doesn't
+// fire twice. Finally, fast-forwards the accordion to Variants.
+async function applyInheritance(
+  deliverableId: string,
+  candidate: { id: string; title: string; settings: Record<string, unknown> | null },
+  signal: AbortSignal,
+) {
+  const prev = (candidate.settings ?? {}) as Record<string, unknown>;
+  const mediumConfig = (prev.mediumConfig ?? {}) as Record<string, unknown>;
+  const contentTypeInputs = (prev.contentTypeInputs ?? {}) as Record<
+    string,
+    string | string[] | number | boolean
+  >;
+  const brief = (prev.brief ?? null) as Record<string, unknown> | null;
+
+  const store = useCanvasStore.getState();
+
+  if (Object.keys(mediumConfig).length > 0) {
+    store.setMediumConfigValues(mediumConfig);
+    store.setMediumApproved(true);
+  }
+  if (Object.keys(contentTypeInputs).length > 0) {
+    store.setContentTypeInputsBulk(contentTypeInputs);
+  }
+  store.setInheritedFrom({ id: candidate.id, title: candidate.title });
+  store.setCompletedSteps(['context', 'medium']);
+  store.setActiveStep('variants');
+
+  try {
+    await fetch(`/api/studio/${deliverableId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      signal,
+      body: JSON.stringify({
+        settings: {
+          mediumConfig,
+          contentTypeInputs,
+          brief,
+          inheritedFrom: {
+            id: candidate.id,
+            title: candidate.title,
+            appliedAt: new Date().toISOString(),
+          },
+        },
+      }),
+    });
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') return;
+    // Non-critical — user can still proceed; banner will re-offer on next load
+    // if the PATCH failed to persist the inheritedFrom marker.
+  }
+}
+
 export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPageProps) {
   const globalStatus = useCanvasStore((s) => s.globalStatus);
   const approvalStatus = useCanvasStore((s) => s.approvalStatus);
   const activeStep = useCanvasStore((s) => s.activeStep);
   const completedSteps = useCanvasStore((s) => s.completedSteps);
+  const storeContentType = useCanvasStore((s) => s.contentType);
+  const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
+  const contentTypeInputsModified = useCanvasStore((s) => s.contentTypeInputsModified);
+  const brief = useCanvasStore((s) => s.brief);
+  const briefModified = useCanvasStore((s) => s.briefModified);
 
   const { data: existingComponents, isLoading: componentsLoading } = useCanvasComponents(deliverableId);
 
   const statusConfig = STATUS_BADGE[approvalStatus];
+
+  // Title is captured locally from the detail fetch — the canvas store doesn't
+  // track it, but the Brand Assistant help button uses it for more specific
+  // contextual prompts ("Shorten 'My Q2 post' to 200 words").
+  const [deliverableTitle, setDeliverableTitle] = React.useState<string | null>(null);
 
   // Whether the store is hydrated from the server — guards against saving
   // a default activeStep before we've read the stored one.
@@ -47,6 +116,8 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
   // Set deliverable in store on mount + load approval state + load context
   useEffect(() => {
     useCanvasStore.getState().setDeliverable(deliverableId, 'canvas', campaignId);
+    // Clear stale title from a prior deliverable — the fetch below populates it.
+    setDeliverableTitle(null);
 
     const controller = new AbortController();
 
@@ -64,6 +135,18 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
             useCanvasStore.getState().setVideoProviderConfig(getDefaultVideoConfig(d.contentType));
           }
         }
+        if (typeof d.title === 'string') {
+          setDeliverableTitle(d.title);
+          // Make this deliverable Claw's active entity so chat requests like
+          // "vul de velden" or "rewrite this" resolve to THIS item, not a
+          // new campaign search. Cleared on unmount below.
+          useClawStore.getState().setActiveEntity({
+            type: 'deliverable',
+            id: deliverableId,
+            name: d.title,
+            campaignId,
+          });
+        }
         useCanvasStore.getState().setApprovalState({
           approvalStatus: (d.approvalStatus ?? 'DRAFT') as ApprovalStatus,
           approvalNote: d.approvalNote ?? null,
@@ -71,6 +154,22 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           approvedAt: d.approvedAt ?? null,
           publishedAt: d.publishedAt ?? null,
         });
+
+        // Surface the inheritance banner on any deliverable whose settings
+        // already carry an inheritedFrom marker — set by the duplicate
+        // endpoint (Sprint B · Step 1) or by a previous auto-inherit pass
+        // (Sprint A · Step 1, after re-opening). The /context endpoint
+        // won't return a fresh candidate in this case, so without this
+        // hydration the banner would stay hidden.
+        const persistedInheritedFrom = d.settings?.inheritedFrom as
+          | { id: string; title: string }
+          | undefined;
+        if (persistedInheritedFrom?.id && persistedInheritedFrom?.title) {
+          useCanvasStore.getState().setInheritedFrom({
+            id: persistedInheritedFrom.id,
+            title: persistedInheritedFrom.title,
+          });
+        }
         // Sync scheduledPublishDate from DB → Canvas store (calendar may have set it)
         if (d.scheduledPublishDate) {
           const sd = new Date(d.scheduledPublishDate);
@@ -111,6 +210,17 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
         if (!useCanvasStore.getState().contextStack) {
           useCanvasStore.getState().setContextStack(data.contextStack);
         }
+
+        // Auto-inherit from previous completed deliverable (Sprint A · Step 1).
+        // The server detects a candidate only for fresh NOT_STARTED deliverables
+        // with no generated content, no prior inheritance, and a prior completed
+        // sibling of the same type. Apply once, persist, fast-forward to Variants.
+        const candidate = data.inheritanceCandidate as
+          | { id: string; title: string; settings: Record<string, unknown> | null }
+          | null;
+        if (candidate && !controller.signal.aborted) {
+          applyInheritance(deliverableId, candidate, controller.signal);
+        }
       })
       .catch((err) => {
         if ((err as Error).name === 'AbortError') return;
@@ -120,8 +230,11 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
     return () => {
       controller.abort();
       useCanvasStore.getState().reset();
+      // Clear Claw's active entity — leaving it set after navigating away
+      // would make chat assume the user is still on this deliverable.
+      useClawStore.getState().setActiveEntity(null);
     };
-  }, [deliverableId]);
+  }, [deliverableId, campaignId]);
 
   // Load existing components into variant groups on fetch (only if store is empty).
   // If components exist, we also auto-advance to step 2 so the user lands on
@@ -230,6 +343,58 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
     return () => controller.abort();
   }, [activeStep, completedSteps, deliverableId]);
 
+  // Persist contentTypeInputs (Step 1 "Review Context" form values) back to
+  // the deliverable settings whenever the user edits them. Without this the
+  // store state vanishes on Canvas unmount and reopening shows empty fields,
+  // since `assembleCanvasContext` reads `settings.contentTypeInputs` from
+  // the DB. Debounced 500ms so consecutive keystrokes batch into one PATCH;
+  // gated on `contentTypeInputsModified` so freshly hydrated values (from
+  // inheritance / contextStack) don't echo back to the server.
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    if (!contentTypeInputsModified) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`/api/studio/${deliverableId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({ settings: { contentTypeInputs } }),
+      }).catch((err) => {
+        if ((err as Error).name === 'AbortError') return;
+        // Non-critical — next edit will retry
+      });
+    }, 500);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [contentTypeInputs, contentTypeInputsModified, deliverableId]);
+
+  // Same autosave pattern for the briefing (objective / keyMessage / tone /
+  // CTA). Surfaces in Step 1 BriefSection. Persists into settings.brief so
+  // Claw's create_deliverable briefing + manual edits survive a Canvas
+  // close/reopen and feed forward into the generation prompts.
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    if (!briefModified) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`/api/studio/${deliverableId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({ settings: { brief } }),
+      }).catch((err) => {
+        if ((err as Error).name === 'AbortError') return;
+      });
+    }, 500);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [brief, briefModified, deliverableId]);
+
   const handleBack = () => {
     onNavigate('campaign-detail');
   };
@@ -296,6 +461,9 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
         )}
       </div>
 
+      {/* Inheritance banner — shown when settings were auto-inherited */}
+      <InheritanceBanner />
+
       {/* Accordion layout */}
       <div className={`flex-1 ${STUDIO.canvas.bg} overflow-hidden`}>
         <HorizontalAccordion deliverableId={deliverableId} />
@@ -306,6 +474,12 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
 
       {/* Insert image modal (Step 3 hero image picker) */}
       <InsertImageModal />
+
+      {/* Sprint B · Step 3.C — floating Brand Assistant help */}
+      <CanvasHelpButton
+        contentType={storeContentType}
+        deliverableTitle={deliverableTitle}
+      />
     </div>
   );
 }

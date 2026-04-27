@@ -173,6 +173,51 @@ export async function deleteDeliverable(campaignId: string, deliverableId: strin
   if (!res.ok) throw new Error('Failed to delete deliverable');
 }
 
+export async function duplicateDeliverable(
+  campaignId: string,
+  deliverableId: string,
+): Promise<DeliverableResponse> {
+  const res = await fetch(
+    `/api/campaigns/${campaignId}/deliverables/${deliverableId}/duplicate`,
+    { method: 'POST' },
+  );
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? 'Failed to duplicate deliverable');
+  }
+  return res.json();
+}
+
+/** Sprint B · Step 2 — create N deliverables in one call with optional source-inheritance. */
+export interface BulkCreateDeliverablesBody {
+  contentType: string;
+  quantity: number;
+  sourceDeliverableId?: string;
+  briefGuidance?: string;
+}
+export interface BulkCreateDeliverablesResponse {
+  deliverables: Array<{ id: string; title: string; contentType: string }>;
+  count: number;
+}
+export async function bulkCreateDeliverables(
+  campaignId: string,
+  body: BulkCreateDeliverablesBody,
+): Promise<BulkCreateDeliverablesResponse> {
+  const res = await fetch(
+    `/api/campaigns/${campaignId}/bulk-create-deliverables`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error ?? 'Failed to create deliverables');
+  }
+  return res.json();
+}
+
 // ─── Strategy ──────────────────────────────────────────────
 
 export async function fetchStrategy(campaignId: string): Promise<StrategyResponse> {

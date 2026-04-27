@@ -70,7 +70,7 @@ export const INPUT_CATEGORY_CONFIG: Record<
 
 // ─── Shared field builders ─────────────────────────────────
 
-function seoKeyword(): ContentTypeInputField {
+function seoKeyword(overrides: Partial<ContentTypeInputField> = {}): ContentTypeInputField {
   return {
     key: "seoKeyword",
     label: "SEO Keyword",
@@ -81,6 +81,7 @@ function seoKeyword(): ContentTypeInputField {
     helpText: "Primary keyword to target for search ranking",
     aiDerivable: true,
     aiHint: "Derive from campaign goal + persona pain points",
+    ...overrides,
   };
 }
 
@@ -404,7 +405,9 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "linkedin-article": [
-    seoKeyword(),
+    // LinkedIn article is a social long-form post — keyword targeting is
+    // helpful but not structural. Marked optional so users can skip it.
+    seoKeyword({ required: false, helpText: 'Optional — helps the AI focus the angle. Leave blank if you have no target keyword.' }),
 
     {
       key: "authorPerspective",
@@ -1795,45 +1798,6 @@ export function getRequiredInputs(
   typeId: string
 ): ContentTypeInputField[] {
   return getContentTypeInputs(typeId).filter((f) => f.required);
-}
-
-/**
- * Essential fields for the Add Content modal (max 1-2 per type).
- * Only fields that make the content item unique and can't be AI-derived.
- * Everything else is filled in later via the Canvas ContentBriefCard.
- */
-const CREATION_ESSENTIAL_KEYS: Record<string, string[]> = {
-  "blog-post": ["seoKeyword"],
-  "pillar-page": ["seoKeyword"],
-  "case-study": ["customerName"],
-  "linkedin-event": ["eventName", "eventDate"],
-  "linkedin-poll": ["pollQuestion"],
-  "press-release": ["newsFact"],
-  "career-page": ["jobTitle"],
-  "job-ad-copy": ["jobTitle"],
-  "employee-story": ["employeeName"],
-  "proposal-template": ["clientName"],
-  "impact-report": ["reportingPeriod"],
-  "landing-page": ["conversionGoal"],
-  "product-page": ["seoKeyword"],
-  "faq-page": ["seoKeyword"],
-  "comparison-page": ["seoKeyword"],
-  "testimonial-video": ["customerName"],
-};
-
-/**
- * Get only creation-essential fields for the Add Content modal.
- * Returns max 1-2 fields per type. Returns empty for types where
- * all fields can be filled later in the Canvas.
- */
-export function getCreationEssentialInputs(
-  typeId: string
-): ContentTypeInputField[] {
-  const resolved = CONTENT_TYPE_ALIASES[typeId] ?? typeId;
-  const essentialKeys = CREATION_ESSENTIAL_KEYS[resolved];
-  if (!essentialKeys) return [];
-  const allFields = getContentTypeInputs(typeId);
-  return allFields.filter((f) => essentialKeys.includes(f.key));
 }
 
 /**

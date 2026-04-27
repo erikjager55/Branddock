@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-import { ExternalLink, Heart, CalendarDays, Trash2 } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { ExternalLink, Heart, CalendarDays, Trash2, Copy } from "lucide-react";
 import { Button } from "@/components/shared";
 import { deriveTrafficLight, TRAFFIC_LIGHT, getPhaseConfig, InlineRenameField } from "../shared/calendar-cards";
 import { formatContentType } from "../../lib/format-content-type";
 import { DeleteConfirmModal } from "../shared/DeleteConfirmModal";
 import { useContentLibraryStore } from "../../stores/useContentLibraryStore";
 import { QualityScoreBadge } from "./QualityScoreBadge";
+import { QuickPublishMenu } from "./QuickPublishMenu";
+import { sameTimeAsLast } from "../../lib/publish-scheduler";
 import type { ContentLibraryItem } from "../../types/content-library.types";
 
 // ─── Types ────────────────────────────────────────────────
@@ -18,6 +20,10 @@ interface ContentCardGridProps {
   onToggleFavorite: (id: string) => void;
   onDelete?: (deliverableId: string, campaignId: string) => void;
   onRename?: (deliverableId: string, campaignId: string, newTitle: string) => void;
+  /** Duplicate the deliverable and open the copy in Canvas (Sprint B · Step 1). */
+  onDuplicate?: (deliverableId: string, campaignId: string) => void;
+  /** Set of deliverable IDs currently being duplicated — disables the button. */
+  duplicatingIds?: Set<string>;
 }
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -39,8 +45,14 @@ export function ContentCardGrid({
   onToggleFavorite,
   onDelete,
   onRename,
+  onDuplicate,
+  duplicatingIds,
 }: ContentCardGridProps) {
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; campaignId: string; title: string } | null>(null);
+
+  // Precomputed once per render — the "Schedule same as last" action
+  // reads this to propose a sensible default; null when nothing is scheduled.
+  const sameAsLastDate = useMemo(() => sameTimeAsLast(items), [items]);
 
   return (
     <>
@@ -75,7 +87,7 @@ export function ContentCardGrid({
             />
 
             <div className="flex-1 flex flex-col">
-              <div className="p-4 flex flex-col gap-3 flex-1">
+              <div className="pl-4 pr-5 py-4 flex flex-col gap-3 flex-1">
                 {/* Row 1: campaign name + favorite + delete */}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500 truncate min-w-0">{item.campaignName}</span>
@@ -97,6 +109,17 @@ export function ContentCardGrid({
                         }`}
                       />
                     </button>
+                    {onDuplicate && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onDuplicate(item.id, item.campaignId); }}
+                        disabled={duplicatingIds?.has(item.id)}
+                        className="p-1 rounded hover:bg-gray-100 transition-colors disabled:opacity-50"
+                        title="Duplicate"
+                      >
+                        <Copy className="w-4 h-4 text-gray-400 hover:text-gray-700" />
+                      </button>
+                    )}
                     {onDelete && (
                       <button
                         type="button"
@@ -176,17 +199,31 @@ export function ContentCardGrid({
                 </div>
               </div>
 
-              {/* Footer action */}
-              <div className="px-4 pb-4">
+              {/* Footer actions — Open in Canvas uses an outline button so
+                  it doesn't fight the campaign brand colors of the card stripe.
+                  When the QuickPublishMenu is shown, the Canvas button shrinks
+                  to make room and the menu sits on its right. Right padding is
+                  pr-5 to match the content area above (slightly more breathing
+                  room on the right than the stripe-side left). */}
+              <div className="pl-4 pr-5 pb-4 flex items-center gap-2">
                 <Button
-                  variant="primary"
+                  variant="secondary"
                   size="sm"
                   icon={ExternalLink}
                   onClick={() => onOpenInStudio(item.id, item.campaignId)}
                   fullWidth
+                  className="!bg-white !text-gray-900 !border-gray-900 hover:!bg-gray-50"
                 >
                   Open in Canvas
                 </Button>
+                {item.hasContent && !item.isPublishReady && (
+                  <QuickPublishMenu
+                    deliverableId={item.id}
+                    campaignId={item.campaignId}
+                    sameAsLastDate={sameAsLastDate}
+                    variant="button"
+                  />
+                )}
               </div>
             </div>
           </div>

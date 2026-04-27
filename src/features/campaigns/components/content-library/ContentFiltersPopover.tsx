@@ -584,7 +584,10 @@ function CampaignList() {
   const ref = useRef<HTMLDivElement>(null);
   const { data: campaignsData } = useCampaigns();
 
-  const campaigns = useMemo(() => {
+  // Full list of campaigns visible to this user — used for both the dropdown
+  // search filter AND for pruning stale selections. Splitting it out means
+  // the prune logic isn't fooled by an in-progress search query.
+  const allCampaigns = useMemo(() => {
     // API returns { campaigns: [...], stats: {...} } — unwrap defensively.
     const raw = campaignsData as
       | { campaigns?: unknown[]; items?: unknown[] }
@@ -593,13 +596,20 @@ function CampaignList() {
     const list = Array.isArray(raw)
       ? raw
       : raw?.campaigns ?? raw?.items ?? [];
-    return (list as Array<{ id: string; title?: string; name?: string }>)
-      .map((c) => ({ id: c.id, name: c.title ?? c.name ?? "Untitled" }))
-      .filter((c) => {
-        if (!search.trim()) return true;
-        return c.name.toLowerCase().includes(search.toLowerCase());
-      });
-  }, [campaignsData, search]);
+    return (list as Array<{ id: string; title?: string; name?: string }>).map(
+      (c) => ({ id: c.id, name: c.title ?? c.name ?? "Untitled" }),
+    );
+  }, [campaignsData]);
+
+  const campaigns = useMemo(() => {
+    if (!search.trim()) return allCampaigns;
+    const q = search.toLowerCase();
+    return allCampaigns.filter((c) => c.name.toLowerCase().includes(q));
+  }, [allCampaigns, search]);
+
+  // Stale-ID pruning runs at the page level (ContentLibraryPage) so it
+  // self-heals even when the dropdown is closed. CampaignList just
+  // renders whatever survives that pruning.
 
   // Close on outside click
   useEffect(() => {

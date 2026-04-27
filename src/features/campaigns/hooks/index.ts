@@ -27,7 +27,15 @@ import {
   fetchDrafts,
   fetchDraftDetail,
   archiveDraft,
+  duplicateDeliverable,
+  bulkCreateDeliverables,
 } from '../api/campaigns.api';
+import type {
+  BulkCreateDeliverablesBody,
+  BulkCreateDeliverablesResponse,
+} from '../api/campaigns.api';
+import { updateApprovalStatus } from '../api/canvas.api';
+import type { ApprovalResponse } from '../types/canvas.types';
 
 // ─── Query Keys ────────────────────────────────────────────
 
@@ -421,6 +429,75 @@ export function useToggleContentFavorite(): UseMutationResult<
     mutationFn: toggleContentFavorite,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: contentLibraryKeys.all });
+    },
+  });
+}
+
+/**
+ * Duplicate a deliverable (Sprint B · Step 1). Accepts `campaignId` per-call
+ * so a single hook instance can handle items from multiple campaigns (e.g.
+ * the cross-campaign Content Library list). Server returns the new deliverable;
+ * onSuccess the caller typically navigates to its Canvas where the
+ * inheritedFrom banner surfaces the source of the copy.
+ */
+export function useDuplicateDeliverable(): UseMutationResult<
+  DeliverableResponse,
+  Error,
+  { campaignId: string; deliverableId: string }
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ campaignId, deliverableId }) =>
+      duplicateDeliverable(campaignId, deliverableId),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: campaignKeys.deliverables(variables.campaignId) });
+      qc.invalidateQueries({ queryKey: campaignKeys.detail(variables.campaignId) });
+      qc.invalidateQueries({ queryKey: contentLibraryKeys.all });
+    },
+  });
+}
+
+/**
+ * Sprint B · Step 2 — bulk-create N deliverables in one call, optionally
+ * inheriting settings from a source. Returned IDs are handed to the
+ * existing `useBulkGenerate` hook to stream parallel content generation.
+ */
+export function useBulkCreateDeliverables(campaignId: string): UseMutationResult<
+  BulkCreateDeliverablesResponse,
+  Error,
+  BulkCreateDeliverablesBody
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: BulkCreateDeliverablesBody) => bulkCreateDeliverables(campaignId, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: campaignKeys.deliverables(campaignId) });
+      qc.invalidateQueries({ queryKey: campaignKeys.detail(campaignId) });
+      qc.invalidateQueries({ queryKey: contentLibraryKeys.all });
+    },
+  });
+}
+
+/**
+ * Approve a deliverable directly from the Content Library quick-publish menu —
+ * wraps the studio approval endpoint and invalidates content-library + campaign
+ * caches so the traffic-light pill flips to "Ready" within one render.
+ * `campaignId` is passed for cache invalidation only; the endpoint is keyed
+ * by deliverableId.
+ */
+export function useApproveDeliverable(): UseMutationResult<
+  ApprovalResponse,
+  Error,
+  { deliverableId: string; campaignId: string; note?: string }
+> {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ deliverableId, note }) =>
+      updateApprovalStatus(deliverableId, 'APPROVED', note),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: contentLibraryKeys.all });
+      qc.invalidateQueries({ queryKey: campaignKeys.detail(variables.campaignId) });
+      qc.invalidateQueries({ queryKey: campaignKeys.deliverables(variables.campaignId) });
     },
   });
 }

@@ -6,6 +6,7 @@ import { useClawStore } from '@/stores/useClawStore';
 import { MutationConfirmCard } from './MutationConfirmCard';
 import { BugReportForm } from './BugReportForm';
 import { FeedbackForm } from './FeedbackForm';
+import { QuickContentForm } from './QuickContentForm';
 import { MarkdownContent } from './MarkdownContent';
 import { getQuickActions } from '@/lib/claw/quick-actions';
 import type { ClawMessage, ClawQuickAction } from '@/lib/claw/claw.types';
@@ -13,7 +14,7 @@ import type { ClawMessage, ClawQuickAction } from '@/lib/claw/claw.types';
 export function ChatArea() {
   const {
     messages, streamingText, isStreaming, setInputText, pendingMutation,
-    bugReportForm, feedbackForm, activityStatus,
+    bugReportForm, feedbackForm, quickContentForm, activityStatus,
     currentPage, activeEntity, wizardSnapshot,
   } = useClawStore();
 
@@ -86,6 +87,9 @@ export function ChatArea() {
 
         {/* Feedback form */}
         {feedbackForm && <FeedbackForm />}
+
+        {/* Quick content form — opened by `/quick` or the TopNav button */}
+        {quickContentForm && <QuickContentForm />}
 
         {/* Quick action follow-ups after last assistant message */}
         {!isStreaming && !pendingMutation && messages.length > 0 && messages[messages.length - 1]?.role === 'assistant' && quickActions.length > 0 && (

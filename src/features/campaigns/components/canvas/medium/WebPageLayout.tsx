@@ -5,6 +5,7 @@ import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { updateComponentContent } from '../../../api/canvas.api';
 import { SimpleMarkdown } from '../previews/SimpleMarkdown';
+import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import {
   CheckCircle2,
@@ -101,8 +102,10 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
     (e) => e.group.toLowerCase() !== 'title' && !e.group.toLowerCase().includes('meta'),
   );
 
-  const titleText = titleEntry?.content ?? null;
-  const metaText = metaEntry?.content ?? null;
+  // Plain-text groups: strip stray markdown the AI sometimes emits (`# Title`,
+  // `**bold**`) before rendering — see strip-markdown.ts.
+  const titleText = titleEntry?.content ? stripMarkdownForPlainText(titleEntry.content) : null;
+  const metaText = metaEntry?.content ? stripMarkdownForPlainText(metaEntry.content) : null;
 
   // ─── Hero Section (responds to heroStyle) ─────────────────
 
@@ -250,14 +253,14 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
           <EditableArticleSection
             entry={titleEntry}
             deliverableId={deliverableId}
-            render={(text) => <h1 className="text-2xl font-bold text-gray-900 leading-tight">{text}</h1>}
+            render={(text) => <h1 className="text-2xl font-bold text-gray-900 leading-tight">{stripMarkdownForPlainText(text)}</h1>}
           />
         )}
         {showTitleInBody && metaEntry && (
           <EditableArticleSection
             entry={metaEntry}
             deliverableId={deliverableId}
-            render={(text) => <p className="text-sm text-gray-500 italic">{text}</p>}
+            render={(text) => <p className="text-sm text-gray-500 italic">{stripMarkdownForPlainText(text)}</p>}
           />
         )}
         {bodyEntries.map((entry) => (
@@ -305,20 +308,20 @@ export function WebPageLayout({ children, onAdvance, deliverableId }: WebPageLay
             <EditableArticleSection
               entry={titleEntry}
               deliverableId={deliverableId}
-              render={(text) => <h1 className="text-3xl font-bold text-gray-900 leading-tight mb-2">{text}</h1>}
+              render={(text) => <h1 className="text-3xl font-bold text-gray-900 leading-tight mb-2">{stripMarkdownForPlainText(text)}</h1>}
             />
           )}
           {showTitleInBody && metaEntry && (
             <EditableArticleSection
               entry={metaEntry}
               deliverableId={deliverableId}
-              render={(text) => <p className="text-base text-gray-500 italic mb-6">{text}</p>}
+              render={(text) => <p className="text-base text-gray-500 italic mb-6">{stripMarkdownForPlainText(text)}</p>}
             />
           )}
           {bodyEntries.length > 0 && (
             <div className="border-l-4 border-teal-500 pl-4 mb-6 py-1">
               <p className="text-lg text-gray-700 italic leading-relaxed">
-                {(bodyEntries[0].content ?? '').split('.')[0]}.
+                {stripMarkdownForPlainText((bodyEntries[0].content ?? '').split('.')[0])}.
               </p>
             </div>
           )}

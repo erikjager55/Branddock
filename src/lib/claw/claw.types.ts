@@ -167,10 +167,13 @@ export interface ClawPageContext {
   /** Sidebar section ID, e.g. 'brand-asset-detail', 'personas', 'dashboard'. */
   page: string;
   /** Active entity type when the user is viewing a detail page. */
-  entityType?: 'brand_asset' | 'persona' | 'product' | 'competitor';
+  entityType?: 'brand_asset' | 'persona' | 'product' | 'competitor' | 'deliverable' | 'campaign';
   entityId?: string;
   /** Display name shown to the AI for readable references. */
   entityName?: string;
+  /** For deliverables — the campaign this deliverable belongs to. Lets Claw
+   *  call create_deliverable / update_deliverable without re-asking. */
+  campaignId?: string;
   /**
    * Client-side snapshot of an in-progress wizard or multi-step form that
    * has no DB representation yet (e.g. the Campaign Wizard before launch).
