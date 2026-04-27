@@ -297,12 +297,548 @@ function socialContentStyleFields(): ContentTypeInputField[] {
   ];
 }
 
+// ── Long-form (blog / pillar / whitepaper / case-study / article / FAQ) ──
+
+function longFormTone(): ContentTypeInputField {
+  return {
+    key: "tone",
+    label: "Tone of Voice",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "authoritative", label: "Authoritative — expert, definitive" },
+      { value: "conversational", label: "Conversational — friendly, peer-to-peer" },
+      { value: "analytical", label: "Analytical — data-driven, neutral" },
+      { value: "inspirational", label: "Inspirational — vision-driven, motivating" },
+      { value: "journalistic", label: "Journalistic — fact-first, investigative" },
+    ],
+    helpText: "Voice the article should adopt",
+    aiDerivable: true,
+  };
+}
+
+function articleStructure(): ContentTypeInputField {
+  return {
+    key: "articleStructure",
+    label: "Article Structure",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "deep-dive", label: "Deep Dive — single topic, in depth" },
+      { value: "listicle", label: "Listicle — numbered list of points" },
+      { value: "how-to", label: "How-to Guide — step-by-step instructions" },
+      { value: "explainer", label: "Explainer — break down a complex concept" },
+      { value: "comparison", label: "Comparison — compare options or approaches" },
+      { value: "narrative", label: "Narrative — story-driven arc" },
+    ],
+    helpText: "How the article is structured",
+    aiDerivable: true,
+  };
+}
+
+function readingLevel(): ContentTypeInputField {
+  return {
+    key: "readingLevel",
+    label: "Reading Level (1–5)",
+    category: "content-style",
+    type: "number",
+    placeholder: "3",
+    helpText: "1 = beginner / general audience · 5 = expert / technical",
+    aiDerivable: true,
+  };
+}
+
+function includeFaq(): ContentTypeInputField {
+  return {
+    key: "includeFaq",
+    label: "Include FAQ Section",
+    category: "engagement",
+    type: "boolean",
+    helpText: "Generate a FAQ block at the end — useful for SEO",
+    aiDerivable: true,
+  };
+}
+
+function includeQuotes(): ContentTypeInputField {
+  return {
+    key: "includeQuotes",
+    label: "Include Expert Quotes / Testimonials",
+    category: "engagement",
+    type: "boolean",
+    helpText: "Insert placeholder quote markers for later fill-in",
+  };
+}
+
+function internalLinking(): ContentTypeInputField {
+  return {
+    key: "internalLinking",
+    label: "Internal Linking",
+    category: "engagement",
+    type: "select",
+    options: [
+      { value: "subtle", label: "Subtle — 1-2 contextual links" },
+      { value: "moderate", label: "Moderate — 3-5 links across sections" },
+      { value: "aggressive", label: "Aggressive — 6+ links for topic cluster" },
+      { value: "none", label: "None — no internal link markers" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function longFormSeoFocus(): ContentTypeInputField {
+  return {
+    key: "seoFocus",
+    label: "SEO Focus",
+    category: "engagement",
+    type: "boolean",
+    helpText: "Optimize headings, meta, and keyword density for search",
+    aiDerivable: true,
+  };
+}
+
+function longFormContentStyleFields(): ContentTypeInputField[] {
+  return [
+    longFormTone(),
+    articleStructure(),
+    readingLevel(),
+    includeFaq(),
+    includeQuotes(),
+    internalLinking(),
+    longFormSeoFocus(),
+  ];
+}
+
+// ── Sales (one-pager / deck / proposal / product description) ──
+
+function salesTone(): ContentTypeInputField {
+  return {
+    key: "tone",
+    label: "Tone of Voice",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "consultative", label: "Consultative — advisor approach" },
+      { value: "direct", label: "Direct — clear and assertive" },
+      { value: "premium", label: "Premium — sophisticated, high-end" },
+      { value: "friendly", label: "Friendly — warm and approachable" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function salesAngle(): ContentTypeInputField {
+  return {
+    key: "salesAngle",
+    label: "Sales Angle",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "problem-solution", label: "Problem → Solution — pain-led" },
+      { value: "benefit-led", label: "Benefit-led — lead with outcomes" },
+      { value: "feature-focused", label: "Feature-focused — capability breakdown" },
+      { value: "social-proof", label: "Social Proof — customer wins first" },
+      { value: "competitive", label: "Competitive — differentiate vs alternatives" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function proofPointDensity(): ContentTypeInputField {
+  return {
+    key: "proofPointDensity",
+    label: "Proof-point Density (1–5)",
+    category: "engagement",
+    type: "number",
+    placeholder: "3",
+    helpText: "1 = minimal · 5 = quote/stat after each section",
+  };
+}
+
+function includePricing(): ContentTypeInputField {
+  return {
+    key: "includePricing",
+    label: "Include Pricing Section",
+    category: "engagement",
+    type: "boolean",
+    helpText: "Placeholder only — leave off if pricing is custom",
+  };
+}
+
+function salesCtaStyle(): ContentTypeInputField {
+  return {
+    key: "ctaStyle",
+    label: "Call to Action",
+    category: "engagement",
+    type: "select",
+    options: [
+      { value: "demo", label: "Request a Demo" },
+      { value: "meeting", label: "Book a Meeting" },
+      { value: "trial", label: "Start Free Trial" },
+      { value: "contact-sales", label: "Contact Sales" },
+      { value: "custom", label: "Custom CTA" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function salesContentStyleFields(): ContentTypeInputField[] {
+  return [salesTone(), salesAngle(), proofPointDensity(), includePricing(), salesCtaStyle()];
+}
+
+// ── PR / HR / Comms ──
+
+function prTone(): ContentTypeInputField {
+  return {
+    key: "tone",
+    label: "Tone of Voice",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "neutral-journalistic", label: "Neutral / Journalistic — press-release style" },
+      { value: "official", label: "Official — corporate formal" },
+      { value: "warm-personal", label: "Warm & Personal — HR / culture stories" },
+      { value: "advocacy", label: "Advocacy — mission-driven, public-facing" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function prStructure(): ContentTypeInputField {
+  return {
+    key: "structure",
+    label: "Structure",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "inverted-pyramid", label: "Inverted Pyramid — lead first" },
+      { value: "chronological", label: "Chronological — timeline / story arc" },
+      { value: "profile", label: "Profile — person-centric" },
+      { value: "impact-report", label: "Impact Report — metrics + narrative" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function quoteCount(): ContentTypeInputField {
+  return {
+    key: "quoteCount",
+    label: "Embedded Quotes (0–4)",
+    category: "engagement",
+    type: "number",
+    placeholder: "2",
+    helpText: "Number of quote placeholders to generate",
+  };
+}
+
+function includeBoilerplate(): ContentTypeInputField {
+  return {
+    key: "includeBoilerplate",
+    label: "Include Boilerplate",
+    category: "engagement",
+    type: "boolean",
+    helpText: 'Standard "About [Brand]" block at the end',
+  };
+}
+
+function includeContactBlock(): ContentTypeInputField {
+  return {
+    key: "includeContactBlock",
+    label: "Include Press Contact",
+    category: "engagement",
+    type: "boolean",
+    helpText: "Name / email / phone placeholders for media",
+  };
+}
+
+function hasEmbargo(): ContentTypeInputField {
+  return {
+    key: "hasEmbargo",
+    label: "Under Embargo",
+    category: "engagement",
+    type: "boolean",
+    helpText: 'Add "EMBARGOED UNTIL [DATE]" header to the release',
+  };
+}
+
+function prContentStyleFields(): ContentTypeInputField[] {
+  return [prTone(), prStructure(), quoteCount(), includeBoilerplate(), includeContactBlock(), hasEmbargo()];
+}
+
+// ── Email ──
+
+function ctaPlacement(): ContentTypeInputField {
+  return {
+    key: "ctaPlacement",
+    label: "CTA Placement",
+    category: "engagement",
+    type: "select",
+    options: [
+      { value: "above-fold", label: "Above the Fold" },
+      { value: "bottom", label: "Bottom" },
+      { value: "multiple", label: "Multiple CTAs" },
+      { value: "inline", label: "Inline" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function previewTextLength(): ContentTypeInputField {
+  return {
+    key: "previewTextLength",
+    label: "Preview Text Length (chars)",
+    category: "engagement",
+    type: "number",
+    placeholder: "90",
+    helpText: "Characters visible in email client preview (30–150)",
+  };
+}
+
+function personalize(): ContentTypeInputField {
+  return {
+    key: "personalize",
+    label: "Personalization",
+    category: "engagement",
+    type: "boolean",
+    helpText: "Use recipient name and dynamic content",
+  };
+}
+
+function emailContentStyleFields(): ContentTypeInputField[] {
+  return [ctaPlacement(), previewTextLength(), personalize()];
+}
+
+// ── Carousel ──
+
+function carouselVisualStyle(): ContentTypeInputField {
+  return {
+    key: "visualStyle",
+    label: "Visual Theme",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "clean-minimal", label: "Clean & Minimal" },
+      { value: "bold-colorful", label: "Bold & Colorful" },
+      { value: "photo-centric", label: "Photo-Centric" },
+      { value: "data-driven", label: "Data-Driven" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function transitionStyle(): ContentTypeInputField {
+  return {
+    key: "transitionStyle",
+    label: "Transition Style",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "continuous", label: "Continuous — content flows across slides" },
+      { value: "standalone", label: "Standalone — each slide independent" },
+      { value: "story-arc", label: "Story Arc — build toward a conclusion" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function includeCtaSlide(): ContentTypeInputField {
+  return {
+    key: "includeCtaSlide",
+    label: "Include CTA Slide",
+    category: "engagement",
+    type: "boolean",
+    helpText: "Final slide is a dedicated call-to-action",
+  };
+}
+
+function carouselContentStyleFields(): ContentTypeInputField[] {
+  return [carouselVisualStyle(), transitionStyle(), includeCtaSlide()];
+}
+
+// ── Podcast ──
+
+function episodeFormat(): ContentTypeInputField {
+  return {
+    key: "episodeFormat",
+    label: "Episode Format",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "solo", label: "Solo" },
+      { value: "interview", label: "Interview" },
+      { value: "panel", label: "Panel" },
+      { value: "narrative", label: "Narrative" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function segmentCount(): ContentTypeInputField {
+  return {
+    key: "segmentCount",
+    label: "Segments (1–8)",
+    category: "content-style",
+    type: "number",
+    placeholder: "3",
+    helpText: "Number of distinct segments with transitions",
+  };
+}
+
+function introStyle(): ContentTypeInputField {
+  return {
+    key: "introStyle",
+    label: "Intro Style",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "cold-open", label: "Cold Open — jump straight in" },
+      { value: "teaser", label: "Teaser — preview key takeaways" },
+      { value: "music-intro", label: "Music Intro — theme music + host intro" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function includeShowNotes(): ContentTypeInputField {
+  return {
+    key: "includeShowNotes",
+    label: "Generate Show Notes",
+    category: "engagement",
+    type: "boolean",
+  };
+}
+
+function includeTranscript(): ContentTypeInputField {
+  return {
+    key: "includeTranscript",
+    label: "Generate Transcript",
+    category: "engagement",
+    type: "boolean",
+  };
+}
+
+function podcastContentStyleFields(): ContentTypeInputField[] {
+  return [episodeFormat(), segmentCount(), introStyle(), includeShowNotes(), includeTranscript()];
+}
+
+// ── Advertising ──
+
+function adVisualStyle(): ContentTypeInputField {
+  return {
+    key: "visualStyle",
+    label: "Visual Style",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "product-focused", label: "Product Focused" },
+      { value: "lifestyle", label: "Lifestyle" },
+      { value: "testimonial", label: "Testimonial" },
+      { value: "data-stat", label: "Data / Statistic" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function adCtaType(): ContentTypeInputField {
+  return {
+    key: "ctaType",
+    label: "CTA Type",
+    category: "engagement",
+    type: "select",
+    options: [
+      { value: "learn-more", label: "Learn More" },
+      { value: "sign-up", label: "Sign Up" },
+      { value: "shop-now", label: "Shop Now" },
+      { value: "contact-us", label: "Contact Us" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function urgencyLevel(): ContentTypeInputField {
+  return {
+    key: "urgencyLevel",
+    label: "Urgency Level (1–5)",
+    category: "engagement",
+    type: "number",
+    placeholder: "2",
+    helpText: "1 = evergreen, 5 = high urgency / scarcity",
+  };
+}
+
+function socialProof(): ContentTypeInputField {
+  return {
+    key: "socialProof",
+    label: "Include Social Proof",
+    category: "engagement",
+    type: "boolean",
+    helpText: "Add testimonial or stat to ad copy",
+  };
+}
+
+function adContentStyleFields(): ContentTypeInputField[] {
+  return [adVisualStyle(), adCtaType(), urgencyLevel(), socialProof()];
+}
+
+// ── Video ──
+
+function footageType(): ContentTypeInputField {
+  return {
+    key: "footageType",
+    label: "Footage Type",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "real-person", label: "Real Person" },
+      { value: "stock", label: "Stock Footage" },
+      { value: "animation", label: "Animation" },
+      { value: "mixed", label: "Mixed" },
+    ],
+    aiDerivable: true,
+  };
+}
+
+function textOverlay(): ContentTypeInputField {
+  return {
+    key: "textOverlay",
+    label: "Text Overlay",
+    category: "content-style",
+    type: "select",
+    options: [
+      { value: "bold-headlines", label: "Bold Headlines" },
+      { value: "minimal", label: "Minimal" },
+      { value: "dynamic-captions", label: "Dynamic Captions" },
+    ],
+  };
+}
+
+function videoContentStyleFields(): ContentTypeInputField[] {
+  return [footageType(), textOverlay()];
+}
+
+// ── Web-page ──
+
+function webPageSeoFocus(): ContentTypeInputField {
+  return {
+    key: "seoFocus",
+    label: "SEO Focus",
+    category: "engagement",
+    type: "boolean",
+    helpText: "Optimize headings and meta for search engines",
+    aiDerivable: true,
+  };
+}
+
+function webPageContentStyleFields(): ContentTypeInputField[] {
+  return [webPageSeoFocus()];
+}
+
 // ─── Registry ──────────────────────────────────────────────
 
 const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── Long-Form Content ──────────────────────────────────
 
   "blog-post": [
+    ...longFormContentStyleFields(),
     seoKeyword(),
     secondaryKeywords(),
 
@@ -327,11 +863,13 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "pillar-page": [
+    ...longFormContentStyleFields(),
     seoKeyword(),
     secondaryKeywords(),
   ],
 
   whitepaper: [
+    ...longFormContentStyleFields(),
 
     {
       key: "researchTheme",
@@ -365,6 +903,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "case-study": [
+    ...longFormContentStyleFields(),
     {
       key: "customerName",
       label: "Customer / Company Name",
@@ -405,6 +944,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   ebook: [
+    ...longFormContentStyleFields(),
 
     {
       key: "chapterCount",
@@ -437,6 +977,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   article: [
+    ...longFormContentStyleFields(),
     seoKeyword(),
     secondaryKeywords(),
 
@@ -451,6 +992,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "thought-leadership": [
+    ...longFormContentStyleFields(),
     seoKeyword(),
 
     {
@@ -524,6 +1066,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "linkedin-article": [
+    ...longFormContentStyleFields(),
     // LinkedIn article is a social long-form post — keyword targeting is
     // helpful but not structural. Marked optional so users can skip it.
     seoKeyword({ required: false, helpText: 'Optional — helps the AI focus the angle. Leave blank if you have no target keyword.' }),
@@ -541,6 +1084,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "linkedin-carousel": [
+    ...carouselContentStyleFields(),
     slidesCount(),
     {
       key: "narrativeStructure",
@@ -562,6 +1106,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "linkedin-ad": [
+    ...adContentStyleFields(),
     landingPageUrl(),
     {
       key: "adFormat",
@@ -593,6 +1138,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "linkedin-newsletter": [
+    ...emailContentStyleFields(),
     subjectLine(),
 
     {
@@ -606,6 +1152,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "linkedin-video": [
+    ...videoContentStyleFields(),
     videoDuration(),
     {
       key: "videoFormat",
@@ -778,6 +1325,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "tiktok-script": [
+    ...videoContentStyleFields(),
     videoDuration(),
     {
       key: "trendReference",
@@ -806,6 +1354,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "social-carousel": [
+    ...carouselContentStyleFields(),
     slidesCount(),
     {
       key: "platform",
@@ -839,6 +1388,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── Advertising ────────────────────────────────────────
 
   "search-ad": [
+    ...adContentStyleFields(),
     {
       key: "targetKeywords",
       label: "Target Keywords",
@@ -872,6 +1422,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "social-ad": [
+    ...adContentStyleFields(),
     landingPageUrl(),
     {
       key: "adPlatform",
@@ -914,6 +1465,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "display-ad": [
+    ...adContentStyleFields(),
     landingPageUrl(),
     {
       key: "bannerSizes",
@@ -936,6 +1488,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "retargeting-ad": [
+    ...adContentStyleFields(),
     landingPageUrl(),
     {
       key: "retargetingSegment",
@@ -967,6 +1520,8 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "video-ad": [
+    ...adContentStyleFields(),
+    ...videoContentStyleFields(),
     videoDuration(),
     landingPageUrl(),
     {
@@ -997,6 +1552,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "native-ad": [
+    ...adContentStyleFields(),
     landingPageUrl(),
     {
       key: "publisherStyle",
@@ -1045,6 +1601,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "welcome-sequence": [
+    ...emailContentStyleFields(),
     {
       key: "emailCount",
       label: "Number of Emails",
@@ -1079,6 +1636,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "promotional-email": [
+    ...emailContentStyleFields(),
     subjectLine(),
     {
       key: "offerDetails",
@@ -1103,6 +1661,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "nurture-sequence": [
+    ...emailContentStyleFields(),
     {
       key: "emailCount",
       label: "Number of Emails",
@@ -1138,6 +1697,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "re-engagement-email": [
+    ...emailContentStyleFields(),
     subjectLine(),
     {
       key: "incentive",
@@ -1162,6 +1722,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── Website & Landing Pages ────────────────────────────
 
   "landing-page": [
+    ...webPageContentStyleFields(),
     seoKeyword(),
     {
       key: "conversionGoal",
@@ -1210,6 +1771,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "product-page": [
+    ...webPageContentStyleFields(),
     seoKeyword(),
     {
       key: "productSpecs",
@@ -1243,6 +1805,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "faq-page": [
+    ...webPageContentStyleFields(),
     {
       key: "topQuestions",
       label: "Top Questions to Answer",
@@ -1258,6 +1821,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "comparison-page": [
+    ...webPageContentStyleFields(),
     seoKeyword(),
     {
       key: "competitors",
@@ -1308,6 +1872,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── Video & Audio ──────────────────────────────────────
 
   "explainer-video": [
+    ...videoContentStyleFields(),
     videoDuration(),
     {
       key: "videoFormat",
@@ -1338,6 +1903,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "testimonial-video": [
+    ...videoContentStyleFields(),
     videoDuration(),
     {
       key: "customerName",
@@ -1361,6 +1927,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "promo-video": [
+    ...videoContentStyleFields(),
     videoDuration(),
     {
       key: "emotionalTone",
@@ -1393,6 +1960,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "webinar-outline": [
+    ...podcastContentStyleFields(),
     videoDuration(),
     {
       key: "webinarFormat",
@@ -1429,6 +1997,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "podcast-outline": [
+    ...podcastContentStyleFields(),
     videoDuration(),
     {
       key: "podcastFormat",
@@ -1462,6 +2031,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── Sales & Pitch ──────────────────────────────────────
 
   "sales-deck": [
+    ...salesContentStyleFields(),
     slidesCount(),
     {
       key: "targetClient",
@@ -1495,6 +2065,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "one-pager": [
+    ...salesContentStyleFields(),
     {
       key: "targetClient",
       label: "Target Audience",
@@ -1527,6 +2098,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "proposal-template": [
+    ...salesContentStyleFields(),
     {
       key: "clientName",
       label: "Client / Project Name",
@@ -1568,6 +2140,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "product-description": [
+    ...salesContentStyleFields(),
     seoKeyword(),
     {
       key: "productSpecs",
@@ -1603,6 +2176,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   // ── PR & Communications ────────────────────────────────
 
   "press-release": [
+    ...prContentStyleFields(),
     {
       key: "newsFact",
       label: "News Fact / Announcement",
@@ -1643,6 +2217,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "media-pitch": [
+    ...prContentStyleFields(),
     {
       key: "targetJournalist",
       label: "Target Journalist / Publication",
@@ -1673,6 +2248,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "internal-comms": [
+    ...prContentStyleFields(),
     {
       key: "announcementType",
       label: "Announcement Type",
@@ -1707,6 +2283,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "career-page": [
+    ...prContentStyleFields(),
     {
       key: "jobTitle",
       label: "Job Title",
@@ -1745,6 +2322,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "job-ad-copy": [
+    ...prContentStyleFields(),
     {
       key: "jobTitle",
       label: "Job Title",
@@ -1774,6 +2352,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "employee-story": [
+    ...prContentStyleFields(),
     {
       key: "employeeName",
       label: "Employee Name & Role",
@@ -1802,6 +2381,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "employer-brand-video": [
+    ...videoContentStyleFields(),
     videoDuration(),
     {
       key: "storyAngle",
@@ -1830,6 +2410,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   ],
 
   "impact-report": [
+    ...prContentStyleFields(),
     {
       key: "reportingPeriod",
       label: "Reporting Period",

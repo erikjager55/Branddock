@@ -633,14 +633,17 @@ function ContentBriefSection() {
       )}
 
       {optionalFields.length > 0 && (
-        <details className="group">
-          <summary className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 cursor-pointer select-none mb-2 list-none">
-            <Plus className="h-3 w-3 transition-transform group-open:rotate-45" />
-            <span>Optional fields ({optionalFields.length})</span>
-          </summary>
-          <p className="text-xs text-gray-400 mb-2">
-            These tweak the AI output. Empty is fine — the AI will derive sensible defaults.
-          </p>
+        <div>
+          {requiredFields.length > 0 && (
+            <div className="border-t border-gray-100 pt-3 mb-2">
+              <p className="text-xs font-medium text-gray-500 mb-1">
+                Optional fields ({optionalFields.length})
+              </p>
+              <p className="text-xs text-gray-400 mb-2">
+                These tweak the AI output. Empty is fine — the AI will derive sensible defaults.
+              </p>
+            </div>
+          )}
           <ContentTypeInputFields
             typeId={contentType}
             values={contentTypeInputs}
@@ -648,7 +651,7 @@ function ContentBriefSection() {
             compact
             filterKeys={optionalFields.map((f) => f.key)}
           />
-        </details>
+        </div>
       )}
     </div>
   );

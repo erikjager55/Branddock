@@ -69,242 +69,27 @@ export function detectMediumCategory(
 }
 
 // ─── Category Configs (registry-driven) ──────────────────────
+// All content-styling fields (tone, structure, FAQ toggles, etc.) migrated
+// to content-type-inputs.ts on 2026-04-27 (TODO 9.0c). Step 3 Medium retains
+// only platform-rendering knobs that affect *how* the content is presented,
+// not what's in it.
 export const MEDIUM_CATEGORY_CONFIGS: Record<MediumCategory, MediumCategoryConfig> = {
   'long-form': {
     category: 'long-form',
     label: 'Long-form Content',
-    sections: [
-      {
-        id: 'voice-structure',
-        title: 'Voice & Structure',
-        fields: [
-          {
-            key: 'tone',
-            label: 'Tone of Voice',
-            type: 'select',
-            options: [
-              { value: 'authoritative', label: 'Authoritative', description: 'Expert, definitive' },
-              { value: 'conversational', label: 'Conversational', description: 'Friendly, peer-to-peer' },
-              { value: 'analytical', label: 'Analytical', description: 'Data-driven, neutral' },
-              { value: 'inspirational', label: 'Inspirational', description: 'Vision-driven, motivating' },
-              { value: 'journalistic', label: 'Journalistic', description: 'Fact-first, investigative' },
-            ],
-            defaultValue: 'conversational',
-          },
-          {
-            key: 'articleStructure',
-            label: 'Article Structure',
-            type: 'select',
-            options: [
-              { value: 'deep-dive', label: 'Deep Dive', description: 'Single topic explored in depth' },
-              { value: 'listicle', label: 'Listicle', description: 'Numbered list of points' },
-              { value: 'how-to', label: 'How-to Guide', description: 'Step-by-step instructions' },
-              { value: 'explainer', label: 'Explainer', description: 'Break down a complex concept' },
-              { value: 'comparison', label: 'Comparison', description: 'Compare options or approaches' },
-              { value: 'narrative', label: 'Narrative', description: 'Story-driven arc' },
-            ],
-            defaultValue: 'deep-dive',
-          },
-          {
-            key: 'readingLevel',
-            label: 'Reading Level',
-            type: 'slider',
-            min: 1,
-            max: 5,
-            step: 1,
-            defaultValue: 3,
-            helpText: '1 = beginner / general audience · 5 = expert / technical',
-          },
-        ],
-      },
-      {
-        id: 'enrichment',
-        title: 'Enrichment',
-        fields: [
-          {
-            key: 'includeFaq',
-            label: 'Include FAQ Section',
-            type: 'toggle',
-            defaultValue: true,
-            helpText: 'Generate a FAQ block at the end — useful for SEO',
-          },
-          {
-            key: 'includeQuotes',
-            label: 'Include Expert Quotes / Testimonials',
-            type: 'toggle',
-            defaultValue: false,
-            helpText: 'Insert placeholder quote markers for later fill-in',
-          },
-          {
-            key: 'internalLinking',
-            label: 'Internal Linking',
-            type: 'select',
-            options: [
-              { value: 'subtle', label: 'Subtle', description: '1-2 contextual links' },
-              { value: 'moderate', label: 'Moderate', description: '3-5 links across sections' },
-              { value: 'aggressive', label: 'Aggressive', description: '6+ links for topic cluster' },
-              { value: 'none', label: 'None', description: 'No internal link markers' },
-            ],
-            defaultValue: 'moderate',
-          },
-          {
-            key: 'seoFocus',
-            label: 'SEO Focus',
-            type: 'toggle',
-            defaultValue: true,
-            helpText: 'Optimize headings, meta, and keyword density for search',
-          },
-        ],
-      },
-    ],
+    sections: [],
   },
 
   sales: {
     category: 'sales',
     label: 'Sales Enablement',
-    sections: [
-      {
-        id: 'positioning',
-        title: 'Positioning',
-        fields: [
-          {
-            key: 'tone',
-            label: 'Tone of Voice',
-            type: 'select',
-            options: [
-              { value: 'consultative', label: 'Consultative', description: 'Advisor approach' },
-              { value: 'direct', label: 'Direct', description: 'Clear and assertive' },
-              { value: 'premium', label: 'Premium', description: 'Sophisticated, high-end' },
-              { value: 'friendly', label: 'Friendly', description: 'Warm and approachable' },
-            ],
-            defaultValue: 'consultative',
-          },
-          {
-            key: 'salesAngle',
-            label: 'Sales Angle',
-            type: 'select',
-            options: [
-              { value: 'problem-solution', label: 'Problem → Solution', description: 'Pain-led narrative' },
-              { value: 'benefit-led', label: 'Benefit-led', description: 'Lead with outcomes' },
-              { value: 'feature-focused', label: 'Feature-focused', description: 'Detailed capability breakdown' },
-              { value: 'social-proof', label: 'Social Proof', description: 'Lead with customer wins' },
-              { value: 'competitive', label: 'Competitive', description: 'Differentiate vs alternatives' },
-            ],
-            defaultValue: 'benefit-led',
-          },
-        ],
-      },
-      {
-        id: 'structure',
-        title: 'Structure',
-        fields: [
-          {
-            key: 'proofPointDensity',
-            label: 'Proof-point Density',
-            type: 'slider',
-            min: 1,
-            max: 5,
-            step: 1,
-            defaultValue: 3,
-            helpText: '1 = minimal · 5 = quote/stat after each section',
-          },
-          {
-            key: 'includePricing',
-            label: 'Include Pricing Section',
-            type: 'toggle',
-            defaultValue: false,
-            helpText: 'Placeholder only — leave off if pricing is custom',
-          },
-          {
-            key: 'ctaStyle',
-            label: 'Call to Action',
-            type: 'select',
-            options: [
-              { value: 'demo', label: 'Request a Demo' },
-              { value: 'meeting', label: 'Book a Meeting' },
-              { value: 'trial', label: 'Start Free Trial' },
-              { value: 'contact-sales', label: 'Contact Sales' },
-              { value: 'custom', label: 'Custom CTA' },
-            ],
-            defaultValue: 'demo',
-          },
-        ],
-      },
-    ],
+    sections: [],
   },
 
   'pr-hr': {
     category: 'pr-hr',
     label: 'PR, HR & Comms',
-    sections: [
-      {
-        id: 'voice-format',
-        title: 'Voice & Format',
-        fields: [
-          {
-            key: 'tone',
-            label: 'Tone of Voice',
-            type: 'select',
-            options: [
-              { value: 'neutral-journalistic', label: 'Neutral / Journalistic', description: 'Press-release style' },
-              { value: 'official', label: 'Official', description: 'Corporate formal' },
-              { value: 'warm-personal', label: 'Warm & Personal', description: 'HR / culture stories' },
-              { value: 'advocacy', label: 'Advocacy', description: 'Mission-driven, public-facing' },
-            ],
-            defaultValue: 'neutral-journalistic',
-          },
-          {
-            key: 'structure',
-            label: 'Structure',
-            type: 'select',
-            options: [
-              { value: 'inverted-pyramid', label: 'Inverted Pyramid', description: 'Classic press-release — lead first' },
-              { value: 'chronological', label: 'Chronological', description: 'Timeline of events / story arc' },
-              { value: 'profile', label: 'Profile', description: 'Person-centric (employee / leadership)' },
-              { value: 'impact-report', label: 'Impact Report', description: 'Metrics + narrative sections' },
-            ],
-            defaultValue: 'inverted-pyramid',
-          },
-        ],
-      },
-      {
-        id: 'elements',
-        title: 'Elements',
-        fields: [
-          {
-            key: 'quoteCount',
-            label: 'Embedded Quotes',
-            type: 'slider',
-            min: 0,
-            max: 4,
-            step: 1,
-            defaultValue: 2,
-            helpText: 'Number of quote placeholders to generate',
-          },
-          {
-            key: 'includeBoilerplate',
-            label: 'Include Boilerplate',
-            type: 'toggle',
-            defaultValue: true,
-            helpText: 'Standard "About [Brand]" block at the end',
-          },
-          {
-            key: 'includeContactBlock',
-            label: 'Include Press Contact',
-            type: 'toggle',
-            defaultValue: true,
-            helpText: 'Name / email / phone placeholders for media',
-          },
-          {
-            key: 'hasEmbargo',
-            label: 'Under Embargo',
-            type: 'toggle',
-            defaultValue: false,
-            helpText: 'Add "EMBARGOED UNTIL [DATE]" header to the release',
-          },
-        ],
-      },
-    ],
+    sections: [],
   },
 
   // Social-post category — content-styling fields (tone, visualStyle,
@@ -350,42 +135,6 @@ export const MEDIUM_CATEGORY_CONFIGS: Record<MediumCategory, MediumCategoryConfi
           },
         ],
       },
-      {
-        id: 'visual-style',
-        title: 'Visual Style',
-        fields: [
-          {
-            key: 'visualStyle',
-            label: 'Visual Theme',
-            type: 'select',
-            options: [
-              { value: 'clean-minimal', label: 'Clean & Minimal' },
-              { value: 'bold-colorful', label: 'Bold & Colorful' },
-              { value: 'photo-centric', label: 'Photo-Centric' },
-              { value: 'data-driven', label: 'Data-Driven' },
-            ],
-            defaultValue: 'clean-minimal',
-          },
-          {
-            key: 'transitionStyle',
-            label: 'Transition Style',
-            type: 'button-group',
-            options: [
-              { value: 'continuous', label: 'Continuous', description: 'Content flows across slides' },
-              { value: 'standalone', label: 'Standalone', description: 'Each slide is independent' },
-              { value: 'story-arc', label: 'Story Arc', description: 'Build toward a conclusion' },
-            ],
-            defaultValue: 'story-arc',
-            columns: 3,
-          },
-          {
-            key: 'includeCtaSlide',
-            label: 'Include CTA Slide',
-            type: 'toggle',
-            defaultValue: true,
-          },
-        ],
-      },
     ],
   },
 
@@ -421,41 +170,6 @@ export const MEDIUM_CATEGORY_CONFIGS: Record<MediumCategory, MediumCategoryConfi
               { value: 'gradient', label: 'Gradient Banner' },
             ],
             defaultValue: 'hero-image',
-          },
-        ],
-      },
-      {
-        id: 'content-settings',
-        title: 'Content Settings',
-        fields: [
-          {
-            key: 'ctaPlacement',
-            label: 'CTA Placement',
-            type: 'select',
-            options: [
-              { value: 'above-fold', label: 'Above the Fold' },
-              { value: 'bottom', label: 'Bottom' },
-              { value: 'multiple', label: 'Multiple CTAs' },
-              { value: 'inline', label: 'Inline' },
-            ],
-            defaultValue: 'above-fold',
-          },
-          {
-            key: 'previewTextLength',
-            label: 'Preview Text Length',
-            type: 'slider',
-            min: 30,
-            max: 150,
-            step: 10,
-            defaultValue: 90,
-            helpText: 'Characters visible in email client preview',
-          },
-          {
-            key: 'personalize',
-            label: 'Personalization',
-            type: 'toggle',
-            defaultValue: true,
-            helpText: 'Use recipient name and dynamic content',
           },
         ],
       },
@@ -522,13 +236,6 @@ export const MEDIUM_CATEGORY_CONFIGS: Record<MediumCategory, MediumCategoryConfi
             ],
             defaultValue: 'button',
           },
-          {
-            key: 'seoFocus',
-            label: 'SEO Focus',
-            type: 'toggle',
-            defaultValue: true,
-            helpText: 'Optimize headings and meta for search engines',
-          },
         ],
       },
     ],
@@ -539,22 +246,9 @@ export const MEDIUM_CATEGORY_CONFIGS: Record<MediumCategory, MediumCategoryConfi
     label: 'Podcast',
     sections: [
       {
-        id: 'episode-format',
-        title: 'Episode Format',
+        id: 'duration',
+        title: 'Duration',
         fields: [
-          {
-            key: 'episodeFormat',
-            label: 'Format',
-            type: 'button-group',
-            options: [
-              { value: 'solo', label: 'Solo' },
-              { value: 'interview', label: 'Interview' },
-              { value: 'panel', label: 'Panel' },
-              { value: 'narrative', label: 'Narrative' },
-            ],
-            defaultValue: 'solo',
-            columns: 4,
-          },
           {
             key: 'duration',
             label: 'Target Duration (min)',
@@ -563,44 +257,6 @@ export const MEDIUM_CATEGORY_CONFIGS: Record<MediumCategory, MediumCategoryConfi
             max: 120,
             step: 5,
             defaultValue: 30,
-          },
-          {
-            key: 'segmentCount',
-            label: 'Segments',
-            type: 'slider',
-            min: 1,
-            max: 8,
-            step: 1,
-            defaultValue: 3,
-          },
-        ],
-      },
-      {
-        id: 'production',
-        title: 'Production Style',
-        fields: [
-          {
-            key: 'introStyle',
-            label: 'Intro Style',
-            type: 'select',
-            options: [
-              { value: 'cold-open', label: 'Cold Open', description: 'Jump straight into content' },
-              { value: 'teaser', label: 'Teaser', description: 'Preview key takeaways' },
-              { value: 'music-intro', label: 'Music Intro', description: 'Theme music + host intro' },
-            ],
-            defaultValue: 'teaser',
-          },
-          {
-            key: 'includeShowNotes',
-            label: 'Generate Show Notes',
-            type: 'toggle',
-            defaultValue: true,
-          },
-          {
-            key: 'includeTranscript',
-            label: 'Generate Transcript',
-            type: 'toggle',
-            defaultValue: false,
           },
         ],
       },
@@ -627,54 +283,6 @@ export const MEDIUM_CATEGORY_CONFIGS: Record<MediumCategory, MediumCategoryConfi
             ],
             defaultValue: 'single-image',
             columns: 4,
-          },
-          {
-            key: 'visualStyle',
-            label: 'Visual Style',
-            type: 'select',
-            options: [
-              { value: 'product-focused', label: 'Product Focused' },
-              { value: 'lifestyle', label: 'Lifestyle' },
-              { value: 'testimonial', label: 'Testimonial' },
-              { value: 'data-stat', label: 'Data / Statistic' },
-            ],
-            defaultValue: 'product-focused',
-          },
-        ],
-      },
-      {
-        id: 'messaging',
-        title: 'Messaging',
-        fields: [
-          {
-            key: 'ctaType',
-            label: 'CTA Type',
-            type: 'button-group',
-            options: [
-              { value: 'learn-more', label: 'Learn More' },
-              { value: 'sign-up', label: 'Sign Up' },
-              { value: 'shop-now', label: 'Shop Now' },
-              { value: 'contact-us', label: 'Contact Us' },
-            ],
-            defaultValue: 'learn-more',
-            columns: 4,
-          },
-          {
-            key: 'urgencyLevel',
-            label: 'Urgency Level',
-            type: 'slider',
-            min: 1,
-            max: 5,
-            step: 1,
-            defaultValue: 2,
-            helpText: '1 = Evergreen, 5 = High urgency',
-          },
-          {
-            key: 'socialProof',
-            label: 'Include Social Proof',
-            type: 'toggle',
-            defaultValue: false,
-            helpText: 'Add testimonial or stat to ad copy',
           },
         ],
       },
@@ -728,31 +336,8 @@ export const MEDIUM_CATEGORY_CONFIGS: Record<MediumCategory, MediumCategoryConfi
       },
       {
         id: 'visual-style',
-        title: 'Visual Style',
+        title: 'Color Grade',
         fields: [
-          {
-            key: 'footageType',
-            label: 'Footage Type',
-            type: 'select',
-            options: [
-              { value: 'real-person', label: 'Real Person' },
-              { value: 'stock', label: 'Stock Footage' },
-              { value: 'animation', label: 'Animation' },
-              { value: 'mixed', label: 'Mixed' },
-            ],
-            defaultValue: 'mixed',
-          },
-          {
-            key: 'textOverlay',
-            label: 'Text Overlay',
-            type: 'select',
-            options: [
-              { value: 'bold-headlines', label: 'Bold Headlines' },
-              { value: 'minimal', label: 'Minimal' },
-              { value: 'dynamic-captions', label: 'Dynamic Captions' },
-            ],
-            defaultValue: 'bold-headlines',
-          },
           {
             key: 'colorGrade',
             label: 'Color Grading',
