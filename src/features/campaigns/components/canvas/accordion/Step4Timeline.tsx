@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useCallback, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
+import { campaignKeys, contentLibraryKeys } from '../../../hooks';
 import { resolvePreviewComponent } from '../previews/preview-map';
 import { SendCampaignModal } from '../SendCampaignModal';
 import { CampaignSendStats } from '../CampaignSendStats';
@@ -39,6 +41,7 @@ interface Step4TimelineProps {
 }
 
 export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
+  const queryClient = useQueryClient();
   const contextStack = useCanvasStore((s) => s.contextStack);
   const variantGroups = useCanvasStore((s) => s.variantGroups);
   const selections = useCanvasStore((s) => s.selections);
@@ -63,6 +66,8 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
   const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Schedule picker is collapsed by default (WordPress UX) — opens via Edit.
+  const [showSchedulePicker, setShowSchedulePicker] = useState(false);
   const [showDownloadFormats, setShowDownloadFormats] = useState(false);
 
   const platform = contextStack?.medium?.platform ?? null;
@@ -210,10 +215,11 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
       const body: Record<string, unknown> = { channelId };
       const store = useCanvasStore.getState();
       if (store.scheduledDate) {
-        const dt = store.scheduledTime
-          ? `${store.scheduledDate}T${store.scheduledTime}:00Z`
-          : `${store.scheduledDate}T09:00:00Z`;
-        body.scheduledFor = dt;
+        // Local clock → UTC ISO (see handlePublish for rationale).
+        const localDateTime = store.scheduledTime
+          ? `${store.scheduledDate}T${store.scheduledTime}:00`
+          : `${store.scheduledDate}T09:00:00`;
+        body.scheduledFor = new Date(localDateTime).toISOString();
       } else {
         body.publishNow = true;
       }
@@ -226,41 +232,75 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
       const data = await res.json();
       setPublishSuccess(`${data.status === 'published' ? 'Published' : 'Scheduled'} to ${data.channelPlatform}`);
       store.setApprovalState({
-        approvalStatus: data.status === 'published' ? 'PUBLISHED' : 'APPROVED',
+        // Channel publish that's scheduled → SCHEDULED status (was APPROVED).
+        // Aligns with the local publish flow: scheduled = queued, not yet live.
+        approvalStatus: data.status === 'published' ? 'PUBLISHED' : 'SCHEDULED',
         publishedAt: data.status === 'published' ? new Date().toISOString() : undefined,
       });
+      queryClient.invalidateQueries({ queryKey: contentLibraryKeys.all });
+      queryClient.invalidateQueries({ queryKey: campaignKeys.all });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Publish failed');
     } finally {
       setIsSubmitting(false);
     }
-  }, [deliverableId]);
+  }, [deliverableId, queryClient]);
 
-  // Schedule / Approve
-  const handlePublish = useCallback(async (action: 'approve' | 'schedule') => {
+  // Approve, schedule for a future date, or publish immediately. The
+  // schedule/publish branches both hit /publish — the route picks SCHEDULED
+  // vs PUBLISHED based on the date. The approve branch hits /approval.
+  const handlePublish = useCallback(async (action: 'approve' | 'schedule' | 'publish-now') => {
     setIsSubmitting(true);
     setError(null);
 
     const store = useCanvasStore.getState();
 
     try {
-      if (action === 'schedule' && store.scheduledDate) {
-        const scheduledAt = store.scheduledTime
-          ? `${store.scheduledDate}T${store.scheduledTime}:00`
-          : `${store.scheduledDate}T09:00:00`;
+      if (action === 'schedule' || action === 'publish-now') {
+        // The /publish route is now the single source of truth for both
+        // SCHEDULED (future date) and PUBLISHED (now / past) — see WordPress-
+        // style state machine in the route. We just hand it the user's
+        // intent: a date for schedule, or publishNow=true for immediate.
+        //
+        // Date+time inputs return local-clock values ("2026-04-27", "09:00").
+        // Build a Date from the local string (no Z), then toISOString() to
+        // get a proper UTC ISO that the server stores. On read-back the
+        // browser will convert UTC → local again, so the user sees their
+        // original 09:00 regardless of timezone.
+        const body: Record<string, unknown> = {};
+        if (action === 'schedule' && store.scheduledDate) {
+          const localDateTime = store.scheduledTime
+            ? `${store.scheduledDate}T${store.scheduledTime}:00`
+            : `${store.scheduledDate}T09:00:00`;
+          body.scheduledPublishDate = new Date(localDateTime).toISOString();
+        } else {
+          body.publishNow = true;
+        }
 
         const res = await fetch(`/api/studio/${deliverableId}/publish`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ scheduledPublishDate: scheduledAt }),
+          body: JSON.stringify(body),
         });
-        if (!res.ok) throw new Error('Failed to schedule');
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: 'Failed to publish' }));
+          throw new Error(err.error ?? 'Failed to publish');
+        }
+        const data = await res.json();
 
-        store.setApprovalState({ approvalStatus: 'PUBLISHED', publishedAt: new Date().toISOString() });
-        store.setStepSummary('planner', {
-          label: `Scheduled: ${formatDateDisplay(store.scheduledDate)}${store.scheduledTime ? ` at ${store.scheduledTime}` : ''}`,
+        store.setApprovalState({
+          approvalStatus: data.approvalStatus,
+          publishedAt: data.publishedAt ?? undefined,
         });
+        if (data.approvalStatus === 'SCHEDULED') {
+          store.setStepSummary('planner', {
+            label: `Scheduled: ${formatDateDisplay(store.scheduledDate ?? '')}${store.scheduledTime ? ` at ${store.scheduledTime}` : ''}`,
+          });
+        } else {
+          store.setStepSummary('planner', { label: 'Published' });
+        }
       } else {
+        // action === 'approve' — Mark as Ready (no publish intent yet).
         const res = await fetch(`/api/studio/${deliverableId}/approval`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -274,15 +314,26 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         store.setApprovalState({ approvalStatus: 'APPROVED' });
         store.setStepSummary('planner', { label: 'Ready for publishing' });
       }
+
+      // Server cache is already invalidated by the route, but the TanStack
+      // Query cache for Content Library / Campaigns lists holds stale data
+      // until we explicitly invalidate — otherwise the traffic-light pill
+      // stays red after Mark as Ready / Schedule.
+      queryClient.invalidateQueries({ queryKey: contentLibraryKeys.all });
+      queryClient.invalidateQueries({ queryKey: campaignKeys.all });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Action failed');
     } finally {
       setIsSubmitting(false);
     }
-  }, [deliverableId]);
+  }, [deliverableId, queryClient]);
 
   const isPublished = approvalStatus === 'PUBLISHED';
+  const isScheduled = approvalStatus === 'SCHEDULED';
   const isApproved = approvalStatus === 'APPROVED';
+  // "Ready for any next action" — content is no longer in DRAFT and has at
+  // least been marked-as-ready or further along the pipeline.
+  const isReady = isApproved || isScheduled || isPublished;
   const PreviewComponent = previewEntry.component;
 
   const ICON_MAP: Record<string, typeof Copy> = {
@@ -291,16 +342,26 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
 
   return (
     <div className="space-y-6">
-      {/* Success state */}
-      {(isPublished || isApproved) && (
-        <div className="flex items-center gap-3 p-4 rounded-lg bg-emerald-50 border border-emerald-200">
-          <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+      {/* Status banner — distinct copy per state */}
+      {isReady && (
+        <div className={`flex items-center gap-3 p-4 rounded-lg border ${
+          isScheduled
+            ? 'bg-blue-50 border-blue-200'
+            : 'bg-emerald-50 border-emerald-200'
+        }`}>
+          {isScheduled ? (
+            <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
+          ) : (
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+          )}
           <div>
-            <p className="text-sm font-medium text-emerald-800">
-              {isPublished ? 'Content scheduled for publishing' : 'Content approved and ready'}
+            <p className={`text-sm font-medium ${isScheduled ? 'text-blue-800' : 'text-emerald-800'}`}>
+              {isPublished ? 'Content published' :
+               isScheduled ? 'Scheduled for publication' :
+               'Content approved and ready'}
             </p>
             {scheduledDate && (
-              <p className="text-xs text-emerald-600 mt-0.5">
+              <p className={`text-xs mt-0.5 ${isScheduled ? 'text-blue-600' : 'text-emerald-600'}`}>
                 {formatDateDisplay(scheduledDate)}{scheduledTime ? ` at ${scheduledTime}` : ''}
               </p>
             )}
@@ -308,8 +369,9 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         </div>
       )}
 
-      {/* Send Campaign (email deliverables only) */}
-      {isEmailDeliverable && campaignId && isApproved && (
+      {/* Send Campaign (email deliverables only) — also available once
+          scheduled, the user may still want to push to Emailit. */}
+      {isEmailDeliverable && campaignId && (isApproved || isScheduled) && (
         <div className="rounded-lg border border-gray-200 bg-white p-4 flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-gray-900">Ready to send via Emailit</p>
@@ -418,100 +480,172 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
           ? selectedChannelId
           : (activeChannels[0]?.id ?? null);
 
-        const publishLabel = isSubmitting
-          ? 'Publishing...'
-          : scheduledDate
-            ? 'Schedule to Platform'
-            : 'Publish Now';
+        // WordPress-style primary-action label: derived from the current
+        // schedule + status state. Mirrors WP behaviour:
+        //   - already published, no future date  → "Update"  (re-save metadata)
+        //   - already published, future date     → "Reschedule"
+        //   - scheduled, future date             → "Update schedule"
+        //   - scheduled, cleared date            → "Publish now"
+        //   - draft/approved, no date            → "Publish now"
+        //   - draft/approved, future date        → "Schedule"
+        const hasFutureDate = !!scheduledDate;
+        const primaryLabel = isSubmitting
+          ? (hasFutureDate ? 'Scheduling…' : 'Publishing…')
+          : isPublished
+            ? (hasFutureDate ? 'Reschedule' : 'Update')
+            : isScheduled
+              ? (hasFutureDate ? 'Update schedule' : 'Publish now')
+              : (hasFutureDate ? 'Schedule' : 'Publish now');
+        const primaryAction: 'schedule' | 'publish-now' = hasFutureDate ? 'schedule' : 'publish-now';
+        const formattedSchedule = scheduledDate
+          ? `${formatDateDisplay(scheduledDate)}${scheduledTime ? ` at ${scheduledTime}` : ''}`
+          : null;
 
         return (
           <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-5">
-            <h3 className="text-sm font-semibold text-gray-700">Finish &amp; Publish</h3>
-
-            {/* Schedule (optional) */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Schedule (optional)</h4>
-
-              {timingSuggestion && (
-                <button
-                  type="button"
-                  onClick={handleApplySuggestion}
-                  className="w-full flex items-start gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors text-left"
-                >
-                  <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">
-                      Suggested: {timingSuggestion.day} at {timingSuggestion.time}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-0.5">{timingSuggestion.reason}</p>
-                  </div>
-                </button>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-700">Finish &amp; Publish</h3>
+              {isScheduled && formattedSchedule && (
+                <span className="inline-flex items-center gap-1 text-xs text-blue-700">
+                  <Clock className="h-3 w-3" />
+                  Scheduled: {formattedSchedule}
+                </span>
               )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="schedule-date" className="block text-xs font-medium text-gray-600 mb-1">
-                    <Calendar className="h-3.5 w-3.5 inline mr-1" />
-                    Date
-                  </label>
-                  <input
-                    id="schedule-date"
-                    type="date"
-                    value={scheduledDate ?? ''}
-                    onChange={(e) => useCanvasStore.getState().setScheduledDate(e.target.value || null)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="schedule-time" className="block text-xs font-medium text-gray-600 mb-1">
-                    <Clock className="h-3.5 w-3.5 inline mr-1" />
-                    Time
-                  </label>
-                  <input
-                    id="schedule-time"
-                    type="time"
-                    value={scheduledTime ?? ''}
-                    onChange={(e) => useCanvasStore.getState().setScheduledTime(e.target.value || null)}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
-              </div>
             </div>
 
-            {/* Two primary actions */}
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Action 1 — Mark as Ready (opens download options on success) */}
+            {/* WordPress-style "Publish: Immediately [Edit]" — collapsed by default */}
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-3 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <span className="font-medium">Publish:</span>
+                  <span className={hasFutureDate ? 'text-blue-700 font-medium' : 'text-gray-600'}>
+                    {hasFutureDate ? formattedSchedule : 'Immediately'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSchedulePicker((v) => !v)}
+                  className="text-xs font-medium text-primary hover:text-primary/80 underline-offset-2 hover:underline"
+                >
+                  {showSchedulePicker ? 'Done' : 'Edit'}
+                </button>
+              </div>
+
+              {showSchedulePicker && (
+                <>
+                  {timingSuggestion && (
+                    <button
+                      type="button"
+                      onClick={handleApplySuggestion}
+                      className="w-full flex items-start gap-3 p-2.5 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors text-left"
+                    >
+                      <Sparkles className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs font-medium text-gray-800">
+                          Suggested: {timingSuggestion.day} at {timingSuggestion.time}
+                        </p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">{timingSuggestion.reason}</p>
+                      </div>
+                    </button>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label htmlFor="schedule-date" className="block text-[11px] font-medium text-gray-600 mb-1">
+                        Date
+                      </label>
+                      <input
+                        id="schedule-date"
+                        type="date"
+                        value={scheduledDate ?? ''}
+                        onChange={(e) => useCanvasStore.getState().setScheduledDate(e.target.value || null)}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="schedule-time" className="block text-[11px] font-medium text-gray-600 mb-1">
+                        Time
+                      </label>
+                      <input
+                        id="schedule-time"
+                        type="time"
+                        value={scheduledTime ?? ''}
+                        onChange={(e) => useCanvasStore.getState().setScheduledTime(e.target.value || null)}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {hasFutureDate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        useCanvasStore.getState().setScheduledDate(null);
+                        useCanvasStore.getState().setScheduledTime(null);
+                      }}
+                      className="text-[11px] text-gray-500 hover:text-gray-700 underline underline-offset-2"
+                    >
+                      Clear schedule (publish immediately)
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Primary action — Publish / Schedule / Update (label is dynamic).
+                Disabled when there's nothing meaningful to do: already
+                published with no new date implies a no-op republish that
+                would overwrite publishedAt. The user must prik a date for
+                Reschedule, or use a side action for unpublish/edit. */}
+            <button
+              type="button"
+              onClick={() => handlePublish(primaryAction)}
+              disabled={isSubmitting || (isPublished && !hasFutureDate)}
+              title={isPublished && !hasFutureDate ? 'Already published. Pick a date to reschedule.' : undefined}
+              className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              {hasFutureDate ? <Calendar className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+              {primaryLabel}
+            </button>
+
+            {/* Secondary actions */}
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              {/* Mark as Ready — only when not yet ready/published */}
+              {!isReady && (
                 <button
                   type="button"
                   onClick={async () => {
-                    if (!isApproved) {
-                      await handlePublish('approve');
-                    }
+                    await handlePublish('approve');
                     setShowDownloadFormats(true);
                   }}
                   disabled={isSubmitting}
-                  className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-gray-700 font-medium border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-800 underline-offset-2 hover:underline disabled:opacity-50"
                 >
-                  <CheckCircle2 className="h-4 w-4" />
-                  {isApproved ? 'Ready' : 'Mark as Ready'}
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Mark as Ready (no publish)
                 </button>
+              )}
 
-                {/* Action 2 — Publish / Schedule to Platform */}
+              {/* Publish to a connected channel — separate concern from the
+                  primary publish action. Only shown when integrations exist. */}
+              {hasActiveChannels && (
                 <button
                   type="button"
                   onClick={() => {
                     if (!effectiveChannelId) return;
                     handlePublishToChannel(effectiveChannelId);
                   }}
-                  disabled={!hasActiveChannels || isSubmitting || (hasMultipleChannels && !selectedChannelId)}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
+                  disabled={isSubmitting || (hasMultipleChannels && !selectedChannelId)}
+                  className="inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-800 underline-offset-2 hover:underline disabled:opacity-50"
                 >
-                  <Send className="h-4 w-4" />
-                  {publishLabel}
+                  <Send className="h-3.5 w-3.5" />
+                  Send to platform
                 </button>
-              </div>
+              )}
+            </div>
 
+            <div className="space-y-3">
               {/* Download format picker — appears after Mark as Ready */}
               {showDownloadFormats && (
                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">

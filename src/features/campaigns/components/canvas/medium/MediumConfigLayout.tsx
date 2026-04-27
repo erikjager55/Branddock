@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { resolvePreviewComponent } from '../previews/preview-map';
 import { SimpleMarkdown } from '../previews/SimpleMarkdown';
 import { HeroImageSlot } from '../previews/HeroImageSlot';
 import { STUDIO } from '@/lib/constants/design-tokens';
-import { CheckCircle2, RefreshCw, Video } from 'lucide-react';
+import { CheckCircle2, RefreshCw, Video, Pencil, ChevronDown } from 'lucide-react';
 import { ContentSectionsEditor } from './ContentSectionsEditor';
 import type { PreviewContent } from '../../../types/canvas.types';
 
@@ -39,6 +39,10 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
   const setInsertImageModalOpen = useCanvasStore((s) => s.setInsertImageModalOpen);
   const mediumConfigValues = useCanvasStore((s) => s.mediumConfigValues);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
+  // Edit panel collapsed by default — preview is the primary view, edit is
+  // a tweak surface (intermediate step toward fully inline-editable previews
+  // per category, see TODO 9.0b).
+  const [showEditor, setShowEditor] = useState(false);
 
   const { generate } = useCanvasOrchestration(deliverableId ?? null);
 
@@ -116,12 +120,10 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
         {children}
       </div>
 
-      {/* Per-section content editor — only shown when content has been generated */}
-      {hasExistingContent && deliverableId && (
-        <ContentSectionsEditor deliverableId={deliverableId} />
-      )}
-
-      {/* Full-width content preview — show generated video if available, else platform mock */}
+      {/* Full-width content preview — show generated video if available, else platform mock.
+          The preview is now the primary view; editing happens in the collapsible
+          panel below. Long-term goal (TODO 9.0b): make each preview component
+          inline-editable per section so the panel disappears entirely. */}
       <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200">
           <span className="text-xs font-semibold text-gray-600">
@@ -157,6 +159,34 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
           )}
         </div>
       </div>
+
+      {/* Edit content sections — collapsible, opens below the preview when
+          the user wants to tweak. Replaces the previous duplicate editor
+          that sat *above* the preview (which forced the user to compare two
+          rendered copies). */}
+      {hasExistingContent && deliverableId && (
+        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowEditor((v) => !v)}
+            className="flex items-center justify-between w-full px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border-b border-gray-200 transition-colors"
+            aria-expanded={showEditor}
+          >
+            <span className="flex items-center gap-2 text-xs font-semibold text-gray-600">
+              <Pencil className="h-3.5 w-3.5" />
+              Edit content sections
+            </span>
+            <ChevronDown
+              className={`h-4 w-4 text-gray-400 transition-transform ${showEditor ? 'rotate-180' : ''}`}
+            />
+          </button>
+          {showEditor && (
+            <div className="p-3">
+              <ContentSectionsEditor deliverableId={deliverableId} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Config summary badges */}
       {configBadges.length > 0 && (

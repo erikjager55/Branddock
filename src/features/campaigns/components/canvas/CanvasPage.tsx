@@ -30,6 +30,7 @@ const STATUS_BADGE: Record<ApprovalStatus, {
   IN_REVIEW: { label: 'In Review', variant: 'info' },
   APPROVED: { label: 'Ready', variant: 'success' },
   CHANGES_REQUESTED: { label: 'Changes Requested', variant: 'warning' },
+  SCHEDULED: { label: 'Scheduled', variant: 'info' },
   PUBLISHED: { label: 'Published', variant: 'success' },
 };
 

@@ -313,6 +313,32 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
 
 > Items die geen blocker zijn maar de codebase verbeteren.
 
+### 9.0 Canvas Stap 3 — preview = direct editable, geen dubbele content
+
+**Status: Intermediate step DONE (2026-04-27)** — `<ContentSectionsEditor />` verplaatst van *boven* de preview naar *onder* als collapsible "Edit content sections" panel in `MediumConfigLayout.tsx` (default dicht). Preview is nu primair voor alle non-WebPage layouts. Geen dubbele weergave meer. Tussenstap richting de eindvorm hieronder.
+
+### 9.0b Per-preview inline-edit overlays (follow-up)
+
+**Doel: ContentSectionsEditor compleet vervangen door inline-edit in elke preview component**, zoals `WebPageLayout.EditableArticleSection` al doet.
+
+**Scope**
+- Shared `<InlineEditableSection group componentId>` component bouwen op basis van `EditableArticleSection`-patroon — Pencil-on-hover, klik → textarea + save/cancel via component PATCH endpoint.
+- Toepassen op alle 13 preview componenten in `src/features/campaigns/components/canvas/previews/`: LinkedInPostPreview, LinkedInAdPreview, LinkedInCarouselPreview, InstagramPostPreview, InstagramCarouselPreview, FacebookPostPreview, XPostPreview, EmailPreview, LandingPagePreview, VideoPreview, PodcastPreview, GenericPreview (= fallback).
+- `stripMarkdownForPlainText` toepassen op plain-text variant groups (title/meta/cta/subject/preheader) bij render in elke preview.
+- Na rollout: `<ContentSectionsEditor />` verwijderen uit `MediumConfigLayout` en `ContentSectionsEditor.tsx` schrappen.
+
+**Acceptatiecriteria**
+- Klik op een sectie in elke preview → inline editable, save persisteert via component PATCH.
+- Markdown rendering in body groups blijft werken; plain-text groups blijven gestript bij render.
+- Geen `<ContentSectionsEditor />` meer in de UI.
+- Geen regressies in approval / publish flow.
+
+**Referenties**
+- `src/features/campaigns/components/canvas/medium/WebPageLayout.tsx` — referentie-implementatie van EditableArticleSection
+- `src/features/campaigns/components/canvas/previews/` — 13 preview componenten
+- `src/features/campaigns/lib/strip-markdown.ts` — herbruikbare helpers
+- `src/features/campaigns/api/canvas.api.ts` — `updateComponentContent` endpoint
+
 ### 9.1 Deprecated Types Opruimen
 
 **✅ 9.1.1 Campaign deprecated types (2026-04-19)**

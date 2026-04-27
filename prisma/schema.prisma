@@ -1008,7 +1008,7 @@ model Deliverable {
   publishedAt           DateTime?
 
   // ─── Canvas: Approval ──────────────────────────────
-  approvalStatus        String            @default("DRAFT")  // DRAFT | IN_REVIEW | CHANGES_REQUESTED | APPROVED | PUBLISHED
+  approvalStatus        String            @default("DRAFT")  // DRAFT | IN_REVIEW | CHANGES_REQUESTED | APPROVED | SCHEDULED | PUBLISHED
   approvalNote          String?           @db.Text
   approvedBy            String?
   approvedAt            DateTime?

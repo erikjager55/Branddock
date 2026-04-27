@@ -980,6 +980,65 @@ function formatMediumConfig(config: Record<string, unknown>): string {
     if (textOverlay) parts.push('- Include text overlay directions for key moments.');
   }
 
+  // ── Long-form (blog / pillar / whitepaper / case-study / article / FAQ) ──
+  const longFormTone = config.tone as string | undefined;
+  const articleStructure = config.articleStructure as string | undefined;
+  const readingLevel = config.readingLevel as number | undefined;
+  const includeFaq = config.includeFaq as boolean | undefined;
+  const includeQuotes = config.includeQuotes as boolean | undefined;
+  const internalLinking = config.internalLinking as string | undefined;
+  const longFormSeoFocus = config.seoFocus as boolean | undefined;
+
+  if (
+    longFormTone ||
+    articleStructure ||
+    readingLevel ||
+    includeFaq !== undefined ||
+    includeQuotes !== undefined ||
+    internalLinking ||
+    longFormSeoFocus !== undefined
+  ) {
+    if (longFormTone) parts.push(`- Tone: ${longFormTone}.`);
+    if (articleStructure) {
+      const structMap: Record<string, string> = {
+        'deep-dive': 'Deep-dive structure: thorough exploration with sub-headings, build the argument step by step.',
+        'listicle': 'Listicle structure: numbered or labeled list of distinct points (e.g. "5 ways to ...").',
+        'how-to': 'How-to structure: actionable, step-by-step guide with clear procedural headings.',
+        'explainer': 'Explainer structure: define the concept, then unpack it from first principles to advanced.',
+        'comparison': 'Comparison structure: side-by-side analysis of options with clear criteria.',
+        'narrative': 'Narrative structure: story-driven with a clear arc — situation, complication, resolution.',
+      };
+      parts.push(`- Article structure: ${structMap[articleStructure] ?? articleStructure}`);
+    }
+    if (typeof readingLevel === 'number') {
+      const levelLabel =
+        readingLevel <= 2 ? 'beginner / general audience — short sentences, plain language, no jargon'
+        : readingLevel >= 4 ? 'expert / technical — assume domain knowledge, use precise terminology'
+        : 'intermediate — clear and accessible but not dumbed down';
+      parts.push(`- Reading level: ${levelLabel} (${readingLevel}/5).`);
+    }
+    if (includeFaq === true) {
+      parts.push('- FAQ section: REQUIRED. After the conclusion, add a clearly-labeled "Frequently Asked Questions" or "FAQ" section with 4-6 question-and-answer pairs that address common concerns about the topic. Format each as a "## Question" heading followed by a 1-3 sentence answer.');
+    } else if (includeFaq === false) {
+      parts.push('- FAQ section: do NOT include a FAQ block.');
+    }
+    if (includeQuotes === true) {
+      parts.push('- Expert quotes: insert 2-3 quote markers in the format `> "Quote text" — Expert Name, Title` at relevant points. Use realistic placeholder quotes the user can replace.');
+    }
+    if (internalLinking) {
+      const linkMap: Record<string, string> = {
+        subtle: '1-2 contextual `[Internal Link: anchor text]` markers in the body.',
+        moderate: '3-5 `[Internal Link: anchor text]` markers spread across the sections.',
+        aggressive: '6+ `[Internal Link: anchor text]` markers — build a topic-cluster effect.',
+        none: 'no internal link markers.',
+      };
+      parts.push(`- Internal linking: ${linkMap[internalLinking] ?? internalLinking}`);
+    }
+    if (longFormSeoFocus === true) {
+      parts.push('- SEO focus: optimize headings, meta description, and keyword density for search ranking. Include the primary keyword in title, first paragraph, and at least one H2.');
+    }
+  }
+
   // If no category-specific rules matched, fall back to generic
   if (parts.length === 1) {
     for (const [key, value] of entries) {

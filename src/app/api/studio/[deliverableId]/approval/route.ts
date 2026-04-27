@@ -6,16 +6,23 @@ import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { trackEvent } from '@/lib/analytics/posthog';
 
+/**
+ * Approval state transitions. SCHEDULED and PUBLISHED are terminal-ish but
+ * reversible to DRAFT (e.g. user wants to unpublish or cancel a schedule).
+ * SCHEDULED ↔ PUBLISHED is also allowed because the cron-job (future) flips
+ * one to the other; manual flips via the UI mirror that.
+ */
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  DRAFT: ['IN_REVIEW', 'APPROVED'],
+  DRAFT: ['IN_REVIEW', 'APPROVED', 'SCHEDULED', 'PUBLISHED'],
   IN_REVIEW: ['APPROVED', 'CHANGES_REQUESTED', 'DRAFT'],
   CHANGES_REQUESTED: ['APPROVED', 'IN_REVIEW', 'DRAFT'],
-  APPROVED: ['PUBLISHED', 'DRAFT'],
-  PUBLISHED: [],
+  APPROVED: ['SCHEDULED', 'PUBLISHED', 'DRAFT'],
+  SCHEDULED: ['PUBLISHED', 'APPROVED', 'DRAFT'],
+  PUBLISHED: ['SCHEDULED', 'DRAFT'],
 };
 
 const approvalSchema = z.object({
-  status: z.enum(['DRAFT', 'IN_REVIEW', 'APPROVED', 'CHANGES_REQUESTED', 'PUBLISHED']),
+  status: z.enum(['DRAFT', 'IN_REVIEW', 'APPROVED', 'CHANGES_REQUESTED', 'SCHEDULED', 'PUBLISHED']),
   note: z.string().max(2000).optional(),
 });
 

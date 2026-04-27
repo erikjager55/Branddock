@@ -209,14 +209,20 @@ export async function GET(request: NextRequest) {
         d.generatedText != null ||
         (Array.isArray(d.generatedImageUrls) && d.generatedImageUrls.length > 0) ||
         d.generatedVideoUrl != null;
+      // SCHEDULED + PUBLISHED both count as approved — the user has signed
+      // off either way. APPROVED-without-publish-intent is the "Ready" state
+      // (Mark as Ready button); SCHEDULED has a future publish date queued.
       const isApproved =
-        d.approvalStatus === "APPROVED" || d.approvalStatus === "PUBLISHED";
-      const isScheduled = d.scheduledPublishDate != null;
+        d.approvalStatus === "APPROVED" ||
+        d.approvalStatus === "SCHEDULED" ||
+        d.approvalStatus === "PUBLISHED";
+      const isScheduledStatus = d.approvalStatus === "SCHEDULED";
+      const isScheduled = d.scheduledPublishDate != null || isScheduledStatus;
       const isPipelineComplete = d.pipelineStatus === "COMPLETE";
-      // Publish-ready = user-approved (Mark as Ready) OR already published.
-      // Scheduling alone is NOT readiness — a user can drag an unfinished
-      // item onto the calendar to pick a date, but the content is still
-      // work in progress. Status pill should only turn green once approved.
+      // Publish-ready = approved / scheduled / published. Scheduling alone
+      // (date set on a draft via calendar drag) is NOT readiness — only when
+      // the user actually flipped the status to APPROVED+ does the pill go
+      // green. The status check above covers both cases.
       const isPublishReady = isApproved;
 
       // Build a human-readable hint about what's missing

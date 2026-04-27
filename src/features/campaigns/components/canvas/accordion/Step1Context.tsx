@@ -132,7 +132,14 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
               )}
             </>
           ) : (
-            <p className="text-xs text-gray-400 italic">No phase data available</p>
+            <div className="space-y-1">
+              <p className="text-xs text-gray-400 italic">No phase data available</p>
+              <p className="text-[11px] text-gray-400">
+                This content item isn&apos;t tied to a campaign blueprint phase yet.
+                Generate a campaign blueprint to add awareness/consideration/conversion
+                phases — or skip and the AI will infer tone from the briefing.
+              </p>
+            </div>
           )}
         </ContextCard>
 

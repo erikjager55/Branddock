@@ -5,11 +5,31 @@ import { z } from 'zod';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 
+/**
+ * Body shape: either pass `scheduledPublishDate` for a future date (results in
+ * SCHEDULED status) or `publishNow: true` (results in PUBLISHED status). A
+ * past date counts as a backdated publish (PUBLISHED with publishedAt set to
+ * that past date). Both fields optional → empty body defaults to publishNow.
+ */
 const publishSchema = z.object({
   scheduledPublishDate: z.string().datetime().optional(),
+  publishNow: z.boolean().optional(),
 });
 
-/** POST /api/studio/[deliverableId]/publish — Publish approved content */
+/**
+ * POST /api/studio/[deliverableId]/publish
+ *
+ * WordPress-style publish endpoint. The state machine:
+ *
+ *   - publishNow=true OR no date          → PUBLISHED, publishedAt=now
+ *   - scheduledPublishDate in the future  → SCHEDULED, scheduledPublishDate set
+ *   - scheduledPublishDate in the past    → PUBLISHED, publishedAt=that date (backdate)
+ *
+ * Idempotent: a SCHEDULED item can be re-scheduled (date updated) or
+ * fast-tracked to PUBLISHED. Pre-conditions relaxed — any status except a
+ * truly empty draft can publish (we keep the "must have content" check
+ * implicit through the upstream UI).
+ */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ deliverableId: string }> },
@@ -32,14 +52,6 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    // Must be APPROVED to publish
-    if (deliverable.approvalStatus !== 'APPROVED') {
-      return NextResponse.json(
-        { error: `Cannot publish: current status is ${deliverable.approvalStatus ?? 'DRAFT'}, must be APPROVED` },
-        { status: 400 },
-      );
-    }
-
     const body = await request.json().catch(() => ({}));
     const parsed = publishSchema.safeParse(body);
     if (!parsed.success) {
@@ -49,38 +61,55 @@ export async function POST(
       );
     }
 
-    const { scheduledPublishDate } = parsed.data;
+    const { scheduledPublishDate, publishNow } = parsed.data;
+    const now = new Date();
+    const schedDate = scheduledPublishDate ? new Date(scheduledPublishDate) : null;
+    const isFuture = schedDate !== null && schedDate.getTime() > now.getTime();
 
-    // Validate scheduled date is in the future if provided
-    if (scheduledPublishDate) {
-      const schedDate = new Date(scheduledPublishDate);
-      if (schedDate <= new Date()) {
-        return NextResponse.json(
-          { error: 'Scheduled publish date must be in the future' },
-          { status: 400 },
-        );
-      }
+    // Resolve target status + timestamps from the body shape.
+    let nextStatus: 'SCHEDULED' | 'PUBLISHED';
+    let nextPublishedAt: Date | null;
+    let nextScheduledDate: Date | null;
+
+    if (publishNow === true || schedDate === null) {
+      // Publish immediately — no future date provided.
+      nextStatus = 'PUBLISHED';
+      nextPublishedAt = now;
+      nextScheduledDate = null;
+    } else if (isFuture) {
+      // Schedule for a future date — status SCHEDULED, no publishedAt yet.
+      nextStatus = 'SCHEDULED';
+      nextPublishedAt = null;
+      nextScheduledDate = schedDate;
+    } else {
+      // Past date → backdated publish.
+      nextStatus = 'PUBLISHED';
+      nextPublishedAt = schedDate;
+      nextScheduledDate = schedDate;
     }
 
-    const now = new Date();
     const updated = await prisma.deliverable.update({
       where: { id: deliverableId },
       data: {
-        approvalStatus: 'PUBLISHED',
-        publishedAt: now,
-        ...(scheduledPublishDate && { scheduledPublishDate: new Date(scheduledPublishDate) }),
+        approvalStatus: nextStatus,
+        publishedAt: nextPublishedAt,
+        scheduledPublishDate: nextScheduledDate,
+        // Mark the deliverable as completed once it has a publish intent —
+        // SCHEDULED items still count as completed work, just queued.
         status: 'COMPLETED',
       },
     });
 
-    // Cache invalidation
+    // Server-side cache invalidation. Client-side TanStack Query cache is
+    // refreshed by the caller (Step4Timeline invalidates contentLibraryKeys
+    // + campaignKeys after a successful response).
     invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
     invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
 
     return NextResponse.json({
       deliverableId: updated.id,
-      publishedAt: updated.publishedAt?.toISOString() ?? now.toISOString(),
-      approvalStatus: 'PUBLISHED',
+      approvalStatus: nextStatus,
+      publishedAt: updated.publishedAt?.toISOString() ?? null,
       scheduledPublishDate: updated.scheduledPublishDate?.toISOString() ?? null,
     });
   } catch (error) {

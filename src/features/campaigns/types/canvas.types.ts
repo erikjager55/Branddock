@@ -128,7 +128,26 @@ export interface BrandVoiceCheckResult {
 
 // ─── Approval Types ──────────────────────────────────────────
 
-export type ApprovalStatus = 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'CHANGES_REQUESTED' | 'PUBLISHED';
+/**
+ * Deliverable approval / publication state machine. WordPress-inspired flow:
+ *
+ *   DRAFT → IN_REVIEW (optional) → APPROVED → SCHEDULED (future date) or
+ *   PUBLISHED (now / past). CHANGES_REQUESTED is the rejection path back
+ *   to DRAFT.
+ *
+ * SCHEDULED is distinct from PUBLISHED because the content is *not yet
+ * live* — it's queued for a future date. The traffic-light pill renders
+ * "Scheduled" with a clock icon, and a future cron job flips SCHEDULED →
+ * PUBLISHED when the date arrives. Stored as String in Prisma (Deliverable
+ * model), not an enum, so adding values is non-breaking.
+ */
+export type ApprovalStatus =
+  | 'DRAFT'
+  | 'IN_REVIEW'
+  | 'APPROVED'
+  | 'CHANGES_REQUESTED'
+  | 'SCHEDULED'
+  | 'PUBLISHED';
 
 export interface ApprovalResponse {
   deliverableId: string;

@@ -66,6 +66,11 @@ export function deriveTrafficLight(
   // changes the bucket, otherwise "In progress" filter would hide
   // overdue-in-progress items.
   if (state === "published") return { light: "green", label: "Published" };
+  // Approved-and-scheduled: green pill with "Scheduled" label so the user can
+  // distinguish queued items from "ready but not yet timed" ones at a glance.
+  if (isPublishReady === true && state === "scheduled") {
+    return { light: "green", label: "Scheduled" };
+  }
   if (isPublishReady === true) return { light: "green", label: "Ready" };
 
   const isOverdue = state === "overdue";

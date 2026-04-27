@@ -90,10 +90,15 @@ function useElapsedTimer(isComplete: boolean) {
 
 function SourcePill({ icon: Icon, label, count }: { icon: React.ElementType; label: string; count: number | boolean }) {
   if (!count) return null;
+  // For numeric counts, format as "Label (N)" so the number is unambiguous —
+  // not a version or attempt index. Source-specific noun (blocks/results/
+  // papers) is implied by the label itself; we keep the pill compact.
+  const display =
+    typeof count === 'boolean' ? label : `${label} (${count})`;
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-100/80 text-violet-700 text-xs">
       <Icon className="w-3 h-3" />
-      {typeof count === 'boolean' ? label : `${label} ${count}`}
+      {display}
     </span>
   );
 }
