@@ -4,21 +4,36 @@ import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { Play, Download, MoreHorizontal, Radio } from 'lucide-react';
 import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 import { SimpleMarkdown } from './SimpleMarkdown';
 
 /**
  * Podcast episode mockup — styled after Spotify's episode card design.
+ *
+ * Templates emit `episode-title + episode-description + intro-script +
+ * segment-outline + interview-questions + outro-script + show-notes +
+ * chapter-markers` (episode) or `episode-title + episode-summary +
+ * key-takeaways + timestamps + resources-links + guest-bio +
+ * transcript-excerpt` (show-notes). The title slot falls back through
+ * headline → hook → episode-title; description through body → caption →
+ * episode-description → episode-summary; intro through intro →
+ * intro-script. Everything else surfaces in AdditionalComponentsSection.
  */
 export function PodcastPreview({ previewContent, isGenerating, brandName }: PlatformPreviewProps) {
   // Inline-edit entries — null when no content has been generated yet.
-  const titleEntryPrimary = useEditableEntry('headline');
-  const titleEntryFallback = useEditableEntry('hook');
-  const titleEntry = titleEntryPrimary ?? titleEntryFallback;
-  const descriptionEntryPrimary = useEditableEntry('body');
-  const descriptionEntryFallback = useEditableEntry('caption');
-  const descriptionEntry = descriptionEntryPrimary ?? descriptionEntryFallback;
-  const introEntry = useEditableEntry('intro');
+  const titleHeadline = useEditableEntry('headline');
+  const titleHook = useEditableEntry('hook');
+  const titleEpisode = useEditableEntry('episode-title');
+  const titleEntry = titleHeadline ?? titleHook ?? titleEpisode;
+  const descriptionBody = useEditableEntry('body');
+  const descriptionCaption = useEditableEntry('caption');
+  const descriptionEpisode = useEditableEntry('episode-description');
+  const descriptionSummary = useEditableEntry('episode-summary');
+  const descriptionEntry = descriptionBody ?? descriptionCaption ?? descriptionEpisode ?? descriptionSummary;
+  const introPrimary = useEditableEntry('intro');
+  const introFallback = useEditableEntry('intro-script');
+  const introEntry = introPrimary ?? introFallback;
 
   const name = brandName ?? 'Brand Name';
   const duration = previewContent.body?.metadata?.duration ?? 23;
@@ -112,6 +127,17 @@ export function PodcastPreview({ previewContent, isGenerating, brandName }: Plat
           </div>
           <span className="text-[10px] text-gray-400 flex-shrink-0">{duration} min</span>
         </div>
+      </div>
+
+      {/* Additional generated components that don't fit the curated slots */}
+      <div className="px-4 pb-3">
+        <AdditionalComponentsSection
+          handledGroups={[
+            'headline', 'hook', 'episode-title',
+            'body', 'caption', 'episode-description', 'episode-summary',
+            'intro', 'intro-script',
+          ]}
+        />
       </div>
 
       {/* Bottom actions */}

@@ -6,6 +6,7 @@ import { HeroImageSlot } from './HeroImageSlot';
 import { SimpleMarkdown } from './SimpleMarkdown';
 import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, MoreHorizontal } from 'lucide-react';
 import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 
 const LINKEDIN_BLUE = '#0A66C2';
@@ -14,6 +15,10 @@ const LINKEDIN_BLUE = '#0A66C2';
  * LinkedIn sponsored ad mockup — pixel-accurate replica of the real LinkedIn
  * sponsored post format with advertiser header, 1.91:1 image, link card,
  * and action bar.
+ *
+ * Seed template emits `headline + body + description + cta-button` — the
+ * cta slot falls back from `cta` to `cta-button` so the generated CTA is
+ * always editable inside the action button.
  */
 export function LinkedInAdPreview({ previewContent, heroImage, onAddImage, isGenerating, brandName, imageVariants }: PlatformPreviewProps) {
   // Inline-edit entries — null when no content has been generated yet.
@@ -24,7 +29,9 @@ export function LinkedInAdPreview({ previewContent, heroImage, onAddImage, isGen
   const descriptionEntryPrimary = useEditableEntry('description');
   const descriptionEntryFallback = useEditableEntry('caption');
   const descriptionEntry = descriptionEntryPrimary ?? descriptionEntryFallback;
-  const ctaEntry = useEditableEntry('cta');
+  const ctaPrimary = useEditableEntry('cta');
+  const ctaButtonFallback = useEditableEntry('cta-button');
+  const ctaEntry = ctaPrimary ?? ctaButtonFallback;
 
   const fallbackCta = previewContent.cta?.content ?? 'Learn More';
   const name = brandName ?? 'Brand Name';
@@ -170,6 +177,13 @@ export function LinkedInAdPreview({ previewContent, heroImage, onAddImage, isGen
           </div>
           <span>2 comments</span>
         </div>
+      </div>
+
+      {/* Additional generated components that don't fit the curated slots */}
+      <div className="px-4 pb-2">
+        <AdditionalComponentsSection
+          handledGroups={['headline', 'body', 'description', 'caption', 'cta', 'cta-button']}
+        />
       </div>
 
       {/* Action bar — LinkedIn four buttons */}

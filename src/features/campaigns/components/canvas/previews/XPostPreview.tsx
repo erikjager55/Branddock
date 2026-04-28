@@ -7,6 +7,7 @@ import { SimpleMarkdown } from './SimpleMarkdown';
 import { MessageCircle, Repeat2, Heart, BarChart3, Share, MoreHorizontal, BadgeCheck } from 'lucide-react';
 import { extractCta, CtaButton } from './CtaButton';
 import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 
 /**
  * X (Twitter) post mockup — styled to match the real X feed.
@@ -94,6 +95,11 @@ export function XPostPreview({ previewContent, isGenerating, heroImage, onAddIma
         <div className="rounded-2xl overflow-hidden border border-gray-200">
           <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[16/9]" rounded="rounded-none" />
         </div>
+
+        {/* Additional generated components that don't fit the curated slots */}
+        <AdditionalComponentsSection
+          handledGroups={['body', 'caption', 'hashtags']}
+        />
 
         {/* Timestamp */}
         <p className="text-xs text-gray-500 mt-3">Just now</p>

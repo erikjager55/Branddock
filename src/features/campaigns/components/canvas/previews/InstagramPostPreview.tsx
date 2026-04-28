@@ -6,15 +6,22 @@ import { HeroImageSlot } from './HeroImageSlot';
 import { extractCta, CtaButton } from './CtaButton';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from 'lucide-react';
 import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 
 /**
  * Instagram feed post mockup — styled to match the real Instagram app.
+ *
+ * Seed template emits `hook-line + caption + hashtags`. The hook-line is
+ * surfaced as a separate emphasized line above the caption (matches the
+ * Instagram convention where the first line is the visible "hook" before
+ * the "...more" truncation).
  */
 export function InstagramPostPreview({ previewContent, isGenerating, heroImage, onAddImage, brandName }: PlatformPreviewProps) {
   const captionPrimary = useEditableEntry('caption');
   const captionFallback = useEditableEntry('body');
   const captionEntry = captionPrimary ?? captionFallback;
+  const hookLineEntry = useEditableEntry('hook-line');
   const hashtagsEntry = useEditableEntry('hashtags');
 
   const cta = extractCta(previewContent);
@@ -74,6 +81,16 @@ export function InstagramPostPreview({ previewContent, isGenerating, heroImage, 
 
       {/* Caption — inline-editable */}
       <div className="px-3 pb-2.5">
+        {hookLineEntry && (
+          <InlineEditableSection
+            entry={hookLineEntry}
+            render={(text) => (
+              <p className="text-xs text-gray-900 font-semibold leading-relaxed mb-1">
+                {stripMarkdownForPlainText(text)}
+              </p>
+            )}
+          />
+        )}
         {captionEntry && (
           <InlineEditableSection
             entry={captionEntry}
@@ -95,6 +112,9 @@ export function InstagramPostPreview({ previewContent, isGenerating, heroImage, 
         )}
         <p className="text-xs text-gray-400 mt-1">View all 8 comments</p>
         <p className="text-[10px] text-gray-400 mt-1 uppercase">2 hours ago</p>
+        <AdditionalComponentsSection
+          handledGroups={['caption', 'body', 'hook-line', 'hashtags']}
+        />
       </div>
 
       {/* CTA — link in bio style */}

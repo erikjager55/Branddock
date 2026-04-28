@@ -6,6 +6,7 @@ import { HeroImageSlot } from './HeroImageSlot';
 import { SimpleMarkdown } from './SimpleMarkdown';
 import { extractCta } from './CtaButton';
 import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, MoreHorizontal } from 'lucide-react';
 
@@ -16,11 +17,16 @@ import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, MoreHorizontal } from 'l
 export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, onAddImage, mediumConfig, brandName }: PlatformPreviewProps) {
   // Inline-edit entries — null when no content has been generated yet.
   // Hooks are called unconditionally; we pick which body entry to use after.
-  const headlineEntry = useEditableEntry('headline');
+  // Seed template emits `hook + body + cta + hashtags` — so the headline slot
+  // falls back to `hook` and we surface `cta` as an editable component too.
+  const headlinePrimary = useEditableEntry('headline');
+  const headlineFallback = useEditableEntry('hook');
+  const headlineEntry = headlinePrimary ?? headlineFallback;
   const bodyEntryPrimary = useEditableEntry('body');
   const bodyEntryFallback = useEditableEntry('caption');
   const bodyEntry = bodyEntryPrimary ?? bodyEntryFallback;
   const hashtagsEntry = useEditableEntry('hashtags');
+  const ctaEntry = useEditableEntry('cta');
 
   const ctaStyle = (mediumConfig?.ctaStyle as string) ?? '';
   const hashtagStrategy = (mediumConfig?.hashtagStrategy as string) ?? 'moderate';
@@ -98,8 +104,31 @@ export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, o
       {/* Image */}
       <HeroImageSlot image={heroImage} onAddImage={onAddImage} aspectRatio="aspect-[1.91/1]" rounded="rounded-none" />
 
-      {/* CTA button — uses generated CTA text or medium config fallback */}
+      {/* CTA — prefers the generated `cta` component (inline-editable);
+          falls back to extracting a CTA from the body or to the medium-config
+          ctaStyle so the preview still looks like a finished post even when
+          the AI didn't emit a separate CTA component. */}
       {(() => {
+        if (ctaEntry) {
+          return (
+            <div className="px-4 py-2 border-t border-gray-100">
+              <InlineEditableSection
+                entry={ctaEntry}
+                render={(text) => (
+                  <div className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{stripMarkdownForPlainText(text).slice(0, 80)}</p>
+                      <p className="text-xs text-gray-500">{(brandName ?? 'brand').toLowerCase().replace(/\s+/g, '')}.com</p>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold border" style={{ color: '#0A66C2', borderColor: '#0A66C2' }}>
+                      {stripMarkdownForPlainText(text).slice(0, 24)}
+                    </span>
+                  </div>
+                )}
+              />
+            </div>
+          );
+        }
         const ctaText = extractCta(previewContent) ?? (ctaStyle && ctaStyle !== 'none' ? (ctaStyle === 'sign-up' ? 'Sign Up' : 'Learn More') : null);
         if (!ctaText) return null;
         return (
@@ -116,6 +145,11 @@ export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, o
           </div>
         );
       })()}
+
+      {/* Additional generated components that don't fit the curated slots */}
+      <div className="px-4 pb-2">
+        <AdditionalComponentsSection handledGroups={['headline', 'hook', 'body', 'caption', 'hashtags', 'cta']} />
+      </div>
 
       {/* Engagement counts */}
       <div className="px-4 py-1.5">

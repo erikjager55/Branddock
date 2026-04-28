@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Pencil, Check, X, Loader2 } from 'lucide-react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { updateComponentContent } from '../../../api/canvas.api';
@@ -12,6 +12,11 @@ import { updateComponentContent } from '../../../api/canvas.api';
  *
  * Preview components call this once per group they render, then pass the
  * entry to <InlineEditableSection /> alongside a render function.
+ *
+ * NOTE: Hooks rule — must be called at fixed positions per render, so
+ * structured platform previews list every potential group up front and
+ * pick the first non-null. For dynamic-group rendering (any group name)
+ * use {@link useEditableEntries} instead.
  */
 export function useEditableEntry(group: string): InlineEditableEntry | null {
   const variants = useCanvasStore((s) => s.variantGroups.get(group));
@@ -25,6 +30,39 @@ export function useEditableEntry(group: string): InlineEditableEntry | null {
     componentId: selected.componentId,
     variantIndex: selectedIdx,
   };
+}
+
+/**
+ * Map-based variant — returns every editable entry keyed by group name in a
+ * single store subscription. Use this in previews that render groups
+ * dynamically (e.g. {@link GenericPreview}, {@link LandingPagePreview}) so
+ * the lookup table doesn't have to be hardcoded against every possible
+ * template name (subject-line vs subject, body-sections vs body, etc.).
+ *
+ * Returned Map identity is stable as long as the store's variantGroups +
+ * selections refs don't change (the canvas store creates fresh Map refs on
+ * every mutation, so memoization is safe).
+ */
+export function useEditableEntries(): Map<string, InlineEditableEntry> {
+  const variantGroups = useCanvasStore((s) => s.variantGroups);
+  const selections = useCanvasStore((s) => s.selections);
+
+  return useMemo(() => {
+    const entries = new Map<string, InlineEditableEntry>();
+    for (const [group, variants] of variantGroups.entries()) {
+      const idx = selections.get(group) ?? 0;
+      const selected = variants[idx];
+      if (selected?.content) {
+        entries.set(group, {
+          group,
+          content: selected.content,
+          componentId: selected.componentId,
+          variantIndex: idx,
+        });
+      }
+    }
+    return entries;
+  }, [variantGroups, selections]);
 }
 
 /**

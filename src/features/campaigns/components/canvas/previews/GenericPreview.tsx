@@ -5,44 +5,22 @@ import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { FileText, Copy, Check } from 'lucide-react';
 import { HeroImageSlot } from './HeroImageSlot';
 import { SimpleMarkdown } from './SimpleMarkdown';
-import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { InlineEditableSection, useEditableEntries } from './InlineEditableSection';
 import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 
 /**
- * Fallback preview for unmapped platform/format combinations.
+ * Fallback preview for unmapped platform/format combinations + the canonical
+ * preview for blog-article (preview-map.ts → web/blog-article).
  *
- * GenericPreview renders all text variant groups dynamically. Because hooks
- * must be called unconditionally, we call `useEditableEntry` for a fixed
- * list of common group names and pick the right entry per group below.
+ * Every text variant group is rendered dynamically and made inline-editable
+ * via {@link useEditableEntries} — no hardcoded group registry, so newly
+ * introduced template group names (introduction, body-sections, value-prop,
+ * etc.) become editable automatically.
  */
 export function GenericPreview({ previewContent, isGenerating, heroImage, onAddImage }: PlatformPreviewProps) {
   const [copied, setCopied] = React.useState(false);
 
-  // Call hooks unconditionally for every known group; build a lookup map.
-  // Unknown groups still render but without inline-edit (acceptable fallback).
-  const entryMap: Record<string, ReturnType<typeof useEditableEntry>> = {
-    title: useEditableEntry('title'),
-    headline: useEditableEntry('headline'),
-    subject: useEditableEntry('subject'),
-    'subject-line': useEditableEntry('subject-line'),
-    meta: useEditableEntry('meta'),
-    'meta-description': useEditableEntry('meta-description'),
-    body: useEditableEntry('body'),
-    content: useEditableEntry('content'),
-    paragraph: useEditableEntry('paragraph'),
-    intro: useEditableEntry('intro'),
-    conclusion: useEditableEntry('conclusion'),
-    hook: useEditableEntry('hook'),
-    caption: useEditableEntry('caption'),
-    hashtags: useEditableEntry('hashtags'),
-    cta: useEditableEntry('cta'),
-    'call-to-action': useEditableEntry('call-to-action'),
-    subheadline: useEditableEntry('subheadline'),
-    subtitle: useEditableEntry('subtitle'),
-    'cta-text': useEditableEntry('cta-text'),
-    preheader: useEditableEntry('preheader'),
-    description: useEditableEntry('description'),
-  };
+  const entries = useEditableEntries();
 
   const textEntries = Object.entries(previewContent).filter(
     ([, v]) => v.type === 'text' && v.content
@@ -125,7 +103,7 @@ export function GenericPreview({ previewContent, isGenerating, heroImage, onAddI
           const isCta = g === 'cta' || g === 'call-to-action';
           const isHashtags = g === 'hashtags';
           const isCaption = g === 'caption';
-          const entry = entryMap[group];
+          const entry = entries.get(group);
 
           // Renders the role-appropriate display for a given text value.
           const renderRole = (text: string) => {

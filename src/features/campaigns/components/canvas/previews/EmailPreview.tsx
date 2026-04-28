@@ -6,19 +6,29 @@ import { HeroImageSlot } from './HeroImageSlot';
 import { SimpleMarkdown } from './SimpleMarkdown';
 import { extractCta } from './CtaButton';
 import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 
 /**
  * Email client mockup — styled like a real email template rendering.
+ *
+ * Seed template emits `subject-line + preheader + headline + body +
+ * cta-button + footer`. The subject slot falls back through
+ * subject → subject-line → headline; the cta slot through cta → cta-button.
+ * Anything left over (e.g. a separate `headline` next to `subject-line`,
+ * or `footer`) drops into AdditionalComponentsSection at the bottom.
  */
 export function EmailPreview({ previewContent, isGenerating, heroImage, onAddImage, mediumConfig, brandName }: PlatformPreviewProps) {
   // Inline-edit entries — null when no content has been generated yet.
   const subjectEntryPrimary = useEditableEntry('subject');
+  const subjectEntryAlias = useEditableEntry('subject-line');
   const subjectEntryFallback = useEditableEntry('headline');
-  const subjectEntry = subjectEntryPrimary ?? subjectEntryFallback;
+  const subjectEntry = subjectEntryPrimary ?? subjectEntryAlias ?? subjectEntryFallback;
   const preheaderEntry = useEditableEntry('preheader');
   const bodyEntry = useEditableEntry('body');
-  const ctaEntry = useEditableEntry('cta');
+  const ctaPrimary = useEditableEntry('cta');
+  const ctaButtonFallback = useEditableEntry('cta-button');
+  const ctaEntry = ctaPrimary ?? ctaButtonFallback;
 
   const cta = extractCta(previewContent) ?? '';
   const templateStyle = (mediumConfig?.templateStyle as string) ?? 'minimal';
@@ -150,6 +160,13 @@ export function EmailPreview({ previewContent, isGenerating, heroImage, onAddIma
                 )}
               </div>
             )}
+          </div>
+
+          {/* Additional generated components that don't fit the curated slots */}
+          <div className="px-6 pb-3">
+            <AdditionalComponentsSection
+              handledGroups={['subject', 'subject-line', 'headline', 'preheader', 'body', 'cta', 'cta-button']}
+            />
           </div>
 
           {/* Footer */}

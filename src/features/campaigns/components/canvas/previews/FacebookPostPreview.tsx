@@ -7,6 +7,7 @@ import { SimpleMarkdown } from './SimpleMarkdown';
 import { ThumbsUp, MessageCircle, Share2, Globe, MoreHorizontal } from 'lucide-react';
 import { extractCta, CtaButton } from './CtaButton';
 import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 
 /**
@@ -91,6 +92,13 @@ export function FacebookPostPreview({ previewContent, isGenerating, heroImage, o
           <CtaButton text={cta} variant="filled" />
         </div>
       )}
+
+      {/* Additional generated components that don't fit the curated slots */}
+      <div className="px-4 pb-2">
+        <AdditionalComponentsSection
+          handledGroups={['body', 'caption', 'hashtags']}
+        />
+      </div>
 
       {/* Reactions + counts */}
       <div className="px-4 py-1.5">

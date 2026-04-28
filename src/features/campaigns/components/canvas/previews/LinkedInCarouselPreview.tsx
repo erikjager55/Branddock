@@ -7,6 +7,7 @@ import { SimpleMarkdown } from './SimpleMarkdown';
 import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 import { extractCta } from './CtaButton';
 import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 
 const LINKEDIN_BLUE = '#0A66C2';
 
@@ -152,6 +153,11 @@ export function LinkedInCarouselPreview({ previewContent, imageVariants, isGener
           </div>
         </div>
       )}
+
+      {/* Additional generated components that don't fit the curated slots */}
+      <AdditionalComponentsSection
+        handledGroups={['body', 'caption', 'hashtags']}
+      />
 
       {/* Engagement bar */}
       <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100">

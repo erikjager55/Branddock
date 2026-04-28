@@ -7,6 +7,7 @@ import { SimpleMarkdown } from './SimpleMarkdown';
 import { ChevronLeft, ChevronRight, Heart, MessageCircle, Send, Bookmark } from 'lucide-react';
 import { extractCta, CtaButton } from './CtaButton';
 import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 
 const INSTAGRAM_GRADIENT = '#E1306C';
 
@@ -149,6 +150,14 @@ export function InstagramCarouselPreview({ previewContent, imageVariants, isGene
           <CtaButton text={cta} variant="pill" />
         </div>
       )}
+
+      {/* Slide narration + any other generated components — caption only
+          covers the bottom card; the per-slide groups (cover-slide,
+          content-slides, cta-slide) live in the additional section so the
+          user can edit them. */}
+      <AdditionalComponentsSection
+        handledGroups={['caption', 'body', 'hashtags']}
+      />
     </PreviewFrame>
   );
 }

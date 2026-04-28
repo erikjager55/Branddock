@@ -5,7 +5,8 @@ import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { HeroImageSlot } from './HeroImageSlot';
 import { SimpleMarkdown } from './SimpleMarkdown';
 import { Play, Heart, MessageCircle, Bookmark, Share2, Music, Eye } from 'lucide-react';
-import { InlineEditableSection, useEditableEntry, type InlineEditableEntry } from './InlineEditableSection';
+import { InlineEditableSection, useEditableEntry, useEditableEntries, type InlineEditableEntry } from './InlineEditableSection';
+import { AdditionalComponentsSection } from './AdditionalComponentsSection';
 import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 
 /**
@@ -13,8 +14,13 @@ import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
  * Renders TikTok-style (9:16 dark overlay) or YouTube-style (16:9 card)
  * based on the `platform` prop.
  *
- * Hooks are called unconditionally at the top level so we can pass entries
- * down to the sub-style components.
+ * Templates across platforms emit a wide variety of groups
+ * (hook, body-script, cta, on-screen-text, intro, body-sections,
+ * cta-mid-roll, conclusion, tags, thumbnail-concept, script-body,
+ * visual-directions, voiceover-notes, scene, overall-concept,
+ * mood-board-direction, music-sound-notes …). The curated mockups only
+ * surface caption + title; everything else drops into
+ * AdditionalComponentsSection so the user can still edit it.
  */
 export function VideoPreview({ previewContent, isGenerating, heroImage, onAddImage, brandName, platform }: PlatformPreviewProps) {
   // Inline-edit entries — null when no content has been generated yet.
@@ -24,20 +30,6 @@ export function VideoPreview({ previewContent, isGenerating, heroImage, onAddIma
   const titleEntryPrimary = useEditableEntry('headline');
   const titleEntryFallback = useEditableEntry('hook');
   const titleEntry = titleEntryPrimary ?? titleEntryFallback;
-  const descriptionEntry = useEditableEntry('description');
-
-  // Map known groups for the GenericVideoStyle fallback (dynamic rendering).
-  const entryMap: Record<string, ReturnType<typeof useEditableEntry>> = {
-    title: useEditableEntry('title'),
-    headline: titleEntryPrimary,
-    hook: titleEntryFallback,
-    body: captionEntryFallback,
-    caption: captionEntryPrimary,
-    description: descriptionEntry,
-    script: useEditableEntry('script'),
-    intro: useEditableEntry('intro'),
-    conclusion: useEditableEntry('conclusion'),
-  };
 
   const textEntries = Object.entries(previewContent).filter(
     ([, v]) => v.type === 'text' && v.content,
@@ -70,7 +62,7 @@ export function VideoPreview({ previewContent, isGenerating, heroImage, onAddIma
   }
 
   // Default — generic video with script text
-  return <GenericVideoStyle textEntries={textEntries} entryMap={entryMap} heroImage={heroImage} onAddImage={onAddImage} />;
+  return <GenericVideoStyle textEntries={textEntries} heroImage={heroImage} onAddImage={onAddImage} />;
 }
 
 // ─── TikTok / Reels Style ─────────────────────────────────
@@ -133,6 +125,11 @@ function TikTokStyle({ captionEntry, fallbackCaption, name, handle, heroImage, o
           <Music className="h-3 w-3" />
           <span className="truncate">Original sound — {name}</span>
         </div>
+        <div className="text-white/90">
+          <AdditionalComponentsSection
+            handledGroups={['caption', 'body']}
+          />
+        </div>
       </div>
     </div>
   );
@@ -188,6 +185,9 @@ function YouTubeStyle({ titleEntry, fallbackTitle, name, heroImage, onAddImage }
             </div>
           </div>
         </div>
+        <AdditionalComponentsSection
+          handledGroups={['headline', 'hook', 'title']}
+        />
       </div>
     </div>
   );
@@ -195,12 +195,12 @@ function YouTubeStyle({ titleEntry, fallbackTitle, name, heroImage, onAddImage }
 
 // ─── Generic Video Style ──────────────────────────────────
 
-function GenericVideoStyle({ textEntries, entryMap, heroImage, onAddImage }: {
+function GenericVideoStyle({ textEntries, heroImage, onAddImage }: {
   textEntries: [string, { content: string | null; type: string }][];
-  entryMap: Record<string, InlineEditableEntry | null>;
   heroImage?: PlatformPreviewProps['heroImage'];
   onAddImage?: () => void;
 }) {
+  const entries = useEditableEntries();
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <div className="relative">
@@ -216,7 +216,7 @@ function GenericVideoStyle({ textEntries, entryMap, heroImage, onAddImage }: {
           {textEntries.map(([group, value]) => {
             const lower = group.toLowerCase();
             const isPlainText = lower === 'title' || lower === 'headline';
-            const entry = entryMap[group];
+            const entry = entries.get(group);
             const renderRow = (text: string) => (
               <div className="mb-2 last:mb-0">
                 <p className="text-xs font-medium text-gray-400 uppercase mb-1">{group.replace(/_/g, ' ')}</p>
