@@ -9,7 +9,13 @@ import { WEBSITE_DELIVERABLE_TYPES } from '@/lib/ai/seo-pipeline.types';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
 import { ContentTypeInputFields } from '../../shared/ContentTypeInputFields';
-import { getContentTypeInputs, getRequiredInputs, type ContentTypeInputValue } from '../../../lib/content-type-inputs';
+import {
+  getContentTypeInputs,
+  getRequiredInputs,
+  getToneSuggestions,
+  getCtaSuggestions,
+  type ContentTypeInputValue,
+} from '../../../lib/content-type-inputs';
 
 interface Step1ContextProps {
   deliverableId: string;
@@ -165,12 +171,11 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
         </ContextCard>
       </div>
 
-      {/* Briefing — settings.brief (set by Claw create_deliverable or wizard) */}
-      <BriefSection />
-
-      {/* Content Brief — type-specific input fields. Required fields gate the
-          Generate button; optional fields tweak the AI output. Lives here (not
-          in a side panel) because the Generate CTA sits a few rows down. */}
+      {/* Content Brief — strategy fields (always shown) + type-specific
+          fields (vary). Replaces the previous two-card split (Briefing +
+          Content Brief) where tone-of-voice was asked twice in different
+          formats. Strategy fields persist in `settings.brief`; type-specific
+          fields persist in `settings.contentTypeInputs`. */}
       <ContentBriefSection />
 
       {/* Knowledge context */}
@@ -339,79 +344,24 @@ function BrandContent({ brand }: { brand: BrandContextBlock }) {
 }
 
 /**
- * Briefing section — surfaces `settings.brief` (objective / keyMessage /
- * tone / CTA). Filled by Claw via `create_deliverable` or by the wizard's
- * launch step. Edits autosave through CanvasPage (debounced PATCH).
- *
- * Sits ABOVE the content-type input fields because brief is the strategic
- * "what & why" — type-specific inputs (SEO keyword, meta description, etc.)
- * are tactical knobs that build on top of the brief.
+ * Brief field with optional suggestion chips. Tone + CTA use this to
+ * surface curated vocabularies per content category (e.g. blog has
+ * authoritative/conversational/analytical/inspirational/journalistic)
+ * without locking the user into a dropdown — clicking a chip fills the
+ * textarea, but free text is always allowed.
  */
-function BriefSection() {
-  const brief = useCanvasStore((s) => s.brief);
-  const setBriefField = useCanvasStore((s) => s.setBriefField);
-
-  const filledCount = Object.values(brief).filter(
-    (v) => typeof v === 'string' && v.trim().length > 0,
-  ).length;
-
-  return (
-    <div className="rounded-lg border border-gray-200 bg-white p-3">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Lightbulb className="h-4 w-4 text-amber-500" />
-          <span className="text-sm font-medium text-gray-700">Briefing</span>
-        </div>
-        {filledCount > 0 && (
-          <Badge variant="default" size="sm">
-            {filledCount}/4
-          </Badge>
-        )}
-      </div>
-      <p className="text-xs text-gray-500 mb-3">
-        The strategic frame — what this content needs to do. Inherited from
-        the campaign briefing or set when you (or Claw) create the item.
-      </p>
-      <div className="space-y-2.5">
-        <BriefField
-          label="Objective"
-          placeholder="What this content should achieve"
-          value={brief.objective}
-          onChange={(v) => setBriefField('objective', v)}
-        />
-        <BriefField
-          label="Key message"
-          placeholder="The single thing the audience should take away"
-          value={brief.keyMessage}
-          onChange={(v) => setBriefField('keyMessage', v)}
-        />
-        <BriefField
-          label="Tone direction"
-          placeholder="e.g. authoritative, playful, urgent"
-          value={brief.toneDirection}
-          onChange={(v) => setBriefField('toneDirection', v)}
-        />
-        <BriefField
-          label="Call to action"
-          placeholder="What should the audience do next?"
-          value={brief.callToAction}
-          onChange={(v) => setBriefField('callToAction', v)}
-        />
-      </div>
-    </div>
-  );
-}
-
 function BriefField({
   label,
   placeholder,
   value,
   onChange,
+  suggestions,
 }: {
   label: string;
   placeholder: string;
   value: string;
   onChange: (v: string) => void;
+  suggestions?: ReadonlyArray<{ value: string; label: string }> | null;
 }) {
   return (
     <label className="block">
@@ -423,6 +373,27 @@ function BriefField({
         rows={2}
         className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-400 resize-y"
       />
+      {suggestions && suggestions.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap gap-1">
+          {suggestions.map((s) => {
+            const active = value.trim() === s.value;
+            return (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => onChange(s.value)}
+                className={
+                  active
+                    ? 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-teal-50 text-teal-700 border border-teal-300'
+                    : 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                }
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </label>
   );
 }
@@ -551,15 +522,26 @@ function SkeletonContextCard() {
 }
 
 /**
- * Type-specific input fields for the active deliverable. Required fields are
- * highlighted with an amber accent because they gate the Generate CTA below;
- * optional fields tweak the AI output but never block. Lives in Step 1 (no
- * longer in a side panel) so the user sees + fills everything in one column.
+ * Unified Content Brief section — replaces the old Briefing + Content Brief
+ * split where tone-of-voice and CTA were asked twice in different formats.
+ * Two visual subgroups inside one card:
+ *
+ *   1. **Strategy** (always shown, 4 fields persisted in `settings.brief`):
+ *      Objective · Key message · Tone of voice · Call to action.
+ *      Tone + CTA show curated suggestion chips for the content category
+ *      (long-form / sales / social / pr-hr) and fall back to free text for
+ *      the rest.
+ *
+ *   2. **Type-specific** (varies, persisted in `settings.contentTypeInputs`):
+ *      Required fields gate the Generate CTA below; optional fields tweak
+ *      the AI output but never block.
  */
 function ContentBriefSection() {
   const contentType = useCanvasStore((s) => s.contentType);
   const contentTypeInputs = useCanvasStore((s) => s.contentTypeInputs);
   const setContentTypeInput = useCanvasStore((s) => s.setContentTypeInput);
+  const brief = useCanvasStore((s) => s.brief);
+  const setBriefField = useCanvasStore((s) => s.setBriefField);
 
   const fields = React.useMemo(
     () => (contentType ? getContentTypeInputs(contentType) : []),
@@ -575,6 +557,15 @@ function ContentBriefSection() {
     [fields],
   );
 
+  const toneSuggestions = React.useMemo(
+    () => (contentType ? getToneSuggestions(contentType) : null),
+    [contentType],
+  );
+  const ctaSuggestions = React.useMemo(
+    () => (contentType ? getCtaSuggestions(contentType) : null),
+    [contentType],
+  );
+
   const handleChange = React.useCallback(
     (key: string, value: ContentTypeInputValue) => {
       setContentTypeInput(key, value);
@@ -582,9 +573,11 @@ function ContentBriefSection() {
     [setContentTypeInput],
   );
 
-  if (fields.length === 0 || !contentType) return null;
+  const briefFilled = Object.values(brief).filter(
+    (v) => typeof v === 'string' && v.trim().length > 0,
+  ).length;
 
-  const filledCount = Object.values(contentTypeInputs).filter((v) => {
+  const typeFieldsFilled = Object.values(contentTypeInputs).filter((v) => {
     if (v === '' || v === false) return false;
     if (Array.isArray(v) && v.length === 0) return false;
     return v != null;
@@ -599,6 +592,8 @@ function ContentBriefSection() {
   }).length;
 
   const hasMissingRequired = missingRequiredCount > 0;
+  const totalFilled = briefFilled + typeFieldsFilled;
+  const totalFields = 4 + fields.length;
 
   return (
     <div
@@ -615,42 +610,92 @@ function ContentBriefSection() {
         </div>
         {hasMissingRequired ? (
           <Badge variant="warning" size="sm">{missingRequiredCount} required</Badge>
-        ) : filledCount > 0 ? (
-          <Badge variant="teal" size="sm">{filledCount}/{fields.length}</Badge>
+        ) : totalFilled > 0 ? (
+          <Badge variant="teal" size="sm">{totalFilled}/{totalFields}</Badge>
         ) : null}
       </div>
 
-      {requiredFields.length > 0 && (
-        <div className="space-y-2 mb-3">
-          <ContentTypeInputFields
-            typeId={contentType}
-            values={contentTypeInputs}
-            onChange={handleChange}
-            compact
-            filterKeys={requiredFields.map((f) => f.key)}
-          />
-        </div>
-      )}
+      {/* ── Strategy ── */}
+      <div className="space-y-2.5">
+        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+          Strategy
+        </p>
+        <BriefField
+          label="Objective"
+          placeholder="What this content should achieve"
+          value={brief.objective}
+          onChange={(v) => setBriefField('objective', v)}
+        />
+        <BriefField
+          label="Key message"
+          placeholder="The single thing the audience should take away"
+          value={brief.keyMessage}
+          onChange={(v) => setBriefField('keyMessage', v)}
+        />
+        <BriefField
+          label="Tone of voice"
+          placeholder={
+            toneSuggestions
+              ? 'Free text — or pick a suggestion below'
+              : 'e.g. authoritative, playful, urgent'
+          }
+          value={brief.toneDirection}
+          onChange={(v) => setBriefField('toneDirection', v)}
+          suggestions={toneSuggestions}
+        />
+        <BriefField
+          label="Call to action"
+          placeholder={
+            ctaSuggestions
+              ? 'What should the audience do next? Pick a suggestion or write your own'
+              : 'What should the audience do next?'
+          }
+          value={brief.callToAction}
+          onChange={(v) => setBriefField('callToAction', v)}
+          suggestions={ctaSuggestions}
+        />
+      </div>
 
-      {optionalFields.length > 0 && (
-        <div>
+      {/* ── Type-specific ── */}
+      {contentType && fields.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-3">
+            {hasMissingRequired ? 'Type-specific (required)' : 'Type-specific'}
+          </p>
+
           {requiredFields.length > 0 && (
-            <div className="border-t border-gray-100 pt-3 mb-2">
-              <p className="text-xs font-medium text-gray-500 mb-1">
-                Optional fields ({optionalFields.length})
-              </p>
-              <p className="text-xs text-gray-400 mb-2">
-                These tweak the AI output. Empty is fine — the AI will derive sensible defaults.
-              </p>
+            <div className="space-y-2 mb-3">
+              <ContentTypeInputFields
+                typeId={contentType}
+                values={contentTypeInputs}
+                onChange={handleChange}
+                compact
+                filterKeys={requiredFields.map((f) => f.key)}
+              />
             </div>
           )}
-          <ContentTypeInputFields
-            typeId={contentType}
-            values={contentTypeInputs}
-            onChange={handleChange}
-            compact
-            filterKeys={optionalFields.map((f) => f.key)}
-          />
+
+          {optionalFields.length > 0 && (
+            <div>
+              {requiredFields.length > 0 && (
+                <div className="border-t border-gray-100 pt-3 mb-2">
+                  <p className="text-xs font-medium text-gray-500 mb-1">
+                    Optional fields ({optionalFields.length})
+                  </p>
+                  <p className="text-xs text-gray-400 mb-2">
+                    These tweak the AI output. Empty is fine — the AI will derive sensible defaults.
+                  </p>
+                </div>
+              )}
+              <ContentTypeInputFields
+                typeId={contentType}
+                values={contentTypeInputs}
+                onChange={handleChange}
+                compact
+                filterKeys={optionalFields.map((f) => f.key)}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>

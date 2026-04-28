@@ -76,6 +76,156 @@ export const INPUT_CATEGORY_CONFIG: Record<
   "creative-direction": { label: "Creative Direction", order: 8 },
 };
 
+// ─── Content categories ────────────────────────────────────
+
+/**
+ * Top-level grouping for content types. Drives the Strategy-tone suggestion
+ * chips (only 4 categories have curated tone vocabularies; the rest fall
+ * back to free text). NOT a UI-visible label — used internally to scope
+ * tone/CTA helpers.
+ */
+export type ContentCategory =
+  | 'social'
+  | 'long-form'
+  | 'sales'
+  | 'pr-hr'
+  | 'email'
+  | 'carousel'
+  | 'podcast'
+  | 'ad'
+  | 'video'
+  | 'web-page';
+
+/**
+ * Map of every registered content-type id to its category. Sourced from
+ * which *ContentStyleFields() bundle each type spreads in CONTENT_TYPE_INPUTS.
+ * For types using multiple bundles (e.g. video-ad spreads both ad + video),
+ * the category that owns tone wins (video-ad → 'ad' because ad has button
+ * labels, video has none).
+ */
+const CATEGORY_BY_TYPE: Record<string, ContentCategory> = {
+  // social
+  'linkedin-post': 'social',
+  'instagram-post': 'social',
+  'twitter-thread': 'social',
+  'facebook-post': 'social',
+  'linkedin-event': 'social',
+  'linkedin-poll': 'social',
+  // long-form
+  'blog-post': 'long-form',
+  'pillar-page': 'long-form',
+  'case-study': 'long-form',
+  'thought-leadership': 'long-form',
+  'linkedin-article': 'long-form',
+  // sales
+  'sales-deck': 'sales',
+  'one-pager': 'sales',
+  'proposal-template': 'sales',
+  'product-description': 'sales',
+  // pr / hr / comms
+  'press-release': 'pr-hr',
+  'media-pitch': 'pr-hr',
+  'internal-comms': 'pr-hr',
+  'career-page': 'pr-hr',
+  'job-ad-copy': 'pr-hr',
+  'employee-story': 'pr-hr',
+  'impact-report': 'pr-hr',
+  // email
+  'welcome-sequence': 'email',
+  'promotional-email': 'email',
+  'nurture-sequence': 'email',
+  're-engagement-email': 'email',
+  'linkedin-newsletter': 'email',
+  // carousel
+  'linkedin-carousel': 'carousel',
+  'social-carousel': 'carousel',
+  // podcast / webinar
+  'webinar-outline': 'podcast',
+  'podcast-outline': 'podcast',
+  // ad
+  'search-ad': 'ad',
+  'social-ad': 'ad',
+  'display-ad': 'ad',
+  'retargeting-ad': 'ad',
+  'native-ad': 'ad',
+  'linkedin-ad': 'ad',
+  // video — types that spread videoContentStyleFields()
+  'tiktok-script': 'video',
+  'explainer-video': 'video',
+  'testimonial-video': 'video',
+  'promo-video': 'video',
+  'linkedin-video': 'video',
+  'employer-brand-video': 'video',
+  'video-ad': 'ad',
+  // web-page
+  'landing-page': 'web-page',
+  'product-page': 'web-page',
+  'faq-page': 'web-page',
+  'comparison-page': 'web-page',
+};
+
+/**
+ * Curated tone-of-voice suggestion chips per content category. The Strategy
+ * tone field in the Content Brief is always a free-text input — these
+ * chips populate the input when clicked, replacing the per-type tone
+ * dropdowns that used to ask the same question twice. Categories not
+ * listed here render free-text only (no chips).
+ */
+export const TONE_SUGGESTIONS_BY_CATEGORY: Partial<
+  Record<ContentCategory, ReadonlyArray<{ value: string; label: string }>>
+> = {
+  social: [
+    { value: 'professional', label: 'Professional' },
+    { value: 'casual', label: 'Casual' },
+    { value: 'inspirational', label: 'Inspirational' },
+    { value: 'educational', label: 'Educational' },
+    { value: 'humorous', label: 'Humorous' },
+  ],
+  'long-form': [
+    { value: 'authoritative', label: 'Authoritative — expert, definitive' },
+    { value: 'conversational', label: 'Conversational — friendly, peer-to-peer' },
+    { value: 'analytical', label: 'Analytical — data-driven, neutral' },
+    { value: 'inspirational', label: 'Inspirational — vision-driven' },
+    { value: 'journalistic', label: 'Journalistic — fact-first, investigative' },
+  ],
+  sales: [
+    { value: 'consultative', label: 'Consultative — advisor approach' },
+    { value: 'direct', label: 'Direct — clear and assertive' },
+    { value: 'premium', label: 'Premium — sophisticated, high-end' },
+    { value: 'friendly', label: 'Friendly — warm and approachable' },
+  ],
+  'pr-hr': [
+    { value: 'neutral-journalistic', label: 'Neutral / Journalistic — press-release style' },
+    { value: 'official', label: 'Official — formal corporate' },
+    { value: 'warm-personal', label: 'Warm / Personal — human voice' },
+    { value: 'advocacy', label: 'Advocacy — values-driven' },
+  ],
+};
+
+/**
+ * Curated call-to-action suggestion chips per content category. Used by the
+ * Strategy CTA field (free-text input + chips). Replaces the social-style /
+ * sales-style fields that were really "what action should the audience
+ * take?" — now asked once. Type-specific button labels (adCtaType),
+ * placement (ctaPlacement), and toggles (includeCtaSlide) remain in the
+ * type-specific fields because they answer different questions.
+ */
+export const CTA_SUGGESTIONS_BY_CATEGORY: Partial<
+  Record<ContentCategory, ReadonlyArray<{ value: string; label: string }>>
+> = {
+  social: [
+    { value: 'Direct', label: 'Direct ask' },
+    { value: 'Question', label: 'Question to engage' },
+    { value: 'Soft suggestion', label: 'Soft suggestion' },
+  ],
+  sales: [
+    { value: 'Request a demo', label: 'Request a demo' },
+    { value: 'Book a meeting', label: 'Book a meeting' },
+    { value: 'Start free trial', label: 'Start free trial' },
+    { value: 'Contact sales', label: 'Contact sales' },
+  ],
+};
+
 // ─── Shared field builders ─────────────────────────────────
 
 function seoKeyword(overrides: Partial<ContentTypeInputField> = {}): ContentTypeInputField {
@@ -189,31 +339,18 @@ function subjectLine(): ContentTypeInputField {
 
 // ─── Content-styling field builders ───────────────────────
 // Migrated 2026-04-27 from medium-config-registry. These shape WHAT the AI
-// writes (tone, hashtag strategy, CTA voice) — they belong with the brief,
-// not with the medium-rendering config in Step 3. The medium config still
-// holds platform-rendering fields (page layout, hero style, slide count,
-// etc.). Prompt-injection still happens via formatMediumConfig in the
-// orchestrator — the value just travels through contentTypeInputs now.
-
-function socialTone(overrides: Partial<ContentTypeInputField> = {}): ContentTypeInputField {
-  return {
-    key: "tone",
-    label: "Tone of Voice",
-    category: "content-style",
-    type: "select",
-    options: [
-      { value: "professional", label: "Professional" },
-      { value: "casual", label: "Casual" },
-      { value: "inspirational", label: "Inspirational" },
-      { value: "educational", label: "Educational" },
-      { value: "humorous", label: "Humorous" },
-    ],
-    helpText: "How the post should read overall",
-    aiDerivable: true,
-    aiHint: "Based on persona psychographics + brand personality",
-    ...overrides,
-  };
-}
+// writes (hashtag strategy, visual direction, etc.) — they belong with the
+// brief, not with the medium-rendering config in Step 3. The medium config
+// still holds platform-rendering fields (page layout, hero style, slide
+// count, etc.). Prompt-injection still happens via formatMediumConfig in
+// the orchestrator — the value just travels through contentTypeInputs now.
+//
+// The per-type tone + CTA-style fields that used to live here were removed
+// 2026-04-28 — they duplicated brief.toneDirection / brief.callToAction,
+// asking the same strategic question twice in different formats. The
+// curated tone/CTA vocabularies are exposed via TONE_SUGGESTIONS_BY_CATEGORY
+// and CTA_SUGGESTIONS_BY_CATEGORY so the unified Strategy fields in the
+// Content Brief section can show them as suggestion chips.
 
 function visualStyle(overrides: Partial<ContentTypeInputField> = {}): ContentTypeInputField {
   return {
@@ -253,24 +390,6 @@ function hashtagStrategy(overrides: Partial<ContentTypeInputField> = {}): Conten
   };
 }
 
-function socialCtaStyle(overrides: Partial<ContentTypeInputField> = {}): ContentTypeInputField {
-  return {
-    key: "ctaStyle",
-    label: "Call to Action",
-    category: "engagement",
-    type: "select",
-    options: [
-      { value: "subtle", label: "Subtle" },
-      { value: "direct", label: "Direct" },
-      { value: "question", label: "Question" },
-      { value: "none", label: "None" },
-    ],
-    helpText: "Style of how the post closes",
-    aiDerivable: true,
-    ...overrides,
-  };
-}
-
 function includeEmoji(overrides: Partial<ContentTypeInputField> = {}): ContentTypeInputField {
   return {
     key: "includeEmoji",
@@ -285,37 +404,22 @@ function includeEmoji(overrides: Partial<ContentTypeInputField> = {}): ContentTy
 
 /**
  * Standard set of content-style fields for all social-post types
- * (LinkedIn / Instagram / Facebook / X / TikTok / etc.).
+ * (LinkedIn / Instagram / Facebook / X / TikTok / etc.). Tone + CTA are
+ * handled by the unified Strategy fields in the Content Brief — see
+ * TONE_SUGGESTIONS_BY_CATEGORY / CTA_SUGGESTIONS_BY_CATEGORY for the
+ * social-specific suggestion chips.
  */
 function socialContentStyleFields(): ContentTypeInputField[] {
   return [
-    socialTone(),
     visualStyle(),
     hashtagStrategy(),
-    socialCtaStyle(),
     includeEmoji(),
   ];
 }
 
 // ── Long-form (blog / pillar / whitepaper / case-study / article / FAQ) ──
-
-function longFormTone(): ContentTypeInputField {
-  return {
-    key: "tone",
-    label: "Tone of Voice",
-    category: "content-style",
-    type: "select",
-    options: [
-      { value: "authoritative", label: "Authoritative — expert, definitive" },
-      { value: "conversational", label: "Conversational — friendly, peer-to-peer" },
-      { value: "analytical", label: "Analytical — data-driven, neutral" },
-      { value: "inspirational", label: "Inspirational — vision-driven, motivating" },
-      { value: "journalistic", label: "Journalistic — fact-first, investigative" },
-    ],
-    helpText: "Voice the article should adopt",
-    aiDerivable: true,
-  };
-}
+// Tone is unified into the Strategy field with long-form suggestion chips
+// (see TONE_SUGGESTIONS_BY_CATEGORY['long-form']).
 
 function articleStructure(): ContentTypeInputField {
   return {
@@ -398,7 +502,6 @@ function longFormSeoFocus(): ContentTypeInputField {
 
 function longFormContentStyleFields(): ContentTypeInputField[] {
   return [
-    longFormTone(),
     articleStructure(),
     readingLevel(),
     includeFaq(),
@@ -409,22 +512,8 @@ function longFormContentStyleFields(): ContentTypeInputField[] {
 }
 
 // ── Sales (one-pager / deck / proposal / product description) ──
-
-function salesTone(): ContentTypeInputField {
-  return {
-    key: "tone",
-    label: "Tone of Voice",
-    category: "content-style",
-    type: "select",
-    options: [
-      { value: "consultative", label: "Consultative — advisor approach" },
-      { value: "direct", label: "Direct — clear and assertive" },
-      { value: "premium", label: "Premium — sophisticated, high-end" },
-      { value: "friendly", label: "Friendly — warm and approachable" },
-    ],
-    aiDerivable: true,
-  };
-}
+// Tone + CTA-style are unified into the Strategy fields (see
+// TONE_SUGGESTIONS_BY_CATEGORY['sales'] and CTA_SUGGESTIONS_BY_CATEGORY['sales']).
 
 function salesAngle(): ContentTypeInputField {
   return {
@@ -464,44 +553,12 @@ function includePricing(): ContentTypeInputField {
   };
 }
 
-function salesCtaStyle(): ContentTypeInputField {
-  return {
-    key: "ctaStyle",
-    label: "Call to Action",
-    category: "engagement",
-    type: "select",
-    options: [
-      { value: "demo", label: "Request a Demo" },
-      { value: "meeting", label: "Book a Meeting" },
-      { value: "trial", label: "Start Free Trial" },
-      { value: "contact-sales", label: "Contact Sales" },
-      { value: "custom", label: "Custom CTA" },
-    ],
-    aiDerivable: true,
-  };
-}
-
 function salesContentStyleFields(): ContentTypeInputField[] {
-  return [salesTone(), salesAngle(), proofPointDensity(), includePricing(), salesCtaStyle()];
+  return [salesAngle(), proofPointDensity(), includePricing()];
 }
 
 // ── PR / HR / Comms ──
-
-function prTone(): ContentTypeInputField {
-  return {
-    key: "tone",
-    label: "Tone of Voice",
-    category: "content-style",
-    type: "select",
-    options: [
-      { value: "neutral-journalistic", label: "Neutral / Journalistic — press-release style" },
-      { value: "official", label: "Official — corporate formal" },
-      { value: "warm-personal", label: "Warm & Personal — HR / culture stories" },
-      { value: "advocacy", label: "Advocacy — mission-driven, public-facing" },
-    ],
-    aiDerivable: true,
-  };
-}
+// Tone is unified into the Strategy field (see TONE_SUGGESTIONS_BY_CATEGORY['pr-hr']).
 
 function prStructure(): ContentTypeInputField {
   return {
@@ -561,7 +618,7 @@ function hasEmbargo(): ContentTypeInputField {
 }
 
 function prContentStyleFields(): ContentTypeInputField[] {
-  return [prTone(), prStructure(), quoteCount(), includeBoilerplate(), includeContactBlock(), hasEmbargo()];
+  return [prStructure(), quoteCount(), includeBoilerplate(), includeContactBlock(), hasEmbargo()];
 }
 
 // ── Email ──
@@ -2492,6 +2549,39 @@ export function getContentTypeInputs(
   return CONTENT_TYPE_INPUTS[typeId]
     ?? CONTENT_TYPE_INPUTS[CONTENT_TYPE_ALIASES[typeId] ?? '']
     ?? [];
+}
+
+/**
+ * Resolve a content type to its category. Used by the unified Strategy
+ * tone/CTA fields in the Content Brief to scope suggestion chips. Returns
+ * null when the type id is unknown or the alias lookup fails.
+ */
+export function getContentCategory(typeId: string): ContentCategory | null {
+  const resolved = CONTENT_TYPE_ALIASES[typeId] ?? typeId;
+  return CATEGORY_BY_TYPE[resolved] ?? null;
+}
+
+/**
+ * Get the tone-of-voice suggestion chips for a content type, or null when
+ * no curated vocabulary exists (the Strategy tone field falls back to a
+ * plain free-text input in that case).
+ */
+export function getToneSuggestions(
+  typeId: string,
+): ReadonlyArray<{ value: string; label: string }> | null {
+  const category = getContentCategory(typeId);
+  return category ? (TONE_SUGGESTIONS_BY_CATEGORY[category] ?? null) : null;
+}
+
+/**
+ * Get the call-to-action suggestion chips for a content type, or null when
+ * no curated vocabulary exists.
+ */
+export function getCtaSuggestions(
+  typeId: string,
+): ReadonlyArray<{ value: string; label: string }> | null {
+  const category = getContentCategory(typeId);
+  return category ? (CTA_SUGGESTIONS_BY_CATEGORY[category] ?? null) : null;
 }
 
 /**

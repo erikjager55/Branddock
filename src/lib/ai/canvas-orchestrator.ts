@@ -888,13 +888,20 @@ function formatMediumConfig(config: Record<string, unknown>): string {
   }
 
   // ── Social Post ────────────────────────────────────────
+  // Tone + CTA were removed from contentTypeInputs in favour of the unified
+  // Strategy fields (brief.toneDirection / brief.callToAction). The legacy
+  // `tone` and `ctaStyle` reads stay here so old deliverables created before
+  // the migration still respect their stored values; new deliverables get
+  // tone/CTA via the brief block instead. The social block trigger now
+  // includes hashtagStrategy / visualStyle / includeEmoji so it fires even
+  // when tone/CTA are no longer in contentTypeInputs.
   const tone = config.tone as string | undefined;
   const hashtagStrategy = config.hashtagStrategy as string | undefined;
   const ctaStyleSocial = config.ctaStyle as string | undefined;
   const includeEmoji = config.includeEmoji as boolean | undefined;
   const visualStyle = config.visualStyle as string | undefined;
 
-  if (tone || hashtagStrategy || ctaStyleSocial) {
+  if (tone || hashtagStrategy || ctaStyleSocial || visualStyle || includeEmoji !== undefined) {
     if (tone) parts.push(`- Tone: Write in a ${tone} voice.`);
     if (visualStyle) parts.push(`- Visual style: ${visualStyle}.`);
     if (hashtagStrategy) {
