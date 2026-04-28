@@ -479,16 +479,20 @@ function FontDisplayCard({
       </p>
 
       {/* Big Aa specimen + name */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-6 min-w-0">
         <div
-          className="leading-none text-gray-900 select-none"
+          className="leading-none text-gray-900 select-none flex-shrink-0"
           style={{ fontFamily: normalised ? `"${normalised}", system-ui, -apple-system, sans-serif` : undefined, fontSize: '5.25rem', fontWeight: 600 }}
         >
           Aa
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
+          {/* break-all handles long hash-style font names (no spaces) that
+              `break-words` won't wrap. Truncate to 2 lines after that so a
+              60-char hash doesn't push the card height absurdly. */}
           <div
-            className="text-2xl font-semibold text-gray-900 break-words leading-tight"
+            className="text-2xl font-semibold text-gray-900 break-all leading-tight line-clamp-2"
+            title={name ?? undefined}
             style={{ fontFamily: normalised ? `"${normalised}", system-ui, -apple-system, sans-serif` : undefined }}
           >
             {name}
