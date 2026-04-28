@@ -12,7 +12,7 @@
 // =============================================================
 
 import { prisma } from '@/lib/prisma';
-import { assembleCanvasContext, type CanvasContextStack, type MediumContext, type PersonaContext, type BriefContext, type ProductContext } from './canvas-context';
+import { assembleCanvasContext, type CanvasContextStack, type MediumContext, type PersonaContext, type BriefContext, type ProductContext, type VisualBrief, type VisualStyleDirection } from './canvas-context';
 import { createStructuredCompletion } from './exploration/ai-caller';
 import { resolveFeatureModel, assertProvider } from './feature-models.server';
 import { getFeatureDefinition, type AiProvider } from './feature-models';
@@ -629,6 +629,7 @@ function buildCanvasPrompt(
     formatContentTypeInputs(stack.contentTypeInputs, contentType),
     medium ? formatMediumSpecs(medium) : '',
     formatMergedMediumConfig(options?.mediumConfig, stack.contentTypeInputs),
+    formatVisualBrief(stack.visualBrief ?? null),
     contentType ? formatConstraintsForPrompt(contentType) : '',
     options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
   ]
@@ -643,7 +644,7 @@ function buildCanvasPrompt(
     .join('\n');
 
   const imageInstruction = hasImageComponent
-    ? '\n\nAlso generate 2 "imagePrompts" — detailed image generation prompts that match the brand visual identity. Each prompt should describe the image in detail including style, composition, and mood.'
+    ? buildImagePromptInstruction(stack.visualBrief ?? null)
     : '';
 
   const userInstruction = options?.instruction
@@ -739,6 +740,7 @@ function buildRegenerationPrompt(
     stack.products.length > 0 ? formatProductContext(stack.products) : '',
     formatContentTypeInputs(stack.contentTypeInputs, regenContentType),
     formatMergedMediumConfig(options?.mediumConfig, stack.contentTypeInputs),
+    formatVisualBrief(stack.visualBrief ?? null),
     regenContentType ? formatConstraintsForPrompt(regenContentType) : '',
     options?.additionalContextText ? `\n## Additional Context\n${options.additionalContextText}` : '',
   ]
@@ -1428,4 +1430,93 @@ async function persistRegeneratedGroup(
 
   invalidateCache(cacheKeys.prefixes.campaigns(workspaceId));
   invalidateCache(cacheKeys.prefixes.dashboard(workspaceId));
+}
+
+// ─── Visual Brief — rich style-direction mapping ──────────────────────
+//
+// Replaces the old single-line "- Visual style: lifestyle." injection.
+// Every chip emits explicit guidance for both text-generation (so the
+// AI matches its prose to the visual mood — e.g. infographic = data-led,
+// short captions; lifestyle = narrative, sensory) AND for image-prompt
+// generation (so DALL-E / Imagen / FLUX get concrete composition rules).
+
+const VISUAL_STYLE_TEXT_INSTRUCTIONS: Record<VisualStyleDirection, string> = {
+  lifestyle:
+    'Match the visual\'s narrative-led energy. Write in scenes — situate the reader in a real moment. Sensory details over abstract claims. Keep paragraphs flowing, not bulleted.',
+  'product-shot':
+    'The image is hero-product focused. Lead copy with the product\'s clearest benefit. Tight, declarative sentences. No long anecdotes — the visual already does the seducing.',
+  'quote-text':
+    'The visual is typography-led; the quote IS the content. Punch up the headline / hook. Body copy stays minimal. Aim for memorable, repeatable phrasing.',
+  'behind-the-scenes':
+    'The image is candid / process-focused. Use first-person voice ("we", "our team"). Be honest about the work, not glossy. Imperfect details build trust.',
+  ugc: 'The image looks user-shot (handheld, raw). Write copy that reads like a real customer wrote it — natural sentence rhythm, no marketing polish, no hype words.',
+  infographic:
+    'The visual carries the data. Keep prose minimal — short callouts, key numbers in bold. Structure: claim → stat → implication. Avoid filler sentences that the chart already makes.',
+  illustration:
+    'The visual is drawn / vector. Match it with confident, approachable copy. Slightly playful tone is fine. Concrete metaphors land well alongside illustration.',
+  'data-driven':
+    'Numbers carry the argument. Lead with the headline number, then context, then implication. Hedge sparingly. Cite sources where critical.',
+};
+
+const VISUAL_STYLE_IMAGE_INSTRUCTIONS: Record<VisualStyleDirection, string> = {
+  lifestyle:
+    'Lifestyle photography: real people in authentic situations using the product/service. Natural lighting, candid composition, environmental context. Avoid posed studio shots.',
+  'product-shot':
+    'Clean product photography: isolated subject on simple background, controlled studio lighting, hero composition. Focus is the product itself with crisp details.',
+  'quote-text':
+    'Typography-led design: large quote / phrase as the focal point. Brand colors for accent. Minimal supporting imagery. Geometric or solid background.',
+  'behind-the-scenes':
+    'Documentary photography: candid team / workspace / process shots. Available light, slight grain, real moments. Not glossy or staged.',
+  ugc: 'User-generated style: handheld phone composition, natural light, slight imperfection. Authentic and unpolished. Avoid professional studio polish.',
+  infographic:
+    'Information graphic: data viz, icons, structured layout. Clear visual hierarchy. Brand colors for accent on data points. Minimal decoration.',
+  illustration:
+    'Illustrated artwork: drawn or vector style. Confident lines, on-brand color palette. Can be conceptual / metaphorical. Not photorealistic.',
+  'data-driven':
+    'Editorial chart-led layout: prominent data viz (chart/graph) as the hero. Headline number large. Minimal accompanying decoration. Magazine-quality.',
+};
+
+/**
+ * Format the Visual Brief as a system-prompt block. Returns empty string
+ * when no brief is set or no direction has been chosen — the orchestrator
+ * runs unchanged in that case (backward compat for old deliverables).
+ */
+function formatVisualBrief(brief: VisualBrief | null): string {
+  if (!brief) return '';
+  if (brief.source === 'none') {
+    return '\n## Visual Direction\n(No visual will be produced for this content item — focus all output on the text components.)';
+  }
+  const chip = brief.styleDirection;
+  const freeText = brief.styleDirectionFreeText?.trim() ?? '';
+  if (!chip && !freeText) return '';
+  const lines = ['\n## Visual Direction'];
+  if (chip) {
+    const label = chip.replace(/-/g, ' ');
+    lines.push(`Visual style: **${label}**.`);
+    lines.push(VISUAL_STYLE_TEXT_INSTRUCTIONS[chip]);
+  }
+  if (freeText) {
+    lines.push(`Additional direction: ${freeText}`);
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Build the imagePrompt instruction line. When a visual brief is set with
+ * a chip, inject the chip's image-side mapping directly into the prompt
+ * the AI uses to write image generation prompts — Claude no longer needs
+ * to infer composition from the brand context alone.
+ */
+function buildImagePromptInstruction(brief: VisualBrief | null): string {
+  const baseInstruction =
+    '\n\nAlso generate 2 "imagePrompts" — detailed image generation prompts that match the brand visual identity. Each prompt should describe the image in detail including style, composition, and mood.';
+  if (!brief || brief.source === 'none') return baseInstruction;
+
+  const chipGuide = brief.styleDirection
+    ? `\n\nIMAGE STYLE — apply this composition to BOTH imagePrompts:\n${VISUAL_STYLE_IMAGE_INSTRUCTIONS[brief.styleDirection]}`
+    : '';
+  const freeTextGuide = brief.styleDirectionFreeText?.trim()
+    ? `\nAdditional visual direction from the user: ${brief.styleDirectionFreeText.trim()}`
+    : '';
+  return baseInstruction + chipGuide + freeTextGuide;
 }

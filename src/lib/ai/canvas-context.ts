@@ -53,6 +53,75 @@ export interface BriefContext {
   contentOutline: string[];
 }
 
+/**
+ * Visual style chips — a finite vocabulary that scopes both text-prompt
+ * style direction AND image-prompt composition guidance. The orchestrator
+ * has rich per-chip mappings (see canvas-orchestrator.ts) so picking
+ * "infographic" emits different instructions to Claude/DALL-E than
+ * "lifestyle". Free text is allowed via styleDirectionFreeText.
+ */
+export type VisualStyleDirection =
+  | 'lifestyle'
+  | 'product-shot'
+  | 'quote-text'
+  | 'behind-the-scenes'
+  | 'ugc'
+  | 'infographic'
+  | 'illustration'
+  | 'data-driven';
+
+/**
+ * How the visual for this content item gets sourced. Phase 1 only wires
+ * `generate` and `none` end-to-end; library/compose/trained-style come
+ * online in later phases (per-source pickers + pipeline branches).
+ */
+export type VisualBriefSource =
+  | 'generate'
+  | 'library'
+  | 'compose'
+  | 'trained-style'
+  | 'none';
+
+/**
+ * Strategic visual direction set in Step 1 of the Canvas. Replaces the
+ * previous tag-only `visualStyle` / `visualDirection` / `contentStyle`
+ * fields scattered across content-type-inputs that asked similar things
+ * in incompatible formats.
+ *
+ * The Visual Brief lives in `settings.visualBrief` (Json on Deliverable)
+ * and flows through to the orchestrator via assembleCanvasContext.
+ */
+export interface VisualBrief {
+  source: VisualBriefSource;
+  /** One of the canonical style chips — null when not chosen. */
+  styleDirection: VisualStyleDirection | null;
+  /** Free-text style notes — used when none of the chips fit. */
+  styleDirectionFreeText: string | null;
+  /** Per-source config blocks — only the active source's block is read. */
+  generate?: {
+    /** Image model preference (imagen-4 / dall-e-3 / flux-pro / recraft / ideogram). */
+    model?: string;
+    /** Override the AI-derived image prompt with explicit user prose. */
+    promptOverride?: string;
+  };
+  library?: {
+    /** MediaAsset IDs picked from the library — used directly as image variants. */
+    assetIds: string[];
+  };
+  compose?: {
+    /** 2-9 reference MediaAsset IDs fed to FLUX 2 multi-reference compositing. */
+    referenceIds: string[];
+    /** Natural-language compose instruction (e.g. "Sarah holding the product in a coffee shop"). */
+    instruction: string;
+  };
+  trained?: {
+    /** ConsistentModel ID — the user's trained LoRA for branded photography / illustration / etc. */
+    modelId: string;
+    /** Style strength 0-100. */
+    strength?: number;
+  };
+}
+
 export interface ProductContext {
   id: string;
   name: string;
@@ -76,6 +145,8 @@ export interface CanvasContextStack {
   products: ProductContext[];
   /** Type-specific inputs (SEO keywords, landing page URL, event details, etc.) */
   contentTypeInputs?: Record<string, string | string[] | number | boolean>;
+  /** Strategic visual direction for this content item — see VisualBrief. */
+  visualBrief?: VisualBrief | null;
 }
 
 // ─── Content Type → Platform/Format Mapping ──────────────────
@@ -345,9 +416,83 @@ export async function assembleCanvasContext(
   const contentTypeInputs = (settings.contentTypeInputs ?? undefined) as
     Record<string, string | string[] | number | boolean> | undefined;
 
+  // Visual Brief — strategic visual direction (source + style chips). Falls
+  // back to migrating legacy contentTypeInputs.visualStyle / visualDirection
+  // / contentStyle into styleDirectionFreeText so existing deliverables
+  // don't lose their visual hint after the schema migration.
+  const visualBrief = parseVisualBrief(settings.visualBrief, contentTypeInputs);
+
   return {
     brand, concept, journeyPhase, medium,
     deliverableTypeId: deliverable.contentType ?? null,
-    personas, brief, products, contentTypeInputs,
+    personas, brief, products, contentTypeInputs, visualBrief,
   };
+}
+
+/**
+ * Parse the stored Json `settings.visualBrief` into a typed VisualBrief.
+ * Returns null when nothing has been set AND there is no legacy data to
+ * migrate. Legacy migration: pre-VisualBrief deliverables stored visual
+ * hints in `contentTypeInputs.visualStyle / visualDirection / contentStyle`
+ * — we surface those as styleDirectionFreeText so the orchestrator still
+ * has something to inject.
+ */
+function parseVisualBrief(
+  raw: unknown,
+  legacyInputs: Record<string, string | string[] | number | boolean> | undefined,
+): VisualBrief | null {
+  // New schema — stored object shape
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const obj = raw as Record<string, unknown>;
+    const source = (obj.source ?? 'generate') as VisualBriefSource;
+    const styleDirection = (obj.styleDirection ?? null) as VisualStyleDirection | null;
+    const styleDirectionFreeText = (obj.styleDirectionFreeText ?? null) as string | null;
+    const generate = obj.generate as VisualBrief['generate'];
+    const library = obj.library as VisualBrief['library'];
+    const compose = obj.compose as VisualBrief['compose'];
+    const trained = obj.trained as VisualBrief['trained'];
+    return { source, styleDirection, styleDirectionFreeText, generate, library, compose, trained };
+  }
+  // Legacy migration — synthesize a minimal VisualBrief from old keys
+  const legacyVisualStyle = typeof legacyInputs?.visualStyle === 'string' ? legacyInputs.visualStyle : null;
+  const legacyVisualDirection = typeof legacyInputs?.visualDirection === 'string' ? legacyInputs.visualDirection : null;
+  const legacyContentStyle = typeof legacyInputs?.contentStyle === 'string' ? legacyInputs.contentStyle : null;
+  const freeText = legacyVisualDirection ?? null;
+  const styleDirection = mapLegacyStyleToChip(legacyVisualStyle ?? legacyContentStyle);
+  if (!freeText && !styleDirection) return null;
+  return {
+    source: 'generate',
+    styleDirection,
+    styleDirectionFreeText: freeText,
+  };
+}
+
+/**
+ * Best-effort mapping from the old free-form `visualStyle` / `contentStyle`
+ * values to the canonical chip vocabulary. Unknown values fall through to
+ * null and the user can re-pick a chip.
+ */
+function mapLegacyStyleToChip(value: string | null): VisualStyleDirection | null {
+  if (!value) return null;
+  const v = value.toLowerCase().trim();
+  const map: Record<string, VisualStyleDirection> = {
+    photo: 'lifestyle',
+    illustration: 'illustration',
+    'text-only': 'quote-text',
+    infographic: 'infographic',
+    'product shot': 'product-shot',
+    'product-shot': 'product-shot',
+    lifestyle: 'lifestyle',
+    'quote / text': 'quote-text',
+    'behind the scenes': 'behind-the-scenes',
+    'user-generated': 'ugc',
+    'product focused': 'product-shot',
+    testimonial: 'lifestyle',
+    'data / statistic': 'data-driven',
+    'data-driven': 'data-driven',
+    'photo-centric': 'lifestyle',
+    'clean & minimal': 'quote-text',
+    'bold & colorful': 'lifestyle',
+  };
+  return map[v] ?? null;
 }

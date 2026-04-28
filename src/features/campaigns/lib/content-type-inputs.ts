@@ -284,19 +284,6 @@ function landingPageUrl(): ContentTypeInputField {
   };
 }
 
-function visualDirection(): ContentTypeInputField {
-  return {
-    key: "visualDirection",
-    label: "Visual Direction",
-    category: "creative-direction",
-    type: "textarea",
-    placeholder: "e.g. Clean, professional photography with teal accents",
-    helpText: "Guidance for accompanying visuals",
-    aiDerivable: true,
-    aiHint: "Based on brand style and campaign tone",
-  };
-}
-
 function videoDuration(): ContentTypeInputField {
   return {
     key: "videoDuration",
@@ -340,37 +327,17 @@ function subjectLine(): ContentTypeInputField {
 
 // ─── Content-styling field builders ───────────────────────
 // Migrated 2026-04-27 from medium-config-registry. These shape WHAT the AI
-// writes (hashtag strategy, visual direction, etc.) — they belong with the
-// brief, not with the medium-rendering config in Step 3. The medium config
-// still holds platform-rendering fields (page layout, hero style, slide
-// count, etc.). Prompt-injection still happens via formatMediumConfig in
-// the orchestrator — the value just travels through contentTypeInputs now.
+// writes (hashtag strategy, etc.) — they belong with the brief, not with
+// the medium-rendering config in Step 3.
 //
-// The per-type tone + CTA-style fields that used to live here were removed
-// 2026-04-28 — they duplicated brief.toneDirection / brief.callToAction,
-// asking the same strategic question twice in different formats. The
-// curated tone/CTA vocabularies are exposed via TONE_SUGGESTIONS_BY_CATEGORY
-// and CTA_SUGGESTIONS_BY_CATEGORY so the unified Strategy fields in the
-// Content Brief section can show them as suggestion chips.
-
-function visualStyle(overrides: Partial<ContentTypeInputField> = {}): ContentTypeInputField {
-  return {
-    key: "visualStyle",
-    label: "Visual Style",
-    category: "content-style",
-    type: "select",
-    options: [
-      { value: "photo", label: "Photo" },
-      { value: "illustration", label: "Illustration" },
-      { value: "text-only", label: "Text Only" },
-      { value: "infographic", label: "Infographic" },
-    ],
-    helpText: "Direction for the accompanying visual",
-    aiDerivable: true,
-    aiHint: "Default to photo unless brand or content type suggests otherwise",
-    ...overrides,
-  };
-}
+// Removed 2026-04-28: per-type tone + CTA-style fields (duplicated
+// brief.toneDirection / brief.callToAction).
+//
+// Removed 2026-04-28 (Visual Brief migration): visualStyle / visualDirection
+// / contentStyle / carouselVisualStyle / adVisualStyle. They're replaced by
+// settings.visualBrief (Step 1 Visual Brief subsection) which gives a
+// single coherent answer per content item: source + style chip with rich
+// per-chip prompt mapping in canvas-orchestrator.
 
 function hashtagStrategy(overrides: Partial<ContentTypeInputField> = {}): ContentTypeInputField {
   return {
@@ -411,11 +378,10 @@ function includeEmoji(overrides: Partial<ContentTypeInputField> = {}): ContentTy
  * social-specific suggestion chips.
  */
 function socialContentStyleFields(): ContentTypeInputField[] {
-  return [
-    visualStyle(),
-    hashtagStrategy(),
-    includeEmoji(),
-  ];
+  // Visual style now lives in the Visual Brief subsection (Step 1) — see
+  // settings.visualBrief.styleDirection. Bundle keeps the social-specific
+  // engagement knobs.
+  return [hashtagStrategy(), includeEmoji()];
 }
 
 // ── Long-form (blog / pillar / whitepaper / case-study / article / FAQ) ──
@@ -618,22 +584,7 @@ function emailContentStyleFields(): ContentTypeInputField[] {
 }
 
 // ── Carousel ──
-
-function carouselVisualStyle(): ContentTypeInputField {
-  return {
-    key: "visualStyle",
-    label: "Visual Theme",
-    category: "content-style",
-    type: "select",
-    options: [
-      { value: "clean-minimal", label: "Clean & Minimal" },
-      { value: "bold-colorful", label: "Bold & Colorful" },
-      { value: "photo-centric", label: "Photo-Centric" },
-      { value: "data-driven", label: "Data-Driven" },
-    ],
-    aiDerivable: true,
-  };
-}
+// Visual theme moved to Visual Brief (settings.visualBrief.styleDirection).
 
 function transitionStyle(): ContentTypeInputField {
   return {
@@ -661,7 +612,7 @@ function includeCtaSlide(): ContentTypeInputField {
 }
 
 function carouselContentStyleFields(): ContentTypeInputField[] {
-  return [carouselVisualStyle(), transitionStyle(), includeCtaSlide()];
+  return [transitionStyle(), includeCtaSlide()];
 }
 
 // ── Podcast ──
@@ -731,22 +682,7 @@ function podcastContentStyleFields(): ContentTypeInputField[] {
 }
 
 // ── Advertising ──
-
-function adVisualStyle(): ContentTypeInputField {
-  return {
-    key: "visualStyle",
-    label: "Visual Style",
-    category: "content-style",
-    type: "select",
-    options: [
-      { value: "product-focused", label: "Product Focused" },
-      { value: "lifestyle", label: "Lifestyle" },
-      { value: "testimonial", label: "Testimonial" },
-      { value: "data-stat", label: "Data / Statistic" },
-    ],
-    aiDerivable: true,
-  };
-}
+// Visual style moved to Visual Brief (settings.visualBrief.styleDirection).
 
 function adCtaType(): ContentTypeInputField {
   return {
@@ -786,7 +722,7 @@ function socialProof(): ContentTypeInputField {
 }
 
 function adContentStyleFields(): ContentTypeInputField[] {
-  return [adVisualStyle(), adCtaType(), urgencyLevel(), socialProof()];
+  return [adCtaType(), urgencyLevel(), socialProof()];
 }
 
 // ── Video ──
@@ -1053,7 +989,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on content goal and audience",
     },
-    visualDirection(),
   ],
 
   "linkedin-ad": [
@@ -1105,7 +1040,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on content type and available resources",
     },
-    visualDirection(),
   ],
 
   "linkedin-event": [
@@ -1181,24 +1115,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
 
   "instagram-post": [
     ...socialContentStyleFields(),
-    {
-      key: "contentStyle",
-      label: "Content Style",
-      category: "creative-direction",
-      type: "select",
-      options: [
-        "Product Shot",
-        "Lifestyle",
-        "Quote / Text",
-        "Behind the Scenes",
-        "User-Generated",
-        "Infographic",
-      ],
-      helpText: "Visual content approach",
-      aiDerivable: true,
-      aiHint: "Based on campaign goal and brand style",
-    },
-    visualDirection(),
   ],
 
   "twitter-thread": [
@@ -1646,7 +1562,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on campaign scope, typically 3-5",
     },
-    visualDirection(),
   ],
 
   // ── Video & Audio ──────────────────────────────────────
@@ -1719,7 +1634,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on brand personality and video tone",
     },
-    visualDirection(),
   ],
 
   "webinar-outline": [

@@ -3,11 +3,12 @@
 import React from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
-import { Building2, Lightbulb, Route, Monitor, BookOpen, Plus, X, Sparkles, Search, Trash2, FileText } from 'lucide-react';
+import { Building2, Lightbulb, Route, Monitor, BookOpen, Plus, X, Sparkles, Search, Trash2, FileText, Image as ImageIcon } from 'lucide-react';
 import { Badge, Skeleton, SkeletonText } from '@/components/shared';
 import { WEBSITE_DELIVERABLE_TYPES } from '@/lib/ai/seo-pipeline.types';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { BrandContextBlock } from '@/lib/ai/prompt-templates';
+import type { VisualBriefSource, VisualStyleDirection } from '@/lib/ai/canvas-context';
 import { ContentTypeInputFields } from '../../shared/ContentTypeInputFields';
 import {
   getContentTypeInputs,
@@ -177,6 +178,13 @@ export function Step1Context({ deliverableId, onAdvance }: Step1ContextProps) {
           formats. Strategy fields persist in `settings.brief`; type-specific
           fields persist in `settings.contentTypeInputs`. */}
       <ContentBriefSection />
+
+      {/* Visual Brief — strategic visual direction (source + style chips).
+          Source picks which pipeline runs at generate-time; style chips
+          drive both text-prompt mediumConfig and image-prompt instructions.
+          Persists in `settings.visualBrief`. Phase 1 wires the `generate`
+          source end-to-end; library/compose/trained-style are placeholders. */}
+      <VisualBriefSection />
 
       {/* Knowledge context */}
       {additionalContextItems.size > 0 && (
@@ -696,6 +704,170 @@ function ContentBriefSection() {
               />
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Visual Brief subsection ──────────────────────────────────
+
+const VISUAL_SOURCES: Array<{
+  value: VisualBriefSource;
+  label: string;
+  description: string;
+  ready: boolean;
+}> = [
+  {
+    value: 'generate',
+    label: 'Generate',
+    description: 'AI creates the visual from scratch (Imagen / DALL-E / Flux)',
+    ready: true,
+  },
+  {
+    value: 'library',
+    label: 'From library',
+    description: 'Pick existing assets from your Media Library',
+    ready: false,
+  },
+  {
+    value: 'compose',
+    label: 'Compose',
+    description: 'Combine multiple library images via natural language (e.g. "model holding the product")',
+    ready: false,
+  },
+  {
+    value: 'trained-style',
+    label: 'Trained style',
+    description: 'Apply your trained AI Model (illustration / photography / brand style)',
+    ready: false,
+  },
+  {
+    value: 'none',
+    label: 'No visual',
+    description: 'Skip image generation for this content item',
+    ready: true,
+  },
+];
+
+const STYLE_CHIPS: Array<{ value: VisualStyleDirection; label: string; description: string }> = [
+  { value: 'lifestyle', label: 'Lifestyle', description: 'People in real situations using the product/service' },
+  { value: 'product-shot', label: 'Product shot', description: 'Clean isolated subject, controlled lighting' },
+  { value: 'quote-text', label: 'Quote / text', description: 'Typography-led, no central subject' },
+  { value: 'behind-the-scenes', label: 'Behind the scenes', description: 'Candid team / process / workspace shots' },
+  { value: 'ugc', label: 'UGC', description: 'User-generated style: handheld, raw, authentic' },
+  { value: 'infographic', label: 'Infographic', description: 'Data viz, icons, structured layout' },
+  { value: 'illustration', label: 'Illustration', description: 'Drawn / vector style' },
+  { value: 'data-driven', label: 'Data-driven', description: 'Chart-led editorial, numbers in focus' },
+];
+
+/**
+ * Visual Brief — Phase 1 of the four-source visual architecture (see
+ * canvas-context.ts VisualBrief type). Asks two strategic questions:
+ *
+ *  1. Source — which pipeline runs when generating? (generate / library /
+ *     compose / trained-style / none). Phase 1 wires `generate` and `none`
+ *     fully; the others are placeholders that fall back to generate until
+ *     Phases 3-5 add per-source pickers in Step 2.
+ *
+ *  2. Style direction — a chip from the canonical vocabulary, drives both
+ *     text-prompt mediumConfig and image-prompt instructions via rich
+ *     mapping in canvas-orchestrator. Free text is still allowed via the
+ *     plain input below the chips.
+ */
+function VisualBriefSection() {
+  const visualBrief = useCanvasStore((s) => s.visualBrief);
+  const setSource = useCanvasStore((s) => s.setVisualBriefSource);
+  const setStyleDirection = useCanvasStore((s) => s.setVisualBriefStyleDirection);
+
+  const filledChip = visualBrief.styleDirection;
+  const freeText = visualBrief.styleDirectionFreeText ?? '';
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-3">
+      <div className="flex items-center gap-2 mb-3">
+        <ImageIcon className="h-4 w-4 text-violet-600" />
+        <span className="text-sm font-medium text-gray-700">Visual Brief</span>
+      </div>
+      <p className="text-xs text-gray-500 mb-3">
+        How the visual gets made. Source picks the pipeline, style direction
+        steers both what the AI writes and what it generates.
+      </p>
+
+      {/* Source — radio cards */}
+      <div className="space-y-2 mb-4">
+        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+          Source
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {VISUAL_SOURCES.map((opt) => {
+            const active = visualBrief.source === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setSource(opt.value)}
+                disabled={!opt.ready && !active}
+                className={
+                  active
+                    ? 'text-left rounded-md border-2 border-violet-400 bg-violet-50 p-2.5'
+                    : opt.ready
+                      ? 'text-left rounded-md border border-gray-200 bg-white p-2.5 hover:border-gray-300 hover:bg-gray-50'
+                      : 'text-left rounded-md border border-gray-200 bg-gray-50 p-2.5 cursor-not-allowed opacity-60'
+                }
+              >
+                <div className="flex items-center justify-between">
+                  <span className={`text-sm font-medium ${active ? 'text-violet-900' : 'text-gray-900'}`}>
+                    {opt.label}
+                  </span>
+                  {!opt.ready && (
+                    <span className="text-[10px] text-gray-400 uppercase tracking-wider">soon</span>
+                  )}
+                </div>
+                <p className="text-[11px] text-gray-500 leading-snug mt-0.5">{opt.description}</p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Style direction — chips + free text */}
+      {visualBrief.source !== 'none' && (
+        <div className="space-y-2">
+          <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+            Style direction
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {STYLE_CHIPS.map((chip) => {
+              const active = filledChip === chip.value;
+              return (
+                <button
+                  key={chip.value}
+                  type="button"
+                  onClick={() => setStyleDirection(active ? null : chip.value)}
+                  title={chip.description}
+                  className={
+                    active
+                      ? 'inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-violet-100 text-violet-800 border border-violet-300'
+                      : 'inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                  }
+                >
+                  {chip.label}
+                </button>
+              );
+            })}
+          </div>
+          <textarea
+            value={freeText}
+            onChange={(e) => setStyleDirection(filledChip, e.target.value)}
+            placeholder={
+              filledChip
+                ? 'Add extra direction (mood, colors, references) — optional'
+                : 'Or describe the visual direction in free text'
+            }
+            rows={2}
+            className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-400 resize-y"
+          />
         </div>
       )}
     </div>

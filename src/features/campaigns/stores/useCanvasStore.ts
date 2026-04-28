@@ -5,7 +5,12 @@
 import { create } from 'zustand';
 import type { CanvasVariant, CanvasImageVariant, ApprovalStatus } from '../types/canvas.types';
 import type { StepSummaryData } from '../types/accordion.types';
-import type { CanvasContextStack } from '@/lib/ai/canvas-context';
+import type {
+  CanvasContextStack,
+  VisualBrief,
+  VisualBriefSource,
+  VisualStyleDirection,
+} from '@/lib/ai/canvas-context';
 import type { MediumCategory, MediumVariant } from '../types/medium-config.types';
 type GenerationStatus = 'idle' | 'generating' | 'complete' | 'error';
 
@@ -141,6 +146,15 @@ interface CanvasStoreState {
   };
   briefModified: boolean;
 
+  // ─── Visual Brief (settings.visualBrief) ──────────────────
+  // Strategic visual direction picked in Step 1. Source decides which
+  // pipeline runs at generate-time (generate / library / compose /
+  // trained-style); styleDirection feeds into both text and image prompts
+  // via the rich mapping in canvas-orchestrator. Phase 1 wires the
+  // `generate` source end-to-end; library/compose/trained come later.
+  visualBrief: VisualBrief;
+  visualBriefModified: boolean;
+
   // ─── SEO Pipeline ────────────────────────────────────────
   seoInput: { primaryKeyword: string; funnelStage: 'awareness' | 'consideration' | 'decision'; competitorUrls: string[] };
   seoSteps: Array<{ step: number; name: string; label: string; status: 'pending' | 'running' | 'complete' | 'error'; preview: string | null }>;
@@ -223,6 +237,17 @@ interface CanvasStoreState {
     }>,
   ) => void;
 
+  /** Visual Brief actions — flips `visualBriefModified` so the autosave fires. */
+  setVisualBriefSource: (source: VisualBriefSource) => void;
+  setVisualBriefStyleDirection: (
+    chip: VisualStyleDirection | null,
+    freeText?: string | null,
+  ) => void;
+  setVisualBriefField: <K extends 'generate' | 'library' | 'compose' | 'trained'>(
+    key: K,
+    value: VisualBrief[K],
+  ) => void;
+
   // ─── SEO actions ─────────────────────────────────────────
   setSeoInput: (input: Partial<{ primaryKeyword: string; funnelStage: 'awareness' | 'consideration' | 'decision'; competitorUrls: string[] }>) => void;
   initSeoSteps: () => void;
@@ -293,6 +318,15 @@ const INITIAL_STATE = {
   brief: { objective: '', keyMessage: '', toneDirection: '', callToAction: '' },
   briefModified: false,
 
+  // Visual Brief — defaults to "generate" source, no style chip picked.
+  // The orchestrator runs unchanged when nothing is set (existing behavior).
+  visualBrief: {
+    source: 'generate' as VisualBriefSource,
+    styleDirection: null,
+    styleDirectionFreeText: null,
+  } as VisualBrief,
+  visualBriefModified: false,
+
   // SEO Pipeline
   seoInput: { primaryKeyword: '', funnelStage: 'awareness' as const, competitorUrls: [] as string[] },
   seoSteps: [] as Array<{ step: number; name: string; label: string; status: 'pending' | 'running' | 'complete' | 'error'; preview: string | null }>,
@@ -338,6 +372,13 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
           hydratedBrief.toneDirection ||
           hydratedBrief.callToAction);
 
+      // Visual Brief hydration — assembleCanvasContext already migrates
+      // legacy contentTypeInputs.visualStyle / visualDirection / contentStyle
+      // into stack.visualBrief, so we just copy across when unmodified.
+      const hydratedVisual = stack.visualBrief;
+      const shouldHydrateVisual =
+        !state.visualBriefModified && hydratedVisual != null;
+
       return {
         contextStack: stack,
         ...(shouldHydrateInputs ? { contentTypeInputs: hydratedInputs } : {}),
@@ -351,6 +392,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
               },
             }
           : {}),
+        ...(shouldHydrateVisual ? { visualBrief: hydratedVisual } : {}),
       };
     }),
 
@@ -492,6 +534,31 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
         callToAction: brief.callToAction ?? state.brief.callToAction,
       },
       briefModified: false,
+    })),
+
+  setVisualBriefSource: (source) =>
+    set((state) => ({
+      visualBrief: { ...state.visualBrief, source },
+      visualBriefModified: true,
+    })),
+
+  setVisualBriefStyleDirection: (chip, freeText) =>
+    set((state) => ({
+      visualBrief: {
+        ...state.visualBrief,
+        styleDirection: chip,
+        // Keep free text in sync — clearing the chip clears free text only
+        // when the caller passed an explicit override.
+        styleDirectionFreeText:
+          freeText !== undefined ? freeText : state.visualBrief.styleDirectionFreeText,
+      },
+      visualBriefModified: true,
+    })),
+
+  setVisualBriefField: (key, value) =>
+    set((state) => ({
+      visualBrief: { ...state.visualBrief, [key]: value },
+      visualBriefModified: true,
     })),
 
   setSeoInput: (input) =>

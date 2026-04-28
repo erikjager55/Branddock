@@ -100,6 +100,8 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
   const contentTypeInputsModified = useCanvasStore((s) => s.contentTypeInputsModified);
   const brief = useCanvasStore((s) => s.brief);
   const briefModified = useCanvasStore((s) => s.briefModified);
+  const visualBrief = useCanvasStore((s) => s.visualBrief);
+  const visualBriefModified = useCanvasStore((s) => s.visualBriefModified);
 
   const { data: existingComponents, isLoading: componentsLoading } = useCanvasComponents(deliverableId);
 
@@ -396,6 +398,29 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
       controller.abort();
     };
   }, [brief, briefModified, deliverableId]);
+
+  // Visual Brief autosave — same debounced PATCH pattern as the briefing.
+  // Persists settings.visualBrief so source + style chip survive reopen and
+  // feed forward into the orchestrator's text + image prompt builders.
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    if (!visualBriefModified) return;
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`/api/studio/${deliverableId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({ settings: { visualBrief } }),
+      }).catch((err) => {
+        if ((err as Error).name === 'AbortError') return;
+      });
+    }, 500);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [visualBrief, visualBriefModified, deliverableId]);
 
   const handleBack = () => {
     onNavigate('campaign-detail');
