@@ -162,6 +162,7 @@ const CATEGORY_BY_TYPE: Record<string, ContentCategory> = {
   'product-page': 'web-page',
   'faq-page': 'web-page',
   'comparison-page': 'web-page',
+  microsite: 'web-page',
 };
 
 /**
@@ -463,51 +464,17 @@ function includeFaq(): ContentTypeInputField {
   };
 }
 
-function includeQuotes(): ContentTypeInputField {
-  return {
-    key: "includeQuotes",
-    label: "Include Expert Quotes / Testimonials",
-    category: "engagement",
-    type: "boolean",
-    helpText: "Insert placeholder quote markers for later fill-in",
-  };
-}
-
-function internalLinking(): ContentTypeInputField {
-  return {
-    key: "internalLinking",
-    label: "Internal Linking",
-    category: "engagement",
-    type: "select",
-    options: [
-      { value: "subtle", label: "Subtle — 1-2 contextual links" },
-      { value: "moderate", label: "Moderate — 3-5 links across sections" },
-      { value: "aggressive", label: "Aggressive — 6+ links for topic cluster" },
-      { value: "none", label: "None — no internal link markers" },
-    ],
-    aiDerivable: true,
-  };
-}
-
-function longFormSeoFocus(): ContentTypeInputField {
-  return {
-    key: "seoFocus",
-    label: "SEO Focus",
-    category: "engagement",
-    type: "boolean",
-    helpText: "Optimize headings, meta, and keyword density for search",
-    aiDerivable: true,
-  };
-}
-
 function longFormContentStyleFields(): ContentTypeInputField[] {
+  // Removed 2026-04-28: includeQuotes (the AI uses quotes appropriately
+  // by default — explicit toggle was rarely flipped), internalLinking
+  // (vague strategy that overlaps with the explicit per-type
+  // `internalLinks` field), longFormSeoFocus (redundant — having a
+  // seoKeyword set IS the SEO signal). Per-article tone now lives in
+  // the unified Strategy field.
   return [
     articleStructure(),
     readingLevel(),
     includeFaq(),
-    includeQuotes(),
-    internalLinking(),
-    longFormSeoFocus(),
   ];
 }
 
@@ -532,17 +499,6 @@ function salesAngle(): ContentTypeInputField {
   };
 }
 
-function proofPointDensity(): ContentTypeInputField {
-  return {
-    key: "proofPointDensity",
-    label: "Proof-point Density (1–5)",
-    category: "engagement",
-    type: "number",
-    placeholder: "3",
-    helpText: "1 = minimal · 5 = quote/stat after each section",
-  };
-}
-
 function includePricing(): ContentTypeInputField {
   return {
     key: "includePricing",
@@ -554,7 +510,10 @@ function includePricing(): ContentTypeInputField {
 }
 
 function salesContentStyleFields(): ContentTypeInputField[] {
-  return [salesAngle(), proofPointDensity(), includePricing()];
+  // Removed 2026-04-28: proofPointDensity (1-5 numeric was too granular —
+  // the AI matches density to audience and tone by default). Tone + CTA-
+  // style now live in the unified Strategy fields.
+  return [salesAngle(), includePricing()];
 }
 
 // ── PR / HR / Comms ──
@@ -607,18 +566,12 @@ function includeContactBlock(): ContentTypeInputField {
   };
 }
 
-function hasEmbargo(): ContentTypeInputField {
-  return {
-    key: "hasEmbargo",
-    label: "Under Embargo",
-    category: "engagement",
-    type: "boolean",
-    helpText: 'Add "EMBARGOED UNTIL [DATE]" header to the release',
-  };
-}
-
 function prContentStyleFields(): ContentTypeInputField[] {
-  return [prStructure(), quoteCount(), includeBoilerplate(), includeContactBlock(), hasEmbargo()];
+  // Removed 2026-04-28: hasEmbargo (irrelevant for HR/internal/career
+  // types that share this bundle — press releases that need an embargo
+  // can use a free-text note in the Strategy / brief). Tone now lives in
+  // the unified Strategy field.
+  return [prStructure(), quoteCount(), includeBoilerplate(), includeContactBlock()];
 }
 
 // ── Email ──
@@ -940,14 +893,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiHint: "Based on campaign goal and industry context",
     },
     {
-      key: "dataSourcesHint",
-      label: "Data Sources / References",
-      category: "references",
-      type: "textarea",
-      placeholder: "e.g. Industry reports, internal data, case examples",
-      helpText: "Types of evidence to reference",
-    },
-    {
       key: "expertiseLevel",
       label: "Reader Expertise",
       category: "audience",
@@ -1023,29 +968,12 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on target persona",
     },
-    {
-      key: "leadMagnetContext",
-      label: "Lead Magnet Context",
-      category: "campaign-details",
-      type: "text",
-      placeholder: "e.g. Gated download after webinar signup",
-      helpText: "How this ebook will be used for lead generation",
-    },
   ],
 
   article: [
     ...longFormContentStyleFields(),
     seoKeyword(),
     secondaryKeywords(),
-
-    {
-      key: "publicationTarget",
-      label: "Publication / Platform",
-      category: "campaign-details",
-      type: "text",
-      placeholder: "e.g. Company blog, Medium, industry publication",
-      helpText: "Where this article will be published",
-    },
   ],
 
   "thought-leadership": [
@@ -1062,14 +990,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       helpText: "Whose perspective and what contrarian angle",
       aiDerivable: true,
       aiHint: "Based on brand positioning and industry context",
-    },
-    {
-      key: "publicationTarget",
-      label: "Publication Target",
-      category: "campaign-details",
-      type: "text",
-      placeholder: "e.g. LinkedIn, Forbes, industry magazine",
-      helpText: "Target publication determines tone and format",
     },
   ],
 
@@ -1093,32 +1013,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       helpText: "Determines structure and tone",
       aiDerivable: true,
       aiHint: "Based on campaign goal and content strategy",
-    },
-    {
-      key: "hookStyle",
-      label: "Hook Style",
-      category: "creative-direction",
-      type: "select",
-      options: [
-        "Bold Statement",
-        "Question",
-        "Statistic",
-        "Story Opening",
-        "Contrarian Take",
-      ],
-      helpText: "Opening line approach for engagement",
-      aiDerivable: true,
-      aiHint: "Match to post type and audience",
-    },
-    {
-      key: "hashtagStrategy",
-      label: "Hashtags",
-      category: "seo",
-      type: "tags",
-      placeholder: "Add hashtag…",
-      helpText: "3-5 relevant hashtags",
-      aiDerivable: true,
-      aiHint: "Industry + topic + branded hashtags",
     },
   ],
 
@@ -1181,16 +1075,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       helpText: "LinkedIn ad placement format",
       aiDerivable: true,
       aiHint: "Based on campaign goal: awareness→image, conversion→carousel/message",
-    },
-    {
-      key: "audienceTargeting",
-      label: "Audience Targeting",
-      category: "audience",
-      type: "text",
-      placeholder: "e.g. Marketing Directors, SaaS companies, 50-200 employees",
-      helpText: "Key targeting criteria for ad copy alignment",
-      aiDerivable: true,
-      aiHint: "Based on persona job title, industry, company size",
     },
   ],
 
@@ -1314,16 +1198,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on campaign goal and brand style",
     },
-    {
-      key: "hashtagStrategy",
-      label: "Hashtags",
-      category: "seo",
-      type: "tags",
-      placeholder: "Add hashtag…",
-      helpText: "Mix of branded, community, and trending hashtags",
-      aiDerivable: true,
-      aiHint: "5-15 relevant hashtags across branded/community/trending",
-    },
     visualDirection(),
   ],
 
@@ -1339,22 +1213,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on topic depth, typically 5-10",
     },
-    {
-      key: "hookStyle",
-      label: "Opening Hook",
-      category: "creative-direction",
-      type: "select",
-      options: [
-        "Bold Claim",
-        "Thread Opener (🧵)",
-        "Question",
-        "Contrarian Take",
-        "Story Start",
-      ],
-      helpText: "First tweet style to stop the scroll",
-      aiDerivable: true,
-      aiHint: "Based on topic and audience",
-    },
   ],
 
   "facebook-post": [
@@ -1369,16 +1227,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on campaign content and goal",
     },
-    {
-      key: "engagementGoal",
-      label: "Engagement Goal",
-      category: "creative-direction",
-      type: "select",
-      options: ["Comments", "Shares", "Link Clicks", "Reactions", "Saves"],
-      helpText: "Primary engagement metric to optimize for",
-      aiDerivable: true,
-      aiHint: "Based on campaign funnel stage",
-    },
   ],
 
   "tiktok-script": [
@@ -1391,22 +1239,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       type: "text",
       placeholder: "e.g. 'Day in the life' format, trending audio XYZ",
       helpText: "TikTok trend or sound to leverage",
-    },
-    {
-      key: "hookType",
-      label: "Hook (First 3 Seconds)",
-      category: "creative-direction",
-      type: "select",
-      options: [
-        "Text Overlay",
-        "Direct Address",
-        "Visual Surprise",
-        "Question",
-        "POV Setup",
-      ],
-      helpText: "First 3 seconds determine watch rate",
-      aiDerivable: true,
-      aiHint: "Based on content style and audience",
     },
   ],
 
@@ -1457,25 +1289,7 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on campaign goal, product, and audience search intent",
     },
-    {
-      key: "negativeKeywords",
-      label: "Negative Keywords",
-      category: "seo",
-      type: "tags",
-      placeholder: "Add keyword to exclude…",
-      helpText: "Keywords to exclude from targeting",
-    },
     landingPageUrl(),
-    {
-      key: "adExtensions",
-      label: "Ad Extensions",
-      category: "campaign-details",
-      type: "tags",
-      placeholder: "e.g. Sitelinks, Callouts, Structured Snippets",
-      helpText: "Google Ads extensions to include",
-      aiDerivable: true,
-      aiHint: "Suggest relevant extensions based on ad goal",
-    },
   ],
 
   "social-ad": [
@@ -1509,39 +1323,11 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on campaign funnel stage",
     },
-    {
-      key: "audienceTargeting",
-      label: "Audience Targeting",
-      category: "audience",
-      type: "text",
-      placeholder: "e.g. Women 25-44, interest: sustainable fashion",
-      helpText: "Key targeting criteria to align copy with",
-      aiDerivable: true,
-      aiHint: "Based on persona demographics and interests",
-    },
   ],
 
   "display-ad": [
     ...adContentStyleFields(),
     landingPageUrl(),
-    {
-      key: "bannerSizes",
-      label: "Banner Sizes",
-      category: "format-specs",
-      type: "tags",
-      placeholder: "e.g. 300x250, 728x90, 160x600",
-      helpText: "Ad dimensions to write copy for",
-      aiDerivable: true,
-      aiHint: "Standard sizes: 300x250, 728x90, 160x600",
-    },
-    {
-      key: "placementContext",
-      label: "Placement Context",
-      category: "campaign-details",
-      type: "text",
-      placeholder: "e.g. News sites, industry blogs, Google Display Network",
-      helpText: "Where the ads will appear",
-    },
   ],
 
   "retargeting-ad": [
@@ -1597,15 +1383,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on campaign channel strategy",
     },
-    {
-      key: "skipBehavior",
-      label: "Skippable?",
-      category: "format-specs",
-      type: "boolean",
-      helpText: "Whether viewers can skip after 5 seconds",
-      aiDerivable: true,
-      aiHint: "YouTube pre-roll is typically skippable; bumper ads are not",
-    },
   ],
 
   "native-ad": [
@@ -1620,14 +1397,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       helpText: "Native ads should match the host publication's style",
       aiDerivable: true,
       aiHint: "Based on placement context and audience",
-    },
-    {
-      key: "disclosureText",
-      label: "Disclosure / Sponsored Label",
-      category: "campaign-details",
-      type: "text",
-      placeholder: "e.g. Sponsored by [Brand]",
-      helpText: "Required advertising disclosure text",
     },
   ],
 
@@ -1644,16 +1413,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       helpText: "Content sections to include in the newsletter",
       aiDerivable: true,
       aiHint: "3-5 sections based on campaign themes and recent content",
-    },
-    {
-      key: "subscriberSegment",
-      label: "Subscriber Segment",
-      category: "audience",
-      type: "text",
-      placeholder: "e.g. Active subscribers, free tier users",
-      helpText: "Which subscriber segment receives this",
-      aiDerivable: true,
-      aiHint: "Based on campaign audience targeting",
     },
   ],
 
@@ -1703,16 +1462,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       placeholder: "e.g. 30% off annual plans until June 30",
       required: true,
       helpText: "The specific offer, discount, or promotion",
-    },
-    {
-      key: "urgencyElement",
-      label: "Urgency / Scarcity",
-      category: "creative-direction",
-      type: "text",
-      placeholder: "e.g. Limited to first 100 signups, ends Friday",
-      helpText: "Time-bound or quantity-limited element",
-      aiDerivable: true,
-      aiHint: "Based on campaign dates and offer structure",
     },
     landingPageUrl(),
   ],
@@ -1810,14 +1559,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiHint: "Based on campaign channel strategy",
     },
     {
-      key: "formFields",
-      label: "Form Fields",
-      category: "format-specs",
-      type: "tags",
-      placeholder: "e.g. Name, Email, Company, Phone",
-      helpText: "Fields in the conversion form",
-    },
-    {
       key: "socialProof",
       label: "Available Social Proof",
       category: "references",
@@ -1848,16 +1589,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       type: "text",
       placeholder: "e.g. Starting at €49/month, free tier available",
       helpText: "Pricing to display or reference",
-    },
-    {
-      key: "competitorDifferentiator",
-      label: "Key Differentiator vs Competition",
-      category: "creative-direction",
-      type: "text",
-      placeholder: "e.g. Only solution with AI-powered brand analysis",
-      helpText: "What makes this product unique",
-      aiDerivable: true,
-      aiHint: "Based on competitive positioning and brand promise",
     },
   ],
 
@@ -1914,14 +1645,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       helpText: "Number of pages in the microsite",
       aiDerivable: true,
       aiHint: "Based on campaign scope, typically 3-5",
-    },
-    {
-      key: "campaignDuration",
-      label: "Campaign Duration",
-      category: "campaign-details",
-      type: "text",
-      placeholder: "e.g. June 1-30, 2026",
-      helpText: "How long the microsite will be live",
     },
     visualDirection(),
   ],
@@ -1987,23 +1710,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
     ...videoContentStyleFields(),
     videoDuration(),
     {
-      key: "emotionalTone",
-      label: "Emotional Tone",
-      category: "creative-direction",
-      type: "select",
-      options: [
-        "Inspirational",
-        "Energetic",
-        "Professional",
-        "Playful",
-        "Urgent",
-        "Warm",
-      ],
-      helpText: "Emotional direction for the video",
-      aiDerivable: true,
-      aiHint: "Based on brand personality and campaign goal",
-    },
-    {
       key: "musicDirection",
       label: "Music / Sound Direction",
       category: "creative-direction",
@@ -2057,31 +1763,12 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
     ...podcastContentStyleFields(),
     videoDuration(),
     {
-      key: "podcastFormat",
-      label: "Episode Format",
-      category: "format-specs",
-      type: "select",
-      options: ["Solo", "Interview", "Panel", "Co-hosted", "Narrative"],
-      required: true,
-      helpText: "Episode structure",
-      aiDerivable: true,
-      aiHint: "Based on content type and available speakers",
-    },
-    {
       key: "guestInfo",
       label: "Guest Name & Bio",
       category: "references",
       type: "textarea",
       placeholder: "e.g. Jane Doe, CEO of BrandCo — 15 years in brand strategy",
       helpText: "Guest details for interview-style episodes",
-    },
-    {
-      key: "seriesContext",
-      label: "Series / Season Context",
-      category: "campaign-details",
-      type: "text",
-      placeholder: "e.g. Episode 12 of 'Brand Builders' series",
-      helpText: "How this episode fits into a larger series",
     },
   ],
 
@@ -2090,17 +1777,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
   "sales-deck": [
     ...salesContentStyleFields(),
     slidesCount(),
-    {
-      key: "targetClient",
-      label: "Target Client / Audience",
-      category: "audience",
-      type: "text",
-      placeholder: "e.g. Enterprise CMOs at retail brands",
-      required: true,
-      helpText: "Who will receive this pitch",
-      aiDerivable: true,
-      aiHint: "Based on campaign personas and target segment",
-    },
     {
       key: "pricingInfo",
       label: "Pricing / Investment",
@@ -2123,27 +1799,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
 
   "one-pager": [
     ...salesContentStyleFields(),
-    {
-      key: "targetClient",
-      label: "Target Audience",
-      category: "audience",
-      type: "text",
-      placeholder: "e.g. Marketing managers evaluating tools",
-      required: true,
-      helpText: "Who will read this one-pager",
-      aiDerivable: true,
-      aiHint: "Based on campaign personas",
-    },
-    {
-      key: "keyDifferentiators",
-      label: "Key Differentiators",
-      category: "creative-direction",
-      type: "tags",
-      placeholder: "e.g. AI-powered, all-in-one platform, 24/7 support",
-      helpText: "Top 3-5 competitive advantages",
-      aiDerivable: true,
-      aiHint: "Based on brand promise and competitor analysis",
-    },
     {
       key: "keyMetrics",
       label: "Proof Points",
@@ -2218,16 +1873,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       placeholder: "e.g. €99, starting at €49/month",
       helpText: "Product pricing to mention",
     },
-    {
-      key: "targetSegment",
-      label: "Target Buyer Segment",
-      category: "audience",
-      type: "text",
-      placeholder: "e.g. Small business owners, creative professionals",
-      helpText: "Primary buyer for tone and benefit framing",
-      aiDerivable: true,
-      aiHint: "Based on campaign personas",
-    },
   ],
 
   // ── PR & Communications ────────────────────────────────
@@ -2294,14 +1939,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       aiDerivable: true,
       aiHint: "Based on campaign USP and target publication",
     },
-    {
-      key: "embargoDate",
-      label: "Embargo Date",
-      category: "campaign-details",
-      type: "text",
-      placeholder: "e.g. Under embargo until June 15, 2026",
-      helpText: "If applicable, when the news can be published",
-    },
   ],
 
   "internal-comms": [
@@ -2365,16 +2002,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       type: "text",
       placeholder: "e.g. €60,000 - €80,000",
       helpText: "Salary indication (recommended for transparency)",
-    },
-    {
-      key: "teamContext",
-      label: "Team Context",
-      category: "references",
-      type: "text",
-      placeholder: "e.g. Join a 12-person brand strategy team",
-      helpText: "Team size and who they'll work with",
-      aiDerivable: true,
-      aiHint: "Based on company context",
     },
   ],
 
@@ -2455,14 +2082,6 @@ const CONTENT_TYPE_INPUTS: Record<string, ContentTypeInputField[]> = {
       helpText: "Video narrative focus",
       aiDerivable: true,
       aiHint: "Based on employer brand goals and company values",
-    },
-    {
-      key: "musicDirection",
-      label: "Music Direction",
-      category: "creative-direction",
-      type: "text",
-      placeholder: "e.g. Warm acoustic, modern upbeat",
-      helpText: "Music mood for the video",
     },
   ],
 
