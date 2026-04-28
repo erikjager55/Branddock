@@ -5,13 +5,21 @@ import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { detectMediumCategory } from '../../../constants/medium-config-registry';
 import { VideoConfigPanel } from '../medium/VideoConfigPanel';
 import { GenericConfigPanel } from '../medium/GenericConfigPanel';
+import { MediumConfigLayout } from '../medium/MediumConfigLayout';
 
 interface Step3GenerateMediumProps {
   onAdvance: () => void;
   deliverableId?: string;
 }
 
-/** Step 3 orchestrator: routes to VideoConfigPanel or GenericConfigPanel based on detected category */
+/**
+ * Step 3 orchestrator: routes to VideoConfigPanel or GenericConfigPanel
+ * based on detected category. When platform/format/category can't be
+ * resolved (e.g. context stack missing the medium block), we still render
+ * the preview + Confirm via an empty MediumConfigLayout so the user can
+ * advance — most categories have empty Step 3 sections after the 9.0c
+ * content-styling migration anyway.
+ */
 export function Step3GenerateMedium({ onAdvance, deliverableId }: Step3GenerateMediumProps) {
   const contextStack = useCanvasStore((s) => s.contextStack);
 
@@ -29,12 +37,15 @@ export function Step3GenerateMedium({ onAdvance, deliverableId }: Step3GenerateM
   }, [category]);
 
   if (!platform || !format || !category) {
+    // Fallback: render preview + Confirm without any config fields.
+    // No category match usually means this content type doesn't have
+    // platform-rendering knobs (post-migration). The user just confirms.
     return (
-      <div className="text-center py-8">
-        <p className="text-sm text-gray-500">
-          No medium configured for this deliverable.
-        </p>
-      </div>
+      <MediumConfigLayout onAdvance={onAdvance} deliverableId={deliverableId}>
+        {/* No config sections — Step 3 is a confirm step for this type.
+            Empty fragment satisfies the required children prop. */}
+        <></>
+      </MediumConfigLayout>
     );
   }
 

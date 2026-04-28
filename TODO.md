@@ -317,6 +317,38 @@ Deze stubs zijn onderdeel van de productie-launch fase en volgen wanneer Stripe 
 
 **Status: Intermediate step DONE (2026-04-27)** — `<ContentSectionsEditor />` verplaatst van *boven* de preview naar *onder* als collapsible "Edit content sections" panel in `MediumConfigLayout.tsx` (default dicht). Preview is nu primair voor alle non-WebPage layouts. Geen dubbele weergave meer. Tussenstap richting de eindvorm hieronder.
 
+### 9.0d Brand Assistant — universele field-fill capability
+
+**Probleem (geconstateerd 2026-04-28, testronde Linfi)**
+Brand Assistant kan op specifieke pagina's via dedicated tools (`update_persona`, `update_brand_asset`, etc.) velden vullen, maar voor veel pagina's ontbreekt zo'n tool. Concreet voorbeeld: de gebruiker vroeg om Stap 1 Review Context briefing-velden te vullen voor een press-release. De assistent antwoordde "Ik zie dat er geen `inspect_current_entity` tool is voor deliverables. … Ik kan je concrete, kant-en-klare test content geven die je direct in de velden kunt kopiëren." — workaround in plaats van oplossing.
+
+**Doel**
+De assistent kan op iedere pagina mee helpen vullen, ongeacht entiteit-type. Specifiek: Setup, Knowledge, Strategy, Concept, Content Brief (Stap 1), Medium config (Stap 3), Planner (Stap 4), plus alle entity detail-pagina's (Brand Asset / Persona / Product / Competitor / Strategy / Brandstyle / etc.).
+
+**Twee benaderingen**
+
+| Optie | Aanpak | Trade-off |
+|---|---|---|
+| A | Per-pagina dedicated tools toevoegen (`update_deliverable_brief`, `update_setup_step`, etc.) | Incrementeel maar onderhoudsintensief — nieuwe pagina = nieuwe tool. |
+| B | **Generic field-filler tool** + page-aware context-store | Eenmalig bouwen, werkt overal. Pagina's registreren hun editable velden in een global "active form context". Claw krijgt tool `fill_active_field(fieldKey, value)` of `fill_active_form(values)` die naar die store schrijft. |
+
+**Aanbeveling: B**
+- Pagina's gebruiken een hook `useFormFillContext()` die hun editable velden registreert (key, label, currentValue, setter)
+- Claw chat-route ziet via session/store welke velden actief zijn en kan ze noemen in zijn antwoord
+- Eén tool `fill_form_fields([{ key, value }, ...])` past de wijzigingen toe via setters in de actieve pagina
+- Bevestiging-flow blijft hetzelfde als bestaande mutation tools (preview → user confirms → apply)
+
+**Scope eerste iteratie**
+- Generic context store + hook
+- Tool definitie in `src/lib/claw/tools/`
+- Wiring in 3 representatieve pagina's: Stap 1 Content Brief (Canvas), Persona Detail, Brand Asset Detail
+- Daarna uitrol naar overige pagina's (~15-20 pagina's met form velden)
+
+**Referenties**
+- `src/lib/claw/tools/write-tools.ts` — bestaande mutation tools (per-entity)
+- `src/lib/claw/context-assembler.ts` — Brand Assistant prompt
+- `src/features/campaigns/components/canvas/accordion/Step1Context.tsx` — eerste pagina om te wiren
+
 ### 9.0c Migreer content-styling velden naar Content Brief
 
 **Probleem (geconstateerd 2026-04-27)**

@@ -113,12 +113,25 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
       }));
   }, [mediumConfigValues]);
 
+  // After the 9.0c content-styling migration, several categories
+  // (long-form, sales, pr-hr, social-post) have no Step 3 config fields
+  // — content-styling moved to Step 1 Content Brief. Show a brief notice
+  // so the user knows it's intentional, not a missing-data bug.
+  const hasConfigChildren = React.Children.count(children) > 0;
+
   return (
     <div className="space-y-6">
       {/* Config sections — side by side, collapsible */}
-      <div className="grid grid-cols-2 gap-4 items-start">
-        {children}
-      </div>
+      {hasConfigChildren ? (
+        <div className="grid grid-cols-2 gap-4 items-start">
+          {children}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+          No platform-specific configuration for this content type — review
+          the preview below and click <span className="font-medium">Confirm &amp; Continue</span>.
+        </div>
+      )}
 
       {/* Full-width content preview — show generated video if available, else platform mock.
           The preview is now the primary view; editing happens in the collapsible
