@@ -10,10 +10,16 @@ import { cacheKeys } from '@/lib/api/cache-keys';
  * SCHEDULED status) or `publishNow: true` (results in PUBLISHED status). A
  * past date counts as a backdated publish (PUBLISHED with publishedAt set to
  * that past date). Both fields optional → empty body defaults to publishNow.
+ *
+ * Distribution is independent: `publishedVia` carries the channel platform
+ * (e.g. "linkedin") when the publish was triggered via a connected channel.
+ * Omitted (or empty) means manual / local-only — the user marked it as
+ * published in Branddock and distributes externally themselves.
  */
 const publishSchema = z.object({
   scheduledPublishDate: z.string().datetime().optional(),
   publishNow: z.boolean().optional(),
+  publishedVia: z.string().trim().min(1).max(50).optional(),
 });
 
 /**
@@ -61,7 +67,7 @@ export async function POST(
       );
     }
 
-    const { scheduledPublishDate, publishNow } = parsed.data;
+    const { scheduledPublishDate, publishNow, publishedVia } = parsed.data;
     const now = new Date();
     const schedDate = scheduledPublishDate ? new Date(scheduledPublishDate) : null;
     const isFuture = schedDate !== null && schedDate.getTime() > now.getTime();
@@ -94,6 +100,10 @@ export async function POST(
         approvalStatus: nextStatus,
         publishedAt: nextPublishedAt,
         scheduledPublishDate: nextScheduledDate,
+        // Distribution channel — null when the user used the local "Publish
+        // now" button without a connected channel. Channel-publish routes
+        // pass the platform string explicitly.
+        publishedVia: publishedVia ?? null,
         // Mark the deliverable as completed once it has a publish intent —
         // SCHEDULED items still count as completed work, just queued.
         status: 'COMPLETED',
@@ -111,6 +121,7 @@ export async function POST(
       approvalStatus: nextStatus,
       publishedAt: updated.publishedAt?.toISOString() ?? null,
       scheduledPublishDate: updated.scheduledPublishDate?.toISOString() ?? null,
+      publishedVia: updated.publishedVia,
     });
   } catch (error) {
     console.error('[POST /api/studio/:id/publish]', error);

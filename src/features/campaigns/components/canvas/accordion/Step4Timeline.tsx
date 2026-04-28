@@ -53,6 +53,7 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
   const mediumConfigValues = useCanvasStore((s) => s.mediumConfigValues);
   const contentType = useCanvasStore((s) => s.contentType);
   const campaignId = useCanvasStore((s) => s.campaignId);
+  const publishedVia = useCanvasStore((s) => s.publishedVia);
   const [showSendCampaign, setShowSendCampaign] = useState(false);
 
   // Email deliverable → unlock the Send Campaign flow once approved.
@@ -236,6 +237,9 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         // Aligns with the local publish flow: scheduled = queued, not yet live.
         approvalStatus: data.status === 'published' ? 'PUBLISHED' : 'SCHEDULED',
         publishedAt: data.status === 'published' ? new Date().toISOString() : undefined,
+        // Mark this publish as channel-driven so the status banner shows
+        // "via LinkedIn" instead of "manual distribution".
+        publishedVia: typeof data.channelPlatform === 'string' ? data.channelPlatform : undefined,
       });
       queryClient.invalidateQueries({ queryKey: contentLibraryKeys.all });
       queryClient.invalidateQueries({ queryKey: campaignKeys.all });
@@ -291,6 +295,9 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
         store.setApprovalState({
           approvalStatus: data.approvalStatus,
           publishedAt: data.publishedAt ?? undefined,
+          // Local publish leaves publishedVia null — explicit reset so a
+          // re-publish after a channel-publish doesn't keep the channel tag.
+          publishedVia: data.publishedVia ?? null,
         });
         if (data.approvalStatus === 'SCHEDULED') {
           store.setStepSummary('planner', {
@@ -342,32 +349,47 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
 
   return (
     <div className="space-y-6">
-      {/* Status banner — distinct copy per state */}
-      {isReady && (
-        <div className={`flex items-center gap-3 p-4 rounded-lg border ${
-          isScheduled
-            ? 'bg-blue-50 border-blue-200'
-            : 'bg-emerald-50 border-emerald-200'
-        }`}>
-          {isScheduled ? (
-            <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
-          ) : (
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
-          )}
-          <div>
-            <p className={`text-sm font-medium ${isScheduled ? 'text-blue-800' : 'text-emerald-800'}`}>
-              {isPublished ? 'Content published' :
-               isScheduled ? 'Scheduled for publication' :
-               'Content approved and ready'}
-            </p>
-            {scheduledDate && (
-              <p className={`text-xs mt-0.5 ${isScheduled ? 'text-blue-600' : 'text-emerald-600'}`}>
-                {formatDateDisplay(scheduledDate)}{scheduledTime ? ` at ${scheduledTime}` : ''}
-              </p>
+      {/* Status banner — distinct copy per state. Distribution suffix
+          ("via LinkedIn" vs "manual distribution") communicates how the
+          publish was actually pushed out, separate from the publish status
+          itself (Branddock-internal). */}
+      {isReady && (() => {
+        const distributionSuffix = (isPublished || isScheduled)
+          ? (publishedVia
+              ? ` · via ${publishedVia.charAt(0).toUpperCase()}${publishedVia.slice(1)}`
+              : ' · manual distribution')
+          : '';
+        return (
+          <div className={`flex items-center gap-3 p-4 rounded-lg border ${
+            isScheduled
+              ? 'bg-blue-50 border-blue-200'
+              : 'bg-emerald-50 border-emerald-200'
+          }`}>
+            {isScheduled ? (
+              <Clock className="h-5 w-5 text-blue-600 flex-shrink-0" />
+            ) : (
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 flex-shrink-0" />
             )}
+            <div>
+              <p className={`text-sm font-medium ${isScheduled ? 'text-blue-800' : 'text-emerald-800'}`}>
+                {isPublished ? `Content published${distributionSuffix}` :
+                 isScheduled ? `Scheduled for publication${distributionSuffix}` :
+                 'Content approved and ready'}
+              </p>
+              {scheduledDate && (
+                <p className={`text-xs mt-0.5 ${isScheduled ? 'text-blue-600' : 'text-emerald-600'}`}>
+                  {formatDateDisplay(scheduledDate)}{scheduledTime ? ` at ${scheduledTime}` : ''}
+                </p>
+              )}
+              {!publishedVia && (isPublished || isScheduled) && (
+                <p className={`text-xs mt-0.5 ${isScheduled ? 'text-blue-600' : 'text-emerald-600'}`}>
+                  Distribute the content yourself, or connect a publishing channel to automate.
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Send Campaign (email deliverables only) — also available once
           scheduled, the user may still want to push to Emailit. */}
@@ -598,50 +620,82 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                 published with no new date implies a no-op republish that
                 would overwrite publishedAt. The user must prik a date for
                 Reschedule, or use a side action for unpublish/edit. */}
-            <button
-              type="button"
-              onClick={() => handlePublish(primaryAction)}
-              disabled={isSubmitting || (isPublished && !hasFutureDate)}
-              title={isPublished && !hasFutureDate ? 'Already published. Pick a date to reschedule.' : undefined}
-              className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {hasFutureDate ? <Calendar className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-              {primaryLabel}
-            </button>
+            {/* Two equal primary actions side-by-side: publish/schedule vs
+                mark-as-ready (no publish). Mark as Ready uses border style
+                so it's visibly secondary while still in equal real estate.
+                Publishing here is *local* — the deliverable's status flips
+                to PUBLISHED/SCHEDULED in Branddock. Channel distribution is
+                a separate concern handled in the section below. */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => handlePublish(primaryAction)}
+                disabled={isSubmitting || (isPublished && !hasFutureDate)}
+                title={isPublished && !hasFutureDate ? 'Already published. Pick a date to reschedule.' : undefined}
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {hasFutureDate ? <Calendar className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+                {primaryLabel}
+              </button>
 
-            {/* Secondary actions */}
-            <div className="flex flex-wrap items-center gap-3 text-xs">
-              {/* Mark as Ready — only when not yet ready/published */}
-              {!isReady && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await handlePublish('approve');
-                    setShowDownloadFormats(true);
-                  }}
-                  disabled={isSubmitting}
-                  className="inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-800 underline-offset-2 hover:underline disabled:opacity-50"
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Mark as Ready (no publish)
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={async () => {
+                  await handlePublish('approve');
+                  setShowDownloadFormats(true);
+                }}
+                disabled={isSubmitting || isReady}
+                title={isReady ? 'Already approved.' : undefined}
+                className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-gray-700 font-medium border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {isApproved && !isScheduled && !isPublished ? 'Ready' : 'Mark as Ready'}
+              </button>
+            </div>
 
-              {/* Publish to a connected channel — separate concern from the
-                  primary publish action. Only shown when integrations exist. */}
-              {hasActiveChannels && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!effectiveChannelId) return;
-                    handlePublishToChannel(effectiveChannelId);
-                  }}
-                  disabled={isSubmitting || (hasMultipleChannels && !selectedChannelId)}
-                  className="inline-flex items-center gap-1.5 text-gray-600 hover:text-gray-800 underline-offset-2 hover:underline disabled:opacity-50"
-                >
-                  <Send className="h-3.5 w-3.5" />
-                  Send to platform
-                </button>
+            {/* Distribute to platform — separate concern from publish status.
+                Local publish above marks the item as published in Branddock;
+                this section controls whether it ALSO gets pushed to a
+                connected platform (LinkedIn / WordPress / etc.). */}
+            <div className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Distribute to platform
+                </h4>
+                {publishedVia && (
+                  <span className="text-xs text-emerald-700 inline-flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Sent to {publishedVia}
+                  </span>
+                )}
+              </div>
+
+              {hasActiveChannels ? (
+                <>
+                  {hasMultipleChannels && (
+                    <p className="text-xs text-gray-500">
+                      Select a channel below, then click <span className="font-medium">Send to platform</span>.
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!effectiveChannelId) return;
+                      handlePublishToChannel(effectiveChannelId);
+                    }}
+                    disabled={isSubmitting || (hasMultipleChannels && !selectedChannelId)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                    Send to platform
+                  </button>
+                </>
+              ) : (
+                <p className="text-xs text-gray-500 inline-flex items-center gap-2">
+                  <Plug className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                  Connect a channel in Settings → Integrations to auto-distribute.
+                  Until then, you distribute the published content yourself.
+                </p>
               )}
             </div>
 
@@ -675,13 +729,8 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                 </div>
               )}
 
-              {/* No active channel hint */}
-              {!hasActiveChannels && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-700">
-                  <Plug className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span>Connect a publishing channel in Settings → Integrations to enable Publish / Schedule. You can still Mark as Ready or download locally.</span>
-                </div>
-              )}
+              {/* No-active-channel hint moved into the Distribute panel above —
+                  the local Publish/Schedule action no longer requires a channel. */}
 
               {/* Channel selector — only shown when multiple active channels require a choice */}
               {hasMultipleChannels && (

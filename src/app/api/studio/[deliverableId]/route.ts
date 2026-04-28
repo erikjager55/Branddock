@@ -78,6 +78,7 @@ export async function GET(
         approvedBy: deliverable.approvedBy ?? null,
         approvedAt: deliverable.approvedAt?.toISOString() ?? null,
         publishedAt: deliverable.publishedAt?.toISOString() ?? null,
+        publishedVia: deliverable.publishedVia ?? null,
         scheduledPublishDate: deliverable.scheduledPublishDate?.toISOString() ?? null,
         suggestedPublishDate: deliverable.suggestedPublishDate?.toISOString() ?? null,
       },

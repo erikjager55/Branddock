@@ -94,6 +94,9 @@ interface CanvasStoreState {
   approvedBy: string | null;
   approvedAt: string | null;
   publishedAt: string | null;
+  /** Channel platform the publish was distributed through (e.g. "linkedin").
+   * null = manual / local-only publish. */
+  publishedVia: string | null;
 
   // ─── Accordion navigation ─────────────────────────────────
   activeStep: string;
@@ -175,6 +178,7 @@ interface CanvasStoreState {
     approvedBy?: string | null;
     approvedAt?: string | null;
     publishedAt?: string | null;
+    publishedVia?: string | null;
   }) => void;
 
   // ─── Accordion actions ────────────────────────────────────
@@ -257,6 +261,7 @@ const INITIAL_STATE = {
   approvedBy: null,
   approvedAt: null,
   publishedAt: null,
+  publishedVia: null,
 
   // Accordion
   activeStep: 'context',
@@ -407,6 +412,7 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       approvedBy: data.approvedBy ?? null,
       approvedAt: data.approvedAt ?? null,
       publishedAt: data.publishedAt ?? null,
+      publishedVia: data.publishedVia ?? null,
     }),
 
   // ─── Accordion actions ────────────────────────────────────

@@ -1006,6 +1006,12 @@ model Deliverable {
   suggestedPublishDate  DateTime?
   scheduledPublishDate  DateTime?
   publishedAt           DateTime?
+  // How the publish happened. null = local / manual (the user marked it as
+  // published in Branddock but distribution to a platform is their own job).
+  // String values map to a publish channel platform: "linkedin", "wordpress",
+  // "ayrshare", etc. Set by the channel-publish route; left null by the
+  // local Publish now action.
+  publishedVia          String?
 
   // ─── Canvas: Approval ──────────────────────────────
   approvalStatus        String            @default("DRAFT")  // DRAFT | IN_REVIEW | CHANGES_REQUESTED | APPROVED | SCHEDULED | PUBLISHED

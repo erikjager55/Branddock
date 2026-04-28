@@ -154,6 +154,7 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
           approvedBy: d.approvedBy ?? null,
           approvedAt: d.approvedAt ?? null,
           publishedAt: d.publishedAt ?? null,
+          publishedVia: d.publishedVia ?? null,
         });
 
         // Surface the inheritance banner on any deliverable whose settings
