@@ -203,13 +203,19 @@ export function InlineEditableSection({
     );
   }
 
+  // Edit button is lifted ABOVE the content (-top-2) instead of overlaying it
+  // — overlapping the rendered text was unreadable when the content reached
+  // the right edge ("...maat" disappearing under the Edit pill). Background
+  // is fully opaque + shadow + border so it reads cleanly against any
+  // backdrop. The wrapper gets a faint hover tint so editable sections are
+  // discoverable without staring at every paragraph corner.
   const editButtonClass =
     size === 'compact'
-      ? 'absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 text-[10px] text-gray-400 hover:text-gray-600 px-1 py-0.5'
-      : 'absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded bg-white/90 border border-gray-200';
+      ? 'absolute -top-2 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5 text-[10px] font-medium text-gray-600 hover:text-gray-900 px-1.5 py-0.5 rounded bg-white shadow-sm border border-gray-200 z-10'
+      : 'absolute -top-2 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[11px] font-medium text-gray-600 hover:text-gray-900 px-2 py-1 rounded-md bg-white shadow-sm border border-gray-200 z-10';
 
   return (
-    <div className="group relative">
+    <div className="group relative rounded transition-colors hover:bg-gray-50/60">
       <button
         type="button"
         onClick={handleStartEdit}

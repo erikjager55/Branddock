@@ -493,12 +493,15 @@ function EditableArticleSection({ entry, deliverableId, render }: EditableArticl
     );
   }
 
+  // Edit button lifts above the content (-top-2) instead of overlaying it
+  // — same reasoning as InlineEditableSection: overlapping the rendered
+  // text was unreadable when the content reached the right edge.
   return (
-    <div className="group relative">
+    <div className="group relative rounded transition-colors hover:bg-gray-50/60">
       <button
         type="button"
         onClick={handleStartEdit}
-        className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 px-2 py-1 rounded bg-white/90 border border-gray-200"
+        className="absolute -top-2 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[11px] font-medium text-gray-600 hover:text-gray-900 px-2 py-1 rounded-md bg-white shadow-sm border border-gray-200 z-10"
         aria-label={`Edit ${group}`}
       >
         <Pencil className="h-3 w-3" /> Edit
