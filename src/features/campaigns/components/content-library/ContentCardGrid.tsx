@@ -87,7 +87,7 @@ export function ContentCardGrid({
             />
 
             <div className="flex-1 flex flex-col">
-              <div className="pl-4 pr-5 py-4 flex flex-col gap-3 flex-1">
+              <div className="pl-4 pr-6 py-4 flex flex-col gap-3 flex-1">
                 {/* Row 1: campaign name + favorite + delete */}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-500 truncate min-w-0">{item.campaignName}</span>
@@ -203,9 +203,11 @@ export function ContentCardGrid({
                   it doesn't fight the campaign brand colors of the card stripe.
                   When the QuickPublishMenu is shown, the Canvas button shrinks
                   to make room and the menu sits on its right. Right padding is
-                  pr-5 to match the content area above (slightly more breathing
-                  room on the right than the stripe-side left). */}
-              <div className="pl-4 pr-5 pb-4 flex items-center gap-2">
+                  pr-6 (matches the content area above) so the button's stark
+                  outline doesn't visually merge with the card edge — the 6px
+                  stripe absorbs visual weight on the left, so the right side
+                  needs slightly more breathing room to look balanced. */}
+              <div className="pl-4 pr-6 pb-4 flex items-center gap-2">
                 <Button
                   variant="secondary"
                   size="sm"
