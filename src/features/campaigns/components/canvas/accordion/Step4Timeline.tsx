@@ -620,38 +620,63 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
                 published with no new date implies a no-op republish that
                 would overwrite publishedAt. The user must prik a date for
                 Reschedule, or use a side action for unpublish/edit. */}
-            {/* Two equal primary actions side-by-side: publish/schedule vs
-                mark-as-ready (no publish). Mark as Ready uses border style
-                so it's visibly secondary while still in equal real estate.
-                Publishing here is *local* — the deliverable's status flips
-                to PUBLISHED/SCHEDULED in Branddock. Channel distribution is
-                a separate concern handled in the section below. */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => handlePublish(primaryAction)}
-                disabled={isSubmitting || (isPublished && !hasFutureDate)}
-                title={isPublished && !hasFutureDate ? 'Already published. Pick a date to reschedule.' : undefined}
-                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                {hasFutureDate ? <Calendar className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-                {primaryLabel}
-              </button>
+            {/* Two equal primary actions side-by-side. Without an active
+                channel, Publish/Schedule has no real distribution to do, so
+                we disable it and switch the visual emphasis to Mark as Ready
+                (the only action that makes sense without a channel: flip
+                status, distribute manually). With an active channel, Publish
+                is the gradient primary and Mark as Ready is the border
+                secondary. Both buttons share padding, height and icon size
+                so they line up exactly. */}
+            {(() => {
+              const publishGated = !hasActiveChannels && !isPublished && !isScheduled;
+              const publishDisabled =
+                isSubmitting || (isPublished && !hasFutureDate) || publishGated;
 
-              <button
-                type="button"
-                onClick={async () => {
-                  await handlePublish('approve');
-                  setShowDownloadFormats(true);
-                }}
-                disabled={isSubmitting || isReady}
-                title={isReady ? 'Already approved.' : undefined}
-                className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-gray-700 font-medium border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                {isApproved && !isScheduled && !isPublished ? 'Ready' : 'Mark as Ready'}
-              </button>
-            </div>
+              const publishClass = publishGated
+                ? 'flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-gray-500 font-medium border border-gray-300 bg-white disabled:opacity-50 disabled:cursor-not-allowed'
+                : `flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`;
+
+              const readyPrimary = publishGated; // Mark as Ready takes the gradient when Publish is gated.
+              const readyClass = readyPrimary
+                ? `flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium ${STUDIO.generateButton} disabled:opacity-50 disabled:cursor-not-allowed`
+                : 'flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-gray-700 font-medium border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed';
+
+              const publishTitle = publishGated
+                ? 'Connect a publishing channel in Settings → Integrations to enable Publish / Schedule.'
+                : isPublished && !hasFutureDate
+                  ? 'Already published. Pick a date to reschedule.'
+                  : undefined;
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-stretch">
+                  <button
+                    type="button"
+                    onClick={() => handlePublish(primaryAction)}
+                    disabled={publishDisabled}
+                    title={publishTitle}
+                    className={publishClass}
+                  >
+                    {hasFutureDate ? <Calendar className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+                    {primaryLabel}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await handlePublish('approve');
+                      setShowDownloadFormats(true);
+                    }}
+                    disabled={isSubmitting || isReady}
+                    title={isReady ? 'Already approved.' : undefined}
+                    className={readyClass}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    {isApproved && !isScheduled && !isPublished ? 'Ready' : 'Mark as Ready'}
+                  </button>
+                </div>
+              );
+            })()}
 
             {/* Distribute to platform — separate concern from publish status.
                 Local publish above marks the item as published in Branddock;
