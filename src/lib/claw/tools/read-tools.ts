@@ -60,9 +60,9 @@ export const readTools: ClawToolDefinition[] = [
     description:
       'Inspect the entity the user is currently viewing on the page. Returns the current value of each field (truncated preview) with an isEmpty marker, plus an overall completenessPercentage. ' +
       'Use this BEFORE proposing field updates, so you know which fields are empty and what the existing content looks like. ' +
-      'Works for the four entity types shown in the Current Page context: brand_asset, persona, product, competitor.',
+      'Works for the entity types shown in the Current Page context: brand_asset, persona, product, competitor, deliverable.',
     inputSchema: z.object({
-      entityType: z.enum(['brand_asset', 'persona', 'product', 'competitor'])
+      entityType: z.enum(['brand_asset', 'persona', 'product', 'competitor', 'deliverable'])
         .describe('The entity type from the Current Page context.'),
       entityId: z.string().describe('The entity ID from the Current Page context.'),
     }),
@@ -70,7 +70,7 @@ export const readTools: ClawToolDefinition[] = [
     category: 'read',
     execute: async (params, ctx: ToolExecutionContext) => {
       const p = params as {
-        entityType: 'brand_asset' | 'persona' | 'product' | 'competitor';
+        entityType: 'brand_asset' | 'persona' | 'product' | 'competitor' | 'deliverable';
         entityId: string;
       };
 
@@ -238,6 +238,52 @@ export const readTools: ClawToolDefinition[] = [
             completenessPercentage: completenessFromFields(fields),
             fields,
             tip: 'Use update_competitor to fill empty fields.',
+          };
+        }
+
+        case 'deliverable': {
+          // Surfaces Step 1 Content Brief fields (settings.brief.*) plus
+          // type-specific contentTypeInputs so Claw can fill them via
+          // update_deliverable_brief / update_deliverable_content_inputs.
+          const deliverable = await prisma.deliverable.findFirst({
+            where: { id: p.entityId },
+            include: { campaign: { select: { workspaceId: true, title: true } } },
+          });
+          if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
+            return { error: 'Deliverable not found in this workspace' };
+          }
+
+          const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
+          const brief = (settings.brief ?? {}) as Record<string, unknown>;
+          const contentTypeInputs = (settings.contentTypeInputs ?? {}) as Record<string, unknown>;
+
+          // Brief fields are the four canonical Step 1 textareas.
+          const briefFields: FieldPreview[] = [
+            field('Objective', 'objective', brief.objective as string | null | undefined),
+            field('Key message', 'keyMessage', brief.keyMessage as string | null | undefined),
+            field('Tone direction', 'toneDirection', brief.toneDirection as string | null | undefined),
+            field('Call to action', 'callToAction', brief.callToAction as string | null | undefined),
+          ];
+
+          // Content-type inputs are dynamic per content type — surface what
+          // the user has filled in so far so Claw can spot gaps. Keys
+          // correspond to entries in src/features/campaigns/lib/content-type-inputs.ts.
+          const contentTypeInputPreviews: Record<string, ReturnType<typeof preview>> = {};
+          for (const [k, v] of Object.entries(contentTypeInputs)) {
+            contentTypeInputPreviews[k] = preview(v);
+          }
+
+          return {
+            entityType: 'deliverable',
+            id: deliverable.id,
+            title: deliverable.title,
+            contentType: deliverable.contentType,
+            campaignTitle: deliverable.campaign.title,
+            approvalStatus: deliverable.approvalStatus,
+            completenessPercentage: completenessFromFields(briefFields),
+            briefFields,
+            contentTypeInputs: contentTypeInputPreviews,
+            tip: 'Use update_deliverable_brief for the four briefing fields (objective, keyMessage, toneDirection, callToAction). Use update_deliverable_content_inputs for the type-specific keys shown in contentTypeInputs (SEO keyword, tone, hashtag strategy, CTA style, etc.). Both apply via the user confirmation card.',
           };
         }
       }

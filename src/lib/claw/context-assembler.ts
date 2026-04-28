@@ -385,10 +385,19 @@ function formatPageContext(ctx: ClawPageContext): string {
         'When they say "vul de velden", "fill in the briefing", "rewrite this", ' +
         '"shorten it", "make it more formal", or anything else about THIS content, ' +
         'they mean this deliverable. Do NOT search for a new campaign or call ' +
-        '`create_deliverable` — the deliverable already exists. Use ' +
-        '`update_deliverable` or `update_deliverable_brief` (when available) to ' +
-        'edit fields, or give targeted writing advice that the user can apply ' +
-        'in the Canvas. Never re-create what they\'re already working on.'
+        '`create_deliverable` — the deliverable already exists.'
+      );
+      lines.push(
+        'To fill or edit Step 1 (Review Context) fields:'
+      );
+      lines.push(
+        '  1. Call `inspect_current_entity` with entityType=deliverable + entityId above. It returns the four briefing fields (objective / keyMessage / toneDirection / callToAction) plus the type-specific contentTypeInputs (SEO keyword, tone, hashtag strategy, etc.) — each with current value and isEmpty markers.'
+      );
+      lines.push(
+        '  2. Use `update_deliverable_brief` for the four briefing fields. Use `update_deliverable_content_inputs` for the type-specific keys. Both apply via a confirmation card the user reviews before saving — propose values grounded in the brand context above and the persona psychographics, never generic filler.'
+      );
+      lines.push(
+        '  3. For content body / variant rewrites (after Step 2 has run), give targeted writing advice the user can apply via the inline edit on each preview section. The Canvas variant grid is not directly editable through tools.'
       );
     } else {
       lines.push(

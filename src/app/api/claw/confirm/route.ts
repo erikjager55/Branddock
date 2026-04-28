@@ -220,6 +220,14 @@ function resolveAffectedEntity(
         campaignId: resultStr('campaignId') ?? (typeof input.campaignId === 'string' ? input.campaignId : null),
         isNew: true,
       };
+    case 'update_deliverable_brief':
+    case 'update_deliverable_content_inputs':
+      return {
+        entityType: 'deliverable',
+        entityId: inputId('deliverableId'),
+        entityName: null,
+        isNew: false,
+      };
     case 'create_campaign':
       return {
         entityType: 'campaign',

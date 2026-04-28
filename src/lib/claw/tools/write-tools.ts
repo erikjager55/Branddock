@@ -740,6 +740,198 @@ export const writeTools: ClawToolDefinition[] = [
     },
   },
 
+  // ─── Update Deliverable Brief ────────────────────────────
+  // Step 1 Content Brief in the Canvas writes its four briefing fields
+  // (objective / keyMessage / toneDirection / callToAction) into
+  // Deliverable.settings.brief. This tool lets Claw fill those fields when
+  // the user is on a Canvas page — pairs with `inspect_current_entity`
+  // entityType=deliverable for empty-field detection.
+  {
+    name: 'update_deliverable_brief',
+    description:
+      'Fill or update the four Content Brief fields for a deliverable: objective, keyMessage, toneDirection, callToAction. Use when the user is on the Canvas Step 1 (Review Context) and asks to fill in the brief. Always inspect_current_entity first (entityType=deliverable) to see what is already filled — never overwrite a non-empty field unless the user explicitly asks. Ground proposed values in brand context and persona psychographics.',
+    inputSchema: z.object({
+      deliverableId: z.string().describe('The deliverable ID from the Current Page context'),
+      objective: z.string().max(2000).optional().describe('What this content should achieve. Concrete and outcome-focused.'),
+      keyMessage: z.string().max(2000).optional().describe('The single thing the audience should take away.'),
+      toneDirection: z.string().max(2000).optional().describe('Voice / tone steer — e.g. "authoritative, journalistic" or "warm, conversational".'),
+      callToAction: z.string().max(2000).optional().describe('What the audience should do next. Concrete + verb-first.'),
+    }),
+    requiresConfirmation: true,
+    category: 'write',
+    buildProposal: async (params, ctx) => {
+      const p = params as {
+        deliverableId: string;
+        objective?: string; keyMessage?: string;
+        toneDirection?: string; callToAction?: string;
+      };
+      const deliverable = await prisma.deliverable.findFirst({
+        where: { id: p.deliverableId },
+        include: { campaign: { select: { workspaceId: true, title: true } } },
+      });
+      if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
+        throw new Error('Deliverable not found in this workspace');
+      }
+      const existing = (deliverable.settings as { brief?: Record<string, string> } | null)?.brief ?? {};
+      const fields: Array<{ key: 'objective' | 'keyMessage' | 'toneDirection' | 'callToAction'; label: string }> = [
+        { key: 'objective', label: 'Objective' },
+        { key: 'keyMessage', label: 'Key message' },
+        { key: 'toneDirection', label: 'Tone direction' },
+        { key: 'callToAction', label: 'Call to action' },
+      ];
+      const changes = fields
+        .filter((f) => p[f.key] !== undefined && p[f.key] !== '')
+        .map((f) => ({
+          field: f.key,
+          label: f.label,
+          currentValue: existing[f.key] ?? null,
+          proposedValue: p[f.key]!,
+        }));
+      return {
+        toolCallId: '',
+        toolName: 'update_deliverable_brief',
+        params,
+        description: `Fill ${changes.length} brief field${changes.length === 1 ? '' : 's'} on "${deliverable.title}"`,
+        entityType: 'Deliverable',
+        entityId: p.deliverableId,
+        entityName: deliverable.title,
+        changes,
+      };
+    },
+    execute: async (params, ctx) => {
+      const p = params as {
+        deliverableId: string;
+        objective?: string; keyMessage?: string;
+        toneDirection?: string; callToAction?: string;
+      };
+
+      const deliverable = await prisma.deliverable.findFirst({
+        where: { id: p.deliverableId },
+        include: { campaign: { select: { workspaceId: true } } },
+      });
+      if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
+        throw new Error('Deliverable not found in this workspace');
+      }
+
+      const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
+      const brief = { ...((settings.brief ?? {}) as Record<string, string>) };
+      let touched = 0;
+      for (const k of ['objective', 'keyMessage', 'toneDirection', 'callToAction'] as const) {
+        const v = p[k];
+        if (typeof v === 'string' && v.trim()) {
+          brief[k] = v;
+          touched++;
+        }
+      }
+      if (touched === 0) return { success: false, message: 'No briefing fields provided' };
+
+      await prisma.deliverable.update({
+        where: { id: p.deliverableId },
+        data: { settings: { ...settings, brief } },
+      });
+      invalidateDashboard(ctx.workspaceId);
+      return {
+        success: true,
+        message: `Updated ${touched} brief field${touched === 1 ? '' : 's'}`,
+        deliverableId: p.deliverableId,
+      };
+    },
+  },
+
+  // ─── Update Deliverable Content-Type Inputs ──────────────
+  // Type-specific input fields (SEO keyword, tone, hashtag strategy, CTA
+  // style, etc.) live in Deliverable.settings.contentTypeInputs as a flat
+  // key/value map. This tool sets one or more of those keys. Field keys
+  // are defined per content type in
+  // src/features/campaigns/lib/content-type-inputs.ts — the AI sees the
+  // available keys via inspect_current_entity (deliverable).
+  {
+    name: 'update_deliverable_content_inputs',
+    description:
+      'Fill or update type-specific Content Brief inputs on a deliverable (SEO keyword, secondary keywords, tone, hashtag strategy, CTA style, include emojis, etc. — keys depend on the content type). Use when the user asks to fill the optional brief fields shown on Canvas Step 1. inspect_current_entity returns the valid keys + current values; only send keys that exist there. Boolean fields use true/false; arrays use string lists; everything else is a string.',
+    inputSchema: z.object({
+      deliverableId: z.string().describe('The deliverable ID from the Current Page context'),
+      updates: z
+        .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]))
+        .describe('Map of contentTypeInput key → value. Keys must come from inspect_current_entity output.'),
+    }),
+    requiresConfirmation: true,
+    category: 'write',
+    buildProposal: async (params, ctx) => {
+      const p = params as {
+        deliverableId: string;
+        updates: Record<string, unknown>;
+      };
+      const deliverable = await prisma.deliverable.findFirst({
+        where: { id: p.deliverableId },
+        include: { campaign: { select: { workspaceId: true, title: true } } },
+      });
+      if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
+        throw new Error('Deliverable not found in this workspace');
+      }
+      const existing = ((deliverable.settings as { contentTypeInputs?: Record<string, unknown> } | null)?.contentTypeInputs) ?? {};
+      const changes = Object.entries(p.updates).map(([field, value]) => ({
+        field,
+        label: field,
+        currentValue: existing[field] != null ? String(existing[field]) : null,
+        proposedValue: Array.isArray(value) ? value.join(', ') : String(value),
+      }));
+      return {
+        toolCallId: '',
+        toolName: 'update_deliverable_content_inputs',
+        params,
+        description: `Fill ${changes.length} type-specific input${changes.length === 1 ? '' : 's'} on "${deliverable.title}"`,
+        entityType: 'Deliverable',
+        entityId: p.deliverableId,
+        entityName: deliverable.title,
+        changes,
+      };
+    },
+    execute: async (params, ctx) => {
+      const p = params as {
+        deliverableId: string;
+        updates: Record<string, unknown>;
+      };
+
+      const deliverable = await prisma.deliverable.findFirst({
+        where: { id: p.deliverableId },
+        include: { campaign: { select: { workspaceId: true } } },
+      });
+      if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
+        throw new Error('Deliverable not found in this workspace');
+      }
+
+      const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
+      const contentTypeInputs = {
+        ...((settings.contentTypeInputs ?? {}) as Record<string, unknown>),
+      };
+      let touched = 0;
+      for (const [k, v] of Object.entries(p.updates)) {
+        if (v == null) continue;
+        // Coerce to one of the four allowed shapes per ContentTypeInputValue
+        if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+          contentTypeInputs[k] = v;
+          touched++;
+        } else if (Array.isArray(v) && v.every((x) => typeof x === 'string')) {
+          contentTypeInputs[k] = v;
+          touched++;
+        }
+      }
+      if (touched === 0) return { success: false, message: 'No valid inputs provided' };
+
+      await prisma.deliverable.update({
+        where: { id: p.deliverableId },
+        data: { settings: { ...settings, contentTypeInputs } },
+      });
+      invalidateDashboard(ctx.workspaceId);
+      return {
+        success: true,
+        message: `Updated ${touched} content input${touched === 1 ? '' : 's'}`,
+        deliverableId: p.deliverableId,
+      };
+    },
+  },
+
   // ─── Create Campaign ─────────────────────────────────────
   // Path 2 fix (2026-04-25): paired with create_deliverable so the user can
   // start fresh from chat — "begin a campaign for our Q2 launch" creates
