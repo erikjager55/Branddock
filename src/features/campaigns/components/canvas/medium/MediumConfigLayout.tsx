@@ -1,14 +1,11 @@
 'use client';
 
-import React, { useMemo, useCallback, useState } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { resolvePreviewComponent } from '../previews/preview-map';
-import { SimpleMarkdown } from '../previews/SimpleMarkdown';
-import { HeroImageSlot } from '../previews/HeroImageSlot';
 import { STUDIO } from '@/lib/constants/design-tokens';
-import { CheckCircle2, RefreshCw, Video, Pencil, ChevronDown } from 'lucide-react';
-import { ContentSectionsEditor } from './ContentSectionsEditor';
+import { CheckCircle2, Video } from 'lucide-react';
 import type { PreviewContent } from '../../../types/canvas.types';
 
 interface MediumConfigLayoutProps {
@@ -39,10 +36,6 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
   const setInsertImageModalOpen = useCanvasStore((s) => s.setInsertImageModalOpen);
   const mediumConfigValues = useCanvasStore((s) => s.mediumConfigValues);
   const globalStatus = useCanvasStore((s) => s.globalStatus);
-  // Edit panel collapsed by default — preview is the primary view, edit is
-  // a tweak surface (intermediate step toward fully inline-editable previews
-  // per category, see TODO 9.0b).
-  const [showEditor, setShowEditor] = useState(false);
 
   const { generate } = useCanvasOrchestration(deliverableId ?? null);
 
@@ -173,33 +166,10 @@ export function MediumConfigLayout({ children, onAdvance, deliverableId }: Mediu
         </div>
       </div>
 
-      {/* Edit content sections — collapsible, opens below the preview when
-          the user wants to tweak. Replaces the previous duplicate editor
-          that sat *above* the preview (which forced the user to compare two
-          rendered copies). */}
-      {hasExistingContent && deliverableId && (
-        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setShowEditor((v) => !v)}
-            className="flex items-center justify-between w-full px-4 py-2.5 bg-gray-50 hover:bg-gray-100 border-b border-gray-200 transition-colors"
-            aria-expanded={showEditor}
-          >
-            <span className="flex items-center gap-2 text-xs font-semibold text-gray-600">
-              <Pencil className="h-3.5 w-3.5" />
-              Edit content sections
-            </span>
-            <ChevronDown
-              className={`h-4 w-4 text-gray-400 transition-transform ${showEditor ? 'rotate-180' : ''}`}
-            />
-          </button>
-          {showEditor && (
-            <div className="p-3">
-              <ContentSectionsEditor deliverableId={deliverableId} />
-            </div>
-          )}
-        </div>
-      )}
+      {/* Inline-edit lives directly inside each preview component (hover →
+          click "Edit" → inline textarea). The old "Edit content sections"
+          collapsible panel was removed when 9.0b shipped — see
+          src/features/campaigns/components/canvas/previews/InlineEditableSection.tsx */}
 
       {/* Config summary badges */}
       {configBadges.length > 0 && (

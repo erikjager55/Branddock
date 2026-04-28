@@ -3,14 +3,20 @@
 import React, { useState, useEffect } from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { PreviewFrame } from './PreviewFrame';
+import { SimpleMarkdown } from './SimpleMarkdown';
 import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, ChevronLeft, ChevronRight } from 'lucide-react';
 import { extractCta } from './CtaButton';
+import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
 
 const LINKEDIN_BLUE = '#0A66C2';
 
 /** LinkedIn carousel post mockup */
 export function LinkedInCarouselPreview({ previewContent, imageVariants, isGenerating, brandName }: PlatformPreviewProps) {
-  const caption = previewContent.body?.content ?? previewContent.caption?.content ?? '';
+  // Inline-edit entries — null when no content has been generated yet.
+  const captionEntryPrimary = useEditableEntry('body');
+  const captionEntryFallback = useEditableEntry('caption');
+  const captionEntry = captionEntryPrimary ?? captionEntryFallback;
+
   const cta = extractCta(previewContent);
   const totalSlides = imageVariants.length;
 
@@ -60,10 +66,17 @@ export function LinkedInCarouselPreview({ previewContent, imageVariants, isGener
       </div>
 
       {/* Caption text */}
-      {caption && (
-        <p className="text-sm text-gray-800 whitespace-pre-wrap line-clamp-4 mb-3">
-          {caption}
-        </p>
+      {captionEntry && (
+        <div className="mb-3">
+          <InlineEditableSection
+            entry={captionEntry}
+            render={(text) => (
+              <div className="text-sm text-gray-800 leading-relaxed line-clamp-4">
+                <SimpleMarkdown text={text} />
+              </div>
+            )}
+          />
+        </div>
       )}
 
       {/* Carousel container */}

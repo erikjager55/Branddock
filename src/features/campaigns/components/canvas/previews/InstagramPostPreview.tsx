@@ -5,13 +5,18 @@ import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { HeroImageSlot } from './HeroImageSlot';
 import { extractCta, CtaButton } from './CtaButton';
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from 'lucide-react';
+import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 
 /**
  * Instagram feed post mockup — styled to match the real Instagram app.
  */
 export function InstagramPostPreview({ previewContent, isGenerating, heroImage, onAddImage, brandName }: PlatformPreviewProps) {
-  const caption = previewContent.caption?.content ?? previewContent.body?.content ?? '';
-  const hashtags = previewContent.hashtags?.content ?? '';
+  const captionPrimary = useEditableEntry('caption');
+  const captionFallback = useEditableEntry('body');
+  const captionEntry = captionPrimary ?? captionFallback;
+  const hashtagsEntry = useEditableEntry('hashtags');
+
   const cta = extractCta(previewContent);
   const brandHandle = (brandName ?? 'brandname').toLowerCase().replace(/\s+/g, '');
 
@@ -67,16 +72,26 @@ export function InstagramPostPreview({ previewContent, isGenerating, heroImage, 
         <p className="text-xs font-semibold text-gray-900">142 likes</p>
       </div>
 
-      {/* Caption */}
+      {/* Caption — inline-editable */}
       <div className="px-3 pb-2.5">
-        {caption && (
-          <p className="text-xs text-gray-900 leading-relaxed">
-            <span className="font-semibold">{brandHandle} </span>
-            <span>{caption}</span>
-          </p>
+        {captionEntry && (
+          <InlineEditableSection
+            entry={captionEntry}
+            render={(text) => (
+              <p className="text-xs text-gray-900 leading-relaxed">
+                <span className="font-semibold">{brandHandle} </span>
+                <span>{stripMarkdownForPlainText(text)}</span>
+              </p>
+            )}
+          />
         )}
-        {hashtags && (
-          <p className="text-xs mt-1" style={{ color: '#00376b' }}>{hashtags}</p>
+        {hashtagsEntry && (
+          <InlineEditableSection
+            entry={hashtagsEntry}
+            render={(text) => (
+              <p className="text-xs mt-1" style={{ color: '#00376b' }}>{stripMarkdownForPlainText(text)}</p>
+            )}
+          />
         )}
         <p className="text-xs text-gray-400 mt-1">View all 8 comments</p>
         <p className="text-[10px] text-gray-400 mt-1 uppercase">2 hours ago</p>

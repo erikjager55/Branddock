@@ -6,6 +6,28 @@ import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { updateComponentContent } from '../../../api/canvas.api';
 
 /**
+ * Helper hook for preview components — given a variant group key, returns
+ * the InlineEditableEntry for the currently-selected variant in that group.
+ * Returns null when the group has no variants yet (no content generated).
+ *
+ * Preview components call this once per group they render, then pass the
+ * entry to <InlineEditableSection /> alongside a render function.
+ */
+export function useEditableEntry(group: string): InlineEditableEntry | null {
+  const variants = useCanvasStore((s) => s.variantGroups.get(group));
+  const selectedIdx = useCanvasStore((s) => s.selections.get(group) ?? 0);
+  if (!variants) return null;
+  const selected = variants[selectedIdx];
+  if (!selected || !selected.content) return null;
+  return {
+    group,
+    content: selected.content,
+    componentId: selected.componentId,
+    variantIndex: selectedIdx,
+  };
+}
+
+/**
  * Variant entry shape — passed in by the preview component so we know which
  * variant group + variant index to update on save.
  */
@@ -20,7 +42,10 @@ export interface InlineEditableSectionProps {
   entry: InlineEditableEntry;
   /** Renders the read-mode display of the content (e.g. an h1, p, or markdown). */
   render: (text: string) => React.ReactNode;
-  /** Optional: persist edits to the DB via the component PATCH endpoint. */
+  /**
+   * Persist edits to the DB. Optional override; when omitted the component
+   * uses `useCanvasStore.deliverableId` which is set on Canvas mount.
+   */
   deliverableId?: string;
   /** Optional ARIA label override — defaults to "Edit {group}". */
   ariaLabel?: string;
@@ -42,11 +67,13 @@ export interface InlineEditableSectionProps {
 export function InlineEditableSection({
   entry,
   render,
-  deliverableId,
+  deliverableId: deliverableIdProp,
   ariaLabel,
   size = 'default',
 }: InlineEditableSectionProps) {
   const { group, content, componentId, variantIndex } = entry;
+  const storeDeliverableId = useCanvasStore((s) => s.deliverableId);
+  const deliverableId = deliverableIdProp ?? storeDeliverableId ?? undefined;
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(content);
   const [isSaving, setIsSaving] = useState(false);

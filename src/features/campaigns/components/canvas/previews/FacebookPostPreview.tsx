@@ -6,13 +6,18 @@ import { HeroImageSlot } from './HeroImageSlot';
 import { SimpleMarkdown } from './SimpleMarkdown';
 import { ThumbsUp, MessageCircle, Share2, Globe, MoreHorizontal } from 'lucide-react';
 import { extractCta, CtaButton } from './CtaButton';
+import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 
 /**
  * Facebook post mockup — styled to match the real Facebook feed.
  */
 export function FacebookPostPreview({ previewContent, isGenerating, heroImage, onAddImage, brandName }: PlatformPreviewProps) {
-  const body = previewContent.body?.content ?? previewContent.caption?.content ?? '';
-  const hashtags = previewContent.hashtags?.content ?? '';
+  const bodyEntryPrimary = useEditableEntry('body');
+  const bodyEntryFallback = useEditableEntry('caption');
+  const bodyEntry = bodyEntryPrimary ?? bodyEntryFallback;
+  const hashtagsEntry = useEditableEntry('hashtags');
+
   const cta = extractCta(previewContent);
   const name = brandName ?? 'Brand Name';
   const initial = name.charAt(0).toUpperCase();
@@ -55,14 +60,24 @@ export function FacebookPostPreview({ previewContent, isGenerating, heroImage, o
         </div>
       </div>
 
-      {/* Post content */}
-      {body && (
+      {/* Post content — inline-editable on hover */}
+      {bodyEntry && (
         <div className="px-4 pb-2">
-          <div className="text-sm text-gray-900 leading-relaxed">
-            <SimpleMarkdown text={body} />
-          </div>
-          {hashtags && (
-            <p className="text-sm mt-1" style={{ color: '#1877F2' }}>{hashtags}</p>
+          <InlineEditableSection
+            entry={bodyEntry}
+            render={(text) => (
+              <div className="text-sm text-gray-900 leading-relaxed">
+                <SimpleMarkdown text={text} />
+              </div>
+            )}
+          />
+          {hashtagsEntry && (
+            <InlineEditableSection
+              entry={hashtagsEntry}
+              render={(text) => (
+                <p className="text-sm mt-1" style={{ color: '#1877F2' }}>{stripMarkdownForPlainText(text)}</p>
+              )}
+            />
           )}
         </div>
       )}

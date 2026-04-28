@@ -3,13 +3,23 @@
 import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { Play, Download, MoreHorizontal, Radio } from 'lucide-react';
+import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
+import { SimpleMarkdown } from './SimpleMarkdown';
 
 /**
  * Podcast episode mockup — styled after Spotify's episode card design.
  */
 export function PodcastPreview({ previewContent, isGenerating, brandName }: PlatformPreviewProps) {
-  const title = previewContent.headline?.content ?? previewContent.hook?.content ?? '';
-  const description = previewContent.body?.content ?? previewContent.caption?.content ?? '';
+  // Inline-edit entries — null when no content has been generated yet.
+  const titleEntryPrimary = useEditableEntry('headline');
+  const titleEntryFallback = useEditableEntry('hook');
+  const titleEntry = titleEntryPrimary ?? titleEntryFallback;
+  const descriptionEntryPrimary = useEditableEntry('body');
+  const descriptionEntryFallback = useEditableEntry('caption');
+  const descriptionEntry = descriptionEntryPrimary ?? descriptionEntryFallback;
+  const introEntry = useEditableEntry('intro');
+
   const name = brandName ?? 'Brand Name';
   const duration = previewContent.body?.metadata?.duration ?? 23;
 
@@ -43,9 +53,18 @@ export function PodcastPreview({ previewContent, isGenerating, brandName }: Plat
           </div>
           {/* Episode meta */}
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">
-              {title || 'Episode Title'}
-            </p>
+            {titleEntry ? (
+              <InlineEditableSection
+                entry={titleEntry}
+                render={(text) => (
+                  <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">
+                    {stripMarkdownForPlainText(text) || 'Episode Title'}
+                  </p>
+                )}
+              />
+            ) : (
+              <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">Episode Title</p>
+            )}
             <p className="text-xs text-gray-500 mt-0.5">{name}</p>
             <p className="text-xs text-gray-400 mt-0.5">
               Just now · {duration} min
@@ -54,8 +73,27 @@ export function PodcastPreview({ previewContent, isGenerating, brandName }: Plat
         </div>
 
         {/* Description */}
-        {description && (
-          <p className="text-xs text-gray-600 leading-relaxed line-clamp-3 mb-3">{description}</p>
+        {descriptionEntry && (
+          <InlineEditableSection
+            entry={descriptionEntry}
+            render={(text) => (
+              <div className="text-xs text-gray-600 leading-relaxed line-clamp-3 mb-3">
+                <SimpleMarkdown text={text} />
+              </div>
+            )}
+          />
+        )}
+
+        {/* Intro / segments */}
+        {introEntry && (
+          <InlineEditableSection
+            entry={introEntry}
+            render={(text) => (
+              <div className="text-xs text-gray-600 leading-relaxed line-clamp-3 mb-3 border-l-2 border-gray-200 pl-2 italic">
+                <SimpleMarkdown text={text} />
+              </div>
+            )}
+          />
         )}
 
         {/* Player bar */}

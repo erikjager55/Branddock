@@ -4,11 +4,29 @@ import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { HeroImageSlot } from './HeroImageSlot';
 import { Globe, ExternalLink, Lock } from 'lucide-react';
+import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 
 /**
  * Landing page mockup — browser chrome with URL bar + structured page sections.
+ *
+ * Hooks must be called unconditionally; we call `useEditableEntry` for known
+ * group names and pick the right entry per rendered section below.
  */
 export function LandingPagePreview({ previewContent, isGenerating, heroImage, onAddImage, brandName }: PlatformPreviewProps) {
+  const entryMap: Record<string, ReturnType<typeof useEditableEntry>> = {
+    headline: useEditableEntry('headline'),
+    hero: useEditableEntry('hero'),
+    title: useEditableEntry('title'),
+    subheadline: useEditableEntry('subheadline'),
+    subtitle: useEditableEntry('subtitle'),
+    description: useEditableEntry('description'),
+    body: useEditableEntry('body'),
+    cta: useEditableEntry('cta'),
+    'cta-text': useEditableEntry('cta-text'),
+    button: useEditableEntry('button'),
+  };
+
   const textEntries = Object.entries(previewContent).filter(
     ([, v]) => v.type === 'text' && v.content,
   );
@@ -83,37 +101,47 @@ export function LandingPagePreview({ previewContent, isGenerating, heroImage, on
             const isHeadline = lower.includes('headline') || lower.includes('hero') || lower.includes('title');
             const isCta = lower.includes('cta') || lower.includes('button');
             const isSubheading = lower.includes('sub') || lower.includes('description');
+            const entry = entryMap[group];
 
-            if (isCta) {
+            const renderRole = (text: string) => {
+              if (isCta) {
+                return (
+                  <div className="text-center py-1">
+                    <span className="inline-block px-6 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-semibold">
+                      {stripMarkdownForPlainText(text).slice(0, 80)}
+                    </span>
+                  </div>
+                );
+              }
+              if (isHeadline) {
+                return (
+                  <p className="text-lg font-bold text-gray-900 text-center leading-tight">
+                    {stripMarkdownForPlainText(text)}
+                  </p>
+                );
+              }
+              if (isSubheading) {
+                return (
+                  <p className="text-sm text-gray-500 text-center max-w-xs mx-auto">
+                    {stripMarkdownForPlainText(text)}
+                  </p>
+                );
+              }
               return (
-                <div key={group} className="text-center py-1">
-                  <span className="inline-block px-6 py-2.5 rounded-lg bg-gray-900 text-white text-sm font-semibold">
-                    {value.content}
-                  </span>
+                <div className="border-t border-gray-100 pt-3">
+                  <p className="text-xs font-medium text-gray-400 uppercase mb-1">{group.replace(/_/g, ' ')}</p>
+                  <p className="text-xs text-gray-700 whitespace-pre-wrap line-clamp-4">{text}</p>
                 </div>
               );
-            }
-
-            if (isHeadline) {
-              return (
-                <p key={group} className="text-lg font-bold text-gray-900 text-center leading-tight">
-                  {value.content}
-                </p>
-              );
-            }
-
-            if (isSubheading) {
-              return (
-                <p key={group} className="text-sm text-gray-500 text-center max-w-xs mx-auto">
-                  {value.content}
-                </p>
-              );
-            }
+            };
 
             return (
-              <div key={group} className="border-t border-gray-100 pt-3">
-                <p className="text-xs font-medium text-gray-400 uppercase mb-1">{group.replace(/_/g, ' ')}</p>
-                <p className="text-xs text-gray-700 whitespace-pre-wrap line-clamp-4">{value.content}</p>
+              <div key={group}>
+                {entry ? (
+                  <InlineEditableSection entry={entry} render={renderRole} />
+                ) : (
+                  renderRole(value.content ?? '')
+                )}
               </div>
             );
           })}

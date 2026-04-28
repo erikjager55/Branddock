@@ -5,14 +5,21 @@ import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { HeroImageSlot } from './HeroImageSlot';
 import { SimpleMarkdown } from './SimpleMarkdown';
 import { extractCta } from './CtaButton';
+import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 
 /**
  * Email client mockup — styled like a real email template rendering.
  */
 export function EmailPreview({ previewContent, isGenerating, heroImage, onAddImage, mediumConfig, brandName }: PlatformPreviewProps) {
-  const subject = previewContent.subject?.content ?? previewContent.headline?.content ?? '';
-  const preheader = previewContent.preheader?.content ?? '';
-  const body = previewContent.body?.content ?? '';
+  // Inline-edit entries — null when no content has been generated yet.
+  const subjectEntryPrimary = useEditableEntry('subject');
+  const subjectEntryFallback = useEditableEntry('headline');
+  const subjectEntry = subjectEntryPrimary ?? subjectEntryFallback;
+  const preheaderEntry = useEditableEntry('preheader');
+  const bodyEntry = useEditableEntry('body');
+  const ctaEntry = useEditableEntry('cta');
+
   const cta = extractCta(previewContent) ?? '';
   const templateStyle = (mediumConfig?.templateStyle as string) ?? 'minimal';
   const ctaPlacement = (mediumConfig?.ctaPlacement as string) ?? 'bottom';
@@ -51,10 +58,16 @@ export function EmailPreview({ previewContent, isGenerating, heroImage, onAddIma
             <span className="text-gray-400 w-10">To:</span>
             <span className="text-gray-700">{personalize ? '{{firstName}} {{lastName}}' : 'subscriber@email.com'}</span>
           </div>
-          {subject && (
+          {subjectEntry && (
             <div className="flex items-center gap-2 text-xs">
               <span className="text-gray-400 w-10">Subject:</span>
-              <span className="text-gray-900 font-semibold">{subject}</span>
+              <InlineEditableSection
+                entry={subjectEntry}
+                size="compact"
+                render={(text) => (
+                  <span className="text-gray-900 font-semibold">{stripMarkdownForPlainText(text)}</span>
+                )}
+              />
             </div>
           )}
         </div>
@@ -77,32 +90,64 @@ export function EmailPreview({ previewContent, isGenerating, heroImage, onAddIma
             )}
 
             {/* Preheader / preview text */}
-            {preheader && (
-              <p className="text-xs text-gray-400 italic">{preheader}</p>
+            {preheaderEntry && (
+              <InlineEditableSection
+                entry={preheaderEntry}
+                render={(text) => (
+                  <p className="text-xs text-gray-400 italic">{stripMarkdownForPlainText(text)}</p>
+                )}
+              />
             )}
 
             {/* CTA top placement */}
-            {ctaPlacement === 'top' && cta && (
+            {ctaPlacement === 'top' && (ctaEntry || cta) && (
               <div className="text-center py-2">
-                <span className="inline-block px-6 py-2.5 text-sm font-semibold text-white rounded-md" style={{ backgroundColor: accentColor }}>
-                  {cta}
-                </span>
+                {ctaEntry ? (
+                  <InlineEditableSection
+                    entry={ctaEntry}
+                    render={(text) => (
+                      <span className="inline-block px-6 py-2.5 text-sm font-semibold text-white rounded-md" style={{ backgroundColor: accentColor }}>
+                        {stripMarkdownForPlainText(text).slice(0, 80)}
+                      </span>
+                    )}
+                  />
+                ) : (
+                  <span className="inline-block px-6 py-2.5 text-sm font-semibold text-white rounded-md" style={{ backgroundColor: accentColor }}>
+                    {cta}
+                  </span>
+                )}
               </div>
             )}
 
             {/* Body */}
-            {body && (
-              <div className="text-sm text-gray-700 leading-relaxed">
-                <SimpleMarkdown text={body} />
-              </div>
+            {bodyEntry && (
+              <InlineEditableSection
+                entry={bodyEntry}
+                render={(text) => (
+                  <div className="text-sm text-gray-700 leading-relaxed">
+                    <SimpleMarkdown text={text} />
+                  </div>
+                )}
+              />
             )}
 
             {/* CTA bottom placement */}
-            {ctaPlacement !== 'top' && cta && (
+            {ctaPlacement !== 'top' && (ctaEntry || cta) && (
               <div className="text-center py-2">
-                <span className="inline-block px-6 py-2.5 text-sm font-semibold text-white rounded-md" style={{ backgroundColor: accentColor }}>
-                  {cta}
-                </span>
+                {ctaEntry ? (
+                  <InlineEditableSection
+                    entry={ctaEntry}
+                    render={(text) => (
+                      <span className="inline-block px-6 py-2.5 text-sm font-semibold text-white rounded-md" style={{ backgroundColor: accentColor }}>
+                        {stripMarkdownForPlainText(text).slice(0, 80)}
+                      </span>
+                    )}
+                  />
+                ) : (
+                  <span className="inline-block px-6 py-2.5 text-sm font-semibold text-white rounded-md" style={{ backgroundColor: accentColor }}>
+                    {cta}
+                  </span>
+                )}
               </div>
             )}
           </div>

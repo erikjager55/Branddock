@@ -3,14 +3,21 @@
 import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { HeroImageSlot } from './HeroImageSlot';
+import { SimpleMarkdown } from './SimpleMarkdown';
 import { MessageCircle, Repeat2, Heart, BarChart3, Share, MoreHorizontal, BadgeCheck } from 'lucide-react';
 import { extractCta, CtaButton } from './CtaButton';
+import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
 
 /**
  * X (Twitter) post mockup — styled to match the real X feed.
  */
 export function XPostPreview({ previewContent, isGenerating, heroImage, onAddImage, brandName }: PlatformPreviewProps) {
-  const body = previewContent.body?.content ?? previewContent.caption?.content ?? '';
+  // Inline-edit entries — null when no content has been generated yet.
+  const bodyEntryPrimary = useEditableEntry('body');
+  const bodyEntryFallback = useEditableEntry('caption');
+  const bodyEntry = bodyEntryPrimary ?? bodyEntryFallback;
+  const hashtagsEntry = useEditableEntry('hashtags');
+
   const cta = extractCta(previewContent);
   const name = brandName ?? 'Brand Name';
   const handle = '@' + name.toLowerCase().replace(/\s+/g, '');
@@ -55,8 +62,25 @@ export function XPostPreview({ previewContent, isGenerating, heroImage, onAddIma
         </div>
 
         {/* Post text */}
-        {body && (
-          <p className="text-[15px] text-gray-900 leading-relaxed whitespace-pre-wrap mb-3">{body}</p>
+        {bodyEntry && (
+          <InlineEditableSection
+            entry={bodyEntry}
+            render={(text) => (
+              <div className="text-[15px] text-gray-900 leading-relaxed mb-3">
+                <SimpleMarkdown text={text} />
+              </div>
+            )}
+          />
+        )}
+
+        {/* Hashtags */}
+        {hashtagsEntry && (
+          <InlineEditableSection
+            entry={hashtagsEntry}
+            render={(text) => (
+              <p className="text-[15px] mb-3" style={{ color: '#1D9BF0' }}>{text}</p>
+            )}
+          />
         )}
 
         {/* CTA link */}

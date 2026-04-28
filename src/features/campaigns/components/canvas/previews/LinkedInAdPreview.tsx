@@ -3,7 +3,10 @@
 import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { HeroImageSlot } from './HeroImageSlot';
+import { SimpleMarkdown } from './SimpleMarkdown';
 import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, MoreHorizontal } from 'lucide-react';
+import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 
 const LINKEDIN_BLUE = '#0A66C2';
 
@@ -13,13 +16,21 @@ const LINKEDIN_BLUE = '#0A66C2';
  * and action bar.
  */
 export function LinkedInAdPreview({ previewContent, heroImage, onAddImage, isGenerating, brandName, imageVariants }: PlatformPreviewProps) {
-  const introText = previewContent.body?.content ?? previewContent.description?.content ?? '';
-  const headline = previewContent.headline?.content ?? '';
-  const description = previewContent.description?.content ?? previewContent.caption?.content ?? '';
-  const cta = previewContent.cta?.content ?? 'Learn More';
+  // Inline-edit entries — null when no content has been generated yet.
+  const introTextEntryPrimary = useEditableEntry('body');
+  const introTextEntryFallback = useEditableEntry('description');
+  const introTextEntry = introTextEntryPrimary ?? introTextEntryFallback;
+  const headlineEntry = useEditableEntry('headline');
+  const descriptionEntryPrimary = useEditableEntry('description');
+  const descriptionEntryFallback = useEditableEntry('caption');
+  const descriptionEntry = descriptionEntryPrimary ?? descriptionEntryFallback;
+  const ctaEntry = useEditableEntry('cta');
+
+  const fallbackCta = previewContent.cta?.content ?? 'Learn More';
   const name = brandName ?? 'Brand Name';
   const initial = name.charAt(0).toUpperCase();
   const selectedImage = imageVariants.find((img) => img.isSelected);
+  const hasIntroText = !!introTextEntry;
 
   if (isGenerating) {
     return (
@@ -66,9 +77,16 @@ export function LinkedInAdPreview({ previewContent, heroImage, onAddImage, isGen
       </div>
 
       {/* Intro text (body above image) */}
-      {introText && (
+      {introTextEntry && (
         <div className="px-4 pb-2">
-          <p className="text-sm text-gray-800 leading-relaxed line-clamp-3">{introText}</p>
+          <InlineEditableSection
+            entry={introTextEntry}
+            render={(text) => (
+              <div className="text-sm text-gray-800 leading-relaxed line-clamp-3">
+                <SimpleMarkdown text={text} />
+              </div>
+            )}
+          />
         </div>
       )}
 
@@ -96,20 +114,46 @@ export function LinkedInAdPreview({ previewContent, heroImage, onAddImage, isGen
             <p className="text-xs text-gray-500 mb-0.5">
               {name.toLowerCase().replace(/\s+/g, '')}.com
             </p>
-            {headline && (
-              <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{headline}</p>
+            {headlineEntry && (
+              <InlineEditableSection
+                entry={headlineEntry}
+                render={(text) => (
+                  <p className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{stripMarkdownForPlainText(text)}</p>
+                )}
+              />
             )}
-            {description && !introText && (
-              <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{description}</p>
+            {descriptionEntry && !hasIntroText && (
+              <InlineEditableSection
+                entry={descriptionEntry}
+                render={(text) => (
+                  <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{stripMarkdownForPlainText(text)}</p>
+                )}
+              />
             )}
           </div>
-          <button
-            type="button"
-            className="flex-shrink-0 px-4 py-1.5 text-sm font-semibold rounded-full text-white"
-            style={{ backgroundColor: LINKEDIN_BLUE }}
-          >
-            {cta}
-          </button>
+          {ctaEntry ? (
+            <InlineEditableSection
+              entry={ctaEntry}
+              size="compact"
+              render={(text) => (
+                <button
+                  type="button"
+                  className="flex-shrink-0 px-4 py-1.5 text-sm font-semibold rounded-full text-white"
+                  style={{ backgroundColor: LINKEDIN_BLUE }}
+                >
+                  {stripMarkdownForPlainText(text).slice(0, 80)}
+                </button>
+              )}
+            />
+          ) : (
+            <button
+              type="button"
+              className="flex-shrink-0 px-4 py-1.5 text-sm font-semibold rounded-full text-white"
+              style={{ backgroundColor: LINKEDIN_BLUE }}
+            >
+              {fallbackCta}
+            </button>
+          )}
         </div>
       </div>
 

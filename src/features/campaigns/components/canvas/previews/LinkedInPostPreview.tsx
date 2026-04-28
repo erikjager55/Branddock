@@ -5,6 +5,8 @@ import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { HeroImageSlot } from './HeroImageSlot';
 import { SimpleMarkdown } from './SimpleMarkdown';
 import { extractCta } from './CtaButton';
+import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, MoreHorizontal } from 'lucide-react';
 
 /**
@@ -12,9 +14,14 @@ import { ThumbsUp, MessageCircle, Repeat2, Send, Globe, MoreHorizontal } from 'l
  * Uses LinkedIn's actual font sizes, spacing, and color palette.
  */
 export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, onAddImage, mediumConfig, brandName }: PlatformPreviewProps) {
-  const body = previewContent.body?.content ?? previewContent.caption?.content ?? '';
-  const headline = previewContent.headline?.content ?? '';
-  const hashtags = previewContent.hashtags?.content ?? '';
+  // Inline-edit entries — null when no content has been generated yet.
+  // Hooks are called unconditionally; we pick which body entry to use after.
+  const headlineEntry = useEditableEntry('headline');
+  const bodyEntryPrimary = useEditableEntry('body');
+  const bodyEntryFallback = useEditableEntry('caption');
+  const bodyEntry = bodyEntryPrimary ?? bodyEntryFallback;
+  const hashtagsEntry = useEditableEntry('hashtags');
+
   const ctaStyle = (mediumConfig?.ctaStyle as string) ?? '';
   const hashtagStrategy = (mediumConfig?.hashtagStrategy as string) ?? 'moderate';
 
@@ -58,18 +65,33 @@ export function LinkedInPostPreview({ previewContent, isGenerating, heroImage, o
         </div>
       </div>
 
-      {/* Post content */}
+      {/* Post content — sections are inline-editable on hover */}
       <div className="px-4 pb-2">
-        {headline && (
-          <p className="text-sm font-semibold text-gray-900 mb-1.5">{headline}</p>
+        {headlineEntry && (
+          <InlineEditableSection
+            entry={headlineEntry}
+            render={(text) => (
+              <p className="text-sm font-semibold text-gray-900 mb-1.5">{stripMarkdownForPlainText(text)}</p>
+            )}
+          />
         )}
-        {body && (
-          <div className="text-sm text-gray-800 leading-relaxed">
-            <SimpleMarkdown text={body} />
-          </div>
+        {bodyEntry && (
+          <InlineEditableSection
+            entry={bodyEntry}
+            render={(text) => (
+              <div className="text-sm text-gray-800 leading-relaxed">
+                <SimpleMarkdown text={text} />
+              </div>
+            )}
+          />
         )}
-        {hashtagStrategy !== 'none' && hashtags && (
-          <p className="text-sm mt-2" style={{ color: '#0A66C2' }}>{hashtags}</p>
+        {hashtagStrategy !== 'none' && hashtagsEntry && (
+          <InlineEditableSection
+            entry={hashtagsEntry}
+            render={(text) => (
+              <p className="text-sm mt-2" style={{ color: '#0A66C2' }}>{stripMarkdownForPlainText(text)}</p>
+            )}
+          />
         )}
       </div>
 

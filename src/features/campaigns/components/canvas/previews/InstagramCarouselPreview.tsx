@@ -3,15 +3,21 @@
 import React from 'react';
 import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { PreviewFrame } from './PreviewFrame';
+import { SimpleMarkdown } from './SimpleMarkdown';
 import { ChevronLeft, ChevronRight, Heart, MessageCircle, Send, Bookmark } from 'lucide-react';
 import { extractCta, CtaButton } from './CtaButton';
+import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
 
 const INSTAGRAM_GRADIENT = '#E1306C';
 
 /** Instagram carousel mockup with slide navigation */
 export function InstagramCarouselPreview({ previewContent, imageVariants, isGenerating, brandName }: PlatformPreviewProps) {
   const [currentSlide, setCurrentSlide] = React.useState(0);
-  const caption = previewContent.caption?.content ?? previewContent.body?.content ?? '';
+  // Inline-edit entries — null when no content has been generated yet.
+  const captionEntryPrimary = useEditableEntry('caption');
+  const captionEntryFallback = useEditableEntry('body');
+  const captionEntry = captionEntryPrimary ?? captionEntryFallback;
+
   const cta = extractCta(previewContent);
   const brandHandle = (brandName ?? 'brandname').toLowerCase().replace(/\s+/g, '');
 
@@ -123,11 +129,18 @@ export function InstagramCarouselPreview({ previewContent, imageVariants, isGene
       </div>
 
       {/* Caption */}
-      {caption && (
-        <p className="text-xs text-gray-800">
-          <span className="font-semibold">{brandHandle} </span>
-          <span className="line-clamp-3">{caption}</span>
-        </p>
+      {captionEntry && (
+        <InlineEditableSection
+          entry={captionEntry}
+          render={(text) => (
+            <div className="text-xs text-gray-800">
+              <span className="font-semibold">{brandHandle} </span>
+              <span className="inline-block align-top line-clamp-3">
+                <SimpleMarkdown text={text} />
+              </span>
+            </div>
+          )}
+        />
       )}
 
       {/* CTA pill */}

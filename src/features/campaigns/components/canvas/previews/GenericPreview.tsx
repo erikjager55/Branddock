@@ -5,10 +5,44 @@ import type { PlatformPreviewProps } from '../../../types/canvas.types';
 import { FileText, Copy, Check } from 'lucide-react';
 import { HeroImageSlot } from './HeroImageSlot';
 import { SimpleMarkdown } from './SimpleMarkdown';
+import { InlineEditableSection, useEditableEntry } from './InlineEditableSection';
+import { stripMarkdownForPlainText } from '../../../lib/strip-markdown';
 
-/** Fallback preview for unmapped platform/format combinations */
+/**
+ * Fallback preview for unmapped platform/format combinations.
+ *
+ * GenericPreview renders all text variant groups dynamically. Because hooks
+ * must be called unconditionally, we call `useEditableEntry` for a fixed
+ * list of common group names and pick the right entry per group below.
+ */
 export function GenericPreview({ previewContent, isGenerating, heroImage, onAddImage }: PlatformPreviewProps) {
   const [copied, setCopied] = React.useState(false);
+
+  // Call hooks unconditionally for every known group; build a lookup map.
+  // Unknown groups still render but without inline-edit (acceptable fallback).
+  const entryMap: Record<string, ReturnType<typeof useEditableEntry>> = {
+    title: useEditableEntry('title'),
+    headline: useEditableEntry('headline'),
+    subject: useEditableEntry('subject'),
+    'subject-line': useEditableEntry('subject-line'),
+    meta: useEditableEntry('meta'),
+    'meta-description': useEditableEntry('meta-description'),
+    body: useEditableEntry('body'),
+    content: useEditableEntry('content'),
+    paragraph: useEditableEntry('paragraph'),
+    intro: useEditableEntry('intro'),
+    conclusion: useEditableEntry('conclusion'),
+    hook: useEditableEntry('hook'),
+    caption: useEditableEntry('caption'),
+    hashtags: useEditableEntry('hashtags'),
+    cta: useEditableEntry('cta'),
+    'call-to-action': useEditableEntry('call-to-action'),
+    subheadline: useEditableEntry('subheadline'),
+    subtitle: useEditableEntry('subtitle'),
+    'cta-text': useEditableEntry('cta-text'),
+    preheader: useEditableEntry('preheader'),
+    description: useEditableEntry('description'),
+  };
 
   const textEntries = Object.entries(previewContent).filter(
     ([, v]) => v.type === 'text' && v.content
@@ -91,6 +125,37 @@ export function GenericPreview({ previewContent, isGenerating, heroImage, onAddI
           const isCta = g === 'cta' || g === 'call-to-action';
           const isHashtags = g === 'hashtags';
           const isCaption = g === 'caption';
+          const entry = entryMap[group];
+
+          // Renders the role-appropriate display for a given text value.
+          const renderRole = (text: string) => {
+            if (isTitle || isSubject) {
+              return (
+                <h1 className="text-xl font-bold text-gray-900 leading-tight">
+                  {stripMarkdownForPlainText(text)}
+                </h1>
+              );
+            }
+            if (isMeta) {
+              return <p className="text-sm text-gray-500 italic">{stripMarkdownForPlainText(text)}</p>;
+            }
+            if (isCta) {
+              return (
+                <div className="pt-1">
+                  <span className="inline-block px-4 py-1.5 rounded bg-teal-600 text-white text-xs font-medium">
+                    {stripMarkdownForPlainText(text).slice(0, 80)}
+                  </span>
+                </div>
+              );
+            }
+            if (isHashtags) {
+              return <p className="text-xs text-blue-600">{text}</p>;
+            }
+            if (isCaption) {
+              return <p className="text-sm text-gray-700 whitespace-pre-wrap">{text}</p>;
+            }
+            return <SimpleMarkdown text={text} />;
+          };
 
           return (
             <div key={group}>
@@ -101,25 +166,10 @@ export function GenericPreview({ previewContent, isGenerating, heroImage, onAddI
                 </p>
               )}
 
-              {/* Role-specific rendering */}
-              {(isTitle || isSubject) ? (
-                <h1 className="text-xl font-bold text-gray-900 leading-tight">
-                  {value.content}
-                </h1>
-              ) : isMeta ? (
-                <p className="text-sm text-gray-500 italic">{value.content}</p>
-              ) : isCta ? (
-                <div className="pt-1">
-                  <span className="inline-block px-4 py-1.5 rounded bg-teal-600 text-white text-xs font-medium">
-                    {value.content}
-                  </span>
-                </div>
-              ) : isHashtags ? (
-                <p className="text-xs text-blue-600">{value.content}</p>
-              ) : isCaption ? (
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">{value.content}</p>
+              {entry ? (
+                <InlineEditableSection entry={entry} render={renderRole} />
               ) : (
-                <SimpleMarkdown text={value.content ?? ''} />
+                renderRole(value.content ?? '')
               )}
             </div>
           );
