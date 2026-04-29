@@ -256,6 +256,7 @@ export const readTools: ClawToolDefinition[] = [
           const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
           const brief = (settings.brief ?? {}) as Record<string, unknown>;
           const contentTypeInputs = (settings.contentTypeInputs ?? {}) as Record<string, unknown>;
+          const visualBrief = (settings.visualBrief ?? null) as Record<string, unknown> | null;
 
           // Brief fields are the four canonical Step 1 textareas.
           const briefFields: FieldPreview[] = [
@@ -266,12 +267,32 @@ export const readTools: ClawToolDefinition[] = [
           ];
 
           // Content-type inputs are dynamic per content type — surface what
-          // the user has filled in so far so Claw can spot gaps. Keys
-          // correspond to entries in src/features/campaigns/lib/content-type-inputs.ts.
+          // the user has filled in so far so Claw can spot gaps. Filter to
+          // keys that actually exist in the current registry so Claw doesn't
+          // see (and try to update) stale keys from previous schemas.
+          const { getContentTypeInputs } = await import('@/features/campaigns/lib/content-type-inputs');
+          const validKeys = new Set(
+            getContentTypeInputs(deliverable.contentType).map((f) => f.key),
+          );
           const contentTypeInputPreviews: Record<string, ReturnType<typeof preview>> = {};
           for (const [k, v] of Object.entries(contentTypeInputs)) {
-            contentTypeInputPreviews[k] = preview(v);
+            if (validKeys.has(k)) contentTypeInputPreviews[k] = preview(v);
           }
+          // List the still-empty registry keys so Claw can see what to fill.
+          const availableContentTypeKeys: string[] = [];
+          for (const k of validKeys) {
+            if (!(k in contentTypeInputPreviews)) availableContentTypeKeys.push(k);
+          }
+
+          // Visual Brief — strategic visual direction (source + style chip).
+          // Lives in settings.visualBrief; updated via update_deliverable_visual_brief.
+          const visualBriefPreview = visualBrief
+            ? {
+                source: (visualBrief.source ?? 'generate') as string,
+                styleDirection: (visualBrief.styleDirection ?? null) as string | null,
+                styleDirectionFreeText: (visualBrief.styleDirectionFreeText ?? null) as string | null,
+              }
+            : { source: 'generate', styleDirection: null, styleDirectionFreeText: null };
 
           return {
             entityType: 'deliverable',
@@ -283,7 +304,14 @@ export const readTools: ClawToolDefinition[] = [
             completenessPercentage: completenessFromFields(briefFields),
             briefFields,
             contentTypeInputs: contentTypeInputPreviews,
-            tip: 'Use update_deliverable_brief for the four briefing fields (objective, keyMessage, toneDirection, callToAction). Use update_deliverable_content_inputs for the type-specific keys shown in contentTypeInputs (SEO keyword, tone, hashtag strategy, CTA style, etc.). Both apply via the user confirmation card.',
+            availableContentTypeKeys,
+            visualBrief: visualBriefPreview,
+            visualBriefValidStyles: [
+              'lifestyle', 'product-shot', 'quote-text', 'behind-the-scenes',
+              'ugc', 'infographic', 'illustration', 'data-driven',
+            ],
+            visualBriefValidSources: ['generate', 'library', 'compose', 'trained-style', 'none'],
+            tip: 'Three write-tools fill the Step 1 Content Brief: (1) update_deliverable_brief for the four strategic textareas (objective, keyMessage, toneDirection, callToAction). (2) update_deliverable_content_inputs for type-specific keys — ONLY keys listed in `availableContentTypeKeys` or already in `contentTypeInputs` are valid. (3) update_deliverable_visual_brief for the Visual Brief subsection (source from `visualBriefValidSources`, styleDirection from `visualBriefValidStyles`, plus optional free text). All three apply via the user confirmation card.',
           };
         }
       }

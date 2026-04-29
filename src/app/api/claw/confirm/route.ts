@@ -222,6 +222,7 @@ function resolveAffectedEntity(
       };
     case 'update_deliverable_brief':
     case 'update_deliverable_content_inputs':
+    case 'update_deliverable_visual_brief':
       return {
         entityType: 'deliverable',
         entityId: inputId('deliverableId'),

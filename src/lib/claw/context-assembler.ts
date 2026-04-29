@@ -391,10 +391,10 @@ function formatPageContext(ctx: ClawPageContext): string {
         'To fill or edit Step 1 (Review Context) fields:'
       );
       lines.push(
-        '  1. Call `inspect_current_entity` with entityType=deliverable + entityId above. It returns the four briefing fields (objective / keyMessage / toneDirection / callToAction) plus the type-specific contentTypeInputs (SEO keyword, tone, hashtag strategy, etc.) — each with current value and isEmpty markers.'
+        '  1. Call `inspect_current_entity` with entityType=deliverable + entityId above. It returns: (a) the four briefing fields (objective / keyMessage / toneDirection / callToAction); (b) the type-specific `contentTypeInputs` plus `availableContentTypeKeys` listing valid empty keys (SEO keyword, structure, etc. — varies per content type); (c) the `visualBrief` (source + styleDirection chip + free text) with `visualBriefValidStyles` and `visualBriefValidSources` arrays.'
       );
       lines.push(
-        '  2. Use `update_deliverable_brief` for the four briefing fields. Use `update_deliverable_content_inputs` for the type-specific keys. Both apply via a confirmation card the user reviews before saving — propose values grounded in the brand context above and the persona psychographics, never generic filler.'
+        '  2. Three write-tools cover Step 1: (a) `update_deliverable_brief` for the four strategic textareas. (b) `update_deliverable_content_inputs` for type-specific keys — ONLY use keys returned by inspect_current_entity, never invent keys. (c) `update_deliverable_visual_brief` for the Visual Brief subsection. All three apply via a user confirmation card — propose values grounded in brand context + persona psychographics, never generic filler.'
       );
       lines.push(
         '  3. For content body / variant rewrites (after Step 2 has run), give targeted writing advice the user can apply via the inline edit on each preview section. The Canvas variant grid is not directly editable through tools.'

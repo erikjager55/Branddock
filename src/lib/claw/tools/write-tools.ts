@@ -838,17 +838,153 @@ export const writeTools: ClawToolDefinition[] = [
     },
   },
 
+  // ─── Update Deliverable Visual Brief ─────────────────────
+  // Canvas Step 1 Visual Brief lives in Deliverable.settings.visualBrief.
+  // Source picks the image-pipeline route at generate-time; styleDirection
+  // (one of 8 canonical chips) drives both text-prompt mediumConfig AND
+  // image-prompt composition rules via canvas-orchestrator's rich mapping.
+  // styleDirectionFreeText is a fallback when no chip fits — both can be
+  // set together (chip + extra direction).
+  {
+    name: 'update_deliverable_visual_brief',
+    description:
+      'Fill or update the Visual Brief for a deliverable on Canvas Step 1: source (which image pipeline runs) + styleDirection (one canonical chip from 8) + optional free-text. Use when the user asks for a specific visual mood/composition. Always inspect_current_entity first to see `visualBriefValidStyles` and `visualBriefValidSources` — only send valid values. Set styleDirection to null to clear an existing chip; pass styleDirectionFreeText for additional mood notes that complement the chip.',
+    inputSchema: z.object({
+      deliverableId: z.string().describe('The deliverable ID from the Current Page context'),
+      source: z
+        .enum(['generate', 'library', 'compose', 'trained-style', 'none'])
+        .optional()
+        .describe('Visual pipeline source. Phase 1 supports `generate` and `none`; the others are placeholders.'),
+      styleDirection: z
+        .enum(['lifestyle', 'product-shot', 'quote-text', 'behind-the-scenes', 'ugc', 'infographic', 'illustration', 'data-driven'])
+        .nullable()
+        .optional()
+        .describe('Canonical style chip — null clears any existing chip.'),
+      styleDirectionFreeText: z
+        .string()
+        .max(1000)
+        .nullable()
+        .optional()
+        .describe('Free-text mood / composition notes that complement (or replace) the chip.'),
+    }),
+    requiresConfirmation: true,
+    category: 'write',
+    buildProposal: async (params, ctx) => {
+      const p = params as {
+        deliverableId: string;
+        source?: string;
+        styleDirection?: string | null;
+        styleDirectionFreeText?: string | null;
+      };
+      const deliverable = await prisma.deliverable.findFirst({
+        where: { id: p.deliverableId },
+        include: { campaign: { select: { workspaceId: true, title: true } } },
+      });
+      if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
+        throw new Error('Deliverable not found in this workspace');
+      }
+      const existing = ((deliverable.settings as { visualBrief?: Record<string, unknown> } | null)?.visualBrief) ?? {};
+      const changes: Array<{ field: string; label: string; currentValue: string | null; proposedValue: string }> = [];
+      if (p.source !== undefined) {
+        changes.push({
+          field: 'source',
+          label: 'Visual source',
+          currentValue: (existing.source as string | undefined) ?? 'generate',
+          proposedValue: p.source,
+        });
+      }
+      if (p.styleDirection !== undefined) {
+        changes.push({
+          field: 'styleDirection',
+          label: 'Style direction',
+          currentValue: (existing.styleDirection as string | null | undefined) ?? null,
+          proposedValue: p.styleDirection ?? '(cleared)',
+        });
+      }
+      if (p.styleDirectionFreeText !== undefined) {
+        changes.push({
+          field: 'styleDirectionFreeText',
+          label: 'Free-text direction',
+          currentValue: (existing.styleDirectionFreeText as string | null | undefined) ?? null,
+          proposedValue: p.styleDirectionFreeText ?? '(cleared)',
+        });
+      }
+      return {
+        toolCallId: '',
+        toolName: 'update_deliverable_visual_brief',
+        params,
+        description: `Update Visual Brief on "${deliverable.title}"`,
+        entityType: 'Deliverable',
+        entityId: p.deliverableId,
+        entityName: deliverable.title,
+        changes,
+      };
+    },
+    execute: async (params, ctx) => {
+      const p = params as {
+        deliverableId: string;
+        source?: string;
+        styleDirection?: string | null;
+        styleDirectionFreeText?: string | null;
+      };
+
+      const deliverable = await prisma.deliverable.findFirst({
+        where: { id: p.deliverableId },
+        include: { campaign: { select: { workspaceId: true } } },
+      });
+      if (!deliverable || deliverable.campaign.workspaceId !== ctx.workspaceId) {
+        throw new Error('Deliverable not found in this workspace');
+      }
+
+      const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
+      const existing = (settings.visualBrief ?? {}) as Record<string, unknown>;
+      const visualBrief: Record<string, unknown> = {
+        source: existing.source ?? 'generate',
+        styleDirection: existing.styleDirection ?? null,
+        styleDirectionFreeText: existing.styleDirectionFreeText ?? null,
+        ...(existing.generate ? { generate: existing.generate } : {}),
+        ...(existing.library ? { library: existing.library } : {}),
+        ...(existing.compose ? { compose: existing.compose } : {}),
+        ...(existing.trained ? { trained: existing.trained } : {}),
+      };
+
+      let touched = 0;
+      if (p.source !== undefined) { visualBrief.source = p.source; touched++; }
+      if (p.styleDirection !== undefined) { visualBrief.styleDirection = p.styleDirection; touched++; }
+      if (p.styleDirectionFreeText !== undefined) { visualBrief.styleDirectionFreeText = p.styleDirectionFreeText; touched++; }
+
+      if (touched === 0) return { success: false, message: 'No visual brief fields provided' };
+
+      await prisma.deliverable.update({
+        where: { id: p.deliverableId },
+        data: { settings: { ...settings, visualBrief } },
+      });
+      invalidateDashboard(ctx.workspaceId);
+      return {
+        success: true,
+        message: `Updated ${touched} visual brief field${touched === 1 ? '' : 's'}`,
+        deliverableId: p.deliverableId,
+      };
+    },
+  },
+
   // ─── Update Deliverable Content-Type Inputs ──────────────
-  // Type-specific input fields (SEO keyword, tone, hashtag strategy, CTA
-  // style, etc.) live in Deliverable.settings.contentTypeInputs as a flat
+  // Type-specific input fields (SEO keyword, hashtag strategy, structure,
+  // etc.) live in Deliverable.settings.contentTypeInputs as a flat
   // key/value map. This tool sets one or more of those keys. Field keys
   // are defined per content type in
   // src/features/campaigns/lib/content-type-inputs.ts — the AI sees the
   // available keys via inspect_current_entity (deliverable).
+  //
+  // IMPORTANT: tone, callToAction (the CTA copy itself), visualStyle,
+  // visualDirection and contentStyle are NOT in this registry — they
+  // moved to update_deliverable_brief and update_deliverable_visual_brief.
+  // Stale keys are rejected at write-time with a list of valid keys
+  // returned in the result so the AI corrects course.
   {
     name: 'update_deliverable_content_inputs',
     description:
-      'Fill or update type-specific Content Brief inputs on a deliverable (SEO keyword, secondary keywords, tone, hashtag strategy, CTA style, include emojis, etc. — keys depend on the content type). Use when the user asks to fill the optional brief fields shown on Canvas Step 1. inspect_current_entity returns the valid keys + current values; only send keys that exist there. Boolean fields use true/false; arrays use string lists; everything else is a string.',
+      'Fill or update type-specific Content Brief inputs on a deliverable (SEO keyword, secondary keywords, hashtag strategy, article structure, slide count, etc. — keys depend on the content type). NEVER guess keys; always call `inspect_current_entity` first and use only keys from `availableContentTypeKeys` or already in `contentTypeInputs`. For tone / CTA / visual style use the dedicated tools (`update_deliverable_brief` and `update_deliverable_visual_brief`). Boolean fields use true/false; arrays use string lists; everything else is a string.',
     inputSchema: z.object({
       deliverableId: z.string().describe('The deliverable ID from the Current Page context'),
       updates: z
@@ -901,13 +1037,27 @@ export const writeTools: ClawToolDefinition[] = [
         throw new Error('Deliverable not found in this workspace');
       }
 
+      // Whitelist incoming keys against the active registry. Stale keys
+      // (left over from old prompts: tone / ctaStyle / visualStyle /
+      // contentStyle / visualDirection / etc.) get rejected and reported
+      // back so the AI corrects course on the next turn.
+      const { getContentTypeInputs } = await import('@/features/campaigns/lib/content-type-inputs');
+      const validKeys = new Set(
+        getContentTypeInputs(deliverable.contentType).map((f) => f.key),
+      );
+
       const settings = (deliverable.settings ?? {}) as Record<string, unknown>;
       const contentTypeInputs = {
         ...((settings.contentTypeInputs ?? {}) as Record<string, unknown>),
       };
       let touched = 0;
+      const rejectedKeys: string[] = [];
       for (const [k, v] of Object.entries(p.updates)) {
         if (v == null) continue;
+        if (!validKeys.has(k)) {
+          rejectedKeys.push(k);
+          continue;
+        }
         // Coerce to one of the four allowed shapes per ContentTypeInputValue
         if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
           contentTypeInputs[k] = v;
@@ -917,7 +1067,17 @@ export const writeTools: ClawToolDefinition[] = [
           touched++;
         }
       }
-      if (touched === 0) return { success: false, message: 'No valid inputs provided' };
+
+      if (touched === 0) {
+        return {
+          success: false,
+          message: rejectedKeys.length > 0
+            ? `No valid keys for content type "${deliverable.contentType}". Rejected: ${rejectedKeys.join(', ')}. Valid keys: ${Array.from(validKeys).join(', ') || '(none — this type has no contentTypeInputs)'}.`
+            : 'No valid inputs provided',
+          rejectedKeys,
+          validKeys: Array.from(validKeys),
+        };
+      }
 
       await prisma.deliverable.update({
         where: { id: p.deliverableId },
@@ -926,8 +1086,11 @@ export const writeTools: ClawToolDefinition[] = [
       invalidateDashboard(ctx.workspaceId);
       return {
         success: true,
-        message: `Updated ${touched} content input${touched === 1 ? '' : 's'}`,
+        message: rejectedKeys.length > 0
+          ? `Updated ${touched} content input${touched === 1 ? '' : 's'}; rejected ${rejectedKeys.length} unknown key${rejectedKeys.length === 1 ? '' : 's'}: ${rejectedKeys.join(', ')}. Use update_deliverable_brief for tone/CTA, update_deliverable_visual_brief for visual style.`
+          : `Updated ${touched} content input${touched === 1 ? '' : 's'}`,
         deliverableId: p.deliverableId,
+        rejectedKeys: rejectedKeys.length > 0 ? rejectedKeys : undefined,
       };
     },
   },
