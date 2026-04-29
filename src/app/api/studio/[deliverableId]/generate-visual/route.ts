@@ -24,7 +24,7 @@ import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
 import { withAiRateLimit } from '@/lib/ai/middleware';
 import { assembleCanvasContext, type CanvasContextStack } from '@/lib/ai/canvas-context';
-import { buildVisualBriefImagePrompts } from '@/lib/ai/visual-brief-prompts';
+import { buildVisualBriefImagePrompts, selectModelForStyle } from '@/lib/ai/visual-brief-prompts';
 import { generateFalImage } from '@/lib/integrations/fal/fal-client';
 import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { getStorageProvider } from '@/lib/storage';
@@ -35,13 +35,10 @@ import { z } from 'zod';
 const VISUAL_GROUP = 'visual';
 
 /**
- * Default model for Visual Brief generation. FLUX.2 Pro is described in
- * the fal provider registry as "Best overall quality. Excels at sharp
- * details, realistic textures, and consistent lighting across diverse
- * scenes." — strictly higher fidelity than Imagen 4 for marketing /
- * brand visuals.
+ * The route auto-routes between FLUX.2 Pro / GPT Image 2 / Recraft V3
+ * based on the chosen style chip — see selectModelForStyle() in
+ * visual-brief-prompts.ts. Fallback when no chip is set is FLUX.2 Pro.
  */
-const DEFAULT_FAL_MODEL = 'fal-ai/flux-2-pro';
 
 /**
  * Standard fal.ai aspect-ratio presets we route to. Mapped from
@@ -226,13 +223,17 @@ export async function POST(request: Request, { params }: RouteParams) {
       explicitFalSize ?? resolveAspectFromMedium(stack) ?? 'square_hd';
     const aspectLabel = falSizeToAspectLabel(falImageSize);
 
-    // Generate via FLUX.2 Pro on fal.ai — best overall quality per the
-    // provider registry. Each prompt fires a separate call in parallel.
+    // Auto-route to the best model for this chip. Honour an explicit
+    // visualBrief.generate.model override when the user has picked one.
+    const generateConfig = visualBrief?.generate as { model?: string } | undefined;
+    const modelId = generateConfig?.model
+      ?? selectModelForStyle(stack.visualBrief?.styleDirection ?? null);
+
     const startMs = Date.now();
     const generated = await Promise.all(
       finalPrompts.map(async (prompt) => {
         try {
-          const result = await generateFalImage(DEFAULT_FAL_MODEL, prompt, {
+          const result = await generateFalImage(modelId, prompt, {
             imageSize: falImageSize,
             numImages: 1,
           });
@@ -240,7 +241,7 @@ export async function POST(request: Request, { params }: RouteParams) {
           if (!url) return null;
           return { prompt, hostedUrl: url };
         } catch (err) {
-          console.error('[generate-visual] fal.ai call failed:', err instanceof Error ? err.message : err);
+          console.error(`[generate-visual] ${modelId} call failed:`, err instanceof Error ? err.message : err);
           return null;
         }
       }),
@@ -249,7 +250,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     const successful = generated.filter((r): r is NonNullable<typeof r> => r !== null);
     if (successful.length === 0) {
       return NextResponse.json(
-        { error: 'All image generation calls failed. Check that FAL_KEY is configured.' },
+        { error: `All image generation calls failed (model: ${modelId}). Check that FAL_KEY is configured.` },
         { status: 502 },
       );
     }
@@ -293,8 +294,8 @@ export async function POST(request: Request, { params }: RouteParams) {
             imageUrl: u.url,
             imageSource: 'ai_generated',
             imagePromptUsed: u.prompt,
-            aiProvider: 'fal',
-            aiModel: DEFAULT_FAL_MODEL,
+            aiProvider: modelId.startsWith('openai/') ? 'openai' : 'fal',
+            aiModel: modelId,
             generationDuration: elapsedMs,
             status: 'GENERATED',
             generatedAt: new Date(),
@@ -311,8 +312,8 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     return NextResponse.json({
       variants: components,
-      provider: 'fal',
-      model: DEFAULT_FAL_MODEL,
+      provider: modelId.startsWith('openai/') ? 'openai' : 'fal',
+      model: modelId,
       aspectRatio: aspectLabel,
       generationDuration: elapsedMs,
     });

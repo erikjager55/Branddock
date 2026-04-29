@@ -56,7 +56,8 @@ export type FalUsageCategory =
 
 /** All available generation providers (superset) */
 const ALL_FAL_PROVIDERS: Record<string, FalProvider> = {
-  'fal-ai/flux-2-pro':      { id: 'fal-ai/flux-2-pro',      label: 'FLUX.2 Pro',      description: 'Best overall quality. Excels at sharp details, realistic textures, and consistent lighting across diverse scenes.',           cost: '$0.03/MP',  preview: 'flux-2-pro.svg' },
+  'openai/gpt-image-2':     { id: 'openai/gpt-image-2',     label: 'GPT Image 2',     description: 'OpenAI\'s SOTA model (April 2026). State-of-the-art photorealism, pixel-perfect text rendering on labels/logos/packaging, brand-consistent product photography. Best when text in image matters.',                  cost: '$0.21/img high', preview: 'gpt-image-2.svg' },
+  'fal-ai/flux-2-pro':      { id: 'fal-ai/flux-2-pro',      label: 'FLUX.2 Pro',      description: 'Best overall photoreal quality. Excels at sharp details, realistic textures, and consistent lighting across diverse scenes. Cheaper than GPT Image 2 — pick this when text in image is not critical.',           cost: '$0.03/MP',  preview: 'flux-2-pro.svg' },
   'fal-ai/recraft-v3':      { id: 'fal-ai/recraft-v3',      endpoint: 'fal-ai/recraft/v3/text-to-image', label: 'Recraft V3', description: 'Purpose-built for brand design. Produces clean logos, icons, illustrations, and marketing assets with precise color control.', cost: '$0.04/img', preview: 'recraft-v3.svg' },
   'fal-ai/seedream-v4-5':   { id: 'fal-ai/seedream-v4-5',   endpoint: 'fal-ai/bytedance/seedream/v4/text-to-image', label: 'Seedream V4', description: 'Specialized in rendering readable text within images. Ideal for product labels, packaging, and signage.', cost: '$0.04/img', preview: 'seedream-v4-5.svg' },
   'fal-ai/flux-2':          { id: 'fal-ai/flux-2',          label: 'FLUX.2 Dev',      description: 'Fast and cost-effective. Strong prompt adherence with good quality — suitable for high-volume reference generation.',          cost: '$0.025/MP', preview: 'flux-2-dev.svg' },
@@ -69,12 +70,12 @@ const ALL_FAL_PROVIDERS: Record<string, FalProvider> = {
 
 /** Provider IDs per ConsistentModelType — AI Trainer only */
 const FAL_PROVIDERS_BY_TYPE: Record<ModelTypeKey, string[]> = {
-  PERSON:       ['fal-ai/flux-2-pro', 'fal-ai/nano-banana-pro', 'fal-ai/phota'],
-  PRODUCT:      ['fal-ai/flux-2-pro', 'fal-ai/flux-2', 'fal-ai/seedream-v4-5'],
-  OBJECT:       ['fal-ai/flux-2-pro', 'fal-ai/flux-2', 'fal-ai/seedream-v4-5'],
+  PERSON:       ['openai/gpt-image-2', 'fal-ai/flux-2-pro', 'fal-ai/nano-banana-pro', 'fal-ai/phota'],
+  PRODUCT:      ['openai/gpt-image-2', 'fal-ai/flux-2-pro', 'fal-ai/flux-2', 'fal-ai/seedream-v4-5'],
+  OBJECT:       ['fal-ai/flux-2-pro', 'fal-ai/flux-2', 'fal-ai/seedream-v4-5', 'openai/gpt-image-2'],
   STYLE:        ['fal-ai/flux-2-pro', 'fal-ai/recraft-v3', 'fal-ai/ideogram-v3', 'fal-ai/flux-2'],
-  BRAND_STYLE:  ['fal-ai/recraft-v3', 'fal-ai/ideogram-v3', 'fal-ai/flux-2-pro', 'fal-ai/seedream-v4-5'],
-  PHOTOGRAPHY:  ['fal-ai/flux-2-pro', 'fal-ai/phota', 'fal-ai/flux-2'],
+  BRAND_STYLE:  ['openai/gpt-image-2', 'fal-ai/recraft-v3', 'fal-ai/ideogram-v3', 'fal-ai/flux-2-pro', 'fal-ai/seedream-v4-5'],
+  PHOTOGRAPHY:  ['openai/gpt-image-2', 'fal-ai/flux-2-pro', 'fal-ai/phota', 'fal-ai/flux-2'],
   ILLUSTRATION: ['fal-ai/recraft-v3', 'fal-ai/ideogram-v3', 'fal-ai/flux-2-pro', 'fal-ai/flux-2'],
   VOICE:        [],
   SOUND_EFFECT: [],
@@ -84,12 +85,12 @@ const FAL_PROVIDERS_BY_TYPE: Record<ModelTypeKey, string[]> = {
 
 /** Provider IDs per usage category — AI Studio questionnaire */
 const FAL_PROVIDERS_BY_USAGE: Record<FalUsageCategory, string[]> = {
-  portrait:      ['fal-ai/flux-2-pro', 'fal-ai/nano-banana-pro', 'fal-ai/phota'],
-  product:       ['fal-ai/flux-2-pro', 'fal-ai/flux-2', 'fal-ai/seedream-v4-5'],
-  scene:         ['fal-ai/flux-2-pro', 'fal-ai/flux-2', 'fal-ai/phota'],
+  portrait:      ['openai/gpt-image-2', 'fal-ai/flux-2-pro', 'fal-ai/nano-banana-pro', 'fal-ai/phota'],
+  product:       ['openai/gpt-image-2', 'fal-ai/flux-2-pro', 'fal-ai/flux-2', 'fal-ai/seedream-v4-5'],
+  scene:         ['fal-ai/flux-2-pro', 'fal-ai/flux-2', 'fal-ai/phota', 'openai/gpt-image-2'],
   illustration:  ['fal-ai/recraft-v3', 'fal-ai/ideogram-v3', 'fal-ai/flux-2-pro'],
-  'brand-design': ['fal-ai/recraft-v3', 'fal-ai/ideogram-v3', 'fal-ai/flux-2-pro', 'fal-ai/seedream-v4-5'],
-  'text-heavy':  ['fal-ai/seedream-v4-5', 'fal-ai/ideogram-v3', 'fal-ai/recraft-v3'],
+  'brand-design': ['openai/gpt-image-2', 'fal-ai/recraft-v3', 'fal-ai/ideogram-v3', 'fal-ai/flux-2-pro', 'fal-ai/seedream-v4-5'],
+  'text-heavy':  ['openai/gpt-image-2', 'fal-ai/seedream-v4-5', 'fal-ai/ideogram-v3', 'fal-ai/recraft-v3'],
 };
 
 // ─── Public API ──────────────────────────────────────────────

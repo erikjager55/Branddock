@@ -18,6 +18,50 @@
 import type { VisualBrief, VisualStyleDirection } from './canvas-context';
 import type { BrandContextBlock } from './prompt-templates';
 
+/**
+ * Smart model selection per style chip — picks the model whose strengths
+ * align with what the chip needs most. The order respects cost-awareness:
+ * cheaper models (FLUX.2 Pro at $0.03/MP) are preferred when their
+ * quality is "good enough"; we splurge on GPT Image 2 ($0.21/img high)
+ * only when text rendering or product-packaging accuracy is structurally
+ * critical to the chip.
+ *
+ * Vendors:
+ * - openai/gpt-image-2  — SOTA photoreal + pixel-perfect text
+ * - fal-ai/flux-2-pro   — best photoreal at value pricing
+ * - fal-ai/recraft-v3   — purpose-built for vector / brand design
+ *
+ * Override path: visualBrief.generate.model wins over the default in
+ * the endpoint. This map fires only when the user hasn't explicitly
+ * picked a model.
+ */
+export function selectModelForStyle(chip: VisualStyleDirection | null): string {
+  switch (chip) {
+    case 'quote-text':
+    case 'infographic':
+    case 'data-driven':
+      // Text rendering is THE feature — GPT Image 2 is best in class
+      return 'openai/gpt-image-2';
+    case 'product-shot':
+      // Product shots commonly include brand text on packaging / labels
+      // — GPT Image 2's text accuracy avoids the usual "garbled logo" issue
+      return 'openai/gpt-image-2';
+    case 'illustration':
+      // Vector / drawn style — Recraft V3 is purpose-built; GPT Image 2
+      // and FLUX bias toward photoreal which fights the brief
+      return 'fal-ai/recraft-v3';
+    case 'lifestyle':
+    case 'behind-the-scenes':
+    case 'ugc':
+      // Photoreal scenes without critical text — FLUX.2 Pro hits the
+      // quality bar at ~7× lower cost than GPT Image 2 high
+      return 'fal-ai/flux-2-pro';
+    default:
+      // No chip picked — pick the safe photoreal default
+      return 'fal-ai/flux-2-pro';
+  }
+}
+
 export const VISUAL_STYLE_IMAGE_INSTRUCTIONS: Record<VisualStyleDirection, string> = {
   lifestyle:
     'Lifestyle photography: real people in authentic situations using the product/service. Natural lighting, candid composition, environmental context. Avoid posed studio shots.',
