@@ -121,6 +121,35 @@ export async function inlineTransform(
   return res.json();
 }
 
+export interface GenerateVisualResponse {
+  variants: Array<{ id: string; url: string; prompt: string }>;
+  provider: string;
+  model: string;
+  generationDuration: number;
+}
+
+/**
+ * Trigger image generation from the Visual Brief — fires the chip's
+ * composition rule + brand visual identity at Imagen 4 (default provider
+ * for Phase 1). Returns 1-3 fresh image variants and replaces any existing
+ * visual-group components on the deliverable.
+ */
+export async function generateCanvasVisual(
+  deliverableId: string,
+  options?: { instruction?: string; aspectRatio?: '1:1' | '16:9' | '9:16' | '4:3' | '3:4'; count?: number },
+): Promise<GenerateVisualResponse> {
+  const res = await fetch(`/api/studio/${deliverableId}/generate-visual`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(options ?? {}),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to generate visual' }));
+    throw new Error(err.error ?? 'Failed to generate visual');
+  }
+  return res.json();
+}
+
 /** Create a derivative deliverable for another platform */
 export async function deriveDeliverable(
   deliverableId: string,

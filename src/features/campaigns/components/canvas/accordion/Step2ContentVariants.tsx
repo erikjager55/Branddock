@@ -8,11 +8,13 @@ import { FeedbackBar } from '../FeedbackBar';
 import { Badge } from '@/components/shared';
 import { STUDIO } from '@/lib/constants/design-tokens';
 import type { PreviewContent } from '../../../types/canvas.types';
-import { Loader2, Sparkles, ArrowRight, Check, Film, MessageSquare, MousePointerClick } from 'lucide-react';
+import { Loader2, Sparkles, ArrowRight, Check, Film, MessageSquare, MousePointerClick, Image as ImageIcon, RefreshCw, X } from 'lucide-react';
 import { SeoProgressPanel } from '../SeoProgressPanel';
 import { getEstimatedDuration } from '../../../lib/content-type-inputs';
 import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
 import type { SceneId } from '../../../stores/useCanvasStore';
+import { generateCanvasVisual } from '../../../api/canvas.api';
+import type { CanvasImageVariant } from '../../../types/canvas.types';
 
 interface Step2ContentVariantsProps {
   deliverableId: string;
@@ -253,6 +255,13 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
         <SceneBreakdown variantGroups={variantGroups} selectedVariantIndex={selectedVariantIndex} />
       )}
 
+      {/* Visual generation — shown when variants exist and Visual Brief
+          source is 'generate'. Image generation is decoupled from text
+          generation server-side, so the user explicitly triggers it here. */}
+      {hasVariants && !isGenerating && (
+        <VisualVariantsBlock deliverableId={deliverableId} />
+      )}
+
       {/* Feedback bar */}
       <div className="border-t border-gray-200 pt-4">
         <FeedbackBar onRegenerate={regenerate} onAbort={abort} />
@@ -360,3 +369,166 @@ function GeneratingIndicator({ contentType }: { contentType: string | null }) {
 }
 
 export default Step2ContentVariants;
+
+// ─── Visual Variants Block ────────────────────────────────────
+// Sits between the text-variants grid and the FeedbackBar. Behavior:
+//   - source === 'none'      → renders nothing (user opted out)
+//   - source === 'generate'  → primary "Generate visual" button (or grid
+//                              of existing variants + Regenerate)
+//   - other sources          → "coming soon" banner pointing to Visual
+//                              Brief subsection in Step 1
+// Image gen is decoupled from text-gen server-side so it only fires when
+// the user clicks the button — text-gen stays fast.
+
+function VisualVariantsBlock({ deliverableId }: { deliverableId: string }) {
+  const visualBrief = useCanvasStore((s) => s.visualBrief);
+  const imageVariants = useCanvasStore((s) => s.imageVariants);
+  const setImageVariants = useCanvasStore((s) => s.setImageVariants);
+  const [status, setStatus] = React.useState<'idle' | 'generating' | 'error'>('idle');
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+
+  const source = visualBrief.source;
+  const hasImages = imageVariants.length > 0;
+  const isGenerating = status === 'generating';
+
+  if (source === 'none') return null;
+
+  const handleGenerate = async () => {
+    setStatus('generating');
+    setErrorMessage(null);
+    try {
+      const result = await generateCanvasVisual(deliverableId, { count: 2 });
+      const mapped: CanvasImageVariant[] = result.variants.map((v, i) => ({
+        index: i,
+        url: v.url,
+        prompt: v.prompt,
+        isSelected: i === 0,
+      }));
+      setImageVariants(mapped);
+      setStatus('idle');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to generate visual';
+      setErrorMessage(message);
+      setStatus('error');
+    }
+  };
+
+  const handleSelect = (idx: number) => {
+    const updated = imageVariants.map((v, i) => ({ ...v, isSelected: i === idx }));
+    setImageVariants(updated);
+  };
+
+  // Sources other than `generate` aren't wired in Phase 1 — give a hint
+  // rather than rendering a dead button.
+  if (source !== 'generate') {
+    const sourceLabel =
+      source === 'library' ? 'From library'
+      : source === 'compose' ? 'Compose'
+      : source === 'trained-style' ? 'Trained style'
+      : source;
+    return (
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+        <div className="flex items-center gap-2 mb-1">
+          <ImageIcon className="h-4 w-4" />
+          <span className="font-medium">Visual: {sourceLabel}</span>
+        </div>
+        <p className="text-xs text-gray-500">
+          The {sourceLabel} picker is coming in a later phase. Switch the Visual
+          Brief source to <strong>Generate</strong> in Step 1 to use AI image
+          generation, or <strong>No visual</strong> to skip.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <ImageIcon className="h-4 w-4" style={{ color: '#7c3aed' }} />
+          <span className="text-sm font-medium text-gray-700">Visual</span>
+          {visualBrief.styleDirection && (
+            <Badge variant="default" size="sm">
+              {visualBrief.styleDirection.replace(/-/g, ' ')}
+            </Badge>
+          )}
+        </div>
+        {hasImages && !isGenerating && (
+          <button
+            type="button"
+            onClick={handleGenerate}
+            className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 px-2 py-1 rounded hover:bg-gray-100"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Regenerate
+          </button>
+        )}
+      </div>
+
+      {/* Empty state — primary "Generate visual" button */}
+      {!hasImages && !isGenerating && (
+        <div className="space-y-2">
+          <p className="text-xs text-gray-500">
+            {visualBrief.styleDirection
+              ? `Generate 2 image variants in ${visualBrief.styleDirection.replace(/-/g, ' ')} style using the brand visual identity. ~10-30 seconds via Imagen 4.`
+              : 'Generate 2 image variants using the brand visual identity. Pick a style chip in Step 1 for sharper composition rules.'}
+          </p>
+          <button
+            type="button"
+            onClick={handleGenerate}
+            className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
+          >
+            <Sparkles className="h-4 w-4" />
+            Generate visual
+          </button>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {isGenerating && (
+        <div className="flex items-center justify-center py-8 gap-3 text-sm text-gray-600">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Generating 2 image variants — this takes 10-30 seconds...</span>
+        </div>
+      )}
+
+      {/* Error state */}
+      {status === 'error' && errorMessage && !isGenerating && (
+        <div className="flex items-start gap-2 rounded-md bg-red-50 border border-red-200 p-3 text-xs text-red-800">
+          <X className="h-4 w-4 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-medium">Image generation failed</p>
+            <p className="mt-0.5">{errorMessage}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Variants grid */}
+      {hasImages && !isGenerating && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {imageVariants.map((img, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => handleSelect(idx)}
+              className="relative rounded-lg overflow-hidden border-2 transition-all"
+              style={{
+                borderColor: img.isSelected ? '#7c3aed' : '#e5e7eb',
+              }}
+            >
+              <img src={img.url} alt={img.prompt} className="w-full aspect-square object-cover" />
+              {img.isSelected && (
+                <div className="absolute top-2 right-2 rounded-full bg-white/90 p-1 shadow">
+                  <Check className="h-3.5 w-3.5" style={{ color: '#7c3aed' }} />
+                </div>
+              )}
+              <div className="px-2 py-1.5 bg-white">
+                <p className="text-[11px] text-gray-500 line-clamp-2 text-left">{img.prompt}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

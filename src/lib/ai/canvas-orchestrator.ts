@@ -13,6 +13,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { assembleCanvasContext, type CanvasContextStack, type MediumContext, type PersonaContext, type BriefContext, type ProductContext, type VisualBrief, type VisualStyleDirection } from './canvas-context';
+import { VISUAL_STYLE_IMAGE_INSTRUCTIONS } from './visual-brief-prompts';
 import { createStructuredCompletion } from './exploration/ai-caller';
 import { resolveFeatureModel, assertProvider } from './feature-models.server';
 import { getFeatureDefinition, type AiProvider } from './feature-models';
@@ -1458,23 +1459,9 @@ const VISUAL_STYLE_TEXT_INSTRUCTIONS: Record<VisualStyleDirection, string> = {
     'Numbers carry the argument. Lead with the headline number, then context, then implication. Hedge sparingly. Cite sources where critical.',
 };
 
-const VISUAL_STYLE_IMAGE_INSTRUCTIONS: Record<VisualStyleDirection, string> = {
-  lifestyle:
-    'Lifestyle photography: real people in authentic situations using the product/service. Natural lighting, candid composition, environmental context. Avoid posed studio shots.',
-  'product-shot':
-    'Clean product photography: isolated subject on simple background, controlled studio lighting, hero composition. Focus is the product itself with crisp details.',
-  'quote-text':
-    'Typography-led design: large quote / phrase as the focal point. Brand colors for accent. Minimal supporting imagery. Geometric or solid background.',
-  'behind-the-scenes':
-    'Documentary photography: candid team / workspace / process shots. Available light, slight grain, real moments. Not glossy or staged.',
-  ugc: 'User-generated style: handheld phone composition, natural light, slight imperfection. Authentic and unpolished. Avoid professional studio polish.',
-  infographic:
-    'Information graphic: data viz, icons, structured layout. Clear visual hierarchy. Brand colors for accent on data points. Minimal decoration.',
-  illustration:
-    'Illustrated artwork: drawn or vector style. Confident lines, on-brand color palette. Can be conceptual / metaphorical. Not photorealistic.',
-  'data-driven':
-    'Editorial chart-led layout: prominent data viz (chart/graph) as the hero. Headline number large. Minimal accompanying decoration. Magazine-quality.',
-};
+// VISUAL_STYLE_IMAGE_INSTRUCTIONS is imported from ./visual-brief-prompts —
+// it's shared with the /api/studio/[id]/generate-visual endpoint so both
+// call sites use the same chip → composition rule mapping.
 
 /**
  * Format the Visual Brief as a system-prompt block. Returns empty string

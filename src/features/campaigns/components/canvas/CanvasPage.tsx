@@ -273,14 +273,36 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
       storeState.setHeroImage(null);
     }
 
+    // Image variants — separate code path. variantGroup === 'visual' carries
+    // image rows (imageUrl + imagePromptUsed), populated by the
+    // /generate-visual endpoint when the user clicks "Generate visual" on
+    // Step 2. Hydrate into the store's imageVariants slot.
+    const visualComps = existingComponents.filter(
+      (c) => c.variantGroup === 'visual' && c.imageUrl,
+    );
+    if (visualComps.length > 0) {
+      const sortedVisuals = [...visualComps].sort(
+        (a, b) => (a.variantIndex ?? 0) - (b.variantIndex ?? 0),
+      );
+      storeState.setImageVariants(
+        sortedVisuals.map((c, i) => ({
+          index: c.variantIndex ?? i,
+          url: c.imageUrl ?? '',
+          prompt: c.imagePromptUsed ?? '',
+          isSelected: c.isSelected,
+        })),
+      );
+    }
+
     // Text variants — only load if store is empty (avoid clobbering an
     // in-flight orchestration).
     if (storeState.variantGroups.size > 0) return;
 
     const groups = new Map<string, typeof existingComponents>();
     for (const comp of existingComponents) {
-      // Skip the hero image — handled above
-      if (!comp.variantGroup || comp.variantGroup === 'hero-image') continue;
+      // Skip hero-image (handled above) and visual-group image variants
+      // (handled directly into imageVariants above)
+      if (!comp.variantGroup || comp.variantGroup === 'hero-image' || comp.variantGroup === 'visual') continue;
       const existing = groups.get(comp.variantGroup) ?? [];
       existing.push(comp);
       groups.set(comp.variantGroup, existing);
