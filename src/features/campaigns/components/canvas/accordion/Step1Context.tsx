@@ -783,10 +783,20 @@ function VisualBriefSection() {
   const filledChip = visualBrief.styleDirection;
   const freeText = visualBrief.styleDirectionFreeText ?? '';
 
+  // Tailwind 4 in this project only safelists the teal/primary palette
+  // (see globals.css @theme inline). Violet utilities get purged, so the
+  // active states use inline hex styles to survive the build pipeline.
+  const ACTIVE_HEX = '#7c3aed'; // violet-600
+  const ACTIVE_BG = '#f5f3ff'; // violet-50
+  const ACTIVE_BORDER = '#a78bfa'; // violet-400
+  const CHIP_ACTIVE_BG = '#ede9fe'; // violet-100
+  const CHIP_ACTIVE_TEXT = '#5b21b6'; // violet-800
+  const CHIP_ACTIVE_BORDER = '#c4b5fd'; // violet-300
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-3">
       <div className="flex items-center gap-2 mb-3">
-        <ImageIcon className="h-4 w-4 text-violet-600" />
+        <ImageIcon className="h-4 w-4" style={{ color: ACTIVE_HEX }} />
         <span className="text-sm font-medium text-gray-700">Visual Brief</span>
       </div>
       <p className="text-xs text-gray-500 mb-3">
@@ -809,15 +819,23 @@ function VisualBriefSection() {
                 onClick={() => setSource(opt.value)}
                 disabled={!opt.ready && !active}
                 className={
-                  active
-                    ? 'text-left rounded-md border-2 border-violet-400 bg-violet-50 p-2.5'
-                    : opt.ready
-                      ? 'text-left rounded-md border border-gray-200 bg-white p-2.5 hover:border-gray-300 hover:bg-gray-50'
-                      : 'text-left rounded-md border border-gray-200 bg-gray-50 p-2.5 cursor-not-allowed opacity-60'
+                  opt.ready || active
+                    ? 'text-left rounded-md p-2.5 transition-colors'
+                    : 'text-left rounded-md p-2.5 cursor-not-allowed opacity-60'
                 }
+                style={{
+                  border: active ? `2px solid ${ACTIVE_BORDER}` : '1px solid #e5e7eb',
+                  backgroundColor: active ? ACTIVE_BG : opt.ready ? '#ffffff' : '#f9fafb',
+                  // Account for the 1px → 2px border switch so the layout
+                  // doesn't jump on selection.
+                  margin: active ? '0' : '1px',
+                }}
               >
                 <div className="flex items-center justify-between">
-                  <span className={`text-sm font-medium ${active ? 'text-violet-900' : 'text-gray-900'}`}>
+                  <span
+                    className="text-sm font-medium"
+                    style={{ color: active ? '#4c1d95' : '#111827' }}
+                  >
                     {opt.label}
                   </span>
                   {!opt.ready && (
@@ -846,11 +864,12 @@ function VisualBriefSection() {
                   type="button"
                   onClick={() => setStyleDirection(active ? null : chip.value)}
                   title={chip.description}
-                  className={
-                    active
-                      ? 'inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-violet-100 text-violet-800 border border-violet-300'
-                      : 'inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
-                  }
+                  className="inline-flex items-center px-2 py-0.5 text-xs rounded-full transition-colors"
+                  style={{
+                    backgroundColor: active ? CHIP_ACTIVE_BG : '#f9fafb',
+                    color: active ? CHIP_ACTIVE_TEXT : '#4b5563',
+                    border: `1px solid ${active ? CHIP_ACTIVE_BORDER : '#e5e7eb'}`,
+                  }}
                 >
                   {chip.label}
                 </button>
@@ -866,7 +885,8 @@ function VisualBriefSection() {
                 : 'Or describe the visual direction in free text'
             }
             rows={2}
-            className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-violet-400 resize-y"
+            className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 resize-y"
+            style={{ outlineColor: ACTIVE_HEX }}
           />
         </div>
       )}
