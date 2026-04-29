@@ -13,7 +13,7 @@ import { SeoProgressPanel } from '../SeoProgressPanel';
 import { getEstimatedDuration } from '../../../lib/content-type-inputs';
 import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
 import type { SceneId } from '../../../stores/useCanvasStore';
-import { generateCanvasVisual } from '../../../api/canvas.api';
+import { generateCanvasVisual, setHeroImage as persistHeroImage } from '../../../api/canvas.api';
 import type { CanvasImageVariant } from '../../../types/canvas.types';
 
 interface Step2ContentVariantsProps {
@@ -384,6 +384,7 @@ function VisualVariantsBlock({ deliverableId }: { deliverableId: string }) {
   const visualBrief = useCanvasStore((s) => s.visualBrief);
   const imageVariants = useCanvasStore((s) => s.imageVariants);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
+  const setHeroImage = useCanvasStore((s) => s.setHeroImage);
   const [status, setStatus] = React.useState<'idle' | 'generating' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
@@ -392,6 +393,25 @@ function VisualVariantsBlock({ deliverableId }: { deliverableId: string }) {
   const isGenerating = status === 'generating';
 
   if (source === 'none') return null;
+
+  // Promote a chosen image variant to the deliverable's hero image so
+  // Step 3 (Medium) renders it instead of the "Add image" placeholder.
+  // Best-effort persistence — local store updates immediately so the UI
+  // never blocks on the network call.
+  const promoteToHero = React.useCallback(
+    (variant: CanvasImageVariant) => {
+      setHeroImage({ url: variant.url, mediaAssetId: null, alt: variant.prompt });
+      persistHeroImage(deliverableId, {
+        imageUrl: variant.url,
+        imageSource: 'ai-generated',
+        mediaAssetId: null,
+        alt: variant.prompt ?? null,
+      }).catch((err) => {
+        console.error('[Visual] hero image persist failed', err);
+      });
+    },
+    [deliverableId, setHeroImage],
+  );
 
   const handleGenerate = async () => {
     setStatus('generating');
@@ -405,6 +425,9 @@ function VisualVariantsBlock({ deliverableId }: { deliverableId: string }) {
         isSelected: i === 0,
       }));
       setImageVariants(mapped);
+      // Auto-promote the first variant — user can switch by clicking
+      // another tile, no need to make them confirm twice.
+      if (mapped[0]) promoteToHero(mapped[0]);
       setStatus('idle');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to generate visual';
@@ -416,6 +439,7 @@ function VisualVariantsBlock({ deliverableId }: { deliverableId: string }) {
   const handleSelect = (idx: number) => {
     const updated = imageVariants.map((v, i) => ({ ...v, isSelected: i === idx }));
     setImageVariants(updated);
+    if (updated[idx]) promoteToHero(updated[idx]);
   };
 
   // Sources other than `generate` aren't wired in Phase 1 — give a hint

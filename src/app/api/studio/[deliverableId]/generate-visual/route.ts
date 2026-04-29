@@ -23,15 +23,93 @@ import { NextResponse } from 'next/server';
 import { resolveWorkspaceId, getServerSession } from '@/lib/auth-server';
 import { prisma } from '@/lib/prisma';
 import { withAiRateLimit } from '@/lib/ai/middleware';
-import { assembleCanvasContext } from '@/lib/ai/canvas-context';
+import { assembleCanvasContext, type CanvasContextStack } from '@/lib/ai/canvas-context';
 import { buildVisualBriefImagePrompts } from '@/lib/ai/visual-brief-prompts';
-import { generateImage } from '@/lib/ai/gemini-client';
+import { generateFalImage } from '@/lib/integrations/fal/fal-client';
+import { fetchWithSizeLimit, AI_IMAGE_SIZE_CAP } from '@/lib/security/fetch-with-limit';
 import { getStorageProvider } from '@/lib/storage';
 import { invalidateCache } from '@/lib/api/cache';
 import { cacheKeys } from '@/lib/api/cache-keys';
 import { z } from 'zod';
 
 const VISUAL_GROUP = 'visual';
+
+/**
+ * Default model for Visual Brief generation. FLUX.2 Pro is described in
+ * the fal provider registry as "Best overall quality. Excels at sharp
+ * details, realistic textures, and consistent lighting across diverse
+ * scenes." — strictly higher fidelity than Imagen 4 for marketing /
+ * brand visuals.
+ */
+const DEFAULT_FAL_MODEL = 'fal-ai/flux-2-pro';
+
+/**
+ * Standard fal.ai aspect-ratio presets we route to. Mapped from
+ * MediumEnrichment.specs.imageSize | heroImageSize | videoSize so each
+ * deliverable type generates at its native aspect (LinkedIn 1200x627
+ * → 16:9, Instagram 1080x1080 → 1:1, TikTok 1080x1920 → 9:16).
+ */
+type FalImageSize =
+  | 'square_hd'
+  | 'landscape_16_9'
+  | 'portrait_16_9'
+  | 'landscape_4_3'
+  | 'portrait_4_3';
+
+/** Map aspect ratio (w/h) to nearest standard preset. */
+function widthHeightToFalSize(width: number, height: number): FalImageSize {
+  if (!width || !height) return 'square_hd';
+  const ratio = width / height;
+  // Closest standard match — distances to 1, 16/9, 9/16, 4/3, 3/4.
+  const candidates: Array<{ size: FalImageSize; ratio: number }> = [
+    { size: 'square_hd',       ratio: 1 },
+    { size: 'landscape_16_9',  ratio: 16 / 9 },
+    { size: 'portrait_16_9',   ratio: 9 / 16 },
+    { size: 'landscape_4_3',   ratio: 4 / 3 },
+    { size: 'portrait_4_3',    ratio: 3 / 4 },
+  ];
+  let best = candidates[0];
+  let bestDelta = Math.abs(Math.log(ratio / best.ratio));
+  for (const c of candidates.slice(1)) {
+    const delta = Math.abs(Math.log(ratio / c.ratio));
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      best = c;
+    }
+  }
+  return best.size;
+}
+
+/** Convert FalImageSize back to "1:1"-style label for the response payload. */
+function falSizeToAspectLabel(size: FalImageSize): string {
+  return {
+    square_hd: '1:1',
+    landscape_16_9: '16:9',
+    portrait_16_9: '9:16',
+    landscape_4_3: '4:3',
+    portrait_4_3: '3:4',
+  }[size];
+}
+
+/**
+ * Resolve the right image size from the Medium specs. Looks at
+ * `imageSize` first, then `heroImageSize`, then `videoSize` (all
+ * stored as { width, height }). Returns null when nothing usable.
+ */
+function resolveAspectFromMedium(stack: CanvasContextStack): FalImageSize | null {
+  const specs = stack.medium?.specs as Record<string, unknown> | undefined;
+  if (!specs) return null;
+  const candidates = [specs.imageSize, specs.heroImageSize, specs.videoSize];
+  for (const raw of candidates) {
+    if (raw && typeof raw === 'object') {
+      const obj = raw as { width?: unknown; height?: unknown };
+      if (typeof obj.width === 'number' && typeof obj.height === 'number') {
+        return widthHeightToFalSize(obj.width, obj.height);
+      }
+    }
+  }
+  return null;
+}
 
 const requestSchema = z
   .object({
@@ -131,38 +209,62 @@ export async function POST(request: Request, { params }: RouteParams) {
       ? prompts.map((p) => `${p} ${body!.instruction}`)
       : prompts;
 
-    // Generate via Imagen 4 (default for v1 — provider picker is Phase 5)
-    const aspectRatio = body?.aspectRatio ?? '1:1';
+    // Resolve aspect ratio — explicit body override beats medium specs
+    // beats default 1:1. Medium specs are derived from MediumEnrichment
+    // so a LinkedIn post auto-uses 16:9 (1200x627), Instagram 1:1, TikTok
+    // 9:16, blog hero 16:9, etc.
+    const explicitFalSize = body?.aspectRatio
+      ? ({
+          '1:1': 'square_hd' as const,
+          '16:9': 'landscape_16_9' as const,
+          '9:16': 'portrait_16_9' as const,
+          '4:3': 'landscape_4_3' as const,
+          '3:4': 'portrait_4_3' as const,
+        }[body.aspectRatio])
+      : null;
+    const falImageSize: FalImageSize =
+      explicitFalSize ?? resolveAspectFromMedium(stack) ?? 'square_hd';
+    const aspectLabel = falSizeToAspectLabel(falImageSize);
+
+    // Generate via FLUX.2 Pro on fal.ai — best overall quality per the
+    // provider registry. Each prompt fires a separate call in parallel.
     const startMs = Date.now();
-    const imageBuffers = await Promise.all(
+    const generated = await Promise.all(
       finalPrompts.map(async (prompt) => {
         try {
-          const result = await generateImage(prompt, { aspectRatio });
-          return { prompt, bytes: result.imageBytes, mimeType: result.mimeType };
+          const result = await generateFalImage(DEFAULT_FAL_MODEL, prompt, {
+            imageSize: falImageSize,
+            numImages: 1,
+          });
+          const url = result.images?.[0]?.url;
+          if (!url) return null;
+          return { prompt, hostedUrl: url };
         } catch (err) {
-          console.error('[generate-visual] Imagen call failed:', err instanceof Error ? err.message : err);
+          console.error('[generate-visual] fal.ai call failed:', err instanceof Error ? err.message : err);
           return null;
         }
       }),
     );
 
-    const successful = imageBuffers.filter((r): r is NonNullable<typeof r> => r !== null);
+    const successful = generated.filter((r): r is NonNullable<typeof r> => r !== null);
     if (successful.length === 0) {
       return NextResponse.json(
-        { error: 'All image generation calls failed. Check that GEMINI_API_KEY is configured.' },
+        { error: 'All image generation calls failed. Check that FAL_KEY is configured.' },
         { status: 502 },
       );
     }
 
-    // Upload to storage
+    // Download from fal.ai's hosted URL (signed, expires) and upload to
+    // our storage so the URL remains stable for downstream usage.
     const storage = getStorageProvider();
     const uploads = await Promise.all(
       successful.map(async (img, idx) => {
+        const bytes = await fetchWithSizeLimit(img.hostedUrl, AI_IMAGE_SIZE_CAP);
         const fileName = `canvas-visual-${deliverableId}-${Date.now()}-${idx}.png`;
-        const upload = await storage.upload(img.bytes, {
+        const upload = await storage.upload(bytes, {
           workspaceId,
           fileName,
-          contentType: img.mimeType,
+          contentType: 'image/png',
         });
         return { url: upload.url, prompt: img.prompt };
       }),
@@ -191,8 +293,8 @@ export async function POST(request: Request, { params }: RouteParams) {
             imageUrl: u.url,
             imageSource: 'ai_generated',
             imagePromptUsed: u.prompt,
-            aiProvider: 'google',
-            aiModel: 'imagen-4.0-generate-001',
+            aiProvider: 'fal',
+            aiModel: DEFAULT_FAL_MODEL,
             generationDuration: elapsedMs,
             status: 'GENERATED',
             generatedAt: new Date(),
@@ -209,8 +311,9 @@ export async function POST(request: Request, { params }: RouteParams) {
 
     return NextResponse.json({
       variants: components,
-      provider: 'google',
-      model: 'imagen-4.0-generate-001',
+      provider: 'fal',
+      model: DEFAULT_FAL_MODEL,
+      aspectRatio: aspectLabel,
       generationDuration: elapsedMs,
     });
   } catch (err) {
