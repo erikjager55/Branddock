@@ -150,6 +150,32 @@ export async function generateCanvasVisual(
   return res.json();
 }
 
+export interface SelectLibraryVisualResponse {
+  variants: Array<{ id: string; url: string; prompt: string }>;
+  source: 'library';
+}
+
+/**
+ * Pick 1-3 existing MediaAssets from the workspace library as the
+ * deliverable's image variants. Used when Visual Brief source = 'library'.
+ * Replaces any existing visual-group components.
+ */
+export async function selectCanvasVisualFromLibrary(
+  deliverableId: string,
+  assetIds: string[],
+): Promise<SelectLibraryVisualResponse> {
+  const res = await fetch(`/api/studio/${deliverableId}/select-library-visual`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ assetIds }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to select library visuals' }));
+    throw new Error(err.error ?? 'Failed to select library visuals');
+  }
+  return res.json();
+}
+
 /** Create a derivative deliverable for another platform */
 export async function deriveDeliverable(
   deliverableId: string,

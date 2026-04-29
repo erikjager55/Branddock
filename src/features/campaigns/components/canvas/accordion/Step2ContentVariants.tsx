@@ -14,6 +14,7 @@ import { getEstimatedDuration } from '../../../lib/content-type-inputs';
 import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
 import type { SceneId } from '../../../stores/useCanvasStore';
 import { generateCanvasVisual, setHeroImage as persistHeroImage } from '../../../api/canvas.api';
+import { LibraryAssetPicker } from '../LibraryAssetPicker';
 import type { CanvasImageVariant } from '../../../types/canvas.types';
 
 interface Step2ContentVariantsProps {
@@ -38,6 +39,7 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const heroImage = useCanvasStore((s) => s.heroImage);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
   const setHeroImage = useCanvasStore((s) => s.setHeroImage);
+  const visualBrief = useCanvasStore((s) => s.visualBrief);
   const { regenerate, abort } = useCanvasOrchestration(deliverableId);
 
   // Visual generation lifted from VisualVariantsBlock so the unified
@@ -306,23 +308,33 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
         <SceneBreakdown variantGroups={variantGroups} selectedVariantIndex={selectedVariantIndex} />
       )}
 
-      {/* Visual generation — empty-state Generate button + variant grid +
-          selection. Refining is handled by the unified FeedbackBar below
-          (Visual option in the dropdown). */}
+      {/* Visual generation — routes by Visual Brief source:
+          • generate      → AI generation (Imagen / GPT Image 2 / FLUX etc.)
+          • library       → MediaAsset picker
+          • compose / trained-style → "soon" placeholder
+          Refining a generate-source result happens via the FeedbackBar's
+          Visual dropdown below. */}
       {hasVariants && !isGenerating && (
         <VisualVariantsBlock
+          deliverableId={deliverableId}
           onGenerate={() => handleGenerateVisual()}
           status={visualStatus}
           errorMessage={visualError}
         />
       )}
 
-      {/* Unified feedback bar — text variants + visual via dropdown */}
+      {/* Unified feedback bar — text variants + visual via dropdown.
+          Visual feedback (Refine) only applies to generate source —
+          library is curated, no AI to refine. */}
       <div className="border-t border-gray-200 pt-4">
         <FeedbackBar
           onRegenerate={regenerate}
           onAbort={abort}
-          onRegenerateVisual={imageVariants.length > 0 ? (feedback) => handleGenerateVisual(feedback) : undefined}
+          onRegenerateVisual={
+            imageVariants.length > 0 && visualBrief.source === 'generate'
+              ? (feedback) => handleGenerateVisual(feedback)
+              : undefined
+          }
           isVisualGenerating={visualStatus === 'generating'}
         />
       </div>
@@ -441,18 +453,24 @@ export default Step2ContentVariants;
 // the user clicks the button — text-gen stays fast.
 
 interface VisualVariantsBlockProps {
+  deliverableId: string;
   onGenerate: () => void;
   status: 'idle' | 'generating' | 'error';
   errorMessage: string | null;
 }
 
 /**
- * Empty-state "Generate visual" button + variant grid + selection.
- * Refinement (feedback-driven regenerate) is handled by the unified
- * FeedbackBar below this block — pick "Visual" in its dropdown and type
- * feedback to drive a fresh image generation.
+ * Routes per Visual Brief source:
+ *   - 'generate'      → Generate visual button + variant grid (AI flow)
+ *   - 'library'       → MediaAsset picker + variant grid (curated assets)
+ *   - 'compose'       → "soon" placeholder (Phase 4)
+ *   - 'trained-style' → "soon" placeholder (Phase 5)
+ *   - 'none'          → renders nothing
+ *
+ * Refinement (feedback) on generate-source images runs through the
+ * unified FeedbackBar's Visual dropdown option below this block.
  */
-function VisualVariantsBlock({ onGenerate, status, errorMessage }: VisualVariantsBlockProps) {
+function VisualVariantsBlock({ deliverableId, onGenerate, status, errorMessage }: VisualVariantsBlockProps) {
   const visualBrief = useCanvasStore((s) => s.visualBrief);
   const imageVariants = useCanvasStore((s) => s.imageVariants);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
@@ -461,6 +479,7 @@ function VisualVariantsBlock({ onGenerate, status, errorMessage }: VisualVariant
   const source = visualBrief.source;
   const hasImages = imageVariants.length > 0;
   const isGenerating = status === 'generating';
+  const [showLibraryPicker, setShowLibraryPicker] = React.useState(false);
 
   if (source === 'none') return null;
 
@@ -473,14 +492,9 @@ function VisualVariantsBlock({ onGenerate, status, errorMessage }: VisualVariant
     }
   };
 
-  // Sources other than `generate` aren't wired in Phase 1 — give a hint
-  // rather than rendering a dead button.
-  if (source !== 'generate') {
-    const sourceLabel =
-      source === 'library' ? 'From library'
-      : source === 'compose' ? 'Compose'
-      : source === 'trained-style' ? 'Trained style'
-      : source;
+  // Compose / trained-style still placeholder — Phase 4 / 5.
+  if (source === 'compose' || source === 'trained-style') {
+    const sourceLabel = source === 'compose' ? 'Compose' : 'Trained style';
     return (
       <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
         <div className="flex items-center gap-2 mb-1">
@@ -489,8 +503,8 @@ function VisualVariantsBlock({ onGenerate, status, errorMessage }: VisualVariant
         </div>
         <p className="text-xs text-gray-500">
           The {sourceLabel} picker is coming in a later phase. Switch the Visual
-          Brief source to <strong>Generate</strong> in Step 1 to use AI image
-          generation, or <strong>No visual</strong> to skip.
+          Brief source to <strong>Generate</strong> or <strong>From library</strong>{' '}
+          in Step 1 to pick a visual now.
         </p>
       </div>
     );
@@ -510,8 +524,8 @@ function VisualVariantsBlock({ onGenerate, status, errorMessage }: VisualVariant
         </div>
       </div>
 
-      {/* Empty state — primary "Generate visual" button */}
-      {!hasImages && !isGenerating && (
+      {/* GENERATE source — empty state with "Generate visual" button */}
+      {source === 'generate' && !hasImages && !isGenerating && (
         <div className="space-y-2">
           <p className="text-xs text-gray-500">
             {visualBrief.styleDirection
@@ -529,16 +543,26 @@ function VisualVariantsBlock({ onGenerate, status, errorMessage }: VisualVariant
         </div>
       )}
 
-      {/* Loading state */}
-      {isGenerating && (
+      {/* LIBRARY source — picker visible by default in empty state, or
+          opened via the "Pick different" button when images already exist. */}
+      {source === 'library' && (!hasImages || showLibraryPicker) && (
+        <LibraryAssetPicker
+          deliverableId={deliverableId}
+          onCancel={hasImages ? () => setShowLibraryPicker(false) : undefined}
+          onPicked={() => setShowLibraryPicker(false)}
+        />
+      )}
+
+      {/* Loading state — generate flow only */}
+      {source === 'generate' && isGenerating && (
         <div className="flex items-center justify-center py-8 gap-3 text-sm text-gray-600">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>Generating 2 image variants — this takes 15-30 seconds...</span>
         </div>
       )}
 
-      {/* Error state */}
-      {status === 'error' && errorMessage && !isGenerating && (
+      {/* Error state — generate flow only */}
+      {source === 'generate' && status === 'error' && errorMessage && !isGenerating && (
         <div className="flex items-start gap-2 rounded-md bg-red-50 border border-red-200 p-3 text-xs text-red-800">
           <X className="h-4 w-4 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
@@ -548,32 +572,47 @@ function VisualVariantsBlock({ onGenerate, status, errorMessage }: VisualVariant
         </div>
       )}
 
-      {/* Variants grid — selection only. Refinement happens via the
-          unified FeedbackBar's "Visual" dropdown option below. */}
-      {hasImages && !isGenerating && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {imageVariants.map((img, idx) => (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => handleSelect(idx)}
-              className="relative rounded-lg overflow-hidden border-2 transition-all"
-              style={{
-                borderColor: img.isSelected ? '#7c3aed' : '#e5e7eb',
-              }}
-            >
-              <img src={img.url} alt={img.prompt} className="w-full aspect-square object-cover" />
-              {img.isSelected && (
-                <div className="absolute top-2 right-2 rounded-full bg-white/90 p-1 shadow">
-                  <Check className="h-3.5 w-3.5" style={{ color: '#7c3aed' }} />
+      {/* Variants grid — selection. For library source, also surface a
+          "Pick different" button to reopen the picker. Refinement (feedback-
+          driven regenerate) on generate source runs through the FeedbackBar
+          below; library doesn't need feedback since it's curated assets. */}
+      {hasImages && !isGenerating && !showLibraryPicker && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {imageVariants.map((img, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleSelect(idx)}
+                className="relative rounded-lg overflow-hidden border-2 transition-all"
+                style={{
+                  borderColor: img.isSelected ? '#7c3aed' : '#e5e7eb',
+                }}
+              >
+                <img src={img.url} alt={img.prompt} className="w-full aspect-square object-cover" />
+                {img.isSelected && (
+                  <div className="absolute top-2 right-2 rounded-full bg-white/90 p-1 shadow">
+                    <Check className="h-3.5 w-3.5" style={{ color: '#7c3aed' }} />
+                  </div>
+                )}
+                <div className="px-2 py-1.5 bg-white">
+                  <p className="text-[11px] text-gray-500 line-clamp-2 text-left">{img.prompt}</p>
                 </div>
-              )}
-              <div className="px-2 py-1.5 bg-white">
-                <p className="text-[11px] text-gray-500 line-clamp-2 text-left">{img.prompt}</p>
-              </div>
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+          {source === 'library' && (
+            <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowLibraryPicker(true)}
+                className="text-xs text-teal-700 hover:text-teal-800 font-medium"
+              >
+                Pick different assets →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

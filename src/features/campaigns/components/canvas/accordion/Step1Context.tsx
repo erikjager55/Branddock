@@ -798,7 +798,7 @@ const VISUAL_SOURCES: Array<{
     value: 'library',
     label: 'From library',
     description: 'Pick existing assets from your Media Library',
-    ready: false,
+    ready: true,
   },
   {
     value: 'compose',
