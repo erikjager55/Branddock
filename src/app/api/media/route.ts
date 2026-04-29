@@ -56,10 +56,17 @@ export async function GET(request: NextRequest) {
     };
 
     if (search) {
+      // Search across name, fileName, AI-generated description, AI-detected
+      // tags (string array), and the join-table tag names. The aiTags
+      // `has` filter is exact-match per array element which is fine for
+      // single-word tags; users typing multi-word queries fall through to
+      // the description match where contains works.
       where.OR = [
         { name: { contains: search, mode: "insensitive" } },
         { fileName: { contains: search, mode: "insensitive" } },
         { aiDescription: { contains: search, mode: "insensitive" } },
+        { aiTags: { has: search.toLowerCase() } },
+        { tags: { some: { mediaTag: { name: { contains: search, mode: "insensitive" } } } } },
       ];
     }
 

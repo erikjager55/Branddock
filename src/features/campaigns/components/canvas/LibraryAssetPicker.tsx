@@ -1,13 +1,28 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { Loader2, Search, Check, X, Image as ImageIcon } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Loader2, Search, Check, X, Image as ImageIcon, Heart } from 'lucide-react';
 import { useMediaAssets } from '@/features/media-library/hooks';
 import { selectCanvasVisualFromLibrary } from '../../api/canvas.api';
 import { useCanvasStore } from '../../stores/useCanvasStore';
-import type { MediaAssetWithMeta } from '@/features/media-library/types/media.types';
+import type { MediaAssetWithMeta, MediaCategory } from '@/features/media-library/types/media.types';
 import type { CanvasImageVariant } from '../../types/canvas.types';
 import { setHeroImage as persistHeroImage } from '../../api/canvas.api';
+
+// Image-relevant subset of MediaCategory — surfaces the categories users
+// actually pick from in a Canvas visual context. A "More" expand button
+// could open the full 25-item enum if needed; for now the curated 8 cover
+// the typical use cases (hero / lifestyle / product / team / etc.).
+const CATEGORY_CHIPS: Array<{ value: MediaCategory; label: string }> = [
+  { value: 'HERO_IMAGE', label: 'Hero' },
+  { value: 'LIFESTYLE', label: 'Lifestyle' },
+  { value: 'PRODUCT_PHOTO', label: 'Product' },
+  { value: 'TEAM_PHOTO', label: 'Team' },
+  { value: 'EVENT_PHOTO', label: 'Event' },
+  { value: 'PHOTOGRAPHY', label: 'Photography' },
+  { value: 'ILLUSTRATION', label: 'Illustration' },
+  { value: 'INFOGRAPHIC', label: 'Infographic' },
+];
 
 interface LibraryAssetPickerProps {
   deliverableId: string;
@@ -30,7 +45,10 @@ const MAX_PICKS = 3;
  * (and gets promoted to hero image, mirroring the generate flow).
  */
 export function LibraryAssetPicker({ deliverableId, onCancel, onPicked }: LibraryAssetPickerProps) {
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [category, setCategory] = useState<MediaCategory | null>(null);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,19 +56,32 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked }: Librar
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
   const setHeroImage = useCanvasStore((s) => s.setHeroImage);
 
+  // 300ms debounce so the user can type freely without firing a request
+  // per keystroke. Felt-instant for fast typists, no request storm for
+  // the backend.
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
   // Always image-type — videos / audio aren't valid image variants.
   // Cap at 60 results in the picker; if user needs more they should
-  // narrow via search.
-  const { data, isLoading } = useMediaAssets({
+  // narrow via search/category.
+  const { data, isLoading, isFetching } = useMediaAssets({
     mediaType: 'IMAGE',
     isArchived: false,
-    search: search.trim() || undefined,
+    search: debouncedSearch || undefined,
+    category: category ?? undefined,
+    isFavorite: favoritesOnly ? true : undefined,
     limit: 60,
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
 
   const assets = useMemo(() => data?.assets ?? [], [data]);
+  const total = data?.total ?? 0;
+  const hasFilters =
+    debouncedSearch.length > 0 || category !== null || favoritesOnly;
 
   const togglePick = (assetId: string) => {
     setPicked((prev) => {
@@ -108,17 +139,97 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked }: Librar
 
   return (
     <div className="space-y-3">
-      {/* Search */}
+      {/* Search with clear-X */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
         <input
           type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name, tag, or description..."
-          className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-400"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Search by name, tag, AI description..."
+          className="w-full pl-9 pr-9 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-400"
         />
+        {searchInput && (
+          <button
+            type="button"
+            onClick={() => setSearchInput('')}
+            aria-label="Clear search"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
+
+      {/* Category chips + favorites toggle */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => setCategory(null)}
+          className={
+            category === null
+              ? 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-teal-50 text-teal-700 border border-teal-300'
+              : 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+          }
+        >
+          All categories
+        </button>
+        {CATEGORY_CHIPS.map((chip) => {
+          const active = category === chip.value;
+          return (
+            <button
+              key={chip.value}
+              type="button"
+              onClick={() => setCategory(active ? null : chip.value)}
+              className={
+                active
+                  ? 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-teal-50 text-teal-700 border border-teal-300'
+                  : 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+              }
+            >
+              {chip.label}
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => setFavoritesOnly((v) => !v)}
+          className={
+            favoritesOnly
+              ? 'inline-flex items-center gap-1 px-2 py-0.5 text-[11px] rounded-full bg-rose-50 text-rose-700 border border-rose-300'
+              : 'inline-flex items-center gap-1 px-2 py-0.5 text-[11px] rounded-full bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+          }
+          aria-pressed={favoritesOnly}
+        >
+          <Heart className={`h-3 w-3 ${favoritesOnly ? 'fill-current' : ''}`} />
+          Favorites
+        </button>
+      </div>
+
+      {/* Result count */}
+      {!isLoading && (
+        <p className="text-[11px] text-gray-400">
+          {total === 0
+            ? 'No matches'
+            : total === 1
+              ? '1 image'
+              : `${total} images${assets.length < total ? ` — showing first ${assets.length}` : ''}`}
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchInput('');
+                setCategory(null);
+                setFavoritesOnly(false);
+              }}
+              className="ml-2 text-teal-700 hover:text-teal-800"
+            >
+              Clear filters
+            </button>
+          )}
+          {isFetching && <span className="ml-2 text-gray-400">refreshing…</span>}
+        </p>
+      )}
 
       {/* Empty / loading / grid */}
       {isLoading ? (
@@ -127,7 +238,7 @@ export function LibraryAssetPicker({ deliverableId, onCancel, onPicked }: Librar
           Loading library...
         </div>
       ) : assets.length === 0 ? (
-        <EmptyState search={search} />
+        <EmptyState hasFilters={hasFilters} search={debouncedSearch} />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-96 overflow-y-auto pr-1">
           {assets.map((asset) => {
@@ -232,7 +343,7 @@ function AssetTile({
   );
 }
 
-function EmptyState({ search }: { search: string }) {
+function EmptyState({ hasFilters, search }: { hasFilters: boolean; search: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 gap-2 text-center">
       <div className="rounded-full bg-gray-100 p-3">
@@ -240,8 +351,10 @@ function EmptyState({ search }: { search: string }) {
       </div>
       <p className="text-sm text-gray-600 font-medium">No images found</p>
       <p className="text-xs text-gray-500 max-w-xs">
-        {search.trim()
-          ? `No assets match "${search.trim()}". Try a different search or clear the filter.`
+        {hasFilters
+          ? search
+            ? `No assets match "${search}" with the current filters. Try widening the search or clear filters.`
+            : 'No assets match the current filters. Try clearing them.'
           : 'Your media library is empty. Upload images via the Media Library section, then return here to pick them.'}
       </p>
     </div>
