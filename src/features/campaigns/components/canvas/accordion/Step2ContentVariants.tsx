@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
 import { useCanvasOrchestration } from '../../../hooks/useCanvasOrchestration';
 import { resolvePreviewComponent } from '../previews/preview-map';
@@ -36,7 +36,58 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
   const contextStack = useCanvasStore((s) => s.contextStack);
   const contentType = useCanvasStore((s) => s.contentType);
   const heroImage = useCanvasStore((s) => s.heroImage);
+  const setImageVariants = useCanvasStore((s) => s.setImageVariants);
+  const setHeroImage = useCanvasStore((s) => s.setHeroImage);
   const { regenerate, abort } = useCanvasOrchestration(deliverableId);
+
+  // Visual generation lifted from VisualVariantsBlock so the unified
+  // FeedbackBar at the bottom can also trigger it. The empty-state
+  // "Generate visual" button still lives in VisualVariantsBlock and
+  // calls back into this handler.
+  const [visualStatus, setVisualStatus] = useState<'idle' | 'generating' | 'error'>('idle');
+  const [visualError, setVisualError] = useState<string | null>(null);
+
+  const promoteToHero = useCallback(
+    (variant: { url: string; prompt: string }) => {
+      setHeroImage({ url: variant.url, mediaAssetId: null, alt: variant.prompt });
+      persistHeroImage(deliverableId, {
+        imageUrl: variant.url,
+        imageSource: 'ai-generated',
+        mediaAssetId: null,
+        alt: variant.prompt ?? null,
+      }).catch((err) => {
+        console.error('[Visual] hero image persist failed', err);
+      });
+    },
+    [deliverableId, setHeroImage],
+  );
+
+  const handleGenerateVisual = useCallback(
+    async (instruction?: string) => {
+      setVisualStatus('generating');
+      setVisualError(null);
+      try {
+        const result = await generateCanvasVisual(deliverableId, {
+          count: 2,
+          instruction: instruction?.trim() || undefined,
+        });
+        const mapped: CanvasImageVariant[] = result.variants.map((v, i) => ({
+          index: i,
+          url: v.url,
+          prompt: v.prompt,
+          isSelected: i === 0,
+        }));
+        setImageVariants(mapped);
+        if (mapped[0]) promoteToHero(mapped[0]);
+        setVisualStatus('idle');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to generate visual';
+        setVisualError(message);
+        setVisualStatus('error');
+      }
+    },
+    [deliverableId, setImageVariants, promoteToHero],
+  );
 
   const hasVariants = variantGroups.size > 0;
   const isGenerating = globalStatus === 'generating';
@@ -255,16 +306,25 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
         <SceneBreakdown variantGroups={variantGroups} selectedVariantIndex={selectedVariantIndex} />
       )}
 
-      {/* Visual generation — shown when variants exist and Visual Brief
-          source is 'generate'. Image generation is decoupled from text
-          generation server-side, so the user explicitly triggers it here. */}
+      {/* Visual generation — empty-state Generate button + variant grid +
+          selection. Refining is handled by the unified FeedbackBar below
+          (Visual option in the dropdown). */}
       {hasVariants && !isGenerating && (
-        <VisualVariantsBlock deliverableId={deliverableId} />
+        <VisualVariantsBlock
+          onGenerate={() => handleGenerateVisual()}
+          status={visualStatus}
+          errorMessage={visualError}
+        />
       )}
 
-      {/* Feedback bar */}
+      {/* Unified feedback bar — text variants + visual via dropdown */}
       <div className="border-t border-gray-200 pt-4">
-        <FeedbackBar onRegenerate={regenerate} onAbort={abort} />
+        <FeedbackBar
+          onRegenerate={regenerate}
+          onAbort={abort}
+          onRegenerateVisual={imageVariants.length > 0 ? (feedback) => handleGenerateVisual(feedback) : undefined}
+          isVisualGenerating={visualStatus === 'generating'}
+        />
       </div>
 
       {/* Advance button */}
@@ -380,79 +440,37 @@ export default Step2ContentVariants;
 // Image gen is decoupled from text-gen server-side so it only fires when
 // the user clicks the button — text-gen stays fast.
 
-function VisualVariantsBlock({ deliverableId }: { deliverableId: string }) {
+interface VisualVariantsBlockProps {
+  onGenerate: () => void;
+  status: 'idle' | 'generating' | 'error';
+  errorMessage: string | null;
+}
+
+/**
+ * Empty-state "Generate visual" button + variant grid + selection.
+ * Refinement (feedback-driven regenerate) is handled by the unified
+ * FeedbackBar below this block — pick "Visual" in its dropdown and type
+ * feedback to drive a fresh image generation.
+ */
+function VisualVariantsBlock({ onGenerate, status, errorMessage }: VisualVariantsBlockProps) {
   const visualBrief = useCanvasStore((s) => s.visualBrief);
   const imageVariants = useCanvasStore((s) => s.imageVariants);
   const setImageVariants = useCanvasStore((s) => s.setImageVariants);
   const setHeroImage = useCanvasStore((s) => s.setHeroImage);
-  const [status, setStatus] = React.useState<'idle' | 'generating' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-  const [feedback, setFeedback] = React.useState('');
 
   const source = visualBrief.source;
   const hasImages = imageVariants.length > 0;
   const isGenerating = status === 'generating';
-  const trimmedFeedback = feedback.trim();
-  const hasFeedback = trimmedFeedback.length > 0;
 
   if (source === 'none') return null;
-
-  // Promote a chosen image variant to the deliverable's hero image so
-  // Step 3 (Medium) renders it instead of the "Add image" placeholder.
-  // Best-effort persistence — local store updates immediately so the UI
-  // never blocks on the network call.
-  const promoteToHero = React.useCallback(
-    (variant: CanvasImageVariant) => {
-      setHeroImage({ url: variant.url, mediaAssetId: null, alt: variant.prompt });
-      persistHeroImage(deliverableId, {
-        imageUrl: variant.url,
-        imageSource: 'ai-generated',
-        mediaAssetId: null,
-        alt: variant.prompt ?? null,
-      }).catch((err) => {
-        console.error('[Visual] hero image persist failed', err);
-      });
-    },
-    [deliverableId, setHeroImage],
-  );
-
-  const handleGenerate = async () => {
-    setStatus('generating');
-    setErrorMessage(null);
-    try {
-      // Pass any inline feedback as the instruction — server appends it to
-      // every prompt so the model gets explicit user steering ("more
-      // dramatic lighting", "outdoor setting", "swap the model for a man",
-      // etc.). Empty string is fine; backend treats it as no-op.
-      const result = await generateCanvasVisual(deliverableId, {
-        count: 2,
-        instruction: trimmedFeedback || undefined,
-      });
-      const mapped: CanvasImageVariant[] = result.variants.map((v, i) => ({
-        index: i,
-        url: v.url,
-        prompt: v.prompt,
-        isSelected: i === 0,
-      }));
-      setImageVariants(mapped);
-      // Auto-promote the first variant — user can switch by clicking
-      // another tile, no need to make them confirm twice.
-      if (mapped[0]) promoteToHero(mapped[0]);
-      // Clear feedback after a successful run so the next click starts
-      // fresh; user can re-type if they want another adjustment.
-      setFeedback('');
-      setStatus('idle');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to generate visual';
-      setErrorMessage(message);
-      setStatus('error');
-    }
-  };
 
   const handleSelect = (idx: number) => {
     const updated = imageVariants.map((v, i) => ({ ...v, isSelected: i === idx }));
     setImageVariants(updated);
-    if (updated[idx]) promoteToHero(updated[idx]);
+    const picked = updated[idx];
+    if (picked) {
+      setHeroImage({ url: picked.url, mediaAssetId: null, alt: picked.prompt });
+    }
   };
 
   // Sources other than `generate` aren't wired in Phase 1 — give a hint
@@ -497,12 +515,12 @@ function VisualVariantsBlock({ deliverableId }: { deliverableId: string }) {
         <div className="space-y-2">
           <p className="text-xs text-gray-500">
             {visualBrief.styleDirection
-              ? `Generate 2 image variants in ${visualBrief.styleDirection.replace(/-/g, ' ')} style using the brand visual identity. ~10-30 seconds via Imagen 4.`
+              ? `Generate 2 image variants in ${visualBrief.styleDirection.replace(/-/g, ' ')} style using the brand visual identity.`
               : 'Generate 2 image variants using the brand visual identity. Pick a style chip in Step 1 for sharper composition rules.'}
           </p>
           <button
             type="button"
-            onClick={handleGenerate}
+            onClick={onGenerate}
             className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-medium ${STUDIO.generateButton}`}
           >
             <Sparkles className="h-4 w-4" />
@@ -515,7 +533,7 @@ function VisualVariantsBlock({ deliverableId }: { deliverableId: string }) {
       {isGenerating && (
         <div className="flex items-center justify-center py-8 gap-3 text-sm text-gray-600">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>Generating 2 image variants — this takes 10-30 seconds...</span>
+          <span>Generating 2 image variants — this takes 15-30 seconds...</span>
         </div>
       )}
 
@@ -530,67 +548,32 @@ function VisualVariantsBlock({ deliverableId }: { deliverableId: string }) {
         </div>
       )}
 
-      {/* Variants grid */}
+      {/* Variants grid — selection only. Refinement happens via the
+          unified FeedbackBar's "Visual" dropdown option below. */}
       {hasImages && !isGenerating && (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {imageVariants.map((img, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSelect(idx)}
-                className="relative rounded-lg overflow-hidden border-2 transition-all"
-                style={{
-                  borderColor: img.isSelected ? '#7c3aed' : '#e5e7eb',
-                }}
-              >
-                <img src={img.url} alt={img.prompt} className="w-full aspect-square object-cover" />
-                {img.isSelected && (
-                  <div className="absolute top-2 right-2 rounded-full bg-white/90 p-1 shadow">
-                    <Check className="h-3.5 w-3.5" style={{ color: '#7c3aed' }} />
-                  </div>
-                )}
-                <div className="px-2 py-1.5 bg-white">
-                  <p className="text-[11px] text-gray-500 line-clamp-2 text-left">{img.prompt}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {imageVariants.map((img, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => handleSelect(idx)}
+              className="relative rounded-lg overflow-hidden border-2 transition-all"
+              style={{
+                borderColor: img.isSelected ? '#7c3aed' : '#e5e7eb',
+              }}
+            >
+              <img src={img.url} alt={img.prompt} className="w-full aspect-square object-cover" />
+              {img.isSelected && (
+                <div className="absolute top-2 right-2 rounded-full bg-white/90 p-1 shadow">
+                  <Check className="h-3.5 w-3.5" style={{ color: '#7c3aed' }} />
                 </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Inline feedback — passes through as `instruction` to the
-              endpoint, gets appended to every prompt on the next run. The
-              top-right Regenerate keeps working as a no-feedback shortcut;
-              this textarea + button is the explicit "tweak it" path. */}
-          <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
-            <label className="block text-[11px] font-medium text-gray-600">
-              Refine these visuals
-            </label>
-            <textarea
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              placeholder="e.g. more dramatic lighting · swap to outdoor setting · use brand teal as accent · less corporate, more warm"
-              rows={2}
-              maxLength={1000}
-              className="w-full text-sm px-2.5 py-1.5 border border-gray-200 rounded focus:outline-none focus:ring-1 resize-y"
-              style={{ outlineColor: '#7c3aed' }}
-            />
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] text-gray-400">
-                {hasFeedback
-                  ? 'Feedback will be applied to all variants on regenerate.'
-                  : 'Optional — leave empty to regenerate with the same brief.'}
-              </p>
-              <button
-                type="button"
-                onClick={handleGenerate}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-white text-xs font-medium ${STUDIO.generateButton}`}
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                {hasFeedback ? 'Regenerate with feedback' : 'Regenerate'}
-              </button>
-            </div>
-          </div>
-        </>
+              )}
+              <div className="px-2 py-1.5 bg-white">
+                <p className="text-[11px] text-gray-500 line-clamp-2 text-left">{img.prompt}</p>
+              </div>
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

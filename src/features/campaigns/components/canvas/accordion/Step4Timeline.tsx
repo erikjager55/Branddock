@@ -3,6 +3,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCanvasStore } from '../../../stores/useCanvasStore';
+import { useClawStore } from '@/stores/useClawStore';
 import { campaignKeys, contentLibraryKeys } from '../../../hooks';
 import { resolvePreviewComponent } from '../previews/preview-map';
 import { SendCampaignModal } from '../SendCampaignModal';
@@ -328,6 +329,15 @@ export function Step4Timeline({ deliverableId }: Step4TimelineProps) {
       // stays red after Mark as Ready / Schedule.
       queryClient.invalidateQueries({ queryKey: contentLibraryKeys.all });
       queryClient.invalidateQueries({ queryKey: campaignKeys.all });
+
+      // After "Mark as Ready" the user's work on this Canvas is done — the
+      // item appears as ready in the overview. Navigate back to the
+      // content library so they don't sit on a now-completed Canvas.
+      // Schedule / Publish stay on the Canvas because the user may still
+      // want to download formats or check the publish suggestion.
+      if (action === 'approve') {
+        useClawStore.getState().requestNavigation({ section: 'content-library' });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Action failed');
     } finally {

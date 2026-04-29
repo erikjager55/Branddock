@@ -167,13 +167,18 @@ const CATEGORY_BY_TYPE: Record<string, ContentCategory> = {
 
 /**
  * Curated tone-of-voice suggestion chips per content category. The Strategy
- * tone field in the Content Brief is always a free-text input — these
- * chips populate the input when clicked, replacing the per-type tone
- * dropdowns that used to ask the same question twice. Categories not
- * listed here render free-text only (no chips).
+ * tone field renders as multi-select pills only (no free text input) — see
+ * TonePillsField in Step1Context. Selected pills are stored as a
+ * comma-separated string in brief.toneDirection; the orchestrator
+ * interpolates that verbatim into the prompt.
+ *
+ * Every ContentCategory has chips defined so every content type gets a
+ * tone selector. Vocabularies are tuned per category — social leans
+ * personality, long-form leans editorial stance, ads lean energy, etc.
  */
-export const TONE_SUGGESTIONS_BY_CATEGORY: Partial<
-  Record<ContentCategory, ReadonlyArray<{ value: string; label: string }>>
+export const TONE_SUGGESTIONS_BY_CATEGORY: Record<
+  ContentCategory,
+  ReadonlyArray<{ value: string; label: string }>
 > = {
   social: [
     { value: 'professional', label: 'Professional' },
@@ -183,23 +188,65 @@ export const TONE_SUGGESTIONS_BY_CATEGORY: Partial<
     { value: 'humorous', label: 'Humorous' },
   ],
   'long-form': [
-    { value: 'authoritative', label: 'Authoritative — expert, definitive' },
-    { value: 'conversational', label: 'Conversational — friendly, peer-to-peer' },
-    { value: 'analytical', label: 'Analytical — data-driven, neutral' },
-    { value: 'inspirational', label: 'Inspirational — vision-driven' },
-    { value: 'journalistic', label: 'Journalistic — fact-first, investigative' },
+    { value: 'authoritative', label: 'Authoritative' },
+    { value: 'conversational', label: 'Conversational' },
+    { value: 'analytical', label: 'Analytical' },
+    { value: 'inspirational', label: 'Inspirational' },
+    { value: 'journalistic', label: 'Journalistic' },
   ],
   sales: [
-    { value: 'consultative', label: 'Consultative — advisor approach' },
-    { value: 'direct', label: 'Direct — clear and assertive' },
-    { value: 'premium', label: 'Premium — sophisticated, high-end' },
-    { value: 'friendly', label: 'Friendly — warm and approachable' },
+    { value: 'consultative', label: 'Consultative' },
+    { value: 'direct', label: 'Direct' },
+    { value: 'premium', label: 'Premium' },
+    { value: 'friendly', label: 'Friendly' },
   ],
   'pr-hr': [
-    { value: 'neutral-journalistic', label: 'Neutral / Journalistic — press-release style' },
-    { value: 'official', label: 'Official — formal corporate' },
-    { value: 'warm-personal', label: 'Warm / Personal — human voice' },
-    { value: 'advocacy', label: 'Advocacy — values-driven' },
+    { value: 'neutral-journalistic', label: 'Neutral / Journalistic' },
+    { value: 'official', label: 'Official' },
+    { value: 'warm-personal', label: 'Warm / Personal' },
+    { value: 'advocacy', label: 'Advocacy' },
+  ],
+  email: [
+    { value: 'professional', label: 'Professional' },
+    { value: 'friendly', label: 'Friendly' },
+    { value: 'urgent', label: 'Urgent' },
+    { value: 'inspirational', label: 'Inspirational' },
+    { value: 'casual', label: 'Casual' },
+  ],
+  carousel: [
+    { value: 'professional', label: 'Professional' },
+    { value: 'educational', label: 'Educational' },
+    { value: 'inspirational', label: 'Inspirational' },
+    { value: 'playful', label: 'Playful' },
+    { value: 'bold', label: 'Bold' },
+  ],
+  podcast: [
+    { value: 'conversational', label: 'Conversational' },
+    { value: 'authoritative', label: 'Authoritative' },
+    { value: 'educational', label: 'Educational' },
+    { value: 'inspirational', label: 'Inspirational' },
+    { value: 'casual', label: 'Casual' },
+  ],
+  ad: [
+    { value: 'direct', label: 'Direct' },
+    { value: 'urgent', label: 'Urgent' },
+    { value: 'friendly', label: 'Friendly' },
+    { value: 'aspirational', label: 'Aspirational' },
+    { value: 'playful', label: 'Playful' },
+  ],
+  video: [
+    { value: 'energetic', label: 'Energetic' },
+    { value: 'cinematic', label: 'Cinematic' },
+    { value: 'conversational', label: 'Conversational' },
+    { value: 'inspirational', label: 'Inspirational' },
+    { value: 'playful', label: 'Playful' },
+  ],
+  'web-page': [
+    { value: 'authoritative', label: 'Authoritative' },
+    { value: 'conversational', label: 'Conversational' },
+    { value: 'direct', label: 'Direct' },
+    { value: 'friendly', label: 'Friendly' },
+    { value: 'inspirational', label: 'Inspirational' },
   ],
 };
 
@@ -407,17 +454,6 @@ function articleStructure(): ContentTypeInputField {
   };
 }
 
-function readingLevel(): ContentTypeInputField {
-  return {
-    key: "readingLevel",
-    label: "Reading Level (1–5)",
-    category: "content-style",
-    type: "number",
-    placeholder: "3",
-    helpText: "1 = beginner / general audience · 5 = expert / technical",
-    aiDerivable: true,
-  };
-}
 
 function includeFaq(): ContentTypeInputField {
   return {
@@ -431,15 +467,12 @@ function includeFaq(): ContentTypeInputField {
 }
 
 function longFormContentStyleFields(): ContentTypeInputField[] {
-  // Removed 2026-04-28: includeQuotes (the AI uses quotes appropriately
-  // by default — explicit toggle was rarely flipped), internalLinking
-  // (vague strategy that overlaps with the explicit per-type
-  // `internalLinks` field), longFormSeoFocus (redundant — having a
-  // seoKeyword set IS the SEO signal). Per-article tone now lives in
-  // the unified Strategy field.
+  // Removed: includeQuotes / internalLinking / longFormSeoFocus
+  // (2026-04-28 — duplicates / vague), readingLevel (2026-04-29 — AI
+  // derives this from tone + audience). Per-article tone lives in the
+  // unified Strategy field.
   return [
     articleStructure(),
-    readingLevel(),
     includeFaq(),
   ];
 }

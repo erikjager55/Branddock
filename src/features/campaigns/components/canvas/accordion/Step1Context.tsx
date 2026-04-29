@@ -352,11 +352,86 @@ function BrandContent({ brand }: { brand: BrandContextBlock }) {
 }
 
 /**
- * Brief field with optional suggestion chips. Tone + CTA use this to
- * surface curated vocabularies per content category (e.g. blog has
- * authoritative/conversational/analytical/inspirational/journalistic)
- * without locking the user into a dropdown — clicking a chip fills the
- * textarea, but free text is always allowed.
+ * Multi-select pills field — used for the Tone of Voice field. The user
+ * picks one or more chips; the selection is stored as a comma-separated
+ * string in brief.toneDirection (the orchestrator interpolates it
+ * verbatim into the prompt, so "professional, casual" reads naturally).
+ *
+ * No free-text input — the curated vocabulary is the contract. If a
+ * content category has no curated tone chips the field renders nothing.
+ */
+function TonePillsField({
+  label,
+  value,
+  onChange,
+  suggestions,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  suggestions?: ReadonlyArray<{ value: string; label: string }> | null;
+}) {
+  // Hide entirely when no curated chips are available — falling back to
+  // a textarea would defeat the "pills only" rule the user asked for.
+  if (!suggestions || suggestions.length === 0) return null;
+
+  // Parse comma-separated value into a set for fast membership lookup.
+  const activeSet = React.useMemo(() => {
+    const items = value
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return new Set(items);
+  }, [value]);
+
+  const togglePill = (chipValue: string) => {
+    const next = new Set(activeSet);
+    if (next.has(chipValue)) {
+      next.delete(chipValue);
+    } else {
+      next.add(chipValue);
+    }
+    // Preserve the suggestions order so re-toggling reads consistently.
+    const ordered = suggestions
+      .filter((s) => next.has(s.value))
+      .map((s) => s.value);
+    onChange(ordered.join(', '));
+  };
+
+  return (
+    <div className="block">
+      <span className="block text-[11px] font-medium text-gray-600 mb-1.5">{label}</span>
+      <div className="flex flex-wrap gap-1">
+        {suggestions.map((s) => {
+          const active = activeSet.has(s.value);
+          return (
+            <button
+              key={s.value}
+              type="button"
+              onClick={() => togglePill(s.value)}
+              className={
+                active
+                  ? 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-teal-50 text-teal-700 border border-teal-300'
+                  : 'inline-flex items-center px-2 py-0.5 text-[11px] rounded-full bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+              }
+            >
+              {s.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Brief field with optional suggestion chips. Used for Objective / Key
+ * message / Call to action — fields where free-text is essential.
+ * Clicking a chip fills the textarea (single-select); free text always
+ * allowed.
+ *
+ * The Tone of Voice field uses TonePillsField above instead — that one
+ * is multi-select pills only, no textarea.
  */
 function BriefField({
   label,
@@ -640,13 +715,8 @@ function ContentBriefSection() {
           value={brief.keyMessage}
           onChange={(v) => setBriefField('keyMessage', v)}
         />
-        <BriefField
+        <TonePillsField
           label="Tone of voice"
-          placeholder={
-            toneSuggestions
-              ? 'Free text — or pick a suggestion below'
-              : 'e.g. authoritative, playful, urgent'
-          }
           value={brief.toneDirection}
           onChange={(v) => setBriefField('toneDirection', v)}
           suggestions={toneSuggestions}
