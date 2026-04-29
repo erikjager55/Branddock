@@ -45,3 +45,7 @@ yarn-error.log*
 next-env.d.ts
 backups/
 lighthouse-report.json
+
+# Local storage provider artefacts (AI-generated images / videos /
+# uploads) — never belong in git. Use a real storage provider for prod.
+public/uploads/
