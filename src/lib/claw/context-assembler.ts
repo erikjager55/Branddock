@@ -394,10 +394,13 @@ function formatPageContext(ctx: ClawPageContext): string {
         '  1. Call `inspect_current_entity` with entityType=deliverable + entityId above. It returns: (a) the four briefing fields (objective / keyMessage / toneDirection / callToAction); (b) the type-specific `contentTypeInputs` plus `availableContentTypeKeys` listing valid empty keys (SEO keyword, structure, etc. — varies per content type); (c) the `visualBrief` (source + styleDirection chip + free text) with `visualBriefValidStyles` and `visualBriefValidSources` arrays.'
       );
       lines.push(
-        '  2. Three write-tools cover Step 1: (a) `update_deliverable_brief` for the four strategic textareas. (b) `update_deliverable_content_inputs` for type-specific keys — ONLY use keys returned by inspect_current_entity, never invent keys. (c) `update_deliverable_visual_brief` for the Visual Brief subsection. All three apply via a user confirmation card — propose values grounded in brand context + persona psychographics, never generic filler.'
+        '  2. Three write-tools cover Step 1, one per section: (a) `update_deliverable_brief` for the four strategic textareas. (b) `update_deliverable_content_inputs` for type-specific keys — ONLY use keys returned by inspect_current_entity, never invent keys. (c) `update_deliverable_visual_brief` for the Visual Brief subsection. All three apply via a user confirmation card — propose values grounded in brand context + persona psychographics, never generic filler.'
       );
       lines.push(
-        '  3. For content body / variant rewrites (after Step 2 has run), give targeted writing advice the user can apply via the inline edit on each preview section. The Canvas variant grid is not directly editable through tools.'
+        '  3. CRITICAL when the user asks broadly ("vul de velden", "fill in everything", "complete the brief", "stel de briefing in"): propose updates across ALL THREE sections in a single turn — call all three write-tools in parallel. Skip a tool only when its section is already complete OR when no relevant context exists. Never stop after only one section unless the user was explicit ("only the visual brief", "alleen de tone").'
+      );
+      lines.push(
+        '  4. For content body / variant rewrites (after Step 2 has run), give targeted writing advice the user can apply via the inline edit on each preview section. The Canvas variant grid is not directly editable through tools.'
       );
     } else {
       lines.push(

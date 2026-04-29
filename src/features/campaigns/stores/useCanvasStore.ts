@@ -237,6 +237,13 @@ interface CanvasStoreState {
     }>,
   ) => void;
 
+  /**
+   * Clear all *Modified flags so the next setContextStack call re-hydrates
+   * brief / contentTypeInputs / visualBrief from the server. Used after a
+   * Claw mutation refresh — the server is now the source of truth.
+   */
+  resetModifiedFlags: () => void;
+
   /** Visual Brief actions — flips `visualBriefModified` so the autosave fires. */
   setVisualBriefSource: (source: VisualBriefSource) => void;
   setVisualBriefStyleDirection: (
@@ -535,6 +542,13 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
       },
       briefModified: false,
     })),
+
+  resetModifiedFlags: () =>
+    set({
+      briefModified: false,
+      contentTypeInputsModified: false,
+      visualBriefModified: false,
+    }),
 
   setVisualBriefSource: (source) =>
     set((state) => ({

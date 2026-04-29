@@ -132,6 +132,19 @@ export function MutationConfirmCard() {
         }
         queryClient.invalidateQueries({ queryKey: ['dashboard'] });
 
+        // The Content Canvas hydrates its store via plain fetch (not
+        // TanStack Query) so query invalidation alone won't update the
+        // open Canvas form fields. Dispatch a window event the Canvas
+        // listens for; it refetches /context + /deliverable when the
+        // event id matches the currently-open deliverable.
+        if (affected.entityType === 'deliverable' && affected.entityId && !affected.isNew) {
+          window.dispatchEvent(
+            new CustomEvent('canvas:refresh-deliverable', {
+              detail: { deliverableId: affected.entityId },
+            }),
+          );
+        }
+
         // Path 2 fix (2026-04-25): deliverables auto-navigate to the
         // Content Canvas instead of waiting for a toast click. Setting
         // both IDs in useCampaignStore matches how every other Canvas

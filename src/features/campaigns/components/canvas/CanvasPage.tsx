@@ -240,6 +240,36 @@ export function CanvasPage({ deliverableId, campaignId, onNavigate }: CanvasPage
     };
   }, [deliverableId, campaignId]);
 
+  // After a Claw mutation that targets THIS deliverable, refetch settings
+  // so the form shows the new values without a manual refresh. The Canvas
+  // store hydrates via plain fetch (not TanStack Query) so query
+  // invalidation doesn't reach it — MutationConfirmCard fires a
+  // 'canvas:refresh-deliverable' window event after a successful update
+  // and we listen here.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { deliverableId?: string } | undefined;
+      if (detail?.deliverableId !== deliverableId) return;
+      const store = useCanvasStore.getState();
+      // Server is now the source of truth for brief / contentTypeInputs /
+      // visualBrief — clear the *Modified flags so setContextStack
+      // hydrates the fresh values from /context.
+      store.resetModifiedFlags();
+      fetch(`/api/studio/${deliverableId}/context`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.contextStack) {
+            useCanvasStore.getState().setContextStack(data.contextStack);
+          }
+        })
+        .catch(() => {
+          // Non-critical — next page reload will pick up the change
+        });
+    };
+    window.addEventListener('canvas:refresh-deliverable', handler);
+    return () => window.removeEventListener('canvas:refresh-deliverable', handler);
+  }, [deliverableId]);
+
   // Load existing components into variant groups on fetch (only if store is empty).
   // If components exist, we also auto-advance to step 2 so the user lands on
   // the existing content review instead of the "Generate Content" button —
