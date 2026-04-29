@@ -29,7 +29,9 @@ export function FeedbackBar({ onRegenerate, onAbort }: FeedbackBarProps) {
   }));
 
   const handleRegenerate = () => {
-    if (!feedbackDraft.trim()) return;
+    // Feedback is optional — the user might just want to re-run with the
+    // updated Visual Brief / Content Brief / chip selection. If they
+    // typed feedback it gets appended as a steering instruction.
     const feedback = feedbackDraft.trim();
     const groups = feedbackGroup
       ? [feedbackGroup]
@@ -80,7 +82,6 @@ export function FeedbackBar({ onRegenerate, onAbort }: FeedbackBarProps) {
             variant="primary"
             size="sm"
             onClick={handleRegenerate}
-            disabled={!feedbackDraft.trim()}
           >
             <RefreshCw className="h-4 w-4 mr-1.5" />
             Regenerate
