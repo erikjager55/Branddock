@@ -146,20 +146,25 @@ const DEFAULT_COMPOSITE_THRESHOLD = 75;
 
 /**
  * Normaliseer pillar weights zodat ze tot 1.0 sommeren.
- * Wanneer judge wordt overgeslagen herverdelen we het judge-aandeel
- * proportioneel over style + rules.
+ * Een pijler waarvoor we geen signaal hebben (judge skipped, of style
+ * zonder declared BrandPersonality vocab/traits) krijgt weight 0 en zijn
+ * aandeel wordt herverdeeld over de actieve pijlers.
  */
 function normalizeWeights(
   raw: { style?: number; judge?: number; rules?: number },
   skipJudge: boolean,
+  skipStyle: boolean,
 ): { style: number; judge: number; rules: number } {
-  const style = raw.style ?? DEFAULT_PILLAR_WEIGHTS.style;
+  const style = skipStyle ? 0 : (raw.style ?? DEFAULT_PILLAR_WEIGHTS.style);
   const judge = skipJudge ? 0 : (raw.judge ?? DEFAULT_PILLAR_WEIGHTS.judge);
   const rules = raw.rules ?? DEFAULT_PILLAR_WEIGHTS.rules;
   const sum = style + judge + rules;
   if (sum <= 0) {
     // Pathological — distribute evenly across active pillars
-    return skipJudge ? { style: 0.5, judge: 0, rules: 0.5 } : { style: 0.34, judge: 0.33, rules: 0.33 };
+    if (!skipJudge && !skipStyle) return { style: 0.34, judge: 0.33, rules: 0.33 };
+    if (!skipJudge) return { style: 0, judge: 0.5, rules: 0.5 };
+    if (!skipStyle) return { style: 0.5, judge: 0, rules: 0.5 };
+    return { style: 0, judge: 0, rules: 1 };
   }
   return { style: style / sum, judge: judge / sum, rules: rules / sum };
 }
@@ -217,6 +222,10 @@ export async function computeFidelityScore(
 
   const pillar3 = computePillar3(detectorResult, rulesResult);
 
+  // Pijler 1 heeft alleen betekenis met declared BrandPersonality signals.
+  // Zonder vocab + traits is het meten tegen niets → skip & herverdeel weight.
+  const skipStyle = styleResult.declaredSignalCount === 0;
+
   const skipJudge = input.skipJudge === true;
   let judgeBreakdown: PillarBreakdown<GEvalResult> | null = null;
 
@@ -244,10 +253,10 @@ export async function computeFidelityScore(
     };
   }
 
-  const weights = normalizeWeights(input.pillarWeights ?? {}, skipJudge);
+  const weights = normalizeWeights(input.pillarWeights ?? {}, skipJudge, skipStyle);
 
   const compositeScore = Math.round(
-    styleResult.compositeScore * weights.style +
+    (skipStyle ? 0 : styleResult.compositeScore * weights.style) +
       (judgeBreakdown ? judgeBreakdown.score * weights.judge : 0) +
       pillar3.score * weights.rules,
   );

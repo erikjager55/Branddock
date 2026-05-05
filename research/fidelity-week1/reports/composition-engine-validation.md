@@ -8,15 +8,15 @@ Datum: 2026-05-05
 - Pillar 2 (judge): 76/100
 - Pillar 3 (anti-tell): 79/100
 - Detector position: 35/100 (AI_LEANING)
-- Compute time: 22.0s
+- Compute time: 20.8s
 
 ## BB-A + STRICT (Opus + BVD + rewrite)
-- Composite: **74/100** (below threshold)
+- Composite: **75/100** (above threshold)
 - Pillar 1 (style): 43/100
-- Pillar 2 (judge): 89/100
+- Pillar 2 (judge): 91/100
 - Pillar 3 (anti-tell): 95/100
 - Detector position: 8/100 (TOP_TIER)
-- Compute time: 17.4s
+- Compute time: 29.1s
 
 ## ChatGPT-4o BB (vanille)
 - Composite: **40/100** (below threshold)
@@ -24,4 +24,4 @@ Datum: 2026-05-05
 - Pillar 2 (judge): 32/100
 - Pillar 3 (anti-tell): 75/100
 - Detector position: 42/100 (AI_LEANING)
-- Compute time: 18.8s
+- Compute time: 16.2s

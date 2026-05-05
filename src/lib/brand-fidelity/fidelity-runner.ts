@@ -267,6 +267,9 @@ export async function runFidelityScoring(
  * Held klein — UI kan via deliverable.settings.fidelityScore meer detail ophalen.
  */
 export function buildFidelityScoreEventPayload(result: FidelityCompositeResult) {
+  // Pillar score is null wanneer de pijler is overgeslagen (weight 0):
+  // pijler 1 zonder declared BrandPersonality vocab/traits, of pijler 2
+  // expliciet gedisabled via skipJudge. UI toont "n.v.t." i.p.v. 0/100.
   return {
     compositeScore: result.compositeScore,
     thresholdMet: result.thresholdMet,
@@ -274,7 +277,7 @@ export function buildFidelityScoreEventPayload(result: FidelityCompositeResult) 
     detectorVerdict: result.detectorVerdict,
     humanBaselinePosition: result.humanBaselinePosition,
     pillars: {
-      style: result.pillars.style.score,
+      style: result.pillars.style.weight > 0 ? result.pillars.style.score : null,
       judge: result.pillars.judge?.score ?? null,
       rules: result.pillars.rules.score,
     },
