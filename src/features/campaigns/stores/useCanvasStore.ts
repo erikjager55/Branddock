@@ -85,6 +85,28 @@ interface CanvasStoreState {
   // ─── Publish suggestion ───────────────────────────────────
   publishSuggestion: { suggestedDate: string; reasoning: string } | null;
 
+  // ─── F-VAL fidelity score ─────────────────────────────────
+  // Populated streaming via tell_check_complete (fast detector signal,
+  // ~5ms after generation) en fidelity_score_complete (full pijler 1+2+3
+  // composite, ~20s na generation door cross-family judge call).
+  fidelityScore: {
+    /** Streaming status — 'idle' until generation, 'computing' tijdens runner, 'complete' na composite */
+    stage: 'idle' | 'detector-only' | 'computing' | 'complete';
+    /** Composite 0-100 — null tijdens detector-only fase */
+    compositeScore: number | null;
+    /** True wanneer composite >= compositeThreshold (default 75) */
+    thresholdMet: boolean | null;
+    compositeThreshold: number | null;
+    /** Detector verdict — beschikbaar zodra tell_check_complete fired */
+    detectorVerdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI' | null;
+    /** 0-100 positie op mens↔AI schaal — drives position-bar pin */
+    humanBaselinePosition: number | null;
+    /** Per-pijler scores; null wanneer pijler geskipt (geen BrandPersonality of skipJudge) */
+    pillars: { style: number | null; judge: number | null; rules: number | null } | null;
+    /** Compute time in ms voor "computed in 22s" UI hint */
+    elapsedMs: number | null;
+  };
+
   // ─── Additional knowledge context ────────────────────────
   additionalContextItems: Map<string, SelectedContextItem>;
   contextSelectorOpen: boolean;
@@ -181,6 +203,18 @@ interface CanvasStoreState {
   setGlobalStatus: (status: GenerationStatus, errorMessage?: string) => void;
   setImageVariants: (variants: CanvasImageVariant[]) => void;
   setPublishSuggestion: (suggestion: { suggestedDate: string; reasoning: string } | null) => void;
+  setFidelityDetector: (data: { verdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI'; humanBaselinePosition: number }) => void;
+  setFidelityComputing: () => void;
+  setFidelityComplete: (data: {
+    compositeScore: number;
+    thresholdMet: boolean;
+    compositeThreshold: number;
+    detectorVerdict: 'TOP_TIER' | 'HUMAN_BASELINE' | 'AI_LEANING' | 'PURE_AI';
+    humanBaselinePosition: number;
+    pillars: { style: number | null; judge: number | null; rules: number | null };
+    elapsedMs: number;
+  }) => void;
+  resetFidelityScore: () => void;
   setFeedbackDraft: (text: string) => void;
   setFeedbackGroup: (group: string | null) => void;
   toggleContextSelector: () => void;
@@ -284,6 +318,16 @@ const INITIAL_STATE = {
   globalErrorMessage: null as string | null,
   imageVariants: [],
   publishSuggestion: null,
+  fidelityScore: {
+    stage: 'idle' as const,
+    compositeScore: null,
+    thresholdMet: null,
+    compositeThreshold: null,
+    detectorVerdict: null,
+    humanBaselinePosition: null,
+    pillars: null,
+    elapsedMs: null,
+  },
   additionalContextItems: new Map<string, SelectedContextItem>(),
   contextSelectorOpen: false,
   feedbackDraft: '',
@@ -437,6 +481,49 @@ export const useCanvasStore = create<CanvasStoreState>((set) => ({
   setImageVariants: (variants) => set({ imageVariants: variants }),
 
   setPublishSuggestion: (suggestion) => set({ publishSuggestion: suggestion }),
+
+  setFidelityDetector: ({ verdict, humanBaselinePosition }) =>
+    set((state) => ({
+      fidelityScore: {
+        ...state.fidelityScore,
+        stage: state.fidelityScore.stage === 'complete' ? 'complete' : 'detector-only',
+        detectorVerdict: verdict,
+        humanBaselinePosition,
+      },
+    })),
+
+  setFidelityComputing: () =>
+    set((state) => ({
+      fidelityScore: { ...state.fidelityScore, stage: 'computing' },
+    })),
+
+  setFidelityComplete: (data) =>
+    set({
+      fidelityScore: {
+        stage: 'complete',
+        compositeScore: data.compositeScore,
+        thresholdMet: data.thresholdMet,
+        compositeThreshold: data.compositeThreshold,
+        detectorVerdict: data.detectorVerdict,
+        humanBaselinePosition: data.humanBaselinePosition,
+        pillars: data.pillars,
+        elapsedMs: data.elapsedMs,
+      },
+    }),
+
+  resetFidelityScore: () =>
+    set({
+      fidelityScore: {
+        stage: 'idle',
+        compositeScore: null,
+        thresholdMet: null,
+        compositeThreshold: null,
+        detectorVerdict: null,
+        humanBaselinePosition: null,
+        pillars: null,
+        elapsedMs: null,
+      },
+    }),
 
   setFeedbackDraft: (text) => set({ feedbackDraft: text }),
 

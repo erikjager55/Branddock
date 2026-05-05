@@ -15,6 +15,7 @@ import { VIDEO_ADJACENT_TYPES } from '../../../lib/deliverable-types';
 import type { SceneId } from '../../../stores/useCanvasStore';
 import { generateCanvasVisual, setHeroImage as persistHeroImage } from '../../../api/canvas.api';
 import { LibraryAssetPicker } from '../LibraryAssetPicker';
+import { FidelityScoreBar } from '../FidelityScoreBar';
 import type { CanvasImageVariant } from '../../../types/canvas.types';
 
 interface Step2ContentVariantsProps {
@@ -226,6 +227,9 @@ export function Step2ContentVariants({ deliverableId, onAdvance }: Step2ContentV
           Generating variants...
         </div>
       )}
+
+      {/* F-VAL fidelity score — verschijnt zodra detector heeft gerund (~5ms na text_complete) */}
+      {hasVariants && <FidelityScoreBar />}
 
       {/* Variant selector tabs */}
       <div className="flex items-center gap-2">

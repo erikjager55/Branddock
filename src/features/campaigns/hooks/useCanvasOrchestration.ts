@@ -61,6 +61,7 @@ export function useCanvasOrchestration(deliverableId: string | null) {
 
     const store = useCanvasStore.getState();
     store.setGlobalStatus('generating');
+    store.resetFidelityScore();
     isGeneratingRef.current = true;
 
     // Abort previous request if any
@@ -336,6 +337,54 @@ function routeEvent(eventName: string, rawData: string) {
         });
       }
       break;
+
+    case 'tell_check_complete': {
+      const verdict = data.verdict as
+        | 'TOP_TIER'
+        | 'HUMAN_BASELINE'
+        | 'AI_LEANING'
+        | 'PURE_AI'
+        | undefined;
+      const pos = typeof data.humanBaselinePosition === 'number' ? data.humanBaselinePosition : null;
+      if (verdict && pos !== null) {
+        store.setFidelityDetector({ verdict, humanBaselinePosition: pos });
+      }
+      break;
+    }
+
+    case 'fidelity_score_running':
+      store.setFidelityComputing();
+      break;
+
+    case 'fidelity_score_complete': {
+      const composite = typeof data.compositeScore === 'number' ? data.compositeScore : null;
+      const verdict = data.detectorVerdict as
+        | 'TOP_TIER'
+        | 'HUMAN_BASELINE'
+        | 'AI_LEANING'
+        | 'PURE_AI'
+        | undefined;
+      const pos = typeof data.humanBaselinePosition === 'number' ? data.humanBaselinePosition : null;
+      const pillarsRaw = data.pillars as
+        | { style: number | null; judge: number | null; rules: number | null }
+        | undefined;
+      if (composite !== null && verdict && pos !== null && pillarsRaw) {
+        store.setFidelityComplete({
+          compositeScore: composite,
+          thresholdMet: data.thresholdMet === true,
+          compositeThreshold: typeof data.compositeThreshold === 'number' ? data.compositeThreshold : 75,
+          detectorVerdict: verdict,
+          humanBaselinePosition: pos,
+          pillars: {
+            style: typeof pillarsRaw.style === 'number' ? pillarsRaw.style : null,
+            judge: typeof pillarsRaw.judge === 'number' ? pillarsRaw.judge : null,
+            rules: typeof pillarsRaw.rules === 'number' ? pillarsRaw.rules : null,
+          },
+          elapsedMs: typeof data.elapsedMs === 'number' ? data.elapsedMs : 0,
+        });
+      }
+      break;
+    }
 
     case 'seo_step': {
       const step = data.step as number | undefined;
