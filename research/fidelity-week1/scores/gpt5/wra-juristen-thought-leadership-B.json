@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "wra-juristen",
+    "type": "thought-leadership",
+    "condition": "B",
+    "key": "wra-juristen-thought-leadership-B"
+  },
+  "judgeProvider": "openai",
+  "judgeModel": "gpt-5",
+  "scores": {
+    "voiceFit": {
+      "score": 9,
+      "reasoning": "De tekst is nuchter, eerlijk en benaderbaar, met een sterke serieuze toon en duidelijke, jargonarme uitleg. Ze gebruikt kernwoorden en -houdingen als 'naast je', 'helder', 'nuchter', en beantwoordt expliciet de kanaalvraag met 'wie staat er aan jouw kant?'. Klein minpunt: af en toe net wat steviger retoriek richting 'grote kantoren' dan strikt nodig.",
+      "exampleStrong": "“De onderliggende vraag: wie staat er aan jouw kant?”",
+      "exampleWeak": "“Wetswijzigingen zoals de Wwwt zijn voor grote zakelijke kantoren en HR-consultancies een marketingmoment.”"
+    },
+    "brandRecognition": {
+      "score": 7,
+      "reasoning": "Er zijn herkenbare WRA-signaturen zoals het expliciet maken van 'wie staat er aan jouw kant?', de nuchtere middenweg ('één avond per jaar — een lijst — drie vragen'), en het benadrukken van gelijkwaardigheid ('iemand die naast je staat'). Toch blijft het grotendeels ook passend bij andere nuchtere MKB-juristen, dus niet uniek genoeg voor een hogere score.",
+      "exampleStrong": "“Tussen deze twee uitersten zit de zinvolle middenweg… Eén avond per jaar — letterlijk: één avond — … drie vragen.”",
+      "exampleWeak": "“Eerst even: wat verandert er feitelijk?”"
+    },
+    "naturalness": {
+      "score": 9,
+      "reasoning": "Leest als door een ervaren schrijver: concrete scenario’s, twee herkenbare patronen, duidelijke adviezen in tijdvakken, en vloeiende overgangen. Geen AI-tropes of overmatige herhaling; het ritme is menselijk en pragmatisch.",
+      "exampleStrong": "“We schrijven dit niet vanuit een ivoren toren. We zitten dagelijks aan tafel bij ondernemers… Twee patronen vallen op.”",
+      "exampleWeak": "“Dit is geen route.”"
+    },
+    "fluency": {
+      "score": 9,
+      "reasoning": "Taalgebruik is verzorgd, consistent in het Nederlands en goed gestructureerd met heldere alinea’s. Enige kleine hapering is de wat abrupt afgebroken slotzin.",
+      "exampleStrong": "“Het tweede gevolg is minder zichtbaar maar belangrijker. Doordat het budget niet meer in cash op tafel komt, verdwijnt een deel van de onderhandelingsruimte…”",
+      "exampleWeak": "“Plan een uur in je agenda”"
+    }
+  },
+  "compositeScore": 8.5,
+  "elapsedMs": 22218,
+  "computedAt": "2026-05-05T10:48:00.155Z"
+}

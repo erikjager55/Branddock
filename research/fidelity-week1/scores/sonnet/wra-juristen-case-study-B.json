@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "wra-juristen",
+    "type": "case-study",
+    "condition": "B",
+    "key": "wra-juristen-case-study-B"
+  },
+  "judgeProvider": "anthropic",
+  "judgeModel": "claude-sonnet-4-6",
+  "scores": {
+    "voiceFit": {
+      "score": 9,
+      "reasoning": "The content consistently reflects the declared personality: nuchter, slagvaardig, betrokken, and gelijkwaardig. The opening paragraph immediately positions the firm as standing alongside the entrepreneur ('naast je'), and the tone stays respectful without becoming formal or detached. Vocabulary aligns well — 'eerlijke prijs', 'helder traject', 'regie teruggeven', 'we hebben hem gevraagd', 'schoon schip maken' all appear and feel organic. Forbidden words are absent. The only minor dip is the section on 'Scenario drie' which reads slightly more procedurally dry than the surrounding prose, but it's brief and contextually justified.",
+      "exampleStrong": "Veertien maanden uitstellen is niet onnozel. Het is begrijpelijk. Het betekent dat iemand probeerde het zelf te regelen, dat hij rekening hield met de werknemer, dat hij een werkrelatie van elf jaar serieus nam. Dat is geen fout — dat is de werkelijkheid van een ondernemer die niet alleen aan papier denkt.",
+      "exampleWeak": "Een ontslag op staande voet zou met aan zekerheid grenzende waarschijnlijkheid worden teruggedraaid door de rechter, met loondoorbetaling, schadevergoeding en een werkgever die nog steeds met het probleem zat."
+    },
+    "brandRecognition": {
+      "score": 7,
+      "reasoning": "Several WRA-specific markers are present: the empathetic reframe of the entrepreneur's delay as loyalty rather than failure, the 'drie scenario's op tafel' structure presented with transparent cost logic, and the closing philosophy of resolving without winners and losers. These are distinctive enough that a reader familiar with WRA's positioning would recognize them. However, much of the narrative — the character sketch of the productieleider, the case-study arc — is structurally similar to quality legal content produced by other accessible Dutch law firms, which prevents a higher score. The distinctive WRA texture shows through but not so sharply that it's unmistakable.",
+      "exampleStrong": "Niet uurtje-factuurtje met verrassingen achteraf. Een vast bedrag, vooraf afgesproken, zonder addertjes.",
+      "exampleWeak": "In de twee weken daarna hebben wij de vaststellingsovereenkomst opgesteld. Niet ingewikkeld, wel zorgvuldig."
+    },
+    "naturalness": {
+      "score": 8,
+      "reasoning": "The piece reads predominantly as human-written: the narrative voice is consistent, the story builds organically, and the dialogue-style moments (the productieleider's 'hij was niet boos, hij was opgelucht') feel genuinely observed rather than constructed. The three-scenario structure is the most formulaic section and risks feeling templated, but it's contextually logical. A few rhetorical patterns repeat slightly — the em-dash pause used for effect, the short declarative sentences after a long build — but not so frequently as to feel robotic. Overall the writing has the rhythm of an experienced human narrator.",
+      "exampleStrong": "Hij zei dat hij zelf ook wist dat het niet meer ging zoals het ging. Dat hij het niet had aangekaart omdat hij niet wist hoe. Dat hij thuis in een lastige situatie zat — een ouder met dementie, een echtgenote die net was geopereerd.",
+      "exampleWeak": "Voordeel: eerlijk, verdedigbaar, biedt de werknemer een echte kans. Nadeel: kost vier maanden, in een periode waarin de woningcorporatie al gewaarschuwd heeft."
+    },
+    "fluency": {
+      "score": 9,
+      "reasoning": "Grammar, syntax, and cohesion are consistently strong throughout. Sentence variation is well-handled — short punchy sentences alternate with longer expository ones without jarring transitions. Referents are clear even across long paragraphs. The Dutch is natural and idiomatic. One minor point: 'met aan zekerheid grenzende waarschijnlijkheid' is a slightly legalistic phrase that creates a brief tonal bump given the surrounding register, but it's a single instance and doesn't materially affect flow.",
+      "exampleStrong": "Hij was vroeger iemand die op de werkvloer stond, met de jongens een bak koffie dronk, meedacht over een lastige inbouw. Nu zat hij vaker op kantoor, met de deur dicht.",
+      "exampleWeak": "Een ontslag op staande voet zou met aan zekerheid grenzende waarschijnlijkheid worden teruggedraaid door de rechter."
+    }
+  },
+  "compositeScore": 8.3,
+  "elapsedMs": 27089,
+  "computedAt": "2026-05-05T10:46:50.406Z"
+}

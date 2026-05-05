@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "linfi",
+    "type": "thought-leadership",
+    "condition": "A",
+    "key": "linfi-thought-leadership-A"
+  },
+  "judgeProvider": "anthropic",
+  "judgeModel": "claude-sonnet-4-6",
+  "scores": {
+    "voiceFit": {
+      "score": 6,
+      "reasoning": "The content demonstrates sophistication and competence through precise, technical language and an authoritative tone, which aligns with Linfi's primary/secondary brand dimensions. However, the brand voice directive specifies 'strongly Exclusive' and 'strongly Serious' positioning, yet the piece frequently adopts a self-deprecating, almost apologetic register ('We benadrukken: dit is geen verwijt aan de betrokken architecten'; 'We schrijven dit stuk niet om Linfi als bedrijf in het centrum van het verhaal te zetten') that undercuts the quiet confidence and reserved authority the brand projects. Key vocabulary from the 'Words we use' list (exclusief, op maat, precisiewerk, vakmanschap, naadloos, veiligheid, kwaliteit) does appear organically, but 'goedkoop' and 'betaalbaar' surface in contexts that border on the excluded 'budget' territory. The channel guidance for website calls for 'refined and descriptive, showcasing technical excellence and aesthetic benefits with elegant, confident language' — this piece is more argumentative and discursive than elegantly descriptive.",
+      "exampleStrong": "Elk vloerluik dat Linfi levert wordt op maat vervaardigd, op basis van inmeting ter plaatse, met de werkelijke vloerafwerking als referentie.",
+      "exampleWeak": "We schrijven dit stuk niet om Linfi als bedrijf in het centrum van het verhaal te zetten."
+    },
+    "brandRecognition": {
+      "score": 5,
+      "reasoning": "The piece establishes a clear niche (invisible accessibility in luxury residential architecture) and uses vocabulary patterns (naadloos, precisiewerk, op maat, vakmanschap) consistent with Linfi's declared identity, but these terms are generic enough that any premium floor-hatch specialist could plausibly have written this. There are no truly distinctive signature phrases, unexpected metaphors, or idiosyncratic sentence constructions that would fingerprint this as unmistakably Linfi rather than any thoughtful competitor. The argumentative structure — 'we observe a gap, here are three criteria, here are three client types' — is a common consultative thought-leadership template that further reduces distinctiveness.",
+      "exampleStrong": "een vloerluik dat niet aanwezig is, maar afwezig in zijn eigen aanwezigheid",
+      "exampleWeak": "Drie soorten projecten, drie soorten vragen"
+    },
+    "naturalness": {
+      "score": 5,
+      "reasoning": "The piece shows several hallmarks of AI-generated long-form content: rigid tripartite structures repeated across multiple sections ('drie criteria', 'drie soorten projecten', 'drie dingen'), formulaic transitional meta-commentary ('Om het gesprek concreet te maken', 'We hebben tot nu toe drie criteria geformuleerd'), and a closing section that explicitly summarizes the article's own purpose in a way experienced human thought-leadership writers typically avoid. The statistical claim ('in zeven van de tien gevallen') appears without sourcing in a way that feels inserted for credibility rather than organically recalled. Some passages do achieve genuine rhetorical flow and specificity that reads as human, particularly the section on scharniertechniek and materiaalintegratie.",
+      "exampleStrong": "Het verschil tussen een onzichtbaar en een zichtbaar luik wordt bepaald door tienden van millimeters in de naadbreedte, door de keuze van de scharniertechniek, door de manier waarop de drager onder het materiaal is geconstrueerd.",
+      "exampleWeak": "We schrijven dit stuk niet om Linfi als bedrijf in het centrum van het verhaal te zetten. We schrijven het omdat we vinden dat een leverancier die zichzelf serieus neemt, ook een verantwoordelijkheid heeft naar het vak waarin hij opereert. Die verantwoordelijkheid bestaat uit drie dingen."
+    },
+    "fluency": {
+      "score": 8,
+      "reasoning": "The Dutch is grammatically correct throughout, with well-constructed complex sentences and generally smooth paragraph flow. Referents are clear, parallelism is maintained within lists, and there are no language-mixing errors or obvious grammatical failures. Minor deductions: a few sentences are slightly overloaded with subordinate clauses that slow reading pace, and the closing section ('Een uitnodiging tot dialoog') uses near-identical sentence openings in consecutive paragraphs ('Wij nodigen u uit', 'We zijn ervan overtuigd', 'We hopen') that create mild rhythmic monotony.",
+      "exampleStrong": "De eis die in de rest van het project is gehanteerd — alle techniek onzichtbaar, alle materialen tot op de millimeter doorgewerkt, geen compromis op de detaillering — wordt op dit ene punt losgelaten.",
+      "exampleWeak": "Wij nodigen u uit om dat gesprek met ons aan te gaan... We zijn ervan overtuigd dat het vakgebied... we zijn graag bereid daar onze rol in te spelen."
+    }
+  },
+  "compositeScore": 6,
+  "elapsedMs": 31109,
+  "computedAt": "2026-05-05T10:44:14.152Z"
+}

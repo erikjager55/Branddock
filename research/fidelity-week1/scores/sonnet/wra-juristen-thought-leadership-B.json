@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "wra-juristen",
+    "type": "thought-leadership",
+    "condition": "B",
+    "key": "wra-juristen-thought-leadership-B"
+  },
+  "judgeProvider": "anthropic",
+  "judgeModel": "claude-sonnet-4-6",
+  "scores": {
+    "voiceFit": {
+      "score": 8,
+      "reasoning": "The content strongly reflects WRA's declared voice: nuchter, gelijkwaardig, slagvaardig. Phrases like 'Dat is het. Dat is alles. Daarna kun je gewoon weer ondernemen' and 'Gewoon: wat moet je weten als je tussen de tien en vijftig mensen in dienst hebt' align directly with the jip-en-janneketaal requirement. The 'wie staat er aan jouw kant' section hits the channel-specific tone guidance precisely. Minor deductions: a few passages lean slightly longer and more explanatory than the sharp sample text suggests, and 'ons kantoor' equivalent constructions are avoided but 'we schrijven dit niet vanuit een ivoren toren' edges toward slightly dramatic register. Forbidden vocabulary is cleanly avoided throughout.",
+      "exampleStrong": "Dat is het. Dat is alles. Daarna kun je gewoon weer ondernemen.",
+      "exampleWeak": "De Wwwt past in een bredere beweging waarin de wetgever probeert om de arbeidsmarkt eerlijker te verdelen tussen vast en flex, hoog en laag opgeleid, jong en oud."
+    },
+    "brandRecognition": {
+      "score": 7,
+      "reasoning": "A knowledgeable reader would likely identify this as a no-nonsense, MKB-focused Dutch law firm with a distinct 'naast je staan' positioning — not a generic legal publisher. The explicit contrast between big fancy firms, cheap HR platforms, and 'iemand die naast je staat' is a recognizable signature move. However, several structural elements (numbered misunderstandings section, tiered 'wat nu / wat in 2026 / wat wachten' breakdown) are common enough in Dutch legal content marketing that they reduce distinctiveness. The voice is recognizable but not yet so singular that it couldn't plausibly come from one of a handful of similar positioned firms.",
+      "exampleStrong": "Iemand die niet elk gesprek omtovert tot een traject, maar gewoon antwoord geeft als dat antwoord er is.",
+      "exampleWeak": "Als je onder een cao valt, ga je in 2026 zien dat sommige cao-partijen aanvullende afspraken maken over hoe de Wwwt in jouw branche wordt toegepast."
+    },
+    "naturalness": {
+      "score": 7,
+      "reasoning": "The piece reads convincingly human in most stretches — particularly the two contrasting 'patroon' observations and the frank assessment of who the law affects most. The conversational directness ('Allebei kost je geld.') feels genuinely written, not templated. Some sections show AI-typical patterns: the tripartite conclusion ('Drie dingen. Ten eerste... Ten tweede... Ten derde...') is formulaic, and the 'Wat je nu al kunt regelen / Wat je in 2026 moet plannen / Waarop je beter kunt wachten' structure with bolded subheads feels slightly mechanical. No obvious hedge-heavy openings or generic AI tropes, which keeps the score solid.",
+      "exampleStrong": "Een teamleider met €5.500 bruto per maand en tien dienstjaren krijgt nu ruim €18.000. Onder de Wwwt wordt dat €18.000 ook ongeveer, maar geoormerkt.",
+      "exampleWeak": "Drie dingen. Ten eerste... Ten tweede... Ten derde..."
+    },
+    "fluency": {
+      "score": 8,
+      "reasoning": "The Dutch is consistently correct and flows well throughout. Sentence variety is good — short punchy sentences alternate with longer explanatory ones without becoming choppy. One notable issue: the article ends abruptly mid-sentence ('Plan een uur in je agenda') without a completing thought or call to action, which is a clear fluency/completeness break. A few sentences in the technical section are slightly dense but not grammatically incorrect. No mixed-language issues, no broken parallelism.",
+      "exampleStrong": "Je kunt op twee manieren reageren op dit soort berichten. Of je raakt in paniek... Of je doet niets... Allebei kost je geld.",
+      "exampleWeak": "Plan een uur in je agenda"
+    }
+  },
+  "compositeScore": 7.5,
+  "elapsedMs": 26933,
+  "computedAt": "2026-05-05T10:48:27.089Z"
+}

@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "linfi",
+    "type": "case-study",
+    "condition": "B",
+    "key": "linfi-case-study-B"
+  },
+  "judgeProvider": "openai",
+  "judgeModel": "gpt-5",
+  "scores": {
+    "voiceFit": {
+      "score": 9,
+      "reasoning": "The piece embodies a sophisticated, meticulous, and exclusive voice with precise, elegant descriptions and emphasis on craftsmanship and millimeter-level tolerances. It uses brand-aligned vocabulary and concepts (naadloos, op maat, precisiewerk, vakmensen, veiligheid) and maintains a strongly serious, refined tone suited to a website case study. Minor deviation: an occasional sharp word choice slightly undercuts the reserved refinement.",
+      "exampleStrong": "“Die werkwijze — eerst luisteren, dan rekenen, dan tekenen — is voor Linfi geen procedure maar een uitgangspunt.”",
+      "exampleWeak": "“Bij een visgraat is het dodelijk:”"
+    },
+    "brandRecognition": {
+      "score": 7,
+      "reasoning": "Distinctive markers include the motto-like sequencing (“eerst luisteren, dan rekenen, dan tekenen”), the maxim about geometry (“Het luik moet zich voegen naar de vloer, niet andersom.”), and the emphasis on tight tolerances and limited annual projects. Still, a highly specialized competitor could plausibly sound similar, so the signature is strong but not unmistakable.",
+      "exampleStrong": "“Het luik moet zich voegen naar de vloer, niet andersom.”",
+      "exampleWeak": "“Een project als dit lost zich niet op met een productcatalogus.”"
+    },
+    "naturalness": {
+      "score": 9,
+      "reasoning": "Reads like an experienced human case study: scene-setting, stakeholder dialogue, specific dates, and consequential decisions. No AI tropes or filler; pacing varies naturally and technical details are integrated smoothly.",
+      "exampleStrong": "“Wij waren erbij. De architect ook. Het deksel zakte in zijn kader, het visgraatpatroon liep door alsof er geen luik was.”",
+      "exampleWeak": ""
+    },
+    "fluency": {
+      "score": 9,
+      "reasoning": "Grammatically clean, cohesive, and fluid Dutch with precise terminology and controlled long sentences. Minor density in a few sentences, but no material errors or awkward constructions.",
+      "exampleStrong": "“De omtrekvoeg viel samen met de patroonvoegen. De sleuteluitsparing zat verborgen in een voeg waar zij visueel niet als afwijking werd waargenomen.”",
+      "exampleWeak": "“De uitsparing is bij gesloten luik niet als zodanig herkenbaar; pas wanneer men weet waar zij zit, is zij vindbaar.”"
+    }
+  },
+  "compositeScore": 8.5,
+  "elapsedMs": 26587,
+  "computedAt": "2026-05-05T10:43:00.431Z"
+}

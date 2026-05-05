@@ -1,0 +1,14 @@
+{
+  "run": {
+    "brand": "linfi",
+    "type": "case-study",
+    "condition": "A",
+    "key": "linfi-case-study-A"
+  },
+  "generatorModel": "claude-opus-4-7",
+  "wordCount": 2986,
+  "inputTokens": 2703,
+  "outputTokens": 8000,
+  "elapsedMs": 146901,
+  "generatedAt": "2026-05-05T10:13:18.100Z"
+}

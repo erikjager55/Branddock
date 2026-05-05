@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "linfi",
+    "type": "thought-leadership",
+    "condition": "B",
+    "key": "linfi-thought-leadership-B"
+  },
+  "judgeProvider": "openai",
+  "judgeModel": "gpt-5",
+  "scores": {
+    "voiceFit": {
+      "score": 7,
+      "reasoning": "The piece is refined, serious, and meticulous, aligning with Sophistication/Competence and the channel’s thought-leadership aim. It uses elegant, confident language and highlights precision and integration (e.g., tolerances in millimeters, lifecycle thinking). However, it violates explicit vocabulary bans by using 'compromis' and 'standaard', which the directive says to avoid entirely.",
+      "exampleStrong": "“Een vloerluik dat vanaf de eerste maatvoering is meegenomen — … — kan naadloos verdwijnen.”",
+      "exampleWeak": "“... zal altijd een compromis zijn.” en “... in de standaard woningbouw ...”"
+    },
+    "brandRecognition": {
+      "score": 6,
+      "reasoning": "The argument structure (three criteria) and phrasing like 'volmaakte integratie' and 'functionele waardigheid' feel distinctive and premium, suggesting a specialist in luxe vloerluiken. Yet it lacks signature Linfi markers such as recurring preferred vocabulary like ‘op maat’, ‘vakmanschap’, or ‘exclusief,’ so it could plausibly be from another high-end provider.",
+      "exampleStrong": "“Drie criteria … Volmaakte integratie … Functionele waardigheid … Anticipatie op de levenscyclus.”",
+      "exampleWeak": "Algemene formuleringen zoals “Wij zien het als onze verantwoordelijkheid — als partij die zich uitsluitend op dit segment richt” zonder Linfi-specifieke signatuurwoorden."
+    },
+    "naturalness": {
+      "score": 7,
+      "reasoning": "Reads like an expert essay with nuanced argumentation and varied sentence structures; no formulaic AI tropes. However, the abrupt truncation at the end breaks the human-finished feel and slightly undermines overall naturalness.",
+      "exampleStrong": "“Het verschil tussen een goed geïntegreerd luik en een uitstekend geïntegreerd luik wordt vaak gemeten in tienden van millimeters.”",
+      "exampleWeak": "Afsluiting: “Wij z” (afgebroken einde)."
+    },
+    "fluency": {
+      "score": 7,
+      "reasoning": "Grammar and flow are strong throughout with precise, coherent Dutch and controlled long sentences. The single significant fluency issue is the cut-off ending, which leaves the final section incomplete.",
+      "exampleStrong": "“Een schaduwvoeg die rondom 2,0 millimeter breed is, is nog acceptabel; eentje die op één zijde 2,3 en op de andere 1,7 millimeter meet, valt direct op …”",
+      "exampleWeak": "“Wij z” (onvolledige zin aan het slot)."
+    }
+  },
+  "compositeScore": 6.8,
+  "elapsedMs": 28376,
+  "computedAt": "2026-05-05T10:44:42.531Z"
+}

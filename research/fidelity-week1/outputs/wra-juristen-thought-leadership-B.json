@@ -1,0 +1,14 @@
+{
+  "run": {
+    "brand": "wra-juristen",
+    "type": "thought-leadership",
+    "condition": "B",
+    "key": "wra-juristen-thought-leadership-B"
+  },
+  "generatorModel": "claude-opus-4-7",
+  "wordCount": 2892,
+  "inputTokens": 2729,
+  "outputTokens": 8000,
+  "elapsedMs": 144579,
+  "generatedAt": "2026-05-05T10:30:15.006Z"
+}

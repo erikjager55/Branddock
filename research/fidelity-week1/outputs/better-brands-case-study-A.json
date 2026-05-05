@@ -1,0 +1,14 @@
+{
+  "run": {
+    "brand": "better-brands",
+    "type": "case-study",
+    "condition": "A",
+    "key": "better-brands-case-study-A"
+  },
+  "generatorModel": "claude-opus-4-7",
+  "wordCount": 2930,
+  "inputTokens": 2667,
+  "outputTokens": 8000,
+  "elapsedMs": 146598,
+  "generatedAt": "2026-05-05T10:03:43.797Z"
+}

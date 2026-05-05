@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "wra-juristen",
+    "type": "thought-leadership",
+    "condition": "A",
+    "key": "wra-juristen-thought-leadership-A"
+  },
+  "judgeProvider": "openai",
+  "judgeModel": "gpt-5",
+  "scores": {
+    "voiceFit": {
+      "score": 8,
+      "reasoning": "De toon is nuchter, eerlijk en benaderbaar, met praktische stappen en geen juridisch jargon (“Geen wetstaal, geen doemverhaal.”). Het stuk is respectvol-serieus, scherp in analyse en empathisch richting MKB-ondernemers. Wel wordt vaak “we/wij” gebruikt waar volgens de directive “WRA Juristen” hoort, wat een consistente merkverwijzing ondermijnt.",
+      "exampleStrong": "“Dit stuk is een poging om er nuchter naar te kijken. Wat verandert er echt? … Geen wetstaal, geen doemverhaal.”",
+      "exampleWeak": "“Wat we niet doen: webinars verkopen, audits aanbieden…”"
+    },
+    "brandRecognition": {
+      "score": 6,
+      "reasoning": "De nuchtere, anti-paniek insteek en de concrete 70/20/10-stelling geven karakter, maar kenmerkende merkwoorden als “naast je”, “gelijkwaardig”, “het regelen” en “jouw recht, onze zaak” ontbreken. Het had met kleine aanpassingen een generieke MKB-juristenblog kunnen zijn.",
+      "exampleStrong": "“Eén: rekenen, niet alarmeren.”",
+      "exampleWeak": "Algemene passages over cao-afwijkingen en sectorfondsen zonder typische WRA-woordkeuzes of signatuurfrasen."
+    },
+    "naturalness": {
+      "score": 7,
+      "reasoning": "Het leest menselijk, met voorbeelden uit de praktijk, duidelijke stellingname en variatie in zinslengte. De structuur voelt organisch en niet sjabloonmatig. De abrupte, afgebroken slotzin vermindert wel de natuurlijke afronding.",
+      "exampleStrong": "“Een ondernemer met 32 werknemers belde in september: ‘Ik wil al m’n vaste mensen evalueren…’ Dat was een slecht idee, om twee redenen.”",
+      "exampleWeak": "“Dat is een vraag van een uur werk. Het antwo”"
+    },
+    "fluency": {
+      "score": 5,
+      "reasoning": "Overwegend correct Nederlands met goede flow en logische overgangen. Toch eindigt de tekst met een afgebroken woord, wat een duidelijke fout is en de leeservaring stoort.",
+      "exampleStrong": "“Dat is de kern. Daaromheen hangt een hoop techniek over overgangsrecht, sectorale afwijkingen…”",
+      "exampleWeak": "“Dat is een vraag van een uur werk. Het antwo”"
+    }
+  },
+  "compositeScore": 6.5,
+  "elapsedMs": 19054,
+  "computedAt": "2026-05-05T10:47:09.463Z"
+}

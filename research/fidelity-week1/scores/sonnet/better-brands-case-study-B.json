@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "better-brands",
+    "type": "case-study",
+    "condition": "B",
+    "key": "better-brands-case-study-B"
+  },
+  "judgeProvider": "anthropic",
+  "judgeModel": "claude-sonnet-4-6",
+  "scores": {
+    "voiceFit": {
+      "score": 7,
+      "reasoning": "The content largely reflects the brand's competence-primary, excitement-secondary positioning with strategic depth, authentic purpose-driven language, and evidence-based reasoning. The 'strongly Proven' and 'strongly Exclusive' spectrum positions are well served by the operational-proof methodology and willingness to exclude clients. However, the tone skews more Serious and less Funny than declared — the humorous asides ('het zuiden van Limburg dat zich graag België voelt') are isolated rather than integrated, and the piece is rarely 'enthusiastic' in the declared sense. Several brand vocabulary words ('toekomstbestendig,' 'impact,' 'betekenisgedreven') appear but the 'Words we use' list is only lightly deployed, while avoided terms are successfully absent.",
+      "exampleStrong": "'We dachten dat we ons onderscheidden door duurzaam te zijn. Maar duurzaam is geen onderscheid meer. Het is een toegangskaartje.' — embodies the Strategic + Authentic + Visionary voice cluster precisely.",
+      "exampleWeak": "The closing 'leersuggestie' section with five bullet-formatted rules reads as instructional and slightly preachy, drifting toward the anti-pattern 'idealistic without substance' and away from 'inspiring without being impractical.'"
+    },
+    "brandRecognition": {
+      "score": 6,
+      "reasoning": "There are distinctive signature moves — the discourse-analysis methodology, the 'claim that excludes the majority' framing, the 'feitenmap' device, and the four specific interview questions — that give the piece a recognizable strategic consultancy flavor. However, many of these markers belong to a generic 'smart brand strategy agency' archetype rather than specifically to Better Brands. The piece could plausibly be attributed to any of several Dutch brand strategy consultancies without the brand name present. The homepage-test and the 'werkwoord vs. zelfstandig naamwoord' analogy are the most distinctive fingerprints.",
+      "exampleStrong": "'Welke claim kunnen wij maken die onze drie grootste concurrenten niet kunnen maken zonder te liegen?' — a memorable, specific framing unlikely to appear verbatim in a generic agency case study.",
+      "exampleWeak": "The five-point 'leersuggestie' closing reads as generic consulting takeaways indistinguishable from dozens of Dutch strategy agency blogs."
+    },
+    "naturalness": {
+      "score": 8,
+      "reasoning": "The piece reads as highly human-written: the opening anecdote has authentic texture, the self-interrupting structure ('Wat we niet deden' before 'wat we wél deden') mirrors real consultancy storytelling, and the measured qualification of results ('met enige reserve') feels genuinely human rather than performatively humble. Minor naturalism breaks appear in the three grammatically parallel 'Regel één/twee/drie' block and in the closing five-point list, which both display mild AI-adjacent parallelism. The abrupt cut-off at the very end ('ga niet harder roepen wie') is jarring but paradoxically increases the human feel.",
+      "exampleStrong": "'De CEO aarzelde toen hij het zag. \"Het voelt niet als marketing.\" Wij zeiden: \"Dat is precies wat we hopen.\"' — crisp, specific dialogue that grounds the piece in lived experience.",
+      "exampleWeak": "The five closing bullet-point prescriptions ('Doe de homepage-test,' 'Vraag niet wat...,' etc.) are structurally formulaic and represent the piece's most AI-typical passage."
+    },
+    "fluency": {
+      "score": 9,
+      "reasoning": "The Dutch throughout is consistently correct, with well-controlled sentence rhythm ranging from short punchy fragments to longer analytical constructions without losing the reader. Referents are clear, parallelism is mostly intentional, and transitions between sections are smooth. The only notable issue is the truncated final sentence ('ga niet harder roepen wie'), which is either an error or an intentional cliffhanger — either way it disrupts the closing fluency. One minor awkwardness: 'marketing-technisch gesproken' feels slightly register-mixed but is not incorrect.",
+      "exampleStrong": "'Een purpose die niets kost, is geen purpose. Het is een marketingmoment.' — clean, rhythmically effective, grammatically impeccable.",
+      "exampleWeak": "'ga niet harder roepen wie' — the sentence ends mid-thought, breaking reading flow at the critical closing moment regardless of intent."
+    }
+  },
+  "compositeScore": 7.5,
+  "elapsedMs": 27507,
+  "computedAt": "2026-05-05T10:49:20.588Z"
+}

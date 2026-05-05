@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "wra-juristen",
+    "type": "case-study",
+    "condition": "A",
+    "key": "wra-juristen-case-study-A"
+  },
+  "judgeProvider": "anthropic",
+  "judgeModel": "claude-sonnet-4-6",
+  "scores": {
+    "voiceFit": {
+      "score": 9,
+      "reasoning": "The content strongly embodies WRA Juristen's declared voice across nearly all dimensions: nuchter (no dramatization, plain facts), gelijkwaardig (the ondernemer is never talked down to), slagvaardig (clear phases, decisive recommendations), and betrokken (empathy for the 'knoop in de maag' is genuine and specific). Vocabulary aligns well — 'naast de ondernemer', 'eerlijke prijs', 'helder', 'nuchter', 'regie' — and forbidden words like 'cliënt', 'derhalve', 'conform' are absent. The website channel tone ('toegankelijk en geruststellend', answering 'wie staat er aan jouw kant?') is clearly honored. One minor tension: the five numbered takeaways at the end edge toward a slightly more structured/analytical tone than the conversational warmth in the brand's writing sample, but this doesn't break the voice.",
+      "exampleStrong": "'Dat is waar de meeste van dit soort gesprekken beginnen. Niet bij een juridische vraag, maar bij een knoop in de maag.'",
+      "exampleWeak": "'Vijf: scherpte aan tafel betekent niet hard zijn tegen mensen.' — The numbered list format feels marginally more didactic than the declared voice's naturalistic flow."
+    },
+    "brandRecognition": {
+      "score": 7,
+      "reasoning": "A knowledgeable reader familiar with WRA Juristen's niche (MKB, arbeidsrecht, no-nonsense MKB juristen) would recognize several signature elements: the sensory opening ('ruikt naar koper en koffie'), the 'knoop in de maag' framing, the explicit rejection of scenario C as a table-clearing move, and the 'naast de ondernemer, niet erboven' closing. However, the structural skeleton — case study with numbered phases and five takeaways — is common enough in Dutch legal/HR content marketing that without the brand name (which appears explicitly in the text), the piece could be attributed to other MKB-focused legal brands. The distinctive markers are present but not fully unique enough to score higher.",
+      "exampleStrong": "'De ondernemer sliep voor het eerst in maanden weer een nacht door.' — Emotionally specific, not generic.",
+      "exampleWeak": "The five numbered takeaway points ('Eén: het is normaal dat het lang duurt...') follow a format common across Dutch legal content marketing and reduce distinctiveness."
+    },
+    "naturalness": {
+      "score": 8,
+      "reasoning": "The piece reads convincingly as experienced human writing for most of its length. The opening scene-setting (the smell of copper and coffee, the father's business) is vivid and particular in a way that resists AI tropes. The narrative moves at a human pace and resists over-explaining. Minor deductions: the five-point takeaway section has a slightly formulaic parallelism ('Eén:... Twee:... Drie:...') that is a mild AI tell, and a few transitions between sections feel slightly scaffolded. The reflective closing nearly rescues this by returning to the personal register, though it cuts off mid-sentence ('In gewone ta...'), suggesting a truncation artifact rather than authorial choice.",
+      "exampleStrong": "'Hij weet ook hoe je iemand aanneemt. Wat hij niet wist — of liever: niet wilde weten — was hoe je iemand laat gaan met wie je elf jaar lang hebt opgetrokken.'",
+      "exampleWeak": "'Eén: het is normaal dat het lang duurt voordat je belt... Twee: de juiste route is niet altijd de juridisch zuiverste...' — Numbered parallelism reads as structured AI output more than natural editorial voice."
+    },
+    "fluency": {
+      "score": 8,
+      "reasoning": "Grammar and syntax are consistently correct throughout; Dutch sentence structures are natural and varied. Paragraph rhythm is generally strong, and the piece sustains readable flow across 3000+ words without notable awkwardness. The primary fluency defect is the abrupt truncation at the very end ('In gewone ta') which is an unambiguous mechanical error rather than stylistic choice. One or two long sentences in the takeaway section push readability limits slightly but remain within grammatical bounds.",
+      "exampleStrong": "'In het begin schreef de ondernemer het toe aan privéomstandigheden. De productieleider was een paar jaar daarvoor gescheiden, had het zwaar gehad, en de ondernemer had hem destijds ruimte gegeven.' — Clean, clear, well-paced.",
+      "exampleWeak": "'In gewone ta' — Hard truncation at end of document breaks fluency at the final impression point."
+    }
+  },
+  "compositeScore": 8,
+  "elapsedMs": 28312,
+  "computedAt": "2026-05-05T10:46:03.060Z"
+}

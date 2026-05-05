@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "better-brands",
+    "type": "thought-leadership",
+    "condition": "A",
+    "key": "better-brands-thought-leadership-A"
+  },
+  "judgeProvider": "anthropic",
+  "judgeModel": "claude-sonnet-4-6",
+  "scores": {
+    "voiceFit": {
+      "score": 6,
+      "reasoning": "The content is strategic, analytical, and purpose-driven, which aligns with the Competence and Visionary traits. However, several brand voice requirements are violated: the brand directive specifies using Dutch preferred vocabulary ('positieve verandering', 'duurzaam', 'betekenisgedreven', 'toekomstbestendig', 'maatschappelijke relevantie') but the content is littered with English terms ('purpose-fatigue', 'brand manager', 'purpose-statement', 'rollout', 'hiring', 'compliance', 'all-hands-meetings', 'toolkit'). The tone skews heavily serious and analytical, underweighting the 'Funny' and 'Enthusiastic' tone dimensions declared. The 'Inspiring/energizing' trait is largely absent — the content is more diagnostic than empowering. The brand name 'Better Brands' does appear naturally.",
+      "exampleStrong": "'Wij geloven in merken die verder gaan dan winst alleen' spirit is echoed in the strategic framing of purpose as transformative organizational mechanism, consistent with the Visionary and Authentic traits.",
+      "exampleWeak": "Heavy reliance on English business jargon ('brand manager', 'rollout', 'hiring', 'all-hands-meetings', 'compliance') contradicts the Dutch preferred vocabulary list and the brand's declared linguistic identity."
+    },
+    "brandRecognition": {
+      "score": 4,
+      "reasoning": "Despite 'Better Brands' appearing by name, the content lacks distinctive signature markers that would make it recognizable as specifically this brand. The analytical, case-study-driven approach could belong to McKinsey, a strategy consultancy, or any Dutch branding agency. The brand's characteristic vocabulary ('positieve verandering', 'maatschappelijke relevantie', 'betekenisgedreven') is nearly absent from the body text, appearing only nominally. The distinctive balance of 'professional yet inspiring, strategic yet human' is not realized in a way that sets this apart from generic thought leadership.",
+      "exampleStrong": "The reference to Better Brands' direct client work ('In het werk van Better Brands met merken in voeding, financiële dienstverlening en zorg') grounds it as practitioner-specific.",
+      "exampleWeak": "The Patagonia and Tony's Chocolonely examples, the 'Mark the brand manager' persona, and the five-question diagnostic framework are all generic thought-leadership conventions that could appear in any industry publication."
+    },
+    "naturalness": {
+      "score": 7,
+      "reasoning": "The content reads largely as human-written: the narrative arc is coherent, the 'Mark' persona device is effective, and transitions between observations feel organic rather than formulaic. The historical reconstruction section has a confident, essayistic voice. Some passages drift toward AI-typical parallelism (e.g., the three-part listing structures in Observation 2's resolution), and the diagnostic section's five-question format has a slight checklist feel. The abrupt cut-off at the end ('omdat de meting nooit op deze manier') is notable and feels unfinished, which paradoxically reads as more human than a polished AI conclusion.",
+      "exampleStrong": "'Ze beginnen met de wens om het mooier of inspirerender te maken. Ze eindigen met de erkenning dat ze het scherper en kleiner moeten maken. Het scherper maken is niet de creatieve fase; het is de politieke fase.'",
+      "exampleWeak": "The three-part resolution in Observation 2 ('een budgetherverdeling... een herziening... en een aanpassing') reads with mechanical parallelism typical of AI structuring."
+    },
+    "fluency": {
+      "score": 7,
+      "reasoning": "The Dutch prose is grammatically sound and generally flows well, with good use of varied sentence lengths and effective rhetorical questions. The main fluency issue is the incomplete final sentence ('omdat de meting nooit op deze manier') — the article is cut off mid-thought, which is a structural flaw. There are also occasional register inconsistencies where English loanwords sit awkwardly next to formal Dutch constructions, and some run-on list structures reduce readability in the diagnostic section.",
+      "exampleStrong": "'De purpose-statements die werken — die het soort organisatie-effect hebben waarvoor ze ooit zijn bedoeld — hebben een gedeeld kenmerk: ze zijn restrictief.' Clean, well-constructed Dutch sentence with effective em-dash use.",
+      "exampleWeak": "'omdat de meting nooit op deze manier' — the piece ends mid-sentence, a clear fluency and structural failure that significantly undermines the overall reading experience."
+    }
+  },
+  "compositeScore": 6,
+  "elapsedMs": 26115,
+  "computedAt": "2026-05-05T10:49:47.201Z"
+}

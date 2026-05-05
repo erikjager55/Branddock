@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "wra-juristen",
+    "type": "thought-leadership",
+    "condition": "A",
+    "key": "wra-juristen-thought-leadership-A"
+  },
+  "judgeProvider": "anthropic",
+  "judgeModel": "claude-sonnet-4-6",
+  "scores": {
+    "voiceFit": {
+      "score": 9,
+      "reasoning": "The content strongly reflects WRA Juristen's declared voice across nearly all dimensions: nuchter (no-nonsense framing, dismissing panic and hype), gelijkwaardig (direct second-person address, plain language throughout), slagvaardig (clear action lists, decisive recommendations), and betrokken (empathy for the MKB-ondernemer's position). Vocabulary aligns well — 'eerlijke prijs', 'nuchter', 'helder', 'meedenken' spirit is present throughout. The brand name appears naturally. Minor weakness: a few passages edge toward slightly more elaborate explanation than the ultra-compressed writing sample suggests, but this is appropriate for long-form thought leadership on the website channel.",
+      "exampleStrong": "'We hebben hem geadviseerd om gewoon door te ondernemen en in Q3 2026 nog eens te kijken.' — nuchter, slagvaardig, no dramatiek.",
+      "exampleWeak": "The extended 'sectorfonds wordt een black box' paragraph is slightly more elaborately reasoned than the brand's typical directness warrants."
+    },
+    "brandRecognition": {
+      "score": 7,
+      "reasoning": "A knowledgeable reader would recognize several distinctive markers: the skeptical framing of advisor hype ('adviseurseconomie draait op volle toeren'), the 70/20/10 central thesis structure, the concrete anecdote format ('Een ondernemer met 32 werknemers belde in september'), and the closing self-description ('Dat is het soort jurist dat we zijn'). However, some sections — particularly the structured bullet lists and subheaded breakdowns — feel like competent legal marketing writing that multiple Dutch law firms could produce. The brand's most distinctive signature (the 'we staan naast je' intimacy and handshake directness) is present but not so pervasive that the piece couldn't theoretically come from a competitor.",
+      "exampleStrong": "'Niet reageren op marketingmails met \"deze wet raakt u!\" -onderwerpregels. Of, beter: lees ze, lach erom, en delete ze.' — distinctively WRA in tone.",
+      "exampleWeak": "The structured 'Wat er feitelijk verandert — en wat niet' section with numbered bullets could belong to any competent Dutch legal blog."
+    },
+    "naturalness": {
+      "score": 8,
+      "reasoning": "The piece reads largely as a confident human writer with genuine opinions — the dismissal of the €4.800 audit offer, the specific September phone call anecdote, and the self-aware closing ('Genoeg gepraat') all feel human and earned. The piece avoids most AI tropes: no hedge-heavy preamble, no 'in today's complex world' openers, no robotic parallelism. Minor deductions: the three-part 'paniekreflex / doe-niets-reflex / adviseurseconomie' structure feels slightly formulated, and the 'Nu / In Q4 2026 / Niet doen' action section has the clean tripartite parallelism typical of AI output. The abrupt cut-off at the end ('Het antwo') is presumably an artifact but does disrupt the naturalness of the close.",
+      "exampleStrong": "'Er werd een offerte langskomen voor een \"WWWT-readiness audit\" voor € 4.800. Voor een werkgever met 22 werknemers. Dat is de wereld op zijn kop.' — rhythmically punchy and human.",
+      "exampleWeak": "The tripart action list (Nu / In Q4 2026 / Niet doen) with clean parallel sub-bullets reads formulaically and somewhat AI-patterned."
+    },
+    "fluency": {
+      "score": 8,
+      "reasoning": "Grammar and syntax are consistently correct throughout; Dutch is clean and idiomatic. Sentence rhythm varies well between short punchy fragments and longer explanatory clauses. One clear issue: the piece ends mid-sentence ('Het antwo') which is a hard fluency break, likely a truncation artifact. A minor awkward phrasing appears at 'Er werd een offerte langskomen' (should be 'Er kwam een offerte langs'). These are isolated issues in an otherwise well-constructed text.",
+      "exampleStrong": "'Dat klinkt misschien laks, maar het is precies het tegenovergestelde. Het is keuze voor focus.' — clean rhythm, correct, punchy.",
+      "exampleWeak": "'Er werd een offerte langskomen voor een \"WWWT-readiness audit\"' — grammatically incorrect construction; and the abrupt mid-sentence ending damages overall fluency."
+    }
+  },
+  "compositeScore": 8,
+  "elapsedMs": 28471,
+  "computedAt": "2026-05-05T10:47:37.935Z"
+}

@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "linfi",
+    "type": "case-study",
+    "condition": "B",
+    "key": "linfi-case-study-B"
+  },
+  "judgeProvider": "anthropic",
+  "judgeModel": "claude-sonnet-4-6",
+  "scores": {
+    "voiceFit": {
+      "score": 9,
+      "reasoning": "The content strongly embodies Linfi's declared personality: sophisticated, competent, reserved, and formal without being stiff. Vocabulary aligns tightly with 'Words we use' — vakmanschap, precisiewerk, naadloos, op maat, exclusief — and banned words are entirely absent. The tone is serious and thoughtful throughout, with quiet authority rather than boastfulness, matching the 'never boastful, but clearly authoritative' voice character. The channel-specific guidance (refined, descriptive, technically confident) is consistently applied.",
+      "exampleStrong": "Een visgraatpatroon vergeeft niets: de hartlijn van het patroon legt zich vast aan de geometrie van de ruimte, en elke afwijking — een net iets te brede voeg, een afgekapt visje langs een wand, een tegenliggende richting — wordt onmiddellijk zichtbaar.",
+      "exampleWeak": "Wij verheugen ons erop het volgende project met u te ontwerpen. — slightly warmer/enthusiastic than the 'slightly Reserved' brand spectrum, though not a major violation."
+    },
+    "brandRecognition": {
+      "score": 7,
+      "reasoning": "A knowledgeable reader could identify this as a premium, craft-oriented Dutch flooring/access-hatch brand through its combination of millimeter-precision language, the designer-contractor-craftsman collaboration framing, and its refusal of generic solutions. However, the content lacks truly signature phrases or structural idiosyncrasies that would pin it exclusively to Linfi versus other high-end Dutch interior craftsmanship brands. The 'visgraat-hartlijn' and 'luik voegt zich naar de vloer' framings are distinctive but not yet iconic.",
+      "exampleStrong": "Wij hebben de luikgeometrie afgeleid van de visgraat-hartlijn, niet andersom. Die volgorde is de scheidslijn tussen een oplossing die zich verbergt en een oplossing die altijd zichtbaar blijft.",
+      "exampleWeak": "Linfi werkt aan een beperkt aantal projecten per jaar, in nauwe samenwerking met interieurarchitecten en hoofdaannemers — this closing formula is competent but could belong to many premium niche B2B brands."
+    },
+    "naturalness": {
+      "score": 8,
+      "reasoning": "The piece reads convincingly as written by an experienced human writer: the narrative has genuine momentum, technical details are woven into the story rather than listed, and the pacing of tension (problem → failed alternatives → solution) feels organic. Minor AI-pattern signals are present: the three-point 'Drie technische punten' structure is slightly formulaic, and the closing 'Drie inzichten' section with bold headers has the hallmarks of AI-organized summaries. These are noticeable but don't undermine the overall naturalness.",
+      "exampleStrong": "Een korte ontmoeting in juli voorkwam een correctieronde in september. — precise, human-toned, earned through narrative buildup.",
+      "exampleWeak": "Drie inzichten uit dit traject zijn voor ons leidend in de manier waarop wij werken. — the bold-header three-point takeaway block reads as an AI structural reflex appended to an otherwise narrative piece."
+    },
+    "fluency": {
+      "score": 9,
+      "reasoning": "Grammar is consistently correct throughout this long Dutch text, sentence structures are varied and well-controlled, and paragraph transitions are smooth. Referents are clear even in complex technical passages. One minor observation: 'een dienblad' in a load-capacity sentence feels slightly incongruous with the surrounding formal register, and the em-dash usage is occasionally dense, but neither constitutes a fluency error. Reading flow is strong across 2,879 words.",
+      "exampleStrong": "Het deksel zakte in zijn kader, het visgraatpatroon liep door alsof er geen luik was. De omtrekvoeg viel samen met de patroonvoegen.",
+      "exampleWeak": "een eettafel met acht stoelen die in beweging zijn, een staande lamp, een dienblad — 'een dienblad' as a load example feels register-incongruent, though grammatically fine."
+    }
+  },
+  "compositeScore": 8.3,
+  "elapsedMs": 22232,
+  "computedAt": "2026-05-05T10:43:22.664Z"
+}

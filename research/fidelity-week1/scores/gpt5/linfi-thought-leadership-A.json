@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "linfi",
+    "type": "thought-leadership",
+    "condition": "A",
+    "key": "linfi-thought-leadership-A"
+  },
+  "judgeProvider": "openai",
+  "judgeModel": "gpt-5",
+  "scores": {
+    "voiceFit": {
+      "score": 7,
+      "reasoning": "The piece is refined, serious, and meticulous, aligning with Linfi’s sophistication/competence emphasis and the website channel’s descriptive, elegant tone. It uses preferred concepts like op maat, naadloos, veiligheid, vakmanschap, and highlights precision and exclusivity. However, it repeatedly uses first-person plural (“we”) when referring to the brand and leans on the avoided term ‘standaard’ multiple times, which conflicts with the NON-NEGOTIABLE directive.",
+      "exampleStrong": "“Elk vloerluik dat Linfi levert wordt op maat vervaardigd, op basis van inmeting ter plaatse… zo geconstrueerd dat de naden samenvallen met het bestaande voegenpatroon.”",
+      "exampleWeak": "“Op een ruwbouwniveau wordt vaak nog gewerkt met standaardluiken…” en “We benadrukken: dit is geen verwijt…”"
+    },
+    "brandRecognition": {
+      "score": 6,
+      "reasoning": "The focus on onzichtbare toegankelijkheid in luxe residentiële architectuur and the deep dive into floor hatches is somewhat distinctive, with assured, understated authority. Still, absent the Linfi name, it could plausibly belong to any premium, bespoke floor-hatch/access supplier; there are few unmistakable, signature lexical markers unique to Linfi.",
+      "exampleStrong": "“Wie het niet weet, vindt het niet.”",
+      "exampleWeak": "“Drie criteria voor de ontwerpfase” — a generic structure common in thought-leadership."
+    },
+    "naturalness": {
+      "score": 9,
+      "reasoning": "Reads like an experienced human essay: coherent argumentation, nuanced claims, no AI clichés, and varied sentence rhythms. Transitions are organic and the voice maintains quiet confidence without filler.",
+      "exampleStrong": "“Het verschil tussen een onzichtbaar en een zichtbaar luik wordt bepaald door tienden van millimeters… Wie deze details niet beheerst, levert een product. Wie ze wel beheerst, levert een verlengstuk van de vloer.”",
+      "exampleWeak": ""
+    },
+    "fluency": {
+      "score": 9,
+      "reasoning": "Grammatically sound Dutch with smooth flow and precise vocabulary. Long sentences are controlled and clear. Minor stylistic density in places, but no substantive errors.",
+      "exampleStrong": "“De materialen moeten uitzettingscoëfficiënten hebben die overeenkomen met die van de omliggende vloer, anders ontstaan na verloop van tijd zichtbare verschillen.”",
+      "exampleWeak": ""
+    }
+  },
+  "compositeScore": 7.8,
+  "elapsedMs": 20374,
+  "computedAt": "2026-05-05T10:43:43.041Z"
+}

@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "better-brands",
+    "type": "case-study",
+    "condition": "B",
+    "key": "better-brands-case-study-B"
+  },
+  "judgeProvider": "openai",
+  "judgeModel": "gpt-5",
+  "scores": {
+    "voiceFit": {
+      "score": 8,
+      "reasoning": "The piece is strongly competent, reserved, and evidence-based, with a strategic, authentic stance and measurable outcomes—matching the brand’s core traits and channel tone. It balances seriousness with light, respectful humor and enthusiasm. Minor mismatch: it explicitly sidelines vocabulary like ‘duurzaam’, ‘impact’, ‘toekomstbestendig’ (which the brand embraces), creating a small divergence from the stated vocabulary preferences.",
+      "exampleStrong": "“Regel één: geen claim zonder bewijs in dezelfde alinea.”",
+      "exampleWeak": "“We maakten een lijstje van twaalf woorden… — impact, duurzaam…, toekomstbestendig… — …herschrijf uw homepage zonder ze.”"
+    },
+    "brandRecognition": {
+      "score": 7,
+      "reasoning": "The distinctive “grammar” framework (rules like ‘geen claim zonder bewijs’ and ‘noem de keuze die het je kost’), the discourse-analyse method, and the operational proof-focus create recognizable markers beyond generic consultancy prose. However, the avoidance of the brand’s hallmark vocabulary and absence of a few signature Better Brands phrases means a knowledgeable reader might place it among several thoughtful brand strategy firms.",
+      "exampleStrong": "“Wat we wél deden… De grammatica die we voorstelden, had drie regels.”",
+      "exampleWeak": "General critiques like “de taal… zo ingeburgerd… dat… geen onderscheidend criterium meer overhoudt” could appear in many purpose-driven strategy pieces."
+    },
+    "naturalness": {
+      "score": 8,
+      "reasoning": "Reads like an experienced human case study: vivid anecdotes, direct quotes, concrete details, and measured self-awareness. The narrative flow and voice variations feel organic, not templated. A truncated closing sentence slightly disrupts the human-finished feel.",
+      "exampleStrong": "“We legden de vier homepages naast elkaar uit, met de logo's afgeplakt… vijf van de zeven medewerkers… raadden ze het mis.”",
+      "exampleWeak": "The ending fragment: “ga niet harder roepen wie”"
+    },
+    "fluency": {
+      "score": 7,
+      "reasoning": "Overall grammar and style are strong, with clear, flowing Dutch and precise sentence work. However, the text contains an incomplete final sentence, which is a notable fluency break for a long-form web case study.",
+      "exampleStrong": "“De gemiddelde discount in offertes daalde van 11% naar 4%… ‘We hoeven minder weg te geven om dezelfde deal te sluiten.’”",
+      "exampleWeak": "Final incomplete line: “ga niet harder roepen wie”"
+    }
+  },
+  "compositeScore": 7.5,
+  "elapsedMs": 22911,
+  "computedAt": "2026-05-05T10:39:44.112Z"
+}

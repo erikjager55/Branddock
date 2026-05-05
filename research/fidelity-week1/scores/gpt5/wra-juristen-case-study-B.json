@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "wra-juristen",
+    "type": "case-study",
+    "condition": "B",
+    "key": "wra-juristen-case-study-B"
+  },
+  "judgeProvider": "openai",
+  "judgeModel": "gpt-5",
+  "scores": {
+    "voiceFit": {
+      "score": 9,
+      "reasoning": "De toon is nuchter, respectvol en strategisch scherp, met duidelijke uitleg zonder jargon. De tekst toont betrokkenheid bij de ondernemer en benoemt helder de opties en consequenties, geheel volgens de kernwaarden (gelijkwaardig, nuchter, slagvaardig, scherp, betrokken). Verboden woorden worden vermeden en voorkeurstermen als 'helder' en 'eerlijke prijs' komen terug.",
+      "exampleStrong": "Geen uurtje-factuurtje met verrassingen achteraf. Een vast bedrag, vooraf afgesproken, zonder addertjes.",
+      "exampleWeak": "Een ontbinding via de kantonrechter wegens disfunctioneren was theoretisch mogelijk... (juridische termen zijn juist, maar licht formeler dan het beoogde ‘jip-en-janneketaal’)."
+    },
+    "brandRecognition": {
+      "score": 6,
+      "reasoning": "Het voelt duidelijk als een nuchtere, toegankelijke juristenpraktijk met vaste-prijs-transparantie en mensgerichte benadering, maar weinig unieke, merk-specifieke signaturen zoals 'naast je' of 'jouw recht, onze zaak'. Zonder merknaam zou het nog aan meerdere gelijkgestemde bureaus kunnen toekomen.",
+      "exampleStrong": "We hebben dat scenario besproken om het uit te sluiten, niet om het te overwegen.",
+      "exampleWeak": "Drie scenario's op tafel. (Algemene structuur die ook door andere kantoren wordt gebruikt.)"
+    },
+    "naturalness": {
+      "score": 9,
+      "reasoning": "De case leest als een doorgewinterde human writer: concreet, empathisch, met realistische dialogen en tempo. Geen AI-clichés, geen overbodige herhaling; de spanningsboog en nuance in het gesprek zijn geloofwaardig.",
+      "exampleStrong": "Hij was niet boos, hij was opgelucht. Hij zei dat hij zelf ook wist dat het niet meer ging zoals het ging.",
+      "exampleWeak": "Ten eerste: de meeste arbeidsrechtelijke kwesties die wij doen, beginnen niet op de dag dat de ondernemer ons belt. (Kopje-inleiding-slot formule net iets schoolser.)"
+    },
+    "fluency": {
+      "score": 9,
+      "reasoning": "Vloeiend Nederlands met heldere zinsbouw en consistente terminologie. Paragraafopbouw is logisch; geen grammaticale fouten of registerbreuken. Enkele lange zinnen zijn formeel maar blijven goed leesbaar.",
+      "exampleStrong": "Dat is geen fout — dat is de werkelijkheid van een ondernemer die niet alleen aan papier denkt.",
+      "exampleWeak": "Een ontbinding via de kantonrechter wegens disfunctioneren was theoretisch mogelijk, maar zonder verbetertraject op papier zou de rechter dat afwijzen. (Lange samengestelde zin, wel correct maar aan de formele kant.)"
+    }
+  },
+  "compositeScore": 8.3,
+  "elapsedMs": 20253,
+  "computedAt": "2026-05-05T10:46:23.316Z"
+}

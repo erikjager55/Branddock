@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "better-brands",
+    "type": "case-study",
+    "condition": "A",
+    "key": "better-brands-case-study-A"
+  },
+  "judgeProvider": "openai",
+  "judgeModel": "gpt-5",
+  "scores": {
+    "voiceFit": {
+      "score": 7,
+      "reasoning": "The piece is strategic, evidence-based, and inspiring, aligning with Competence primary and Excitement secondary. It uses grounded, transparent claims and avoids hype, matching the website channel. However, it repeatedly uses first‑person plural to refer to the brand (“we”), which conflicts with the directive to use “Better brands,” and it sparsely uses the preferred vocabulary like betekenisgedreven or toekomstbestendig.",
+      "exampleStrong": "“Niet ‘wij geloven in een circulaire toekomst’, maar drie concrete cijfers over watergebruik, retourpercentages en CO₂‑reductie...”",
+      "exampleWeak": "“We werken bij dit soort positioneringstrajecten meestal in een kader van acht weken.”"
+    },
+    "brandRecognition": {
+      "score": 6,
+      "reasoning": "The analytical structure (diagnose—three phases—outcomes), emphasis on operational proof, and the coined framing “operationeel circulair” provide some distinctiveness. Still, the overall consultancy cadence could plausibly come from other strategic brand firms, especially with the generic first‑person plural voice.",
+      "exampleStrong": "“Aan het einde van die workshopdag formuleerden we... niet ‘circulair’ maar: operationeel circulair.”",
+      "exampleWeak": "“De homepage werd opnieuw geschreven... het sales‑deck werd herschreven...”"
+    },
+    "naturalness": {
+      "score": 8,
+      "reasoning": "The narrative flows like an experienced human case study with concrete scenes, varied sentence lengths, and specific detail. Light, restrained wit feels natural. Minor repetition of structures and a clipped ending slightly reduce the human polish.",
+      "exampleStrong": "“Er is een specifiek soort frustratie die je alleen voelt als je een bedrijf hebt opgebouwd waar je echt in gelooft.”",
+      "exampleWeak": "Herhaalde aanzetten als “De opdrachtgever had...” in snelle opeenvolging creëren lichte monotonie."
+    },
+    "fluency": {
+      "score": 7,
+      "reasoning": "Grammar and syntax are strong throughout and the Dutch reads smoothly. However, the text ends abruptly mid‑word, which is a clear fluency break.",
+      "exampleStrong": "“Niet polemisch, niet aanvallend, maar feitelijk. Hier is hoe wij het doen. Hier is hoe het anders kan.”",
+      "exampleWeak": "“Het traject dat we in dit stuk hebben beschreven is daarvoor niet de enige opl”"
+    }
+  },
+  "compositeScore": 7,
+  "elapsedMs": 18060,
+  "computedAt": "2026-05-05T10:39:00.313Z"
+}

@@ -1,0 +1,14 @@
+{
+  "run": {
+    "brand": "linfi",
+    "type": "thought-leadership",
+    "condition": "A",
+    "key": "linfi-thought-leadership-A"
+  },
+  "generatorModel": "claude-opus-4-7",
+  "wordCount": 2846,
+  "inputTokens": 2574,
+  "outputTokens": 8000,
+  "elapsedMs": 140906,
+  "generatedAt": "2026-05-05T10:18:07.645Z"
+}

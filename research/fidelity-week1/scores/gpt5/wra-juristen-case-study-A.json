@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "wra-juristen",
+    "type": "case-study",
+    "condition": "A",
+    "key": "wra-juristen-case-study-A"
+  },
+  "judgeProvider": "openai",
+  "judgeModel": "gpt-5",
+  "scores": {
+    "voiceFit": {
+      "score": 9,
+      "reasoning": "De toon is nuchter, eerlijk en benaderbaar, zonder juridisch jargon en met duidelijke stappen. Het stuk laat strategie en scherpte zien (scenario’s, risico’s, keuzes) én betrokkenheid bij de ondernemer. Het gebruikt kernwoorden en -principes zoals ‘nuchtere inschatting’, ‘helder overzicht’, ‘geen uurtje-factuurtje’, en ‘naast de ondernemer, niet erboven’.",
+      "exampleStrong": "“Geen drama, geen verwijt, gewoon de situatie zoals die was.”",
+      "exampleWeak": "“Hij belde WRA op aanbeveling van zijn boekhouder.” (afwijking van de eis om ‘WRA Juristen’ te gebruiken)"
+    },
+    "brandRecognition": {
+      "score": 7,
+      "reasoning": "Het stuk heeft herkenbare signaturen: nuchtere, directe vertelstijl, praktische fases, expliciet afzetten tegen ‘marketingbochten’, en nadruk op vaste prijs en regie bij de ondernemer. Toch blijft het in de kern ook passend bij andere no-nonsense MKB-arbeidsrechtspecialisten, dus niet uniek genoeg om vanzelf WRA Juristen te raden.",
+      "exampleStrong": "“Dit is het deel waarin de meeste case studies in een marketingbocht schieten… Daar zit de lezer niet op te wachten.”",
+      "exampleWeak": "Algemene termen als “Scenario A/B/C” en “vaststellingsovereenkomst” zijn vrij generiek binnen de branche."
+    },
+    "naturalness": {
+      "score": 8,
+      "reasoning": "Leest menselijk en ervaren: concrete scènes, zintuiglijke details, natuurlijke herhaling (“veertien maanden”) als stijlmiddel, en realistische dialoog- en gespreksopbouw. De slotzin is echter afgebroken, wat de natuurlijkheid licht schaadt.",
+      "exampleStrong": "“...een werkplaats waar het ruikt naar koper en koffie.”",
+      "exampleWeak": "“Voor WRA Juristen is dat niet meer dan hoe we werken. Naast de ondernemer, niet erboven. In gewone ta” (afgebroken)"
+    },
+    "fluency": {
+      "score": 7,
+      "reasoning": "Overwegend vloeiend en grammaticaal correct met goede ritmiek en heldere alinea’s. De tekst bevat echter een duidelijke truncatie aan het einde en een incidentele inconsistentie in naamgebruik, wat de formele vloeiendheid verlaagt.",
+      "exampleStrong": "“De drie scenario's werden niet als een menukaart gepresenteerd. Ze werden uitgelegd, met de voor- en nadelen en de te verwachten doorlooptijd en kosten van elk.”",
+      "exampleWeak": "“...In gewone ta” (onvolledige zin aan het einde)"
+    }
+  },
+  "compositeScore": 7.8,
+  "elapsedMs": 25293,
+  "computedAt": "2026-05-05T10:45:34.748Z"
+}

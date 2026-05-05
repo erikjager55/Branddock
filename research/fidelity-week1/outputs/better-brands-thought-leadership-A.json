@@ -1,0 +1,14 @@
+{
+  "run": {
+    "brand": "better-brands",
+    "type": "thought-leadership",
+    "condition": "A",
+    "key": "better-brands-thought-leadership-A"
+  },
+  "generatorModel": "claude-opus-4-7",
+  "wordCount": 2852,
+  "inputTokens": 2552,
+  "outputTokens": 8000,
+  "elapsedMs": 138915,
+  "generatedAt": "2026-05-05T10:08:38.240Z"
+}

@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "better-brands",
+    "type": "case-study",
+    "condition": "A",
+    "key": "better-brands-case-study-A"
+  },
+  "judgeProvider": "anthropic",
+  "judgeModel": "claude-sonnet-4-6",
+  "scores": {
+    "voiceFit": {
+      "score": 7,
+      "reasoning": "The content largely reflects the brand's core traits — visionary, authentic, strategic, inspiring — and uses several key vocabulary words ('duurzaam', 'circulair', 'impact', 'onderscheidend', 'positionering'). The tone is professional yet human, and avoids all banned words ('disruptive', 'game-changer', etc.). However, the brand voice directive specifies 'Funny' as a tone dimension and 'Enthusiastic', yet the piece reads as almost entirely serious and analytical with very little warmth, levity, or energizing quality. The 'Inspiring' trait — 'energizing, possibility-focused, empowering' — comes through only weakly. The channel guidance calls for 'strategic and inspiring, balancing professional expertise with visionary purpose', but the balance tilts heavily toward analytical.",
+      "exampleStrong": "'operationeel circulair' — de claim die je alleen kunt maken als je het kunt onderbouwen",
+      "exampleWeak": "The reflective closing bullets ('De eerste', 'De tweede') feel academic and methodological rather than inspiring or energizing, drifting from brand personality"
+    },
+    "brandRecognition": {
+      "score": 6,
+      "reasoning": "The content does establish some distinctive markers: the discourse-analysis exercise with fragment-shuffling is a memorable methodological signature, and the 'operationeel circulair' framing is a concrete, ownable concept. The brand name 'Better brands' appears naturally and in the right places. However, many passages could belong to any high-quality B2B branding or positioning consultancy — the structural approach (three phases, stakeholder interviews, workshop, translation) is fairly generic in the category, and the reflective closing section reads like consultancy thought leadership without a strongly distinctive voice fingerprint.",
+      "exampleStrong": "The discourse-analysis experiment with seven readers and near-random fragment attribution — a specific, memorable methodological detail",
+      "exampleWeak": "'Better brands werkt al een aantal jaar met purpose-driven ondernemers' — generic closing attribution without distinctive voice"
+    },
+    "naturalness": {
+      "score": 8,
+      "reasoning": "The piece reads convincingly as human-authored: the opening paragraph with 'je accountant en je moeder' is a natural, warm touch; the narrative flows as a genuine chronicle rather than a formatted listicle; sentence rhythm varies well. The four closing observations formatted as 'De eerste/tweede/derde/vierde' are slightly formulaic and border on AI-typical parallelism, but the surrounding prose avoids most AI tropes. The truncated final sentence ('is daarvoor niet de enige opl') is an artifact but doesn't affect the naturalness score of the body.",
+      "exampleStrong": "'je accountant en je moeder weten waarom het bestaat' — genuinely human, colloquial, unexpected",
+      "exampleWeak": "'De eerste: ... De tweede: ... De derde: ... De vierde, en misschien de belangrijkste:' — mechanically parallel structure typical of AI-structured output"
+    },
+    "fluency": {
+      "score": 8,
+      "reasoning": "Grammar and syntax are consistently correct throughout the Dutch text, with well-constructed sentences and clear referents. Paragraph transitions are smooth and the narrative arc is coherent. One notable flaw: the final sentence is cut off mid-word ('niet de enige opl'), indicating an incomplete conclusion. There are occasional very long sentences that pack multiple clauses together, but these are stylistically intentional and remain readable rather than constituting a grammatical error.",
+      "exampleStrong": "'Een statiegeldsysteem zonder dat de eindklant ooit het woord statiegeld hoeft te lezen.' — clean, precise, elegant construction",
+      "exampleWeak": "'Better brands werkt al een aantal jaar met purpose-driven ondernemers, en het patroon dat we hier beschrijven komt vaker terug dan ons lief is.' — truncated abruptly with 'niet de enige opl'"
+    }
+  },
+  "compositeScore": 7.3,
+  "elapsedMs": 20883,
+  "computedAt": "2026-05-05T10:39:21.198Z"
+}

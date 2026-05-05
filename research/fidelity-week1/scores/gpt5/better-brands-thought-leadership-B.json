@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "better-brands",
+    "type": "thought-leadership",
+    "condition": "B",
+    "key": "better-brands-thought-leadership-B"
+  },
+  "judgeProvider": "openai",
+  "judgeModel": "gpt-5",
+  "scores": {
+    "voiceFit": {
+      "score": 8,
+      "reasoning": "Strategisch, evidence-based en reserved stemt goed overeen met Competence-first en de website thought-leadership context. Het stuk is respectvol, helder en pragmatisch (diagnostisch raamwerk, budget- en hiring-beslissingen), maar gebruikt weinig van de gewenste signatuurwoorden en toont minimale humor/enthousiasme.",
+      "exampleStrong": "“De praktische test is simpel: noem drie commercieel aantrekkelijke beslissingen die jouw purpose onmogelijk maakt.”",
+      "exampleWeak": "“Wij geloven in een betere toekomst.” (geciteerd als voorbeeld) — weinig gebruik van eigen voorkeursvocabulaire zoals ‘betekenisgedreven’, ‘toekomstbestendig’, ‘merkvoorkeur’."
+    },
+    "brandRecognition": {
+      "score": 5,
+      "reasoning": "Het is sterk professioneel en past bij een strategisch bureau, maar mist onderscheidende Better Brands-signaturen of terugkerende woordkeuzes uit de opgegeven lexicon. Het zou ook van andere branding-consultancies kunnen zijn.",
+      "exampleStrong": "Strakke, toetsende formuleringen zoals “Dit zijn geen filters. Dit zijn dekens.” geven een herkenbaar retorisch stempel.",
+      "exampleWeak": "Algemene casussen (Patagonia, Tony’s) en generieke consultancystijl zonder unieke Better Brands-terminologie of kenmerkende zinsritmes."
+    },
+    "naturalness": {
+      "score": 9,
+      "reasoning": "Leest overtuigend menselijk: gevarieerde zinslengte, scherpe observaties, natuurlijke opbouw van context–observaties–raamwerk. Geen AI-clichés of over-gestructureerde opsommingsverslaving.",
+      "exampleStrong": "“Dit zijn geen filters. Dit zijn dekens.” en de politieke realiteitszin rond mandaat en ‘nee’ zeggen voelt doorleefd.",
+      "exampleWeak": ""
+    },
+    "fluency": {
+      "score": 7,
+      "reasoning": "Overwegend vloeiend en grammaticaal correct Nederlands met heldere paragrafen. De tekst eindigt echter abrupt en onvolledig, wat de leesflow aantast.",
+      "exampleStrong": "“Een purpose die alles toelaat, kan niets verbieden, en wordt daarom door iedereen herkend als sierwerk.”",
+      "exampleWeak": "“Tegelijkertijd is de onderliggende premisse niet veranderd. Merken die werkelijk staan voor iets dat verder gaat dan het product, hebben een onderscheidend verm” (afgebroken zin)."
+    }
+  },
+  "compositeScore": 7.3,
+  "elapsedMs": 22399,
+  "computedAt": "2026-05-05T10:41:21.143Z"
+}

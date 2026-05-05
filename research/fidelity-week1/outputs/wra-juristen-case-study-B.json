@@ -1,0 +1,14 @@
+{
+  "run": {
+    "brand": "wra-juristen",
+    "type": "case-study",
+    "condition": "B",
+    "key": "wra-juristen-case-study-B"
+  },
+  "generatorModel": "claude-opus-4-7",
+  "wordCount": 2970,
+  "inputTokens": 2649,
+  "outputTokens": 8000,
+  "elapsedMs": 148458,
+  "generatedAt": "2026-05-05T10:25:23.584Z"
+}

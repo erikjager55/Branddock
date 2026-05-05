@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "linfi",
+    "type": "case-study",
+    "condition": "A",
+    "key": "linfi-case-study-A"
+  },
+  "judgeProvider": "anthropic",
+  "judgeModel": "claude-sonnet-4-6",
+  "scores": {
+    "voiceFit": {
+      "score": 7,
+      "reasoning": "The content strongly reflects the sophistication and competence dimensions through precise, technical language and an exclusive positioning ('een selecte groep architectenbureaus'). The channel-specific guidance for website calls for 'refined and descriptive, showcasing technical excellence and aesthetic benefits with elegant, confident language' — largely delivered. However, the brand directive specifies 'strongly Exclusive' and 'strongly Serious' while also listing Casual and Funny as tone-of-voice elements (even if that seems contradictory with personality scores), and the piece is never casual or warm. More critically, the brand's own vocabulary list ('exclusief, op maat, precisiewerk, vakmanschap, luxe, naadloos, veiligheid, kwaliteit, stijlvol, eye catcher') appears sparingly — 'precisiewerk' and 'op maat' appear but 'luxe', 'exclusief', 'naadloos', 'vakmanschap' are underused for a brand that declares them core. The brand name 'Linfi' is used appropriately throughout rather than 'we'.",
+      "exampleStrong": "'Niet bij benadering. Op de millimeter. Niet als productvariant. Op maat voor dit project, deze vloer, deze ruimte.'",
+      "exampleWeak": "The word 'vakmanschap' appears only once and 'exclusief' barely registers, despite being flagged as primary brand vocabulary."
+    },
+    "brandRecognition": {
+      "score": 6,
+      "reasoning": "A knowledgeable reader could identify this as a premium Dutch bespoke flooring or interior-access product brand due to the consistent positioning around millimeter precision, the architect-partnership narrative, and the invisible integration concept. However, the writing style — long-form case study with iterative design emphasis — is shared by many premium Dutch craftsmanship brands and does not carry sufficiently distinctive fingerprints unique to Linfi. The 'eye catcher' vocabulary and signature phrases from the writing sample are absent, reducing distinctiveness.",
+      "exampleStrong": "'De architect liep tweemaal over de plek waar het luik zat zonder het te zien.' — the invisible-product narrative is a distinctive Linfi proposition.",
+      "exampleWeak": "Sections like 'Linfi werkt anders. Niet omdat dat een marketingbelofte is, maar omdat de werkwijze van Linfi vertrekt vanuit de vloer' could belong to any bespoke craftsmanship brand."
+    },
+    "naturalness": {
+      "score": 8,
+      "reasoning": "The piece reads convincingly as a human-written narrative case study with genuine structural rhythm — the slow build from problem to solution to result feels editorial rather than templated. Sentence variation is good; the short declarative fragments ('Niet bijna onzichtbaar. Onzichtbaar.') feel stylistically intentional rather than AI-generated filler. There is some mild formulaic patterning in the three-point architect feedback section, and occasional over-explanation of obvious points ('Voor wie nooit met visgraat heeft gewerkt'), but these feel like editorial choices rather than AI artifacts.",
+      "exampleStrong": "'De architect liep tweemaal over de plek waar het luik zat zonder het te zien. Pas toen Linfi's specialist het sleuteltje aanbracht en het luik liet openklappen, werd zichtbaar waar de uitsparing zich bevond.'",
+      "exampleWeak": "'Ten eerste:... Ten tweede:... Ten derde:' — the enumerated three-point feedback structure reads as slightly formulaic."
+    },
+    "fluency": {
+      "score": 9,
+      "reasoning": "The Dutch is consistently correct, grammatically sound, and stylistically coherent throughout a nearly 3,000-word piece with no language-switching. Sentence structures are varied and well-constructed. The piece ends mid-sentence ('Voor architecten die werken aan een project waarin een vloerluik zich na') — an apparent truncation — which is the one clear fluency defect, preventing a perfect score. Referents are clear, parallelism is maintained, and the prose flows naturally across sections.",
+      "exampleStrong": "'Een luik dat ná de vloer wordt geplaatst zal altijd ergens een afwijking laten zien. Een luik dat wordt geïntegreerd terwijl de vloer wordt gelegd, verdwijnt erin.'",
+      "exampleWeak": "The final paragraph is cut off: 'Voor architecten die werken aan een project waarin een vloerluik zich na' — incomplete sentence at end of document."
+    }
+  },
+  "compositeScore": 7.5,
+  "elapsedMs": 25744,
+  "computedAt": "2026-05-05T10:42:33.841Z"
+}

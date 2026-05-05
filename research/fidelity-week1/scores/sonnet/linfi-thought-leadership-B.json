@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "linfi",
+    "type": "thought-leadership",
+    "condition": "B",
+    "key": "linfi-thought-leadership-B"
+  },
+  "judgeProvider": "anthropic",
+  "judgeModel": "claude-sonnet-4-6",
+  "scores": {
+    "voiceFit": {
+      "score": 9,
+      "reasoning": "The content strongly reflects the declared brand dimensions: sophistication and competence are evident throughout, with elegant, precise language that avoids all listed prohibited words. The tone is strongly serious, thoughtful, and exclusive as specified — never boastful but clearly authoritative ('quiet confidence'). Vocabulary aligns well with the brand's preferred terms: 'vakmanschap,' 'precisiewerk,' 'naadloos,' 'exclusieve oplossing,' 'op maat.' The channel-specific guidance for 'refined and descriptive, showcasing technical excellence' is consistently honored. Minor note: the tone occasionally edges slightly more formal-academic than the sample text's warmer descriptive style, but this is a marginal deviation.",
+      "exampleStrong": "Een vloerluik dat vanaf de eerste maatvoering is meegenomen — met aandacht voor de richting van de planken, de positie van de voegen in een natuursteenpatroon, de loop van het visgraat — kan naadloos verdwijnen.",
+      "exampleWeak": "De drie criteria — volmaakte integratie, functionele waardigheid en anticipatie op de levenscyclus — vormen samen een raamwerk dat de gesprekken... kan structureren."
+    },
+    "brandRecognition": {
+      "score": 7,
+      "reasoning": "A knowledgeable reader in the luxury construction/architecture space would recognize certain distinctive markers: the obsessive millimeter-level precision language, the specific framing of accessibility as a design problem rather than a technical one, and the positioning as a thoughtful specialist who engages before the contract. However, much of the content could plausibly belong to a premium architectural consultancy or high-end construction firm more broadly — the brand's specific niche (vloerluiken) only becomes explicit mid-article, and the signature phrases are not sufficiently distinctive to pinpoint Linfi specifically without the brand name present.",
+      "exampleStrong": "Het verschil tussen een goed geïntegreerd luik en een uitstekend geïntegreerd luik wordt vaak gemeten in tienden van millimeters.",
+      "exampleWeak": "Wij beschouwen dat als vanzelfsprekend. Een goede oplossing ontstaat niet aan het eind van een proces, maar aan het begin."
+    },
+    "naturalness": {
+      "score": 8,
+      "reasoning": "The piece reads largely as experienced human writing: the opening observational framing ('In zeven van de tien villa's') is a strong, non-formulaic entry point, and the argumentative structure feels organically developed rather than templated. The three-criteria framework section introduces mild formulaic parallelism typical of AI-assisted structuring, but it is not excessive. Some transitions between paragraphs use slightly mechanical connectors, and the closing section ('Slotbeschouwing') recycles the 'laatste schakel' metaphor in a way that feels somewhat neat and resolved — a mild AI-writing tell. Overall, the human voice dominates.",
+      "exampleStrong": "Soms wordt het pas écht een onderwerp wanneer er een lekkage optreedt, drie jaar na oplevering, en de eigenaar voor het eerst beseft dat er onder zijn natuurstenen vloer een installatie zit waar niemand zonder breekwerk bij kan.",
+      "exampleWeak": "De drie criteria — volmaakte integratie, functionele waardigheid en anticipatie op de levenscyclus — vormen samen een raamwerk... Wij merken in de praktijk dat zodra deze drie dimensies expliciet op tafel liggen..."
+    },
+    "fluency": {
+      "score": 9,
+      "reasoning": "The Dutch is grammatically correct throughout, with well-constructed complex sentences that maintain clarity. Paragraph-level flow is strong, and the long-form structure is handled without awkward breaks. The piece ends abruptly mid-sentence ('Wij z'), which is a clear fluency defect — likely a truncation artifact rather than an authorial choice, but it registers as a flaw. One or two sentences are very long and could benefit from a break, but none are genuinely unclear.",
+      "exampleStrong": "De ontwikkeling laat zich beschrijven als een gestage verschuiving naar het onzichtbare. Verlichting verdween in haarscherpe groeven en schaduwvoegen.",
+      "exampleWeak": "Wij z"
+    }
+  },
+  "compositeScore": 8.3,
+  "elapsedMs": 26920,
+  "computedAt": "2026-05-05T10:45:09.452Z"
+}

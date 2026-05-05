@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "better-brands",
+    "type": "thought-leadership",
+    "condition": "A",
+    "key": "better-brands-thought-leadership-A"
+  },
+  "judgeProvider": "openai",
+  "judgeModel": "gpt-5",
+  "scores": {
+    "voiceFit": {
+      "score": 7,
+      "reasoning": "Strategic, evidence-based tone with diagnostic framework fits the Competence-first, website channel guidance. It includes reserved seriousness and authenticity (e.g., budget/hiring focus), and uses approved vocabulary like 'maatschappelijke relevantie'. However, it violates brand naming (uses 'Better Brands' and 'we') and underuses signature terms like 'duurzaam', 'betekenisgedreven', 'toekomstbestendig', and 'transformatie'.",
+      "exampleStrong": "“De oplossing was om... een budgetherverdeling... bonusstructuur... aanpassing van het hiring-profiel...”",
+      "exampleWeak": "“In het werk van Better Brands...” en herhaald gebruik van “we” om naar het merk te verwijzen."
+    },
+    "brandRecognition": {
+      "score": 4,
+      "reasoning": "While the piece is strategically rigorous, its markers are generic to thought leadership on purpose and could come from many consultancies. It lacks repeated use of the brand’s distinctive lexicon (bijv. 'betekenisgedreven', 'toekomstbestendig', 'transformatie') and does not exhibit uniquely identifying turns of phrase tied to Better brands.",
+      "exampleStrong": "“klantsegmenten met lage marge maar hoge maatschappelijke relevantie” hints at the brand’s values.",
+      "exampleWeak": "Algemene frames zoals “purpose-fatigue”, “diagnostisch raamwerk”, en voorbeelden (Patagonia, Tony’s) zijn wijdverspreid in de sector."
+    },
+    "naturalness": {
+      "score": 8,
+      "reasoning": "Narrative voice, concrete anecdotes, and nuanced argumentation feel human and experienced. The progression from observations to a diagnostic set reads naturally. A truncated final sentence slightly reduces the human-polished feel.",
+      "exampleStrong": "“De praktische test is eenvoudig. Pak het purpose-statement... welk lopend project... zou moeten worden afgestoten?”",
+      "exampleWeak": "Slot alinea eindigt abrupt: “... omdat de meting nooit op deze manier”"
+    },
+    "fluency": {
+      "score": 7,
+      "reasoning": "Grammar and flow are largely solid, with varied sentence structures and clear argumentation. However, there is an incomplete sentence at the end and occasional code-switching that doesn’t harm meaning but affects polish.",
+      "exampleStrong": "“Een organisatie laat zien wat ze werkelijk gelooft door wat ze financiert en wie ze aanneemt.”",
+      "exampleWeak": "Onvolledige zin: “Het probleem is niet dat de score laag is; ... omdat de meting nooit op deze manier”"
+    }
+  },
+  "compositeScore": 6.5,
+  "elapsedMs": 18308,
+  "computedAt": "2026-05-05T10:40:29.793Z"
+}

@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "better-brands",
+    "type": "thought-leadership",
+    "condition": "B",
+    "key": "better-brands-thought-leadership-B"
+  },
+  "judgeProvider": "anthropic",
+  "judgeModel": "claude-sonnet-4-6",
+  "scores": {
+    "voiceFit": {
+      "score": 6,
+      "reasoning": "The content is strategic and evidence-based, aligning with the 'Competence' primary dimension and the 'Proven' and 'Traditional' spectrum positions. However, the brand voice calls for 'Funny' and 'Enthusiastic' tone elements alongside 'Respectful,' and the piece is consistently sober and analytical without a trace of the prescribed humor or enthusiasm. The vocabulary list (positieve verandering, duurzaam, betekenisgedreven, merkvoorkeur, toekomstbestendig) is almost entirely absent — the content uses generic strategy language instead. The 'inspiring' and 'empowering' core traits are underdeveloped; the piece reads more like a consultant's audit than a brand that motivates clients toward positive transformation.",
+      "exampleStrong": "De vraag voor brand managers in 2026 is daarom niet meer of ze een purpose-statement nodig hebben... De vraag is hoe de purpose die er al ligt operationeel wordt gemaakt",
+      "exampleWeak": "Het raamwerk bestaat uit vier dimensies, elk met drie diagnostische vragen — functional but entirely devoid of the brand's declared 'inspiring,' 'enthusiastic' tone and signature vocabulary"
+    },
+    "brandRecognition": {
+      "score": 3,
+      "reasoning": "A knowledgeable reader would struggle to attribute this to Better Brands specifically — the content reads as competent strategy consulting prose that could belong to McKinsey, a brand consultancy, or any mid-market thought leadership publisher. There are no signature phrases from the brand's declared vocabulary, no distinctive metaphors tied to the brand, and no characteristic sentence structures that echo the provided sample ('Samen bouwen we aan een betere toekomst'). The framing around 'purpose-paradox' is a common industry trope, not a distinctive Better Brands marker.",
+      "exampleStrong": "",
+      "exampleWeak": "Een organisatie die op vrijwel alle vragen een helder, concreet antwoord heeft, opereert al voorbij de purpose-paradox — generic consulting language with no brand fingerprint"
+    },
+    "naturalness": {
+      "score": 7,
+      "reasoning": "The piece reads largely as human-written: the analytical voice is consistent, the examples (Tony's, Patagonia, Fink's 2018 letter) are well-integrated rather than perfunctory, and the diagnostic framework flows from the arguments rather than feeling bolted on. Some passages show formulaic AI tendencies — the four-dimension framework with three questions each has a rigid parallelism that feels template-driven, and the fictional 'Mark Jansen' figure is an awkward narrative device that is introduced and immediately disclaimed. The piece also ends abruptly mid-sentence, which is a notable flaw.",
+      "exampleStrong": "Dat klinkt zacht, maar het is in de praktijk hard. Het betekent dat je geen kandidaten aanneemt die op alle competenties scoren maar wier track record bestaat uit beslissingen die haaks staan op wat je beweert te willen zijn.",
+      "exampleWeak": "Dit is, in mijn observatie, een van de meest onderschatte structurele kwesties in het hedendaagse merkenwerk — slightly hedged, formulaic transition typical of AI framing"
+    },
+    "fluency": {
+      "score": 7,
+      "reasoning": "The Dutch is grammatically sound throughout and sentence construction is generally clear and well-paced. Long sentences are handled competently without becoming run-ons. The main fluency issues are: the piece ends abruptly mid-sentence ('hebben een onderscheidend verm'), which is a significant structural flaw; the 'Mark Jansen' parenthetical aside breaks the flow awkwardly; and occasional over-long paragraphs reduce scannability in a long-form channel context.",
+      "exampleStrong": "Medewerkers leren niet wat een organisatie belangrijk vindt door te luisteren naar wat de organisatie zegt. Ze leren het door te kijken naar wat de organisatie doet",
+      "exampleWeak": "Merken die werkelijk staan voor iets dat verder gaat dan het product, hebben een onderscheidend verm — the piece cuts off mid-word, a clear fluency failure"
+    }
+  },
+  "compositeScore": 5.8,
+  "elapsedMs": 24854,
+  "computedAt": "2026-05-05T10:50:12.059Z"
+}

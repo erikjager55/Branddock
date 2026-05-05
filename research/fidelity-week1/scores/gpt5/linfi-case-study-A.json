@@ -1,0 +1,39 @@
+{
+  "run": {
+    "brand": "linfi",
+    "type": "case-study",
+    "condition": "A",
+    "key": "linfi-case-study-A"
+  },
+  "judgeProvider": "openai",
+  "judgeModel": "gpt-5",
+  "scores": {
+    "voiceFit": {
+      "score": 9,
+      "reasoning": "The piece is reserved, serious, and precision-obsessed, emphasizing craftsmanship, millimeter-accurate integration, and exclusive collaboration—exactly matching Linfi’s sophisticated/competent positioning for a website case study. It consistently uses “Linfi” and focuses on refined, technical detail and aesthetic benefits without hype. Minor slip: the use of “standaard-uitvoering” appears once, a term on the avoid list.",
+      "exampleStrong": "“Niet bij benadering. Op de millimeter.”",
+      "exampleWeak": "“…in standaard-uitvoering…”"
+    },
+    "brandRecognition": {
+      "score": 7,
+      "reasoning": "The recurring stance “Linfi werkt anders” and the meticulous narrative around aligning a visgraatpatroon with invisible hatches create a distinct, partnership-driven signature. The disciplined focus on planning before floor installation and millimeter tolerances adds recognizability. Still, a high-end craft supplier could plausibly sound similar, so distinctiveness is good but not singular.",
+      "exampleStrong": "“Linfi werkt anders… Een vloerluik wordt bij Linfi op maat gemaakt rond de afwerkvloer… Niet andersom.”",
+      "exampleWeak": "Generic project framing like “Dit is een verhaal over zo'n project.”"
+    },
+    "naturalness": {
+      "score": 9,
+      "reasoning": "Reads like an experienced human case study: scene-setting, precise constraints, iterative design dialogue, and credible on-site details. Varied sentence structures and specifics (planning, tolerances, shared drawings) avoid AI tropes. Only minor repetition of motifs (“het luik”) prevents a perfect score.",
+      "exampleStrong": "“De naden verschoven millimeters om samen te vallen met visgraat-knooppunten…”",
+      "exampleWeak": "Multiple sentences beginning with “Het luik…” in close proximity."
+    },
+    "fluency": {
+      "score": 7,
+      "reasoning": "Grammar and flow are strong throughout with clear, elegant Dutch and coherent paragraphing. However, the text ends with a truncated sentence, which disrupts closure and polish. Long, multi-clause sentences are controlled and readable elsewhere.",
+      "exampleStrong": "“De deksel lag in dezelfde hoogte als de omringende vloer — geen verhoging, geen verlaging, geen ‘tikje’ wanneer een schoen erover gaat.”",
+      "exampleWeak": "“Voor architecten die werken aan een project waarin een vloerluik zich na”"
+    }
+  },
+  "compositeScore": 8,
+  "elapsedMs": 25256,
+  "computedAt": "2026-05-05T10:42:08.096Z"
+}
