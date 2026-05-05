@@ -1,0 +1,4 @@
+# Research outputs are regenerable + may contain customer brand content.
+# Never commit these to git.
+output/
+ws3/output/
