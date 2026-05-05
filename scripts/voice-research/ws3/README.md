@@ -6,8 +6,14 @@ twee voice-scoring mechanismen: de productie quality-scorer Voice-dimensie
 (open-source style-only embeddings).
 
 **Pre-registratie**: scope vastgelegd in
-`docs/voice-fingerprinting-ws2-protocol.md` v0.2 §6 (commit `446f92b`).
-Wijzigingen aan WS3-criteria vereisen protocol-versiebump per §7.2.
+`docs/voice-fingerprinting-ws2-protocol.md` v0.3 (commit `9db58cc`,
+amendment van v0.2 commit `446f92b`).
+
+**v0.3 amendment** (2026-05-05): WS3 stap 2 toonde score-distributie met
+slechts 3 unieke waarden (72/78/88) over 16 pieces. Bij thin distribution
++ n=16 is Pearson r overgevoelig voor ties. Kwalitatieve disagreement-case
+inspectie wordt **primair signaal**, Pearson + Spearman ρ secundair als
+directional indicators (niet threshold-based). Zie protocol §6.4.
 
 ---
 
@@ -17,11 +23,15 @@ Meten of mStyleDistance additieve informatie geeft t.o.v. de bestaande
 quality-scorer Voice-dimensie. Concreet: bereken Pearson r tussen beide
 scoring-mechanismen op een pool van ~40 long-form klantcontent stukken.
 
-| Pearson r | Conclusie | F-VAL implicatie |
-|---|---|---|
-| **> 0.7** | Signalen meten hetzelfde — mStyleDistance is **redundant** | Pijler 1 niet bouwen |
-| **< 0.4** | Signalen meten verschillende dingen — mStyleDistance is **additief** | Pijler 1 bouwen heeft waarde |
-| **0.4 – 0.7** | Grijs gebied | Inspect disagreement-cases handmatig, beslis op kwalitatieve grond |
+**Per v0.3** (2026-05-05): primair signaal = kwalitatieve disagreement-case
+inspectie door 2 raters. Correlation-statistieken zijn secundair en
+directional, niet threshold-based.
+
+| Spearman ρ | Directional richting (kwalitatieve inspectie blijft leidend) |
+|---|---|
+| **> 0.7** | Sterk gecorreleerd → kwalitatief waarschijnlijk redundantie |
+| **0.4 – 0.7** | Matig — kwalitatieve inspectie volledig leidend |
+| **< 0.4** | Zwakke correlatie → kwalitatief waarschijnlijk additief signaal |
 
 ---
 
@@ -52,11 +62,11 @@ scoring-mechanismen op een pool van ~40 long-form klantcontent stukken.
        └─────────────────────────┘
 ```
 
-**Status v0.1** (2026-05-05):
-- ✅ `extract-corpus.ts` — implemented + smoke-tested
-- ⏳ `score-voice-quality.ts` — pending (next session)
-- ⏳ `compute-embeddings.py` — pending model-keuze + Python setup
-- ⏳ `compute-disagreement.ts` — pending upstream outputs
+**Status** (2026-05-05):
+- ✅ `extract-corpus.ts` — DONE (commit `1fefc44`, n=16 pieces)
+- ✅ `score-voice-quality.ts` — DONE (commit `fce7bb6`, voice scores 72/78/88)
+- ✅ `compute-embeddings.py` — implemented, ready to run (this commit)
+- ⏳ `compute-disagreement.ts` — pending embeddings.json output
 
 ---
 
@@ -96,87 +106,89 @@ Used in step 3 to split LINFI items into centroid-training (~14) + test-set (~13
 
 ---
 
-## Stap 2: Quality-scorer Voice-dim scoring (TODO)
+## Stap 2: Quality-scorer Voice-dim scoring (DONE)
 
-Per stuk in `corpus.jsonl`: roep production `scoreContentQuality()` aan
-(vanuit `src/lib/studio/quality-scorer.ts`), extract de Voice-dimensie score
-(25% weight, dimension name `Brand Voice Adherence`), schrijf naar
-`voice-scores.json`.
-
-```json
-{
-  "cmojr89ns00572vc9ezi9w8zv": {
-    "score": 78,
-    "explanation": "...",
-    "dimension_name": "Brand Voice Adherence"
-  },
-  ...
-}
+```bash
+set -a && source .env.local && set +a
+DATABASE_URL="postgresql://erikjager:@localhost:5432/branddock" \
+  npx tsx scripts/voice-research/ws3/score-voice-quality.ts
 ```
 
-Quality-scorer gebruikt Claude Sonnet — kosten per scoring-call ~$0.005-0.01.
-Voor 40 stukken: ~$0.20-0.40 totaal. Geen budget-blocker.
+Optionele flag: `--limit=N` voor smoke test op N items.
 
-**LET OP**: production quality-scorer accepteert `deliverableTypeId` voor type-specifieke
-scoring. Voor disagreement-meting moeten we de Voice-dim consistent extracten
-ongeacht type-specifieke variaties. Verifieer bij implementatie dat de Voice-dim
-key-naam stabiel is over de 9 long-form types.
+Resultaat (16/16 scored, 0 failed, ~4:39 elapsed, ~$0.30):
+- Voice scores 72/78/88 (3 unieke waarden — getriggerde v0.3 amendment)
+- LINFI mean 79.8 (n=12), Napking mean 88.0 (n=4)
+- Output: `output/voice-scores.json`
+
+**Design decision** vastgelegd in script header: `deliverableTypeId=undefined`
+om default 4-dim scorer te forceren. Type-specifieke scorers gebruiken
+verschillende dimension names per content-type — dat zou cross-piece
+comparison breken. Default scorer garandeert consistente "Brand Voice
+Adherence" dimensie over alle 16 pieces.
 
 ---
 
-## Stap 3: mStyleDistance embeddings (TODO)
+## Stap 3: mStyleDistance embeddings (READY TO RUN)
 
-### Modelkeuze
+### Modelkeuze (verified)
 
-LINFI is Nederlandstalig. **mStyleDistance (multilingual)** vereist, niet
-StyleDistance (English-only). Beide zijn HuggingFace-modellen op basis van
-contrastive style learning — getraind om stijl te encoderen onafhankelijk
-van content.
+`StyleDistance/mstyledistance` op HuggingFace bevestigd beschikbaar
+(2026-05-05): sentence-transformers, base model `FacebookAI/xlm-roberta-base`,
+multilingual incl. Nederlands. License MIT.
 
-Mogelijke modellen (verifieer bij implementatie):
-- `StyleDistance/mstyledistance` — multilingual, primary candidate
-- `StyleDistance/styledistance` — English-only, fallback
+**Language caveat**: Dutch was niet in de 9 expliciete training-talen van
+mStyleDistance (paper: huggingface.co/papers/2502.15168). xlm-roberta-base
+ondersteunt Nederlands wel via pretrain. Style-feature transfer naar
+Nederlands is **niet expliciet gevalideerd** door de paper-auteurs.
+Implicatie: behandel absolute similarity-waarden voorzichtig; relatieve
+ordering (wat Pearson/Spearman gebruiken) is betrouwbaarder.
 
-### Setup (Python)
-
-Python 3.10+ recommended. Install dependencies:
+### Setup (eenmalig per machine)
 
 ```bash
-pip install sentence-transformers torch  # transformers + PyTorch backend
+cd scripts/voice-research/ws3
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-### Pipeline (compute-embeddings.py — pending)
+Eerste activatie van het script downloadt ~1.1GB modelgewichten naar
+HuggingFace cache (`~/.cache/huggingface/`).
 
-```python
-# 1. Load model
-from sentence_transformers import SentenceTransformer
-model = SentenceTransformer('StyleDistance/mstyledistance')
+### Run
 
-# 2. Read corpus.jsonl
-with open('corpus.jsonl') as f:
-    corpus = [json.loads(line) for line in f]
-
-# 3. Embed all texts
-embeddings = model.encode([item['content'] for item in corpus])
-
-# 4. Compute LINFI centroid from training-half
-linfi_train = [e for e, item in zip(embeddings, corpus)
-               if item['isBrandAnchor'] and is_in_train_half(item)]
-centroid = mean(linfi_train, axis=0)
-
-# 5. For each piece: cosine similarity to LINFI centroid
-similarities = [cosine(e, centroid) for e in embeddings]
-
-# 6. Output JSON
-{ "embeddings": [...], "centroid": [...], "similarities": {...} }
+```bash
+cd scripts/voice-research/ws3
+source .venv/bin/activate
+python compute-embeddings.py
 ```
 
-### Train/test split for LINFI
+Optionele flags:
+- `--corpus=PATH` override corpus path (default: `output/corpus.jsonl`)
+- `--output=PATH` override output path (default: `output/embeddings.json`)
 
-Per protocol §6.2: LINFI 27 stukken → 14 centroid-training, 13 test-set.
-Split deterministisch (seeded random) zodat de meting reproduceerbaar is.
-Andere workspaces (Napking, Branddock Demo, etc.) krijgen pure stylistic
-distance zonder brand-centroid — alle pieces gaan in de test-set.
+### Methodology — leave-one-out (afwijking van protocol §6.2)
+
+Protocol §6.2 specificeerde train/test split 14/13 voor LINFI 27. Realiteit
+is LINFI=12 pieces. Bij n=12 is leave-one-out methodologisch standaard:
+
+- **LINFI items**: per item, centroid = mean(11 andere LINFI items). Geeft
+  ongebiased similarity, alle 12 pieces blijven in correlation calc.
+- **Non-LINFI items**: pooled centroid uit alle 12 LINFI items. Cross-brand
+  reference points, bias is fine.
+
+Verschil met protocol-original is een implementatie-refinement bij kleinere
+n; geen versiebump nodig per §7.3.
+
+### Output
+
+`output/embeddings.json` met per-item:
+- `embedding` (768-dim vector voor re-analyse)
+- `similarity_to_linfi_centroid` (cosine, 0-1)
+- `similarity_method` (leave-one-out vs pooled-centroid)
+
+Plus aggregate stats per groep (LINFI loo / non-LINFI / overall).
 
 ---
 
@@ -199,23 +211,25 @@ kwalitatieve beslissing in het grijze gebied (0.4 ≤ r ≤ 0.7).
 ```
 scripts/voice-research/ws3/
 ├── README.md                  ← dit document
-├── extract-corpus.ts          ← stap 1, DONE
-├── score-voice-quality.ts     ← stap 2, TODO
-├── compute-embeddings.py      ← stap 3, TODO (separate Python process)
+├── requirements.txt           ← Python deps voor stap 3
+├── extract-corpus.ts          ← stap 1, DONE (commit 1fefc44)
+├── score-voice-quality.ts     ← stap 2, DONE (commit fce7bb6)
+├── compute-embeddings.py      ← stap 3, READY (this commit)
 ├── compute-disagreement.ts    ← stap 4, TODO
-└── output/
-    ├── corpus.jsonl           ← extract-corpus output
-    ├── voice-scores.json      ← score-voice-quality output
-    ├── embeddings.json        ← compute-embeddings output
-    ├── centroid.json          ← LINFI centroid (Python output)
+├── .venv/                     ← Python virtualenv (gitignored)
+└── output/                    ← gitignored, regenerable
+    ├── corpus.jsonl           ← extract-corpus output (16 items)
+    ├── voice-scores.json      ← score-voice-quality output (16 scores)
+    ├── embeddings.json        ← compute-embeddings output (768-dim + similarities)
     └── disagreement-result.json ← compute-disagreement output
 ```
 
 ---
 
-## Open punten vóór live runs
+## Open punten
 
-- [ ] Verifieer dat `StyleDistance/mstyledistance` op HuggingFace beschikbaar is en performant Nederlands embedt
-- [ ] Bevestig dat production quality-scorer Voice-dim key consistent is over alle 9 long-form types
-- [ ] Bepaal seed voor LINFI train/test-split (vastleggen in protocol als WS3-amendment, niet wijzigbaar daarna)
-- [ ] Setup Python virtualenv buiten de Node-codebase — `scripts/voice-research/ws3/.venv/`
+- [x] ~~Verifieer mStyleDistance HuggingFace availability~~ — DONE 2026-05-05, model bevestigd
+- [x] ~~Bevestig Voice-dim key consistent over types~~ — DONE: forced default scorer, name="Brand Voice Adherence"
+- [x] ~~Bepaal LINFI train/test split seed~~ — N/A: gewijzigd naar leave-one-out bij n=12
+- [ ] Setup Python virtualenv eerste keer (zie Stap 3 — Setup hierboven)
+- [ ] Stap 4 implementeren — `compute-disagreement.ts` (Pearson + Spearman + qualitative case dump)

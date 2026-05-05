@@ -1,0 +1,8 @@
+# WS3 Step 3 — mStyleDistance embedding pipeline
+# Install via: pip install -r requirements.txt
+#
+# Note: torch and transformers are pulled in transitively by sentence-transformers.
+# First run downloads ~1.1GB model weights to HuggingFace cache (~/.cache/huggingface/).
+
+sentence-transformers>=3.0.0,<4.0.0
+numpy>=1.24.0,<2.0.0
