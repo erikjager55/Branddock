@@ -1,7 +1,12 @@
 # Research outputs are regenerable + may contain customer brand content.
 # Never commit these to git.
 output/
+ws2/output/
 ws3/output/
+
+# WS2 — actual filled-in topics file (template stays committed for reference).
+# Real topics CSV may contain campaign-sensitive subject lines or strategic context.
+ws2/topics.csv
 
 # Python virtualenv for WS3 step 3 (mStyleDistance embeddings).
 # Regenerable via: cd ws3 && python3 -m venv .venv && pip install -r requirements.txt
