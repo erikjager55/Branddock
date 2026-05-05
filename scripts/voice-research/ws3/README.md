@@ -65,8 +65,8 @@ directional, niet threshold-based.
 **Status** (2026-05-05):
 - ✅ `extract-corpus.ts` — DONE (commit `1fefc44`, n=16 pieces)
 - ✅ `score-voice-quality.ts` — DONE (commit `fce7bb6`, voice scores 72/78/88)
-- ✅ `compute-embeddings.py` — implemented, ready to run (this commit)
-- ⏳ `compute-disagreement.ts` — pending embeddings.json output
+- ✅ `compute-embeddings.py` — implemented, ready to run
+- ✅ `compute-disagreement.ts` — implemented, runs after step 3 produces embeddings.json
 
 ---
 
@@ -192,17 +192,37 @@ Plus aggregate stats per groep (LINFI loo / non-LINFI / overall).
 
 ---
 
-## Stap 4: Pearson r disagreement-meting (TODO)
+## Stap 4: Pearson + Spearman + qualitative cases (READY)
 
-Voor elk stuk in de pool: paar `(voice_score, mstyledistance_similarity)`.
-Bereken Pearson r over alle pairs.
+```bash
+DATABASE_URL="postgresql://erikjager:@localhost:5432/branddock" \
+  npx tsx scripts/voice-research/ws3/compute-disagreement.ts
+```
 
-Drempelinterpretatie per protocol §6.4 — zie tabel bovenaan dit document.
+Optionele flag: `--threshold-z=N` (default 1.0) — markeert pairs met
+`|z(delta)| > N` als disagreement-cases voor kwalitatieve review.
 
-**Disagreement-cases inspectie**: per stuk waar de twee scoring mechanismen
-substantieel verschillen (delta > 1 std-deviation), schrijf de stuk-id +
-beide scores + content-snippet weg voor handmatige review. Dit voedt de
-kwalitatieve beslissing in het grijze gebied (0.4 ≤ r ≤ 0.7).
+**Geen DB / geen API calls** — pure consumption van de drie upstream
+JSON outputs. Pearson + Spearman in plain TypeScript geïmplementeerd
+(geen scipy nodig). Ranks gebruiken average-rank voor ties.
+
+**Output**: `output/disagreement-result.json` met:
+- `correlation.pearson_r` + `correlation.spearman_rho` (Spearman leading per v0.3)
+- `correlation.directional_label_spearman` — interpretatie-string
+- `score_distribution` — voice / similarity / delta stats
+- `disagreement_cases[]` — gesorteerd op |z| descending, met:
+  - voice score + explanation
+  - similarity + method
+  - delta + z-score
+  - direction (`scorer-higher` / `embedding-higher`)
+  - content_snippet (eerste 500 woorden voor blind review)
+- `all_pairs[]` — alle aligned pairs met scores + delta voor inspectie
+
+**Per protocol v0.3 §6.4**: kwalitatieve disagreement-case inspectie
+door 2 raters is het PRIMAIRE signaal. Correlation-statistieken zijn
+secundair en directional, niet threshold-based. Het script genereert
+alle data die de kwalitatieve review nodig heeft (incl. snippets) zodat
+raters niet hoeven cross-refereren naar de corpus.
 
 ---
 
@@ -215,7 +235,7 @@ scripts/voice-research/ws3/
 ├── extract-corpus.ts          ← stap 1, DONE (commit 1fefc44)
 ├── score-voice-quality.ts     ← stap 2, DONE (commit fce7bb6)
 ├── compute-embeddings.py      ← stap 3, READY (this commit)
-├── compute-disagreement.ts    ← stap 4, TODO
+├── compute-disagreement.ts    ← stap 4, READY (this commit)
 ├── .venv/                     ← Python virtualenv (gitignored)
 └── output/                    ← gitignored, regenerable
     ├── corpus.jsonl           ← extract-corpus output (16 items)
@@ -232,4 +252,6 @@ scripts/voice-research/ws3/
 - [x] ~~Bevestig Voice-dim key consistent over types~~ — DONE: forced default scorer, name="Brand Voice Adherence"
 - [x] ~~Bepaal LINFI train/test split seed~~ — N/A: gewijzigd naar leave-one-out bij n=12
 - [ ] Setup Python virtualenv eerste keer (zie Stap 3 — Setup hierboven)
-- [ ] Stap 4 implementeren — `compute-disagreement.ts` (Pearson + Spearman + qualitative case dump)
+- [x] ~~Stap 4 implementeren~~ — DONE this commit
+- [ ] RUN: stap 3 (Python embedding) + stap 4 (correlation calc) — sequentiële uitvoering
+- [ ] 2 raters reviewen disagreement-cases kwalitatief per protocol v0.3 §6.4
