@@ -32,8 +32,8 @@ import path from 'path';
 
 // ─── Constants ────────────────────────────────────────────
 
-const PROTOCOL_VERSION = 'v0.3';
-const PROTOCOL_COMMIT = '9db58cc';
+const PROTOCOL_VERSION = 'v0.4';
+const PROTOCOL_COMMIT = 'de882ce';
 const SCRIPT_DIR = path.resolve(process.cwd(), 'scripts/voice-research/ws3');
 const DEFAULT_CORPUS_PATH = path.join(SCRIPT_DIR, 'output/corpus.jsonl');
 const DEFAULT_VOICE_SCORES_PATH = path.join(SCRIPT_DIR, 'output/voice-scores.json');
