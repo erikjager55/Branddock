@@ -29,6 +29,7 @@ import { buildBrandVoiceDirectiveFromContext } from '@/lib/studio/brand-voice-di
 import { buildHumanVoiceDirective } from '@/lib/studio/human-voice-directive';
 import { resolveHumanVoiceMode } from '@/lib/brand-fidelity/fidelity-config';
 import { detectAiTells } from '@/lib/brand-fidelity/ai-tell-detector';
+import { runFidelityScoring, buildFidelityScoreEventPayload } from '@/lib/brand-fidelity/fidelity-runner';
 import { sanitizeVariantContent } from '@/features/campaigns/lib/variant-content-sanitizer';
 import OpenAI from 'openai';
 
@@ -191,6 +192,7 @@ export async function* orchestrateContentGeneration(
     systemPrompt,
     userPrompt,
     stack.deliverableTypeId,
+    { deliverableId, brandContext: stack.brand },
   );
 
   // Validate AI response
@@ -240,12 +242,14 @@ export async function* orchestrateContentGeneration(
   // mens-baseline position bar. Full STRICT mode rewrite-loop is wired
   // separately (week 2 — requires structured rewrite that preserves
   // component groups + variants).
+  const blobText = textResult.components
+    .map((c) => c.variants[0]?.content ?? '')
+    .filter(Boolean)
+    .join('\n\n');
+  const blobWordCount = blobText.split(/\s+/).filter(Boolean).length;
+
   try {
-    const blobText = textResult.components
-      .map((c) => c.variants[0]?.content ?? '')
-      .filter(Boolean)
-      .join('\n\n');
-    if (blobText.split(/\s+/).filter(Boolean).length >= 50) {
+    if (blobWordCount >= 50) {
       const tellResult = detectAiTells(blobText);
       yield {
         event: 'tell_check_complete',
@@ -262,6 +266,33 @@ export async function* orchestrateContentGeneration(
   } catch (tellErr) {
     // Non-fatal — generation succeeds regardless of detector outcome
     console.error('[canvas-orchestrator] tell-check failed:', tellErr);
+  }
+
+  // ── Step 2.6: Run full F-VAL composition (pijlers 1+2+3) ─
+  // Combineert style-scorer + cross-family G-Eval judge + anti-tell + rules
+  // tot één compositeScore. Persist resultaat naar Deliverable.settings.fidelityScore
+  // voor de demo-UI position-bar + composite display. Non-fatal — falen
+  // hier mag content-generation niet blokkeren.
+  if (blobWordCount >= 50) {
+    yield { event: 'fidelity_score_running', data: { stage: 'computing' } };
+    try {
+      const fidelityResult = await runFidelityScoring({
+        workspaceId,
+        deliverableId,
+        contentTypeId: stack.deliverableTypeId,
+        contentText: blobText,
+        stack,
+        generatorProvider: textModel.provider,
+      });
+      if (fidelityResult) {
+        yield {
+          event: 'fidelity_score_complete',
+          data: buildFidelityScoreEventPayload(fidelityResult),
+        };
+      }
+    } catch (fidelityErr) {
+      console.error('[canvas-orchestrator] fidelity scoring failed:', fidelityErr);
+    }
   }
 
   // ── Step 3: Image generation is now manual ────────────
@@ -406,6 +437,7 @@ async function generateTextWithFallback(
   systemPrompt: string,
   userPrompt: string,
   contentType?: string | null,
+  tracking?: { deliverableId: string; brandContext?: unknown },
 ): Promise<TextGenerationResult> {
   // Build the ordered list of providers to try. Primary first, then the
   // feature's other supportedProviders (from the feature registry).
@@ -431,6 +463,16 @@ async function generateTextWithFallback(
         systemPrompt,
         userPrompt,
         { temperature: 0.7, maxTokens: resolveMaxTokens(contentType ?? null) },
+        tracking
+          ? {
+              workspaceId,
+              parentEntityType: 'Deliverable',
+              parentEntityId: tracking.deliverableId,
+              brandContext: tracking.brandContext,
+              callOrder: i, // 0 = primary, 1+ = fallback attempts
+              sourceIdentifier: `src/lib/ai/canvas-orchestrator.ts:generateTextWithFallback:${i === 0 ? 'primary' : 'fallback'}`,
+            }
+          : undefined,
       );
       if (i > 0) {
         console.warn(
@@ -570,6 +612,13 @@ async function* handleRegeneration(
       systemPrompt,
       userPrompt,
       { temperature: 0.8, maxTokens: resolveMaxTokens(stack.deliverableTypeId ?? null) },
+      {
+        workspaceId,
+        parentEntityType: 'Deliverable',
+        parentEntityId: deliverableId,
+        brandContext: stack.brand,
+        sourceIdentifier: 'src/lib/ai/canvas-orchestrator.ts:handleRegeneration',
+      },
     );
     const textDurationMs = Date.now() - textStart;
 
