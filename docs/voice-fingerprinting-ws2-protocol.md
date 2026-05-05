@@ -1,6 +1,6 @@
 # Voice Fingerprinting WS2 — Drift Measurement Protocol
 
-**Versie**: v0.2 — pre-registratie
+**Versie**: v0.3 — pre-registratie (amendment vóór WS3 stap 3 scoring)
 **Datum**: 2026-05-05
 **Status**: pre-registratie — vastgelegd in git VÓÓR enige scoring of A.1-A.4 implementatie. Wijzigingen na deze commit vereisen expliciete versie-bump met motivatie.
 
@@ -300,13 +300,36 @@ Voor een correlation-meting tussen twee scoring-mechanismen op hetzelfde stuk do
 
 Pre-registratie noteert deze ruimere inclusion expliciet om te voorkomen dat we later het verhaal aanpassen.
 
-### §6.4 Disagreement-criterium
+### §6.4 Disagreement-criterium (HERZIEN v0.3 op basis van WS3 stap 2 score-distributie)
 
-Pearson r tussen quality-scorer Voice-dimensie score (0-100) en mStyleDistance afstand (0-1, geïnverteerd zodat hoog = match) op de gehele pool van ~40 stukken.
+WS3 stap 2 (commit `fce7bb6`, 2026-05-05) toonde dat de quality-scorer Voice-dimensie op n=16 long-form pieces slechts **3 unieke score-waarden** produceert (72, 78, 88). Claude Sonnet als scorer kiest ronde getallen — beperkte score-resolutie. Bij die thin distribution + n=16 is Pearson r overgevoelig voor ties en ruis: de coëfficiënt zwiept op kleine veranderingen en pusht makkelijk naar inconclusief-bucket ongeacht onderliggende waarheid.
 
-- **r > 0.7**: signalen meten hetzelfde, mStyleDistance is **redundant** met bestaande Voice-scorer. F-VAL pijler 1 niet bouwen.
-- **r < 0.4**: signalen meten verschillende dingen, mStyleDistance is **additief**. F-VAL pijler 1 bouwen heeft waarde.
-- **0.4 ≤ r ≤ 0.7**: grijs gebied. Inspectie van disagreement-cases (waar quality-scorer hoog en mStyleDistance laag scoort, en vice versa) bepaalt of additief signal interpreteerbaar is. Beslissing op kwalitatieve grond, gedocumenteerd.
+Pre-registratie corrigeert dit **vóór stap 3 draait** — geen post-data tweaking. Deze amendment is gedaan met v0.2 commit `446f92b` als baseline en stap 3 + 4 nog niet gestart.
+
+**Primair signaal: kwalitatieve disagreement-case inspectie**.
+
+Voor elk stuk in de pool, vergelijk de twee genormaliseerde scores (quality-scorer Voice-dim 0-1, mStyleDistance similarity 0-1). Stukken waar de verschillende mechanismen **substantieel verschillen** — gedefinieerd als (a) verschil > 1 standaarddeviatie van de mean delta, of (b) opposite direction t.o.v. brand-anchor — worden als disagreement-cases gemarkeerd. Per case: stuk-id, beide genormaliseerde scores, content-snippet (eerste 500 woorden), beide explanations.
+
+Twee onafhankelijke reviewers (rater 1 + rater 2 uit §3) lezen alle disagreement-cases en bepalen kwalitatief of het mStyleDistance signaal additief informatie levert die de quality-scorer mist, of dat het inconsistent is met de brand-perception. Beslissing op die kwalitatieve grond, gedocumenteerd.
+
+**Secundair signaal: dual-correlation als directional indicator**.
+
+Beide statistieken rapporteren — geen single-number gate meer.
+
+| Metric | Functie |
+|---|---|
+| Pearson r | Lineaire correlatie. Bekend gevoelig voor ties bij thin distribution; bewust niet leidend bij n=16 + 3 unique values. |
+| Spearman ρ | Rank correlation. Robuust voor ties en ordinal data. **Primaire correlation-metric** bij thin distribution. |
+
+Spearman ρ is leidend voor directional interpretation. **Geen threshold-based branch decisie meer** — de kwalitatieve inspectie hierboven vervangt die rol.
+
+| Spearman ρ | Directional richting (NIET conclusief alleen) |
+|---|---|
+| > 0.7 | Sterk gecorreleerd → kwalitatieve inspectie waarschijnlijk bevestigt redundantie |
+| 0.4 – 0.7 | Matig — geen sterke richting, kwalitatieve inspectie volledig leidend |
+| < 0.4 | Zwakke correlatie → kwalitatieve inspectie waarschijnlijk bevestigt additief signaal |
+
+Onder n=16 met thin Pearson-distributie is een zelfstandige threshold-based correlation conclusie methodologisch niet verdedigbaar. Mixed-method (kwalitatief primair + correlation secundair) sluit aan bij gebruiker-keuze optie 4 uit pool-scope discussie.
 
 ### §6.5 Implementatie
 
@@ -333,7 +356,7 @@ Door git-commit van dit document vóór enige scoring of A.1-A.4 implementatie:
 
 Na pre-registratie commit zonder versie-bump met motivatie:
 - Anchors per dimensie
-- Branch-criteria thresholds (16/20, 1.5 punten, 0.4 / 0.7 voor Pearson r)
+- Branch-criteria thresholds voor WS2 (16/20, 1.5 punten). WS3 correlation thresholds zijn in v0.3 omgezet naar directional indicators voor Spearman ρ; de primaire WS3-beslissing rust op kwalitatieve disagreement-case inspectie (zie §6.4)
 - Inclusion-criteria voor WS3 pool
 - Rubric-dimensies of weging
 
@@ -402,4 +425,5 @@ Na pre-registratie commit:
 ## §10 Versiehistorie
 
 - **v0.1** (2026-05-05, inline in chat, niet gecommit): initiele rubriek + 4 dimensies + 5-punts vs 1-10 keuze + 3 content-types + falsificatie-branches.
-- **v0.2** (2026-05-05, dit document): toegevoegd asymmetrie-erkenning rater 2 (§3.2), κ per rater-type-paar (§3.3), asymmetrische weging (§3.4), rater-framing (§3.6), tweezijdige hypothese A.3 (§1.2), 10 LLM-tells (§1.3), brand-specific weight 3× (§1.3), branch (c) clarificatie geen A.5 fallback (§5), WS2 conditie B redefinitie BVD+A.1-A.4 i.p.v. nieuw schema (§4.2), WS3 scenario B + LINFI-anchored + approved losgelaten (§6.2-6.3), post-hoc rationalisatie blocklist (§7.4).
+- **v0.2** (2026-05-05, commit `446f92b`): toegevoegd asymmetrie-erkenning rater 2 (§3.2), κ per rater-type-paar (§3.3), asymmetrische weging (§3.4), rater-framing (§3.6), tweezijdige hypothese A.3 (§1.2), 10 LLM-tells (§1.3), brand-specific weight 3× (§1.3), branch (c) clarificatie geen A.5 fallback (§5), WS2 conditie B redefinitie BVD+A.1-A.4 i.p.v. nieuw schema (§4.2), WS3 scenario B + LINFI-anchored + approved losgelaten (§6.2-6.3), post-hoc rationalisatie blocklist (§7.4).
+- **v0.3** (2026-05-05, dit commit): WS3 disagreement-criterium herzien op basis van WS3 stap 2 score-distributie observatie (commit `fce7bb6`: 3 unieke waarden 72/78/88 over 16 pieces — thin distribution noopt tot Spearman ρ + kwalitatieve inspectie als primair signaal). Pearson r en Spearman ρ beide rapporteren; kwalitatieve disagreement-case inspectie wordt primair signaal voor F-VAL pijler 1 beslissing; correlation-thresholds gedegradeerd naar directional indicators (§6.4). §7.2 non-modifiable lijst aangepast om Pearson 0.4/0.7 te verwijderen en kwalitatieve inspectie als de gefixeerde primary methodology vast te leggen. **Pre-data amendment**: WS3 stap 3 (mStyleDistance embeddings) en stap 4 (correlation calc) waren nog niet gestart op moment van deze versie-bump. Modelverificatie `StyleDistance/mstyledistance` op HuggingFace bevestigd in dezelfde sessie (sentence-transformers, xlm-roberta-base, multilingual incl. Nederlands).
